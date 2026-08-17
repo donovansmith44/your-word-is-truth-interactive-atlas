@@ -60,7 +60,7 @@ bible-atlas-sketch/
 
 ### 4.1 Time
 
-Signed astronomical year in an `i32` (`-1446` = 1447 BC; no year zero in display, handled at format time). Display: `1447 BC`, `AD 30`. `TimeRange { from_year, to_year }`, inclusive. Year is the finest granularity everywhere (slider, events, queries).
+Signed historical year in an `i32`: `-n` means n BC, `n` means AD n, **zero is forbidden** (ETL-validated). `-1` and `1` are adjacent for contiguity math; ordinary `i32` ordering serves intersection. Display: `1447 BC`, `AD 30`; ranges as `1447 BC – 1400 BC` (spaced en dash). `TimeRange { from_year, to_year }`, inclusive. Year is the finest granularity everywhere (slider, events, queries).
 
 ### 4.2 Core types (atlas-core)
 
@@ -110,7 +110,7 @@ Curated narratives may reference Theographic events or define supplementary even
 
 ### 4.6 ETL (atlas-etl)
 
-`cargo run -p atlas-etl` : reads `data/raw/` + `data/curated/` → validates → writes `data/compiled/*.json` (gzip-friendly plain JSON). **Hard failures** (exit non-zero): unknown place id, dangling narrative leg, verse id outside KJV canon, era gaps/overlaps, duplicate event ids, non-chronological narrative legs (leg n+1's `when.from_year` must be ≥ leg n's). **Report** (stdout + `data/compiled/report.txt`): % events dated, % verses geocoded, per-narrative leg counts, places without any event. A `fetch` subcommand downloads raw datasets to `data/raw/` (which is gitignored; `data/curated/` and small derived files are committed).
+`cargo run -p atlas-etl` : reads `data/raw/` + `data/curated/` → validates → writes `data/compiled/*.json` (gzip-friendly plain JSON). **Hard failures** (exit non-zero): unknown place id, dangling narrative leg, verse id outside KJV canon, era gaps/overlaps, duplicate event ids, non-chronological narrative legs (leg n+1's `when.from_year` must be ≥ leg n's). **Report** (stdout + `data/compiled/report.txt`): % events dated, % verses geocoded, per-narrative leg counts, places without any event. `data/fetch-raw.ps1` (idempotent PowerShell) downloads and extracts the raw datasets into `data/raw/` (gitignored) and vendors Leaflet into the client — keeping atlas-etl itself network-free and TLS-free (which matters on the windows-gnu toolchain). `data/curated/` is committed.
 
 ## 5. API
 
@@ -242,14 +242,14 @@ Within a scene, for each narrative: take its legs (events) in order, keep those 
 
 - **Rust unit tests** (the semantics live here): window intersection incl. boundary years and BC math; scripture-ref parsing/resolution; scene composition; all §7.4 arrow invariants; scripture-mode leg rule; brightness bucketing; cross-ref ordering.
 - **ETL tests + report:** validation failures actually fail (fixture-driven); coverage report generated every run.
-- **Client:** hand-mirrored DTO serialization round-trip tests; component smoke tests only where cheap (bUnit for `TimeSlider` year↔position math — that mapping is worth pinning).
-- **E2E:** verified by driving the running app with Playwright during development (hover cards appear, arrows render, mode override works, cross-ref chain navigates). Scripted CI E2E is future work.
+- **Client:** xunit tests — DTO round-trip against a *shared golden fixture* that the Rust side also serializes (pins the wire format across languages); exhaustive `SliderScale` year↔position round-trip over every year in the span.
+- **UX property suite (exhaustive, property-based, language-agnostic):** a black-box suite in `tests/ux/` that talks ONLY HTTP (the API) and DOM (Playwright) — it imports nothing from `server/` or `client/` and would survive a rewrite of either. Properties are written with fast-check over generated windows, canon-derived scripture refs, and interaction sequences; every UX invariant in §4.4, §7, and §8 carries a stable property ID (SCENE-*, ARROW-*, WORLD-*, READ-*, …) with a traceability table in the implementation plan. Small domains (all 66 books, all eras, era-boundary years) are enumerated exhaustively rather than sampled; generative properties default to CI-friendly run counts with an `FC_NUM_RUNS` knob for deep runs. The DOM contact surface is a documented contract of `data-testid`s and URL patterns (`tests/ux/CONTRACT.md`) that any implementation must expose — that contract, not the code, is what the tests couple to.
 - **Perf budgets:** scene response ≤ ~100 KB typical; hover = zero network; slider drag → ≤ 1 in-flight scene fetch (debounced, latest-wins); Leaflet handles the ≤ ~1,200-marker worst case, typical scenes far smaller.
 - **Errors:** server returns typed errors; client shows non-blocking toasts and keeps the last good scene on screen.
 
 ## 10. Out of scope for M1 (explicitly later)
 
-Other translations (architecture is ready); people/participant exploration and author-based map filters (sketch's `Author` query is exposed only as book metadata in M1); zoomable-axis timeline upgrade; MapLibre swap; auto-derived narrative backfill; scripted E2E in CI; DTO codegen from Rust; deployment hosting setup; uncertainty ranges on dates beyond what `TimeRange` already expresses.
+Other translations (architecture is ready); people/participant exploration and author-based map filters (sketch's `Author` query is exposed only as book metadata in M1); zoomable-axis timeline upgrade; MapLibre swap; auto-derived narrative backfill; DTO codegen from Rust; deployment hosting setup; uncertainty ranges on dates beyond what `TimeRange` already expresses.
 
 ## 11. Implementation phasing (input to the plan)
 
