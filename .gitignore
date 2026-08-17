@@ -1,0 +1,17 @@
+# GHC artifacts from the sketch
+*.hi
+*.o
+
+# Rust
+server/target/
+target/
+
+# .NET
+client/bin/
+client/obj/
+**/bin/
+**/obj/
+
+# Data: raw downloads and compiled outputs are reproducible via atlas-etl
+data/raw/
+data/compiled/
