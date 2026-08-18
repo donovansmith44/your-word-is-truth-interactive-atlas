@@ -458,6 +458,97 @@ mod tests {
         assert_eq!(g.verses, expected); // sorted ascending by verse number, not input order
     }
 
+    /// Deterministic counterpart to `verse_groups_cap_at_20_sorted_ascending_with_true_count`,
+    /// but through `compose_scripture_scene` so it exercises `verse_groups_for`'s
+    /// `Some(r)` branch (SCRIP-1/SCRIP-3's fix) — unlike that test, `demo_fixture`
+    /// (max 3 verses/event) and `big_fixture` (empty-verse legs) never build a
+    /// >20-verse group under a scripture ref, so without this test a regression
+    /// back to plain `take(20)` would only ever be caught by the property suite
+    /// (probabilistically: roughly 1 run in 8 at the default 150 runs). Both cases
+    /// live in one standalone dataset (not `fixture()`), same rationale as the
+    /// test above: isolated from every other example test's expectations.
+    #[test]
+    fn scripture_mode_verse_cap_prioritizes_ref_matching_verses() {
+        // (a) fill path: JOS.10.25 is the HIGHEST verse in a 25-verse ascending
+        // group, i.e. position 25 -- well beyond the top-20 a plain `take(20)`
+        // would keep. Querying that exact verse must still surface it.
+        let verses_a: Vec<String> = (1..=25).map(|v| format!("JOS.10.{v}")).collect();
+        let event_a = Event {
+            id: "big-event-a".into(),
+            label: "Long battle A".into(),
+            when: TimeRange::new(-1400, -1400).unwrap(),
+            places: vec!["place-a".into()],
+            verses: verses_a,
+        };
+
+        // (b) truncate path: a passage ref (JOS.11.5-30) matches 26 of a 30-verse
+        // group (verses 5..30) -- more than the 20-verse cap, with 4 non-matching
+        // verses (1..4) also present in the same group. Every one of the 20
+        // rendered verses must satisfy the ref; none of the 1..4 leftovers may
+        // leak in just because the matched set is already >20.
+        let verses_b: Vec<String> = (1..=30).map(|v| format!("JOS.11.{v}")).collect();
+        let event_b = Event {
+            id: "big-event-b".into(),
+            label: "Long battle B".into(),
+            when: TimeRange::new(-1300, -1300).unwrap(),
+            places: vec!["place-b".into()],
+            verses: verses_b,
+        };
+
+        let places = vec![
+            Place { id: "place-a".into(), name: "Place A".into(), lat: 0.0, lon: 0.0, verse_links: vec![] },
+            Place { id: "place-b".into(), name: "Place B".into(), lat: 0.0, lon: 0.0, verse_links: vec![] },
+        ];
+        let d = AtlasData::new(
+            Canon { books: vec![] },
+            places,
+            vec![event_a, event_b],
+            vec![],
+            vec![],
+            vec![],
+            HashMap::new(),
+            HashMap::new(),
+        )
+        .finish();
+        let jos = crate::canon::resolve_alias("JOS").unwrap();
+
+        // (a)
+        let ref_a = ScriptureRef::Verse(VerseId { book: jos, chapter: 10, verse: 25 });
+        let s_a = compose_scripture_scene(&d, &ref_a);
+        assert_eq!(s_a.places.len(), 1); // only place-a's event matches JOS.10.25
+        let place_a = s_a.places.iter().find(|p| p.id == "place-a").expect("place-a lit by JOS.10.25");
+        assert_eq!(place_a.events.len(), 1);
+        assert_eq!(place_a.events[0].verse_groups.len(), 1);
+        let g_a = &place_a.events[0].verse_groups[0];
+        assert_eq!(g_a.book, "JOS");
+        assert_eq!(g_a.chapter, 10);
+        assert_eq!(g_a.count, 25); // true total, unaffected by capping
+        assert_eq!(g_a.verses.len(), 20); // still capped (SCENE-2)
+        assert!(
+            g_a.verses.contains(&"JOS.10.25".to_string()),
+            "the ref-matching verse must survive the cap: {:?}",
+            g_a.verses
+        );
+        let mut sorted_a = g_a.verses.clone();
+        sorted_a.sort_by_key(|v| v.rsplit('.').next().unwrap().parse::<u16>().unwrap());
+        assert_eq!(g_a.verses, sorted_a, "rendered verses must stay ascending-sorted");
+
+        // (b)
+        let ref_b = ScriptureRef::Passage { book: jos, chapter: 11, from_verse: 5, to_verse: 30 };
+        let s_b = compose_scripture_scene(&d, &ref_b);
+        assert_eq!(s_b.places.len(), 1); // only place-b's event matches JOS.11.5-30
+        let place_b = s_b.places.iter().find(|p| p.id == "place-b").expect("place-b lit by JOS.11.5-30");
+        let g_b = &place_b.events[0].verse_groups[0];
+        assert_eq!(g_b.book, "JOS");
+        assert_eq!(g_b.chapter, 11);
+        assert_eq!(g_b.count, 30); // true total, unaffected by capping
+        assert_eq!(g_b.verses.len(), 20); // capped to the max, even though 26 verses matched
+        for v in &g_b.verses {
+            let vn: u16 = v.rsplit('.').next().unwrap().parse().unwrap();
+            assert!((5..=30).contains(&vn), "every rendered verse must satisfy the ref, got {v}");
+        }
+    }
+
     /// A larger, still plain-deterministic dataset (no proptest seed input;
     /// see controller ruling — the brief's "seed vector" phrasing is
     /// superseded by its own "built deterministically" parenthetical):
