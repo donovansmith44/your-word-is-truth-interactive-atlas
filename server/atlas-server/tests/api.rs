@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use atlas_core::data::demo_fixture;
 use axum::body::Body;
+use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
@@ -234,7 +235,13 @@ async fn verse_chapter_place_and_404() {
 /// (a Blazor client-side route like `/world`) falls back to `index.html`'s
 /// content (tower-http's `not_found_service` SPA idiom — the status on that
 /// fallback response is 404, which is fine: the client-side router only
-/// needs the HTML body, not the status).
+/// needs the HTML body, not the status). Also asserts the permissive-CORS
+/// layer reaches BOTH an `/api`-routed response and a fallback-served
+/// response: `Router::layer` only wraps routes/fallback that exist at the
+/// time it's called, so if `.layer(CorsLayer::permissive())` were ever
+/// reordered to run before `.fallback_service(...)` is attached, the
+/// fallback branch would silently lose its CORS headers while `/api/*`
+/// still had them — this pins the correct (CORS-applied-last) ordering.
 #[tokio::test]
 async fn static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_routes() {
     let dir = std::env::temp_dir().join(format!("atlas-server-static-test-{}", std::process::id()));
@@ -244,8 +251,17 @@ async fn static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_
 
     let app = atlas_server::app::build(Arc::new(demo_fixture()), Some(dir.clone()));
 
-    let response = app.clone().oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap()).await.unwrap();
+    let response = app
+        .clone()
+        .oneshot(Request::builder().uri("/health").header("origin", "http://example.com").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        response.headers().get(ACCESS_CONTROL_ALLOW_ORIGIN).map(|v| v.to_str().unwrap()),
+        Some("*"),
+        "an /api route response must carry permissive CORS headers"
+    );
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     assert_eq!(&bytes[..], b"ok", "an API route must win over the static fallback");
 
@@ -254,7 +270,17 @@ async fn static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     assert_eq!(&bytes[..], b"body{color:red}");
 
-    let response = app.clone().oneshot(Request::builder().uri("/world").body(Body::empty()).unwrap()).await.unwrap();
+    let response = app
+        .clone()
+        .oneshot(Request::builder().uri("/world").header("origin", "http://example.com").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    assert_eq!(
+        response.headers().get(ACCESS_CONTROL_ALLOW_ORIGIN).map(|v| v.to_str().unwrap()),
+        Some("*"),
+        "a fallback-served (SPA-route) response must ALSO carry permissive CORS headers, \
+         not just direct /api routes — this is the case the layer-ordering bug broke"
+    );
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     assert_eq!(&bytes[..], b"<html>shell</html>", "unmatched client-side routes must fall back to index.html");
 

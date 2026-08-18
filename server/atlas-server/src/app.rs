@@ -23,6 +23,21 @@ use crate::handlers;
 /// `app.css`) serves that file; a request for anything else (e.g. the
 /// client-side route `/world`) serves `index.html` so client-side routing
 /// can take over and deep links work.
+///
+/// `.layer(CorsLayer::permissive())` is applied LAST, after the
+/// `static_dir` fallback (if any) has been attached — deliberately, not
+/// incidentally. `Router::layer` only wraps whatever routes/fallback exist
+/// on the router at the moment it's called; `fallback_service` (called
+/// inside the `Some(dir)` arm) replaces the fallback with a brand-new
+/// `Route` that bypasses any layer applied earlier. Wrapping first and
+/// attaching the fallback second would silently leave every fallback-served
+/// response (the client's `index.html`, its static assets, and every
+/// SPA-route fallback) without CORS headers while `/api/*` had them —
+/// exactly the bug a fix-round review caught here. See the
+/// `static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_routes`
+/// test in `tests/api.rs`, which asserts the CORS header on both an `/api`
+/// response and a fallback-served response so this ordering can't silently
+/// regress.
 pub fn build(data: Arc<AtlasData>, static_dir: Option<PathBuf>) -> Router {
     let api = Router::new()
         .route("/health", get(handlers::health))
@@ -34,15 +49,16 @@ pub fn build(data: Arc<AtlasData>, static_dir: Option<PathBuf>) -> Router {
         .route("/api/place/{id}", get(handlers::place))
         .route("/api/narratives", get(handlers::narratives))
         .route("/api/eras", get(handlers::eras))
-        .with_state(data)
-        .layer(CorsLayer::permissive());
+        .with_state(data);
 
-    match static_dir {
+    let router = match static_dir {
         Some(dir) => {
             let index = dir.join("index.html");
             let serve_dir = ServeDir::new(dir).not_found_service(ServeFile::new(index));
             api.fallback_service(serve_dir)
         }
         None => api,
-    }
+    };
+
+    router.layer(CorsLayer::permissive())
 }
