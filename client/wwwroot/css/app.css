@@ -287,24 +287,33 @@ input:focus-visible,
     animation: atlas-marker-in 180ms ease-out both;
 }
 
-.atlas-marker.glow-1 {
+/* Single-class per this file's discipline (header comment) -- glow-1..5
+   only ever appear on the marker div itself (map.js: `class="atlas-marker
+   glow-${brightness}"`), so an .atlas-marker qualifier changes nothing
+   behaviorally but does raise these rules' specificity above the
+   reduced-motion kill-switch below (a compound `.atlas-marker.glow-4`
+   selector beats a single-class `.atlas-marker` one regardless of media
+   query or source order, which would silently keep glow-4/5 breathing
+   under prefers-reduced-motion). Keeping every rule here single-class
+   means specificity is uniform and only source order decides ties. */
+.glow-1 {
     box-shadow: 0 0 5px 1px rgba(255, 200, 100, .5);
 }
 
-.atlas-marker.glow-2 {
+.glow-2 {
     box-shadow: 0 0 7px 2px rgba(255, 200, 100, .55), 0 0 14px 4px rgba(255, 200, 100, .28);
 }
 
-.atlas-marker.glow-3 {
+.glow-3 {
     box-shadow: 0 0 8px 2px rgba(255, 200, 100, .6), 0 0 18px 6px rgba(255, 200, 100, .32), 0 0 28px 10px rgba(255, 200, 100, .16);
 }
 
-.atlas-marker.glow-4 {
+.glow-4 {
     box-shadow: 0 0 10px 3px rgba(255, 200, 100, .65), 0 0 22px 7px rgba(255, 200, 100, .38), 0 0 36px 13px rgba(255, 200, 100, .2);
     animation: atlas-marker-in 180ms ease-out both, atlas-breathe 2.7s ease-in-out 180ms infinite;
 }
 
-.atlas-marker.glow-5 {
+.glow-5 {
     box-shadow: 0 0 12px 4px rgba(255, 200, 100, .72), 0 0 26px 9px rgba(255, 200, 100, .42), 0 0 44px 16px rgba(255, 200, 100, .24);
     animation: atlas-marker-in 180ms ease-out both, atlas-breathe 2.5s ease-in-out 180ms infinite;
 }
@@ -342,7 +351,9 @@ input:focus-visible,
 
 @media (prefers-reduced-motion: reduce) {
     .atlas-marker-icon,
-    .atlas-marker {
+    .atlas-marker,
+    .glow-4,
+    .glow-5 {
         animation: none;
     }
 }
