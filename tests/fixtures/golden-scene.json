@@ -1,0 +1,56 @@
+{
+  "mode": "time",
+  "window": {
+    "from_year": -1450,
+    "to_year": -1400
+  },
+  "places": [
+    {
+      "id": "jericho",
+      "name": "Jericho",
+      "lat": 31.8703,
+      "lon": 35.4436,
+      "brightness": 2,
+      "events": [
+        {
+          "id": "ev_jericho_falls",
+          "label": "The walls of Jericho fall",
+          "when": {
+            "from_year": -1406,
+            "to_year": -1406
+          },
+          "verse_groups": [
+            {
+              "book": "JOS",
+              "chapter": 6,
+              "verses": [
+                "JOS.6.1",
+                "JOS.6.20"
+              ],
+              "count": 27
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "arrows": [
+    {
+      "narrative": "conquest",
+      "color": "#7C3AED",
+      "from_place": "gilgal",
+      "to_place": "jericho",
+      "from_event": "ev_camp_gilgal",
+      "to_event": "ev_jericho_falls",
+      "order": 2
+    }
+  ],
+  "narratives": [
+    {
+      "id": "conquest",
+      "name": "The Conquest",
+      "color": "#7C3AED",
+      "legs_in_scene": 4
+    }
+  ]
+}
