@@ -1,0 +1,213 @@
+@* Era-segmented, year-exact time slider: the "timeline instrument" docked
+   bottom-center over the world map (design-direction.md). SVG-free -- era
+   bands are flex children (native CSS flexbox resolves the same
+   min-width-then-proportional-remainder layout SliderScale computes for its
+   own year<->pixel math) and the brush is two absolutely-positioned drag
+   handles. All year math (handle positions, drag hit-testing) goes through
+   SliderScale, which is zero-year-aware (there is no year 0). *@
+
+<div class="slider" data-testid="slider">
+    <input class="slider-readout"
+           data-testid="slider-readout"
+           value="@_readoutText"
+           spellcheck="false"
+           aria-label="Time window"
+           @oninput="OnReadoutInput"
+           @onkeydown="OnReadoutKeyDown" />
+
+    <div class="slider-track"
+         @onpointermove="OnTrackPointerMove"
+         @onpointerup="OnTrackPointerUp"
+         @onpointercancel="OnTrackPointerUp"
+         @onpointerleave="OnTrackPointerUp">
+        @foreach (var era in Eras)
+        {
+            var active = EffectiveFrom <= era.ToYear && EffectiveTo >= era.FromYear;
+            <button type="button"
+                    class="slider-era"
+                    data-testid="slider-era-@era.Id"
+                    data-active="@(active ? "true" : "false")"
+                    style="flex-grow: @EraSpan(era); flex-basis: 0; min-width: @(MinEraWidthPercent)%;@(_dragTarget is not null ? " pointer-events: none;" : "")"
+                    @onclick="() => ApplyEra(era)">
+                @era.Name
+            </button>
+        }
+
+        @if (Eras.Count > 0)
+        {
+            <div class="slider-handle slider-handle-from"
+                 style="left: @(HandleX(EffectiveFrom).ToString(System.Globalization.CultureInfo.InvariantCulture))px;@(_dragTarget is not null ? " pointer-events: none;" : "")"
+                 role="slider"
+                 tabindex="0"
+                 aria-label="Window start year"
+                 aria-valuenow="@EffectiveFrom"
+                 aria-valuemin="@Eras[0].FromYear"
+                 aria-valuemax="@Eras[^1].ToYear"
+                 aria-valuetext="@YearText.Format(EffectiveFrom)"
+                 @onpointerdown="@(() => OnHandlePointerDown("from"))"
+                 @onkeydown="@(e => OnHandleKeyDown("from", e))"></div>
+            <div class="slider-handle slider-handle-to"
+                 style="left: @(HandleX(EffectiveTo).ToString(System.Globalization.CultureInfo.InvariantCulture))px;@(_dragTarget is not null ? " pointer-events: none;" : "")"
+                 role="slider"
+                 tabindex="0"
+                 aria-label="Window end year"
+                 aria-valuenow="@EffectiveTo"
+                 aria-valuemin="@Eras[0].FromYear"
+                 aria-valuemax="@Eras[^1].ToYear"
+                 aria-valuetext="@YearText.Format(EffectiveTo)"
+                 @onpointerdown="@(() => OnHandlePointerDown("to"))"
+                 @onkeydown="@(e => OnHandleKeyDown("to", e))"></div>
+        }
+    </div>
+</div>
+
+@code {
+    // Matches .slider-track's fixed CSS width (app.css) exactly, so a
+    // pointer's OffsetX within the track maps 1:1 onto SliderScale's pixel
+    // space without any DOM measurement (no JS interop needed). Era buttons
+    // and handles get inline pointer-events:none while dragging (below) so
+    // OffsetX always stays relative to the track itself, never to whichever
+    // child happens to be under the pointer mid-drag.
+    private const double TrackWidthPx = 800.0;
+
+    [Parameter] public List<EraDto> Eras { get; set; } = new();
+    [Parameter] public int From { get; set; }
+    [Parameter] public int To { get; set; }
+    [Parameter] public EventCallback<(int From, int To)> OnWindowChange { get; set; }
+
+    private string _readoutText = "";
+    private int _lastFrom = int.MinValue;
+    private int _lastTo = int.MinValue;
+
+    private string? _dragTarget; // "from" | "to" | null when idle
+    private int _dragFrom;
+    private int _dragTo;
+
+    private int EffectiveFrom => _dragTarget is not null ? _dragFrom : From;
+    private int EffectiveTo => _dragTarget is not null ? _dragTo : To;
+    private double MinEraWidthPercent => Eras.Count > 0 ? 100.0 / (Eras.Count * 2) : 0;
+
+    protected override void OnParametersSet()
+    {
+        // Resync the readout's text to the applied window whenever it
+        // actually changes (initial load, era click, drag release, or an
+        // external URL navigation) -- but never on an unrelated re-render,
+        // so a keystroke mid-edit is never clobbered before Enter is pressed.
+        if (From != _lastFrom || To != _lastTo)
+        {
+            _lastFrom = From;
+            _lastTo = To;
+            _readoutText = YearText.FormatRange(From, To);
+        }
+    }
+
+    private void OnReadoutInput(ChangeEventArgs e) => _readoutText = e.Value?.ToString() ?? "";
+
+    private async Task OnReadoutKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key != "Enter")
+        {
+            return;
+        }
+
+        if (YearText.TryParse(_readoutText, out var from, out var to))
+        {
+            await OnWindowChange.InvokeAsync((from, to));
+        }
+    }
+
+    private async Task ApplyEra(EraDto era) => await OnWindowChange.InvokeAsync((era.FromYear, era.ToYear));
+
+    private void OnHandlePointerDown(string which)
+    {
+        _dragTarget = which;
+        _dragFrom = From;
+        _dragTo = To;
+    }
+
+    private void OnTrackPointerMove(PointerEventArgs e)
+    {
+        if (_dragTarget is null || Eras.Count == 0)
+        {
+            return;
+        }
+
+        var year = SliderScale.XToYear(e.OffsetX, Eras, TrackWidthPx);
+        if (_dragTarget == "from")
+        {
+            _dragFrom = Math.Min(year, _dragTo);
+        }
+        else
+        {
+            _dragTo = Math.Max(year, _dragFrom);
+        }
+    }
+
+    private async Task OnTrackPointerUp(PointerEventArgs e)
+    {
+        if (_dragTarget is null)
+        {
+            return;
+        }
+
+        var (from, to) = (_dragFrom, _dragTo);
+        _dragTarget = null;
+        if (from != From || to != To)
+        {
+            await OnWindowChange.InvokeAsync((from, to));
+        }
+    }
+
+    private async Task OnHandleKeyDown(string which, KeyboardEventArgs e)
+    {
+        var delta = e.Key switch { "ArrowLeft" => -1, "ArrowRight" => 1, _ => 0 };
+        if (delta == 0 || Eras.Count == 0)
+        {
+            return;
+        }
+
+        var from = From;
+        var to = To;
+        if (which == "from")
+        {
+            from = ClampToSpan(NudgeYear(From, delta));
+            if (from > to)
+            {
+                from = to;
+            }
+        }
+        else
+        {
+            to = ClampToSpan(NudgeYear(To, delta));
+            if (to < from)
+            {
+                to = from;
+            }
+        }
+
+        if (from != From || to != To)
+        {
+            await OnWindowChange.InvokeAsync((from, to));
+        }
+    }
+
+    // There is no year 0 (1 BC is immediately followed by AD 1); stepping by
+    // one year must hop over it rather than land on it.
+    private static int NudgeYear(int year, int delta)
+    {
+        var next = year + delta;
+        return next == 0 ? next + delta : next;
+    }
+
+    private int ClampToSpan(int year) => Math.Clamp(year, Eras[0].FromYear, Eras[^1].ToYear);
+
+    private double HandleX(int year) => Eras.Count == 0 ? 0 : SliderScale.YearToX(year, Eras, TrackWidthPx);
+
+    // Mirrors SliderScale's private EraYearCount (zero-aware year count) so
+    // the CSS flex-grow driving each band's on-screen width tracks the same
+    // per-era proportions the C# pixel math uses. SliderScale doesn't expose
+    // this itself (its public surface is just YearToX/XToYear), and the
+    // formula is small enough that duplicating it here beats widening that
+    // contract for one rendering detail.
+    private static int EraSpan(EraDto era) => era.ToYear - era.FromYear + (era.FromYear < 0 && era.ToYear > 0 ? 0 : 1);
+}

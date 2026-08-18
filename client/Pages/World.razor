@@ -1,7 +1,170 @@
 @page "/world"
+@implements IDisposable
+@inject AtlasClient Atlas
+@inject NavigationManager Nav
 
 <PageTitle>Bible Atlas &mdash; World</PageTitle>
 
 <div class="world-page">
     <div id="world-map" class="world-map" data-testid="world-map"></div>
+
+    @if (_eras is not null)
+    {
+        <TimeSlider Eras="_eras" From="_from" To="_to" OnWindowChange="HandleWindowChange" />
+    }
+
+    @if (_errorMessage is not null)
+    {
+        <div class="toast" data-testid="toast">
+            <p class="toast-message">@_errorMessage</p>
+        </div>
+    }
 </div>
+
+@code {
+    // No window specified at all (bare "/world"): show the full timeline
+    // rather than an arbitrary slice.
+    private const int DefaultFrom = -4004;
+    private const int DefaultTo = 100;
+
+    [SupplyParameterFromQuery(Name = "from")]
+    [Parameter]
+    public string? FromQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "to")]
+    [Parameter]
+    public string? ToQuery { get; set; }
+
+    // The "ref" query param (scripture mode) lands in Task 13; this task
+    // only reads/writes from+to and otherwise ignores it.
+
+    private List<EraDto>? _eras;
+    private Scene? _scene; // fetched here; rendered by Task 11
+    private string? _errorMessage;
+    private int _from = DefaultFrom;
+    private int _to = DefaultTo;
+    private CancellationTokenSource? _fetchCts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _eras = await Atlas.Eras();
+        }
+        catch (Exception)
+        {
+            // No eras means no usable slider; surface it the same way as any
+            // other fetch failure rather than crashing the page.
+            _errorMessage = "Couldn't load the timeline eras -- check your connection and try again.";
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_eras is null)
+        {
+            return;
+        }
+
+        await SyncFromQuery();
+    }
+
+    // Single path for every window change, whether it comes from the user
+    // (slider drag / era click / readout Enter, via HandleWindowChange
+    // below) or directly from a URL (deep link, browser reload, back/forward):
+    // all of them change the query string, which re-supplies
+    // FromQuery/ToQuery and re-runs this method through OnParametersSetAsync.
+    private async Task SyncFromQuery()
+    {
+        if (FromQuery is null && ToQuery is null)
+        {
+            if (_scene is null)
+            {
+                await DebouncedLoadScene(_from, _to);
+            }
+
+            return;
+        }
+
+        if (!int.TryParse(FromQuery, out var from) || !int.TryParse(ToQuery, out var to))
+        {
+            _errorMessage = "That link's time window isn't valid. Showing the last window -- try the slider.";
+            return;
+        }
+
+        if (from == 0 || to == 0)
+        {
+            _errorMessage = "Year 0 doesn't exist on this timeline (1 BC is followed by AD 1). Showing the last window -- try the slider.";
+            return;
+        }
+
+        if (from > to)
+        {
+            _errorMessage = "That time window is backwards -- the start year is after the end year. Showing the last window -- try the slider.";
+            return;
+        }
+
+        _from = from;
+        _to = to;
+        await DebouncedLoadScene(from, to);
+    }
+
+    private Task HandleWindowChange((int From, int To) window)
+    {
+        var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["from"] = window.From,
+            ["to"] = window.To,
+        });
+        Nav.NavigateTo(uri, replace: true);
+        return Task.CompletedTask;
+    }
+
+    // Debounced (150ms), latest-wins: a burst of window changes (fast
+    // dragging, rapid era clicks) cancels any fetch still in its debounce
+    // wait, and a fetch that was already in flight when superseded has its
+    // result discarded on return rather than clobbering newer state -- there
+    // is no way to cancel the HTTP call itself (AtlasClient.SceneTime takes
+    // no CancellationToken), only to ignore a stale response.
+    private async Task DebouncedLoadScene(int from, int to)
+    {
+        _fetchCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _fetchCts = cts;
+
+        try
+        {
+            await Task.Delay(150, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        try
+        {
+            var scene = await Atlas.SceneTime(from, to);
+            if (cts.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _scene = scene;
+            _errorMessage = null;
+        }
+        catch (Exception)
+        {
+            if (!cts.IsCancellationRequested)
+            {
+                // Keep the last good _scene as-is -- never blank the page.
+                _errorMessage = $"Couldn't load {YearText.FormatRange(from, to)} -- check your connection and try again.";
+            }
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose() => _fetchCts?.Cancel();
+}
