@@ -316,7 +316,50 @@ mod tests {
         let d = fixture();
         let s = compose_scripture_scene(&d, &ScriptureRef::parse("GEN.13.18").unwrap());
         assert_eq!(s.mode, "scripture");
-        assert!(s.places.iter().any(|p| p.id == "hebron"));
+        // hebron's real event (e5) is about GEN.23, not GEN.13.18, so it must
+        // be lit solely via the geocoding link, i.e. a synthetic mention-*
+        // pseudo-event, and its full shape must match the brief exactly.
+        let hebron = s.places.iter().find(|p| p.id == "hebron").expect("hebron should be geocoding-lit");
+        assert_eq!(hebron.events.len(), 1);
+        let mention = &hebron.events[0];
+        assert_eq!(mention.id, "mention-hebron");
+        assert_eq!(mention.label, "Mentioned");
+        assert_eq!(mention.when, TimeRange::new(-4004, 100).unwrap());
+        assert_eq!(mention.verse_groups.len(), 1);
+        assert_eq!(mention.verse_groups[0].book, "GEN");
+        assert_eq!(mention.verse_groups[0].chapter, 13);
+        assert!(mention.verse_groups[0].verses.contains(&"GEN.13.18".to_string()));
+        assert_eq!(mention.verse_groups[0].count, 1);
+    }
+
+    #[test]
+    fn scripture_scene_lights_ref_matching_events_and_builds_arrows() {
+        // Exercises the real-event scripture path that GEN.13.18 above does
+        // not: build_arrows' `Some(sr)` branch, legend's ref branch, and the
+        // `event_lit` guard that suppresses a mention-* pseudo-event for a
+        // place already lit by a real matching event.
+        let d = fixture();
+        let s = compose_scripture_scene(&d, &ScriptureRef::parse("JOS").unwrap());
+        assert_eq!(s.mode, "scripture");
+
+        let ids: Vec<&str> = s.places.iter().map(|p| p.id.as_str()).collect();
+        assert!(ids.contains(&"gilgal") && ids.contains(&"jericho") && ids.contains(&"ai"));
+        // hebron has no JOS verse_link and its only event (e5) is GEN, not
+        // JOS, so it must not appear at all — and in particular must carry
+        // no mention-* pseudo-event.
+        assert!(!ids.contains(&"hebron"));
+        assert!(!s.places.iter().any(|p| p.events.iter().any(|e| e.id.starts_with("mention-"))));
+
+        let conquest: Vec<_> = s.arrows.iter().filter(|a| a.narrative == "conquest").collect();
+        assert_eq!(conquest.len(), 2);
+        assert_eq!(
+            (conquest[0].from_place.as_str(), conquest[0].to_place.as_str(), conquest[0].order),
+            ("gilgal", "jericho", 1)
+        );
+        assert_eq!(
+            (conquest[1].from_place.as_str(), conquest[1].to_place.as_str(), conquest[1].order),
+            ("jericho", "ai", 3)
+        );
     }
 
     #[test]
@@ -333,6 +376,98 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn ref_contains_book_matches_any_chapter_and_verse() {
+        let gen = crate::canon::resolve_alias("GEN").unwrap();
+        let exo = crate::canon::resolve_alias("EXO").unwrap();
+        let r = ScriptureRef::Book(gen);
+        assert!(ref_contains(&r, &VerseId { book: gen, chapter: 1, verse: 1 }));
+        assert!(ref_contains(&r, &VerseId { book: gen, chapter: 50, verse: 26 })); // last verse of Genesis
+        assert!(!ref_contains(&r, &VerseId { book: exo, chapter: 1, verse: 1 })); // wrong book
+    }
+
+    #[test]
+    fn ref_contains_chapter_matches_book_and_chapter_only() {
+        let gen = crate::canon::resolve_alias("GEN").unwrap();
+        let exo = crate::canon::resolve_alias("EXO").unwrap();
+        let r = ScriptureRef::Chapter { book: gen, chapter: 13 };
+        assert!(ref_contains(&r, &VerseId { book: gen, chapter: 13, verse: 1 }));
+        assert!(ref_contains(&r, &VerseId { book: gen, chapter: 13, verse: 18 }));
+        assert!(!ref_contains(&r, &VerseId { book: gen, chapter: 12, verse: 18 })); // wrong chapter
+        assert!(!ref_contains(&r, &VerseId { book: gen, chapter: 14, verse: 1 })); // wrong chapter
+        assert!(!ref_contains(&r, &VerseId { book: exo, chapter: 13, verse: 1 })); // wrong book, same chapter number
+    }
+
+    #[test]
+    fn ref_contains_passage_boundaries_inclusive() {
+        let jos = crate::canon::resolve_alias("JOS").unwrap();
+        let r = ScriptureRef::Passage { book: jos, chapter: 6, from_verse: 2, to_verse: 5 };
+        assert!(ref_contains(&r, &VerseId { book: jos, chapter: 6, verse: 2 })); // lower boundary: in
+        assert!(ref_contains(&r, &VerseId { book: jos, chapter: 6, verse: 5 })); // upper boundary: in
+        assert!(ref_contains(&r, &VerseId { book: jos, chapter: 6, verse: 3 })); // interior: in
+        assert!(!ref_contains(&r, &VerseId { book: jos, chapter: 6, verse: 1 })); // just below: out
+        assert!(!ref_contains(&r, &VerseId { book: jos, chapter: 6, verse: 6 })); // just above: out
+        assert!(!ref_contains(&r, &VerseId { book: jos, chapter: 5, verse: 3 })); // right verse, wrong chapter
+    }
+
+    #[test]
+    fn ref_contains_verse_matches_exactly() {
+        let jos = crate::canon::resolve_alias("JOS").unwrap();
+        let r = ScriptureRef::Verse(VerseId { book: jos, chapter: 6, verse: 20 });
+        assert!(ref_contains(&r, &VerseId { book: jos, chapter: 6, verse: 20 }));
+        assert!(!ref_contains(&r, &VerseId { book: jos, chapter: 6, verse: 21 })); // wrong verse
+        assert!(!ref_contains(&r, &VerseId { book: jos, chapter: 7, verse: 20 })); // wrong chapter
+    }
+
+    #[test]
+    fn legend_legs_in_scene_counts_kept_not_arrows_and_excludes_zero_arrow_narratives() {
+        let d = fixture();
+        let s = compose_time_scene(&d, TimeRange::new(-1406, -1405).unwrap());
+        // conquest has 4 kept legs (e1..e4 all intersect the window) but only
+        // 2 arrows (e2->e3 is a same-place skip) — legs_in_scene must read the
+        // true kept count, not the arrow count (ruling 4).
+        let conquest = s.narratives.iter().find(|n| n.id == "conquest").expect("conquest has arrows, so it's in the legend");
+        assert_eq!(conquest.legs_in_scene, 4);
+        assert_eq!(conquest.name, "The Conquest");
+        assert_eq!(conquest.color, "#7C3AED");
+        // patriarchs-demo's one leg (e2) is kept by the window filter, but a
+        // lone leg produces zero arrows, so it must be absent from the legend
+        // entirely (membership requires >=1 arrow).
+        assert!(s.narratives.iter().all(|n| n.id != "patriarchs-demo"));
+    }
+
+    #[test]
+    fn verse_groups_cap_at_20_sorted_ascending_with_true_count() {
+        // Standalone dataset (not `fixture()`) so it can't perturb the other
+        // example tests' expectations: one event with 25 verses in a single
+        // chapter, supplied in descending (i.e. unsorted) order.
+        let mut verses: Vec<String> = (1..=25).map(|v| format!("JOS.10.{v}")).collect();
+        verses.reverse();
+
+        let places = vec![Place { id: "many-verses".into(), name: "Many Verses".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+        let events = vec![Event {
+            id: "big-event".into(),
+            label: "Long battle".into(),
+            when: TimeRange::new(-1400, -1400).unwrap(),
+            places: vec!["many-verses".into()],
+            verses,
+        }];
+        let d = AtlasData::new(Canon { books: vec![] }, places, events, vec![], vec![], vec![], HashMap::new(), HashMap::new())
+            .finish();
+
+        let s = compose_time_scene(&d, TimeRange::new(-1400, -1400).unwrap());
+        let place = s.places.iter().find(|p| p.id == "many-verses").unwrap();
+        assert_eq!(place.events.len(), 1);
+        assert_eq!(place.events[0].verse_groups.len(), 1);
+        let g = &place.events[0].verse_groups[0];
+        assert_eq!(g.book, "JOS");
+        assert_eq!(g.chapter, 10);
+        assert_eq!(g.count, 25); // true total before capping
+        assert_eq!(g.verses.len(), 20); // capped
+        let expected: Vec<String> = (1..=20).map(|v| format!("JOS.10.{v}")).collect();
+        assert_eq!(g.verses, expected); // sorted ascending by verse number, not input order
     }
 
     /// A larger, still plain-deterministic dataset (no proptest seed input;
@@ -468,6 +603,10 @@ mod tests {
                     prop_assert_ne!(&a.from_place, &a.to_place);                                        // ARROW-5
                     let (fe, te) = (d.event_by_id(&a.from_event).unwrap(), d.event_by_id(&a.to_event).unwrap());
                     prop_assert!(te.when.from_year >= fe.when.from_year);                               // ARROW-6
+                    let from_sp = s.places.iter().find(|p| p.id == a.from_place).unwrap();
+                    prop_assert!(from_sp.events.iter().any(|e| e.id == a.from_event));                  // ARROW-7
+                    let to_sp = s.places.iter().find(|p| p.id == a.to_place).unwrap();
+                    prop_assert!(to_sp.events.iter().any(|e| e.id == a.to_event));                      // ARROW-7
                 }
                 for pair in arrows.windows(2) {
                     prop_assert_eq!(&pair[0].to_place, &pair[1].from_place);                            // ARROW-3

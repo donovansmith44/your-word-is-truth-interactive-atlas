@@ -106,11 +106,14 @@ pub struct AtlasData {
 
 impl AtlasData {
     /// Builds an `AtlasData` from its eight schema fields, leaving the derived
-    /// indexes empty (call `.finish()` to populate them). This is the only way
-    /// to construct one from outside this module: the index fields are
-    /// private, so a plain struct literal (even with `..Default::default()`)
-    /// cannot be written from another module — functional update still
-    /// requires visibility of every field it fills in, private ones included.
+    /// indexes empty (call `.finish()` to populate them). This is the
+    /// ergonomic, one-expression way to construct one from outside this
+    /// module: the index fields are private, so a plain struct literal
+    /// naming them (including via `..Default::default()`, which still
+    /// requires visibility of every field it fills in) cannot be written
+    /// from another module. It is not the *only* way — `AtlasData::default()`
+    /// followed by per-field assignment on the public schema fields also
+    /// works, since those fields are all `pub`, just less conveniently.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         canon: Canon,
