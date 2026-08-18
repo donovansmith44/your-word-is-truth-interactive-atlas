@@ -11,6 +11,8 @@
 <div class="world-page">
     <div id="world-map" class="world-map" data-testid="world-map" @ref="_mapEl"></div>
 
+    <ScripturePicker OnApply="ApplyScriptureRef" />
+
     @if (_scene is not null && _scene.Places.Count == 0)
     {
         <p class="world-empty">No recorded events in this window &mdash; drag the timeline or choose a scripture.</p>
@@ -33,7 +35,19 @@
 
     @if (_eras is not null)
     {
-        <TimeSlider Eras="_eras" From="_from" To="_to" OnWindowChange="HandleWindowChange" />
+        <TimeSlider Eras="_eras" From="_from" To="_to"
+                    Disabled="@(_scriptureRef is not null)" OnWindowChange="HandleWindowChange" />
+    }
+
+    @if (_scriptureRef is not null)
+    {
+        <div class="mode-chip" data-testid="mode-chip">
+            <span class="mode-chip-label">Scripture</span>
+            <span class="mode-chip-ref">@_scriptureRef</span>
+            <button type="button" class="mode-chip-return" data-testid="mode-chip-return" @onclick="ReturnToTime">
+                Return to time
+            </button>
+        </div>
     }
 
     @if (_scene is not null && _scene.Narratives.Count > 0)
@@ -63,12 +77,25 @@
     [Parameter]
     public string? ToQuery { get; set; }
 
-    // The "ref" query param (scripture mode) lands in Task 13; this task
-    // only reads/writes from+to and otherwise ignores it.
+    // Scripture mode (Task 13, WORLD-6/NAV-1). Non-null exactly when a
+    // scripture ref -- not a time window -- is driving the scene; every
+    // other piece of mode state (TimeSlider's Disabled, mode-chip's render,
+    // which fetch SyncFromQuery kicks below) branches on this one field.
+    [SupplyParameterFromQuery(Name = "ref")]
+    [Parameter]
+    public string? RefQuery { get; set; }
 
     private List<EraDto>? _eras;
     private Scene? _scene;
     private string? _errorMessage;
+    private string? _scriptureRef;
+
+    // The most recently APPLIED time-mode window -- i.e. the last from/to
+    // SyncFromQuery validated, which is exactly "the window to return to"
+    // (WORLD-6's mode-chip-return). Only the time-mode branch below ever
+    // assigns these, so arriving directly on a scripture deep link (never
+    // having had a time-mode URL this session) correctly leaves them at the
+    // whole-span default, per the brief.
     private int _from = DefaultFrom;
     private int _to = DefaultTo;
     private CancellationTokenSource? _fetchCts;
@@ -154,13 +181,27 @@
         }
     }
 
-    // Single path for every window change, whether it comes from the user
-    // (slider drag / era click / readout Enter, via HandleWindowChange
-    // below) or directly from a URL (deep link, browser reload, back/forward):
-    // all of them change the query string, which re-supplies
-    // FromQuery/ToQuery and re-runs this method through OnParametersSetAsync.
+    // Single path for every window/ref change, whether it comes from the
+    // user (slider drag / era click / readout Enter / picker apply / mode-
+    // chip-return, via HandleWindowChange/ApplyScriptureRef/ReturnToTime
+    // below) or directly from a URL (deep link, browser reload,
+    // back/forward): all of them change the query string, which re-supplies
+    // FromQuery/ToQuery/RefQuery and re-runs this method through
+    // OnParametersSetAsync. RefQuery wins whenever present -- applying the
+    // picker/deep-linking into scripture mode REPLACES from/to in the URL
+    // (never both at once, see ApplyScriptureRef/ReturnToTime), so checking
+    // it first is enough to fully separate the two branches below.
     private async Task SyncFromQuery()
     {
+        if (!string.IsNullOrEmpty(RefQuery))
+        {
+            _scriptureRef = RefQuery;
+            await DebouncedLoadScriptureScene(RefQuery);
+            return;
+        }
+
+        _scriptureRef = null;
+
         if (FromQuery is null && ToQuery is null)
         {
             if (_scene is null)
@@ -200,6 +241,41 @@
         {
             ["from"] = window.From,
             ["to"] = window.To,
+        });
+        Nav.NavigateTo(uri, replace: true);
+        return Task.CompletedTask;
+    }
+
+    // ScripturePicker.OnApply (Task 13/WORLD-6). The picker itself is
+    // world-agnostic (see its own file header) -- this is the one place
+    // that decides applying it means entering /world's scripture mode.
+    // `ref` REPLACES from/to in the URL (both explicitly nulled out, not
+    // just left stale/ignored) so the two modes are never simultaneously
+    // present in the query string -- SyncFromQuery's own RefQuery-first
+    // check depends on that invariant.
+    private Task ApplyScriptureRef(string sref)
+    {
+        var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["ref"] = sref,
+            ["from"] = null,
+            ["to"] = null,
+        });
+        Nav.NavigateTo(uri, replace: true);
+        return Task.CompletedTask;
+    }
+
+    // mode-chip-return (WORLD-6). _from/_to are already exactly "the last
+    // applied time-mode window" (see their own field comment) -- restoring
+    // it is just navigating back to it, symmetric with ApplyScriptureRef
+    // above (ref explicitly nulled out this time).
+    private Task ReturnToTime()
+    {
+        var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["from"] = _from,
+            ["to"] = _to,
+            ["ref"] = null,
         });
         Nav.NavigateTo(uri, replace: true);
         return Task.CompletedTask;
@@ -278,6 +354,64 @@
             {
                 // Keep the last good _scene as-is -- never blank the page.
                 _errorMessage = $"Couldn't load {YearText.FormatRange(from, to)} -- check your connection and try again.";
+            }
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    // Same debounce/latest-wins/toast machinery as DebouncedLoadScene above,
+    // sharing the SAME _fetchCts field -- entering scripture mode cancels
+    // whatever time-mode fetch was still in flight (its debounce delay or
+    // its own await Atlas.SceneTime), and vice versa, so a slower fetch from
+    // the mode the user just left can never resolve later and clobber the
+    // scene the user actually switched to. Unlike DebouncedLoadScene, FitScene
+    // runs on EVERY successful load here, not just the first ever -- a
+    // scripture pick is a deliberate jump to a specific (often distant)
+    // place, the same spirit as a fresh deep link, not a continuous slider
+    // tick that should leave the user's current pan/zoom alone.
+    private async Task DebouncedLoadScriptureScene(string sref)
+    {
+        _fetchCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _fetchCts = cts;
+
+        try
+        {
+            await Task.Delay(150, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        try
+        {
+            var scene = await Atlas.SceneScripture(sref);
+            if (cts.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _scene = scene;
+            _errorMessage = null;
+            _isolated = null;
+
+            if (_mapInterop is not null)
+            {
+                await _mapInterop.SetScene(scene);
+                await _mapInterop.FitScene();
+                _firstSceneApplied = true;
+            }
+        }
+        catch (Exception)
+        {
+            if (!cts.IsCancellationRequested)
+            {
+                // Keep the last good _scene as-is -- never blank the page.
+                _errorMessage = $"Couldn't load {sref} -- check your connection and try again.";
             }
         }
         finally

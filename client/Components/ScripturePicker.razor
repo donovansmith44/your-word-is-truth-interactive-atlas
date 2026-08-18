@@ -1,0 +1,121 @@
+@* Reusable book -> chapter -> verse-range picker (design-direction.md:
+   "picker (top-right): dusk-glass panels" describes its mount on the World
+   page). Purely a controlled emitter: it knows nothing about scripture
+   mode, /world, or NavigateWorld/NavigateReader -- it only composes a
+   canonical ref from the current selections and hands it to whatever
+   OnApply the mounting page wired up (World.razor today; a Task 14
+   reader-header mount can point OnApply at a completely different action
+   without this component changing at all). *@
+@inject AtlasClient Atlas
+
+<div class="picker" data-testid="picker">
+    <p class="picker-eyebrow">Scripture</p>
+
+    <select class="picker-select" data-testid="picker-book" aria-label="Book"
+            @bind="_bookCode" @bind:after="OnBookChanged">
+        @if (_toc is not null)
+        {
+            @foreach (var b in _toc)
+            {
+                <option value="@b.Code">@b.Name</option>
+            }
+        }
+    </select>
+
+    <select class="picker-select" data-testid="picker-chapter" aria-label="Chapter"
+            @bind="_chapterText" @bind:after="OnChapterChanged">
+        <option value="">Chapter</option>
+        @for (var c = 1; c <= ChapterCount; c++)
+        {
+            <option value="@c">@c</option>
+        }
+    </select>
+
+    <input class="picker-verse" type="number" data-testid="picker-verse-from" aria-label="From verse"
+           min="1" max="@MaxVerse" disabled="@(SelectedChapter is null)"
+           value="@_verseFromText" @oninput="OnVerseFromInput" />
+    <span class="picker-verse-sep" aria-hidden="true">&ndash;</span>
+    <input class="picker-verse" type="number" data-testid="picker-verse-to" aria-label="To verse"
+           min="1" max="@MaxVerse" disabled="@(SelectedChapter is null)"
+           value="@_verseToText" @oninput="OnVerseToInput" />
+
+    <button type="button" class="picker-apply" data-testid="picker-apply" @onclick="Apply">Go</button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EventCallback<string> OnApply { get; set; }
+
+    private List<BookTocEntry>? _toc;
+    private string _bookCode = "";
+    private string _chapterText = "";
+    private string _verseFromText = "";
+    private string _verseToText = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _toc = await Atlas.Books();
+        if (_toc.Count > 0)
+        {
+            _bookCode = _toc[0].Code;
+        }
+    }
+
+    private BookTocEntry? SelectedBookEntry => _toc?.FirstOrDefault(b => b.Code == _bookCode);
+    private int ChapterCount => SelectedBookEntry?.Chapters.Count ?? 0;
+
+    private int? SelectedChapter =>
+        int.TryParse(_chapterText, out var c) && c >= 1 && c <= ChapterCount ? c : null;
+
+    private int MaxVerse => SelectedChapter is int c ? SelectedBookEntry!.Chapters[c - 1] : 0;
+
+    // A new book invalidates any chapter chosen against the old one (chapter
+    // counts differ book to book) and, transitively, any verse range (bounded
+    // by that now-stale chapter).
+    private void OnBookChanged()
+    {
+        _chapterText = "";
+        _verseFromText = "";
+        _verseToText = "";
+    }
+
+    // A new chapter invalidates any verse range chosen against the old one --
+    // verse bounds are per-chapter (TOC's Chapters[chapter-1]).
+    private void OnChapterChanged()
+    {
+        _verseFromText = "";
+        _verseToText = "";
+    }
+
+    private void OnVerseFromInput(ChangeEventArgs e) => _verseFromText = e.Value?.ToString() ?? "";
+    private void OnVerseToInput(ChangeEventArgs e) => _verseToText = e.Value?.ToString() ?? "";
+
+    // Composes the canonical ref per the exact CONTRACT shapes: book only
+    // ("GEN"), +chapter ("GEN.1"), +verse-from alone or verse-from==verse-to
+    // ("GEN.1.5"), or a strict from<to range ("GEN.1.5-9"). Each step only
+    // extends the ref if the step before it is itself present and in range,
+    // so a blank or out-of-bounds verse box just truncates the ref back to
+    // whatever's still valid instead of composing a broken one.
+    private async Task Apply()
+    {
+        if (string.IsNullOrEmpty(_bookCode))
+        {
+            return;
+        }
+
+        var sref = _bookCode;
+        if (SelectedChapter is int chapter)
+        {
+            sref = $"{sref}.{chapter}";
+            if (int.TryParse(_verseFromText, out var from) && from >= 1 && from <= MaxVerse)
+            {
+                sref = $"{sref}.{from}";
+                if (int.TryParse(_verseToText, out var to) && to > from && to <= MaxVerse)
+                {
+                    sref = $"{sref}-{to}";
+                }
+            }
+        }
+
+        await OnApply.InvokeAsync(sref);
+    }
+}

@@ -670,6 +670,22 @@ input:focus-visible,
     touch-action: none;
 }
 
+/* WORLD-6/CONTRACT: the slider visually recedes while scripture mode
+   overrides it (aria-disabled="true", set by TimeSlider.razor's own
+   Disabled parameter -- see its comment there for why aria- rather than
+   the native `disabled` attribute, and why every handler ALSO guards
+   itself independently of this rule). pointer-events:none is the
+   mouse/touch half of "ignores all input"; TimeSlider's own per-handler
+   Disabled checks are what make the keyboard path (readout Enter, arrow-
+   key nudge) inert too, since pointer-events can't reach those. No
+   transition here -- design-direction.md's motion section scopes
+   animation to scene changes/lamp breathing/popovers ("nothing else
+   moves"); an instant snap needs no prefers-reduced-motion carve-out. */
+.slider[aria-disabled="true"] {
+    opacity: .45;
+    pointer-events: none;
+}
+
 /* Legend -- dusk-glass panel, bottom-right (design-direction.md: "legend
    (bottom-right) ... dusk-glass panels; legend swatches are short thread
    lines with arrowheads, legs_in_scene in mono"). Same material as .slider
@@ -735,6 +751,175 @@ input:focus-visible,
     color: var(--dusk-ink-soft);
     margin-inline-start: auto;
     padding-inline-start: .75rem;
+}
+
+/* ScripturePicker (Task 13/WORLD-6) -- dusk-glass panel, top-right
+   (design-direction.md: "picker (top-right): dusk-glass panels"). Same
+   material language as .slider/.legend (dusk-panel + blur + bronze border
+   + radius) so the three docked instrument panels read as one system;
+   top-right never overlaps .legend (bottom-right) or .slider/.mode-chip
+   (bottom-center) at any supported viewport, so sharing their z-index is
+   safe. ScripturePicker.razor itself is reusable (a later reader-header
+   mount is a different task) -- this positioning lives in its own class
+   here, not baked into any behavior in the component, so a future mount
+   elsewhere only needs different CSS, no markup/logic change. */
+.picker {
+    position: fixed;
+    top: 4.75rem;
+    right: 1.5rem;
+    z-index: 15;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem .6rem;
+    max-width: 19rem;
+    padding: .7rem .85rem .8rem;
+    background: var(--dusk-panel);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--bronze);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+
+.picker-eyebrow {
+    flex-basis: 100%;
+    margin: 0;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .08em;
+    font-size: .78rem;
+    /* dusk-ink, not the softer -soft variant: scanned label text on
+       --dusk-panel needs the >=7:1 dusk contrast floor (measured
+       dusk-ink-soft here at 6.81:1, under it -- the same shortfall Task 10
+       found and fixed for the slider's era labels; dusk-ink measures
+       13.96:1). */
+    color: var(--dusk-ink);
+}
+
+.picker-select {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: .85rem;
+    color: var(--dusk-ink);
+    background: rgba(0, 0, 0, .3);
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    padding: .3rem .4rem;
+}
+
+/* Verse boxes hold digits from a canonical ref (design-direction.md:
+   "canonical refs...set them like instrument readouts, tabular and
+   exact") -- mono, like .slider-readout, unlike the prose-ish book/chapter
+   selects above. The spin-button removal is cosmetic-only (still a normal
+   type="number" input otherwise) -- kept single-class-plus-pseudo-element,
+   same discipline as the rest of the file. */
+.picker-verse {
+    width: 3.4rem;
+    font-family: var(--font-mono);
+    font-size: .85rem;
+    color: var(--bronze-bright);
+    background: rgba(0, 0, 0, .35);
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    padding: .3rem .35rem;
+    text-align: center;
+    appearance: textfield;
+}
+
+.picker-verse::-webkit-outer-spin-button,
+.picker-verse::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+}
+
+.picker-verse:disabled {
+    opacity: .4;
+}
+
+.picker-verse-sep {
+    color: var(--dusk-ink-soft);
+    font-family: var(--font-mono);
+}
+
+.picker-apply {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .06em;
+    font-size: .82rem;
+    color: var(--dusk-deep);
+    background: var(--bronze-bright);
+    border: none;
+    border-radius: 4px;
+    padding: .35rem .75rem;
+    cursor: pointer;
+    margin-inline-start: auto;
+}
+
+.picker-apply:hover {
+    background: var(--lamp);
+}
+
+/* Mode chip (Task 13/WORLD-6/CONTRACT "mode-chip") -- shows the active
+   scripture ref in the instrument mono face (design-direction.md: canonical
+   refs "set them like instrument readouts, tabular and exact") plus a way
+   back to time mode. Docked directly above the (now-dimmed) slider it
+   overrides, sharing its horizontal centering, so the override relationship
+   reads visually without extra copy. Same dusk-glass material as every
+   other docked panel; no entrance animation, same precedent as .toast --
+   a status readout, not a "scene" transition design-direction.md's motion
+   section scopes animation to ("nothing else moves"). */
+.mode-chip {
+    position: fixed;
+    bottom: 8.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 16;
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .5rem .75rem;
+    background: var(--dusk-panel);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--bronze-bright);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+
+.mode-chip-label {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .06em;
+    font-size: .78rem;
+    /* dusk-ink, not -soft -- same >=7:1 dusk-text floor / same measured
+       shortfall (6.81:1) as .picker-eyebrow above. */
+    color: var(--dusk-ink);
+}
+
+.mode-chip-ref {
+    font-family: var(--font-mono);
+    font-size: .95rem;
+    letter-spacing: .03em;
+    color: var(--bronze-bright);
+}
+
+.mode-chip-return {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: .78rem;
+    color: var(--dusk-ink);
+    background: rgba(201, 164, 92, 0.14);
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    padding: .25rem .55rem;
+    cursor: pointer;
+}
+
+.mode-chip-return:hover {
+    background: rgba(201, 164, 92, 0.26);
 }
 
 /* Toast -- a small parchment slip, bottom-left, thin ochre rule; plain
