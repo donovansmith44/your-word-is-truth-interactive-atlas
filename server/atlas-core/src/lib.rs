@@ -15,4 +15,8 @@ pub enum CoreError {
     InvertedRange,
     #[error("invalid scripture reference: {0}")]
     BadRef(String),
+    #[error("reading {path}: {source}")]
+    Io { path: String, #[source] source: std::io::Error },
+    #[error("parsing {path}: {source}")]
+    Json { path: String, #[source] source: serde_json::Error },
 }

@@ -154,7 +154,10 @@ fn lit_places(d: &AtlasData, kept: &[&Event]) -> Vec<ScenePlace> {
     places
 }
 
-fn to_scene_event(e: &Event) -> SceneEvent {
+/// `pub` (not private) because atlas-server's verse/place-detail endpoints
+/// reuse it to build the same SceneEvent shape scenes use, rather than
+/// duplicating the verse-grouping logic in a different crate.
+pub fn to_scene_event(e: &Event) -> SceneEvent {
     SceneEvent { id: e.id.clone(), label: e.label.clone(), when: e.when, verse_groups: verse_groups_for(&e.verses) }
 }
 
@@ -217,82 +220,19 @@ mod tests {
     use proptest::prelude::*;
     use std::collections::HashMap;
 
-    /// A small, hand-built world: 4 places, one narrative (`conquest`) with a
-    /// same-place skip case, a second narrative (`patriarchs-demo`) sharing
-    /// one of `conquest`'s events, and an unrelated bare event. `hebron` is
-    /// additionally geocoding-linked to GEN.13.18 for scripture-mode tests.
-    #[cfg(test)]
-    pub(crate) fn fixture() -> AtlasData {
-        let places = vec![
-            Place { id: "gilgal".into(), name: "Gilgal".into(), lat: 31.9000, lon: 35.4500, verse_links: vec![] },
-            Place { id: "jericho".into(), name: "Jericho".into(), lat: 31.8703, lon: 35.4436, verse_links: vec![] },
-            Place { id: "ai".into(), name: "Ai".into(), lat: 31.9339, lon: 35.2856, verse_links: vec![] },
-            Place {
-                id: "hebron".into(),
-                name: "Hebron".into(),
-                lat: 31.5326,
-                lon: 35.0998,
-                verse_links: vec!["GEN.13.18".into()],
-            },
-        ];
-        let events = vec![
-            Event {
-                id: "e1".into(),
-                label: "Camp at Gilgal".into(),
-                when: TimeRange::new(-1406, -1406).unwrap(),
-                places: vec!["gilgal".into()],
-                verses: vec!["JOS.4.19".into(), "JOS.4.20".into()],
-            },
-            Event {
-                id: "e2".into(),
-                label: "Jericho besieged".into(),
-                when: TimeRange::new(-1406, -1406).unwrap(),
-                places: vec!["jericho".into()],
-                verses: vec!["JOS.6.1".into(), "JOS.6.2".into()],
-            },
-            Event {
-                id: "e3".into(),
-                label: "Jericho falls".into(),
-                when: TimeRange::new(-1405, -1405).unwrap(),
-                places: vec!["jericho".into()],
-                verses: vec!["JOS.6.20".into(), "JOS.6.21".into(), "JOS.6.24".into()],
-            },
-            Event {
-                id: "e4".into(),
-                label: "Ai defeated".into(),
-                when: TimeRange::new(-1405, -1405).unwrap(),
-                places: vec!["ai".into()],
-                verses: vec!["JOS.8.1".into(), "JOS.8.28".into()],
-            },
-            Event {
-                id: "e5".into(),
-                label: "Sarah buried at Machpelah".into(),
-                when: TimeRange::new(-2000, -2000).unwrap(),
-                places: vec!["hebron".into()],
-                verses: vec!["GEN.23.1".into(), "GEN.23.19".into()],
-            },
-        ];
-        let narratives = vec![
-            Narrative {
-                id: "conquest".into(),
-                name: "The Conquest".into(),
-                color: "#7C3AED".into(),
-                legs: vec!["e1".into(), "e2".into(), "e3".into(), "e4".into()],
-            },
-            Narrative {
-                id: "patriarchs-demo".into(),
-                name: "Patriarchs (demo)".into(),
-                color: "#D97706".into(),
-                legs: vec!["e2".into()],
-            },
-        ];
-        AtlasData::new(Canon { books: vec![] }, places, events, narratives, vec![], vec![], HashMap::new(), HashMap::new())
-            .finish()
-    }
+    // The hand-built demo world used throughout this test module (4 places,
+    // one narrative `conquest` with a same-place skip case, a second
+    // narrative `patriarchs-demo` sharing one of `conquest`'s events, and an
+    // unrelated bare event; `hebron` is additionally geocoding-linked to
+    // GEN.13.18 for scripture-mode tests) lives in
+    // `atlas_core::data::demo_fixture` (promoted there in Task 6 so
+    // atlas-server's integration tests, a different crate, can reach it at
+    // normal — not `#[cfg(test)]` — compile time). Every test below calls it
+    // directly rather than through a local wrapper, per Task 6's brief.
 
     #[test]
     fn time_scene_lights_only_intersecting() {
-        let d = fixture();
+        let d = crate::data::demo_fixture();
         let s = compose_time_scene(&d, TimeRange::new(-1406, -1405).unwrap());
         let ids: Vec<&str> = s.places.iter().map(|p| p.id.as_str()).collect();
         assert!(ids.contains(&"gilgal") && ids.contains(&"jericho") && ids.contains(&"ai"));
@@ -301,7 +241,7 @@ mod tests {
 
     #[test]
     fn arrows_skip_same_place_and_chain() {
-        let d = fixture();
+        let d = crate::data::demo_fixture();
         let s = compose_time_scene(&d, TimeRange::new(-1406, -1405).unwrap());
         let conquest: Vec<_> = s.arrows.iter().filter(|a| a.narrative == "conquest").collect();
         // e1->e2 (gilgal->jericho), e2->e3 skipped (same place), e3->e4 (jericho->ai)
@@ -313,7 +253,7 @@ mod tests {
 
     #[test]
     fn scripture_scene_uses_links_not_dates() {
-        let d = fixture();
+        let d = crate::data::demo_fixture();
         let s = compose_scripture_scene(&d, &ScriptureRef::parse("GEN.13.18").unwrap());
         assert_eq!(s.mode, "scripture");
         // hebron's real event (e5) is about GEN.23, not GEN.13.18, so it must
@@ -338,7 +278,7 @@ mod tests {
         // not: build_arrows' `Some(sr)` branch, legend's ref branch, and the
         // `event_lit` guard that suppresses a mention-* pseudo-event for a
         // place already lit by a real matching event.
-        let d = fixture();
+        let d = crate::data::demo_fixture();
         let s = compose_scripture_scene(&d, &ScriptureRef::parse("JOS").unwrap());
         assert_eq!(s.mode, "scripture");
 
@@ -364,7 +304,7 @@ mod tests {
 
     #[test]
     fn brightness_and_caps() {
-        let d = fixture();
+        let d = crate::data::demo_fixture();
         let s = compose_time_scene(&d, TimeRange::new(-1406, -1405).unwrap());
         let jericho = s.places.iter().find(|p| p.id == "jericho").unwrap();
         assert_eq!(jericho.brightness, 2u8.min(5)); // e2 and e3
@@ -423,7 +363,7 @@ mod tests {
 
     #[test]
     fn legend_legs_in_scene_counts_kept_not_arrows_and_excludes_zero_arrow_narratives() {
-        let d = fixture();
+        let d = crate::data::demo_fixture();
         let s = compose_time_scene(&d, TimeRange::new(-1406, -1405).unwrap());
         // conquest has 4 kept legs (e1..e4 all intersect the window) but only
         // 2 arrows (e2->e3 is a same-place skip) — legs_in_scene must read the

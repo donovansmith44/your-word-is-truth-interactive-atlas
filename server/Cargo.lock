@@ -36,9 +36,11 @@ dependencies = [
  "anyhow",
  "atlas-core",
  "axum",
+ "http-body-util",
  "serde",
  "serde_json",
  "tokio",
+ "tower",
  "tower-http",
 ]
 
