@@ -13,5 +13,12 @@ client/obj/
 **/obj/
 
 # Data: raw downloads and compiled outputs are reproducible via atlas-etl
-data/raw/
+data/raw/*
+!data/raw/README.md
 data/compiled/
+
+# Node / test tooling
+node_modules/
+tests/ux/test-results/
+tests/ux/playwright-report/
+client/wwwroot/vendor/

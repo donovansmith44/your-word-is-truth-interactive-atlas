@@ -1,0 +1,3 @@
+[workspace]
+members = ["atlas-core", "atlas-etl", "atlas-server"]
+resolver = "2"
