@@ -1,0 +1,4 @@
+id = "abraham-migration"
+name = "Abraham's Migration"
+color = "#D97706"
+legs = ["ab_ur", "ab_haran", "ab_shechem", "ab_bethel", "ab_egypt", "ab_hebron"]

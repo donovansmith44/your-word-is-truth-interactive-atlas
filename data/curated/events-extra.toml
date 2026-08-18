@@ -1,0 +1,237 @@
+# --- Abraham's migration ---
+[[event]]
+id = "ab_ur"
+label = "Terah's family leaves Ur"
+from_year = -2100
+to_year = -2092
+# places: brief guessed "ur", but geo ancient.jsonl has no plain "Ur" slug --
+# it collides into "Ur 1"/"Ur 2" (both resolve to the same lat/lon,
+# 30.9622, 46.1044 -- Ur of the Chaldees in southern Mesopotamia). ur-1
+# carries the GEN.11.28/GEN.11.31 verse_links (exactly this event's verses);
+# ur-2 carries no verse_links at all. Using ur-1.
+places = ["ur-1"]
+verses = ["GEN.11.28", "GEN.11.31"]
+[[event]]
+id = "ab_haran"
+label = "Sojourn in Haran; the call of Abram"
+from_year = -2092
+to_year = -2091
+places = ["haran"]
+verses = ["GEN.11.31", "GEN.12.1", "GEN.12.4"]
+[[event]]
+id = "ab_shechem"
+label = "Abram at the oak of Moreh"
+from_year = -2091
+to_year = -2091
+places = ["shechem"]
+verses = ["GEN.12.6", "GEN.12.7"]
+[[event]]
+id = "ab_bethel"
+label = "Altar between Bethel and Ai"
+from_year = -2091
+to_year = -2090
+# places: brief guessed "bethel", but geo ancient.jsonl collides into
+# "Bethel 1"/"Bethel 2"/"Bethel 3". bethel-1 and bethel-3 share the same
+# lat/lon (31.9228, 35.2414 -- Bethel north of Jerusalem, next to Ai);
+# bethel-2 is a distinct southern site (31.3450, 35.1244, tied to 1SA.30.27
+# only). bethel-1 carries GEN.12.8 (this event's verse) among its
+# verse_links; bethel-3 carries only JER.48.13. Using bethel-1.
+places = ["bethel-1"]
+verses = ["GEN.12.8"]
+[[event]]
+id = "ab_egypt"
+label = "Famine drives Abram to Egypt"
+from_year = -2090
+to_year = -2089
+places = ["egypt"]
+verses = ["GEN.12.10", "GEN.12.14-20"]
+[[event]]
+id = "ab_hebron"
+label = "Abram settles at Mamre in Hebron"
+from_year = -2088
+to_year = -2085
+places = ["hebron"]
+verses = ["GEN.13.1", "GEN.13.18"]
+
+# --- The Exodus ---
+[[event]]
+id = "ex_rameses"
+label = "Israel departs Rameses"
+from_year = -1446
+to_year = -1446
+places = ["rameses"]
+verses = ["EXO.12.37"]
+[[event]]
+id = "ex_succoth"
+label = "First camp at Succoth"
+from_year = -1446
+to_year = -1446
+# places: brief guessed "succoth", but geo ancient.jsonl collides into
+# "Succoth 1"/"Succoth 2". succoth-1 (32.1966, 35.6212) is Jacob's Succoth
+# in the Transjordan (GEN.33.17, Judges 8); succoth-2 (30.5527, 32.0990) is
+# in the Nile delta near Rameses and carries EXO.12.37/EXO.13.20 -- exactly
+# this event's verses. Using succoth-2.
+places = ["succoth-2"]
+verses = ["EXO.12.37", "EXO.13.20"]
+[[event]]
+id = "ex_red_sea"
+label = "Crossing the Red Sea"
+from_year = -1446
+to_year = -1446
+# places: brief guessed "red-sea", but geo ancient.jsonl collides into
+# "Red Sea 1"/"Red Sea 2"/"Red Sea 3". red-sea-1 and red-sea-3 share
+# lat/lon (28.75, 33.00 -- the Gulf of Suez, the traditional crossing
+# site); red-sea-2 sits further east (28.75, 34.75, the Gulf of
+# Aqaba/Ezion-geber area, unrelated to the crossing). Of the two Suez-arm
+# entries, red-sea-1 carries the crossing-narrative verses (EXO.15.4,
+# EXO.15.22, ACT.7.36, HEB.11.29 "passed through the Red sea"); red-sea-3
+# carries only the locust-plague and itinerary-stop verses. Using red-sea-1.
+places = ["red-sea-1"]
+verses = ["EXO.14.21-31"]
+[[event]]
+id = "ex_marah"
+label = "Bitter water at Marah"
+from_year = -1446
+to_year = -1446
+places = ["marah"]
+verses = ["EXO.15.23-25"]
+[[event]]
+id = "ex_elim"
+label = "Twelve springs at Elim"
+from_year = -1446
+to_year = -1446
+places = ["elim"]
+verses = ["EXO.15.27"]
+[[event]]
+id = "ex_rephidim"
+label = "Water from the rock; war with Amalek"
+from_year = -1446
+to_year = -1446
+places = ["rephidim"]
+verses = ["EXO.17.1", "EXO.17.8-13"]
+[[event]]
+id = "ex_sinai"
+label = "Covenant at Sinai"
+from_year = -1446
+to_year = -1445
+# places: brief guessed "sinai", which does not exist as a bare slug -- geo
+# ancient.jsonl has "Mount Sinai" and "Wilderness of Sinai" as separate
+# friendly_ids, both resolving to the same lat/lon (28.5397, 33.9733,
+# traditional Jebel Musa). Using mount-sinai (kebab of "Mount Sinai") as
+# the anchor for the covenant-giving on the mountain itself (EXO.19.18-20).
+places = ["mount-sinai"]
+verses = ["EXO.19.1-2", "EXO.19.18-20"]
+[[event]]
+id = "ex_kadesh"
+label = "Spies return to Kadesh-barnea"
+from_year = -1445
+to_year = -1444
+places = ["kadesh-barnea"]
+verses = ["NUM.13.26", "NUM.14.1-4"]
+[[event]]
+id = "ex_moab"
+label = "Camp on the plains of Moab"
+from_year = -1407
+to_year = -1406
+# places: brief guessed "moab", but geo ancient.jsonl collides into
+# "Moab 1"/"Moab 2". moab-1 (31.1806, 35.7014) is the general Moab
+# territory further south; moab-2 (31.8402, 35.6737) sits at nearly the
+# same latitude as Jericho (31.8717) and carries NUM.22.1, DEU.34.1,
+# DEU.34.8 -- the "plains of Moab ... by Jericho" itinerary verses this
+# event cites. Using moab-2.
+places = ["moab-2"]
+verses = ["NUM.22.1", "DEU.34.1-5"]
+[[event]]
+id = "ex_jordan"
+label = "Israel crosses the Jordan"
+from_year = -1406
+to_year = -1406
+# places: brief guessed "jericho", but geo ancient.jsonl collides into
+# "Jericho 1"/"Jericho 2". jericho-1 (31.8717, 35.4446) carries the OT
+# verse_links (NUM.22.1, NUM.26.3, ... JOS references); jericho-2 (31.8519,
+# 35.4362) carries only NT Gospel verse_links (MAT/MRK/LUK). This event
+# (Joshua's OT-era crossing) belongs to the OT site: jericho-1.
+places = ["jericho-1"]
+verses = ["JOS.3.14-17"]
+
+# --- Paul's first missionary journey ---
+[[event]]
+id = "p1_antioch"
+label = "Barnabas and Saul sent from Antioch"
+from_year = 46
+to_year = 46
+# places: brief guessed "antioch", but geo ancient.jsonl has no plain
+# "Antioch" slug -- two name-collision entries. antioch-1 (36.2267,
+# 36.1717) is Syrian Antioch-on-the-Orontes and carries the Acts 11 church
+# verses (ACT.11.19-27); antioch-2 (38.3061, 31.1892) is Pisidian Antioch
+# in Asia Minor (see p1_pisidian_antioch below). This event is the sending
+# out from the Syrian church, so antioch-1 is correct.
+places = ["antioch-1"]
+verses = ["ACT.13.1-3"]
+[[event]]
+id = "p1_seleucia"
+label = "Down to the port of Seleucia"
+from_year = 46
+to_year = 46
+places = ["seleucia"]
+verses = ["ACT.13.4"]
+[[event]]
+id = "p1_salamis"
+label = "Preaching in the synagogues of Salamis"
+from_year = 46
+to_year = 46
+places = ["salamis"]
+verses = ["ACT.13.5"]
+[[event]]
+id = "p1_paphos"
+label = "Elymas blinded; the proconsul believes"
+from_year = 46
+to_year = 47
+places = ["paphos"]
+verses = ["ACT.13.6-12"]
+[[event]]
+id = "p1_perga"
+label = "John Mark departs at Perga"
+from_year = 47
+to_year = 47
+places = ["perga"]
+verses = ["ACT.13.13"]
+[[event]]
+id = "p1_pisidian_antioch"
+label = "Sermon in Pisidian Antioch"
+from_year = 47
+to_year = 47
+# places: brief guessed "antioch-2" -- confirmed correct. geo ancient.jsonl's
+# "Antioch 2" (kebab "antioch-2") is at 38.3061, 31.1892 (Pisidian Antioch,
+# Asia Minor) and carries ACT.13.14/ACT.14.19/ACT.14.21/2TI.3.11, matching
+# this event exactly. No change from the brief.
+places = ["antioch-2"]
+verses = ["ACT.13.14-52"]
+[[event]]
+id = "p1_iconium"
+label = "The city divided at Iconium"
+from_year = 47
+to_year = 48
+places = ["iconium"]
+verses = ["ACT.14.1-7"]
+[[event]]
+id = "p1_lystra"
+label = "Stoned at Lystra"
+from_year = 48
+to_year = 48
+places = ["lystra"]
+verses = ["ACT.14.8-20"]
+[[event]]
+id = "p1_derbe"
+label = "Many disciples at Derbe"
+from_year = 48
+to_year = 48
+places = ["derbe"]
+verses = ["ACT.14.20-21"]
+[[event]]
+id = "p1_return"
+label = "Sailing home to Antioch"
+from_year = 48
+to_year = 48
+places = ["attalia"]
+verses = ["ACT.14.24-26"]

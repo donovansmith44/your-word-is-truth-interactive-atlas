@@ -1,0 +1,59 @@
+[[era]]
+id = "primeval"
+name = "Primeval"
+from_year = -4004
+to_year = -2167
+
+[[era]]
+id = "patriarchs"
+name = "Patriarchs"
+from_year = -2166
+to_year = -1877
+
+[[era]]
+id = "egypt-exodus"
+name = "Egypt & Exodus"
+from_year = -1876
+to_year = -1407
+
+[[era]]
+id = "conquest-judges"
+name = "Conquest & Judges"
+from_year = -1406
+to_year = -1051
+
+[[era]]
+id = "united-kingdom"
+name = "United Kingdom"
+from_year = -1050
+to_year = -932
+
+[[era]]
+id = "divided-kingdom"
+name = "Divided Kingdom"
+from_year = -931
+to_year = -587
+
+[[era]]
+id = "exile"
+name = "Exile"
+from_year = -586
+to_year = -539
+
+[[era]]
+id = "return"
+name = "Return & Second Temple"
+from_year = -538
+to_year = -6
+
+[[era]]
+id = "gospels"
+name = "Gospels"
+from_year = -5
+to_year = 29
+
+[[era]]
+id = "early-church"
+name = "Early Church"
+from_year = 30
+to_year = 100

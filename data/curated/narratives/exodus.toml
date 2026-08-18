@@ -1,0 +1,4 @@
+id = "exodus"
+name = "The Exodus"
+color = "#DC2626"
+legs = ["ex_rameses", "ex_succoth", "ex_red_sea", "ex_marah", "ex_elim", "ex_rephidim", "ex_sinai", "ex_kadesh", "ex_moab", "ex_jordan"]

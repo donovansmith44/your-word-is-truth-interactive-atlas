@@ -1,0 +1,4 @@
+id = "paul-first-journey"
+name = "Paul's First Journey"
+color = "#16A34A"
+legs = ["p1_antioch", "p1_seleucia", "p1_salamis", "p1_paphos", "p1_perga", "p1_pisidian_antioch", "p1_iconium", "p1_lystra", "p1_derbe", "p1_return"]

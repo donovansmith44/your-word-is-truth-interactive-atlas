@@ -1,0 +1,381 @@
+[[book]]
+code = "GEN"
+author = "Moses"
+write_from = -1445
+write_to = -1405
+[[book]]
+code = "EXO"
+author = "Moses"
+write_from = -1445
+write_to = -1405
+[[book]]
+code = "LEV"
+author = "Moses"
+write_from = -1445
+write_to = -1405
+[[book]]
+code = "NUM"
+author = "Moses"
+write_from = -1445
+write_to = -1405
+[[book]]
+code = "DEU"
+author = "Moses"
+write_from = -1407
+write_to = -1406
+[[book]]
+code = "JOS"
+author = "Joshua"
+write_from = -1400
+write_to = -1370
+[[book]]
+code = "JDG"
+author = "Samuel (traditional)"
+write_from = -1050
+write_to = -1000
+[[book]]
+code = "RUT"
+author = "Samuel (traditional)"
+write_from = -1050
+write_to = -1000
+[[book]]
+code = "1SA"
+author = "Samuel, Nathan, Gad (traditional)"
+write_from = -1000
+write_to = -960
+[[book]]
+code = "2SA"
+author = "Nathan and Gad (traditional)"
+write_from = -960
+write_to = -930
+[[book]]
+code = "1KI"
+author = "Jeremiah (traditional)"
+write_from = -590
+write_to = -560
+[[book]]
+code = "2KI"
+author = "Jeremiah (traditional)"
+write_from = -590
+write_to = -560
+[[book]]
+code = "1CH"
+author = "Ezra (traditional)"
+write_place = "jerusalem"
+write_from = -450
+write_to = -430
+[[book]]
+code = "2CH"
+author = "Ezra (traditional)"
+write_place = "jerusalem"
+write_from = -450
+write_to = -430
+[[book]]
+code = "EZR"
+author = "Ezra"
+write_place = "jerusalem"
+write_from = -450
+write_to = -430
+[[book]]
+code = "NEH"
+author = "Nehemiah"
+write_place = "jerusalem"
+write_from = -430
+write_to = -400
+[[book]]
+code = "EST"
+author = "Mordecai (traditional)"
+write_place = "susa"
+write_from = -460
+write_to = -440
+[[book]]
+code = "JOB"
+author = "Unknown (Moses, traditional)"
+write_from = -1450
+write_to = -1400
+[[book]]
+code = "PSA"
+author = "David and others"
+write_place = "jerusalem"
+write_from = -1010
+write_to = -430
+[[book]]
+code = "PRO"
+author = "Solomon and others"
+write_place = "jerusalem"
+write_from = -950
+write_to = -700
+[[book]]
+code = "ECC"
+author = "Solomon"
+write_place = "jerusalem"
+write_from = -935
+write_to = -931
+[[book]]
+code = "SNG"
+author = "Solomon"
+write_place = "jerusalem"
+write_from = -960
+write_to = -950
+[[book]]
+code = "ISA"
+author = "Isaiah"
+write_place = "jerusalem"
+write_from = -700
+write_to = -680
+[[book]]
+code = "JER"
+author = "Jeremiah"
+write_from = -585
+write_to = -580
+[[book]]
+code = "LAM"
+author = "Jeremiah"
+write_place = "jerusalem"
+write_from = -586
+write_to = -585
+[[book]]
+code = "EZK"
+author = "Ezekiel"
+# write_place: brief guessed "babylon", but geo ancient.jsonl has no plain
+# "Babylon" slug -- it has 3 name-collision entries. babylon-1 (32.5433,
+# 44.4222) is literal Mesopotamian Babylon near the Euphrates and carries
+# the OT exile verses (2KI/2CH/EZR/JER/EZK/DAN); babylon-2/babylon-3 sit at
+# Rome's coordinates (41.8922, 12.4852) and carry 1PE.5.13 / Revelation's
+# "Babylon the Great" respectively (the NT symbolic Babylon=Rome cipher).
+# Ezekiel prophesied in the literal exile community, so babylon-1 is correct.
+write_place = "babylon-1"
+write_from = -593
+write_to = -570
+[[book]]
+code = "DAN"
+author = "Daniel"
+# Same babylon-1 vs babylon-2/3 disambiguation as EZK above -- Daniel served
+# in the literal Mesopotamian royal court, not the NT symbolic "Babylon".
+write_place = "babylon-1"
+write_from = -605
+write_to = -530
+[[book]]
+code = "HOS"
+author = "Hosea"
+write_from = -750
+write_to = -710
+[[book]]
+code = "JOL"
+author = "Joel"
+write_from = -835
+write_to = -800
+[[book]]
+code = "AMO"
+author = "Amos"
+write_from = -760
+write_to = -750
+[[book]]
+code = "OBA"
+author = "Obadiah"
+write_from = -586
+write_to = -580
+[[book]]
+code = "JON"
+author = "Jonah"
+write_from = -780
+write_to = -750
+[[book]]
+code = "MIC"
+author = "Micah"
+write_from = -735
+write_to = -700
+[[book]]
+code = "NAM"
+author = "Nahum"
+write_from = -650
+write_to = -630
+[[book]]
+code = "HAB"
+author = "Habakkuk"
+write_from = -609
+write_to = -605
+[[book]]
+code = "ZEP"
+author = "Zephaniah"
+write_from = -640
+write_to = -620
+[[book]]
+code = "HAG"
+author = "Haggai"
+write_place = "jerusalem"
+write_from = -520
+write_to = -520
+[[book]]
+code = "ZEC"
+author = "Zechariah"
+write_place = "jerusalem"
+write_from = -520
+write_to = -480
+[[book]]
+code = "MAL"
+author = "Malachi"
+write_place = "jerusalem"
+write_from = -430
+write_to = -420
+[[book]]
+code = "MAT"
+author = "Matthew"
+write_from = 50
+write_to = 60
+[[book]]
+code = "MRK"
+author = "Mark"
+write_place = "rome"
+write_from = 55
+write_to = 65
+[[book]]
+code = "LUK"
+author = "Luke"
+write_from = 60
+write_to = 62
+[[book]]
+code = "JHN"
+author = "John"
+write_place = "ephesus"
+write_from = 85
+write_to = 95
+[[book]]
+code = "ACT"
+author = "Luke"
+write_place = "rome"
+write_from = 62
+write_to = 64
+[[book]]
+code = "ROM"
+author = "Paul"
+write_place = "corinth"
+write_from = 57
+write_to = 57
+[[book]]
+code = "1CO"
+author = "Paul"
+write_place = "ephesus"
+write_from = 55
+write_to = 55
+[[book]]
+code = "2CO"
+author = "Paul"
+write_from = 56
+write_to = 56
+[[book]]
+code = "GAL"
+author = "Paul"
+# write_place: brief guessed "antioch", but geo ancient.jsonl has no plain
+# "Antioch" slug -- two name-collision entries. antioch-1 (36.2267, 36.1717)
+# is Syrian Antioch-on-the-Orontes (Acts 11 church, Paul's sending base);
+# antioch-2 (38.3061, 31.1892) is Pisidian Antioch in Asia Minor (Acts
+# 13:14ff, the p1_pisidian_antioch narrative leg). Galatians was
+# traditionally written from the Syrian base, so antioch-1 is correct.
+write_place = "antioch-1"
+write_from = 48
+write_to = 49
+[[book]]
+code = "EPH"
+author = "Paul"
+write_place = "rome"
+write_from = 60
+write_to = 62
+[[book]]
+code = "PHP"
+author = "Paul"
+write_place = "rome"
+write_from = 61
+write_to = 62
+[[book]]
+code = "COL"
+author = "Paul"
+write_place = "rome"
+write_from = 60
+write_to = 62
+[[book]]
+code = "1TH"
+author = "Paul"
+write_place = "corinth"
+write_from = 51
+write_to = 51
+[[book]]
+code = "2TH"
+author = "Paul"
+write_place = "corinth"
+write_from = 51
+write_to = 52
+[[book]]
+code = "1TI"
+author = "Paul"
+write_from = 62
+write_to = 64
+[[book]]
+code = "2TI"
+author = "Paul"
+write_place = "rome"
+write_from = 66
+write_to = 67
+[[book]]
+code = "TIT"
+author = "Paul"
+write_from = 63
+write_to = 65
+[[book]]
+code = "PHM"
+author = "Paul"
+write_place = "rome"
+write_from = 60
+write_to = 62
+[[book]]
+code = "HEB"
+author = "Unknown"
+write_from = 64
+write_to = 68
+[[book]]
+code = "JAS"
+author = "James"
+write_place = "jerusalem"
+write_from = 45
+write_to = 49
+[[book]]
+code = "1PE"
+author = "Peter"
+write_place = "rome"
+write_from = 63
+write_to = 65
+[[book]]
+code = "2PE"
+author = "Peter"
+write_place = "rome"
+write_from = 65
+write_to = 68
+[[book]]
+code = "1JN"
+author = "John"
+write_place = "ephesus"
+write_from = 85
+write_to = 95
+[[book]]
+code = "2JN"
+author = "John"
+write_place = "ephesus"
+write_from = 85
+write_to = 95
+[[book]]
+code = "3JN"
+author = "John"
+write_place = "ephesus"
+write_from = 85
+write_to = 95
+[[book]]
+code = "JUD"
+author = "Jude"
+write_from = 65
+write_to = 80
+[[book]]
+code = "REV"
+author = "John"
+write_place = "patmos"
+write_from = 95
+write_to = 96
