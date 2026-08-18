@@ -102,7 +102,23 @@
 
     private ElementReference _mapEl;
     private MapInterop? _mapInterop;
-    private bool _firstSceneApplied;
+
+    // Fit-camera policy (fix round 1: replaces a plain "has any scene ever
+    // been fit" bool, which caused a real bug -- see the finding this
+    // fixes). null = nothing fit yet; "time"/"scripture" = the mode of the
+    // MOST RECENT fit. A load re-fits the camera when its own mode differs
+    // from _lastFitMode (covers both "first scene of the page's life" --
+    // null never equals either mode -- and "the mode just changed", which
+    // is exactly what mode-chip-return needs: after any scripture visit,
+    // returning to time mode must re-fit even though a time-mode scene had
+    // already been fit once before, earlier in the session) OR when the
+    // load itself is scripture mode (DebouncedLoadScriptureScene always
+    // fits, unconditionally, on every load -- see its own comment; it also
+    // stamps this field so a LATER return to time mode is correctly
+    // detected as a mode change). Ordinary same-mode time-window changes
+    // (slider drag, era click, readout Enter) still never re-fit -- Task
+    // 10's original policy, preserved for that one case.
+    private string? _lastFitMode;
 
     // Hover-card state. IMapEvents.OnPlaceHover/OnPlaceLeave below are
     // invoked from map.js (via MapEventsSink), not through Blazor's own
@@ -177,7 +193,11 @@
         {
             await _mapInterop.SetScene(_scene);
             await _mapInterop.FitScene();
-            _firstSceneApplied = true;
+            // _scriptureRef is already set (SyncFromQuery sets it synchronously,
+            // before either fetch method's first await) by the time a scene can
+            // possibly be non-null here, so it accurately names which mode
+            // produced _scene.
+            _lastFitMode = _scriptureRef is not null ? "scripture" : "time";
         }
     }
 
@@ -341,10 +361,19 @@
             if (_mapInterop is not null)
             {
                 await _mapInterop.SetScene(scene);
-                if (!_firstSceneApplied)
+
+                // Fix round 1: re-fit whenever the LAST fit was a different
+                // mode -- covers both "first scene ever" (_lastFitMode is
+                // still null) and "just returned from scripture mode"
+                // (_lastFitMode is "scripture"). An ordinary same-mode
+                // window change (slider drag, era click, readout Enter)
+                // leaves _lastFitMode == "time" already, so this correctly
+                // stays a no-op there, preserving Task 10's original
+                // "don't yank the camera on every slider tick" policy.
+                if (_lastFitMode != "time")
                 {
                     await _mapInterop.FitScene();
-                    _firstSceneApplied = true;
+                    _lastFitMode = "time";
                 }
             }
         }
@@ -403,7 +432,12 @@
             {
                 await _mapInterop.SetScene(scene);
                 await _mapInterop.FitScene();
-                _firstSceneApplied = true;
+
+                // Stamp the mode even though this branch always fits
+                // regardless of the PRIOR value -- a later time-mode load
+                // needs to see "scripture" here to know IT must re-fit too
+                // (see DebouncedLoadScene's own _lastFitMode check).
+                _lastFitMode = "scripture";
             }
         }
         catch (Exception)

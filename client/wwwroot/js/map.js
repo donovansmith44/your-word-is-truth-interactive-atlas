@@ -131,9 +131,16 @@ function esc(value) {
     return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// Called once, after the first scene of the page's life loads (World.razor
-// decides "first"; this module just fits whatever markers are currently
-// on the map). Later scene changes intentionally do NOT re-fit -- panning
+// Fits the map's viewport to whatever markers are CURRENTLY on it. This
+// module has no notion of "mode" or "first scene" -- World.razor decides
+// entirely on its own when to call this (see its _lastFitMode field and
+// the comments on DebouncedLoadScene/DebouncedLoadScriptureScene/
+// OnAfterRenderAsync for the actual policy: the very first scene of the
+// page's life, every scripture-mode load, and any load whose mode differs
+// from the last one actually fit -- which is what makes returning to time
+// mode after a scripture visit re-fit correctly). The one deliberately
+// EXCLUDED case, unchanged since Task 10: an ordinary same-mode time-window
+// change (slider drag, era click, readout Enter) does NOT re-fit -- panning
 // off to look at a place shouldn't get yanked back by the next slider tick.
 export function fitScene(id) {
     const inst = instances.get(id);
