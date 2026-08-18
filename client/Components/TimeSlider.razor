@@ -62,12 +62,20 @@
 </div>
 
 @code {
-    // Matches .slider-track's fixed CSS width (app.css) exactly, so a
+    // Must equal .slider-track's content-box width (app.css) exactly, so a
     // pointer's OffsetX within the track maps 1:1 onto SliderScale's pixel
-    // space without any DOM measurement (no JS interop needed). Era buttons
-    // and handles get inline pointer-events:none while dragging (below) so
-    // OffsetX always stays relative to the track itself, never to whichever
-    // child happens to be under the pointer mid-drag.
+    // space without any DOM measurement (no JS interop needed). app.css
+    // deliberately gives .slider-track `box-sizing: content-box` (overriding
+    // the project-wide border-box reset) so its literal `width: 800px`
+    // *is* this 800 -- under the default border-box, the track's 1px border
+    // would shrink the actual content/padding box (what OffsetX and an
+    // absolutely-positioned child's `left:` both resolve against) to 798px,
+    // 2px short of this constant, making the last year(s) of the final era
+    // unreachable by drag. If .slider-track's width or border ever changes,
+    // update this constant to match. Era buttons and handles get inline
+    // pointer-events:none while dragging (below) so OffsetX always stays
+    // relative to the track itself, never to whichever child happens to be
+    // under the pointer mid-drag.
     private const double TrackWidthPx = 800.0;
 
     [Parameter] public List<EraDto> Eras { get; set; } = new();

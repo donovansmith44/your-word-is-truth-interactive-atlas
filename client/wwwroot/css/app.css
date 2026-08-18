@@ -265,6 +265,16 @@ input:focus-visible,
     position: relative;
     display: flex;
     align-items: stretch;
+    /* content-box (overriding the global border-box reset) so this 800px is
+       the actual content-box width -- the coordinate space both
+       PointerEventArgs.OffsetX (drag input) and the handles' absolute
+       `left:` (drag output) resolve against. Under border-box, the 1px
+       border on each side would make the content box 798px while the C#
+       side still assumed 800, so the rightmost ~2px (the last year(s) of
+       the final era) would be unreachable by drag. Must match
+       TimeSlider.razor's TrackWidthPx exactly -- if this width or the
+       border changes, update that constant too. */
+    box-sizing: content-box;
     width: 800px;
     max-width: calc(100vw - 3rem);
     height: 2.25rem;
