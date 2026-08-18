@@ -403,9 +403,11 @@ input:focus-visible,
 /* WORLD-4 legend isolate. Single-class + attribute selector (app.css's own
    discipline, see file header) -- data-faded is set by map.js, never a
    second class, so there is exactly one rule to find this behavior in.
-   The desaturate is additive polish on top of the CONTRACT-mandated
-   opacity (design-direction.md: "a slight desaturate on top is welcome"),
-   never a substitute for it. */
+   Opacity .12 is design-direction.md's own rule for data-faded="true"; the
+   added desaturate on top was sanctioned by the Task 12 dispatch, not a
+   design-direction.md quote (the "slight desaturate...welcome" phrasing
+   was dispatch language, not this file) -- additive polish only, never a
+   substitute for the opacity itself. */
 .atlas-arrow[data-faded="true"] {
     opacity: .12;
     filter: saturate(.55);
@@ -669,7 +671,7 @@ input:focus-visible,
 }
 
 /* Legend -- dusk-glass panel, bottom-right (design-direction.md: "legend
-   (bottom-right) ... dusk-glass panel; legend swatches are short thread
+   (bottom-right) ... dusk-glass panels; legend swatches are short thread
    lines with arrowheads, legs_in_scene in mono"). Same material as .slider
    (same dusk-panel/blur/border/radius language) so the two docked
    instrument panels read as one system; they never overlap on screen

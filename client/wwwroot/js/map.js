@@ -220,6 +220,25 @@ const ArrowLayer = L.Layer.extend({
     // so every place an arrow in `arrows` can reference (ARROW-1: arrows
     // only ever reference lit places) is already present in it.
     setArrows(arrows, placesById) {
+        // World.razor resets its isolate state (`_isolated`) to null on
+        // every new scene, but that alone only fixes the LEGEND's
+        // aria-pressed -- an arrow whose key (narrative:order) survives the
+        // window change goes through the `else` branch below, which never
+        // touched data-faded, so it would otherwise keep whatever
+        // "true"/"false" a PRIOR setIsolate call left it at (review fix
+        // round 1: isolate narrative A, then change to a window that still
+        // has one of B/C's same-keyed arrows -- it stayed faded at opacity
+        // .12 with no legend button pressed to explain why). Resetting
+        // every EXISTING path unconditionally here, before the diff below,
+        // makes "a fresh scene starts unisolated" true for arrows exactly
+        // the same way it's already true for newly-created ones (which get
+        // data-faded="false" from _createPath regardless) -- one JS-side
+        // source of truth, no second SetIsolate(null) interop round-trip
+        // needed from World.razor.
+        for (const entry of this._paths.values()) {
+            entry.path.setAttribute('data-faded', 'false');
+        }
+
         this._placesById = placesById;
         const list = arrows || [];
 

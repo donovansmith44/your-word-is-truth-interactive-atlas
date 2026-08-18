@@ -96,9 +96,15 @@
     // Legend isolate (WORLD-4). Legend.razor is a controlled component --
     // this is the single source of truth it renders aria-pressed from, and
     // the value HandleIsolate below forwards to MapInterop.SetIsolate.
-    // Reset to null whenever a new scene loads (DebouncedLoadScene) so a
-    // window change never leaves the legend showing a narrative "pressed"
-    // while its arrows have already reset to unfaded on the map.
+    // Reset to null whenever a new scene loads (DebouncedLoadScene) so the
+    // legend never shows a narrative "pressed" after a window change wipes
+    // out whatever isolate the user had set on the PREVIOUS scene. The
+    // arrows' own data-faded attributes are reset back to "false" the same
+    // way, independently -- ArrowLayer.setArrows (map.js) does that
+    // unconditionally for every existing path, including ones that survive
+    // the change under the same narrative:order key, so the two stay in
+    // sync without this field needing to call MapInterop.SetIsolate(null)
+    // itself on every load.
     private string? _isolated;
 
     protected override async Task OnInitializedAsync()
