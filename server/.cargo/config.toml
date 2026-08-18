@@ -2,5 +2,13 @@
 # synthesize raw-dylib import libraries (needed by windows-sys >= 0.60).
 # Point rustc at LLVM's self-contained dlltool instead (copied from the
 # rustup llvm-tools component into ~/.cargo/atlas-tools).
+#
+# Run server/setup-toolchain.ps1 once per machine to provision it (idempotent --
+# safe to re-run any time). cargo config.toml does not expand env vars in
+# `rustflags`, so this path must stay a literal absolute path; it is
+# user-specific (embeds the Windows username). If you're on a different account
+# or machine, run the script -- it derives the path from $env:USERPROFILE -- and
+# edit the line below to match what it prints if your username differs from
+# "donov".
 [target.x86_64-pc-windows-gnu]
 rustflags = ["-C", "dlltool=C:/Users/donov/.cargo/atlas-tools/llvm-dlltool.exe"]
