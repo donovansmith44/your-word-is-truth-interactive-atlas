@@ -12,7 +12,7 @@ use crate::wire::{Scene, SceneArrow, SceneEvent, SceneNarrative, ScenePlace, Ver
 /// all of its places; arrows connect each narrative's kept legs in order.
 pub fn compose_time_scene(d: &AtlasData, w: TimeRange) -> Scene {
     let kept: Vec<&Event> = d.events.iter().filter(|e| e.when.intersects(&w)).collect();
-    let places = lit_places(d, &kept); // group kept events by ALL their places
+    let places = lit_places(d, &kept, None); // group kept events by ALL their places
     let arrows = build_arrows(d, &w, None);
     let narratives = legend(d, &w, None, &arrows);
     Scene { mode: "time".into(), window: Some(w), sref: None, places, arrows, narratives }
@@ -29,7 +29,7 @@ pub fn compose_scripture_scene(d: &AtlasData, r: &ScriptureRef) -> Scene {
         .iter()
         .filter(|e| e.verses.iter().any(|v| ref_contains(r, &VerseId::parse_canonical(v).expect("etl-validated verse id"))))
         .collect();
-    let mut places = lit_places(d, &kept);
+    let mut places = lit_places(d, &kept, Some(r));
     let event_lit: HashSet<String> = places.iter().map(|p| p.id.clone()).collect();
 
     for place in &d.places {
@@ -52,7 +52,7 @@ pub fn compose_scripture_scene(d: &AtlasData, r: &ScriptureRef) -> Scene {
             id: format!("mention-{}", place.id),
             label: "Mentioned".into(),
             when: TimeRange::new(-4004, 100).unwrap(),
-            verse_groups: verse_groups_for(&matched),
+            verse_groups: verse_groups_for(&matched, Some(r)),
         };
         let events = vec![mention];
         places.push(ScenePlace {
@@ -128,8 +128,12 @@ fn build_arrows(d: &AtlasData, w: &TimeRange, r: Option<&ScriptureRef>) -> Vec<S
 }
 
 /// Groups `kept` events by every place they touch (not just the anchor) into
-/// `ScenePlace`s. `brightness = min(attached_event_count, 5)`.
-fn lit_places(d: &AtlasData, kept: &[&Event]) -> Vec<ScenePlace> {
+/// `ScenePlace`s. `brightness = min(attached_event_count, 5)`. `r` is `Some`
+/// only for scripture-mode composition, where it must be threaded through to
+/// `verse_groups_for` so the 20-per-group verse cap can never silently drop
+/// the very verse that earned an event (and therefore its place) a spot in
+/// the scene — see `verse_groups_for`'s doc comment (SCRIP-1/SCRIP-3).
+fn lit_places(d: &AtlasData, kept: &[&Event], r: Option<&ScriptureRef>) -> Vec<ScenePlace> {
     let mut by_place: HashMap<&str, Vec<&Event>> = HashMap::new();
     for e in kept {
         for pid in &e.places {
@@ -146,7 +150,15 @@ fn lit_places(d: &AtlasData, kept: &[&Event]) -> Vec<ScenePlace> {
                 lat: place.lat,
                 lon: place.lon,
                 brightness: (evs.len().min(5)) as u8,
-                events: evs.iter().map(|e| to_scene_event(e)).collect(),
+                events: evs
+                    .iter()
+                    .map(|e| SceneEvent {
+                        id: e.id.clone(),
+                        label: e.label.clone(),
+                        when: e.when,
+                        verse_groups: verse_groups_for(&e.verses, r),
+                    })
+                    .collect(),
             })
         })
         .collect();
@@ -156,15 +168,34 @@ fn lit_places(d: &AtlasData, kept: &[&Event]) -> Vec<ScenePlace> {
 
 /// `pub` (not private) because atlas-server's verse/place-detail endpoints
 /// reuse it to build the same SceneEvent shape scenes use, rather than
-/// duplicating the verse-grouping logic in a different crate.
+/// duplicating the verse-grouping logic in a different crate. Always passes
+/// `r = None` to `verse_groups_for`: neither call site (a single verse's own
+/// detail page, a place's full event history) is scoped to one scripture
+/// ref, so there is nothing to prioritize under the cap.
 pub fn to_scene_event(e: &Event) -> SceneEvent {
-    SceneEvent { id: e.id.clone(), label: e.label.clone(), when: e.when, verse_groups: verse_groups_for(&e.verses) }
+    SceneEvent { id: e.id.clone(), label: e.label.clone(), when: e.when, verse_groups: verse_groups_for(&e.verses, None) }
 }
 
 /// Groups canonical verse ids by (book, chapter); within a group sorts by
 /// verse number ascending; caps each group at 20 ids with `count` set to the
 /// true total before capping.
-fn verse_groups_for(verses: &[String]) -> Vec<VerseGroup> {
+///
+/// `r` is `Some` only for scripture-mode composition (`lit_places`'s
+/// scripture-mode call and the synthetic mention-event above). A place/event
+/// is only ever in a scripture-mode scene BECAUSE one of its verses satisfies
+/// `ref_contains(r, ..)`; some real events carry 50-70+ verses in a single
+/// chapter (e.g. a Passion-week summary event spanning all of Luke 22), so
+/// plain ascending truncation can cap away the exact verse that justified
+/// the event's (and its place's) inclusion, leaving a lit place with no
+/// visible evidence it belongs in the scene — a SCRIP-1/SCRIP-3 violation.
+/// When `r` is given, verses satisfying it are moved to the front of the
+/// cap; remaining slots (if any) are filled with the lowest-numbered
+/// leftover verses, and the selected set is re-sorted ascending before
+/// returning, so the wire shape (ascending, <=20, true `count`) is
+/// unchanged — only which 20 verses win the cap can differ. Time mode (and
+/// `to_scene_event`'s other two callers) pass `None` and get the original
+/// plain-ascending truncation, since there is no ref to prioritize.
+fn verse_groups_for(verses: &[String], r: Option<&ScriptureRef>) -> Vec<VerseGroup> {
     let mut groups: HashMap<(String, u16), Vec<(u16, String)>> = HashMap::new();
     for v in verses {
         let vid = VerseId::parse_canonical(v).expect("etl-validated verse id");
@@ -175,7 +206,24 @@ fn verse_groups_for(verses: &[String]) -> Vec<VerseGroup> {
         .map(|((book, chapter), mut vs)| {
             vs.sort_by_key(|(vnum, _)| *vnum);
             let count = vs.len() as u32;
-            let verses: Vec<String> = vs.into_iter().take(20).map(|(_, s)| s).collect();
+            let capped: Vec<(u16, String)> = match r {
+                Some(r) => {
+                    let (mut matched, mut rest): (Vec<(u16, String)>, Vec<(u16, String)>) =
+                        vs.into_iter().partition(|(_, v)| {
+                            ref_contains(r, &VerseId::parse_canonical(v).expect("etl-validated verse id"))
+                        });
+                    if matched.len() < 20 {
+                        rest.truncate(20 - matched.len());
+                        matched.extend(rest);
+                    } else {
+                        matched.truncate(20);
+                    }
+                    matched.sort_by_key(|(vnum, _)| *vnum);
+                    matched
+                }
+                None => vs.into_iter().take(20).collect(),
+            };
+            let verses: Vec<String> = capped.into_iter().map(|(_, s)| s).collect();
             VerseGroup { book, chapter, verses, count }
         })
         .collect();
