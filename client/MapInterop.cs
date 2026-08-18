@@ -6,9 +6,8 @@ namespace BibleAtlas.Client;
 
 /// <summary>
 /// Events map.js raises back into .NET (client/wwwroot/js/map.js's
-/// <c>wireEvents</c> for place markers now; arrow events are declared here
-/// too, per the Task 11 brief, but stay unused until the arrow layer lands
-/// in Task 12). Implemented by whichever page owns a <see cref="MapInterop"/>
+/// <c>wireEvents</c> for place markers, <c>ArrowLayer</c> for narrative
+/// arrows). Implemented by whichever page owns a <see cref="MapInterop"/>
 /// (World.razor) -- a plain interface, not JS-invokable itself; see
 /// <see cref="MapEventsSink"/> for the actual JS-callable bridge.
 /// </summary>
@@ -18,6 +17,7 @@ public interface IMapEvents
     void OnPlaceLeave();
     void OnPlaceClick(string id, double x, double y);
     void OnArrowHover(string key, double x, double y);
+    void OnArrowLeave();
     void OnArrowClick(string key, double x, double y);
 }
 
@@ -69,6 +69,16 @@ public sealed class MapInterop : IAsyncDisposable
 
     public async Task FitScene() => await _module.InvokeVoidAsync("fitScene", _id);
 
+    /// <summary>
+    /// WORLD-4 legend isolate: <paramref name="narrativeId"/> null clears
+    /// every arrow back to unfaded; any other value fades every arrow whose
+    /// narrative doesn't match it. A bare string argument has no properties
+    /// to rename, so (unlike <see cref="SetScene"/>) this can go straight
+    /// through <see cref="IJSObjectReference.InvokeVoidAsync"/> without a
+    /// Wire.Options detour.
+    /// </summary>
+    public async Task SetIsolate(string? narrativeId) => await _module.InvokeVoidAsync("setIsolate", _id, narrativeId);
+
     public async ValueTask DisposeAsync()
     {
         try
@@ -103,5 +113,6 @@ public sealed class MapEventsSink
     [JSInvokable] public void OnPlaceLeave() => _sink.OnPlaceLeave();
     [JSInvokable] public void OnPlaceClick(string id, double x, double y) => _sink.OnPlaceClick(id, x, y);
     [JSInvokable] public void OnArrowHover(string key, double x, double y) => _sink.OnArrowHover(key, x, y);
+    [JSInvokable] public void OnArrowLeave() => _sink.OnArrowLeave();
     [JSInvokable] public void OnArrowClick(string key, double x, double y) => _sink.OnArrowClick(key, x, y);
 }

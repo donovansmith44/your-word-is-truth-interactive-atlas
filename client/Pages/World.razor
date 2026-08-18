@@ -1,4 +1,5 @@
 @page "/world"
+@using System.Globalization
 @implements IAsyncDisposable
 @implements IMapEvents
 @inject AtlasClient Atlas
@@ -22,9 +23,22 @@
                    OnPointerEnter="CancelCardClose" OnPointerLeave="ScheduleCardClose" />
     }
 
+    @if (_hoverArrowText is not null)
+    {
+        <div class="arrow-tip" data-testid="arrow-tip"
+             style="left: @_arrowX.ToString(CultureInfo.InvariantCulture)px; top: @_arrowY.ToString(CultureInfo.InvariantCulture)px;">
+            @_hoverArrowText
+        </div>
+    }
+
     @if (_eras is not null)
     {
         <TimeSlider Eras="_eras" From="_from" To="_to" OnWindowChange="HandleWindowChange" />
+    }
+
+    @if (_scene is not null && _scene.Narratives.Count > 0)
+    {
+        <Legend Narratives="_scene.Narratives" IsolatedId="@_isolated" OnIsolate="HandleIsolate" />
     }
 
     @if (_errorMessage is not null)
@@ -70,6 +84,22 @@
     private double _hoverX;
     private double _hoverY;
     private CancellationTokenSource? _closeCts;
+
+    // arrow-tip state (WORLD-4/contract "arrow-tip"). Text is precomputed
+    // (rather than a place/arrow reference resolved in markup) so a stale
+    // key that no longer resolves against the current scene just clears the
+    // tip instead of throwing mid-render.
+    private string? _hoverArrowText;
+    private double _arrowX;
+    private double _arrowY;
+
+    // Legend isolate (WORLD-4). Legend.razor is a controlled component --
+    // this is the single source of truth it renders aria-pressed from, and
+    // the value HandleIsolate below forwards to MapInterop.SetIsolate.
+    // Reset to null whenever a new scene loads (DebouncedLoadScene) so a
+    // window change never leaves the legend showing a narrative "pressed"
+    // while its arrows have already reset to unfaded on the map.
+    private string? _isolated;
 
     protected override async Task OnInitializedAsync()
     {
@@ -169,6 +199,30 @@
         return Task.CompletedTask;
     }
 
+    // WORLD-4: Legend.razor already decided the new value (null = clear,
+    // otherwise the narrative to isolate) -- this just stores it (so Legend
+    // re-renders aria-pressed correctly, per the IsolatedId parameter below)
+    // and forwards it to the map. No explicit StateHasChanged() needed here
+    // (unlike OnPlaceHover/OnArrowHover/etc. below, which DO need it): this
+    // handler is invoked through Blazor's own EventCallback machinery
+    // (Legend's button click -> Legend.Toggle -> OnIsolate.InvokeAsync,
+    // still routed through IHandleEvent even though the InvokeAsync call
+    // itself is nested inside Legend's handler rather than a raw DOM
+    // dispatch), which re-renders the receiving component -- World -- on
+    // its own; OnPlaceHover/OnArrowHover are invoked from map.js via plain
+    // JS interop, entirely outside that pipeline, which is why those need
+    // the explicit call instead. Confirmed by removing it and polling
+    // aria-pressed with a throwaway Playwright script: it still updated
+    // correctly (~8ms after the click).
+    private async Task HandleIsolate(string? narrativeId)
+    {
+        _isolated = narrativeId;
+        if (_mapInterop is not null)
+        {
+            await _mapInterop.SetIsolate(narrativeId);
+        }
+    }
+
     // Debounced (150ms), latest-wins: a burst of window changes (fast
     // dragging, rapid era clicks) cancels any fetch still in its debounce
     // wait, and a fetch that was already in flight when superseded has its
@@ -200,6 +254,7 @@
 
             _scene = scene;
             _errorMessage = null;
+            _isolated = null;
 
             if (_mapInterop is not null)
             {
@@ -254,12 +309,45 @@
     {
     }
 
-    // Arrow layer lands in Task 12; these two exist now only because
-    // MapInterop's IMapEvents contract (Task 11 brief) declares them.
+    // arrow-tip (WORLD-4/contract "arrow-tip"). `key` is "{narrative}:{order}"
+    // per the ArrowLayer contract (map.js), matching the
+    // arrow-{narrative}-{order} testid exactly -- split on the LAST colon
+    // (never the first) so this stays correct even if a narrative id ever
+    // contained one; `order` itself never does.
     public void OnArrowHover(string key, double x, double y)
     {
+        var split = key.LastIndexOf(':');
+        if (split < 0 || !int.TryParse(key[(split + 1)..], out var order))
+        {
+            return;
+        }
+
+        var narrativeId = key[..split];
+        var arrow = _scene?.Arrows.FirstOrDefault(a => a.Narrative == narrativeId && a.Order == order);
+        if (arrow is null)
+        {
+            return;
+        }
+
+        var narrativeName = _scene?.Narratives.FirstOrDefault(n => n.Id == arrow.Narrative)?.Name ?? arrow.Narrative;
+        var fromName = _scene?.Places.FirstOrDefault(p => p.Id == arrow.FromPlace)?.Name ?? arrow.FromPlace;
+        var toName = _scene?.Places.FirstOrDefault(p => p.Id == arrow.ToPlace)?.Name ?? arrow.ToPlace;
+
+        _hoverArrowText = $"{narrativeName}: {fromName} → {toName}";
+        _arrowX = x;
+        _arrowY = y;
+        StateHasChanged();
     }
 
+    public void OnArrowLeave()
+    {
+        _hoverArrowText = null;
+        StateHasChanged();
+    }
+
+    // Arrow clicks are reported by map.js per the interop contract but have
+    // no behavior yet -- out of scope for WORLD-3/WORLD-4 (hover only).
+    // Documented no-op, same treatment as OnPlaceClick above.
     public void OnArrowClick(string key, double x, double y)
     {
     }

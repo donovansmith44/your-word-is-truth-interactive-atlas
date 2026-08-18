@@ -358,6 +358,80 @@ input:focus-visible,
     }
 }
 
+/* Narrative arrows (design-direction.md: "narratives stitch between [places]
+   as colored threads" / "Arrows = 2.5px colored threads with arrowheads
+   (colors from data)"). map.js's ArrowLayer authors every <path> directly
+   (stroke/marker-end/data-testid/data-faded are all set there, by
+   contract) -- this file only owns the class-level presentation: the
+   entrance draw-in, the faded state, and hit-testing.
+
+   `pointer-events: bounding-box` (SVG2, Chromium) is load-bearing, not
+   decorative: a quadratic-bezier stroke's own on-screen bounding box is
+   almost always bigger than the curve itself, so without this a hover
+   aimed at the path's bounding-box center (which is exactly where
+   Playwright's default .hover() targets, and which the arrow-hover
+   property test relies on) would frequently land on empty space *inside*
+   the bow instead of the stroke, and never fire mouseover at all. */
+.atlas-arrows {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.atlas-arrow {
+    cursor: pointer;
+    animation: atlas-arrow-in 400ms ease-out both;
+}
+
+/* Leaflet's own leaflet.css ships `.leaflet-pane > svg path { pointer-events:
+   none; }` at specificity (0,0,1,2) -- since our arrow paths live inside
+   overlayPane (a `.leaflet-pane`), that rule matches them too and beats a
+   plain single-class `.atlas-arrow { pointer-events: bounding-box; }` (only
+   (0,0,1,0)) regardless of source order, silently making every arrow
+   unhoverable. This is the same class of CSS-discipline exception
+   `.world-page .leaflet-tile-pane` above already documents (Leaflet, not
+   this page, generates the `.leaflet-pane`/`svg` ancestor chain, so only a
+   comparably-scoped selector can reach past it) -- confirmed empirically
+   (a throwaway script read the computed `pointer-events` off a real arrow
+   path and found "none" before this rule was added). */
+.leaflet-pane > svg path.atlas-arrow {
+    pointer-events: bounding-box;
+}
+
+/* WORLD-4 legend isolate. Single-class + attribute selector (app.css's own
+   discipline, see file header) -- data-faded is set by map.js, never a
+   second class, so there is exactly one rule to find this behavior in.
+   The desaturate is additive polish on top of the CONTRACT-mandated
+   opacity (design-direction.md: "a slight desaturate on top is welcome"),
+   never a substitute for it. */
+.atlas-arrow[data-faded="true"] {
+    opacity: .12;
+    filter: saturate(.55);
+}
+
+/* Draws the path once from nothing to fully visible via the classic
+   dasharray-equals-length / dashoffset-to-zero technique. `--arrow-length`
+   and the matching stroke-dasharray are set in JS (map.js's _position) to
+   each path's own real length, computed fresh on every redraw so a
+   zoom-driven length change can never leave a gap once the animation has
+   finished (see _position's comment) -- but redraw only ever mutates
+   already-inserted elements' attributes, never removes/re-adds them, so it
+   can never retrigger this animation. `both` freezes the finished (fully
+   drawn) state permanently afterward, and there is no `transition` on `d`
+   or `stroke-dasharray` anywhere, so zoom/pan recompute is always instant. */
+@keyframes atlas-arrow-in {
+    from { stroke-dashoffset: var(--arrow-length, 0); }
+    to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .atlas-arrow {
+        animation: none;
+    }
+}
+
 /* Empty scene (design-direction.md: "An invitation, not an error"). */
 .world-empty {
     position: absolute;
@@ -434,6 +508,42 @@ input:focus-visible,
 
 @media (prefers-reduced-motion: reduce) {
     .place-card {
+        animation: none;
+    }
+}
+
+/* arrow-tip -- a parchment artifact too (design-direction.md: "popovers and
+   hover cards are parchment artifacts on both pages"), same material and
+   motion language as .place-card above but a single readout line rather
+   than a card: "{narrative}: {from} -> {to}" anchored at the hover point
+   map.js reports (mouseEventToContainerPoint, the same coordinate space
+   .place-card's X/Y already use). `pointer-events: none` so the tip itself
+   never intercepts the mouseout that would otherwise clear it. */
+.arrow-tip {
+    position: absolute;
+    z-index: 30;
+    transform: translate(-50%, calc(-100% - 14px));
+    max-width: 22rem;
+    padding: .4rem .65rem;
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .4);
+    font-family: var(--font-serif);
+    font-size: .82rem;
+    color: var(--ink);
+    white-space: nowrap;
+    pointer-events: none;
+    animation: arrow-tip-in 120ms ease-out both;
+}
+
+@keyframes arrow-tip-in {
+    from { opacity: 0; transform: translate(-50%, calc(-100% - 6px)); }
+    to { opacity: 1; transform: translate(-50%, calc(-100% - 14px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .arrow-tip {
         animation: none;
     }
 }
@@ -556,6 +666,73 @@ input:focus-visible,
     cursor: ew-resize;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
     touch-action: none;
+}
+
+/* Legend -- dusk-glass panel, bottom-right (design-direction.md: "legend
+   (bottom-right) ... dusk-glass panel; legend swatches are short thread
+   lines with arrowheads, legs_in_scene in mono"). Same material as .slider
+   (same dusk-panel/blur/border/radius language) so the two docked
+   instrument panels read as one system; they never overlap on screen
+   (bottom-center vs bottom-right) so sharing .slider's z-index is safe. */
+.legend {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+    padding: .6rem .5rem;
+    background: var(--dusk-panel);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--bronze);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: .3rem .5rem;
+    cursor: pointer;
+    text-align: start;
+}
+
+.legend-item:hover {
+    background: rgba(201, 164, 92, 0.14);
+}
+
+.legend-item[aria-pressed="true"] {
+    background: rgba(201, 164, 92, 0.22);
+}
+
+.legend-swatch {
+    flex: none;
+    width: 28px;
+    height: 10px;
+    overflow: visible;
+}
+
+.legend-name {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: .85rem;
+    color: var(--dusk-ink);
+    white-space: nowrap;
+}
+
+.legend-count {
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    color: var(--dusk-ink-soft);
+    margin-inline-start: auto;
+    padding-inline-start: .75rem;
 }
 
 /* Toast -- a small parchment slip, bottom-left, thin ochre rule; plain

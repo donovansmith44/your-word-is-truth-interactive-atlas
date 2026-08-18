@@ -1,0 +1,46 @@
+@* Dusk-glass legend, bottom-right (design-direction.md: "legend swatches are
+   short thread lines with arrowheads, legs_in_scene in mono"). Each swatch
+   is a tiny standalone SVG mirroring exactly what ArrowLayer draws on the
+   map (map.js: 2.5px stroke, triangular marker-end) so the color+shape
+   language reads as one system rather than two.
+
+   Purely a controlled component, same pattern as TimeSlider (From/To/
+   OnWindowChange): World.razor is the single source of truth for which
+   narrative is isolated (IsolatedId in, so aria-pressed is always correct
+   even after a scene change resets it) and this component decides the new
+   value on click -- clicking the already-isolated narrative again toggles
+   back to null, anything else isolates the clicked one -- reporting that
+   decision up through OnIsolate rather than mutating any state of its own. *@
+
+<div class="legend" data-testid="legend">
+    @foreach (var n in Narratives)
+    {
+        var pressed = IsolatedId == n.Id;
+        <button type="button"
+                class="legend-item"
+                data-testid="legend-item-@n.Id"
+                aria-pressed="@(pressed ? "true" : "false")"
+                @onclick="() => Toggle(n.Id)">
+            <svg class="legend-swatch" viewBox="0 0 28 10" aria-hidden="true" focusable="false">
+                <defs>
+                    <marker id="legend-ah-@n.Id" viewBox="0 0 10 10" refX="8.5" refY="5"
+                            markerWidth="6" markerHeight="6" orient="auto">
+                        <path d="M0,0 L10,5 L0,10 z" fill="@n.Color" />
+                    </marker>
+                </defs>
+                <line x1="1" y1="5" x2="21" y2="5" stroke="@n.Color" stroke-width="2.5"
+                      marker-end="url(#legend-ah-@n.Id)" />
+            </svg>
+            <span class="legend-name">@n.Name</span>
+            <span class="legend-count">@n.LegsInScene</span>
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public List<SceneNarrative> Narratives { get; set; } = default!;
+    [Parameter] public string? IsolatedId { get; set; }
+    [Parameter] public EventCallback<string?> OnIsolate { get; set; }
+
+    private async Task Toggle(string id) => await OnIsolate.InvokeAsync(IsolatedId == id ? null : id);
+}
