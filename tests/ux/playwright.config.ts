@@ -14,8 +14,13 @@ export default defineConfig({
   retries: 0,
   use: { baseURL: 'http://localhost:5000', trace: 'retain-on-failure' },
   webServer: [
+    // 300s (was 120s): start-api.ps1 boots the API via `cargo run --release`,
+    // kept for its ~5x per-request latency win across every suite run; a cold
+    // release build/link on a first run (or after a Rust change) can take
+    // meaningfully longer than a cold debug build, so the boot budget is
+    // raised to absorb that rather than risk a spurious webServer timeout.
     { command: 'powershell -NoProfile -ExecutionPolicy Bypass -File start-api.ps1',
-      url: 'http://localhost:8000/health', reuseExistingServer: true, timeout: 120_000 },
+      url: 'http://localhost:8000/health', reuseExistingServer: true, timeout: 300_000 },
     { command: 'powershell -NoProfile -ExecutionPolicy Bypass -File start-client.ps1',
       url: 'http://localhost:5000', reuseExistingServer: true, timeout: 180_000 },
   ],
