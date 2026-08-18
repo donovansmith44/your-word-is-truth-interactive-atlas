@@ -52,6 +52,19 @@ mod tests {
         assert_eq!(next_year(1), 2);
     }
     #[test]
+    fn contains_year_boundaries() {
+        let bc = TimeRange::new(-1450, -1400).unwrap();
+        assert!(bc.contains_year(-1450)); // lower boundary, in
+        assert!(bc.contains_year(-1400)); // upper boundary, in
+        assert!(!bc.contains_year(-1451)); // just below lower, out
+        assert!(!bc.contains_year(-1399)); // just above upper, out
+
+        let ad = TimeRange::new(1, 100).unwrap();
+        assert!(ad.contains_year(1)); // lower boundary, in
+        assert!(ad.contains_year(100)); // upper boundary, in
+        assert!(!ad.contains_year(101)); // just above upper, out
+    }
+    #[test]
     fn intersect_examples() {
         let a = TimeRange::new(-1450, -1400).unwrap();
         assert!(a.intersects(&TimeRange::new(-1400, -1300).unwrap())); // touching

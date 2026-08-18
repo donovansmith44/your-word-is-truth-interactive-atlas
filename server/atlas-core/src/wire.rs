@@ -58,3 +58,27 @@ pub struct SceneNarrative {
     pub color: String,
     pub legs_in_scene: u32,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn populated_sref_serializes_as_ref_and_omits_window() {
+        let scene = Scene {
+            mode: "scripture".into(),
+            window: None,
+            sref: Some("GEN.1.1".into()),
+            places: vec![],
+            arrows: vec![],
+            narratives: vec![],
+        };
+        let json = serde_json::to_string(&scene).unwrap();
+        assert!(json.contains("\"ref\":\"GEN.1.1\""), "missing ref key: {json}");
+        assert!(!json.contains("\"sref\""), "sref must never appear on the wire: {json}");
+        assert!(!json.contains("\"window\""), "window must be omitted when None: {json}");
+
+        let back: Scene = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, scene);
+    }
+}

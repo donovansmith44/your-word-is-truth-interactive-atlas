@@ -134,6 +134,29 @@ mod tests {
         assert!(ScriptureRef::parse("gen..1").is_err());
     }
     #[test]
+    fn verse_id_serializes_as_canonical_string() {
+        let book = crate::canon::resolve_alias("GEN").unwrap();
+        let v = VerseId { book, chapter: 1, verse: 1 };
+        assert_eq!(serde_json::to_string(&v).unwrap(), "\"GEN.1.1\"");
+    }
+    #[test]
+    fn verse_id_deserialize_round_trips() {
+        let v: VerseId = serde_json::from_str("\"EXO.14.21\"").unwrap();
+        let book = crate::canon::resolve_alias("EXO").unwrap();
+        assert_eq!(v, VerseId { book, chapter: 14, verse: 21 });
+        assert_eq!(serde_json::to_string(&v).unwrap(), "\"EXO.14.21\"");
+    }
+    #[test]
+    fn parse_canonical_accepts_verse_and_rejects_non_verse() {
+        let book = crate::canon::resolve_alias("EXO").unwrap();
+        assert_eq!(
+            VerseId::parse_canonical("EXO.14.21").unwrap(),
+            VerseId { book, chapter: 14, verse: 21 }
+        );
+        assert!(VerseId::parse_canonical("GEN.1").is_err()); // chapter ref, not a verse
+        assert!(VerseId::parse_canonical("GEN.1.0").is_err()); // verse must be >= 1
+    }
+    #[test]
     fn parse_case_insensitive_book_code_displays_uppercase() {
         assert_eq!(ScriptureRef::parse("gen.1.1").unwrap().to_string(), "GEN.1.1");
         assert_eq!(ScriptureRef::parse("Exo.14").unwrap().to_string(), "EXO.14");
