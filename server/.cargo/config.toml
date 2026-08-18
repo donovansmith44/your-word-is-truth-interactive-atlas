@@ -1,0 +1,6 @@
+# This windows-gnu host has no GNU `as`, so the bundled GNU dlltool cannot
+# synthesize raw-dylib import libraries (needed by windows-sys >= 0.60).
+# Point rustc at LLVM's self-contained dlltool instead (copied from the
+# rustup llvm-tools component into ~/.cargo/atlas-tools).
+[target.x86_64-pc-windows-gnu]
+rustflags = ["-C", "dlltool=C:/Users/donov/.cargo/atlas-tools/llvm-dlltool.exe"]
