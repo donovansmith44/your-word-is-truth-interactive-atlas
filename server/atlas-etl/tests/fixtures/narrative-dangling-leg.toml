@@ -1,0 +1,4 @@
+id = "broken"
+name = "Broken Narrative"
+color = "#000000"
+legs = ["ghost_event"]

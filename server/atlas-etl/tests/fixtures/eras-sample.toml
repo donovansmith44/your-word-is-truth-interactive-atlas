@@ -1,0 +1,11 @@
+[[era]]
+id = "primeval"
+name = "Primeval"
+from_year = -4004
+to_year = -2167
+
+[[era]]
+id = "patriarchs"
+name = "Patriarchs"
+from_year = -2166
+to_year = -1877

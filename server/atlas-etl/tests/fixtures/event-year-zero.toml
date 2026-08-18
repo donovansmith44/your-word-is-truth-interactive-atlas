@@ -1,0 +1,7 @@
+[[event]]
+id = "zero_ev"
+label = "Event with impossible year"
+from_year = 0
+to_year = 5
+places = ["somewhere"]
+verses = ["GEN.1.1"]

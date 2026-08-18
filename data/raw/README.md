@@ -134,6 +134,29 @@ place are common (ambiguous ancient places); most have exactly one.
 Real sample line (truncated) — id `aea17b7`, friendly_id `"Abana"`:
 `{"friendly_id":"Abana",...,"identifications":[{"id":"m39ac0b","score":1000,"resolutions":[{"lonlat":"36.305000,33.513542","lonlat_type":"representative point","land_or_water":"water","type":"river","modern_basis_id":"m39ac0b",...}],...}],...,"verses":[{"osis":"2Kgs.5.12","readable":"2 Kgs 5:12","translations":["csb","esv","kjv","leb","nasb","net","niv","nkjv","nrsv"],"usx":"2KI 5:12"}]}`
 
+**Corrections found while implementing atlas-etl (Task 4), against the real,
+full `ancient.jsonl` (not just the sample line above):**
+
+1. `identifications[].score` is NOT a plain int as described above and shown
+   in the truncated sample line — on the real "Abana" record (`aea17b7`) it is
+   actually a nested stats object: `{"time_best_fits":[],"time_intercept":1000,
+   "time_r_squared":0,"time_slope":0,"time_total":1000,"time_values":[],
+   "vote_average":500,"vote_count":1,"vote_total":500}`. The truncated sample
+   above was apparently hand-simplified when this doc was written and doesn't
+   match the actual file. The plain-int score genuinely usable for ranking is
+   `modern_associations[modern_id].score` instead (confirmed int on every
+   record checked) — atlas-etl's `geo::parse` ranks `resolutions[]` by looking
+   up each one's `modern_basis_id` in `modern_associations` and comparing
+   those scores, not `identifications[].score`.
+2. Not every `resolutions[]` entry has `lonlat`/`modern_basis_id` at all: a
+   resolution can be a dead-end marker shaped
+   `{"special":"not_a_place","type":"special","best_path_score":...,
+   "best_time_score":...,"class":...,"description":"not a place","paths":[...]}`
+   with neither field present (real example: id `aaee94d`, friendly_id
+   `"Addar"`, one of whose `identifications[0].resolutions[]` entries is
+   exactly this shape). `geo::parse` treats both fields as optional and skips
+   any resolution missing either one.
+
 ### `modern.jsonl` — canonical modern-place records (per line, key fields)
 
 Flatter than ancient.jsonl. Top-level fields (no nested resolutions):

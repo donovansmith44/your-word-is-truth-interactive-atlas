@@ -1,0 +1,4 @@
+id = "exodus"
+name = "The Exodus"
+color = "#DC2626"
+legs = ["ex_1", "ex_2"]

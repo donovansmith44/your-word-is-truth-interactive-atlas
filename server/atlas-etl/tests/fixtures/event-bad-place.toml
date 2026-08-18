@@ -1,0 +1,7 @@
+[[event]]
+id = "bad_ev"
+label = "Event with nonexistent place"
+from_year = -500
+to_year = -500
+places = ["nonexistent-place"]
+verses = ["GEN.1.1"]

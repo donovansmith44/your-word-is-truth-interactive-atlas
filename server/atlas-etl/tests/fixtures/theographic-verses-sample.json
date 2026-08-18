@@ -1,0 +1,18 @@
+[
+  {
+    "id": "recVerseA",
+    "createdTime": "2018-05-13T17:36:24.000Z",
+    "fields": {
+      "osisRef": "Acts.13.1",
+      "verseText": "Now there were in the church that was at Antioch certain prophets and teachers."
+    }
+  },
+  {
+    "id": "recVerseB",
+    "createdTime": "2018-05-13T17:36:24.000Z",
+    "fields": {
+      "osisRef": "Jonah.1.2",
+      "verseText": "Arise, go to Nineveh, that great city, and cry against it."
+    }
+  }
+]

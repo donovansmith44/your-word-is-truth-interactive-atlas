@@ -1,0 +1,15 @@
+[[event]]
+id = "ex_1"
+label = "Israel departs Rameses"
+from_year = -1446
+to_year = -1446
+places = ["rameses"]
+verses = ["EXO.12.37"]
+
+[[event]]
+id = "ex_2"
+label = "Crossing the Red Sea"
+from_year = -1446
+to_year = -1446
+places = ["red-sea"]
+verses = ["EXO.14.21-31"]

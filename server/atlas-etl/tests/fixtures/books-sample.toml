@@ -1,0 +1,12 @@
+[[book]]
+code = "GEN"
+author = "Moses"
+write_place = "some-place"
+write_from = -1445
+write_to = -1405
+
+[[book]]
+code = "EXO"
+author = "Moses"
+write_from = -1445
+write_to = -1405

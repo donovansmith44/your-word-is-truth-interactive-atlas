@@ -1,0 +1,11 @@
+{
+  "translation": "KJV",
+  "books": [
+    {
+      "name": "Not A Real Book",
+      "chapters": [
+        { "chapter": 1, "verses": [ { "verse": 1, "text": "Nonsense." } ] }
+      ]
+    }
+  ]
+}

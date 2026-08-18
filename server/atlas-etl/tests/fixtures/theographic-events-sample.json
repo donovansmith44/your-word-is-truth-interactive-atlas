@@ -1,0 +1,46 @@
+[
+  {
+    "id": "recEvt1",
+    "createdTime": "2020-08-20T14:38:18.000Z",
+    "fields": {
+      "title": "Creation of all things",
+      "startDate": "-4003",
+      "duration": "7D",
+      "locations": ["recPlaceMatch"],
+      "verses": ["recVerseA"],
+      "eventID": 1
+    }
+  },
+  {
+    "id": "recEvt2",
+    "createdTime": "2020-08-27T01:23:21.000Z",
+    "fields": {
+      "title": "Jonah sent toward Nineveh",
+      "startDate": "0046-03-01",
+      "duration": "1D",
+      "locations": ["recPlaceNew"],
+      "verses": ["recVerseB"],
+      "eventID": 2
+    }
+  },
+  {
+    "id": "recEvt3",
+    "createdTime": "2020-08-27T01:23:21.000Z",
+    "fields": {
+      "title": "Dated event with no linked place",
+      "startDate": "30",
+      "verses": [],
+      "eventID": 3
+    }
+  },
+  {
+    "id": "recEvt4",
+    "createdTime": "2020-08-27T01:23:21.000Z",
+    "fields": {
+      "title": "Undated mystery event",
+      "startDate": "",
+      "verses": [],
+      "eventID": 4
+    }
+  }
+]

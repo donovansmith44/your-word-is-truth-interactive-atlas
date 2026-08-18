@@ -1,0 +1,11 @@
+[[era]]
+id = "a"
+name = "A"
+from_year = -10
+to_year = -5
+
+[[era]]
+id = "b"
+name = "B"
+from_year = -3
+to_year = 0

@@ -1,0 +1,9 @@
+From Verse	To Verse	Votes	#www.openbible.info CC-BY 2026-08-17
+Gen.1.1	Gen.1.1	50
+Gen.1.1	Job.26.13	20
+Gen.1.1	Col.1.16-Col.1.17	7
+Gen.1.1	Ps.124.8	3
+Gen.1.1	NotARealRef	15
+Col.1.16	Col.1.16-Col.1.19	12
+Matt.5.3	Matt.5.3-Matt.6.2	5
+Rev.22.21	Rom.16.23	-2

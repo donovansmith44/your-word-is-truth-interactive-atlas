@@ -1,0 +1,24 @@
+[
+  {
+    "id": "recPlaceMatch",
+    "createdTime": "2020-01-01T00:00:00.000Z",
+    "fields": {
+      "displayTitle": "Antioch",
+      "kjvName": "Antioch",
+      "latitude": "36.15",
+      "longitude": "36.16",
+      "slug": "antioch_1"
+    }
+  },
+  {
+    "id": "recPlaceNew",
+    "createdTime": "2020-01-01T00:00:00.000Z",
+    "fields": {
+      "displayTitle": "Nineveh",
+      "kjvName": "Nineveh",
+      "latitude": "36.36",
+      "longitude": "43.15",
+      "slug": "nineveh_1"
+    }
+  }
+]
