@@ -1,3 +1,44 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager Nav
 
-@Body
+<header class="app-header @HeaderThemeClass">
+    <a class="wordmark" href="/">Bible Atlas <span class="wordmark-glyph" aria-hidden="true">&#8756;</span></a>
+
+    <nav class="app-nav" aria-label="Primary">
+        <a class="nav-link" href="/" data-testid="nav-reader">Reader</a>
+        <a class="nav-link" href="/world" data-testid="nav-world">World</a>
+    </nav>
+
+    <div class="header-tools">
+        <label class="translation-label" for="translation-select">Translation</label>
+        <select id="translation-select" class="translation-select" data-testid="translation-select">
+            <option value="kjv">KJV</option>
+        </select>
+        <a class="attribution" href="#" data-testid="attribution">Credits</a>
+    </div>
+</header>
+
+<main class="app-main">
+    @Body
+</main>
+
+@code {
+    // The header is shared chrome (MainLayout wraps every page), but its
+    // material -- parchment vs dusk glass -- depends on which page is
+    // active, per design-direction.md. NavigationManager.Uri is the only
+    // signal available here (MainLayout never sees the child page's own
+    // markup/classes), so route-prefix drives the theme class directly.
+    private bool IsWorld => Nav.ToBaseRelativePath(Nav.Uri).StartsWith("world", StringComparison.OrdinalIgnoreCase);
+    private string HeaderThemeClass => IsWorld ? "header-dusk" : "header-parchment";
+
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+
+    // MainLayout persists across client-side navigations (Blazor doesn't
+    // recreate the layout per route), so the theme class needs an explicit
+    // re-render hook -- otherwise switching / <-> /world would leave the
+    // header stuck in its first-rendered theme.
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => StateHasChanged();
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+}

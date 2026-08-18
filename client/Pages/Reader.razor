@@ -1,0 +1,22 @@
+@page "/"
+@page "/read/{Book}/{Chapter:int}"
+
+<PageTitle>Bible Atlas &mdash; Reader</PageTitle>
+
+<div class="reader-page" data-testid="reader-root">
+    <div class="reader-stub">
+        <p class="reader-stub-eyebrow">Reader</p>
+        <p class="reader-stub-ref">@DisplayRef</p>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Book { get; set; }
+    [Parameter] public int? Chapter { get; set; }
+
+    // Deep-linked route params aren't wired to real chapter content yet --
+    // that lands with the Reader component itself (a later task). This stub
+    // only proves the two routes resolve to this page and exercises the
+    // instrument-face (mono) treatment design-direction.md specifies for refs.
+    private string DisplayRef => $"{(Book ?? "GEN").ToUpperInvariant()}.{Chapter ?? 1}";
+}

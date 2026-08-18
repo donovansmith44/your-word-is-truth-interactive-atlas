@@ -1,21 +1,241 @@
-.valid.modified:not([type=checkbox]) {
-    outline: 1px solid #26b050;
+/* Bible Atlas -- design tokens and shell styling.
+   Binding direction: .superpowers/sdd/2026-08-17-bible-atlas-m1/design-direction.md
+   Concept: the text by day (Reader, parchment), the world by lamplight (World, dusk).
+
+   CSS discipline (per design-direction.md): every rule below targets a
+   single class (plus pseudo-classes/attribute selectors on that same
+   class) -- no chained/descendant selectors, no !important. Contextual
+   theming (e.g. nav-link color inside a dusk header vs a parchment one) is
+   done with CSS custom properties set by a theme class and inherited down,
+   never by combining two classes in one selector. The handful of type
+   selectors below (*, body, a, focus-visible) are the foundational reset,
+   not component rules -- nothing else targets those elements, so nothing
+   is "fighting" them. */
+
+:root {
+    /* color */
+    --parchment: #F6F1E5;
+    --parchment-raised: #FDFAF2;
+    --ink: #2B2117;
+    --ink-soft: #6B5D4A;
+    --dusk-deep: #141C2B;
+    --dusk-panel: rgba(16, 22, 36, 0.82);
+    --dusk-ink: #EAE3CE;
+    --dusk-ink-soft: #A99F86;
+    --lamp: #FFC864;
+    --lamp-core: #FFEDBE;
+    --bronze: #8A6B3D;
+    --bronze-bright: #C9A45C;
+    --lapis: #2C4A70;
+    --ochre-alert: #9A3B2E;
+
+    /* type */
+    --font-serif: "EB Garamond", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
 }
 
-.invalid {
-    outline: 1px solid red;
+*, *::before, *::after {
+    box-sizing: border-box;
 }
 
-.validation-message {
-    color: red;
+body {
+    margin: 0;
+    background: var(--parchment);
+    color: var(--ink);
+    font-family: var(--font-serif);
 }
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Quality floor: visible keyboard focus on every interactive element. */
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--bronze-bright);
+    outline-offset: 2px;
+}
+
+/* Page scenes (design-direction.md "Page treatments"). Reader is daylight
+   parchment; World is dusk indigo. Each page's root element carries one of
+   these two classes -- they are never combined on the same element. */
+.reader-page {
+    min-height: 100vh;
+    background: var(--parchment);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.world-page {
+    min-height: 100vh;
+    background: var(--dusk-deep);
+    color: var(--dusk-ink);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Header (both pages). Shared layout lives on .app-header; the material --
+   parchment bar in normal flow vs translucent dusk glass overlaying the map
+   -- is a separate class (.header-parchment / .header-dusk) that only ever
+   defines custom properties + its own background/position. Children
+   (.wordmark, .nav-link, ...) read --header-fg/--header-fg-soft/
+   --header-border, which the browser resolves via inheritance from
+   whichever theme class is present on the ancestor <header> -- so every
+   selector below still targets exactly one class. */
+.app-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.75rem 1.5rem;
+    color: var(--header-fg, var(--ink));
+    border-bottom: 1px solid var(--header-border, var(--bronze));
+}
+
+.header-parchment {
+    --header-fg: var(--ink);
+    --header-fg-soft: var(--ink-soft);
+    --header-border: var(--bronze);
+    background: var(--parchment);
+}
+
+.header-dusk {
+    --header-fg: var(--dusk-ink);
+    --header-fg-soft: var(--dusk-ink-soft);
+    --header-border: var(--bronze-bright);
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 20;
+    background: var(--dusk-panel);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.wordmark {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.08em;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--header-fg, var(--ink));
+}
+
+.wordmark-glyph {
+    color: var(--bronze-bright);
+}
+
+.app-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-inline-end: auto;
+}
+
+.nav-link {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.08em;
+    font-size: 0.95rem;
+    color: var(--header-fg-soft, var(--ink-soft));
+    padding: 0.25rem 0;
+}
+
+.nav-link:hover {
+    color: var(--header-fg, var(--ink));
+}
+
+.header-tools {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.translation-label {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.08em;
+    font-size: 0.85rem;
+    color: var(--header-fg-soft, var(--ink-soft));
+}
+
+.translation-select {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.05em;
+    font-size: 0.9rem;
+    color: var(--header-fg, var(--ink));
+    background: transparent;
+    border: 1px solid var(--header-border, var(--bronze));
+    border-radius: 3px;
+    padding: 0.2rem 0.5rem;
+}
+
+.attribution {
+    font-family: var(--font-serif);
+    font-size: 0.8rem;
+    color: var(--header-fg-soft, var(--ink-soft));
+    opacity: 0.85;
+}
+
+.attribution:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
+.app-main {
+    display: block;
+}
+
+/* Reader stub (functional placeholder -- the real chapter view is a later
+   task). Exercises the instrument-face treatment design-direction.md
+   specifies for canonical refs: mono, tabular, exact. */
+.reader-stub {
+    max-width: 66ch;
+    padding: 6rem 1.5rem 3rem;
+    text-align: center;
+}
+
+.reader-stub-eyebrow {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.08em;
+    color: var(--bronze);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.reader-stub-ref {
+    font-family: var(--font-mono);
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    margin: 0.5rem 0 0;
+}
+
+/* World stub (empty map mount -- Leaflet initializes into this element in a
+   later task). */
+.world-map {
+    position: absolute;
+    inset: 0;
+    background: var(--dusk-deep);
+}
+
+/* --- Blazor WebAssembly framework chrome (boot loader + unhandled-error
+   banner) -- required by the runtime, retinted to the app's palette. --- */
 
 #blazor-error-ui {
     color-scheme: light only;
-    background: lightyellow;
+    background: var(--parchment-raised);
+    border-top: 1px solid var(--ochre-alert);
     bottom: 0;
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
     box-sizing: border-box;
+    color: var(--ink);
     display: none;
     left: 0;
     padding: 0.6rem 1.25rem 0.7rem 1.25rem;
@@ -52,14 +272,16 @@
 
     .loading-progress circle {
         fill: none;
-        stroke: #e0e0e0;
+        stroke: var(--ink-soft);
+        opacity: 0.25;
         stroke-width: 0.6rem;
         transform-origin: 50% 50%;
         transform: rotate(-90deg);
     }
 
         .loading-progress circle:last-child {
-            stroke: #1b6ec2;
+            stroke: var(--bronze-bright);
+            opacity: 1;
             stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
             transition: stroke-dasharray 0.05s ease-in-out;
         }
@@ -67,6 +289,7 @@
 .loading-progress-text {
     position: absolute;
     text-align: center;
+    font-family: var(--font-mono);
     font-weight: bold;
     inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
 }
@@ -74,16 +297,3 @@
     .loading-progress-text:after {
         content: var(--blazor-load-percentage-text, "Loading");
     }
-
-code {
-    color: #c02d76;
-}
-
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-    color: var(--bs-secondary-color);
-    text-align: end;
-}
-
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-    text-align: start;
-}

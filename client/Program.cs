@@ -8,4 +8,10 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
+builder.Services.AddSingleton(_ =>
+{
+    var baseAddress = AtlasClient.ResolveBaseAddress(builder.Configuration, builder.HostEnvironment);
+    return new AtlasClient(new HttpClient { BaseAddress = baseAddress });
+});
+
 await builder.Build().RunAsync();
