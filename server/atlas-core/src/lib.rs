@@ -1,5 +1,7 @@
 pub mod canon;
+pub mod data;
 pub mod refs;
+pub mod scene;
 pub mod time;
 pub mod wire;
 
