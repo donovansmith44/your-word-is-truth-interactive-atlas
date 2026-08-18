@@ -217,12 +217,214 @@ input:focus-visible,
     margin: 0.5rem 0 0;
 }
 
-/* World stub (empty map mount -- Leaflet initializes into this element in a
-   later task). */
+/* World map mount -- Leaflet (client/wwwroot/js/map.js) initializes into
+   this element and owns its subtree from then on; Blazor never renders
+   children into it (PlaceCard etc. are siblings, positioned absolutely
+   over it -- see .place-card below). `z-index: 0` looks like a no-op but
+   is load-bearing: combined with `position: absolute` it makes this
+   element establish its own stacking context, so Leaflet's internal panes
+   (leaflet.css gives them z-index 200-700, to layer tiles/markers/popups
+   against each OTHER) stay contained inside it. Without this, those
+   z-index values compare directly against this element's siblings in
+   .world-page -- .slider (15), .toast (25) and .place-card (30) would all
+   render invisibly *underneath* the map tiles (z-index 200) despite being
+   later in the DOM and "visible" by every DOM-level check. */
 .world-map {
     position: absolute;
     inset: 0;
+    z-index: 0;
     background: var(--dusk-deep);
+}
+
+/* Dusk terrain treatment (design-direction.md "World"): the tile source is
+   a light shaded-relief basemap, CSS-filtered into moonlit indigo relief.
+   These two rules are the CSS-discipline exception the file header
+   documents -- Leaflet, not this page, generates .leaflet-tile-pane and
+   .leaflet-container, so they can only be reached by targeting Leaflet's
+   own class names, scoped under .world-page so the (daylight) mini-map
+   inside popovers is never affected. */
+.world-page .leaflet-tile-pane {
+    filter: brightness(.5) sepia(.6) hue-rotate(200deg) saturate(1.8) contrast(1.15);
+}
+
+.world-page .leaflet-container {
+    background: var(--dusk-deep);
+    font-family: var(--font-serif);
+}
+
+/* Lamp markers (design-direction.md: "markers as lamp glow"). .atlas-marker
+   is the glowing dot itself -- a radial-gradient core over a box-shadow
+   halo scaled by .glow-1..5 (brightness = attached-event count, capped at
+   5) -- authored directly into the L.divIcon html map.js builds, so (like
+   the tile-pane rules above) these necessarily target classes this page's
+   own Razor markup never writes but map.js does, by contract with it.
+   .atlas-marker-icon is Leaflet's own icon wrapper (the element Leaflet
+   positions via transform on every pan/zoom); its entrance animation is
+   opacity-only so it never fights that positioning transform -- the
+   scale-in and brightness breathing below live entirely on the (fully
+   custom, Leaflet-untouched) .atlas-marker child instead. */
+.atlas-marker-icon {
+    animation: atlas-fade-in 180ms ease-out both;
+}
+
+/* The hit-testable core is deliberately tiny (design-direction.md: "small
+   radial-gradient core") -- ancient sites are often only a few real-world
+   kilometers apart (e.g. Rephidim/Mount Sinai, Marah/Elim), which a
+   whole-scene fitBounds can compress to single-digit pixels apart on
+   screen. All the visible "glow" comes from box-shadow below, which isn't
+   part of hit-testing, so a larger glow never widens the region where a
+   click/hover could land on the wrong one of two close neighbors. */
+.atlas-marker {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--lamp-core) 0%, var(--lamp) 55%, rgba(255, 200, 100, 0) 78%);
+    transform: translate(-50%, -50%) scale(1);
+    cursor: pointer;
+    animation: atlas-marker-in 180ms ease-out both;
+}
+
+.atlas-marker.glow-1 {
+    box-shadow: 0 0 5px 1px rgba(255, 200, 100, .5);
+}
+
+.atlas-marker.glow-2 {
+    box-shadow: 0 0 7px 2px rgba(255, 200, 100, .55), 0 0 14px 4px rgba(255, 200, 100, .28);
+}
+
+.atlas-marker.glow-3 {
+    box-shadow: 0 0 8px 2px rgba(255, 200, 100, .6), 0 0 18px 6px rgba(255, 200, 100, .32), 0 0 28px 10px rgba(255, 200, 100, .16);
+}
+
+.atlas-marker.glow-4 {
+    box-shadow: 0 0 10px 3px rgba(255, 200, 100, .65), 0 0 22px 7px rgba(255, 200, 100, .38), 0 0 36px 13px rgba(255, 200, 100, .2);
+    animation: atlas-marker-in 180ms ease-out both, atlas-breathe 2.7s ease-in-out 180ms infinite;
+}
+
+.atlas-marker.glow-5 {
+    box-shadow: 0 0 12px 4px rgba(255, 200, 100, .72), 0 0 26px 9px rgba(255, 200, 100, .42), 0 0 44px 16px rgba(255, 200, 100, .24);
+    animation: atlas-marker-in 180ms ease-out both, atlas-breathe 2.5s ease-in-out 180ms infinite;
+}
+
+.atlas-label {
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    margin-inline-start: .5rem;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .06em;
+    font-size: .78rem;
+    color: var(--dusk-ink);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .85), 0 0 6px rgba(0, 0, 0, .6);
+    pointer-events: none;
+}
+
+@keyframes atlas-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes atlas-marker-in {
+    from { transform: translate(-50%, -50%) scale(.35); }
+    to { transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes atlas-breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .65; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .atlas-marker-icon,
+    .atlas-marker {
+        animation: none;
+    }
+}
+
+/* Empty scene (design-direction.md: "An invitation, not an error"). */
+.world-empty {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    margin: 0;
+    max-width: 26rem;
+    padding: 0 1.5rem;
+    text-align: center;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: 1rem;
+    color: var(--dusk-ink-soft);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, .6);
+    pointer-events: none;
+}
+
+/* Place hover card -- a parchment artifact floating over the dusk map
+   (design-direction.md: "on the dusk map they read as lamplit paper
+   floating over the night world"). Anchored at the marker's screen point
+   (left/top, set inline by PlaceCard.razor from map.js's reported
+   containerPoint) then nudged up and centered above it via transform, so
+   it never sits directly on top of the lamp it describes. */
+.place-card {
+    position: absolute;
+    z-index: 30;
+    transform: translate(-50%, calc(-100% - 18px));
+    min-width: 12rem;
+    max-width: 18rem;
+    padding: .65rem .85rem .75rem;
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .45);
+    animation: place-card-in 120ms ease-out both;
+}
+
+.place-card-title {
+    margin: 0 0 .35rem;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: 1.05rem;
+    color: var(--ink);
+}
+
+.place-card-verse-group {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .75rem;
+    margin: .2rem 0 0;
+    font-size: .85rem;
+    color: var(--ink-soft);
+}
+
+.place-card-ref {
+    font-family: var(--font-mono);
+    letter-spacing: .02em;
+}
+
+.place-card-count {
+    font-family: var(--font-mono);
+    color: var(--lapis);
+}
+
+@keyframes place-card-in {
+    from { opacity: 0; transform: translate(-50%, calc(-100% - 10px)); }
+    to { opacity: 1; transform: translate(-50%, calc(-100% - 18px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .place-card {
+        animation: none;
+    }
 }
 
 /* TimeSlider -- "the timeline instrument" (design-direction.md): era bands

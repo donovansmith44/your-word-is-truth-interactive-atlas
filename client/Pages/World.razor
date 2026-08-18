@@ -1,12 +1,26 @@
 @page "/world"
-@implements IDisposable
+@implements IAsyncDisposable
+@implements IMapEvents
 @inject AtlasClient Atlas
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>Bible Atlas &mdash; World</PageTitle>
 
 <div class="world-page">
-    <div id="world-map" class="world-map" data-testid="world-map"></div>
+    <div id="world-map" class="world-map" data-testid="world-map" @ref="_mapEl"></div>
+
+    @if (_scene is not null && _scene.Places.Count == 0)
+    {
+        <p class="world-empty">No recorded events in this window &mdash; drag the timeline or choose a scripture.</p>
+    }
+
+    @{ var hoverPlace = _hoverPlace; }
+    @if (hoverPlace is not null)
+    {
+        <PlaceCard Place="hoverPlace" X="_hoverX" Y="_hoverY"
+                   OnPointerEnter="CancelCardClose" OnPointerLeave="ScheduleCardClose" />
+    }
 
     @if (_eras is not null)
     {
@@ -39,11 +53,23 @@
     // only reads/writes from+to and otherwise ignores it.
 
     private List<EraDto>? _eras;
-    private Scene? _scene; // fetched here; rendered by Task 11
+    private Scene? _scene;
     private string? _errorMessage;
     private int _from = DefaultFrom;
     private int _to = DefaultTo;
     private CancellationTokenSource? _fetchCts;
+
+    private ElementReference _mapEl;
+    private MapInterop? _mapInterop;
+    private bool _firstSceneApplied;
+
+    // Hover-card state. IMapEvents.OnPlaceHover/OnPlaceLeave below are
+    // invoked from map.js (via MapEventsSink), not through Blazor's own
+    // event dispatch, so each one calls StateHasChanged() itself.
+    private ScenePlace? _hoverPlace;
+    private double _hoverX;
+    private double _hoverY;
+    private CancellationTokenSource? _closeCts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -67,6 +93,29 @@
         }
 
         await SyncFromQuery();
+    }
+
+    // The Leaflet map can only be created once #world-map is actually in
+    // the DOM, i.e. after the component's first render. If a scene fetch
+    // already resolved by then (DebouncedLoadScene below skips pushing it
+    // because _mapInterop was still null at the time), push it now instead
+    // -- whichever of the two finishes second is the one that actually
+    // calls SetScene/FitScene, so a scene is never dropped and never
+    // applied twice.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _mapInterop = await MapInterop.Create(JS, _mapEl, mini: false, this);
+        if (_scene is not null)
+        {
+            await _mapInterop.SetScene(_scene);
+            await _mapInterop.FitScene();
+            _firstSceneApplied = true;
+        }
     }
 
     // Single path for every window change, whether it comes from the user
@@ -151,6 +200,16 @@
 
             _scene = scene;
             _errorMessage = null;
+
+            if (_mapInterop is not null)
+            {
+                await _mapInterop.SetScene(scene);
+                if (!_firstSceneApplied)
+                {
+                    await _mapInterop.FitScene();
+                    _firstSceneApplied = true;
+                }
+            }
         }
         catch (Exception)
         {
@@ -166,5 +225,88 @@
         }
     }
 
-    public void Dispose() => _fetchCts?.Cancel();
+    // IMapEvents -- called from map.js via MapEventsSink, so these run
+    // outside Blazor's own UI-event dispatch and must trigger their own
+    // re-render.
+    public void OnPlaceHover(string id, double x, double y)
+    {
+        _closeCts?.Cancel();
+        var place = _scene?.Places.FirstOrDefault(p => p.Id == id);
+        if (place is null)
+        {
+            return;
+        }
+
+        _hoverPlace = place;
+        _hoverX = x;
+        _hoverY = y;
+        StateHasChanged();
+    }
+
+    public void OnPlaceLeave() => ScheduleCardClose();
+
+    // Marker clicks are reported by map.js per the interop contract but
+    // have no behavior yet -- out of scope for WORLD-1/WORLD-2 (hover
+    // only). Left as a documented no-op rather than omitted so the
+    // IMapEvents contract stays satisfied without silently swallowing
+    // future intent.
+    public void OnPlaceClick(string id, double x, double y)
+    {
+    }
+
+    // Arrow layer lands in Task 12; these two exist now only because
+    // MapInterop's IMapEvents contract (Task 11 brief) declares them.
+    public void OnArrowHover(string key, double x, double y)
+    {
+    }
+
+    public void OnArrowClick(string key, double x, double y)
+    {
+    }
+
+    // The place card stays open while the pointer is over the marker OR
+    // the card itself: leaving either one schedules a close, entering
+    // either one (CancelCardClose, wired to PlaceCard.OnPointerEnter, and
+    // OnPlaceHover above) cancels a pending close. This gives the pointer
+    // room to cross the gap between a marker and its card -- which never
+    // sit at the same screen point -- without the card flickering shut.
+    private void ScheduleCardClose()
+    {
+        _closeCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _closeCts = cts;
+        _ = CloseCardAfterDelay(cts);
+    }
+
+    private void CancelCardClose() => _closeCts?.Cancel();
+
+    private async Task CloseCardAfterDelay(CancellationTokenSource cts)
+    {
+        try
+        {
+            await Task.Delay(150, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (cts.IsCancellationRequested)
+        {
+            return;
+        }
+
+        _hoverPlace = null;
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _fetchCts?.Cancel();
+        _closeCts?.Cancel();
+        if (_mapInterop is not null)
+        {
+            await _mapInterop.DisposeAsync();
+        }
+    }
 }

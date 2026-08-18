@@ -1,0 +1,62 @@
+@using System.Globalization
+@* A parchment hover card floating over the dusk map (design-direction.md's
+   "popovers and hover cards are parchment artifacts on both pages" --
+   lamplit paper over the night world). Purely presentational: World.razor
+   owns the hover/close-delay state machine and just feeds this component
+   whichever place is currently showing plus the screen point to anchor at
+   (map.js reports that point as e.containerPoint, which lines up with this
+   card's positioning context because #world-map fills .world-page via
+   `inset: 0` with no border/padding -- see app.css). *@
+
+<div class="place-card"
+     data-testid="place-card"
+     style="left: @X.ToString(CultureInfo.InvariantCulture)px; top: @Y.ToString(CultureInfo.InvariantCulture)px;"
+     @onpointerenter="OnPointerEnter"
+     @onpointerleave="OnPointerLeave">
+    <p class="place-card-title" data-testid="place-card-title">@Place.Name</p>
+    @foreach (var vg in MergedVerseGroups())
+    {
+        <p class="place-card-verse-group" data-testid="verse-group-@vg.Book-@vg.Chapter">
+            <span class="place-card-ref">@vg.Book @vg.Chapter</span>
+            <span class="place-card-count">@vg.Count</span>
+        </p>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ScenePlace Place { get; set; } = default!;
+    [Parameter] public double X { get; set; }
+    [Parameter] public double Y { get; set; }
+    [Parameter] public EventCallback OnPointerEnter { get; set; }
+    [Parameter] public EventCallback OnPointerLeave { get; set; }
+
+    private sealed record MergedGroup(string Book, int Chapter, int Count);
+
+    // Counts merge across every event attached to this place, summed per
+    // (book, chapter) -- tests/ux/world-map.spec.ts's WORLD-2 property
+    // builds the exact same book-chapter -> summed-count map from
+    // p.events[].verse_groups[] before asserting against each
+    // verse-group-{BOOK}-{chapter} row, so this must match it exactly.
+    private List<MergedGroup> MergedVerseGroups()
+    {
+        var counts = new Dictionary<(string Book, int Chapter), int>();
+        var order = new List<(string Book, int Chapter)>();
+
+        foreach (var e in Place.Events)
+        {
+            foreach (var g in e.VerseGroups)
+            {
+                var key = (g.Book, g.Chapter);
+                if (!counts.ContainsKey(key))
+                {
+                    order.Add(key);
+                    counts[key] = 0;
+                }
+
+                counts[key] += g.Count;
+            }
+        }
+
+        return order.Select(key => new MergedGroup(key.Book, key.Chapter, counts[key])).ToList();
+    }
+}
