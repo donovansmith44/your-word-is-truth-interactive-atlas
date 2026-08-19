@@ -1076,18 +1076,24 @@ input:focus-visible,
 
 /* TimeSlider -- "the timeline instrument" (design-direction.md): era bands
    in small-caps, bronze pin handles, an editable readout inset in the
-   instrument face, docked bottom-center over the map on dusk glass. */
+   instrument face. RELOCATED + SHRUNK, Batch C (design-direction.md
+   "Instrument chrome re-layout, de-cramped": "timeline -> bottom-right,
+   smaller footprint"; direct user feedback 2026-08-19: "UI extremely
+   cramped; timeline -> bottom right, smaller"). Docked bottom-right, same
+   corner .legend used to occupy -- .legend itself moves to bottom-left
+   below so the two never collide; .border-tag/.mode-chip (further down)
+   dock directly above this panel's new footprint, sharing its right
+   alignment. */
 .slider {
     position: fixed;
     bottom: 1.5rem;
-    left: 50%;
-    transform: translateX(-50%);
+    right: 1.5rem;
     z-index: 15;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.75rem 1.25rem 1rem;
+    gap: 0.5rem;
+    padding: 0.6rem 0.85rem 0.7rem;
     background: var(--dusk-panel);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -1097,16 +1103,16 @@ input:focus-visible,
 }
 
 .slider-readout {
-    width: 15rem;
+    width: 10rem;
     text-align: center;
     font-family: var(--font-mono);
-    font-size: 0.95rem;
+    font-size: 0.82rem;
     letter-spacing: 0.03em;
     color: var(--bronze-bright);
     background: rgba(0, 0, 0, 0.35);
     border: 1px solid var(--bronze);
     border-radius: 4px;
-    padding: 0.35rem 0.5rem;
+    padding: 0.3rem 0.4rem;
     box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
@@ -1114,19 +1120,28 @@ input:focus-visible,
     position: relative;
     display: flex;
     align-items: stretch;
-    /* content-box (overriding the global border-box reset) so this 800px is
+    /* content-box (overriding the global border-box reset) so this 520px is
        the actual content-box width -- the coordinate space both
        PointerEventArgs.OffsetX (drag input) and the handles' absolute
        `left:` (drag output) resolve against. Under border-box, the 1px
-       border on each side would make the content box 798px while the C#
-       side still assumed 800, so the rightmost ~2px (the last year(s) of
+       border on each side would make the content box 518px while the C#
+       side still assumed 520, so the rightmost ~2px (the last year(s) of
        the final era) would be unreachable by drag. Must match
        TimeSlider.razor's TrackWidthPx exactly -- if this width or the
-       border changes, update that constant too. */
+       border changes, update that constant too. SHRUNK from 800 to 520
+       (Batch C, alongside the bottom-right relocation above) -- a
+       corner-docked instrument doesn't need to span most of the viewport
+       the way the old bottom-center bar did. First tried 460 -- see
+       TrackWidthPx's own comment in TimeSlider.razor for why screenshot
+       review moved it to 520 instead (the 4 shortest, floor-pinned eras
+       truncate to one letter regardless of width -- that's what the era
+       button's own new title attribute is for -- but 460 was ALSO visibly
+       cramping the mid-size eras that don't hit the floor, which 520
+       measurably helps). */
     box-sizing: content-box;
-    width: 800px;
+    width: 520px;
     max-width: calc(100vw - 3rem);
-    height: 2.25rem;
+    height: 1.9rem;
     border: 1px solid var(--bronze);
     border-radius: 4px;
     background: rgba(234, 227, 206, 0.05);
@@ -1136,7 +1151,7 @@ input:focus-visible,
     font-family: var(--font-serif);
     font-variant-caps: small-caps;
     letter-spacing: 0.06em;
-    font-size: 0.68rem;
+    font-size: 0.6rem;
     line-height: 1.2;
     /* dusk-ink (not the softer -soft variant): era names are scanned, read
        content, not decorative chrome -- needs the >=7:1 dusk contrast floor
@@ -1145,7 +1160,7 @@ input:focus-visible,
     background: transparent;
     border: none;
     border-inline-start: 1px solid rgba(201, 164, 92, 0.35);
-    padding: 0.35rem 0.25rem;
+    padding: 0.3rem 0.2rem;
     margin: 0;
     cursor: pointer;
     white-space: nowrap;
@@ -1182,10 +1197,10 @@ input:focus-visible,
 
 .slider-handle {
     position: absolute;
-    top: -0.35rem;
-    width: 0.85rem;
-    height: 2.95rem;
-    margin-inline-start: -0.425rem;
+    top: -0.3rem;
+    width: 0.75rem;
+    height: 2.5rem;
+    margin-inline-start: -0.375rem;
     background: linear-gradient(180deg, var(--bronze-bright), var(--bronze));
     border: 1px solid var(--dusk-deep);
     border-radius: 3px;
@@ -1210,20 +1225,36 @@ input:focus-visible,
     pointer-events: none;
 }
 
-/* Legend -- dusk-glass panel, bottom-right (design-direction.md: "legend
-   (bottom-right) ... dusk-glass panels; legend swatches are short thread
-   lines with arrowheads, legs_in_scene in mono"). Same material as .slider
-   (same dusk-panel/blur/border/radius language) so the two docked
-   instrument panels read as one system; they never overlap on screen
-   (bottom-center vs bottom-right) so sharing .slider's z-index is safe. */
+/* Legend -- dusk-glass panel. RELOCATED, Batch C (design-direction.md
+   "Instrument chrome re-layout, de-cramped": "legend: relocate so it never
+   collides with the timeline" -- the timeline itself moved INTO legend's
+   old bottom-right slot, see .slider's own comment, so legend moves to
+   bottom-left instead of a collapsed/expand-on-hover panel -- simpler).
+   max-height + inner scroll (same pattern .place-card-expanded already
+   uses for its own content-driven height, "rather than letting [it] grow
+   tall enough to run off the top of the viewport"): the curated dataset
+   now runs to 13 narratives (data/curated/narratives/*.toml), not the 3
+   this file's own border-tag comment used to assume -- screenshot review
+   (the full 4004 BC - AD 100 span lights all 13 at once) found an
+   uncapped legend growing tall enough to visually collide with .toast
+   (also bottom-left, further down) despite the two being docked at
+   different bottom offsets. 14rem comfortably fits ~8 rows (every scene
+   this batch's own screenshots hit shows well under that) before
+   scrolling; .toast's own bottom offset is set to clear THIS capped
+   height with margin -- see its comment. Same material as .slider (same
+   dusk-panel/blur/border/radius language) so the two docked instrument
+   panels still read as one system despite sitting in opposite corners
+   now. */
 .legend {
     position: fixed;
-    right: 1.5rem;
+    left: 1.5rem;
     bottom: 1.5rem;
     z-index: 15;
     display: flex;
     flex-direction: column;
     gap: .15rem;
+    max-height: 14rem;
+    overflow-y: auto;
     padding: .6rem .5rem;
     background: var(--dusk-panel);
     backdrop-filter: blur(10px);
@@ -1445,17 +1476,20 @@ input:focus-visible,
 /* Mode chip (Task 13/WORLD-6/CONTRACT "mode-chip") -- shows the active
    scripture ref in the instrument mono face (design-direction.md: canonical
    refs "set them like instrument readouts, tabular and exact") plus a way
-   back to time mode. Docked directly above the (now-dimmed) slider it
-   overrides, sharing its horizontal centering, so the override relationship
-   reads visually without extra copy. Same dusk-glass material as every
-   other docked panel; no entrance animation, same precedent as .toast --
-   a status readout, not a "scene" transition design-direction.md's motion
-   section scopes animation to ("nothing else moves"). */
+   back to time mode. RELOCATED, Batch C: docked directly above the (now-
+   dimmed, now bottom-RIGHT) slider it overrides, sharing its right
+   alignment instead of the old center alignment, so the override
+   relationship still reads visually without extra copy -- see .border-tag's
+   own comment just below for the shared bottom offset and why sharing one
+   slot with it (never shown at the same time) is safe. Same dusk-glass
+   material as every other docked panel; no entrance animation, same
+   precedent as .toast -- a status readout, not a "scene" transition
+   design-direction.md's motion section scopes animation to ("nothing else
+   moves"). */
 .mode-chip {
     position: fixed;
-    bottom: 8.75rem;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 7rem;
+    right: 1.5rem;
     z-index: 16;
     display: flex;
     align-items: center;
@@ -1505,21 +1539,22 @@ input:focus-visible,
 
 /* border-tag (design-direction.md's Atlas plate detail: "a small dusk-glass
    tag near the attribution corner reads 'Borders c. 1000 BC' (mono face
-   for the year) so the snapshot in use is always honest"). Docked
-   bottom-right -- same dusk-glass material as .legend/.mode-chip/.picker --
-   but ABOVE .legend's own bottom-right slot with a fixed gap rather than a
-   dynamically measured one: this dataset curates exactly 3 narratives
-   total (data/curated/narratives/*.toml), so .legend can never exceed 3
-   rows (well under 6rem tall including its own padding); 8.5rem clears
-   that worst case with margin, so the two panels can never visually
-   collide regardless of which narratives a given scene lights up. Never
-   shown at the same time as .mode-chip (World.razor renders border-tag
-   only in time mode, mode-chip only in scripture mode), so no horizontal
-   separation from mode-chip's centered position is needed either. */
+   for the year) so the snapshot in use is always honest"). RELOCATED,
+   Batch C: still docked bottom-right -- same dusk-glass material as
+   .legend/.mode-chip/.picker -- but now ABOVE .slider's own new bottom-right
+   footprint (legend moved away to bottom-left, see its own comment) with a
+   fixed gap rather than a dynamically measured one. .slider's own new
+   dimensions (460px track, shrunk padding/readout/era font -- see its
+   comment) come out to roughly 5.5rem tall at any width; 7rem clears that
+   with margin, matching this file's other "clear with margin, not exact
+   measurement" panels. Never shown at the same time as .mode-chip
+   (World.razor renders border-tag only in time mode, mode-chip only in
+   scripture mode), so both safely share this exact slot -- see
+   .mode-chip's own comment. */
 .border-tag {
     position: fixed;
     right: 1.5rem;
-    bottom: 8.5rem;
+    bottom: 7rem;
     z-index: 16;
     padding: .4rem .7rem;
     background: var(--dusk-panel);
@@ -1553,15 +1588,17 @@ input:focus-visible,
 
 /* Toast -- a small parchment slip, bottom-left, thin ochre rule; plain
    words; never blocks; the last good scene stays rendered beneath it.
-   Docked well above the slider's own bottom-center footprint (~107px tall
-   at any supported viewport, since .slider-track has a fixed width) rather
-   than sharing its bottom edge -- at the 1024px width floor a bottom-left
-   toast and a centered 840px instrument panel are too wide to coexist side
-   by side at the same height without overlapping. */
+   RAISED, Batch C: now docked above .legend's own new bottom-left slot
+   (the timeline moved away from bottom-center, see .slider's own comment,
+   so that's no longer what toast needs to clear) -- .legend's max-height
+   caps it at 14rem + 1.2rem padding + its own 1.5rem bottom offset =
+   16.7rem to its top edge; 17rem clears that with margin, same "clear
+   with margin, not exact measurement" approach as this file's other
+   docked-panel offsets. */
 .toast {
     position: fixed;
     left: 1.5rem;
-    bottom: 10rem;
+    bottom: 17rem;
     z-index: 25;
     max-width: 22rem;
     padding: 0.7rem 1rem;

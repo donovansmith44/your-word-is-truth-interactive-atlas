@@ -9,6 +9,8 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
 - `/read/{BOOK}/{chapter}#v{n}` — verse anchor
 - `/world?from={year}&to={year}` — time mode (signed years, no zero)
 - `/world?ref={REF}` — scripture mode (canonical ref)
+- `/world` (no `from`/`to`/`ref` at all) — defaults to the `gospels` era's
+  exact window (`[-5, 29]`, see `data/curated/eras.toml`)
 
 ## Displayed text formats
 - Year: `1447 BC` or `AD 30`

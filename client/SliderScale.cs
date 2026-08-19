@@ -83,11 +83,28 @@ public static class SliderScale
     /// natural share adds up to more than <paramref name="width"/>), so eras
     /// pinned to the floor are set aside and the rest re-share the leftover
     /// width, repeating until no remaining era's proportional share falls
-    /// under the floor. This mirrors a CSS flex layout with a min-width on
-    /// every child (era segments render as flex divs) -- the returned widths
-    /// sum to exactly <paramref name="width"/> and never fall below the floor.
+    /// under the floor. The returned widths sum to exactly
+    /// <paramref name="width"/> and never fall below the floor.
+    ///
+    /// PUBLIC (Batch C fix round, was private): TimeSlider.razor's era
+    /// bands used to be plain CSS flex children (flex-grow proportional to
+    /// year span, min-width via a percentage) on the ASSUMPTION that native
+    /// flexbox's own min-width-then-proportional-remainder resolution would
+    /// land on the same per-era widths this method computes for the
+    /// handles' pixel math. It doesn't, exactly -- flexbox's own algorithm
+    /// for resolving flex-grow against a min-width constraint is a
+    /// DIFFERENT iterative procedure, and the drift between the two (a few
+    /// px at TrackWidthPx=800) was large enough at the smaller 520px track
+    /// (Batch C's own "de-cramped" resize) to put a released handle's exact
+    /// pixel position past its own band's CSS-rendered edge and onto the
+    /// NEXT era button's clickable center -- caught by WORLD-7's exhaustive
+    /// era-click property test hanging on a blocked click, not assumed.
+    /// TimeSlider.razor now calls this directly and renders each band at an
+    /// EXACT fixed pixel width (`flex: 0 0 {width}px`), making the visual
+    /// band and the handle math the same numbers by construction instead of
+    /// two independent approximations that happen to be close.
     /// </summary>
-    private static double[] EraWidths(IReadOnlyList<EraDto> eras, double width)
+    public static double[] EraWidths(IReadOnlyList<EraDto> eras, double width)
     {
         var n = eras.Count;
         var spans = new double[n];

@@ -90,10 +90,21 @@
 }
 
 @code {
-    // No window specified at all (bare "/world"): show the full timeline
-    // rather than an arbitrary slice.
-    private const int DefaultFrom = -4004;
-    private const int DefaultTo = 100;
+    // No window specified at all (bare "/world"): Batch C / CONTRACT
+    // amendment (design-direction.md + user feedback 2026-08-19) -- default
+    // to the "gospels" era EXACTLY ([-5, 29], data/curated/eras.toml),
+    // replacing the old full-span default. The full 10-era timeline lights
+    // up to 167 places at once (see tests/ux/playwright.config.ts's own
+    // WORLD-1 timing comment) -- an overwhelming first screen, and exactly
+    // what the zoom-tiered label density (map.js) exists to soften but
+    // shouldn't have to paper over on the very first paint. Gospels is a
+    // small, richly-narrated, broadly-recognizable window -- a focused
+    // start rather than an arbitrary slice. Deep links with an explicit
+    // ?from=&to=/?ref= are completely untouched by this (SyncFromQuery only
+    // ever reads these two constants when BOTH FromQuery and ToQuery are
+    // absent), so this is purely a "what a bare /world shows" change.
+    private const int DefaultFrom = -5;
+    private const int DefaultTo = 29;
 
     [SupplyParameterFromQuery(Name = "from")]
     [Parameter]

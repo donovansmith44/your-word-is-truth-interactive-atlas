@@ -1,10 +1,16 @@
 @* Era-segmented, year-exact time slider: the "timeline instrument" docked
-   bottom-center over the world map (design-direction.md). SVG-free -- era
-   bands are flex children (native CSS flexbox resolves the same
-   min-width-then-proportional-remainder layout SliderScale computes for its
-   own year<->pixel math) and the brush is two absolutely-positioned drag
-   handles. All year math (handle positions, drag hit-testing) goes through
-   SliderScale, which is zero-year-aware (there is no year 0). *@
+   over the world map (design-direction.md). SVG-free -- era bands are flex
+   children and the brush is two absolutely-positioned drag handles. All
+   year math (handle positions, drag hit-testing) goes through SliderScale,
+   which is zero-year-aware (there is no year 0).
+   Batch C fix round: each band renders at an EXACT `flex: 0 0 {px}px` width
+   computed by SliderScale.EraWidths (the SAME numbers the handles' own
+   pixel math uses) -- NOT flex-grow-with-a-min-width-percentage, which
+   this file used until WORLD-7's exhaustive era-click property test
+   caught it drifting from SliderScale's own widths by enough px, once the
+   track shrank to 520, for a released handle to land on the NEXT era
+   button's clickable center instead of its own band's edge. See
+   SliderScale.EraWidths's own doc comment for the full story. *@
 
 <div class="slider" data-testid="slider" aria-disabled="@(Disabled ? "true" : "false")">
     <input class="slider-readout"
@@ -20,14 +26,17 @@
          @onpointerup="OnTrackPointerUp"
          @onpointercancel="OnTrackPointerUp"
          @onpointerleave="OnTrackPointerUp">
-        @foreach (var era in Eras)
+        @for (var i = 0; i < Eras.Count; i++)
         {
+            var era = Eras[i];
             var active = EffectiveFrom <= era.ToYear && EffectiveTo >= era.FromYear;
+            var bandWidthPx = EraWidthsPx[i].ToString(System.Globalization.CultureInfo.InvariantCulture);
             <button type="button"
                     class="slider-era"
                     data-testid="slider-era-@era.Id"
                     data-active="@(active ? "true" : "false")"
-                    style="flex-grow: @EraSpan(era); flex-basis: 0; min-width: @(MinEraWidthPercent)%;@(_dragTarget is not null ? " pointer-events: none;" : "")"
+                    style="flex: 0 0 @(bandWidthPx)px;@(_dragTarget is not null ? " pointer-events: none;" : "")"
+                    title="@era.Name"
                     @onclick="() => ApplyEra(era)">
                 @era.Name
             </button>
@@ -66,17 +75,44 @@
     // pointer's OffsetX within the track maps 1:1 onto SliderScale's pixel
     // space without any DOM measurement (no JS interop needed). app.css
     // deliberately gives .slider-track `box-sizing: content-box` (overriding
-    // the project-wide border-box reset) so its literal `width: 800px`
-    // *is* this 800 -- under the default border-box, the track's 1px border
+    // the project-wide border-box reset) so its literal `width: 520px`
+    // *is* this 520 -- under the default border-box, the track's 1px border
     // would shrink the actual content/padding box (what OffsetX and an
-    // absolutely-positioned child's `left:` both resolve against) to 798px,
+    // absolutely-positioned child's `left:` both resolve against) to 518px,
     // 2px short of this constant, making the last year(s) of the final era
     // unreachable by drag. If .slider-track's width or border ever changes,
-    // update this constant to match. Era buttons and handles get inline
-    // pointer-events:none while dragging (below) so OffsetX always stays
-    // relative to the track itself, never to whichever child happens to be
-    // under the pointer mid-drag.
-    private const double TrackWidthPx = 800.0;
+    // update this constant to match -- SHRUNK from 800 to 520 (Batch C,
+    // "Instrument chrome re-layout, de-cramped": timeline moves to
+    // bottom-right with a smaller footprint, see app.css's own .slider
+    // comment) alongside app.css's matching change, in the same commit.
+    // First tried 460 -- screenshot review found the 4 shortest eras
+    // (United Kingdom/Exile/Gospels/Early Church, all pinned to
+    // SliderScale.EraWidths's own floor share) rendering as a single truncated letter,
+    // which crosses from "smaller" into "not usable"; 520 gives the
+    // proportionally-sized eras noticeably more room and is a still-real
+    // 35% reduction from 800 (a fully independent, cheap mitigation for the
+    // floored eras specifically -- the title="era.Name" native tooltip
+    // added to the era button below -- covers the rest: no width was ever
+    // going to fit "United Kingdom" into a 1/20th-of-the-track floor slot
+    // this slider's own min-width mechanism defines). SliderScale's own
+    // year<->pixel math is width-agnostic (every call site threads this
+    // same constant through, so both directions of the conversion stay
+    // exact at any width -- see client.Tests/SliderScaleTests.cs, which
+    // exercises the math at a THIRD width (1000) entirely and still
+    // passes, proving the algorithm itself never hardcoded 800 or 520).
+    // Era buttons and handles get inline pointer-events:none while
+    // dragging (below) so OffsetX always stays relative to the track
+    // itself, never to whichever child happens to be under the pointer
+    // mid-drag.
+    private const double TrackWidthPx = 520.0;
+
+    // Magnetic drag-release snap threshold in TRACK PIXELS (Batch C/CONTRACT
+    // amendment -- user feedback 2026-08-19: "if I select a time period in
+    // the slider, it should snap to that timerange exactly without
+    // overlapping with other time periods unless I drag the slider
+    // deliberately"). See SnapToEraBoundary below for how this is used --
+    // only ever at the RELEASE point, never during the drag itself.
+    private const double SnapThresholdPx = 6.0;
 
     [Parameter] public List<EraDto> Eras { get; set; } = new();
     [Parameter] public int From { get; set; }
@@ -105,7 +141,15 @@
 
     private int EffectiveFrom => _dragTarget is not null ? _dragFrom : From;
     private int EffectiveTo => _dragTarget is not null ? _dragTo : To;
-    private double MinEraWidthPercent => Eras.Count > 0 ? 100.0 / (Eras.Count * 2) : 0;
+
+    // The exact per-era pixel widths the era bands render at -- SAME numbers
+    // HandleX/SliderScale.XToYear use, by construction (see this file's own
+    // header comment for why that equality is now load-bearing, not just
+    // assumed). Recomputed on every access rather than cached in a field:
+    // Eras only ever changes via a fresh parameter set, at which point a new
+    // render happens anyway, so there's no stale-cache risk to guard against
+    // and no measurable cost to recomputing (10 eras, O(eras) work).
+    private double[] EraWidthsPx => SliderScale.EraWidths(Eras, TrackWidthPx);
 
     protected override void OnParametersSet()
     {
@@ -192,6 +236,16 @@
         }
     }
 
+    // Magnetic drag-release snap (CONTRACT amendment -- see SnapThresholdPx's
+    // own comment for the sanctioning feedback). Only the RELEASE point is
+    // ever snapped: OnTrackPointerMove above is completely unchanged --
+    // still pure raw-year tracking during the drag itself ("no snapping
+    // during drag motion" per the brief), so the brush visibly tracks the
+    // pointer exactly right up to release. Only then, here, does the
+    // released handle possibly jump to the nearest era boundary -- and only
+    // if the release pixel was within SnapThresholdPx of one; releasing
+    // anywhere else keeps the exact dragged year ("a mid-era release keeps
+    // the exact year -- deliberate drag wins").
     private async Task OnTrackPointerUp(PointerEventArgs e)
     {
         if (_dragTarget is null)
@@ -200,11 +254,50 @@
         }
 
         var (from, to) = (_dragFrom, _dragTo);
+        if (_dragTarget == "from")
+        {
+            from = Math.Min(SnapToEraBoundary(from, e.OffsetX), to);
+        }
+        else
+        {
+            to = Math.Max(SnapToEraBoundary(to, e.OffsetX), from);
+        }
+
         _dragTarget = null;
         if (from != From || to != To)
         {
             await OnWindowChange.InvokeAsync((from, to));
         }
+    }
+
+    // Every era's FromYear AND ToYear is a candidate boundary (adjacent
+    // eras' own boundary years are one year apart, not the same number --
+    // e.g. primeval ends -2167, patriarchs starts -2166 -- so both sides
+    // must be checked; whichever is pixel-nearest the actual release point
+    // wins). Compares against the RAW release pixel (releaseOffsetX), not
+    // the already-year-quantized draggedYear's own recomputed position --
+    // "within ~6px of an era boundary" is about where the pointer physically
+    // let go, which is the more precise/faithful signal. Returns
+    // draggedYear unchanged if nothing is within SnapThresholdPx.
+    private int SnapToEraBoundary(int draggedYear, double releaseOffsetX)
+    {
+        int? nearestYear = null;
+        var nearestDist = double.MaxValue;
+        foreach (var era in Eras)
+        {
+            foreach (var boundary in new[] { era.FromYear, era.ToYear })
+            {
+                var boundaryX = SliderScale.YearToX(boundary, Eras, TrackWidthPx);
+                var dist = Math.Abs(boundaryX - releaseOffsetX);
+                if (dist < nearestDist)
+                {
+                    nearestDist = dist;
+                    nearestYear = boundary;
+                }
+            }
+        }
+
+        return nearestYear is int boundaryYear && nearestDist <= SnapThresholdPx ? boundaryYear : draggedYear;
     }
 
     private async Task OnHandleKeyDown(string which, KeyboardEventArgs e)
@@ -251,12 +344,4 @@
     private int ClampToSpan(int year) => Math.Clamp(year, Eras[0].FromYear, Eras[^1].ToYear);
 
     private double HandleX(int year) => Eras.Count == 0 ? 0 : SliderScale.YearToX(year, Eras, TrackWidthPx);
-
-    // Mirrors SliderScale's private EraYearCount (zero-aware year count) so
-    // the CSS flex-grow driving each band's on-screen width tracks the same
-    // per-era proportions the C# pixel math uses. SliderScale doesn't expose
-    // this itself (its public surface is just YearToX/XToYear), and the
-    // formula is small enough that duplicating it here beats widening that
-    // contract for one rendering detail.
-    private static int EraSpan(EraDto era) => era.ToYear - era.FromYear + (era.FromYear < 0 && era.ToYear > 0 ? 0 : 1);
 }
