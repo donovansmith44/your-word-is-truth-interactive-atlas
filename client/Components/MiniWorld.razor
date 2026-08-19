@@ -4,9 +4,10 @@
    card." Read together with app.css's own pre-existing
    ".world-page .leaflet-tile-pane" comment ("scoped under .world-page so
    the (daylight) mini-map inside popovers is never affected"), this means:
-   SAME NatGeo tile source map.js's init() already uses for the full map
-   (the "atlas-plate base"), but WITHOUT the extra .world-page-scoped sepia
-   warmth filter -- the popover itself is always a parchment/daylight
+   SAME basemap tile source map.js's init() already uses for the full map
+   (the "atlas-plate base" -- Esri World_Shaded_Relief as of Batch C, see
+   map.js's own TILE_* comment), but WITHOUT the extra .world-page-scoped
+   sepia warmth filter -- the popover itself is always a parchment/daylight
    artifact (design-direction.md's Concept section), so the map figure on
    it reads crisp, not muddied by a filter meant for the dusk page. This
    only holds as long as ExplorerPopover (and this component with it) is

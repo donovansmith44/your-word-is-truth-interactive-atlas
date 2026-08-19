@@ -49,8 +49,16 @@
                 <li><strong>Theographic Bible Metadata</strong> — people, place, and event data. CC BY-SA 4.0, Robert Rouse.</li>
                 <li><strong>Historical border outlines</strong> — coarse original cartography by this project. CC0 (public domain dedication). Boundaries are approximate, non-scholarly sketches, not surveyed fact.</li>
                 <li><strong>Leaflet</strong> — the map library. BSD-2-Clause.</li>
-                <li>Map tiles &copy; National Geographic, Esri, Garmin, HERE, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, increment P Corp.</li>
-                <li><strong>Carto</strong> — fallback map tiles.</li>
+                @* Batch C: basemap swapped to Esri World_Shaded_Relief (label-free
+                   light terrain, see map.js's own TILE_* comment for the
+                   screenshot comparison). Attribution text is the service's
+                   OWN copyrightText, quoted verbatim (never guessed/paraphrased,
+                   the standing citation-integrity rule) -- fetched live via
+                   its REST endpoint's ?f=json on 2026-08-19 -- and kept
+                   byte-for-byte in sync with map.js's own TILE_ATTRIBUTION
+                   constant, which quotes the identical source. *@
+                <li><strong>Esri World Shaded Relief</strong> — map tiles. Attribution (verbatim): "Copyright:(c) 2014 Esri"</li>
+                <li><strong>Carto</strong> — fallback map tiles (label-free, used only if the primary tile service fails to load).</li>
                 <li>Landmark, narrative, and era curation is our own. CC0.</li>
                 <li>Full license details and per-source citations: <code>LICENSES.md</code> in the project repository.</li>
             </ul>

@@ -20,29 +20,41 @@
 // snake_case field). `setScene` JSON.parses it back into a plain object
 // whose shape matches atlas-server's wire JSON exactly.
 
-// Basemap (design-direction.md "World -- REVISED": "an illuminated atlas
-// plate... terrain shading, coastlines, water contrast, country borders,
-// and reference city labels"). NatGeo_World_Map won a side-by-side against
-// the alternative (World_Physical_Map base + World_Boundaries_and_Places
-// overlay), screenshot-compared at all three WINDOWS world-arrows.spec.ts
-// uses (exodus/patriarchs/paul): NatGeo reads as a single coherent vintage
-// atlas plate (letterspaced serif country names, italic sea names, elevation
-// callouts, one tile layer/one failure path) and its native tiles run to
-// zoom 16, so it stays crisp at every zoom this app reaches; the
-// alternative's World_Physical_Map base tops out at native zoom 8 and was
-// visibly soft/smeared once fitScene zoomed in for the patriarchs window's
-// smaller extent (confirmed by screenshot, not just LOD metadata). See
-// tile/{z}/{y}/{x}?f=json on each service for the LOD lists this compares.
-const TILE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}';
+// Basemap -- Batch C / design-direction.md World THIRD REVISION (supersedes
+// the earlier NatGeo_World_Map pick, rejected by user feedback 2026-08-19 as
+// "we should not be seeing airports and stuff... don't put literally
+// everything at once"): NatGeo's own city/road/country labels were exactly
+// the anachronistic clutter the plate has to be free of now -- "the basemap
+// contributes ZERO text," full stop, so any labeled service was disqualified
+// before comparison even started. Esri's two LABEL-FREE candidates,
+// World_Shaded_Relief and World_Terrain_Base, were screenshot-compared at
+// all three of this batch's windows (patriarchs -2100/-2085, egypt-exodus
+// -1446/-1406, scripture ACT.27 -- Paul's voyage, chosen for its heavy
+// Mediterranean coverage) at a 1280x800 viewport, through the app's own
+// existing sepia(.12) saturate(.95) tile-pane filter (kept unfiltered would
+// only sharpen the same verdict): World_Shaded_Relief reads as ONE warm,
+// monotone parchment surface -- land and sea share the same tan relief
+// shading, so coastlines read from terrain contrast alone, exactly
+// "illuminated atlas plate on a clean canvas." World_Terrain_Base paints
+// oceans in a saturated cyan bathymetry gradient that fights the parchment
+// concept outright (most visible on the ACT.27 shot, almost entirely sea) --
+// it reads as a modern GIS/weather reference layer, not an aged plate.
+// World_Shaded_Relief wins. Screenshots + the rest of this reasoning are in
+// the batch report. Both candidates' native tiles top out at LOD 13 (see
+// tile/{z}/{y}/{x}?f=json on each service) -- lower than NatGeo's 16, so
+// TILE_MAX_NATIVE_ZOOM drops to match (Leaflet still lets the MAP zoom past
+// this, upscaling tiles -- see maxZoom on the tileLayer below); Carto
+// light_nolabels (already label-free) stays the tileerror fallback,
+// unchanged.
+const TILE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}';
 const TILE_FALLBACK = 'https://basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png';
-// Esri's own copyrightText for the NatGeo_World_Map service, verbatim (order
-// and all): a fix-round review found this had drifted (Esri/National
-// Geographic swapped, METI silently dropped, "increment P Corp." abbreviated
-// to "iPC") — keep this string byte-for-byte in sync with the credits panel
+// Esri's own copyrightText for the World_Shaded_Relief service, verbatim --
+// fetched live from tile/{z}/{y}/{x}?f=json on 2026-08-19 per the standing
+// citation-integrity rule (never guess/paraphrase a source's own credit
+// line). Keep this string byte-for-byte in sync with the credits panel
 // (MainLayout.razor's attribution popover), which quotes the same source.
-const TILE_ATTRIBUTION =
-    'Tiles &copy; National Geographic, Esri, Garmin, HERE, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, increment P Corp.';
-const TILE_MAX_NATIVE_ZOOM = 16; // NatGeo_World_Map's own max LOD (see comment above)
+const TILE_ATTRIBUTION = 'Copyright:(c) 2014 Esri';
+const TILE_MAX_NATIVE_ZOOM = 13; // World_Shaded_Relief's own max LOD (see comment above); also the map's maxZoom -- see the tileLayer's own maxZoom option below for why it's never upscaled past this
 
 // Roughly centers the Fertile Crescent / Levant before the first real
 // scene arrives; fitScene() (called on the first successful scene fetch)
