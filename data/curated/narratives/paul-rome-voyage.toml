@@ -1,0 +1,4 @@
+id = "paul-rome-voyage"
+name = "Paul's Voyage to Rome"
+color = "#4338CA"
+legs = ["pr_caesarea", "pr_sidon", "pr_myra", "pr_fair_havens", "pr_malta", "pr_syracuse", "pr_rhegium", "pr_puteoli", "pr_rome"]

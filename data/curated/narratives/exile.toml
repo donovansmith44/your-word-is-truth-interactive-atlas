@@ -1,0 +1,4 @@
+id = "exile"
+name = "The Exile to Babylon"
+color = "#64748B"
+legs = ["exl_jerusalem", "exl_riblah", "exl_babylon", "exl_mizpah", "exl_tahpanhes"]

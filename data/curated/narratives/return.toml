@@ -1,0 +1,4 @@
+id = "return"
+name = "The Return from Exile"
+color = "#0891B2"
+legs = ["ret_babylon", "ret_jerusalem_altar", "ret_jerusalem_temple", "ret_susa", "ret_jerusalem_wall"]

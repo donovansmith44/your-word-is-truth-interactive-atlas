@@ -1,0 +1,4 @@
+id = "conquest"
+name = "The Conquest of Canaan"
+color = "#7C3AED"
+legs = ["cq_shittim", "cq_gilgal", "cq_jericho", "cq_ai", "cq_gibeon", "cq_hazor", "cq_shiloh"]

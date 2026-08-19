@@ -1,0 +1,4 @@
+id = "passion-week"
+name = "Passion Week"
+color = "#9F1239"
+legs = ["pw_bethany", "pw_jerusalem_entry", "pw_gethsemane", "pw_golgotha", "pw_jerusalem_resurrection", "pw_emmaus", "pw_galilee", "pw_mount_of_olives"]

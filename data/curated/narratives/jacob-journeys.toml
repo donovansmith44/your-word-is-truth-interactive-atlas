@@ -1,0 +1,4 @@
+id = "jacob-journeys"
+name = "Jacob's Journeys"
+color = "#A16207"
+legs = ["jj_beersheba", "jj_bethel_dream", "jj_haran", "jj_mahanaim", "jj_peniel", "jj_shechem", "jj_bethel_return", "jj_hebron"]

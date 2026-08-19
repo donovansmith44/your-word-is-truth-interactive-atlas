@@ -1,0 +1,4 @@
+id = "joseph-to-egypt"
+name = "Joseph's Journey to Egypt"
+color = "#65A30D"
+legs = ["je_hebron", "je_dothan", "je_egypt_sold", "je_egypt_ruler", "je_beersheba", "je_goshen"]

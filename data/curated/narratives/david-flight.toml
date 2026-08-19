@@ -1,0 +1,4 @@
+id = "david-flight"
+name = "David's Flight from Saul"
+color = "#2563EB"
+legs = ["df_ramah", "df_nob", "df_gath", "df_adullam", "df_keilah", "df_ziph", "df_en_gedi", "df_ziklag", "df_hebron"]

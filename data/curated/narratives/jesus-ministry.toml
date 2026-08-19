@@ -1,0 +1,4 @@
+id = "jesus-ministry"
+name = "Jesus' Ministry"
+color = "#DB2777"
+legs = ["jm_bethlehem", "jm_egypt", "jm_nazareth", "jm_jordan", "jm_cana", "jm_capernaum", "jm_sychar", "jm_bethsaida", "jm_caesarea_philippi", "jm_jericho", "jm_bethany"]

@@ -235,3 +235,715 @@ from_year = 48
 to_year = 48
 places = ["attalia"]
 verses = ["ACT.14.24-26"]
+
+# --- Jacob's Journeys ---
+# places: brief guessed "beersheba", but geo ancient.jsonl collides into
+# "Beersheba 1"/"Beersheba 2" (same lat/lon, 31.2447, 34.8408). beersheba-1
+# carries the monarchy-era verse_links (JOS/JDG/1SA/2SA.. through AMO, used
+# by el_beersheba below); beersheba-2 carries the patriarchal-era
+# verse_links (GEN.21/22/26/28/46) including GEN.28.10, this event's verse.
+# Using beersheba-2.
+[[event]]
+id = "jj_beersheba"
+label = "Jacob departs Beersheba for Haran"
+from_year = -1930
+to_year = -1930
+places = ["beersheba-2"]
+verses = ["GEN.28.10"]
+# places: bethel-1 (see ab_bethel above for the Bethel 1/2/3 disambiguation);
+# bethel-1's verse_links include GEN.28.19, this event's closing verse.
+[[event]]
+id = "jj_bethel_dream"
+label = "Jacob's ladder dream at Bethel"
+from_year = -1930
+to_year = -1930
+places = ["bethel-1"]
+verses = ["GEN.28.11-19"]
+[[event]]
+id = "jj_haran"
+label = "Jacob serves Laban in Haran"
+from_year = -1929
+to_year = -1929
+places = ["haran"]
+verses = ["GEN.29.1-14"]
+[[event]]
+id = "jj_mahanaim"
+label = "Angels meet Jacob at Mahanaim"
+from_year = -1910
+to_year = -1910
+places = ["mahanaim"]
+verses = ["GEN.32.1-2"]
+# places: brief guessed "peniel" (the KJV's GEN.32.30 spelling); no such
+# slug exists in geo ancient.jsonl. The same location is named again one
+# verse later, GEN.32.31, "Penuel" -- the friendly_id geo.rs kebabs to
+# "penuel" (32.1870, 35.6921, immediately next to mahanaim's 32.1857,
+# 35.6867, consistent with both naming the same Jabbok-ford site).
+# penuel's verse_links include both GEN.32.30 and GEN.32.31. Using penuel.
+[[event]]
+id = "jj_peniel"
+label = "Jacob wrestles at Peniel"
+from_year = -1910
+to_year = -1910
+places = ["penuel"]
+verses = ["GEN.32.22-31"]
+[[event]]
+id = "jj_shechem"
+label = "Jacob settles near Shechem"
+from_year = -1909
+to_year = -1909
+places = ["shechem"]
+verses = ["GEN.33.18"]
+[[event]]
+id = "jj_bethel_return"
+label = "Jacob returns to build an altar at Bethel"
+from_year = -1900
+to_year = -1900
+places = ["bethel-1"]
+verses = ["GEN.35.1-7"]
+[[event]]
+id = "jj_hebron"
+label = "Jacob rejoins Isaac at Hebron"
+from_year = -1898
+to_year = -1898
+places = ["hebron"]
+verses = ["GEN.35.27"]
+
+# --- Joseph's Journey to Egypt ---
+[[event]]
+id = "je_hebron"
+label = "Joseph sent from Hebron to his brothers"
+from_year = -1898
+to_year = -1898
+places = ["hebron"]
+verses = ["GEN.37.14"]
+[[event]]
+id = "je_dothan"
+label = "Joseph sold into slavery at Dothan"
+from_year = -1898
+to_year = -1898
+places = ["dothan"]
+verses = ["GEN.37.17-28"]
+[[event]]
+id = "je_egypt_sold"
+label = "Joseph taken to Egypt as a slave"
+from_year = -1897
+to_year = -1897
+places = ["egypt"]
+verses = ["GEN.37.36", "GEN.39.1"]
+[[event]]
+id = "je_egypt_ruler"
+label = "Joseph rises to rule over Egypt"
+from_year = -1885
+to_year = -1885
+places = ["egypt"]
+verses = ["GEN.41.41-46"]
+# places: same Beersheba 1/2 disambiguation as jj_beersheba above.
+# beersheba-2's verse_links include both GEN.46.1 and GEN.46.5. Using
+# beersheba-2.
+[[event]]
+id = "je_beersheba"
+label = "Jacob sets out for Egypt from Beersheba"
+from_year = -1876
+to_year = -1876
+places = ["beersheba-2"]
+verses = ["GEN.46.1-5"]
+# places: brief guessed "goshen", but geo ancient.jsonl collides into
+# "Goshen 1"/"Goshen 2"/"Goshen 3". goshen-1 (30.7994, 31.8342, Nile
+# delta) carries verse_links GEN.45.10/46.28/46.29/46.34/47.1/47.4/47.6/
+# 47.27 -- exactly this event's Egypt-delta Goshen. goshen-2/3 (31.4076,
+# 34.9723) are a same-named district in Judah (JOS.10.41/11.16/15.51),
+# unrelated. Using goshen-1.
+[[event]]
+id = "je_goshen"
+label = "Israel settles in Goshen"
+from_year = -1876
+to_year = -1876
+places = ["goshen-1"]
+verses = ["GEN.46.28-34", "GEN.47.27"]
+
+# --- The Conquest of Canaan ---
+[[event]]
+id = "cq_shittim"
+label = "Spies sent out from Shittim"
+from_year = -1406
+to_year = -1406
+places = ["shittim"]
+verses = ["JOS.2.1"]
+# places: brief guessed "gilgal", but geo ancient.jsonl collides into
+# "Gilgal 1"/"Gilgal 2"/"Gilgal 3"/"Gilgal 4". gilgal-1 and gilgal-4
+# share coords (31.8819, 35.4600, the Jordan-crossing camp); gilgal-1's
+# verse_links include JOS.4.19/4.20, this event's cited verses (gilgal-4
+# carries only DEU.11.30). gilgal-2 (32.0306, 35.2250) is Elisha's Gilgal
+# (2KI.2.1/4.38); gilgal-3 (31.7905, 35.3226) is a Judah-border landmark
+# (JOS.15.7). Using gilgal-1.
+[[event]]
+id = "cq_gilgal"
+label = "Israel camps at Gilgal"
+from_year = -1406
+to_year = -1406
+places = ["gilgal-1"]
+verses = ["JOS.4.19-24"]
+# places: same Jericho 1/2 disambiguation as ex_jordan above (OT-era site;
+# jericho-1's verse_links include JOS.6.1/6.2/6.25/6.26). Using jericho-1.
+[[event]]
+id = "cq_jericho"
+label = "The walls of Jericho fall"
+from_year = -1406
+to_year = -1406
+places = ["jericho-1"]
+verses = ["JOS.6.1-27"]
+# places: brief guessed "ai", but geo ancient.jsonl collides into
+# "Ai 1"/"Ai 2"/"Ai 3". ai-1 and ai-3 share coords (31.9169, 35.2611,
+# next to bethel-1); ai-1's verse_links carry the full Joshua 7-8 Achan/
+# conquest narrative (JOS.8.1 through JOS.8.29 inclusive, this event's
+# whole cited range); ai-3 carries only the Ezra/Nehemiah return-list
+# verses (EZR.2.28, NEH.7.32). ai-2 (31.1342, 35.6400) is a distinct site
+# tied only to JER.49.3. Using ai-1.
+[[event]]
+id = "cq_ai"
+label = "Ai is captured and burned"
+from_year = -1406
+to_year = -1406
+places = ["ai-1"]
+verses = ["JOS.8.1-29"]
+[[event]]
+id = "cq_gibeon"
+label = "The sun stands still over Gibeon"
+from_year = -1405
+to_year = -1405
+places = ["gibeon"]
+verses = ["JOS.10.6-14"]
+# places: brief guessed "hazor", but geo ancient.jsonl collides into 5
+# entries. hazor-1 (33.0183, 35.5692, upper Galilee) carries verse_links
+# JOS.11.1/11.10/11.11/11.13, exactly this event's battle narrative. The
+# others are unrelated same-named sites: hazor-2 (30.7228, 34.6452,
+# JOS.15.23, a Negev town), hazor-3 (31.3450, 35.1244, JOS.15.25),
+# hazor-4 (31.8322, 35.1955, NEH.11.33), hazor-5 (29.8114, 39.8683,
+# Jeremiah's Arabian Hazor). Using hazor-1.
+[[event]]
+id = "cq_hazor"
+label = "Hazor is defeated and burned"
+from_year = -1400
+to_year = -1400
+places = ["hazor-1"]
+verses = ["JOS.11.10-11"]
+[[event]]
+id = "cq_shiloh"
+label = "The tabernacle is set up at Shiloh"
+from_year = -1399
+to_year = -1399
+places = ["shiloh"]
+verses = ["JOS.18.1"]
+
+# --- David's Flight from Saul ---
+# places: brief guessed "ramah", but geo ancient.jsonl collides into 9
+# entries (a common town name). ramah-1/4/7/9 share coords (31.8543,
+# 35.2316, Ramah of Benjamin, Samuel's home town); of these, only
+# ramah-4's verse_links carry the 1 Samuel narrative including 1SA.19.18/
+# 19.19, this event's cited verse (ramah-1 carries Joshua/Judges/Kings
+# refs, ramah-7 only NEH.11.33, ramah-9 only 1CH.27.27). The remaining
+# ramah-2/3/5/6/8 are unrelated same-named towns elsewhere. Using ramah-4.
+[[event]]
+id = "df_ramah"
+label = "David flees to Samuel at Ramah"
+from_year = -1014
+to_year = -1014
+places = ["ramah-4"]
+verses = ["1SA.19.18"]
+[[event]]
+id = "df_nob"
+label = "David receives bread and a sword at Nob"
+from_year = -1013
+to_year = -1013
+places = ["nob"]
+verses = ["1SA.21.1-9"]
+# places: brief guessed "gath", but geo ancient.jsonl collides into
+# "Gath 1"/"Gath 2"/"Gath 3". gath-1 and gath-3 share coords (31.6997,
+# 34.8469, Philistine Gath); gath-1's verse_links include 1SA.21.10/
+# 21.12, this event's cited verses (gath-3 carries only the ark-return
+# verses 2SA.6.10/1CH.13.13). gath-2 (32.3984, 35.0401) is a Naphtali
+# town (1CH.7.21/8.13), unrelated. Using gath-1.
+[[event]]
+id = "df_gath"
+label = "David feigns madness before Achish at Gath"
+from_year = -1013
+to_year = -1013
+places = ["gath-1"]
+verses = ["1SA.21.10-15"]
+[[event]]
+id = "df_adullam"
+label = "David gathers followers at the cave of Adullam"
+from_year = -1013
+to_year = -1013
+places = ["adullam"]
+verses = ["1SA.22.1-2"]
+[[event]]
+id = "df_keilah"
+label = "David delivers Keilah from the Philistines"
+from_year = -1012
+to_year = -1012
+places = ["keilah"]
+verses = ["1SA.23.1-13"]
+# places: brief guessed "ziph", but geo ancient.jsonl collides into
+# "Ziph 1"/"Ziph 2". ziph-1 (31.4748, 35.1351, Judean wilderness south
+# of Hebron) carries verse_links 1SA.23.19/23.24/26.1, matching this
+# event's story; ziph-2 (30.9968, 34.9819) carries only the unrelated
+# border-list verse JOS.15.24. Using ziph-1.
+[[event]]
+id = "df_ziph"
+label = "Saul hunts David in the wilderness of Ziph"
+from_year = -1012
+to_year = -1012
+places = ["ziph-1"]
+verses = ["1SA.23.14-24"]
+# places: brief guessed "en-gedi"; the real friendly_id in geo
+# ancient.jsonl is spelled as one word, "Engedi" (matching the KJV's own
+# spelling, e.g. 1SA.23.29 "strong holds at Engedi"), kebabbing to
+# "engedi" with no hyphen. verse_links include 1SA.23.29/24.1, matching
+# this event. Using engedi.
+[[event]]
+id = "df_en_gedi"
+label = "David spares Saul's life at En-gedi"
+from_year = -1011
+to_year = -1011
+places = ["engedi"]
+verses = ["1SA.24.1-22"]
+[[event]]
+id = "df_ziklag"
+label = "David given Ziklag by Achish"
+from_year = -1010
+to_year = -1010
+places = ["ziklag"]
+verses = ["1SA.27.5-7"]
+[[event]]
+id = "df_hebron"
+label = "David anointed king over Judah at Hebron"
+from_year = -1010
+to_year = -1010
+places = ["hebron"]
+verses = ["2SA.2.1-4"]
+
+# --- Elijah ---
+# places: brief flagged "tishbe" as a likely-missing slug; it resolves
+# directly (33.0286, 35.5397) with verse_links including 1KI.17.1, this
+# event's verse. No substitution needed.
+[[event]]
+id = "el_tishbe"
+label = "Elijah announces the drought"
+from_year = -870
+to_year = -870
+places = ["tishbe"]
+verses = ["1KI.17.1"]
+# places: brief flagged "cherith" as a likely-missing slug; it too
+# resolves directly (32.3947, 35.5914) with verse_links 1KI.17.3/17.5.
+# No substitution needed.
+[[event]]
+id = "el_cherith"
+label = "Elijah fed by ravens at the brook Cherith"
+from_year = -870
+to_year = -870
+places = ["cherith"]
+verses = ["1KI.17.2-7"]
+[[event]]
+id = "el_zarephath"
+label = "The widow of Zarephath's oil and meal"
+from_year = -869
+to_year = -869
+places = ["zarephath"]
+verses = ["1KI.17.8-24"]
+# places: brief guessed "carmel", which resolves (as "carmel-1") but to
+# the WRONG place -- 31.4229, 35.1330, the Carmel near Ziph/Hebron tied
+# to Nabal and Saul's monument (1SA.15/25, see carmel-1 used nowhere in
+# this file). The Baal-contest mountain is a separate friendly_id,
+# "Mount Carmel" (kebab "mount-carmel"), on the coastal ridge at
+# 32.6725, 35.0233, with verse_links 1KI.18.19/18.20/18.42 -- exactly
+# this event. Geographic correctness over name similarity: using
+# mount-carmel.
+[[event]]
+id = "el_carmel"
+label = "Elijah defeats the prophets of Baal on Carmel"
+from_year = -866
+to_year = -866
+places = ["mount-carmel"]
+verses = ["1KI.18.20-40"]
+# places: brief guessed "jezreel", but geo ancient.jsonl collides into
+# "Jezreel 1"/"Jezreel 2"/"Jezreel 3". jezreel-2 (32.5579, 35.3280, the
+# Jezreel Valley city near Gilboa) carries verse_links 1KI.18.45/18.46,
+# exactly this event. jezreel-1/3 (31.4478, 35.0900) are the unrelated
+# southern-Judah Jezreel of 1SA.25/27/30 (Nabal/Abigail's home).
+# Using jezreel-2.
+[[event]]
+id = "el_jezreel"
+label = "Elijah outruns Ahab's chariot to Jezreel"
+from_year = -866
+to_year = -866
+places = ["jezreel-2"]
+verses = ["1KI.18.45-46"]
+# places: same Beersheba 1/2 split as jj_beersheba, opposite pick: this
+# is the monarchy-era Beersheba, and beersheba-1's verse_links include
+# 1KI.19.3, this event's verse. Using beersheba-1.
+[[event]]
+id = "el_beersheba"
+label = "Elijah flees Jezebel to Beersheba"
+from_year = -865
+to_year = -865
+places = ["beersheba-1"]
+verses = ["1KI.19.3"]
+# places: brief guessed "horeb", which has no clean resolvable slug --
+# geo ancient.jsonl has "Mount Horeb" (kebab "mount-horeb", 28.5397,
+# 33.9733, the same Jebel Musa coordinates as ex_sinai's mount-sinai;
+# Horeb and Sinai are used interchangeably in scripture) and a separate
+# stray "Horeb" record with an upstream-assigned id containing a
+# literal underscore (not our kebab() scheme) at 28.5877, 33.9217 with
+# zero verse_links -- an unresolved duplicate. mount-horeb's verse_links
+# include 1KI.19.8, this event's opening verse. Using mount-horeb.
+[[event]]
+id = "el_horeb"
+label = "Elijah hears the still small voice at Horeb"
+from_year = -865
+to_year = -865
+places = ["mount-horeb"]
+verses = ["1KI.19.8-18"]
+[[event]]
+id = "el_abel_meholah"
+label = "Elijah calls Elisha at Abel-meholah"
+from_year = -864
+to_year = -864
+places = ["abel-meholah"]
+verses = ["1KI.19.19-21"]
+
+# --- The Exile to Babylon ---
+[[event]]
+id = "exl_jerusalem"
+label = "Jerusalem falls to Babylon"
+from_year = -586
+to_year = -586
+places = ["jerusalem"]
+verses = ["2KI.25.1-10"]
+# places: brief guessed "riblah", but geo ancient.jsonl collides into
+# "Riblah 1"/"Riblah 2". riblah-1 (34.4595, 36.5726, on the Orontes in
+# north Syria, Nebuchadnezzar's military headquarters) carries
+# verse_links 2KI.25.6/25.20/25.21, exactly this event's cited verses.
+# riblah-2 (33.5369, 36.3661) carries only the unrelated boundary-
+# description verse NUM.34.11. Using riblah-1.
+[[event]]
+id = "exl_riblah"
+label = "Zedekiah judged at Riblah"
+from_year = -586
+to_year = -586
+places = ["riblah-1"]
+verses = ["2KI.25.6-7", "2KI.25.20-21"]
+# places: same Babylon 1/2/3 disambiguation as books.toml's EZK/DAN
+# write_place (see data/curated/books.toml) -- babylon-1 is literal
+# Mesopotamian Babylon; babylon-2/3 are the NT symbolic Babylon=Rome
+# cipher. babylon-1's verse_links include both 2KI.25.11 and PSA.137.1,
+# this event's cited verses. Using babylon-1.
+[[event]]
+id = "exl_babylon"
+label = "The exiles weep by the rivers of Babylon"
+from_year = -586
+to_year = -586
+places = ["babylon-1"]
+verses = ["2KI.25.11", "PSA.137.1"]
+# places: brief guessed "mizpah", but geo ancient.jsonl collides into 4
+# entries. mizpah-3 (31.8851, 35.2164, Mizpah of Benjamin, just north of
+# Jerusalem -- Tell en-Nasbeh, Samuel's Mizpah) carries verse_links
+# 2KI.25.23/25.25, exactly this event. mizpah-1/4 (32.1185, 35.7770) are
+# Gilead's Mizpah (Jephthah, Jacob/Laban's covenant); mizpah-2 (33.4000,
+# 35.8500) is a Lebanon-region site (JOS.11.3). Using mizpah-3.
+[[event]]
+id = "exl_mizpah"
+label = "Gedaliah governs the remnant at Mizpah"
+from_year = -586
+to_year = -586
+places = ["mizpah-3"]
+verses = ["2KI.25.22-25"]
+[[event]]
+id = "exl_tahpanhes"
+label = "The remnant flees to Tahpanhes in Egypt"
+from_year = -585
+to_year = -585
+places = ["tahpanhes"]
+verses = ["JER.43.5-7"]
+
+# --- The Return from Exile ---
+# places: same babylon-1 as exl_babylon above (literal Mesopotamian
+# Babylon, not the NT Rome cipher).
+[[event]]
+id = "ret_babylon"
+label = "Cyrus decrees the return from Babylon"
+from_year = -538
+to_year = -538
+places = ["babylon-1"]
+verses = ["EZR.1.1-4"]
+[[event]]
+id = "ret_jerusalem_altar"
+label = "The altar rebuilt in Jerusalem"
+from_year = -537
+to_year = -537
+places = ["jerusalem"]
+verses = ["EZR.2.1", "EZR.3.1-2"]
+[[event]]
+id = "ret_jerusalem_temple"
+label = "The second temple completed in Jerusalem"
+from_year = -516
+to_year = -516
+places = ["jerusalem"]
+verses = ["EZR.6.14-15"]
+[[event]]
+id = "ret_susa"
+label = "Nehemiah hears of Jerusalem's ruin in Susa"
+from_year = -445
+to_year = -445
+places = ["susa"]
+verses = ["NEH.1.1"]
+[[event]]
+id = "ret_jerusalem_wall"
+label = "Nehemiah completes Jerusalem's wall"
+from_year = -444
+to_year = -444
+places = ["jerusalem"]
+verses = ["NEH.2.11", "NEH.6.15"]
+
+# --- Jesus' Ministry ---
+# places: brief guessed "bethlehem", but geo ancient.jsonl collides into
+# "Bethlehem 1"/"Bethlehem 2"/"Bethlehem 3". bethlehem-1 (31.7043,
+# 35.2076, Bethlehem of Judah/the City of David) carries verse_links
+# including LUK.2.4/2.15, this event's verses. bethlehem-2/3 (32.7348,
+# 35.1856) are the unrelated Bethlehem of Zebulun (JOS.19.15, Judges
+# 12's minor judge Ibzan). Using bethlehem-1.
+[[event]]
+id = "jm_bethlehem"
+label = "Jesus is born in Bethlehem"
+from_year = -5
+to_year = -5
+places = ["bethlehem-1"]
+verses = ["LUK.2.4-7"]
+[[event]]
+id = "jm_egypt"
+label = "The holy family flees to Egypt"
+from_year = -4
+to_year = -4
+places = ["egypt"]
+verses = ["MAT.2.13-15"]
+[[event]]
+id = "jm_nazareth"
+label = "The family settles in Nazareth"
+from_year = -4
+to_year = -4
+places = ["nazareth"]
+verses = ["MAT.2.19-23"]
+# places: brief guessed "jordan-river"; the real friendly_id is just
+# "Jordan" (kebab "jordan", 31.7614, 35.5583, no "-river" suffix in the
+# dataset). verse_links include MAT.3.13, this event's opening verse.
+# Using jordan.
+[[event]]
+id = "jm_jordan"
+label = "Jesus is baptized in the Jordan"
+from_year = 26
+to_year = 26
+places = ["jordan"]
+verses = ["MAT.3.13-17"]
+[[event]]
+id = "jm_cana"
+label = "Jesus turns water to wine at Cana"
+from_year = 27
+to_year = 27
+places = ["cana"]
+verses = ["JHN.2.1-11"]
+[[event]]
+id = "jm_capernaum"
+label = "Jesus makes Capernaum his base"
+from_year = 27
+to_year = 27
+places = ["capernaum"]
+verses = ["MAT.4.13"]
+[[event]]
+id = "jm_sychar"
+label = "Jesus speaks with the woman at the well in Sychar"
+from_year = 27
+to_year = 27
+places = ["sychar"]
+verses = ["JHN.4.4-26"]
+# places: brief guessed "bethsaida", but geo ancient.jsonl collides into
+# "Bethsaida 1"/"Bethsaida 2" (identical coords, 32.9104, 35.6310 --
+# same town, split only by which verses were tagged to which record).
+# bethsaida-2's verse_links include LUK.9.10, this event's verse
+# (bethsaida-1 carries MAT.11.21/LUK.10.13/JHN.1.44/JHN.12.21 instead).
+# Using bethsaida-2.
+[[event]]
+id = "jm_bethsaida"
+label = "Jesus feeds the five thousand near Bethsaida"
+from_year = 29
+to_year = 29
+places = ["bethsaida-2"]
+verses = ["LUK.9.10-17"]
+[[event]]
+id = "jm_caesarea_philippi"
+label = "Peter's confession at Caesarea Philippi"
+from_year = 29
+to_year = 29
+places = ["caesarea-philippi"]
+verses = ["MAT.16.13-20"]
+# places: same Jericho 1/2 split as cq_jericho above, opposite pick:
+# jericho-2 (31.8519, 35.4362, the NT/Herodian-era site) carries only
+# Gospel verse_links, including LUK.19.1, this event's verse.
+# Using jericho-2.
+[[event]]
+id = "jm_jericho"
+label = "Jesus calls Zacchaeus at Jericho"
+from_year = 30
+to_year = 30
+places = ["jericho-2"]
+verses = ["LUK.19.1-10"]
+# places: brief guessed "bethany", but geo ancient.jsonl collides into
+# "Bethany 1"/"Bethany 2". bethany-1 (31.7717, 35.2559, on the Mount of
+# Olives near Jerusalem, home of Mary/Martha/Lazarus) carries
+# verse_links including JHN.12.1, this event's verse. bethany-2
+# (31.8371, 35.5503) is "Bethany beyond Jordan" (JHN.1.28, where John
+# baptized) -- a different place entirely. Using bethany-1.
+[[event]]
+id = "jm_bethany"
+label = "Jesus dines at Bethany before the Passover"
+from_year = 30
+to_year = 30
+places = ["bethany-1"]
+verses = ["JHN.12.1"]
+
+# --- Passion Week ---
+# places: same bethany-1 as jm_bethany above (the Jerusalem-area Bethany,
+# not "Bethany beyond Jordan").
+[[event]]
+id = "pw_bethany"
+label = "Mary anoints Jesus at Bethany"
+from_year = 30
+to_year = 30
+places = ["bethany-1"]
+verses = ["JHN.12.1-11"]
+[[event]]
+id = "pw_jerusalem_entry"
+label = "The triumphal entry into Jerusalem"
+from_year = 30
+to_year = 30
+places = ["jerusalem"]
+verses = ["MAT.21.1-11"]
+[[event]]
+id = "pw_gethsemane"
+label = "Jesus prays and is arrested at Gethsemane"
+from_year = 30
+to_year = 30
+places = ["gethsemane"]
+verses = ["MAT.26.36-56"]
+# places: brief flagged "golgotha" as a likely-missing slug (suggesting
+# a merge into jerusalem if so); it resolves directly (31.7784, 35.2298)
+# with verse_links MAT.27.33/MRK.15.22/LUK.23.33/JHN.19.17 -- exactly
+# the crucifixion narrative. No substitution needed; kept as its own
+# leg (not merged into jerusalem).
+[[event]]
+id = "pw_golgotha"
+label = "The crucifixion at Golgotha"
+from_year = 30
+to_year = 30
+places = ["golgotha"]
+verses = ["JHN.19.16-30"]
+[[event]]
+id = "pw_jerusalem_resurrection"
+label = "The empty tomb in Jerusalem"
+from_year = 30
+to_year = 30
+places = ["jerusalem"]
+verses = ["MAT.28.1-10"]
+[[event]]
+id = "pw_emmaus"
+label = "The road to Emmaus"
+from_year = 30
+to_year = 30
+places = ["emmaus"]
+verses = ["LUK.24.13-35"]
+# places: brief guessed "galilee", but geo ancient.jsonl collides into
+# "Galilee 1"/"Galilee 2" (identical coords, 32.7600, 35.5270).
+# galilee-1's verse_links include MAT.28.16, this event's verse (68
+# verse_links total, the general region); galilee-2 carries only the
+# unrelated territorial-list verse JOS.12.23. Using galilee-1.
+[[event]]
+id = "pw_galilee"
+label = "Jesus commissions the disciples in Galilee"
+from_year = 30
+to_year = 30
+places = ["galilee-1"]
+verses = ["MAT.28.16-20"]
+[[event]]
+id = "pw_mount_of_olives"
+label = "The ascension from the Mount of Olives"
+from_year = 30
+to_year = 30
+places = ["mount-of-olives"]
+verses = ["ACT.1.9-12"]
+
+# --- Paul's Voyage to Rome ---
+[[event]]
+id = "pr_caesarea"
+label = "Paul sails from Caesarea under guard"
+from_year = 59
+to_year = 59
+places = ["caesarea"]
+verses = ["ACT.27.1-2"]
+[[event]]
+id = "pr_sidon"
+label = "Paul allowed ashore at Sidon"
+from_year = 59
+to_year = 59
+places = ["sidon"]
+verses = ["ACT.27.3"]
+[[event]]
+id = "pr_myra"
+label = "The centurion finds a ship at Myra"
+from_year = 59
+to_year = 59
+places = ["myra"]
+verses = ["ACT.27.5-6"]
+# places: brief flagged "fair-havens" as a likely-missing slug; it
+# resolves directly (34.9297, 24.8003, Crete's south coast) with
+# verse_links = [ACT.27.8], exactly this event. No substitution needed.
+[[event]]
+id = "pr_fair_havens"
+label = "Slow progress to Fair Havens"
+from_year = 59
+to_year = 59
+places = ["fair-havens"]
+verses = ["ACT.27.8"]
+[[event]]
+id = "pr_malta"
+label = "Shipwrecked on Malta"
+from_year = 59
+to_year = 59
+places = ["malta"]
+verses = ["ACT.28.1"]
+[[event]]
+id = "pr_syracuse"
+label = "Three days at Syracuse"
+from_year = 60
+to_year = 60
+places = ["syracuse"]
+verses = ["ACT.28.12"]
+[[event]]
+id = "pr_rhegium"
+label = "A brief stop at Rhegium"
+from_year = 60
+to_year = 60
+places = ["rhegium"]
+verses = ["ACT.28.13"]
+[[event]]
+id = "pr_puteoli"
+label = "Landing at Puteoli"
+from_year = 60
+to_year = 60
+places = ["puteoli"]
+verses = ["ACT.28.13-14"]
+[[event]]
+id = "pr_rome"
+label = "Paul arrives at Rome"
+from_year = 60
+to_year = 60
+places = ["rome"]
+verses = ["ACT.28.16"]
