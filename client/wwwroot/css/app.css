@@ -24,6 +24,20 @@
     --dusk-ink-soft: #A99F86;
     --lamp: #FFC864;
     --lamp-core: #FFEDBE;
+    /* Markers -- SECOND REVISION, Batch C2 (design-direction.md, direct
+       user feedback 2026-08-19: "WAY too small, hard to click, not cool
+       and glowy... choose a glowy color that contrasts well with the map
+       background"). The lamps become EMBERS: a saturated orange-red,
+       chosen (and tuned during this batch's own screenshot review) to
+       read as visibly HOT against the warm but much paler World_Shaded_
+       Relief terrain -- pale --lamp-core no longer had enough contrast to
+       read as "glowing" there rather than merely "faint". --lamp-core
+       itself is left defined (a few other rules still derive their own
+       halo rgba()s from the same warm-gold family independently of this
+       token) but .atlas-marker's own core fill below now reads from
+       --ember instead. --lamp (a separate, darker-gold token) keeps its
+       one unrelated consumer, the dusk-themed picker's own button hover. */
+    --ember: #F07818;
     --bronze: #8A6B3D;
     --bronze-bright: #C9A45C;
     /* A darker bronze reserved for TEXT/glyphs read against parchment
@@ -529,12 +543,16 @@ input:focus-visible,
 
 /* Historical borders (design-direction.md's Atlas plate detail, ADDED PER
    USER FEEDBACK 2026-08-18: "Historical borders render as a vector
-   overlay -- thin ink-toned strokes... no fill or a barely-there wash").
-   map.js's BorderLayer authors one <path class="atlas-border"> per
-   feature directly into its own <svg class="atlas-borders"> (by contract
-   with it, like .atlas-arrows/.atlas-arrow above) -- this file only owns
-   the class-level presentation, entirely CSS-driven since (unlike arrows'
-   per-narrative color) every border shares one uniform style. --bronze is
+   overlay -- thin ink-toned strokes... no fill or a barely-there wash";
+   HAND-TINTED per the SECOND ADDENDUM, USER FEEDBACK 2026-08-19: "make the
+   borders pretty like a real map"). map.js's BorderLayer authors one
+   <path class="atlas-border"> per feature directly into its own
+   <svg class="atlas-borders"> (by contract with it, like .atlas-arrows/
+   .atlas-arrow above) -- this file only owns the class-level presentation
+   that's shared by EVERY feature (stroke, fill-opacity); the per-feature
+   fill COLOR is set inline by BorderLayer.setData itself (style.fill, not
+   a CSS declaration here -- see that method's own polityFillColor comment
+   for the deterministic name-hash -> muted-plate-tint rule). --bronze is
    the token this file's own :root comment already earmarks for "RULES/
    BORDERS", so it's reused here rather than introducing a new one.
    pointer-events:none is belt-and-suspenders with Leaflet's own default
@@ -550,11 +568,29 @@ input:focus-visible,
     pointer-events: none;
 }
 
+/* fill-opacity 0.14 -- the TOP of Requirement 1's own 0.10-0.14 range.
+   Screenshot review (batch report) tried 0.12 first (this file's own
+   muted plate palette -- rose/buff/sage/pale-lapis/lilac/tan/moss/coral,
+   all deliberately low-chroma -- read as barely-there against
+   World_Shaded_Relief's own already-textured, multi-toned terrain at that
+   value, distinguishable only on close inspection) and 0.20/0.32 (clearly
+   a hand-tinted wash, but both outside the brief's own bound). 0.14 is the
+   most visible option still inside range -- a real, if soft, cast on a
+   named polity (Hittite Empire's own tan wash, Babylonia's, etc., all
+   visible at a normal viewing distance in the batch report's own
+   screenshots), consistent with "soft translucent area wash" reading as
+   restraint by design, not a compromise. Deliberately NOT set on `fill`
+   itself here (unlike the old flat rgba(138,107,61,.07) this replaces):
+   every rendered feature gets its OWN fill color inline from BorderLayer
+   (a CSS declaration here would beat that inline style on specificity
+   grounds for the COLOR, but fill-opacity is genuinely shared/constant
+   across every feature, so it alone stays a plain class rule). The dash is
+   GONE (Requirement 1: "the dash goes -- dashes read as survey lines, not
+   atlas plates") -- solid stroke only. */
 .atlas-border {
-    fill: rgba(138, 107, 61, 0.07);
+    fill-opacity: 0.14;
     stroke: var(--bronze);
     stroke-width: 1.2px;
-    stroke-dasharray: 4 2;
     stroke-opacity: 0.65;
     pointer-events: none;
 }
@@ -577,44 +613,62 @@ input:focus-visible,
     animation: atlas-fade-in 180ms ease-out both;
 }
 
-/* The hit-testable core -- Batch C (design-direction.md: "Bump the base
-   size meaningfully -- current dots are too small," direct user feedback:
-   "tiny markers") tried bumping this box from 4x4 to 7x7px, and REVERTED
-   it after WORLD-2's own property suite caught a real regression, not a
-   theoretical one: the golden-angle nudge (nudgeCloseLatLng, this file's
-   map.js) spreads exactly-coincident places like Shittim/"plains of
-   Moab" by NUDGE_STEP_DEG (~8.9km), but at the zoom the exodus scene's
-   own fitScene lands on, ~8.9km projects to only ~4.3px on screen --
-   meaning the ORIGINAL 4x4px box (2px radius each side) already ran on a
-   ~0.3px safety margin between the two nudged markers' hit areas, and
-   growing the box to 7x7 (3.5px radius) overlaps them outright: a forced
-   hover on marker-shittim's own screen center landed on marker-moab-2's
-   now-larger box instead (confirmed via `document.elementFromPoint`, not
-   guessed -- Playwright's `force:true` skips ITS OWN obstruction checks,
-   but the resulting CDP mouse event still hits whatever the browser's
-   real hit-testing says is topmost at that exact pixel). This core is
-   what data-testid="marker-{id}" is attached to and what every hover/
-   click/position property test in this suite targets, so it stays at its
-   original, already-safety-margin-thin 4x4px -- "bigger and clearly
-   visible" is carried entirely by the halo below instead, which never
-   touches hit-testing at all (box-shadow isn't part of it), so growing
-   IT can never re-introduce this class of bug regardless of how large it
-   gets. The ring is a `border`, not another box-shadow layer, so it never
-   has to share the box-shadow property with .glow-1..5's halo layers
-   below -- box-sizing: border-box (this file's global reset) keeps the
-   border INSIDE the 4x4 box, so the ring adds zero hit-area of its own. */
+/* The hit-testable core -- SECOND REVISION, Batch C2 (design-direction.md,
+   direct user feedback 2026-08-19: "WAY too small, hard to click, not
+   cool and glowy" -- SUPERSEDES Batch C's revert, which kept this box at
+   its original 4x4px specifically because growing it to 7x7 broke
+   WORLD-2's coincident-pair hover independence, see below). Core is now
+   ~10x10px, filled with the new --ember token (a saturated orange-red
+   chosen and tuned by this batch's own screenshot review to CONTRAST
+   strongly with the light, warm World_Shaded_Relief terrain -- the old
+   pale --lamp-core read as merely faint against it, not glowing), ringed
+   by a fine 1.5px --bronze-ink border (box-sizing: border-box, this
+   file's global reset, keeps the ring INSIDE the 10x10 box, so it adds no
+   hit-area of its own beyond the box itself).
+
+   This time the coincident-pair problem (Shittim/"plains of Moab" -- see
+   the old comment this replaces) is solved PROPERLY instead of by staying
+   small: map.js's NUDGE_STEP_DEG (the golden-angle nudge distance for
+   exactly-coincident places) is scaled to match this new radius plus the
+   ::after hit-padding below, not left at the value tuned for the old
+   4x4px box -- see that constant's own comment in map.js for the real
+   measured numbers this was re-tuned against. data-testid="marker-{id}"
+   still targets this element and only this element (never the ::after
+   padding), so every position property test in this suite (WORLD-3's
+   `boundingBox()`, WORLD-2's `hover({force:true})`) keeps reading the
+   marker's own real, visible geometry. */
 .atlas-marker {
     position: absolute;
     top: 0;
     left: 0;
-    width: 4px;
-    height: 4px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    background: var(--lamp-core);
-    border: 1px solid var(--bronze);
+    background: var(--ember);
+    border: 1.5px solid var(--bronze-ink);
     transform: translate(-50%, -50%) scale(1);
     cursor: pointer;
     animation: atlas-marker-in 180ms ease-out both;
+}
+
+/* Hit/hover target expansion -- Requirement 0c ("the ember marker plus an
+   invisible ::after inset:-8px... so the hover/click target is >=14px
+   even where the visual core is smaller"; this replaces a demo-only
+   hotpatch's own `.atlas-marker::after` patch, reproduced here properly
+   in source). Generated content on an already `position:absolute`
+   element is hit-tested as part of THAT element (pointer events over the
+   invisible ::after box still fire .atlas-marker's own mouseover/
+   mouseout/click, wired in map.js's wireEvents -- no separate listener
+   needed here, map.js stays exactly as dumb about this as it was before).
+   inset:-8px around the 10x10 core yields a 26x26px total hit box, well
+   clear of the >=14px floor -- "generous", per design-direction.md, not
+   merely adequate. Fully transparent: no background/border of its own, so
+   it changes nothing about the marker's own paint, only what area
+   responds to the pointer. */
+.atlas-marker::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
 }
 
 /* Single-class per this file's discipline (header comment) -- glow-1..5
@@ -626,30 +680,40 @@ input:focus-visible,
    query or source order, which would silently keep glow-4/5 breathing
    under prefers-reduced-motion). Keeping every rule here single-class
    means specificity is uniform and only source order decides ties.
-   Radii/spreads bumped ~35-45% (Batch C, "bigger and clearly visible" --
-   see .atlas-marker's own comment for why the CORE dot itself stays at
-   its original 4x4px instead): box-shadow never affects hit-testing, so
-   the halo alone can carry this batch's whole "bigger" ask without ever
-   re-touching the hit-testable geometry WORLD-2's property suite pinned. */
+
+   SECOND REVISION, Batch C2: recolored from a flat warm-gold
+   rgba(255,200,100,*) to a two-tone ember/amber pairing -- an inner,
+   more-saturated ember tone (231,90,20, close to --ember itself) close to
+   the core, and an outer, lighter amber tone (255,160,60) for the
+   farther-reaching layers, the classic hot-coal-to-glow-haze gradient a
+   single flat color can't suggest on its own -- and rescaled up
+   meaningfully from Batch C's own halo (itself already a ~35-45% bump
+   over the original) to stay proportionate to the core's own 4x4->10x10
+   growth above. glow-5 adds a 4th, wide/faint outermost layer on top of
+   the glow-4 shape specifically so it reads as a visibly BIGGER jump, not
+   just a linear continuation of 1-4 -- design-direction.md: "a glow-5
+   place should look HOT". box-shadow never affects hit-testing, so the
+   halo can carry the whole "bigger, glowy" ask without ever touching the
+   hit-testable geometry WORLD-2's property suite pins. */
 .glow-1 {
-    box-shadow: 0 0 7px 2px rgba(255, 200, 100, .5);
+    box-shadow: 0 0 10px 3px rgba(231, 90, 20, .55);
 }
 
 .glow-2 {
-    box-shadow: 0 0 10px 3px rgba(255, 200, 100, .55), 0 0 20px 6px rgba(255, 200, 100, .28);
+    box-shadow: 0 0 14px 4px rgba(231, 90, 20, .6), 0 0 28px 9px rgba(255, 160, 60, .32);
 }
 
 .glow-3 {
-    box-shadow: 0 0 12px 3px rgba(255, 200, 100, .6), 0 0 26px 8px rgba(255, 200, 100, .32), 0 0 40px 14px rgba(255, 200, 100, .16);
+    box-shadow: 0 0 17px 5px rgba(231, 90, 20, .65), 0 0 34px 11px rgba(255, 160, 60, .38), 0 0 52px 18px rgba(255, 180, 90, .18);
 }
 
 .glow-4 {
-    box-shadow: 0 0 14px 4px rgba(255, 200, 100, .65), 0 0 30px 10px rgba(255, 200, 100, .38), 0 0 50px 18px rgba(255, 200, 100, .2);
+    box-shadow: 0 0 19px 6px rgba(231, 90, 20, .72), 0 0 40px 14px rgba(255, 160, 60, .45), 0 0 64px 24px rgba(255, 180, 90, .24);
     animation: atlas-marker-in 180ms ease-out both, atlas-breathe 2.7s ease-in-out 180ms infinite;
 }
 
 .glow-5 {
-    box-shadow: 0 0 17px 5px rgba(255, 200, 100, .72), 0 0 36px 12px rgba(255, 200, 100, .42), 0 0 60px 22px rgba(255, 200, 100, .24);
+    box-shadow: 0 0 22px 7px rgba(231, 90, 20, .8), 0 0 46px 17px rgba(255, 160, 60, .52), 0 0 72px 28px rgba(255, 180, 90, .3), 0 0 100px 38px rgba(255, 180, 90, .14);
     animation: atlas-marker-in 180ms ease-out both, atlas-breathe 2.5s ease-in-out 180ms infinite;
 }
 
@@ -732,15 +796,48 @@ input:focus-visible,
     color: var(--lapis);
 }
 
-/* Mountain/region names: letterspaced small caps --ink-soft
-   (design-direction.md: "mountain/region names in letterspaced small caps
-   --ink-soft"). Comma-grouped (both kinds get identical treatment) --
-   still single-class-plus-attribute-selector per selector, same discipline
-   as .picker-verse's own vendor-prefix comma-group above. */
-.landmark-label[data-kind="mountain"],
-.landmark-label[data-kind="region"] {
+/* Mountain names: letterspaced small caps --ink-soft (design-direction.md:
+   "mountain/region names in letterspaced small caps --ink-soft"). */
+.landmark-label[data-kind="mountain"] {
     font-variant-caps: small-caps;
     letter-spacing: .07em;
+}
+
+/* Region names -- Requirement 2 / design-direction.md's SECOND ADDENDUM:
+   "Region names render extra-muted: --ink-soft at reduced opacity, widely
+   letterspaced small caps, sized by geographic extent." Split out from
+   mountain (which keeps the original, narrower letterspacing/full opacity
+   above) rather than staying comma-grouped with it: this is a genuinely
+   different, MORE muted treatment now, applying to every region-kind
+   landmark -- the three curated before this batch (Wilderness of Sinai,
+   Arabah, Negev) included, not just the new far-field standing regions --
+   since "context, never competition" is the point for the whole kind, not
+   only its newest members. Letterspacing nearly triples the mountain
+   value ("widely" vs mountain's plain small-caps); opacity < 1 stacks with
+   --ink-soft's own already-softer-than---ink color for the "extra-muted"
+   the brief asks for. */
+.landmark-label[data-kind="region"] {
+    font-variant-caps: small-caps;
+    letter-spacing: .18em;
+    opacity: .8;
+}
+
+/* "Sized by geographic extent" (Requirement 2): data-size (sm/md/lg, only
+   present when the curated entry carries one -- see map.js's
+   makeLandmarkIcon) steps the font up from .landmark-label's own base
+   .68rem. Mirrors .polity-label's own sm/md/lg tiers below in spirit (same
+   size-hint-driven-by-data-attribute pattern) but with its own, smaller
+   values -- a landmark label is always "a visual step below place labels"
+   (design-direction.md) regardless of its own size tier, so even "lg"
+   here stays under .atlas-label's .78rem. No "sm" rule: a landmark with
+   size="sm" (none curated yet) or no size hint at all both want the exact
+   same base .68rem, so "sm" is simply the base rule with nothing to add. */
+.landmark-label[data-size="md"] {
+    font-size: .74rem;
+}
+
+.landmark-label[data-size="lg"] {
+    font-size: .8rem;
 }
 
 /* Polity name labels (Batch C / design-direction.md World THIRD REVISION:

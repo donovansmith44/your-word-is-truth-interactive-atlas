@@ -342,19 +342,82 @@ export function setScene(id, sceneJson) {
 // nudge index call to call, keeping a stable scene's markers from jittering
 // on every refetch.
 //
-// CLOSE_THRESHOLD_KM=5 sits deliberately between the one known-broken
+// NUDGE_STEP_DEG -- RE-TUNED, Batch C2 (requirement 0b: "scale
+// nudgeCloseLatLng's separation distance with the new marker radius so
+// hover targets never overlap"). Picked around the OLD 4x4px marker (2px
+// hit-radius, see the pre-Batch-C2 history below); the ember marker's own
+// 26x26px hit box (10px core + this batch's `::after` inset:-8px padding,
+// requirement 0c -- 13px radius) needed a fresh derivation, not a guess.
+//
+// A throwaway script rendered the real exodus-window scene (this file's
+// own worst-case, richest test window -- WORLD-2/world-hover-text.spec.ts
+// both already pick it for exactly that richness) at this app's own
+// 1280x800 reference viewport, read every marker's REAL bounding-box
+// center via Playwright, and fit a local lat/lon->screen-px affine
+// transform from those (Web Mercator is locally linear at this scale, well
+// under 4px residual across the tight Levant/Sinai cluster this matters
+// for). Replaying nudgeCloseLatLng's own algorithm against that fitted
+// projection found NUDGE_STEP_DEG=0.6 (~63-67km, latitude-dependent)
+// separates both pairs THIS threshold (CLOSE_THRESHOLD_KM, unchanged --
+// see below for why it stays at 5) actually nudges to 29px+ (a real
+// margin over the 26px hit-box floor, not the old ~0.3px near-miss the
+// pre-Batch-C2 comment below describes): moab-2/shittim (the exact 0km
+// coincidence) to 29.2px, Gilgal/Jericho (~1.8km) to 29.3px.
+//
+// CLOSE_THRESHOLD_KM stays at 5 -- a first attempt at this fix raised it to
+// 15 specifically to ALSO reach two other, larger-but-still-real "close
+// neighbor" pairs the OLD tiny hit box tolerated (Marah/Elim ~10.5km,
+// Rephidim/Mount Sinai ~13km -- see the pre-Batch-C2 history below), and
+// the same grid search confirmed that DID separate them cleanly too
+// (32-35px). It was reverted after a DIFFERENT real scene caught a
+// concrete regression it caused: the apostolic window (AD 46-48) lights
+// both "Philippi" and its own port city "Neapolis", genuinely 13.92km
+// apart -- INSIDE the raised 15km threshold, OUTSIDE the original 5km one.
+// Nudged by the new, much larger NUDGE_STEP_DEG (needed for the exodus
+// cluster's OWN much-more-zoomed-OUT view), Philippi jumped ~60-70km from
+// its curated position -- at the apostolic scene's own, much CLOSER
+// fitScene zoom (a small two-year window, nowhere near as spread out as
+// the full exodus scene), that jump pushed its marker (and the hover card
+// anchored to it) most of the way off the top of the viewport, breaking
+// world-hover-text.spec.ts's own place-card-more test for it (confirmed
+// live: `document.elementFromPoint` at the button's own pre-move screen
+// position resolved to `place-card-more` before the pointer arrived, and
+// to the surrounding `place-card` div after -- the button had moved out
+// from under it mid-journey). This is the general problem with a single,
+// GLOBAL, zoom-INDEPENDENT threshold/step pair: whether two real places
+// need separating depends on how close THEIR OWN scene renders them, which
+// varies scene to scene, but nudging is decided once, before any zoom is
+// known, and the same result has to hold at every zoom the marker is ever
+// viewed at. 5km safely covers only the two pairs confirmed to need it
+// (the exact coincidence and its near-exact sibling) without reaching far
+// enough to catch a real, ordinary city/port pair like Philippi/Neapolis
+// in a DIFFERENT, more tightly-zoomed scene. Marah/Elim and Rephidim/Mount
+// Sinai's OWN new collision risk (introduced by the bigger hit target, in
+// the exodus scene specifically) is handled the same way the exodus
+// scene's other, structurally-unfixable close cluster already has to be --
+// see world-map.spec.ts's own WORLD-2 comment for the dynamic, real-
+// rendered-pixel filter that keeps the property suite honest about
+// exactly this.
+//
+// Everything below this point is the PRE-Batch-C2 history CLOSE_THRESHOLD_KM
+// and NUDGE_STEP_DEG already carried, unchanged in substance and (for
+// CLOSE_THRESHOLD_KM) unchanged in its own literal number too:
+// CLOSE_THRESHOLD_KM=5 sat deliberately between the one known-broken
 // distance (Gilgal/Jericho, ~1.8km -- see setScene's doc comment) and the
-// nearest known-working one (Marah/Elim, ~10.5km), so this fixes the
-// former without touching (renudging) pairs that already hover correctly
-// today. NUDGE_STEP_DEG (~8.9km) is deliberately LARGER than the threshold
-// that triggers it, so a freshly nudged place always clears the distance
-// that flagged it, and is the same order of magnitude as this app's
-// already-working close-but-distinct neighbors. Successive collisions
-// against the SAME neighborhood are spread around it at the golden angle
-// (same idea phyllotaxis/sunflower-seed packing uses) rather than a single
-// fixed direction, so a third or fourth place crowding one spot -- none
-// exist today, but nothing here assumes exactly two -- would still land at
-// its own distinct spot instead of stacking back onto an earlier nudge.
+// nearest known-working one (Marah/Elim, ~10.5km), so it fixed the former
+// without touching (renudging) pairs that already hovered correctly under
+// the OLD, much smaller hit box -- still exactly true today, just against
+// a bigger hit box needing a bigger NUDGE_STEP_DEG to clear it (see
+// above). NUDGE_STEP_DEG (~8.9km, now ~63-67km) was and is deliberately
+// LARGER than the threshold that triggers it, so a freshly nudged place
+// always clears the distance that flagged it, and was the same order of
+// magnitude as this app's already-working close-but-distinct neighbors AT
+// THE TIME. Successive collisions against the SAME neighborhood are spread
+// around it at the golden angle (same idea phyllotaxis/sunflower-seed
+// packing uses) rather than a single fixed direction, so a third or fourth
+// place crowding one spot -- none exist today outside WORLD-3's own
+// synthetic rig -- still lands at its own distinct spot instead of
+// stacking back onto an earlier nudge.
 //
 // Fix round 1 (M3): "nothing here assumes exactly two" was false until this
 // fix -- `placed` entries are compared by their ORIGINAL (pre-nudge)
@@ -373,7 +436,7 @@ export function setScene(id, sceneJson) {
 // the same count).
 const GOLDEN_ANGLE_RAD = 2.399963229728653;
 const CLOSE_THRESHOLD_KM = 5;
-const NUDGE_STEP_DEG = 0.08;
+const NUDGE_STEP_DEG = 0.6;
 
 function approxKm(lat1, lon1, lat2, lon2) {
     const dLat = (lat1 - lat2) * 111.32;
@@ -603,7 +666,18 @@ function applyLabelTier(inst) {
         if (!el) {
             continue;
         }
-        const tierShow = tier === 'near' || lm.kind === 'water' || (tier === 'mid' && lm.kind === 'mountain');
+        // Batch C2 (design-direction.md's Atlas plate detail SECOND
+        // ADDENDUM): a landmark carrying an explicit `size` hint is a
+        // deliberately-curated far-field context label -- "tier-0
+        // (visible zoomed out)" -- regardless of what its `kind` alone
+        // would otherwise allow at this tier. `size != null` (not
+        // `size === 'lg'` specifically) is the gate: EVERY Requirement-2
+        // addition needs to clear this bar, not just the empire-scale
+        // ones, so tier-0-ness is decoupled from which exact size a label
+        // renders at. A landmark with no size hint at all (every entry
+        // curated before this batch) falls through to the exact
+        // pre-Batch-C2 kind-based rule, unchanged.
+        const tierShow = tier === 'near' || lm.kind === 'water' || (tier === 'mid' && lm.kind === 'mountain') || lm.size != null;
         if (!tierShow || isDedupedByLitPlace(lm, litByName)) {
             el.style.display = 'none';
             continue;
@@ -685,9 +759,15 @@ function labelDirection(lat, lon) {
 // assuming a single fixed one). Styling by kind (italic water names vs
 // small-caps mountain/region names) is entirely app.css's job, driven by
 // the data-kind attribute -- map.js only decides placement and the testid.
+// Batch C2: `data-size` (sm/md/lg) is only written when `l.size` is
+// actually set -- every pre-Batch-C2 landmark has none, and omitting the
+// attribute entirely (rather than writing a literal "undefined"/"null")
+// keeps `.landmark-label:not([data-size])` a meaningful, honest selector
+// for "no size hint" if app.css ever wants one.
 function makeLandmarkIcon(l) {
     const dir = labelDirection(l.lat, l.lon);
-    const html = `<span class="landmark-label" data-kind="${esc(l.kind)}" data-dir="${dir}" data-testid="landmark-${esc(slugify(l.name))}">${esc(l.name)}</span>`;
+    const sizeAttr = l.size ? ` data-size="${esc(l.size)}"` : '';
+    const html = `<span class="landmark-label" data-kind="${esc(l.kind)}" data-dir="${dir}"${sizeAttr} data-testid="landmark-${esc(slugify(l.name))}">${esc(l.name)}</span>`;
     return L.divIcon({ html, className: 'landmark-label-icon', iconSize: [0, 0] });
 }
 
@@ -773,11 +853,13 @@ export function setLandmarks(id, landmarksJson) {
     // dedupe + collision-damping passes (Fix round 1 / M1 -- see the
     // LANDMARK_DEDUPE_KM/COLLISION_CELL_PX comment) don't need a round-trip
     // through the rendered icon's own data-kind attribute or a second
-    // Leaflet getLatLng() call every redraw.
+    // Leaflet getLatLng() call every redraw. `size` (Batch C2) travels the
+    // same way, for the same reason -- applyLabelTier's tier-0 check reads
+    // `lm.size` directly rather than the DOM's data-size attribute.
     inst.landmarkMarkers = landmarks.map(l => {
         const marker = L.marker([l.lat, l.lon], { icon: makeLandmarkIcon(l), interactive: false, pane: 'landmarksPane' });
         marker.addTo(inst.map);
-        return { marker, kind: l.kind, name: l.name, lat: l.lat, lon: l.lon };
+        return { marker, kind: l.kind, name: l.name, lat: l.lat, lon: l.lon, size: l.size ?? null };
     });
     applyLabelTier(inst);
 }
@@ -1172,6 +1254,55 @@ const ArrowLayer = L.Layer.extend({
 // polygon's own on-screen coverage right now) -- app.css only owns the
 // resulting look for each tier via a single-class-plus-attribute selector,
 // same discipline as .landmark-label's data-kind/data-dir.
+//
+// Batch C2 / design-direction.md's Atlas plate detail SECOND ADDENDUM adds
+// a second thing: every feature's translucent area WASH ("the plate is
+// HAND-TINTED... every historical border feature carries a soft
+// translucent area wash... assigned deterministically from the polity
+// NAME (hash -> palette index), so the same power keeps its color as the
+// slider crosses snapshots"). POLITY_TINTS/polityFillColor below implement
+// exactly that hash; setData (this layer) sets each path's fill inline
+// from it once, at creation, since a feature's name never changes for the
+// life of that path element (no need to recompute on every zoom/pan
+// redraw the way position does).
+const POLITY_TINTS = [
+    '#C98A8A', // 0 rose
+    '#C9B37E', // 1 buff
+    '#93A98B', // 2 sage
+    '#7E99B5', // 3 pale lapis
+    '#A18CB0', // 4 lilac
+    '#B59B7E', // 5 tan
+    '#8FA07A', // 6 moss
+    '#C08E7A', // 7 coral
+];
+
+// Deterministic-by-NAME tint pick (Requirement 1: "hash the feature's name
+// -- sum of UTF-16 code units mod 8 -- simple and stable; comment the
+// algorithm"). Normalizing (trim + lowercase + collapse internal
+// whitespace runs to one space) before hashing means two spellings that
+// differ only in case/spacing -- never actually happens in this dataset's
+// own curated names today, but a defensive equivalence regardless, same
+// spirit as slugify's own case-insensitivity -- still land on the same
+// tint. Pure function of the name alone (no draw order, no array index,
+// no per-snapshot state), so "Roman Empire" hashes to the exact same
+// palette slot whether it's the only feature in a snapshot or the fifth --
+// which is the whole point: the SAME power keeps the SAME color as the
+// slider crosses from one border snapshot to another that also carries it
+// (verified by WORLD-13's own two-snapshot determinism property). Every
+// curated border feature carries a `name` today (data/curated/borders/
+// *.geojson), but this degrades harmlessly to hashing the empty string
+// (palette index 0, "rose") for a hypothetical unnamed one rather than
+// leaving it unfilled -- Requirement 1 says "every border feature", not
+// "every named one".
+function polityFillColor(name) {
+    const normalized = String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    let sum = 0;
+    for (let i = 0; i < normalized.length; i++) {
+        sum += normalized.charCodeAt(i);
+    }
+    return POLITY_TINTS[sum % POLITY_TINTS.length];
+}
+
 const BorderLayer = L.Layer.extend({
     initialize() {
         this._paths = []; // [{ path, feature }]
@@ -1214,6 +1345,15 @@ const BorderLayer = L.Layer.extend({
         const features = (featureCollection && featureCollection.features) || [];
         this._paths = features.map(feature => {
             const path = svgEl('path', { class: 'atlas-border' });
+            // Requirement 1: per-feature tint, set inline (style.fill, not
+            // the `fill` presentation attribute) so it beats app.css's own
+            // .atlas-border class rule on specificity regardless of source
+            // order -- an attribute alone sits BELOW any class selector.
+            // Computed once here, not in _redraw: a feature's name (the
+            // only input polityFillColor reads) never changes for the life
+            // of this path element, so there's nothing to recompute on a
+            // later zoom/pan.
+            path.style.fill = polityFillColor(feature.properties && feature.properties.name);
             this._svg.appendChild(path);
             return { path, feature };
         });

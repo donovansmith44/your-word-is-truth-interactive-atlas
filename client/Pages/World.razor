@@ -6,7 +6,7 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
-<PageTitle>Bible Atlas &mdash; World</PageTitle>
+<PageTitle>Bible Explorer &mdash; World</PageTitle>
 
 <div class="world-page">
     <div id="world-map" class="world-map" data-testid="world-map" @ref="_mapEl"></div>
@@ -24,7 +24,7 @@
         <PlaceCard Place="hoverPlace" X="_hoverX" Y="_hoverY"
                    WindowFrom="@(_scriptureRef is null ? _from : (int?)null)"
                    WindowTo="@(_scriptureRef is null ? _to : (int?)null)"
-                   OnPointerEnter="CancelCardClose" OnPointerLeave="ScheduleCardClose"
+                   OnPointerEnter="CardPointerEnter" OnPointerLeave="CardPointerLeave"
                    OnOpenPlace="OpenPlaceFromCard" OnExploreNode="OpenExploreNode" />
     }
 
@@ -185,6 +185,27 @@
     private double _hoverX;
     private double _hoverY;
     private CancellationTokenSource? _closeCts;
+
+    // Requirement 0c (user 2026-08-19: "hover interactions on both the map
+    // and the Bible are extremely fickle. FIX IT."): the real, root-caused
+    // bug behind that report -- reproduced properly here, in source, not
+    // the demo-only hotpatch's document-query workaround. The pointer's
+    // physical journey off a marker and onto the card it's already
+    // pointing at is TWO separate DOM events on TWO separate elements
+    // (Leaflet's marker `mouseout`, dispatched to .NET via an async JS
+    // interop call -- MapInterop/map.js's wireEvents -- and PlaceCard's own
+    // `@onpointerenter`, dispatched through Blazor's own, also-async event
+    // pipeline) with NO ordering guarantee between them. The marker's own
+    // leave can resolve in C# AFTER the card's enter already ran: if
+    // OnPlaceLeave always scheduled a close regardless, that LATE-arriving
+    // schedule has nothing left to cancel it (the card's own enter, which
+    // would have cancelled it, already fired in the past), and the card
+    // closes out from under a pointer that is legitimately still sitting on
+    // it. `_pointerOverCard` closes that race: it's the one piece of state
+    // both sides can check that doesn't depend on event ORDER, only on
+    // where the pointer physically is RIGHT NOW -- see OnPlaceLeave and
+    // CardPointerEnter/CardPointerLeave below for the two halves of the fix.
+    private bool _pointerOverCard;
 
     // arrow-tip state (WORLD-4/contract "arrow-tip"). Text is precomputed
     // (rather than a place/arrow reference resolved in markup) so a stale
@@ -695,7 +716,21 @@
         StateHasChanged();
     }
 
-    public void OnPlaceLeave() => ScheduleCardClose();
+    // Requirement 0c: does NOT unconditionally schedule a close anymore --
+    // see _pointerOverCard's own comment for the exact race this guards
+    // against. If the pointer is (as far as this component currently
+    // knows) already over the card, a marker-leave arriving late tells us
+    // nothing new: the card's own eventual OnPointerLeave (CardPointerLeave
+    // below) is what will actually close it once the pointer leaves THAT.
+    public void OnPlaceLeave()
+    {
+        if (_pointerOverCard)
+        {
+            return;
+        }
+
+        ScheduleCardClose();
+    }
 
     // Marker clicks are reported by map.js per the interop contract but
     // have no behavior yet -- out of scope for WORLD-1/WORLD-2 (hover
@@ -793,14 +828,27 @@
     {
         _closeCts?.Cancel();
         _hoverPlace = null;
+        _pointerOverCard = false;
     }
 
     // The place card stays open while the pointer is over the marker OR
-    // the card itself: leaving either one schedules a close, entering
-    // either one (CancelCardClose, wired to PlaceCard.OnPointerEnter, and
-    // OnPlaceHover above) cancels a pending close. This gives the pointer
-    // room to cross the gap between a marker and its card -- which never
-    // sit at the same screen point -- without the card flickering shut.
+    // the card itself: leaving either one schedules a close (OnPlaceLeave
+    // above / CardPointerLeave below), entering either one (OnPlaceHover
+    // above / CardPointerEnter below) cancels a pending close. This gives
+    // the pointer room to cross the gap between a marker and its card --
+    // which never sit at the same screen point -- without the card
+    // flickering shut.
+    //
+    // Requirement 0c: the grace window is 350ms, up from 150ms -- the
+    // SECOND half of the fickleness fix, alongside _pointerOverCard itself.
+    // 150ms was tight enough that an ordinary, unhurried pointer move
+    // across the marker-to-card gap could occasionally still lose the
+    // race even with _pointerOverCard's own fix in place (the card's own
+    // OnPointerEnter has to actually finish its async Blazor dispatch
+    // before the close fires); 350ms gives that real margin without
+    // reading as a delay a user would ever notice on a deliberate
+    // pointer-leaves-both close (CONTRACT's own "closes within ~1s" bar
+    // for requirement 0c's acceptance test).
     private void ScheduleCardClose()
     {
         _closeCts?.Cancel();
@@ -809,13 +857,34 @@
         _ = CloseCardAfterDelay(cts);
     }
 
-    private void CancelCardClose() => _closeCts?.Cancel();
+    // PlaceCard.OnPointerEnter: the pointer has physically entered the
+    // card. Cancels any pending close (same as the pre-0c CancelCardClose
+    // this replaces) AND records that fact in _pointerOverCard, so a
+    // late-arriving marker-leave (OnPlaceLeave above) knows not to
+    // schedule a fresh close out from under it -- see _pointerOverCard's
+    // own comment for the full race this closes.
+    private void CardPointerEnter()
+    {
+        _pointerOverCard = true;
+        _closeCts?.Cancel();
+    }
+
+    // PlaceCard.OnPointerLeave: the pointer has physically left the card.
+    // Clears _pointerOverCard (a later marker-leave, if one arrives, is
+    // now free to schedule its own close again) and schedules the close
+    // itself -- same as the pre-0c ScheduleCardClose wiring this replaces,
+    // just also keeping _pointerOverCard honest.
+    private void CardPointerLeave()
+    {
+        _pointerOverCard = false;
+        ScheduleCardClose();
+    }
 
     private async Task CloseCardAfterDelay(CancellationTokenSource cts)
     {
         try
         {
-            await Task.Delay(150, cts.Token);
+            await Task.Delay(350, cts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -828,6 +897,7 @@
         }
 
         _hoverPlace = null;
+        _pointerOverCard = false;
         StateHasChanged();
     }
 

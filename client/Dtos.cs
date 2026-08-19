@@ -109,5 +109,9 @@ public sealed record NarrativeOut(string Id, string Name, string Color, List<str
 /// (mirrors atlas-core's own <c>serde_json::Value</c> pass-through).
 public sealed record BordersOut(int? SnapshotYear, JsonElement Geojson);
 
-/// <c>GET /api/landmarks</c> array element.
-public sealed record LandmarkDto(string Name, string Kind, double Lat, double Lon);
+/// <c>GET /api/landmarks</c> array element. <see cref="Size"/> is the
+/// optional Batch C2 far-field size hint ("sm"/"md"/"lg", null for every
+/// landmark curated before that batch) -- see atlas-core's
+/// <c>Landmark::size</c> doc comment. Forwarded to map.js verbatim by
+/// <see cref="MapInterop.SetLandmarks"/>; the client itself never inspects it.
+public sealed record LandmarkDto(string Name, string Kind, double Lat, double Lon, string? Size);

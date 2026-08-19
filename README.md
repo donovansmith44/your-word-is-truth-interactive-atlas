@@ -1,4 +1,4 @@
-# Bible Atlas
+# Bible Explorer
 
 An explorable Bible atlas: a KJV reader alongside a `/world` map with a time
 slider, narrative arrows, and cross-references. Rust API (`server/`) + Blazor
