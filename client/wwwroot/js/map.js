@@ -35,7 +35,13 @@
 // tile/{z}/{y}/{x}?f=json on each service for the LOD lists this compares.
 const TILE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}';
 const TILE_FALLBACK = 'https://basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png';
-const TILE_ATTRIBUTION = 'Tiles &copy; Esri, National Geographic, Garmin, HERE, UNEP-WCMC, USGS, NASA, ESA, NRCAN, GEBCO, NOAA, iPC';
+// Esri's own copyrightText for the NatGeo_World_Map service, verbatim (order
+// and all): a fix-round review found this had drifted (Esri/National
+// Geographic swapped, METI silently dropped, "increment P Corp." abbreviated
+// to "iPC") — keep this string byte-for-byte in sync with the credits panel
+// (MainLayout.razor's attribution popover), which quotes the same source.
+const TILE_ATTRIBUTION =
+    'Tiles &copy; National Geographic, Esri, Garmin, HERE, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, increment P Corp.';
 const TILE_MAX_NATIVE_ZOOM = 16; // NatGeo_World_Map's own max LOD (see comment above)
 
 // Roughly centers the Fertile Crescent / Levant before the first real
@@ -167,6 +173,28 @@ export function init(el, dotnetRef, opts) {
 // way, keyed by "{narrative}:{order}", and read place positions straight
 // out of the `markers` map this loop maintains -- ArrowLayer.setArrows is
 // called after it so every place an arrow can reference is already there.
+//
+// Coordinates are run through nudgeCloseLatLng before use (both here and,
+// transitively, by ArrowLayer's arrow endpoints, which look positions up
+// from this same `markers` map): curated places occasionally geocode very
+// close together -- sometimes to the EXACT same lat/lon (e.g. Shittim and
+// the "plains of Moab" camp -- both real, distinct places per
+// data/curated's own disambiguation comments, just resolved identically by
+// the upstream geocoder), sometimes just close (Gilgal and Jericho, ~1.8km
+// apart -- accurate geography, Gilgal genuinely was that close to Jericho).
+// .atlas-marker's hit box is deliberately tiny specifically so merely-close
+// neighbors already resolve correctly in the COMMON case (Rephidim/Mount
+// Sinai and Marah/Elim, both ~10-13km apart, hover fine today -- see
+// app.css) -- but once two places sit within a few km of each other their
+// 4x4px hit boxes start to overlap, and the browser then delivers
+// hover/click to whichever DOM element happens to paint on top, not
+// deterministically to either place (caught by WORLD-2 and the arrow-hover
+// test once Task 16's narratives introduced both the exact Shittim/Moab
+// collision and the close-but-distinct Gilgal/Jericho pair). Nudging every
+// place that lands within CLOSE_THRESHOLD_KM of an already-placed one (a
+// real pairwise check across the scene, not just an exact-match shortcut)
+// keeps each one independently hoverable without visibly moving away from
+// its real-world location at any zoom this app uses.
 export function setScene(id, sceneJson) {
     const inst = instances.get(id);
     if (!inst) {
@@ -176,24 +204,27 @@ export function setScene(id, sceneJson) {
     const scene = typeof sceneJson === 'string' ? JSON.parse(sceneJson) : (sceneJson || {});
     const places = scene.places || [];
     const seen = new Set();
+    const placed = []; // {lat, lon} already resolved this call, in scene order -- nudgeCloseLatLng checks each new candidate against these
 
     for (const p of places) {
         seen.add(p.id);
+        const [lat, lon] = nudgeCloseLatLng(p, placed);
+        placed.push({ lat, lon });
         const prior = inst.markers.get(p.id);
 
         if (!prior) {
-            const marker = L.marker([p.lat, p.lon], { icon: makeIcon(p) });
+            const marker = L.marker([lat, lon], { icon: makeIcon(p) });
             wireEvents(marker, inst.dotnetRef, p.id);
             marker.addTo(inst.map);
-            inst.markers.set(p.id, { marker, lat: p.lat, lon: p.lon, brightness: p.brightness, name: p.name });
+            inst.markers.set(p.id, { marker, lat, lon, brightness: p.brightness, name: p.name });
             continue;
         }
 
-        if (prior.lat !== p.lat || prior.lon !== p.lon || prior.brightness !== p.brightness || prior.name !== p.name) {
-            prior.marker.setLatLng([p.lat, p.lon]);
+        if (prior.lat !== lat || prior.lon !== lon || prior.brightness !== p.brightness || prior.name !== p.name) {
+            prior.marker.setLatLng([lat, lon]);
             prior.marker.setIcon(makeIcon(p));
-            prior.lat = p.lat;
-            prior.lon = p.lon;
+            prior.lat = lat;
+            prior.lon = lon;
             prior.brightness = p.brightness;
             prior.name = p.name;
         }
@@ -212,6 +243,53 @@ export function setScene(id, sceneJson) {
     if (!inst.mini) {
         inst.arrows.setArrows(scene.arrows || [], inst.markers);
     }
+}
+
+// See setScene's own doc comment for why this exists. Distance is a plain
+// equirectangular approximation (not geodesically precise) -- more than
+// good enough to decide "too close to hover independently" at the few-km
+// scale this operates at, and far cheaper than a real haversine. `placed`
+// is fresh per setScene call but `places` arrives in a stable, deterministic
+// order (server-sorted by place id -- see atlas-core::scene::lit_places),
+// so the SAME place among the SAME neighbors always lands at the SAME
+// nudge index call to call, keeping a stable scene's markers from jittering
+// on every refetch.
+//
+// CLOSE_THRESHOLD_KM=5 sits deliberately between the one known-broken
+// distance (Gilgal/Jericho, ~1.8km -- see setScene's doc comment) and the
+// nearest known-working one (Marah/Elim, ~10.5km), so this fixes the
+// former without touching (renudging) pairs that already hover correctly
+// today. NUDGE_STEP_DEG (~8.9km) is deliberately LARGER than the threshold
+// that triggers it, so a freshly nudged place always clears the distance
+// that flagged it, and is the same order of magnitude as this app's
+// already-working close-but-distinct neighbors. Successive collisions
+// against the SAME neighborhood are spread around it at the golden angle
+// (same idea phyllotaxis/sunflower-seed packing uses) rather than a single
+// fixed direction, so a third or fourth place crowding one spot -- none
+// exist today, but nothing here assumes exactly two -- would still land at
+// its own distinct spot instead of stacking back onto an earlier nudge.
+const GOLDEN_ANGLE_RAD = 2.399963229728653;
+const CLOSE_THRESHOLD_KM = 5;
+const NUDGE_STEP_DEG = 0.08;
+
+function approxKm(lat1, lon1, lat2, lon2) {
+    const dLat = (lat1 - lat2) * 111.32;
+    const dLon = (lon1 - lon2) * 111.32 * Math.cos((lat1 + lat2) / 2 * Math.PI / 180);
+    return Math.sqrt(dLat * dLat + dLon * dLon);
+}
+
+function nudgeCloseLatLng(p, placed) {
+    let n = 0;
+    for (const q of placed) {
+        if (approxKm(p.lat, p.lon, q.lat, q.lon) < CLOSE_THRESHOLD_KM) {
+            n++;
+        }
+    }
+    if (n === 0) {
+        return [p.lat, p.lon];
+    }
+    const angle = n * GOLDEN_ANGLE_RAD;
+    return [p.lat + NUDGE_STEP_DEG * Math.sin(angle), p.lon + NUDGE_STEP_DEG * Math.cos(angle)];
 }
 
 function wireEvents(marker, dotnetRef, placeId) {
@@ -441,18 +519,65 @@ const ArrowLayer = L.Layer.extend({
         this._placesById = placesById;
         const list = arrows || [];
 
-        // parallelIndex = position among arrows sharing the same UNORDERED
-        // place pair, centered 0, +1, -1, +2, ... -- grouped fresh on every
-        // call (which arrows share a pair can change scene to scene) in
-        // the scene's own array order, which is the narrative/order the
-        // server emits arrows in (stable and deterministic).
-        const pairSeen = new Map(); // pairKey -> count so far
+        // parallelIndex = position among arrows whose curves would land in
+        // the same crowded neighborhood, centered 0, +1, -1, +2, ... --
+        // grouped fresh on every call (which arrows are crowded together can
+        // change scene to scene) in the scene's own array order, which is
+        // the narrative/order the server emits arrows in (stable and
+        // deterministic). Grouped by a COARSE ROUNDED MIDPOINT rather than
+        // an exact from/to place-id match: two arrows between the exact same
+        // two places obviously share a midpoint (the original "this
+        // narrative walks A-B then later B-A again" case this always
+        // handled) -- but Task 16 surfaced a second case a bare place-id
+        // match misses entirely: two DIFFERENT narratives' arrows on
+        // DIFFERENT place pairs that still sit in the same real-world
+        // corner (conquest's Shittim->Gilgal and exodus's Moab->Jericho are
+        // both part of the single crowded "plains of Moab" staging area
+        // opposite Jericho -- their short, near-coincident bowed curves
+        // otherwise overlap enough that a hover square-in-the-middle of one
+        // lands on the OTHER instead; confirmed via a live DOM probe, not
+        // guessed). Rounding each arrow's own from/to midpoint to a coarse
+        // grid catches both cases under the one existing mechanism, since a
+        // shared OR merely nearby midpoint rounds to the identical cell
+        // either way.
+        const CLUSTER_GRID_DEG = 0.05; // ~5km at these latitudes
+        const clusterKey = a => {
+            const from = placesById.get(a.from_place);
+            const to = placesById.get(a.to_place);
+            if (!from || !to) {
+                return [a.from_place, a.to_place].slice().sort().join('|'); // ARROW-1 guarantees this never happens for a real scene; still a valid, stable key if it somehow did
+            }
+            const midLat = (from.lat + to.lat) / 2;
+            const midLon = (from.lon + to.lon) / 2;
+            return `${Math.round(midLat / CLUSTER_GRID_DEG)},${Math.round(midLon / CLUSTER_GRID_DEG)}`;
+        };
+        const clusterTotal = new Map(); // clusterKey -> total members in this scene
+        for (const a of list) {
+            const key = clusterKey(a);
+            clusterTotal.set(key, (clusterTotal.get(key) ?? 0) + 1);
+        }
+        const clusterSeen = new Map(); // clusterKey -> count so far
         const parallelIndexByKey = new Map(); // "{narrative}:{order}" -> centered index
         for (const a of list) {
-            const pairKey = [a.from_place, a.to_place].slice().sort().join('|');
-            const k = pairSeen.get(pairKey) ?? 0;
-            pairSeen.set(pairKey, k + 1);
-            parallelIndexByKey.set(arrowKey(a), centeredIndex(k));
+            const key = clusterKey(a);
+            const k = clusterSeen.get(key) ?? 0;
+            clusterSeen.set(key, k + 1);
+            // A multi-member cluster shifts every member's index up by one
+            // (1, -1, 2, -2, ... -- never 0), so EVERY arrow in a crowded
+            // spot gets a nonzero push, not just the second-and-later ones.
+            // A lone unboosted member (index 0, the pre-Task-16 behavior)
+            // sitting in the shared base region keeps failing to separate
+            // from a boosted neighbor no matter how far that neighbor bows,
+            // because a quadratic bezier's bbox always includes its own f/t
+            // endpoints -- for a crowded cluster those already overlap, so
+            // the "straight" member's tiny bbox stays inside the bowed
+            // member's ever-larger one regardless of magnitude (verified
+            // numerically, not assumed, before landing on this fix). A
+            // single-member cluster (the overwhelming majority of arrows)
+            // is completely unaffected: index 0, no offset, identical to
+            // the pre-existing behavior.
+            const total = clusterTotal.get(key) ?? 1;
+            parallelIndexByKey.set(arrowKey(a), centeredIndex(total > 1 ? k + 1 : k));
         }
 
         const seen = new Set();
@@ -571,7 +696,37 @@ const ArrowLayer = L.Layer.extend({
         const dist = Math.hypot(dx, dy) || 1;
         const nx = -dy / dist;
         const ny = dx / dist;
-        const mag = 0.18 * dist + 14 * entry.parallelIndex;
+        // MIN_BOW_PX (Task 16 finding): two real, geographically-close places
+        // (e.g. Shittim/Gilgal, ~7px apart at this app's typical whole-scene
+        // zoom) can put `dist` itself down in single-digit pixels, making the
+        // proportional-only `0.18 * dist` bow negligible -- the resulting
+        // curve (plus its arrowhead decoration) is so compact that BOTH
+        // endpoint markers sit inside its bounding box, and since
+        // `pointer-events: bounding-box` makes that whole box the arrow's
+        // hover target while markerPane still paints above overlayPane, the
+        // box's CENTER (exactly where a plain .hover() lands) can fall right
+        // on top of one marker's own tiny 4x4px hit area -- confirmed via
+        // `document.elementFromPoint` at that exact point returning the
+        // marker div, not the arrow path (root-caused, not guessed: this is
+        // what silently broke the arrow-hover tooltip once a real narrative
+        // leg made this the first arrow in a scene). A floor well above any
+        // marker's hit box guarantees the curve bulges out past it regardless
+        // of how close the two endpoints are; only already-very-short arrows
+        // are affected; the proportional term still wins for any normal-length
+        // arrow (0.18 * dist alone exceeds this floor past ~100px).
+        //
+        // PARALLEL_STEP_PX (raised from 14, also a Task 16 finding): a
+        // quadratic bezier's bounding box always includes its own f/t
+        // endpoints, so for a crowded multi-arrow cluster (see
+        // setArrows/clusterKey's own comment) the step needs to be large
+        // enough that a cluster member's bbox CENTER clears every other
+        // member's bbox entirely, not merely grow its own tail -- verified
+        // numerically against the real Shittim/Gilgal vs Moab/Jericho
+        // cluster (a Node simulation of this exact bbox math, not a guess)
+        // before landing on this value.
+        const MIN_BOW_PX = 30;
+        const PARALLEL_STEP_PX = 40;
+        const mag = Math.max(0.18 * dist, MIN_BOW_PX) + PARALLEL_STEP_PX * entry.parallelIndex;
         const cx = (f.x + t.x) / 2 + nx * mag;
         const cy = (f.y + t.y) / 2 + ny * mag;
 
