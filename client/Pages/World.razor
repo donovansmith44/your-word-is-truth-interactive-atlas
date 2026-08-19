@@ -302,6 +302,22 @@
         if (!string.IsNullOrEmpty(RefQuery))
         {
             _scriptureRef = RefQuery;
+
+            // Fix round 1 (finding 5): hide the border LAYER the moment
+            // scripture mode is entered -- unconditionally, right where
+            // _scriptureRef itself is set, before the scene fetch below
+            // even starts. Previously this only happened in
+            // DebouncedLoadScriptureScene's SUCCESS branch, so a failed
+            // scripture fetch left the vector layer painting even though
+            // the border-tag (already correctly driven by _scriptureRef,
+            // via the @if in the markup) had disappeared -- borders with no
+            // tag explaining what snapshot they're from. Both now hide
+            // together, regardless of the fetch's outcome.
+            if (_mapInterop is not null)
+            {
+                await _mapInterop.SetBordersVisible(false);
+            }
+
             await DebouncedLoadScriptureScene(RefQuery);
             return;
         }
@@ -499,6 +515,19 @@
     // whatever was already there.
     private async Task LoadBordersFor(int from, int to, CancellationTokenSource cts)
     {
+        // Fix round 1 (finding 3): this restore used to run AFTER the fetch
+        // resolved, inside the try's success branch only -- so a transient
+        // fetch failure right after returning from scripture mode left the
+        // layer hidden with nothing left to un-hide it until the NEXT
+        // successful fetch. Moved here, unconditionally, before the fetch
+        // even starts, matching what this comment (and MapInterop.
+        // SetBordersVisible's own doc comment) already promised. Runs even
+        // when the snapshot-year no-op guard below skips the data push.
+        if (_mapInterop is not null)
+        {
+            await _mapInterop.SetBordersVisible(true);
+        }
+
         try
         {
             var borders = await Atlas.Borders(from, to);
@@ -507,10 +536,23 @@
                 return;
             }
 
+            // Fix round 1 (finding 2, client half): a slider drag that
+            // stays within the same border snapshot's window still
+            // re-fetches (from/to changed) but very often resolves to the
+            // SAME snapshot_year -- pushing it again would re-serialize and
+            // rebuild an identical SVG layer for no visible change. Compare
+            // against the PRIOR _borders (captured before it's overwritten
+            // just below) so this only ever short-circuits the interop data
+            // push -- _borders itself always updates, so the border-tag's
+            // YearText stays correct, and the visibility restore above
+            // already ran regardless. Safe because a compiled snapshot's
+            // geojson for a given year never changes within a running
+            // server's lifetime (see atlas-core::data::AtlasData::borders).
+            var sameSnapshot = _borders?.SnapshotYear == borders.SnapshotYear;
             _borders = borders;
-            if (_mapInterop is not null)
+
+            if (_mapInterop is not null && !sameSnapshot)
             {
-                await _mapInterop.SetBordersVisible(true);
                 await _mapInterop.SetBorders(borders.Geojson);
             }
         }
@@ -518,7 +560,8 @@
         {
             // Silent per design-direction.md's Atlas plate detail -- skip
             // this update, keep showing whatever border snapshot (if any)
-            // is already on the map.
+            // is already on the map. Visibility was already restored above,
+            // independent of this failure.
         }
         finally
         {
@@ -571,10 +614,11 @@
                 // Atlas plate detail: "Scripture mode: hide the border
                 // layer AND the tag (no time context)" -- the tag hides
                 // itself via the @if in the markup (keyed off _scriptureRef,
-                // already non-null by now), but the map's border layer
-                // needs an explicit hide; DebouncedLoadScene's
-                // LoadBordersFor restores it on a later return to time mode.
-                await _mapInterop.SetBordersVisible(false);
+                // already non-null by now); the layer's hide now happens in
+                // SyncFromQuery, unconditionally, the moment _scriptureRef
+                // is set (fix round 1, finding 5 -- see that comment), so it
+                // still happens even when this fetch fails. DebouncedLoadScene's
+                // LoadBordersFor restores the layer on a later return to time mode.
 
                 // Stamp the mode even though this branch always fits
                 // regardless of the PRIOR value -- a later time-mode load

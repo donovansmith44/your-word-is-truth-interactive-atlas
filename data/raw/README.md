@@ -358,7 +358,12 @@ David and Solomon"`; `world_bc1.geojson`/`world_100.geojson` contain
 
 `https://github.com/aourednik/historical-basemaps` ships a full `LICENSE`
 file containing the standard GPL-3.0 text (verified by fetching it directly,
-not inferred from a repo topic tag). GPL-3.0's copyleft/source-availability
+not inferred from a repo topic tag). Fix round 1: `fetch-raw.ps1` now also
+fetches this file verbatim to `data/raw/borders/LICENSE` (35,147 bytes,
+starts `GNU GENERAL PUBLIC LICENSE / Version 3, 29 June 2007`) so the
+license text this determination relies on is reproducible locally, not
+just linked — verified idempotent by running the script twice in a row
+(second run printed `have borders\LICENSE`). GPL-3.0's copyleft/source-availability
 obligations (providing a corresponding-source offer, licensing derivative
 works under GPL-3.0, etc.) are triggered by **conveying/distributing** the
 work to others — the license places no restriction on private use, local
@@ -367,12 +372,18 @@ decision) a **local, personal, deploy-ready sketch app**, not a distributed
 product — this use (fetch once, clip/simplify at build time via atlas-etl,
 serve locally from `atlas-server`) stays entirely within GPL-3.0's
 unrestricted private-use terms. **Determination: usable, not blocked.**
-Required attribution is carried in two places: this README (source +
-license) and the app's own `attribution` UI element per the header
-CONTRACT — if this project is ever distributed/published beyond local
-personal use, the borders feature would need either GPL-3.0 compliance
-(offering corresponding source, matching license on redistribution) or the
-dataset swapped for a differently-licensed one; out of scope for M1.
+Required attribution is carried here, in this README (source + license,
+plus the full `LICENSE` text fetched verbatim to `data/raw/borders/LICENSE`
+for local reproducibility — see the fetch script below). It is **not yet**
+carried in the app's own UI: no `attribution` element exists in `client/`
+as of this writing (fix round 1, 2026-08-19) — that is queued for **Task
+16**'s attribution pass (`client/Layout/MainLayout.razor`'s footer
+credits), which must add this dataset's attribution line alongside the
+other sources' before that pass is considered complete. If this project is
+ever distributed/published beyond local personal use, the borders feature
+would additionally need either GPL-3.0 compliance (offering corresponding
+source, matching license on redistribution) or the dataset swapped for a
+differently-licensed one; out of scope for M1.
 
 **Required attribution**: "Historical border data from [aourednik/historical-basemaps](https://github.com/aourednik/historical-basemaps), GNU GPL v3.0."
 

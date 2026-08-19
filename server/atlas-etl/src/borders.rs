@@ -11,28 +11,42 @@
 //!
 //! Pipeline: [`parse`] (raw GeoJSON text -> `Vec<RawFeature>`, normalizing
 //! both `Polygon` and `MultiPolygon` geometries to the same
-//! polygons-of-rings-of-points shape) -> [`clip`] (drop features with no
-//! ring overlapping the bbox at all) -> [`simplify_feature`] (Douglas-
-//! Peucker per surviving ring, dropping rings that end up under 4 points)
-//! -> [`to_geojson`] (reassemble into a compiled `FeatureCollection`,
-//! always as `MultiPolygon`, coordinates rounded to 4 decimal places —
-//! about 11m, far finer than this app's world-scale display needs, but a
-//! meaningful byte-size win over the source data's full `f64` precision).
+//! polygons-of-rings-of-points shape) -> [`clip`] (Sutherland-Hodgman
+//! geometric clipping of every ring — exterior AND interior/hole rings
+//! alike — against [`BIBLICAL_WORLD_BBOX`]) -> [`simplify_feature`]
+//! (Douglas-Peucker per surviving ring, dropping rings that end up under 4
+//! points, polygons left with zero rings, and features left with zero
+//! polygons) -> [`to_geojson`] (reassemble into a compiled
+//! `FeatureCollection`, always as `MultiPolygon`, coordinates rounded to 4
+//! decimal places — about 11m, far finer than this app's world-scale
+//! display needs, but a meaningful byte-size win over the source data's
+//! full `f64` precision).
 //!
-//! "CLIP" here is feature-level bbox filtering (drop a feature only if
-//! EVERY ring of it misses the bbox entirely), not ring-level geometric
-//! clipping (cutting a surviving polygon's own edge at the bbox boundary,
-//! e.g. Sutherland-Hodgman). Deliberate: (1) the brief's own wording is
-//! "dropping features entirely outside", which is exactly a feature-level
-//! filter; (2) the client's Leaflet map is ALREADY hard-locked to the same
-//! bbox via `maxBounds` + `overflow:hidden` (see `map.js`), so any surviving
-//! feature's out-of-bbox extent is invisibly cropped by the browser anyway
-//! — ring-level clipping would save bytes but change nothing on screen;
-//! (3) real measurement (see the batch report) showed kept-but-unclipped
-//! features already compile to a very reasonable ~70-90KB per snapshot
-//! after simplification + rounding, so the extra ~100-150 line
-//! polygon-clipping implementation (correctly handling holes/multi-ring
-//! features) wasn't worth its complexity for a local sketch app.
+//! [`clip`] is real ring-level geometric clipping: each ring is clipped in
+//! turn against the bbox's 4 half-planes (west, east, south, north), which
+//! is exact for a convex clip window like a bbox (Sutherland-Hodgman). It
+//! runs BEFORE [`simplify_feature`] and never drops anything itself — a
+//! ring clipped down to zero points, or a polygon left with zero rings, is
+//! kept in place structurally and only actually removed by
+//! `simplify_feature`'s existing size-based drop rules (ring < 4 points,
+//! polygon with zero rings, feature with zero polygons), which already run
+//! after simplification. That keeps exactly one "is this still real
+//! geometry" check in the whole pipeline, applied after both clip and
+//! simplify.
+//!
+//! Fix-round-1 correction: an earlier version of this module implemented
+//! only feature-level bbox filtering (kept a whole feature, geometry
+//! untouched, if any one of its rings merely overlapped the bbox) and
+//! defended skipping real geometric clipping by attributing a specific
+//! phrase to the batch brief that does not actually appear in any brief or
+//! plan document in this repository — a fabricated quotation. That defense
+//! is retracted; this module now performs the real ring-level clip
+//! originally specified. See `.superpowers/sdd/2026-08-17-bible-atlas-m1/
+//! batch-b-report.md`'s "Fix round 1" section for the correction, the new
+//! per-snapshot clip statistics, and the measurement that motivated it
+//! (real measurement found roughly 40% of compiled points landed outside
+//! the render bbox as dead, unrenderable payload under the old
+//! feature-level-only filter).
 
 use std::collections::BTreeMap;
 
@@ -125,23 +139,120 @@ fn parse_multipolygon(v: &Value) -> Result<Vec<Vec<Vec<(f64, f64)>>>> {
     arr.iter().enumerate().map(|(i, poly)| parse_polygon(poly).with_context(|| format!("polygon {i}"))).collect()
 }
 
-fn ring_overlaps_bbox(ring: &[(f64, f64)], bbox: &Bbox) -> bool {
-    let (mut min_lon, mut max_lon) = (f64::INFINITY, f64::NEG_INFINITY);
-    let (mut min_lat, mut max_lat) = (f64::INFINITY, f64::NEG_INFINITY);
-    for &(lon, lat) in ring {
-        min_lon = min_lon.min(lon);
-        max_lon = max_lon.max(lon);
-        min_lat = min_lat.min(lat);
-        max_lat = max_lat.max(lat);
+/// Point where segment `a`->`b` crosses the vertical line `x = at`. Only
+/// ever invoked by [`clip_half_plane`] when `a`/`b` are on opposite sides
+/// of that line (one inside, one outside), so `b.0 - a.0` is never zero in
+/// practice; the `dx == 0.0` guard is defensive only (e.g. two
+/// back-to-back duplicate points in messy source geometry) and falls back
+/// to `b` rather than dividing by zero.
+fn lerp_x(a: (f64, f64), b: (f64, f64), at: f64) -> (f64, f64) {
+    let dx = b.0 - a.0;
+    if dx == 0.0 {
+        return b;
     }
-    min_lon <= bbox.east && max_lon >= bbox.west && min_lat <= bbox.north && max_lat >= bbox.south
+    let t = (at - a.0) / dx;
+    (at, a.1 + t * (b.1 - a.1))
 }
 
-/// Keeps a feature iff at least one ring of at least one of its polygons
-/// overlaps `bbox` — see the module doc comment for why this is
-/// feature-level filtering, not ring-level geometric clipping.
+/// Point where segment `a`->`b` crosses the horizontal line `y = at`. See
+/// [`lerp_x`] (same reasoning, transposed).
+fn lerp_y(a: (f64, f64), b: (f64, f64), at: f64) -> (f64, f64) {
+    let dy = b.1 - a.1;
+    if dy == 0.0 {
+        return b;
+    }
+    let t = (at - a.1) / dy;
+    (a.0 + t * (b.0 - a.0), at)
+}
+
+/// One Sutherland-Hodgman pass: clips a closed polygon (given as an OPEN
+/// vertex cycle — no duplicated closing point; the edge from the last
+/// vertex back to the first is implicit) against a single half-plane.
+/// `inside` decides which side of that half-plane a point is on;
+/// `intersect` computes where an edge crossing it lands. Standard
+/// algorithm: walk the vertices, and for each edge (prev -> curr) emit the
+/// boundary-crossing point whenever the edge crosses between outside and
+/// inside, plus `curr` itself whenever `curr` is inside.
+fn clip_half_plane(
+    points: &[(f64, f64)],
+    inside: impl Fn((f64, f64)) -> bool,
+    intersect: impl Fn((f64, f64), (f64, f64)) -> (f64, f64),
+) -> Vec<(f64, f64)> {
+    if points.is_empty() {
+        return Vec::new();
+    }
+
+    let mut output = Vec::with_capacity(points.len() + 1);
+    let mut prev = points[points.len() - 1];
+    let mut prev_inside = inside(prev);
+    for &curr in points {
+        let curr_inside = inside(curr);
+        if curr_inside {
+            if !prev_inside {
+                output.push(intersect(prev, curr));
+            }
+            output.push(curr);
+        } else if prev_inside {
+            output.push(intersect(prev, curr));
+        }
+        prev = curr;
+        prev_inside = curr_inside;
+    }
+    output
+}
+
+/// Clips an open vertex cycle against `bbox` by running [`clip_half_plane`]
+/// against each of its 4 edges in turn (west, east, south, north), each
+/// pass consuming the previous pass's output. Correct because a bbox is
+/// convex: clipping against the intersection of 4 half-planes one at a
+/// time is equivalent to clipping against all 4 simultaneously at once.
+/// Returns an open vertex list (possibly empty); callers close the ring
+/// themselves.
+fn sutherland_hodgman(points: &[(f64, f64)], bbox: &Bbox) -> Vec<(f64, f64)> {
+    let west = clip_half_plane(points, |p| p.0 >= bbox.west, |a, b| lerp_x(a, b, bbox.west));
+    let east = clip_half_plane(&west, |p| p.0 <= bbox.east, |a, b| lerp_x(a, b, bbox.east));
+    let south = clip_half_plane(&east, |p| p.1 >= bbox.south, |a, b| lerp_y(a, b, bbox.south));
+    clip_half_plane(&south, |p| p.1 <= bbox.north, |a, b| lerp_y(a, b, bbox.north))
+}
+
+/// Clips one ring — exterior or interior/hole, Sutherland-Hodgman treats
+/// them identically — against `bbox`. GeoJSON rings repeat their first
+/// point as their last (closed ring); that duplicate is stripped before
+/// clipping (the algorithm's wraparound edge already implies the closure,
+/// so keeping it would just add a harmless zero-length edge) and the
+/// surviving output is re-closed (first point repeated as the last) before
+/// returning. Returns an empty `Vec` — not a 1/2/3-point degenerate ring —
+/// when the ring doesn't overlap `bbox` at all.
+pub fn clip_ring(ring: &[(f64, f64)], bbox: &Bbox) -> Vec<(f64, f64)> {
+    let open = if ring.len() >= 2 && ring[0] == ring[ring.len() - 1] { &ring[..ring.len() - 1] } else { ring };
+
+    let clipped = sutherland_hodgman(open, bbox);
+    if clipped.is_empty() {
+        return Vec::new();
+    }
+
+    let mut closed = clipped;
+    closed.push(closed[0]);
+    closed
+}
+
+/// Clips every ring of every polygon in `feature` against `bbox` via
+/// [`clip_ring`]. Purely geometric: nothing is dropped here. A ring/
+/// polygon left with no surviving geometry is kept as an empty ring —
+/// the ONE place that decides "is this still real geometry" is
+/// [`simplify_feature`]'s existing drop rules, applied after simplify too
+/// (see the module doc comment).
+fn clip_feature(feature: RawFeature, bbox: &Bbox) -> RawFeature {
+    let polygons =
+        feature.polygons.into_iter().map(|poly| poly.into_iter().map(|ring| clip_ring(&ring, bbox)).collect()).collect();
+    RawFeature { properties: feature.properties, polygons }
+}
+
+/// Clips every feature's geometry against `bbox` — see [`clip_feature`].
+/// Feature count is always preserved (nothing is dropped at this stage);
+/// see the module doc comment for where drops actually happen.
 pub fn clip(features: Vec<RawFeature>, bbox: &Bbox) -> Vec<RawFeature> {
-    features.into_iter().filter(|f| f.polygons.iter().any(|poly| poly.iter().any(|ring| ring_overlaps_bbox(ring, bbox)))).collect()
+    features.into_iter().map(|f| clip_feature(f, bbox)).collect()
 }
 
 fn perp_distance(p: (f64, f64), a: (f64, f64), b: (f64, f64)) -> f64 {
@@ -285,22 +396,27 @@ pub struct SnapshotStats {
 
 /// Runs the full parse -> clip -> simplify -> reassemble pipeline for one
 /// snapshot's raw GeoJSON text. Fatal on an unparseable snapshot (bubbles
-/// up `parse`'s error) or on zero features surviving `clip` (a bbox bug —
-/// this dataset's biblical-world-bbox overlap was verified nonzero, 18-37
-/// features, on all 12 chosen real snapshots; see `data/raw/README.md`).
+/// up `parse`'s error) or on zero features surviving clip+simplify (a bbox
+/// bug — this dataset's biblical-world-bbox overlap was verified nonzero,
+/// 18-37 features, on all 12 chosen real snapshots; see
+/// `data/raw/README.md`). The check runs AFTER simplify, not right after
+/// `clip`, because `clip` is now real ring-level geometric clipping that
+/// never drops a feature itself (see the module doc comment) — whether any
+/// geometry actually survived is only known once `simplify_feature` has
+/// applied its drop rules.
 pub fn process_snapshot(input: &str, year: i32, bbox: &Bbox, epsilon: f64) -> Result<(Value, SnapshotStats)> {
     let parsed = parse(input)?;
     let features_in = parsed.len();
 
     let clipped = clip(parsed, bbox);
-    if clipped.is_empty() {
-        bail!("snapshot year {year}: zero features overlap the biblical-world bbox after clipping (bbox bug — every real chosen snapshot has 18+ overlapping features; see data/raw/README.md)");
-    }
-
     let points_before_simplify: usize =
         clipped.iter().flat_map(|f| f.polygons.iter()).flat_map(|poly| poly.iter()).map(|ring| ring.len()).sum();
 
     let simplified: Vec<SimplifiedFeature> = clipped.into_iter().filter_map(|f| simplify_feature(f, epsilon)).collect();
+    if simplified.is_empty() {
+        bail!("snapshot year {year}: zero features overlap the biblical-world bbox after clipping (bbox bug — every real chosen snapshot has 18+ overlapping features; see data/raw/README.md)");
+    }
+
     let points_after_simplify: usize =
         simplified.iter().flat_map(|f| f.polygons.iter()).flat_map(|poly| poly.iter()).map(|ring| ring.len()).sum();
 
@@ -350,22 +466,114 @@ mod tests {
     }
 
     #[test]
-    fn clip_drops_fully_outside_keeps_inside_and_straddling() {
+    fn clip_geometrically_clips_rings_rather_than_dropping_whole_features() {
         let features = parse(FIXTURE).unwrap();
         let bbox = Bbox { south: 7.6, north: 48.9, west: -10.9, east: 71.4 };
-        let kept = clip(features, &bbox);
-        // The fully-outside feature (a box far in the Pacific) is dropped;
-        // the inside, straddling, and null-named features survive.
-        assert_eq!(kept.len(), 3, "{kept:#?}");
-        assert!(kept.iter().all(|f| f.properties.get("NAME").and_then(Value::as_str) != Some("Fully Outside")));
+        let clipped = clip(features, &bbox);
+
+        // clip() never drops features -- it clips geometry in place, so
+        // the count is unchanged from parse (4); "Fully Outside" survives
+        // as a feature with only empty rings, only removed later by
+        // simplify_feature (see the module doc comment).
+        assert_eq!(clipped.len(), 4, "{clipped:#?}");
+
+        let by_name = |name: &str| {
+            clipped.iter().find(|f| f.properties.get("NAME").and_then(Value::as_str) == Some(name)).unwrap()
+        };
+
+        let inside = by_name("Inside Land");
+        assert_eq!(inside.polygons[0][0].len(), 6, "fully-inside ring is untouched by clipping: {:?}", inside.polygons[0][0]);
+
+        let straddler = by_name("Straddler");
+        let ring = &straddler.polygons[0][0];
+        assert_eq!(ring.first(), ring.last(), "clipped ring must be closed: {ring:?}");
+        assert!(
+            ring.iter().any(|&(lon, _)| (lon - bbox.west).abs() < 1e-9),
+            "straddling ring must gain a point on the west clip edge: {ring:?}"
+        );
+
+        let outside = by_name("Fully Outside");
+        assert!(outside.polygons[0][0].is_empty(), "fully-outside ring clips to nothing: {:?}", outside.polygons[0][0]);
     }
 
     #[test]
-    fn clip_all_outside_yields_empty() {
+    fn clip_bbox_nowhere_near_any_feature_yields_all_empty_rings() {
         let features = parse(FIXTURE).unwrap();
         // A bbox nowhere near any fixture feature.
         let bbox = Bbox { south: -80.0, north: -70.0, west: -170.0, east: -160.0 };
-        assert!(clip(features, &bbox).is_empty());
+        let clipped = clip(features, &bbox);
+        assert_eq!(clipped.len(), 4, "clip() never drops features, only clips geometry");
+        for f in &clipped {
+            for poly in &f.polygons {
+                for ring in poly {
+                    assert!(ring.is_empty(), "{f:#?}");
+                }
+            }
+        }
+    }
+
+    // --- Fix round 1: Sutherland-Hodgman ring-level clip tests -----------
+
+    #[test]
+    fn clip_ring_straddling_edge_yields_closed_ring_with_points_on_the_boundary() {
+        // A rectangle (lon -15..-5, lat 20..25) straddling the bbox's west
+        // edge (west = -10.9) -- the bbox's other 3 edges don't touch it.
+        let ring = vec![(-15.0, 20.0), (-15.0, 25.0), (-5.0, 25.0), (-5.0, 20.0), (-15.0, 20.0)];
+        let clipped = clip_ring(&ring, &BIBLICAL_WORLD_BBOX);
+
+        assert!(clipped.len() >= 4, "{clipped:?}");
+        assert_eq!(clipped.first(), clipped.last(), "clipped ring must be closed");
+        assert!(
+            clipped.iter().any(|&(lon, _)| (lon - BIBLICAL_WORLD_BBOX.west).abs() < 1e-9),
+            "expected a point exactly on the west clip edge: {clipped:?}"
+        );
+        assert!(clipped.iter().all(|&(lon, _)| lon >= BIBLICAL_WORLD_BBOX.west - 1e-9), "{clipped:?}");
+    }
+
+    #[test]
+    fn clip_ring_fully_containing_bbox_yields_the_bbox_rectangle() {
+        // A giant rectangle that fully contains BIBLICAL_WORLD_BBOX on every side.
+        let ring = vec![(-90.0, -40.0), (-90.0, 80.0), (150.0, 80.0), (150.0, -40.0), (-90.0, -40.0)];
+        let clipped = clip_ring(&ring, &BIBLICAL_WORLD_BBOX);
+
+        assert_eq!(clipped.first(), clipped.last(), "clipped ring must be closed: {clipped:?}");
+        let bbox = &BIBLICAL_WORLD_BBOX;
+        let mut corners: Vec<(f64, f64)> = clipped[..clipped.len() - 1].to_vec();
+        corners.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let mut expected =
+            vec![(bbox.west, bbox.south), (bbox.west, bbox.north), (bbox.east, bbox.south), (bbox.east, bbox.north)];
+        expected.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        assert_eq!(corners, expected, "expected exactly the bbox's 4 corners: {clipped:?}");
+    }
+
+    #[test]
+    fn clip_ring_fully_outside_drops_to_empty() {
+        let ring = vec![(-150.0, -10.0), (-150.0, 0.0), (-140.0, 0.0), (-140.0, -10.0), (-150.0, -10.0)];
+        assert!(clip_ring(&ring, &BIBLICAL_WORLD_BBOX).is_empty());
+    }
+
+    #[test]
+    fn clip_feature_keeps_a_straddling_interior_ring_as_a_valid_hole() {
+        // Exterior ring comfortably covers the bbox; interior ring (hole)
+        // straddles the west edge, same rectangle as the straddling-edge
+        // test above -- the hole must survive clipping as its own valid
+        // ring, not be silently dropped or merged into the exterior.
+        let exterior = vec![(-20.0, 0.0), (-20.0, 50.0), (80.0, 50.0), (80.0, 0.0), (-20.0, 0.0)];
+        let hole = vec![(-15.0, 20.0), (-15.0, 25.0), (-5.0, 25.0), (-5.0, 20.0), (-15.0, 20.0)];
+        let feature = RawFeature { properties: Value::Null, polygons: vec![vec![exterior, hole]] };
+
+        let clipped = clip_feature(feature, &BIBLICAL_WORLD_BBOX);
+
+        assert_eq!(clipped.polygons.len(), 1);
+        assert_eq!(clipped.polygons[0].len(), 2, "exterior + hole both survive clipping: {:#?}", clipped.polygons[0]);
+
+        let hole_ring = &clipped.polygons[0][1];
+        assert!(hole_ring.len() >= 4, "{hole_ring:?}");
+        assert_eq!(hole_ring.first(), hole_ring.last(), "clipped hole ring must be closed: {hole_ring:?}");
+        assert!(
+            hole_ring.iter().any(|&(lon, _)| (lon - BIBLICAL_WORLD_BBOX.west).abs() < 1e-9),
+            "expected the clipped hole to touch the west edge: {hole_ring:?}"
+        );
     }
 
     #[test]

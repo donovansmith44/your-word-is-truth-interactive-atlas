@@ -40,6 +40,9 @@ $borderYears = 'bc4000', 'bc3000', 'bc2000', 'bc1500', 'bc1000', 'bc700', 'bc500
 foreach ($y in $borderYears) {
   Fetch "https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_$y.geojson" "borders\world_$y.geojson"
 }
+# Full LICENSE text (fix round 1: reproducibility -- data/raw/README.md's
+# Borders section cites this file directly instead of only linking upstream).
+Fetch 'https://raw.githubusercontent.com/aourednik/historical-basemaps/master/LICENSE' 'borders\LICENSE'
 
 # Vendor Leaflet 1.9.4 into the client (deterministic, offline-friendly)
 $vendor = Join-Path $PSScriptRoot '..\client\wwwroot\vendor\leaflet'
