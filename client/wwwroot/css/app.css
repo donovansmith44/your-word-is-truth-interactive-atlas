@@ -1135,6 +1135,91 @@ input:focus-visible,
     }
 }
 
+/* Batch E additions -- strictly below .place-card-controls above, never
+   disturbing Batch D's own scroll/controls layout (both are separate flex
+   children of .place-card, `flex: none`, so they just stack under it).
+   .place-card-blurb: a quiet one-liner, same serif/ink language as verse
+   text but italic and a touch smaller/softer -- reads as curator's-note
+   prose, not scripture. */
+.place-card-blurb {
+    flex: none;
+    margin: .5rem 0 0;
+    padding-top: .45rem;
+    border-top: 1px solid rgba(138, 107, 61, .25);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: .85rem;
+    line-height: 1.45;
+    color: var(--ink-soft);
+}
+
+/* place-card-dates: the "instrument-face line" (batch-e-brief.md's own
+   example: "Established c. 1003 BC · Destroyed 586 BC") -- a quiet mono
+   readout row, each date its own button (a giant-DAG node, per the user's
+   own framing: "every node is explorable"). */
+.place-card-dates {
+    flex: none;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin: .4rem 0 0;
+}
+
+.place-card-dates-sep {
+    color: var(--bronze-ink);
+    opacity: .7;
+}
+
+.place-card-date {
+    display: inline-flex;
+    align-items: baseline;
+    gap: .3rem;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    letter-spacing: .02em;
+    color: var(--bronze-ink);
+}
+
+.place-card-date-label {
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    color: var(--ink-soft);
+}
+
+.place-card-date-value {
+    color: var(--bronze-ink);
+}
+
+/* The "Explore" affordance a hover/focus target exposes (batch-e-brief.md
+   Requirement 4). Always present in the DOM (never display:none/
+   pointer-events:none) so it's reliably clickable -- only its visual
+   emphasis changes on hover/focus, via opacity, the way a lamplit
+   instrument dial brightens under attention rather than staying invisible
+   until touched. */
+.place-card-date-explore {
+    opacity: .45;
+    font-size: .68rem;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: opacity 120ms ease-out;
+}
+
+.place-card-date:hover,
+.place-card-date:focus-visible {
+    color: var(--lapis);
+}
+
+.place-card-date:hover .place-card-date-explore,
+.place-card-date:focus-visible .place-card-date-explore {
+    opacity: 1;
+}
+
 /* arrow-tip -- a parchment artifact too (design-direction.md: "popovers and
    hover cards are parchment artifacts on both pages"), same material and
    motion language as .place-card above but a single readout line rather

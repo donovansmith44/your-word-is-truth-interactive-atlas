@@ -28,6 +28,22 @@ public static class YearText
         from == to ? Format(from) : $"{Format(from)}{EnDashSeparator}{Format(to)}";
 
     /// <summary>
+    /// Batch E: formats a curated established/destroyed date claim, e.g.
+    /// "c. 1003 BC" or "586 BC" -- a leading "c." appears exactly when
+    /// <paramref name="note"/> is present (curated as a qualifier such as
+    /// "traditional"), matching the brief's own worked example ("Established
+    /// c. 1003 BC · Destroyed 586 BC" -- the first date is curated
+    /// "traditional", the second is not). Shared by PlaceCard's
+    /// instrument-face line and <see cref="Explore.YearNode"/>'s own title
+    /// so the two always agree on exactly the same text.
+    /// </summary>
+    public static string FormatClaim(int from, int to, string? note)
+    {
+        var range = FormatRange(from, to);
+        return note is null ? range : $"c. {range}";
+    }
+
+    /// <summary>
     /// Parses either a single year text (<c>1447 BC</c>, <c>AD 30</c>) or two
     /// such year texts joined by a spaced en dash or a spaced hyphen. Returns
     /// false (leaving <paramref name="from"/>/<paramref name="to"/> as 0)

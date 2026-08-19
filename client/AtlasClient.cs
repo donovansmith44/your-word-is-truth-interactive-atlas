@@ -31,6 +31,11 @@ public sealed class AtlasClient
     // window rather than deduping on the server's answer costs nothing
     // meaningful in practice while being a one-line, obviously-correct key.
     private readonly LruCache<string, BordersOut> _bordersCache = new(capacity: 12);
+    // Batch E: PlaceCard's hover-lazy history fetch (place id + window),
+    // same "instant on repeat hover" rationale and capacity ballpark as
+    // _chapterCache above -- a scene's lit places cluster into a much
+    // smaller set of distinct (place, window) pairs than 24 in practice.
+    private readonly LruCache<string, PlaceDetail> _placeHistoryCache = new(capacity: 24);
     private List<BookTocEntry>? _booksCache;
     private List<EraDto>? _erasCache;
     private List<LandmarkDto>? _landmarksCache;
@@ -115,6 +120,32 @@ public sealed class AtlasClient
 
     public Task<PlaceDetail> Place(string id) =>
         GetRequired<PlaceDetail>($"api/place/{id}");
+
+    /// <summary>
+    /// Batch E: <c>GET /api/place/{id}?from=&amp;to=</c> -- the window-scoped
+    /// history payload (resolved display name, the one blurb for this
+    /// window, established/destroyed) PlaceCard fetches lazily on hover.
+    /// <paramref name="from"/>/<paramref name="to"/> are optional (null in
+    /// scripture mode, where there is no time window to resolve a blurb
+    /// against -- see <c>atlas_core::history::resolve_display_name</c>'s own
+    /// doc comment for why; established/destroyed still come back, being
+    /// window-independent). LRU-cached like <see cref="Chapter"/>, keyed by
+    /// (id, window) so a re-hover of the same place under the same window
+    /// never re-fetches.
+    /// </summary>
+    public async Task<PlaceDetail> PlaceHistory(string id, int? from, int? to)
+    {
+        var key = from is int f && to is int t ? $"{id}:{f}:{t}" : id;
+        if (_placeHistoryCache.TryGet(key, out var cached))
+        {
+            return cached;
+        }
+
+        var url = from is int f2 && to is int t2 ? $"api/place/{id}?from={f2}&to={t2}" : $"api/place/{id}";
+        var result = await GetRequired<PlaceDetail>(url);
+        _placeHistoryCache.Put(key, result);
+        return result;
+    }
 
     public Task<List<NarrativeOut>> Narratives() =>
         GetRequired<List<NarrativeOut>>("api/narratives");

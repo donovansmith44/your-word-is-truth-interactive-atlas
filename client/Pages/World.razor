@@ -22,8 +22,10 @@
     @if (hoverPlace is not null)
     {
         <PlaceCard Place="hoverPlace" X="_hoverX" Y="_hoverY"
+                   WindowFrom="@(_scriptureRef is null ? _from : (int?)null)"
+                   WindowTo="@(_scriptureRef is null ? _to : (int?)null)"
                    OnPointerEnter="CancelCardClose" OnPointerLeave="ScheduleCardClose"
-                   OnOpenPlace="OpenPlaceFromCard" />
+                   OnOpenPlace="OpenPlaceFromCard" OnExploreNode="OpenExploreNode" />
     }
 
     @if (_hoverArrowText is not null)
@@ -725,8 +727,13 @@
         }
 
         var narrativeName = _scene?.Narratives.FirstOrDefault(n => n.Id == arrow.Narrative)?.Name ?? arrow.Narrative;
-        var fromName = _scene?.Places.FirstOrDefault(p => p.Id == arrow.FromPlace)?.Name ?? arrow.FromPlace;
-        var toName = _scene?.Places.FirstOrDefault(p => p.Id == arrow.ToPlace)?.Name ?? arrow.ToPlace;
+        // Batch E: DisplayName (the scene's own period-resolved name), not
+        // the place's default Name -- same swap as the marker label/card
+        // title, so this text never contradicts what's shown elsewhere in
+        // the SAME scene (e.g. never "The Conquest: Luz -> Jericho" when
+        // the map itself currently labels that marker "Bethel").
+        var fromName = _scene?.Places.FirstOrDefault(p => p.Id == arrow.FromPlace)?.DisplayName ?? arrow.FromPlace;
+        var toName = _scene?.Places.FirstOrDefault(p => p.Id == arrow.ToPlace)?.DisplayName ?? arrow.ToPlace;
 
         _hoverArrowText = $"{narrativeName}: {fromName} → {toName}";
         _arrowX = x;
@@ -756,9 +763,22 @@
     {
         if (_hoverPlace is { } place)
         {
-            _activeNode = new PlaceNode(place.Id, place.Name);
+            _activeNode = new PlaceNode(place.Id, place.DisplayName);
         }
 
+        CloseCardNow();
+        return Task.CompletedTask;
+    }
+
+    // Batch E: PlaceCard.OnExploreNode -- a date affordance (established/
+    // destroyed) was activated. Same "promote into a real popover, close
+    // the hover card so the two parchment artifacts never overlap" pattern
+    // as OpenPlaceFromCard above, just with a caller-supplied node (a
+    // YearNode PlaceCard already constructed, having the DateClaimOut in
+    // hand) instead of building a PlaceNode here.
+    private Task OpenExploreNode(IExplorable node)
+    {
+        _activeNode = node;
         CloseCardNow();
         return Task.CompletedTask;
     }

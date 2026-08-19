@@ -60,10 +60,21 @@ public sealed class MapInterop : IAsyncDisposable
     /// sending the result as a plain string sidesteps that: map.js
     /// JSON.parses it back into an object whose keys are byte-for-byte the
     /// same as the original API response.
+    ///
+    /// Batch E: each place's <c>name</c> key is overwritten with its own
+    /// <see cref="ScenePlace.DisplayName"/> before serializing -- map.js's
+    /// marker-label rendering already reads <c>p.name</c> (see
+    /// wwwroot/js/map.js), so feeding the period-resolved name through that
+    /// SAME key is the Luz/Bethel swap's entire client-side wiring; map.js
+    /// itself needs no change. The wire-shape <c>display_name</c> key is
+    /// still present alongside it (harmless -- map.js reads only the keys
+    /// it knows about), so this stays a faithful re-serialization of `s`,
+    /// not a lossy transform.
     /// </summary>
     public async Task SetScene(Scene s)
     {
-        var json = JsonSerializer.Serialize(s, Wire.Options);
+        var forMap = s with { Places = s.Places.Select(p => p with { Name = p.DisplayName }).ToList() };
+        var json = JsonSerializer.Serialize(forMap, Wire.Options);
         await _module.InvokeVoidAsync("setScene", _id, json);
     }
 

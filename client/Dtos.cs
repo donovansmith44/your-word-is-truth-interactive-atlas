@@ -23,6 +23,11 @@ public sealed record TimeRangeDto(int FromYear, int ToYear);
 public sealed record ScenePlace(
     string Id,
     string Name,
+    // Batch E: the period-true name resolved for the scene's own window
+    // (server: atlas_core::history::resolve_display_name). Always present
+    // -- equal to Name whenever this place has no curated history or none
+    // of its curated name ranges intersects the window.
+    string DisplayName,
     double Lat,
     double Lon,
     int Brightness,
@@ -74,7 +79,27 @@ public sealed record BookMetaDto(string Author, string? WritePlace, int? WriteFr
 
 public sealed record CrossRefOut(string Target, int Votes, string Preview);
 
-public sealed record PlaceDetail(string Id, string Name, double Lat, double Lon, List<SceneEvent> Events);
+public sealed record PlaceDetail(
+    string Id,
+    string Name,
+    double Lat,
+    double Lon,
+    List<SceneEvent> Events,
+    // Batch E: present only when this place has a curated history record
+    // (`GET /api/place/{id}?from=&to=`'s optional `history`).
+    PlaceHistoryOut? History);
+
+/// Batch E: `PlaceDetail.History`'s shape. <see cref="Blurb"/> is null
+/// whenever the request carried no window, or the window matched none of
+/// the place's curated blurb ranges (PlaceCard renders NO blurb section in
+/// either case -- conditional presence, never an empty placeholder).
+public sealed record PlaceHistoryOut(string DisplayName, string? Blurb, DateClaimOut? Established, DateClaimOut? Destroyed);
+
+/// One established/destroyed date claim. <see cref="When"/> reuses
+/// <see cref="TimeRangeDto"/>'s own shape -- <see cref="YearText.FormatRange"/>
+/// already collapses equal endpoints to a single-year display, so a plain
+/// year and a genuine range need no separate wire flag.
+public sealed record DateClaimOut(TimeRangeDto When, List<string> Verses, string? Note);
 
 public sealed record NarrativeOut(string Id, string Name, string Color, List<string> Legs);
 

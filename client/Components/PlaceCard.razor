@@ -19,6 +19,14 @@
    single-shot "Show N more") wherever the two disagree; that section is now
    stale prose, not a contract -- CONTRACT.md is.
 
+   Batch E (batch-e-brief.md, time-accurate places) adds two more sections
+   BELOW Batch D's verse content and controls, never disturbing them: a
+   quiet blurb line and an instrument-face established/destroyed line, each
+   date its own explorable node (Explore/YearNode.cs) opened via
+   OnExploreNode. Title now reads Place.DisplayName (the scene's own
+   period-resolved name), not Place.Name -- map.js/World.razor/PlaceNode
+   follow the same swap; see wire.rs's ScenePlace.display_name.
+
    Verse content is now passage-aware rather than a flat capped list.
    MergedVerses() (unchanged -- every event's verse_groups' verse ids,
    flattened in event order then each event's own already book/chapter/
@@ -66,7 +74,7 @@
      @onpointerenter="OnPointerEnter"
      @onpointerleave="OnPointerLeave">
     <div class="place-card-scroll">
-        <button type="button" class="place-card-title" data-testid="place-card-title" @onclick="() => OnOpenPlace.InvokeAsync()">@Place.Name</button>
+        <button type="button" class="place-card-title" data-testid="place-card-title" @onclick="() => OnOpenPlace.InvokeAsync()">@Place.DisplayName</button>
 
         @{
             var verses = MergedVerses();
@@ -114,6 +122,52 @@
             }
         </div>
     }
+
+    @* Batch E additions -- strictly BELOW Batch D's verse content and
+       controls above (nothing renders after this), per batch-e-brief.md
+       Requirement 4. Conditional presence throughout: no blurb section
+       when the API returned none for this window; no dates section when
+       neither established nor destroyed is curated for this place. *@
+    @if (_history?.Blurb is { } blurb)
+    {
+        <p class="place-card-blurb" data-testid="place-card-blurb">@blurb</p>
+    }
+
+    @{
+        var established = _history?.Established;
+        var destroyed = _history?.Destroyed;
+    }
+    @if (established is not null || destroyed is not null)
+    {
+        <div class="place-card-dates" data-testid="place-card-dates">
+            @if (established is { } est)
+            {
+                var estLabel = ExploreLabel("Established", est);
+                <button type="button" class="place-card-date" data-testid="place-card-date-established"
+                        aria-label="@estLabel"
+                        @onclick="() => ExploreEstablished(est)">
+                    <span class="place-card-date-label">Established</span>
+                    <span class="place-card-date-value">@DateText(est)</span>
+                    <span class="place-card-date-explore" aria-hidden="true">Explore</span>
+                </button>
+            }
+            @if (established is not null && destroyed is not null)
+            {
+                <span class="place-card-dates-sep" aria-hidden="true">&middot;</span>
+            }
+            @if (destroyed is { } dest)
+            {
+                var destLabel = ExploreLabel("Destroyed", dest);
+                <button type="button" class="place-card-date" data-testid="place-card-date-destroyed"
+                        aria-label="@destLabel"
+                        @onclick="() => ExploreDestroyed(dest)">
+                    <span class="place-card-date-label">Destroyed</span>
+                    <span class="place-card-date-value">@DateText(dest)</span>
+                    <span class="place-card-date-explore" aria-hidden="true">Explore</span>
+                </button>
+            }
+        </div>
+    }
 </div>
 
 @code {
@@ -122,6 +176,22 @@
     [Parameter] public double Y { get; set; }
     [Parameter] public EventCallback OnPointerEnter { get; set; }
     [Parameter] public EventCallback OnPointerLeave { get; set; }
+
+    // Batch E: the scene's own active window (time mode) or null (scripture
+    // mode / not yet applied) -- forwarded to AtlasClient.PlaceHistory so
+    // the fetched blurb/display-name resolve against the SAME window the
+    // map itself is currently showing. World.razor is the source of truth
+    // (its own _from/_to fields), same "page owns state, card just renders
+    // it" split every other PlaceCard parameter already follows.
+    [Parameter] public int? WindowFrom { get; set; }
+    [Parameter] public int? WindowTo { get; set; }
+
+    // Batch E: fires with a freshly-constructed YearNode when a date
+    // affordance (place-card-date-established/-destroyed) is activated --
+    // World.razor wires this to push the node onto its own ExplorerPopover,
+    // the same "card promotes into a real popover" pattern OnOpenPlace
+    // already uses for the title/PlaceNode.
+    [Parameter] public EventCallback<IExplorable> OnExploreNode { get; set; }
 
     // WORLD-8/Task 15: the title still promotes this hover card's content
     // into a real ExplorerPopover -- World.razor already has Place.Id/
@@ -149,6 +219,12 @@
     private int _shownCount;
     private int _initialShownCount;
     private readonly Dictionary<string, string> _verseText = new();
+
+    // Batch E: this place's window-scoped history payload (null while
+    // loading, still-loaded, or simply absent for a place with no curated
+    // history -- all three render the same "no blurb/dates section" way,
+    // per CONTRACT's conditional-presence rule).
+    private PlaceHistoryOut? _history;
 
     // A maximal run of consecutive same-book/chapter verses within a
     // MergedVerses() list, identified by its start index into that list.
@@ -307,11 +383,52 @@
 
         _lastPlaceId = Place.Id;
         _verseText.Clear();
+        _history = null;
         var verses = MergedVerses();
         _initialShownCount = InitialShownCount(verses);
         _shownCount = _initialShownCount;
-        await LoadChaptersFor(verses.Take(_shownCount));
+        // Independent fetches (verse text vs. Batch E history) run
+        // concurrently -- neither depends on the other, and a slow/failed
+        // one must not delay or break the other (each has its own try/catch,
+        // see LoadChaptersFor's and LoadHistory's own comments).
+        await Task.WhenAll(LoadChaptersFor(verses.Take(_shownCount)), LoadHistory());
     }
+
+    // Batch E: fetches this place's window-scoped history (blurb/dates) via
+    // AtlasClient's own LRU cache. A nicety, not load-bearing -- same
+    // graceful degradation as LoadChaptersFor: a failure just leaves
+    // _history null, i.e. no blurb/dates section, never an unhandled
+    // exception taking down the card.
+    private async Task LoadHistory()
+    {
+        try
+        {
+            var detail = await Atlas.PlaceHistory(Place.Id, WindowFrom, WindowTo);
+            _history = detail.History;
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    // Shared with Explore.YearNode's own title text (via YearText.FormatClaim)
+    // so the card's instrument-face line and the popover it opens always
+    // agree on exactly the same date text.
+    private static string DateText(DateClaimOut claim) => YearText.FormatClaim(claim.When.FromYear, claim.When.ToYear, claim.Note);
+
+    private static string ExploreLabel(string label, DateClaimOut claim) => $"Explore {label.ToLowerInvariant()} date: {DateText(claim)}";
+
+    // Two named wrappers (rather than one Explore(label, claim) called
+    // inline with a string-literal argument) -- Razor's @onclick="..."
+    // attribute-value parser cannot handle an embedded double-quoted C#
+    // string literal inside the lambda (confirmed: it broke the generated
+    // code, consuming the closing quote early). Named methods sidestep it
+    // entirely; no inline string literals appear in the markup at all.
+    private Task ExploreEstablished(DateClaimOut claim) =>
+        OnExploreNode.InvokeAsync(new YearNode("Established", claim.When, claim.Verses, claim.Note));
+
+    private Task ExploreDestroyed(DateClaimOut claim) =>
+        OnExploreNode.InvokeAsync(new YearNode("Destroyed", claim.When, claim.Verses, claim.Note));
 
     // place-card-more: reveals the next chunk. Step size is +5 if the next
     // not-yet-shown verse belongs to a passage-sized group (Length >= 2,
