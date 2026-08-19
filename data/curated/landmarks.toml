@@ -12,6 +12,15 @@
 # -- same constants as client/wwwroot/js/map.js's BIBLICAL_WORLD_BOUNDS and
 # atlas-etl's borders::BIBLICAL_WORLD_BBOX).
 #
+# Batch C2 (design-direction.md's Atlas plate detail SECOND ADDENDUM,
+# "populated far field"): optional `size` = "sm" | "md" | "lg" (also
+# enforced by validate::run_landmarks) is a geographic-extent hint that
+# ALSO makes the label tier-0 -- visible even zoomed all the way out,
+# unlike a plain region/mountain label, which only shows from a closer
+# zoom (see map.js's applyLabelTier and atlas_core::data::Landmark::size's
+# own doc comments for the exact rule). Every entry curated before this
+# batch has no `size` at all and keeps its original zoom behavior.
+#
 # Every entry below reuses a real geocoded coordinate from
 # data/compiled/places.json (cited by slug in each entry's comment) rather
 # than inventing coordinates -- per the batch brief's "reuse coordinates
@@ -23,6 +32,18 @@
 # point in this dataset (noted case by case below).
 
 # --- water (8) ---------------------------------------------------------
+#
+# Batch C2 checked this set against design-direction.md's SECOND ADDENDUM
+# water list (THE GREAT SEA, RED SEA, SALT SEA, SEA OF CHINNERETH; rivers
+# EUPHRATES, TIGRIS, NILE, JORDAN) and added nothing: RED SEA/EUPHRATES/
+# TIGRIS are already here verbatim; SALT SEA and SEA OF CHINNERETH are the
+# KJV/period names for the SAME real bodies of water "Dead Sea" and "Sea of
+# Galilee" already label below -- a second landmark at the identical spot
+# would just be two labels stacked on one lake, and "Sea of Galilee"
+# specifically is load-bearing for WORLD-12's own lit-place dedupe test
+# (the coincident real lit place is named "Sea of Galilee", not
+# "Chinnereth" -- renaming the landmark would break that dedupe, not just
+# rename a label).
 
 [[landmark]] # places.json slug "jordan"
 name = "Jordan River"
@@ -125,7 +146,28 @@ kind = "mountain"
 lat = 31.766667
 lon = 35.750000
 
-# --- region (3) ----------------------------------------------------------
+# --- region (18) -----------------------------------------------------------
+#
+# The first 3 are the original, local (sub-region-scale) curated set --
+# unchanged, no `size` hint, NEAR-tier-only per their existing zoom rule
+# (WORLD-10/WORLD-12 pin this). The 15 after them are Batch C2's "populated
+# far field" (design-direction.md's SECOND ADDENDUM): broad standing
+# regions/waters/islands spread across the WHOLE biblical-world lock, not
+# just the Levant core the first 19 entries already covered -- each one
+# carries a `size` hint so it renders tier-0 (visible even zoomed all the
+# way out; see the header comment above). None collides by NAME with any
+# currently-lit place OR any historical-border polity feature close enough
+# to read as the same real-world thing twice (checked by hand against both
+# data/compiled/places.json and every data/curated/borders/*.geojson
+# feature's own `name` -- see the batch report for the full cross-check);
+# where a candidate name DID already exist as a real geocoded place (most
+# of them, per Theographic's own Table-of-Nations-style entries), its
+# coordinate is reused verbatim, same "reuse a real geocoded coordinate"
+# policy as the header comment already states for the original 19 -- this
+# also means the existing landmark/lit-place dedupe (map.js's
+# isDedupedByLitPlace) correctly yields to that SAME place whenever an
+# event actually lights it, exactly as design-direction.md intends
+# ("lit places always win... context, never competition").
 
 [[landmark]] # places.json slug "sinai_1098" (the generic "Sinai" geocoded record --
 # chosen over "wilderness-of-sinai", which coincides exactly with mount-sinai's
@@ -147,3 +189,137 @@ name = "Negev"
 kind = "region"
 lat = 31.244722
 lon = 34.840833
+
+# --- far field (15, Batch C2) --------------------------------------------
+# Empire/peninsula-scale standing regions -- "lg", the biggest far-field tier.
+
+[[landmark]] # no matching place/polity name in this dataset; centroid
+# approximated (ours) over the Arabian Peninsula's interior (Nejd), well
+# clear of the Red Sea/Persian Gulf coasts on either side
+name = "Arabia"
+kind = "region"
+size = "lg"
+lat = 23.000000
+lon = 45.000000
+
+[[landmark]] # places.json slug "mesopotamia" (reused coordinate -- see the
+# section header above)
+name = "Mesopotamia"
+kind = "region"
+size = "lg"
+lat = 36.864444
+lon = 39.032778
+
+[[landmark]] # no matching place/polity name in this dataset; centroid
+# approximated (ours) over the Anatolian plateau, distinct from both
+# Cyprus and Mesopotamia below
+name = "Asia Minor"
+kind = "region"
+size = "lg"
+lat = 39.000000
+lon = 35.000000
+
+[[landmark]] # places.json slug "persia" (reused coordinate -- see the
+# section header above; NOT the polity feature "Achaemenid Persian Empire",
+# a different name/slug, so no polity-label collision either)
+name = "Persia"
+kind = "region"
+size = "lg"
+lat = 34.806500
+lon = 48.516247
+
+# Wildernesses -- "md", distinct SLUGS from the plain places "paran"/"sin"
+# (so no lit-place dedupe either way), positioned near but not on top of them.
+
+[[landmark]] # approximated (ours) near places.json "paran" (30.303218,
+# 34.776667), offset southwest into the wilderness proper toward Kadesh-barnea
+name = "Wilderness of Paran"
+kind = "region"
+size = "md"
+lat = 30.100000
+lon = 34.900000
+
+[[landmark]] # approximated (ours) near places.json "sin" (29.147778,
+# 33.536667), the west-Sinai coastal wilderness between Egypt and Mount Sinai
+name = "Wilderness of Sin"
+kind = "region"
+size = "md"
+lat = 29.000000
+lon = 33.300000
+
+# Islands and nearby lands -- "md".
+
+[[landmark]] # places.json slug "cyprus" (reused coordinate)
+name = "Cyprus"
+kind = "region"
+size = "md"
+lat = 35.000000
+lon = 33.000000
+
+[[landmark]] # places.json slug "crete" (reused coordinate)
+name = "Crete"
+kind = "region"
+size = "md"
+lat = 35.309722
+lon = 24.893333
+
+[[landmark]] # places.json slug "ethiopia" (reused coordinate)
+name = "Ethiopia"
+kind = "region"
+size = "md"
+lat = 16.935139
+lon = 33.750750
+
+[[landmark]] # places.json slug "libya" (reused coordinate)
+name = "Libya"
+kind = "region"
+size = "md"
+lat = 32.820946
+lon = 21.851229
+
+[[landmark]] # places.json slug "macedonia" (reused coordinate)
+name = "Macedonia"
+kind = "region"
+size = "md"
+lat = 41.600000
+lon = 22.540000
+
+# The four points that literally DEFINE BIBLICAL_WORLD_BOUNDS' own padding
+# (map.js's own comment on that constant: south=Punt, north=Ashkenaz,
+# west=Tarshish 1, east=India) -- using them as far-field context labels
+# directly guarantees each of the plate's four extreme corners carries
+# something, not just the Levant core -- "md" (same tier as the islands
+# above, not "lg": each is a single named people/place-group, not a broad
+# multi-power region like Persia or Arabia).
+
+[[landmark]] # places.json slug "punt" (reused coordinate) -- south extreme
+name = "Punt"
+kind = "region"
+size = "md"
+lat = 11.595000
+lon = 43.148056
+
+[[landmark]] # places.json slug "ashkenaz" (reused coordinate) -- north extreme
+name = "Ashkenaz"
+kind = "region"
+size = "md"
+lat = 44.942780
+lon = 34.120560
+
+[[landmark]] # places.json slug "tarshish-1" (reused coordinate; its own
+# name is "Tarshish 1", a Theographic disambiguation suffix -- deliberately
+# NOT copied here, so this landmark reads as the classic plain "Tarshish"
+# and (with a different slug from "tarshish-1") never dedupes against that
+# specific disputed-identification place pin) -- west extreme
+name = "Tarshish"
+kind = "region"
+size = "md"
+lat = 37.271944
+lon = -6.944167
+
+[[landmark]] # places.json slug "india" (reused coordinate) -- east extreme
+name = "India"
+kind = "region"
+size = "md"
+lat = 23.994400
+lon = 67.430800

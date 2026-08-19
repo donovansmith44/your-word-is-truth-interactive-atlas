@@ -59,6 +59,13 @@ const ATLAS_END_YEAR: i32 = 100;
 /// names styled letterspaced small caps).
 const ALLOWED_LANDMARK_KINDS: [&str; 3] = ["water", "mountain", "region"];
 
+/// Batch C2: the curated `size` hint `landmarks.toml` may optionally set
+/// (`None` is always valid too — only a PRESENT value is checked against
+/// this enum). Mirrors BorderLayer's own polity-label size tiers
+/// (map.js's `_sizeTier`); see `atlas_core::data::Landmark::size`'s own doc
+/// comment for what each value does.
+const ALLOWED_LANDMARK_SIZES: [&str; 3] = ["sm", "md", "lg"];
+
 pub fn run(data: &AtlasData) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
@@ -123,11 +130,12 @@ pub fn run(data: &AtlasData) -> Result<()> {
 /// Validates curated landmarks (`data/curated/landmarks.toml`, parsed
 /// separately by `curated::parse_landmarks` — see that function's doc
 /// comment for why this is a distinct pipeline step): every `kind` must be
-/// one of [`ALLOWED_LANDMARK_KINDS`], and every `(lat, lon)` must fall
-/// inside `bbox` (a landmark the map is locked away from ever showing is a
-/// curation bug, not a fact worth silently keeping). Collects every
-/// violation before failing, same aggregate-don't-fail-fast policy as
-/// [`run`].
+/// one of [`ALLOWED_LANDMARK_KINDS`], every PRESENT `size` must be one of
+/// [`ALLOWED_LANDMARK_SIZES`] (absent is always fine), and every
+/// `(lat, lon)` must fall inside `bbox` (a landmark the map is locked away
+/// from ever showing is a curation bug, not a fact worth silently keeping).
+/// Collects every violation before failing, same aggregate-don't-fail-fast
+/// policy as [`run`].
 pub fn run_landmarks(landmarks: &[Landmark], bbox: &Bbox) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
@@ -137,6 +145,14 @@ pub fn run_landmarks(landmarks: &[Landmark], bbox: &Bbox) -> Result<()> {
                 "landmark '{}' has invalid kind '{}' (expected one of {:?})",
                 l.name, l.kind, ALLOWED_LANDMARK_KINDS
             ));
+        }
+        if let Some(size) = &l.size {
+            if !ALLOWED_LANDMARK_SIZES.contains(&size.as_str()) {
+                errors.push(format!(
+                    "landmark '{}' has invalid size '{}' (expected one of {:?})",
+                    l.name, size, ALLOWED_LANDMARK_SIZES
+                ));
+            }
         }
         if !bbox.contains(l.lat, l.lon) {
             errors.push(format!("landmark '{}' at (lat={}, lon={}) is outside the clip bbox", l.name, l.lat, l.lon));

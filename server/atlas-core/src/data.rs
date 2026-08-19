@@ -85,12 +85,28 @@ pub struct CrossRef {
 /// this struct itself accepts any string so a hand-authored curated file
 /// with a typo fails ETL validation with a clear message rather than
 /// silently refusing to deserialize with serde's own less-helpful error).
+///
+/// Batch C2 (design-direction.md's Atlas plate detail SECOND ADDENDUM,
+/// "populated far field... broad standing regions... sized by geographic
+/// extent"): `size` is an optional hint, one of `"sm"`, `"md"`, `"lg"`
+/// (also enum-checked by `validate::run_landmarks`, same friendlier-error
+/// reason as `kind`), `None` for every landmark curated before this batch.
+/// Two effects, both in map.js: (1) font-size, mirroring BorderLayer's own
+/// polity-label `data-size` sm/md/lg tiers; (2) tier-0 visibility —
+/// `applyLabelTier` treats ANY landmark carrying an explicit size hint as a
+/// deliberately-curated far-field context label, visible even at the FAR
+/// (zoomed-out) tier regardless of its `kind`'s own default tier rule,
+/// which otherwise only exempts `kind == "water"`. A landmark with no
+/// `size` at all keeps the exact PRE-Batch-C2 kind-based tier behavior —
+/// this field only ever ADDS visibility, never removes any.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Landmark {
     pub name: String,
     pub kind: String,
     pub lat: f64,
     pub lon: f64,
+    #[serde(default)]
+    pub size: Option<String>,
 }
 
 /// Batch E (time-accurate places): one curated period name for a place,

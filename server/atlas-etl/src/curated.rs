@@ -139,6 +139,13 @@ struct LandmarkToml {
     kind: String,
     lat: f64,
     lon: f64,
+    // Batch C2: optional far-field size hint ("sm"/"md"/"lg") — see
+    // atlas_core::data::Landmark::size's own doc comment. `Option<T>`
+    // fields are optional-by-default under serde's derive (missing key ->
+    // None) even without an explicit `#[serde(default)]`, so every
+    // pre-Batch-C2 landmarks.toml entry (no `size = ...` line at all)
+    // keeps parsing exactly as before.
+    size: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -147,15 +154,15 @@ struct LandmarksFile {
 }
 
 /// Parses `landmarks.toml` (schema: `[[landmark]]` with `name`/`kind`/
-/// `lat`/`lon`). Pure — does not validate `kind` against the allowed enum
-/// or check `lat`/`lon` against the clip bbox; that's
-/// `validate::run_landmarks`'s job (needs the bbox, which this module
-/// doesn't own), matching the brief's "curated::parse_landmarks (pure) ->
-/// validate" pipeline.
+/// `lat`/`lon`/optional `size`). Pure — does not validate `kind`/`size`
+/// against their allowed enums or check `lat`/`lon` against the clip bbox;
+/// that's `validate::run_landmarks`'s job (needs the bbox, which this
+/// module doesn't own), matching the brief's "curated::parse_landmarks
+/// (pure) -> validate" pipeline.
 pub fn parse_landmarks(input: &str) -> Result<Vec<Landmark>> {
     let f: LandmarksFile =
         toml::from_str(input).context("landmarks.toml: invalid TOML or does not match the [[landmark]] schema")?;
-    Ok(f.landmark.into_iter().map(|l| Landmark { name: l.name, kind: l.kind, lat: l.lat, lon: l.lon }).collect())
+    Ok(f.landmark.into_iter().map(|l| Landmark { name: l.name, kind: l.kind, lat: l.lat, lon: l.lon, size: l.size }).collect())
 }
 
 // --- Batch E: place-history.toml -------------------------------------------
@@ -282,6 +289,15 @@ mod tests {
         assert_eq!(jordan.kind, "water");
         assert_eq!(jordan.lat, 31.76);
         assert_eq!(jordan.lon, 35.55);
+        assert_eq!(jordan.size, None); // Batch C2: no `size` line in the fixture -> None, not an error
+
+        // Batch C2: the Negev entry DOES carry a `size = "lg"` line -- proves
+        // parse_landmarks actually threads the optional field through
+        // (rather than silently dropping it), the real bug a naive
+        // `Landmark { ..., size: None }` literal in the map closure would
+        // have caused with zero compile-time signal.
+        let negev = landmarks.iter().find(|l| l.name == "Negev").unwrap();
+        assert_eq!(negev.size.as_deref(), Some("lg"));
     }
 
     #[test]

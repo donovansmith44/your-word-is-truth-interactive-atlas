@@ -399,6 +399,15 @@ fn landmarks_bad_kind_fails_validation() {
     assert!(err.to_string().contains("invalid kind"), "{err}");
 }
 
+// Batch C2: the optional far-field `size` hint (sm/md/lg) is enum-checked
+// the same way `kind` already is -- see Landmark::size's own doc comment.
+#[test]
+fn landmarks_bad_size_fails_validation() {
+    let landmarks = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-bad-size.toml")).unwrap();
+    let err = atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::borders::BIBLICAL_WORLD_BBOX).unwrap_err();
+    assert!(err.to_string().contains("invalid size"), "{err}");
+}
+
 #[test]
 fn landmarks_out_of_bbox_fails_validation() {
     let landmarks = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-out-of-bbox.toml")).unwrap();

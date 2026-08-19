@@ -15,3 +15,4 @@ name = "Negev"
 kind = "region"
 lat = 31.24
 lon = 34.84
+size = "lg"

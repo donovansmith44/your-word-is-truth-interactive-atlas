@@ -57,4 +57,4 @@ Border snapshots (12 years):
   total point reduction from simplification: 3.9% (485 -> 466)
 
 Landmarks:
-  19 curated landmarks compiled
+  34 curated landmarks compiled
