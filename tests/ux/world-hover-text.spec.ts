@@ -4,6 +4,7 @@ import {
   mergedVerses, groups, isPassage, initialShownCount, visibleGroups,
   revealSequence, spanRef, verseText, type Group,
 } from './lib/hovercard';
+import { independentlyHoverableIds } from './lib/hoverSafety';
 
 // A card anchored above a marker near the TOP of the viewport (this batch's
 // own real, live example: "Philippi" in the apostolic window) can need a
@@ -57,6 +58,57 @@ const WINDOWS = [
   { from: -2100, to: -2085 },
   { from: 46, to: 48 },
 ];
+
+// Batch C2 (requirement 0b/0c): the tests below that pick "whichever place
+// has the most merged verses" (or similar) originally searched pure scene
+// DATA across every WINDOWS entry, with no notion of whether the winner's
+// marker is actually independently hoverable on screen -- which is exactly
+// how one of them found "Philippi" (apostolic window): 32 merged verses,
+// the clear data-only winner, but its marker renders within single-digit
+// px of "Neapolis" (its own port city, 13.92km away in reality) at that
+// scene's natural zoom, and lib/hoverSafety.ts's own header comment has the
+// confirmed root cause (Leaflet's default per-marker z-index-by-screen-Y
+// stacking, not DOM order) for why a forced hover there can land on the
+// WRONG marker. This helper is the fix every affected search below now
+// shares: it still walks WINDOWS in order, but -- since "is this marker
+// safe" can only be answered by actually rendering a window, unlike a pure
+// data search -- it navigates to each candidate window in turn and scores
+// `filter`-eligible places ONLY among that window's own real, currently
+// independently-hoverable markers, returning the best (by `score`) match in
+// the FIRST window that has any. A window with no safe eligible place is
+// skipped, not failed -- the caller's own remaining WINDOWS entries are the
+// fallback, same as every one of these searches already had.
+async function bestHoverablePlace(
+  page: Page,
+  filter: (verses: string[]) => boolean,
+  score: (verses: string[]) => number,
+): Promise<{ w: typeof WINDOWS[number]; place: any; verses: string[] } | undefined> {
+  for (const w of WINDOWS) {
+    const scene = await api.sceneTime(w.from, w.to);
+    const eligible = scene.places.filter((p: any) => filter(mergedVerses(p)));
+    if (eligible.length === 0) {
+      continue;
+    }
+
+    await page.goto(`/world?from=${w.from}&to=${w.to}`);
+    const safeIds = await independentlyHoverableIds(page, eligible.map((p: any) => p.id));
+
+    let best: { place: any; verses: string[] } | undefined;
+    for (const p of eligible) {
+      if (!safeIds.has(p.id)) {
+        continue;
+      }
+      const verses = mergedVerses(p);
+      if (!best || score(verses) > score(best.verses)) {
+        best = { place: p, verses };
+      }
+    }
+    if (best) {
+      return { w, place: best.place, verses: best.verses };
+    }
+  }
+  return undefined;
+}
 
 test('hover place card: a passage-first place renders one capped hover-passage block, verbatim text, no bookkeeping rows', async ({ page }) => {
   // Search every candidate window for whichever place has the LONGEST
@@ -154,29 +206,27 @@ test('hover place card: a lone-first place shows exactly its first two verses in
 });
 
 test('hover place card: place-card-more repeatedly reveals the next chunk (+5 inside a passage, +2 for lone verses) until the full list is shown, then disappears', async ({ page }) => {
-  // Whichever place has the most merged verses, across every candidate
-  // window, to exercise several clicks (and, on real curated data, both
+  // Whichever INDEPENDENTLY HOVERABLE place has the most merged verses, in
+  // the first candidate window with any (bestHoverablePlace's own header
+  // comment) -- to exercise several clicks (and, on real curated data, both
   // step sizes) rather than just one.
-  let best: { w: typeof WINDOWS[number]; place: any; verses: string[] } | undefined;
-  for (const w of WINDOWS) {
-    const scene = await api.sceneTime(w.from, w.to);
-    for (const place of scene.places) {
-      const verses = mergedVerses(place);
-      if (!best || verses.length > best.verses.length) {
-        best = { w, place, verses };
-      }
-    }
-  }
-  if (!best || best.verses.length <= initialShownCount(best.verses)) {
-    test.skip(true, 'no place with more than its own initial verse count found in any candidate window');
+  const best = await bestHoverablePlace(
+    page,
+    verses => verses.length > initialShownCount(verses),
+    verses => verses.length,
+  );
+  if (!best) {
+    test.skip(true, 'no independently-hoverable place with more than its own initial verse count found in any candidate window');
     return;
   }
-  const { w, place, verses } = best;
+  const { place, verses } = best;
   const seq = revealSequence(verses);
   expect(seq.length).toBeGreaterThanOrEqual(1);
   expect(seq[seq.length - 1]).toBe(verses.length);
 
-  await page.goto(`/world?from=${w.from}&to=${w.to}`);
+  // bestHoverablePlace already navigated to (and rendered) `w` while
+  // measuring hover safety -- re-navigating here would just re-fetch the
+  // same page for nothing.
   await page.getByTestId(`marker-${place.id}`).hover({ force: true });
   const card = page.getByTestId('place-card');
   await expect(card).toBeVisible();
@@ -208,25 +258,23 @@ test('hover place card: place-card-more repeatedly reveals the next chunk (+5 in
 });
 
 test('hover place card: place-card-collapse snaps back to the exact initial DOM state after expanding', async ({ page }) => {
-  let found: { w: typeof WINDOWS[number]; place: any } | undefined;
-  for (const w of WINDOWS) {
-    const scene = await api.sceneTime(w.from, w.to);
-    const place = scene.places.find((p: any) => {
-      const verses = mergedVerses(p);
-      return verses.length > initialShownCount(verses);
-    });
-    if (place) {
-      found = { w, place };
-      break;
-    }
-  }
+  // First independently-hoverable eligible place (bestHoverablePlace's own
+  // header comment) -- a constant `score` keeps this a "first match" search,
+  // same intent the old plain scene.places.find() had.
+  const found = await bestHoverablePlace(
+    page,
+    verses => verses.length > initialShownCount(verses),
+    () => 0,
+  );
   if (!found) {
-    test.skip(true, 'no place with more than its own initial verse count found in any candidate window');
+    test.skip(true, 'no independently-hoverable place with more than its own initial verse count found in any candidate window');
     return;
   }
-  const { w, place } = found;
+  const { place } = found;
 
-  await page.goto(`/world?from=${w.from}&to=${w.to}`);
+  // bestHoverablePlace already navigated to (and rendered) the winning
+  // window while measuring hover safety -- re-navigating here would just
+  // re-fetch the same page for nothing.
   await page.getByTestId(`marker-${place.id}`).hover({ force: true });
   const card = page.getByTestId('place-card');
   await expect(card).toBeVisible();
@@ -297,4 +345,64 @@ test('hover place card: a place with two or fewer merged verses shows every vers
   await expect(card.getByTestId('place-card-collapse')).toHaveCount(0);
   await expect(card.locator('[data-testid^="verse-group-"]')).toHaveCount(0);
   await expect(card.getByTestId('place-card-expand')).toHaveCount(0);
+});
+
+// Requirement 0c (user 2026-08-19: "hover interactions on both the map and
+// the Bible are extremely fickle. FIX IT."; CONTRACT-bound acceptance
+// test): the exact realistic journey the brief names -- hover a marker,
+// travel across the gap into the card, click place-card-more, then leave
+// both entirely and confirm the card actually closes. moveAndClick's own
+// many-small-steps pointer move (this file's header comment) is what makes
+// this "realistic" rather than a synthetic teleport: a real mouse crossing
+// the marker/card gap always arrives the same way, and the source-level
+// fix this batch ships (World.razor's `_pointerOverCard`, tracked across
+// PlaceCard's own OnPointerEnter/OnPointerLeave) is exactly what keeps the
+// card open through that crossing without the old 150ms grace window's
+// leave-then-enter race closing it out from under the pointer -- see
+// World.razor's own comment on `_pointerOverCard` for the full race.
+test('hover robustness: hover -> cross the gap -> click place-card-more succeeds, and the card closes within ~1s once the pointer leaves both', async ({ page }) => {
+  // Whichever INDEPENDENTLY HOVERABLE place has the most merged verses, in
+  // the first candidate window with any -- see bestHoverablePlace's own
+  // header comment for why this can't be a pure data search (a real,
+  // confirmed example, "Philippi" in the apostolic window, is the DATA-only
+  // winner here but not independently hoverable at all).
+  const best = await bestHoverablePlace(
+    page,
+    verses => verses.length > initialShownCount(verses),
+    verses => verses.length,
+  );
+  if (!best) {
+    test.skip(true, 'no independently-hoverable place with more than its own initial verse count found in any candidate window');
+    return;
+  }
+  const { place, verses } = best;
+  const initialShown = initialShownCount(verses);
+
+  // bestHoverablePlace already navigated to (and rendered) the winning
+  // window while measuring hover safety -- re-navigating here would just
+  // re-fetch the same page for nothing.
+
+  // Phase 1: hover the marker.
+  await page.getByTestId(`marker-${place.id}`).hover({ force: true });
+  const card = page.getByTestId('place-card');
+  await expect(card).toBeVisible();
+  await expect(card.getByTestId(/^hover-verse-/)).toHaveCount(initialShown);
+
+  // Phase 2: travel across the gap (moveAndClick's own multi-step
+  // page.mouse.move, steps: 10 -- see this file's header comment) and
+  // click place-card-more. Success here -- more verses revealed, card
+  // still open -- is only possible if the pointer's journey off the
+  // marker and onto the card never triggered a premature close.
+  const moreBtn = card.getByTestId('place-card-more');
+  await expect(moreBtn).toBeVisible();
+  await moveAndClick(page, moreBtn);
+  await expect(card).toBeVisible();
+  await expect(card.getByTestId(/^hover-verse-/)).toHaveCount(revealSequence(verses)[0]);
+
+  // Phase 3: the pointer leaves both the marker and the card entirely --
+  // CONTRACT's own "~1s" bar. World.razor's grace is 350ms (up from
+  // 150ms, requirement 0c); 1200ms gives real margin above that for the
+  // close to actually land without asserting an exact millisecond.
+  await page.mouse.move(0, 0, { steps: 10 });
+  await expect(card).toBeHidden({ timeout: 1200 });
 });
