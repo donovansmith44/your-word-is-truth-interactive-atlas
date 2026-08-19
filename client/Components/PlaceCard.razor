@@ -30,7 +30,7 @@
      style="left: @X.ToString(CultureInfo.InvariantCulture)px; top: @Y.ToString(CultureInfo.InvariantCulture)px;"
      @onpointerenter="OnPointerEnter"
      @onpointerleave="OnPointerLeave">
-    <p class="place-card-title" data-testid="place-card-title">@Place.Name</p>
+    <button type="button" class="place-card-title" data-testid="place-card-title" @onclick="() => OnOpenPlace.InvokeAsync()">@Place.Name</button>
 
     @{
         var verses = MergedVerses();
@@ -54,10 +54,11 @@
     <div class="place-card-index">
         @foreach (var vg in MergedVerseGroups())
         {
-            <p class="place-card-verse-group" data-testid="verse-group-@vg.Book-@vg.Chapter">
+            <button type="button" class="place-card-verse-group" data-testid="verse-group-@vg.Book-@vg.Chapter"
+                    @onclick="() => OpenVerseGroup(vg)">
                 <span class="place-card-ref">@vg.Book @vg.Chapter</span>
                 <span class="place-card-count">@vg.Count</span>
-            </p>
+            </button>
         }
     </div>
 </div>
@@ -68,6 +69,16 @@
     [Parameter] public double Y { get; set; }
     [Parameter] public EventCallback OnPointerEnter { get; set; }
     [Parameter] public EventCallback OnPointerLeave { get; set; }
+
+    // WORLD-8/Task 15: verse-group rows and the title both promote this
+    // hover card's content into a real ExplorerPopover -- World.razor owns
+    // _activeNode and constructs the actual VerseNode/PlaceNode (it already
+    // has Place.Id/Place.Name in hand from _hoverPlace, the same source this
+    // component's own Place parameter comes from), so these callbacks stay
+    // parameterless/string-only rather than passing whole node instances
+    // across the component boundary.
+    [Parameter] public EventCallback<string> OnOpenVerse { get; set; }
+    [Parameter] public EventCallback OnOpenPlace { get; set; }
 
     private const int InitialShown = 2;
 
@@ -106,6 +117,37 @@
         }
 
         return order.Select(key => new MergedGroup(key.Book, key.Chapter, counts[key])).ToList();
+    }
+
+    // WORLD-8/Task 15: a verse-group row opens a VerseNode for the FIRST
+    // verse of that (book,chapter) group -- same nested Events/VerseGroups
+    // walk order as MergedVerseGroups above (event order, then each event's
+    // own already book/chapter/verse-ascending VerseGroups), so "first
+    // match" is exactly the group's own first (and canonically earliest)
+    // verse, not an arbitrary pick.
+    private async Task OpenVerseGroup(MergedGroup vg)
+    {
+        var vref = FirstVerseOf(vg.Book, vg.Chapter);
+        if (vref is not null)
+        {
+            await OnOpenVerse.InvokeAsync(vref);
+        }
+    }
+
+    private string? FirstVerseOf(string book, int chapter)
+    {
+        foreach (var e in Place.Events)
+        {
+            foreach (var g in e.VerseGroups)
+            {
+                if (g.Book == book && g.Chapter == chapter && g.Verses.Count > 0)
+                {
+                    return g.Verses[0];
+                }
+            }
+        }
+
+        return null;
     }
 
     // The flat, deduped verse-id list the new lead-with-scripture block

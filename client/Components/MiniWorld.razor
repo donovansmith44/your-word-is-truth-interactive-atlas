@@ -1,0 +1,114 @@
+@* MiniWorld -- the popover's own map figure (Task 15, READ-4/READ-5).
+   design-direction.md: "The mini-map inside popovers (Task 15) inherits
+   the same atlas-plate base naturally: a small engraved figure on a paper
+   card." Read together with app.css's own pre-existing
+   ".world-page .leaflet-tile-pane" comment ("scoped under .world-page so
+   the (daylight) mini-map inside popovers is never affected"), this means:
+   SAME NatGeo tile source map.js's init() already uses for the full map
+   (the "atlas-plate base"), but WITHOUT the extra .world-page-scoped sepia
+   warmth filter -- the popover itself is always a parchment/daylight
+   artifact (design-direction.md's Concept section), so the map figure on
+   it reads crisp, not muddied by a filter meant for the dusk page. This
+   only holds as long as ExplorerPopover (and this component with it) is
+   never rendered as a DOM descendant of .world-page -- both Reader.razor
+   (Task 14) and World.razor (this task) render <ExplorerPopover> as a
+   SIBLING of their page-root div, never nested inside it, so a mini-map
+   opened from either page looks identical.
+
+   CONTROLLER RULING (this task's dispatch): mini instances render markers
+   ONLY -- no border overlay, no landmark labels, no arrows (320x240 is
+   too small to read any of the three). This component only ever calls
+   MapInterop.SetScene/FitScene -- never SetBorders/SetBordersVisible/
+   SetLandmarks -- and map.js's own init(mini: true) path independently
+   skips creating the border/arrow/landmark layers at all, and setScene's
+   own arrow push (arrows travel bundled inside every Scene payload,
+   unlike borders/landmarks which are separate calls this component simply
+   never makes) is gated on the same mini flag -- belt and suspenders.
+
+   Each MiniWorld instance owns exactly one MapInterop (and therefore one
+   Leaflet map/DOM subtree); ExplorerPopover's own @if around <MiniWorld>
+   (never rendering more than one at a time, and always via null in
+   between -- see ExplorerPopover.razor's own comment) means Blazor tears
+   this component down -- calling DisposeAsync below -- every time the
+   mini-map area closes or a different popover node loads, so no Leaflet
+   instance ever outlives the figure that created it. *@
+@implements IAsyncDisposable
+@implements IMapEvents
+@inject AtlasClient Atlas
+@inject IJSRuntime JS
+
+<div class="popover-mini-map" data-testid="mini-map">
+    <div class="mini-world-map" @ref="_mapEl"></div>
+    <a class="mini-world-open-world" data-testid="mini-map-open-world"
+       href="@($"/world?ref={Uri.EscapeDataString(SRef)}")">Open in world &rsaquo;</a>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string SRef { get; set; } = default!;
+
+    private ElementReference _mapEl;
+    private MapInterop? _mapInterop;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _mapInterop = await MapInterop.Create(JS, _mapEl, mini: true, this);
+
+        try
+        {
+            var scene = await Atlas.SceneScripture(SRef);
+            await _mapInterop.SetScene(scene);
+            await _mapInterop.FitScene();
+        }
+        catch (Exception)
+        {
+            // A mini-map that fails to load is a quiet nicety gone missing,
+            // not a popover-breaking error -- the surrounding popover's own
+            // body/chips already loaded successfully by the time this runs.
+            // The 320x240 figure just stays an empty (tile-only) map.
+        }
+    }
+
+    // IMapEvents: mini-map markers stay non-interactive beyond whatever
+    // Leaflet gives for free (a pointer cursor on hover) -- popovers-from-
+    // mini-maps are explicitly NOT required by this task's brief, so every
+    // callback here is a deliberate no-op, not a missing feature. map.js's
+    // wireEvents still fires these for every marker regardless of mini
+    // (same code path as the full map), so "marker hover" stays trivially
+    // available per the brief -- it just resolves to nothing happening.
+    public void OnPlaceHover(string id, double x, double y)
+    {
+    }
+
+    public void OnPlaceLeave()
+    {
+    }
+
+    public void OnPlaceClick(string id, double x, double y)
+    {
+    }
+
+    public void OnArrowHover(string key, double x, double y)
+    {
+    }
+
+    public void OnArrowLeave()
+    {
+    }
+
+    public void OnArrowClick(string key, double x, double y)
+    {
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_mapInterop is not null)
+        {
+            await _mapInterop.DisposeAsync();
+        }
+    }
+}

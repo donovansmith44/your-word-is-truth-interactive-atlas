@@ -14,8 +14,16 @@
      - Any ShowMiniMap-targeted chip reveals a mini-map area IN PLACE
        (no stack push) -- CONTRACT's mini-map testid lives inside the still-
        open popover beside its own chips/breadcrumb, not as a separate node.
-       The container is intentionally empty; Task 15 fills it with a real
-       MiniWorld.
+       Renders a real <MiniWorld> (Task 15); MiniWorld's own root carries
+       the mini-map testid, so this file adds no extra wrapping element
+       around it.
+
+   A third, narrower escape (Task 15): PlaceNode's event rows need a way to
+   push a fresh TimeAndPlaceNode onto THIS popover's own Stack from inside
+   PlaceNode's own BodyAsync-rendered markup. LoadCurrent wires PlaceNode.
+   OnSelectEvent to a closure that does exactly that -- see PlaceNode.cs's
+   own doc comment for why this lives on the node (a settable delegate)
+   rather than as a fourth ChipTestId-string-match special case here.
 
    Backdrop is a sibling element, not a wrapper, so clicking the popover
    itself never needs stopPropagation to avoid closing through a parent
@@ -68,11 +76,9 @@
         </div>
     }
 
-    @if (_miniMapSref is not null)
+    @if (_miniMapSref is { } miniMapSref)
     {
-        <div class="popover-mini-map" data-testid="mini-map">
-            @* Task 15 fills this with a real <MiniWorld SRef="@_miniMapSref" /> plus mini-map-open-world. *@
-        </div>
+        <MiniWorld @key="miniMapSref" SRef="@miniMapSref" />
     }
 </div>
 
@@ -125,6 +131,38 @@
     {
         _xrefs = null;
         _miniMapSref = null;
+
+        // PlaceNode's event rows need a way back into THIS popover's own
+        // Stack -- see PlaceNode.OnSelectEvent's own doc comment for why
+        // this lives here rather than as a fourth ChipTestId-style special
+        // case. Reassigned on every LoadCurrent, including a Back() that
+        // returns TO a PlaceNode, so the closure always captures the
+        // CURRENT _stack/LoadCurrent, never a stale one from an earlier push.
+        //
+        // The explicit StateHasChanged() (found via systematic-debugging,
+        // tracing a real "click does nothing visible" failure) is load-
+        // bearing, not defensive: the row's own onclick is bound via
+        // EventCallback.Factory.Create(this, ...) INSIDE PlaceNode.BodyAsync,
+        // where "this" is the PlaceNode instance, not a component -- so it
+        // doesn't implement IHandleEvent, and ComponentBase.HandleEventAsync
+        // (the mechanism that gives EVERY normal @onclick="Method" its
+        // automatic post-invoke re-render) never runs for it. Confirmed by
+        // instrumenting the click end-to-end: the callback fires, select()
+        // (this exact closure) is awaited and returns, _stack genuinely
+        // gains the new node -- but the DOM stayed on the stale content
+        // until this call was added, exactly like World.razor's own
+        // OnPlaceHover/OnArrowHover already need it for JS-interop-sourced
+        // events that arrive outside Blazor's normal event dispatch.
+        if (Current is PlaceNode placeNode)
+        {
+            placeNode.OnSelectEvent = async node =>
+            {
+                _stack.Push(node);
+                await LoadCurrent();
+                StateHasChanged();
+            };
+        }
+
         try
         {
             _explorations = await Current.ExploreAsync(Atlas);

@@ -378,6 +378,49 @@ input:focus-visible,
     color: var(--lapis);
 }
 
+/* passage-chip (READ-5/Task 15): "floats bottom-center like a paper tag:
+   parchment, bronze border, ref in mono" (design-direction.md). Stays
+   visible while its own popover is open (design's own "selecting a new
+   anchor or navigating clears the chip" is an exhaustive list that does
+   NOT include "opening its popover") -- z-index sits above reader-prev/
+   reader-next (15) but well below the popover/backdrop (41/40), so an open
+   popover's own backdrop visually covers it without any special handling
+   here. */
+.passage-chip {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    transform: translateX(-50%);
+    z-index: 20;
+    font-family: var(--font-mono);
+    font-size: .85rem;
+    letter-spacing: .02em;
+    color: var(--bronze-ink);
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+    border-radius: 999px;
+    padding: .45rem 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+    animation: passage-chip-in 120ms ease-out both;
+}
+
+.passage-chip:hover {
+    color: var(--lapis);
+    border-color: var(--lapis);
+}
+
+@keyframes passage-chip-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+    to { opacity: 1; transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .passage-chip {
+        animation: none;
+    }
+}
+
 /* World map mount -- Leaflet (client/wwwroot/js/map.js) initializes into
    this element and owns its subtree from then on; Blazor never renders
    children into it (PlaceCard etc. are siblings, positioned absolutely
@@ -768,13 +811,27 @@ input:focus-visible,
     overflow-y: auto;
 }
 
+/* WORLD-8/Task 15: opens a PlaceNode popover (this place's full event
+   history) -- a real <button> now, reset to read exactly as the plain
+   heading it always was. */
 .place-card-title {
+    display: block;
+    width: 100%;
     margin: 0 0 .35rem;
+    padding: 0;
+    border: none;
+    background: none;
     font-family: var(--font-serif);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     font-size: 1.05rem;
     color: var(--ink);
+    text-align: start;
+    cursor: pointer;
+}
+
+.place-card-title:hover {
+    color: var(--lapis);
 }
 
 /* The lead verse-text block (design-direction.md "Hover place card --
@@ -833,14 +890,30 @@ input:focus-visible,
     border-top: 1px solid rgba(138, 107, 61, .25);
 }
 
+/* WORLD-8/Task 15: opens a VerseNode popover for the group's first verse --
+   a real <button> now (was a plain <p>); .place-card-ref has no color of
+   its own, so it inherits this rule's color (including the :hover change
+   below) automatically -- .place-card-count keeps its own explicit --lapis
+   regardless, unchanged. */
 .place-card-verse-group {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: .75rem;
+    width: 100%;
     margin: .2rem 0 0;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: var(--font-serif);
     font-size: .85rem;
     color: var(--ink-soft);
+    text-align: start;
+    cursor: pointer;
+}
+
+.place-card-verse-group:hover {
+    color: var(--lapis);
 }
 
 .place-card-ref {
@@ -1589,16 +1662,54 @@ input:focus-visible,
     color: var(--ink-soft);
 }
 
-/* Empty container (Task 14) -- Task 15 fills this with a real MiniWorld
-   (design-direction.md: "the mini-map inside popovers stays DAYLIGHT
-   [even on /world]: a small engraved figure on a paper card"). */
+/* MiniWorld's own host (Task 15, READ-4/READ-5, design-direction.md: "the
+   mini-map inside popovers... a small engraved figure on a paper card").
+   MiniWorld.razor renders this whole element (data-testid="mini-map" lives
+   on ITS root, not a wrapper this file adds) -- .popover-mini-map is just
+   the parchment frame; .mini-world-map is the literal 320x240 Leaflet
+   mount per the brief. Deliberately NOT scoped under .world-page (see
+   World.razor's own comment on where it renders <ExplorerPopover>), so the
+   figure stays unfiltered "daylight" NatGeo tiles regardless of which page
+   opened the popover -- MiniWorld.razor's own header comment explains why
+   that reading of "inherits the atlas-plate base naturally" was chosen. */
 .popover-mini-map {
-    min-height: 8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .45rem;
+    padding: .5rem;
     background: var(--parchment);
     border: 1px solid var(--bronze);
     border-radius: 4px;
 }
 
+.mini-world-map {
+    width: 320px;
+    max-width: 100%;
+    height: 240px;
+    border: 1px solid rgba(138, 107, 61, .35);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.mini-world-open-world {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: .8rem;
+    color: var(--lapis);
+}
+
+.mini-world-open-world:hover {
+    color: var(--bronze-ink);
+}
+
+/* Base layout, shared by TimeAndPlaceNode's own (non-interactive <p>) rows
+   and PlaceNode's clickable event rows below -- .popover-event-row-button
+   is the modifier that turns THIS SAME layout into a real button (same
+   base+modifier split as .picker/.picker-dusk/.picker-parchment elsewhere
+   in this file), so a plain summary row never shows a misleading pointer
+   cursor. */
 .popover-event-row {
     display: flex;
     align-items: baseline;
@@ -1608,6 +1719,25 @@ input:focus-visible,
     padding: .3rem 0;
     border-bottom: 1px solid rgba(138, 107, 61, .18);
     font-size: .88rem;
+}
+
+/* PlaceNode's event rows (WORLD-8/Task 15) -- pushes a TimeAndPlaceNode.
+   border/border-bottom is re-declared here (not just inherited from
+   .popover-event-row above) so this rule's own reset (`border: none`)
+   never depends on source order against the base rule to keep the
+   hairline. */
+.popover-event-row-button {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid rgba(138, 107, 61, .18);
+    background: none;
+    font-family: var(--font-serif);
+    text-align: start;
+    cursor: pointer;
+}
+
+.popover-event-row-button:hover {
+    background: rgba(44, 74, 112, .08);
 }
 
 .popover-event-label {

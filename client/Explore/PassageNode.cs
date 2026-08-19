@@ -9,9 +9,15 @@ namespace BibleAtlas.Client.Explore;
 /// VerseNode/ChapterNode this node needs no AtlasClient fetch of its own for
 /// its body -- the caller hands over the already-known sref and concatenated
 /// text directly at construction, avoiding a second network round-trip for
-/// content already in memory. Task 15 owns the actual shift-click wiring in
-/// Reader.razor; this class exists now with the Title/Kind/body/explorations
-/// the spec's node table gives for "Passage/Chapter/Book".
+/// content already in memory. Reader.razor owns the actual shift-click
+/// wiring (Task 15).
+///
+/// The map chip is <see cref="ExplorationTarget.ShowMiniMap"/> (Task 15) --
+/// "chips: map/context like VerseNode" per the brief, i.e. reveals the
+/// <c>mini-map</c> IN PLACE the same way VerseNode's own map chip does,
+/// rather than Task 14's placeholder <c>NavigateWorld</c> (which would have
+/// left the popover entirely, breaking READ-5's own "chip -&gt; popover-chip-
+/// map -&gt; mini-map, all within the SAME still-open passage popover" flow).
 /// </summary>
 public sealed class PassageNode : IExplorable
 {
@@ -32,8 +38,7 @@ public sealed class PassageNode : IExplorable
         var (book, chapter, verse) = CanonRef.ParseVerse(CanonRef.FirstVerseOf(_sref));
         IReadOnlyList<Exploration> list = new[]
         {
-            new Exploration("Show on /world", "popover-chip-map",
-                new ExplorationTarget.NavigateWorld($"ref={Uri.EscapeDataString(_sref)}")),
+            new Exploration("Explore geo-temporally", "popover-chip-map", new ExplorationTarget.ShowMiniMap(_sref)),
             new Exploration("Read in context", "popover-chip-context",
                 new ExplorationTarget.NavigateReader(book, chapter, verse)),
             new Exploration("About this book", "popover-chip-book",

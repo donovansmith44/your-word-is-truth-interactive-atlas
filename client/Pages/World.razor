@@ -22,7 +22,8 @@
     @if (hoverPlace is not null)
     {
         <PlaceCard Place="hoverPlace" X="_hoverX" Y="_hoverY"
-                   OnPointerEnter="CancelCardClose" OnPointerLeave="ScheduleCardClose" />
+                   OnPointerEnter="CancelCardClose" OnPointerLeave="ScheduleCardClose"
+                   OnOpenVerse="OpenVerseFromCard" OnOpenPlace="OpenPlaceFromCard" />
     }
 
     @if (_hoverArrowText is not null)
@@ -74,6 +75,19 @@
         </div>
     }
 </div>
+
+@* Rendered as a SIBLING of .world-page, not nested inside it -- same
+   placement Reader.razor already uses for its own ExplorerPopover. Load-
+   bearing, not just conventional: a mini-map (Task 15's <MiniWorld>, opened
+   via WORLD-8's place-history flow) is meant to stay a "daylight" figure
+   regardless of which page opened it (see MiniWorld.razor's own comment);
+   nesting the popover inside .world-page would make its embedded Leaflet
+   tile pane a DOM descendant of ".world-page .leaflet-tile-pane", picking
+   up the dusk page's own sepia warmth filter by CSS accident. *@
+@if (_activeNode is not null)
+{
+    <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover" />
+}
 
 @code {
     // No window specified at all (bare "/world"): show the full timeline
@@ -180,6 +194,13 @@
     // sync without this field needing to call MapInterop.SetIsolate(null)
     // itself on every load.
     private string? _isolated;
+
+    // WORLD-8/Task 15: PlaceCard's title/verse-group rows promote the hover
+    // card's content into a real ExplorerPopover -- same @key-per-instance
+    // pattern Reader.razor already uses so a different node always remounts
+    // a fresh popover (breadcrumb stack included) rather than diffing into
+    // an existing one.
+    private IExplorable? _activeNode;
 
     protected override async Task OnInitializedAsync()
     {
@@ -711,6 +732,41 @@
     // Documented no-op, same treatment as OnPlaceClick above.
     public void OnArrowClick(string key, double x, double y)
     {
+    }
+
+    // PlaceCard.OnOpenVerse/OnOpenPlace (WORLD-8/Task 15): both close the
+    // hover card immediately (rather than leaving it to the pointer-leave
+    // timer) since its content is now shown, promoted, inside the popover
+    // that's about to open -- avoids two parchment artifacts (hover card +
+    // popover) ever visibly overlapping for the delay window.
+    private Task OpenVerseFromCard(string vref)
+    {
+        _activeNode = new VerseNode(vref);
+        CloseCardNow();
+        return Task.CompletedTask;
+    }
+
+    private Task OpenPlaceFromCard()
+    {
+        if (_hoverPlace is { } place)
+        {
+            _activeNode = new PlaceNode(place.Id, place.Name);
+        }
+
+        CloseCardNow();
+        return Task.CompletedTask;
+    }
+
+    private Task ClosePopover()
+    {
+        _activeNode = null;
+        return Task.CompletedTask;
+    }
+
+    private void CloseCardNow()
+    {
+        _closeCts?.Cancel();
+        _hoverPlace = null;
     }
 
     // The place card stays open while the pointer is over the marker OR

@@ -1,8 +1,17 @@
 // Leaflet interop for the World map (design-direction.md: "the world by
 // lamplight"). One ES module instance backs every `MapInterop` on the C#
 // side (client/MapInterop.cs), keyed by a small integer id so the same
-// module can host more than one Leaflet map at once (the full-size world
-// map now; mini-maps inside popovers are a later task).
+// module can host more than one Leaflet map at once -- the full-size world
+// map, and (Task 15) any number of 320x240 mini-maps inside popovers,
+// concurrently. Mini instances (opts.mini) render the base tile layer and
+// markers only: no zoom/pan controls (unchanged since Task 11), and no
+// border overlay / landmark labels / narrative arrows at all -- init()
+// below skips creating those three layers entirely for a mini instance
+// rather than creating-then-never-feeding them, and setScene()'s own arrow
+// push (arrows travel bundled inside every Scene payload, unlike borders/
+// landmarks which only ever arrive through their own SetBorders/
+// SetLandmarks calls that MiniWorld.razor simply never makes) is gated on
+// the same flag.
 //
 // Scene data crosses the JS interop boundary as a pre-serialized JSON
 // string (see MapInterop.SetScene's comment for why: IJSObjectReference
@@ -116,31 +125,36 @@ export function init(el, dotnetRef, opts) {
         tiles.setUrl(TILE_FALLBACK);
     });
 
-    // Borders (Task batch-B "Atlas plate detail: time-period-accurate
-    // borders") are added to the map BEFORE arrows so their shared
-    // overlayPane's DOM paint order puts them BELOW the narrative threads
-    // (design-direction.md: borders are period cartography; narrative
-    // threads read on top of it) -- see BorderLayer's own header comment.
-    const borders = new BorderLayer();
-    borders.addTo(map);
+    // Borders/arrows/landmarks (Task 15 controller ruling): a mini instance
+    // gets NONE of the three -- not created, never populated -- rather than
+    // created-but-fed-nothing. Borders are added to the map BEFORE arrows
+    // so their shared overlayPane's DOM paint order puts them BELOW the
+    // narrative threads (design-direction.md: borders are period
+    // cartography; narrative threads read on top of it) -- see
+    // BorderLayer's own header comment. Landmarks get their own pane,
+    // z-indexed between overlayPane (400: borders/arrows) and markerPane
+    // (600: scripture's places) -- design-direction.md: landmark labels
+    // sit "a visual step below place labels so scripture's places stay the
+    // foreground." A dedicated pane makes that ordering independent of DOM
+    // insertion timing: landmarks are fetched/set once, asynchronously,
+    // from World.razor (see setLandmarks below), while place markers come
+    // and go on every window change -- relying on relative insertion order
+    // between the two would be racy.
+    let borders = null;
+    let arrows = null;
+    if (!mini) {
+        borders = new BorderLayer();
+        borders.addTo(map);
 
-    const arrows = new ArrowLayer(dotnetRef);
-    arrows.addTo(map);
+        arrows = new ArrowLayer(dotnetRef);
+        arrows.addTo(map);
 
-    // Landmarks (Task batch-B "always-visible landmark labels") get their
-    // own pane, z-indexed between overlayPane (400: borders/arrows) and
-    // markerPane (600: scripture's places) -- design-direction.md:
-    // landmark labels sit "a visual step below place labels so scripture's
-    // places stay the foreground." A dedicated pane makes that ordering
-    // independent of DOM insertion timing: landmarks are fetched/set once,
-    // asynchronously, from World.razor (see setLandmarks below), while
-    // place markers come and go on every window change -- relying on
-    // relative insertion order between the two would be racy.
-    map.createPane('landmarksPane');
-    map.getPane('landmarksPane').style.zIndex = 500;
-    map.getPane('landmarksPane').style.pointerEvents = 'none';
+        map.createPane('landmarksPane');
+        map.getPane('landmarksPane').style.zIndex = 500;
+        map.getPane('landmarksPane').style.pointerEvents = 'none';
+    }
 
-    instances.set(id, { map, dotnetRef, markers: new Map(), arrows, borders, landmarkMarkers: [] });
+    instances.set(id, { map, dotnetRef, mini, markers: new Map(), arrows, borders, landmarkMarkers: [] });
     return id;
 }
 
@@ -192,7 +206,12 @@ export function setScene(id, sceneJson) {
         }
     }
 
-    inst.arrows.setArrows(scene.arrows || [], inst.markers);
+    // Mini instances never render arrows at all (Task 15 controller ruling
+    // -- see init()'s own comment); guard rather than call setArrows on a
+    // null inst.arrows.
+    if (!inst.mini) {
+        inst.arrows.setArrows(scene.arrows || [], inst.markers);
+    }
 }
 
 function wireEvents(marker, dotnetRef, placeId) {
@@ -280,7 +299,7 @@ export function fitScene(id) {
 // every arrow whose narrative doesn't match it.
 export function setIsolate(id, narrativeId) {
     const inst = instances.get(id);
-    if (!inst) {
+    if (!inst || !inst.arrows) {
         return;
     }
 
@@ -296,7 +315,7 @@ export function setIsolate(id, narrativeId) {
 // function doesn't need to know about modes at all).
 export function setBorders(id, geojsonString) {
     const inst = instances.get(id);
-    if (!inst) {
+    if (!inst || !inst.borders) {
         return;
     }
 
@@ -309,7 +328,7 @@ export function setBorders(id, geojsonString) {
 // to time mode").
 export function setBordersVisible(id, visible) {
     const inst = instances.get(id);
-    if (!inst) {
+    if (!inst || !inst.borders) {
         return;
     }
 
@@ -322,7 +341,7 @@ export function setBordersVisible(id, visible) {
 // call is still idempotent rather than duplicating labels.
 export function setLandmarks(id, landmarksJson) {
     const inst = instances.get(id);
-    if (!inst) {
+    if (!inst || inst.mini) {
         return;
     }
 

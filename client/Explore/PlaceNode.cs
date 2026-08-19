@@ -6,10 +6,23 @@ namespace BibleAtlas.Client.Explore;
 /// A place's activity across ALL recorded history (spec node table row
 /// "Place": "Its events across time (-&gt; TimeAndPlace nodes), Show on
 /// /world"; Task 15's WORLD-8 opens this from World's PlaceCard title).
-/// Title/Kind/body and the one "Show on /world" exploration are correct and
-/// complete here; clicking an individual event row to push a
-/// TimeAndPlaceNode is Task 15's own wiring (no CONTRACT testid exists yet
-/// for that row), so the event list below is informational only for now.
+/// Title/Kind/body and the one "Show on /world" exploration were already
+/// correct as of Task 14; Task 15 wires the event rows themselves -- each is
+/// a real button that pushes a fresh <see cref="TimeAndPlaceNode"/> for that
+/// specific event via <see cref="OnSelectEvent"/>.
+///
+/// <see cref="OnSelectEvent"/> is a deliberate, narrow escape from
+/// IExplorable's usual "ExplorerPopover renders every node identically"
+/// promise -- documented here rather than hidden, and chosen over adding a
+/// THIRD ExplorerPopover-side special case (alongside xrefs/ShowMiniMap):
+/// CONTRACT.md places no fixed testid on "click an event row" the way it
+/// does for xrefs/mini-map, so nothing forces this interaction out of the
+/// node's own BodyAsync the way those two are forced out. Also, unlike
+/// xrefs (a toggleable, chip-gated list), WORLD-8 requires the event years
+/// to be visible in the body IMMEDIATELY on open, with no chip click first
+/// -- which only BodyAsync's own always-rendered content can satisfy.
+/// ExplorerPopover.LoadCurrent sets this property immediately after making
+/// this node Current, to a closure that pushes onto its own Stack.
 /// </summary>
 public sealed class PlaceNode : IExplorable
 {
@@ -26,13 +39,23 @@ public sealed class PlaceNode : IExplorable
     public string Title => _placeName;
     public string Kind => "Place";
 
+    /// <summary>
+    /// Wired by <c>ExplorerPopover.LoadCurrent</c> right after this node
+    /// becomes Current; invoked by an event row's own onclick (see
+    /// <see cref="BodyAsync"/>) with the <see cref="TimeAndPlaceNode"/> to
+    /// push. Left null (a no-op click) if nobody ever wires it, e.g. a
+    /// caller that renders this node's body outside a real ExplorerPopover.
+    /// </summary>
+    public Func<IExplorable, Task>? OnSelectEvent { get; set; }
+
     public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
         // No single scripture ref or narrow time window is inherently "this
         // place's own" -- the whole-span default is the only /world query the
         // CONTRACT's from/to vocabulary can express for "everywhere this
-        // place has ever appeared". Task 15 may narrow this once it wires
-        // real per-event interaction here.
+        // place has ever appeared". Individual events get their OWN precise
+        // NavigateWorld window via TimeAndPlaceNode's own chip once a row
+        // below is clicked.
         IReadOnlyList<Exploration> list = new[]
         {
             new Exploration("Show on /world", "popover-chip-map",
@@ -45,6 +68,9 @@ public sealed class PlaceNode : IExplorable
     {
         var detail = await Load(api);
         var events = detail.Events;
+        var placeName = _placeName;
+        var select = OnSelectEvent;
+
         RenderFragment fragment = builder =>
         {
             var seq = 0;
@@ -59,16 +85,29 @@ public sealed class PlaceNode : IExplorable
 
             foreach (var e in events)
             {
-                builder.OpenElement(seq++, "p");
-                builder.AddAttribute(seq++, "class", "popover-event-row");
+                var ev = e; // local copy -- captured per-row by the onclick closure below
+                builder.OpenElement(seq++, "button");
+                builder.AddAttribute(seq++, "type", "button");
+                builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button");
+                builder.AddAttribute(seq++, "data-testid", $"place-event-{ev.Id}");
+                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, async () =>
+                {
+                    if (select is not null)
+                    {
+                        await select(new TimeAndPlaceNode(placeName, ev.When, ev.Label, ev.VerseGroups));
+                    }
+                }));
+
                 builder.OpenElement(seq++, "span");
                 builder.AddAttribute(seq++, "class", "popover-event-label");
-                builder.AddContent(seq++, e.Label);
+                builder.AddContent(seq++, ev.Label);
                 builder.CloseElement();
+
                 builder.OpenElement(seq++, "span");
                 builder.AddAttribute(seq++, "class", "popover-event-years");
-                builder.AddContent(seq++, YearText.FormatRange(e.When.FromYear, e.When.ToYear));
+                builder.AddContent(seq++, YearText.FormatRange(ev.When.FromYear, ev.When.ToYear));
                 builder.CloseElement();
+
                 builder.CloseElement();
             }
         };

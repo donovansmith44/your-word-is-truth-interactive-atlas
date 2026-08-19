@@ -8,56 +8,75 @@
 
 <PageTitle>Bible Atlas &mdash; @BookName @_chapterNum</PageTitle>
 
-<div class="reader-page" data-testid="reader-root">
-    <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" />
+@* Outer wrapper exists ONLY so a keydown while focus is ANYWHERE inside --
+   a verse-num button just clicked, or the popover panel once its own
+   FocusAsync() lands -- bubbles to ONE handler regardless of exactly where
+   focus is at that instant (OnPageKeyDown below). .reader-page and
+   ExplorerPopover are otherwise unrelated SIBLINGS in the DOM (Blazor
+   renders a conditional block as a sibling, not a child, of the element
+   before it), so neither one alone could catch a keydown whose focus target
+   is inside the OTHER. Purely structural -- no class, no visual effect;
+   .reader-page keeps its own min-height:100vh (vh units are viewport-
+   relative regardless of ancestor nesting) and .popover keeps its own
+   position:fixed centering (an unstyled wrapper introduces no new
+   containing block). *@
+<div @onkeydown="OnPageKeyDown">
+    <div class="reader-page" data-testid="reader-root">
+        <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" />
 
-    @if (ChapterMatchesRoute)
-    {
-        <article class="reader-column">
-            <h1 class="chapter-head">
-                <span class="chapter-head-book">@BookName</span>
-                <span class="chapter-head-num">@_chapterNum</span>
-            </h1>
+        @if (ChapterMatchesRoute)
+        {
+            <article class="reader-column">
+                <h1 class="chapter-head">
+                    <span class="chapter-head-book">@BookName</span>
+                    <span class="chapter-head-num">@_chapterNum</span>
+                </h1>
 
-            @foreach (var v in _chapter!.Verses)
+                @foreach (var v in _chapter!.Verses)
+                {
+                    <p class="verse-line" data-testid="verse-line-@v.Verse" id="v@(v.Verse)">
+                        <button type="button" class="verse-num" data-testid="verse-num-@v.Verse" @onclick="@(e => OnVerseNumClick(e, v.Verse))">@v.Verse</button>
+                        <span class="verse-text">@v.Text</span>
+                        <button type="button" class="verse-explore" data-testid="verse-explore-@v.Verse"
+                                aria-label="@($"Explore {_book}.{_chapterNum}.{v.Verse}")" @onclick="() => SetAnchorAndOpen(v.Verse)">&#8756;</button>
+                    </p>
+                }
+            </article>
+        }
+        else if (_errorMessage is null)
+        {
+            <p class="reader-loading">Loading&hellip;</p>
+        }
+
+        <nav aria-label="Chapter navigation">
+            @if (PrevTarget is { } prev)
             {
-                <p class="verse-line" data-testid="verse-line-@v.Verse" id="v@(v.Verse)">
-                    <button type="button" class="verse-num" data-testid="verse-num-@v.Verse" @onclick="() => OpenVerse(v.Verse)">@v.Verse</button>
-                    <span class="verse-text">@v.Text</span>
-                    <button type="button" class="verse-explore" data-testid="verse-explore-@v.Verse"
-                            aria-label="@($"Explore {_book}.{_chapterNum}.{v.Verse}")" @onclick="() => OpenVerse(v.Verse)">&#8756;</button>
-                </p>
+                <a class="reader-prev" data-testid="reader-prev" href="@($"/read/{prev.Book}/{prev.Chapter}")">&lsaquo; @prev.Name @prev.Chapter</a>
             }
-        </article>
-    }
-    else if (_errorMessage is null)
-    {
-        <p class="reader-loading">Loading&hellip;</p>
-    }
+            @if (NextTarget is { } next)
+            {
+                <a class="reader-next" data-testid="reader-next" href="@($"/read/{next.Book}/{next.Chapter}")">@next.Name @next.Chapter &rsaquo;</a>
+            }
+        </nav>
 
-    <nav aria-label="Chapter navigation">
-        @if (PrevTarget is { } prev)
+        @if (_passageRange is { } range)
         {
-            <a class="reader-prev" data-testid="reader-prev" href="@($"/read/{prev.Book}/{prev.Chapter}")">&lsaquo; @prev.Name @prev.Chapter</a>
+            <button type="button" class="passage-chip" data-testid="passage-chip" @onclick="OpenPassage">@PassageRef(range)</button>
         }
-        @if (NextTarget is { } next)
-        {
-            <a class="reader-next" data-testid="reader-next" href="@($"/read/{next.Book}/{next.Chapter}")">@next.Name @next.Chapter &rsaquo;</a>
-        }
-    </nav>
 
-    @if (_errorMessage is not null)
+        @if (_errorMessage is not null)
+        {
+            <div class="toast" data-testid="toast">
+                <p class="toast-message">@_errorMessage</p>
+            </div>
+        }
+    </div>
+
+    @if (_activeNode is not null)
     {
-        <div class="toast" data-testid="toast">
-            <p class="toast-message">@_errorMessage</p>
-        </div>
+        <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover" />
     }
 </div>
-
-@if (_activeNode is not null)
-{
-    <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover" />
-}
 
 @code {
     private static readonly Regex VerseFragment = new(@"^#v(\d+)$", RegexOptions.Compiled);
@@ -73,6 +92,17 @@
     private int? _loadedChapterNum;
     private string? _errorMessage;
     private IExplorable? _activeNode;
+
+    // Passage selection (READ-5/Task 15). _anchorVerse is the last PLAIN
+    // click (never a shift-click); it stays fixed across repeated shift-
+    // clicks against different verses (standard shift-click UX: the anchor
+    // only moves on a fresh plain click), so it's a real int? field, not
+    // just "whatever OpenVerse last touched". _passageRange is null unless
+    // a shift-click just formed a real range (V1<=V2, canonical order
+    // regardless of click direction -- see OnVerseNumClick).
+    private int? _anchorVerse;
+    private (int From, int To)? _passageRange;
+
     private int _requestId;
     private string? _scrolledFragment;
     private IJSObjectReference? _readerJs;
@@ -129,6 +159,18 @@
     {
         var book = string.IsNullOrWhiteSpace(Book) ? "GEN" : Book.ToUpperInvariant();
         var chapterNum = Chapter ?? 1;
+
+        // "Selecting a new anchor or navigating clears the chip" (Task 15
+        // brief) -- OnParametersSetAsync only ever runs in response to a
+        // genuine navigation the router dispatched to this page (initial
+        // load, or any URL change matching this route, including a
+        // same-chapter fragment-only jump from the picker), never from an
+        // unrelated StateHasChanged elsewhere -- so unconditionally
+        // resetting here, before the redundant-refetch guard below, is
+        // exactly "navigating clears the chip", covering every kind of
+        // navigation rather than only ones that also change chapter.
+        _anchorVerse = null;
+        _passageRange = null;
 
         if (book == _book && chapterNum == _chapterNum && _loadedBook == book && _loadedChapterNum == chapterNum)
         {
@@ -205,6 +247,84 @@
     {
         _activeNode = null;
         return Task.CompletedTask;
+    }
+
+    // Closes any open popover the INSTANT Shift goes down -- found by
+    // tracing a real READ-5 failure (systematic-debugging): the popover's
+    // own backdrop is a full-viewport, position:fixed div (by design --
+    // ExplorerPopover's click-outside-to-close) that physically intercepts
+    // pointer events, so a plain click's popover staying open would make
+    // Playwright's (and a real user's) very next click on a DIFFERENT
+    // verse-num impossible to land at all -- it would just retry against
+    // the intercepting backdrop until its actionability timeout, never
+    // reaching OnVerseNumClick below. Closing on keydown (not waiting for
+    // the shift-click itself) means the backdrop is already gone by the
+    // time that second click is attempted. A plain onclick guard on
+    // ExplorerPopover's OWN focused panel was considered and rejected: the
+    // real test never waits for that panel's own async FocusAsync() to
+    // land before pressing Shift, so focus could still be on the
+    // just-clicked verse-num button at that instant -- only a common
+    // ancestor of BOTH (this component's own wrapper div, see its comment)
+    // catches the bubbled keydown reliably regardless of which one
+    // currently has focus.
+    private void OnPageKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Shift" && _activeNode is not null)
+        {
+            _activeNode = null;
+        }
+    }
+
+    // READ-2/READ-5 interplay (brief note, verbatim): "plain click closes
+    // any popover, opens verse popover, sets anchor; shift-click suppresses
+    // popover and shows the chip." A shift-click with no anchor yet (the
+    // user shift-clicked before ever plain-clicking a verse this visit) has
+    // nothing to form a range against -- falls through to the plain-click
+    // path instead of silently doing nothing, so the shift-clicked verse
+    // itself becomes a usable anchor for the NEXT shift-click. Same
+    // fallback when the anchor and the shift-clicked verse are the SAME
+    // verse (a degenerate "V-V" range), which would otherwise produce a
+    // meaningless one-verse "passage".
+    private void OnVerseNumClick(MouseEventArgs e, int verseNum)
+    {
+        if (e.ShiftKey && _anchorVerse is int anchor && anchor != verseNum)
+        {
+            _passageRange = (Math.Min(anchor, verseNum), Math.Max(anchor, verseNum));
+            _activeNode = null; // suppress the popover -- the chip is the result of a shift-click, not a new popover
+            return;
+        }
+
+        SetAnchorAndOpen(verseNum);
+    }
+
+    // The shared "plain click" behavior: verse-num's own non-shift path and
+    // verse-explore's own click both funnel here -- the ∴ affordance is
+    // always an explicit "open this verse" action regardless of any
+    // modifier key held, never a range-selection gesture.
+    private void SetAnchorAndOpen(int verseNum)
+    {
+        _anchorVerse = verseNum;
+        _passageRange = null;
+        OpenVerse(verseNum);
+    }
+
+    private string PassageRef((int From, int To) range) => $"{_book}.{_chapterNum}.{range.From}-{range.To}";
+
+    // passage-chip click (READ-5): PassageNode takes its text directly
+    // (concatenated from verses the reader already has in memory -- see
+    // PassageNode.cs's own doc comment) rather than issuing a second
+    // network round-trip for content this page already rendered.
+    private void OpenPassage()
+    {
+        if (_passageRange is not { } range || _chapter is not { } chapter)
+        {
+            return;
+        }
+
+        var text = string.Join(" ", chapter.Verses
+            .Where(v => v.Verse >= range.From && v.Verse <= range.To)
+            .Select(v => v.Text));
+        _activeNode = new PassageNode(PassageRef(range), text);
     }
 
     // ScripturePicker composes one of GEN / GEN.1 / GEN.1.5 / GEN.1.5-9 (the
