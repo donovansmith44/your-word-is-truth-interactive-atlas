@@ -230,6 +230,49 @@ async fn verse_chapter_place_and_404() {
     assert_eq!(body["error"]["code"], "not_found");
 }
 
+#[tokio::test]
+async fn borders_empty_fixture_shape_and_errors() {
+    let app = app();
+
+    // demo_fixture() has no compiled border snapshots -- a valid window
+    // still 200s, with snapshot_year null and an empty FeatureCollection
+    // (mirrors scene_time's "out-of-span is not an error" spirit one level
+    // up: "no border data at all" is a valid state, not a failure).
+    let (st, body) = call(&app, "/api/borders?from=-1450&to=-1400").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["snapshot_year"], serde_json::Value::Null);
+    assert_eq!(body["geojson"]["type"], "FeatureCollection");
+    assert_eq!(body["geojson"]["features"], serde_json::json!([]));
+
+    // Same bad_window rulings as /api/scene: missing/unparseable/zero/inverted.
+    for bad in [
+        "/api/borders?from=0&to=5",
+        "/api/borders?from=5&to=-5",
+        "/api/borders?from=1",
+        "/api/borders",
+        "/api/borders?from=x&to=y",
+        "/api/borders?from=&to=",
+    ] {
+        let (st, body) = call(&app, bad).await;
+        assert_eq!(st, 400, "{bad}");
+        assert_eq!(body["error"]["code"], "bad_window", "{bad}: {body}");
+    }
+
+    // Ruling 2 parity: a structurally valid but wildly out-of-span window
+    // is NOT an error, same as /api/scene.
+    let (st, body) = call(&app, "/api/borders?from=-50000&to=50000").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["snapshot_year"], serde_json::Value::Null);
+}
+
+#[tokio::test]
+async fn landmarks_empty_fixture_list() {
+    let app = app();
+    let (st, body) = call(&app, "/api/landmarks").await;
+    assert_eq!(st, 200);
+    assert_eq!(body, serde_json::json!([]));
+}
+
 /// `app::build`'s `static_dir` branch: API routes still win over the static
 /// fallback, an existing file is served as itself, and an unmatched path
 /// (a Blazor client-side route like `/world`) falls back to `index.html`'s

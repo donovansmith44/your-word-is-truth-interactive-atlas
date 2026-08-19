@@ -1,7 +1,7 @@
 //! The atlas data model: the compiled-file schema that ETL writes and the
 //! server reads. Every record type derives `Serialize + Deserialize`.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use serde::{Deserialize, Serialize};
 
@@ -78,6 +78,21 @@ pub struct CrossRef {
     pub votes: i32,
 }
 
+/// A curated landmark label (river/sea/mountain/region) rendered always-on,
+/// non-interactive, on the World map — the "actual good and informative
+/// map" landmark-labels feature. `kind` is one of `"water"`, `"mountain"`,
+/// `"region"` (atlas-etl's `validate::run_landmarks` enforces the enum;
+/// this struct itself accepts any string so a hand-authored curated file
+/// with a typo fails ETL validation with a clear message rather than
+/// silently refusing to deserialize with serde's own less-helpful error).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Landmark {
+    pub name: String,
+    pub kind: String,
+    pub lat: f64,
+    pub lon: f64,
+}
+
 /// The whole compiled atlas: ETL builds one of these and calls `.finish()`
 /// before writing it to disk; the server deserializes the file and calls
 /// `.finish()` again to rebuild the derived indexes (they are `#[serde(skip)]`
@@ -92,6 +107,27 @@ pub struct AtlasData {
     pub books_meta: Vec<BookMeta>,
     pub verses: HashMap<String, String>,
     pub cross_refs: HashMap<String, Vec<CrossRef>>,
+
+    /// Historical border snapshots: year -> already clip/simplified GeoJSON
+    /// `FeatureCollection` (kept as an untyped `serde_json::Value` rather
+    /// than a typed geometry model — the server only ever passes this
+    /// straight through to the client, never inspects it). `#[serde(skip)]`
+    /// because — like the derived indexes below — this isn't populated via
+    /// the struct-level derive: `AtlasData::load` fills it in from
+    /// `borders-index.json` + `borders/{year}.json`, a different
+    /// one-field/many-files shape than the other schema fields above.
+    /// `demo_fixture()` leaves this empty (no server test needs real border
+    /// geometry); real data always has 12 real BC/AD snapshots once
+    /// atlas-etl has run.
+    #[serde(skip)]
+    pub borders: BTreeMap<Year, serde_json::Value>,
+    /// Curated landmark labels (rivers/seas/mountains/regions). Same
+    /// `#[serde(skip)]`-plus-bespoke-`load()` treatment as `borders` above,
+    /// for the same reason (loaded from its own `landmarks.json`, not part
+    /// of the original eight-file/eight-field pattern). `demo_fixture()`
+    /// leaves this empty too.
+    #[serde(skip)]
+    pub landmarks: Vec<Landmark>,
 
     /// Derived: place id -> index into `places`. Built by `finish()`.
     #[serde(skip)]
@@ -181,14 +217,49 @@ impl AtlasData {
         self.verse_to_events.get(verse).map(|v| v.as_slice()).unwrap_or(&[])
     }
 
-    /// Reads the eight compiled JSON files ETL writes under `dir` (exact
+    /// Picks the border snapshot year nearest `[from,to]`'s midpoint, in
+    /// "year index" space — years are contiguous integers with zero
+    /// removed (there is no year 0; 1 BC and AD 1 are adjacent, matching
+    /// `time::next_year`), so a window straddling BC/AD never skews toward
+    /// one side just because zero isn't a real year. Ties (a snapshot year
+    /// exactly as far from the midpoint on either side) resolve to the
+    /// earlier (smaller/more-BC) snapshot. Returns `None` only when
+    /// `self.borders` is empty (the `demo_fixture()` / not-yet-ETL'd case);
+    /// callers use that to produce the contract's `snapshot_year: null`
+    /// empty-state response instead of calling this at all.
+    pub fn nearest_border_year(&self, from: Year, to: Year) -> Option<Year> {
+        // Compares `2 * (idx(candidate) - mid)` instead of `idx(candidate) -
+        // mid` so the midpoint never needs to be represented as a fraction
+        // (mid = (idx(from)+idx(to))/2 is exact only when that sum is
+        // even) — doubling both sides of the comparison keeps everything in
+        // exact i64 arithmetic with no rounding-direction ambiguity.
+        let doubled_mid = year_index(from) + year_index(to);
+        let mut best: Option<(i64, Year)> = None; // (doubled distance from mid, year)
+        for &year in self.borders.keys() {
+            let doubled_dist = (2 * year_index(year) - doubled_mid).abs();
+            best = match best {
+                None => Some((doubled_dist, year)),
+                Some((best_dist, best_year)) => {
+                    if doubled_dist < best_dist || (doubled_dist == best_dist && year < best_year) {
+                        Some((doubled_dist, year))
+                    } else {
+                        Some((best_dist, best_year))
+                    }
+                }
+            };
+        }
+        best.map(|(_, year)| year)
+    }
+
+    /// Reads the compiled JSON files ETL writes under `dir` (exact
     /// filenames mirror `atlas-etl/src/main.rs`'s `write_json` calls:
     /// `canon.json`, `places.json`, `events.json`, `narratives.json`,
-    /// `eras.json`, `books-meta.json`, `verses-kjv.json`, `cross-refs.json`)
-    /// and assembles an `AtlasData`. Does NOT call `.finish()` — the derived
-    /// indexes are `#[serde(skip)]` and come back empty from a fresh
-    /// deserialize (see the struct doc comment); callers (the server's
-    /// `main.rs`) must call `.finish()` themselves.
+    /// `eras.json`, `books-meta.json`, `verses-kjv.json`, `cross-refs.json`,
+    /// plus `borders-index.json` + one `borders/{year}.json` per listed
+    /// year, plus `landmarks.json`) and assembles an `AtlasData`. Does NOT
+    /// call `.finish()` — the derived indexes are `#[serde(skip)]` and come
+    /// back empty from a fresh deserialize (see the struct doc comment);
+    /// callers (the server's `main.rs`) must call `.finish()` themselves.
     pub fn load(dir: &std::path::Path) -> Result<Self, crate::CoreError> {
         let canon: Canon = read_json(dir, "canon.json")?;
         let places: Vec<Place> = read_json(dir, "places.json")?;
@@ -198,7 +269,32 @@ impl AtlasData {
         let books_meta: Vec<BookMeta> = read_json(dir, "books-meta.json")?;
         let verses: HashMap<String, String> = read_json(dir, "verses-kjv.json")?;
         let cross_refs: HashMap<String, Vec<CrossRef>> = read_json(dir, "cross-refs.json")?;
-        Ok(Self::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs))
+
+        let border_years: Vec<Year> = read_json(dir, "borders-index.json")?;
+        let mut borders = BTreeMap::new();
+        for year in border_years {
+            let geojson: serde_json::Value = read_json(dir, &format!("borders/{year}.json"))?;
+            borders.insert(year, geojson);
+        }
+        let landmarks: Vec<Landmark> = read_json(dir, "landmarks.json")?;
+
+        let mut data = Self::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs);
+        data.borders = borders;
+        data.landmarks = landmarks;
+        Ok(data)
+    }
+}
+
+/// Maps a signed calendar year (never zero) onto a contiguous integer line
+/// with the zero-year gap removed: `..., -2, -1, 1, 2, ...` becomes
+/// `..., -2, -1, 0, 1, ...` (AD years shift down by one; BC years are
+/// unchanged, since they're already contiguous below zero). Used only by
+/// `nearest_border_year`'s midpoint math above.
+fn year_index(y: Year) -> i64 {
+    if y > 0 {
+        (y - 1) as i64
+    } else {
+        y as i64
     }
 }
 
@@ -355,4 +451,66 @@ pub fn demo_fixture() -> AtlasData {
     );
 
     AtlasData::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs).finish()
+}
+
+#[cfg(test)]
+mod border_tests {
+    use super::*;
+
+    fn data_with_years(years: &[Year]) -> AtlasData {
+        let mut data = AtlasData::default();
+        for &y in years {
+            data.borders.insert(y, serde_json::json!({"type": "FeatureCollection", "features": []}));
+        }
+        data
+    }
+
+    #[test]
+    fn empty_borders_returns_none() {
+        let data = AtlasData::default();
+        assert_eq!(data.nearest_border_year(-100, 100), None);
+    }
+
+    #[test]
+    fn picks_the_closer_snapshot() {
+        let data = data_with_years(&[-1000, -100, 100]);
+        // Window [-150,-50]: midpoint index -100ish, closer to -100 than -1000 or 100.
+        assert_eq!(data.nearest_border_year(-150, -50), Some(-100));
+    }
+
+    #[test]
+    fn exact_tie_prefers_the_earlier_snapshot() {
+        // idx(-1) = -1, idx(100) = 99; window [40,60] -> idx(40)=39, idx(60)=59,
+        // doubled_mid = 98. doubled_dist(-1) = |2*(-1)-98| = 100;
+        // doubled_dist(100) = |2*99-98| = 100 -- an exact tie; -1 (earlier) wins.
+        let data = data_with_years(&[-1, 100]);
+        assert_eq!(data.nearest_border_year(40, 60), Some(-1));
+    }
+
+    #[test]
+    fn window_straddling_bc_ad_uses_zero_aware_midpoint() {
+        // Window [-1,1] (1 BC to AD 1, immediately adjacent, no year 0
+        // between them) -- the zero-aware midpoint must land close to that
+        // seam, not be skewed by treating year 0 as if it existed.
+        let data = data_with_years(&[-500, -1, 1, 500]);
+        let year = data.nearest_border_year(-1, 1).unwrap();
+        assert!(year == -1 || year == 1, "expected -1 or 1, got {year}");
+    }
+
+    #[test]
+    fn single_snapshot_always_wins() {
+        let data = data_with_years(&[-323]);
+        assert_eq!(data.nearest_border_year(-4004, 100), Some(-323));
+    }
+
+    #[test]
+    fn year_index_is_contiguous_across_the_bc_ad_seam() {
+        assert_eq!(year_index(-1), -1);
+        assert_eq!(year_index(1), 0);
+        assert_eq!(year_index(-2), -2);
+        assert_eq!(year_index(2), 1);
+        // -1 and 1 (adjacent calendar years, matching time::next_year) must
+        // be exactly 1 apart in index space.
+        assert_eq!(year_index(1) - year_index(-1), 1);
+    }
 }

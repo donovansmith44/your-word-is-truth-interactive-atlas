@@ -10,7 +10,7 @@ use axum::extract::{Path, Query, State};
 use axum::Json;
 use serde::Serialize;
 
-use atlas_core::data::{AtlasData, BookMeta, CanonBook, Era, Narrative};
+use atlas_core::data::{AtlasData, BookMeta, CanonBook, Era, Landmark, Narrative};
 use atlas_core::refs::{ScriptureRef, VerseId};
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene, to_scene_event};
 use atlas_core::time::TimeRange;
@@ -76,6 +76,50 @@ pub async fn eras(State(data): State<Arc<AtlasData>>) -> Json<Vec<Era>> {
 
 pub async fn narratives(State(data): State<Arc<AtlasData>>) -> Json<Vec<Narrative>> {
     Json(data.narratives.clone())
+}
+
+pub async fn landmarks(State(data): State<Arc<AtlasData>>) -> Json<Vec<Landmark>> {
+    Json(data.landmarks.clone())
+}
+
+#[derive(Debug, Serialize)]
+pub struct BordersOut {
+    pub snapshot_year: Option<i32>,
+    pub geojson: serde_json::Value,
+}
+
+fn empty_feature_collection() -> serde_json::Value {
+    serde_json::json!({ "type": "FeatureCollection", "features": [] })
+}
+
+/// `GET /api/borders?from=&to=`. `from`/`to` share `scene_time`'s lenient
+/// parsing (ruling 1: missing/unparseable/zero/inverted -> 400
+/// `bad_window`), via the same `parse_year` helper and `TimeRange::new`
+/// validity check.
+///
+/// Once the window is valid, an EMPTY `borders` map (the `demo_fixture()`
+/// case, or a `--data-dir` from before atlas-etl's borders step ever ran)
+/// is not an error — it returns `snapshot_year: null` with an empty
+/// `FeatureCollection`, 200, mirroring `scene_time`'s ruling-2 spirit
+/// ("out-of-span is not an error") one level up: "no border data compiled
+/// at all" is a valid, meaningful state for the client to render as "no
+/// borders yet", not a failure. Otherwise picks the snapshot nearest the
+/// window's zero-aware midpoint via `AtlasData::nearest_border_year`.
+pub async fn borders(
+    State(data): State<Arc<AtlasData>>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<BordersOut>, ApiError> {
+    let from = parse_year(&params, "from")?;
+    let to = parse_year(&params, "to")?;
+    TimeRange::new(from, to).map_err(|_| ApiError::bad_window())?;
+
+    let Some(year) = data.nearest_border_year(from, to) else {
+        return Ok(Json(BordersOut { snapshot_year: None, geojson: empty_feature_collection() }));
+    };
+    // `year` came straight out of `data.borders`'s own keys, so this lookup
+    // cannot miss; the fallback is defensive only, never expected to fire.
+    let geojson = data.borders.get(&year).cloned().unwrap_or_else(empty_feature_collection);
+    Ok(Json(BordersOut { snapshot_year: Some(year), geojson }))
 }
 
 #[derive(Debug, Serialize)]

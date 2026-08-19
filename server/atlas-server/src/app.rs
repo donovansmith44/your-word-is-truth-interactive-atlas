@@ -49,6 +49,8 @@ pub fn build(data: Arc<AtlasData>, static_dir: Option<PathBuf>) -> Router {
         .route("/api/place/{id}", get(handlers::place))
         .route("/api/narratives", get(handlers::narratives))
         .route("/api/eras", get(handlers::eras))
+        .route("/api/borders", get(handlers::borders))
+        .route("/api/landmarks", get(handlers::landmarks))
         .with_state(data);
 
     let router = match static_dir {
