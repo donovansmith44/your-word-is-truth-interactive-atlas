@@ -1,13 +1,25 @@
-//! Parser + clip + simplify pipeline for `aourednik/historical-basemaps`
-//! GeoJSON border snapshots (see `data/raw/README.md`'s Borders section for
-//! the license, file list, and real structure this was written against).
+//! Parser + clip + simplify pipeline for Bible Atlas's own curated,
+//! hand-authored historical border snapshots (`data/curated/borders/
+//! {signed_year}.geojson`; see `LICENSES.md` for the CC0 dedication and the
+//! public sources consulted when drawing them).
+//!
+//! Batch L (license remediation) replaced this module's original input --
+//! `aourednik/historical-basemaps` (GPL-3.0), fetched into `data/raw/borders/`
+//! by `data/fetch-raw.ps1` -- with this project's own coarse, original
+//! cartography, so the repo can be published without carrying a copyleft
+//! dataset. Only the INPUT source changed (`data/curated/borders/` instead
+//! of `data/raw/borders/`, and a plain-signed-year filename stem instead of
+//! `world_bc{N}`/`world_{N}`, see [`parse_snapshot_year`]); the clip/
+//! simplify/reassemble pipeline below is unchanged from the original
+//! implementation and works identically on either source, since it only
+//! ever depended on the standard GeoJSON `Polygon`/`MultiPolygon` shape,
+//! never on which dataset produced it.
 //!
 //! Hand-parsed via `serde_json::Value` rather than a typed `geojson` crate
 //! dependency (sanctioned by the batch brief; the windows-gnu toolchain
-//! constraint rules out crates needing cc/cmake/nasm, and this dataset's
-//! `properties` schema isn't even uniform across files — see the README —
-//! so an untyped pass-through is also simply the right fit, not just the
-//! dependency-avoiding one).
+//! constraint rules out crates needing cc/cmake/nasm) -- also simply the
+//! right fit regardless, since `properties` here is intentionally minimal
+//! and untyped (just a `name` string per feature; see `LICENSES.md`).
 //!
 //! Pipeline: [`parse`] (raw GeoJSON text -> `Vec<RawFeature>`, normalizing
 //! both `Polygon` and `MultiPolygon` geometries to the same
@@ -19,8 +31,8 @@
 //! polygons) -> [`to_geojson`] (reassemble into a compiled
 //! `FeatureCollection`, always as `MultiPolygon`, coordinates rounded to 4
 //! decimal places — about 11m, far finer than this app's world-scale
-//! display needs, but a meaningful byte-size win over the source data's
-//! full `f64` precision).
+//! display needs, but a meaningful byte-size win over the curated source's
+//! own precision).
 //!
 //! [`clip`] is real ring-level geometric clipping: each ring is clipped in
 //! turn against the bbox's 4 half-planes (west, east, south, north), which
@@ -34,19 +46,19 @@
 //! geometry" check in the whole pipeline, applied after both clip and
 //! simplify.
 //!
-//! Fix-round-1 correction: an earlier version of this module implemented
-//! only feature-level bbox filtering (kept a whole feature, geometry
-//! untouched, if any one of its rings merely overlapped the bbox) and
-//! defended skipping real geometric clipping by attributing a specific
-//! phrase to the batch brief that does not actually appear in any brief or
-//! plan document in this repository — a fabricated quotation. That defense
-//! is retracted; this module now performs the real ring-level clip
-//! originally specified. See `.superpowers/sdd/2026-08-17-bible-atlas-m1/
-//! batch-b-report.md`'s "Fix round 1" section for the correction, the new
-//! per-snapshot clip statistics, and the measurement that motivated it
-//! (real measurement found roughly 40% of compiled points landed outside
-//! the render bbox as dead, unrenderable payload under the old
-//! feature-level-only filter).
+//! Fix-round-1 correction (predates Batch L, kept for the audit trail): an
+//! earlier version of this module implemented only feature-level bbox
+//! filtering (kept a whole feature, geometry untouched, if any one of its
+//! rings merely overlapped the bbox) and defended skipping real geometric
+//! clipping by attributing a specific phrase to the batch brief that did
+//! not actually appear in any brief or plan document in this repository —
+//! a fabricated quotation. That defense was retracted; this module has
+//! performed the real ring-level clip described above ever since. See
+//! `.superpowers/sdd/2026-08-17-bible-atlas-m1/batch-b-report.md`'s "Fix
+//! round 1" section for the correction, the per-snapshot clip statistics
+//! from that round, and the measurement that motivated it (roughly 40% of
+//! compiled points landed outside the render bbox as dead, unrenderable
+//! payload under the old feature-level-only filter).
 
 use std::collections::BTreeMap;
 
@@ -360,26 +372,19 @@ pub fn to_geojson(features: &[SimplifiedFeature]) -> Value {
     serde_json::json!({ "type": "FeatureCollection", "features": features_json })
 }
 
-/// Parses the signed year a snapshot filename stem encodes: `"world_bc323"`
-/// -> `-323`, `"world_100"` -> `100`. Fatal on anything else (not shaped
-/// like `world_...`, a non-numeric year, or a zero year — the repo's own
-/// file list never has `world_0.geojson`/`world_bc0.geojson`, so seeing one
-/// would mean a naming assumption broke, not a value to silently coerce).
+/// Parses the signed year a curated snapshot filename stem encodes:
+/// `data/curated/borders/{signed_year}.geojson`, e.g. `"-1000"` -> `-1000`,
+/// `"100"` -> `100`. Fatal on anything else (not a plain signed integer, or
+/// a zero year — there is no year zero in this app's calendar; see
+/// `atlas_core::time`, where `-1`/`1` are adjacent).
 pub fn parse_snapshot_year(filename_stem: &str) -> Result<i32> {
-    let rest = filename_stem
-        .strip_prefix("world_")
-        .with_context(|| format!("snapshot filename '{filename_stem}' does not start with 'world_'"))?;
-    let (magnitude_str, sign) = match rest.strip_prefix("bc") {
-        Some(digits) => (digits, -1),
-        None => (rest, 1),
-    };
-    let magnitude: i32 = magnitude_str
-        .parse()
-        .with_context(|| format!("snapshot filename '{filename_stem}': '{magnitude_str}' is not a valid year number"))?;
-    if magnitude == 0 {
-        bail!("snapshot filename '{filename_stem}': year cannot be zero");
+    let year: i32 = filename_stem.parse().with_context(|| {
+        format!("snapshot filename '{filename_stem}.geojson' is not a valid signed year (expected e.g. '-1000' or '100')")
+    })?;
+    if year == 0 {
+        bail!("snapshot filename '{filename_stem}.geojson': year cannot be zero");
     }
-    Ok(sign * magnitude)
+    Ok(year)
 }
 
 /// Per-snapshot stats for `atlas-etl`'s report (feature counts through the
@@ -636,19 +641,19 @@ mod tests {
     }
 
     #[test]
-    fn parse_snapshot_year_handles_bc_and_ad() {
-        assert_eq!(parse_snapshot_year("world_bc323").unwrap(), -323);
-        assert_eq!(parse_snapshot_year("world_bc4000").unwrap(), -4000);
-        assert_eq!(parse_snapshot_year("world_100").unwrap(), 100);
-        assert_eq!(parse_snapshot_year("world_1").unwrap(), 1);
+    fn parse_snapshot_year_handles_negative_and_positive() {
+        assert_eq!(parse_snapshot_year("-323").unwrap(), -323);
+        assert_eq!(parse_snapshot_year("-4000").unwrap(), -4000);
+        assert_eq!(parse_snapshot_year("100").unwrap(), 100);
+        assert_eq!(parse_snapshot_year("1").unwrap(), 1);
     }
 
     #[test]
     fn parse_snapshot_year_rejects_bad_shapes() {
-        assert!(parse_snapshot_year("nope_100").is_err());
-        assert!(parse_snapshot_year("world_bc0").is_err());
-        assert!(parse_snapshot_year("world_0").is_err());
-        assert!(parse_snapshot_year("world_abc").is_err());
+        assert!(parse_snapshot_year("world_bc100").is_err(), "old aourednik-style stems are no longer accepted");
+        assert!(parse_snapshot_year("0").is_err());
+        assert!(parse_snapshot_year("").is_err());
+        assert!(parse_snapshot_year("abc").is_err());
     }
 
     #[test]

@@ -97,7 +97,7 @@ pub fn write(r: &Report) -> String {
     for snap in &r.border_snapshots {
         writeln!(
             s,
-            "  {}: {} features kept (of {} in the raw snapshot), {} -> {} points",
+            "  {}: {} features kept (of {} in the source snapshot), {} -> {} points",
             snap.year, snap.features_kept, snap.features_in, snap.points_before_simplify, snap.points_after_simplify
         )
         .unwrap();

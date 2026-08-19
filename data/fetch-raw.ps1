@@ -28,21 +28,11 @@ if (-not (Test-Path (Join-Path $raw 'theographic'))) { Expand-Archive (Join-Path
 # Cross references (TSV with votes)
 Fetch 'https://a.openbible.info/data/cross-references.zip' 'cross-references.zip'
 if (-not (Test-Path (Join-Path $raw 'xrefs'))) { Expand-Archive (Join-Path $raw 'cross-references.zip') (Join-Path $raw 'xrefs') }
-# Historical border snapshots (aourednik/historical-basemaps, GPL-3.0 --
-# license terms + attribution recorded in data/raw/README.md's Borders
-# section). 12 snapshots covering/nearest our [-4004,100] span: filenames
-# are "world_bc{N}.geojson" (N BC) or "world_{N}.geojson" (AD N); the
-# repo's actual file list was verified against its GitHub tree before
-# picking these (see data/raw/README.md).
-$bordersDir = Join-Path $raw 'borders'
-New-Item -ItemType Directory -Force $bordersDir | Out-Null
-$borderYears = 'bc4000', 'bc3000', 'bc2000', 'bc1500', 'bc1000', 'bc700', 'bc500', 'bc323', 'bc200', 'bc100', 'bc1', '100'
-foreach ($y in $borderYears) {
-  Fetch "https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_$y.geojson" "borders\world_$y.geojson"
-}
-# Full LICENSE text (fix round 1: reproducibility -- data/raw/README.md's
-# Borders section cites this file directly instead of only linking upstream).
-Fetch 'https://raw.githubusercontent.com/aourednik/historical-basemaps/master/LICENSE' 'borders\LICENSE'
+# Historical border snapshots are NOT fetched -- Batch L (license
+# remediation) removed the aourednik/historical-basemaps (GPL-3.0) source
+# that used to be fetched here. Historical borders are now this project's
+# own hand-curated, CC0 data at data/curated/borders/*.geojson, committed
+# to the repo like the rest of data/curated/. See LICENSES.md.
 
 # Vendor Leaflet 1.9.4 into the client (deterministic, offline-friendly)
 $vendor = Join-Path $PSScriptRoot '..\client\wwwroot\vendor\leaflet'

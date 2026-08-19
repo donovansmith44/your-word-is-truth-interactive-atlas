@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "cc0_dedication": "CC0 1.0 Universal (Public Domain Dedication). Coarse original cartography authored by the Bible Atlas project, 2026 -- hand-drawn from general historical-geography knowledge of these polities' well-documented approximate extents, NOT copied or traced from any third-party dataset (in particular, the GPL-3.0 data formerly at data/raw/borders was never opened while authoring this file). See LICENSES.md for authorship notes and the specific public sources consulted.",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Egypt" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [29.9, 31.4], [30.4, 31.55], [31.3, 31.5], [31.8, 31.45], [32.2, 30.8],
+          [31.4, 29.0], [30.9, 27.0], [32.9, 24.05], [32.5, 23.9], [30.7, 25.3],
+          [30.1, 27.6], [29.7, 29.8], [29.9, 31.4]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Sumer" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [43.2, 34.5], [45.0, 34.0], [46.3, 32.8], [47.5, 31.5], [48.0, 30.3],
+          [47.6, 29.5], [46.3, 30.0], [44.8, 30.8], [43.6, 32.0], [43.0, 33.3],
+          [43.2, 34.5]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Elam" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [47.5, 33.2], [49.6, 33.6], [50.6, 32.0], [50.0, 29.3], [48.4, 28.3],
+          [46.9, 29.8], [46.7, 32.0], [47.5, 33.2]
+        ]]
+      }
+    }
+  ]
+}

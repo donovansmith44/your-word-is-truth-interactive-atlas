@@ -142,12 +142,15 @@ fn main() -> Result<()> {
     let data = AtlasData::new(canon, all_places, all_events, narratives, eras, books_meta, verses, xrefs_map).finish();
     validate::run(&data).context("data/compiled/* was NOT written; fix data/curated/ and re-run")?;
 
-    // --- data/raw/borders/ (historical border snapshots) -----------------
-    // Everything here is computed BEFORE any file is written, same
-    // all-or-nothing property `validate::run` above already gives the core
-    // eight files — a bad snapshot or a bad landmarks.toml must not leave a
-    // half-written data/compiled/ behind.
-    let (compiled_borders, border_snapshots) = process_border_snapshots(&raw_dir.join("borders"))?;
+    // --- data/curated/borders/ (historical border snapshots) -------------
+    // Batch L: this project's own curated, hand-authored, CC0 snapshots
+    // (data/curated/borders/{signed_year}.geojson) replaced the former
+    // aourednik/historical-basemaps (GPL-3.0) input at data/raw/borders/ --
+    // see LICENSES.md. Everything here is computed BEFORE any file is
+    // written, same all-or-nothing property `validate::run` above already
+    // gives the core eight files — a bad snapshot or a bad landmarks.toml
+    // must not leave a half-written data/compiled/ behind.
+    let (compiled_borders, border_snapshots) = process_border_snapshots(&curated_dir.join("borders"))?;
 
     let landmarks = curated::parse_landmarks(&read(&curated_dir.join("landmarks.toml"))?)?;
     validate::run_landmarks(&landmarks, &borders::BIBLICAL_WORLD_BBOX)
@@ -192,27 +195,27 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Reads every `*.geojson` snapshot under `borders_raw_dir` (sorted by
+/// Reads every `*.geojson` snapshot under `borders_curated_dir` (sorted by
 /// filename for a deterministic processing order — the report's own
 /// per-year lines are re-sorted by parsed year afterward, since filename
-/// order and numeric-year order aren't the same thing, e.g.
-/// "world_bc100.geojson" < "world_bc1000.geojson" lexicographically despite
-/// -100 being the LATER year), clips + simplifies each one via
-/// `borders::process_snapshot`, and returns the compiled year->GeoJSON map
-/// alongside per-snapshot stats for the report. Fatal (bubbles up
-/// `borders::process_snapshot`'s own errors — unparseable snapshot, or zero
-/// features surviving the clip) on any bad snapshot, and fatal if the
-/// directory is missing/empty (nothing to compile at all).
-fn process_border_snapshots(borders_raw_dir: &Path) -> Result<(BTreeMap<i32, serde_json::Value>, Vec<borders::SnapshotStats>)> {
-    let mut paths: Vec<PathBuf> = fs::read_dir(borders_raw_dir)
-        .with_context(|| format!("reading directory {} -- run data/fetch-raw.ps1", borders_raw_dir.display()))?
+/// order and numeric-year order aren't the same thing, e.g. "-100.geojson"
+/// < "-1000.geojson" lexicographically despite -100 being the LATER year),
+/// clips + simplifies each one via `borders::process_snapshot`, and returns
+/// the compiled year->GeoJSON map alongside per-snapshot stats for the
+/// report. Fatal (bubbles up `borders::process_snapshot`'s own errors —
+/// unparseable snapshot, or zero features surviving the clip) on any bad
+/// snapshot, and fatal if the directory is missing/empty (nothing to
+/// compile at all).
+fn process_border_snapshots(borders_curated_dir: &Path) -> Result<(BTreeMap<i32, serde_json::Value>, Vec<borders::SnapshotStats>)> {
+    let mut paths: Vec<PathBuf> = fs::read_dir(borders_curated_dir)
+        .with_context(|| format!("reading directory {} -- these are hand-authored and committed, not fetched; see LICENSES.md", borders_curated_dir.display()))?
         .filter_map(|e| e.ok())
         .map(|e| e.path())
         .filter(|p| p.extension().is_some_and(|ext| ext == "geojson"))
         .collect();
     paths.sort();
     if paths.is_empty() {
-        bail!("{} contains no *.geojson snapshots -- run data/fetch-raw.ps1", borders_raw_dir.display());
+        bail!("{} contains no *.geojson snapshots -- these are hand-authored and committed, not fetched; see LICENSES.md", borders_curated_dir.display());
     }
 
     let mut compiled = BTreeMap::new();
@@ -224,7 +227,7 @@ fn process_border_snapshots(borders_raw_dir: &Path) -> Result<(BTreeMap<i32, ser
         let (geojson, snap_stats) = borders::process_snapshot(&content, year, &borders::BIBLICAL_WORLD_BBOX, BORDER_SIMPLIFY_EPSILON)
             .with_context(|| format!("processing border snapshot {}", path.display()))?;
         if compiled.insert(year, geojson).is_some() {
-            bail!("duplicate border snapshot year {year} (from {}) — two raw files map to the same year", path.display());
+            bail!("duplicate border snapshot year {year} (from {}) — two curated files map to the same year", path.display());
         }
         stats.push(snap_stats);
     }
@@ -293,6 +296,14 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     let landmarks_path = curated_dir.join("landmarks.toml");
     if !landmarks_path.is_file() {
         missing.push(format!("{}", landmarks_path.display()));
+    }
+    let borders_dir = curated_dir.join("borders");
+    let has_border_files = borders_dir.is_dir()
+        && fs::read_dir(&borders_dir)
+            .map(|entries| entries.filter_map(|e| e.ok()).any(|e| e.path().extension().is_some_and(|ext| ext == "geojson")))
+            .unwrap_or(false);
+    if !has_border_files {
+        missing.push(format!("{} (expected one or more *.geojson snapshot files)", borders_dir.display()));
     }
 
     if missing.is_empty() {
