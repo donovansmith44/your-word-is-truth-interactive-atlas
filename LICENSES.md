@@ -34,11 +34,15 @@ prohibition on redistribution, and this repo already credits the dataset
 (here and in the app's Credits popover) and labels exactly which compiled
 artifacts derive from it (see the per-artifact table below), which is what
 CC BY-SA 4.0 requires. Dropping Theographic and replacing it with
-independently-sourced data was considered and rejected: per this batch's
-mandate, doing so would cost roughly 450 of the compiled dataset's 476
-dated events — the great majority of the app's chronological/narrative
-content — for a license condition that public release doesn't actually
-require working around.
+independently-sourced data was considered and rejected: doing so would cost
+450 of the compiled dataset's 552 dated events (81.5%) — the great majority
+of the app's chronological/narrative content — for a license condition that
+public release doesn't actually require working around. (Verified directly
+against `data/compiled/events.json`: 552 total events, all carrying a
+`when`/date, of which 450 have the `theo-` id prefix that marks them as
+Theographic-sourced; the remaining 102 are curated,
+`data/curated/events-extra.toml`, which independently has exactly 102
+`[[event]]` entries.)
 
 ## Esri / Carto — served live, never redistributed
 
