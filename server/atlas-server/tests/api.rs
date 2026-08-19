@@ -230,6 +230,69 @@ async fn verse_chapter_place_and_404() {
     assert_eq!(body["error"]["code"], "not_found");
 }
 
+/// Batch E: `/api/place/{id}?from=&to=` end to end, against
+/// `demo_fixture()`'s own small curated "hebron" history (Kirjath-arba ->
+/// Hebron at -2001/-2000, an `established` claim at -2000, a `patriarchs`-
+/// era blurb) -- exercises the SAME resolution `atlas_core::history`'s own
+/// unit/property tests cover, but through the real HTTP handler, proving
+/// the query-param plumbing (parse, `TimeRange::new`, `resolve_display_name`/
+/// `resolve_blurb`) is wired correctly end to end.
+#[tokio::test]
+async fn place_history_resolves_by_window_and_is_deterministic() {
+    let app = app();
+
+    // A place with no curated history at all -> `history` is entirely
+    // absent from the response, window or not.
+    let (st, body) = call(&app, "/api/place/jericho?from=-1406&to=-1405").await;
+    assert_eq!(st, 200);
+    assert!(body.get("history").is_none(), "{body}");
+
+    // No window at all: history is still present (established is
+    // window-independent) but with the default name and no blurb.
+    let (st, body) = call(&app, "/api/place/hebron").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["history"]["display_name"], "Hebron");
+    assert!(body["history"]["blurb"].is_null(), "{body}");
+    assert_eq!(body["history"]["established"]["when"]["from_year"], -2000);
+    assert_eq!(body["history"]["established"]["verses"], serde_json::json!(["GEN.23.19"]));
+    assert_eq!(body["history"]["established"]["note"], "traditional");
+    assert!(body["history"]["destroyed"].is_null());
+
+    // NAME-1: a window fully inside the curated "Kirjath-arba" range.
+    let (st, body) = call(&app, "/api/place/hebron?from=-2500&to=-2200").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["history"]["display_name"], "Kirjath-arba");
+
+    // NAME-1: the exact boundary years pinned exhaustively -- -2001 is the
+    // curated range's own last "Kirjath-arba" year, -2000 is the first
+    // "Hebron" (default-fallback) year.
+    let (st, body) = call(&app, "/api/place/hebron?from=-2001&to=-2001").await;
+    assert_eq!(body["history"]["display_name"], "Kirjath-arba");
+    let (st2, body2) = call(&app, "/api/place/hebron?from=-2000&to=-2000").await;
+    assert_eq!(st, 200);
+    assert_eq!(st2, 200);
+    assert_eq!(body2["history"]["display_name"], "Hebron");
+
+    // BLURB-1: a window inside the curated "era" blurb range shows it;
+    // a window outside every curated blurb range shows none. established
+    // is window-independent -- still -2000 under BOTH windows, even the
+    // one that resolves a totally different display_name/blurb.
+    let (st, blurb_hit) = call(&app, "/api/place/hebron?from=-2100&to=-2000").await;
+    assert_eq!(st, 200);
+    assert_eq!(blurb_hit["history"]["blurb"], "Abraham buried Sarah in the cave of Machpelah here.");
+    assert_eq!(blurb_hit["history"]["established"]["when"]["from_year"], -2000);
+
+    let (st, blurb_miss) = call(&app, "/api/place/hebron?from=1&to=50").await;
+    assert_eq!(st, 200);
+    assert!(blurb_miss["history"]["blurb"].is_null(), "{blurb_miss}");
+    assert_eq!(blurb_miss["history"]["established"]["when"]["from_year"], -2000);
+
+    // Determinism: repeating the exact same request yields the exact same body.
+    let (_, again) = call(&app, "/api/place/hebron?from=-2100&to=-2000").await;
+    let (_, repeat) = call(&app, "/api/place/hebron?from=-2100&to=-2000").await;
+    assert_eq!(again, repeat);
+}
+
 #[tokio::test]
 async fn borders_empty_fixture_shape_and_errors() {
     let app = app();

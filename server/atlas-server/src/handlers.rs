@@ -11,6 +11,7 @@ use axum::Json;
 use serde::Serialize;
 
 use atlas_core::data::{AtlasData, BookMeta, CanonBook, Era, Landmark, Narrative};
+use atlas_core::history::{resolve_blurb, resolve_display_name};
 use atlas_core::refs::{ScriptureRef, VerseId};
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene, to_scene_event};
 use atlas_core::time::TimeRange;
@@ -302,6 +303,37 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
     }))
 }
 
+/// Batch E: one curated established/destroyed date claim, as served by
+/// `/api/place/{id}`. `when` reuses `TimeRange`'s own wire shape
+/// (`from_year`/`to_year`) rather than a separate "year" field -- the
+/// client's `YearText.FormatRange` already collapses equal endpoints to a
+/// single-year display, so a genuine year and a range need no separate flag.
+#[derive(Debug, Serialize)]
+pub struct DateClaimOut {
+    pub when: TimeRange,
+    pub verses: Vec<String>,
+    pub note: Option<String>,
+}
+
+/// Batch E: `/api/place/{id}`'s optional `history` payload, present only
+/// when this place has a curated `PlaceHistory` record at all (`when
+/// curated`, per the brief). `display_name` and `blurb` are resolved
+/// against the request's `?from=&to=` window when given (else `display_name`
+/// falls back to the place's own default `name` and `blurb` is omitted --
+/// see `history::resolve_display_name`/`resolve_blurb`'s own doc comments);
+/// `established`/`destroyed` are window-independent static facts, always
+/// included verbatim whenever curated.
+#[derive(Debug, Serialize)]
+pub struct HistoryOut {
+    pub display_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blurb: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub established: Option<DateClaimOut>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub destroyed: Option<DateClaimOut>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct PlaceDetailOut {
     pub id: String,
@@ -309,16 +341,42 @@ pub struct PlaceDetailOut {
     pub lat: f64,
     pub lon: f64,
     pub events: Vec<SceneEvent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub history: Option<HistoryOut>,
 }
 
-/// `GET /api/place/{id}`. Unknown id -> 404 `not_found` (a place id is an
-/// exact identifier, not a ref that can be "out of canon but still valid
-/// shape" — there's no parsing/shape question here at all).
-pub async fn place(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -> Result<Json<PlaceDetailOut>, ApiError> {
+/// `GET /api/place/{id}?from=&to=`. Unknown id -> 404 `not_found` (a place
+/// id is an exact identifier, not a ref that can be "out of canon but still
+/// valid shape" — there's no parsing/shape question here at all).
+///
+/// `from`/`to` are OPTIONAL (Batch E) and, unlike `scene_time`/`borders`'s
+/// own `from`/`to`, never themselves cause a 400: this endpoint's core
+/// resource (the place, its events) is fully meaningful with neither
+/// present, so a missing or malformed window just means `history` (when the
+/// place has one at all) reports its default display name and no blurb,
+/// rather than rejecting the whole request over an optional refinement.
+pub async fn place(
+    State(data): State<Arc<AtlasData>>,
+    Path(id): Path<String>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<PlaceDetailOut>, ApiError> {
     let place = data.place_by_id(&id).ok_or_else(|| ApiError::not_found("place"))?;
 
     let mut events: Vec<SceneEvent> = data.events.iter().filter(|e| e.places.contains(&id)).map(to_scene_event).collect();
     events.sort_by_key(|e| e.when.from_year);
 
-    Ok(Json(PlaceDetailOut { id: place.id.clone(), name: place.name.clone(), lat: place.lat, lon: place.lon, events }))
+    let window = match (params.get("from").and_then(|s| s.parse::<i32>().ok()), params.get("to").and_then(|s| s.parse::<i32>().ok()))
+    {
+        (Some(from), Some(to)) => TimeRange::new(from, to).ok(),
+        _ => None,
+    };
+
+    let history = data.place_history_for(&id).map(|h| HistoryOut {
+        display_name: resolve_display_name(&place.name, Some(h), window),
+        blurb: window.and_then(|w| resolve_blurb(&h.blurbs, w)).map(|b| b.text.clone()),
+        established: h.established.as_ref().map(|c| DateClaimOut { when: c.when, verses: c.verses.clone(), note: c.note.clone() }),
+        destroyed: h.destroyed.as_ref().map(|c| DateClaimOut { when: c.when, verses: c.verses.clone(), note: c.note.clone() }),
+    });
+
+    Ok(Json(PlaceDetailOut { id: place.id.clone(), name: place.name.clone(), lat: place.lat, lon: place.lon, events, history }))
 }
