@@ -8,6 +8,7 @@
     {
       "id": "jericho",
       "name": "Jericho",
+      "display_name": "Jericho",
       "lat": 31.8703,
       "lon": 35.4436,
       "brightness": 2,

@@ -22,11 +22,30 @@
 //! `xrefs::parse` + `xrefs::filter_missing_first_verse` instead — those
 //! rows are dropped-and-counted during ETL, so by the time `run` sees
 //! `AtlasData` they're already clean and don't need re-checking here.
+//!
+//! Batch E (`run_place_history`, same separate-entry-point pattern as
+//! `run_landmarks` — place histories are `#[serde(skip)]` "extra" data on
+//! `AtlasData`, not part of the core eight fields `run` above validates):
+//! unknown place id, a cited verse that doesn't parse as canonical OR
+//! doesn't exist in the compiled KJV text (a STRICTER bar than
+//! `run`'s own event-verse/verse_links check above, deliberate — every verse
+//! here is hand-typed, and this batch's standing citation-integrity rule
+//! means a typo'd verse ref must fail loudly, not silently pass a
+//! format-only check), a year of zero or outside `[ATLAS_START_YEAR,
+//! ATLAS_END_YEAR]` (zero/inverted are already impossible by the time this
+//! runs — `TimeRange::new` enforces both at parse time, see
+//! `curated::parse_place_history` — so only the atlas-span bound is left to
+//! check here), overlapping name ranges within one place, and — within one
+//! place's own blurbs — two ranges of the SAME breadth overlapping (a
+//! "broad" range is expected to overlap every "era" range it summarizes, so
+//! only same-breadth overlaps are an error). Duplicate place ids within
+//! place-history.toml itself are an extra check beyond the brief's literal
+//! list, same spirit as `run`'s own duplicate-place/duplicate-event checks.
 
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{bail, Result};
-use atlas_core::data::{AtlasData, Era, Event, Landmark};
+use atlas_core::data::{AtlasData, Era, Event, Landmark, PlaceHistory};
 use atlas_core::refs::VerseId;
 use atlas_core::time::next_year;
 
@@ -129,6 +148,96 @@ pub fn run_landmarks(landmarks: &[Landmark], bbox: &Bbox) -> Result<()> {
     }
     let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
     bail!("landmark validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// Batch E: validates curated place histories (`data/curated/place-history.toml`,
+/// parsed separately by `curated::parse_place_history` — see that
+/// function's doc comment for why this is a distinct pipeline step, same
+/// reason `run_landmarks` above is separate from `run`). `place_ids` is the
+/// FULL compiled place-id set (so an unknown id is caught regardless of
+/// whether ANY event references it) and `verses` is the compiled KJV text
+/// map (so a cited verse must both parse canonically and actually exist).
+/// Same aggregate-don't-fail-fast policy as every other check in this file.
+pub fn run_place_history(history: &[PlaceHistory], place_ids: &HashSet<&str>, verses: &HashMap<String, String>) -> Result<()> {
+    let mut errors: Vec<String> = Vec::new();
+
+    check_duplicate_ids(history.iter().map(|h| h.id.as_str()), "place-history", &mut errors);
+
+    let check_verse = |v: &str, ctx: &str, errors: &mut Vec<String>| match VerseId::parse_canonical(v) {
+        Err(err) => errors.push(format!("{ctx}: verse '{v}' is not a canonical single-verse ref: {err}")),
+        Ok(_) if !verses.contains_key(v) => {
+            errors.push(format!("{ctx}: verse '{v}' parses but does not exist in the compiled KJV text"))
+        }
+        Ok(_) => {}
+    };
+    let check_bounds = |from_year: i32, to_year: i32, ctx: &str, errors: &mut Vec<String>| {
+        if from_year < ATLAS_START_YEAR || from_year > ATLAS_END_YEAR {
+            errors.push(format!("{ctx}: from_year {from_year} is outside [{ATLAS_START_YEAR},{ATLAS_END_YEAR}]"));
+        }
+        if to_year < ATLAS_START_YEAR || to_year > ATLAS_END_YEAR {
+            errors.push(format!("{ctx}: to_year {to_year} is outside [{ATLAS_START_YEAR},{ATLAS_END_YEAR}]"));
+        }
+    };
+
+    for h in history {
+        if !place_ids.contains(h.id.as_str()) {
+            errors.push(format!("place-history '{}': unknown place id (not in compiled places.json)", h.id));
+        }
+
+        let mut name_ranges: Vec<(&str, atlas_core::time::TimeRange)> = Vec::new();
+        for n in &h.names {
+            let ctx = format!("place-history '{}' name '{}'", h.id, n.name);
+            check_bounds(n.when.from_year, n.when.to_year, &ctx, &mut errors);
+            for v in &n.verses {
+                check_verse(v, &ctx, &mut errors);
+            }
+            name_ranges.push((n.name.as_str(), n.when));
+        }
+        for i in 0..name_ranges.len() {
+            for j in (i + 1)..name_ranges.len() {
+                if name_ranges[i].1.intersects(&name_ranges[j].1) {
+                    errors.push(format!(
+                        "place-history '{}': name ranges '{}' and '{}' overlap",
+                        h.id, name_ranges[i].0, name_ranges[j].0
+                    ));
+                }
+            }
+        }
+
+        let mut blurb_ranges_by_breadth: HashMap<&str, Vec<atlas_core::time::TimeRange>> = HashMap::new();
+        for b in &h.blurbs {
+            let ctx = format!("place-history '{}' blurb ({})", h.id, b.breadth);
+            check_bounds(b.when.from_year, b.when.to_year, &ctx, &mut errors);
+            if b.breadth != "era" && b.breadth != "broad" {
+                errors.push(format!("{ctx}: invalid breadth '{}' (expected 'era' or 'broad')", b.breadth));
+            }
+            blurb_ranges_by_breadth.entry(b.breadth.as_str()).or_default().push(b.when);
+        }
+        for (breadth, ranges) in &blurb_ranges_by_breadth {
+            for i in 0..ranges.len() {
+                for j in (i + 1)..ranges.len() {
+                    if ranges[i].intersects(&ranges[j]) {
+                        errors.push(format!("place-history '{}': two '{breadth}' blurb ranges overlap", h.id));
+                    }
+                }
+            }
+        }
+
+        for (label, claim) in [("established", &h.established), ("destroyed", &h.destroyed)] {
+            let Some(claim) = claim else { continue };
+            let ctx = format!("place-history '{}' {label}", h.id);
+            check_bounds(claim.when.from_year, claim.when.to_year, &ctx, &mut errors);
+            for v in &claim.verses {
+                check_verse(v, &ctx, &mut errors);
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        return Ok(());
+    }
+    let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("place-history validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
 fn check_duplicate_ids<'a>(ids: impl Iterator<Item = &'a str>, kind: &str, errors: &mut Vec<String>) {

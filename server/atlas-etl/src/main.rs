@@ -156,6 +156,12 @@ fn main() -> Result<()> {
     validate::run_landmarks(&landmarks, &borders::BIBLICAL_WORLD_BBOX)
         .context("data/compiled/landmarks.json was NOT written; fix data/curated/landmarks.toml and re-run")?;
 
+    // --- data/curated/place-history.toml (Batch E: time-accurate places) -
+    let place_history = curated::parse_place_history(&read(&curated_dir.join("place-history.toml"))?)?;
+    let compiled_place_ids: HashSet<&str> = data.places.iter().map(|p| p.id.as_str()).collect();
+    validate::run_place_history(&place_history, &compiled_place_ids, &data.verses)
+        .context("data/compiled/place-history.json was NOT written; fix data/curated/place-history.toml and re-run")?;
+
     // --- write compiled output ------------------------------------------
     fs::create_dir_all(&compiled_dir).with_context(|| format!("creating {}", compiled_dir.display()))?;
     write_json(&compiled_dir.join("canon.json"), &data.canon)?;
@@ -174,6 +180,7 @@ fn main() -> Result<()> {
     }
     write_json(&compiled_dir.join("borders-index.json"), &borders::sorted_years(&compiled_borders))?;
     write_json(&compiled_dir.join("landmarks.json"), &landmarks)?;
+    write_json(&compiled_dir.join("place-history.json"), &place_history)?;
 
     let rpt = Report {
         counts,
@@ -296,6 +303,10 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     let landmarks_path = curated_dir.join("landmarks.toml");
     if !landmarks_path.is_file() {
         missing.push(format!("{}", landmarks_path.display()));
+    }
+    let place_history_path = curated_dir.join("place-history.toml");
+    if !place_history_path.is_file() {
+        missing.push(format!("{}", place_history_path.display()));
     }
     let borders_dir = curated_dir.join("borders");
     let has_border_files = borders_dir.is_dir()

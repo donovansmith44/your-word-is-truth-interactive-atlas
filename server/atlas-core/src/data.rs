@@ -93,6 +93,64 @@ pub struct Landmark {
     pub lon: f64,
 }
 
+/// Batch E (time-accurate places): one curated period name for a place,
+/// e.g. "Luz" for `bethel-1` before Jacob's naming. `when` is the window
+/// this name applies for; `verses` are canonical refs SUPPORTING the name
+/// claim (etl-validated to exist in the compiled KJV text, same trust class
+/// `Event.verses`/`Place.verse_links` already have).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PlaceNameEntry {
+    pub name: String,
+    pub when: TimeRange,
+    pub verses: Vec<String>,
+}
+
+/// One curated hover blurb for a place, active over `when`. `breadth` is
+/// `"era"` (a period-specific blurb) or `"broad"` (a whole-sweep summary
+/// shown when the selected window spans more than one of this place's own
+/// `"era"` ranges) -- validated against that two-value enum by
+/// `atlas-etl::validate` (same "plain String, checked at ETL time" pattern
+/// [`Landmark::kind`] already uses, for the same friendlier-error reason).
+/// No `verses` field -- blurb text is curator-written prose (ours/CC0), not
+/// a claim keyed to a specific verse the way names/established/destroyed are.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PlaceBlurbEntry {
+    pub text: String,
+    pub when: TimeRange,
+    pub breadth: String,
+}
+
+/// A biblically-supported established/destroyed date claim. `when` is
+/// either a single year (`from_year == to_year`, the curated TOML's `year =
+/// ...` shorthand) or a genuine range (`from = ...` / `to = ...`) --
+/// collapsed to one `TimeRange` here since the client's own `YearText.
+/// FormatRange` already renders an equal-endpoints range as a single year,
+/// so no separate "was this a year or a range" flag is needed on the wire.
+/// `note` is a short qualifier (e.g. `"traditional"`) the client renders as
+/// a leading "c." on the date when present.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PlaceDateClaim {
+    pub when: TimeRange,
+    pub verses: Vec<String>,
+    pub note: Option<String>,
+}
+
+/// One place's whole curated history record (`data/curated/place-history.toml`,
+/// compiled to `place-history.json`). `id` matches a real compiled `Place.id`
+/// (etl-validated -- an unknown id hard-fails, same trust class as
+/// `Event.places`). Not every place has one of these; `AtlasData::place_history`
+/// only holds entries for the ~15-25 places this batch actually curated.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PlaceHistory {
+    pub id: String,
+    #[serde(default)]
+    pub names: Vec<PlaceNameEntry>,
+    #[serde(default)]
+    pub blurbs: Vec<PlaceBlurbEntry>,
+    pub established: Option<PlaceDateClaim>,
+    pub destroyed: Option<PlaceDateClaim>,
+}
+
 /// The whole compiled atlas: ETL builds one of these and calls `.finish()`
 /// before writing it to disk; the server deserializes the file and calls
 /// `.finish()` again to rebuild the derived indexes (they are `#[serde(skip)]`
@@ -128,6 +186,15 @@ pub struct AtlasData {
     /// leaves this empty too.
     #[serde(skip)]
     pub landmarks: Vec<Landmark>,
+    /// Batch E: curated place histories (period names, blurbs, established/
+    /// destroyed dates), keyed by place id. Same `#[serde(skip)]`-plus-
+    /// bespoke-`load()` treatment as `borders`/`landmarks` above -- loaded
+    /// from its own `place-history.json` (a plain `Vec<PlaceHistory>` on
+    /// disk, matching every sibling compiled file's array shape), indexed
+    /// into a map here since every lookup site wants it by place id.
+    /// `demo_fixture()` leaves this empty too (no scene test depends on it).
+    #[serde(skip)]
+    pub place_history: HashMap<String, PlaceHistory>,
 
     /// Derived: place id -> index into `places`. Built by `finish()`.
     #[serde(skip)]
@@ -212,6 +279,12 @@ impl AtlasData {
         self.place_index.get(id).map(|&i| &self.places[i])
     }
 
+    /// Batch E: this place's curated history record, if any (most places
+    /// have none -- `place_history` only covers the curated ~15-25).
+    pub fn place_history_for(&self, id: &str) -> Option<&PlaceHistory> {
+        self.place_history.get(id)
+    }
+
     /// Event ids whose `verses` include the given canonical verse id.
     pub fn events_for_verse(&self, verse: &str) -> &[String] {
         self.verse_to_events.get(verse).map(|v| v.as_slice()).unwrap_or(&[])
@@ -256,10 +329,11 @@ impl AtlasData {
     /// `canon.json`, `places.json`, `events.json`, `narratives.json`,
     /// `eras.json`, `books-meta.json`, `verses-kjv.json`, `cross-refs.json`,
     /// plus `borders-index.json` + one `borders/{year}.json` per listed
-    /// year, plus `landmarks.json`) and assembles an `AtlasData`. Does NOT
-    /// call `.finish()` — the derived indexes are `#[serde(skip)]` and come
-    /// back empty from a fresh deserialize (see the struct doc comment);
-    /// callers (the server's `main.rs`) must call `.finish()` themselves.
+    /// year, plus `landmarks.json`, plus `place-history.json`) and
+    /// assembles an `AtlasData`. Does NOT call `.finish()` — the derived
+    /// indexes are `#[serde(skip)]` and come back empty from a fresh
+    /// deserialize (see the struct doc comment); callers (the server's
+    /// `main.rs`) must call `.finish()` themselves.
     pub fn load(dir: &std::path::Path) -> Result<Self, crate::CoreError> {
         let canon: Canon = read_json(dir, "canon.json")?;
         let places: Vec<Place> = read_json(dir, "places.json")?;
@@ -277,9 +351,13 @@ impl AtlasData {
             borders.insert(year, geojson);
         }
         let landmarks: Vec<Landmark> = read_json(dir, "landmarks.json")?;
+        let place_history_list: Vec<PlaceHistory> = read_json(dir, "place-history.json")?;
+        let place_history: HashMap<String, PlaceHistory> =
+            place_history_list.into_iter().map(|h| (h.id.clone(), h)).collect();
 
         let mut data = Self::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs);
         data.borders = borders;
+        data.place_history = place_history;
         data.landmarks = landmarks;
         Ok(data)
     }
@@ -288,9 +366,11 @@ impl AtlasData {
 /// Maps a signed calendar year (never zero) onto a contiguous integer line
 /// with the zero-year gap removed: `..., -2, -1, 1, 2, ...` becomes
 /// `..., -2, -1, 0, 1, ...` (AD years shift down by one; BC years are
-/// unchanged, since they're already contiguous below zero). Used only by
-/// `nearest_border_year`'s midpoint math above.
-fn year_index(y: Year) -> i64 {
+/// unchanged, since they're already contiguous below zero). Used by
+/// `nearest_border_year`'s midpoint math above and, via `pub(crate)`, by
+/// `crate::history`'s own zero-aware window-midpoint math (same
+/// straddle-BC/AD problem, same fix -- one source of truth for it).
+pub(crate) fn year_index(y: Year) -> i64 {
     if y > 0 {
         (y - 1) as i64
     } else {
@@ -450,7 +530,36 @@ pub fn demo_fixture() -> AtlasData {
         ],
     );
 
-    AtlasData::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs).finish()
+    let mut data = AtlasData::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs).finish();
+    // Batch E: one small curated history record (hebron -- already present
+    // above with a real event, e5, and its own GEN.23.* verses) so
+    // atlas-server's own integration tests can exercise the REAL
+    // `/api/place/{id}?from=&to=` resolution pipeline end to end, not just
+    // atlas_core::history's pure functions in isolation. Values are
+    // plausible, not independently curated the way data/curated/
+    // place-history.toml's real content is -- this fixture exists only to
+    // give the endpoint something to resolve.
+    data.place_history.insert(
+        "hebron".into(),
+        PlaceHistory {
+            id: "hebron".into(),
+            names: vec![
+                PlaceNameEntry { name: "Kirjath-arba".into(), when: TimeRange::new(-4004, -2001).unwrap(), verses: vec!["GEN.23.2".into()] },
+            ],
+            blurbs: vec![PlaceBlurbEntry {
+                text: "Abraham buried Sarah in the cave of Machpelah here.".into(),
+                when: TimeRange::new(-2166, -1877).unwrap(),
+                breadth: "era".into(),
+            }],
+            established: Some(PlaceDateClaim {
+                when: TimeRange::new(-2000, -2000).unwrap(),
+                verses: vec!["GEN.23.19".into()],
+                note: Some("traditional".into()),
+            }),
+            destroyed: None,
+        },
+    );
+    data
 }
 
 #[cfg(test)]

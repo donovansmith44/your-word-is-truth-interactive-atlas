@@ -19,7 +19,7 @@
 //! trust class scene composition relies on).
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookMeta, Era, Event, Landmark, Narrative};
+use atlas_core::data::{BookMeta, Era, Event, Landmark, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -156,6 +156,118 @@ pub fn parse_landmarks(input: &str) -> Result<Vec<Landmark>> {
     let f: LandmarksFile =
         toml::from_str(input).context("landmarks.toml: invalid TOML or does not match the [[landmark]] schema")?;
     Ok(f.landmark.into_iter().map(|l| Landmark { name: l.name, kind: l.kind, lat: l.lat, lon: l.lon }).collect())
+}
+
+// --- Batch E: place-history.toml -------------------------------------------
+
+#[derive(Deserialize)]
+struct PlaceHistoryFile {
+    place: Vec<PlaceToml>,
+}
+
+#[derive(Deserialize)]
+struct PlaceToml {
+    id: String,
+    #[serde(default, rename = "name")]
+    names: Vec<NameToml>,
+    #[serde(default, rename = "blurb")]
+    blurbs: Vec<BlurbToml>,
+    #[serde(default)]
+    established: Option<DateClaimToml>,
+    #[serde(default)]
+    destroyed: Option<DateClaimToml>,
+}
+
+#[derive(Deserialize)]
+struct NameToml {
+    name: String,
+    from: i32,
+    to: i32,
+    #[serde(default)]
+    verses: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct BlurbToml {
+    text: String,
+    from: i32,
+    to: i32,
+    breadth: String,
+}
+
+/// `year` OR `from`+`to` (the brief's "year OR from/to range") -- exactly
+/// one of the two shapes is required; ambiguous (both) or empty (neither)
+/// TOML tables are a curator authoring mistake, held to the same
+/// hard-error-not-soft-drop bar `parse_events_extra` already applies to our
+/// own hand-authored data (see this module's file header).
+#[derive(Deserialize)]
+struct DateClaimToml {
+    year: Option<i32>,
+    from: Option<i32>,
+    to: Option<i32>,
+    #[serde(default)]
+    verses: Vec<String>,
+    #[serde(default)]
+    note: Option<String>,
+}
+
+fn resolve_date_claim(claim: DateClaimToml, place_id: &str, field: &str) -> Result<PlaceDateClaim> {
+    let when = match (claim.year, claim.from, claim.to) {
+        (Some(_), Some(_), _) | (Some(_), _, Some(_)) => {
+            bail!("place '{place_id}' {field}: has BOTH 'year' and 'from'/'to' -- use exactly one shape")
+        }
+        (Some(y), None, None) => TimeRange::new(y, y),
+        (None, Some(f), Some(t)) => TimeRange::new(f, t),
+        (None, Some(_), None) | (None, None, Some(_)) => {
+            bail!("place '{place_id}' {field}: 'from'/'to' range needs BOTH bounds")
+        }
+        (None, None, None) => {
+            bail!("place '{place_id}' {field}: needs either 'year' or 'from'+'to'")
+        }
+    }
+    .map_err(|src| anyhow::anyhow!("place '{place_id}' {field}: {src}"))?;
+    Ok(PlaceDateClaim { when, verses: claim.verses, note: claim.note })
+}
+
+/// Parses `place-history.toml` (Batch E: `[[place]]` per curated place id,
+/// with nested `[[place.name]]` / `[[place.blurb]]` arrays and singular
+/// `[place.established]` / `[place.destroyed]` tables). Pure — bails
+/// immediately (matching `parse_events_extra`'s precedent) only on
+/// STRUCTURAL shape problems a `TimeRange` can catch by itself (a zero year
+/// or an inverted range) or an ambiguous/empty established/destroyed table;
+/// does NOT check the place id is real, that cited verses parse and exist
+/// in the compiled KJV text, or that ranges within one place don't overlap
+/// — those need the full merged `AtlasData` (or the compiled verse map) and
+/// so are `validate::run_place_history`'s job instead, same pure-parse-then-
+/// cross-validate split every other curated schema in this module follows.
+pub fn parse_place_history(input: &str) -> Result<Vec<PlaceHistory>> {
+    let f: PlaceHistoryFile =
+        toml::from_str(input).context("place-history.toml: invalid TOML or does not match the [[place]] schema")?;
+
+    let mut out = Vec::with_capacity(f.place.len());
+    for p in f.place {
+        let mut names = Vec::with_capacity(p.names.len());
+        for n in p.names {
+            let when = TimeRange::new(n.from, n.to).map_err(|src| {
+                anyhow::anyhow!("place '{}' name '{}' (from={}, to={}): {}", p.id, n.name, n.from, n.to, src)
+            })?;
+            names.push(PlaceNameEntry { name: n.name, when, verses: n.verses });
+        }
+
+        let mut blurbs = Vec::with_capacity(p.blurbs.len());
+        for b in p.blurbs {
+            let when = TimeRange::new(b.from, b.to).map_err(|src| {
+                anyhow::anyhow!("place '{}' blurb '{}...' (from={}, to={}): {}", p.id, &b.text.chars().take(24).collect::<String>(), b.from, b.to, src)
+            })?;
+            blurbs.push(PlaceBlurbEntry { text: b.text, when, breadth: b.breadth });
+        }
+
+        let established = p.established.map(|c| resolve_date_claim(c, &p.id, "established")).transpose()?;
+        let destroyed = p.destroyed.map(|c| resolve_date_claim(c, &p.id, "destroyed")).transpose()?;
+
+        out.push(PlaceHistory { id: p.id, names, blurbs, established, destroyed });
+    }
+    Ok(out)
 }
 
 #[cfg(test)]

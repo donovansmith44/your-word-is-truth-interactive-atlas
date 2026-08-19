@@ -18,6 +18,13 @@ pub struct Scene {
 pub struct ScenePlace {
     pub id: String,
     pub name: String,
+    /// Batch E: the period-true name resolved for this scene's own window
+    /// (`crate::history::resolve_display_name`) -- `name`'s original,
+    /// always-present value unchanged; this is the ADDITIONAL field the
+    /// client renders on map labels / hover card title / arrow-tip text.
+    /// Equal to `name` whenever this place has no curated history, or none
+    /// of its curated ranges intersects the window.
+    pub display_name: String,
     pub lat: f64,
     pub lon: f64,
     pub brightness: u8,

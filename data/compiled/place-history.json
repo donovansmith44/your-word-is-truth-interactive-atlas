@@ -1,0 +1,501 @@
+[
+  {
+    "id": "bethel-1",
+    "names": [
+      {
+        "name": "Luz",
+        "when": {
+          "from_year": -4004,
+          "to_year": -2092
+        },
+        "verses": [
+          "GEN.28.19"
+        ]
+      },
+      {
+        "name": "Bethel",
+        "when": {
+          "from_year": -2091,
+          "to_year": 100
+        },
+        "verses": [
+          "GEN.28.19"
+        ]
+      }
+    ],
+    "blurbs": [
+      {
+        "text": "Abram built an altar here on first entering Canaan, and a generation later his grandson Jacob dreamed of a ladder to heaven and named the place the house of God.",
+        "when": {
+          "from_year": -2091,
+          "to_year": -1877
+        },
+        "breadth": "era"
+      },
+      {
+        "text": "After the kingdom split, Jeroboam set up a golden calf shrine here to rival the temple at Jerusalem.",
+        "when": {
+          "from_year": -931,
+          "to_year": -587
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  },
+  {
+    "id": "jerusalem",
+    "names": [
+      {
+        "name": "Jebus",
+        "when": {
+          "from_year": -4004,
+          "to_year": -1004
+        },
+        "verses": [
+          "JDG.19.10"
+        ]
+      }
+    ],
+    "blurbs": [
+      {
+        "text": "Once the Jebusite stronghold of Jebus, the city became Israel's capital after David's conquest and the site of Solomon's temple, until Babylon burned it in 586 BC.",
+        "when": {
+          "from_year": -4004,
+          "to_year": -587
+        },
+        "breadth": "era"
+      },
+      {
+        "text": "Rebuilt after the exile as the Second Temple city, Jerusalem was the setting for Jesus' final week, his crucifixion and resurrection, and the birth of the church.",
+        "when": {
+          "from_year": -538,
+          "to_year": 100
+        },
+        "breadth": "era"
+      },
+      {
+        "text": "Jerusalem's story runs from a Canaanite hill fort through the City of David, two temples, and the birth of the church.",
+        "when": {
+          "from_year": -4004,
+          "to_year": 100
+        },
+        "breadth": "broad"
+      }
+    ],
+    "established": {
+      "when": {
+        "from_year": -1003,
+        "to_year": -1003
+      },
+      "verses": [
+        "2SA.5.6",
+        "2SA.5.7",
+        "2SA.5.9"
+      ],
+      "note": "traditional"
+    },
+    "destroyed": {
+      "when": {
+        "from_year": -586,
+        "to_year": -586
+      },
+      "verses": [
+        "2KI.25.9",
+        "2KI.25.10"
+      ],
+      "note": null
+    }
+  },
+  {
+    "id": "hebron",
+    "names": [
+      {
+        "name": "Kirjath-arba",
+        "when": {
+          "from_year": -4004,
+          "to_year": -2092
+        },
+        "verses": [
+          "GEN.23.2",
+          "JOS.14.15"
+        ]
+      }
+    ],
+    "blurbs": [
+      {
+        "text": "Abraham pitched his tents at Mamre near Hebron and bought a field here to bury Sarah; his son Isaac and grandson Jacob were later buried in the same cave.",
+        "when": {
+          "from_year": -2091,
+          "to_year": -1876
+        },
+        "breadth": "era"
+      },
+      {
+        "text": "David was anointed king here and reigned from Hebron for seven years before capturing Jerusalem.",
+        "when": {
+          "from_year": -1013,
+          "to_year": -1003
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  },
+  {
+    "id": "egypt",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "Egypt sheltered Abram in famine and later Joseph's family; his descendants multiplied there for centuries before Moses led them out in the Exodus.",
+        "when": {
+          "from_year": -2091,
+          "to_year": -1446
+        },
+        "breadth": "era"
+      },
+      {
+        "text": "The infant Jesus found refuge in Egypt from Herod's soldiers before his family returned to settle in Nazareth.",
+        "when": {
+          "from_year": -5,
+          "to_year": -3
+        },
+        "breadth": "era"
+      },
+      {
+        "text": "Egypt's story in scripture runs from Abram's famine refuge and Joseph's rise to power, through the Exodus centuries later, to briefly sheltering the infant Jesus.",
+        "when": {
+          "from_year": -4004,
+          "to_year": 100
+        },
+        "breadth": "broad"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  },
+  {
+    "id": "haran",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "Abram's family paused here on the way from Ur, and a generation later his grandson Jacob fled here to escape Esau and work for his uncle Laban.",
+        "when": {
+          "from_year": -2100,
+          "to_year": -1900
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  },
+  {
+    "id": "shechem",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "Abram built his first altar in Canaan near Shechem's oak, and Jacob later bought land and dug a well here, burying his household's foreign idols under the same oak.",
+        "when": {
+          "from_year": -2091,
+          "to_year": -1908
+        },
+        "breadth": "era"
+      },
+      {
+        "text": "Joshua renewed Israel's covenant here at the end of his life, and Joseph's bones, carried up from Egypt, were finally buried in the ground Jacob had bought.",
+        "when": {
+          "from_year": -1406,
+          "to_year": -1400
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  },
+  {
+    "id": "jericho-1",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "Israel crossed the Jordan into Canaan here and won their first battle when the city's walls fell, the opening victory of the conquest.",
+        "when": {
+          "from_year": -1410,
+          "to_year": -1400
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  },
+  {
+    "id": "beersheba-2",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "Abraham and Isaac both dug wells and swore covenants of peace here, giving Beersheba its name; Jacob departed from here for Haran and, decades later, for Egypt.",
+        "when": {
+          "from_year": -2100,
+          "to_year": -1876
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  },
+  {
+    "id": "bethany-1",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "Jesus' friends Mary, Martha, and Lazarus made their home here on the Mount of Olives' eastern slope, and it became his lodging place in his final week before the crucifixion.",
+        "when": {
+          "from_year": 27,
+          "to_year": 30
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  },
+  {
+    "id": "nineveh",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "Founded by Asshur out of Nimrod's kingdom of Babel, Nineveh grew into one of the great cities of the ancient Near East.",
+        "when": {
+          "from_year": -4004,
+          "to_year": -1407
+        },
+        "breadth": "era"
+      },
+      {
+        "text": "Jonah reluctantly preached God's coming judgment to this \"exceeding great city,\" and its people repented at his warning.",
+        "when": {
+          "from_year": -800,
+          "to_year": -750
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": {
+      "when": {
+        "from_year": -1822,
+        "to_year": -1822
+      },
+      "verses": [
+        "GEN.10.11"
+      ],
+      "note": "traditional"
+    },
+    "destroyed": null
+  },
+  {
+    "id": "dan",
+    "names": [
+      {
+        "name": "Laish",
+        "when": {
+          "from_year": -4004,
+          "to_year": -1401
+        },
+        "verses": [
+          "JDG.18.29"
+        ]
+      }
+    ],
+    "blurbs": [
+      {
+        "text": "After the Danites conquered and resettled the old Canaanite town of Laish, Jeroboam later set up a golden calf shrine here to rival Jerusalem's temple.",
+        "when": {
+          "from_year": -1400,
+          "to_year": -931
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  },
+  {
+    "id": "rome",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "Paul appealed to Caesar and was brought here under guard, where he spent his final recorded years awaiting trial while still preaching under house arrest.",
+        "when": {
+          "from_year": 56,
+          "to_year": 60
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  },
+  {
+    "id": "antioch-1",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "Believers scattered by persecution planted a church here whose members were first called \"Christians,\" and it became the sending base for Paul's missionary journeys.",
+        "when": {
+          "from_year": 42,
+          "to_year": 48
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  },
+  {
+    "id": "samaria_1022",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "Omri built his new capital on a hill he bought from Shemer, and it remained the northern kingdom's royal city until Assyria besieged and took it, exiling Israel.",
+        "when": {
+          "from_year": -929,
+          "to_year": -722
+        },
+        "breadth": "era"
+      },
+      {
+        "text": "After Stephen's martyrdom scattered the believers, Philip preached the gospel here, and the Samaritans received the Holy Spirit through the apostles.",
+        "when": {
+          "from_year": 30,
+          "to_year": 33
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": {
+      "when": {
+        "from_year": -929,
+        "to_year": -929
+      },
+      "verses": [
+        "1KI.16.24"
+      ],
+      "note": "traditional"
+    },
+    "destroyed": {
+      "when": {
+        "from_year": -722,
+        "to_year": -722
+      },
+      "verses": [
+        "2KI.17.5",
+        "2KI.17.6"
+      ],
+      "note": null
+    }
+  },
+  {
+    "id": "shiloh",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "Israel's tabernacle stood here for centuries after the conquest, the nation's central place of worship before Jerusalem's temple was built.",
+        "when": {
+          "from_year": -1399,
+          "to_year": -1051
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": {
+      "when": {
+        "from_year": -1399,
+        "to_year": -1399
+      },
+      "verses": [
+        "JOS.18.1"
+      ],
+      "note": "traditional"
+    },
+    "destroyed": {
+      "when": {
+        "from_year": -1104,
+        "to_year": -1050
+      },
+      "verses": [
+        "PSA.78.60",
+        "JER.7.12"
+      ],
+      "note": "traditional; inferred, not directly narrated"
+    }
+  },
+  {
+    "id": "capernaum",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "Jesus left Nazareth to make this fishing town on the Sea of Galilee his ministry base, teaching in its synagogue and healing many who were brought to him.",
+        "when": {
+          "from_year": 27,
+          "to_year": 30
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  },
+  {
+    "id": "damascus",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "The persecutor Saul was struck blind by a vision of the risen Christ on the road here, and emerged days later to preach in the same city's synagogues.",
+        "when": {
+          "from_year": 32,
+          "to_year": 38
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  },
+  {
+    "id": "babylon-1",
+    "names": [],
+    "blurbs": [
+      {
+        "text": "Nimrod's kingdom began at Babel, where the builders of a great tower were scattered when God confused their language.",
+        "when": {
+          "from_year": -4004,
+          "to_year": -2167
+        },
+        "breadth": "era"
+      },
+      {
+        "text": "Jerusalem's exiles wept by Babylon's rivers, remembering the city they had lost, until the kingdom itself fell to the Medes and Persians.",
+        "when": {
+          "from_year": -586,
+          "to_year": -539
+        },
+        "breadth": "era"
+      },
+      {
+        "text": "Cyrus of Persia decreed that the exiles could return home and rebuild the LORD's house in Jerusalem.",
+        "when": {
+          "from_year": -538,
+          "to_year": -536
+        },
+        "breadth": "era"
+      }
+    ],
+    "established": null,
+    "destroyed": null
+  }
+]

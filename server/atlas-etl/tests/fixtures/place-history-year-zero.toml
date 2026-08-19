@@ -1,0 +1,8 @@
+[[place]]
+id = "bethel-1"
+
+  [[place.name]]
+  name = "Luz"
+  from = -4004
+  to = 0
+  verses = ["GEN.28.19"]

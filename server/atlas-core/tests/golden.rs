@@ -7,7 +7,7 @@ fn sample_scene() -> Scene {
         window: Some(TimeRange::new(-1450, -1400).unwrap()),
         sref: None,
         places: vec![ScenePlace {
-            id: "jericho".into(), name: "Jericho".into(), lat: 31.8703, lon: 35.4436,
+            id: "jericho".into(), name: "Jericho".into(), display_name: "Jericho".into(), lat: 31.8703, lon: 35.4436,
             brightness: 2,
             events: vec![SceneEvent {
                 id: "ev_jericho_falls".into(), label: "The walls of Jericho fall".into(),

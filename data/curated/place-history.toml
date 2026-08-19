@@ -1,0 +1,434 @@
+# Batch E: curated place history (period-true names, hover blurbs, and
+# biblically-supported established/destroyed dates). One [[place]] table per
+# covered place id -- ids are the REAL compiled `data/compiled/places.json`
+# ids (post geo-collision disambiguation, e.g. "bethel-1" not "bethel"; see
+# each place's own comment where the id needed disambiguating), since only
+# ids events actually reference ever get lit on the map at all.
+#
+# CITATION INTEGRITY (standing project rule): every `verses` entry below was
+# checked against `data/compiled/verses-kjv.json` (raw KJV text) as it was
+# written -- see each place's own comment for what the cited verse actually
+# says and why it supports the claim next to it.
+#
+# Coverage floor (batch-e-brief.md): every place with a curated event in >=2
+# narratives (computed from data/curated/narratives/*.toml + events-extra.toml:
+# babylon-1, beersheba-2, bethany-1, bethel-1, egypt, haran, hebron, jericho-1,
+# jerusalem, shechem), PLUS the mandated renames (Luz->Bethel, Jebus->
+# Jerusalem) and the mandated extra places (Jerusalem, Babylon, Nineveh,
+# Shechem, Hebron, Dan, Rome, Antioch), PLUS a few well-supported extras
+# (Samaria, Shiloh, Capernaum, Damascus) chosen for their own strong,
+# independently-checkable citations. 18 places total.
+#
+# Proleptic naming (a recurring wrinkle, documented once here rather than
+# repeated per place): several "at the first" / "before" verses (GEN.28.19,
+# GEN.23.2, JOS.14.15, JDG.18.29, JDG.19.10) assert an OLD name without
+# pinning an exact calendar year, and Genesis/Joshua's own narration often
+# already uses the LATER name for events that chronologically precede the
+# rename story itself (e.g. GEN.12.8, dated -2091 in ab_bethel, already says
+# "Beth-el" -- 160 years before Jacob's own naming of it in GEN.28.19 at
+# -1930). Every boundary year below was chosen so the curated name NEVER
+# contradicts a verse already shown, verbatim, on the same place's card for
+# an overlapping window -- preferring an earlier cutover (before the
+# earliest compiled event that already uses the later name) over a
+# textually-neat but contradiction-prone one. See batch-e-report.md for the
+# full reasoning per place.
+
+# --- Bethel / Luz (GEN.28.19) ---------------------------------------------
+# id disambiguation: geo ancient.jsonl collides "Bethel" into bethel-1/2/3;
+# every compiled event that touches this story (ab_bethel, jj_bethel_dream,
+# jj_bethel_return) uses bethel-1 (see events-extra.toml's own comments).
+# Default compiled name is "Bethel 1" (the raw collision-disambiguation
+# suffix) -- this is the one place in this file where a plain rename-window
+# alone wouldn't finish the picture (a window outside every curated range
+# would fall back to that ugly suffixed default), so BOTH names are curated
+# below, jointly covering the whole atlas span, purely so the flagship
+# Luz/Bethel swap (batch-e-brief.md's "money shot") reads "Luz" -> "Bethel",
+# not "Luz" -> "Bethel 1". This is a deliberate, narrow exception -- no
+# other place in this file gets a "current name" entry, only genuine
+# renames get one.
+[[place]]
+id = "bethel-1"
+
+  [[place.name]]
+  name = "Luz"
+  from = -4004
+  to = -2092
+  # GEN.28.19: "And he called the name of that place Beth-el: but the name
+  # of that city was called Luz AT THE FIRST." Cutover set to end just
+  # before ab_bethel (-2091/-2090, GEN.12.8), which already narrates Abram
+  # calling on the Lord "on the east of Beth-el" -- i.e. Genesis's own
+  # narration already treats "Beth-el" as the live name by Abram's arrival,
+  # well before Jacob's own dream (-1930) formalizes it. "Luz" is therefore
+  # curated as the pre-patriarchal (Canaanite) name only.
+  verses = ["GEN.28.19"]
+
+  [[place.name]]
+  name = "Bethel"
+  from = -2091
+  to = 100
+  # Same verse, other half of its claim: the place WAS named Beth-el
+  # ("house of God") -- matches every bethel-1 event from ab_bethel (-2091)
+  # onward, whose own verses (GEN.12.8, GEN.28.11-19, GEN.35.1-7) all already
+  # say "Beth-el".
+  verses = ["GEN.28.19"]
+
+  [[place.blurb]]
+  text = "Abram built an altar here on first entering Canaan, and a generation later his grandson Jacob dreamed of a ladder to heaven and named the place the house of God."
+  from = -2091
+  to = -1877
+  breadth = "era"
+
+  [[place.blurb]]
+  text = "After the kingdom split, Jeroboam set up a golden calf shrine here to rival the temple at Jerusalem."
+  from = -931
+  to = -587
+  breadth = "era"
+
+# --- Jerusalem / Jebus (JDG.19.10) ----------------------------------------
+[[place]]
+id = "jerusalem"
+
+  [[place.name]]
+  name = "Jebus"
+  from = -4004
+  to = -1004
+  # JDG.19.10: "...came over against Jebus, WHICH IS JERUSALEM..." -- a
+  # judges-period traveler's-eye gloss equating the two, cited generally
+  # (not time-boxed to that one narrative moment) the same way JOS.14.15
+  # explains Hebron's old name below. Cutover at -1004/-1003 matches the
+  # established date immediately below (David's conquest); no compiled
+  # jerusalem-tagged event predates the conquest with a verse that already
+  # says "Jerusalem" EXCEPT theo-159 ("Reign of David", Theographic-sourced,
+  # nominally dated -1055 at the start of David's Hebron-only kingship but
+  # carrying 668 verses spanning his WHOLE 40-year reign, many post-conquest)
+  # -- a pre-existing bucket-event/single-timestamp modeling limitation in
+  # the compiled data, not something any boundary choice here can fully
+  # avoid; see batch-e-report.md.
+  verses = ["JDG.19.10"]
+
+  [place.established]
+  year = -1003
+  # 2SA.5.6: David marches on the Jebusites at Jerusalem; 2SA.5.7: "David
+  # took the strong hold of Zion: the same is the city of David"; 2SA.5.9:
+  # "David dwelt in the fort, and called it the city of David." Year is
+  # traditional -- 2 Samuel gives no calendar year, only "seven years and
+  # six months" in Hebron before this (2SA.5.5), which is where -1003 comes
+  # from (df_hebron's own -1010 Hebron-anointing + ~7.5 years).
+  verses = ["2SA.5.6", "2SA.5.7", "2SA.5.9"]
+  note = "traditional"
+
+  [place.destroyed]
+  year = -586
+  # 2KI.25.9: "he burnt the house of the LORD, and the king's house, and all
+  # the houses of Jerusalem..."; 2KI.25.10: "...brake down the walls of
+  # Jerusalem round about." Matches the already-curated exl_jerusalem event
+  # exactly (events-extra.toml, -586). No "traditional" qualifier -- 2 Kings
+  # 25 ties this to an explicit regnal-year chain (Zedekiah's 9th/11th
+  # years), the firmest-dated event in this file.
+  verses = ["2KI.25.9", "2KI.25.10"]
+
+  [[place.blurb]]
+  text = "Once the Jebusite stronghold of Jebus, the city became Israel's capital after David's conquest and the site of Solomon's temple, until Babylon burned it in 586 BC."
+  from = -4004
+  to = -587
+  breadth = "era"
+
+  [[place.blurb]]
+  text = "Rebuilt after the exile as the Second Temple city, Jerusalem was the setting for Jesus' final week, his crucifixion and resurrection, and the birth of the church."
+  from = -538
+  to = 100
+  breadth = "era"
+
+  [[place.blurb]]
+  text = "Jerusalem's story runs from a Canaanite hill fort through the City of David, two temples, and the birth of the church."
+  from = -4004
+  to = 100
+  breadth = "broad"
+
+# --- Hebron / Kirjath-arba (GEN.23.2) -------------------------------------
+[[place]]
+id = "hebron"
+
+  [[place.name]]
+  name = "Kirjath-arba"
+  from = -4004
+  to = -2092
+  # GEN.23.2: "Sarah died in Kirjath-arba; the SAME IS Hebron"; JOS.14.15:
+  # "the name of Hebron BEFORE was Kirjath-arba; which Arba was a great man
+  # among the Anakims" -- an explicitly pre-Israelite (Anakite) naming.
+  # Cutover set just before ab_hebron (-2088, GEN.13.18 "...in the plain of
+  # Mamre, which is in Hebron") -- Genesis already calls it "Hebron" from
+  # Abram's own arrival, so "Kirjath-arba" is curated as the older,
+  # pre-patriarchal name only (same reasoning as bethel-1 above).
+  verses = ["GEN.23.2", "JOS.14.15"]
+
+  [[place.blurb]]
+  text = "Abraham pitched his tents at Mamre near Hebron and bought a field here to bury Sarah; his son Isaac and grandson Jacob were later buried in the same cave."
+  from = -2091
+  to = -1876
+  breadth = "era"
+
+  [[place.blurb]]
+  text = "David was anointed king here and reigned from Hebron for seven years before capturing Jerusalem."
+  from = -1013
+  to = -1003
+  breadth = "era"
+
+# --- Egypt -----------------------------------------------------------------
+[[place]]
+id = "egypt"
+
+  [[place.blurb]]
+  text = "Egypt sheltered Abram in famine and later Joseph's family; his descendants multiplied there for centuries before Moses led them out in the Exodus."
+  from = -2091
+  to = -1446
+  breadth = "era"
+
+  [[place.blurb]]
+  text = "The infant Jesus found refuge in Egypt from Herod's soldiers before his family returned to settle in Nazareth."
+  from = -5
+  to = -3
+  breadth = "era"
+
+  [[place.blurb]]
+  text = "Egypt's story in scripture runs from Abram's famine refuge and Joseph's rise to power, through the Exodus centuries later, to briefly sheltering the infant Jesus."
+  from = -4004
+  to = 100
+  breadth = "broad"
+
+# --- Haran -------------------------------------------------------------
+[[place]]
+id = "haran"
+
+  [[place.blurb]]
+  text = "Abram's family paused here on the way from Ur, and a generation later his grandson Jacob fled here to escape Esau and work for his uncle Laban."
+  from = -2100
+  to = -1900
+  breadth = "era"
+
+# --- Shechem -----------------------------------------------------------
+[[place]]
+id = "shechem"
+
+  [[place.blurb]]
+  text = "Abram built his first altar in Canaan near Shechem's oak, and Jacob later bought land and dug a well here, burying his household's foreign idols under the same oak."
+  from = -2091
+  to = -1908
+  breadth = "era"
+
+  [[place.blurb]]
+  text = "Joshua renewed Israel's covenant here at the end of his life, and Joseph's bones, carried up from Egypt, were finally buried in the ground Jacob had bought."
+  from = -1406
+  to = -1400
+  breadth = "era"
+
+# --- Jericho (Old Testament site; NT Jericho is a separate id) -----------
+[[place]]
+id = "jericho-1"
+
+  [[place.blurb]]
+  text = "Israel crossed the Jordan into Canaan here and won their first battle when the city's walls fell, the opening victory of the conquest."
+  from = -1410
+  to = -1400
+  breadth = "era"
+
+# --- Beersheba (patriarchal site; monarchy-era Beersheba is a separate id) -
+[[place]]
+id = "beersheba-2"
+
+  [[place.blurb]]
+  text = "Abraham and Isaac both dug wells and swore covenants of peace here, giving Beersheba its name; Jacob departed from here for Haran and, decades later, for Egypt."
+  from = -2100
+  to = -1876
+  breadth = "era"
+
+# --- Bethany (Jerusalem-area; "Bethany beyond Jordan" is a separate id) --
+[[place]]
+id = "bethany-1"
+
+  [[place.blurb]]
+  text = "Jesus' friends Mary, Martha, and Lazarus made their home here on the Mount of Olives' eastern slope, and it became his lodging place in his final week before the crucifixion."
+  from = 27
+  to = 30
+  breadth = "era"
+
+# --- Nineveh (GEN.10.11) --------------------------------------------------
+[[place]]
+id = "nineveh"
+
+  [place.established]
+  year = -1822
+  # GEN.10.11: "Out of that land went forth Asshur, and builded Nineveh."
+  # Year matches the compiled theo-87 event ("Nimrod's kingdom begins"),
+  # which cites the same GEN.10.8-12 passage -- kept aligned so the
+  # established-date node and the lit map event agree exactly.
+  verses = ["GEN.10.11"]
+  note = "traditional"
+
+  [[place.blurb]]
+  text = "Founded by Asshur out of Nimrod's kingdom of Babel, Nineveh grew into one of the great cities of the ancient Near East."
+  from = -4004
+  to = -1407
+  breadth = "era"
+
+  [[place.blurb]]
+  text = "Jonah reluctantly preached God's coming judgment to this \"exceeding great city,\" and its people repented at his warning."
+  from = -800
+  to = -750
+  breadth = "era"
+
+# --- Dan / Laish (JDG.18.29) ----------------------------------------------
+[[place]]
+id = "dan"
+
+  [[place.name]]
+  name = "Laish"
+  from = -4004
+  to = -1401
+  # JDG.18.29: "they called the name of the city Dan... howbeit the name of
+  # the city was Laish AT THE FIRST." No compiled event touches "dan" yet
+  # (a pre-existing data gap, not introduced by this batch), so this rename
+  # is reachable via /api/place/dan?from=&to= or scripture mode (e.g.
+  # ref=JDG.18) rather than by dragging the time slider -- see
+  # batch-e-report.md.
+  verses = ["JDG.18.29"]
+
+  [[place.blurb]]
+  text = "After the Danites conquered and resettled the old Canaanite town of Laish, Jeroboam later set up a golden calf shrine here to rival Jerusalem's temple."
+  from = -1400
+  to = -931
+  breadth = "era"
+
+# --- Rome ------------------------------------------------------------------
+[[place]]
+id = "rome"
+
+  [[place.blurb]]
+  text = "Paul appealed to Caesar and was brought here under guard, where he spent his final recorded years awaiting trial while still preaching under house arrest."
+  from = 56
+  to = 60
+  breadth = "era"
+
+# --- Antioch (Syrian; Pisidian Antioch is a separate id) ------------------
+[[place]]
+id = "antioch-1"
+
+  [[place.blurb]]
+  text = "Believers scattered by persecution planted a church here whose members were first called \"Christians,\" and it became the sending base for Paul's missionary journeys."
+  from = 42
+  to = 48
+  breadth = "era"
+
+# --- Samaria (city; id carries Theographic's own raw underscore id) ------
+[[place]]
+id = "samaria_1022"
+
+  [place.established]
+  year = -929
+  # 1KI.16.24: "he bought the hill Samaria of Shemer... and called the name
+  # of the city which he built... Samaria." Year matches the compiled
+  # theo-176 event ("Reign of Omri").
+  verses = ["1KI.16.24"]
+  note = "traditional"
+
+  [place.destroyed]
+  year = -722
+  # 2KI.17.5: "the king of Assyria came up... and besieged it three years";
+  # 2KI.17.6: "In the ninth year of Hoshea the king of Assyria took
+  # Samaria, and carried Israel away into Assyria." No "traditional"
+  # qualifier -- externally synchronized to Assyrian records, same firm
+  # standing as Jerusalem's 586 BC destruction above.
+  verses = ["2KI.17.5", "2KI.17.6"]
+
+  [[place.blurb]]
+  text = "Omri built his new capital on a hill he bought from Shemer, and it remained the northern kingdom's royal city until Assyria besieged and took it, exiling Israel."
+  from = -929
+  to = -722
+  breadth = "era"
+
+  [[place.blurb]]
+  text = "After Stephen's martyrdom scattered the believers, Philip preached the gospel here, and the Samaritans received the Holy Spirit through the apostles."
+  from = 30
+  to = 33
+  breadth = "era"
+
+# --- Shiloh ------------------------------------------------------------
+[[place]]
+id = "shiloh"
+
+  [place.established]
+  year = -1399
+  # JOS.18.1: "the whole congregation of the children of Israel assembled
+  # together at Shiloh, and set up the tabernacle." Matches the compiled
+  # cq_shiloh event exactly.
+  verses = ["JOS.18.1"]
+  note = "traditional"
+
+  [place.destroyed]
+  from = -1104
+  to = -1050
+  # Not directly narrated (no single verse says "and Shiloh was destroyed");
+  # inferred from later references: PSA.78.60 "he forsook the tabernacle of
+  # Shiloh, the tent which he placed among men"; JER.7.12 "go ye now unto my
+  # place which was in Shiloh... see what I did to it." Range covers the
+  # traditional window around the ark's capture by the Philistines
+  # (1 Samuel 4).
+  verses = ["PSA.78.60", "JER.7.12"]
+  note = "traditional; inferred, not directly narrated"
+
+  [[place.blurb]]
+  text = "Israel's tabernacle stood here for centuries after the conquest, the nation's central place of worship before Jerusalem's temple was built."
+  from = -1399
+  to = -1051
+  breadth = "era"
+
+# --- Capernaum ---------------------------------------------------------
+[[place]]
+id = "capernaum"
+
+  [[place.blurb]]
+  text = "Jesus left Nazareth to make this fishing town on the Sea of Galilee his ministry base, teaching in its synagogue and healing many who were brought to him."
+  from = 27
+  to = 30
+  breadth = "era"
+
+# --- Damascus ------------------------------------------------------------
+[[place]]
+id = "damascus"
+
+  [[place.blurb]]
+  text = "The persecutor Saul was struck blind by a vision of the risen Christ on the road here, and emerged days later to preach in the same city's synagogues."
+  from = 32
+  to = 38
+  breadth = "era"
+
+# --- Babylon -------------------------------------------------------------
+# No name entry: "Babel" (Hebrew) and "Babylon" (Greek-derived) are the
+# same underlying name rendered through different KJV source languages, not
+# a historical rename -- Daniel and Jeremiah (written centuries after
+# Genesis, during and after the exile) still call it "Babylon", so curating
+# a Babel->Babylon swap would misrepresent a translation convention as a
+# renaming event. No established/destroyed either: Genesis gives no year
+# for Babel's founding, and Babylon's 539 BC fall to Cyrus was a change of
+# ruler, not a destruction -- the city continues to appear in later events
+# (e.g. ret_babylon, -538) after that date.
+[[place]]
+id = "babylon-1"
+
+  [[place.blurb]]
+  text = "Nimrod's kingdom began at Babel, where the builders of a great tower were scattered when God confused their language."
+  from = -4004
+  to = -2167
+  breadth = "era"
+
+  [[place.blurb]]
+  text = "Jerusalem's exiles wept by Babylon's rivers, remembering the city they had lost, until the kingdom itself fell to the Medes and Persians."
+  from = -586
+  to = -539
+  breadth = "era"
+
+  [[place.blurb]]
+  text = "Cyrus of Persia decreed that the exiles could return home and rebuild the LORD's house in Jerusalem."
+  from = -538
+  to = -536
+  breadth = "era"

@@ -4,6 +4,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::data::{AtlasData, Event};
+use crate::history::resolve_display_name;
 use crate::refs::{ScriptureRef, VerseId};
 use crate::time::TimeRange;
 use crate::wire::{Scene, SceneArrow, SceneEvent, SceneNarrative, ScenePlace, VerseGroup};
@@ -12,7 +13,7 @@ use crate::wire::{Scene, SceneArrow, SceneEvent, SceneNarrative, ScenePlace, Ver
 /// all of its places; arrows connect each narrative's kept legs in order.
 pub fn compose_time_scene(d: &AtlasData, w: TimeRange) -> Scene {
     let kept: Vec<&Event> = d.events.iter().filter(|e| e.when.intersects(&w)).collect();
-    let places = lit_places(d, &kept, None); // group kept events by ALL their places
+    let places = lit_places(d, &kept, None, Some(w)); // group kept events by ALL their places
     let arrows = build_arrows(d, &w, None);
     let narratives = legend(d, &w, None, &arrows);
     Scene { mode: "time".into(), window: Some(w), sref: None, places, arrows, narratives }
@@ -29,7 +30,12 @@ pub fn compose_scripture_scene(d: &AtlasData, r: &ScriptureRef) -> Scene {
         .iter()
         .filter(|e| e.verses.iter().any(|v| ref_contains(r, &VerseId::parse_canonical(v).expect("etl-validated verse id"))))
         .collect();
-    let mut places = lit_places(d, &kept, Some(r));
+    // `name_window: None` -- scripture mode never resolves a curated period
+    // name (see `history::resolve_display_name`'s own doc comment for why:
+    // a place here is lit by its geocoded verse links, whose KJV text
+    // already names it, so there is no window to reconcile a period name
+    // against without risking a title/verse-text contradiction).
+    let mut places = lit_places(d, &kept, Some(r), None);
     let event_lit: HashSet<String> = places.iter().map(|p| p.id.clone()).collect();
 
     for place in &d.places {
@@ -58,6 +64,7 @@ pub fn compose_scripture_scene(d: &AtlasData, r: &ScriptureRef) -> Scene {
         places.push(ScenePlace {
             id: place.id.clone(),
             name: place.name.clone(),
+            display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), None),
             lat: place.lat,
             lon: place.lon,
             brightness: (events.len().min(5)) as u8,
@@ -133,7 +140,11 @@ fn build_arrows(d: &AtlasData, w: &TimeRange, r: Option<&ScriptureRef>) -> Vec<S
 /// `verse_groups_for` so the 20-per-group verse cap can never silently drop
 /// the very verse that earned an event (and therefore its place) a spot in
 /// the scene — see `verse_groups_for`'s doc comment (SCRIP-1/SCRIP-3).
-fn lit_places(d: &AtlasData, kept: &[&Event], r: Option<&ScriptureRef>) -> Vec<ScenePlace> {
+/// `name_window` is the window `display_name` resolves against (`Some(w)`
+/// for time mode, `None` for scripture mode — see `compose_scripture_scene`'s
+/// own call site comment for why) — a SEPARATE concept from `r`, which only
+/// controls verse-cap prioritization.
+fn lit_places(d: &AtlasData, kept: &[&Event], r: Option<&ScriptureRef>, name_window: Option<TimeRange>) -> Vec<ScenePlace> {
     let mut by_place: HashMap<&str, Vec<&Event>> = HashMap::new();
     for e in kept {
         for pid in &e.places {
@@ -147,6 +158,7 @@ fn lit_places(d: &AtlasData, kept: &[&Event], r: Option<&ScriptureRef>) -> Vec<S
             Some(ScenePlace {
                 id: place.id.clone(),
                 name: place.name.clone(),
+                display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), name_window),
                 lat: place.lat,
                 lon: place.lon,
                 brightness: (evs.len().min(5)) as u8,

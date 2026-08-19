@@ -1,0 +1,33 @@
+[[place]]
+id = "bethel-1"
+
+  [[place.name]]
+  name = "Luz"
+  from = -4004
+  to = -2092
+  verses = ["GEN.28.19"]
+
+  [[place.name]]
+  name = "Bethel"
+  from = -2091
+  to = 100
+  verses = ["GEN.28.19"]
+
+  [[place.blurb]]
+  text = "A patriarchal altar site."
+  from = -2091
+  to = -1877
+  breadth = "era"
+
+[[place]]
+id = "jerusalem"
+
+  [place.established]
+  year = -1003
+  verses = ["2SA.5.7"]
+  note = "traditional"
+
+  [place.destroyed]
+  from = -586
+  to = -586
+  verses = ["2KI.25.9", "2KI.25.10"]

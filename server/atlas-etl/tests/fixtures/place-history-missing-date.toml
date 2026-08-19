@@ -1,0 +1,5 @@
+[[place]]
+id = "jerusalem"
+
+  [place.established]
+  verses = ["2SA.5.7"]

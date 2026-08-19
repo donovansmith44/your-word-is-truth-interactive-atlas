@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, Narrative, Place};
+use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry};
 use atlas_core::time::TimeRange;
 
 // ---------------------------------------------------------------------
@@ -463,4 +463,224 @@ fn report_contains_expected_sections() {
     assert!(text.contains("29 features kept"), "{text}");
     assert!(text.contains("point reduction"), "{text}");
     assert!(text.contains("19 curated landmarks"), "{text}");
+}
+
+// ---------------------------------------------------------------------
+// place-history (Batch E: curated.rs::parse_place_history + validate.rs::run_place_history)
+// ---------------------------------------------------------------------
+
+#[test]
+fn place_history_valid_toml_parses_names_blurbs_and_dates() {
+    let history = atlas_etl::curated::parse_place_history(include_str!("fixtures/place-history-sample.toml")).unwrap();
+    assert_eq!(history.len(), 2);
+
+    let bethel = history.iter().find(|h| h.id == "bethel-1").unwrap();
+    assert_eq!(bethel.names.len(), 2);
+    assert_eq!(bethel.names[0].name, "Luz");
+    assert_eq!(bethel.names[0].when, TimeRange::new(-4004, -2092).unwrap());
+    assert_eq!(bethel.names[0].verses, vec!["GEN.28.19".to_string()]);
+    assert_eq!(bethel.blurbs.len(), 1);
+    assert_eq!(bethel.blurbs[0].breadth, "era");
+
+    let jerusalem = history.iter().find(|h| h.id == "jerusalem").unwrap();
+    let established = jerusalem.established.as_ref().unwrap();
+    assert_eq!(established.when, TimeRange::new(-1003, -1003).unwrap()); // `year = -1003` shorthand
+    assert_eq!(established.note.as_deref(), Some("traditional"));
+    let destroyed = jerusalem.destroyed.as_ref().unwrap();
+    assert_eq!(destroyed.when, TimeRange::new(-586, -586).unwrap()); // `from`/`to` shape, equal endpoints
+    assert_eq!(destroyed.verses, vec!["2KI.25.9".to_string(), "2KI.25.10".to_string()]);
+}
+
+#[test]
+fn place_history_zero_year_hard_errors() {
+    let err = atlas_etl::curated::parse_place_history(include_str!("fixtures/place-history-year-zero.toml")).unwrap_err();
+    assert!(err.to_string().to_lowercase().contains("zero"), "{err}");
+}
+
+#[test]
+fn place_history_ambiguous_established_date_hard_errors() {
+    let err = atlas_etl::curated::parse_place_history(include_str!("fixtures/place-history-ambiguous-date.toml")).unwrap_err();
+    assert!(err.to_string().contains("BOTH"), "{err}");
+}
+
+#[test]
+fn place_history_missing_established_date_hard_errors() {
+    let err = atlas_etl::curated::parse_place_history(include_str!("fixtures/place-history-missing-date.toml")).unwrap_err();
+    assert!(err.to_string().contains("needs either"), "{err}");
+}
+
+fn name_entry(name: &str, from: i32, to: i32, verses: &[&str]) -> PlaceNameEntry {
+    PlaceNameEntry { name: name.into(), when: TimeRange::new(from, to).unwrap(), verses: verses.iter().map(|v| v.to_string()).collect() }
+}
+
+fn blurb_entry(text: &str, from: i32, to: i32, breadth: &str) -> PlaceBlurbEntry {
+    PlaceBlurbEntry { text: text.into(), when: TimeRange::new(from, to).unwrap(), breadth: breadth.into() }
+}
+
+fn some_verses() -> HashMap<String, String> {
+    let mut v = HashMap::new();
+    v.insert("GEN.28.19".to_string(), "And he called the name of that place Bethel...".to_string());
+    v.insert("2SA.5.7".to_string(), "Nevertheless David took the strong hold of Zion...".to_string());
+    v
+}
+
+#[test]
+fn place_history_unknown_place_id_fails_validation() {
+    let history = vec![PlaceHistory { id: "not-a-real-place".into(), names: vec![], blurbs: vec![], established: None, destroyed: None }];
+    let place_ids: HashSet<&str> = ["bethel-1", "jerusalem"].into_iter().collect();
+    let err = atlas_etl::validate::run_place_history(&history, &place_ids, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("unknown place id"), "{err}");
+}
+
+#[test]
+fn place_history_non_canonical_verse_fails_validation() {
+    let history = vec![PlaceHistory {
+        id: "bethel-1".into(),
+        names: vec![name_entry("Luz", -4004, -2092, &["NOT.A.VERSE"])],
+        blurbs: vec![],
+        established: None,
+        destroyed: None,
+    }];
+    let place_ids: HashSet<&str> = ["bethel-1"].into_iter().collect();
+    let err = atlas_etl::validate::run_place_history(&history, &place_ids, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("not a canonical single-verse ref"), "{err}");
+}
+
+#[test]
+fn place_history_verse_missing_from_compiled_kjv_text_fails_validation() {
+    // GEN.99.99 parses fine structurally (a real book, positive chapter/verse)
+    // but does not exist in the compiled KJV text -- Batch E's own
+    // strengthened check (beyond plain `VerseId::parse_canonical`) catches it.
+    let history = vec![PlaceHistory {
+        id: "bethel-1".into(),
+        names: vec![name_entry("Luz", -4004, -2092, &["GEN.99.99"])],
+        blurbs: vec![],
+        established: None,
+        destroyed: None,
+    }];
+    let place_ids: HashSet<&str> = ["bethel-1"].into_iter().collect();
+    let err = atlas_etl::validate::run_place_history(&history, &place_ids, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("does not exist in the compiled KJV text"), "{err}");
+}
+
+#[test]
+fn place_history_year_outside_atlas_span_fails_validation() {
+    let history = vec![PlaceHistory {
+        id: "bethel-1".into(),
+        names: vec![name_entry("Luz", -5000, -2092, &["GEN.28.19"])], // -5000 < -4004
+        blurbs: vec![],
+        established: None,
+        destroyed: None,
+    }];
+    let place_ids: HashSet<&str> = ["bethel-1"].into_iter().collect();
+    let err = atlas_etl::validate::run_place_history(&history, &place_ids, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("outside [-4004,100]"), "{err}");
+}
+
+#[test]
+fn place_history_overlapping_name_ranges_fail_validation() {
+    let history = vec![PlaceHistory {
+        id: "bethel-1".into(),
+        names: vec![
+            name_entry("Luz", -4004, -1900, &["GEN.28.19"]),
+            name_entry("Bethel", -2000, 100, &["GEN.28.19"]), // overlaps [-2000,-1900] with Luz above
+        ],
+        blurbs: vec![],
+        established: None,
+        destroyed: None,
+    }];
+    let place_ids: HashSet<&str> = ["bethel-1"].into_iter().collect();
+    let err = atlas_etl::validate::run_place_history(&history, &place_ids, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("name ranges") && err.to_string().contains("overlap"), "{err}");
+}
+
+#[test]
+fn place_history_overlapping_same_breadth_blurbs_fail_validation() {
+    let history = vec![PlaceHistory {
+        id: "jerusalem".into(),
+        names: vec![],
+        blurbs: vec![
+            blurb_entry("first", -4004, -500, "era"),
+            blurb_entry("second", -600, 100, "era"), // overlaps [-600,-500] with "first", same breadth
+        ],
+        established: None,
+        destroyed: None,
+    }];
+    let place_ids: HashSet<&str> = ["jerusalem"].into_iter().collect();
+    let err = atlas_etl::validate::run_place_history(&history, &place_ids, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("'era' blurb ranges overlap"), "{err}");
+}
+
+#[test]
+fn place_history_blurb_overlap_across_breadths_is_allowed() {
+    // A "broad" range is EXPECTED to overlap every "era" range it summarizes
+    // -- only same-breadth overlaps are an error (batch-e-brief.md
+    // Requirement 2: "blurb ranges may overlap across breadths but not
+    // within one breadth").
+    let history = vec![PlaceHistory {
+        id: "jerusalem".into(),
+        names: vec![],
+        blurbs: vec![blurb_entry("era one", -4004, -587, "era"), blurb_entry("whole sweep", -4004, 100, "broad")],
+        established: None,
+        destroyed: None,
+    }];
+    let place_ids: HashSet<&str> = ["jerusalem"].into_iter().collect();
+    assert!(atlas_etl::validate::run_place_history(&history, &place_ids, &some_verses()).is_ok());
+}
+
+#[test]
+fn place_history_invalid_blurb_breadth_fails_validation() {
+    let history = vec![PlaceHistory {
+        id: "jerusalem".into(),
+        names: vec![],
+        blurbs: vec![blurb_entry("oops", -100, -50, "century")], // not "era" or "broad"
+        established: None,
+        destroyed: None,
+    }];
+    let place_ids: HashSet<&str> = ["jerusalem"].into_iter().collect();
+    let err = atlas_etl::validate::run_place_history(&history, &place_ids, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("invalid breadth"), "{err}");
+}
+
+#[test]
+fn place_history_duplicate_place_id_fails_validation() {
+    let history = vec![
+        PlaceHistory { id: "jerusalem".into(), names: vec![], blurbs: vec![], established: None, destroyed: None },
+        PlaceHistory { id: "jerusalem".into(), names: vec![], blurbs: vec![], established: None, destroyed: None },
+    ];
+    let place_ids: HashSet<&str> = ["jerusalem"].into_iter().collect();
+    let err = atlas_etl::validate::run_place_history(&history, &place_ids, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("duplicate"), "{err}");
+}
+
+#[test]
+fn place_history_established_verse_outside_canon_fails_validation() {
+    let history = vec![PlaceHistory {
+        id: "jerusalem".into(),
+        names: vec![],
+        blurbs: vec![],
+        established: Some(PlaceDateClaim {
+            when: TimeRange::new(-1003, -1003).unwrap(),
+            verses: vec!["NOT.A.VERSE".into()],
+            note: None,
+        }),
+        destroyed: None,
+    }];
+    let place_ids: HashSet<&str> = ["jerusalem"].into_iter().collect();
+    let err = atlas_etl::validate::run_place_history(&history, &place_ids, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("established") && err.to_string().contains("not a canonical"), "{err}");
+}
+
+#[test]
+fn place_history_valid_data_passes_validation() {
+    let history = vec![PlaceHistory {
+        id: "bethel-1".into(),
+        names: vec![name_entry("Luz", -4004, -2092, &["GEN.28.19"]), name_entry("Bethel", -2091, 100, &["GEN.28.19"])],
+        blurbs: vec![blurb_entry("A patriarchal altar site.", -2091, -1877, "era")],
+        established: None,
+        destroyed: Some(PlaceDateClaim { when: TimeRange::new(-1003, -1003).unwrap(), verses: vec!["2SA.5.7".into()], note: Some("traditional".into()) }),
+    }];
+    let place_ids: HashSet<&str> = ["bethel-1"].into_iter().collect();
+    let result = atlas_etl::validate::run_place_history(&history, &place_ids, &some_verses());
+    assert!(result.is_ok(), "{:?}", result.err());
 }
