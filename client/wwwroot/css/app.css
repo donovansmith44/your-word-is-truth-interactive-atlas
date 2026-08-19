@@ -157,7 +157,26 @@ input:focus-visible,
 
 .header-dusk {
     --header-fg: var(--dusk-ink);
-    --header-fg-soft: var(--dusk-ink-soft);
+    /* Fix round 1 addendum: was --dusk-ink-soft, measured 4.78:1 on
+       .nav-link (real screenshot pixels, over the header's own water-toned
+       terrain patch) -- under the 7:1 dusk floor. --dusk-ink-soft has no
+       brighter sibling between it and plain --dusk-ink (the gap is real,
+       not a rounding error: even --dusk-ink itself only just clears 7.5:1
+       against this file's own lightest measured terrain sample, so a new
+       INTERMEDIATE token would have almost no safety margin to work with
+       -- see the batch report's Fix round 1 addendum for the arithmetic).
+       Reusing --dusk-ink directly matches this file's own established
+       precedent for the identical problem (.slider-era, .picker-eyebrow,
+       .mode-chip-label, .border-tag-label all made this exact swap
+       already, each independently, when THEY were found short). Trade-off,
+       disclosed: --header-fg-soft now equals --header-fg on the DUSK
+       theme, so .nav-link:hover's color transition (its only hover
+       affordance) is a no-op on /world specifically -- unaffected on
+       /world's own .translation-label (no hover state) and .attribution
+       (hover is opacity+underline, not color); the .header-parchment
+       theme's own --ink/--ink-soft pair is untouched, so the reader page
+       keeps its full soft/normal distinction. */
+    --header-fg-soft: var(--dusk-ink);
     --header-border: var(--bronze-bright);
     position: fixed;
     inset-inline: 0;
@@ -1347,7 +1366,15 @@ input:focus-visible,
 .legend-count {
     font-family: var(--font-mono);
     font-size: .75rem;
-    color: var(--dusk-ink-soft);
+    /* Fix round 1 addendum: was --dusk-ink-soft, measured 4.36:1 (real
+       screenshot pixels) -- under the 7:1 floor, and design-direction.md's
+       own "every number on screen... is real content, never decoration"
+       rules out leaving a COUNT intentionally dim. Same --dusk-ink swap as
+       .header-dusk's --header-fg-soft above (see that rule's own comment
+       for why an intermediate token isn't a safe option here) -- now reads
+       the same weight as .legend-name right beside it; the remaining
+       mono-vs-serif/size/position differences still separate the two. */
+    color: var(--dusk-ink);
     margin-inline-start: auto;
     padding-inline-start: .75rem;
 }
