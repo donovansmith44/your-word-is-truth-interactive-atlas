@@ -275,16 +275,19 @@ async fn landmarks_empty_fixture_list() {
 
 /// `app::build`'s `static_dir` branch: API routes still win over the static
 /// fallback, an existing file is served as itself, and an unmatched path
-/// (a Blazor client-side route like `/world`) falls back to `index.html`'s
-/// content (tower-http's `not_found_service` SPA idiom — the status on that
-/// fallback response is 404, which is fine: the client-side router only
-/// needs the HTML body, not the status). Also asserts the permissive-CORS
-/// layer reaches BOTH an `/api`-routed response and a fallback-served
-/// response: `Router::layer` only wraps routes/fallback that exist at the
-/// time it's called, so if `.layer(CorsLayer::permissive())` were ever
-/// reordered to run before `.fallback_service(...)` is attached, the
-/// fallback branch would silently lose its CORS headers while `/api/*`
-/// still had them — this pins the correct (CORS-applied-last) ordering.
+/// (a Blazor client-side route like `/world` or `/read/EXO/14`) falls back
+/// to `index.html`'s content WITH a 200 status — tower-http's
+/// `not_found_service` SPA idiom natively tags that fallback response 404
+/// (correct from `ServeDir`'s point of view, wrong from the SPA's: a deep
+/// link to a real client-side route is not an error), and `app::build`'s
+/// `.map_response` rewrite is what corrects it; this test pins that fix so
+/// it can't silently regress. Also asserts the permissive-CORS layer
+/// reaches BOTH an `/api`-routed response and a fallback-served response:
+/// `Router::layer` only wraps routes/fallback that exist at the time it's
+/// called, so if `.layer(CorsLayer::permissive())` were ever reordered to
+/// run before `.fallback_service(...)` is attached, the fallback branch
+/// would silently lose its CORS headers while `/api/*` still had them —
+/// this pins the correct (CORS-applied-last) ordering.
 #[tokio::test]
 async fn static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_routes() {
     let dir = std::env::temp_dir().join(format!("atlas-server-static-test-{}", std::process::id()));
@@ -313,19 +316,31 @@ async fn static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     assert_eq!(&bytes[..], b"body{color:red}");
 
-    let response = app
-        .clone()
-        .oneshot(Request::builder().uri("/world").header("origin", "http://example.com").body(Body::empty()).unwrap())
-        .await
-        .unwrap();
-    assert_eq!(
-        response.headers().get(ACCESS_CONTROL_ALLOW_ORIGIN).map(|v| v.to_str().unwrap()),
-        Some("*"),
-        "a fallback-served (SPA-route) response must ALSO carry permissive CORS headers, \
-         not just direct /api routes — this is the case the layer-ordering bug broke"
-    );
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    assert_eq!(&bytes[..], b"<html>shell</html>", "unmatched client-side routes must fall back to index.html");
+    for deep_link in ["/world", "/read/EXO/14"] {
+        let response = app
+            .clone()
+            .oneshot(Request::builder().uri(deep_link).header("origin", "http://example.com").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(
+            response.status(),
+            StatusCode::OK,
+            "a SPA deep link ({deep_link}) must fall back to index.html with a 200, not tower-http's native 404 — \
+             a client (or curl) that checks status instead of sniffing the body must not see a false failure"
+        );
+        assert_eq!(
+            response.headers().get(ACCESS_CONTROL_ALLOW_ORIGIN).map(|v| v.to_str().unwrap()),
+            Some("*"),
+            "a fallback-served (SPA-route) response ({deep_link}) must ALSO carry permissive CORS headers, \
+             not just direct /api routes — this is the case the layer-ordering bug broke"
+        );
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(
+            &bytes[..],
+            b"<html>shell</html>",
+            "unmatched client-side route {deep_link} must fall back to index.html's body"
+        );
+    }
 
     std::fs::remove_dir_all(&dir).ok();
 }
