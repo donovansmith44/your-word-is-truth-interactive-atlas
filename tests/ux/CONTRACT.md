@@ -20,10 +20,15 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
 ## data-testid inventory
 Header: `nav-reader`, `nav-world`, `translation-select`, `attribution`
 World: `world-map`, `marker-{placeId}`, `place-card`, `place-card-title`,
-  `hover-verse-{VREF}` (one row per shown verse, VREF = canonical id e.g. `EXO.14.21`;
-  row text contains the verse text), `place-card-expand` (button; present only when
-  more verses than shown exist; text contains the remaining count),
-  `verse-group-{BOOK}-{chapter}` (one per group, text contains `{count}`),
+  `hover-verse-{VREF}` (one element per currently shown verse, VREF = canonical id e.g.
+  `EXO.14.21`, whether it renders as its own lone-verse row or as one verse inside a
+  passage block; element text contains that verse's own KJV text verbatim -- never
+  trimmed, never paraphrased), `hover-passage-{SPAN}` (one per currently shown passage
+  block -- a maximal run of >=2 consecutive same-book/chapter verses; SPAN = canonical
+  span text of that run's CURRENTLY SHOWN extent, e.g. `GEN.12.1-4`; contains that
+  block's own `hover-verse-{VREF}` elements), `place-card-more` (button; present only
+  while unshown verses remain for this place), `place-card-collapse` (button; present
+  only while more than the initial content is shown),
   `arrows-svg`, `arrow-{narrativeId}-{order}` (SVG path; attr `stroke` = narrative color;
   attr `data-faded` = "true"|"false"; `marker-end` set),
   `legend`, `legend-item-{narrativeId}` (button; `aria-pressed` = isolated),
@@ -57,6 +62,24 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `xref-item-{TARGET}` (TARGET = canonical ref/span text), `mini-map`, `mini-map-open-world`
 Notes:
 - `marker-{placeId}` elements carry the visible place label.
+- Hover place card content (batch-d-brief.md): the card is place name + verse
+  content + controls, nothing else -- no per-(book,chapter) count rows, bare
+  canonical-ref rows, or chapter-identifier lines anywhere on it. From the
+  place's merged, deduped activating verse list (event order, then each
+  event's own already book/chapter/verse-ascending groups -- this list's
+  long-standing "canonical order"), maximal runs of consecutive same-book/
+  chapter verses (n, n+1, ...) are passages (`hover-passage-{SPAN}`, rendered
+  as one flowing block); runs of one are lone verses. Initial state shows up
+  to the first 4 verses if the first group is a passage, else the first 2
+  verses (necessarily non-consecutive with each other, since the first group
+  being a lone verse means the very next verse in the list isn't consecutive
+  with it) -- only ever the first group (passage) or the first two lone
+  verses, never more, never a wall. Each `place-card-more` click reveals the
+  next chunk: +5 verses if the next not-yet-shown verse belongs to a
+  passage-sized group, +2 if it belongs to a lone verse's group; repeats
+  until the place's full (already server-capped) verse list is exhausted, at
+  which point `place-card-more` is absent. `place-card-collapse` restores the
+  exact initial state (DOM and card size) in one click.
 - Scene pseudo-events with ids beginning `mention-` are text-mention markers
   (scripture mode); arrows never reference them.
 - The slider is `aria-disabled="true"` while scripture mode is active.

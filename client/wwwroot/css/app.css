@@ -946,13 +946,44 @@ input:focus-visible,
    it never sits directly on top of the lamp it describes. Widened from the
    original 18rem -- design-direction.md's REVISED card leads with real
    verse sentences (below), which need more breathing room than the
-   book/chapter/count index rows this width was originally sized for. */
+   book/chapter/count index rows this width was originally sized for.
+
+   max-height + inner scroll is UNCONDITIONAL, not a separate "expanded"
+   state, as of Batch D (batch-d-brief.md, design language item 4:
+   "Card must not exceed ~60% viewport height expanded; inner scroll takes
+   over"). Originally only place-card-more's own reveals could make the
+   card tall (the pre-Batch-D initial state was always 2 short verse
+   lines), so gating the cap on a `place-card-expanded` class was enough --
+   but a passage-first place's INITIAL render can already be several verses
+   of real flowing KJV prose (e.g. Joshua 8's opening, ~730 characters
+   before a single click), tall enough on its own to push place-card-title
+   off the top of the viewport for a marker anchored near the top edge --
+   confirmed live (reader-map.spec.ts's WORLD-8, which only hovers+clicks
+   the title, started timing out against exactly this once passages
+   shipped). max-height has no effect on a card whose content already fits
+   under it, so this is a strict no-op for every small card -- safe to
+   apply always rather than re-litigate "is this render tall enough to
+   need it" per state.
+
+   The scroll itself lives on .place-card-scroll (below), NOT this element:
+   a flex column with place-card-controls (the down/up arrows) as a second,
+   unscrolled flex item is what keeps those two buttons reachable at a
+   fixed position regardless of how tall the verse content grows, rather
+   than sliding away at the bottom of an ever-growing scrolled list --
+   confirmed live (world-hover-text.spec.ts's own repeated-place-card-more
+   property started timing out, Playwright retrying an unreachable/
+   reflowing target, when both lived in one shared scrolling box; a real
+   user hunting for the down arrow at the bottom of a long scroll would
+   have hit the same problem). */
 .place-card {
     position: absolute;
     z-index: 30;
     transform: translate(-50%, calc(-100% - 18px));
+    display: flex;
+    flex-direction: column;
     min-width: 12rem;
     max-width: 21rem;
+    max-height: min(26rem, 60vh);
     padding: .65rem .85rem .75rem;
     background: var(--parchment-raised);
     border: 1px solid var(--bronze);
@@ -961,12 +992,15 @@ input:focus-visible,
     animation: place-card-in 120ms ease-out both;
 }
 
-/* "Show N more" (place-card-expand below) reveals the rest of the scene-
-   provided verse list in place -- design-direction.md: "card gets a
-   max-height + inner scroll once expanded" -- rather than letting the card
-   grow tall enough to run off the top of the viewport. */
-.place-card-expanded {
-    max-height: min(26rem, 70vh);
+/* The one part of .place-card that actually scrolls (title + verse/passage
+   content) -- flex:1 so it claims whatever space .place-card-controls
+   below doesn't need; min-height:0 overrides the flex default of
+   `min-height: auto`, which otherwise refuses to let a flex item shrink
+   below its own content size and would silently defeat overflow-y here
+   the moment content exceeds .place-card's max-height. */
+.place-card-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -993,11 +1027,10 @@ input:focus-visible,
     color: var(--lapis);
 }
 
-/* The lead verse-text block (design-direction.md "Hover place card --
-   REVISED": "the card leads with scripture... ref in the instrument mono
-   face, verse text in the serif"). Stacked (ref above its own sentence),
-   not the inline ref/count row .place-card-verse-group below uses -- a full
-   verse sentence needs its own line, not a space-between pair. */
+/* A lone verse's own line (batch-d-brief.md Requirement 2: any maximal run
+   of length 1) -- ref above its own sentence in the instrument mono face,
+   verse text in the serif, same shape .place-card-passage below uses for a
+   whole block. */
 .place-card-verse {
     margin: 0 0 .5rem;
 }
@@ -1019,69 +1052,75 @@ input:focus-visible,
     color: var(--ink);
 }
 
-.place-card-expand {
+/* A passage -- a maximal run of >=2 consecutive same-book/chapter verses
+   (batch-d-brief.md Requirement 2) -- renders as ONE flowing block: a
+   single span ref ("GEN.12.1-4") above continuous KJV prose, rather than
+   .place-card-verse's repeated ref+text pair. Structurally a sibling of
+   .place-card-verse (same margin-bottom rhythm), not a variant of it. */
+.place-card-passage {
+    margin: 0 0 .5rem;
+}
+
+.place-card-passage-ref {
     display: block;
-    margin: .3rem 0 .1rem;
-    padding: 0;
+    margin: 0 0 .1rem;
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .03em;
+    color: var(--bronze-ink);
+}
+
+.place-card-passage-text {
+    display: block;
     font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: .05em;
-    font-size: .8rem;
-    color: var(--ink-soft);
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-align: start;
+    font-size: .92rem;
+    line-height: 1.6;
+    color: var(--ink);
 }
 
-.place-card-expand:hover {
-    color: var(--lapis);
+/* One inline number per verse inside a flowing passage (Requirement 2:
+   "small inline verse numbers"), instrument mono face -- design language
+   item 4: "refs/verse numbers in the instrument mono face". Raised and
+   shrunk the way a printed Bible sets verse numbers into running prose,
+   not Reader's own separate-gutter .verse-num treatment (a different
+   layout entirely -- one verse per line, not flowing paragraph text). */
+.place-card-verse-num {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    color: var(--bronze-ink);
+    margin-inline-end: .15rem;
 }
 
-/* The per-(book,chapter) count rows now stay BENEATH the verse text as the
-   compact index (design-direction.md: "the per-(book,chapter) count rows
-   stay beneath as the compact index") -- a rule above separates the two
-   sections the same way .popover-xref-list separates cross-refs from the
-   verse body it follows. */
-.place-card-index {
-    margin-top: .4rem;
-    padding-top: .35rem;
-    border-top: 1px solid rgba(138, 107, 61, .25);
-}
-
-/* WORLD-8/Task 15: opens a VerseNode popover for the group's first verse --
-   a real <button> now (was a plain <p>); .place-card-ref has no color of
-   its own, so it inherits this rule's color (including the :hover change
-   below) automatically -- .place-card-count keeps its own explicit --lapis
-   regardless, unchanged. */
-.place-card-verse-group {
+/* place-card-more / place-card-collapse: the down/up arrow controls
+   (batch-d-brief.md Requirement 2 -- CONTRACT). Quiet parchment-styled
+   real <button>s, same "no border/background, ink-soft resting / lapis
+   hover" quiet-control language the title already used; grouped in one row
+   since both can be visible at once (partway expanded -- neither exhausted
+   nor back at the initial count). */
+.place-card-controls {
+    flex: none;
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: .75rem;
-    width: 100%;
-    margin: .2rem 0 0;
+    align-items: center;
+    gap: .6rem;
+    margin: .3rem 0 0;
+}
+
+.place-card-more,
+.place-card-collapse {
+    display: block;
+    margin: 0;
     padding: 0;
-    border: none;
-    background: none;
     font-family: var(--font-serif);
-    font-size: .85rem;
+    font-size: .95rem;
+    line-height: 1;
     color: var(--ink-soft);
-    text-align: start;
+    background: none;
+    border: none;
     cursor: pointer;
 }
 
-.place-card-verse-group:hover {
-    color: var(--lapis);
-}
-
-.place-card-ref {
-    font-family: var(--font-mono);
-    letter-spacing: .02em;
-}
-
-.place-card-count {
-    font-family: var(--font-mono);
+.place-card-more:hover,
+.place-card-collapse:hover {
     color: var(--lapis);
 }
 
@@ -1293,9 +1332,9 @@ input:focus-visible,
    collides with the timeline" -- the timeline itself moved INTO legend's
    old bottom-right slot, see .slider's own comment, so legend moves to
    bottom-left instead of a collapsed/expand-on-hover panel -- simpler).
-   max-height + inner scroll (same pattern .place-card-expanded already
-   uses for its own content-driven height, "rather than letting [it] grow
-   tall enough to run off the top of the viewport"): the curated dataset
+   max-height + inner scroll (same pattern .place-card already uses for its
+   own content-driven height, "rather than letting [it] grow tall enough to
+   run off the top of the viewport"): the curated dataset
    now runs to 13 narratives (data/curated/narratives/*.toml), not the 3
    this file's own border-tag comment used to assume -- screenshot review
    (the full 4004 BC - AD 100 span lights all 13 at once) found an

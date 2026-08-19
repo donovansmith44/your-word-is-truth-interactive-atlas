@@ -4,6 +4,7 @@ import { api } from './lib/api';
 import { arbWindow } from './lib/canon';
 import { fcAssert, RUNS_UI } from './lib/fc';
 import { formatRange } from './lib/years';
+import { mergedVerses, groups, isPassage, initialShownCount, visibleGroups, spanRef } from './lib/hovercard';
 
 test('WORLD-1: rendered markers equal the API scene', async ({ page }) => {
   await fcAssert(fc.asyncProperty(arbWindow, async w => {
@@ -16,6 +17,19 @@ test('WORLD-1: rendered markers equal the API scene', async ({ page }) => {
   }), RUNS_UI);
 });
 
+// Batch D (batch-d-brief.md) killed the old per-(book,chapter) count-row
+// index this property used to check (verse-group-{BOOK}-{chapter}, summed
+// via g.count) -- CONTRACT.md's "Hover place card content" note is the
+// single authority now. This property is the broad, whole-scene-random
+// counterpart to world-hover-text.spec.ts's own few, deliberately-chosen
+// scenarios: it re-derives the expected initial shown-verse shape (4/2-
+// initial rule) from the SAME scene JSON for every randomly drawn place in
+// a rich window, via tests/ux/lib/hovercard.ts's black-box mirror of
+// PlaceCard.razor's own grouping logic, and confirms neither the killed
+// index nor its old expand button ever reappears. Guaranteed to fail
+// against the old card: it never had a hover-passage-{SPAN} testid (no
+// grouping existed at all) and always rendered verse-group-*/place-card-
+// expand, the opposite of what's asserted below.
 test('WORLD-2: hover card matches scene data', async ({ page }) => {
   const w = { from: -1446, to: -1406 };                    // exodus window: rich scene
   await page.goto(`/world?from=${w.from}&to=${w.to}`);
@@ -27,13 +41,25 @@ test('WORLD-2: hover card matches scene data', async ({ page }) => {
       const card = page.getByTestId('place-card');
       await expect(card).toBeVisible();
       await expect(page.getByTestId('place-card-title')).toHaveText(p.name);
-      const groups = new Map<string, number>();
-      for (const e of p.events) for (const g of e.verse_groups) {
-        groups.set(`${g.book}-${g.chapter}`, (groups.get(`${g.book}-${g.chapter}`) ?? 0) + g.count);
+
+      const verses = mergedVerses(p);
+      const shown = initialShownCount(verses);
+      const visible = visibleGroups(groups(verses), shown);
+
+      await expect(card.getByTestId(/^hover-verse-/)).toHaveCount(shown);
+      for (const vref of verses.slice(0, shown)) {
+        await expect(card.getByTestId(`hover-verse-${vref}`)).toBeVisible();
       }
-      for (const [k, count] of groups) {
-        await expect(card.getByTestId(`verse-group-${k}`)).toContainText(String(count));
+      const passageGroups = visible.filter(isPassage);
+      await expect(card.locator('[data-testid^="hover-passage-"]')).toHaveCount(passageGroups.length);
+      for (const g of passageGroups) {
+        await expect(card.getByTestId(`hover-passage-${spanRef(verses, g)}`)).toBeVisible();
       }
+
+      // The killed bookkeeping never reappears.
+      await expect(card.locator('[data-testid^="verse-group-"]')).toHaveCount(0);
+      await expect(card.getByTestId('place-card-expand')).toHaveCount(0);
+
       await page.mouse.move(0, 0);
       await expect(card).toBeHidden();
     }), RUNS_UI);

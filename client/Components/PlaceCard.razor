@@ -1,22 +1,57 @@
 @using System.Globalization
 @using BibleAtlas.Client.Explore
 @inject AtlasClient Atlas
-@* A parchment hover card floating over the dusk map (design-direction.md's
+@* A parchment hover card floating over the atlas plate (design-direction.md's
    "popovers and hover cards are parchment artifacts on both pages" --
-   lamplit paper over the night world). World.razor owns the hover/close-
-   delay state machine and just feeds this component whichever place is
-   currently showing plus the screen point to anchor at (map.js reports
-   that point as e.containerPoint, which lines up with this card's
-   positioning context because #world-map fills .world-page via `inset: 0`
-   with no border/padding -- see app.css).
+   lamplit paper over the world). World.razor owns the hover/close-delay
+   state machine and just feeds this component whichever place is currently
+   showing plus the screen point to anchor at (map.js reports that point as
+   e.containerPoint, which lines up with this card's positioning context
+   because #world-map fills .world-page via `inset: 0` with no border/
+   padding -- see app.css).
 
-   design-direction.md's "Hover place card -- REVISED": the card leads with
-   scripture, not bookkeeping -- the place name, then the first two verses
-   (canonical order) of the place's merged activating verses as real text,
-   then a quiet "Show N more" control expanding the rest of the scene-
-   provided (already server-capped) list. The per-(book,chapter) count rows
-   (MergedVerseGroups, unchanged since WORLD-2) stay beneath as the compact
-   index.
+   Batch D (batch-d-brief.md) rebuilt this card from direct, binding user
+   feedback: no more bookkeeping. The per-(book,chapter) count-row index
+   (the old MergedVerseGroups/verse-group-{BOOK}-{chapter} rows, WORLD-2/
+   WORLD-8) is GONE -- the card is place name + verse content + controls,
+   nothing else. This SUPERSEDES design-direction.md's "Hover place card --
+   REVISED" section (which still describes that count-row index and a flat
+   single-shot "Show N more") wherever the two disagree; that section is now
+   stale prose, not a contract -- CONTRACT.md is.
+
+   Verse content is now passage-aware rather than a flat capped list.
+   MergedVerses() (unchanged -- every event's verse_groups' verse ids,
+   flattened in event order then each event's own already book/chapter/
+   verse-ascending group order, deduped) is the list this file and
+   design-direction.md have both long called "canonical order". Groups()
+   splits THIS list, by list position, into maximal runs of numerically-
+   consecutive same-book/chapter verses: a run of length >=2 is a passage
+   (renders as ONE block -- flowing KJV text, small inline mono verse
+   numbers, a single span ref like "GEN.12.1-4"); a run of length 1 is a
+   lone verse (its own mono ref line + serif text, same shape as before
+   this batch). Grouping by LIST POSITION rather than a fresh global sort
+   is deliberate: two verses that are numerically back-to-back but arrived
+   via non-adjacent events never merge into one passage -- "the scene's
+   activating verse list... canonical order" (the brief's own phrase) is
+   this codebase's existing name for MergedVerses()'s own order, not an
+   instruction to re-sort it (world-hover-text.spec.ts's black-box
+   mergedVerses() mirror flattens the same way and calls it the same
+   thing).
+
+   _shownCount replaces the old boolean _expanded: how many of
+   MergedVerses(), from the start, are currently rendered. It always starts
+   at InitialShownCount() -- up to 4 verses if the FIRST group is a
+   passage, up to 2 if it's a lone verse (CONTRACT's 4/2-initial rule) --
+   and grows by PassageStep (5) or LoneStep (2) verses per place-card-more
+   click, whichever kind of group contains the next not-yet-shown verse.
+   The step is a flat verse count, not capped at that group's own remaining
+   length, so one click can finish a passage AND spill into the next
+   group's first verse(s) in the same step -- safe because rendering
+   (VisibleGroups) recomputes fresh from _shownCount every time: a group
+   only 1 verse into its reveal renders as a lone verse now and upgrades to
+   a passage block automatically once a later click reveals a 2nd verse of
+   it, with no separate reveal-history state to keep in sync. place-card-
+   collapse snaps _shownCount back to InitialShownCount() in one click.
 
    Because World.razor renders this with no @key, hovering from one marker
    straight to another (no gap where hoverPlace goes null) reuses THIS SAME
@@ -25,42 +60,60 @@
    below is what resets expand/verse-text state for the new place instead
    of silently showing the previous place's already-fetched text. *@
 
-<div class="place-card @(_expanded ? "place-card-expanded" : "")"
+<div class="place-card"
      data-testid="place-card"
      style="left: @X.ToString(CultureInfo.InvariantCulture)px; top: @Y.ToString(CultureInfo.InvariantCulture)px;"
      @onpointerenter="OnPointerEnter"
      @onpointerleave="OnPointerLeave">
-    <button type="button" class="place-card-title" data-testid="place-card-title" @onclick="() => OnOpenPlace.InvokeAsync()">@Place.Name</button>
+    <div class="place-card-scroll">
+        <button type="button" class="place-card-title" data-testid="place-card-title" @onclick="() => OnOpenPlace.InvokeAsync()">@Place.Name</button>
 
-    @{
-        var verses = MergedVerses();
-        var shown = ShownCount(verses);
-    }
-    @for (var i = 0; i < shown; i++)
-    {
-        var vref = verses[i];
-        <p class="place-card-verse" data-testid="hover-verse-@vref">
-            <span class="place-card-verse-ref">@vref</span>
-            <span class="place-card-verse-text">@VerseText(vref)</span>
-        </p>
-    }
-    @if (verses.Count > shown)
-    {
-        <button type="button" class="place-card-expand" data-testid="place-card-expand" @onclick="Expand">
-            Show @(verses.Count - shown) more
-        </button>
-    }
-
-    <div class="place-card-index">
-        @foreach (var vg in MergedVerseGroups())
+        @{
+            var verses = MergedVerses();
+            var visible = VisibleGroups(Groups(verses), _shownCount);
+        }
+        @foreach (var g in visible)
         {
-            <button type="button" class="place-card-verse-group" data-testid="verse-group-@vg.Book-@vg.Chapter"
-                    @onclick="() => OpenVerseGroup(vg)">
-                <span class="place-card-ref">@vg.Book @vg.Chapter</span>
-                <span class="place-card-count">@vg.Count</span>
-            </button>
+            @if (g.IsPassage)
+            {
+                var blockVerses = verses.GetRange(g.Start, g.Length);
+                var span = SpanRef(blockVerses[0], blockVerses[^1]);
+                <p class="place-card-passage" data-testid="hover-passage-@span">
+                    <span class="place-card-passage-ref">@span</span>
+                    <span class="place-card-passage-text">
+                        @foreach (var vref in blockVerses)
+                        {
+                            <span data-testid="hover-verse-@vref"><sup class="place-card-verse-num">@VerseNumOf(vref)</sup>@VerseText(vref) </span>
+                        }
+                    </span>
+                </p>
+            }
+            else
+            {
+                var vref = verses[g.Start];
+                <p class="place-card-verse" data-testid="hover-verse-@vref">
+                    <span class="place-card-verse-ref">@vref</span>
+                    <span class="place-card-verse-text">@VerseText(vref)</span>
+                </p>
+            }
         }
     </div>
+
+    @if (_shownCount > _initialShownCount || _shownCount < verses.Count)
+    {
+        <div class="place-card-controls">
+            @if (_shownCount > _initialShownCount)
+            {
+                <button type="button" class="place-card-collapse" data-testid="place-card-collapse"
+                        aria-label="Show fewer verses" @onclick="Collapse">&#9652;</button>
+            }
+            @if (_shownCount < verses.Count)
+            {
+                <button type="button" class="place-card-more" data-testid="place-card-more"
+                        aria-label="Show more verses" @onclick="ShowMore">&#9662;</button>
+            }
+        </div>
+    }
 </div>
 
 @code {
@@ -70,95 +123,53 @@
     [Parameter] public EventCallback OnPointerEnter { get; set; }
     [Parameter] public EventCallback OnPointerLeave { get; set; }
 
-    // WORLD-8/Task 15: verse-group rows and the title both promote this
-    // hover card's content into a real ExplorerPopover -- World.razor owns
-    // _activeNode and constructs the actual VerseNode/PlaceNode (it already
-    // has Place.Id/Place.Name in hand from _hoverPlace, the same source this
-    // component's own Place parameter comes from), so these callbacks stay
-    // parameterless/string-only rather than passing whole node instances
-    // across the component boundary.
-    [Parameter] public EventCallback<string> OnOpenVerse { get; set; }
+    // WORLD-8/Task 15: the title still promotes this hover card's content
+    // into a real ExplorerPopover -- World.razor already has Place.Id/
+    // Place.Name in hand from _hoverPlace, the same source this
+    // component's own Place parameter comes from, so this stays
+    // parameterless rather than passing a whole node instance across the
+    // component boundary. Batch D removed this card's OTHER, older route
+    // into a popover -- the verse-group index rows' click-to-open-a-verse
+    // affordance -- along with the rows themselves; the brief's own content
+    // list for this card is closed ("place name + verse content +
+    // controls, nothing else"), so there is no replacement for it here.
     [Parameter] public EventCallback OnOpenPlace { get; set; }
 
-    private const int InitialShown = 2;
+    // CONTRACT's 4/2-initial + 5/2-step rule (batch-d-brief.md Requirement 2).
+    private const int PassageInitialMax = 4;
+    private const int PassageStep = 5;
+    private const int LoneInitialMax = 2;
+    private const int LoneStep = 2;
 
     // Identifies which place the fetched/fetching _verseText belongs to, so
     // a hover that moves marker-to-marker (see the file-header comment)
-    // resets rather than showing stale text under the new place's name.
+    // resets rather than showing stale text/reveal-state under the new
+    // place's name.
     private string? _lastPlaceId;
-    private bool _expanded;
+    private int _shownCount;
+    private int _initialShownCount;
     private readonly Dictionary<string, string> _verseText = new();
 
-    private sealed record MergedGroup(string Book, int Chapter, int Count);
-
-    // Counts merge across every event attached to this place, summed per
-    // (book, chapter) -- tests/ux/world-map.spec.ts's WORLD-2 property
-    // builds the exact same book-chapter -> summed-count map from
-    // p.events[].verse_groups[] before asserting against each
-    // verse-group-{BOOK}-{chapter} row, so this must match it exactly.
-    private List<MergedGroup> MergedVerseGroups()
+    // A maximal run of consecutive same-book/chapter verses within a
+    // MergedVerses() list, identified by its start index into that list.
+    // Length >= 2 is Requirement 2's "passage" (renders as one flowing
+    // block); Length == 1 is a lone verse (renders as its own ref+text
+    // line, same shape as every verse row rendered before this batch).
+    private sealed record VerseRun(int Start, int Length)
     {
-        var counts = new Dictionary<(string Book, int Chapter), int>();
-        var order = new List<(string Book, int Chapter)>();
-
-        foreach (var e in Place.Events)
-        {
-            foreach (var g in e.VerseGroups)
-            {
-                var key = (g.Book, g.Chapter);
-                if (!counts.ContainsKey(key))
-                {
-                    order.Add(key);
-                    counts[key] = 0;
-                }
-
-                counts[key] += g.Count;
-            }
-        }
-
-        return order.Select(key => new MergedGroup(key.Book, key.Chapter, counts[key])).ToList();
+        public bool IsPassage => Length >= 2;
     }
 
-    // WORLD-8/Task 15: a verse-group row opens a VerseNode for the FIRST
-    // verse of that (book,chapter) group -- same nested Events/VerseGroups
-    // walk order as MergedVerseGroups above (event order, then each event's
-    // own already book/chapter/verse-ascending VerseGroups), so "first
-    // match" is exactly the group's own first (and canonically earliest)
-    // verse, not an arbitrary pick.
-    private async Task OpenVerseGroup(MergedGroup vg)
-    {
-        var vref = FirstVerseOf(vg.Book, vg.Chapter);
-        if (vref is not null)
-        {
-            await OnOpenVerse.InvokeAsync(vref);
-        }
-    }
-
-    private string? FirstVerseOf(string book, int chapter)
-    {
-        foreach (var e in Place.Events)
-        {
-            foreach (var g in e.VerseGroups)
-            {
-                if (g.Book == book && g.Chapter == chapter && g.Verses.Count > 0)
-                {
-                    return g.Verses[0];
-                }
-            }
-        }
-
-        return null;
-    }
-
-    // The flat, deduped verse-id list the new lead-with-scripture block
-    // renders from -- same merge shape as MergedVerseGroups above (event
-    // order, then each event's own already (book,chapter)-then-verse-number
-    // sorted VerseGroups -- see atlas-core's verse_groups_for), just keeping
-    // the actual capped verse ids instead of collapsing them to a count.
-    // Deduped (a verse can legitimately anchor more than one event at the
-    // same place, e.g. two narrative beats both citing the crossing verse)
-    // so neither a hover-verse-{VREF} testid nor a human ever sees the same
-    // verse twice.
+    // The flat, deduped verse-id list the card renders from -- unchanged
+    // since before this batch: event order, then each event's own already
+    // (book,chapter)-then-verse-number sorted VerseGroups (see atlas-core's
+    // verse_groups_for), deduped (a verse can legitimately anchor more than
+    // one event at the same place, e.g. two narrative beats both citing the
+    // crossing verse) so neither a hover-verse-{VREF} testid nor a human
+    // ever sees the same verse twice. This is the list design-direction.md
+    // and this file have both long called "canonical order" -- Groups()
+    // below groups THIS list's own order, not a fresh sort (see file
+    // header).
     private List<string> MergedVerses()
     {
         var seen = new HashSet<string>();
@@ -181,7 +192,96 @@
         return result;
     }
 
-    private int ShownCount(List<string> verses) => _expanded ? verses.Count : Math.Min(InitialShown, verses.Count);
+    // Splits `verses` into maximal runs of numerically-consecutive same-
+    // book/chapter verses (Requirement 2: "same book+chapter, verse
+    // numbers n, n+1, ..."). Adjacency is checked purely by LIST POSITION
+    // -- see the file header's note on why that's the deliberate reading
+    // of "the scene's activating verse list... canonical order", not a
+    // fresh sort.
+    private static List<VerseRun> Groups(List<string> verses)
+    {
+        var groups = new List<VerseRun>();
+        var i = 0;
+        while (i < verses.Count)
+        {
+            var start = i;
+            var (book, chapter, num) = CanonRef.ParseVerse(verses[i]);
+            i++;
+            while (i < verses.Count)
+            {
+                var next = CanonRef.ParseVerse(verses[i]);
+                if (next.Book != book || next.Chapter != chapter || next.Verse != num + 1)
+                {
+                    break;
+                }
+
+                num = next.Verse;
+                i++;
+            }
+
+            groups.Add(new VerseRun(start, i - start));
+        }
+
+        return groups;
+    }
+
+    // Requirement 2's 4/2-initial rule: up to the first 4 verses of the
+    // FIRST group if it's a passage; otherwise (the first group is a lone
+    // verse -- by construction non-consecutive with whatever comes next)
+    // the first 2 verses of the flat list, "2 non-consecutive verses" per
+    // the brief. Only ever looks at the first group -- a short first
+    // passage never pads out into the second group, a lone first verse
+    // never reaches for a 3rd ("Only the first group (passage) or first
+    // two lone verses appear initially -- never a wall").
+    private static int InitialShownCount(List<string> verses)
+    {
+        if (verses.Count == 0)
+        {
+            return 0;
+        }
+
+        var first = Groups(verses)[0];
+        return first.IsPassage ? Math.Min(PassageInitialMax, first.Length) : Math.Min(LoneInitialMax, verses.Count);
+    }
+
+    // Clips `groups` to however many verses are currently shown: every
+    // group that starts before _shownCount is included, its own Length
+    // clipped down to whatever portion of it is actually visible yet. A
+    // pure function of (groups, shownCount), recomputed fresh every render
+    // -- so a group that's only 1 verse into its reveal renders as a lone
+    // verse now (visible Length 1, IsPassage false) and upgrades to a
+    // passage block automatically once a later click reveals a 2nd verse
+    // of it, with no separate reveal-history state to keep in sync.
+    private static List<VerseRun> VisibleGroups(List<VerseRun> groups, int shownCount)
+    {
+        var visible = new List<VerseRun>();
+        foreach (var g in groups)
+        {
+            if (g.Start >= shownCount)
+            {
+                break;
+            }
+
+            visible.Add(new VerseRun(g.Start, Math.Min(g.Length, shownCount - g.Start)));
+        }
+
+        return visible;
+    }
+
+    // The single ref label for a passage block (Requirement 2: "one ref
+    // label for the block (span form, e.g. GEN.12.1-4)"). first/last are
+    // always same book+chapter by construction (Groups only ever runs
+    // within one book+chapter) -- reflects only whatever portion of the
+    // underlying group is currently visible, so a partially-revealed 8-verse
+    // passage shown 4-deep correctly spans "...1-4", not "...1-8".
+    private static string SpanRef(string firstVref, string lastVref)
+    {
+        var first = CanonRef.ParseVerse(firstVref);
+        var last = CanonRef.ParseVerse(lastVref);
+        return $"{first.Book}.{first.Chapter}.{first.Verse}-{last.Verse}";
+    }
+
+    private static int VerseNumOf(string vref) => CanonRef.ParseVerse(vref).Verse;
 
     private string VerseText(string vref) => _verseText.TryGetValue(vref, out var text) ? text : "";
 
@@ -193,10 +293,11 @@
     // deliberate: Blazor renders once synchronously right after parameters
     // are applied and this method's synchronous prefix runs, THEN again
     // when the awaited task completes -- so the place name and every
-    // hover-verse-{VREF} ref (MergedVerses/ShownCount are pure, synchronous)
-    // paint immediately, and VerseText(vref) simply reads "" until the
-    // second render fills it in. Same pattern ExplorerPopover's
-    // OnInitializedAsync/LoadCurrent already relies on for its own body.
+    // hover-verse-{VREF}/hover-passage-{SPAN} ref (MergedVerses/Groups/
+    // VisibleGroups are pure, synchronous) paint immediately, and
+    // VerseText(vref) simply reads "" until the second render fills it in.
+    // Same pattern ExplorerPopover's OnInitializedAsync/LoadCurrent already
+    // relies on for its own body.
     protected override async Task OnParametersSetAsync()
     {
         if (Place.Id == _lastPlaceId)
@@ -205,23 +306,52 @@
         }
 
         _lastPlaceId = Place.Id;
-        _expanded = false;
         _verseText.Clear();
-        await LoadChaptersFor(MergedVerses().Take(InitialShown));
+        var verses = MergedVerses();
+        _initialShownCount = InitialShownCount(verses);
+        _shownCount = _initialShownCount;
+        await LoadChaptersFor(verses.Take(_shownCount));
     }
 
-    private async Task Expand()
+    // place-card-more: reveals the next chunk. Step size is +5 if the next
+    // not-yet-shown verse belongs to a passage-sized group (Length >= 2,
+    // "...continuing inside a passage" -- true whether that group was
+    // already partway open or this click starts it fresh, the two read the
+    // same from here), +2 if it's a lone verse's group -- Requirement 2's
+    // 5/2-step rule. A flat verse-count step, not capped at the group's own
+    // remaining length, so one click can finish a passage and spill into
+    // the next group's first verse or two in the same step; see
+    // VisibleGroups' own comment for why that's safe to render.
+    private async Task ShowMore()
     {
-        _expanded = true;
-        await LoadChaptersFor(MergedVerses().Skip(InitialShown));
+        var verses = MergedVerses();
+        if (_shownCount >= verses.Count)
+        {
+            return;
+        }
+
+        var group = Groups(verses).First(g => _shownCount >= g.Start && _shownCount < g.Start + g.Length);
+        var step = group.IsPassage ? PassageStep : LoneStep;
+        var oldShown = _shownCount;
+        _shownCount = Math.Min(_shownCount + step, verses.Count);
+        await LoadChaptersFor(verses.Skip(oldShown).Take(_shownCount - oldShown));
     }
 
-    // Resolves every (book, chapter) pair the given verses span (usually
-    // one) via AtlasClient's own Chapter LRU cache -- a hover that
-    // revisits a place, or an expand that reopens a chapter InitialShown
-    // already touched, never re-hits the network. Populates every verse
-    // FROM each fetched chapter, not just the ones asked for: harmless
-    // (VerseText only ever reads keys it knows to look up) and means two
+    // place-card-collapse: snaps back to the initial 4/2-count state in one
+    // click (Requirement 2's up-arrow rule) -- no fetch needed, every verse
+    // in the initial range was already loaded by OnParametersSetAsync (or
+    // an earlier ShowMore).
+    private void Collapse()
+    {
+        _shownCount = _initialShownCount;
+    }
+
+    // Resolves every (book, chapter) pair the given verses span via
+    // AtlasClient's own Chapter LRU cache -- a hover that revisits a place,
+    // or a show-more that reopens a chapter an earlier step already
+    // touched, never re-hits the network. Populates every verse FROM each
+    // fetched chapter, not just the ones asked for: harmless (VerseText
+    // only ever reads keys it knows to look up) and means several
     // requested verses sharing a chapter cost exactly one fetch.
     private async Task LoadChaptersFor(IEnumerable<string> vrefs)
     {
