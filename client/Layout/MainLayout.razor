@@ -36,7 +36,7 @@
 @if (_showAttribution)
 {
     <div class="popover-backdrop" data-testid="popover-backdrop" @onclick="CloseAttribution"></div>
-    <div class="popover" data-testid="popover" tabindex="-1" @onkeydown="OnAttributionKeyDown">
+    <div class="popover" data-testid="popover" tabindex="-1" @ref="_panelRef" @onkeydown="OnAttributionKeyDown">
         <div class="popover-head">
             <p class="popover-title" data-testid="popover-title" data-ref="false">Credits &amp; Attribution</p>
             <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" @onclick="CloseAttribution">&times;</button>
@@ -66,7 +66,18 @@
     private string HeaderThemeClass => IsWorld ? "header-dusk" : "header-parchment";
 
     private bool _showAttribution;
-    private void ToggleAttribution() => _showAttribution = !_showAttribution;
+    private bool _focusPending;
+    private ElementReference _panelRef;
+
+    private void ToggleAttribution()
+    {
+        _showAttribution = !_showAttribution;
+        if (_showAttribution)
+        {
+            _focusPending = true;
+        }
+    }
+
     private void CloseAttribution() => _showAttribution = false;
 
     private void OnAttributionKeyDown(KeyboardEventArgs e)
@@ -74,6 +85,39 @@
         if (e.Key == "Escape")
         {
             CloseAttribution();
+        }
+    }
+
+    // Fix round 1 (M1): mirrors ExplorerPopover's FocusAsync-after-open
+    // exactly (@ref + tabindex="-1" on the panel, FocusAsync in
+    // OnAfterRenderAsync, non-fatal try/catch) -- without it, the Credits
+    // button keeps DOM focus after its own click (standard browser
+    // behavior), so Escape's keydown never reaches this popover's
+    // @onkeydown at all. One necessary adaptation from ExplorerPopover's
+    // own version: ExplorerPopover gets a brand-new component instance per
+    // "opening" (Reader.razor's @key), so a focus-once-ever bool is
+    // correct there. MainLayout is the persistent layout -- it is never
+    // recreated across navigations -- so "have we focused yet" has to be
+    // re-armed on every open rather than spent permanently after the
+    // first; ToggleAttribution sets _focusPending on each open, and this
+    // clears it after the resulting render actually focuses the panel.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_focusPending)
+        {
+            return;
+        }
+
+        _focusPending = false;
+        try
+        {
+            await _panelRef.FocusAsync();
+        }
+        catch (Exception)
+        {
+            // Non-fatal -- focus is a nicety (keyboard Escape-to-close, a
+            // visible focus ring on open), never load-bearing for the
+            // popover's own functionality.
         }
     }
 
