@@ -19,7 +19,7 @@
 //! trust class scene composition relies on).
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookMeta, Era, Event, Narrative};
+use atlas_core::data::{BookMeta, Era, Event, Landmark, Narrative};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -133,9 +133,44 @@ pub fn parse_events_extra(input: &str) -> Result<Vec<Event>> {
     Ok(out)
 }
 
+#[derive(Deserialize)]
+struct LandmarkToml {
+    name: String,
+    kind: String,
+    lat: f64,
+    lon: f64,
+}
+
+#[derive(Deserialize)]
+struct LandmarksFile {
+    landmark: Vec<LandmarkToml>,
+}
+
+/// Parses `landmarks.toml` (schema: `[[landmark]]` with `name`/`kind`/
+/// `lat`/`lon`). Pure — does not validate `kind` against the allowed enum
+/// or check `lat`/`lon` against the clip bbox; that's
+/// `validate::run_landmarks`'s job (needs the bbox, which this module
+/// doesn't own), matching the brief's "curated::parse_landmarks (pure) ->
+/// validate" pipeline.
+pub fn parse_landmarks(input: &str) -> Result<Vec<Landmark>> {
+    let f: LandmarksFile =
+        toml::from_str(input).context("landmarks.toml: invalid TOML or does not match the [[landmark]] schema")?;
+    Ok(f.landmark.into_iter().map(|l| Landmark { name: l.name, kind: l.kind, lat: l.lat, lon: l.lon }).collect())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_landmarks_reads_valid_toml() {
+        let landmarks = parse_landmarks(include_str!("../tests/fixtures/landmarks-sample.toml")).unwrap();
+        assert_eq!(landmarks.len(), 3);
+        let jordan = landmarks.iter().find(|l| l.name == "Jordan River").unwrap();
+        assert_eq!(jordan.kind, "water");
+        assert_eq!(jordan.lat, 31.76);
+        assert_eq!(jordan.lon, 35.55);
+    }
 
     #[test]
     fn expand_verse_ref_handles_single_and_range() {

@@ -6,14 +6,20 @@
 //! `data/compiled/*.json` + `report.txt`. Run as `cargo run -p atlas-etl`
 //! from `server/` (paths below are relative to that working directory).
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 use atlas_core::data::AtlasData;
 use atlas_etl::report::{Counts, Report};
-use atlas_etl::{curated, geo, kjv, report, theographic, validate, xrefs};
+use atlas_etl::{borders, curated, geo, kjv, report, theographic, validate, xrefs};
+
+/// Douglas-Peucker epsilon (degrees) for border-snapshot simplification —
+/// within the batch brief's suggested ~0.01-0.02 range; chosen at the top
+/// of that range after comparing simplification yield at 0.015 vs 0.02
+/// against the real fetched snapshots (see the batch report).
+const BORDER_SIMPLIFY_EPSILON: f64 = 0.02;
 
 fn main() -> Result<()> {
     // Built from components (not a literal "../data/raw" string) so joined
@@ -136,6 +142,17 @@ fn main() -> Result<()> {
     let data = AtlasData::new(canon, all_places, all_events, narratives, eras, books_meta, verses, xrefs_map).finish();
     validate::run(&data).context("data/compiled/* was NOT written; fix data/curated/ and re-run")?;
 
+    // --- data/raw/borders/ (historical border snapshots) -----------------
+    // Everything here is computed BEFORE any file is written, same
+    // all-or-nothing property `validate::run` above already gives the core
+    // eight files — a bad snapshot or a bad landmarks.toml must not leave a
+    // half-written data/compiled/ behind.
+    let (compiled_borders, border_snapshots) = process_border_snapshots(&raw_dir.join("borders"))?;
+
+    let landmarks = curated::parse_landmarks(&read(&curated_dir.join("landmarks.toml"))?)?;
+    validate::run_landmarks(&landmarks, &borders::BIBLICAL_WORLD_BBOX)
+        .context("data/compiled/landmarks.json was NOT written; fix data/curated/landmarks.toml and re-run")?;
+
     // --- write compiled output ------------------------------------------
     fs::create_dir_all(&compiled_dir).with_context(|| format!("creating {}", compiled_dir.display()))?;
     write_json(&compiled_dir.join("canon.json"), &data.canon)?;
@@ -147,6 +164,14 @@ fn main() -> Result<()> {
     write_json(&compiled_dir.join("verses-kjv.json"), &data.verses)?;
     write_json(&compiled_dir.join("cross-refs.json"), &data.cross_refs)?;
 
+    let compiled_borders_dir = compiled_dir.join("borders");
+    fs::create_dir_all(&compiled_borders_dir).with_context(|| format!("creating {}", compiled_borders_dir.display()))?;
+    for (year, geojson) in &compiled_borders {
+        write_json(&compiled_borders_dir.join(format!("{year}.json")), geojson)?;
+    }
+    write_json(&compiled_dir.join("borders-index.json"), &borders::sorted_years(&compiled_borders))?;
+    write_json(&compiled_dir.join("landmarks.json"), &landmarks)?;
+
     let rpt = Report {
         counts,
         pct_events_dated,
@@ -157,12 +182,54 @@ fn main() -> Result<()> {
         xref_dropped_unparseable: xref_stats.dropped_unparseable,
         xref_dropped_self: xref_stats.dropped_self,
         xref_dropped_missing_first_verse,
+        border_snapshots,
+        landmarks_count: landmarks.len(),
     };
     let text = report::write(&rpt);
     fs::write(compiled_dir.join("report.txt"), &text).context("writing data/compiled/report.txt")?;
     print!("{text}");
 
     Ok(())
+}
+
+/// Reads every `*.geojson` snapshot under `borders_raw_dir` (sorted by
+/// filename for a deterministic processing order — the report's own
+/// per-year lines are re-sorted by parsed year afterward, since filename
+/// order and numeric-year order aren't the same thing, e.g.
+/// "world_bc100.geojson" < "world_bc1000.geojson" lexicographically despite
+/// -100 being the LATER year), clips + simplifies each one via
+/// `borders::process_snapshot`, and returns the compiled year->GeoJSON map
+/// alongside per-snapshot stats for the report. Fatal (bubbles up
+/// `borders::process_snapshot`'s own errors — unparseable snapshot, or zero
+/// features surviving the clip) on any bad snapshot, and fatal if the
+/// directory is missing/empty (nothing to compile at all).
+fn process_border_snapshots(borders_raw_dir: &Path) -> Result<(BTreeMap<i32, serde_json::Value>, Vec<borders::SnapshotStats>)> {
+    let mut paths: Vec<PathBuf> = fs::read_dir(borders_raw_dir)
+        .with_context(|| format!("reading directory {} -- run data/fetch-raw.ps1", borders_raw_dir.display()))?
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| p.extension().is_some_and(|ext| ext == "geojson"))
+        .collect();
+    paths.sort();
+    if paths.is_empty() {
+        bail!("{} contains no *.geojson snapshots -- run data/fetch-raw.ps1", borders_raw_dir.display());
+    }
+
+    let mut compiled = BTreeMap::new();
+    let mut stats = Vec::with_capacity(paths.len());
+    for path in &paths {
+        let stem = path.file_stem().and_then(|s| s.to_str()).with_context(|| format!("non-UTF8 filename {}", path.display()))?;
+        let year = borders::parse_snapshot_year(stem).with_context(|| format!("parsing snapshot year from {}", path.display()))?;
+        let content = read(path)?;
+        let (geojson, snap_stats) = borders::process_snapshot(&content, year, &borders::BIBLICAL_WORLD_BBOX, BORDER_SIMPLIFY_EPSILON)
+            .with_context(|| format!("processing border snapshot {}", path.display()))?;
+        if compiled.insert(year, geojson).is_some() {
+            bail!("duplicate border snapshot year {year} (from {}) — two raw files map to the same year", path.display());
+        }
+        stats.push(snap_stats);
+    }
+    stats.sort_by_key(|s| s.year);
+    Ok((compiled, stats))
 }
 
 fn read(path: &Path) -> Result<String> {
@@ -222,6 +289,10 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
             .unwrap_or(false);
     if !has_narrative_files {
         missing.push(format!("{} (expected one or more *.toml narrative files)", narratives_dir.display()));
+    }
+    let landmarks_path = curated_dir.join("landmarks.toml");
+    if !landmarks_path.is_file() {
+        missing.push(format!("{}", landmarks_path.display()));
     }
 
     if missing.is_empty() {

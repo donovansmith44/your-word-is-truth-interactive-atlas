@@ -1,0 +1,17 @@
+[[landmark]]
+name = "Jordan River"
+kind = "water"
+lat = 31.76
+lon = 35.55
+
+[[landmark]]
+name = "Mount Sinai"
+kind = "mountain"
+lat = 28.54
+lon = 33.97
+
+[[landmark]]
+name = "Negev"
+kind = "region"
+lat = 31.24
+lon = 34.84

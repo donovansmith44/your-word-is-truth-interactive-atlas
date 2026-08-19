@@ -26,12 +26,19 @@
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{bail, Result};
-use atlas_core::data::{AtlasData, Era, Event};
+use atlas_core::data::{AtlasData, Era, Event, Landmark};
 use atlas_core::refs::VerseId;
 use atlas_core::time::next_year;
 
+use crate::borders::Bbox;
+
 const ATLAS_START_YEAR: i32 = -4004;
 const ATLAS_END_YEAR: i32 = 100;
+
+/// The curated `kind` values `landmarks.toml` may use (design-direction.md's
+/// Atlas plate detail: water names styled italic/lapis, mountain/region
+/// names styled letterspaced small caps).
+const ALLOWED_LANDMARK_KINDS: [&str; 3] = ["water", "mountain", "region"];
 
 pub fn run(data: &AtlasData) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
@@ -92,6 +99,36 @@ pub fn run(data: &AtlasData) -> Result<()> {
     }
     let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
     bail!("validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// Validates curated landmarks (`data/curated/landmarks.toml`, parsed
+/// separately by `curated::parse_landmarks` — see that function's doc
+/// comment for why this is a distinct pipeline step): every `kind` must be
+/// one of [`ALLOWED_LANDMARK_KINDS`], and every `(lat, lon)` must fall
+/// inside `bbox` (a landmark the map is locked away from ever showing is a
+/// curation bug, not a fact worth silently keeping). Collects every
+/// violation before failing, same aggregate-don't-fail-fast policy as
+/// [`run`].
+pub fn run_landmarks(landmarks: &[Landmark], bbox: &Bbox) -> Result<()> {
+    let mut errors: Vec<String> = Vec::new();
+
+    for l in landmarks {
+        if !ALLOWED_LANDMARK_KINDS.contains(&l.kind.as_str()) {
+            errors.push(format!(
+                "landmark '{}' has invalid kind '{}' (expected one of {:?})",
+                l.name, l.kind, ALLOWED_LANDMARK_KINDS
+            ));
+        }
+        if !bbox.contains(l.lat, l.lon) {
+            errors.push(format!("landmark '{}' at (lat={}, lon={}) is outside the clip bbox", l.name, l.lat, l.lon));
+        }
+    }
+
+    if errors.is_empty() {
+        return Ok(());
+    }
+    let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("landmark validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
 fn check_duplicate_ids<'a>(ids: impl Iterator<Item = &'a str>, kind: &str, errors: &mut Vec<String>) {

@@ -322,6 +322,114 @@ Notes:
 
 ---
 
+## Borders — `aourednik/historical-basemaps` (historical border snapshots)
+
+Fetched by the "Historical border snapshots" block in `fetch-raw.ps1`, added
+2026-08-19 for the time-period-accurate borders feature. 12 GeoJSON files
+into `data/raw/borders/`, verified against the repo's real GitHub tree
+(`api.github.com/repos/aourednik/historical-basemaps/git/trees/master?recursive=1`)
+before picking them — the repo ships 53 `geojson/world_*.geojson` snapshots
+total, spanning `world_bc123000.geojson` (123,000 BC) through
+`world_2010.geojson` (AD 2010); filenames are `world_bc{N}.geojson` (year
+`-N`) or `world_{N}.geojson` (year `N`, always positive in this repo — there
+is no `world_0.geojson`).
+
+**Chosen 12** (covering/nearest atlas-etl's `[-4004,100]` span; the earliest,
+`bc4000`, is 4 years short of the exact span start but is the nearest
+available snapshot, matching the brief's "the earliest available BC snapshot
+covers the deep past"; `world_100` is an exact match for the span's end):
+
+```
+world_bc4000.geojson  (-4000)   world_bc500.geojson (-500)
+world_bc3000.geojson  (-3000)   world_bc323.geojson (-323, Alexander's death)
+world_bc2000.geojson  (-2000)   world_bc200.geojson (-200)
+world_bc1500.geojson  (-1500)   world_bc100.geojson (-100)
+world_bc1000.geojson  (-1000)   world_bc1.geojson   (-1, 1 BC)
+world_bc700.geojson   (-700)    world_100.geojson   (100, AD 100)
+```
+
+Sizes range 786,563–1,185,423 bytes each (~10.7 MB total). Verified real
+snapshot content includes biblically-relevant regions by name at multiple
+years, e.g. `world_bc1000.geojson` contains a feature named `"Kingdom of
+David and Solomon"`; `world_bc1.geojson`/`world_100.geojson` contain
+`"Judea"`; `world_bc323.geojson` contains `"Empire of Alexander"`.
+
+### License — GNU GPL v3.0 (verified against the repo's actual `LICENSE` file)
+
+`https://github.com/aourednik/historical-basemaps` ships a full `LICENSE`
+file containing the standard GPL-3.0 text (verified by fetching it directly,
+not inferred from a repo topic tag). GPL-3.0's copyleft/source-availability
+obligations (providing a corresponding-source offer, licensing derivative
+works under GPL-3.0, etc.) are triggered by **conveying/distributing** the
+work to others — the license places no restriction on private use, local
+modification, or study. Bible Atlas is (per the project's own stack
+decision) a **local, personal, deploy-ready sketch app**, not a distributed
+product — this use (fetch once, clip/simplify at build time via atlas-etl,
+serve locally from `atlas-server`) stays entirely within GPL-3.0's
+unrestricted private-use terms. **Determination: usable, not blocked.**
+Required attribution is carried in two places: this README (source +
+license) and the app's own `attribution` UI element per the header
+CONTRACT — if this project is ever distributed/published beyond local
+personal use, the borders feature would need either GPL-3.0 compliance
+(offering corresponding source, matching license on redistribution) or the
+dataset swapped for a differently-licensed one; out of scope for M1.
+
+**Required attribution**: "Historical border data from [aourednik/historical-basemaps](https://github.com/aourednik/historical-basemaps), GNU GPL v3.0."
+
+### GeoJSON structure (verified against real fetched files, not the repo's prose docs)
+
+Each file is a `FeatureCollection` of `Feature`s; every geometry observed
+across all 12 chosen files (and a handful of others spot-checked) is
+`MultiPolygon` — atlas-etl's parser also accepts a bare `Polygon` per the
+GeoJSON spec (normalizing it to a one-polygon MultiPolygon internally) since
+nothing guarantees every one of the repo's 53 files stays MultiPolygon-only,
+but none of the 12 chosen files exercise that branch. Coordinates are
+`[lon, lat]` pairs (standard GeoJSON order), full `f64` precision (~15
+significant digits — far more than this app's world-scale display needs;
+atlas-etl rounds to 4 decimal places, ~11m, when writing the compiled
+output).
+
+Feature `properties` (the repo's own README documents `NAME`/`SUBJECTO`/
+`PARTOF`/`BORDERPRECISION`; verified present on real records, all
+UPPERCASE):
+
+```
+NAME              country/region name, e.g. "Roman Empire", "Kingdom of David and Solomon";
+                  NULL on many features (unnamed/unclassified regions in the
+                  source dataset -- real, not a parsing bug; e.g. feature[0]
+                  of world_bc323.geojson has NAME: null). atlas-etl keeps
+                  these features (geometry is still valid map content) --
+                  only the CLIENT's landmark labels need real names, and
+                  those come from the separately-curated landmarks.toml, not
+                  from border feature names.
+ABBREVN           short name; also frequently null; not used by atlas-etl.
+CONTROL           null on every record checked; not used by atlas-etl.
+SUBJECTO          colonial power / region name per the repo's README; not used by atlas-etl.
+BORDERPRECISION   ordinal 1 (approximate) .. 3 (legally determined); always
+                  present as an integer (1 on every record checked in the
+                  biblical-world bbox); not used by atlas-etl (M1 renders
+                  every border the same stroke style regardless).
+PARTOF            parent cultural area name if applicable; not used by atlas-etl.
+```
+
+Two of the four older/deep-past files spot-checked (`world_bc4000.geojson`)
+additionally carry `type` and `weblnks` fields not present on the
+later/closer-to-span files (`world_bc323.geojson` etc.) — the schema is not
+perfectly uniform across the repo's 53-file history, confirming the
+hand-parse-via-`serde_json::Value` approach (no fixed properties struct) was
+the right call: atlas-etl's `borders::parse` reads `properties` as an
+untyped JSON object and passes it through to the compiled output unchanged,
+so it tolerates whatever fields any given snapshot happens to carry.
+
+Biblical-world bbox overlap check (lat 7.6..48.9, lon -10.9..71.4, same
+constants `client/wwwroot/js/map.js`'s `BIBLICAL_WORLD_BOUNDS` uses):
+every one of the 12 chosen files has 18–37 features overlapping that box out
+of 136–442 total features in the file (the biblical world sits in the
+Africa-Eurasia landmass all 53 snapshots cover, so this is true across the
+whole dataset, not just the chosen 12) — comfortably nonzero, so
+atlas-etl's "zero features after clipping = fatal" check is a real
+bbox-bug guard, not a check expected to ever legitimately fire on this data.
+
 ## Vendored Leaflet (`client/wwwroot/vendor/leaflet/`)
 
 `leaflet.js` (147,552 bytes) and `leaflet.css` (14,806 bytes), fetched from

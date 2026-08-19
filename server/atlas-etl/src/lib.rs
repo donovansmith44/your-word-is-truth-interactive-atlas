@@ -6,6 +6,7 @@
 //! reads `data/raw/` and `data/curated/`, calls into these modules, merges
 //! the results, validates, and writes `data/compiled/*.json` + report.txt.
 
+pub mod borders;
 pub mod curated;
 pub mod geo;
 pub mod kjv;

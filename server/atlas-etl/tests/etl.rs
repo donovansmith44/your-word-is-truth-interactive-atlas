@@ -361,6 +361,52 @@ fn validate_valid_data_passes() {
 }
 
 // ---------------------------------------------------------------------
+// borders.rs
+// ---------------------------------------------------------------------
+
+#[test]
+fn borders_full_pipeline_and_zero_feature_bbox_is_fatal() {
+    // process_snapshot's own unit tests (server/atlas-etl/src/borders.rs)
+    // already exercise this in detail; this is the "real fixture through
+    // the public API" smoke check consistent with the rest of this file's
+    // one-file-per-module organization.
+    let fixture = include_str!("fixtures/borders-sample.geojson");
+    let bbox = atlas_etl::borders::BIBLICAL_WORLD_BBOX;
+    let (geojson, stats) = atlas_etl::borders::process_snapshot(fixture, -323, &bbox, 0.02).unwrap();
+    assert_eq!(stats.features_kept, 3);
+    assert_eq!(geojson["features"].as_array().unwrap().len(), 3);
+
+    let empty_bbox = atlas_etl::borders::Bbox { south: -80.0, north: -70.0, west: -170.0, east: -160.0 };
+    let err = atlas_etl::borders::process_snapshot(fixture, -323, &empty_bbox, 0.02).unwrap_err();
+    assert!(err.to_string().contains("zero features"), "{err}");
+}
+
+// ---------------------------------------------------------------------
+// landmarks (curated::parse_landmarks + validate::run_landmarks)
+// ---------------------------------------------------------------------
+
+#[test]
+fn landmarks_valid_toml_parses_and_validates() {
+    let landmarks = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-sample.toml")).unwrap();
+    assert_eq!(landmarks.len(), 3);
+    assert!(atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::borders::BIBLICAL_WORLD_BBOX).is_ok());
+}
+
+#[test]
+fn landmarks_bad_kind_fails_validation() {
+    let landmarks = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-bad-kind.toml")).unwrap();
+    let err = atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::borders::BIBLICAL_WORLD_BBOX).unwrap_err();
+    assert!(err.to_string().contains("invalid kind"), "{err}");
+}
+
+#[test]
+fn landmarks_out_of_bbox_fails_validation() {
+    let landmarks = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-out-of-bbox.toml")).unwrap();
+    let err = atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::borders::BIBLICAL_WORLD_BBOX).unwrap_err();
+    assert!(err.to_string().contains("outside the clip bbox"), "{err}");
+}
+
+// ---------------------------------------------------------------------
 // osis.rs
 // ---------------------------------------------------------------------
 
@@ -399,10 +445,22 @@ fn report_contains_expected_sections() {
         xref_dropped_unparseable: 1,
         xref_dropped_self: 1,
         xref_dropped_missing_first_verse: 2,
+        border_snapshots: vec![atlas_etl::borders::SnapshotStats {
+            year: -323,
+            features_in: 149,
+            features_kept: 29,
+            points_before_simplify: 4410,
+            points_after_simplify: 3725,
+        }],
+        landmarks_count: 19,
     };
     let text = atlas_etl::report::write(&report);
     assert!(text.contains("66"), "{text}");
     assert!(text.contains("exodus"), "{text}");
     assert!(text.contains("antioch-2"), "{text}");
     assert!(text.contains("unknown write_place"), "{text}");
+    assert!(text.contains("-323"), "{text}"); // border snapshot year
+    assert!(text.contains("29 features kept"), "{text}");
+    assert!(text.contains("point reduction"), "{text}");
+    assert!(text.contains("19 curated landmarks"), "{text}");
 }

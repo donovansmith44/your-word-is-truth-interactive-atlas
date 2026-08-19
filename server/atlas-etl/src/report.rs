@@ -4,6 +4,8 @@
 
 use std::fmt::Write as _;
 
+use crate::borders::SnapshotStats;
+
 #[derive(Debug, Clone, Default)]
 pub struct Counts {
     pub canon_books: usize,
@@ -32,6 +34,9 @@ pub struct Report {
     pub xref_dropped_unparseable: usize,
     pub xref_dropped_self: usize,
     pub xref_dropped_missing_first_verse: usize,
+    /// Per-snapshot border stats, sorted by year (see `borders::process_snapshot`).
+    pub border_snapshots: Vec<SnapshotStats>,
+    pub landmarks_count: usize,
 }
 
 fn write_list(s: &mut String, lines: &[String]) {
@@ -84,6 +89,28 @@ pub fn write(r: &Report) -> String {
 
     writeln!(s, "Warnings:").unwrap();
     write_list(&mut s, &r.warnings);
+    writeln!(s).unwrap();
+
+    writeln!(s, "Border snapshots ({} years):", r.border_snapshots.len()).unwrap();
+    let mut points_before = 0usize;
+    let mut points_after = 0usize;
+    for snap in &r.border_snapshots {
+        writeln!(
+            s,
+            "  {}: {} features kept (of {} in the raw snapshot), {} -> {} points",
+            snap.year, snap.features_kept, snap.features_in, snap.points_before_simplify, snap.points_after_simplify
+        )
+        .unwrap();
+        points_before += snap.points_before_simplify;
+        points_after += snap.points_after_simplify;
+    }
+    let point_reduction_pct = if points_before == 0 { 0.0 } else { 100.0 * (1.0 - points_after as f64 / points_before as f64) };
+    writeln!(s, "  total point reduction from simplification: {point_reduction_pct:.1}% ({points_before} -> {points_after})")
+        .unwrap();
+    writeln!(s).unwrap();
+
+    writeln!(s, "Landmarks:").unwrap();
+    writeln!(s, "  {} curated landmarks compiled", r.landmarks_count).unwrap();
 
     s
 }
