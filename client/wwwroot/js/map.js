@@ -427,6 +427,76 @@ const ZOOM_TIER_MID = 6;
 const ZOOM_TIER_NEAR = 9;
 const BRIGHT_LABEL_MIN = 4;
 
+// Fix round 1 (M1 -- review finding: "zoom-tiered label density does not
+// prevent local label collision; the new default view is visibly
+// cluttered"). Zoom tiering alone only answers "how MANY labels are
+// allowed at this zoom" -- it says nothing about whether the survivors
+// actually fit without stacking on each other, which is exactly what broke
+// on the Gospels-era default view (a dense scene landing in the MID/NEAR
+// tier, where "every lit place's label" is allowed at once): Bethsaida,
+// Chorazin, Capernaum, Cana, Nazareth, Nain, Sea of Galilee (landmark),
+// Galilee and Decapolis (region landmarks) all within a few km of each
+// other, PLUS "Mount Hermon" rendering TWICE -- once as a place label
+// (DEU.3.8 etc. light it in some windows -- see places.json's "mount-
+// hermon") and once as a landmark label (landmarks.toml), both at the
+// identical lat/lon. Two independent, ORTHOGONAL passes fix this, both
+// re-run every time applyLabelTier runs (zoomend/setScene/setLandmarks --
+// "re-bucket on zoom change" falls out of that for free, no new listener):
+//
+// (a) DEDUPE -- a landmark whose NAME matches a currently-LIT place's name
+//     AND whose position is within LANDMARK_DEDUPE_KM of it is the exact
+//     same real-world feature described twice by two independent curated
+//     datasets. Rule: the PLACE wins, always, while it's lit -- it's the
+//     more foreground, more authoritative representation (interactive,
+//     glowing, backed by real verse events -- design-direction.md already
+//     ranks landmarks "a visual step below place labels so scripture's
+//     places stay the foreground"), so the landmark is suppressed outright
+//     the whole time its real-world twin is lit, regardless of whether the
+//     place's OWN label is tier-visible at this exact zoom (showing the
+//     landmark alone the moment the place's label happens to be tier-
+//     hidden would just trade one inconsistency for another, less legible
+//     one -- a name that's ACTIVE right now reading in the "decorative,
+//     never glows" landmark style). LANDMARK_DEDUPE_KM, not exact
+//     coordinate equality: nudgeCloseLatLng (this file) can move a place's
+//     rendered position up to NUDGE_STEP_DEG away from its curated
+//     original when another LIT PLACE (not landmarks -- nudging never
+//     looks at landmarks at all) crowds the same spot, which a same-point-
+//     only check would miss.
+//
+// (b) COLLISION DAMPING -- even after dedupe, DIFFERENT labels with no
+//     name in common at all (Bethsaida/Chorazin/Cana/Nazareth) can still
+//     crowd the same few square pixels at the same tier. Every label that
+//     survives its own tier+dedupe check this pass is bucketed into a
+//     COLLISION_CELL_PX square grid keyed off its own on-screen anchor
+//     point (map.latLngToContainerPoint, so this is naturally zoom/pan-
+//     aware already) -- the same coarse-grid-over-exact-geometry
+//     philosophy ArrowLayer.setArrows's own clusterKey already uses for
+//     crowded arrow bundles, not a real text-bbox intersection test
+//     (cheap, approximate, good enough at this label density; two labels
+//     can rarely still nudge up against a cell-boundary neighbor -- same
+//     known trade-off clusterKey already accepts, see its own comment).
+//     Only the HIGHEST-PRIORITY label in a contested cell survives this
+//     pass; every other claimant is hidden (never removed -- spread back
+//     out by a later zoom/pan, it reclaims its cell on the next call).
+//     Priority, highest first: any PLACE label (brighter beats dimmer, via
+//     PLACE_PRIORITY_BASE + brightness, so even the dimmest visible place
+//     still outranks every landmark) > landmark labels ranked by kind
+//     (water > mountain > region -- water names are the coarsest, most
+//     orienting labels on the plate, the same reason water is the only
+//     landmark kind that survives the FAR tier at all). Polity labels
+//     (BorderLayer, its own pane/layer) are deliberately OUTSIDE this pass
+//     -- they already have an independent declutter mechanism (size-tier +
+//     on-screen-fraction, see BorderLayer._positionLabel) and are
+//     inherently sparse (one per historical border FEATURE, not per city);
+//     no concrete polity/place or polity/landmark collision was ever
+//     observed in review, so this stays scoped to the two label kinds the
+//     actual reported clutter (Galilee cluster, Mount Hermon dup) came
+//     from rather than a speculative cross-layer rewrite.
+const LANDMARK_DEDUPE_KM = 5; // == CLOSE_THRESHOLD_KM's own "same real-world spot" radius (see that constant's own comment) -- a coincidence of purpose, not a shared constant, so the two stay independently tunable
+const COLLISION_CELL_PX = 72; // picked by screenshot review (see batch report) against real rendered label widths at .atlas-label's .78rem / .landmark-label's .68rem (app.css)
+const PLACE_PRIORITY_BASE = 1000; // + brightness (1-5): unconditionally beats every landmark's own 0-2 priority below
+const LANDMARK_KIND_PRIORITY = { water: 2, mountain: 1, region: 0 };
+
 function labelTier(zoom) {
     if (zoom >= ZOOM_TIER_NEAR) {
         return 'near';
@@ -440,6 +510,18 @@ function labelTier(zoom) {
 // on a mini instance (mini has no landmarkMarkers/zoomend listener to begin
 // with, but this guard makes the function safe to call unconditionally
 // regardless).
+//
+// Fix round 1 (M1): now THREE passes, not one -- see the DEDUPE/COLLISION
+// DAMPING comment above this file's LANDMARK_DEDUPE_KM etc. constants for
+// the full rule. (1) decide each label's own tier+dedupe visibility exactly
+// as before, hiding it immediately (and finally, for this pass) the moment
+// it fails either check; (2) collect every SURVIVOR -- places and
+// landmarks together, collision has to see both to damp one kind against
+// the other, not just within each kind separately -- into one shared
+// `candidates` list; (3) grid-bucket `candidates` and hide every cell's
+// non-winners. Markers (the lamp dots) are never touched by any of the
+// three passes -- only ever a place's `.atlas-label` child or a landmark's
+// own element (which IS just its label; landmarks have no separate dot).
 function applyLabelTier(inst) {
     if (!inst || inst.mini) {
         return;
@@ -447,24 +529,86 @@ function applyLabelTier(inst) {
 
     const tier = labelTier(inst.map.getZoom());
 
+    // Every currently-lit place's name/position, for the landmark dedupe
+    // check below -- "lit" means present in inst.markers at all (see
+    // setScene's own doc comment), independent of whether ITS OWN label
+    // happens to be tier-visible right now (see the dedupe rule's own
+    // comment above the constants for why: the place wins outright
+    // whenever lit, not only while its own label is currently showing).
+    const litByName = new Map(); // slugify(name) -> [{lat, lon}, ...]
+    for (const entry of inst.markers.values()) {
+        const slug = slugify(entry.name);
+        const list = litByName.get(slug);
+        if (list) {
+            list.push(entry);
+        } else {
+            litByName.set(slug, [entry]);
+        }
+    }
+
+    // Every label that cleared its own tier+dedupe check, still competing
+    // for a grid cell: { el, x, y, priority }.
+    const candidates = [];
+
     for (const entry of inst.markers.values()) {
         const el = entry.marker.getElement();
         const label = el && el.querySelector('.atlas-label');
         if (!label) {
             continue;
         }
-        const show = tier !== 'far' || entry.brightness >= BRIGHT_LABEL_MIN;
-        label.style.display = show ? '' : 'none';
+        const tierShow = tier !== 'far' || entry.brightness >= BRIGHT_LABEL_MIN;
+        if (!tierShow) {
+            label.style.display = 'none';
+            continue;
+        }
+        const pt = inst.map.latLngToContainerPoint([entry.lat, entry.lon]);
+        candidates.push({ el: label, x: pt.x, y: pt.y, priority: PLACE_PRIORITY_BASE + entry.brightness });
     }
 
-    for (const { marker, kind } of inst.landmarkMarkers) {
-        const el = marker.getElement();
+    for (const lm of inst.landmarkMarkers) {
+        const el = lm.marker.getElement();
         if (!el) {
             continue;
         }
-        const show = tier === 'near' || kind === 'water' || (tier === 'mid' && kind === 'mountain');
-        el.style.display = show ? '' : 'none';
+        const tierShow = tier === 'near' || lm.kind === 'water' || (tier === 'mid' && lm.kind === 'mountain');
+        if (!tierShow || isDedupedByLitPlace(lm, litByName)) {
+            el.style.display = 'none';
+            continue;
+        }
+        const pt = inst.map.latLngToContainerPoint([lm.lat, lm.lon]);
+        candidates.push({ el, x: pt.x, y: pt.y, priority: LANDMARK_KIND_PRIORITY[lm.kind] ?? 0 });
     }
+
+    // Highest priority first (stable sort -- Array.prototype.sort has been
+    // spec-guaranteed stable since ES2019, every engine this app targets --
+    // so same-priority candidates keep their original map-iteration order,
+    // places before landmarks, rather than reshuffling nondeterministically
+    // redraw to redraw); the first claimant of a cell wins it, every later
+    // claimant of the SAME cell is hidden for this pass.
+    candidates.sort((a, b) => b.priority - a.priority);
+    const claimedCells = new Set();
+    for (const c of candidates) {
+        const cellKey = `${Math.round(c.x / COLLISION_CELL_PX)},${Math.round(c.y / COLLISION_CELL_PX)}`;
+        if (claimedCells.has(cellKey)) {
+            c.el.style.display = 'none';
+        } else {
+            claimedCells.add(cellKey);
+            c.el.style.display = '';
+        }
+    }
+}
+
+// See applyLabelTier's own DEDUPE comment (above this file's
+// LANDMARK_DEDUPE_KM constant) for the full rule. `litByName` is keyed by
+// slugify(name) -- the same normalization the landmark-{slug}/polity-
+// label-{slug} testids already use, not a fresh string-compare, so name
+// pairs differing only in case/punctuation still dedupe correctly.
+function isDedupedByLitPlace(landmark, litByName) {
+    const list = litByName.get(slugify(landmark.name));
+    if (!list) {
+        return false;
+    }
+    return list.some(p => approxKm(landmark.lat, landmark.lon, p.lat, p.lon) <= LANDMARK_DEDUPE_KM);
 }
 
 function esc(value) {
@@ -590,14 +734,17 @@ export function setLandmarks(id, landmarksJson) {
     for (const { marker } of inst.landmarkMarkers) {
         inst.map.removeLayer(marker);
     }
-    // `kind` travels alongside its marker (not re-read from the DOM) so
-    // applyLabelTier's zoom-tier decision (water/mountain shown from MID,
-    // region only from NEAR -- see its own comment) doesn't need a
-    // round-trip through the rendered icon's own data-kind attribute.
+    // `kind`/`name`/`lat`/`lon` travel alongside the marker (not re-read
+    // from the DOM) so applyLabelTier's zoom-tier decision (water/mountain
+    // shown from MID, region only from NEAR -- see its own comment) and its
+    // dedupe + collision-damping passes (Fix round 1 / M1 -- see the
+    // LANDMARK_DEDUPE_KM/COLLISION_CELL_PX comment) don't need a round-trip
+    // through the rendered icon's own data-kind attribute or a second
+    // Leaflet getLatLng() call every redraw.
     inst.landmarkMarkers = landmarks.map(l => {
         const marker = L.marker([l.lat, l.lon], { icon: makeLandmarkIcon(l), interactive: false, pane: 'landmarksPane' });
         marker.addTo(inst.map);
-        return { marker, kind: l.kind };
+        return { marker, kind: l.kind, name: l.name, lat: l.lat, lon: l.lon };
     });
     applyLabelTier(inst);
 }
