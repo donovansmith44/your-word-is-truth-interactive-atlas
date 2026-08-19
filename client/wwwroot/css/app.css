@@ -193,6 +193,14 @@ input:focus-visible,
     font-size: 0.8rem;
     color: var(--header-fg-soft, var(--ink-soft));
     opacity: 0.85;
+    /* Task 16: now a <button> (it opens the credits popover rather than
+       navigating), so reset the button-chrome browser defaults a plain <a>
+       never had -- background/border/padding/cursor -- to keep it looking
+       exactly like the plain text link it always was. */
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
 }
 
 .attribution:hover {
@@ -1607,6 +1615,27 @@ input:focus-visible,
     margin: 0;
     font-size: 1.1rem;
     line-height: 1.7;
+}
+
+/* Task 16: the attribution/credits popover's source list (MainLayout.razor).
+   A plain reading list, not instrument-readout data -- no mono, no
+   small-caps -- just quieter than ordinary popover-body prose since it's
+   reference material, not narrative content. */
+.attribution-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    font-size: .88rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+}
+
+.attribution-list strong {
+    color: var(--ink);
+    font-weight: 600;
 }
 
 .popover-meta {

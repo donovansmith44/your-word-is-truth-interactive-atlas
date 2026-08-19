@@ -15,13 +15,46 @@
         <select id="translation-select" class="translation-select" data-testid="translation-select">
             <option value="kjv">KJV</option>
         </select>
-        <a class="attribution" href="#" data-testid="attribution">Credits</a>
+        <button type="button" class="attribution" data-testid="attribution" @onclick="ToggleAttribution">Credits</button>
     </div>
 </header>
 
 <main class="app-main">
     @Body
 </main>
+
+@* Task 16: attribution content. Reuses the shared parchment popover
+   pattern (design-direction.md: "One popover style everywhere") via its
+   existing, already-shared testids/classes (popover/popover-backdrop/
+   popover-title/popover-close — see ExplorerPopover.razor and CONTRACT.md's
+   "Popover (shared)" list) rather than pulling this static, non-explorable
+   content through the IExplorable/AtlasClient machinery ExplorerPopover is
+   built around: there's nothing here to fetch, push, or drill into, so a
+   minimal disclosure (backdrop click / Close button / Escape all close it)
+   is the honest fit, not a fourth IExplorable node type invented for one
+   static panel. No new CONTRACT testids are introduced. *@
+@if (_showAttribution)
+{
+    <div class="popover-backdrop" data-testid="popover-backdrop" @onclick="CloseAttribution"></div>
+    <div class="popover" data-testid="popover" tabindex="-1" @onkeydown="OnAttributionKeyDown">
+        <div class="popover-head">
+            <p class="popover-title" data-testid="popover-title" data-ref="false">Credits &amp; Attribution</p>
+            <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" @onclick="CloseAttribution">&times;</button>
+        </div>
+        <div class="popover-body">
+            <ul class="attribution-list">
+                <li><strong>KJV</strong> — the King James Version text. Public domain.</li>
+                <li><strong>OpenBible.info</strong> — place geocoding and cross-references. CC-BY 4.0, openbible.info.</li>
+                <li><strong>Theographic Bible Metadata</strong> — people, place, and event data. CC BY-SA 4.0, Robert Rouse.</li>
+                <li><strong>aourednik/historical-basemaps</strong> — historical border snapshots. GPL-3.0. Boundaries are approximate scholarly reconstructions.</li>
+                <li><strong>Leaflet</strong> — the map library.</li>
+                <li>Map tiles &copy; National Geographic, Esri, Garmin, HERE, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, increment P Corp.</li>
+                <li><strong>Carto</strong> — fallback map tiles.</li>
+                <li>Landmark curation is our own.</li>
+            </ul>
+        </div>
+    </div>
+}
 
 @code {
     // The header is shared chrome (MainLayout wraps every page), but its
@@ -32,13 +65,31 @@
     private bool IsWorld => Nav.ToBaseRelativePath(Nav.Uri).StartsWith("world", StringComparison.OrdinalIgnoreCase);
     private string HeaderThemeClass => IsWorld ? "header-dusk" : "header-parchment";
 
+    private bool _showAttribution;
+    private void ToggleAttribution() => _showAttribution = !_showAttribution;
+    private void CloseAttribution() => _showAttribution = false;
+
+    private void OnAttributionKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            CloseAttribution();
+        }
+    }
+
     protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 
     // MainLayout persists across client-side navigations (Blazor doesn't
     // recreate the layout per route), so the theme class needs an explicit
     // re-render hook -- otherwise switching / <-> /world would leave the
-    // header stuck in its first-rendered theme.
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => StateHasChanged();
+    // header stuck in its first-rendered theme. Also closes an open credits
+    // popover on navigation -- MainLayout persisting across routes means a
+    // popover left open here would otherwise float over the next page too.
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _showAttribution = false;
+        StateHasChanged();
+    }
 
     public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
 }

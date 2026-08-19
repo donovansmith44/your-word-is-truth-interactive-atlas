@@ -22,3 +22,7 @@ node_modules/
 tests/ux/test-results/
 tests/ux/playwright-report/
 client/wwwroot/vendor/
+
+# Publish output (dotnet publish client -o publish; see README's publish-path
+# section) -- a build artifact, never committed.
+publish/
