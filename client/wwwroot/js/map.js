@@ -11,9 +11,23 @@
 // snake_case field). `setScene` JSON.parses it back into a plain object
 // whose shape matches atlas-server's wire JSON exactly.
 
-const TILE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}';
+// Basemap (design-direction.md "World -- REVISED": "an illuminated atlas
+// plate... terrain shading, coastlines, water contrast, country borders,
+// and reference city labels"). NatGeo_World_Map won a side-by-side against
+// the alternative (World_Physical_Map base + World_Boundaries_and_Places
+// overlay), screenshot-compared at all three WINDOWS world-arrows.spec.ts
+// uses (exodus/patriarchs/paul): NatGeo reads as a single coherent vintage
+// atlas plate (letterspaced serif country names, italic sea names, elevation
+// callouts, one tile layer/one failure path) and its native tiles run to
+// zoom 16, so it stays crisp at every zoom this app reaches; the
+// alternative's World_Physical_Map base tops out at native zoom 8 and was
+// visibly soft/smeared once fitScene zoomed in for the patriarchs window's
+// smaller extent (confirmed by screenshot, not just LOD metadata). See
+// tile/{z}/{y}/{x}?f=json on each service for the LOD lists this compares.
+const TILE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}';
 const TILE_FALLBACK = 'https://basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png';
-const TILE_ATTRIBUTION = 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ';
+const TILE_ATTRIBUTION = 'Tiles &copy; Esri, National Geographic, Garmin, HERE, UNEP-WCMC, USGS, NASA, ESA, NRCAN, GEBCO, NOAA, iPC';
+const TILE_MAX_NATIVE_ZOOM = 16; // NatGeo_World_Map's own max LOD (see comment above)
 
 // Roughly centers the Fertile Crescent / Levant before the first real
 // scene arrives; fitScene() (called on the first successful scene fetch)
@@ -21,6 +35,30 @@ const TILE_ATTRIBUTION = 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTE
 // moment.
 const DEFAULT_CENTER = [31.5, 35.0];
 const DEFAULT_ZOOM = 5;
+
+// Region lock (design-direction.md "World -- REVISED": "The map is locked
+// to the biblical world" -- user feedback 2026-08-18 rejected an
+// unconstrained globe: "we don't need the whole world, just the Biblical
+// world"). Computed ONCE (not derived at runtime) from every place's lat/lon
+// in data/compiled/places.json (1375 places) via a throwaway node script:
+// min/max over every {lat, lon}, which came out to
+//   lat  11.595   (punt / Punt)        .. 44.94278 (ashkenaz / Ashkenaz)
+//   lon  -6.944167 (tarshish-1 / Tarshish 1) .. 67.4308 (india / India)
+// then padded by a flat 4 degrees on every side (within the brief's
+// "~3-5 degrees" range) and rounded to 1 decimal place:
+//   south = 11.595 - 4  =  7.595  -> 7.6
+//   north = 44.94278 + 4 = 48.94278 -> 48.9
+//   west  = -6.944167 - 4 = -10.944167 -> -10.9
+//   east  = 67.4308 + 4 = 71.4308 -> 71.4
+// This is intentionally the full extent of every place the compiled data
+// set ever positions (Table-of-Nations entries like Punt/Tarshish/India
+// included), not just whichever handful of narratives happen to be lit in
+// any one scene -- scripture mode can jump to any verse in the canon, so
+// the lock has to cover everywhere a real place marker could ever land.
+// The result is still a firmly regional box (Atlantic-adjacent Morocco to
+// the Indus, just north of the Horn of Africa to the Caucasus) -- nowhere
+// close to "the whole world" and nowhere close to the globe.
+const BIBLICAL_WORLD_BOUNDS = [[7.6, -10.9], [48.9, 71.4]];
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -35,11 +73,32 @@ export function init(el, dotnetRef, opts) {
         zoomControl: !mini,
         attributionControl: !mini,
         scrollWheelZoom: !mini,
+        maxBounds: BIBLICAL_WORLD_BOUNDS,
+        maxBoundsViscosity: 1.0,
     }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
+    // minZoom chosen empirically FROM THIS MAP'S OWN real container size --
+    // Leaflet's getBoundsZoom(bounds, inside) has two modes and only ONE of
+    // them is "fills the frame": plain getBoundsZoom(bounds) (inside=false,
+    // what fitBounds uses) returns the LARGEST zoom at which the bounds still
+    // fit inside the view WITHOUT CLIPPING, which at a merely-integer zoom
+    // step routinely leaves both axes with slack (measured: at this map's
+    // 1440x900 dev viewport it returned zoom 4, where BIBLICAL_WORLD_BOUNDS
+    // only filled ~65% of the width and ~61% of the height -- Portugal and
+    // India both visible beyond the "biblical world," the exact bug this
+    // region lock exists to prevent). inside=true asks the OPPOSITE
+    // question -- the SMALLEST zoom at which the viewport fits ENTIRELY
+    // INSIDE the bounds, i.e. no area outside BIBLICAL_WORLD_BOUNDS is ever
+    // visible -- which is what "fills the frame" actually means; confirmed
+    // against the same 1440x900 viewport (zoom 5, both axes fully covered).
+    // Computed fresh per map instance rather than a baked-in constant so it
+    // adapts to any viewport this map didn't happen to be measured at (the
+    // quality floor's "nothing breaks between 1024px and ultrawide").
+    map.setMinZoom(map.getBoundsZoom(BIBLICAL_WORLD_BOUNDS, true));
+
     const tiles = L.tileLayer(TILE_URL, {
-        maxNativeZoom: 13,
-        maxZoom: 13,
+        maxNativeZoom: TILE_MAX_NATIVE_ZOOM,
+        maxZoom: TILE_MAX_NATIVE_ZOOM,
         attribution: TILE_ATTRIBUTION,
     }).addTo(map);
 

@@ -394,32 +394,38 @@ input:focus-visible,
     position: absolute;
     inset: 0;
     z-index: 0;
-    background: var(--dusk-deep);
+    background: var(--parchment);
 }
 
-/* Dusk terrain treatment (design-direction.md "World"): the tile source is
-   a light shaded-relief basemap, CSS-filtered into moonlit indigo relief.
-   These two rules are the CSS-discipline exception the file header
-   documents -- Leaflet, not this page, generates .leaflet-tile-pane and
-   .leaflet-container, so they can only be reached by targeting Leaflet's
-   own class names, scoped under .world-page so the (daylight) mini-map
-   inside popovers is never affected. */
+/* Atlas-plate terrain treatment (design-direction.md "World -- REVISED per
+   user feedback 2026-08-18": a full-bleed LIGHT basemap with real
+   cartographic detail replaces the earlier dusk/moonlit filter, which was
+   rejected as muddy -- "there should be nice borders and city markers").
+   Only a gentle warmth filter on top of NatGeo_World_Map's own colors, never
+   a heavy recolor. These two rules are the CSS-discipline exception the
+   file header documents -- Leaflet, not this page, generates
+   .leaflet-tile-pane and .leaflet-container, so they can only be reached by
+   targeting Leaflet's own class names, scoped under .world-page so the
+   (daylight) mini-map inside popovers is never affected. */
 .world-page .leaflet-tile-pane {
-    filter: brightness(.5) sepia(.6) hue-rotate(200deg) saturate(1.8) contrast(1.15);
+    filter: sepia(.12) saturate(.95);
 }
 
 .world-page .leaflet-container {
-    background: var(--dusk-deep);
+    background: var(--parchment);
     font-family: var(--font-serif);
 }
 
-/* Lamp markers (design-direction.md: "markers as lamp glow"). .atlas-marker
-   is the glowing dot itself -- a radial-gradient core over a box-shadow
-   halo scaled by .glow-1..5 (brightness = attached-event count, capped at
-   5) -- authored directly into the L.divIcon html map.js builds, so (like
-   the tile-pane rules above) these necessarily target classes this page's
-   own Razor markup never writes but map.js does, by contract with it.
-   .atlas-marker-icon is Leaflet's own icon wrapper (the element Leaflet
+/* Lamp markers, adapted for the light ground (design-direction.md "World --
+   REVISED": "Markers stay lamp-lit but adapted for the light ground: bright
+   --lamp-core dot with a thin bronze ring and a warm outer halo... so they
+   read as illuminated capitals on the plate"). .atlas-marker is the lit
+   core itself -- a solid --lamp-core disc with a thin --bronze ring, over a
+   box-shadow halo scaled by .glow-1..5 (brightness = attached-event count,
+   capped at 5) -- authored directly into the L.divIcon html map.js builds,
+   so (like the tile-pane rules above) these necessarily target classes this
+   page's own Razor markup never writes but map.js does, by contract with
+   it. .atlas-marker-icon is Leaflet's own icon wrapper (the element Leaflet
    positions via transform on every pan/zoom); its entrance animation is
    opacity-only so it never fights that positioning transform -- the
    scale-in and brightness breathing below live entirely on the (fully
@@ -428,13 +434,17 @@ input:focus-visible,
     animation: atlas-fade-in 180ms ease-out both;
 }
 
-/* The hit-testable core is deliberately tiny (design-direction.md: "small
-   radial-gradient core") -- ancient sites are often only a few real-world
-   kilometers apart (e.g. Rephidim/Mount Sinai, Marah/Elim), which a
-   whole-scene fitBounds can compress to single-digit pixels apart on
-   screen. All the visible "glow" comes from box-shadow below, which isn't
-   part of hit-testing, so a larger glow never widens the region where a
-   click/hover could land on the wrong one of two close neighbors. */
+/* The hit-testable core is deliberately tiny (unchanged since WORLD-1/2 --
+   ancient sites are often only a few real-world kilometers apart, e.g.
+   Rephidim/Mount Sinai, Marah/Elim, which a whole-scene fitBounds can
+   compress to single-digit pixels apart on screen). All the visible "glow"
+   comes from box-shadow below, which isn't part of hit-testing, so a larger
+   glow never widens the region where a click/hover could land on the wrong
+   one of two close neighbors. The ring is a `border`, not another
+   box-shadow layer, specifically so it never has to share the box-shadow
+   property with .glow-1..5's halo layers below -- box-sizing: border-box
+   (this file's global reset) keeps the border INSIDE the 4x4 box, so the
+   ring adds zero hit-area, same geometry as before this restyle. */
 .atlas-marker {
     position: absolute;
     top: 0;
@@ -442,7 +452,8 @@ input:focus-visible,
     width: 4px;
     height: 4px;
     border-radius: 50%;
-    background: radial-gradient(circle, var(--lamp-core) 0%, var(--lamp) 55%, rgba(255, 200, 100, 0) 78%);
+    background: var(--lamp-core);
+    border: 1px solid var(--bronze);
     transform: translate(-50%, -50%) scale(1);
     cursor: pointer;
     animation: atlas-marker-in 180ms ease-out both;
@@ -479,6 +490,16 @@ input:focus-visible,
     animation: atlas-marker-in 180ms ease-out both, atlas-breathe 2.5s ease-in-out 180ms infinite;
 }
 
+/* Place labels read as dark ink on the plate now, not pale text on night sky
+   -- design-direction.md "World -- REVISED": "place labels in small-caps
+   --ink with a soft LIGHT halo (parchment text-shadow) for legibility over
+   terrain." The halo is a hardcoded rgba of --parchment (#F6F1E5 ->
+   246,241,229; CSS text-shadow can't read a custom property through
+   color-mix() cleanly enough to bother) at three blur radii, mirroring the
+   old dark-halo's two-layer structure but a touch stronger -- terrain tiles
+   vary from deep sea blue to green cover to white boundary strokes right
+   under a label, so the halo needs to read as a solid cutout against any of
+   them, not just a soft glow. */
 .atlas-label {
     position: absolute;
     top: 50%;
@@ -490,8 +511,8 @@ input:focus-visible,
     font-variant-caps: small-caps;
     letter-spacing: .06em;
     font-size: .78rem;
-    color: var(--dusk-ink);
-    text-shadow: 0 1px 3px rgba(0, 0, 0, .85), 0 0 6px rgba(0, 0, 0, .6);
+    color: var(--ink);
+    text-shadow: 0 0 2px rgba(246, 241, 229, .95), 0 0 4px rgba(246, 241, 229, .9), 0 1px 5px rgba(246, 241, 229, .8);
     pointer-events: none;
 }
 
@@ -595,7 +616,11 @@ input:focus-visible,
     }
 }
 
-/* Empty scene (design-direction.md: "An invitation, not an error"). */
+/* Empty scene (design-direction.md: "An invitation, not an error"). Sits
+   directly on the map like a place label, not inside a dusk-glass panel, so
+   -- like .atlas-label above -- it needs light-ground ink + a light halo
+   now, not the pre-REVISED dusk-toned text + dark halo (which read fine on
+   the old indigo terrain but would be nearly invisible on the atlas plate). */
 .world-empty {
     position: absolute;
     top: 50%;
@@ -610,8 +635,8 @@ input:focus-visible,
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     font-size: 1rem;
-    color: var(--dusk-ink-soft);
-    text-shadow: 0 1px 4px rgba(0, 0, 0, .6);
+    color: var(--ink-soft);
+    text-shadow: 0 0 2px rgba(246, 241, 229, .95), 0 0 4px rgba(246, 241, 229, .9), 0 1px 5px rgba(246, 241, 229, .8);
     pointer-events: none;
 }
 
