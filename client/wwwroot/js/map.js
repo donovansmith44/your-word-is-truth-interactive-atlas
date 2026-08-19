@@ -209,7 +209,7 @@ export function init(el, dotnetRef, opts) {
         map.getPane('landmarksPane').style.pointerEvents = 'none';
     }
 
-    instances.set(id, { map, dotnetRef, mini, markers: new Map(), arrows, borders, landmarkMarkers: [] });
+    instances.set(id, { map, dotnetRef, mini, markers: new Map(), arrows, borders, landmarkMarkers: [], litByName: new Map() });
 
     // Zoom-tiered label density (design-direction.md's declutter rule --
     // see applyLabelTier's own comment for the concrete tiers/thresholds).
@@ -301,6 +301,17 @@ export function setScene(id, sceneJson) {
             inst.map.removeLayer(entry.marker);
             inst.markers.delete(placeId);
         }
+    }
+
+    // Fix round 1 addendum: rebuilt fresh here, every time `markers` just
+    // changed (the only thing that can change it) -- see buildLitByName's
+    // own comment for why this one Map feeds BOTH applyLabelTier's
+    // landmark dedupe AND BorderLayer's polity dedupe. Fed to the border
+    // layer BEFORE applyLabelTier below so a same-tick redraw (setLitPlaces
+    // calls _redraw() itself) never races the marker-side pass.
+    inst.litByName = buildLitByName(inst.markers);
+    if (!inst.mini) {
+        inst.borders.setLitPlaces(inst.litByName);
     }
 
     // Re-applied on every scene load, unconditionally (applyLabelTier itself
@@ -504,6 +515,32 @@ function labelTier(zoom) {
     return zoom >= ZOOM_TIER_MID ? 'mid' : 'far';
 }
 
+// Every currently-lit place's name/position, keyed by slugify(name) -- the
+// same normalization the landmark-{slug}/polity-label-{slug} testids
+// already use, not a fresh string-compare, so name pairs differing only in
+// case/punctuation still dedupe correctly (case-insensitivity in
+// particular falls out of slugify's own lowercasing for free). "Lit" means
+// present in `markers` at all (see setScene's own call site), independent
+// of whether a place's OWN label is itself currently tier/collision-
+// visible. Shared by TWO independent consumers, one source of truth
+// instead of two copies: applyLabelTier's own landmark dedupe below, and
+// BorderLayer's polity dedupe (fix round 1 addendum -- see
+// BorderLayer.setLitPlaces/_isDedupedByLitPlace), fed by setScene's own
+// call site every time `markers` changes.
+function buildLitByName(markers) {
+    const litByName = new Map();
+    for (const entry of markers.values()) {
+        const slug = slugify(entry.name);
+        const list = litByName.get(slug);
+        if (list) {
+            list.push(entry);
+        } else {
+            litByName.set(slug, [entry]);
+        }
+    }
+    return litByName;
+}
+
 // Applied fresh (not diffed) on every zoomend and every setScene/
 // setLandmarks call -- see setScene's own call site for why a fresh pass
 // every time is necessary rather than a one-time decision. No-ops entirely
@@ -529,22 +566,18 @@ function applyLabelTier(inst) {
 
     const tier = labelTier(inst.map.getZoom());
 
-    // Every currently-lit place's name/position, for the landmark dedupe
-    // check below -- "lit" means present in inst.markers at all (see
-    // setScene's own doc comment), independent of whether ITS OWN label
-    // happens to be tier-visible right now (see the dedupe rule's own
-    // comment above the constants for why: the place wins outright
-    // whenever lit, not only while its own label is currently showing).
-    const litByName = new Map(); // slugify(name) -> [{lat, lon}, ...]
-    for (const entry of inst.markers.values()) {
-        const slug = slugify(entry.name);
-        const list = litByName.get(slug);
-        if (list) {
-            list.push(entry);
-        } else {
-            litByName.set(slug, [entry]);
-        }
-    }
+    // inst.litByName (built by buildLitByName, kept fresh by setScene every
+    // time inst.markers changes -- see that function's own comment) is the
+    // one shared source of truth for "which places are lit, by name" that
+    // BOTH this landmark dedupe check AND BorderLayer's own polity dedupe
+    // (fix round 1 addendum, BorderLayer.setLitPlaces/_isDedupedByLitPlace)
+    // read from -- independent of whether ITS OWN label happens to be
+    // tier-visible right now (the place wins outright whenever lit, not
+    // only while its own label is currently showing; see the dedupe
+    // rule's own comment above the constants). Falls back to an empty Map
+    // (never undefined -- initialized alongside every other inst field in
+    // init()) if applyLabelTier is ever reached before the first setScene.
+    const litByName = inst.litByName;
 
     // Every label that cleared its own tier+dedupe check, still competing
     // for a grid cell: { el, x, y, priority }.
@@ -1143,6 +1176,13 @@ const BorderLayer = L.Layer.extend({
     initialize() {
         this._paths = []; // [{ path, feature }]
         this._labels = []; // [{ el, feature, cLat, cLon }]
+        // Fix round 1 addendum: slugify(name) -> [{lat, lon}, ...] of every
+        // currently-lit place, fed in by setScene via setLitPlaces below --
+        // defaulted to empty here (not left undefined) so a redraw that
+        // happens to run before the first setLitPlaces call (borders can
+        // load before the first scene fetch resolves) degrades to "nothing
+        // to dedupe against" rather than a null-reference.
+        this._litByName = new Map();
     },
 
     onAdd(map) {
@@ -1189,6 +1229,18 @@ const BorderLayer = L.Layer.extend({
         for (const l of this._labels) {
             l.el.style.display = visible ? '' : 'none';
         }
+    },
+
+    // Fix round 1 addendum: called from setScene (map.js) every time the
+    // lit-place set changes, so a polity label's dedupe state (see
+    // _isDedupedByLitPlace below) is never more than one scene load stale.
+    // Triggers an immediate _redraw() -- unlike a mere zoom/pan, a WINDOW
+    // change can flip dedupe state with no zoomend/moveend of its own to
+    // ride along on (e.g. "Egypt" the place stops being lit -- the polity
+    // label must reappear right away, not wait for the next pan).
+    setLitPlaces(litByName) {
+        this._litByName = litByName;
+        this._redraw();
     },
 
     _redraw() {
@@ -1280,10 +1332,40 @@ const BorderLayer = L.Layer.extend({
         return { el, feature, cLat, cLon };
     },
 
+    // Fix round 1 addendum (coordinator follow-up to M1's own landmark
+    // dedupe): a polity label whose NAME matches a currently-lit place's
+    // name (case-insensitively -- slugify already lowercases, the same
+    // normalization applyLabelTier's own landmark dedupe and the
+    // landmark-{slug}/polity-label-{slug} testids all use) AND whose
+    // on-screen anchor sits within COLLISION_CELL_PX of that place's own
+    // on-screen position is describing the identical real-world thing
+    // twice -- confirmed live in the egypt-exodus scene: the polity
+    // "Egypt" and the lit place "EGYPT" label the same point. Same rule as
+    // the landmark dedupe: the place wins, the polity label is suppressed
+    // for as long as its same-named place is lit, and returns the moment
+    // that place drops out of the scene (setLitPlaces re-triggers a
+    // redraw for exactly this reason). Deliberately NARROW -- this is
+    // NOT polity labels joining applyLabelTier's general collision pass:
+    // a DIFFERENT-named polity sitting near a city (e.g. "Roman Empire"
+    // near "Jerusalem") is legitimate period cartography, not a
+    // duplicate, and must never be suppressed for proximity alone.
+    _isDedupedByLitPlace(l) {
+        const list = this._litByName.get(slugify(l.feature.properties.name));
+        if (!list) {
+            return false;
+        }
+        const center = this._map.latLngToContainerPoint([l.cLat, l.cLon]);
+        return list.some(p => {
+            const pt = this._map.latLngToContainerPoint([p.lat, p.lon]);
+            return Math.hypot(pt.x - center.x, pt.y - center.y) <= COLLISION_CELL_PX;
+        });
+    },
+
     // Positions the label at its polygon's centroid and decides visibility
     // for THIS redraw: "skip a label when its polygon is mostly outside the
     // viewport or too small at current zoom" (both re-evaluated fresh every
-    // zoomend/moveend, since both depend on the current projection).
+    // zoomend/moveend, since both depend on the current projection), PLUS
+    // the lit-place dedupe above (fix round 1 addendum).
     // POLITY_LABEL_MIN_PX: below this on-screen span, the polygon reads as
     // a sliver -- not worth a label (chosen as a bit under the smallest
     // comfortable label width, ~2 letterspaced small-caps words at this
@@ -1320,8 +1402,9 @@ const BorderLayer = L.Layer.extend({
         const onscreenFrac = (onscreenW * onscreenH) / (bboxW * bboxH);
         const tooSmall = Math.max(bboxW, bboxH) < POLITY_LABEL_MIN_PX;
         const mostlyOffscreen = onscreenFrac < POLITY_LABEL_MIN_ONSCREEN_FRAC;
+        const dedupedByLitPlace = this._isDedupedByLitPlace(l);
 
-        l.el.style.display = (tooSmall || mostlyOffscreen) ? 'none' : '';
+        l.el.style.display = (tooSmall || mostlyOffscreen || dedupedByLitPlace) ? 'none' : '';
         const center = this._map.latLngToLayerPoint([l.cLat, l.cLon]);
         l.el.style.transform = `translate(${center.x}px, ${center.y}px) translate(-50%, -50%)`;
     },
