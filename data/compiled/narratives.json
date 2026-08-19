@@ -1,0 +1,195 @@
+[
+  {
+    "id": "abraham-migration",
+    "name": "Abraham's Migration",
+    "color": "#D97706",
+    "legs": [
+      "ab_ur",
+      "ab_haran",
+      "ab_shechem",
+      "ab_bethel",
+      "ab_egypt",
+      "ab_hebron"
+    ]
+  },
+  {
+    "id": "conquest",
+    "name": "The Conquest of Canaan",
+    "color": "#7C3AED",
+    "legs": [
+      "cq_shittim",
+      "cq_gilgal",
+      "cq_jericho",
+      "cq_ai",
+      "cq_gibeon",
+      "cq_hazor",
+      "cq_shiloh"
+    ]
+  },
+  {
+    "id": "david-flight",
+    "name": "David's Flight from Saul",
+    "color": "#2563EB",
+    "legs": [
+      "df_ramah",
+      "df_nob",
+      "df_gath",
+      "df_adullam",
+      "df_keilah",
+      "df_ziph",
+      "df_en_gedi",
+      "df_ziklag",
+      "df_hebron"
+    ]
+  },
+  {
+    "id": "elijah",
+    "name": "Elijah",
+    "color": "#0D9488",
+    "legs": [
+      "el_tishbe",
+      "el_cherith",
+      "el_zarephath",
+      "el_carmel",
+      "el_jezreel",
+      "el_beersheba",
+      "el_horeb",
+      "el_abel_meholah"
+    ]
+  },
+  {
+    "id": "exile",
+    "name": "The Exile to Babylon",
+    "color": "#64748B",
+    "legs": [
+      "exl_jerusalem",
+      "exl_riblah",
+      "exl_babylon",
+      "exl_mizpah",
+      "exl_tahpanhes"
+    ]
+  },
+  {
+    "id": "exodus",
+    "name": "The Exodus",
+    "color": "#DC2626",
+    "legs": [
+      "ex_rameses",
+      "ex_succoth",
+      "ex_red_sea",
+      "ex_marah",
+      "ex_elim",
+      "ex_rephidim",
+      "ex_sinai",
+      "ex_kadesh",
+      "ex_moab",
+      "ex_jordan"
+    ]
+  },
+  {
+    "id": "jacob-journeys",
+    "name": "Jacob's Journeys",
+    "color": "#A16207",
+    "legs": [
+      "jj_beersheba",
+      "jj_bethel_dream",
+      "jj_haran",
+      "jj_mahanaim",
+      "jj_peniel",
+      "jj_shechem",
+      "jj_bethel_return",
+      "jj_hebron"
+    ]
+  },
+  {
+    "id": "jesus-ministry",
+    "name": "Jesus' Ministry",
+    "color": "#DB2777",
+    "legs": [
+      "jm_bethlehem",
+      "jm_egypt",
+      "jm_nazareth",
+      "jm_jordan",
+      "jm_cana",
+      "jm_capernaum",
+      "jm_sychar",
+      "jm_bethsaida",
+      "jm_caesarea_philippi",
+      "jm_jericho",
+      "jm_bethany"
+    ]
+  },
+  {
+    "id": "joseph-to-egypt",
+    "name": "Joseph's Journey to Egypt",
+    "color": "#65A30D",
+    "legs": [
+      "je_hebron",
+      "je_dothan",
+      "je_egypt_sold",
+      "je_egypt_ruler",
+      "je_beersheba",
+      "je_goshen"
+    ]
+  },
+  {
+    "id": "passion-week",
+    "name": "Passion Week",
+    "color": "#9F1239",
+    "legs": [
+      "pw_bethany",
+      "pw_jerusalem_entry",
+      "pw_gethsemane",
+      "pw_golgotha",
+      "pw_jerusalem_resurrection",
+      "pw_emmaus",
+      "pw_galilee",
+      "pw_mount_of_olives"
+    ]
+  },
+  {
+    "id": "paul-first-journey",
+    "name": "Paul's First Journey",
+    "color": "#16A34A",
+    "legs": [
+      "p1_antioch",
+      "p1_seleucia",
+      "p1_salamis",
+      "p1_paphos",
+      "p1_perga",
+      "p1_pisidian_antioch",
+      "p1_iconium",
+      "p1_lystra",
+      "p1_derbe",
+      "p1_return"
+    ]
+  },
+  {
+    "id": "paul-rome-voyage",
+    "name": "Paul's Voyage to Rome",
+    "color": "#4338CA",
+    "legs": [
+      "pr_caesarea",
+      "pr_sidon",
+      "pr_myra",
+      "pr_fair_havens",
+      "pr_malta",
+      "pr_syracuse",
+      "pr_rhegium",
+      "pr_puteoli",
+      "pr_rome"
+    ]
+  },
+  {
+    "id": "return",
+    "name": "The Return from Exile",
+    "color": "#0891B2",
+    "legs": [
+      "ret_babylon",
+      "ret_jerusalem_altar",
+      "ret_jerusalem_temple",
+      "ret_susa",
+      "ret_jerusalem_wall"
+    ]
+  }
+]

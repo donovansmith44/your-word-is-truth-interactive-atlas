@@ -12,10 +12,12 @@ client/obj/
 **/bin/
 **/obj/
 
-# Data: raw downloads and compiled outputs are reproducible via atlas-etl
+# Data: raw downloads are reproducible via data/fetch-raw.ps1 + atlas-etl and
+# stay gitignored; data/compiled/ is the app's actual runtime data and IS
+# committed (see README.md's "Data" section and LICENSES.md) so a fresh
+# clone runs with zero downloads.
 data/raw/*
 !data/raw/README.md
-data/compiled/
 
 # Node / test tooling
 node_modules/

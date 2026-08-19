@@ -1,0 +1,464 @@
+[
+  {
+    "book": "GEN",
+    "author": "Moses",
+    "write_place": null,
+    "write_from": -1445,
+    "write_to": -1405
+  },
+  {
+    "book": "EXO",
+    "author": "Moses",
+    "write_place": null,
+    "write_from": -1445,
+    "write_to": -1405
+  },
+  {
+    "book": "LEV",
+    "author": "Moses",
+    "write_place": null,
+    "write_from": -1445,
+    "write_to": -1405
+  },
+  {
+    "book": "NUM",
+    "author": "Moses",
+    "write_place": null,
+    "write_from": -1445,
+    "write_to": -1405
+  },
+  {
+    "book": "DEU",
+    "author": "Moses",
+    "write_place": null,
+    "write_from": -1407,
+    "write_to": -1406
+  },
+  {
+    "book": "JOS",
+    "author": "Joshua",
+    "write_place": null,
+    "write_from": -1400,
+    "write_to": -1370
+  },
+  {
+    "book": "JDG",
+    "author": "Samuel (traditional)",
+    "write_place": null,
+    "write_from": -1050,
+    "write_to": -1000
+  },
+  {
+    "book": "RUT",
+    "author": "Samuel (traditional)",
+    "write_place": null,
+    "write_from": -1050,
+    "write_to": -1000
+  },
+  {
+    "book": "1SA",
+    "author": "Samuel, Nathan, Gad (traditional)",
+    "write_place": null,
+    "write_from": -1000,
+    "write_to": -960
+  },
+  {
+    "book": "2SA",
+    "author": "Nathan and Gad (traditional)",
+    "write_place": null,
+    "write_from": -960,
+    "write_to": -930
+  },
+  {
+    "book": "1KI",
+    "author": "Jeremiah (traditional)",
+    "write_place": null,
+    "write_from": -590,
+    "write_to": -560
+  },
+  {
+    "book": "2KI",
+    "author": "Jeremiah (traditional)",
+    "write_place": null,
+    "write_from": -590,
+    "write_to": -560
+  },
+  {
+    "book": "1CH",
+    "author": "Ezra (traditional)",
+    "write_place": "jerusalem",
+    "write_from": -450,
+    "write_to": -430
+  },
+  {
+    "book": "2CH",
+    "author": "Ezra (traditional)",
+    "write_place": "jerusalem",
+    "write_from": -450,
+    "write_to": -430
+  },
+  {
+    "book": "EZR",
+    "author": "Ezra",
+    "write_place": "jerusalem",
+    "write_from": -450,
+    "write_to": -430
+  },
+  {
+    "book": "NEH",
+    "author": "Nehemiah",
+    "write_place": "jerusalem",
+    "write_from": -430,
+    "write_to": -400
+  },
+  {
+    "book": "EST",
+    "author": "Mordecai (traditional)",
+    "write_place": "susa",
+    "write_from": -460,
+    "write_to": -440
+  },
+  {
+    "book": "JOB",
+    "author": "Unknown (Moses, traditional)",
+    "write_place": null,
+    "write_from": -1450,
+    "write_to": -1400
+  },
+  {
+    "book": "PSA",
+    "author": "David and others",
+    "write_place": "jerusalem",
+    "write_from": -1010,
+    "write_to": -430
+  },
+  {
+    "book": "PRO",
+    "author": "Solomon and others",
+    "write_place": "jerusalem",
+    "write_from": -950,
+    "write_to": -700
+  },
+  {
+    "book": "ECC",
+    "author": "Solomon",
+    "write_place": "jerusalem",
+    "write_from": -935,
+    "write_to": -931
+  },
+  {
+    "book": "SNG",
+    "author": "Solomon",
+    "write_place": "jerusalem",
+    "write_from": -960,
+    "write_to": -950
+  },
+  {
+    "book": "ISA",
+    "author": "Isaiah",
+    "write_place": "jerusalem",
+    "write_from": -700,
+    "write_to": -680
+  },
+  {
+    "book": "JER",
+    "author": "Jeremiah",
+    "write_place": null,
+    "write_from": -585,
+    "write_to": -580
+  },
+  {
+    "book": "LAM",
+    "author": "Jeremiah",
+    "write_place": "jerusalem",
+    "write_from": -586,
+    "write_to": -585
+  },
+  {
+    "book": "EZK",
+    "author": "Ezekiel",
+    "write_place": "babylon-1",
+    "write_from": -593,
+    "write_to": -570
+  },
+  {
+    "book": "DAN",
+    "author": "Daniel",
+    "write_place": "babylon-1",
+    "write_from": -605,
+    "write_to": -530
+  },
+  {
+    "book": "HOS",
+    "author": "Hosea",
+    "write_place": null,
+    "write_from": -750,
+    "write_to": -710
+  },
+  {
+    "book": "JOL",
+    "author": "Joel",
+    "write_place": null,
+    "write_from": -835,
+    "write_to": -800
+  },
+  {
+    "book": "AMO",
+    "author": "Amos",
+    "write_place": null,
+    "write_from": -760,
+    "write_to": -750
+  },
+  {
+    "book": "OBA",
+    "author": "Obadiah",
+    "write_place": null,
+    "write_from": -586,
+    "write_to": -580
+  },
+  {
+    "book": "JON",
+    "author": "Jonah",
+    "write_place": null,
+    "write_from": -780,
+    "write_to": -750
+  },
+  {
+    "book": "MIC",
+    "author": "Micah",
+    "write_place": null,
+    "write_from": -735,
+    "write_to": -700
+  },
+  {
+    "book": "NAM",
+    "author": "Nahum",
+    "write_place": null,
+    "write_from": -650,
+    "write_to": -630
+  },
+  {
+    "book": "HAB",
+    "author": "Habakkuk",
+    "write_place": null,
+    "write_from": -609,
+    "write_to": -605
+  },
+  {
+    "book": "ZEP",
+    "author": "Zephaniah",
+    "write_place": null,
+    "write_from": -640,
+    "write_to": -620
+  },
+  {
+    "book": "HAG",
+    "author": "Haggai",
+    "write_place": "jerusalem",
+    "write_from": -520,
+    "write_to": -520
+  },
+  {
+    "book": "ZEC",
+    "author": "Zechariah",
+    "write_place": "jerusalem",
+    "write_from": -520,
+    "write_to": -480
+  },
+  {
+    "book": "MAL",
+    "author": "Malachi",
+    "write_place": "jerusalem",
+    "write_from": -430,
+    "write_to": -420
+  },
+  {
+    "book": "MAT",
+    "author": "Matthew",
+    "write_place": null,
+    "write_from": 50,
+    "write_to": 60
+  },
+  {
+    "book": "MRK",
+    "author": "Mark",
+    "write_place": "rome",
+    "write_from": 55,
+    "write_to": 65
+  },
+  {
+    "book": "LUK",
+    "author": "Luke",
+    "write_place": null,
+    "write_from": 60,
+    "write_to": 62
+  },
+  {
+    "book": "JHN",
+    "author": "John",
+    "write_place": "ephesus",
+    "write_from": 85,
+    "write_to": 95
+  },
+  {
+    "book": "ACT",
+    "author": "Luke",
+    "write_place": "rome",
+    "write_from": 62,
+    "write_to": 64
+  },
+  {
+    "book": "ROM",
+    "author": "Paul",
+    "write_place": "corinth",
+    "write_from": 57,
+    "write_to": 57
+  },
+  {
+    "book": "1CO",
+    "author": "Paul",
+    "write_place": "ephesus",
+    "write_from": 55,
+    "write_to": 55
+  },
+  {
+    "book": "2CO",
+    "author": "Paul",
+    "write_place": null,
+    "write_from": 56,
+    "write_to": 56
+  },
+  {
+    "book": "GAL",
+    "author": "Paul",
+    "write_place": "antioch-1",
+    "write_from": 48,
+    "write_to": 49
+  },
+  {
+    "book": "EPH",
+    "author": "Paul",
+    "write_place": "rome",
+    "write_from": 60,
+    "write_to": 62
+  },
+  {
+    "book": "PHP",
+    "author": "Paul",
+    "write_place": "rome",
+    "write_from": 61,
+    "write_to": 62
+  },
+  {
+    "book": "COL",
+    "author": "Paul",
+    "write_place": "rome",
+    "write_from": 60,
+    "write_to": 62
+  },
+  {
+    "book": "1TH",
+    "author": "Paul",
+    "write_place": "corinth",
+    "write_from": 51,
+    "write_to": 51
+  },
+  {
+    "book": "2TH",
+    "author": "Paul",
+    "write_place": "corinth",
+    "write_from": 51,
+    "write_to": 52
+  },
+  {
+    "book": "1TI",
+    "author": "Paul",
+    "write_place": null,
+    "write_from": 62,
+    "write_to": 64
+  },
+  {
+    "book": "2TI",
+    "author": "Paul",
+    "write_place": "rome",
+    "write_from": 66,
+    "write_to": 67
+  },
+  {
+    "book": "TIT",
+    "author": "Paul",
+    "write_place": null,
+    "write_from": 63,
+    "write_to": 65
+  },
+  {
+    "book": "PHM",
+    "author": "Paul",
+    "write_place": "rome",
+    "write_from": 60,
+    "write_to": 62
+  },
+  {
+    "book": "HEB",
+    "author": "Unknown",
+    "write_place": null,
+    "write_from": 64,
+    "write_to": 68
+  },
+  {
+    "book": "JAS",
+    "author": "James",
+    "write_place": "jerusalem",
+    "write_from": 45,
+    "write_to": 49
+  },
+  {
+    "book": "1PE",
+    "author": "Peter",
+    "write_place": "rome",
+    "write_from": 63,
+    "write_to": 65
+  },
+  {
+    "book": "2PE",
+    "author": "Peter",
+    "write_place": "rome",
+    "write_from": 65,
+    "write_to": 68
+  },
+  {
+    "book": "1JN",
+    "author": "John",
+    "write_place": "ephesus",
+    "write_from": 85,
+    "write_to": 95
+  },
+  {
+    "book": "2JN",
+    "author": "John",
+    "write_place": "ephesus",
+    "write_from": 85,
+    "write_to": 95
+  },
+  {
+    "book": "3JN",
+    "author": "John",
+    "write_place": "ephesus",
+    "write_from": 85,
+    "write_to": 95
+  },
+  {
+    "book": "JUD",
+    "author": "Jude",
+    "write_place": null,
+    "write_from": 65,
+    "write_to": 80
+  },
+  {
+    "book": "REV",
+    "author": "John",
+    "write_place": "patmos",
+    "write_from": 95,
+    "write_to": 96
+  }
+]
