@@ -39,6 +39,15 @@ test('SCENE-1/2 + ARROW-1..7: window scene invariants', async () => {
     const s = await api.sceneTime(w.from, w.to);
     ok(s.__status === undefined, 'SCENE-1: unexpected error status');
     ok(s.mode === 'time', 'SCENE-1: mode mismatch');
+    // Fix round 1 (M2): the expect(s.window).toEqual({from_year, to_year})
+    // this replaced also failed on any EXTRA key in s.window, not just wrong
+    // values -- a value-only check silently permits s.window to grow a stray
+    // field. Restoring that exact-shape guarantee explicitly (key-set check
+    // + value check) rather than reaching for a deep-equal helper, to keep
+    // this file's one dependency (fast-check) unchanged.
+    const windowKeys = Object.keys(s.window).sort();
+    ok(windowKeys.length === 2 && windowKeys[0] === 'from_year' && windowKeys[1] === 'to_year',
+      'SCENE-1: window has extra/missing fields (expected exactly from_year, to_year)');
     ok(s.window.from_year === w.from && s.window.to_year === w.to, 'SCENE-1: window echo mismatch');
     const placeIds = new Set(s.places.map((p: any) => p.id));
     for (const p of s.places) {                                           // SCENE-2
