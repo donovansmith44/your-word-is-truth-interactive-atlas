@@ -18,6 +18,9 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
 ## data-testid inventory
 Header: `nav-reader`, `nav-world`, `translation-select`, `attribution`
 World: `world-map`, `marker-{placeId}`, `place-card`, `place-card-title`,
+  `hover-verse-{VREF}` (one row per shown verse, VREF = canonical id e.g. `EXO.14.21`;
+  row text contains the verse text), `place-card-expand` (button; present only when
+  more verses than shown exist; text contains the remaining count),
   `verse-group-{BOOK}-{chapter}` (one per group, text contains `{count}`),
   `arrows-svg`, `arrow-{narrativeId}-{order}` (SVG path; attr `stroke` = narrative color;
   attr `data-faded` = "true"|"false"; `marker-end` set),

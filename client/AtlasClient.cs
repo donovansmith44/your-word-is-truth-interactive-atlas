@@ -11,12 +11,19 @@ namespace BibleAtlas.Client;
 /// call per slider/dropdown change) are cached in a capacity-48 LRU keyed by
 /// request shape; the canon table of contents and eras list are small,
 /// stable, and needed by nearly every page, so they are fetched once and
-/// cached for the lifetime of the app.
+/// cached for the lifetime of the app. Chapters (fetched by PlaceCard's
+/// hover-verse-text block -- design-direction.md's "Hover place card --
+/// REVISED": "Verse text loads via the chapter endpoint, LRU-cached, so
+/// hovers stay instant after first touch") get their own smaller capacity-24
+/// LRU: a hover's whole point is instant repeat-visits, and a scene's places
+/// tend to cluster into a much smaller set of distinct chapters than the
+/// 48-scene cache is sized for.
 /// </summary>
 public sealed class AtlasClient
 {
     private readonly HttpClient _http;
     private readonly LruCache<string, Scene> _sceneCache = new(capacity: 48);
+    private readonly LruCache<string, ChapterOut> _chapterCache = new(capacity: 24);
     private List<BookTocEntry>? _booksCache;
     private List<EraDto>? _erasCache;
 
@@ -82,8 +89,18 @@ public sealed class AtlasClient
         return _erasCache;
     }
 
-    public Task<ChapterOut> Chapter(string book, int chapter) =>
-        GetRequired<ChapterOut>($"api/chapter/{book}.{chapter}");
+    public async Task<ChapterOut> Chapter(string book, int chapter)
+    {
+        var key = $"{book}.{chapter}";
+        if (_chapterCache.TryGet(key, out var cached))
+        {
+            return cached;
+        }
+
+        var result = await GetRequired<ChapterOut>($"api/chapter/{key}");
+        _chapterCache.Put(key, result);
+        return result;
+    }
 
     public Task<VerseDetail> Verse(string vref) =>
         GetRequired<VerseDetail>($"api/verse/{vref}");

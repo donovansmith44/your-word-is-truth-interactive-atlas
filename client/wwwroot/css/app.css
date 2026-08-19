@@ -645,19 +645,31 @@ input:focus-visible,
    floating over the night world"). Anchored at the marker's screen point
    (left/top, set inline by PlaceCard.razor from map.js's reported
    containerPoint) then nudged up and centered above it via transform, so
-   it never sits directly on top of the lamp it describes. */
+   it never sits directly on top of the lamp it describes. Widened from the
+   original 18rem -- design-direction.md's REVISED card leads with real
+   verse sentences (below), which need more breathing room than the
+   book/chapter/count index rows this width was originally sized for. */
 .place-card {
     position: absolute;
     z-index: 30;
     transform: translate(-50%, calc(-100% - 18px));
     min-width: 12rem;
-    max-width: 18rem;
+    max-width: 21rem;
     padding: .65rem .85rem .75rem;
     background: var(--parchment-raised);
     border: 1px solid var(--bronze);
     border-radius: 4px;
     box-shadow: 0 10px 28px rgba(0, 0, 0, .45);
     animation: place-card-in 120ms ease-out both;
+}
+
+/* "Show N more" (place-card-expand below) reveals the rest of the scene-
+   provided verse list in place -- design-direction.md: "card gets a
+   max-height + inner scroll once expanded" -- rather than letting the card
+   grow tall enough to run off the top of the viewport. */
+.place-card-expanded {
+    max-height: min(26rem, 70vh);
+    overflow-y: auto;
 }
 
 .place-card-title {
@@ -667,6 +679,62 @@ input:focus-visible,
     letter-spacing: .05em;
     font-size: 1.05rem;
     color: var(--ink);
+}
+
+/* The lead verse-text block (design-direction.md "Hover place card --
+   REVISED": "the card leads with scripture... ref in the instrument mono
+   face, verse text in the serif"). Stacked (ref above its own sentence),
+   not the inline ref/count row .place-card-verse-group below uses -- a full
+   verse sentence needs its own line, not a space-between pair. */
+.place-card-verse {
+    margin: 0 0 .5rem;
+}
+
+.place-card-verse-ref {
+    display: block;
+    margin: 0 0 .1rem;
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .03em;
+    color: var(--bronze-ink);
+}
+
+.place-card-verse-text {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: .92rem;
+    line-height: 1.5;
+    color: var(--ink);
+}
+
+.place-card-expand {
+    display: block;
+    margin: .3rem 0 .1rem;
+    padding: 0;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: .8rem;
+    color: var(--ink-soft);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: start;
+}
+
+.place-card-expand:hover {
+    color: var(--lapis);
+}
+
+/* The per-(book,chapter) count rows now stay BENEATH the verse text as the
+   compact index (design-direction.md: "the per-(book,chapter) count rows
+   stay beneath as the compact index") -- a rule above separates the two
+   sections the same way .popover-xref-list separates cross-refs from the
+   verse body it follows. */
+.place-card-index {
+    margin-top: .4rem;
+    padding-top: .35rem;
+    border-top: 1px solid rgba(138, 107, 61, .25);
 }
 
 .place-card-verse-group {

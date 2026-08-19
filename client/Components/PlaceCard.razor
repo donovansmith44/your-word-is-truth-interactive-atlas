@@ -1,26 +1,65 @@
 @using System.Globalization
+@using BibleAtlas.Client.Explore
+@inject AtlasClient Atlas
 @* A parchment hover card floating over the dusk map (design-direction.md's
    "popovers and hover cards are parchment artifacts on both pages" --
-   lamplit paper over the night world). Purely presentational: World.razor
-   owns the hover/close-delay state machine and just feeds this component
-   whichever place is currently showing plus the screen point to anchor at
-   (map.js reports that point as e.containerPoint, which lines up with this
-   card's positioning context because #world-map fills .world-page via
-   `inset: 0` with no border/padding -- see app.css). *@
+   lamplit paper over the night world). World.razor owns the hover/close-
+   delay state machine and just feeds this component whichever place is
+   currently showing plus the screen point to anchor at (map.js reports
+   that point as e.containerPoint, which lines up with this card's
+   positioning context because #world-map fills .world-page via `inset: 0`
+   with no border/padding -- see app.css).
 
-<div class="place-card"
+   design-direction.md's "Hover place card -- REVISED": the card leads with
+   scripture, not bookkeeping -- the place name, then the first two verses
+   (canonical order) of the place's merged activating verses as real text,
+   then a quiet "Show N more" control expanding the rest of the scene-
+   provided (already server-capped) list. The per-(book,chapter) count rows
+   (MergedVerseGroups, unchanged since WORLD-2) stay beneath as the compact
+   index.
+
+   Because World.razor renders this with no @key, hovering from one marker
+   straight to another (no gap where hoverPlace goes null) reuses THIS SAME
+   component instance with a new Place parameter, rather than
+   destroying/recreating it -- OnParametersSetAsync's _lastPlaceId guard
+   below is what resets expand/verse-text state for the new place instead
+   of silently showing the previous place's already-fetched text. *@
+
+<div class="place-card @(_expanded ? "place-card-expanded" : "")"
      data-testid="place-card"
      style="left: @X.ToString(CultureInfo.InvariantCulture)px; top: @Y.ToString(CultureInfo.InvariantCulture)px;"
      @onpointerenter="OnPointerEnter"
      @onpointerleave="OnPointerLeave">
     <p class="place-card-title" data-testid="place-card-title">@Place.Name</p>
-    @foreach (var vg in MergedVerseGroups())
+
+    @{
+        var verses = MergedVerses();
+        var shown = ShownCount(verses);
+    }
+    @for (var i = 0; i < shown; i++)
     {
-        <p class="place-card-verse-group" data-testid="verse-group-@vg.Book-@vg.Chapter">
-            <span class="place-card-ref">@vg.Book @vg.Chapter</span>
-            <span class="place-card-count">@vg.Count</span>
+        var vref = verses[i];
+        <p class="place-card-verse" data-testid="hover-verse-@vref">
+            <span class="place-card-verse-ref">@vref</span>
+            <span class="place-card-verse-text">@VerseText(vref)</span>
         </p>
     }
+    @if (verses.Count > shown)
+    {
+        <button type="button" class="place-card-expand" data-testid="place-card-expand" @onclick="Expand">
+            Show @(verses.Count - shown) more
+        </button>
+    }
+
+    <div class="place-card-index">
+        @foreach (var vg in MergedVerseGroups())
+        {
+            <p class="place-card-verse-group" data-testid="verse-group-@vg.Book-@vg.Chapter">
+                <span class="place-card-ref">@vg.Book @vg.Chapter</span>
+                <span class="place-card-count">@vg.Count</span>
+            </p>
+        }
+    </div>
 </div>
 
 @code {
@@ -29,6 +68,15 @@
     [Parameter] public double Y { get; set; }
     [Parameter] public EventCallback OnPointerEnter { get; set; }
     [Parameter] public EventCallback OnPointerLeave { get; set; }
+
+    private const int InitialShown = 2;
+
+    // Identifies which place the fetched/fetching _verseText belongs to, so
+    // a hover that moves marker-to-marker (see the file-header comment)
+    // resets rather than showing stale text under the new place's name.
+    private string? _lastPlaceId;
+    private bool _expanded;
+    private readonly Dictionary<string, string> _verseText = new();
 
     private sealed record MergedGroup(string Book, int Chapter, int Count);
 
@@ -58,5 +106,116 @@
         }
 
         return order.Select(key => new MergedGroup(key.Book, key.Chapter, counts[key])).ToList();
+    }
+
+    // The flat, deduped verse-id list the new lead-with-scripture block
+    // renders from -- same merge shape as MergedVerseGroups above (event
+    // order, then each event's own already (book,chapter)-then-verse-number
+    // sorted VerseGroups -- see atlas-core's verse_groups_for), just keeping
+    // the actual capped verse ids instead of collapsing them to a count.
+    // Deduped (a verse can legitimately anchor more than one event at the
+    // same place, e.g. two narrative beats both citing the crossing verse)
+    // so neither a hover-verse-{VREF} testid nor a human ever sees the same
+    // verse twice.
+    private List<string> MergedVerses()
+    {
+        var seen = new HashSet<string>();
+        var result = new List<string>();
+
+        foreach (var e in Place.Events)
+        {
+            foreach (var g in e.VerseGroups)
+            {
+                foreach (var v in g.Verses)
+                {
+                    if (seen.Add(v))
+                    {
+                        result.Add(v);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private int ShownCount(List<string> verses) => _expanded ? verses.Count : Math.Min(InitialShown, verses.Count);
+
+    private string VerseText(string vref) => _verseText.TryGetValue(vref, out var text) ? text : "";
+
+    // Fires on every parameter push, including this component's very first
+    // render (Place.Id vacuously differs from the null _lastPlaceId then
+    // too) -- the _lastPlaceId guard makes both cases, and an X/Y-only
+    // update from the SAME place (no re-fetch needed), converge correctly.
+    // Awaiting the fetch here (rather than firing it off unobserved) is
+    // deliberate: Blazor renders once synchronously right after parameters
+    // are applied and this method's synchronous prefix runs, THEN again
+    // when the awaited task completes -- so the place name and every
+    // hover-verse-{VREF} ref (MergedVerses/ShownCount are pure, synchronous)
+    // paint immediately, and VerseText(vref) simply reads "" until the
+    // second render fills it in. Same pattern ExplorerPopover's
+    // OnInitializedAsync/LoadCurrent already relies on for its own body.
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Place.Id == _lastPlaceId)
+        {
+            return;
+        }
+
+        _lastPlaceId = Place.Id;
+        _expanded = false;
+        _verseText.Clear();
+        await LoadChaptersFor(MergedVerses().Take(InitialShown));
+    }
+
+    private async Task Expand()
+    {
+        _expanded = true;
+        await LoadChaptersFor(MergedVerses().Skip(InitialShown));
+    }
+
+    // Resolves every (book, chapter) pair the given verses span (usually
+    // one) via AtlasClient's own Chapter LRU cache -- a hover that
+    // revisits a place, or an expand that reopens a chapter InitialShown
+    // already touched, never re-hits the network. Populates every verse
+    // FROM each fetched chapter, not just the ones asked for: harmless
+    // (VerseText only ever reads keys it knows to look up) and means two
+    // requested verses sharing a chapter cost exactly one fetch.
+    private async Task LoadChaptersFor(IEnumerable<string> vrefs)
+    {
+        var pairs = vrefs.Select(CanonRef.ParseVerse).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
+        if (pairs.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var chapters = await Task.WhenAll(pairs.Select(p => Atlas.Chapter(p.Book, p.Chapter)));
+            foreach (var chapter in chapters)
+            {
+                // chapter.Ref is the CODE-based "JDG.3" (atlas-server's
+                // ChapterOut.sref, built from book.code()); chapter.Book is
+                // the human-readable display NAME ("Judges", book.name()) --
+                // a real, deliberate API distinction (VerseGroup.Book is the
+                // code; ChapterOut.Book is the name), not interchangeable.
+                // Building the key from Book here silently produced
+                // "Judges.3.7" instead of "JDG.3.7", so it could never match
+                // a hover-verse-{VREF} testid -- caught by
+                // world-hover-text.spec.ts (verse text never appeared).
+                foreach (var v in chapter.Verses)
+                {
+                    _verseText[$"{chapter.Ref}.{v.Verse}"] = v.Text;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // A hover card's verse text is a nicety, not load-bearing -- the
+            // ref already rendered synchronously above; leaving its text
+            // blank on a flaky-network failure degrades gracefully instead
+            // of an unhandled exception from this lifecycle continuation
+            // taking down the whole app.
+        }
     }
 }
