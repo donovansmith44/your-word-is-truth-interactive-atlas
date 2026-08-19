@@ -73,10 +73,20 @@ pub fn resolve_display_name(default_name: &str, history: Option<&PlaceHistory>, 
 }
 
 /// BLURB-1: resolves the ONE blurb (if any) that should show for `blurbs`
-/// over `window`. Era-breadth entries win whenever exactly one of them
-/// intersects `window`; when `window` spans MORE than one era-breadth range
-/// (>=2 intersect), a broad-breadth entry is preferred instead (falling
-/// back to the era set, same `pick_by_window` tie rule, if no broad entry
+/// over `window`. Both `TimeRange::intersects`/`contains_year` (and
+/// therefore every curated range below) are inclusive on BOTH ends -- the
+/// year model's general convention (see `time.rs`) -- so a range's own
+/// `to` year is itself covered, not excluded; a blurb whose text narrates a
+/// specific year must curate its range to REACH that year, not stop one
+/// short of it (fix round 1, M1: Jerusalem's own -586 destruction blurb had
+/// exactly this off-by-one -- see place-history.toml's own comment there
+/// and batch-e-report.md's "Fix round 1" section for the full fencepost
+/// sweep this bug prompted across every other curated range).
+///
+/// Era-breadth entries win whenever exactly one of them intersects
+/// `window`; when `window` spans MORE than one era-breadth range (>=2
+/// intersect), a broad-breadth entry is preferred instead (falling back to
+/// the era set, same `pick_by_window` tie rule, if no broad entry
 /// intersects either) -- "a broad period -> a broad blurb; don't stack
 /// everything" (user direction, 2026-08-19). Exactly one blurb or none,
 /// never a stack: every branch below returns at most one reference.
@@ -88,6 +98,17 @@ pub fn resolve_blurb(blurbs: &[PlaceBlurbEntry], window: TimeRange) -> Option<&P
         if let Some(e) = era.first() {
             return Some(e);
         }
+        // era.len() == 0: window touches NONE of this place's own
+        // era-breadth ranges (a genuine gap between curated eras, or a
+        // place with no era blurbs at all) -- deliberate design choice
+        // (fix round 1, M1, documented here because the reviewer correctly
+        // flagged this branch as unlabeled): fall back to a broad summary
+        // if one intersects, rather than showing no blurb. A window inside
+        // an unnarrated gap is still, truthfully, inside the place's whole
+        // history, and the broad blurb is written to be true of the whole
+        // span -- hiding it here would trade a correct, useful answer for
+        // a blank one. CONTRACT.md's BLURB-1 note documents this case
+        // explicitly (was previously silent on it, per the review).
         return pick_by_window(&broad, window, |b| b.when).map(|i| broad[i]);
     }
 
@@ -231,6 +252,66 @@ mod tests {
         // No broad entry at all -- exactly one blurb (not none, not both).
         let got = resolve_blurb(&blurbs, range(-300, 50));
         assert!(got.is_some());
+    }
+
+    #[test]
+    fn blurb_range_is_inclusive_on_both_ends() {
+        // Fix round 1 (M1): pins the boundary semantics CONTRACT.md's
+        // BLURB-1 note now documents explicitly -- a blurb's own `to` (and
+        // `from`) year is itself covered, not excluded.
+        let blurbs = vec![blurb("only", -200, -100, "era")];
+        assert_eq!(resolve_blurb(&blurbs, range(-200, -200)).map(|b| b.text.as_str()), Some("only")); // lower edge
+        assert_eq!(resolve_blurb(&blurbs, range(-100, -100)).map(|b| b.text.as_str()), Some("only")); // upper edge
+        assert_eq!(resolve_blurb(&blurbs, range(-201, -201)), None); // one before: excluded
+        assert_eq!(resolve_blurb(&blurbs, range(-99, -99)), None); // one after: excluded
+    }
+
+    #[test]
+    fn zero_era_hits_falls_back_to_broad_by_design() {
+        // Fix round 1 (M1): the branch the review flagged as unlabeled --
+        // a window touching NONE of this place's era ranges but that a
+        // broad range still intersects shows the broad summary, not "no
+        // blurb" (see resolve_blurb's own doc comment for the reasoning).
+        // Locks the decision in: changing this requires deliberately
+        // updating this test, not an accidental behavior drift.
+        let blurbs = vec![
+            blurb("first half", -4004, -800, "era"),
+            blurb("second half", -400, 100, "era"),
+            blurb("whole sweep", -4004, 100, "broad"),
+        ];
+        // [-799,-401] touches NEITHER era range (a genuine gap) but the
+        // broad range still covers it.
+        assert_eq!(resolve_blurb(&blurbs, range(-799, -401)).map(|b| b.text.as_str()), Some("whole sweep"));
+    }
+
+    #[test]
+    fn zero_era_hits_and_no_broad_curated_returns_none() {
+        // Symmetric counterpart to the test above: a gap with no broad
+        // entry at all curated for this place still correctly falls
+        // through to "no blurb" (the brief's own "fallback default/none"
+        // case), not a panic or a spurious pick.
+        let blurbs = vec![blurb("first half", -4004, -800, "era"), blurb("second half", -400, 100, "era")];
+        assert_eq!(resolve_blurb(&blurbs, range(-799, -401)), None);
+    }
+
+    #[test]
+    fn narrated_boundary_year_resolves_to_the_specific_blurb_not_broad() {
+        // Fix round 1 (M1): a direct, synthetic reproduction of the exact
+        // shape of the shipped bug -- Jerusalem's own era-1 blurb text
+        // named "586 BC" as its own closing event, but its curated range
+        // stopped at -587, one year short, so the window reached via the
+        // shipped "Destroyed 586 BC" -> "Show this time on the map" link
+        // (from=-586&to=-586) fell into the zero-era-hits fallback and
+        // showed the generic broad summary instead. This pins the FIXED
+        // shape: a blurb's range reaching the exact year its own text
+        // narrates resolves to that specific blurb, never broad.
+        let blurbs = vec![
+            blurb("Once a stronghold, the city fell in 586 BC.", -4004, -586, "era"),
+            blurb("Rebuilt after the exile.", -538, 100, "era"),
+            blurb("The whole sweep, Canaanite era to today.", -4004, 100, "broad"),
+        ];
+        let destroyed_year = range(-586, -586); // place.destroyed.when, mirrored
+        assert_eq!(resolve_blurb(&blurbs, destroyed_year).map(|b| b.text.as_str()), Some("Once a stronghold, the city fell in 586 BC."));
     }
 
     #[test]

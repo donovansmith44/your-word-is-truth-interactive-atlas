@@ -63,7 +63,7 @@
         "text": "Once the Jebusite stronghold of Jebus, the city became Israel's capital after David's conquest and the site of Solomon's temple, until Babylon burned it in 586 BC.",
         "when": {
           "from_year": -4004,
-          "to_year": -587
+          "to_year": -586
         },
         "breadth": "era"
       },
@@ -407,7 +407,7 @@
         "text": "Israel's tabernacle stood here for centuries after the conquest, the nation's central place of worship before Jerusalem's temple was built.",
         "when": {
           "from_year": -1399,
-          "to_year": -1051
+          "to_year": -1050
         },
         "breadth": "era"
       }

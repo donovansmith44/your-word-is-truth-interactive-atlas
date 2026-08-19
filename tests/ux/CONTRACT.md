@@ -88,12 +88,26 @@ Notes:
   range falls back to the place's plain default name. Scripture mode always
   shows the plain default name (no curated period name is ever resolved
   there -- there is no time window to resolve one against).
+- Every curated place-history range (a `[[place.name]]`, a `[[place.blurb]]`,
+  or `established`/`destroyed`'s own `when`) is INCLUSIVE on both ends --
+  its own `from`/`to` year is itself covered, matching `TimeRange`'s general
+  convention throughout this app (`slider-era-{eraId}`'s own `data-active`
+  rule already relies on the same inclusive-both-ends reading). A curated
+  range whose text names a specific year (e.g. a destruction date) must
+  therefore reach that exact year, not stop one short of it (fix round 1,
+  M1: Jerusalem's own destruction-year blurb had exactly this off-by-one).
 - BLURB-1 (batch-e-brief.md): `place-card-blurb` shows at most one blurb,
   never a stack -- a window inside exactly one of a place's own `"era"`-
   breadth ranges shows that blurb; a window spanning more than one of them
   shows a `"broad"`-breadth blurb instead (falling back to an `"era"` pick
-  if no `"broad"` blurb is curated); a window matching nothing shows no
-  `place-card-blurb` at all.
+  if no `"broad"` blurb is curated); a window inside NEITHER a place's
+  `"era"` ranges NOR any `"broad"` one shows no `place-card-blurb` at all.
+  A window that touches ZERO `"era"` ranges (a gap between two curated
+  eras) but that a `"broad"` range still intersects is NOT the "matches
+  nothing" case -- it shows the `"broad"` blurb (fix round 1, M1: this
+  branch existed since the first batch-e commits but was undocumented
+  here; a window inside such a gap is still, truthfully, inside the
+  place's whole history, so the broad summary is shown rather than nothing).
 - Hover place card content (batch-d-brief.md): the card is place name + verse
   content + controls, nothing else -- no per-(book,chapter) count rows, bare
   canonical-ref rows, or chapter-identifier lines anywhere on it. From the

@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Locator } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { api } from './lib/api';
 import { formatClaim } from './lib/years';
 
@@ -16,16 +16,21 @@ import { formatClaim } from './lib/years';
 // lights a marker on its own -- Jerusalem's theo-159 event (dated -1055,
 // inside the curated Jebus range) does).
 
-// Same rationale/technique as world-hover-text.spec.ts's own moveAndClick:
-// a real user's pointer never teleports, and a single-jump click can miss
-// delivering the pointerenter PlaceCard's own hover-stays-open logic needs.
-async function moveAndClick(page: Page, locator: Locator): Promise<void> {
-  const box = await locator.boundingBox();
-  if (!box) throw new Error('moveAndClick: locator has no bounding box (not visible?)');
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 10 });
-  await page.mouse.down();
-  await page.mouse.up();
-}
+// Fix round 1 (batch-e-review.md MAJOR-2): every click below targets a
+// button INSIDE an already-open, already-hovered card -- world-hover-text.
+// spec.ts's own moveAndClick helper exists for a DIFFERENT problem (a
+// marker-to-card HOVER transition, where a single-jump move can miss
+// delivering the pointerenter PlaceCard's own hover-stays-open logic
+// needs), which none of these clicks are. Reviewer reproduced a ~60%
+// failure rate on one such click (a custom helper that snapshots
+// boundingBox() ONCE and dispatches raw mouse events at that stale
+// position, racing .place-card's own CSS entrance animation -- the second
+// click in a test has no incidental settle time the way a first click
+// right after several `await expect(...)` calls does) and confirmed
+// Playwright's own `.click()` (which re-reads the target's position and
+// waits for it to be visually STABLE, not just attached, immediately
+// before dispatching) passes 5/5 in the identical scenario. Plain
+// `.click()` throughout this file, no custom helper.
 
 test('NAME-1: Jerusalem/Jebus swaps on the marker label and card title when the window crosses the curated boundary', async ({ page }) => {
   // Before David's conquest (theo-159, "Reign of David", dated -1055 --
@@ -108,7 +113,7 @@ test('DATE-1: the established date affordance opens a popover that lists curated
   await expect(established).toContainText(formatClaim(-1003, -1003, 'traditional')); // "c. 1003 BC"
   await expect(card.getByTestId('place-card-date-destroyed')).toContainText(formatClaim(-586, -586, null)); // "586 BC", no "c."
 
-  await moveAndClick(page, established);
+  await established.click();
   const popover = page.getByTestId('popover');
   await expect(popover).toBeVisible();
   await expect(page.getByTestId('popover-title')).toHaveText(`Established ${formatClaim(-1003, -1003, 'traditional')}`);
@@ -147,7 +152,7 @@ test('DATE-1: the established date affordance opens a popover that lists curated
 
   // The destroyed date opens its OWN popover, with ITS OWN curated verses
   // (no "c." -- no note curated for this claim).
-  await moveAndClick(page, destroyed);
+  await destroyed.click();
   await expect(page.getByTestId('popover-title')).toHaveText(`Destroyed ${formatClaim(-586, -586, null)}`);
   const destroyedChips = await page.getByTestId('popover').locator('.popover-chips [data-testid]').evaluateAll(
     els => els.map(el => el.getAttribute('data-testid')));
@@ -157,7 +162,7 @@ test('DATE-1: the established date affordance opens a popover that lists curated
 test('DATE-1: "Show this time on the map" navigates /world to the claim\'s own window', async ({ page }) => {
   await page.goto('/world?from=-590&to=-580');
   await page.getByTestId('marker-jerusalem').hover({ force: true });
-  await moveAndClick(page, page.getByTestId('place-card-date-established'));
+  await page.getByTestId('place-card-date-established').click();
   await expect(page.getByTestId('popover')).toBeVisible();
   await page.getByTestId('popover-chip-map').click();
   await page.waitForURL(u => u.pathname === '/world' && u.searchParams.get('from') === '-1003' && u.searchParams.get('to') === '-1003');

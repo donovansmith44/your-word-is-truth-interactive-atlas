@@ -129,8 +129,15 @@ id = "jerusalem"
 
   [[place.blurb]]
   text = "Once the Jebusite stronghold of Jebus, the city became Israel's capital after David's conquest and the site of Solomon's temple, until Babylon burned it in 586 BC."
+  # Fix round 1 (M1): `to` was -587, one year short of the 586 BC burning
+  # this text itself narrates -- and of `place.destroyed.year` (-586)
+  # curated just above. Range must reach the exact year its own prose
+  # names (resolve_blurb is inclusive on both ends); -586 also closes the
+  # boundary against the second era blurb below (from = -538), leaving a
+  # deliberate 48-year unnarrated gap [-585,-539] where the broad summary
+  # is the correct fallback (see CONTRACT.md's BLURB-1 note on this).
   from = -4004
-  to = -587
+  to = -586
   breadth = "era"
 
   [[place.blurb]]
@@ -378,8 +385,14 @@ id = "shiloh"
 
   [[place.blurb]]
   text = "Israel's tabernacle stood here for centuries after the conquest, the nation's central place of worship before Jerusalem's temple was built."
+  # Fix round 1 (M1 sweep): `to` was -1051, one year short of
+  # `place.destroyed.to` (-1050) directly above -- the same class of gap
+  # Jerusalem's blurb had: "Show this time on the map" for the destroyed
+  # RANGE navigates to from=-1104&to=-1050, and narrowing to exactly -1050
+  # (the range's own tail) would have missed this blurb. Extended to match
+  # destroyed's own upper bound exactly.
   from = -1399
-  to = -1051
+  to = -1050
   breadth = "era"
 
 # --- Capernaum ---------------------------------------------------------

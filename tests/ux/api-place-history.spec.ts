@@ -81,7 +81,7 @@ test('NAME-1: every other curated rename pinned at its own boundary (Jebus/Jerus
 });
 
 test('BLURB-1: exactly one blurb or none, deterministic, and a broad window prefers the broad summary over stacking eras', async () => {
-  // jerusalem: two "era" blurbs ([-4004,-587], [-538,100]) plus one "broad"
+  // jerusalem: two "era" blurbs ([-4004,-586], [-538,100]) plus one "broad"
   // ([-4004,100]) -- batch-e-brief.md Requirement 4's "don't stack
   // everything for Jerusalem".
   const insideFirstEra = await api.placeHistory('jerusalem', -1055, -1055);
@@ -98,6 +98,30 @@ test('BLURB-1: exactly one blurb or none, deterministic, and a broad window pref
   // Determinism.
   const again = await api.placeHistory('jerusalem', -4004, 100);
   expect(again).toEqual(wholeSpan);
+});
+
+test('M1 regression: Jerusalem\'s OWN destruction year (the exact "Destroyed 586 BC" -> "Show this time on the map" click path) resolves to the SPECIFIC blurb naming that year, not the broad summary', async () => {
+  // Fix round 1 (batch-e-review.md MAJOR-1): the first era blurb's own
+  // text says "...until Babylon burned it in 586 BC" but its curated range
+  // used to stop at -587, one year short -- so this exact window (which is
+  // also exactly place.destroyed.when, and exactly where YearNode's "Show
+  // this time on the map" chip navigates to from the destroyed date's own
+  // popover) fell into the zero-era-hits fallback and showed the generic
+  // broad summary instead. Pinned here so it can never silently regress.
+  const atDestructionYear = await api.placeHistory('jerusalem', -586, -586);
+  expect(atDestructionYear.history.display_name).toBe('Jerusalem');
+  expect(atDestructionYear.history.blurb).toContain('Jebusite stronghold');
+  expect(atDestructionYear.history.blurb).toContain('586 BC');
+  expect(atDestructionYear.history.blurb).not.toContain("Jerusalem's story runs"); // NOT the broad one
+  expect(atDestructionYear.history.destroyed.when).toEqual({ from_year: -586, to_year: -586 });
+
+  // One year on either side of the fixed boundary, for good measure: -587
+  // (still era-1, unaffected by the fix) and -585 (start of the genuine,
+  // documented [-585,-539] gap, where broad correctly takes over).
+  const justBefore = await api.placeHistory('jerusalem', -587, -587);
+  expect(justBefore.history.blurb).toContain('Jebusite stronghold');
+  const inTheGap = await api.placeHistory('jerusalem', -585, -560);
+  expect(inTheGap.history.blurb).toContain("Jerusalem's story runs");
 });
 
 test('established/destroyed are window-independent: same values regardless of which window is asked for', async () => {
