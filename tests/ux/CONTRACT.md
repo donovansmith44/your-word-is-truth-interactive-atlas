@@ -28,7 +28,12 @@ World: `world-map`, `marker-{placeId}`, `place-card`, `place-card-title`,
   attr `data-faded` = "true"|"false"; `marker-end` set),
   `legend`, `legend-item-{narrativeId}` (button; `aria-pressed` = isolated),
   `slider`, `slider-readout` (an `<input>`, accepts typed year/range text, Enter applies),
-  `slider-era-{eraId}` (clickable era label), `mode-chip` (text contains active ref),
+  `slider-era-{eraId}` (clickable era label; attr `data-active` = "true" when the
+  currently-applied window overlaps this era's own `[from_year, to_year]`, "false"
+  otherwise -- clicking an era band applies that era's own exact range, which, because
+  era ranges are contiguous and non-overlapping by construction, always leaves exactly
+  that one era's `data-active` "true" and every other era's "false"),
+  `mode-chip` (text contains active ref),
   `mode-chip-return`,
   `arrow-tip` (visible while an arrow is hovered; text contains the narrative name),
   `toast` (non-blocking error notice; last good scene stays rendered beneath it),
@@ -55,3 +60,10 @@ Notes:
 - Scene pseudo-events with ids beginning `mention-` are text-mention markers
   (scripture mode); arrows never reference them.
 - The slider is `aria-disabled="true"` while scripture mode is active.
+- Magnetic drag-release snap: releasing a dragged slider handle within ~6px of an
+  era boundary (either neighboring era's own `from_year`/`to_year`) snaps the
+  released value to that boundary year; releasing anywhere else keeps the exact
+  pixel-decoded year (a deliberate mid-era release is never pulled to a boundary).
+  Snapping is evaluated only at the release point -- never while the handle is
+  still being dragged, so the brush visibly tracks the pointer exactly until the
+  pointer is lifted.
