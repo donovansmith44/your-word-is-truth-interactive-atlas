@@ -204,12 +204,12 @@ export function setScene(id, sceneJson) {
     const scene = typeof sceneJson === 'string' ? JSON.parse(sceneJson) : (sceneJson || {});
     const places = scene.places || [];
     const seen = new Set();
-    const placed = []; // {lat, lon} already resolved this call, in scene order -- nudgeCloseLatLng checks each new candidate against these
+    const placed = []; // {lat, lon, origLat, origLon} already resolved this call, in scene order -- nudgeCloseLatLng checks each new candidate's ORIGINAL coords against these (fix round 1 / M3: not the nudged lat/lon, see nudgeCloseLatLng's own comment)
 
     for (const p of places) {
         seen.add(p.id);
         const [lat, lon] = nudgeCloseLatLng(p, placed);
-        placed.push({ lat, lon });
+        placed.push({ lat, lon, origLat: p.lat, origLon: p.lon });
         const prior = inst.markers.get(p.id);
 
         if (!prior) {
@@ -268,6 +268,22 @@ export function setScene(id, sceneJson) {
 // fixed direction, so a third or fourth place crowding one spot -- none
 // exist today, but nothing here assumes exactly two -- would still land at
 // its own distinct spot instead of stacking back onto an earlier nudge.
+//
+// Fix round 1 (M3): "nothing here assumes exactly two" was false until this
+// fix -- `placed` entries are compared by their ORIGINAL (pre-nudge)
+// coordinates (origLat/origLon), not their final nudged ones. Comparing
+// against final positions was the actual bug: NUDGE_STEP_DEG is deliberately
+// LARGER than CLOSE_THRESHOLD_KM (see above), so a nudged point always moves
+// itself outside CLOSE_THRESHOLD_KM of the cluster it came from -- meaning a
+// THIRD place at the same original spot would only ever count the still-
+// unmoved first point as "close" (the second point, already nudged away,
+// drops out of range), landing it on the exact same golden-angle slot as
+// the second place instead of a fresh one. Original coordinates never move,
+// so counting against those gives every coincident place in a cluster of
+// any size its own distinct running count (1, 2, 3, ...) and hence its own
+// slot, and preserves the existing call-to-call determinism (same place
+// among the same neighbors, in the same server-sorted order, always sees
+// the same count).
 const GOLDEN_ANGLE_RAD = 2.399963229728653;
 const CLOSE_THRESHOLD_KM = 5;
 const NUDGE_STEP_DEG = 0.08;
@@ -281,7 +297,7 @@ function approxKm(lat1, lon1, lat2, lon2) {
 function nudgeCloseLatLng(p, placed) {
     let n = 0;
     for (const q of placed) {
-        if (approxKm(p.lat, p.lon, q.lat, q.lon) < CLOSE_THRESHOLD_KM) {
+        if (approxKm(p.lat, p.lon, q.origLat, q.origLon) < CLOSE_THRESHOLD_KM) {
             n++;
         }
     }
