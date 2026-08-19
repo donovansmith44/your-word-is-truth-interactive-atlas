@@ -31,7 +31,17 @@
    between -- see ExplorerPopover.razor's own comment) means Blazor tears
    this component down -- calling DisposeAsync below -- every time the
    mini-map area closes or a different popover node loads, so no Leaflet
-   instance ever outlives the figure that created it. *@
+   instance ever outlives the figure that created it.
+
+   FIX ROUND 1: that last guarantee is not automatic just from DisposeAsync
+   existing -- OnAfterRenderAsync's own awaits (MapInterop.Create, then
+   Atlas.SceneScripture/SetScene/FitScene) are each a point where
+   DisposeAsync can run concurrently and, without the _disposed flag below,
+   would see _mapInterop still null mid-Create and no-op, letting the
+   continuation that resolves afterward assign a MapInterop nothing would
+   ever dispose -- a real leaked Leaflet instance. See _disposed's own
+   comment and every check against it in OnAfterRenderAsync/DisposeAsync for
+   how this is actually made true, not just stated. *@
 @implements IAsyncDisposable
 @implements IMapEvents
 @inject AtlasClient Atlas
@@ -49,6 +59,26 @@
     private ElementReference _mapEl;
     private MapInterop? _mapInterop;
 
+    // Fix round 1 finding: every await below is a point where DisposeAsync
+    // can run concurrently (ExplorerPopover's own @if around <MiniWorld> --
+    // see this component's header comment -- tears this component down the
+    // instant the mini-map area closes or a different node loads, which can
+    // land at ANY of these awaits if the user is fast, or a test is). Before
+    // this flag existed, DisposeAsync running while MapInterop.Create's own
+    // internal awaits (JS module import + Leaflet init) were still pending
+    // saw _mapInterop still null and no-opped -- then Create's continuation
+    // resolved and assigned a FRESH MapInterop to _mapInterop, which nothing
+    // would ever read or dispose again: a real Leaflet map/DOM subtree
+    // leaked, permanently, every time the race landed there. _disposed is
+    // set FIRST thing in DisposeAsync (see below), then checked after EVERY
+    // await in this method -- the moment it's true, whatever this method
+    // was about to do next is pointless (the popover this map belongs to is
+    // already gone), so it either disposes whatever it just created itself
+    // (DisposeAsync can no longer do it -- it already ran) or simply bails,
+    // never touching a _mapInterop DisposeAsync may have already disposed
+    // and nulled out from underneath it.
+    private bool _disposed;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
@@ -56,12 +86,40 @@
             return;
         }
 
-        _mapInterop = await MapInterop.Create(JS, _mapEl, mini: true, this);
+        var interop = await MapInterop.Create(JS, _mapEl, mini: true, this);
+        if (_disposed)
+        {
+            // DisposeAsync ran while the await above was pending -- at that
+            // moment _mapInterop was still null, so its own cleanup (below)
+            // had nothing to dispose. `interop` is now the ONLY reference to
+            // the real Leaflet map/DOM subtree map.js's own `instances` Map
+            // is still holding (see map.js's `destroy`) -- dispose it
+            // directly here rather than assigning it to _mapInterop, which
+            // nothing would ever read or dispose again.
+            await interop.DisposeAsync();
+            return;
+        }
+
+        _mapInterop = interop;
 
         try
         {
             var scene = await Atlas.SceneScripture(SRef);
+            if (_disposed)
+            {
+                // DisposeAsync ran during this fetch. _mapInterop was
+                // already assigned by the time it ran, so DisposeAsync's
+                // own cleanup already disposed it (and nulled the field) --
+                // nothing left to do here.
+                return;
+            }
+
             await _mapInterop.SetScene(scene);
+            if (_disposed)
+            {
+                return;
+            }
+
             await _mapInterop.FitScene();
         }
         catch (Exception)
@@ -69,7 +127,9 @@
             // A mini-map that fails to load is a quiet nicety gone missing,
             // not a popover-breaking error -- the surrounding popover's own
             // body/chips already loaded successfully by the time this runs.
-            // The 320x240 figure just stays an empty (tile-only) map.
+            // The 320x240 figure just stays an empty (tile-only) map. (A
+            // disposed _mapInterop mid-fetch never reaches a call that could
+            // throw here -- both _disposed checks above return first.)
         }
     }
 
@@ -106,9 +166,28 @@
 
     public async ValueTask DisposeAsync()
     {
-        if (_mapInterop is not null)
+        // Set FIRST, before any await -- this is the flag OnAfterRenderAsync
+        // checks after each of its own awaits (see its comment). Single-
+        // threaded Blazor WASM guarantees no other continuation can run
+        // between this assignment and the field capture/null below, so by
+        // the time ANY interleaved OnAfterRenderAsync continuation resumes
+        // and reads _disposed, it is already true.
+        _disposed = true;
+
+        // Capture-then-null rather than a plain null check: if
+        // OnAfterRenderAsync's own Create() await is still pending right
+        // now, _mapInterop is still null here too -- correctly nothing to
+        // dispose FROM THIS METHOD (OnAfterRenderAsync's own _disposed
+        // check, once its await resolves, disposes that interop itself
+        // instead). If _mapInterop IS already assigned, nulling it here
+        // (before awaiting its disposal) means OnAfterRenderAsync's later
+        // _disposed checks never touch an interop this method has already
+        // started disposing.
+        var interop = _mapInterop;
+        _mapInterop = null;
+        if (interop is not null)
         {
-            await _mapInterop.DisposeAsync();
+            await interop.DisposeAsync();
         }
     }
 }

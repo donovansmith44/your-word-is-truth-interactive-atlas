@@ -379,13 +379,14 @@ input:focus-visible,
 }
 
 /* passage-chip (READ-5/Task 15): "floats bottom-center like a paper tag:
-   parchment, bronze border, ref in mono" (design-direction.md). Stays
-   visible while its own popover is open (design's own "selecting a new
-   anchor or navigating clears the chip" is an exhaustive list that does
-   NOT include "opening its popover") -- z-index sits above reader-prev/
-   reader-next (15) but well below the popover/backdrop (41/40), so an open
-   popover's own backdrop visually covers it without any special handling
-   here. */
+   parchment, bronze border, ref in mono" (design-direction.md, line 51).
+   Stays visible while its own popover is open -- the chip-clearing rule
+   (Reader.razor's own design choice, not a design-direction.md quote: a new
+   anchor or a navigation clears the chip, see OnParametersSetAsync's/
+   SetAnchorAndOpen's own comments) does not list "opening its popover" as a
+   clearing event -- z-index sits above reader-prev/reader-next (15) but
+   well below the popover/backdrop (41/40), so an open popover's own
+   backdrop visually covers it without any special handling here. */
 .passage-chip {
     position: fixed;
     left: 50%;
@@ -1489,6 +1490,18 @@ input:focus-visible,
     inset: 0;
     z-index: 40;
     background: rgba(43, 33, 23, .18);
+}
+
+/* Fix round 1 (Task 15 finding, Reader.razor): Reader.razor toggles
+   .reader-shift-active on its own outer wrapper for exactly as long as
+   Shift is held (cleared on keyup, or via reader.js's blur/visibilitychange
+   safety net if Shift is released while the tab/window isn't focused) --
+   see Reader.razor's own wrapper-div and OnPageKeyDown/OnPageKeyUp
+   comments. This alone (never touching .popover's own z-index/position, and
+   never closing the popover) lets a shift-click's second click reach the
+   verse-num button the backdrop would otherwise physically cover. */
+.reader-shift-active .popover-backdrop {
+    pointer-events: none;
 }
 
 .popover {

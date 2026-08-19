@@ -8,19 +8,43 @@
 
 <PageTitle>Bible Atlas &mdash; @BookName @_chapterNum</PageTitle>
 
-@* Outer wrapper exists ONLY so a keydown while focus is ANYWHERE inside --
-   a verse-num button just clicked, or the popover panel once its own
-   FocusAsync() lands -- bubbles to ONE handler regardless of exactly where
-   focus is at that instant (OnPageKeyDown below). .reader-page and
-   ExplorerPopover are otherwise unrelated SIBLINGS in the DOM (Blazor
-   renders a conditional block as a sibling, not a child, of the element
-   before it), so neither one alone could catch a keydown whose focus target
-   is inside the OTHER. Purely structural -- no class, no visual effect;
-   .reader-page keeps its own min-height:100vh (vh units are viewport-
-   relative regardless of ancestor nesting) and .popover keeps its own
-   position:fixed centering (an unstyled wrapper introduces no new
-   containing block). *@
-<div @onkeydown="OnPageKeyDown">
+@* Outer wrapper exists ONLY so a keydown/keyup while focus is ANYWHERE
+   inside -- a verse-num button just clicked, or the popover panel once its
+   own FocusAsync() lands -- bubbles to ONE pair of handlers regardless of
+   exactly where focus is at that instant (OnPageKeyDown/OnPageKeyUp below).
+   .reader-page and ExplorerPopover are otherwise unrelated SIBLINGS in the
+   DOM (Blazor renders a conditional block as a sibling, not a child, of the
+   element before it), so neither one alone could catch a keydown/keyup
+   whose focus target is inside the OTHER.
+
+   Fix round 1 finding: this used to ALSO close any open popover the instant
+   Shift went down, to get ExplorerPopover's own click-outside-to-close
+   backdrop (position:fixed, inset:0 -- physically covers every verse-num
+   underneath it) out of the way before a shift-click's second click. That
+   over-fired on Shift+Tab (ordinary backward tab traversal through the
+   popover's own controls, which also sends a Shift keydown) and slammed the
+   popover shut on plain keyboard navigation. Replaced with a narrower
+   mechanism: OnPageKeyDown/OnPageKeyUp only track whether Shift is
+   currently held (`_shiftHeld`), toggling the `reader-shift-active` class
+   below, which app.css turns into `pointer-events: none` on
+   `.popover-backdrop` alone -- the popover itself no longer closes on
+   keydown at all, so Tab's own default focus-traversal behavior (never
+   prevented here) proceeds normally through an open popover exactly like
+   it would anywhere else. The backdrop being un-clickable for the instant
+   Shift is held is a deliberate, narrow trade (click-outside-to-close is
+   briefly unavailable), not an oversight -- see OnVerseNumClick's own
+   comment for how the range-forming shift-click itself still closes the
+   popover afterward, unchanged.
+
+   `reader-shift-active` reacts to Shift released OUTSIDE this window too
+   (alt-tab away, switch browser tabs) via reader.js's watchShiftRelease --
+   see OnAfterRenderAsync/DisposeAsync below -- so it can never get stuck on
+   if this page's own keyup never fires. Otherwise purely structural -- no
+   visual effect of its own; .reader-page keeps its own min-height:100vh
+   (vh units are viewport-relative regardless of ancestor nesting) and
+   .popover keeps its own position:fixed centering (an unstyled wrapper
+   introduces no new containing block). *@
+<div class="@(_shiftHeld ? "reader-shift-active" : null)" @onkeydown="OnPageKeyDown" @onkeyup="OnPageKeyUp">
     <div class="reader-page" data-testid="reader-root">
         <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" />
 
@@ -107,6 +131,14 @@
     private string? _scrolledFragment;
     private IJSObjectReference? _readerJs;
 
+    // Backdrop-inertness while Shift is held (fix round 1) -- see the
+    // wrapper div's own comment above and OnPageKeyDown/OnPageKeyUp below.
+    // _selfRef is only ever used for reader.js's watchShiftRelease ->
+    // ResetShiftHeld bridge (the window-blur/tab-hidden safety net); never
+    // passed anywhere else.
+    private bool _shiftHeld;
+    private DotNetObjectReference<Reader>? _selfRef;
+
     private string BookName => _toc?.FirstOrDefault(b => b.Code == _book)?.Name ?? _book;
 
     // Fix round 1 finding: _book/_chapterNum are updated to the NEW route's
@@ -160,15 +192,19 @@
         var book = string.IsNullOrWhiteSpace(Book) ? "GEN" : Book.ToUpperInvariant();
         var chapterNum = Chapter ?? 1;
 
-        // "Selecting a new anchor or navigating clears the chip" (Task 15
-        // brief) -- OnParametersSetAsync only ever runs in response to a
-        // genuine navigation the router dispatched to this page (initial
-        // load, or any URL change matching this route, including a
-        // same-chapter fragment-only jump from the picker), never from an
-        // unrelated StateHasChanged elsewhere -- so unconditionally
-        // resetting here, before the redundant-refetch guard below, is
-        // exactly "navigating clears the chip", covering every kind of
-        // navigation rather than only ones that also change chapter.
+        // Chip-clearing rule: this component's own design choice (NOT a
+        // verbatim quote from the Task 15 brief or design-direction.md --
+        // the brief's actual, verbatim note on this interplay is quoted
+        // below, at OnVerseNumClick) is that a new anchor or a navigation
+        // each clear the chip. A new anchor is handled in SetAnchorAndOpen
+        // (_passageRange = null there). Navigating is handled here:
+        // OnParametersSetAsync only ever runs in response to a genuine
+        // navigation the router dispatched to this page (initial load, or
+        // any URL change matching this route, including a same-chapter
+        // fragment-only jump from the picker), never from an unrelated
+        // StateHasChanged elsewhere -- so unconditionally resetting here,
+        // before the redundant-refetch guard below, clears the chip on
+        // every kind of navigation, not only ones that also change chapter.
         _anchorVerse = null;
         _passageRange = null;
 
@@ -189,6 +225,16 @@
         if (firstRender)
         {
             _readerJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
+
+            // Fix round 1: Blazor has no binding for window.blur/
+            // document.visibilitychange (releasing Shift while this
+            // tab/window isn't focused never fires a DOM keyup ON THIS
+            // PAGE at all), so this tiny JS-side watcher exists purely to
+            // guarantee _shiftHeld can't get stuck true -- see reader.js's
+            // own comment. ResetShiftHeld is the only [JSInvokable] this
+            // page exposes, and _selfRef is disposed in DisposeAsync below.
+            _selfRef = DotNetObjectReference.Create(this);
+            await _readerJs.InvokeVoidAsync("watchShiftRelease", _selfRef);
         }
 
         if (!ChapterMatchesRoute || _readerJs is null)
@@ -249,29 +295,67 @@
         return Task.CompletedTask;
     }
 
-    // Closes any open popover the INSTANT Shift goes down -- found by
-    // tracing a real READ-5 failure (systematic-debugging): the popover's
-    // own backdrop is a full-viewport, position:fixed div (by design --
-    // ExplorerPopover's click-outside-to-close) that physically intercepts
-    // pointer events, so a plain click's popover staying open would make
-    // Playwright's (and a real user's) very next click on a DIFFERENT
-    // verse-num impossible to land at all -- it would just retry against
-    // the intercepting backdrop until its actionability timeout, never
-    // reaching OnVerseNumClick below. Closing on keydown (not waiting for
-    // the shift-click itself) means the backdrop is already gone by the
-    // time that second click is attempted. A plain onclick guard on
-    // ExplorerPopover's OWN focused panel was considered and rejected: the
-    // real test never waits for that panel's own async FocusAsync() to
-    // land before pressing Shift, so focus could still be on the
-    // just-clicked verse-num button at that instant -- only a common
-    // ancestor of BOTH (this component's own wrapper div, see its comment)
-    // catches the bubbled keydown reliably regardless of which one
+    // Fix round 1 (replaces a prior version that closed any open popover
+    // the instant Shift went down -- see the wrapper div's own comment for
+    // why that over-fired on Shift+Tab). This pair only ever tracks
+    // _shiftHeld; neither touches _activeNode. The original problem this
+    // exists to solve is still real: ExplorerPopover's own backdrop is a
+    // full-viewport, position:fixed div (by design -- click-outside-to-
+    // close) that physically intercepts pointer events, so a plain click's
+    // popover staying open would make a shift-click's SECOND click (on a
+    // different verse-num) impossible to land at all -- it would just retry
+    // against the intercepting backdrop until its actionability timeout,
+    // never reaching OnVerseNumClick below. `reader-shift-active` (toggled
+    // on the wrapper div above, see its own comment) turns that backdrop
+    // `pointer-events: none` for exactly as long as Shift is held, so the
+    // second click's pointer event passes through to the verse-num button
+    // beneath it -- OnVerseNumClick's own existing shift-click branch then
+    // closes the popover itself once a valid range actually forms (or
+    // doesn't, if it fell through to the plain-click path -- see its
+    // comment), same as before this fix round.
+    //
+    // Bound on this component's own wrapper div (not verse-num or the
+    // popover panel individually) for the same reason the original version
+    // was: the real test never waits for ExplorerPopover's own async
+    // FocusAsync() to land before pressing Shift, so focus could still be
+    // on the just-clicked verse-num button at that instant, or could
+    // already be inside the popover panel -- only a common ancestor of BOTH
+    // catches the bubbled keydown/keyup reliably regardless of which one
     // currently has focus.
     private void OnPageKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Shift" && _activeNode is not null)
+        if (e.Key == "Shift")
         {
-            _activeNode = null;
+            _shiftHeld = true;
+        }
+    }
+
+    private void OnPageKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Shift")
+        {
+            _shiftHeld = false;
+        }
+    }
+
+    // reader.js's watchShiftRelease -> window.blur/document.visibilitychange
+    // safety net (see OnAfterRenderAsync). The ONLY way _shiftHeld can go
+    // stuck true is Shift being physically released while this tab/window
+    // isn't the focused one -- no DOM keyup for it ever reaches this page
+    // in that case. Resetting unconditionally (rather than trying to prove
+    // Shift is truly no longer held) is always the safe direction: at worst
+    // this fires once while Shift genuinely is still down (the user let go
+    // specifically while alt-tabbed away), which just makes the backdrop
+    // briefly clickable again a little early -- a real Shift keydown on
+    // return sets _shiftHeld back to true immediately, same as any other
+    // fresh keydown.
+    [JSInvokable]
+    public void ResetShiftHeld()
+    {
+        if (_shiftHeld)
+        {
+            _shiftHeld = false;
+            StateHasChanged();
         }
     }
 
@@ -399,6 +483,15 @@
         {
             try
             {
+                // Removes reader.js's own window/document-level blur and
+                // visibilitychange listeners (see watchShiftRelease's own
+                // comment) BEFORE disposing the module reference itself --
+                // those listeners are global (window/document, not scoped
+                // to this component's own DOM), so leaving them wired past
+                // this page's own lifetime would call back into a disposed
+                // _selfRef on every future navigation's blur/visibility
+                // event for as long as the browser tab stays open.
+                await _readerJs.InvokeVoidAsync("unwatchShiftRelease");
                 await _readerJs.DisposeAsync();
             }
             catch (JSDisconnectedException)
@@ -406,5 +499,7 @@
                 // The circuit is already gone during teardown -- nothing left to clean up JS-side.
             }
         }
+
+        _selfRef?.Dispose();
     }
 }
