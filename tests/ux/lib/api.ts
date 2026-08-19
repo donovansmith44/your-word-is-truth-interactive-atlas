@@ -13,6 +13,8 @@ export const api = {
   chapter: (cref: string) => getJson(`/api/chapter/${cref}`),
   verse: (vref: string) => getJson(`/api/verse/${vref}`),
   place: (id: string) => getJson(`/api/place/${id}`),
+  // Batch E: `/api/place/{id}?from=&to=` -- the window-scoped `history` payload.
+  placeHistory: (id: string, from: number, to: number) => getJson(`/api/place/${id}?from=${from}&to=${to}`),
   narratives: () => getJson('/api/narratives'),
   borders: (from: number, to: number) => getJson(`/api/borders?from=${from}&to=${to}`),
   landmarks: () => getJson('/api/landmarks'),
