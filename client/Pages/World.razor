@@ -55,6 +55,18 @@
         <Legend Narratives="_scene.Narratives" IsolatedId="@_isolated" OnIsolate="HandleIsolate" />
     }
 
+    @* Atlas plate detail (design-direction.md, ADDED PER USER FEEDBACK
+       2026-08-18): time-mode-only, honest about which snapshot is showing;
+       hidden whenever there's no time context (scripture mode) or no
+       snapshot has loaded yet. *@
+    @if (_scriptureRef is null && _borders?.SnapshotYear is not null)
+    {
+        <div class="border-tag" data-testid="border-tag">
+            <span class="border-tag-label">Borders c.</span>
+            <span class="border-tag-year">@YearText.Format(_borders.SnapshotYear.Value)</span>
+        </div>
+    }
+
     @if (_errorMessage is not null)
     {
         <div class="toast" data-testid="toast">
@@ -89,6 +101,25 @@
     private Scene? _scene;
     private string? _errorMessage;
     private string? _scriptureRef;
+
+    // Atlas plate detail (design-direction.md, ADDED PER USER FEEDBACK
+    // 2026-08-18): the last successfully-fetched border snapshot (border-
+    // tag's own text/visibility) and the curated landmark list (fetched
+    // once in OnInitializedAsync, pushed to the map once it exists). Both
+    // stay null until their first successful fetch and are never reset to
+    // null afterward -- a later failed refetch just leaves the prior
+    // (still-honest, if slightly stale) value in place, same "last good
+    // state stays" philosophy the toast already uses for _scene.
+    private BordersOut? _borders;
+    private List<LandmarkDto>? _landmarks;
+
+    // Guards PushLandmarksIfReady below against double-pushing -- unlike
+    // _scene/_borders (each refetched on every window change, with their
+    // own natural "only apply if this fetch is still current" logic),
+    // landmarks are fetched exactly ONCE, so the race between "the fetch
+    // resolves" and "the map gets created" needs an explicit once-only
+    // flag instead of reusing that machinery.
+    private bool _landmarksPushed;
 
     // The most recently APPLIED time-mode window -- i.e. the last from/to
     // SyncFromQuery validated, which is exactly "the window to return to"
@@ -162,6 +193,43 @@
             // other fetch failure rather than crashing the page.
             _errorMessage = "Couldn't load the timeline eras -- check your connection and try again.";
         }
+
+        try
+        {
+            _landmarks = await Atlas.Landmarks();
+        }
+        catch (Exception)
+        {
+            // Landmarks are map decoration, not load-bearing -- same silent,
+            // non-fatal treatment as borders (design-direction.md's Atlas
+            // plate detail): the map still works fine with no labels.
+        }
+
+        // If OnInitializedAsync's own await above didn't complete
+        // synchronously (the normal case -- it's a real network fetch),
+        // Blazor already rendered once with _mapInterop still unset, so
+        // OnAfterRenderAsync(firstRender: true) can fire and find
+        // _mapInterop non-null BEFORE this line ever runs (confirmed: this
+        // is exactly the race a naive "OnInitializedAsync always finishes
+        // before the first render" assumption misses -- Blazor's own
+        // contract is the opposite: an incomplete OnInitializedAsync task
+        // gets an interim render, not a delayed one). Covers that case;
+        // OnAfterRenderAsync's own call covers the reverse ordering.
+        await PushLandmarksIfReady();
+    }
+
+    // Pushes the curated landmark list to the map exactly once, whichever
+    // of OnInitializedAsync's fetch or OnAfterRenderAsync's map-creation
+    // happens to resolve second (see _landmarksPushed's own comment).
+    private async Task PushLandmarksIfReady()
+    {
+        if (_landmarksPushed || _landmarks is null || _mapInterop is null)
+        {
+            return;
+        }
+
+        _landmarksPushed = true;
+        await _mapInterop.SetLandmarks(_landmarks);
     }
 
     protected override async Task OnParametersSetAsync()
@@ -199,6 +267,24 @@
             // produced _scene.
             _lastFitMode = _scriptureRef is not null ? "scripture" : "time";
         }
+
+        // Same "already resolved before the map existed" race as _scene
+        // above, for borders: only push them if we're not (by now) in
+        // scripture mode -- a deep link straight into scripture mode must
+        // never show a border layer it never asked for, matching
+        // DebouncedLoadScriptureScene's own SetBordersVisible(false).
+        if (_borders is not null && _scriptureRef is null)
+        {
+            await _mapInterop.SetBordersVisible(true);
+            await _mapInterop.SetBorders(_borders.Geojson);
+        }
+
+        // Landmarks: same "whichever resolves second" race as _scene/
+        // _borders above, just fetched once in OnInitializedAsync instead
+        // of on every window change -- see PushLandmarksIfReady/
+        // _landmarksPushed's own comments for why a naive "OnInitializedAsync
+        // always finishes before the first render" assumption is wrong.
+        await PushLandmarksIfReady();
     }
 
     // Single path for every window/ref change, whether it comes from the
@@ -389,6 +475,55 @@
         {
             StateHasChanged();
         }
+
+        // Borders share this same debounce/cancellation (`cts`) but are a
+        // fully independent try/catch from the scene fetch above -- a
+        // borders failure must never surface as the scene's own error
+        // toast (design-direction.md's Atlas plate detail: "failures
+        // NON-fatal -- no toast, just skip borders, log-free"). Skipped
+        // entirely (not just skipped-on-map-push) when this call was
+        // already superseded, same as the scene fetch would have been.
+        if (!cts.IsCancellationRequested)
+        {
+            await LoadBordersFor(from, to, cts);
+        }
+    }
+
+    // Fetches the border snapshot for [from,to] and pushes it to the map.
+    // Unconditionally restores the layer's visibility FIRST, before the
+    // fetch even starts: entering/being in time mode should always show
+    // *some* border layer (the last successfully fetched snapshot, stale
+    // or not) rather than staying hidden from a previous scripture-mode
+    // visit just because this particular refresh failed. Silent on failure
+    // per the batch brief -- no toast, no logging, just keep showing
+    // whatever was already there.
+    private async Task LoadBordersFor(int from, int to, CancellationTokenSource cts)
+    {
+        try
+        {
+            var borders = await Atlas.Borders(from, to);
+            if (cts.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _borders = borders;
+            if (_mapInterop is not null)
+            {
+                await _mapInterop.SetBordersVisible(true);
+                await _mapInterop.SetBorders(borders.Geojson);
+            }
+        }
+        catch (Exception)
+        {
+            // Silent per design-direction.md's Atlas plate detail -- skip
+            // this update, keep showing whatever border snapshot (if any)
+            // is already on the map.
+        }
+        finally
+        {
+            StateHasChanged();
+        }
     }
 
     // Same debounce/latest-wins/toast machinery as DebouncedLoadScene above,
@@ -432,6 +567,14 @@
             {
                 await _mapInterop.SetScene(scene);
                 await _mapInterop.FitScene();
+
+                // Atlas plate detail: "Scripture mode: hide the border
+                // layer AND the tag (no time context)" -- the tag hides
+                // itself via the @if in the markup (keyed off _scriptureRef,
+                // already non-null by now), but the map's border layer
+                // needs an explicit hide; DebouncedLoadScene's
+                // LoadBordersFor restores it on a later return to time mode.
+                await _mapInterop.SetBordersVisible(false);
 
                 // Stamp the mode even though this branch always fits
                 // regardless of the PRIOR value -- a later time-mode load

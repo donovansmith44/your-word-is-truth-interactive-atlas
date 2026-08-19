@@ -29,7 +29,11 @@ World: `world-map`, `marker-{placeId}`, `place-card`, `place-card-title`,
   `slider-era-{eraId}` (clickable era label), `mode-chip` (text contains active ref),
   `mode-chip-return`,
   `arrow-tip` (visible while an arrow is hovered; text contains the narrative name),
-  `toast` (non-blocking error notice; last good scene stays rendered beneath it)
+  `toast` (non-blocking error notice; last good scene stays rendered beneath it),
+  `border-tag` (visible in time mode when a border snapshot is loaded; text contains
+  "Borders c."; hidden in scripture mode and whenever no snapshot is loaded),
+  `landmark-{slug}` (always-visible, non-interactive landmark label; slug = lowercase
+  kebab-case of the landmark's name, e.g. "Mount Sinai" -> "mount-sinai")
 Picker (ScripturePicker, shared by world and reader):
   `picker-book` (select of 66 books), `picker-chapter` (select sized from TOC),
   `picker-verse-from`, `picker-verse-to` (numeric inputs bounded by TOC),

@@ -14,4 +14,6 @@ export const api = {
   verse: (vref: string) => getJson(`/api/verse/${vref}`),
   place: (id: string) => getJson(`/api/place/${id}`),
   narratives: () => getJson('/api/narratives'),
+  borders: (from: number, to: number) => getJson(`/api/borders?from=${from}&to=${to}`),
+  landmarks: () => getJson('/api/landmarks'),
 };

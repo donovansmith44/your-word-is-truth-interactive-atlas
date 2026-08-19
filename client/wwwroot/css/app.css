@@ -416,6 +416,38 @@ input:focus-visible,
     font-family: var(--font-serif);
 }
 
+/* Historical borders (design-direction.md's Atlas plate detail, ADDED PER
+   USER FEEDBACK 2026-08-18: "Historical borders render as a vector
+   overlay -- thin ink-toned strokes... no fill or a barely-there wash").
+   map.js's BorderLayer authors one <path class="atlas-border"> per
+   feature directly into its own <svg class="atlas-borders"> (by contract
+   with it, like .atlas-arrows/.atlas-arrow above) -- this file only owns
+   the class-level presentation, entirely CSS-driven since (unlike arrows'
+   per-narrative color) every border shares one uniform style. --bronze is
+   the token this file's own :root comment already earmarks for "RULES/
+   BORDERS", so it's reused here rather than introducing a new one.
+   pointer-events:none is belt-and-suspenders with Leaflet's own default
+   `.leaflet-pane > svg path` rule (see .leaflet-pane > svg path.atlas-arrow
+   below, which has to fight and override that same default) -- borders
+   WANT to stay non-interactive, so no override is needed, just an explicit
+   restatement for clarity. */
+.atlas-borders {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.atlas-border {
+    fill: rgba(138, 107, 61, 0.07);
+    stroke: var(--bronze);
+    stroke-width: 1.2px;
+    stroke-dasharray: 4 2;
+    stroke-opacity: 0.65;
+    pointer-events: none;
+}
+
 /* Lamp markers, adapted for the light ground (design-direction.md "World --
    REVISED": "Markers stay lamp-lit but adapted for the light ground: bright
    --lamp-core dot with a thin bronze ring and a warm outer halo... so they
@@ -514,6 +546,70 @@ input:focus-visible,
     color: var(--ink);
     text-shadow: 0 0 2px rgba(246, 241, 229, .95), 0 0 4px rgba(246, 241, 229, .9), 0 1px 5px rgba(246, 241, 229, .8);
     pointer-events: none;
+}
+
+/* Landmark labels (design-direction.md's Atlas plate detail: "curated:
+   rivers/seas/mountains/regions... always visible, non-interactive,
+   classic atlas typography... sized a step below place labels so
+   scripture's places stay the foreground. Landmarks never glow -- only
+   places touched by events do."). map.js's makeLandmarkIcon authors this
+   span directly (data-kind/data-dir driving the style/placement variants
+   below, by contract with it) into its own landmarksPane. Anchored into
+   one of 4 diagonal quadrants around the point (classic atlas label
+   convention) rather than dead-centered on it or fixed to one direction
+   for everyone -- screenshot review (fix round 1) found several curated
+   points sitting only a few real-world km apart (Mount Sinai/Mount Horeb/
+   Wilderness of Sinai, all in one corner of the Sinai peninsula) whose
+   labels fully overlapped under either of those simpler schemes;
+   map.js's labelDirection spreads them across quadrants instead, per
+   point, without moving any curated coordinate. data-dir="ne" is this
+   rule's own default (same direction the very first version of this rule
+   used) so an unrecognized/missing data-dir still degrades to a sane
+   placement rather than dead center. Same light parchment halo as
+   .atlas-label/.world-empty for legibility over the terrain tiles
+   underneath, at a smaller font-size than .atlas-label's .78rem so place
+   labels always read as the foreground layer. */
+.landmark-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translate(3px, calc(-100% - 2px));
+    white-space: nowrap;
+    pointer-events: none;
+    font-family: var(--font-serif);
+    font-size: .68rem;
+    color: var(--ink-soft);
+    text-shadow: 0 0 2px rgba(246, 241, 229, .95), 0 0 4px rgba(246, 241, 229, .9), 0 1px 5px rgba(246, 241, 229, .8);
+}
+
+.landmark-label[data-dir="nw"] {
+    transform: translate(calc(-100% - 3px), calc(-100% - 2px));
+}
+
+.landmark-label[data-dir="se"] {
+    transform: translate(3px, 2px);
+}
+
+.landmark-label[data-dir="sw"] {
+    transform: translate(calc(-100% - 3px), 2px);
+}
+
+/* Water names: italic serif, --lapis-leaning (design-direction.md: "water
+   names in ITALIC serif (--lapis-leaning ink with light halo)"). */
+.landmark-label[data-kind="water"] {
+    font-style: italic;
+    color: var(--lapis);
+}
+
+/* Mountain/region names: letterspaced small caps --ink-soft
+   (design-direction.md: "mountain/region names in letterspaced small caps
+   --ink-soft"). Comma-grouped (both kinds get identical treatment) --
+   still single-class-plus-attribute-selector per selector, same discipline
+   as .picker-verse's own vendor-prefix comma-group above. */
+.landmark-label[data-kind="mountain"],
+.landmark-label[data-kind="region"] {
+    font-variant-caps: small-caps;
+    letter-spacing: .07em;
 }
 
 @keyframes atlas-fade-in {
@@ -1231,6 +1327,54 @@ input:focus-visible,
 
 .mode-chip-return:hover {
     background: rgba(201, 164, 92, 0.26);
+}
+
+/* border-tag (design-direction.md's Atlas plate detail: "a small dusk-glass
+   tag near the attribution corner reads 'Borders c. 1000 BC' (mono face
+   for the year) so the snapshot in use is always honest"). Docked
+   bottom-right -- same dusk-glass material as .legend/.mode-chip/.picker --
+   but ABOVE .legend's own bottom-right slot with a fixed gap rather than a
+   dynamically measured one: this dataset curates exactly 3 narratives
+   total (data/curated/narratives/*.toml), so .legend can never exceed 3
+   rows (well under 6rem tall including its own padding); 8.5rem clears
+   that worst case with margin, so the two panels can never visually
+   collide regardless of which narratives a given scene lights up. Never
+   shown at the same time as .mode-chip (World.razor renders border-tag
+   only in time mode, mode-chip only in scripture mode), so no horizontal
+   separation from mode-chip's centered position is needed either. */
+.border-tag {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 8.5rem;
+    z-index: 16;
+    padding: .4rem .7rem;
+    background: var(--dusk-panel);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--bronze);
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .3);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.border-tag-label {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: .78rem;
+    /* dusk-ink, not -soft -- same >=7:1 dusk contrast floor / same
+       measured shortfall (6.81:1) as .picker-eyebrow and .mode-chip-label
+       above. */
+    color: var(--dusk-ink);
+}
+
+.border-tag-year {
+    margin-inline-start: .35rem;
+    font-family: var(--font-mono);
+    font-size: .85rem;
+    letter-spacing: .02em;
+    color: var(--bronze-bright);
 }
 
 /* Toast -- a small parchment slip, bottom-left, thin ochre rule; plain

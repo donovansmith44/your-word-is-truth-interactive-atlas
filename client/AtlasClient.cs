@@ -24,8 +24,16 @@ public sealed class AtlasClient
     private readonly HttpClient _http;
     private readonly LruCache<string, Scene> _sceneCache = new(capacity: 48);
     private readonly LruCache<string, ChapterOut> _chapterCache = new(capacity: 24);
+    // Capacity ~12: keyed by the requested "{from}:{to}" window (not by the
+    // returned snapshot_year) -- simpler, and this is a low-traffic cache
+    // (one call per debounced time-mode window change, not a hot per-hover
+    // path like scenes/chapters), so caching every distinct requested
+    // window rather than deduping on the server's answer costs nothing
+    // meaningful in practice while being a one-line, obviously-correct key.
+    private readonly LruCache<string, BordersOut> _bordersCache = new(capacity: 12);
     private List<BookTocEntry>? _booksCache;
     private List<EraDto>? _erasCache;
+    private List<LandmarkDto>? _landmarksCache;
 
     public AtlasClient(HttpClient http)
     {
@@ -110,6 +118,27 @@ public sealed class AtlasClient
 
     public Task<List<NarrativeOut>> Narratives() =>
         GetRequired<List<NarrativeOut>>("api/narratives");
+
+    public async Task<BordersOut> Borders(int from, int to)
+    {
+        var key = $"borders:{from}:{to}";
+        if (_bordersCache.TryGet(key, out var cached))
+        {
+            return cached;
+        }
+
+        var result = await GetRequired<BordersOut>($"api/borders?from={from}&to={to}");
+        _bordersCache.Put(key, result);
+        return result;
+    }
+
+    // Curated landmarks never change within a running session -- fetched
+    // once and cached forever, same treatment as Books()/Eras() above.
+    public async Task<List<LandmarkDto>> Landmarks()
+    {
+        _landmarksCache ??= await GetRequired<List<LandmarkDto>>("api/landmarks");
+        return _landmarksCache;
+    }
 
     private async Task<T> GetRequired<T>(string relativeUrl)
     {

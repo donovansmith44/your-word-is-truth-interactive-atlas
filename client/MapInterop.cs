@@ -70,6 +70,49 @@ public sealed class MapInterop : IAsyncDisposable
     public async Task FitScene() => await _module.InvokeVoidAsync("fitScene", _id);
 
     /// <summary>
+    /// Pushes a freshly-fetched border snapshot (design-direction.md's
+    /// Atlas plate detail: "historical borders render as a vector
+    /// overlay... swapped to the snapshot nearest the selected window").
+    /// Unlike <see cref="SetScene"/>, <paramref name="geojson"/> is already
+    /// a <see cref="JsonElement"/> -- a raw parsed-JSON tree with no C#
+    /// property names for a naming policy to rename in the first place, so
+    /// there is no snake_case/camelCase risk here the way there is for a
+    /// POCO like <see cref="Scene"/>. Still routed through
+    /// <see cref="Wire.Options"/> and sent as a string (rather than passed
+    /// as a bare interop argument) purely so every <c>SetX</c> method on
+    /// this class follows the exact same "serialize with Wire.Options,
+    /// then InvokeVoidAsync a string" shape -- one pattern to read, not two.
+    /// </summary>
+    public async Task SetBorders(JsonElement geojson)
+    {
+        var json = JsonSerializer.Serialize(geojson, Wire.Options);
+        await _module.InvokeVoidAsync("setBorders", _id, json);
+    }
+
+    /// <summary>
+    /// Toggles the border layer's visibility without touching its data --
+    /// used only to hide it on entering scripture mode (design-direction.md:
+    /// "Scripture mode: hide the border layer AND the tag... restore on
+    /// return to time mode") and to unconditionally restore it at the start
+    /// of every time-mode border fetch (World.razor's LoadBordersFor), so a
+    /// transient fetch failure right after returning from scripture mode
+    /// still shows the last known-good snapshot instead of staying hidden.
+    /// </summary>
+    public async Task SetBordersVisible(bool visible) => await _module.InvokeVoidAsync("setBordersVisible", _id, visible);
+
+    /// <summary>
+    /// Pushes the curated landmark list (fetched once, see
+    /// <see cref="AtlasClient.Landmarks"/>) -- always-visible, non-interactive
+    /// labels rendered once and never diffed/updated again for the life of
+    /// the map instance.
+    /// </summary>
+    public async Task SetLandmarks(List<LandmarkDto> landmarks)
+    {
+        var json = JsonSerializer.Serialize(landmarks, Wire.Options);
+        await _module.InvokeVoidAsync("setLandmarks", _id, json);
+    }
+
+    /// <summary>
     /// WORLD-4 legend isolate: <paramref name="narrativeId"/> null clears
     /// every arrow back to unfaded; any other value fades every arrow whose
     /// narrative doesn't match it. A bare string argument has no properties

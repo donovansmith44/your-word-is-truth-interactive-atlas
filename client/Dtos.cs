@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace BibleAtlas.Client;
 
 /// <summary>
@@ -75,3 +77,12 @@ public sealed record CrossRefOut(string Target, int Votes, string Preview);
 public sealed record PlaceDetail(string Id, string Name, double Lat, double Lon, List<SceneEvent> Events);
 
 public sealed record NarrativeOut(string Id, string Name, string Color, List<string> Legs);
+
+/// <c>GET /api/borders?from=&amp;to=</c>. <see cref="Geojson"/> stays a raw
+/// <see cref="JsonElement"/> rather than a typed geometry model -- the
+/// client never inspects border geometry, only forwards it to map.js
+/// (mirrors atlas-core's own <c>serde_json::Value</c> pass-through).
+public sealed record BordersOut(int? SnapshotYear, JsonElement Geojson);
+
+/// <c>GET /api/landmarks</c> array element.
+public sealed record LandmarkDto(string Name, string Kind, double Lat, double Lon);

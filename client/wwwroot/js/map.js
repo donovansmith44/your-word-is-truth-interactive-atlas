@@ -116,10 +116,31 @@ export function init(el, dotnetRef, opts) {
         tiles.setUrl(TILE_FALLBACK);
     });
 
+    // Borders (Task batch-B "Atlas plate detail: time-period-accurate
+    // borders") are added to the map BEFORE arrows so their shared
+    // overlayPane's DOM paint order puts them BELOW the narrative threads
+    // (design-direction.md: borders are period cartography; narrative
+    // threads read on top of it) -- see BorderLayer's own header comment.
+    const borders = new BorderLayer();
+    borders.addTo(map);
+
     const arrows = new ArrowLayer(dotnetRef);
     arrows.addTo(map);
 
-    instances.set(id, { map, dotnetRef, markers: new Map(), arrows });
+    // Landmarks (Task batch-B "always-visible landmark labels") get their
+    // own pane, z-indexed between overlayPane (400: borders/arrows) and
+    // markerPane (600: scripture's places) -- design-direction.md:
+    // landmark labels sit "a visual step below place labels so scripture's
+    // places stay the foreground." A dedicated pane makes that ordering
+    // independent of DOM insertion timing: landmarks are fetched/set once,
+    // asynchronously, from World.razor (see setLandmarks below), while
+    // place markers come and go on every window change -- relying on
+    // relative insertion order between the two would be racy.
+    map.createPane('landmarksPane');
+    map.getPane('landmarksPane').style.zIndex = 500;
+    map.getPane('landmarksPane').style.pointerEvents = 'none';
+
+    instances.set(id, { map, dotnetRef, markers: new Map(), arrows, borders, landmarkMarkers: [] });
     return id;
 }
 
@@ -190,6 +211,49 @@ function esc(value) {
     return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// Lowercase-kebab-case of a landmark's name, matching the CONTRACT's
+// landmark-{slug} testid exactly ("Mount Sinai" -> "mount-sinai"; "The
+// Great Sea" -> "the-great-sea") -- mirrors atlas-etl's geo::kebab (same
+// "runs of non-alphanumeric characters become one dash, no leading/
+// trailing dash" rule), independently reimplemented here since map.js has
+// no access to that Rust code.
+function slugify(name) {
+    return String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+// Deterministically picks one of 4 diagonal quadrants to offset a
+// landmark's label into, from its OWN coordinates (not its name) --
+// screenshot review (fix round 1) found several curated points only a few
+// real-world km apart (Mount Sinai/Mount Horeb/Wilderness of Sinai, all in
+// the same corner of the Sinai peninsula) whose labels overlapped almost
+// completely at overview zoom when every label used the same fixed offset
+// direction. Hashing the coordinates (not the name) decorrelates well even
+// for near-duplicate names like "Mount Sinai"/"Mount Horeb" -- verified
+// against the real curated set (see the batch report) that this spreads
+// that specific cluster across 3 different quadrants; it isn't a general
+// collision-detection algorithm (two points could still coincidentally
+// hash to the same quadrant), just a cheap, deterministic improvement over
+// one fixed direction for everyone.
+function labelDirection(lat, lon) {
+    const dirs = ['ne', 'nw', 'se', 'sw'];
+    const h = Math.abs(Math.round(lat * 9973 + lon * 7919));
+    return dirs[h % dirs.length];
+}
+
+// Landmarks (design-direction.md's Atlas plate detail: "always visible,
+// non-interactive, classic atlas typography"). No dot/glow -- just the
+// label itself, offset from the point per labelDirection above (unlike
+// makeIcon's marker+offset-label pair, there is no separate "capital" to
+// offset from, so map.js decides the direction here instead of app.css
+// assuming a single fixed one). Styling by kind (italic water names vs
+// small-caps mountain/region names) is entirely app.css's job, driven by
+// the data-kind attribute -- map.js only decides placement and the testid.
+function makeLandmarkIcon(l) {
+    const dir = labelDirection(l.lat, l.lon);
+    const html = `<span class="landmark-label" data-kind="${esc(l.kind)}" data-dir="${dir}" data-testid="landmark-${esc(slugify(l.name))}">${esc(l.name)}</span>`;
+    return L.divIcon({ html, className: 'landmark-label-icon', iconSize: [0, 0] });
+}
+
 // Fits the map's viewport to whatever markers are CURRENTLY on it. This
 // module has no notion of "mode" or "first scene" -- World.razor decides
 // entirely on its own when to call this (see its _lastFitMode field and
@@ -221,6 +285,56 @@ export function setIsolate(id, narrativeId) {
     }
 
     inst.arrows.setIsolate(narrativeId ?? null);
+}
+
+// Replaces the border layer's geojson wholesale (Task batch-B: "time
+// period accurate borders... swapped to the snapshot nearest the selected
+// window") and makes sure it's visible -- a fresh snapshot arriving is
+// always a reason to show it, even if scripture mode had it hidden most
+// recently (World.razor's own mode bookkeeping is what actually prevents
+// this from being CALLED during scripture mode in the first place; this
+// function doesn't need to know about modes at all).
+export function setBorders(id, geojsonString) {
+    const inst = instances.get(id);
+    if (!inst) {
+        return;
+    }
+
+    const fc = typeof geojsonString === 'string' ? JSON.parse(geojsonString) : (geojsonString || {});
+    inst.borders.setData(fc);
+}
+
+// Shows/hides the border layer without touching its data (Task batch-B:
+// "Scripture mode: hide the border layer AND the tag... restore on return
+// to time mode").
+export function setBordersVisible(id, visible) {
+    const inst = instances.get(id);
+    if (!inst) {
+        return;
+    }
+
+    inst.borders.setVisible(!!visible);
+}
+
+// Renders the curated landmark list (Task batch-B: "always-visible
+// landmark labels"). Called once per map instance (World.razor fetches
+// landmarks once on init) -- clears any prior markers first so a second
+// call is still idempotent rather than duplicating labels.
+export function setLandmarks(id, landmarksJson) {
+    const inst = instances.get(id);
+    if (!inst) {
+        return;
+    }
+
+    const landmarks = typeof landmarksJson === 'string' ? JSON.parse(landmarksJson) : (landmarksJson || []);
+    for (const marker of inst.landmarkMarkers) {
+        inst.map.removeLayer(marker);
+    }
+    inst.landmarkMarkers = landmarks.map(l => {
+        const marker = L.marker([l.lat, l.lon], { icon: makeLandmarkIcon(l), interactive: false, pane: 'landmarksPane' });
+        marker.addTo(inst.map);
+        return marker;
+    });
 }
 
 export function destroy(id) {
@@ -453,6 +567,101 @@ const ArrowLayer = L.Layer.extend({
         const len = entry.path.getTotalLength();
         entry.path.style.strokeDasharray = String(len);
         entry.path.style.setProperty('--arrow-length', String(len));
+    },
+});
+
+// --- BorderLayer: period-accurate country/culture-region strokes ---------
+// (Task batch-B, design-direction.md's "Atlas plate detail: the plate
+// carries period cartography").
+//
+// A custom L.Layer managing exactly one <svg class="atlas-borders"> in the
+// map's overlayPane, created and added to the map BEFORE ArrowLayer in
+// init() so its DOM node lands first: overlayPane assigns no z-index
+// between layers sharing it, so paint order is plain DOM order, and
+// borders must render BELOW the narrative threads (see init()'s own
+// comment). Both already sit below markerPane (places) via Leaflet's own
+// per-pane z-indices (400 vs 600), independent of DOM order.
+//
+// Deliberately non-interactive -- no event wiring at all, unlike
+// ArrowLayer: borders are decoration, never a hover/click target. app.css's
+// .atlas-borders rule also sets pointer-events:none explicitly (Leaflet's
+// own default `.leaflet-pane > svg path` rule already implies it, but
+// relying on a rule documented as being about ARROWS -- see that rule's own
+// comment in app.css -- would be less clear here).
+//
+// No diffing (unlike ArrowLayer.setArrows/setScene's marker diff): a
+// border-snapshot swap is a rare, deliberate window-change event driven by
+// a 150ms-debounced fetch, not a hot per-frame path, so replacing the
+// layer's content wholesale on every setData call is simple and cheap
+// enough.
+const BorderLayer = L.Layer.extend({
+    initialize() {
+        this._paths = []; // [{ path, feature }]
+    },
+
+    onAdd(map) {
+        this._map = map;
+        this._svg = svgEl('svg', { class: 'atlas-borders' });
+        map.getPane('overlayPane').appendChild(this._svg);
+        return this;
+    },
+
+    onRemove() {
+        this._svg.remove();
+        this._paths = [];
+    },
+
+    getEvents() {
+        return { zoomend: this._redraw, moveend: this._redraw };
+    },
+
+    setData(featureCollection) {
+        this._svg.replaceChildren();
+        const features = (featureCollection && featureCollection.features) || [];
+        this._paths = features.map(feature => {
+            const path = svgEl('path', { class: 'atlas-border' });
+            this._svg.appendChild(path);
+            return { path, feature };
+        });
+        this.setVisible(true);
+        this._redraw();
+    },
+
+    setVisible(visible) {
+        this._svg.style.display = visible ? '' : 'none';
+    },
+
+    _redraw() {
+        if (!this._map) {
+            return;
+        }
+        for (const entry of this._paths) {
+            entry.path.setAttribute('d', this._pathData(entry.feature));
+        }
+    },
+
+    // One <path> per feature, one "M...Z" subpath per ring of every
+    // polygon in its geometry (atlas-etl always compiles MultiPolygon --
+    // see atlas-etl/src/borders.rs -- but this reads plain
+    // geometry.coordinates structurally rather than assuming that, so it
+    // degrades harmlessly on any array-of-rings-of-points shape). A single
+    // SVG path element can represent a multi-ring/multi-polygon shape this
+    // way, exactly how Leaflet's own SVG renderer draws multi-ring
+    // polygons (holes and all -- fill-rule defaults to nonzero, which
+    // reads holes correctly given GeoJSON's right-hand-rule ring winding).
+    _pathData(feature) {
+        const polygons = (feature.geometry && feature.geometry.coordinates) || [];
+        let d = '';
+        for (const polygon of polygons) {
+            for (const ring of polygon) {
+                if (!ring || ring.length === 0) {
+                    continue;
+                }
+                const pts = ring.map(([lon, lat]) => this._map.latLngToLayerPoint([lat, lon]));
+                d += `M${pts.map(p => `${p.x},${p.y}`).join('L')}Z`;
+            }
+        }
+        return d;
     },
 });
 
