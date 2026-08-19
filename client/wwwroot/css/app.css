@@ -40,6 +40,45 @@
     --bronze-ink: #654A2A;
     --lapis: #2C4A70;
     --ochre-alert: #9A3B2E;
+    /* Fix round 1 (M2): a protective backing for BRONZE-BRIGHT text sitting
+       directly on a translucent --dusk-panel (rather than on a solid
+       ground). Needed because --dusk-panel is only 82% opaque with a blur
+       behind it: its EFFECTIVE composited color depends on whatever is
+       visually behind the glass, and this batch swapped the World map's
+       basemap from dark dusk terrain to LIGHT terrain without re-checking
+       every rule that assumed the old, darker composite. --dusk-ink/
+       --dusk-ink-soft text stays comfortably >=7:1 even against the
+       lightened composite (both are near-white, so a modest background
+       lightening barely dents their contrast) -- --bronze-bright is a
+       midtone gold, inherently closer in luminance to the panel to begin
+       with, so it's the one color that actually dips under the floor.
+       Value derivation (real screenshot pixels, not a synthetic estimate --
+       see the batch report's Fix round 1 section for every sampled ratio):
+       .border-tag-year/.mode-chip-ref measured 4.98:1 uncorrected. A FIRST
+       attempt at this token used the same rgba(0,0,0,.35) .slider-readout
+       and --picker-verse-bg already used, unnamed, before this fix -- that
+       only reached ~6.5-6.6:1 (still under the 7:1 floor) once measured
+       from a real rendered screenshot, which is also how this fix round
+       discovered .slider-readout's own PRE-EXISTING rgba(0,0,0,.35) inset
+       was never actually clearing 7:1 either (~6.5:1 real, not the "~8.2:1
+       independently computed" the review estimated) -- both were tuned
+       against an assumed-opaque or assumed-darker backdrop, never a real
+       terrain-composited pixel. Solved for the alpha instead of guessing
+       again: composited-background luminance must be <=~0.0096 for a
+       comfortable (>=7.5:1) margin against --bronze-bright's own luminance
+       (~0.397), which this file's own real measured dusk-panel-over-terrain
+       samples (~rgb(53,56,66) to ~rgb(70,72,80) across two different
+       screenshots/scenes) solve to alpha>=~0.65; 0.7 clears every sampled
+       base by a further margin (7.7-8.4:1) without reading as a flat black
+       box -- it's still a composite, just a strongly protective one, on
+       top of dusk-panel's own blur. Applied to every bronze-bright-on-
+       dusk-panel instrument-face text in the file: .slider-readout,
+       --picker-verse-bg (dusk variant only -- the parchment variant has its
+       own, unrelated, already-passing value), .mode-chip-ref,
+       .border-tag-year -- one token, four consumers, instead of four
+       independent (and, it turned out, three UNDER-dosed) copies of the
+       same literal. */
+    --panel-inset: rgba(0, 0, 0, 0.7);
 
     /* type */
     --font-serif: "EB Garamond", "Palatino Linotype", Palatino, Georgia, serif;
@@ -1109,7 +1148,12 @@ input:focus-visible,
     font-size: 0.82rem;
     letter-spacing: 0.03em;
     color: var(--bronze-bright);
-    background: rgba(0, 0, 0, 0.35);
+    /* Fix round 1 (M2): was a private rgba(0,0,0,.35) literal -- measured
+       from a real screenshot at only ~6.5:1 (under the 7:1 dusk floor,
+       despite the review's own unverified "~8.2:1" estimate) -- now the
+       shared --panel-inset token; see its own :root comment for the full
+       measurement/derivation. */
+    background: var(--panel-inset);
     border: 1px solid var(--bronze);
     border-radius: 4px;
     padding: 0.3rem 0.4rem;
@@ -1354,7 +1398,10 @@ input:focus-visible,
     --picker-select-fg: var(--dusk-ink);
     --picker-select-bg: rgba(0, 0, 0, .3);
     --picker-verse-fg: var(--bronze-bright);
-    --picker-verse-bg: rgba(0, 0, 0, .35);
+    /* Fix round 1 (M2): was a private rgba(0,0,0,.35) literal, same
+       under-dosed value as .slider-readout's own pre-fix background (see
+       --panel-inset's :root comment) -- now the shared token. */
+    --picker-verse-bg: var(--panel-inset);
     --picker-sep-fg: var(--dusk-ink-soft);
     --picker-apply-fg: var(--dusk-deep);
     --picker-apply-bg: var(--bronze-bright);
@@ -1518,6 +1565,15 @@ input:focus-visible,
     font-size: .95rem;
     letter-spacing: .03em;
     color: var(--bronze-bright);
+    /* Fix round 1 (M2): --panel-inset backing -- see its own :root comment.
+       Measured post-fix from a real rendered screenshot; ratio recorded in
+       the batch report's Fix round 1 section. A flex item of .mode-chip
+       already (block-level by the flex spec regardless of the span tag),
+       so padding/radius render as a clean chip with no extra display
+       override needed here. */
+    background: var(--panel-inset);
+    padding: .15rem .4rem;
+    border-radius: 4px;
 }
 
 .mode-chip-return {
@@ -1584,6 +1640,18 @@ input:focus-visible,
     font-size: .85rem;
     letter-spacing: .02em;
     color: var(--bronze-bright);
+    /* Fix round 1 (M2): --panel-inset backing -- see its own :root comment
+       and .mode-chip-ref's identical treatment just above. .border-tag
+       (unlike .mode-chip) isn't a flex container, so this plain span needs
+       its own inline-block to render the padding/radius as a clean chip
+       rather than an inline-only background that could clip awkwardly
+       against the line box. Measured post-fix from a real rendered
+       screenshot; ratio recorded in the batch report's Fix round 1
+       section. */
+    background: var(--panel-inset);
+    padding: .1rem .35rem;
+    border-radius: 3px;
+    display: inline-block;
 }
 
 /* Toast -- a small parchment slip, bottom-left, thin ochre rule; plain
