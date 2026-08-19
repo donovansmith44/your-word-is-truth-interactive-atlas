@@ -449,16 +449,17 @@ input:focus-visible,
     background: var(--parchment);
 }
 
-/* Atlas-plate terrain treatment (design-direction.md "World -- REVISED per
-   user feedback 2026-08-18": a full-bleed LIGHT basemap with real
-   cartographic detail replaces the earlier dusk/moonlit filter, which was
-   rejected as muddy -- "there should be nice borders and city markers").
-   Only a gentle warmth filter on top of NatGeo_World_Map's own colors, never
-   a heavy recolor. These two rules are the CSS-discipline exception the
-   file header documents -- Leaflet, not this page, generates
-   .leaflet-tile-pane and .leaflet-container, so they can only be reached by
-   targeting Leaflet's own class names, scoped under .world-page so the
-   (daylight) mini-map inside popovers is never affected. */
+/* Atlas-plate terrain treatment (design-direction.md World THIRD REVISION:
+   a label-free LIGHT basemap -- Esri World_Shaded_Relief, see map.js's own
+   TILE_* comment for the screenshot comparison that picked it over
+   World_Terrain_Base -- reads as "an illuminated atlas plate on a clean
+   canvas"). Only a gentle warmth filter on top of the tile service's own
+   relief-shading colors, never a heavy recolor. These two rules are the
+   CSS-discipline exception the file header documents -- Leaflet, not this
+   page, generates .leaflet-tile-pane and .leaflet-container, so they can
+   only be reached by targeting Leaflet's own class names, scoped under
+   .world-page so the (daylight) mini-map inside popovers is never
+   affected. */
 .world-page .leaflet-tile-pane {
     filter: sepia(.12) saturate(.95);
 }
@@ -518,17 +519,32 @@ input:focus-visible,
     animation: atlas-fade-in 180ms ease-out both;
 }
 
-/* The hit-testable core is deliberately tiny (unchanged since WORLD-1/2 --
-   ancient sites are often only a few real-world kilometers apart, e.g.
-   Rephidim/Mount Sinai, Marah/Elim, which a whole-scene fitBounds can
-   compress to single-digit pixels apart on screen). All the visible "glow"
-   comes from box-shadow below, which isn't part of hit-testing, so a larger
-   glow never widens the region where a click/hover could land on the wrong
-   one of two close neighbors. The ring is a `border`, not another
-   box-shadow layer, specifically so it never has to share the box-shadow
-   property with .glow-1..5's halo layers below -- box-sizing: border-box
-   (this file's global reset) keeps the border INSIDE the 4x4 box, so the
-   ring adds zero hit-area, same geometry as before this restyle. */
+/* The hit-testable core -- Batch C (design-direction.md: "Bump the base
+   size meaningfully -- current dots are too small," direct user feedback:
+   "tiny markers") tried bumping this box from 4x4 to 7x7px, and REVERTED
+   it after WORLD-2's own property suite caught a real regression, not a
+   theoretical one: the golden-angle nudge (nudgeCloseLatLng, this file's
+   map.js) spreads exactly-coincident places like Shittim/"plains of
+   Moab" by NUDGE_STEP_DEG (~8.9km), but at the zoom the exodus scene's
+   own fitScene lands on, ~8.9km projects to only ~4.3px on screen --
+   meaning the ORIGINAL 4x4px box (2px radius each side) already ran on a
+   ~0.3px safety margin between the two nudged markers' hit areas, and
+   growing the box to 7x7 (3.5px radius) overlaps them outright: a forced
+   hover on marker-shittim's own screen center landed on marker-moab-2's
+   now-larger box instead (confirmed via `document.elementFromPoint`, not
+   guessed -- Playwright's `force:true` skips ITS OWN obstruction checks,
+   but the resulting CDP mouse event still hits whatever the browser's
+   real hit-testing says is topmost at that exact pixel). This core is
+   what data-testid="marker-{id}" is attached to and what every hover/
+   click/position property test in this suite targets, so it stays at its
+   original, already-safety-margin-thin 4x4px -- "bigger and clearly
+   visible" is carried entirely by the halo below instead, which never
+   touches hit-testing at all (box-shadow isn't part of it), so growing
+   IT can never re-introduce this class of bug regardless of how large it
+   gets. The ring is a `border`, not another box-shadow layer, so it never
+   has to share the box-shadow property with .glow-1..5's halo layers
+   below -- box-sizing: border-box (this file's global reset) keeps the
+   border INSIDE the 4x4 box, so the ring adds zero hit-area of its own. */
 .atlas-marker {
     position: absolute;
     top: 0;
@@ -551,26 +567,31 @@ input:focus-visible,
    selector beats a single-class `.atlas-marker` one regardless of media
    query or source order, which would silently keep glow-4/5 breathing
    under prefers-reduced-motion). Keeping every rule here single-class
-   means specificity is uniform and only source order decides ties. */
+   means specificity is uniform and only source order decides ties.
+   Radii/spreads bumped ~35-45% (Batch C, "bigger and clearly visible" --
+   see .atlas-marker's own comment for why the CORE dot itself stays at
+   its original 4x4px instead): box-shadow never affects hit-testing, so
+   the halo alone can carry this batch's whole "bigger" ask without ever
+   re-touching the hit-testable geometry WORLD-2's property suite pinned. */
 .glow-1 {
-    box-shadow: 0 0 5px 1px rgba(255, 200, 100, .5);
+    box-shadow: 0 0 7px 2px rgba(255, 200, 100, .5);
 }
 
 .glow-2 {
-    box-shadow: 0 0 7px 2px rgba(255, 200, 100, .55), 0 0 14px 4px rgba(255, 200, 100, .28);
+    box-shadow: 0 0 10px 3px rgba(255, 200, 100, .55), 0 0 20px 6px rgba(255, 200, 100, .28);
 }
 
 .glow-3 {
-    box-shadow: 0 0 8px 2px rgba(255, 200, 100, .6), 0 0 18px 6px rgba(255, 200, 100, .32), 0 0 28px 10px rgba(255, 200, 100, .16);
+    box-shadow: 0 0 12px 3px rgba(255, 200, 100, .6), 0 0 26px 8px rgba(255, 200, 100, .32), 0 0 40px 14px rgba(255, 200, 100, .16);
 }
 
 .glow-4 {
-    box-shadow: 0 0 10px 3px rgba(255, 200, 100, .65), 0 0 22px 7px rgba(255, 200, 100, .38), 0 0 36px 13px rgba(255, 200, 100, .2);
+    box-shadow: 0 0 14px 4px rgba(255, 200, 100, .65), 0 0 30px 10px rgba(255, 200, 100, .38), 0 0 50px 18px rgba(255, 200, 100, .2);
     animation: atlas-marker-in 180ms ease-out both, atlas-breathe 2.7s ease-in-out 180ms infinite;
 }
 
 .glow-5 {
-    box-shadow: 0 0 12px 4px rgba(255, 200, 100, .72), 0 0 26px 9px rgba(255, 200, 100, .42), 0 0 44px 16px rgba(255, 200, 100, .24);
+    box-shadow: 0 0 17px 5px rgba(255, 200, 100, .72), 0 0 36px 12px rgba(255, 200, 100, .42), 0 0 60px 22px rgba(255, 200, 100, .24);
     animation: atlas-marker-in 180ms ease-out both, atlas-breathe 2.5s ease-in-out 180ms infinite;
 }
 
@@ -664,6 +685,47 @@ input:focus-visible,
     letter-spacing: .07em;
 }
 
+/* Polity name labels (Batch C / design-direction.md World THIRD REVISION:
+   "polity names rendered from the historical border features... Letterspaced
+   small caps, sparse, sized to the polity's extent, --ink-soft-leaning with
+   a light parchment halo"). BorderLayer (map.js) authors one
+   <span class="polity-label" data-size="sm|md|lg"> per named feature into
+   its own polityLabelsPane and positions/hides it every redraw (see that
+   layer's own _positionLabel/_sizeTier comments for the pixel math and size
+   tiers) -- this file only owns the class-level look, same split as
+   .landmark-label's data-kind/data-dir. Centered on its own anchor point
+   (translate(-50%,-50%), set alongside the position in JS) rather than
+   offset like a landmark/place label -- a polity name reads as sitting
+   "on" the polygon it names, not pointing at a spot the way a place pin's
+   label does. Same light parchment halo as every other label on this light
+   ground, sparser letter-spacing than a place label (design-direction.md:
+   "sparse") since these are meant to read as quiet regional watermarks
+   under the foreground place labels, never competing with them. */
+.polity-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    white-space: nowrap;
+    pointer-events: none;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .12em;
+    color: var(--ink-soft);
+    text-shadow: 0 0 2px rgba(246, 241, 229, .95), 0 0 4px rgba(246, 241, 229, .9), 0 1px 5px rgba(246, 241, 229, .8);
+}
+
+.polity-label[data-size="sm"] {
+    font-size: .62rem;
+}
+
+.polity-label[data-size="md"] {
+    font-size: .74rem;
+}
+
+.polity-label[data-size="lg"] {
+    font-size: .95rem;
+}
+
 @keyframes atlas-fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -715,6 +777,35 @@ input:focus-visible,
     animation: atlas-arrow-in 400ms ease-out both;
 }
 
+/* Dark casing/halo under every colored stroke (Batch C / design-direction.md
+   World THIRD REVISION: "colored narrative threads get a dark casing/halo
+   under the colored stroke... so they read on light terrain" -- the light
+   basemap this batch introduces no longer gives a bright narrative color
+   automatic contrast the way the old dusk terrain did). map.js's ArrowLayer
+   authors one of these per arrow, sharing its colored counterpart's exact
+   `d` every redraw and painted BEFORE it in DOM order (same "DOM order is
+   paint order within one pane" rule as borders-under-arrows, see
+   BorderLayer's own header comment) -- so this file only owns the
+   class-level look: a fixed dark stroke a little wider than the 3px colored
+   line on top of it, at low opacity so it reads as a halo, not a second
+   visible line. --dusk-deep is this palette's own "dark" token, reused
+   rather than inventing a new color for one purpose. No stroke color here
+   ever varies per-narrative -- only the colored path on top carries a
+   narrative's own color, so "arrowheads keep narrative color" holds
+   automatically (the casing gets no marker-end/arrowhead of its own at
+   all). */
+.atlas-arrow-casing {
+    stroke: var(--dusk-deep);
+    stroke-width: 5px;
+    opacity: .45;
+    pointer-events: none;
+    animation: atlas-arrow-in 400ms ease-out both;
+}
+
+.atlas-arrow-casing[data-faded="true"] {
+    opacity: .06;
+}
+
 /* Leaflet's own leaflet.css ships `.leaflet-pane > svg path { pointer-events:
    none; }` at specificity (0,0,1,2) -- since our arrow paths live inside
    overlayPane (a `.leaflet-pane`), that rule matches them too and beats a
@@ -759,7 +850,8 @@ input:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .atlas-arrow {
+    .atlas-arrow,
+    .atlas-arrow-casing {
         animation: none;
     }
 }
@@ -1711,13 +1803,20 @@ input:focus-visible,
    the parchment frame; .mini-world-map is the literal 320x240 Leaflet
    mount per the brief. Deliberately NOT scoped under .world-page (see
    World.razor's own comment on where it renders <ExplorerPopover>), so the
-   figure stays unfiltered "daylight" NatGeo tiles regardless of which page
+   figure stays unfiltered "daylight" basemap tiles regardless of which page
    opened the popover -- MiniWorld.razor's own header comment explains why
-   that reading of "inherits the atlas-plate base naturally" was chosen. */
+   that reading of "inherits the atlas-plate base naturally" was chosen.
+   align-items FIXED, Batch C (queued from the published demo's own hot-patch
+   -- source never had it): flex-end hugged the 320px map to the frame's
+   right edge, leaving a dead gap on the left whenever "Open in world" (the
+   frame's only other child) rendered narrower than the map -- center keeps
+   both children visually centered in the frame; .mini-world-open-world's
+   own align-self below re-pins JUST that link to the right edge, matching
+   the original intent for it specifically without dragging the map along. */
 .popover-mini-map {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: center;
     gap: .45rem;
     padding: .5rem;
     background: var(--parchment);
@@ -1735,6 +1834,7 @@ input:focus-visible,
 }
 
 .mini-world-open-world {
+    align-self: flex-end;
     font-family: var(--font-serif);
     font-variant-caps: small-caps;
     letter-spacing: .05em;

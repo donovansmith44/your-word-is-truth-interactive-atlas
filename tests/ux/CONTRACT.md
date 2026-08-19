@@ -33,7 +33,12 @@ World: `world-map`, `marker-{placeId}`, `place-card`, `place-card-title`,
   `border-tag` (visible in time mode when a border snapshot is loaded; text contains
   "Borders c."; hidden in scripture mode and whenever no snapshot is loaded),
   `landmark-{slug}` (always-visible, non-interactive landmark label; slug = lowercase
-  kebab-case of the landmark's name, e.g. "Mount Sinai" -> "mount-sinai")
+  kebab-case of the landmark's name, e.g. "Mount Sinai" -> "mount-sinai"),
+  `polity-label-{slug}` (non-interactive polity-name label rendered from the
+  active border snapshot's own features; slug = lowercase kebab-case of the
+  feature's `name`, same rule as `landmark-{slug}`; visible in time mode
+  only, subject to its own per-feature zoom/viewport visibility rule --
+  absent entirely whenever no border snapshot is loaded, e.g. scripture mode)
 Picker (ScripturePicker, shared by world and reader):
   `picker-book` (select of 66 books), `picker-chapter` (select sized from TOC),
   `picker-verse-from`, `picker-verse-to` (numeric inputs bounded by TOC),

@@ -104,27 +104,49 @@ export function init(el, dotnetRef, opts) {
         maxBoundsViscosity: 1.0,
     }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
-    // minZoom chosen empirically FROM THIS MAP'S OWN real container size --
-    // Leaflet's getBoundsZoom(bounds, inside) has two modes and only ONE of
-    // them is "fills the frame": plain getBoundsZoom(bounds) (inside=false,
-    // what fitBounds uses) returns the LARGEST zoom at which the bounds still
-    // fit inside the view WITHOUT CLIPPING, which at a merely-integer zoom
-    // step routinely leaves both axes with slack (measured: at this map's
-    // 1440x900 dev viewport it returned zoom 4, where BIBLICAL_WORLD_BOUNDS
-    // only filled ~65% of the width and ~61% of the height -- Portugal and
-    // India both visible beyond the "biblical world," the exact bug this
-    // region lock exists to prevent). inside=true asks the OPPOSITE
-    // question -- the SMALLEST zoom at which the viewport fits ENTIRELY
-    // INSIDE the bounds, i.e. no area outside BIBLICAL_WORLD_BOUNDS is ever
-    // visible -- which is what "fills the frame" actually means; confirmed
-    // against the same 1440x900 viewport (zoom 5, both axes fully covered).
-    // Computed fresh per map instance rather than a baked-in constant so it
-    // adapts to any viewport this map didn't happen to be measured at (the
-    // quality floor's "nothing breaks between 1024px and ultrawide").
-    map.setMinZoom(map.getBoundsZoom(BIBLICAL_WORLD_BOUNDS, true));
+    // minZoom -- REVERSED, Batch C (design-direction.md World THIRD
+    // REVISION: "a GENEROUS zoom range... the prior lock was too tight to
+    // zoom out," direct user feedback 2026-08-19: "can't zoom out enough").
+    // Task 10's original pick used getBoundsZoom(bounds, true) -- the
+    // SMALLEST zoom at which the viewport fits ENTIRELY INSIDE the bounds,
+    // i.e. the bounds always fill the frame with zero slack -- which is
+    // exactly what made zooming OUT past that point impossible: there was
+    // no looser zoom level left to go to. inside=false (what fitBounds
+    // itself uses) asks the OPPOSITE question -- the LARGEST zoom at which
+    // the bounds still fit inside the view WITHOUT CLIPPING -- which at a
+    // merely-integer zoom step routinely leaves both axes with slack
+    // (measured at this map's 1440x900 dev viewport: zoom 4, where
+    // BIBLICAL_WORLD_BOUNDS only fills ~65% of the width/~61% of the
+    // height). That slack is no longer a bug to avoid -- it's the literal
+    // "plus breathing room" the brief asks for, so this now uses inside=
+    // false directly rather than inverting it back to a tight fit. Computed
+    // fresh per map instance (not a baked-in constant) so it adapts to any
+    // viewport this map didn't happen to be measured at (the quality
+    // floor's "nothing breaks between 1024px and ultrawide"); confirmed via
+    // a throwaway script at 1024x768, 1280x800 (the brief's own reference
+    // viewport), 1440x900, and 1920x1080 -- all four resolve to the same
+    // zoom 4, so the whole locked region comfortably fits with room to
+    // spare across that entire width range, not just the one viewport.
+    map.setMinZoom(map.getBoundsZoom(BIBLICAL_WORLD_BOUNDS, false));
 
     const tiles = L.tileLayer(TILE_URL, {
         maxNativeZoom: TILE_MAX_NATIVE_ZOOM,
+        // maxZoom == maxNativeZoom, deliberately -- NOT upscaled past it.
+        // Screenshot review (batch report) tried upscaling to 16 (matching
+        // the old NatGeo basemap's own native depth) and found it a visibly
+        // blurred, washed-out mess at zoom 14-16 (Leaflet stretches the last
+        // real z13 tile up to 8x to fill a z16 grid cell): NatGeo genuinely
+        // needed zoom 16 because ITS deep zoom levels carried fine TEXT
+        // (small-town labels) that had to stay crisp; this basemap carries
+        // no text at all (every label on the plate is ours, rendered as
+        // real DOM/SVG elements at their own CSS pixel size, never baked
+        // into the raster) -- there is nothing on the tile itself that
+        // benefits from deeper zoom, only a texture that degrades. And the
+        // brief's actual requirement -- "maxZoom high enough to separate
+        // neighboring cities" -- is already massively satisfied at native
+        // zoom 13 alone: Jerusalem/Bethlehem (~8km apart) sit roughly 400px
+        // apart there already, an order of magnitude past what independent
+        // hovering needs.
         maxZoom: TILE_MAX_NATIVE_ZOOM,
         attribution: TILE_ATTRIBUTION,
     }).addTo(map);
@@ -161,6 +183,21 @@ export function init(el, dotnetRef, opts) {
     let borders = null;
     let arrows = null;
     if (!mini) {
+        // polityLabelsPane (Batch C, design-direction.md World THIRD
+        // REVISION: "polity names rendered from the historical border
+        // features"): z-indexed BELOW landmarksPane (500) -- design-
+        // direction.md lists "polity names, seas... curated biblical
+        // landmarks, and the lit place markers" in that order, least-to-
+        // most foreground, and BorderLayer's own polity labels are the
+        // background-most text on the plate, one step above the raw
+        // border strokes/fill they're paired with (overlayPane, 400).
+        // Created here (not inside BorderLayer.onAdd) so it exists before
+        // borders.addTo(map) below ever runs. BorderLayer itself reads it
+        // back via map.getPane -- see its own onAdd.
+        map.createPane('polityLabelsPane');
+        map.getPane('polityLabelsPane').style.zIndex = 450;
+        map.getPane('polityLabelsPane').style.pointerEvents = 'none';
+
         borders = new BorderLayer();
         borders.addTo(map);
 
@@ -173,6 +210,20 @@ export function init(el, dotnetRef, opts) {
     }
 
     instances.set(id, { map, dotnetRef, mini, markers: new Map(), arrows, borders, landmarkMarkers: [] });
+
+    // Zoom-tiered label density (design-direction.md's declutter rule --
+    // see applyLabelTier's own comment for the concrete tiers/thresholds).
+    // Markers themselves never respond to zoom (design-direction.md: markers
+    // "stay visible at every zoom -- only LABELS tier"); this only ever
+    // touches label elements' display. Gated on !mini here (rather than
+    // inside applyLabelTier) so a mini instance never pays for a listener
+    // it has no labels to update -- applyLabelTier ALSO no-ops on mini as a
+    // second, belt-and-suspenders guard, consistent with every other mini
+    // exclusion in this file.
+    if (!mini) {
+        map.on('zoomend', () => applyLabelTier(instances.get(id)));
+    }
+
     return id;
 }
 
@@ -194,12 +245,15 @@ export function init(el, dotnetRef, opts) {
 // data/curated's own disambiguation comments, just resolved identically by
 // the upstream geocoder), sometimes just close (Gilgal and Jericho, ~1.8km
 // apart -- accurate geography, Gilgal genuinely was that close to Jericho).
-// .atlas-marker's hit box is deliberately tiny specifically so merely-close
-// neighbors already resolve correctly in the COMMON case (Rephidim/Mount
-// Sinai and Marah/Elim, both ~10-13km apart, hover fine today -- see
-// app.css) -- but once two places sit within a few km of each other their
-// 4x4px hit boxes start to overlap, and the browser then delivers
-// hover/click to whichever DOM element happens to paint on top, not
+// .atlas-marker's hit box is deliberately tiny (4x4px, unchanged since
+// WORLD-1/2 -- Batch C tried growing it and reverted, see app.css's own
+// .atlas-marker comment for the real regression that caught) specifically
+// so merely-close neighbors already resolve correctly in the COMMON case
+// (Rephidim/Mount Sinai and Marah/Elim, both ~10-13km apart, hover fine
+// today -- see app.css) -- but once two places sit within a few km of each
+// other their 4x4px hit boxes start to overlap, and the browser then
+// delivers hover/click to whichever DOM element happens to paint on top,
+// not
 // deterministically to either place (caught by WORLD-2 and the arrow-hover
 // test once Task 16's narratives introduced both the exact Shittim/Moab
 // collision and the close-but-distinct Gilgal/Jericho pair). Nudging every
@@ -248,6 +302,16 @@ export function setScene(id, sceneJson) {
             inst.markers.delete(placeId);
         }
     }
+
+    // Re-applied on every scene load, unconditionally (applyLabelTier itself
+    // no-ops on mini): a changed/new marker's icon was just rebuilt from
+    // scratch by makeIcon above (setIcon replaces the DOM node, so any
+    // display:none a PRIOR call left on the old node is gone with it), and
+    // even an unchanged marker's brightness could now sit on the far side of
+    // BRIGHT_LABEL_MIN if the scene itself didn't change but the zoom did
+    // between loads -- either way, every marker's label needs a fresh
+    // decision against the map's CURRENT zoom, every time.
+    applyLabelTier(inst);
 
     // Mini instances never render arrows at all (Task 15 controller ruling
     // -- see init()'s own comment); guard rather than call setArrows on a
@@ -330,6 +394,77 @@ function makeIcon(p) {
     const brightness = Math.min(5, Math.max(1, p.brightness | 0 || 1));
     const html = `<div class="atlas-marker glow-${brightness}" data-testid="marker-${esc(p.id)}"><span class="atlas-label">${esc(p.name)}</span></div>`;
     return L.divIcon({ html, className: 'atlas-marker-icon', iconSize: [0, 0] });
+}
+
+// Zoom-tiered label DENSITY (design-direction.md's declutter rule: "Never
+// everything at once; the plate must breathe" -- user feedback 2026-08-19:
+// "don't put literally everything at once -- it's overwhelming and
+// claustrophobic"; "ONLY place Biblically relevant cities... relevant at a
+// period in time" is already handled upstream (the API only ever lights
+// places touched by an event in the selected window) -- this is the
+// SEPARATE, purely visual declutter layer on top of that: which of the
+// already-period-true labels stay legible at once). Three tiers, gated on
+// the map's own current zoom:
+//   FAR  (< ZOOM_TIER_MID):  polity names (own visibility rule, see
+//        BorderLayer) + seas (landmarks kind=water) + only the BRIGHTEST
+//        places (brightness >= BRIGHT_LABEL_MIN).
+//   MID  (< ZOOM_TIER_NEAR): every lit place's label + "major" landmarks
+//        (water + mountain).
+//   NEAR (>= ZOOM_TIER_NEAR): everything, including "dimmer" landmarks
+//        (region) too.
+// Markers (the lamp dots + their glow) are NEVER touched here -- design-
+// direction.md: markers "stay visible at every zoom -- only LABELS tier."
+// Thresholds are coupled to this basemap's own usable range (minZoom ~4,
+// see init(); maxZoom 16) and to fitScene's own maxZoom:8 cap -- a big,
+// spread-out scene (many markers = needs a lower zoom to fit them all)
+// naturally LANDS in the FAR tier on its own, so the worst-clutter case
+// (e.g. the full 10-era span) declutters itself without any scene-size
+// logic here. Picked by screenshot review against this file's own three
+// basemap-comparison windows (patriarchs/egypt-exodus/ACT.27), not derived
+// from a formula -- if minZoom/maxZoom/the basemap ever change, re-check
+// these by eye rather than assuming they still bracket the range usefully.
+const ZOOM_TIER_MID = 6;
+const ZOOM_TIER_NEAR = 9;
+const BRIGHT_LABEL_MIN = 4;
+
+function labelTier(zoom) {
+    if (zoom >= ZOOM_TIER_NEAR) {
+        return 'near';
+    }
+    return zoom >= ZOOM_TIER_MID ? 'mid' : 'far';
+}
+
+// Applied fresh (not diffed) on every zoomend and every setScene/
+// setLandmarks call -- see setScene's own call site for why a fresh pass
+// every time is necessary rather than a one-time decision. No-ops entirely
+// on a mini instance (mini has no landmarkMarkers/zoomend listener to begin
+// with, but this guard makes the function safe to call unconditionally
+// regardless).
+function applyLabelTier(inst) {
+    if (!inst || inst.mini) {
+        return;
+    }
+
+    const tier = labelTier(inst.map.getZoom());
+
+    for (const entry of inst.markers.values()) {
+        const el = entry.marker.getElement();
+        const label = el && el.querySelector('.atlas-label');
+        if (!label) {
+            continue;
+        }
+        const show = tier !== 'far' || entry.brightness >= BRIGHT_LABEL_MIN;
+        label.style.display = show ? '' : 'none';
+    }
+
+    for (const { marker, kind } of inst.landmarkMarkers) {
+        const el = marker.getElement();
+        if (!el) {
+            continue;
+        }
+        const show = tier === 'near' || kind === 'water' || (tier === 'mid' && kind === 'mountain');
+        el.style.display = show ? '' : 'none';
+    }
 }
 
 function esc(value) {
@@ -452,14 +587,19 @@ export function setLandmarks(id, landmarksJson) {
     }
 
     const landmarks = typeof landmarksJson === 'string' ? JSON.parse(landmarksJson) : (landmarksJson || []);
-    for (const marker of inst.landmarkMarkers) {
+    for (const { marker } of inst.landmarkMarkers) {
         inst.map.removeLayer(marker);
     }
+    // `kind` travels alongside its marker (not re-read from the DOM) so
+    // applyLabelTier's zoom-tier decision (water/mountain shown from MID,
+    // region only from NEAR -- see its own comment) doesn't need a
+    // round-trip through the rendered icon's own data-kind attribute.
     inst.landmarkMarkers = landmarks.map(l => {
         const marker = L.marker([l.lat, l.lon], { icon: makeLandmarkIcon(l), interactive: false, pane: 'landmarksPane' });
         marker.addTo(inst.map);
-        return marker;
+        return { marker, kind: l.kind };
     });
+    applyLabelTier(inst);
 }
 
 export function destroy(id) {
@@ -542,6 +682,7 @@ const ArrowLayer = L.Layer.extend({
         // needed from World.razor.
         for (const entry of this._paths.values()) {
             entry.path.setAttribute('data-faded', 'false');
+            entry.casing.setAttribute('data-faded', 'false');
         }
 
         this._placesById = placesById;
@@ -614,7 +755,7 @@ const ArrowLayer = L.Layer.extend({
             seen.add(key);
             let entry = this._paths.get(key);
             if (!entry) {
-                entry = { path: this._createPath(a), arrow: a, parallelIndex: 0 };
+                entry = { ...this._createPath(a), arrow: a, parallelIndex: 0 };
                 this._paths.set(key, entry);
             } else {
                 entry.arrow = a;
@@ -626,6 +767,7 @@ const ArrowLayer = L.Layer.extend({
         for (const [key, entry] of this._paths) {
             if (!seen.has(key)) {
                 entry.path.remove();
+                entry.casing.remove();
                 this._paths.delete(key);
             }
         }
@@ -634,20 +776,49 @@ const ArrowLayer = L.Layer.extend({
     },
 
     // WORLD-4: null clears every arrow back to "false"; any other value
-    // fades every arrow whose narrative doesn't match it.
+    // fades every arrow whose narrative doesn't match it. Mirrored onto the
+    // casing too (Batch C) purely for visual coherence -- CONTRACT only
+    // ever queries the colored path's own data-faded, but an isolated-out
+    // arrow whose dark casing stayed at full opacity would leave a
+    // conspicuous ghost line where the "faded to .12" colored stroke is
+    // meant to all but disappear.
     setIsolate(narrativeId) {
         for (const entry of this._paths.values()) {
             const faded = narrativeId != null && entry.arrow.narrative !== narrativeId;
             entry.path.setAttribute('data-faded', faded ? 'true' : 'false');
+            entry.casing.setAttribute('data-faded', faded ? 'true' : 'false');
         }
     },
 
+    // Batch C / design-direction.md World THIRD REVISION: "Colored
+    // narrative threads get a dark casing/halo under the colored stroke...
+    // so they read on light terrain" -- the light basemap this batch
+    // introduces (see the TILE_* comment above) no longer gives a bright
+    // narrative color automatic contrast the way the old dusk terrain did.
+    // Two stacked <path> elements sharing the exact same `d` (kept in sync
+    // every redraw, see _position): a plain dark casing painted FIRST (so
+    // it sits visually BEHIND, same DOM-order-is-paint-order rule
+    // BorderLayer's own header comment already relies on), then the
+    // colored path on top, unchanged in every other way (testid, hover/
+    // click wiring, marker-end arrowhead -- "arrowheads keep narrative
+    // color" per the brief, which is automatically true since the casing
+    // gets no marker-end of its own at all). The casing carries no
+    // data-testid -- CONTRACT's arrow-{narrativeId}-{order} testid and the
+    // WORLD-3 spec's `path[data-testid^="arrow-"]` count both stay pinned
+    // to exactly one element per arrow, unchanged.
     _createPath(a) {
+        const casing = svgEl('path', {
+            class: 'atlas-arrow-casing',
+            fill: 'none',
+            'data-faded': 'false',
+        });
+        this._svg.appendChild(casing);
+
         const path = svgEl('path', {
             class: 'atlas-arrow',
             'data-testid': `arrow-${a.narrative}-${a.order}`,
             fill: 'none',
-            'stroke-width': '2.5',
+            'stroke-width': '3',
             'data-faded': 'false',
         });
         this._syncColor(path, a);
@@ -661,7 +832,7 @@ const ArrowLayer = L.Layer.extend({
             this._dotnetRef.invokeMethodAsync('OnArrowClick', arrowKey(a), pt.x, pt.y);
         });
         this._svg.appendChild(path);
-        return path;
+        return { path, casing };
     },
 
     // `stroke` is set to the EXACT data string (never re-derived/restyled --
@@ -758,7 +929,9 @@ const ArrowLayer = L.Layer.extend({
         const cx = (f.x + t.x) / 2 + nx * mag;
         const cy = (f.y + t.y) / 2 + ny * mag;
 
-        entry.path.setAttribute('d', `M${f.x},${f.y} Q${cx},${cy} ${t.x},${t.y}`);
+        const d = `M${f.x},${f.y} Q${cx},${cy} ${t.x},${t.y}`;
+        entry.path.setAttribute('d', d);
+        entry.casing.setAttribute('d', d); // identical curve, painted behind -- see _createPath
 
         // Keeps the one-shot draw-in animation (app.css: atlas-arrow-in,
         // stroke-dasharray/--arrow-length sized to the path's own length)
@@ -766,9 +939,14 @@ const ArrowLayer = L.Layer.extend({
         // this only ever mutates a style property on an EXISTING element
         // (never re-creates/re-inserts it), so it can never retrigger the
         // animation, keeping zoom/pan recompute instant per design-direction.
+        // Both elements share `d`, so their total lengths are identical --
+        // one measurement (off the colored path) is reused for the casing
+        // rather than calling getTotalLength() twice per arrow per redraw.
         const len = entry.path.getTotalLength();
         entry.path.style.strokeDasharray = String(len);
         entry.path.style.setProperty('--arrow-length', String(len));
+        entry.casing.style.strokeDasharray = String(len);
+        entry.casing.style.setProperty('--arrow-length', String(len));
     },
 });
 
@@ -796,21 +974,45 @@ const ArrowLayer = L.Layer.extend({
 // a 150ms-debounced fetch, not a hot per-frame path, so replacing the
 // layer's content wholesale on every setData call is simple and cheap
 // enough.
+//
+// Batch C / design-direction.md World THIRD REVISION adds one thing this
+// layer didn't own before: the polity NAME labels themselves ("polity names
+// rendered from the historical border features active in the selected
+// window... place at the polygon's visual center... skip a label when its
+// polygon is mostly outside the viewport or too small at current zoom").
+// One plain <div class="polity-label"> per feature, positioned into
+// polityLabelsPane (created in init(), z-indexed between the border
+// strokes and landmarksPane -- see that pane's own comment) rather than
+// added as Leaflet markers: this layer already hand-projects every
+// feature's ring points every redraw for the border path itself, so
+// reusing that same per-feature projection pass for its label's bbox/
+// visibility check is simpler than standing up a second, parallel
+// marker-based mechanism. Sizing/visibility live here (not app.css) since
+// both are per-FEATURE decisions (this polygon's own extent, this
+// polygon's own on-screen coverage right now) -- app.css only owns the
+// resulting look for each tier via a single-class-plus-attribute selector,
+// same discipline as .landmark-label's data-kind/data-dir.
 const BorderLayer = L.Layer.extend({
     initialize() {
         this._paths = []; // [{ path, feature }]
+        this._labels = []; // [{ el, feature, cLat, cLon }]
     },
 
     onAdd(map) {
         this._map = map;
         this._svg = svgEl('svg', { class: 'atlas-borders' });
         map.getPane('overlayPane').appendChild(this._svg);
+        this._labelPane = map.getPane('polityLabelsPane'); // created in init(), before this layer's own addTo(map)
         return this;
     },
 
     onRemove() {
         this._svg.remove();
         this._paths = [];
+        for (const l of this._labels) {
+            l.el.remove();
+        }
+        this._labels = [];
     },
 
     getEvents() {
@@ -819,18 +1021,27 @@ const BorderLayer = L.Layer.extend({
 
     setData(featureCollection) {
         this._svg.replaceChildren();
+        for (const l of this._labels) {
+            l.el.remove();
+        }
         const features = (featureCollection && featureCollection.features) || [];
         this._paths = features.map(feature => {
             const path = svgEl('path', { class: 'atlas-border' });
             this._svg.appendChild(path);
             return { path, feature };
         });
+        this._labels = features
+            .filter(feature => feature.properties && feature.properties.name)
+            .map(feature => this._makeLabel(feature));
         this.setVisible(true);
         this._redraw();
     },
 
     setVisible(visible) {
         this._svg.style.display = visible ? '' : 'none';
+        for (const l of this._labels) {
+            l.el.style.display = visible ? '' : 'none';
+        }
     },
 
     _redraw() {
@@ -839,6 +1050,9 @@ const BorderLayer = L.Layer.extend({
         }
         for (const entry of this._paths) {
             entry.path.setAttribute('d', this._pathData(entry.feature));
+        }
+        for (const l of this._labels) {
+            this._positionLabel(l);
         }
     },
 
@@ -864,6 +1078,105 @@ const BorderLayer = L.Layer.extend({
             }
         }
         return d;
+    },
+
+    // Geographic (lat/lon degree) bbox across every ring of every polygon --
+    // "centroid is fine" per the brief, so this uses the plain bbox CENTER
+    // as the label's anchor point rather than a true area-weighted polygon
+    // centroid, and also drives the size tier below (a polity's on-the-
+    // ground extent, not its on-screen pixel size, which changes with
+    // zoom).
+    _geoBBox(feature) {
+        let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+        const polygons = (feature.geometry && feature.geometry.coordinates) || [];
+        for (const polygon of polygons) {
+            for (const ring of polygon) {
+                for (const [lon, lat] of ring) {
+                    minLat = Math.min(minLat, lat);
+                    maxLat = Math.max(maxLat, lat);
+                    minLon = Math.min(minLon, lon);
+                    maxLon = Math.max(maxLon, lon);
+                }
+            }
+        }
+        return { minLat, maxLat, minLon, maxLon };
+    },
+
+    // Size tiers ("sized to the polity's extent"), thresholds picked
+    // against the real curated dataset (data/compiled/borders/*.json, all
+    // 12 snapshots): max(latSpan, lonSpan) ranges from 1 deg (Yehud,
+    // post-exile Judah) to 50 deg (Alexander's empire, Achaemenid Persia).
+    // SM covers city-state/small-kingdom-scale polities (<5 deg -- Judah,
+    // Yehud, Phoenicia, Herodian/Hasmonean Judea, early Assyria); MD covers
+    // regional kingdoms (5-16 deg -- Sumer, Elam, Babylonia, every Egypt
+    // snapshot, the Hittite Empire); LG covers the true empires (>=16 deg --
+    // Neo-Assyria, Rome, the Seleucids/Parthia, Alexander, Persia). See the
+    // batch report for the full measured list.
+    _sizeTier(bbox) {
+        const span = Math.max(bbox.maxLat - bbox.minLat, bbox.maxLon - bbox.minLon);
+        if (span >= 16) {
+            return 'lg';
+        }
+        return span >= 5 ? 'md' : 'sm';
+    },
+
+    _makeLabel(feature) {
+        const bbox = this._geoBBox(feature);
+        const cLat = (bbox.minLat + bbox.maxLat) / 2;
+        const cLon = (bbox.minLon + bbox.maxLon) / 2;
+        const el = document.createElement('span');
+        el.className = 'polity-label';
+        el.dataset.size = this._sizeTier(bbox);
+        el.setAttribute('data-testid', `polity-label-${slugify(feature.properties.name)}`);
+        el.textContent = feature.properties.name;
+        this._labelPane.appendChild(el);
+        return { el, feature, cLat, cLon };
+    },
+
+    // Positions the label at its polygon's centroid and decides visibility
+    // for THIS redraw: "skip a label when its polygon is mostly outside the
+    // viewport or too small at current zoom" (both re-evaluated fresh every
+    // zoomend/moveend, since both depend on the current projection).
+    // POLITY_LABEL_MIN_PX: below this on-screen span, the polygon reads as
+    // a sliver -- not worth a label (chosen as a bit under the smallest
+    // comfortable label width, ~2 letterspaced small-caps words at this
+    // tier's font-size). POLITY_LABEL_MIN_ONSCREEN_FRAC: below this
+    // fraction of the polygon's own bbox actually inside the viewport, the
+    // polygon reads as "elsewhere" even though its centroid (and thus the
+    // label) might still land on-screen -- e.g. zoomed into one corner of a
+    // 50-degree empire. Both are plain constants, not derived, same as
+    // this file's other zoom/pixel thresholds -- picked by screenshot
+    // review, not a formula.
+    _positionLabel(l) {
+        const POLITY_LABEL_MIN_PX = 50;
+        const POLITY_LABEL_MIN_ONSCREEN_FRAC = 0.35;
+
+        const size = this._map.getSize();
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        const polygons = (l.feature.geometry && l.feature.geometry.coordinates) || [];
+        for (const polygon of polygons) {
+            for (const ring of polygon) {
+                for (const [lon, lat] of ring) {
+                    const p = this._map.latLngToContainerPoint([lat, lon]);
+                    minX = Math.min(minX, p.x);
+                    maxX = Math.max(maxX, p.x);
+                    minY = Math.min(minY, p.y);
+                    maxY = Math.max(maxY, p.y);
+                }
+            }
+        }
+
+        const bboxW = Math.max(maxX - minX, 1);
+        const bboxH = Math.max(maxY - minY, 1);
+        const onscreenW = Math.max(0, Math.min(maxX, size.x) - Math.max(minX, 0));
+        const onscreenH = Math.max(0, Math.min(maxY, size.y) - Math.max(minY, 0));
+        const onscreenFrac = (onscreenW * onscreenH) / (bboxW * bboxH);
+        const tooSmall = Math.max(bboxW, bboxH) < POLITY_LABEL_MIN_PX;
+        const mostlyOffscreen = onscreenFrac < POLITY_LABEL_MIN_ONSCREEN_FRAC;
+
+        l.el.style.display = (tooSmall || mostlyOffscreen) ? 'none' : '';
+        const center = this._map.latLngToLayerPoint([l.cLat, l.cLon]);
+        l.el.style.transform = `translate(${center.x}px, ${center.y}px) translate(-50%, -50%)`;
     },
 });
 
