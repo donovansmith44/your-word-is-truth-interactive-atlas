@@ -1,22 +1,254 @@
 @page "/"
 @page "/read/{Book}/{Chapter:int}"
+@using System.Text.RegularExpressions
+@implements IAsyncDisposable
+@inject AtlasClient Atlas
+@inject NavigationManager Nav
+@inject IJSRuntime JS
 
-<PageTitle>Bible Atlas &mdash; Reader</PageTitle>
+<PageTitle>Bible Atlas &mdash; @BookName @_chapterNum</PageTitle>
 
 <div class="reader-page" data-testid="reader-root">
-    <div class="reader-stub">
-        <p class="reader-stub-eyebrow">Reader</p>
-        <p class="reader-stub-ref">@DisplayRef</p>
-    </div>
+    <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" />
+
+    @if (_chapter is not null)
+    {
+        <article class="reader-column">
+            <h1 class="chapter-head">
+                <span class="chapter-head-book">@BookName</span>
+                <span class="chapter-head-num">@_chapterNum</span>
+            </h1>
+
+            @foreach (var v in _chapter.Verses)
+            {
+                <p class="verse-line" data-testid="verse-line-@v.Verse" id="v@(v.Verse)">
+                    <button type="button" class="verse-num" data-testid="verse-num-@v.Verse" @onclick="() => OpenVerse(v.Verse)">@v.Verse</button>
+                    <span class="verse-text">@v.Text</span>
+                    <button type="button" class="verse-explore" data-testid="verse-explore-@v.Verse"
+                            aria-label="@($"Explore {_book}.{_chapterNum}.{v.Verse}")" @onclick="() => OpenVerse(v.Verse)">&#8756;</button>
+                </p>
+            }
+        </article>
+    }
+    else if (_errorMessage is null)
+    {
+        <p class="reader-loading">Loading&hellip;</p>
+    }
+
+    <nav aria-label="Chapter navigation">
+        @if (PrevTarget is { } prev)
+        {
+            <a class="reader-prev" data-testid="reader-prev" href="@($"/read/{prev.Book}/{prev.Chapter}")">&lsaquo; @prev.Name @prev.Chapter</a>
+        }
+        @if (NextTarget is { } next)
+        {
+            <a class="reader-next" data-testid="reader-next" href="@($"/read/{next.Book}/{next.Chapter}")">@next.Name @next.Chapter &rsaquo;</a>
+        }
+    </nav>
+
+    @if (_errorMessage is not null)
+    {
+        <div class="toast" data-testid="toast">
+            <p class="toast-message">@_errorMessage</p>
+        </div>
+    }
 </div>
 
+@if (_activeNode is not null)
+{
+    <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover" />
+}
+
 @code {
+    private static readonly Regex VerseFragment = new(@"^#v(\d+)$", RegexOptions.Compiled);
+
     [Parameter] public string? Book { get; set; }
     [Parameter] public int? Chapter { get; set; }
 
-    // Deep-linked route params aren't wired to real chapter content yet --
-    // that lands with the Reader component itself (a later task). This stub
-    // only proves the two routes resolve to this page and exercises the
-    // instrument-face (mono) treatment design-direction.md specifies for refs.
-    private string DisplayRef => $"{(Book ?? "GEN").ToUpperInvariant()}.{Chapter ?? 1}";
+    private List<BookTocEntry>? _toc;
+    private string _book = "GEN";
+    private int _chapterNum = 1;
+    private ChapterOut? _chapter;
+    private string? _errorMessage;
+    private IExplorable? _activeNode;
+    private int _requestId;
+    private string? _scrolledFragment;
+    private IJSObjectReference? _readerJs;
+
+    private string BookName => _toc?.FirstOrDefault(b => b.Code == _book)?.Name ?? _book;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _toc = await Atlas.Books();
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Couldn't load the book list — check your connection and try again.";
+        }
+    }
+
+    // Runs on every navigation, including the very first one -- book/chapter
+    // change (a genuinely new chapter, refetch + close any open popover) is
+    // distinguished from a fragment-only change (e.g. the picker jumping to
+    // a different verse anchor within the SAME chapter, or a re-render with
+    // unchanged route params) which must NOT redundantly refetch or drop an
+    // open popover.
+    protected override async Task OnParametersSetAsync()
+    {
+        var book = string.IsNullOrWhiteSpace(Book) ? "GEN" : Book.ToUpperInvariant();
+        var chapterNum = Chapter ?? 1;
+
+        if (book == _book && chapterNum == _chapterNum && _chapter is not null)
+        {
+            return;
+        }
+
+        _book = book;
+        _chapterNum = chapterNum;
+        _activeNode = null;
+        _scrolledFragment = null;
+        await LoadChapter();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _readerJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
+        }
+
+        if (_chapter is null || _readerJs is null)
+        {
+            return;
+        }
+
+        var fragment = new Uri(Nav.Uri).Fragment;
+        if (fragment == _scrolledFragment)
+        {
+            return;
+        }
+
+        _scrolledFragment = fragment;
+        var m = VerseFragment.Match(fragment);
+        if (m.Success)
+        {
+            await _readerJs.InvokeVoidAsync("scrollToVerse", int.Parse(m.Groups[1].Value));
+        }
+    }
+
+    private async Task LoadChapter()
+    {
+        var myRequest = ++_requestId;
+        try
+        {
+            var chapter = await Atlas.Chapter(_book, _chapterNum);
+            if (myRequest != _requestId)
+            {
+                return; // superseded by a newer navigation -- discard this stale response
+            }
+
+            _chapter = chapter;
+            _errorMessage = null;
+        }
+        catch (Exception)
+        {
+            if (myRequest != _requestId)
+            {
+                return;
+            }
+
+            _errorMessage = $"Couldn't load {_book} {_chapterNum} — check your connection and try again.";
+        }
+    }
+
+    private void OpenVerse(int verseNum) => _activeNode = new VerseNode($"{_book}.{_chapterNum}.{verseNum}");
+
+    private Task ClosePopover()
+    {
+        _activeNode = null;
+        return Task.CompletedTask;
+    }
+
+    // ScripturePicker composes one of GEN / GEN.1 / GEN.1.5 / GEN.1.5-9 (the
+    // 4 canonical ref shapes -- see ScripturePicker.Apply); this is the
+    // reader's own NavigateReader-style dispatch for it (World's mount
+    // instead sends the same ref straight into scripture-mode).
+    private Task ApplyScriptureRef(string sref)
+    {
+        var parts = sref.Split('.');
+        var book = parts[0];
+        var chapterNum = parts.Length > 1 ? int.Parse(parts[1]) : 1;
+        int? verse = null;
+        if (parts.Length > 2)
+        {
+            var versePart = parts[2];
+            var dash = versePart.IndexOf('-');
+            verse = int.Parse(dash >= 0 ? versePart[..dash] : versePart);
+        }
+
+        Nav.NavigateTo($"/read/{book}/{chapterNum}" + (verse is int v ? $"#v{v}" : ""));
+        return Task.CompletedTask;
+    }
+
+    private sealed record AdjacentChapter(string Book, string Name, int Chapter);
+
+    private AdjacentChapter? PrevTarget => ComputeAdjacent(forward: false);
+    private AdjacentChapter? NextTarget => ComputeAdjacent(forward: true);
+
+    // Crosses book boundaries via the TOC: GEN.50 next -> EXO.1; EXO.1 prev
+    // -> GEN.50; null (hidden) at GEN.1's prev and REV.22's next.
+    private AdjacentChapter? ComputeAdjacent(bool forward)
+    {
+        if (_toc is null)
+        {
+            return null;
+        }
+
+        var idx = _toc.FindIndex(b => b.Code == _book);
+        if (idx < 0)
+        {
+            return null;
+        }
+
+        var entry = _toc[idx];
+        if (forward)
+        {
+            if (_chapterNum < entry.Chapters.Count)
+            {
+                return new AdjacentChapter(_book, entry.Name, _chapterNum + 1);
+            }
+
+            return idx + 1 < _toc.Count ? new AdjacentChapter(_toc[idx + 1].Code, _toc[idx + 1].Name, 1) : null;
+        }
+
+        if (_chapterNum > 1)
+        {
+            return new AdjacentChapter(_book, entry.Name, _chapterNum - 1);
+        }
+
+        if (idx == 0)
+        {
+            return null;
+        }
+
+        var prevEntry = _toc[idx - 1];
+        return new AdjacentChapter(prevEntry.Code, prevEntry.Name, prevEntry.Chapters.Count);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_readerJs is not null)
+        {
+            try
+            {
+                await _readerJs.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is already gone during teardown -- nothing left to clean up JS-side.
+            }
+        }
+    }
 }

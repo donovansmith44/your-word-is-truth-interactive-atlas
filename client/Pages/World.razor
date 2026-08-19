@@ -11,7 +11,7 @@
 <div class="world-page">
     <div id="world-map" class="world-map" data-testid="world-map" @ref="_mapEl"></div>
 
-    <ScripturePicker OnApply="ApplyScriptureRef" />
+    <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-dusk" />
 
     @if (_scene is not null && _scene.Places.Count == 0)
     {

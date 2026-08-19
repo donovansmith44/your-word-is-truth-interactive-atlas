@@ -1,14 +1,21 @@
 @* Reusable book -> chapter -> verse-range picker (design-direction.md:
    "picker (top-right): dusk-glass panels" describes its mount on the World
-   page). Purely a controlled emitter: it knows nothing about scripture
-   mode, /world, or NavigateWorld/NavigateReader -- it only composes a
-   canonical ref from the current selections and hands it to whatever
-   OnApply the mounting page wired up (World.razor today; a Task 14
-   reader-header mount can point OnApply at a completely different action
-   without this component changing at all). *@
+   page; Task 14 adds a second, parchment-context mount in the reader
+   header). Purely a controlled emitter: it knows nothing about scripture
+   mode, /world, /read, or NavigateWorld/NavigateReader -- it only composes
+   a canonical ref from the current selections and hands it to whatever
+   OnApply the mounting page wired up.
+
+   ThemeClass is the ONLY thing that differs between mounts: World.razor
+   passes "picker-dusk", Reader.razor passes "picker-parchment". Markup and
+   behavior stay identical -- app.css's .picker carries every rule that's
+   the SAME in both contexts, reading the material/color/position specifics
+   from custom properties the theme class sets (the same --header-fg-style
+   inheritance .app-header + .header-parchment/.header-dusk already use),
+   so no selector ever combines two classes. *@
 @inject AtlasClient Atlas
 
-<div class="picker" data-testid="picker">
+<div class="picker @ThemeClass" data-testid="picker">
     <p class="picker-eyebrow">Scripture</p>
 
     <select class="picker-select" data-testid="picker-book" aria-label="Book"
@@ -44,6 +51,7 @@
 
 @code {
     [Parameter, EditorRequired] public EventCallback<string> OnApply { get; set; }
+    [Parameter, EditorRequired] public string ThemeClass { get; set; } = "";
 
     private List<BookTocEntry>? _toc;
     private string _bookCode = "";

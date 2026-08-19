@@ -1,0 +1,238 @@
+@* The shared parchment popover (design-direction.md: "popovers and hover
+   cards are parchment artifacts on both pages... One popover style
+   everywhere -- it renders the same ExplorerPopover -- the design mirrors
+   the architecture"). Renders ANY IExplorable: title, body, exploration
+   chips, and a breadcrumb Stack for drilling in (Push) and walking back out.
+
+   Two node-specific behaviors are special-cased here rather than being
+   generic ExplorationTarget dispatch, because CONTRACT.md's testids are
+   fixed rather than parameterized per node kind:
+     - popover-chip-xrefs (only ever offered by VerseNode) expands an inline
+       xref-item-{TARGET} list fetched fresh from
+       AtlasClient.Verse(Current.Title) -- Current.Title IS the vref for any
+       VerseNode by construction, so reading it here needs no type check.
+     - Any ShowMiniMap-targeted chip reveals a mini-map area IN PLACE
+       (no stack push) -- CONTRACT's mini-map testid lives inside the still-
+       open popover beside its own chips/breadcrumb, not as a separate node.
+       The container is intentionally empty; Task 15 fills it with a real
+       MiniWorld.
+
+   Backdrop is a sibling element, not a wrapper, so clicking the popover
+   itself never needs stopPropagation to avoid closing through a parent
+   listener -- a click on the popover simply never reaches the backdrop's
+   own @onclick at all. *@
+@inject AtlasClient Atlas
+@inject NavigationManager Nav
+
+<div class="popover-backdrop" data-testid="popover-backdrop" @onclick="RequestClose"></div>
+
+<div class="popover" data-testid="popover" tabindex="-1" @ref="_panelRef" @onkeydown="OnKeyDown">
+    <div class="popover-head">
+        @if (_stack.Count > 1)
+        {
+            <button type="button" class="popover-breadcrumb-back" data-testid="popover-breadcrumb-back"
+                    aria-label="Back" @onclick="Back">&lsaquo;</button>
+        }
+        <p class="popover-title" data-testid="popover-title" data-ref="@(IsRefKind(Current.Kind) ? "true" : "false")">@Current.Title</p>
+        <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" @onclick="RequestClose">&times;</button>
+    </div>
+
+    <div class="popover-body">
+        @_body
+    </div>
+
+    @if (_explorations.Count > 0)
+    {
+        <div class="popover-chips">
+            @foreach (var ex in _explorations)
+            {
+                <button type="button" class="popover-chip" data-testid="@ex.ChipTestId" @onclick="() => Activate(ex)">@ex.Label</button>
+            }
+        </div>
+    }
+
+    @if (_xrefs is not null)
+    {
+        <div class="popover-xref-list">
+            @if (_xrefs.Count == 0)
+            {
+                <p class="popover-meta">No cross-references recorded.</p>
+            }
+            @foreach (var x in _xrefs)
+            {
+                <button type="button" class="popover-xref-item" data-testid="xref-item-@x.Target" @onclick="() => FollowXref(x.Target)">
+                    <span class="popover-xref-target">@x.Target</span>
+                    <span class="popover-xref-preview">@x.Preview</span>
+                </button>
+            }
+        </div>
+    }
+
+    @if (_miniMapSref is not null)
+    {
+        <div class="popover-mini-map" data-testid="mini-map">
+            @* Task 15 fills this with a real <MiniWorld SRef="@_miniMapSref" /> plus mini-map-open-world. *@
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IExplorable Root { get; set; } = default!;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private readonly Stack<IExplorable> _stack = new();
+    private IExplorable Current => _stack.Peek();
+
+    private IReadOnlyList<Exploration> _explorations = Array.Empty<Exploration>();
+    private RenderFragment _body = _ => { };
+    private List<CrossRefOut>? _xrefs;
+    private string? _miniMapSref;
+    private ElementReference _panelRef;
+    private bool _focused;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _stack.Push(Root);
+        await LoadCurrent();
+    }
+
+    // Focuses the panel exactly once, on the FIRST render of this instance
+    // (a fresh ExplorerPopover is created per "opening" -- see Reader.razor's
+    // @key -- so this naturally re-runs for every new popover without ever
+    // stealing focus back on an internal push/pop/xrefs-expand within an
+    // already-open one).
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focused)
+        {
+            return;
+        }
+
+        _focused = true;
+        try
+        {
+            await _panelRef.FocusAsync();
+        }
+        catch (Exception)
+        {
+            // Non-fatal -- focus is a nicety (keyboard Escape-to-close, a
+            // visible focus ring on open), never load-bearing for the
+            // popover's own functionality.
+        }
+    }
+
+    private async Task LoadCurrent()
+    {
+        _xrefs = null;
+        _miniMapSref = null;
+        try
+        {
+            _explorations = await Current.ExploreAsync(Atlas);
+            _body = await Current.BodyAsync(Atlas);
+        }
+        catch (Exception)
+        {
+            _explorations = Array.Empty<Exploration>();
+            _body = builder =>
+            {
+                builder.OpenElement(0, "p");
+                builder.AddAttribute(1, "class", "popover-meta");
+                builder.AddContent(2, "Couldn't load this — check your connection and try again.");
+                builder.CloseElement();
+            };
+        }
+    }
+
+    private async Task Activate(Exploration ex)
+    {
+        if (ex.ChipTestId == "popover-chip-xrefs")
+        {
+            await ToggleXrefs();
+            return;
+        }
+
+        switch (ex.Target)
+        {
+            case ExplorationTarget.Push push:
+                _miniMapSref = null;
+                _stack.Push(push.Next);
+                await LoadCurrent();
+                break;
+
+            case ExplorationTarget.ShowMiniMap map:
+                _xrefs = null;
+                _miniMapSref = _miniMapSref == map.SRef ? null : map.SRef;
+                break;
+
+            case ExplorationTarget.NavigateWorld world:
+                await RequestClose();
+                Nav.NavigateTo($"/world?{world.Query}");
+                break;
+
+            case ExplorationTarget.NavigateReader reader:
+                await RequestClose();
+                var url = $"/read/{reader.Book}/{reader.Chapter}" + (reader.Verse is int v ? $"#v{v}" : "");
+                Nav.NavigateTo(url);
+                break;
+        }
+    }
+
+    // Fetches fresh from the CURRENT node every time (never cached across a
+    // Push/pop) -- READ-3 walks a chain where each hop's own cross-ref list
+    // must reflect ITS verse, not whichever verse was open when the chip was
+    // first clicked.
+    private async Task ToggleXrefs()
+    {
+        _miniMapSref = null;
+        if (_xrefs is not null)
+        {
+            _xrefs = null;
+            return;
+        }
+
+        try
+        {
+            var detail = await Atlas.Verse(Current.Title);
+            _xrefs = detail.CrossRefs;
+        }
+        catch (Exception)
+        {
+            _xrefs = new List<CrossRefOut>();
+        }
+    }
+
+    private async Task FollowXref(string target)
+    {
+        _stack.Push(new VerseNode(CanonRef.FirstVerseOf(target)));
+        await LoadCurrent();
+    }
+
+    private async Task Back()
+    {
+        if (_stack.Count <= 1)
+        {
+            return;
+        }
+
+        _stack.Pop();
+        await LoadCurrent();
+    }
+
+    private Task RequestClose() => OnClose.InvokeAsync();
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            await RequestClose();
+        }
+    }
+
+    // Verse/Passage/Chapter/Book titles are canonical refs (GEN.1.1,
+    // GEN.1.1-5, GEN.1, GEN) -- design-direction.md's "canonical refs...
+    // set them like instrument readouts" applies to popover-title too, via
+    // this attribute (see .popover-title[data-ref] in app.css). Place/
+    // Author/TimeAndPlace titles are proper names/composed labels, styled
+    // as ordinary prose headings instead.
+    private static bool IsRefKind(string kind) => kind is "Verse" or "Passage" or "Chapter" or "Book";
+}

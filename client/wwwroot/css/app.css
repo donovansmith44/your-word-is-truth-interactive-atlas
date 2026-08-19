@@ -26,6 +26,18 @@
     --lamp-core: #FFEDBE;
     --bronze: #8A6B3D;
     --bronze-bright: #C9A45C;
+    /* A darker bronze reserved for TEXT/glyphs read against parchment
+       (verse numbers, the explore affordance, chapter-head book name,
+       popover years/breadcrumb) -- design-direction.md calls these
+       "bronze" explicitly (e.g. "Verse numbers... instrument face,
+       bronze, small"), but plain --bronze measures only 4.38:1 on
+       --parchment, under even the 4.5:1 WCAG AA floor for small text.
+       This measures 7.26:1 on --parchment / 7.85:1 on --parchment-raised
+       -- same warm hue, legible. --bronze itself is untouched and stays
+       for RULES/BORDERS, where a hairline's contrast against its
+       background isn't a legibility concern the way a number or label's
+       own text color is. */
+    --bronze-ink: #654A2A;
     --lapis: #2C4A70;
     --ochre-alert: #9A3B2E;
 
@@ -192,29 +204,174 @@ input:focus-visible,
     display: block;
 }
 
-/* Reader stub (functional placeholder -- the real chapter view is a later
-   task). Exercises the instrument-face treatment design-direction.md
-   specifies for canonical refs: mono, tabular, exact. */
-.reader-stub {
+/* Reader (Task 14, READ-1..3). Single centered ~66ch column on parchment
+   (design-direction.md "Reader"). .reader-column carries the measure;
+   everything docked (picker/prev/next/popover) is position:fixed and lives
+   outside its flow. */
+.reader-column {
+    width: 100%;
     max-width: 66ch;
-    padding: 6rem 1.5rem 3rem;
+    padding: 6.5rem 1.5rem 6rem;
+}
+
+.reader-loading {
+    padding: 8rem 1.5rem;
+    text-align: center;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: .95rem;
+    color: var(--ink-soft);
+}
+
+/* Chapter head: book name in letterspaced small caps over a large
+   old-style chapter numeral, thin bronze rule beneath (design-direction.md
+   "Reader"). A real <h1> -- App.razor's <FocusOnNavigate Selector="h1" />
+   focuses it on every chapter navigation for free. */
+.chapter-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .35rem;
+    margin: 0 0 2.75rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--bronze);
     text-align: center;
 }
 
-.reader-stub-eyebrow {
+.chapter-head-book {
     font-family: var(--font-serif);
     font-variant-caps: small-caps;
-    letter-spacing: 0.08em;
-    color: var(--bronze);
-    font-size: 0.95rem;
-    margin: 0;
+    letter-spacing: .12em;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--bronze-ink);
 }
 
-.reader-stub-ref {
+.chapter-head-num {
+    font-family: var(--font-serif);
+    font-variant-numeric: oldstyle-nums;
+    font-size: 3.4rem;
+    line-height: 1;
+    font-weight: 400;
+    color: var(--ink);
+}
+
+/* Verse rows: gutter number (instrument mono, bronze, small) + serif verse
+   text (19-20px/1.7) + a quiet ∴ explore affordance that appears at line
+   end on row hover. --explore-opacity is set by :hover/:focus-within on
+   THIS class and read by .verse-explore below via inheritance -- the same
+   custom-property technique .app-header's theme classes use -- so no rule
+   here ever combines two classes or crosses an element boundary. */
+.verse-line {
+    --explore-opacity: 0;
+    display: flex;
+    align-items: baseline;
+    gap: .85rem;
+    margin: 0 0 .55rem;
+    scroll-margin-top: 5.5rem;
+}
+
+.verse-line:hover {
+    --explore-opacity: 1;
+}
+
+.verse-line:focus-within {
+    --explore-opacity: 1;
+}
+
+.verse-num {
+    flex: none;
+    width: 2.25rem;
+    text-align: right;
     font-family: var(--font-mono);
+    font-size: .78rem;
+    line-height: 1.7;
+    color: var(--bronze-ink);
+    background: none;
+    border: none;
+    padding: 0 .3rem 0 0;
+    cursor: pointer;
+}
+
+.verse-num:hover {
+    color: var(--lapis);
+}
+
+.verse-text {
+    flex: 1 1 auto;
+    font-family: var(--font-serif);
+    font-size: 1.2rem;
+    line-height: 1.7;
+    color: var(--ink);
+}
+
+.verse-explore {
+    flex: none;
+    align-self: center;
+    opacity: var(--explore-opacity, 0);
+    transition: opacity 120ms ease-out;
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--bronze-ink);
+    background: none;
+    border: none;
+    padding: 0 .25rem;
+    cursor: pointer;
+}
+
+.verse-explore:hover {
+    color: var(--lapis);
+}
+
+.verse-explore:focus-visible {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .verse-explore {
+        transition: none;
+    }
+}
+
+/* reader-prev/reader-next: quiet bottom corners (design-direction.md
+   "Reader"), always reachable without scrolling to the end of a long
+   chapter. Two independent rules (not comma-grouped) per this file's own
+   single-class discipline. */
+.reader-prev {
+    position: fixed;
+    left: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 15;
+    max-width: 12rem;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: .85rem;
     color: var(--ink-soft);
-    font-size: 0.9rem;
-    margin: 0.5rem 0 0;
+}
+
+.reader-prev:hover {
+    color: var(--lapis);
+}
+
+.reader-next {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 15;
+    max-width: 12rem;
+    text-align: right;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: .85rem;
+    color: var(--ink-soft);
+}
+
+.reader-next:hover {
+    color: var(--lapis);
 }
 
 /* World map mount -- Leaflet (client/wwwroot/js/map.js) initializes into
@@ -753,19 +910,22 @@ input:focus-visible,
     padding-inline-start: .75rem;
 }
 
-/* ScripturePicker (Task 13/WORLD-6) -- dusk-glass panel, top-right
-   (design-direction.md: "picker (top-right): dusk-glass panels"). Same
-   material language as .slider/.legend (dusk-panel + blur + bronze border
-   + radius) so the three docked instrument panels read as one system;
-   top-right never overlaps .legend (bottom-right) or .slider/.mode-chip
-   (bottom-center) at any supported viewport, so sharing their z-index is
-   safe. ScripturePicker.razor itself is reusable (a later reader-header
-   mount is a different task) -- this positioning lives in its own class
-   here, not baked into any behavior in the component, so a future mount
-   elsewhere only needs different CSS, no markup/logic change. */
+/* ScripturePicker (Task 13/WORLD-6; Task 14 adds the reader mount) -- ONE
+   component, TWO material contexts (design-direction.md: "picker
+   (top-right): dusk-glass panels" on /world; the reader instead needs a
+   parchment presentation of the exact same controls). .picker carries
+   every rule that's IDENTICAL in both contexts (layout/shape/position);
+   .picker-dusk / .picker-parchment (ScripturePicker.razor's ThemeClass
+   parameter renders one of these ALONGSIDE .picker on the same root
+   element) supply nothing but the material custom properties .picker and
+   its children read -- the same --header-fg-style inheritance
+   .app-header + .header-parchment/.header-dusk already establish above, so
+   no single selector here ever combines two classes. Top-right never
+   overlaps .legend (bottom-right) or .slider/.mode-chip (bottom-center) on
+   /world, nor .reader-prev/.reader-next (bottom corners) on the reader, at
+   any supported viewport, so sharing z-index 15 is safe on both pages. */
 .picker {
     position: fixed;
-    top: 4.75rem;
     right: 1.5rem;
     z-index: 15;
     display: flex;
@@ -774,12 +934,50 @@ input:focus-visible,
     gap: .5rem .6rem;
     max-width: 19rem;
     padding: .7rem .85rem .8rem;
-    background: var(--dusk-panel);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: var(--picker-bg);
+    backdrop-filter: var(--picker-blur, none);
+    -webkit-backdrop-filter: var(--picker-blur, none);
     border: 1px solid var(--bronze);
     border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .3);
+}
+
+.picker-dusk {
+    top: 4.75rem;
+    --picker-bg: var(--dusk-panel);
+    --picker-blur: blur(10px);
+    /* dusk-ink, not the softer -soft variant: scanned label text on
+       --dusk-panel needs the >=7:1 dusk contrast floor (measured
+       dusk-ink-soft here at 6.81:1, under it -- the same shortfall Task 10
+       found and fixed for the slider's era labels; dusk-ink measures
+       13.96:1). */
+    --picker-label-fg: var(--dusk-ink);
+    --picker-select-fg: var(--dusk-ink);
+    --picker-select-bg: rgba(0, 0, 0, .3);
+    --picker-verse-fg: var(--bronze-bright);
+    --picker-verse-bg: rgba(0, 0, 0, .35);
+    --picker-sep-fg: var(--dusk-ink-soft);
+    --picker-apply-fg: var(--dusk-deep);
+    --picker-apply-bg: var(--bronze-bright);
+    --picker-apply-hover-bg: var(--lamp);
+}
+
+.picker-parchment {
+    top: 5.5rem;
+    --picker-bg: var(--parchment-raised);
+    --picker-blur: none;
+    /* --bronze-ink, not --bronze: this is the picker's label/button TEXT,
+       same 4.38:1-on-parchment shortfall as verse-num/chapter-head-book
+       above (see --bronze-ink's own token comment). */
+    --picker-label-fg: var(--bronze-ink);
+    --picker-select-fg: var(--ink);
+    --picker-select-bg: rgba(138, 107, 61, .08);
+    --picker-verse-fg: var(--lapis);
+    --picker-verse-bg: rgba(138, 107, 61, .08);
+    --picker-sep-fg: var(--ink-soft);
+    --picker-apply-fg: var(--parchment);
+    --picker-apply-bg: var(--bronze-ink);
+    --picker-apply-hover-bg: var(--lapis);
 }
 
 .picker-eyebrow {
@@ -789,12 +987,7 @@ input:focus-visible,
     font-variant-caps: small-caps;
     letter-spacing: .08em;
     font-size: .78rem;
-    /* dusk-ink, not the softer -soft variant: scanned label text on
-       --dusk-panel needs the >=7:1 dusk contrast floor (measured
-       dusk-ink-soft here at 6.81:1, under it -- the same shortfall Task 10
-       found and fixed for the slider's era labels; dusk-ink measures
-       13.96:1). */
-    color: var(--dusk-ink);
+    color: var(--picker-label-fg);
 }
 
 .picker-select {
@@ -802,8 +995,8 @@ input:focus-visible,
     font-variant-caps: small-caps;
     letter-spacing: .05em;
     font-size: .85rem;
-    color: var(--dusk-ink);
-    background: rgba(0, 0, 0, .3);
+    color: var(--picker-select-fg);
+    background: var(--picker-select-bg);
     border: 1px solid var(--bronze);
     border-radius: 4px;
     padding: .3rem .4rem;
@@ -819,8 +1012,8 @@ input:focus-visible,
     width: 3.4rem;
     font-family: var(--font-mono);
     font-size: .85rem;
-    color: var(--bronze-bright);
-    background: rgba(0, 0, 0, .35);
+    color: var(--picker-verse-fg);
+    background: var(--picker-verse-bg);
     border: 1px solid var(--bronze);
     border-radius: 4px;
     padding: .3rem .35rem;
@@ -839,7 +1032,7 @@ input:focus-visible,
 }
 
 .picker-verse-sep {
-    color: var(--dusk-ink-soft);
+    color: var(--picker-sep-fg);
     font-family: var(--font-mono);
 }
 
@@ -848,8 +1041,8 @@ input:focus-visible,
     font-variant-caps: small-caps;
     letter-spacing: .06em;
     font-size: .82rem;
-    color: var(--dusk-deep);
-    background: var(--bronze-bright);
+    color: var(--picker-apply-fg);
+    background: var(--picker-apply-bg);
     border: none;
     border-radius: 4px;
     padding: .35rem .75rem;
@@ -858,7 +1051,7 @@ input:focus-visible,
 }
 
 .picker-apply:hover {
-    background: var(--lamp);
+    background: var(--picker-apply-hover-bg);
 }
 
 /* Mode chip (Task 13/WORLD-6/CONTRACT "mode-chip") -- shows the active
@@ -947,6 +1140,223 @@ input:focus-visible,
     font-family: var(--font-serif);
     font-size: 0.9rem;
     color: var(--ink);
+}
+
+/* ExplorerPopover (Task 14) -- the shared parchment artifact
+   (design-direction.md: "popovers and hover cards are parchment artifacts
+   on both pages... styled ONCE"). Used identically by the reader
+   (VerseNode/etc.) and, later, by /world's pinned exploration popovers --
+   nothing here is page-scoped. Backdrop is a sibling of .popover (never a
+   wrapper), so a click on the popover itself never needs stopPropagation
+   to avoid closing through a parent listener. */
+.popover-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(43, 33, 23, .18);
+}
+
+.popover {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 41;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    width: min(34rem, calc(100vw - 3rem));
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    padding: 1.25rem 1.4rem 1.4rem;
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+    border-radius: 6px;
+    box-shadow: 0 16px 44px rgba(0, 0, 0, .4);
+    animation: popover-in 120ms ease-out both;
+}
+
+@keyframes popover-in {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(.97); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .popover {
+        animation: none;
+    }
+}
+
+.popover-head {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+}
+
+.popover-breadcrumb-back {
+    flex: none;
+    width: 1.9rem;
+    height: 1.9rem;
+    font-family: var(--font-serif);
+    font-size: 1.3rem;
+    line-height: 1;
+    color: var(--bronze-ink);
+    background: none;
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.popover-breadcrumb-back:hover {
+    color: var(--lapis);
+    border-color: var(--lapis);
+}
+
+/* Verse/Passage/Chapter/Book titles are canonical refs (GEN.1.1, GEN.1,
+   ...) -- design-direction.md's "canonical refs...set them like instrument
+   readouts" (mono, tabular, exact). Place/Author/TimeAndPlace titles are
+   proper names/composed labels instead, styled as an ordinary heading via
+   the [data-ref="false"] variant below (ExplorerPopover.razor sets the
+   attribute from the current node's Kind). */
+.popover-title {
+    flex: 1 1 auto;
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 1.15rem;
+    letter-spacing: .02em;
+    color: var(--ink);
+}
+
+.popover-title[data-ref="false"] {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: 1.2rem;
+}
+
+.popover-close {
+    flex: none;
+    font-family: var(--font-serif);
+    font-size: 1.3rem;
+    line-height: 1;
+    color: var(--ink-soft);
+    background: none;
+    border: none;
+    padding: 0 .2rem;
+    cursor: pointer;
+}
+
+.popover-close:hover {
+    color: var(--ochre-alert);
+}
+
+.popover-body {
+    font-family: var(--font-serif);
+    color: var(--ink);
+}
+
+.popover-verse-text {
+    margin: 0;
+    font-size: 1.1rem;
+    line-height: 1.7;
+}
+
+.popover-meta {
+    margin: 0;
+    font-size: .92rem;
+    color: var(--ink-soft);
+}
+
+.popover-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.popover-chip {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: .82rem;
+    color: var(--ink);
+    background: rgba(138, 107, 61, .1);
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    padding: .35rem .65rem;
+    cursor: pointer;
+}
+
+.popover-chip:hover {
+    background: rgba(138, 107, 61, .2);
+}
+
+.popover-xref-list {
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+    padding-top: .5rem;
+    border-top: 1px solid rgba(138, 107, 61, .3);
+}
+
+.popover-xref-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .15rem;
+    text-align: start;
+    background: none;
+    border: none;
+    border-inline-start: 2px solid var(--bronze);
+    padding: .2rem 0 .2rem .65rem;
+    cursor: pointer;
+}
+
+.popover-xref-item:hover {
+    border-inline-start-color: var(--lapis);
+}
+
+.popover-xref-target {
+    font-family: var(--font-mono);
+    font-size: .85rem;
+    color: var(--lapis);
+}
+
+.popover-xref-preview {
+    font-family: var(--font-serif);
+    font-size: .85rem;
+    color: var(--ink-soft);
+}
+
+/* Empty container (Task 14) -- Task 15 fills this with a real MiniWorld
+   (design-direction.md: "the mini-map inside popovers stays DAYLIGHT
+   [even on /world]: a small engraved figure on a paper card"). */
+.popover-mini-map {
+    min-height: 8rem;
+    background: var(--parchment);
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+}
+
+.popover-event-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .75rem;
+    margin: 0;
+    padding: .3rem 0;
+    border-bottom: 1px solid rgba(138, 107, 61, .18);
+    font-size: .88rem;
+}
+
+.popover-event-label {
+    color: var(--ink);
+}
+
+.popover-event-years {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    color: var(--bronze-ink);
 }
 
 /* --- Blazor WebAssembly framework chrome (boot loader + unhandled-error
