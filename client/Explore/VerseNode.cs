@@ -45,7 +45,7 @@ public sealed class VerseNode : IExplorable
 
     public async Task<RenderFragment> BodyAsync(AtlasClient api)
     {
-        var detail = await Load(api);
+        var detail = await DetailAsync(api);
         RenderFragment fragment = builder =>
         {
             builder.OpenElement(0, "p");
@@ -56,5 +56,14 @@ public sealed class VerseNode : IExplorable
         return fragment;
     }
 
-    private async Task<VerseDetail> Load(AtlasClient api) => _cached ??= await api.Verse(_vref);
+    // Public + memoized so ExplorerPopover's popover-chip-xrefs handling can
+    // read THIS node's own CrossRefs (fix round 1 finding: it previously
+    // issued its own independent AtlasClient.Verse(Current.Title) call on
+    // every expand, on top of the one BodyAsync already makes -- 2-4x
+    // fetches per popover with no actual freshness benefit, since a NEW
+    // VerseNode instance is pushed per hop anyway, so its cache is exactly
+    // as fresh as a re-fetch would be). Idempotent: the underlying HTTP
+    // call only ever happens once per node instance regardless of how many
+    // times BodyAsync/this are each called.
+    public async Task<VerseDetail> DetailAsync(AtlasClient api) => _cached ??= await api.Verse(_vref);
 }

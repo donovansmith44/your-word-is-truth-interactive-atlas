@@ -11,7 +11,7 @@
 <div class="reader-page" data-testid="reader-root">
     <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" />
 
-    @if (_chapter is not null)
+    @if (ChapterMatchesRoute)
     {
         <article class="reader-column">
             <h1 class="chapter-head">
@@ -19,7 +19,7 @@
                 <span class="chapter-head-num">@_chapterNum</span>
             </h1>
 
-            @foreach (var v in _chapter.Verses)
+            @foreach (var v in _chapter!.Verses)
             {
                 <p class="verse-line" data-testid="verse-line-@v.Verse" id="v@(v.Verse)">
                     <button type="button" class="verse-num" data-testid="verse-num-@v.Verse" @onclick="() => OpenVerse(v.Verse)">@v.Verse</button>
@@ -69,6 +69,8 @@
     private string _book = "GEN";
     private int _chapterNum = 1;
     private ChapterOut? _chapter;
+    private string? _loadedBook;
+    private int? _loadedChapterNum;
     private string? _errorMessage;
     private IExplorable? _activeNode;
     private int _requestId;
@@ -76,6 +78,28 @@
     private IJSObjectReference? _readerJs;
 
     private string BookName => _toc?.FirstOrDefault(b => b.Code == _book)?.Name ?? _book;
+
+    // Fix round 1 finding: _book/_chapterNum are updated to the NEW route's
+    // values SYNCHRONOUSLY in OnParametersSetAsync, before LoadChapter's
+    // await resolves -- Blazor renders once in between (the intermediate
+    // render any non-synchronously-completing lifecycle await triggers),
+    // and at THAT render _chapter still holds the PREVIOUS chapter's data.
+    // Gating on "_chapter is not null" alone let that intermediate render
+    // show the new heading over the old chapter's verse rows, and let
+    // OnAfterRenderAsync try to scroll a fragment against the wrong
+    // chapter's DOM (silently consuming _scrolledFragment so the real
+    // scroll, once the correct chapter finally renders, was suppressed).
+    //
+    // _loadedBook/_loadedChapterNum (below) are stamped by LoadChapter
+    // itself at the exact moment it assigns _chapter, from the SAME _book/
+    // _chapterNum values that drove that fetch -- NOT from ChapterOut's own
+    // Book field, which turns out to be the book's display NAME ("Genesis"),
+    // not its canonical code ("GEN"); comparing that against _book would
+    // never match and would wedge the page on "Loading..." forever (caught
+    // by hand-testing this fix, not by READ-1..3, which never deep-link
+    // into a chapter fast enough to observe the intermediate render).
+    private bool ChapterMatchesRoute =>
+        _chapter is not null && _loadedBook == _book && _loadedChapterNum == _chapterNum;
 
     protected override async Task OnInitializedAsync()
     {
@@ -94,13 +118,19 @@
     // distinguished from a fragment-only change (e.g. the picker jumping to
     // a different verse anchor within the SAME chapter, or a re-render with
     // unchanged route params) which must NOT redundantly refetch or drop an
-    // open popover.
+    // open popover. Checking _loadedBook/_loadedChapterNum here (not just
+    // "_chapter is not null") matters for a case adjacent to fix round 1's
+    // finding 1: if a fetch for this exact target previously FAILED,
+    // _chapter still holds whatever chapter loaded before that (non-null,
+    // but stale/mismatched) -- re-navigating to the same failed target must
+    // still retry the fetch, not silently no-op because SOME chapter
+    // happens to be loaded.
     protected override async Task OnParametersSetAsync()
     {
         var book = string.IsNullOrWhiteSpace(Book) ? "GEN" : Book.ToUpperInvariant();
         var chapterNum = Chapter ?? 1;
 
-        if (book == _book && chapterNum == _chapterNum && _chapter is not null)
+        if (book == _book && chapterNum == _chapterNum && _loadedBook == book && _loadedChapterNum == chapterNum)
         {
             return;
         }
@@ -119,7 +149,7 @@
             _readerJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
         }
 
-        if (_chapter is null || _readerJs is null)
+        if (!ChapterMatchesRoute || _readerJs is null)
         {
             return;
         }
@@ -149,7 +179,13 @@
                 return; // superseded by a newer navigation -- discard this stale response
             }
 
+            // myRequest == _requestId here guarantees no newer navigation has
+            // started since this fetch began (that would have changed _book/
+            // _chapterNum AND bumped _requestId again) -- so the CURRENT
+            // values of _book/_chapterNum are exactly what this fetch was for.
             _chapter = chapter;
+            _loadedBook = _book;
+            _loadedChapterNum = _chapterNum;
             _errorMessage = null;
         }
         catch (Exception)

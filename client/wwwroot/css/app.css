@@ -206,12 +206,16 @@ input:focus-visible,
 
 /* Reader (Task 14, READ-1..3). Single centered ~66ch column on parchment
    (design-direction.md "Reader"). .reader-column carries the measure;
-   everything docked (picker/prev/next/popover) is position:fixed and lives
-   outside its flow. */
+   reader-prev/reader-next/the popover are position:fixed and live outside
+   its flow (their own horizontal footprint never overlaps the column's, at
+   any viewport -- see their own rules below). The picker is NOT fixed here
+   (fix round 1 finding 3 -- see .picker-parchment's own comment); it's a
+   normal in-flow sibling BEFORE this element, so .reader-column's own
+   top padding only needs to clear IT, not also a floating overlay. */
 .reader-column {
     width: 100%;
     max-width: 66ch;
-    padding: 6.5rem 1.5rem 6rem;
+    padding: 2.5rem 1.5rem 6rem;
 }
 
 .reader-loading {
@@ -914,19 +918,16 @@ input:focus-visible,
    component, TWO material contexts (design-direction.md: "picker
    (top-right): dusk-glass panels" on /world; the reader instead needs a
    parchment presentation of the exact same controls). .picker carries
-   every rule that's IDENTICAL in both contexts (layout/shape/position);
-   .picker-dusk / .picker-parchment (ScripturePicker.razor's ThemeClass
-   parameter renders one of these ALONGSIDE .picker on the same root
-   element) supply nothing but the material custom properties .picker and
-   its children read -- the same --header-fg-style inheritance
-   .app-header + .header-parchment/.header-dusk already establish above, so
-   no single selector here ever combines two classes. Top-right never
-   overlaps .legend (bottom-right) or .slider/.mode-chip (bottom-center) on
-   /world, nor .reader-prev/.reader-next (bottom corners) on the reader, at
-   any supported viewport, so sharing z-index 15 is safe on both pages. */
+   every rule that's IDENTICAL in both contexts (shape/material); .picker-
+   dusk / .picker-parchment (ScripturePicker.razor's ThemeClass parameter
+   renders one of these ALONGSIDE .picker on the same root element) supply
+   the material custom properties .picker and its children read -- the same
+   --header-fg-style inheritance .app-header + .header-parchment/.header-
+   dusk already establish above -- PLUS their own positioning, which now
+   genuinely differs between the two (see .picker-parchment's own comment,
+   fix round 1 finding 3), so no single selector here ever combines two
+   classes. */
 .picker {
-    position: fixed;
-    right: 1.5rem;
     z-index: 15;
     display: flex;
     flex-wrap: wrap;
@@ -942,8 +943,12 @@ input:focus-visible,
     box-shadow: 0 8px 24px rgba(0, 0, 0, .3);
 }
 
+/* /world is full-bleed and never scrolls, so a fixed top-right overlay has
+   nothing beneath it to ever collide with -- unchanged from Task 13. */
 .picker-dusk {
+    position: fixed;
     top: 4.75rem;
+    right: 1.5rem;
     --picker-bg: var(--dusk-panel);
     --picker-blur: blur(10px);
     /* dusk-ink, not the softer -soft variant: scanned label text on
@@ -962,8 +967,28 @@ input:focus-visible,
     --picker-apply-hover-bg: var(--lamp);
 }
 
+/* Fix round 1 finding 3: the reader IS a normal scrolling document (unlike
+   /world), so a position:fixed picker here sits in a viewport-fixed band
+   that every verse row eventually scrolls THROUGH -- confirmed by
+   measurement (a throwaway scrolled scan across PSA.119 at the 1024px
+   floor, glyph-accurate via Range.getClientRects(), not just element
+   bounding boxes) that real verse text gets hidden behind the panel at
+   several scroll positions, not just a theoretical risk. Fix: no
+   position:fixed at all -- .picker-parchment is a normal in-flow child of
+   .reader-page (a flex column, align-items:center by default), pushed to
+   the column's own right edge via align-self:flex-end instead. Being in
+   flow, it can never overlap ANY scrolled content, by construction, not
+   just by measurement at one viewport. Trade-off (accepted, not covered by
+   any given test): the picker scrolls away once you read past it, unlike
+   /world's always-on overlay -- reader-prev/reader-next (still fixed,
+   bottom corners, confirmed never overlapping the column at any scroll
+   position since their own horizontal footprint sits OUTSIDE it) remain
+   the always-available way to move sequentially; the picker is for jumping
+   to an arbitrary, possibly-distant reference, which reasonably asks you
+   to scroll to the top first. */
 .picker-parchment {
-    top: 5.5rem;
+    align-self: flex-end;
+    margin: 1.5rem 1.5rem 0 0;
     --picker-bg: var(--parchment-raised);
     --picker-blur: none;
     /* --bronze-ink, not --bronze: this is the picker's label/button TEXT,

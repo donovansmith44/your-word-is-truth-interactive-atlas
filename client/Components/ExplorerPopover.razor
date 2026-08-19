@@ -8,9 +8,9 @@
    generic ExplorationTarget dispatch, because CONTRACT.md's testids are
    fixed rather than parameterized per node kind:
      - popover-chip-xrefs (only ever offered by VerseNode) expands an inline
-       xref-item-{TARGET} list fetched fresh from
-       AtlasClient.Verse(Current.Title) -- Current.Title IS the vref for any
-       VerseNode by construction, so reading it here needs no type check.
+       xref-item-{TARGET} list read from the current VerseNode's own
+       (memoized) VerseDetail.CrossRefs -- see ToggleXrefs's own comment for
+       why this reuses the node's cache instead of issuing a second fetch.
      - Any ShowMiniMap-targeted chip reveals a mini-map area IN PLACE
        (no stack push) -- CONTRACT's mini-map testid lives inside the still-
        open popover beside its own chips/breadcrumb, not as a separate node.
@@ -177,10 +177,16 @@
         }
     }
 
-    // Fetches fresh from the CURRENT node every time (never cached across a
-    // Push/pop) -- READ-3 walks a chain where each hop's own cross-ref list
-    // must reflect ITS verse, not whichever verse was open when the chip was
-    // first clicked.
+    // Reads the CURRENT node's own (memoized) VerseDetail rather than
+    // issuing a fresh AtlasClient.Verse(Current.Title) call every time this
+    // is clicked (fix round 1 finding: that duplicated the fetch
+    // BodyAsync/LoadCurrent already made when the node was pushed, 2-4x per
+    // popover for no freshness benefit). Freshness across hops still holds
+    // -- each hop pushes a BRAND NEW VerseNode instance with its own empty
+    // cache, so "the current node's own cache" and "a fresh fetch for the
+    // current verse" are exactly the same data; only re-toggling xrefs on
+    // the SAME node (no navigation) now reuses the cache, which is correct
+    // since nothing could have changed underneath it in that time.
     private async Task ToggleXrefs()
     {
         _miniMapSref = null;
@@ -190,9 +196,17 @@
             return;
         }
 
+        if (Current is not VerseNode verseNode)
+        {
+            // Invariant guard, not a real path: only VerseNode ever offers
+            // popover-chip-xrefs (see VerseNode.ExploreAsync).
+            _xrefs = new List<CrossRefOut>();
+            return;
+        }
+
         try
         {
-            var detail = await Atlas.Verse(Current.Title);
+            var detail = await verseNode.DetailAsync(Atlas);
             _xrefs = detail.CrossRefs;
         }
         catch (Exception)
