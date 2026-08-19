@@ -346,9 +346,21 @@ input:focus-visible,
    end on row hover. --explore-opacity is set by :hover/:focus-within on
    THIS class and read by .verse-explore below via inheritance -- the same
    custom-property technique .app-header's theme classes use -- so no rule
-   here ever combines two classes or crosses an element boundary. */
+   here ever combines two classes or crosses an element boundary.
+
+   Batch C2, requirement 0c (user 2026-08-19: "hover interactions on both
+   the map and the Bible are extremely fickle"): the STRUCTURAL reader-side
+   fix (design-direction.md's "the ∴ end-of-line button DIES as the
+   affordance... EVERY explorable element... darkens slightly" -- the whole
+   row becomes the hover target, not this one small glyph) is Batch G1's
+   own click-to-explore work, out of scope here. The one in-scope stopgap:
+   base --explore-opacity 0 -> 0.3, so the ∴ is always AT LEAST faintly
+   visible rather than fully invisible until a pointer happens to land
+   exactly on its own row -- less fickle to simply find, without
+   pre-empting G1's real redesign of the affordance itself. :hover/
+   :focus-within still raise it to fully opaque, unchanged. */
 .verse-line {
-    --explore-opacity: 0;
+    --explore-opacity: 0.3;
     display: flex;
     align-items: baseline;
     gap: .85rem;
