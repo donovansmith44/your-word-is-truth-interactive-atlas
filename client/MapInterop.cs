@@ -107,7 +107,13 @@ public sealed class MapInterop : IAsyncDisposable
     /// </summary>
     public async Task SetScene(Scene s)
     {
-        var forMap = s with { Places = s.Places.Select(p => p with { Name = p.DisplayName }).ToList() };
+        var forMap = s with
+        {
+            Places = s.Places.Select(p => p with { Name = p.DisplayName }).ToList(),
+            QuietPlaces = s.QuietPlaces ?? [],
+            Arrows = s.Arrows ?? [],
+            Narratives = s.Narratives ?? []
+        };
         var json = JsonSerializer.Serialize(forMap, Wire.Options);
         await _module.InvokeVoidAsync("setScene", _id, json);
     }

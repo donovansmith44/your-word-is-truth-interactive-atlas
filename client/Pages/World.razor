@@ -58,7 +58,7 @@
                    WindowTo="@(_scriptureRef is null ? _to : (int?)null)"
                    OnPointerEnter="CardPointerEnter" OnPointerLeave="CardPointerLeave"
                    OnOpenPlace="OpenPlaceFromCard" OnExploreNode="OpenExploreNode"
-                   Pinned="@(_pinnedPlaceId is not null)" Arrows="_scene?.Arrows" Narratives="_scene?.Narratives"
+                   Pinned="@(_pinnedPlaceId is not null)" Arrows="_scene?.Arrows ?? []" Narratives="_scene?.Narratives ?? []"
                    OnGoToPlace="GoToAdjacent" OnClosePin="ClosePinnedCard" />
     }
 
@@ -95,7 +95,7 @@
         </div>
     }
 
-    @if (_scene is not null && _scene.Narratives.Count > 0)
+    @if (_scene is not null && _scene.Narratives?.Count > 0)
     {
         <Legend Narratives="_scene.Narratives" IsolatedId="@_isolated" OnIsolate="HandleIsolate" />
     }

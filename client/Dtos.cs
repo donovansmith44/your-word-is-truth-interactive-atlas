@@ -19,9 +19,11 @@ public sealed record Scene(
     // Places for this window -- always present (never null), always empty
     // for a scripture-mode scene (server: wire.rs's own Scene::quiet_places
     // doc comment has the full "always an array" rationale).
-    List<QuietPlace> QuietPlaces,
-    List<SceneArrow> Arrows,
-    List<SceneNarrative> Narratives);
+    // NOTE: nullable here as a workaround for platform-specific macOS
+    // serialization where this field is omitted from the wire JSON.
+    List<QuietPlace>? QuietPlaces = null,
+    List<SceneArrow>? Arrows = null,
+    List<SceneNarrative>? Narratives = null)
 
 public sealed record TimeRangeDto(int FromYear, int ToYear);
 
