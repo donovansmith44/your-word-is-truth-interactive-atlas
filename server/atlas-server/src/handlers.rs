@@ -83,44 +83,74 @@ pub async fn landmarks(State(data): State<Arc<AtlasData>>) -> Json<Vec<Landmark>
     Json(data.landmarks.clone())
 }
 
+/// Batch B2 ("borders v2, the cartographer's edition"): one polity-era row
+/// on the wire, `{ id, name, from, to, rings, color_key }` per the batch
+/// brief verbatim -- field names deliberately match
+/// `atlas_core::data::PolityEra`'s own (`from`/`to`, not `from_year`/
+/// `to_year`; see that struct's doc comment for why) so this is a plain
+/// copy, not a rename. `id` is the POLITY's id (constant across every era
+/// row this same polity contributes to a response), `name`/`from`/`to`/
+/// `rings` are this specific ERA's own fields, and `color_key` is the
+/// polity's own precomputed hash (`Polity::color_key` -- copied here
+/// unchanged, never rehashed per-request).
 #[derive(Debug, Serialize)]
-pub struct BordersOut {
-    pub snapshot_year: Option<i32>,
-    pub geojson: serde_json::Value,
+pub struct PolityOut {
+    pub id: String,
+    pub name: String,
+    pub from: i32,
+    pub to: i32,
+    pub rings: Vec<Vec<(f64, f64)>>,
+    pub color_key: u8,
 }
 
-fn empty_feature_collection() -> serde_json::Value {
-    serde_json::json!({ "type": "FeatureCollection", "features": [] })
+#[derive(Debug, Serialize)]
+pub struct PolitiesOut {
+    pub polities: Vec<PolityOut>,
 }
 
-/// `GET /api/borders?from=&to=`. `from`/`to` share `scene_time`'s lenient
+/// `GET /api/polities?from=&to=`. `from`/`to` share `scene_time`'s lenient
 /// parsing (ruling 1: missing/unparseable/zero/inverted -> 400
 /// `bad_window`), via the same `parse_year` helper and `TimeRange::new`
 /// validity check.
 ///
-/// Once the window is valid, an EMPTY `borders` map (the `demo_fixture()`
-/// case, or a `--data-dir` from before atlas-etl's borders step ever ran)
-/// is not an error — it returns `snapshot_year: null` with an empty
-/// `FeatureCollection`, 200, mirroring `scene_time`'s ruling-2 spirit
-/// ("out-of-span is not an error") one level up: "no border data compiled
-/// at all" is a valid, meaningful state for the client to render as "no
-/// borders yet", not a failure. Otherwise picks the snapshot nearest the
-/// window's zero-aware midpoint via `AtlasData::nearest_border_year`.
-pub async fn borders(
+/// Once the window is valid, emits every era (of every polity) whose own
+/// `[from,to]` intersects it -- a polity with several eras in view (a
+/// window spanning a border change) contributes one row PER intersecting
+/// era, all sharing that polity's own `id`/`color_key`; a window matching no
+/// era at all (out-of-span, or the `demo_fixture()`/pre-ETL case where
+/// `data.polities` is empty) is not an error, mirroring `scene_time`'s own
+/// ruling-2 spirit -- it 200s with an empty `polities` array. Deterministic
+/// order: by polity id, then by era `from` -- so a multi-era window always
+/// lists a polity's OLDER era before its newer one (the exact order
+/// map.js's `BorderLayer` needs to paint older-under-newer and pick the
+/// dotted/lightest era correctly without re-sorting client-side).
+pub async fn polities(
     State(data): State<Arc<AtlasData>>,
     Query(params): Query<HashMap<String, String>>,
-) -> Result<Json<BordersOut>, ApiError> {
+) -> Result<Json<PolitiesOut>, ApiError> {
     let from = parse_year(&params, "from")?;
     let to = parse_year(&params, "to")?;
-    TimeRange::new(from, to).map_err(|_| ApiError::bad_window())?;
+    let window = TimeRange::new(from, to).map_err(|_| ApiError::bad_window())?;
 
-    let Some(year) = data.nearest_border_year(from, to) else {
-        return Ok(Json(BordersOut { snapshot_year: None, geojson: empty_feature_collection() }));
-    };
-    // `year` came straight out of `data.borders`'s own keys, so this lookup
-    // cannot miss; the fallback is defensive only, never expected to fire.
-    let geojson = data.borders.get(&year).cloned().unwrap_or_else(empty_feature_collection);
-    Ok(Json(BordersOut { snapshot_year: Some(year), geojson }))
+    let mut out: Vec<PolityOut> = Vec::new();
+    for p in &data.polities {
+        for era in &p.eras {
+            let era_range = TimeRange { from_year: era.from, to_year: era.to };
+            if window.intersects(&era_range) {
+                out.push(PolityOut {
+                    id: p.id.clone(),
+                    name: era.name.clone(),
+                    from: era.from,
+                    to: era.to,
+                    rings: era.rings.clone(),
+                    color_key: p.color_key,
+                });
+            }
+        }
+    }
+    out.sort_by(|a, b| a.id.cmp(&b.id).then(a.from.cmp(&b.from)));
+
+    Ok(Json(PolitiesOut { polities: out }))
 }
 
 #[derive(Debug, Serialize)]

@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use atlas_core::data::demo_fixture;
+use atlas_core::data::{demo_fixture, AtlasData, Polity, PolityEra};
 use axum::body::Body;
 use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
 use axum::http::{Request, StatusCode};
@@ -294,27 +294,25 @@ async fn place_history_resolves_by_window_and_is_deterministic() {
 }
 
 #[tokio::test]
-async fn borders_empty_fixture_shape_and_errors() {
+async fn polities_empty_fixture_shape_and_errors() {
     let app = app();
 
-    // demo_fixture() has no compiled border snapshots -- a valid window
-    // still 200s, with snapshot_year null and an empty FeatureCollection
-    // (mirrors scene_time's "out-of-span is not an error" spirit one level
-    // up: "no border data at all" is a valid state, not a failure).
-    let (st, body) = call(&app, "/api/borders?from=-1450&to=-1400").await;
+    // demo_fixture() has no compiled polities -- a valid window still 200s,
+    // with an empty `polities` array (mirrors scene_time's "out-of-span is
+    // not an error" spirit one level up: "no polity data at all" is a valid
+    // state, not a failure).
+    let (st, body) = call(&app, "/api/polities?from=-1450&to=-1400").await;
     assert_eq!(st, 200);
-    assert_eq!(body["snapshot_year"], serde_json::Value::Null);
-    assert_eq!(body["geojson"]["type"], "FeatureCollection");
-    assert_eq!(body["geojson"]["features"], serde_json::json!([]));
+    assert_eq!(body["polities"], serde_json::json!([]));
 
     // Same bad_window rulings as /api/scene: missing/unparseable/zero/inverted.
     for bad in [
-        "/api/borders?from=0&to=5",
-        "/api/borders?from=5&to=-5",
-        "/api/borders?from=1",
-        "/api/borders",
-        "/api/borders?from=x&to=y",
-        "/api/borders?from=&to=",
+        "/api/polities?from=0&to=5",
+        "/api/polities?from=5&to=-5",
+        "/api/polities?from=1",
+        "/api/polities",
+        "/api/polities?from=x&to=y",
+        "/api/polities?from=&to=",
     ] {
         let (st, body) = call(&app, bad).await;
         assert_eq!(st, 400, "{bad}");
@@ -323,9 +321,90 @@ async fn borders_empty_fixture_shape_and_errors() {
 
     // Ruling 2 parity: a structurally valid but wildly out-of-span window
     // is NOT an error, same as /api/scene.
-    let (st, body) = call(&app, "/api/borders?from=-50000&to=50000").await;
+    let (st, body) = call(&app, "/api/polities?from=-50000&to=50000").await;
     assert_eq!(st, 200);
-    assert_eq!(body["snapshot_year"], serde_json::Value::Null);
+    assert_eq!(body["polities"], serde_json::json!([]));
+}
+
+fn square_ring() -> Vec<(f64, f64)> {
+    vec![(10.0, 10.0), (10.0, 11.0), (11.0, 11.0), (11.0, 10.0), (10.0, 10.0)]
+}
+
+/// A tiny `AtlasData` carrying real, hand-built polities -- `demo_fixture()`
+/// plus an overwritten `polities` field, `.finish()`d again (idempotent per
+/// its own doc comment) so the derived indexes stay consistent. Two
+/// polities: `egypt` with TWO non-overlapping eras (renamed across them,
+/// "Egypt" -> "Ptolemaic Egypt", mirroring the real curated data -- the
+/// exact shape `color_key`'s own "stable across a rename" guarantee needs a
+/// live test for) and `rome` with one era, so ordering ("by id then from")
+/// has more than one id to actually sort.
+fn app_with_test_polities() -> axum::Router {
+    let mut data = demo_fixture();
+    data.polities = vec![
+        Polity {
+            id: "egypt".into(),
+            color_key: 3,
+            eras: vec![
+                PolityEra { name: "Egypt".into(), from: -2100, to: -1200, ref_note: "fixture".into(), rings: vec![square_ring()] },
+                PolityEra { name: "Ptolemaic Egypt".into(), from: -331, to: -30, ref_note: "fixture".into(), rings: vec![square_ring()] },
+            ],
+        },
+        Polity {
+            id: "rome".into(),
+            color_key: 5,
+            eras: vec![PolityEra { name: "Roman Empire".into(), from: -30, to: 100, ref_note: "fixture".into(), rings: vec![square_ring()] }],
+        },
+    ];
+    let data: AtlasData = data.finish();
+    atlas_server::app::build(Arc::new(data), None)
+}
+
+#[tokio::test]
+async fn polities_intersection_ordering_and_color_key_stability() {
+    let app = app_with_test_polities();
+
+    // A window inside egypt's FIRST era only -- exactly one row, and rome
+    // (whose only era starts at -30, after this window ends) never appears.
+    let (st, body) = call(&app, "/api/polities?from=-2000&to=-1900").await;
+    assert_eq!(st, 200);
+    let polities = body["polities"].as_array().unwrap();
+    assert_eq!(polities.len(), 1, "{polities:?}");
+    assert_eq!(polities[0]["id"], "egypt");
+    assert_eq!(polities[0]["name"], "Egypt");
+    assert_eq!(polities[0]["color_key"], 3);
+
+    // A window spanning BOTH of egypt's eras plus rome's own -- three rows,
+    // deterministically ordered "by id then from": egypt's OLDER era first,
+    // egypt's newer era second, rome last (id "rome" > "egypt").
+    let (st, body) = call(&app, "/api/polities?from=-1500&to=50").await;
+    assert_eq!(st, 200);
+    let polities = body["polities"].as_array().unwrap();
+    assert_eq!(polities.len(), 3, "{polities:?}");
+    assert_eq!(polities[0]["id"], "egypt");
+    assert_eq!(polities[0]["name"], "Egypt");
+    assert_eq!(polities[0]["from"], -2100);
+    assert_eq!(polities[1]["id"], "egypt");
+    assert_eq!(polities[1]["name"], "Ptolemaic Egypt");
+    assert_eq!(polities[1]["from"], -331);
+    assert_eq!(polities[2]["id"], "rome");
+
+    // color_key stability across eras of the SAME polity: both egypt rows
+    // above carry the SAME color_key (3) despite their different era NAMES
+    // -- the exact property the batch brief asks for ("hash the polity ID,
+    // not the era name").
+    assert_eq!(polities[0]["color_key"], 3);
+    assert_eq!(polities[1]["color_key"], 3);
+    assert_eq!(polities[0]["color_key"], polities[1]["color_key"]);
+
+    // A window touching neither polity at all -- empty, not an error.
+    let (st, body) = call(&app, "/api/polities?from=-4004&to=-2500").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["polities"], serde_json::json!([]));
+
+    // Rings travel through byte-identical to how they're stored -- [lat, lon]
+    // pairs, never transposed.
+    let (_, body) = call(&app, "/api/polities?from=-2000&to=-1900").await;
+    assert_eq!(body["polities"][0]["rings"][0][0], serde_json::json!([10.0, 10.0]));
 }
 
 #[tokio::test]
