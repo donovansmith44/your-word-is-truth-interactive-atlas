@@ -182,6 +182,16 @@
     {
     }
 
+    // Batch H fix round 2: map.js's own init() never wires the
+    // moveend/zoomend camera-tracking listener this fires from when mini is
+    // true (see its own comment) -- a mini figure never disposes into
+    // ViewStateService.Map (only the full World page does), so tracking its
+    // camera would have nothing to feed anyway. Implemented anyway, same
+    // treatment as every OTHER IMapEvents member above.
+    public void OnCameraChanged(double lat, double lon, double zoom)
+    {
+    }
+
     public async ValueTask DisposeAsync()
     {
         // Set FIRST, before any await -- this is the flag OnAfterRenderAsync

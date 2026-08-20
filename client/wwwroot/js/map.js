@@ -274,6 +274,26 @@ export function init(el, dotnetRef, opts) {
     if (!mini) {
         map.on('click', () => dotnetRef.invokeMethodAsync('OnMapClick'));
         instances.get(id).escapeCleanup = watchEscape(dotnetRef);
+
+        // Batch H fix round 2 (review Critical-1): continuous camera
+        // tracking into ViewStateService, mirroring reader.js's own
+        // watchScroll -- World.razor's DisposeAsync used to read the
+        // camera via an AWAITED getCamera() call, which races a
+        // concurrently-mounting new World instance on transitions that
+        // dispose one page and mount another in the same navigation
+        // (e.g. split-close-reader): Blazor gives no ordering guarantee
+        // between an outgoing component's async DisposeAsync continuation
+        // and an incoming component's own lifecycle. Firing on EVERY
+        // moveend/zoomend (not just user-driven gestures) also naturally
+        // covers the very first auto-fit with no separate special case --
+        // Leaflet's own setView/fitBounds (used by fitScene/setCamera,
+        // both already {animate:false}) trigger moveend/zoomend
+        // synchronously, so an auto-fit landing right after init() is
+        // captured exactly like a user drag/zoom would be.
+        map.on('moveend zoomend', () => {
+            const c = map.getCenter();
+            dotnetRef.invokeMethodAsync('OnCameraChanged', c.lat, c.lng, map.getZoom());
+        });
     }
 
     return id;

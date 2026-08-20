@@ -448,27 +448,44 @@ Notes:
   localStorage-persisted -- explicitly out of scope this batch; a hard
   reload starts fresh), app-lifetime view-state service remembers where the
   reader and the atlas were each left, independent of split. Map state
-  (window OR scripture ref, follow on/off, camera center/zoom, captured on
-  every World.razor dispose -- standalone page-nav-away OR a split pane
-  closing, either one) is ONE shared value: full-page `/world` and the
-  split's own atlas pane read and write the SAME saved position -- "it is
-  the same atlas." Reader state (book/chapter + a plain scroll-Y pixel
-  offset) is tracked continuously while Reader.razor is mounted (a
-  throttled scroll listener, not a dispose-time read -- Blazor's own router
-  resets window scroll on navigation before a dispose-time read could ever
-  see anything but 0) and restored only when landing back on the EXACT
-  book+chapter last left (a different chapter always starts at its own
-  natural top, same as any ordinary navigation). Round-trip acceptance:
-  reader (scroll down) -> `/world` (drag/zoom) -> back to reader (same
-  scroll) -> back to `/world` (same window/camera) == exactly where left,
-  each leg an ordinary full-page navigation. Split open/close preserves
-  both sides the same way, since opening/closing on the READER side is a
-  local toggle (nothing to restore, the reader instance never moved) and
-  closing the ATLAS side is itself a navigation this same round-trip
-  covers. `follow` itself is written back ONLY by a `SplitMode` (embedded
-  atlas pane) dispose -- an intervening STANDALONE `/world` visit (which has
-  no follow chip to change it from) never resets it, so the split's own
-  follow state survives a detour through the full-page atlas untouched.
+  (window OR scripture ref, follow on/off, camera center/zoom) is ONE
+  shared value: full-page `/world` and the split's own atlas pane read and
+  write the SAME saved position -- "it is the same atlas." Reader state
+  (book/chapter + a plain scroll-Y pixel offset) is tracked continuously
+  while Reader.razor is mounted (a throttled scroll listener, not a
+  dispose-time read -- Blazor's own router resets window scroll on
+  navigation before a dispose-time read could ever see anything but 0) and
+  restored only when landing back on the EXACT book+chapter last left (a
+  different chapter always starts at its own natural top, same as any
+  ordinary navigation). FIX ROUND 2: map state is ALSO tracked
+  continuously, not captured at dispose time -- window/ref/follow the
+  instant any of them changes (every direct scene-entry path on
+  World.razor), camera center/zoom on every Leaflet moveend/zoomend (map.js).
+  This replaced an earlier dispose-time capture that shipped with a real,
+  live-reproduced bug: on a navigation that disposes one World instance
+  while mounting a brand-new one in the SAME step (`split-close-reader`,
+  and symmetrically "Read beside the map" opening a split), Blazor gives no
+  ordering guarantee between the outgoing instance's own DisposeAsync (even
+  its fully synchronous portion) and the incoming instance's own
+  OnParametersSetAsync reading the shared state -- confirmed live: even a
+  purely synchronous dispose-time write, with no `await` before it, still
+  lost the race, because the losing side was DisposeAsync not yet having
+  been CALLED at all, not merely an in-flight continuation. Continuous
+  tracking sidesteps the question of when (or whether) DisposeAsync runs
+  relative to a new instance's mount entirely, mirroring the reader-scroll
+  mechanism above exactly. Round-trip acceptance: reader (scroll down) ->
+  `/world` (drag/zoom) -> back to reader (same scroll) -> back to `/world`
+  (same window/camera) == exactly where left, each leg an ordinary
+  full-page navigation. Split open/close preserves both sides the same
+  way, since opening/closing on the READER side is a local toggle (nothing
+  to restore, the reader instance never moved) and closing the ATLAS side
+  is itself a navigation this same round-trip covers -- including the
+  concurrent dispose+mount shape above, now that the write no longer
+  depends on DisposeAsync running in time. `follow` itself is written back
+  ONLY by a `SplitMode` (embedded atlas pane) instance -- an intervening
+  STANDALONE `/world` visit (which has no follow chip to change it from)
+  never resets it, so the split's own follow state survives a detour
+  through the full-page atlas untouched.
 - EXISTENCE-1 (batch-h-brief.md, existence gating, deferred from E2): a
   place's NAME -- the `.atlas-label`/`.quiet-label` span inside
   `marker-{placeId}`/`quiet-marker-{placeId}`, never the dot/marker itself

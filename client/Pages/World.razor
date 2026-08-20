@@ -452,6 +452,45 @@
         }
     }
 
+    // Batch H fix round 2 (review Critical-1, take 2): pushes THIS instance's
+    // current window/ref/follow into the shared ViewState the MOMENT they
+    // change, rather than only at dispose time. Fix round 2's first attempt
+    // reordered DisposeAsync so these same five fields were written into
+    // ViewState BEFORE the method's own first await (the camera's, since
+    // removed -- see DisposeAsync's own comment) -- sound C# async
+    // reasoning (a synchronous prefix of an async method runs inline, in
+    // the caller's own call stack), but EMPIRICALLY still lost the exact
+    // same race live (a regression test written against that fix stayed
+    // red): Blazor's renderer does not guarantee an outgoing component's
+    // DisposeAsync is even CALLED before an incoming component's own
+    // OnParametersSetAsync reads shared state, on a navigation that
+    // disposes one component and mounts another in the same step --
+    // ordering between the two is simply undocumented/unguaranteed, so no
+    // fix confined to DisposeAsync (sync or not) can close it. Removing the
+    // dispose-time write from the critical path entirely -- syncing
+    // continuously instead -- is what actually works, because it no longer
+    // matters when, or even whether, DisposeAsync gets called relative to
+    // the new instance's mount. Exactly the same fix shape already proven
+    // for OnCameraChanged (map.js's moveend/zoomend) and reader.js's own
+    // watchScroll/OnScroll.
+    private void SyncViewState()
+    {
+        ViewState.Map.HasData = true;
+        ViewState.Map.From = _from;
+        ViewState.Map.To = _to;
+        ViewState.Map.ScriptureRef = _scriptureRef;
+        if (SplitMode)
+        {
+            // Follow is a split-only concept -- a standalone /world visit
+            // has no toggle chip to ever change it FROM, so only a
+            // SplitMode instance writes this half of the state, keeping
+            // whatever the user last explicitly set even across an
+            // intervening standalone visit (see MapViewState.Follow's own
+            // doc comment).
+            ViewState.Map.Follow = _follow;
+        }
+    }
+
     // Batch H: the shared "enter scripture mode" sequence every direct
     // (non-URL) scene-loading call site below needs -- SyncFromQuery's own
     // ref-branch already inlines these exact three steps (stamp
@@ -462,10 +501,13 @@
     // rather than each one re-deriving/risking missing a step.
     // SyncFromQuery's own two call sites are intentionally left as they
     // are (not refactored onto this) -- battle-tested, unrelated to this
-    // batch's own risk surface.
+    // batch's own risk surface -- but each now makes its own SyncViewState
+    // call directly (fix round 2), so every path that sets _scriptureRef/
+    // _from/_to stays covered either way.
     private async Task EnterScriptureMode(string sref)
     {
         _scriptureRef = sref;
+        SyncViewState();
         if (_mapInterop is not null)
         {
             await _mapInterop.SetPolitiesVisible(false);
@@ -485,6 +527,7 @@
         _scriptureRef = null;
         _from = from;
         _to = to;
+        SyncViewState();
         return DebouncedLoadScene(from, to);
     }
 
@@ -544,6 +587,12 @@
     private async Task ToggleFollow()
     {
         _follow = !_follow;
+        // fix round 2: syncs the flipped Follow value even in the
+        // (practically unreachable -- Reader.razor always supplies a real
+        // FollowRef in SplitMode -- but defensively worth covering) edge
+        // case where toggling ON finds FollowRef null and neither branch
+        // below would otherwise call a SyncViewState-carrying helper at all.
+        SyncViewState();
         if (_follow)
         {
             if (FollowRef is not null)
@@ -699,6 +748,7 @@
         if (!string.IsNullOrEmpty(RefQuery))
         {
             _scriptureRef = RefQuery;
+            SyncViewState(); // fix round 2 -- see SyncViewState's own comment
 
             // Fix round 1 (finding 5): hide the polity-border LAYER the
             // moment scripture mode is entered -- unconditionally, right
@@ -736,6 +786,7 @@
                 }
                 else
                 {
+                    SyncViewState(); // fix round 2 -- see SyncViewState's own comment
                     await DebouncedLoadScene(_from, _to);
                 }
             }
@@ -763,6 +814,7 @@
 
         _from = from;
         _to = to;
+        SyncViewState(); // fix round 2 -- see SyncViewState's own comment
         await DebouncedLoadScene(from, to);
     }
 
@@ -1250,6 +1302,23 @@
         StateHasChanged();
     }
 
+    // Batch H fix round 2 (view-state round-trip, review Critical-1): fired
+    // on every Leaflet moveend/zoomend (map.js's init()) -- keeps
+    // ViewState.Map's camera fields continuously current instead of reading
+    // them once, awaited, at dispose time (see DisposeAsync's own comment
+    // for the exact race that read lost). Purely a write-through into the
+    // shared service, nothing on THIS component's own render output depends
+    // on it, so no StateHasChanged() -- same shape as Reader.razor's own
+    // OnScroll. Fires for the very first auto-fit too, not just user drags/
+    // zooms (map.js's own comment on why), so there's no gap for "opened
+    // and closed without ever touching the map."
+    public void OnCameraChanged(double lat, double lon, double zoom)
+    {
+        ViewState.Map.CenterLat = lat;
+        ViewState.Map.CenterLon = lon;
+        ViewState.Map.Zoom = zoom;
+    }
+
     // PlaceCard.OnOpenPlace (WORLD-8/Task 15): closes the hover card
     // immediately (rather than leaving it to the pointer-leave timer) since
     // its content is now shown, promoted, inside the popover that's about
@@ -1425,43 +1494,35 @@
         StateHasChanged();
     }
 
+    // Batch H (view-state round-trip), fix round 2 (review Critical-1):
+    // ViewState.Map is NOT captured here at all anymore -- neither the
+    // window/ref/follow fields nor the camera. Fix round 2's FIRST attempt
+    // moved the five non-camera fields into this method's own synchronous
+    // prefix (before its one await, _mapInterop.DisposeAsync()), reasoning
+    // that a synchronous prefix of an async method always runs inline in
+    // the caller's own call stack -- sound in isolation, but EMPIRICALLY
+    // still lost the exact race it was meant to close (a regression test
+    // written against that fix stayed red): Blazor's renderer does not
+    // guarantee an outgoing component's DisposeAsync is even CALLED before
+    // an incoming component's own OnParametersSetAsync reads shared state,
+    // on a navigation that disposes one component and mounts another in
+    // the same step. No fix confined to DisposeAsync, sync or not, can
+    // close a race whose losing side is "not yet invoked at all." The
+    // actual fix -- SyncViewState(), called continuously the moment
+    // _scriptureRef/_from/_to/_follow change (EnterScriptureMode/
+    // EnterTimeMode/SyncFromQuery's own inline branches -- see
+    // SyncViewState's own comment) and OnCameraChanged below (a Leaflet
+    // moveend/zoomend listener, map.js's init()) for the camera -- removes
+    // DisposeAsync from the critical path entirely, mirroring reader.js's
+    // own watchScroll/OnScroll exactly. By the time ANY instance disposes,
+    // whatever it had worth capturing is already in ViewState.
     public async ValueTask DisposeAsync()
     {
         _fetchCts?.Cancel();
         _closeCts?.Cancel();
 
-        // Batch H (view-state round-trip): capture wherever this instance is
-        // CURRENTLY sitting -- standalone /world navigated away from, OR a
-        // split pane closed/torn down -- into the shared ViewState BEFORE
-        // the underlying Leaflet instance (and its camera) is gone. Only
-        // when a real map instance existed at all (a page that never
-        // finished OnAfterRenderAsync's own MapInterop.Create has nothing
-        // meaningful to capture).
         if (_mapInterop is not null)
         {
-            var camera = await _mapInterop.GetCamera();
-            ViewState.Map.HasData = true;
-            ViewState.Map.From = _from;
-            ViewState.Map.To = _to;
-            ViewState.Map.ScriptureRef = _scriptureRef;
-            if (SplitMode)
-            {
-                // Follow is a split-only concept -- a standalone /world
-                // visit has no toggle chip to ever change it FROM, so only a
-                // split-pane dispose writes this half of the state, keeping
-                // whatever the user last explicitly set even across an
-                // intervening standalone visit (see MapViewState.Follow's
-                // own doc comment).
-                ViewState.Map.Follow = _follow;
-            }
-
-            if (camera is not null)
-            {
-                ViewState.Map.CenterLat = camera.Lat;
-                ViewState.Map.CenterLon = camera.Lng;
-                ViewState.Map.Zoom = camera.Zoom;
-            }
-
             await _mapInterop.DisposeAsync();
         }
     }

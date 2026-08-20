@@ -83,10 +83,26 @@ test('SPLIT-1: "Read beside the map" from /world lands in split at the reader\'s
   await expect(page.getByTestId('follow-chip')).toHaveText('Following GEN.1');
 });
 
-test('SPLIT-1: closing the reader pane returns to a full /world', async ({ page }) => {
+// Fix round 2 (review Critical-1): the reviewer's own live repro was exactly
+// this shape -- open split with follow ON (the untouched default, no extra
+// interaction needed to reach it), immediately close-reader. Before the fix,
+// World.razor's DisposeAsync wrote ViewState.Map's fields AFTER an awaited
+// GetCamera() JS-interop call, which genuinely yields (IJSObjectReference
+// calls always resolve via a JS promise microtask, even for a synchronous JS
+// function) -- so the brand-new standalone World mounting in the SAME
+// navigation could (and, per the reviewer's 3/3 and 8/8 live reproductions,
+// reliably did) read ViewState.Map.HasData as still false, silently falling
+// back to the hardcoded Gospels-era default instead of restoring GEN.12's
+// scripture scene. This is the exact state-content assertion Important-1
+// flagged as missing -- the ORIGINAL version of this test only ever checked
+// DOM structure (split-view gone, world-map visible), which passes whether
+// the restore actually worked OR silently discarded state and fell back to
+// a default -- both look identical at the DOM-structure level.
+test('SPLIT-1: closing the reader pane returns to a full /world, preserving the atlas pane\'s actual state', async ({ page }) => {
   await page.goto('/read/GEN/12');
   await page.getByTestId('split-open-reader').click();
   await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'true'); // follow ON, the default, untouched
 
   await page.getByTestId('split-close-reader').click();
   await page.waitForURL(u => u.pathname === '/world');
@@ -95,6 +111,59 @@ test('SPLIT-1: closing the reader pane returns to a full /world', async ({ page 
   await expect(page.getByTestId('verse-line-1')).toHaveCount(0);
   await expect(page.getByTestId('world-map')).toBeVisible();
   await expect(page.getByTestId('split-open-world')).toBeVisible();
+  // The actual state-content assertion: the resulting /world shows GEN.12's
+  // scripture scene (what the pane was actually following), NOT the
+  // hardcoded Gospels-era time-mode default (5 BC - AD 29) a lost race
+  // silently falls back to.
+  await expect(page.getByTestId('mode-chip')).toContainText('GEN.12');
+  const scene = await api.sceneScripture('GEN.12');
+  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
+});
+
+// Important-2 (same review): the reverse direction shares the identical
+// mechanism -- "Read beside the map" (OpenReadBesideMap) disposes a
+// standalone /world instance while mounting a brand-new SplitMode World, in
+// one navigation -- but exercises SyncFollowRef's OWN restore branch (else
+// if ViewState.Map.HasData) rather than SyncFromQuery's, only reachable when
+// follow is off (the first branch, "_follow && FollowRef is not null",
+// otherwise wins regardless of any race). Seeded non-racily first (follow
+// toggled off, then closed via the LOCAL split-close-atlas toggle and an
+// ordinary nav-world link click -- neither disposes a SplitMode instance
+// concurrently with a mount, so ViewState.Map.Follow/HasData land for real
+// before the actual test begins) so the only race under test is the ONE
+// this finding is actually about: a ref applied on the live standalone page
+// (same-route requery, Blazor reuses the instance, no dispose yet) that has
+// NEVER been captured into ViewState before "Read beside the map" disposes
+// this exact instance while mounting the new pane.
+test('SPLIT-1: "Read beside the map" preserves a ref just applied on the standalone page, not a stale/default state', async ({ page }) => {
+  await page.goto('/read/GEN/12');
+  await page.getByTestId('split-open-reader').click();
+  await page.getByTestId('follow-chip').click(); // off
+  await page.getByTestId('split-close-atlas').click(); // local toggle, no concurrent mount
+  await expect(page.getByTestId('split-view')).toHaveCount(0);
+
+  await page.getByTestId('nav-world').click(); // ordinary link nav -- Reader disposes, never touches ViewState.Map
+  await page.waitForURL(u => u.pathname === '/world');
+  await expect(page.getByTestId('split-open-world')).toBeVisible();
+
+  // Applies to the SAME live standalone instance (same route, Blazor
+  // reuses the component rather than disposing it -- ApplyScriptureRef's
+  // own NavigateTo only changes the query string) -- this ref exists ONLY
+  // on the live instance's own _scriptureRef field until something disposes it.
+  await page.getByTestId('picker-book').selectOption('JOS');
+  await page.getByTestId('picker-chapter').selectOption('6');
+  await page.getByTestId('picker-apply').click();
+  await expect(page).toHaveURL(/ref=JOS\.6/);
+  await expect(page.getByTestId('mode-chip')).toContainText('JOS.6');
+
+  // The actual race: THIS instance (JOS.6 live, never yet captured)
+  // disposes while a brand-new SplitMode instance mounts, in one navigation.
+  await page.getByTestId('split-open-world').click();
+  await page.waitForURL(u => u.pathname.startsWith('/read/') && u.searchParams.get('split') === '1');
+
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByTestId('mode-chip')).toContainText('JOS.6');
 });
 
 // The money shot: reader navigation re-scenes the atlas pane automatically,
