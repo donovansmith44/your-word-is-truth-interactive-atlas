@@ -23,7 +23,11 @@ data/raw/*
 node_modules/
 tests/ux/test-results/
 tests/ux/playwright-report/
-client/wwwroot/vendor/
+
+# client/wwwroot/vendor/ is COMMITTED on purpose: index.html loads Leaflet
+# (BSD-2-Clause, redistributable -- see LICENSES.md) from vendor/leaflet/,
+# and a clone that lacks it gets index.html served in leaflet.js's place by
+# the SPA fallback ("Unexpected token '<'"), breaking clone-and-run.
 
 # Publish output (dotnet publish client -o publish; see README's publish-path
 # section) -- a build artifact, never committed.
