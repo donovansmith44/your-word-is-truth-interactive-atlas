@@ -12,6 +12,8 @@ export const api = {
   eras: () => getJson('/api/eras'),
   chapter: (cref: string) => getJson(`/api/chapter/${cref}`),
   verse: (vref: string) => getJson(`/api/verse/${vref}`),
+  // Batch G1: GET /api/xrefs/{sref} -- span-aggregated cross-references.
+  xrefs: (sref: string) => getJson(`/api/xrefs/${sref}`),
   place: (id: string) => getJson(`/api/place/${id}`),
   // Batch E: `/api/place/{id}?from=&to=` -- the window-scoped `history` payload.
   placeHistory: (id: string, from: number, to: number) => getJson(`/api/place/${id}?from=${from}&to=${to}`),

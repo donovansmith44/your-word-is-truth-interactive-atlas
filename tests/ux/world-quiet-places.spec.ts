@@ -106,6 +106,39 @@ test('quiet dot hover card: Jerusalem in the primeval era shows the quiet line, 
   await expect(page.locator('[data-testid^="place-event-"]')).toHaveCount(detail.events.length);
 });
 
+// Batch G1 requirement 3: "when you build click-to-pin, quiet markers pin
+// their card too... extend the pin to quiet with the same conditional-
+// presence card" -- CONTRACT.md's own PIN-1 note (superseding this file's
+// earlier "clicking a marker -- lit OR quiet -- is a no-op today"). Same
+// place/window as the hover-card test above (Jerusalem, primeval era) so
+// this is a direct, minimal-diff comparison: identical content, pinned.
+test('quiet dot click pins the SAME quiet card (place-card-quiet, no verse controls), survives pointer-leave, closes via its own X', async ({ page }) => {
+  await page.goto(`/world?from=${PRIMEVAL.from}&to=${PRIMEVAL.to}`);
+
+  const card = page.getByTestId('place-card');
+  // dispatchEvent, not click({force:true}): Jerusalem sits at the EXACT same
+  // lat/lon as "Beautiful-gate" (see the hover-card test above's own
+  // comment) -- a pixel-coordinate click can resolve to either one, same
+  // hit-testing ambiguity force:true does NOT bypass (it only skips
+  // Playwright's own actionability pre-check, not the browser's real
+  // hit-test at that screen point). dispatchEvent fires directly on this
+  // exact DOM node, still exercising the real production click listener.
+  await page.getByTestId('quiet-marker-jerusalem').dispatchEvent('click');
+  await expect(card).toBeVisible();
+  await expect(card).toHaveAttribute('data-pinned', 'true');
+  await expect(page.getByTestId('place-card-title')).toHaveText('Jebus');
+  await expect(page.getByTestId('place-card-quiet')).toHaveText('No recorded events in this window — drag the timeline.');
+  await expect(card.locator('[data-testid^="hover-verse-"]')).toHaveCount(0);
+  await expect(page.getByTestId('place-card-more')).toHaveCount(0);
+
+  await page.mouse.move(5, 5);
+  await page.waitForTimeout(1200);
+  await expect(card).toBeVisible();
+
+  await page.getByTestId('place-card-close').click();
+  await expect(card).toHaveCount(0);
+});
+
 test('quiet dots: scripture mode never shows one', async ({ page }) => {
   await page.goto('/world?ref=EXO.14');
   const scene = await api.sceneScripture('EXO.14');

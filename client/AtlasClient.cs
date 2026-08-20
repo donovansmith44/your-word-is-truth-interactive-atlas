@@ -35,6 +35,10 @@ public sealed class AtlasClient
     // _chapterCache above -- a scene's lit places cluster into a much
     // smaller set of distinct (place, window) pairs than 24 in practice.
     private readonly LruCache<string, PlaceDetail> _placeHistoryCache = new(capacity: 24);
+    // Batch G1 requirement 2: PassageNode's own cross-references chip, keyed
+    // by sref -- same "instant on repeat visits/re-opens" rationale as
+    // _chapterCache/_placeHistoryCache above.
+    private readonly LruCache<string, List<CrossRefOut>> _xrefsCache = new(capacity: 24);
     private List<BookTocEntry>? _booksCache;
     private List<EraDto>? _erasCache;
     private List<LandmarkDto>? _landmarksCache;
@@ -143,6 +147,30 @@ public sealed class AtlasClient
         var url = from is int f2 && to is int t2 ? $"api/place/{id}?from={f2}&to={t2}" : $"api/place/{id}";
         var result = await GetRequired<PlaceDetail>(url);
         _placeHistoryCache.Put(key, result);
+        return result;
+    }
+
+    /// <summary>
+    /// Batch G1 requirement 2: <c>GET /api/xrefs/{sref}</c> -- aggregated
+    /// cross-references for a verse or same-chapter passage span (union of
+    /// member verses' own xrefs, votes summed, self-targets dropped, sorted
+    /// desc, capped at 20). Reuses <see cref="CrossRefOut"/> -- the wire
+    /// shape is identical to <see cref="VerseDetail.CrossRefs"/>'s own
+    /// per-item shape. LRU-cached like <see cref="Chapter"/>/
+    /// <see cref="PlaceHistory"/>: PassageNode's own popover reads this
+    /// twice per open (once to decide the chip's conditional presence, once
+    /// again if the chip is actually clicked) and this cache is what makes
+    /// the second read free.
+    /// </summary>
+    public async Task<List<CrossRefOut>> Xrefs(string sref)
+    {
+        if (_xrefsCache.TryGet(sref, out var cached))
+        {
+            return cached;
+        }
+
+        var result = await GetRequired<List<CrossRefOut>>($"api/xrefs/{sref}");
+        _xrefsCache.Put(sref, result);
         return result;
     }
 

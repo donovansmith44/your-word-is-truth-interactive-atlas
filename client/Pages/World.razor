@@ -25,7 +25,9 @@
                    WindowFrom="@(_scriptureRef is null ? _from : (int?)null)"
                    WindowTo="@(_scriptureRef is null ? _to : (int?)null)"
                    OnPointerEnter="CardPointerEnter" OnPointerLeave="CardPointerLeave"
-                   OnOpenPlace="OpenPlaceFromCard" OnExploreNode="OpenExploreNode" />
+                   OnOpenPlace="OpenPlaceFromCard" OnExploreNode="OpenExploreNode"
+                   Pinned="@(_pinnedPlaceId is not null)" Arrows="_scene?.Arrows" Narratives="_scene?.Narratives"
+                   OnGoToPlace="GoToAdjacent" OnClosePin="ClosePinnedCard" />
     }
 
     @if (_hoverArrowText is not null)
@@ -174,6 +176,18 @@
     private double _hoverX;
     private double _hoverY;
     private CancellationTokenSource? _closeCts;
+
+    // Batch G1 requirement 3 (click-to-pin): non-null exactly when a marker
+    // (lit or quiet) has been clicked and its card should stay open
+    // regardless of hover state, closing only via Escape, the card's own
+    // close button, or a click elsewhere on the map. _hoverPlace/_hoverX/
+    // _hoverY are STILL what the card actually renders from (unchanged
+    // rendering path) -- this field is purely the "is the currently-shown
+    // card pinned, and to what" flag every close/hover path below checks.
+    // OnPlaceHover/OnPlaceClick/GoToAdjacent are the only writers; CloseCardNow
+    // is the ONE place that clears it, so a fully-closed card can never
+    // leave this field pointing at nothing shown (see its own comment).
+    private string? _pinnedPlaceId;
 
     // Requirement 0c (user 2026-08-19: "hover interactions on both the map
     // and the Bible are extremely fickle. FIX IT."): the real, root-caused
@@ -675,6 +689,20 @@
     // re-render.
     public void OnPlaceHover(string id, double x, double y)
     {
+        // Batch G1 requirement 3: "hover behavior unchanged for UNPINNED
+        // browsing" -- once a card is pinned it OWNS the display slot
+        // exclusively; an ordinary hover on some OTHER marker while pinned
+        // does nothing (no preview swap) until the pin itself changes
+        // (clicking a different marker re-pins to it, per OnPlaceClick
+        // below) or is explicitly closed. Simpler and more predictable than
+        // a transient hover-preview-over-a-pin, and keeps this method's own
+        // pre-existing hover-persistence logic completely untouched for the
+        // unpinned case this guard doesn't touch.
+        if (_pinnedPlaceId is not null)
+        {
+            return;
+        }
+
         _closeCts?.Cancel();
         var place = _scene?.Places.FirstOrDefault(p => p.Id == id) ?? QuietAsScenePlace(id);
         if (place is null)
@@ -716,6 +744,10 @@
     // knows) already over the card, a marker-leave arriving late tells us
     // nothing new: the card's own eventual OnPointerLeave (CardPointerLeave
     // below) is what will actually close it once the pointer leaves THAT.
+    // Batch G1: while pinned, this still schedules exactly as before (no
+    // extra guard needed here) -- ScheduleCardClose itself is the ONE choke
+    // point that refuses to actually close a pinned card, so every caller
+    // (this one and CardPointerLeave below) stays simple.
     public void OnPlaceLeave()
     {
         if (_pointerOverCard)
@@ -726,13 +758,31 @@
         ScheduleCardClose();
     }
 
-    // Marker clicks are reported by map.js per the interop contract but
-    // have no behavior yet -- out of scope for WORLD-1/WORLD-2 (hover
-    // only). Left as a documented no-op rather than omitted so the
-    // IMapEvents contract stays satisfied without silently swallowing
-    // future intent.
+    // Batch G1 requirement 3: click a marker (lit or quiet) -> pin its card
+    // open. WORLD-1/WORLD-2's own original hover-only design (and Batch
+    // E2's own "click is a no-op today, deferred to Batch G1" note on the
+    // quiet side) is superseded by this -- the click IS now the pinning
+    // gesture, for both marker kinds identically. Resolves the place the
+    // exact same way OnPlaceHover does (lit ScenePlace, or a synthetic
+    // QuietAsScenePlace) so a pinned card renders with identical content to
+    // a hovered one, per CONTRACT's own hover/pin content-parity promise.
+    // Clicking a DIFFERENT marker while one is already pinned simply
+    // re-pins to the new one -- no special-casing needed, this assignment
+    // is unconditional.
     public void OnPlaceClick(string id, double x, double y)
     {
+        var place = _scene?.Places.FirstOrDefault(p => p.Id == id) ?? QuietAsScenePlace(id);
+        if (place is null)
+        {
+            return;
+        }
+
+        _closeCts?.Cancel();
+        _pinnedPlaceId = id;
+        _hoverPlace = place;
+        _hoverX = x;
+        _hoverY = y;
+        StateHasChanged();
     }
 
     // arrow-tip (WORLD-4/contract "arrow-tip"). `key` is "{narrative}:{order}"
@@ -778,9 +828,50 @@
 
     // Arrow clicks are reported by map.js per the interop contract but have
     // no behavior yet -- out of scope for WORLD-3/WORLD-4 (hover only).
-    // Documented no-op, same treatment as OnPlaceClick above.
+    // Documented no-op rather than omitted so the IMapEvents contract stays
+    // satisfied without silently swallowing future intent -- unlike
+    // OnPlaceClick (Batch G1 gave marker clicks real behavior: pinning),
+    // arrow clicks remain exactly as they were.
     public void OnArrowClick(string key, double x, double y)
     {
+    }
+
+    // Batch G1 requirement 3: a genuine map-background click (map.js's own
+    // stopPropagation on every marker/arrow click guarantees this never
+    // ALSO fires for one of those in the same gesture -- see map.js's own
+    // comment) closes a pinned card, per the brief's "closes via Escape, an
+    // X, or clicking elsewhere on the map." A no-op when nothing is pinned
+    // (an ordinary click on empty map/terrain/borders has never had any
+    // effect, and still doesn't).
+    public void OnMapClick()
+    {
+        if (_pinnedPlaceId is null)
+        {
+            return;
+        }
+
+        CloseCardNow();
+        StateHasChanged();
+    }
+
+    // Batch G1 requirement 3: Escape closes a pinned card -- but ONLY when
+    // no popover is currently open, so a single Escape press closes exactly
+    // the TOPMOST layer: ExplorerPopover already has its own Escape handler
+    // (OnKeyDown -> RequestClose, scoped to the popover panel); this method
+    // deliberately steps aside while _activeNode is non-null rather than
+    // ALSO closing the pin in the same keypress, so a user backing out of a
+    // popover opened from a pinned card's own content (a verse, a date, the
+    // title) doesn't lose the pin underneath it in the same press. A SECOND
+    // Escape, once the popover is gone, closes the pin.
+    public void OnEscapePressed()
+    {
+        if (_activeNode is not null || _pinnedPlaceId is null)
+        {
+            return;
+        }
+
+        CloseCardNow();
+        StateHasChanged();
     }
 
     // PlaceCard.OnOpenPlace (WORLD-8/Task 15): closes the hover card
@@ -804,7 +895,12 @@
     // the hover card so the two parchment artifacts never overlap" pattern
     // as OpenPlaceFromCard above, just with a caller-supplied node (a
     // YearNode PlaceCard already constructed, having the DateClaimOut in
-    // hand) instead of building a PlaceNode here.
+    // hand) instead of building a PlaceNode here. Batch G1 requirement 1b
+    // reuses this SAME callback for card verse/passage clicks (VerseNode/
+    // PassageNode) -- "follow that exact pattern for layering/close
+    // behavior" per the brief -- so a pinned card is superseded (fully
+    // closed, including its own pin, via CloseCardNow) exactly the same way
+    // an unpinned one already was; no separate handling needed for either.
     private Task OpenExploreNode(IExplorable node)
     {
         _activeNode = node;
@@ -818,11 +914,57 @@
         return Task.CompletedTask;
     }
 
+    // PlaceCard.OnClosePin (Batch G1 requirement 3): the card's own "X" --
+    // present only while pinned (see PlaceCard.razor's own Pinned param) --
+    // and CONTRACT's own Escape/click-elsewhere paths (OnEscapePressed/
+    // OnMapClick below) all funnel here.
+    private Task ClosePinnedCard()
+    {
+        CloseCardNow();
+        return Task.CompletedTask;
+    }
+
+    // PlaceCard.OnGoToPlace (Batch G1 requirement 3, narrative traversal):
+    // fired with the adjacent place's own id by a ‹ previous event / next
+    // event › control. Resolves it the same way a marker click would (lit
+    // or quiet -- arrows only ever connect LIT places per ARROW-1, so in
+    // practice this always resolves via the lit branch, but mirroring
+    // OnPlaceClick's own full resolution costs nothing and stays correct
+    // even if that invariant ever loosens) and, if it resolves, pans the
+    // map there and re-pins. A place that doesn't resolve at all (off-
+    // window -- e.g. a scripture-mode scene whose own lit set doesn't
+    // include the adjacent place, or theoretically any other gap) no-ops
+    // gracefully, per the brief: "if the adjacent place is off-window...
+    // no-op gracefully."
+    private async Task GoToAdjacent(string placeId)
+    {
+        var place = _scene?.Places.FirstOrDefault(p => p.Id == placeId) ?? QuietAsScenePlace(placeId);
+        if (place is null || _mapInterop is null)
+        {
+            return;
+        }
+
+        var (x, y) = await _mapInterop.PanToPlace(place.Lat, place.Lon);
+        _closeCts?.Cancel();
+        _pinnedPlaceId = placeId;
+        _hoverPlace = place;
+        _hoverX = x;
+        _hoverY = y;
+    }
+
+    // The one choke point for "the card is now fully gone" -- ALWAYS clears
+    // _pinnedPlaceId alongside _hoverPlace (Batch G1), never just one or the
+    // other: a fully-closed card can never stay "pinned" underneath nothing
+    // shown (a real, latent bug this guards against -- see _pinnedPlaceId's
+    // own field comment -- OnPlaceHover's own pinned-guard would otherwise
+    // silently ignore every future hover on ANY marker, forever, the moment
+    // something closed the card via a path that forgot to also clear this).
     private void CloseCardNow()
     {
         _closeCts?.Cancel();
         _hoverPlace = null;
         _pointerOverCard = false;
+        _pinnedPlaceId = null;
     }
 
     // The place card stays open while the pointer is over the marker OR
@@ -843,8 +985,20 @@
     // reading as a delay a user would ever notice on a deliberate
     // pointer-leaves-both close (CONTRACT's own "closes within ~1s" bar
     // for requirement 0c's acceptance test).
+    // Batch G1 requirement 3: the ONE choke point that refuses to schedule
+    // a close at all while pinned ("stays through mouse-leave" -- a marker's
+    // own real mouseout still fires OnPlaceLeave regardless of pin state,
+    // map.js has no notion of pinning; this is where that gets stopped).
+    // Both of this method's own callers (OnPlaceLeave, CardPointerLeave)
+    // stay unchanged/unguarded themselves -- simpler than duplicating the
+    // same check at every call site.
     private void ScheduleCardClose()
     {
+        if (_pinnedPlaceId is not null)
+        {
+            return;
+        }
+
         _closeCts?.Cancel();
         var cts = new CancellationTokenSource();
         _closeCts = cts;

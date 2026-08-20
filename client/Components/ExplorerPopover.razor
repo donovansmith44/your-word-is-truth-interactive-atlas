@@ -165,8 +165,22 @@
 
         try
         {
-            _explorations = await Current.ExploreAsync(Atlas);
-            _body = await Current.BodyAsync(Atlas);
+            // Batch G1: run concurrently, not sequentially -- PassageNode's
+            // own ExploreAsync now does a network fetch (requirement 2's
+            // conditional-presence chip), which used to mean BodyAsync's
+            // already-instant text (PassageNode never fetches for its own
+            // body -- see PassageNode.cs's doc comment) would wait on it
+            // too, since Blazor renders once only after THIS WHOLE METHOD
+            // returns, not between two sequential awaits inside it. Mirrors
+            // PlaceCard.OnParametersSetAsync's own established "independent
+            // fetches run concurrently via Task.WhenAll" rule for the exact
+            // same reason -- neither call depends on the other's result for
+            // ANY node type today.
+            var explorationsTask = Current.ExploreAsync(Atlas);
+            var bodyTask = Current.BodyAsync(Atlas);
+            await Task.WhenAll(explorationsTask, bodyTask);
+            _explorations = explorationsTask.Result;
+            _body = bodyTask.Result;
         }
         catch (Exception)
         {
@@ -215,16 +229,23 @@
         }
     }
 
-    // Reads the CURRENT node's own (memoized) VerseDetail rather than
-    // issuing a fresh AtlasClient.Verse(Current.Title) call every time this
-    // is clicked (fix round 1 finding: that duplicated the fetch
+    // Reads the CURRENT node's own (memoized) VerseDetail/xrefs cache
+    // rather than issuing a fresh fetch every time this is clicked (fix
+    // round 1 finding, VerseNode's own case: that duplicated the fetch
     // BodyAsync/LoadCurrent already made when the node was pushed, 2-4x per
     // popover for no freshness benefit). Freshness across hops still holds
-    // -- each hop pushes a BRAND NEW VerseNode instance with its own empty
+    // -- each hop pushes a BRAND NEW node instance with its own empty
     // cache, so "the current node's own cache" and "a fresh fetch for the
-    // current verse" are exactly the same data; only re-toggling xrefs on
-    // the SAME node (no navigation) now reuses the cache, which is correct
+    // current ref" are exactly the same data; only re-toggling xrefs on the
+    // SAME node (no navigation) now reuses the cache, which is correct
     // since nothing could have changed underneath it in that time.
+    //
+    // Batch G1 requirement 2: PassageNode offers the SAME chip now (backed
+    // by GET /api/xrefs/{sref}'s span aggregation, not VerseNode's own
+    // per-verse VerseDetail.CrossRefs) -- its own XrefsAsync is ALREADY
+    // memoized from the ExploreAsync call that decided this chip should
+    // even be offered (requirement 2's conditional-presence rule), so this
+    // click is a free cache hit, never a second network round trip.
     private async Task ToggleXrefs()
     {
         _miniMapSref = null;
@@ -234,18 +255,17 @@
             return;
         }
 
-        if (Current is not VerseNode verseNode)
-        {
-            // Invariant guard, not a real path: only VerseNode ever offers
-            // popover-chip-xrefs (see VerseNode.ExploreAsync).
-            _xrefs = new List<CrossRefOut>();
-            return;
-        }
-
         try
         {
-            var detail = await verseNode.DetailAsync(Atlas);
-            _xrefs = detail.CrossRefs;
+            _xrefs = Current switch
+            {
+                VerseNode verseNode => (await verseNode.DetailAsync(Atlas)).CrossRefs,
+                PassageNode passageNode => await passageNode.XrefsAsync(Atlas),
+                // Invariant guard, not a real path: only VerseNode/
+                // PassageNode ever offer popover-chip-xrefs (see each
+                // node's own ExploreAsync).
+                _ => new List<CrossRefOut>(),
+            };
         }
         catch (Exception)
         {

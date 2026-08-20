@@ -259,7 +259,44 @@ export function init(el, dotnetRef, opts) {
         map.on('zoomend', () => applyLabelTier(instances.get(id)));
     }
 
+    // Batch G1 requirement 3 (click-to-pin/traversal): "clicking elsewhere
+    // on the map" closes a pinned card, and Escape does too from anywhere
+    // on the page. Both gated !mini -- pinning has no meaning for a 320x240
+    // mini-map figure inside a popover (see MiniWorld.razor's own IMapEvents
+    // comment). map.click fires on any genuine map-BACKGROUND click (tiles,
+    // borders, empty water); a marker or arrow click never reaches it --
+    // wireEvents/wireQuietEvents/ArrowLayer's own click handlers each stop
+    // propagation FIRST (Leaflet markers bubble mouse events to the map by
+    // default, `bubblingMouseEvents: true` -- see each handler's own
+    // comment), so a click that pins/traverses never ALSO immediately
+    // unpins in the same gesture.
+    if (!mini) {
+        map.on('click', () => dotnetRef.invokeMethodAsync('OnMapClick'));
+        instances.get(id).escapeCleanup = watchEscape(dotnetRef);
+    }
+
     return id;
+}
+
+// document-level (not map-container-level) Escape listener -- mirrors
+// reader.js's own watchShiftRelease: a marker click never moves DOM focus
+// anywhere in particular, so a Blazor @onkeydown scoped to some element
+// inside the page could easily miss it (keydown targets whatever
+// document.activeElement currently is, which after a marker click is
+// typically still whatever it was before -- often outside any single
+// element a page-level handler could bind to). Returns its own cleanup
+// function, stashed on the instance entry and invoked by destroy() below,
+// same "per-instance cleanup, not a single module-wide singleton" discipline
+// as every other per-map resource in this file (though in practice only one
+// non-mini instance is ever alive at a time).
+function watchEscape(dotnetRef) {
+    const handler = e => {
+        if (e.key === 'Escape') {
+            dotnetRef.invokeMethodAsync('OnEscapePressed');
+        }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
 }
 
 // Diffs the incoming place list against the markers already on the map,
@@ -545,7 +582,15 @@ function nudgeCloseLatLng(p, placed) {
 function wireEvents(marker, dotnetRef, placeId) {
     marker.on('mouseover', e => dotnetRef.invokeMethodAsync('OnPlaceHover', placeId, e.containerPoint.x, e.containerPoint.y));
     marker.on('mouseout', () => dotnetRef.invokeMethodAsync('OnPlaceLeave'));
-    marker.on('click', e => dotnetRef.invokeMethodAsync('OnPlaceClick', placeId, e.containerPoint.x, e.containerPoint.y));
+    marker.on('click', e => {
+        // Batch G1 requirement 3: a marker click must never ALSO register
+        // as a map-background click (Leaflet markers bubble mouse events to
+        // the map by default, `bubblingMouseEvents: true`) -- otherwise
+        // pinning THIS marker would, in the very same gesture, immediately
+        // fire OnMapClick and unpin it again. See init()'s own comment.
+        L.DomEvent.stopPropagation(e);
+        dotnetRef.invokeMethodAsync('OnPlaceClick', placeId, e.containerPoint.x, e.containerPoint.y);
+    });
 }
 
 // Batch E2 fix (self-review finding, not in the original brief): a real bug
@@ -610,8 +655,14 @@ function wireQuietEvents(marker, dotnetRef, placeId) {
         }
     });
     // Click is a discrete, deliberate action (not a continuous transit risk
-    // the way mouseover is) -- fires immediately, same as a lit marker's own.
-    marker.on('click', e => dotnetRef.invokeMethodAsync('OnPlaceClick', placeId, e.containerPoint.x, e.containerPoint.y));
+    // the way mouseover is) -- fires immediately, same as a lit marker's
+    // own, including the same Batch G1 stopPropagation (see wireEvents's
+    // own comment) so pinning a quiet marker's card doesn't also unpin it
+    // via a bubbled map-background click.
+    marker.on('click', e => {
+        L.DomEvent.stopPropagation(e);
+        dotnetRef.invokeMethodAsync('OnPlaceClick', placeId, e.containerPoint.x, e.containerPoint.y);
+    });
 }
 
 function makeIcon(p) {
@@ -1017,6 +1068,26 @@ export function fitScene(id) {
     inst.map.fitBounds(L.latLngBounds(latlngs), { padding: [48, 48], maxZoom: 8, animate: false });
 }
 
+// Batch G1 requirement 3 (narrative traversal): recenters on (lat, lon) --
+// the adjacent place's own marker -- at the CURRENT zoom (no zoom change,
+// "pan" not "fit") and returns its new container point. `animate: false`,
+// same reasoning as fitScene's own -- an animated pan updates the map's
+// internal center progressively over the transition, so reading
+// latLngToContainerPoint immediately afterward would risk an INTERMEDIATE,
+// not final, point without a much more complex moveend-await round trip;
+// instant keeps this call (and MapInterop.PanToPlace's own C# caller)
+// simple and its return value always correct.
+export function panToPlace(id, lat, lon) {
+    const inst = instances.get(id);
+    if (!inst) {
+        return { x: 0, y: 0 };
+    }
+
+    inst.map.setView([lat, lon], inst.map.getZoom(), { animate: false });
+    const pt = inst.map.latLngToContainerPoint([lat, lon]);
+    return { x: pt.x, y: pt.y };
+}
+
 // Sets/clears the legend's isolate filter (Task 12, WORLD-4): `narrativeId`
 // null clears every arrow back to data-faded="false"; any other value fades
 // every arrow whose narrative doesn't match it.
@@ -1099,6 +1170,15 @@ export function destroy(id) {
     if (!inst) {
         return;
     }
+
+    // Batch G1: the document-level Escape listener (watchEscape, !mini only
+    // -- see init()'s own comment) is NOT torn down by map.remove() below,
+    // unlike every Leaflet-internal listener (map.on(...), marker/arrow
+    // events) -- document.addEventListener is independent of the Leaflet
+    // map instance entirely. Must be explicitly cleaned up here or it would
+    // keep calling back into a disposed dotnetRef for the rest of the page's
+    // life.
+    inst.escapeCleanup?.();
 
     inst.map.remove();
     instances.delete(id);
@@ -1386,6 +1466,13 @@ const ArrowLayer = L.Layer.extend({
         });
         path.addEventListener('mouseout', () => this._dotnetRef.invokeMethodAsync('OnArrowLeave'));
         path.addEventListener('click', e => {
+            // Batch G1 requirement 3: same reason wireEvents/wireQuietEvents
+            // stop propagation on their own marker clicks -- this is a raw
+            // DOM listener (not a Leaflet-wrapped one), so the plain native
+            // stopPropagation is what's needed here, but the goal is
+            // identical: an arrow click must never ALSO bubble up as a
+            // map-background click and unpin a card in the same gesture.
+            e.stopPropagation();
             const pt = this._map.mouseEventToContainerPoint(e);
             this._dotnetRef.invokeMethodAsync('OnArrowClick', arrowKey(a), pt.x, pt.y);
         });

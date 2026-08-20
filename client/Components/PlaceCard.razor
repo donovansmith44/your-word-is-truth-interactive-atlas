@@ -70,11 +70,24 @@
 
 <div class="place-card"
      data-testid="place-card"
+     data-pinned="@(Pinned ? "true" : "false")"
      style="left: @X.ToString(CultureInfo.InvariantCulture)px; top: @Y.ToString(CultureInfo.InvariantCulture)px;"
      @onpointerenter="OnPointerEnter"
      @onpointerleave="OnPointerLeave">
     <div class="place-card-scroll">
-        <button type="button" class="place-card-title" data-testid="place-card-title" @onclick="() => OnOpenPlace.InvokeAsync()">@Place.DisplayName</button>
+        <div class="place-card-head">
+            <button type="button" class="place-card-title explorable" data-testid="place-card-title" @onclick="() => OnOpenPlace.InvokeAsync()">@Place.DisplayName</button>
+            @* Batch G1 requirement 3: present only while pinned -- a hover-
+               only card already closes itself on pointer-leave, so an
+               explicit close control would be redundant/confusing there;
+               CONTRACT's own "closes via Escape, an X, or clicking
+               elsewhere on the map" is specifically about the pinned case. *@
+            @if (Pinned)
+            {
+                <button type="button" class="place-card-close" data-testid="place-card-close"
+                        aria-label="Close" @onclick="() => OnClosePin.InvokeAsync()">&times;</button>
+            }
+        </div>
 
         @{
             var verses = MergedVerses();
@@ -92,29 +105,56 @@
         }
         else
         {
+            @* Batch G1 requirement 1b (user 2026-08-19: "verses/passages
+               viewed in the map are not explorable... this is all one big
+               dag that we can explore from anywhere"): every hover-verse-
+               {VREF}/hover-passage-{SPAN} element becomes explorable under
+               the SAME one rule (.explorable, app.css) -- hover/focus
+               darkens, click (or Enter) opens the ExplorerPopover via
+               OnExploreNode, the EXACT SAME callback/mechanism Batch E's
+               date affordances already use (World.razor's OpenExploreNode:
+               push the node, close this hover card the way a promoted
+               popover always supersedes it). A passage block nests its own
+               per-verse spans inside the block-level passage row -- clicking
+               a SPECIFIC verse's span opens just that VerseNode and stops
+               the click from also bubbling into the passage row's own
+               handler (@onclick:stopPropagation); clicking anywhere else in
+               the row (the ref label, or the block's own whitespace) opens
+               the whole PassageNode instead. place-card-more/-collapse
+               (below, outside this loop) stay non-explorable controls,
+               unchanged. *@
             @foreach (var g in visible)
             {
                 @if (g.IsPassage)
                 {
                     var blockVerses = verses.GetRange(g.Start, g.Length);
                     var span = SpanRef(blockVerses[0], blockVerses[^1]);
-                    <p class="place-card-passage" data-testid="hover-passage-@span">
+                    <div class="place-card-passage explorable" data-testid="hover-passage-@span"
+                         tabindex="0" role="button" aria-label="@($"Explore passage {span}")"
+                         @onclick="() => ExplorePassage(span, blockVerses)"
+                         @onkeydown="@(e => OnPassageKeyDown(e, span, blockVerses))">
                         <span class="place-card-passage-ref">@span</span>
                         <span class="place-card-passage-text">
                             @foreach (var vref in blockVerses)
                             {
-                                <span data-testid="hover-verse-@vref"><sup class="place-card-verse-num">@VerseNumOf(vref)</sup>@VerseText(vref) </span>
+                                <span class="place-card-passage-verse explorable" data-testid="hover-verse-@vref"
+                                      tabindex="0" role="button" aria-label="@($"Explore {vref}")"
+                                      @onclick="() => ExploreVerse(vref)" @onclick:stopPropagation="true"
+                                      @onkeydown="@(e => OnVerseKeyDown(e, vref))" @onkeydown:stopPropagation="true"
+                                      ><sup class="place-card-verse-num">@VerseNumOf(vref)</sup>@VerseText(vref) </span>
                             }
                         </span>
-                    </p>
+                    </div>
                 }
                 else
                 {
                     var vref = verses[g.Start];
-                    <p class="place-card-verse" data-testid="hover-verse-@vref">
+                    <div class="place-card-verse explorable" data-testid="hover-verse-@vref"
+                         tabindex="0" role="button" aria-label="@($"Explore {vref}")"
+                         @onclick="() => ExploreVerse(vref)" @onkeydown="@(e => OnVerseKeyDown(e, vref))">
                         <span class="place-card-verse-ref">@vref</span>
                         <span class="place-card-verse-text">@VerseText(vref)</span>
-                    </p>
+                    </div>
                 }
             }
         }
@@ -156,7 +196,7 @@
             @if (established is { } est)
             {
                 var estLabel = ExploreLabel("Established", est);
-                <button type="button" class="place-card-date" data-testid="place-card-date-established"
+                <button type="button" class="place-card-date explorable" data-testid="place-card-date-established"
                         aria-label="@estLabel"
                         @onclick="() => ExploreEstablished(est)">
                     <span class="place-card-date-label">Established</span>
@@ -171,13 +211,45 @@
             @if (destroyed is { } dest)
             {
                 var destLabel = ExploreLabel("Destroyed", dest);
-                <button type="button" class="place-card-date" data-testid="place-card-date-destroyed"
+                <button type="button" class="place-card-date explorable" data-testid="place-card-date-destroyed"
                         aria-label="@destLabel"
                         @onclick="() => ExploreDestroyed(dest)">
                     <span class="place-card-date-label">Destroyed</span>
                     <span class="place-card-date-value">@DateText(dest)</span>
                     <span class="place-card-date-explore" aria-hidden="true">Explore</span>
                 </button>
+            }
+        </div>
+    }
+
+    @* Batch G1 requirement 3 (narrative traversal) -- strictly LAST, below
+       every Batch D/E section above, same "later batches append below,
+       never disturb" layering. One row per narrative that has >=1 arrow
+       touching THIS place in the CURRENT scene; entirely absent when
+       Arrows/Narratives are null (scripture mode, or a scene not yet
+       loaded) or this place has no leg of any narrative here. *@
+    @{ var narrativeRows = NarrativeRows(); }
+    @if (narrativeRows.Count > 0)
+    {
+        <div class="place-card-narratives" data-testid="place-card-narratives">
+            @foreach (var row in narrativeRows)
+            {
+                <div class="place-card-narrative-row">
+                    <span class="place-card-narrative-swatch" style="background-color: @row.Color;" aria-hidden="true"></span>
+                    <span class="place-card-narrative-name">@row.Name</span>
+                    @if (row.PrevPlaceId is { } prevId)
+                    {
+                        <button type="button" class="place-card-nav-event" data-testid="card-prev-event-@row.NarrativeId"
+                                aria-label="@($"Previous event in {row.Name}")"
+                                @onclick="() => OnGoToPlace.InvokeAsync(prevId)">&lsaquo; previous event</button>
+                    }
+                    @if (row.NextPlaceId is { } nextId)
+                    {
+                        <button type="button" class="place-card-nav-event" data-testid="card-next-event-@row.NarrativeId"
+                                aria-label="@($"Next event in {row.Name}")"
+                                @onclick="() => OnGoToPlace.InvokeAsync(nextId)">next event &rsaquo;</button>
+                    }
+                </div>
             }
         </div>
     }
@@ -217,6 +289,22 @@
     // list for this card is closed ("place name + verse content +
     // controls, nothing else"), so there is no replacement for it here.
     [Parameter] public EventCallback OnOpenPlace { get; set; }
+
+    // Batch G1 requirement 3 (click-to-pin/narrative traversal). Pinned:
+    // World.razor's own source of truth (its _pinnedPlaceId field) for
+    // whether THIS currently-shown card is pinned -- drives the close
+    // button's conditional presence and the place-card data-pinned
+    // attribute. Arrows/Narratives: the current scene's own lists (null in
+    // scripture mode / before the first scene loads), read-only inputs to
+    // NarrativeRows() below -- never mutated here, World.razor owns the
+    // scene. OnGoToPlace fires with the ADJACENT place's own id when a
+    // ‹ previous event / next event › control is clicked; OnClosePin fires
+    // when the card's own "X" is clicked.
+    [Parameter] public bool Pinned { get; set; }
+    [Parameter] public List<SceneArrow>? Arrows { get; set; }
+    [Parameter] public List<SceneNarrative>? Narratives { get; set; }
+    [Parameter] public EventCallback<string> OnGoToPlace { get; set; }
+    [Parameter] public EventCallback OnClosePin { get; set; }
 
     // CONTRACT's 4/2-initial + 5/2-step rule (batch-d-brief.md Requirement 2).
     private const int PassageInitialMax = 4;
@@ -443,6 +531,31 @@
     private Task ExploreDestroyed(DateClaimOut claim) =>
         OnExploreNode.InvokeAsync(new YearNode("Destroyed", claim.When, claim.Verses, claim.Note));
 
+    // Batch G1 requirement 1b: card verses/passages become explorable via
+    // the SAME OnExploreNode callback Batch E's dates already use (World
+    // .razor's OpenExploreNode -- push the node, close this hover card the
+    // way a promoted popover always supersedes it; see this callback's own
+    // parameter comment).
+    private Task ExploreVerse(string vref) => OnExploreNode.InvokeAsync(new VerseNode(vref));
+
+    // The passage's own text, concatenated in verse order -- same "already-
+    // in-memory, no second network round-trip" approach Reader.razor's own
+    // OpenPassage/PassageNode already use (see PassageNode.cs's doc
+    // comment); this card already fetched every visible verse's text via
+    // LoadChaptersFor.
+    private Task ExplorePassage(string span, List<string> blockVerses) =>
+        OnExploreNode.InvokeAsync(new PassageNode(span, string.Join(" ", blockVerses.Select(VerseText))));
+
+    // Keyboard equivalents (design-direction.md: "Enter opens" -- see
+    // Reader.razor's OnVerseLineKeyDown for why Enter only, not Space, is
+    // this batch's deliberate scope everywhere the interaction rule
+    // applies).
+    private Task OnVerseKeyDown(KeyboardEventArgs e, string vref) =>
+        e.Key == "Enter" ? ExploreVerse(vref) : Task.CompletedTask;
+
+    private Task OnPassageKeyDown(KeyboardEventArgs e, string span, List<string> blockVerses) =>
+        e.Key == "Enter" ? ExplorePassage(span, blockVerses) : Task.CompletedTask;
+
     // place-card-more: reveals the next chunk. Step size is +5 if the next
     // not-yet-shown verse belongs to a passage-sized group (Length >= 2,
     // "...continuing inside a passage" -- true whether that group was
@@ -474,6 +587,65 @@
     private void Collapse()
     {
         _shownCount = _initialShownCount;
+    }
+
+    // Batch G1 requirement 3: one row per narrative (colored swatch + name)
+    // that has >=1 arrow touching THIS place in the CURRENT scene, each with
+    // its own prev/next adjacency. Pure/synchronous -- Arrows/Narratives are
+    // already-loaded scene data, no fetch involved (client-side derivation,
+    // no API change, per the brief).
+    private sealed record NarrativeAdjacency(string NarrativeId, string Name, string Color, string? PrevPlaceId, string? NextPlaceId);
+
+    private List<NarrativeAdjacency> NarrativeRows()
+    {
+        if (Arrows is not { Count: > 0 } arrows || Narratives is not { Count: > 0 } narratives)
+        {
+            return new List<NarrativeAdjacency>();
+        }
+
+        // "Use the arrow whose event verses the card is showing" (brief,
+        // verbatim) -- the card shows ALL of Place.Events for this window
+        // (no single-event selection state), so this is every event id
+        // currently on display, used only to break ties below.
+        var shownEventIds = new HashSet<string>(Place.Events.Select(e => e.Id));
+
+        var rows = new List<NarrativeAdjacency>();
+        foreach (var n in narratives)
+        {
+            var legs = arrows.Where(a => a.Narrative == n.Id).ToList();
+            var incoming = legs.Where(a => a.ToPlace == Place.Id).ToList();   // arrows arriving AT this place -> prev
+            var outgoing = legs.Where(a => a.FromPlace == Place.Id).ToList(); // arrows leaving FROM this place -> next
+            if (incoming.Count == 0 && outgoing.Count == 0)
+            {
+                continue; // this place has no leg of this narrative in the current scene
+            }
+
+            var prev = PickAdjacent(incoming, a => a.ToEvent, a => a.FromPlace, shownEventIds);
+            var next = PickAdjacent(outgoing, a => a.FromEvent, a => a.ToPlace, shownEventIds);
+            rows.Add(new NarrativeAdjacency(n.Id, n.Name, n.Color, prev, next));
+        }
+
+        return rows;
+    }
+
+    // A place can appear in more than one leg of the SAME narrative (brief's
+    // own example: revisited twice) -- tie-break rule, verbatim: "use the
+    // arrow whose event verses the card is showing, else the lowest order;
+    // keep it simple and comment the rule." `ownEventId` reads whichever end
+    // of the candidate arrow belongs to THIS place (to_event for an incoming/
+    // prev candidate, from_event for an outgoing/next one); `adjacentPlaceId`
+    // reads the OTHER end, the place to jump to.
+    private static string? PickAdjacent(
+        List<SceneArrow> candidates, Func<SceneArrow, string> ownEventId, Func<SceneArrow, string> adjacentPlaceId, HashSet<string> shownEventIds)
+    {
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        var chosen = candidates.FirstOrDefault(a => shownEventIds.Contains(ownEventId(a)))
+            ?? candidates.OrderBy(a => a.Order).First();
+        return adjacentPlaceId(chosen);
     }
 
     // Resolves every (book, chapter) pair the given verses span via

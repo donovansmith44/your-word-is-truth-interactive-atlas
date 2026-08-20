@@ -24,14 +24,27 @@ World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief
   lit this window, see QUIET-1 below -- distinct from and never overlapping
   `marker-{placeId}`'s own ids for the same scene, per QUIET-1's disjointness; a small,
   unlit, non-glowing dot, hoverable/clickable exactly like a lit marker; absent entirely
-  in scripture mode and on mini-maps), `place-card`, `place-card-title`,
+  in scripture mode and on mini-maps), `place-card` (attr `data-pinned` = "true"|"false" --
+  batch-g1-brief.md requirement 3, PIN-1 below), `place-card-title`,
+  `place-card-close` (batch-g1-brief.md; button; present ONLY while `data-pinned="true"`;
+  closes the pinned card -- see PIN-1), `place-card-narratives` (batch-g1-brief.md; present
+  ONLY when the pinned place has >=1 narrative leg in the current scene; wraps one row per
+  such narrative -- swatch + name + `card-prev-event-{narrativeId}` / `card-next-event-
+  {narrativeId}`, see TRAVERSAL-1 below), `card-prev-event-{narrativeId}` (batch-g1-brief.md;
+  button; present only when that narrative has an adjacent PREVIOUS place for this one, per
+  TRAVERSAL-1), `card-next-event-{narrativeId}` (batch-g1-brief.md; button; present only when
+  that narrative has an adjacent NEXT place),
   `hover-verse-{VREF}` (one element per currently shown verse, VREF = canonical id e.g.
   `EXO.14.21`, whether it renders as its own lone-verse row or as one verse inside a
   passage block; element text contains that verse's own KJV text verbatim -- never
-  trimmed, never paraphrased), `hover-passage-{SPAN}` (one per currently shown passage
+  trimmed, never paraphrased; batch-g1-brief.md requirement 1b -- explorable under
+  ONE-RULE below, opens a VerseNode), `hover-passage-{SPAN}` (one per currently shown passage
   block -- a maximal run of >=2 consecutive same-book/chapter verses; SPAN = canonical
   span text of that run's CURRENTLY SHOWN extent, e.g. `GEN.12.1-4`; contains that
-  block's own `hover-verse-{VREF}` elements), `place-card-more` (button; present only
+  block's own `hover-verse-{VREF}` elements; batch-g1-brief.md requirement 1b -- ALSO
+  explorable, opens a PassageNode for the whole span -- clicking a specific nested
+  `hover-verse-{VREF}` inside it opens that verse's own node instead, per ONE-RULE),
+  `place-card-more` (button; present only
   while unshown verses remain for this place), `place-card-collapse` (button; present
   only while more than the initial content is shown),
   `place-card-blurb` (batch-e-brief.md; present only when the API's `history.blurb`
@@ -93,16 +106,50 @@ Picker (ScripturePicker, shared by world and reader):
   `picker-book` (select of 66 books), `picker-chapter` (select sized from TOC),
   `picker-verse-from`, `picker-verse-to` (numeric inputs bounded by TOC),
   `picker-apply` (button; composes the canonical ref)
-Reader: `reader-root`, `verse-line-{n}`, `verse-num-{n}`, `verse-explore-{n}`,
+Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
+  book-name/chapter-numeral spans; opens the ExplorerPopover with a
+  ChapterNode), `verse-line-{n}` (batch-g1-brief.md; THE explorable element
+  for that verse -- see ONE-RULE below; the retired `verse-explore-{n}` ∴
+  button's replacement, not an addition alongside it), `verse-num-{n}`,
   `reader-prev`, `reader-next`, `passage-chip`
 Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
-  `popover-chip-xrefs`, `popover-chip-map`, `popover-chip-book`, `popover-chip-context`,
+  `popover-chip-xrefs` (batch-g1-brief.md requirement 2: offered by BOTH VerseNode
+  -- unconditionally, unchanged -- AND PassageNode -- CONDITIONALLY, present only
+  when `GET /api/xrefs/{sref}` returns >=1 target for that passage's own span;
+  expands the SAME inline `xref-item-{TARGET}` list either way, backed by
+  `VerseDetail.CrossRefs` for a VerseNode or the new span-aggregation endpoint for a
+  PassageNode),
+  `popover-chip-map`, `popover-chip-book`, `popover-chip-context`,
   `popover-chip-verse-{VREF}` (batch-e-brief.md; one per a `YearNode`'s own curated
   supporting verses, in curated order, ALWAYS rendered before that same node's
   `popover-chip-map` chip -- DATE-1: opening a date's popover lists its supporting
   verses first),
   `xref-item-{TARGET}` (TARGET = canonical ref/span text), `mini-map`, `mini-map-open-world`
 Notes:
+- ONE-RULE (batch-g1-brief.md, user direction 2026-08-19: "the little trinity button
+  isn't clear... explorable elements display slightly darker on hover; click opens the
+  pop-up menu" -- REPLACES the retired `verse-explore-{n}` ∴ button, which offered no
+  visible affordance of its own until Batch C2's interim `--explore-opacity` stopgap):
+  every explorable element in the app signals itself and behaves IDENTICALLY -- on
+  hover AND `:focus-visible` it darkens slightly (a translucent ink wash, `.explorable`
+  in app.css, ~120ms ease, `prefers-reduced-motion: reduce` covered) with
+  `cursor:pointer`; a click, or Enter while keyboard-focused, opens the
+  ExplorerPopover on that element's own node. This currently covers: `chapter-head`
+  (ChapterNode), `verse-line-{n}` (VerseNode), `hover-verse-{VREF}`/`hover-passage-
+  {SPAN}` in the world place card (VerseNode/PassageNode -- requirement 1b), and
+  `place-card-title`/`place-card-date-established`/`place-card-date-destroyed`
+  (PlaceNode/YearNode, pre-existing testids, RESTYLED onto this same rule -- their own
+  prior per-element hover color is gone). Two kinds of element are deliberately
+  EXCLUDED, never explorable, and keep whatever hover treatment (if any) they already
+  had: SELECTION controls (`verse-num-{n}` -- drives the anchor+extend passage-range
+  mechanic, shift-click still forms `passage-chip`; a plain click on it no longer opens
+  a popover at all, which it did, redundantly with the ∴ button, before this batch --
+  selection and exploration are fully independent gestures on independent targets now)
+  and PAGING controls (`place-card-more`/`place-card-collapse` -- "controls, not
+  nodes"). A passage block's own per-verse `hover-verse-{VREF}` spans nest inside its
+  `hover-passage-{SPAN}` row; clicking a specific verse span opens just that verse and
+  never also bubbles into the passage's own click (stopPropagation on the inner
+  element) -- the more specific target always wins.
 - `marker-{placeId}` elements carry the visible place label -- batch-e-brief.md:
   this is the scene's own `display_name` (the period name resolved for the
   scene's current window when the place has curated history and one of its
@@ -168,12 +215,41 @@ Notes:
   `place-card-quiet` replaces the verse content entirely (no `hover-verse-{VREF}`,
   no `hover-passage-{SPAN}`, no `place-card-more`/`place-card-collapse` -- a quiet
   place has no events THIS window to show, so there is nothing for those controls to
-  page through). Clicking a marker -- lit OR quiet -- is a no-op today: `OnPlaceClick`
-  is an intentional, documented empty handler, unchanged by this batch (WORLD-1/2's own
-  original hover-only design). The brief's own wording for this card was conditional --
-  "hover (and click/pin, if Batch G1's pinning has landed by your HEAD -- check)" -- and
-  G1 had not landed at this batch's own HEAD, so no click/pin behavior was added; that
-  half is deferred to Batch G1, whenever it lands.
+  page through). UPDATED, batch-g1-brief.md: clicking a marker -- lit OR quiet, identically
+  -- now PINS this exact same card open (`OnPlaceClick` gained real behavior; WORLD-1/2's
+  original hover-only design is superseded) -- see PIN-1 below, which this quiet-place note
+  no longer needs to duplicate.
+- PIN-1 (batch-g1-brief.md requirement 3): clicking a `marker-{placeId}` or
+  `quiet-marker-{placeId}` pins that place's `place-card` open (`data-pinned="true"`) --
+  the exact same card content hover already renders (title/verse-or-quiet-content/
+  controls/blurb/dates), now surviving a pointer leaving both the marker and the card
+  (hover-persistence's own close-on-leave, batch-c2-brief.md requirement 0c, is
+  suppressed while pinned). Hover on any OTHER marker while pinned does nothing (the
+  pinned card owns the display slot exclusively) until the pin itself changes -- clicking
+  a DIFFERENT marker re-pins to it, same as the first click. A pinned card closes via
+  `place-card-close` (present only while pinned), Escape (page-wide; a no-op while an
+  ExplorerPopover is open, so one Escape press closes exactly the topmost layer -- the
+  popover first, the pin on a second press), or a click on the map BACKGROUND (never a
+  marker/arrow click, which each stop propagation before it could also register as one).
+  Opening a popover from INSIDE a pinned card (the title, a date, a verse/passage) closes
+  the pin the same way it already closed an unpinned hover card -- promoting into a real
+  popover always supersedes the card, pinned or not.
+- TRAVERSAL-1 (batch-g1-brief.md requirement 3): while pinned, `place-card-narratives`
+  shows one row per narrative with >=1 arrow (in the CURRENT scene) touching this place --
+  a colored swatch (that narrative's own data color) + its name, small caps. Adjacency is
+  derived CLIENT-SIDE from the scene's own `arrows` (no API change): for narrative N and
+  place P, an arrow with `to_place==P` yields `card-prev-event-N`'s target (`from_place`);
+  an arrow with `from_place==P` yields `card-next-event-N`'s target (`to_place`) -- each
+  button present only when that direction has a candidate. A place appearing in more than
+  one leg of the same narrative breaks the tie by preferring the arrow whose own event
+  (`to_event` for prev, `from_event` for next) is among the CURRENTLY SHOWN place's events,
+  else the lowest `order`. Clicking `card-prev-event-N`/`card-next-event-N` pans the map to
+  the adjacent place's own marker (no zoom change) and pins ITS card -- a traversal chain:
+  repeated clicks walk the narrative leg by leg, `card-prev-event-N` always reversing the
+  most recent `card-next-event-N` (and vice versa) back to the previous place. An adjacent
+  place that does not resolve in the current scene (lit or quiet) no-ops gracefully rather
+  than erroring -- arrows only ever connect lit places (ARROW-1), so this is not expected
+  to occur in practice, but is handled rather than assumed away.
 - Hover place card content (batch-d-brief.md): the card is place name + verse
   content + controls, nothing else -- no per-(book,chapter) count rows, bare
   canonical-ref rows, or chapter-identifier lines anywhere on it. From the
@@ -212,7 +288,10 @@ Notes:
   order the marker's own leave and the card's own pointer-enter resolve in -- a
   marker `mouseout` that resolves (its own async map/interop round trip) AFTER
   the card's pointer-enter already ran never schedules a close out from under a
-  pointer that is legitimately still on the card.
+  pointer that is legitimately still on the card. This whole mechanism (both the
+  persistence itself and the ~350ms/~1s close) is SUPPRESSED entirely while the card is
+  pinned (batch-g1-brief.md, PIN-1 above) -- a pinned card ignores pointer-leave forever,
+  by design, resuming this exact behavior only once it's unpinned again.
 - Quiet-marker hover-intent debounce (batch-e2-brief.md self-review fix): unlike a lit
   `marker-{id}`, which opens its `place-card` immediately on `mouseover`, a
   `quiet-marker-{id}` only opens it once the pointer has DWELLED on that marker for

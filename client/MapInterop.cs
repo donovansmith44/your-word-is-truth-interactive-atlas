@@ -19,6 +19,28 @@ public interface IMapEvents
     void OnArrowHover(string key, double x, double y);
     void OnArrowLeave();
     void OnArrowClick(string key, double x, double y);
+
+    /// <summary>
+    /// Batch G1 requirement 3: fired on a genuine map-BACKGROUND click --
+    /// tiles, borders, empty water -- never a marker or arrow click (both of
+    /// those stop propagation in map.js before this can also fire for the
+    /// same physical click). World.razor closes a pinned card on this, per
+    /// the brief's "closes via Escape, an X, or clicking elsewhere on the
+    /// map." Never fired for a mini instance (map.js's init() only wires
+    /// this listener when !mini).
+    /// </summary>
+    void OnMapClick();
+
+    /// <summary>
+    /// Batch G1 requirement 3: fired on Escape, document-wide, while this
+    /// (non-mini) map instance is mounted. A document-level listener (map.js's
+    /// own watchEscape, wired inside init()) rather than a Blazor
+    /// @onkeydown -- the same "must work regardless of which element
+    /// currently has DOM focus" reason reader.js's watchShiftRelease exists,
+    /// since a marker click never moves keyboard focus anywhere in
+    /// particular. Never fired for a mini instance.
+    /// </summary>
+    void OnEscapePressed();
 }
 
 /// <summary>
@@ -134,6 +156,25 @@ public sealed class MapInterop : IAsyncDisposable
     /// </summary>
     public async Task SetIsolate(string? narrativeId) => await _module.InvokeVoidAsync("setIsolate", _id, narrativeId);
 
+    /// <summary>
+    /// Batch G1 requirement 3 (narrative traversal): recenters the map on
+    /// (lat, lon) -- the adjacent place's own marker -- WITHOUT changing
+    /// zoom, and returns its new on-screen container point so the caller
+    /// can re-anchor the pinned place-card there (the same coordinate space
+    /// map.js already reports via containerPoint on hover/click). Instant,
+    /// not animated (map.js's own panToPlace uses `{animate:false}`) --
+    /// deliberately, so the returned point is always the FINAL settled
+    /// position, never one read mid-animation; see map.js's own comment for
+    /// why an animated pan would make that point unreliable without a much
+    /// more complex moveend-await round trip for no real user-facing
+    /// benefit here (the brief allows "fly/pan" either way).
+    /// </summary>
+    public async Task<(double X, double Y)> PanToPlace(double lat, double lon)
+    {
+        var point = await _module.InvokeAsync<ContainerPointDto>("panToPlace", _id, lat, lon);
+        return (point.X, point.Y);
+    }
+
     public async ValueTask DisposeAsync()
     {
         try
@@ -170,4 +211,15 @@ public sealed class MapEventsSink
     [JSInvokable] public void OnArrowHover(string key, double x, double y) => _sink.OnArrowHover(key, x, y);
     [JSInvokable] public void OnArrowLeave() => _sink.OnArrowLeave();
     [JSInvokable] public void OnArrowClick(string key, double x, double y) => _sink.OnArrowClick(key, x, y);
+    [JSInvokable] public void OnMapClick() => _sink.OnMapClick();
+    [JSInvokable] public void OnEscapePressed() => _sink.OnEscapePressed();
 }
+
+/// <summary>
+/// Batch G1: <see cref="MapInterop.PanToPlace"/>'s own return shape --
+/// deserialized via Blazor's DEFAULT (camelCase) JS-interop JSON options,
+/// not <see cref="Wire.Options"/> (this never crosses the real HTTP API, so
+/// there is no snake_case wire shape to match here -- see map.js's own
+/// panToPlace, which returns a plain <c>{x, y}</c> object).
+/// </summary>
+public sealed record ContainerPointDto(double X, double Y);

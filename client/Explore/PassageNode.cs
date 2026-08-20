@@ -23,6 +23,7 @@ public sealed class PassageNode : IExplorable
 {
     private readonly string _sref;
     private readonly string _text;
+    private List<CrossRefOut>? _cachedXrefs;
 
     public PassageNode(string sref, string text)
     {
@@ -33,10 +34,21 @@ public sealed class PassageNode : IExplorable
     public string Title => _sref;
     public string Kind => "Passage";
 
-    public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
+    // Batch G1 requirement 2 ("passage context -- passages give xrefs, not
+    // just geo"): unlike every OTHER chip on every node type in this file
+    // (all derivable from the ref string alone -- see VerseNode.ExploreAsync's
+    // own comment on that general rule), the "Cross-references" chip here
+    // is CONDITIONAL: it appears only when GET /api/xrefs/{sref} actually
+    // returns >=1 target (the brief's own words, verbatim). That can only be
+    // known by actually fetching -- a deliberate, documented exception to
+    // the "no fetch needed to decide which explorations exist" rule, scoped
+    // to this one node/chip. Fails soft (no chip, not an exception bubbling
+    // out of the popover) on a network error, same graceful-degradation
+    // policy every other lazy fetch in this app already follows.
+    public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
         var (book, chapter, verse) = CanonRef.ParseVerse(CanonRef.FirstVerseOf(_sref));
-        IReadOnlyList<Exploration> list = new[]
+        var list = new List<Exploration>
         {
             new Exploration("Explore geo-temporally", "popover-chip-map", new ExplorationTarget.ShowMiniMap(_sref)),
             new Exploration("Read in context", "popover-chip-context",
@@ -44,8 +56,32 @@ public sealed class PassageNode : IExplorable
             new Exploration("About this book", "popover-chip-book",
                 new ExplorationTarget.Push(new AuthorNode(book))),
         };
-        return Task.FromResult(list);
+
+        try
+        {
+            var xrefs = await XrefsAsync(api);
+            if (xrefs.Count > 0)
+            {
+                // Target/Push(this) is the same "chip's real behavior is
+                // ExplorerPopover's own special-cased popover-chip-xrefs
+                // handling, never generically dispatched" placeholder
+                // VerseNode's own xrefs chip uses -- see its comment.
+                list.Add(new Exploration("Cross-references", "popover-chip-xrefs", new ExplorationTarget.Push(this)));
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        return list;
     }
+
+    // Public + memoized (mirrors VerseNode.DetailAsync's own reasoning
+    // exactly) so ExploreAsync's own presence check above and
+    // ExplorerPopover's later popover-chip-xrefs click share ONE fetch, not
+    // two -- the chip would otherwise re-request the exact same data it
+    // just used to decide whether to render itself at all.
+    public async Task<List<CrossRefOut>> XrefsAsync(AtlasClient api) => _cachedXrefs ??= await api.Xrefs(_sref);
 
     public Task<RenderFragment> BodyAsync(AtlasClient api)
     {

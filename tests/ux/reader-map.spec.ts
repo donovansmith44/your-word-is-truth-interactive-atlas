@@ -10,7 +10,11 @@ test('READ-4: mini-map equals scripture scene; open-in-world carries the ref', a
   await fcAssert(fc.asyncProperty(arbVerseRef(toc), async vref => {
     const [b, c, v] = vref.split('.');
     await page.goto(`/read/${b}/${c}`);
-    await page.getByTestId(`verse-num-${v}`).click();
+    // Batch G1: verse-num no longer opens a popover on plain click (that's
+    // the verse LINE's own job now, see reader.spec.ts's own header note) --
+    // this test's own subject is the mini-map chip inside the popover, not
+    // how the popover got opened, so it just opens via the line instead.
+    await page.getByTestId(`verse-line-${v}`).click();
     await page.getByTestId('popover-chip-map').click();
     await expect(page.getByTestId('mini-map')).toBeVisible();
     const scene = await api.sceneScripture(vref);
@@ -73,5 +77,45 @@ test('READ-5: shift-click passage selection', async ({ page }) => {
     const scene = await api.sceneScripture(pref);
     await expect(page.getByTestId('mini-map').locator('[data-testid^="marker-"]'))
       .toHaveCount(scene.places.length);
+  }), RUNS_UI);
+});
+
+// Batch G1 requirement 2 ("passage context -- passages give xrefs, not just
+// geo"): the passage-chip's own popover (a PassageNode) gains the SAME
+// popover-chip-xrefs chip VerseNode already had -- CONDITIONALLY, backed by
+// the new GET /api/xrefs/{sref} span-aggregation endpoint. Both branches
+// (present/absent) are real, reachable outcomes depending on the random
+// passage's own real cross-ref data, so this property asserts whichever one
+// actually holds for each generated passage rather than assuming either.
+test('READ-6: passage cross-references chip is conditional on the endpoint actually having targets, and lists them when present', async ({ page }) => {
+  const toc = await loadToc();
+  const arb = arbChapterRef(toc).filter(c => c.verses >= 4).chain(c =>
+    fc.tuple(fc.integer({ min: 1, max: c.verses - 1 }), fc.integer({ min: 1, max: c.verses }))
+      .filter(([a, b]) => a < b).map(([a, b]) => ({ ...c, a, b })));
+  await fcAssert(fc.asyncProperty(arb, async s => {
+    const pref = `${s.book}.${s.chapter}.${s.a}-${s.b}`;
+    const xrefs = await api.xrefs(pref);
+
+    await page.goto(`/read/${s.book}/${s.chapter}`);
+    await page.getByTestId(`verse-num-${s.a}`).click();
+    await page.keyboard.down('Shift');
+    await page.getByTestId(`verse-num-${s.b}`).click();
+    await page.keyboard.up('Shift');
+    await page.getByTestId('passage-chip').click();
+    await expect(page.getByTestId('popover-title')).toHaveText(pref);
+
+    const chip = page.getByTestId('popover-chip-xrefs');
+    if (xrefs.length === 0) {
+      await expect(chip).toHaveCount(0);
+      return;
+    }
+
+    await expect(chip).toBeVisible();
+    await chip.click();
+    const items = page.getByTestId(/^xref-item-/);
+    await expect(items).toHaveCount(xrefs.length);
+    for (let i = 0; i < xrefs.length; i++) {
+      await expect(items.nth(i)).toContainText(xrefs[i].target);
+    }
   }), RUNS_UI);
 });

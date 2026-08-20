@@ -167,6 +167,21 @@
     {
     }
 
+    // Batch G1 requirement 3 (click-to-pin/traversal): map.js's own init()
+    // never wires the map-click/document-Escape listeners these fire from
+    // when mini is true (see its own comment) -- pinning has no meaning for
+    // a 320x240 popover figure -- so neither callback is ever actually
+    // invoked here. Implemented anyway (same treatment as every OTHER
+    // IMapEvents member above) so this class keeps satisfying the interface
+    // without a special exemption for these two.
+    public void OnMapClick()
+    {
+    }
+
+    public void OnEscapePressed()
+    {
+    }
+
     public async ValueTask DisposeAsync()
     {
         // Set FIRST, before any await -- this is the flag OnAfterRenderAsync

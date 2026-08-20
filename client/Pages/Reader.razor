@@ -52,18 +52,50 @@
         {
             <article class="reader-column">
                 <h1 class="chapter-head">
-                    <span class="chapter-head-book">@BookName</span>
-                    <span class="chapter-head-num">@_chapterNum</span>
+                    @* Batch G1 requirement 1: the chapter header becomes
+                       explorable the same way (.explorable, see app.css) --
+                       a real <button> wrapping the existing book/num spans
+                       (the wrapping-button fallback design-direction.md
+                       prefers, and here it works cleanly: nothing else
+                       inside the header needs its own separate click
+                       target). The outer <h1> itself stays a plain,
+                       unmodified heading -- App.razor's FocusOnNavigate
+                       still finds and focuses IT, not this button, so
+                       document-outline semantics are untouched. *@
+                    <button type="button" class="chapter-head-button explorable" data-testid="chapter-head"
+                            aria-label="@($"Explore {_book}.{_chapterNum}")" @onclick="OpenChapter">
+                        <span class="chapter-head-book">@BookName</span>
+                        <span class="chapter-head-num">@_chapterNum</span>
+                    </button>
                 </h1>
 
                 @foreach (var v in _chapter!.Verses)
                 {
-                    <p class="verse-line" data-testid="verse-line-@v.Verse" id="v@(v.Verse)">
-                        <button type="button" class="verse-num" data-testid="verse-num-@v.Verse" @onclick="@(e => OnVerseNumClick(e, v.Verse))">@v.Verse</button>
+                    @* Batch G1 requirement 1 (design-direction.md's REVISED
+                       interaction rule): the ∴ button DIES. THE VERSE LINE
+                       is the explorable element -- hover/focus darkens it
+                       (.explorable) with cursor:pointer, click (anywhere on
+                       the line) opens the verse's ExplorerPopover, same
+                       behavior the ∴ had. Real interactive-element
+                       semantics via role/tabindex/keydown (OnVerseLineKeyDown
+                       below) since a wrapping <button> can't be used here
+                       the way chapter-head's own button above can -- it
+                       would illegally nest .verse-num's own real <button>
+                       inside it. Verse-NUMBER clicks stay a SEPARATE gesture
+                       on a SEPARATE target (.verse-num, not .explorable --
+                       anchor+extend passage-range mechanics only, no popover
+                       -- see OnVerseNumClick/SetAnchor below); its own click
+                       AND keydown both stop propagation so activating it
+                       (mouse or keyboard) never also bubbles into this row's
+                       own click-opens-popover handler. *@
+                    <div class="verse-line explorable" data-testid="verse-line-@v.Verse" id="v@(v.Verse)"
+                         tabindex="0" role="button" aria-label="@($"Explore {_book}.{_chapterNum}.{v.Verse}")"
+                         @onclick="() => OpenVerse(v.Verse)" @onkeydown="@(e => OnVerseLineKeyDown(e, v.Verse))">
+                        <button type="button" class="verse-num" data-testid="verse-num-@v.Verse"
+                                @onclick="@(e => OnVerseNumClick(e, v.Verse))" @onclick:stopPropagation="true"
+                                @onkeydown:stopPropagation="true">@v.Verse</button>
                         <span class="verse-text">@v.Text</span>
-                        <button type="button" class="verse-explore" data-testid="verse-explore-@v.Verse"
-                                aria-label="@($"Explore {_book}.{_chapterNum}.{v.Verse}")" @onclick="() => SetAnchorAndOpen(v.Verse)">&#8756;</button>
-                    </p>
+                    </div>
                 }
             </article>
         }
@@ -289,6 +321,12 @@
 
     private void OpenVerse(int verseNum) => _activeNode = new VerseNode($"{_book}.{_chapterNum}.{verseNum}");
 
+    // Batch G1 requirement 1: the chapter header's own explore target
+    // (chapter-head-button's @onclick) -- the ChapterNode type already
+    // existed in client/Explore/ (spec node table row "Passage/Chapter/
+    // Book"), unused by any UI surface before this batch.
+    private void OpenChapter() => _activeNode = new ChapterNode(_book, _chapterNum);
+
     private Task ClosePopover()
     {
         _activeNode = null;
@@ -359,16 +397,19 @@
         }
     }
 
-    // READ-2/READ-5 interplay (brief note, verbatim): "plain click closes
-    // any popover, opens verse popover, sets anchor; shift-click suppresses
-    // popover and shows the chip." A shift-click with no anchor yet (the
-    // user shift-clicked before ever plain-clicking a verse this visit) has
-    // nothing to form a range against -- falls through to the plain-click
-    // path instead of silently doing nothing, so the shift-clicked verse
-    // itself becomes a usable anchor for the NEXT shift-click. Same
-    // fallback when the anchor and the shift-clicked verse are the SAME
-    // verse (a degenerate "V-V" range), which would otherwise produce a
-    // meaningless one-verse "passage".
+    // READ-2/READ-5 interplay -- REVISED, Batch G1 requirement 1
+    // ("selection and exploration are separate gestures on separate
+    // targets"): a plain verse-num click ONLY sets the anchor now (no
+    // popover -- that's the verse LINE's job, see OnVerseLineKeyDown/the
+    // line's own @onclick); shift-click still suppresses any anchor update
+    // and shows the passage-chip, unchanged. A shift-click with no anchor
+    // yet (the user shift-clicked before ever plain-clicking a verse this
+    // visit) has nothing to form a range against -- falls through to the
+    // plain-click path instead of silently doing nothing, so the shift-
+    // clicked verse itself becomes a usable anchor for the NEXT shift-
+    // click. Same fallback when the anchor and the shift-clicked verse are
+    // the SAME verse (a degenerate "V-V" range), which would otherwise
+    // produce a meaningless one-verse "passage".
     private void OnVerseNumClick(MouseEventArgs e, int verseNum)
     {
         if (e.ShiftKey && _anchorVerse is int anchor && anchor != verseNum)
@@ -378,18 +419,40 @@
             return;
         }
 
-        SetAnchorAndOpen(verseNum);
+        SetAnchor(verseNum);
     }
 
-    // The shared "plain click" behavior: verse-num's own non-shift path and
-    // verse-explore's own click both funnel here -- the ∴ affordance is
-    // always an explicit "open this verse" action regardless of any
-    // modifier key held, never a range-selection gesture.
-    private void SetAnchorAndOpen(int verseNum)
+    // The shared "plain click" behavior: sets the anchor only, per this
+    // batch's own separation of selection (verse-num) from exploration
+    // (the verse line, OpenVerse) -- deliberately does NOT open a popover
+    // (that was the pre-Batch-G1 behavior, shared with the now-dead ∴
+    // button; see this method's own git history for the prior version).
+    // Does not touch _activeNode either way, so an already-open popover
+    // (e.g. from a just-clicked verse LINE) is left exactly as it was --
+    // ExplorerPopover's own backdrop already intercepts a plain click on a
+    // DIFFERENT verse-num while it's open anyway (click-outside-to-close),
+    // same pre-existing behavior this change doesn't alter.
+    private void SetAnchor(int verseNum)
     {
         _anchorVerse = verseNum;
         _passageRange = null;
-        OpenVerse(verseNum);
+    }
+
+    // The verse LINE's own keyboard equivalent (design-direction.md: "if
+    // the line stays a div, role/tabindex/keydown must make it a genuine
+    // button equivalent... Enter opens"). Deliberately Enter only, not
+    // Space: Blazor's @onkeydown:preventDefault modifier is a static,
+    // whole-element toggle, not conditional per key, so unconditionally
+    // suppressing Space's native "scroll the page" default here would also
+    // have to suppress Tab's own default focus-move -- a real regression a
+    // Space-only omission avoids entirely. The brief's own text asks for
+    // "Enter opens", not "Enter/Space".
+    private void OnVerseLineKeyDown(KeyboardEventArgs e, int verseNum)
+    {
+        if (e.Key == "Enter")
+        {
+            OpenVerse(verseNum);
+        }
     }
 
     private string PassageRef((int From, int To) range) => $"{_book}.{_chapterNum}.{range.From}-{range.To}";

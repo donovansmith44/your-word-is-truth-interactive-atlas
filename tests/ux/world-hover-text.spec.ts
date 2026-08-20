@@ -406,3 +406,88 @@ test('hover robustness: hover -> cross the gap -> click place-card-more succeeds
   await page.mouse.move(0, 0, { steps: 10 });
   await expect(card).toBeHidden({ timeout: 1200 });
 });
+
+// Batch G1 requirement 1b ("the map's verses are nodes too" -- user
+// direction: "this is all one big dag that we can explore from anywhere"):
+// hover-verse-{VREF}/hover-passage-{SPAN} content in the (UNPINNED) hover
+// card is explorable under the same one rule verse-line/chapter-head use in
+// the reader -- click opens the ExplorerPopover on that verse's own node,
+// and (per the brief's own acceptance test) its xrefs chip works. The card
+// stays alive through this whole gesture (hover-persistence keeps it open
+// while the pointer travels onto it) until the popover promotion itself
+// supersedes it, same "date-explore" pattern Batch E's dates already use.
+test('hover place card: clicking a verse in an UNPINNED card opens its VerseNode popover; the xrefs chip works', async ({ page }) => {
+  const best = await bestHoverablePlace(page, verses => verses.length > 0, verses => verses.length);
+  if (!best) {
+    test.skip(true, 'no independently-hoverable place with any merged verse found in any candidate window');
+    return;
+  }
+  const { place, verses } = best;
+  const vref = verses[0];
+
+  await page.getByTestId(`marker-${place.id}`).hover({ force: true });
+  const card = page.getByTestId('place-card');
+  await expect(card).toBeVisible();
+
+  const verseEl = card.getByTestId(`hover-verse-${vref}`);
+  await moveAndClick(page, verseEl);
+
+  // The popover promotion supersedes the (unpinned) hover card, same as
+  // every other card-explore affordance (Batch E's dates, WORLD-8's title).
+  await expect(card).toHaveCount(0);
+  const popover = page.getByTestId('popover');
+  await expect(popover).toBeVisible();
+  await expect(page.getByTestId('popover-title')).toHaveText(vref);
+  const text = await verseText(vref);
+  await expect(popover).toContainText(text);
+
+  const xrefsChip = page.getByTestId('popover-chip-xrefs');
+  await expect(xrefsChip).toBeVisible(); // VerseNode always offers it, unconditionally
+  await xrefsChip.click();
+  const detail = await api.verse(vref);
+  if (detail.cross_refs.length === 0) {
+    await expect(popover).toContainText('No cross-references recorded.');
+  } else {
+    await expect(page.getByTestId(/^xref-item-/)).toHaveCount(detail.cross_refs.length);
+    await expect(page.getByTestId(`xref-item-${detail.cross_refs[0].target}`)).toBeVisible();
+  }
+});
+
+// Same acceptance test, the PASSAGE side: clicking the passage row itself
+// (its own ref label, outside any nested verse span) opens the whole
+// PassageNode instead of any one verse. Uses bestHoverablePlace (not a plain
+// scan) for the same reason every OTHER click/hover-precision test in this
+// file does: an unsafe pick can land on a place from the exodus window's own
+// documented dense cluster (WORLD-8's own comment names "Ai" specifically) --
+// confirmed live while writing this test, a plain scan's first match landed
+// on exactly that place and a forced hover resolved to a NEIGHBORING marker
+// instead, so the expected hover-passage-{SPAN} testid never appeared and
+// the test hung on boundingBox() until timeout.
+test('hover place card: clicking a passage block (outside a specific verse) opens its PassageNode popover', async ({ page }) => {
+  const best = await bestHoverablePlace(
+    page,
+    verses => verses.length > 0 && isPassage(groups(verses)[0]),
+    verses => groups(verses)[0].length,
+  );
+  if (!best) {
+    test.skip(true, 'no independently-hoverable place with a consecutive-run first group found in any candidate window');
+    return;
+  }
+  const { place, verses } = best;
+  const first = groups(verses)[0];
+  const span = spanRef(verses, { start: 0, length: Math.min(4, first.length) });
+
+  // bestHoverablePlace already navigated to (and rendered) the winning
+  // window while measuring hover safety -- re-navigating here would just
+  // re-fetch the same page for nothing.
+  await page.getByTestId(`marker-${place.id}`).hover({ force: true });
+  const card = page.getByTestId('place-card');
+  await expect(card).toBeVisible();
+
+  const passageEl = card.getByTestId(`hover-passage-${span}`);
+  const refEl = passageEl.locator('.place-card-passage-ref');
+  await moveAndClick(page, refEl);
+
+  await expect(card).toHaveCount(0);
+  await expect(page.getByTestId('popover-title')).toHaveText(span);
+});

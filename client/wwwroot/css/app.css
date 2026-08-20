@@ -126,6 +126,48 @@ input:focus-visible,
     outline-offset: 2px;
 }
 
+/* Batch G1 -- THE one interaction rule (design-direction.md "Explorable-
+   element interaction -- REVISED PER USER FEEDBACK 2026-08-19": "the little
+   trinity button isn't clear... explorable elements display slightly darker
+   on hover; click opens the pop-up menu"). Every explorable element -- a
+   verse line, a chapter header, a place-card date, a card verse/passage --
+   carries this class ALONGSIDE its own (Reader.razor's verse-line, PlaceCard
+   .razor's place-card-verse/-passage, etc.) -- the same "base class + state/
+   variant class on one element" pattern this file already uses elsewhere
+   (.atlas-marker.glow-3, .slider-handle.slider-handle-from), not an
+   exception to the single-class-selector discipline. One rule, learned
+   once, true everywhere: "if it darkens, it's a node" (design-direction.md,
+   verbatim) -- verse lines, chapter headers, card dates, and card verses/
+   passages all darken-then-open IDENTICALLY (requirement 4), so this is the
+   ONLY place that background tint/transition is ever defined; no per-
+   element hover rule below re-derives its own color.
+   The tint is a flat --ink wash at low alpha (43,33,23 is --ink's own RGB)
+   applied to the element's OWN existing box -- no padding/margin bleed
+   trick, so nothing ever shifts/reflows between rest and hover, and no risk
+   of two adjacent explorable elements' hit-boxes overlapping (relevant for
+   PlaceCard's own per-verse spans running back-to-back inside one flowing
+   passage block). Reads correctly on both grounds explorable content ever
+   sits on -- --parchment (Reader) and --parchment-raised (World's
+   place-card, itself a parchment artifact per design-direction.md's
+   Concept) -- since both are close in luminance. */
+.explorable {
+    cursor: pointer;
+    border-radius: 3px;
+    background-color: rgba(43, 33, 23, 0);
+    transition: background-color 120ms ease-out;
+}
+
+.explorable:hover,
+.explorable:focus-visible {
+    background-color: rgba(43, 33, 23, .07);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .explorable {
+        transition: none;
+    }
+}
+
 /* Page scenes (design-direction.md "Page treatments"). Reader is daylight
    parchment; World is dusk indigo. Each page's root element carries one of
    these two classes -- they are never combined on the same element. */
@@ -342,39 +384,46 @@ input:focus-visible,
     color: var(--ink);
 }
 
-/* Verse rows: gutter number (instrument mono, bronze, small) + serif verse
-   text (19-20px/1.7) + a quiet ∴ explore affordance that appears at line
-   end on row hover. --explore-opacity is set by :hover/:focus-within on
-   THIS class and read by .verse-explore below via inheritance -- the same
-   custom-property technique .app-header's theme classes use -- so no rule
-   here ever combines two classes or crosses an element boundary.
+/* Batch G1 requirement 1: the chapter header becomes explorable the same
+   way (.explorable) -- opens a ChapterNode. A real <button> WRAPPING
+   .chapter-head's own book/num spans (design-direction.md's preferred
+   fallback -- "a wrapping <button> restyled is preferred if layout
+   survives" -- and here it does: unlike verse-line, nothing else inside
+   .chapter-head needs its own separate, competing click target, so the
+   nested-interactive problem verse-line has doesn't apply). The OUTER
+   <h1>.chapter-head itself stays a plain heading (untouched, no role
+   override) so document-outline/FocusOnNavigate semantics are unaffected --
+   only this INNER button carries the click/focus/darken behavior. */
+.chapter-head-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .35rem;
+    padding: .5rem 1.25rem;
+    background: none;
+    border: none;
+    font: inherit;
+}
 
-   Batch C2, requirement 0c (user 2026-08-19: "hover interactions on both
-   the map and the Bible are extremely fickle"): the STRUCTURAL reader-side
-   fix (design-direction.md's "the ∴ end-of-line button DIES as the
-   affordance... EVERY explorable element... darkens slightly" -- the whole
-   row becomes the hover target, not this one small glyph) is Batch G1's
-   own click-to-explore work, out of scope here. The one in-scope stopgap:
-   base --explore-opacity 0 -> 0.3, so the ∴ is always AT LEAST faintly
-   visible rather than fully invisible until a pointer happens to land
-   exactly on its own row -- less fickle to simply find, without
-   pre-empting G1's real redesign of the affordance itself. :hover/
-   :focus-within still raise it to fully opaque, unchanged. */
+/* Verse rows: gutter number (instrument mono, bronze, small) + serif verse
+   text (19-20px/1.7). Batch G1 (design-direction.md's REVISED interaction
+   rule -- "the ∴ end-of-line button DIES as the affordance"): the ∴ glyph
+   and its own dedicated button are GONE. THE VERSE LINE ITSELF is now the
+   explorable element (.explorable, see its own shared-rule comment above) --
+   the whole row darkens on hover/focus and click opens the verse's
+   ExplorerPopover (Reader.razor's OnVerseLineClick/OpenVerse). Verse-NUMBER
+   clicks are a SEPARATE gesture on a SEPARATE target (.verse-num below,
+   deliberately NOT .explorable -- it drives the anchor+extend passage-range
+   mechanic, never opens a popover itself; requirement 1: "selection and
+   exploration are separate gestures on separate targets"), so its own
+   existing lapis hover treatment is untouched -- a different, pre-existing
+   control, not one of the darken-then-open family. */
 .verse-line {
-    --explore-opacity: 0.3;
     display: flex;
     align-items: baseline;
     gap: .85rem;
     margin: 0 0 .55rem;
     scroll-margin-top: 5.5rem;
-}
-
-.verse-line:hover {
-    --explore-opacity: 1;
-}
-
-.verse-line:focus-within {
-    --explore-opacity: 1;
 }
 
 .verse-num {
@@ -401,35 +450,6 @@ input:focus-visible,
     font-size: 1.2rem;
     line-height: 1.7;
     color: var(--ink);
-}
-
-.verse-explore {
-    flex: none;
-    align-self: center;
-    opacity: var(--explore-opacity, 0);
-    transition: opacity 120ms ease-out;
-    font-family: var(--font-serif);
-    font-size: 1.1rem;
-    line-height: 1;
-    color: var(--bronze-ink);
-    background: none;
-    border: none;
-    padding: 0 .25rem;
-    cursor: pointer;
-}
-
-.verse-explore:hover {
-    color: var(--lapis);
-}
-
-.verse-explore:focus-visible {
-    opacity: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .verse-explore {
-        transition: none;
-    }
 }
 
 /* reader-prev/reader-next: quiet bottom corners (design-direction.md
@@ -1360,13 +1380,27 @@ input:focus-visible,
     overflow-y: auto;
 }
 
+/* Batch G1 requirement 3: title + (while pinned) the close button share one
+   row -- title claims whatever space the close button doesn't need. */
+.place-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: .4rem;
+    margin: 0 0 .35rem;
+}
+
 /* WORLD-8/Task 15: opens a PlaceNode popover (this place's full event
    history) -- a real <button> now, reset to read exactly as the plain
-   heading it always was. */
+   heading it always was. Batch G1 requirement 4 ("one-rule consistency"):
+   .explorable (shared darken-on-hover/focus rule, see its own comment)
+   replaces the old lapis-color hover -- every explorable element in this
+   card (title, dates, verses/passages) now darkens identically instead of
+   this one alone shifting to a different color. */
 .place-card-title {
     display: block;
-    width: 100%;
-    margin: 0 0 .35rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
     padding: 0;
     border: none;
     background: none;
@@ -1379,14 +1413,33 @@ input:focus-visible,
     cursor: pointer;
 }
 
-.place-card-title:hover {
+/* Batch G1 requirement 3: the pinned card's own close control ("closes via
+   Escape, an X, or clicking elsewhere on the map") -- present only while
+   Pinned (see PlaceCard.razor). Deliberately NOT .explorable -- a control,
+   not a DAG node, same family as place-card-more/-collapse. */
+.place-card-close {
+    flex: none;
+    margin: 0;
+    padding: 0 .1rem;
+    background: none;
+    border: none;
+    line-height: 1.3;
+    font-size: 1.15rem;
+    color: var(--ink-soft);
+    cursor: pointer;
+}
+
+.place-card-close:hover {
     color: var(--lapis);
 }
 
 /* A lone verse's own line (batch-d-brief.md Requirement 2: any maximal run
    of length 1) -- ref above its own sentence in the instrument mono face,
    verse text in the serif, same shape .place-card-passage below uses for a
-   whole block. */
+   whole block. Batch G1 requirement 1b ("the map's verses are nodes too"):
+   also carries .explorable in markup -- the whole row darkens on hover/
+   focus and opens this verse's own VerseNode, same one rule as everywhere
+   else. */
 .place-card-verse {
     margin: 0 0 .5rem;
 }
@@ -1412,7 +1465,15 @@ input:focus-visible,
    (batch-d-brief.md Requirement 2) -- renders as ONE flowing block: a
    single span ref ("GEN.12.1-4") above continuous KJV prose, rather than
    .place-card-verse's repeated ref+text pair. Structurally a sibling of
-   .place-card-verse (same margin-bottom rhythm), not a variant of it. */
+   .place-card-verse (same margin-bottom rhythm), not a variant of it.
+   Batch G1 requirement 1b: also carries .explorable -- clicking the block
+   ANYWHERE outside a specific verse span (the ref label, or the block's own
+   padding/whitespace) opens this whole passage's own PassageNode; clicking
+   INSIDE a specific verse span (.place-card-passage-verse below) opens that
+   VERSE's own node instead and stops the click from also bubbling up to
+   this row (see PlaceCard.razor's own @onclick:stopPropagation) -- the more
+   specific target wins, same nested-explorable resolution Reader.razor's
+   verse-line/verse-num pair already uses for a different reason. */
 .place-card-passage {
     margin: 0 0 .5rem;
 }
@@ -1445,6 +1506,17 @@ input:focus-visible,
     font-size: .68rem;
     color: var(--bronze-ink);
     margin-inline-end: .15rem;
+}
+
+/* Batch G1 requirement 1b: one verse's own inline run within a flowing
+   passage (its sup number + text) -- carries .explorable too, so hovering/
+   clicking a SPECIFIC verse inside the passage darkens/opens just that
+   verse, per .place-card-passage's own comment. Deliberately no padding/
+   margin of its own (.explorable's shared rule adds none either, see its
+   comment) -- these sit back-to-back with no gap between them, and any
+   padding here would visibly overlap into the next verse's own run. */
+.place-card-passage-verse {
+    display: inline;
 }
 
 /* Batch E2 (the ever-present graph): the quiet line -- replaces verse
@@ -1547,6 +1619,10 @@ input:focus-visible,
     opacity: .7;
 }
 
+/* Batch G1 requirement 4: also carries .explorable in markup (PlaceCard
+   .razor) for the shared darken-on-hover/focus rule -- the old lapis-color
+   hover this rule used to carry directly is gone, see .explorable's own
+   comment. */
 .place-card-date {
     display: inline-flex;
     align-items: baseline;
@@ -1586,14 +1662,69 @@ input:focus-visible,
     transition: opacity 120ms ease-out;
 }
 
-.place-card-date:hover,
-.place-card-date:focus-visible {
-    color: var(--lapis);
-}
-
 .place-card-date:hover .place-card-date-explore,
 .place-card-date:focus-visible .place-card-date-explore {
     opacity: 1;
+}
+
+/* Batch G1 requirement 3 (narrative traversal) -- strictly LAST section of
+   the card (see PlaceCard.razor's own comment). One row per narrative this
+   PINNED place has a leg of in the current scene: a colored swatch (data-
+   driven narrative color, "never restyled" per design-direction.md, same
+   spirit ArrowLayer/Legend already follow) + name in small caps + prev/next
+   controls. */
+.place-card-narratives {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    margin: .5rem 0 0;
+    padding-top: .45rem;
+    border-top: 1px solid rgba(138, 107, 61, .25);
+}
+
+.place-card-narrative-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .4rem;
+}
+
+.place-card-narrative-swatch {
+    flex: none;
+    width: .55rem;
+    height: .55rem;
+    border-radius: 999px;
+}
+
+.place-card-narrative-name {
+    flex: none;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .04em;
+    font-size: .78rem;
+    color: var(--ink-soft);
+    margin-inline-end: auto;
+}
+
+/* Deliberately NOT .explorable -- a navigation control (jumps the pin to a
+   different place), not a DAG node of its own. */
+.place-card-nav-event {
+    flex: none;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .03em;
+    font-size: .78rem;
+    color: var(--lapis);
+}
+
+.place-card-nav-event:hover {
+    color: var(--ink);
 }
 
 /* arrow-tip -- a parchment artifact too (design-direction.md: "popovers and
