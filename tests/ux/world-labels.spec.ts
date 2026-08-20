@@ -74,6 +74,49 @@ test('LABEL-1: est/dest dates are reachable in <=2 clicks from a label (regressi
   await expect(page.getByTestId('popover-place-date-established')).toBeVisible();
 });
 
+// Batch R review fix round 1, Important-1 (review 2026-08-20): .atlas-label
+// is a DOM CHILD of .atlas-marker, absolutely positioned just past the
+// dot's own hit halo -- a REAL pointer transit from the dot into the label
+// (unlike every test above, which jumps straight there via { force: true })
+// crosses a genuine element boundary and fires a native mouseout+mouseover
+// pair on the SAME marker along the way. The review found this benign
+// today (World.razor's own 350ms close-grace comfortably absorbs it) but
+// untested -- this proves that stays true: across a real, granular,
+// stepped move from the dot's own center to the label's own center, the
+// hover card must never actually disappear, and must still name the SAME
+// place once the transit completes. A future change that shortened or
+// removed the grace window would show up here as a dropped card mid-loop,
+// not just at the two endpoints.
+test('LABEL-1: a real pointer transit from a marker\'s dot into its own label never drops the hover card or swaps its target', async ({ page }) => {
+  const w = { from: -1446, to: -1406 };
+  await page.goto(`/world?from=${w.from}&to=${w.to}`);
+  const scene = await api.sceneTime(w.from, w.to);
+  const safeIds = await independentlyHoverableIds(page, scene.places.map((p: any) => p.id));
+  const p = scene.places.find((pl: any) => safeIds.has(pl.id));
+  expect(p, 'expected at least one independently-hoverable lit place').toBeTruthy();
+
+  const marker = page.getByTestId(`marker-${p.id}`);
+  const label = marker.locator('.atlas-label');
+  const dotBox = await marker.boundingBox();
+  const labelBox = await label.boundingBox();
+  expect(dotBox && labelBox).toBeTruthy();
+
+  const from = { x: dotBox!.x + dotBox!.width / 2, y: dotBox!.y + dotBox!.height / 2 };
+  const to = { x: labelBox!.x + labelBox!.width / 2, y: labelBox!.y + labelBox!.height / 2 };
+  await page.mouse.move(from.x, from.y);
+
+  const card = page.getByTestId('place-card');
+  await expect(card).toBeVisible();
+  await expect(page.getByTestId('place-card-title')).toHaveText(p.display_name);
+
+  const steps = 8;
+  for (let i = 1; i <= steps; i++) {
+    await page.mouse.move(from.x + (to.x - from.x) * i / steps, from.y + (to.y - from.y) * i / steps);
+    await expect(card).toBeVisible(); // never drops anywhere along the real transit
+  }
+  await expect(page.getByTestId('place-card-title')).toHaveText(p.display_name); // still the same place, not swapped mid-transit
+});
+
 // Polity/landmark labels stay entirely non-interactive -- LABEL-1's own
 // explicit scope boundary.
 test('LABEL-1: polity and landmark labels stay non-interactive', async ({ page }) => {
