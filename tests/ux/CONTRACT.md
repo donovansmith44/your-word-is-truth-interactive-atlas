@@ -254,9 +254,12 @@ Notes:
   `from` first. The client renders every returned row (never picks a
   single "nearest" one the retired snapshot-year model used to) and tags
   each polity's own rows, independently, oldest-to-newest as `"oldest"`
-  (dotted line, lightest wash), `"middle"` (dashed, intermediate -- only
-  reachable with 3+ simultaneously-visible eras of one polity, none of
-  which exist in this app's own curated roster today), `"newest"` (solid
+  (dotted line, lightest wash), `"middle"` (dashed, intermediate -- reachable
+  with 3+ simultaneously-visible eras of one polity; the curated roster has
+  exactly one such case today, egypt's own three eras intersecting the
+  1600-900 BC window, `BORDERS-5` -- corrected fix round 1, M4: this note
+  previously claimed no such case existed, which the batch's own BORDERS-5
+  test already contradicted at the time it shipped), `"newest"` (solid
   line, full wash -- ALSO the single-era case, i.e. `data-age="newest"`
   covers both "the only visible era" and "the newest of several"). Rings
   are painted in that same oldest-to-newest order (both across the whole

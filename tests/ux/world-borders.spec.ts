@@ -132,6 +132,34 @@ test('BORDERS-5: a spanning window (1600-900 BC) shows 3 rings of the same polit
   await expect(page.getByTestId('polity-year-tag-egypt--1549-0')).toContainText('1549 BC');
   await expect(page.getByTestId('polity-year-tag-egypt--1068-0')).toContainText('1068 BC');
 
+  // Fix round 1 (M2 -- review finding B3: "neither world-borders.spec.ts
+  // nor any other test checks tag POSITIONS against each other... this gap
+  // is untested as well as unfixed" -- every year tag used to anchor at its
+  // own ring's bbox CENTER, so this exact 3-tier Egypt case, concentric by
+  // design, put all three tags almost exactly on top of each other; visible
+  // directly in the batch's own egypt-exodus/spanning-1600-900bc
+  // screenshots). Asserts what the screenshots alone can't pin down
+  // numerically: every pair of this polity's own tags sits at least
+  // MIN_TAG_SEPARATION_PX apart on screen -- comfortably more than either
+  // tag's own rendered size (a short "c. NNNN BC" mono-face string), so
+  // "visible" (checked above) and "actually legible, not stacked" are two
+  // different, both now-covered claims.
+  const MIN_TAG_SEPARATION_PX = 20;
+  const tagCenters = await Promise.all(
+    ['polity-year-tag-egypt--4004-0', 'polity-year-tag-egypt--1549-0', 'polity-year-tag-egypt--1068-0'].map(async testid => {
+      const box = await page.getByTestId(testid).boundingBox();
+      expect(box, `${testid} has no bounding box`).not.toBeNull();
+      return { testid, x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
+    })
+  );
+  for (let i = 0; i < tagCenters.length; i++) {
+    for (let j = i + 1; j < tagCenters.length; j++) {
+      const a = tagCenters[i], b = tagCenters[j];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      expect(dist, `${a.testid} and ${b.testid} are only ${dist.toFixed(1)}px apart, expected staggered/legible`).toBeGreaterThan(MIN_TAG_SEPARATION_PX);
+    }
+  }
+
   // "the polity name label renders once per era-name" -- all three eras
   // here are named "Egypt" (redraws, not renames), so exactly ONE label,
   // not three, even though three rings/year-tags are visible.
