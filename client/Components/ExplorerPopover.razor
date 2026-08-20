@@ -189,6 +189,26 @@
     private async Task LoadCurrent()
     {
         _miniMapSref = null;
+        // Fix, a real bug caught live (diagnostic script against the actual
+        // running app, not static review): Blazor's own event-dispatch
+        // machinery renders once at THIS method's first genuine await (the
+        // fetches below) regardless of how far LoadCurrent has gotten --
+        // Current.Title already reflects the NEW node by then (_stack.Push
+        // always happens synchronously, before LoadCurrent is ever called),
+        // but _sections/_explorations/_body were, before this fix, still
+        // whatever the PREVIOUS node left behind, so that intermediate
+        // render showed the new title beside the WRONG node's content for
+        // the full duration of the fetch -- reproduced live via a
+        // cross-reference chain: HAB.1.7's own 6-item xref list stayed on
+        // screen under a "JER.52.25" title (a verse with only 3) until the
+        // real fetch resolved. Clearing here makes that intermediate frame
+        // EMPTY instead of WRONG -- the same "loading, then filled" shape
+        // this method's very first caller (OnInitializedAsync) already had,
+        // now applied uniformly to every push/pop, not just the initial
+        // open.
+        _sections = Array.Empty<PopoverSection>();
+        _explorations = Array.Empty<Exploration>();
+        _body = _ => { };
 
         var applicable = PopoverSectionRegistry.Providers.Where(p => p.AppliesTo(Current)).ToList();
         _usingSectionRegistry = applicable.Count > 0;
