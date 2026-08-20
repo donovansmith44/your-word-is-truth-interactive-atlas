@@ -131,11 +131,11 @@
         <nav aria-label="Chapter navigation">
             @if (PrevTarget is { } prev)
             {
-                <a class="reader-prev" data-testid="reader-prev" href="@($"/read/{prev.Book}/{prev.Chapter}")">&lsaquo; @prev.Name @prev.Chapter</a>
+                <a class="reader-prev" data-testid="reader-prev" href="@($"/read/{prev.Book}/{prev.Chapter}")" aria-label="@($"Previous chapter: {prev.Name} {prev.Chapter}")">&lsaquo;<span class="reader-nav-label"> @prev.Name @prev.Chapter</span></a>
             }
             @if (NextTarget is { } next)
             {
-                <a class="reader-next" data-testid="reader-next" href="@($"/read/{next.Book}/{next.Chapter}")">@next.Name @next.Chapter &rsaquo;</a>
+                <a class="reader-next" data-testid="reader-next" href="@($"/read/{next.Book}/{next.Chapter}")" aria-label="@($"Next chapter: {next.Name} {next.Chapter}")"><span class="reader-nav-label">@next.Name @next.Chapter </span>&rsaquo;</a>
             }
         </nav>
 

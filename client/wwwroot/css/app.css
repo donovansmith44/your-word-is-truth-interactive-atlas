@@ -424,11 +424,25 @@ input:focus-visible,
 /* Reader (Task 14, READ-1..3). Single centered ~66ch column on parchment
    (design-direction.md "Reader"). .reader-column carries the measure;
    reader-prev/reader-next/the popover are position:fixed and live outside
-   its flow (their own horizontal footprint never overlaps the column's, at
-   any viewport -- see their own rules below). The picker is NOT fixed here
-   (fix round 1 finding 3 -- see .picker-parchment's own comment); it's a
-   normal in-flow sibling BEFORE this element, so .reader-column's own
-   top padding only needs to clear IT, not also a floating overlay. */
+   its flow. The picker is NOT fixed here (fix round 1 finding 3 -- see
+   .picker-parchment's own comment); it's a normal in-flow sibling BEFORE
+   this element, so .reader-column's own top padding only needs to clear
+   IT, not also a floating overlay.
+
+   Batch R review fix round 1, Critical-1: reader-prev/reader-next's own
+   horizontal footprint does NOT stay clear of this column at every
+   viewport on its own -- max-width:66ch (~700px) only ever CLAMPS a wide
+   box down; it never GUARANTEES a gutter once the box it's clamping is
+   already narrower than that, which is exactly what happens in split view
+   (.split-pane-reader below caps the pane at ~55% of the viewport). At the
+   brief's own documented 1024px floor that leaves the column filling the
+   pane almost edge-to-edge, sharing the SAME 1.5rem offset the nav buttons
+   themselves sit at -- confirmed live, reviewer-measured: the buttons'
+   own full "‹ Book NN" text printed directly across mid-chapter verse
+   text (review-diag-split-1024-overlap.png). See .reader-nav-label below
+   for the fix: split view gets a chevron-only, real-gutter-clearing
+   treatment; standalone keeps the full label (already proven clear, ~172px
+   of real clearance measured at the same 1024px floor). */
 .reader-column {
     width: 100%;
     max-width: 66ch;
@@ -617,6 +631,42 @@ input:focus-visible,
 
 .reader-next:hover {
     color: var(--lapis);
+}
+
+/* Batch R review fix round 1, Critical-1: split view gets a compact,
+   chevron-only treatment -- .reader-nav-label (the "Book NN" text
+   Reader.razor now wraps separately) is hidden entirely, and the button's
+   own footprint is pulled in near the pane's real edge, comfortably inside
+   the real gutter .reader-column's own padding leaves before verse text
+   starts at the documented 1024px floor (measured: this compact button
+   occupies roughly 8..26px from the pane edge there, verse text starts
+   ~41px in -- real clearance, not a last-pixel fit). The <a>'s own
+   aria-label (Reader.razor) still carries the full "Previous/Next chapter:
+   Book NN" text regardless, so nothing is lost for a screen reader even
+   though the glyph is now the only VISIBLE content. Unconditional across
+   the WHOLE split range (not just near 1024px) -- .split-pane-reader never
+   exceeds ~55% of the viewport, so .reader-column's own 66ch clamp never
+   actually binds in split view at any realistic width, meaning the tight-
+   gutter problem this fixes never goes away at a wider split either.
+   Standalone reader is UNCHANGED -- these three rules only ever match
+   inside .split-pane-reader; the full "‹ Book NN" label at left/
+   right:1.5rem stays exactly as NAV-2 already proved it (~172px of real
+   clearance at the same 1024px floor, nothing near this tight). No layout
+   shift (still fully out of flow), no animation (nothing here needs its
+   own reduced-motion guard), contrast/quiet-until-hovered treatment
+   untouched (only position/content visibility change). */
+.split-pane-reader .reader-prev {
+    left: .5rem;
+    padding: .15rem .3rem;
+}
+
+.split-pane-reader .reader-next {
+    right: .5rem;
+    padding: .15rem .3rem;
+}
+
+.split-pane-reader .reader-nav-label {
+    display: none;
 }
 
 /* passage-chip (READ-5/Task 15): "floats bottom-center like a paper tag:

@@ -157,3 +157,70 @@ test('NAV-2: chapter-nav stays fixed, vertically centered, and visible while scr
   await next.hover();
   await expect.poll(() => next.evaluate(el => getComputedStyle(el).color)).not.toBe(restColor);
 });
+
+// Batch R fix round 1, Critical-1 (review 2026-08-20): NAV-2 above proves
+// reader-prev/reader-next stay VISIBLE and roughly VIEWPORT-CENTERED while
+// scrolled -- it never checked that centering against the reading column's
+// own text at a REALISTIC width. In split view at the brief's own
+// documented 1024px floor, the pane narrows to ~55% of the viewport, and
+// the reading column (max-width:66ch, never actually clamping at that
+// width) fills the pane almost edge-to-edge -- the nav buttons, sized for a
+// full-width standalone reader, printed directly across mid-chapter verse
+// text (reviewer-measured live: review-diag-split-1024-overlap.png, ~59px
+// of overlap on each side). This asserts real, geometric non-overlap
+// between EVERY currently-rendered verse row and each nav button, in split
+// view, at the floor width -- not just "visible"/"centered" (NAV-2's own
+// bar), which this exact regression already satisfied while still visually
+// overlapping text underneath.
+test('NAV-3: chapter-nav never overlaps the verse text column in split view at the documented 1024px floor', async ({ page }) => {
+  const toc = await loadToc();
+  let longest = { book: toc[0].code, chapter: 1, verses: toc[0].chapters[0] };
+  for (const b of toc) {
+    b.chapters.forEach((v, i) => {
+      if (v > longest.verses) longest = { book: b.code, chapter: i + 1, verses: v };
+    });
+  }
+  expect(longest.verses, 'expected a real long chapter for real mid-chapter scroll room').toBeGreaterThan(30);
+
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await page.goto(`/read/${longest.book}/${longest.chapter}?split=1`);
+
+  const mid = Math.floor(longest.verses / 2);
+  await page.getByTestId(`verse-line-${mid}`).scrollIntoViewIfNeeded();
+
+  const prev = page.getByTestId('reader-prev');
+  const next = page.getByTestId('reader-next');
+  // --chapter-nav-top's own recompute is scroll-driven (reader.js's
+  // watchChapterNavCenter, rAF-throttled) -- wait for the REAL settled
+  // position (toBeInViewport, not a one-shot read) before trusting either
+  // box: a pre-recompute read produces a stale/off-screen Y that is a
+  // timing artifact, not a real bug (the exact red herring the review's own
+  // diagnostic flagged and warned future runs away from).
+  await expect(prev).toBeInViewport();
+  await expect(next).toBeInViewport();
+
+  const prevBox = await prev.boundingBox();
+  const nextBox = await next.boundingBox();
+  expect(prevBox && nextBox).toBeTruthy();
+
+  // Check EVERY currently-rendered verse row (the reader has no
+  // virtualization -- a whole chapter's own rows are all in the DOM at
+  // once), not just the one scrolled to: a real 2D bounding-box
+  // intersection against each button, so this catches the bug regardless
+  // of exactly which row ends up sharing the buttons' own vertical band.
+  const overlaps = await page.evaluate(({ prevBox, nextBox }) => {
+    const rows = Array.from(document.querySelectorAll('[data-testid^="verse-line-"]'));
+    const hits: string[] = [];
+    for (const row of rows) {
+      const r = row.getBoundingClientRect();
+      for (const [name, b] of [['reader-prev', prevBox], ['reader-next', nextBox]] as const) {
+        if (!b) continue;
+        const vOverlap = r.top < b.y + b.height && r.bottom > b.y;
+        const hOverlap = r.left < b.x + b.width && r.right > b.x;
+        if (vOverlap && hOverlap) hits.push(`${name} over ${row.getAttribute('data-testid')}`);
+      }
+    }
+    return hits;
+  }, { prevBox, nextBox });
+  expect(overlaps).toEqual([]);
+});

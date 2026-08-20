@@ -125,10 +125,20 @@ Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   `reader-prev`, `reader-next` (batch-r-brief.md requirement 6, "always
   visible... middle-aligned... even as i scroll": REPOSITIONED from quiet
   bottom corners to vertically-centered at the reading column's own left/
-  right edges -- `position:fixed`, unchanged testids/content/quiet-until-
-  hovered treatment; `.reader-page`'s own `contain:layout`, Batch H, already
+  right edges -- `position:fixed`, unchanged testids/quiet-until-hovered
+  treatment; `.reader-page`'s own `contain:layout`, Batch H, already
   confines this to the reader PANE specifically in split view, not the
-  whole window), `passage-chip`
+  whole window. Review fix round 1, Critical-1 (2026-08-20): the vertically-
+  centered position exposed a real overlap with mid-chapter verse text in
+  split view at the documented 1024px floor (the reading column fills a
+  narrow pane almost edge-to-edge; the buttons' own full "‹ Book NN" text
+  printed across it) -- split view now shows a chevron-only compact form
+  (the "Book NN" text lives in a `.reader-nav-label` span, `display:none`
+  only inside `.split-pane-reader`; the full `<a>` keeps an `aria-label`
+  with the complete "Previous/Next chapter: Book NN" text regardless, so
+  nothing is lost for a screen reader). Standalone reader keeps the full
+  label, unconditionally, at every width -- unaffected by this fix, per
+  NAV-2), `passage-chip`
 Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
   FOLLOW-1/VIEWSTATE-1 below for the full behavior these wire up):
   `split-open-reader` (button, reader only, absent once split is open;
