@@ -6,20 +6,14 @@
 //! `data/compiled/*.json` + `report.txt`. Run as `cargo run -p atlas-etl`
 //! from `server/` (paths below are relative to that working directory).
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::AtlasData;
-use atlas_etl::report::{Counts, Report};
-use atlas_etl::{borders, curated, geo, kjv, report, theographic, validate, xrefs};
-
-/// Douglas-Peucker epsilon (degrees) for border-snapshot simplification —
-/// within the batch brief's suggested ~0.01-0.02 range; chosen at the top
-/// of that range after comparing simplification yield at 0.015 vs 0.02
-/// against the real fetched snapshots (see the batch report).
-const BORDER_SIMPLIFY_EPSILON: f64 = 0.02;
+use atlas_core::data::{AtlasData, Polity};
+use atlas_etl::report::{Counts, PolityStats, Report};
+use atlas_etl::{curated, geo, kjv, polities, report, theographic, validate, xrefs};
 
 fn main() -> Result<()> {
     // Built from components (not a literal "../data/raw" string) so joined
@@ -142,18 +136,20 @@ fn main() -> Result<()> {
     let data = AtlasData::new(canon, all_places, all_events, narratives, eras, books_meta, verses, xrefs_map).finish();
     validate::run(&data).context("data/compiled/* was NOT written; fix data/curated/ and re-run")?;
 
-    // --- data/curated/borders/ (historical border snapshots) -------------
-    // Batch L: this project's own curated, hand-authored, CC0 snapshots
-    // (data/curated/borders/{signed_year}.geojson) replaced the former
-    // aourednik/historical-basemaps (GPL-3.0) input at data/raw/borders/ --
-    // see LICENSES.md. Everything here is computed BEFORE any file is
-    // written, same all-or-nothing property `validate::run` above already
-    // gives the core eight files — a bad snapshot or a bad landmarks.toml
-    // must not leave a half-written data/compiled/ behind.
-    let (compiled_borders, border_snapshots) = process_border_snapshots(&curated_dir.join("borders"))?;
+    // --- data/curated/polities/ (Batch B2: hand-authored per-polity
+    // timerange borders, "borders v2, the cartographer's edition") --------
+    // Supersedes Batch L's own curated snapshot-year GeoJSON pipeline
+    // entirely -- see atlas_core::data::Polity's own doc comment. Everything
+    // here is computed BEFORE any file is written, same all-or-nothing
+    // property `validate::run` above already gives the core eight files — a
+    // bad polity file or a bad landmarks.toml must not leave a
+    // half-written data/compiled/ behind.
+    let (compiled_polities, polity_stats) = process_polities(&curated_dir.join("polities"))?;
+    validate::run_polities(&compiled_polities, &polities::BIBLICAL_WORLD_BBOX)
+        .context("data/compiled/polities.json was NOT written; fix data/curated/polities/*.toml and re-run")?;
 
     let landmarks = curated::parse_landmarks(&read(&curated_dir.join("landmarks.toml"))?)?;
-    validate::run_landmarks(&landmarks, &borders::BIBLICAL_WORLD_BBOX)
+    validate::run_landmarks(&landmarks, &polities::BIBLICAL_WORLD_BBOX)
         .context("data/compiled/landmarks.json was NOT written; fix data/curated/landmarks.toml and re-run")?;
 
     // --- data/curated/place-history.toml (Batch E: time-accurate places) -
@@ -173,12 +169,7 @@ fn main() -> Result<()> {
     write_json(&compiled_dir.join("verses-kjv.json"), &data.verses)?;
     write_json(&compiled_dir.join("cross-refs.json"), &data.cross_refs)?;
 
-    let compiled_borders_dir = compiled_dir.join("borders");
-    fs::create_dir_all(&compiled_borders_dir).with_context(|| format!("creating {}", compiled_borders_dir.display()))?;
-    for (year, geojson) in &compiled_borders {
-        write_json(&compiled_borders_dir.join(format!("{year}.json")), geojson)?;
-    }
-    write_json(&compiled_dir.join("borders-index.json"), &borders::sorted_years(&compiled_borders))?;
+    write_json(&compiled_dir.join("polities.json"), &compiled_polities)?;
     write_json(&compiled_dir.join("landmarks.json"), &landmarks)?;
     write_json(&compiled_dir.join("place-history.json"), &place_history)?;
 
@@ -192,7 +183,7 @@ fn main() -> Result<()> {
         xref_dropped_unparseable: xref_stats.dropped_unparseable,
         xref_dropped_self: xref_stats.dropped_self,
         xref_dropped_missing_first_verse,
-        border_snapshots,
+        polities: polity_stats,
         landmarks_count: landmarks.len(),
     };
     let text = report::write(&rpt);
@@ -202,43 +193,43 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Reads every `*.geojson` snapshot under `borders_curated_dir` (sorted by
-/// filename for a deterministic processing order — the report's own
-/// per-year lines are re-sorted by parsed year afterward, since filename
-/// order and numeric-year order aren't the same thing, e.g. "-100.geojson"
-/// < "-1000.geojson" lexicographically despite -100 being the LATER year),
-/// clips + simplifies each one via `borders::process_snapshot`, and returns
-/// the compiled year->GeoJSON map alongside per-snapshot stats for the
-/// report. Fatal (bubbles up `borders::process_snapshot`'s own errors —
-/// unparseable snapshot, or zero features surviving the clip) on any bad
-/// snapshot, and fatal if the directory is missing/empty (nothing to
-/// compile at all).
-fn process_border_snapshots(borders_curated_dir: &Path) -> Result<(BTreeMap<i32, serde_json::Value>, Vec<borders::SnapshotStats>)> {
-    let mut paths: Vec<PathBuf> = fs::read_dir(borders_curated_dir)
-        .with_context(|| format!("reading directory {} -- these are hand-authored and committed, not fetched; see LICENSES.md", borders_curated_dir.display()))?
+/// Reads every `*.toml` polity file under `polities_curated_dir` (sorted by
+/// filename -- i.e. by polity id, since the filename stem IS the id, see
+/// `check_curated_inputs_exist`'s sibling check below -- for a deterministic
+/// processing/report order), parses each via `curated::parse_polity`, and
+/// returns the full compiled roster alongside per-polity stats for the
+/// report. Fatal (bubbles up `curated::parse_polity`'s own errors) on any
+/// unparseable file, and fatal if the directory is missing/empty (nothing to
+/// compile at all) -- same "hand-authored and committed, not fetched"
+/// framing `process_border_snapshots` (Batch B2's predecessor, deleted)
+/// used for its own curated directory. Does NOT itself check for two files
+/// claiming the same polity `id` -- unlike the old snapshot pipeline's
+/// `BTreeMap<year, _>` (which literally could not represent two entries
+/// under one key), a `Vec<Polity>` has no such structural constraint, so
+/// that check is `validate::run_polities`'s job instead (its own
+/// `check_duplicate_ids` call), same single-source-of-truth split every
+/// OTHER duplicate-id check in this crate already follows.
+fn process_polities(polities_curated_dir: &Path) -> Result<(Vec<Polity>, Vec<PolityStats>)> {
+    let mut paths: Vec<PathBuf> = fs::read_dir(polities_curated_dir)
+        .with_context(|| format!("reading directory {} -- these are hand-authored and committed, not fetched; see LICENSES.md", polities_curated_dir.display()))?
         .filter_map(|e| e.ok())
         .map(|e| e.path())
-        .filter(|p| p.extension().is_some_and(|ext| ext == "geojson"))
+        .filter(|p| p.extension().is_some_and(|ext| ext == "toml"))
         .collect();
     paths.sort();
     if paths.is_empty() {
-        bail!("{} contains no *.geojson snapshots -- these are hand-authored and committed, not fetched; see LICENSES.md", borders_curated_dir.display());
+        bail!("{} contains no *.toml polity files -- these are hand-authored and committed, not fetched; see LICENSES.md", polities_curated_dir.display());
     }
 
-    let mut compiled = BTreeMap::new();
+    let mut compiled = Vec::with_capacity(paths.len());
     let mut stats = Vec::with_capacity(paths.len());
     for path in &paths {
-        let stem = path.file_stem().and_then(|s| s.to_str()).with_context(|| format!("non-UTF8 filename {}", path.display()))?;
-        let year = borders::parse_snapshot_year(stem).with_context(|| format!("parsing snapshot year from {}", path.display()))?;
         let content = read(path)?;
-        let (geojson, snap_stats) = borders::process_snapshot(&content, year, &borders::BIBLICAL_WORLD_BBOX, BORDER_SIMPLIFY_EPSILON)
-            .with_context(|| format!("processing border snapshot {}", path.display()))?;
-        if compiled.insert(year, geojson).is_some() {
-            bail!("duplicate border snapshot year {year} (from {}) — two curated files map to the same year", path.display());
-        }
-        stats.push(snap_stats);
+        let polity = curated::parse_polity(&content).with_context(|| format!("parsing polity {}", path.display()))?;
+        let points: usize = polity.eras.iter().flat_map(|e| e.rings.iter()).map(|r| r.len()).sum();
+        stats.push(PolityStats { id: polity.id.clone(), eras: polity.eras.len(), points });
+        compiled.push(polity);
     }
-    stats.sort_by_key(|s| s.year);
     Ok((compiled, stats))
 }
 
@@ -308,13 +299,13 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     if !place_history_path.is_file() {
         missing.push(format!("{}", place_history_path.display()));
     }
-    let borders_dir = curated_dir.join("borders");
-    let has_border_files = borders_dir.is_dir()
-        && fs::read_dir(&borders_dir)
-            .map(|entries| entries.filter_map(|e| e.ok()).any(|e| e.path().extension().is_some_and(|ext| ext == "geojson")))
+    let polities_dir = curated_dir.join("polities");
+    let has_polity_files = polities_dir.is_dir()
+        && fs::read_dir(&polities_dir)
+            .map(|entries| entries.filter_map(|e| e.ok()).any(|e| e.path().extension().is_some_and(|ext| ext == "toml")))
             .unwrap_or(false);
-    if !has_border_files {
-        missing.push(format!("{} (expected one or more *.geojson snapshot files)", borders_dir.display()));
+    if !has_polity_files {
+        missing.push(format!("{} (expected one or more *.toml polity files)", polities_dir.display()));
     }
 
     if missing.is_empty() {

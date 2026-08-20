@@ -19,10 +19,12 @@
 //! trust class scene composition relies on).
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookMeta, Era, Event, Landmark, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry};
+use atlas_core::data::{BookMeta, Era, Event, Landmark, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityEra};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
+
+use crate::polities::color_key;
 
 #[derive(Deserialize)]
 struct ErasFile {
@@ -277,6 +279,56 @@ pub fn parse_place_history(input: &str) -> Result<Vec<PlaceHistory>> {
     Ok(out)
 }
 
+// --- Batch B2: polities/{id}.toml ("borders v2, the cartographer's edition") ---
+
+#[derive(Deserialize)]
+struct PolityToml {
+    id: String,
+    #[serde(rename = "era")]
+    eras: Vec<PolityEraToml>,
+}
+
+#[derive(Deserialize)]
+struct PolityEraToml {
+    name: String,
+    from: i32,
+    to: i32,
+    ref_note: String,
+    rings: Vec<Vec<(f64, f64)>>,
+}
+
+/// Parses one `data/curated/polities/{id}.toml` file (schema: top-level
+/// `id`, one or more `[[era]]` tables -- `name`/`from`/`to`/`ref_note`/
+/// `rings`, see `atlas_core::data::PolityEra`'s own doc comment for the
+/// exact field shape and why `rings` is `[lat, lon]`, not GeoJSON's
+/// `[lon, lat]`). Pure and STRUCTURAL only, same split every other curated
+/// schema in this module follows (`parse_landmarks`/`parse_place_history`):
+/// a TOML file that doesn't even parse into this shape is a curator
+/// authoring mistake, held to the same immediate-bail bar
+/// `parse_place_history` already applies to hand-authored data, but zero
+/// years, inverted ranges, era overlap, ring closure/simplicity, and the
+/// bbox check all need the FULL picture (every era at once, geometry math) and
+/// so are deliberately deferred to `validate::run_polities` instead, same
+/// "parse then cross-validate, don't fail fast mid-file" reasoning as
+/// `parse_place_history`'s own doc comment.
+///
+/// `color_key` IS computed here, eagerly, even though it isn't itself part
+/// of the curated TOML shape at all -- unlike every semantic check above, it
+/// has nothing to cross-validate (it's a pure function of `id` alone, see
+/// `polities::color_key`'s own doc comment), so there's no reason to defer
+/// it to a later pass the way the brief's own aggregate validation checks
+/// are deferred.
+pub fn parse_polity(input: &str) -> Result<Polity> {
+    let f: PolityToml = toml::from_str(input).context("polity TOML: invalid TOML or does not match the id/[[era]] schema")?;
+    let color_key = color_key(&f.id);
+    let eras = f
+        .eras
+        .into_iter()
+        .map(|e| PolityEra { name: e.name, from: e.from, to: e.to, ref_note: e.ref_note, rings: e.rings })
+        .collect();
+    Ok(Polity { id: f.id, color_key, eras })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -298,6 +350,33 @@ mod tests {
         // have caused with zero compile-time signal.
         let negev = landmarks.iter().find(|l| l.name == "Negev").unwrap();
         assert_eq!(negev.size.as_deref(), Some("lg"));
+    }
+
+    // --- Batch B2: parse_polity ---------------------------------------------
+
+    #[test]
+    fn parse_polity_reads_valid_toml_and_computes_color_key() {
+        let polity = parse_polity(include_str!("../tests/fixtures/polities-sample.toml")).unwrap();
+        assert_eq!(polity.id, "testland");
+        assert_eq!(polity.eras.len(), 2);
+        assert_eq!(polity.eras[0].name, "Testland");
+        assert_eq!(polity.eras[0].from, -2000);
+        assert_eq!(polity.eras[0].to, -1500);
+        assert_eq!(polity.eras[0].rings.len(), 1);
+        assert_eq!(polity.eras[0].rings[0].len(), 5);
+        assert_eq!(polity.eras[0].rings[0][0], (10.0, 10.0), "rings are [lat, lon], first pair verbatim");
+        assert_eq!(polity.eras[1].name, "Greater Testland");
+
+        // color_key is a pure function of `id` alone (crate::polities::color_key's
+        // own unit tests cover the hash itself in detail) -- this just proves
+        // parse_polity actually threads it through rather than defaulting to 0.
+        assert_eq!(polity.color_key, crate::polities::color_key("testland"));
+    }
+
+    #[test]
+    fn parse_polity_rejects_malformed_toml() {
+        assert!(parse_polity("not = [valid").is_err());
+        assert!(parse_polity("id = \"x\"").is_err(), "missing [[era]] array entirely");
     }
 
     #[test]

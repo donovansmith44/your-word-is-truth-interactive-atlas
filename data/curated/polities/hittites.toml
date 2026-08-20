@@ -1,0 +1,23 @@
+# hittites.toml -- Hittite Empire; shapes are approximate, drawn for
+# recognizability.
+id = "hittites"
+
+# The Hittite Empire at its height under Suppiluliuma I and successors:
+# north-central Anatolia around the capital Hattusa, reaching south into
+# Cilicia and northern Syria (toward Carchemish/Ugarit) -- the great power
+# Egypt's New Kingdom rivaled and treatied with (the Battle of Kadesh, the
+# Hittite-Egyptian peace treaty).
+[[era]]
+name = "Hittite Empire"
+from = -1600
+to = -1180
+ref_note = "fetched en.wikipedia.org/wiki/Hittites 2026-08-19 for territorial extent (core Anatolia around Hattusa; northern Syria/Upper Mesopotamia to the Mitanni/Assyria border; south toward Lebanon; Arzawa in the west)"
+rings = [
+  [
+    [41.3, 29.0], [41.5, 30.0], [41.6, 31.2], [41.55, 32.3], [41.4, 33.3], [41.3, 34.4], [41.2, 35.5],
+    [41.0, 36.6], [40.6, 37.6], [40.2, 38.4], [39.6, 39.2], [39.0, 39.8], [38.3, 39.6], [37.7, 39.0],
+    [37.2, 38.3], [36.8, 37.6], [36.4, 37.0], [36.0, 36.3], [35.8, 35.6], [35.9, 35.0], [36.3, 34.6],
+    [36.7, 34.2], [37.0, 33.5], [37.0, 32.6], [36.8, 31.8], [36.7, 30.9], [36.9, 30.0], [37.4, 29.2],
+    [38.1, 28.3], [38.9, 27.7], [39.7, 27.6], [40.4, 27.9], [41.0, 28.4], [41.3, 29.0]
+  ]
+]

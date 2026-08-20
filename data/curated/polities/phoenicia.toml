@@ -1,0 +1,22 @@
+# phoenicia.toml -- Phoenicia; shapes are approximate, drawn for
+# recognizability.
+id = "phoenicia"
+
+# The Phoenician city-states (Tyre, Sidon, Byblos, Arwad) -- a narrow
+# coastal strip, never a unified territorial kingdom, the source of Hiram
+# of Tyre's cedar and craftsmen for Solomon's Temple (1 Kings 5). Ends as
+# Neo-Babylonian/Persian control absorbs the coast.
+[[era]]
+name = "Phoenicia"
+from = -1200
+to = -539
+ref_note = "drawn from general historical-geography knowledge of the Phoenician coastal city-states (Arwad, Byblos, Sidon, Tyre); no specific source consulted this session"
+rings = [
+  [
+    [34.85, 35.9], [34.72, 35.92], [34.6, 35.95], [34.47, 35.85], [34.35, 35.75], [34.22, 35.7], [34.1, 35.65],
+    [33.97, 35.58], [33.85, 35.5], [33.72, 35.45], [33.6, 35.4], [33.47, 35.31], [33.35, 35.22], [33.22, 35.17],
+    [33.1, 35.12], [33.02, 35.1], [32.95, 35.08], [32.95, 35.12], [32.98, 35.16], [33.05, 35.18], [33.1, 35.2],
+    [33.22, 35.25], [33.35, 35.3], [33.47, 35.39], [33.6, 35.48], [33.72, 35.54], [33.85, 35.6], [33.97, 35.68],
+    [34.1, 35.75], [34.22, 35.8], [34.35, 35.85], [34.47, 35.95], [34.6, 36.05], [34.72, 35.98], [34.85, 35.9]
+  ]
+]

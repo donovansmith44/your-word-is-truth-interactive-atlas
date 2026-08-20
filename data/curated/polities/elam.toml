@@ -1,0 +1,24 @@
+# elam.toml -- Elam; shapes are approximate, drawn for recognizability.
+id = "elam"
+
+# Elam (Genesis 14's "Chedorlaomer king of Elam"; later a Persian-adjacent
+# power): southwest Iran around Susa, in the Zagros foothills east of the
+# Tigris/Euphrates lowlands -- one long-lived footprint from the earliest
+# Sumerian-era city-states through to its absorption into Achaemenid
+# Persia, whose own imperial core succeeds it (Susa becomes an Achaemenid
+# capital).
+[[era]]
+name = "Elam"
+from = -4004
+to = -539
+ref_note = "drawn from general historical-geography knowledge of Elam's southwest-Iran core around Susa; no specific source consulted this session"
+rings = [
+  [
+    [33.5, 47.0], [33.4, 47.4], [33.3, 47.8], [33.15, 48.1], [33.0, 48.4], [32.8, 48.65], [32.6, 48.9],
+    [32.4, 49.1], [32.2, 49.3], [31.95, 49.4], [31.7, 49.5], [31.45, 49.55], [31.2, 49.6], [30.95, 49.55],
+    [30.7, 49.5], [30.5, 49.35], [30.3, 49.2], [30.15, 48.95], [30.0, 48.7], [29.9, 48.4], [29.8, 48.1],
+    [29.75, 47.8], [29.7, 47.5], [29.75, 47.2], [29.8, 46.9], [29.95, 46.7], [30.1, 46.5], [30.3, 46.4],
+    [30.5, 46.3], [30.75, 46.25], [31.0, 46.2], [31.25, 46.25], [31.5, 46.3], [31.75, 46.4], [32.0, 46.5],
+    [32.25, 46.55], [32.5, 46.6], [32.75, 46.65], [33.0, 46.7], [33.25, 46.85], [33.5, 47.0]
+  ]
+]

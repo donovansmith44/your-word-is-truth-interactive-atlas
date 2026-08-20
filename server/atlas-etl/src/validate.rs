@@ -45,11 +45,11 @@
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{bail, Result};
-use atlas_core::data::{AtlasData, Era, Event, Landmark, PlaceHistory};
+use atlas_core::data::{AtlasData, Era, Event, Landmark, PlaceHistory, Polity};
 use atlas_core::refs::VerseId;
-use atlas_core::time::next_year;
+use atlas_core::time::{next_year, TimeRange};
 
-use crate::borders::Bbox;
+use crate::polities::{ring_is_simple, Bbox};
 
 const ATLAS_START_YEAR: i32 = -4004;
 const ATLAS_END_YEAR: i32 = 100;
@@ -164,6 +164,105 @@ pub fn run_landmarks(landmarks: &[Landmark], bbox: &Bbox) -> Result<()> {
     }
     let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
     bail!("landmark validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// Batch B2 ("borders v2"): validates curated polities
+/// (`data/curated/polities/{id}.toml`, one `Polity` per file, parsed
+/// separately by `curated::parse_polity` -- same distinct-entry-point
+/// pattern as `run_landmarks`/`run_place_history` above: this needs the
+/// clip bbox, which the pure parse step doesn't own). Checks required by
+/// the batch brief, all aggregated (never fail-fast) same as every other
+/// check in this file:
+/// - duplicate polity ids across the curated set
+/// - every era's `from`/`to`: non-zero, non-inverted, and inside
+///   `[ATLAS_START_YEAR, ATLAS_END_YEAR]`
+/// - within ONE polity, no two eras' `[from,to]` windows intersect (reuses
+///   `TimeRange::intersects`, the exact "overlapping name/blurb ranges"
+///   check `run_place_history` already applies to a place's own curated
+///   ranges -- same shape of invariant, same reused check)
+/// - every ring: closed (first point repeats as the last, >=4 points) AND
+///   simple (`ring_is_simple` -- the reused Batch L segment-crossing test,
+///   see `crate::polities`'s own module doc comment)
+/// - every ring point falls inside `bbox` (same "a curator's typo shouldn't
+///   silently draw off in the ocean somewhere this app never renders" reason
+///   `run_landmarks` already checks `lat`/`lon` against it)
+pub fn run_polities(polities: &[Polity], bbox: &Bbox) -> Result<()> {
+    let mut errors: Vec<String> = Vec::new();
+
+    check_duplicate_ids(polities.iter().map(|p| p.id.as_str()), "polity", &mut errors);
+
+    for p in polities {
+        if p.eras.is_empty() {
+            errors.push(format!("polity '{}' has no eras", p.id));
+            continue;
+        }
+
+        // Only eras with a structurally sound (non-zero, non-inverted) range
+        // are collected here for the cross-era overlap check below -- a
+        // malformed era already gets its own specific error from the loop
+        // just below and would otherwise make `TimeRange::intersects`
+        // meaningless to ask about it.
+        let mut sound_ranges: Vec<(usize, TimeRange)> = Vec::new();
+
+        for (i, era) in p.eras.iter().enumerate() {
+            let ctx = format!("polity '{}' era '{}' ({}..{})", p.id, era.name, era.from, era.to);
+
+            if era.from == 0 || era.to == 0 {
+                errors.push(format!("{ctx}: year cannot be zero"));
+            } else if era.from > era.to {
+                errors.push(format!("{ctx}: inverted range (from={} > to={})", era.from, era.to));
+            } else {
+                if era.from < ATLAS_START_YEAR || era.from > ATLAS_END_YEAR {
+                    errors.push(format!("{ctx}: from {} is outside [{ATLAS_START_YEAR},{ATLAS_END_YEAR}]", era.from));
+                }
+                if era.to < ATLAS_START_YEAR || era.to > ATLAS_END_YEAR {
+                    errors.push(format!("{ctx}: to {} is outside [{ATLAS_START_YEAR},{ATLAS_END_YEAR}]", era.to));
+                }
+                sound_ranges.push((i, TimeRange { from_year: era.from, to_year: era.to }));
+            }
+
+            if era.rings.is_empty() {
+                errors.push(format!("{ctx}: has no rings"));
+            }
+            for (ri, ring) in era.rings.iter().enumerate() {
+                let ring_ctx = format!("{ctx} ring {ri}");
+                if ring.len() < 4 || ring.first() != ring.last() {
+                    errors.push(format!(
+                        "{ring_ctx}: not a closed ring ({} points; the first point must repeat as the last, >=4 points total)",
+                        ring.len()
+                    ));
+                    continue; // a not-closed ring isn't a meaningful shape to run the simplicity/bbox checks against either
+                }
+                if !ring_is_simple(ring) {
+                    errors.push(format!("{ring_ctx}: self-intersects (not a simple polygon)"));
+                }
+                for &(lat, lon) in ring {
+                    if !bbox.contains(lat, lon) {
+                        errors.push(format!("{ring_ctx}: point (lat={lat}, lon={lon}) is outside the clip bbox"));
+                    }
+                }
+            }
+        }
+
+        for a in 0..sound_ranges.len() {
+            for b in (a + 1)..sound_ranges.len() {
+                let (ia, ra) = sound_ranges[a];
+                let (ib, rb) = sound_ranges[b];
+                if ra.intersects(&rb) {
+                    errors.push(format!(
+                        "polity '{}': era '{}' ({}..{}) overlaps era '{}' ({}..{})",
+                        p.id, p.eras[ia].name, ra.from_year, ra.to_year, p.eras[ib].name, rb.from_year, rb.to_year
+                    ));
+                }
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        return Ok(());
+    }
+    let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("polity validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
 /// Batch E: validates curated place histories (`data/curated/place-history.toml`,

@@ -4,8 +4,6 @@
 
 use std::fmt::Write as _;
 
-use crate::borders::SnapshotStats;
-
 #[derive(Debug, Clone, Default)]
 pub struct Counts {
     pub canon_books: usize,
@@ -34,9 +32,22 @@ pub struct Report {
     pub xref_dropped_unparseable: usize,
     pub xref_dropped_self: usize,
     pub xref_dropped_missing_first_verse: usize,
-    /// Per-snapshot border stats, sorted by year (see `borders::process_snapshot`).
-    pub border_snapshots: Vec<SnapshotStats>,
+    /// Batch B2: one line per curated polity, sorted by id (see
+    /// `PolityStats`).
+    pub polities: Vec<PolityStats>,
     pub landmarks_count: usize,
+}
+
+/// Batch B2: per-polity report line -- how many eras it carries, and the
+/// total point count across every ring of every one of those eras (a coarse
+/// "how much hand-authoring does this polity represent" figure, the spirit
+/// of what the retired border-snapshot report's own point-reduction line
+/// used to convey, now with nothing simplified away to reduce).
+#[derive(Debug, Clone, Default)]
+pub struct PolityStats {
+    pub id: String,
+    pub eras: usize,
+    pub points: usize,
 }
 
 fn write_list(s: &mut String, lines: &[String]) {
@@ -91,22 +102,12 @@ pub fn write(r: &Report) -> String {
     write_list(&mut s, &r.warnings);
     writeln!(s).unwrap();
 
-    writeln!(s, "Border snapshots ({} years):", r.border_snapshots.len()).unwrap();
-    let mut points_before = 0usize;
-    let mut points_after = 0usize;
-    for snap in &r.border_snapshots {
-        writeln!(
-            s,
-            "  {}: {} features kept (of {} in the source snapshot), {} -> {} points",
-            snap.year, snap.features_kept, snap.features_in, snap.points_before_simplify, snap.points_after_simplify
-        )
-        .unwrap();
-        points_before += snap.points_before_simplify;
-        points_after += snap.points_after_simplify;
+    let total_eras: usize = r.polities.iter().map(|p| p.eras).sum();
+    let total_points: usize = r.polities.iter().map(|p| p.points).sum();
+    writeln!(s, "Polities ({} polities, {total_eras} eras, {total_points} points total):", r.polities.len()).unwrap();
+    for p in &r.polities {
+        writeln!(s, "  {}: {} era(s), {} points", p.id, p.eras, p.points).unwrap();
     }
-    let point_reduction_pct = if points_before == 0 { 0.0 } else { 100.0 * (1.0 - points_after as f64 / points_before as f64) };
-    writeln!(s, "  total point reduction from simplification: {point_reduction_pct:.1}% ({points_before} -> {points_after})")
-        .unwrap();
     writeln!(s).unwrap();
 
     writeln!(s, "Landmarks:").unwrap();

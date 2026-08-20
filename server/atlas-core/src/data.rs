@@ -1,7 +1,7 @@
 //! The atlas data model: the compiled-file schema that ETL writes and the
 //! server reads. Every record type derives `Serialize + Deserialize`.
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -167,6 +167,60 @@ pub struct PlaceHistory {
     pub destroyed: Option<PlaceDateClaim>,
 }
 
+/// Batch B2 ("borders v2, the cartographer's edition" -- supersedes the
+/// snapshot-year GeoJSON model Batch B/C2 shipped, `AtlasData::borders` +
+/// `nearest_border_year` below, both now deleted). One hand-authored
+/// timerange era of ONE polity: `name` is time-accurate (may differ across a
+/// single polity's own eras -- "Egypt" then later "Ptolemaic Egypt" is the
+/// SAME `Polity::id`, so it keeps one color across the rename, see
+/// `Polity::color_key`'s own comment), `from`/`to` are the (validated
+/// non-overlapping-within-one-polity, see `atlas_etl::validate::run_polities`)
+/// signed-year window this era's shape is drawn for, `ref_note` names only
+/// the public-domain/general-knowledge source actually consulted while
+/// drawing THIS era's rings (citation-integrity rule -- never a source that
+/// wasn't opened), and `rings` is one or more CLOSED (first point repeats as
+/// the last) simple polygon rings of `(lat, lon)` pairs -- deliberately
+/// `[lat, lon]`, NOT GeoJSON's own `[lon, lat]` convention, matching how
+/// every other coordinate pair in this app's curated data reads (`Place.lat`/
+/// `Place.lon`, `Landmark.lat`/`Landmark.lon`) and how Leaflet's own
+/// `L.latLng`/polygon APIs take points -- one less silent-transpose bug for a
+/// curator hand-typing coordinates. Field names are `from`/`to` (not
+/// `from_year`/`to_year`, unlike `Era`) and stay flat (no nested `TimeRange`)
+/// on purpose: the batch brief's own TOML example and wire contract both
+/// name them `from`/`to` verbatim, and keeping the curated TOML, the compiled
+/// JSON, and the wire response byte-identical in shape means zero rename
+/// mapping anywhere in the pipeline -- "easily reversible/modifiable"
+/// (the user's own words) starts with the data staying exactly what it looks
+/// like on disk.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PolityEra {
+    pub name: String,
+    pub from: Year,
+    pub to: Year,
+    pub ref_note: String,
+    pub rings: Vec<Vec<(f64, f64)>>,
+}
+
+/// One hand-authored polity, `data/curated/polities/{id}.toml` (one file per
+/// polity, "easily reversible/modifiable... I'm expecting you to get this
+/// wrong" per the user's own direction -- a wrong shape is ONE file, ONE
+/// `[[era]]` table, plain coordinate lists, nothing derived). `color_key` is
+/// computed ONCE at ETL compile time (`atlas_etl::polities::color_key`, hash
+/// of `id` -- never the era `name`, so a polity keeps its plate tint across a
+/// rename, e.g. Egypt staying the same hue through "Ptolemaic Egypt"; this
+/// REFINES Batch C2's own name-hash, which kept re-deriving the tint from
+/// whatever single name a snapshot-year feature happened to carry that year)
+/// -- an index into map.js's own 8-color `POLITY_TINTS` palette, unchanged
+/// since C2. Stored here (not recomputed per-request) since it's a pure
+/// function of `id` alone; `/api/polities` just copies it onto every emitted
+/// era row.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Polity {
+    pub id: String,
+    pub color_key: u8,
+    pub eras: Vec<PolityEra>,
+}
+
 /// The whole compiled atlas: ETL builds one of these and calls `.finish()`
 /// before writing it to disk; the server deserializes the file and calls
 /// `.finish()` again to rebuild the derived indexes (they are `#[serde(skip)]`
@@ -182,19 +236,17 @@ pub struct AtlasData {
     pub verses: HashMap<String, String>,
     pub cross_refs: HashMap<String, Vec<CrossRef>>,
 
-    /// Historical border snapshots: year -> already clip/simplified GeoJSON
-    /// `FeatureCollection` (kept as an untyped `serde_json::Value` rather
-    /// than a typed geometry model — the server only ever passes this
-    /// straight through to the client, never inspects it). `#[serde(skip)]`
-    /// because — like the derived indexes below — this isn't populated via
-    /// the struct-level derive: `AtlasData::load` fills it in from
-    /// `borders-index.json` + `borders/{year}.json`, a different
-    /// one-field/many-files shape than the other schema fields above.
-    /// `demo_fixture()` leaves this empty (no server test needs real border
-    /// geometry); real data always has 12 real BC/AD snapshots once
+    /// Batch B2: hand-authored per-polity timerange borders (supersedes the
+    /// snapshot-year GeoJSON model -- see `Polity`'s own doc comment).
+    /// `#[serde(skip)]` because -- like `landmarks`/`place_history` below --
+    /// this isn't populated via the struct-level derive: `AtlasData::load`
+    /// fills it in from its own `polities.json`, a plain `Vec<Polity>` on
+    /// disk (one entry per curated `data/curated/polities/{id}.toml` file).
+    /// `demo_fixture()` leaves this empty (no server test needs real polity
+    /// geometry); real data always has the full curated roster once
     /// atlas-etl has run.
     #[serde(skip)]
-    pub borders: BTreeMap<Year, serde_json::Value>,
+    pub polities: Vec<Polity>,
     /// Curated landmark labels (rivers/seas/mountains/regions). Same
     /// `#[serde(skip)]`-plus-bespoke-`load()` treatment as `borders` above,
     /// for the same reason (loaded from its own `landmarks.json`, not part
@@ -352,47 +404,12 @@ impl AtlasData {
         self.verse_to_events.get(verse).map(|v| v.as_slice()).unwrap_or(&[])
     }
 
-    /// Picks the border snapshot year nearest `[from,to]`'s midpoint, in
-    /// "year index" space — years are contiguous integers with zero
-    /// removed (there is no year 0; 1 BC and AD 1 are adjacent, matching
-    /// `time::next_year`), so a window straddling BC/AD never skews toward
-    /// one side just because zero isn't a real year. Ties (a snapshot year
-    /// exactly as far from the midpoint on either side) resolve to the
-    /// earlier (smaller/more-BC) snapshot. Returns `None` only when
-    /// `self.borders` is empty (the `demo_fixture()` / not-yet-ETL'd case);
-    /// callers use that to produce the contract's `snapshot_year: null`
-    /// empty-state response instead of calling this at all.
-    pub fn nearest_border_year(&self, from: Year, to: Year) -> Option<Year> {
-        // Compares `2 * (idx(candidate) - mid)` instead of `idx(candidate) -
-        // mid` so the midpoint never needs to be represented as a fraction
-        // (mid = (idx(from)+idx(to))/2 is exact only when that sum is
-        // even) — doubling both sides of the comparison keeps everything in
-        // exact i64 arithmetic with no rounding-direction ambiguity.
-        let doubled_mid = year_index(from) + year_index(to);
-        let mut best: Option<(i64, Year)> = None; // (doubled distance from mid, year)
-        for &year in self.borders.keys() {
-            let doubled_dist = (2 * year_index(year) - doubled_mid).abs();
-            best = match best {
-                None => Some((doubled_dist, year)),
-                Some((best_dist, best_year)) => {
-                    if doubled_dist < best_dist || (doubled_dist == best_dist && year < best_year) {
-                        Some((doubled_dist, year))
-                    } else {
-                        Some((best_dist, best_year))
-                    }
-                }
-            };
-        }
-        best.map(|(_, year)| year)
-    }
-
     /// Reads the compiled JSON files ETL writes under `dir` (exact
     /// filenames mirror `atlas-etl/src/main.rs`'s `write_json` calls:
     /// `canon.json`, `places.json`, `events.json`, `narratives.json`,
     /// `eras.json`, `books-meta.json`, `verses-kjv.json`, `cross-refs.json`,
-    /// plus `borders-index.json` + one `borders/{year}.json` per listed
-    /// year, plus `landmarks.json`, plus `place-history.json`) and
-    /// assembles an `AtlasData`. Does NOT call `.finish()` — the derived
+    /// plus `polities.json`, plus `landmarks.json`, plus `place-history.json`)
+    /// and assembles an `AtlasData`. Does NOT call `.finish()` — the derived
     /// indexes are `#[serde(skip)]` and come back empty from a fresh
     /// deserialize (see the struct doc comment); callers (the server's
     /// `main.rs`) must call `.finish()` themselves.
@@ -406,19 +423,14 @@ impl AtlasData {
         let verses: HashMap<String, String> = read_json(dir, "verses-kjv.json")?;
         let cross_refs: HashMap<String, Vec<CrossRef>> = read_json(dir, "cross-refs.json")?;
 
-        let border_years: Vec<Year> = read_json(dir, "borders-index.json")?;
-        let mut borders = BTreeMap::new();
-        for year in border_years {
-            let geojson: serde_json::Value = read_json(dir, &format!("borders/{year}.json"))?;
-            borders.insert(year, geojson);
-        }
+        let polities: Vec<Polity> = read_json(dir, "polities.json")?;
         let landmarks: Vec<Landmark> = read_json(dir, "landmarks.json")?;
         let place_history_list: Vec<PlaceHistory> = read_json(dir, "place-history.json")?;
         let place_history: HashMap<String, PlaceHistory> =
             place_history_list.into_iter().map(|h| (h.id.clone(), h)).collect();
 
         let mut data = Self::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs);
-        data.borders = borders;
+        data.polities = polities;
         data.place_history = place_history;
         data.landmarks = landmarks;
         Ok(data)
@@ -625,55 +637,15 @@ pub fn demo_fixture() -> AtlasData {
 }
 
 #[cfg(test)]
-mod border_tests {
+mod year_index_tests {
     use super::*;
 
-    fn data_with_years(years: &[Year]) -> AtlasData {
-        let mut data = AtlasData::default();
-        for &y in years {
-            data.borders.insert(y, serde_json::json!({"type": "FeatureCollection", "features": []}));
-        }
-        data
-    }
-
-    #[test]
-    fn empty_borders_returns_none() {
-        let data = AtlasData::default();
-        assert_eq!(data.nearest_border_year(-100, 100), None);
-    }
-
-    #[test]
-    fn picks_the_closer_snapshot() {
-        let data = data_with_years(&[-1000, -100, 100]);
-        // Window [-150,-50]: midpoint index -100ish, closer to -100 than -1000 or 100.
-        assert_eq!(data.nearest_border_year(-150, -50), Some(-100));
-    }
-
-    #[test]
-    fn exact_tie_prefers_the_earlier_snapshot() {
-        // idx(-1) = -1, idx(100) = 99; window [40,60] -> idx(40)=39, idx(60)=59,
-        // doubled_mid = 98. doubled_dist(-1) = |2*(-1)-98| = 100;
-        // doubled_dist(100) = |2*99-98| = 100 -- an exact tie; -1 (earlier) wins.
-        let data = data_with_years(&[-1, 100]);
-        assert_eq!(data.nearest_border_year(40, 60), Some(-1));
-    }
-
-    #[test]
-    fn window_straddling_bc_ad_uses_zero_aware_midpoint() {
-        // Window [-1,1] (1 BC to AD 1, immediately adjacent, no year 0
-        // between them) -- the zero-aware midpoint must land close to that
-        // seam, not be skewed by treating year 0 as if it existed.
-        let data = data_with_years(&[-500, -1, 1, 500]);
-        let year = data.nearest_border_year(-1, 1).unwrap();
-        assert!(year == -1 || year == 1, "expected -1 or 1, got {year}");
-    }
-
-    #[test]
-    fn single_snapshot_always_wins() {
-        let data = data_with_years(&[-323]);
-        assert_eq!(data.nearest_border_year(-4004, 100), Some(-323));
-    }
-
+    // Batch B2: `nearest_border_year` (the snapshot-year model it served)
+    // and its own dedicated test module are gone -- see `Polity`'s doc
+    // comment. `year_index` itself survives (still used by
+    // `crate::history`'s zero-aware window-midpoint math), so its own unit
+    // coverage survives with it, just no longer nested under a
+    // border-flavored module name.
     #[test]
     fn year_index_is_contiguous_across_the_bc_ad_seam() {
         assert_eq!(year_index(-1), -1);

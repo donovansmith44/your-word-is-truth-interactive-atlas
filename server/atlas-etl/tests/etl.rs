@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry};
+use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityEra};
 use atlas_core::time::TimeRange;
 
 // ---------------------------------------------------------------------
@@ -361,27 +361,6 @@ fn validate_valid_data_passes() {
 }
 
 // ---------------------------------------------------------------------
-// borders.rs
-// ---------------------------------------------------------------------
-
-#[test]
-fn borders_full_pipeline_and_zero_feature_bbox_is_fatal() {
-    // process_snapshot's own unit tests (server/atlas-etl/src/borders.rs)
-    // already exercise this in detail; this is the "real fixture through
-    // the public API" smoke check consistent with the rest of this file's
-    // one-file-per-module organization.
-    let fixture = include_str!("fixtures/borders-sample.geojson");
-    let bbox = atlas_etl::borders::BIBLICAL_WORLD_BBOX;
-    let (geojson, stats) = atlas_etl::borders::process_snapshot(fixture, -323, &bbox, 0.02).unwrap();
-    assert_eq!(stats.features_kept, 3);
-    assert_eq!(geojson["features"].as_array().unwrap().len(), 3);
-
-    let empty_bbox = atlas_etl::borders::Bbox { south: -80.0, north: -70.0, west: -170.0, east: -160.0 };
-    let err = atlas_etl::borders::process_snapshot(fixture, -323, &empty_bbox, 0.02).unwrap_err();
-    assert!(err.to_string().contains("zero features"), "{err}");
-}
-
-// ---------------------------------------------------------------------
 // landmarks (curated::parse_landmarks + validate::run_landmarks)
 // ---------------------------------------------------------------------
 
@@ -389,13 +368,13 @@ fn borders_full_pipeline_and_zero_feature_bbox_is_fatal() {
 fn landmarks_valid_toml_parses_and_validates() {
     let landmarks = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-sample.toml")).unwrap();
     assert_eq!(landmarks.len(), 3);
-    assert!(atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::borders::BIBLICAL_WORLD_BBOX).is_ok());
+    assert!(atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::polities::BIBLICAL_WORLD_BBOX).is_ok());
 }
 
 #[test]
 fn landmarks_bad_kind_fails_validation() {
     let landmarks = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-bad-kind.toml")).unwrap();
-    let err = atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::borders::BIBLICAL_WORLD_BBOX).unwrap_err();
+    let err = atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::polities::BIBLICAL_WORLD_BBOX).unwrap_err();
     assert!(err.to_string().contains("invalid kind"), "{err}");
 }
 
@@ -404,15 +383,124 @@ fn landmarks_bad_kind_fails_validation() {
 #[test]
 fn landmarks_bad_size_fails_validation() {
     let landmarks = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-bad-size.toml")).unwrap();
-    let err = atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::borders::BIBLICAL_WORLD_BBOX).unwrap_err();
+    let err = atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::polities::BIBLICAL_WORLD_BBOX).unwrap_err();
     assert!(err.to_string().contains("invalid size"), "{err}");
 }
 
 #[test]
 fn landmarks_out_of_bbox_fails_validation() {
     let landmarks = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-out-of-bbox.toml")).unwrap();
-    let err = atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::borders::BIBLICAL_WORLD_BBOX).unwrap_err();
+    let err = atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::polities::BIBLICAL_WORLD_BBOX).unwrap_err();
     assert!(err.to_string().contains("outside the clip bbox"), "{err}");
+}
+
+// ---------------------------------------------------------------------
+// polities (Batch B2: curated::parse_polity + validate::run_polities)
+// ---------------------------------------------------------------------
+
+fn square_ring(south: f64, west: f64, north: f64, east: f64) -> Vec<(f64, f64)> {
+    vec![(south, west), (south, east), (north, east), (north, west), (south, west)]
+}
+
+fn test_bbox() -> atlas_etl::polities::Bbox {
+    atlas_etl::polities::Bbox { south: 0.0, north: 50.0, west: 0.0, east: 50.0 }
+}
+
+fn one_era_polity(id: &str, name: &str, from: i32, to: i32, ring: Vec<(f64, f64)>) -> Polity {
+    Polity {
+        id: id.into(),
+        color_key: atlas_etl::polities::color_key(id),
+        eras: vec![PolityEra { name: name.into(), from, to, ref_note: "fixture".into(), rings: vec![ring] }],
+    }
+}
+
+#[test]
+fn polities_valid_toml_parses_and_validates() {
+    let polity = atlas_etl::curated::parse_polity(include_str!("fixtures/polities-sample.toml")).unwrap();
+    assert!(atlas_etl::validate::run_polities(&[polity], &test_bbox()).is_ok());
+}
+
+#[test]
+fn polities_zero_year_fails_validation() {
+    let polity = one_era_polity("z", "Z", 0, 100, square_ring(10.0, 10.0, 20.0, 20.0));
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    assert!(err.to_string().to_lowercase().contains("zero"), "{err}");
+}
+
+#[test]
+fn polities_inverted_range_fails_validation() {
+    let polity = one_era_polity("i", "I", 100, -100, square_ring(10.0, 10.0, 20.0, 20.0));
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    assert!(err.to_string().to_lowercase().contains("inverted"), "{err}");
+}
+
+#[test]
+fn polities_year_outside_atlas_span_fails_validation() {
+    let polity = one_era_polity("o", "O", -5000, -4500, square_ring(10.0, 10.0, 20.0, 20.0));
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    assert!(err.to_string().contains("outside [-4004,100]"), "{err}");
+}
+
+#[test]
+fn polities_overlapping_eras_fail_validation() {
+    let polity = Polity {
+        id: "overlap".into(),
+        color_key: 0,
+        eras: vec![
+            PolityEra { name: "A".into(), from: -1000, to: -500, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)] },
+            PolityEra { name: "B".into(), from: -600, to: -100, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)] },
+        ],
+    };
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    assert!(err.to_string().contains("overlaps"), "{err}");
+}
+
+#[test]
+fn polities_adjacent_non_overlapping_eras_pass_validation() {
+    let polity = Polity {
+        id: "adjacent".into(),
+        color_key: 0,
+        eras: vec![
+            PolityEra { name: "A".into(), from: -1000, to: -500, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)] },
+            PolityEra { name: "B".into(), from: -499, to: -100, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)] },
+        ],
+    };
+    assert!(atlas_etl::validate::run_polities(&[polity], &test_bbox()).is_ok());
+}
+
+#[test]
+fn polities_unclosed_ring_fails_validation() {
+    let mut ring = square_ring(10.0, 10.0, 20.0, 20.0);
+    ring.pop(); // drop the closing repeat -- no longer a closed ring
+    let polity = one_era_polity("u", "U", -1000, -500, ring);
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    assert!(err.to_string().contains("not a closed ring"), "{err}");
+}
+
+#[test]
+fn polities_self_intersecting_ring_fails_validation() {
+    // The same "bowtie" shape polities.rs's own ring_is_simple unit test
+    // uses -- verifying the validator actually WIRES that checker in, not
+    // just that the checker itself works in isolation.
+    let bowtie = vec![(10.0, 10.0), (20.0, 20.0), (20.0, 10.0), (10.0, 20.0), (10.0, 10.0)];
+    let polity = one_era_polity("b", "B", -1000, -500, bowtie);
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    assert!(err.to_string().contains("self-intersects"), "{err}");
+}
+
+#[test]
+fn polities_out_of_bbox_point_fails_validation() {
+    let polity = one_era_polity("far", "Far", -1000, -500, square_ring(60.0, 60.0, 70.0, 70.0)); // outside test_bbox()'s 0..50
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    assert!(err.to_string().contains("outside the clip bbox"), "{err}");
+}
+
+#[test]
+fn polities_duplicate_id_fails_validation() {
+    let a = one_era_polity("dup", "A", -1000, -500, square_ring(10.0, 10.0, 20.0, 20.0));
+    let b = one_era_polity("dup", "B", -400, -100, square_ring(10.0, 10.0, 20.0, 20.0));
+    let err = atlas_etl::validate::run_polities(&[a, b], &test_bbox()).unwrap_err();
+    assert!(err.to_string().contains("duplicate"), "{err}");
 }
 
 // ---------------------------------------------------------------------
@@ -454,13 +542,7 @@ fn report_contains_expected_sections() {
         xref_dropped_unparseable: 1,
         xref_dropped_self: 1,
         xref_dropped_missing_first_verse: 2,
-        border_snapshots: vec![atlas_etl::borders::SnapshotStats {
-            year: -323,
-            features_in: 149,
-            features_kept: 29,
-            points_before_simplify: 4410,
-            points_after_simplify: 3725,
-        }],
+        polities: vec![atlas_etl::report::PolityStats { id: "egypt".to_string(), eras: 4, points: 180 }],
         landmarks_count: 19,
     };
     let text = atlas_etl::report::write(&report);
@@ -468,9 +550,9 @@ fn report_contains_expected_sections() {
     assert!(text.contains("exodus"), "{text}");
     assert!(text.contains("antioch-2"), "{text}");
     assert!(text.contains("unknown write_place"), "{text}");
-    assert!(text.contains("-323"), "{text}"); // border snapshot year
-    assert!(text.contains("29 features kept"), "{text}");
-    assert!(text.contains("point reduction"), "{text}");
+    assert!(text.contains("egypt"), "{text}"); // polity id
+    assert!(text.contains("4 era(s)"), "{text}");
+    assert!(text.contains("180 points"), "{text}");
     assert!(text.contains("19 curated landmarks"), "{text}");
 }
 

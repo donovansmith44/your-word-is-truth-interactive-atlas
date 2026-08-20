@@ -1,0 +1,22 @@
+# Test fixture only -- a tiny two-era polity in the SAME shape real curated
+# files under data/curated/polities/ use, not meant to be geographically
+# meaningful (small squares, not a real coastline).
+id = "testland"
+
+[[era]]
+name = "Testland"
+from = -2000
+to = -1500
+ref_note = "synthetic fixture, not a real place"
+rings = [
+  [[10.0, 10.0], [10.0, 11.0], [11.0, 11.0], [11.0, 10.0], [10.0, 10.0]],
+]
+
+[[era]]
+name = "Greater Testland"
+from = -1499
+to = -1000
+ref_note = "synthetic fixture, not a real place"
+rings = [
+  [[9.0, 9.0], [9.0, 12.0], [12.0, 12.0], [12.0, 9.0], [9.0, 9.0]],
+]

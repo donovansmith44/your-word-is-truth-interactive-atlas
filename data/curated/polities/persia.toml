@@ -1,0 +1,27 @@
+# persia.toml -- Achaemenid Persian Empire; shapes are approximate, drawn
+# for recognizability.
+id = "persia"
+
+# The Achaemenid Persian Empire (Cyrus, Darius, Xerxes -- Ezra/Nehemiah/
+# Esther's own imperial backdrop): from Cyrus's conquest of Babylon (539
+# BC, ending the Exile) to Alexander's conquest (331 BC). The largest
+# empire the biblical world had yet seen -- Anatolia and Egypt in the
+# west, the Indus valley in the east (drawn slightly short of its true
+# historical reach there, which continues past this app's own map bounds).
+[[era]]
+name = "Achaemenid Persian Empire"
+from = -539
+to = -331
+ref_note = "fetched en.wikipedia.org/wiki/Achaemenid_Empire 2026-08-19 for territorial extent (Balkans/Cyrenaica west to the Indus Valley east; Black Sea north; Arabia/Libya south)"
+rings = [
+  [
+    [40.5, 26.5], [41.3, 29.0], [41.6, 32.0], [41.5, 35.0], [41.0, 38.0], [40.3, 41.0], [41.0, 44.0],
+    [40.0, 47.0], [38.5, 49.0], [37.0, 52.0], [36.5, 55.0], [36.0, 58.0], [35.5, 61.0], [35.0, 64.0],
+    [34.5, 67.0], [33.5, 68.5], [31.0, 68.5], [28.5, 68.0], [26.5, 67.0], [25.0, 64.0], [25.5, 60.0],
+    [26.0, 56.5], [26.5, 52.0], [27.0, 49.5], [26.0, 48.5], [24.5, 47.5], [23.0, 46.5], [22.0, 44.0],
+    [22.5, 41.0], [24.0, 38.5], [26.0, 36.5], [28.0, 34.7], [29.5, 32.6], [29.0, 31.0], [27.5, 30.0],
+    [25.5, 29.5], [24.0, 28.0], [23.5, 25.0], [24.5, 22.0], [26.5, 21.0], [29.0, 20.8], [31.0, 20.9],
+    [32.2, 22.5], [32.7, 25.0], [31.8, 28.0], [31.5, 30.5], [31.4, 32.3], [31.9, 34.5], [33.0, 35.2],
+    [34.5, 35.9], [36.0, 36.2], [37.5, 29.5], [38.5, 27.5], [40.5, 26.5]
+  ]
+]

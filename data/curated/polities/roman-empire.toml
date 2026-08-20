@@ -1,0 +1,59 @@
+# roman-empire.toml -- Rome; shapes are approximate, drawn for
+# recognizability. One polity id spanning Republic into Empire -- the era
+# NAME changes ("Roman Republic" -> "Roman Empire") but the id stays
+# "roman-empire" throughout, so the plate keeps one hue across the growth
+# from Mediterranean power to the empire Paul travels and writes to.
+id = "roman-empire"
+
+# The Roman Republic at the height of its own Mediterranean expansion
+# (after the Punic Wars and Pompey's eastern settlement, before Actium):
+# Italy (INCLUDING the peninsula proper, not just Rome's own immediate
+# hinterland -- omitting it was a real defect a previous fix round on this
+# exact kind of shape had to catch and correct), Greece, western Anatolia,
+# a Levant client-state fringe (Judea under Hyrcanus II), and North Africa
+# after Carthage's fall (146 BC). Egypt stays independent (Ptolemaic)
+# through this whole era -- see egypt.toml.
+[[era]]
+name = "Roman Republic"
+from = -200
+to = -31
+ref_note = "fetched en.wikipedia.org/wiki/Roman_Empire 2026-08-19 for the Mediterranean-rim extent this era's own successor inherits; Republic-era specifics (Italy, Greece, Punic Wars-era North Africa) from general historical-geography knowledge"
+rings = [
+  [
+    [40.0, 0.5], [41.5, 2.5], [43.0, 3.5], [43.5, 5.0], [44.2, 7.5], [45.0, 8.8], [45.4, 9.5], [44.5, 11.0],
+    [43.7, 12.3], [42.8, 12.6], [41.9, 12.5], [41.0, 13.5], [40.85, 14.25], [40.0, 15.3], [39.0, 16.3],
+    [38.2, 15.9], [38.5, 18.0], [39.0, 19.0], [39.5, 20.0], [38.5, 21.0], [37.5, 22.0], [37.0, 23.0],
+    [38.0, 23.7], [39.0, 23.0], [40.0, 22.5], [41.0, 22.3], [41.3, 24.0], [41.0, 26.0], [40.5, 26.8],
+    [39.5, 26.5], [38.0, 27.0], [37.0, 27.5], [36.5, 28.5], [36.3, 30.0], [36.5, 32.0], [35.8, 35.9],
+    [33.0, 35.2], [31.9, 34.5], [31.0, 33.5], [30.5, 32.0], [31.0, 30.0], [31.5, 28.0], [32.0, 25.0],
+    [32.5, 22.0], [32.8, 20.0], [33.0, 17.0], [33.5, 14.0], [34.0, 11.5], [36.8, 10.2], [37.2, 9.0],
+    [37.0, 7.0], [36.7, 4.5], [36.5, 2.0], [36.7, 0.0], [37.5, -2.0], [38.5, -1.0], [39.5, 0.0], [40.0, 0.5]
+  ]
+]
+
+# The Roman Empire under the early Principate (Augustus through the
+# Flavians -- Acts' and the epistles' own imperial backdrop): the same
+# Mediterranean rim grown further -- Egypt annexed (30 BC, after Actium),
+# Gaul held fully to the Rhine frontier, Anatolia and Syria absorbed
+# outright (no longer client states), the Euphrates as the eastern
+# frontier with Parthia.
+[[era]]
+name = "Roman Empire"
+from = -30
+to = 100
+ref_note = "fetched en.wikipedia.org/wiki/Roman_Empire 2026-08-19 for the early-Principate extent (\"completely circled the Mediterranean\"; Rhine-Danube north; Euphrates in Syria east; Egypt and North Africa south)"
+rings = [
+  [
+    [40.0, 0.5], [42.5, 2.5], [44.5, 5.0], [46.5, 7.0], [47.6, 9.0], [46.5, 10.0], [45.4, 9.5], [44.5, 11.0],
+    [43.7, 12.3], [42.8, 12.6], [41.9, 12.5], [41.0, 13.5], [40.85, 14.25], [40.0, 15.3], [39.0, 16.3],
+    [38.2, 15.9], [38.5, 18.0], [39.0, 19.0], [39.5, 20.0], [38.5, 21.0], [37.5, 22.0], [37.0, 23.0],
+    [38.0, 23.7], [39.0, 23.0], [40.0, 22.5], [41.0, 22.3], [41.3, 24.0], [41.5, 26.0], [41.2, 28.5],
+    [40.5, 29.5], [39.5, 30.5], [38.5, 31.5], [37.5, 32.5], [36.8, 33.5], [36.5, 35.5], [36.2, 37.1],
+    [36.5, 38.5], [35.0, 39.5], [33.5, 39.0], [33.0, 37.0], [33.0, 35.9], [33.0, 35.2], [31.9, 34.5],
+    [31.5, 34.4], [31.5, 32.9], [31.45, 32.25], [31.35, 29.9], [31.0, 29.95], [30.7, 30.15], [30.3, 30.5],
+    [29.9, 30.65], [28.9, 30.55], [27.9, 30.35], [26.9, 30.55], [25.9, 31.4], [24.9, 32.15], [24.3, 32.9],
+    [25.5, 29.0], [27.0, 25.5], [29.0, 22.0], [31.0, 20.8], [32.3, 21.0], [33.0, 19.0], [33.5, 16.0],
+    [34.0, 13.0], [34.0, 11.5], [36.8, 10.2], [37.2, 9.0], [36.7, 4.5], [36.7, 0.0], [37.5, -2.0],
+    [38.5, -1.0], [39.5, 0.0], [40.0, 0.5]
+  ]
+]

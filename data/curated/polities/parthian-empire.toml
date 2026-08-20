@@ -1,0 +1,24 @@
+# parthian-empire.toml -- Parthian Empire; shapes are approximate, drawn
+# for recognizability.
+id = "parthian-empire"
+
+# The Parthian Empire: Rome's own great eastern rival (its Euphrates
+# frontier with Rome is the reason Acts 2:9's Pentecost crowd includes
+# "Parthians, and Medes, and Elamites"), holding Mesopotamia and the whole
+# Persian plateau east to Bactria. Western border along the Euphrates/
+# Syrian desert, unlike Persia/Alexander's own empires, which also held
+# everything west of it.
+[[era]]
+name = "Parthian Empire"
+from = -140
+to = 100
+ref_note = "drawn from general historical-geography knowledge of the Parthian Empire's extent (Mesopotamia and the Persian plateau east to Bactria, Euphrates frontier with Rome); no specific source consulted this session"
+rings = [
+  [
+    [37.0, 38.3], [36.0, 40.5], [35.0, 42.5], [34.0, 44.0], [33.0, 45.0], [32.0, 46.0], [31.0, 46.8],
+    [30.0, 47.3], [29.5, 47.6], [28.5, 49.0], [27.5, 51.0], [26.5, 53.5], [25.7, 56.0], [25.3, 59.0],
+    [26.0, 62.0], [27.5, 64.5], [29.5, 66.5], [31.5, 67.5], [33.5, 67.3], [35.0, 66.0], [36.5, 63.0],
+    [38.0, 60.0], [39.0, 57.0], [39.2, 54.0], [38.5, 51.0], [37.5, 48.5], [36.5, 46.0], [35.5, 43.5],
+    [36.2, 41.5], [37.0, 38.3]
+  ]
+]
