@@ -71,7 +71,19 @@ test('arrow hover shows the narrative tooltip', async ({ page }) => {
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       const name = scene.narratives.find((n: any) => n.id === a.narrative)!.name;
       const tip = page.getByTestId('arrow-tip');
-      if (await tip.isVisible().catch(() => false) && (await tip.textContent())?.includes(name)) {
+      // Both calls below carry an explicit, SHORT timeout -- without one,
+      // a non-matching arrow can hang the whole search: isVisible() itself
+      // never waits, but a bare textContent() does (Playwright's default
+      // actionability wait, up to the test's own global timeout), and if
+      // the tooltip happens to be visible from a PRIOR iteration at the
+      // instant isVisible() is checked but is cleared (OnArrowLeave's own
+      // async interop call) before textContent() actually runs, that call
+      // would otherwise wait the full default timeout for a NEW arrow-tip
+      // to appear that may never come -- confirmed live: this exact race
+      // hung one run for the full 240s test timeout before this fix.
+      const visible = await tip.isVisible().catch(() => false);
+      const text = visible ? await tip.textContent({ timeout: 500 }).catch(() => null) : null;
+      if (text?.includes(name)) {
         match = { a, name };
         break;
       }
