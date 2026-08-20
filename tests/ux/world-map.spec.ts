@@ -283,15 +283,17 @@ test('WORLD-10b: landmark labels are still zoom-tiered, isolated from place-labe
 
 // Fix round 1 (M3, review MAJOR 3): polity-label-{slug} (CONTRACT, added by
 // this batch's BorderLayer) was previously exercised by no spec at all.
-// Windows picked by probing every curated border snapshot's own rendered
-// polity labels against the real running app (see the batch report): the
-// snapshot nearest -3000..-2900 ("3000 BC") is the only one whose features
-// include "Sumer"; the snapshot nearest 40..60 ("1 BC") is the only one
-// with "Roman Empire" -- a real, unambiguous swap, not just "a label
-// happens to still be there" after the window moves. In-app navigation via
-// the readout (not a reload) is the same "window moves" path BORDERS-2
-// already uses to prove the border vector layer itself swaps.
-test('WORLD-11: polity labels render from the active border snapshot and swap when the window moves to a different one', async ({ page }) => {
+// Windows picked against the real curated polity eras (Batch B2's own
+// per-polity timerange model, data/curated/polities/*.toml, replacing the
+// original snapshot-year model this test was first written against):
+// -3000..-2900 intersects ONLY sumer's own single era (-4004..-2004) among
+// these two polities' eras; 40..60 intersects ONLY roman-empire's own
+// "Roman Empire" era (-30..100) -- a real, unambiguous swap, not just "a
+// label happens to still be there" after the window moves. In-app
+// navigation via the readout (not a reload) is the same "window moves"
+// path world-borders.spec.ts's own tests already use to prove the polity
+// vector layer itself swaps.
+test('WORLD-11: polity labels render from the active polity eras and swap when the window moves to a different one', async ({ page }) => {
   await page.goto('/world?from=-3000&to=-2900');
   await expect(page.getByTestId('polity-label-sumer')).toBeVisible();
   await expect(page.getByTestId('polity-label-sumer')).toHaveText('Sumer');

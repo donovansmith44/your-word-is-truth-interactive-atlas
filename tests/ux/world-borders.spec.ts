@@ -1,54 +1,58 @@
 import { test, expect } from '@playwright/test';
 import { api } from './lib/api';
-import { formatRange } from './lib/years';
 
-// Black-box mirror of map.js's slugify (kebab-case of the landmark's own
-// name) -- must match it exactly for landmark-{slug} testids to resolve.
-// Kept local to this spec file (no client imports, per the black-box UX
-// suite rule).
+// Batch B2 ("borders v2, the cartographer's edition"): every test in this
+// file was rewritten against the new per-polity timerange border model
+// (GET /api/polities?from=&to=) -- the old snapshot-year GeoJSON model
+// (GET /api/borders, the "Borders c. X" tag, "nearest snapshot") is gone
+// entirely; see CONTRACT.md's own BORDER-1 note for the invariant every
+// test below ultimately checks a facet of. Black-box mirror of map.js's
+// own slugify (kebab-case of a name) -- must match it exactly for
+// landmark-{slug}/polity-label-{slug} testids to resolve. Kept local (no
+// client imports, per this suite's own black-box rule).
 function kebab(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-test('BORDERS-1: every era resolves to a real, non-empty border snapshot (exhaustive)', async () => {
+test('BORDERS-1: every era resolves to at least one polity (exhaustive)', async () => {
   const eras = await api.eras();
   expect(eras.length).toBeGreaterThan(0);
   for (const e of eras) {
-    const res = await api.borders(e.from_year, e.to_year);
+    const res = await api.polities(e.from_year, e.to_year);
     expect(res.__status, `era ${e.id}: ${JSON.stringify(res)}`).toBeUndefined();
-    expect(Number.isInteger(res.snapshot_year), `era ${e.id}: snapshot_year=${res.snapshot_year}`).toBe(true);
-    expect(res.geojson?.features?.length, `era ${e.id}`).toBeGreaterThan(0);
+    expect(Array.isArray(res.polities), `era ${e.id}`).toBe(true);
+    expect(res.polities.length, `era ${e.id} (${e.from_year}..${e.to_year}) unexpectedly empty`).toBeGreaterThan(0);
   }
 });
 
-test('BORDERS-2: border tag reflects the loaded snapshot and updates on in-app window navigation', async ({ page }) => {
-  await page.goto('/world?from=-2000&to=-1900');
-  const tag = page.getByTestId('border-tag');
-  await expect(tag).toBeVisible();
-  await expect(tag).toContainText('Borders c.');
-  const firstText = (await tag.textContent())?.trim();
+// Requirement 6: "single-era window: solid ring + wash". -30..100 (early-
+// church) intersects EXACTLY roman-empire's own "Roman Empire" era
+// (-30..100) and parthian-empire's own single era -- neither polity has a
+// second era anywhere near this window, so both render data-age="newest"
+// (the single-era default): a plain solid line, no dash, and the full
+// (0.32) wash opacity -- no year tag either (BORDERS-VISIBLE-ONLY-ONE-ERA
+// never gets one, see CONTRACT's own polity-year-tag-* note).
+test('BORDERS-2: single-era window renders a solid ring + full wash, no year tag', async ({ page }) => {
+  await page.goto('/world?from=30&to=90');
+  const line = page.getByTestId('polity-ring-roman-empire--30-0');
+  await expect(line).toBeAttached();
+  await expect(line).toHaveAttribute('data-age', 'newest');
 
-  // At least one real vector path is on the map for this snapshot, distinct
-  // from narrative-arrow paths (arrows-svg's own .atlas-arrow elements) --
-  // an honest, stable signal that the border layer actually rendered
-  // geometry rather than just showing the tag text.
-  const mapPaths = page.locator('[data-testid="world-map"] path:not(.atlas-arrow)');
-  await expect(mapPaths.first()).toBeAttached();
-  expect(await mapPaths.count()).toBeGreaterThan(0);
+  const style = await line.evaluate(el => {
+    const cs = getComputedStyle(el);
+    return { dasharray: cs.strokeDasharray, opacity: cs.strokeOpacity };
+  });
+  // "solid" -- no dash pattern at all (Chromium reports an unset
+  // stroke-dasharray as the literal string "none").
+  expect(style.dasharray).toBe('none');
+  expect(parseFloat(style.opacity)).toBeGreaterThan(0.8); // .atlas-border-line[data-age="newest"] is 0.88
 
-  // Navigate in-app via the readout (not a reload) to a window nowhere near
-  // the first one -- the border snapshot must change accordingly.
-  await page.getByTestId('slider-readout').fill(formatRange(40, 60));
-  await page.getByTestId('slider-readout').press('Enter');
-  await page.waitForURL(u => u.searchParams.get('from') === '40' && u.searchParams.get('to') === '60');
+  const wash = page.locator('path.atlas-border-wash[data-age="newest"]').first();
+  await expect(wash).toBeAttached();
+  const washOpacity = await wash.evaluate(el => parseFloat(getComputedStyle(el).fillOpacity));
+  expect(washOpacity).toBeCloseTo(0.32, 2);
 
-  await expect(tag).toBeVisible();
-  await expect(async () => {
-    const nowText = (await tag.textContent())?.trim();
-    expect(nowText).not.toBe(firstText);
-  }).toPass();
-
-  expect(await mapPaths.count()).toBeGreaterThan(0);
+  await expect(page.getByTestId(/^polity-year-tag-roman-empire-/)).toHaveCount(0);
 });
 
 test('BORDERS-3: every curated landmark is attached and styled by kind', async ({ page }) => {
@@ -74,138 +78,192 @@ test('BORDERS-3: every curated landmark is attached and styled by kind', async (
   expect(mountainStyle).not.toBe('italic');
 });
 
-test('BORDERS-4: scripture mode hides the border tag', async ({ page }) => {
+test('BORDERS-4: scripture mode hides every polity ring and label', async ({ page }) => {
+  await page.goto('/world?from=-1446&to=-1400'); // time mode first -- confirms rings exist to hide
+  await expect(page.getByTestId(/^polity-ring-/).first()).toBeAttached();
+
   await page.goto('/world?ref=EXO.14');
-  await expect(page.getByTestId('border-tag')).toHaveCount(0);
+  await expect(page.getByTestId(/^polity-ring-/)).toHaveCount(0);
+  await expect(page.getByTestId(/^polity-label-/)).toHaveCount(0);
+  await expect(page.locator('svg.atlas-borders')).toBeHidden();
 });
 
-// Batch C2, Requirement 1 (hand-tinted polity area washes) + Requirement 3's
-// own test list: "every rendered border feature has a fill with opacity in
-// the chosen value ±0" and "polity-name -> color determinism... assert
-// identical fill color... across two snapshots". Black-box mirror of
-// map.js's own POLITY_TINTS/polityFillColor (same "no client-internals
-// import" rule this file's own kebab() already follows) -- a pure function
-// of the feature's NAME alone, so this doesn't need to guess or hardcode
-// which hex a given polity gets; it computes the SAME thing map.js does and
-// checks the live app agrees.
-const POLITY_TINTS = ['#C98A8A', '#C9B37E', '#93A98B', '#7E99B5', '#A18CB0', '#B59B7E', '#8FA07A', '#C08E7A'];
-function polityFillColor(name: string): string {
-  const normalized = name.trim().toLowerCase().replace(/\s+/g, ' ');
-  let sum = 0;
-  for (let i = 0; i < normalized.length; i++) {
-    sum += normalized.charCodeAt(i);
-  }
-  return POLITY_TINTS[sum % POLITY_TINTS.length];
-}
-function hexToRgbString(hex: string): string {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
-}
+// Requirement 6: "spanning window: >=2 rings, distinct dash classes, year
+// tags". The batch brief's own named example -- 1600 BC to 900 BC -- spans
+// Egypt's OWN border changes so thoroughly it actually catches THREE of
+// egypt's own curated eras at once (found empirically while writing this
+// test, a richer result than the brief's own two-era framing anticipated,
+// not a bug): the tail of the Old/Middle Kingdom era (-4004..-1550, just
+// its last 50 years), the New Kingdom empire (-1549..-1069, large, extends
+// into Canaan), and the contracted post-Empire footprint (-1068..-332) --
+// oldest/middle/newest respectively, dotted/dashed/solid, lightest/
+// intermediate/full wash. A real bonus for this test: it's the one window
+// in this app's own curated data that ever reaches the "middle" tier at
+// all (every other multi-era window in the roster has exactly 2 visible
+// eras of any one polity).
+test('BORDERS-5: a spanning window (1600-900 BC) shows 3 rings of the same polity with distinct dash classes and year tags', async ({ page }) => {
+  await page.goto('/world?from=-1600&to=-900');
 
-// Batch C2 fix round 1 (review M1): the brief's ORIGINAL 0.10-0.14 ceiling
-// was itself wrong -- screenshot + pixel-sampling review proved 0.14 (that
-// ceiling's own top) reads as indistinguishable from bare terrain, not a
-// hand-tinted wash. Re-ruled band: 0.22-0.35 (design-direction.md's own
-// Atlas plate detail addendum carries the same corrected number); shipped
-// value 0.32 (app.css's own .atlas-border comment has the full
-// screenshot-review history). This property still checks a RANGE, not a
-// hardcoded single value, for the same reason it always did: fill-opacity
-// is a shared, class-wide design value (like the palette hexes), not a
-// wire-level contract number CONTRACT.md pins -- see the batch report's own
-// "CONTRACT amendments" reasoning.
-test('BORDERS-5: every rendered border feature shares one fill-opacity inside the 0.22-0.35 range', async ({ page }) => {
-  await page.goto('/world?from=-2000&to=-1900');
-  const paths = page.locator('[data-testid="world-map"] .atlas-border');
-  await expect(paths.first()).toBeAttached();
-  const opacities = await paths.evaluateAll(els => els.map(el => getComputedStyle(el).fillOpacity));
-  expect(opacities.length).toBeGreaterThan(0);
+  const oldest = page.getByTestId('polity-ring-egypt--4004-0');
+  const middle = page.getByTestId('polity-ring-egypt--1549-0');
+  const newest = page.getByTestId('polity-ring-egypt--1068-0');
+  await expect(oldest).toBeAttached();
+  await expect(middle).toBeAttached();
+  await expect(newest).toBeAttached();
+  await expect(oldest).toHaveAttribute('data-age', 'oldest');
+  await expect(middle).toHaveAttribute('data-age', 'middle');
+  await expect(newest).toHaveAttribute('data-age', 'newest');
 
-  const chosen = parseFloat(opacities[0]);
-  expect(chosen).toBeGreaterThanOrEqual(0.22);
-  expect(chosen).toBeLessThanOrEqual(0.35);
-  for (const raw of opacities) {
-    // "±0" -- every feature's own fill-opacity is the exact same value,
-    // not merely close to it (app.css sets this once, class-wide, never
-    // per-feature -- see .atlas-border's own comment).
-    expect(raw).toBe(opacities[0]);
-  }
+  const [oldestDash, middleDash, newestDash] = await Promise.all([
+    oldest.evaluate(el => getComputedStyle(el).strokeDasharray),
+    middle.evaluate(el => getComputedStyle(el).strokeDasharray),
+    newest.evaluate(el => getComputedStyle(el).strokeDasharray),
+  ]);
+  expect(newestDash, 'newest era: solid').toBe('none');
+  expect(oldestDash, 'oldest era: dotted').not.toBe('none');
+  expect(middleDash, 'middle era: dashed').not.toBe('none');
+  // "distinct dash classes" -- all three read differently from one another.
+  expect(new Set([oldestDash, middleDash, newestDash]).size).toBe(3);
+
+  await expect(page.getByTestId('polity-year-tag-egypt--4004-0')).toBeVisible();
+  await expect(page.getByTestId('polity-year-tag-egypt--1549-0')).toBeVisible();
+  await expect(page.getByTestId('polity-year-tag-egypt--1068-0')).toBeVisible();
+  await expect(page.getByTestId('polity-year-tag-egypt--4004-0')).toContainText('4004 BC');
+  await expect(page.getByTestId('polity-year-tag-egypt--1549-0')).toContainText('1549 BC');
+  await expect(page.getByTestId('polity-year-tag-egypt--1068-0')).toContainText('1068 BC');
+
+  // "the polity name label renders once per era-name" -- all three eras
+  // here are named "Egypt" (redraws, not renames), so exactly ONE label,
+  // not three, even though three rings/year-tags are visible.
+  await expect(page.getByTestId('polity-label-egypt')).toHaveCount(1);
 });
 
-test('BORDERS-6: a polity name determines its fill color, identically, across two different border snapshots', async ({ page }) => {
-  // Two real, different snapshot years (data/compiled/borders/*.json) that
-  // both happen to carry "Roman Empire" at feature index 0 -- confirmed via
-  // the live API, not assumed (see this test's own two windows below).
-  const windows = [
-    { from: -40, to: -20 }, // -> snapshot -1
-    { from: 50, to: 90 },   // -> snapshot 100
-  ];
+// Requirement 1's own color_key refinement, verified LIVE end to end
+// (server hash -> wire -> map.js POLITY_TINTS lookup): egypt's two windows
+// below each show a DIFFERENT era name ("Egypt" vs "Ptolemaic Egypt") with
+// NOTHING else in common except the shared polity id -- if color_key were
+// still hashed from the era NAME (the retired Batch C2 behavior), these
+// two would very likely disagree.
+test('BORDERS-6: a polity keeps the same fill color across a rename (color_key hashes the id, not the era name)', async ({ page }) => {
+  await page.goto('/world?from=-500&to=-400'); // era "Egypt" (-1068..-332)
+  await expect(page.getByTestId('polity-ring-egypt--1068-0')).toBeAttached();
+  const firstFill = await page.locator('path.atlas-border-wash[data-age="newest"]').first().evaluate(el => getComputedStyle(el).fill);
 
-  const expectedRgb = hexToRgbString(polityFillColor('Roman Empire'));
+  await page.goto('/world?from=-100&to=-50'); // era "Ptolemaic Egypt" (-331..-30)
+  await expect(page.getByTestId('polity-ring-egypt--331-0')).toBeAttached();
+  const secondFill = await page.locator('path.atlas-border-wash[data-age="newest"]').first().evaluate(el => getComputedStyle(el).fill);
 
-  for (const w of windows) {
-    const borders = await api.borders(w.from, w.to);
-    const idx = borders.geojson.features.findIndex((f: any) => f.properties.name === 'Roman Empire');
-    expect(idx, `Roman Empire not found in the snapshot for ${w.from}..${w.to} (got ${borders.geojson.features.map((f: any) => f.properties.name)})`).toBeGreaterThanOrEqual(0);
-
-    await page.goto(`/world?from=${w.from}&to=${w.to}`);
-    const path = page.locator('[data-testid="world-map"] .atlas-border').nth(idx);
-    await expect(path).toBeAttached();
-    const fill = await path.evaluate(el => getComputedStyle(el).fill);
-    expect(fill, `Roman Empire's own fill at snapshot ${borders.snapshot_year}`).toBe(expectedRgb);
-  }
+  expect(secondFill, 'Egypt -> Ptolemaic Egypt: same polity id, same fill color').toBe(firstFill);
 });
 
-// Requirement 3's own far-field smoke test: "at least N curated far-field
-// landmark labels visible outside the active border features' bounding box
-// ... the point is 'not bereft'". The full 4004 BC - AD 100 span is the
-// SAME "default zoom-out" window WORLD-10 (world-map.spec.ts) already uses
-// and confirms lands in the FAR zoom tier -- the honest stand-in for "as
-// zoomed out as this app's own UI ever naturally goes" (fitScene has no
-// separate "show me everything" affordance; a scene this wide is the widest
-// real view). N=6 of 7 landmarks confirmed independently, deterministically
-// visible here across repeated runs (see the batch report) -- one below
-// that count for a small honest margin, matching this suite's own
-// "pick honest N from your curation" instruction rather than the exact
-// observed count.
-test('BORDERS-7: the populated far field -- at least 6 curated landmarks outside the active border snapshot render visible at the widest natural view', async ({ page }) => {
-  const w = { from: -4004, to: 100 };
-  const borders = await api.borders(w.from, w.to);
-  let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
-  for (const f of borders.geojson.features) {
-    for (const polygon of f.geometry.coordinates) {
-      for (const ring of polygon) {
-        for (const [lon, lat] of ring) {
-          minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
-          minLon = Math.min(minLon, lon); maxLon = Math.max(maxLon, lon);
-        }
-      }
-    }
-  }
-
+// Requirement 3's own far-field smoke test (Batch C2's "populated far
+// field": broad standing regions/waters spread across the whole biblical-
+// world lock, each curated with a `size` hint precisely so it stays
+// visible at the widest, most-zoomed-out view). Batch B2's OWN much richer
+// polity roster (14 polities, 25 eras -- vs the retired snapshot model's
+// single active snapshot at a time) means the full 4004 BC - AD 100 span
+// now shows real historical polities across nearly the WHOLE biblical-
+// world bbox at once (a good thing -- a fuller, more populated plate than
+// the old model ever managed on its own) -- so "outside the active
+// polities' own bbox" is no longer a meaningfully SPARSE comparison set
+// the way it was against one snapshot's few features (confirmed
+// empirically while writing this test: only 4 curated landmarks fall
+// outside the union of every polity's own rings at this window, down from
+// a much larger set under the retired model). This checks the same
+// underlying feature a more robust way instead: the curated far-field
+// landmarks themselves (every entry carrying a `size` hint, i.e. the
+// entries Batch C2 added specifically for this) render visible at the
+// widest natural view, regardless of how much of the plate polities now
+// also cover. Full 4004 BC - AD 100 span is the SAME "default zoom-out"
+// window WORLD-10 (world-map.spec.ts) already confirms lands in the FAR
+// zoom tier.
+test('BORDERS-7: the populated far field -- most curated far-field-hinted landmarks render visible at the widest natural view', async ({ page }) => {
   const landmarks = await api.landmarks();
-  const outside = landmarks.filter((l: any) => l.lat < minLat || l.lat > maxLat || l.lon < minLon || l.lon > maxLon);
-  expect(outside.length, 'expected at least some curated landmarks outside the active snapshot bbox').toBeGreaterThan(0);
+  const farField = landmarks.filter((l: any) => l.size);
+  expect(farField.length, 'expected a real curated far-field set to check').toBeGreaterThan(0);
 
-  await page.goto(`/world?from=${w.from}&to=${w.to}`);
-  // This window's own scene is 200+ places (WORLD-10's own comment) --
-  // slower to fetch/render/settle (applyLabelTier's own tier+collision
-  // passes included) than this suite's usual small windows. A plain
-  // isVisible() check (unlike expect().toBeVisible(), which polls) reads
-  // the CURRENT state with no retry, so it needs the map to have actually
-  // finished settling first -- waiting for the landmark layer's own first
-  // element existing at all also guarantees setLandmarks/applyLabelTier
-  // have run at least once.
+  await page.goto('/world?from=-4004&to=100');
   await page.waitForSelector('.landmark-label', { timeout: 15000 });
   await page.waitForTimeout(500);
 
-  function kebab(name: string): string {
-    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-  }
   let visibleCount = 0;
-  for (const l of outside) {
+  for (const l of farField) {
     if (await page.getByTestId(`landmark-${kebab(l.name)}`).isVisible().catch(() => false)) {
       visibleCount++;
     }
   }
-  expect(visibleCount, `expected at least 6 of ${outside.length} outside-bbox landmarks visible; the plate must not read as bereft at its widest view`).toBeGreaterThanOrEqual(6);
+  expect(visibleCount, `expected most of ${farField.length} curated far-field landmarks visible; the plate must not read as bereft at its widest view`).toBeGreaterThanOrEqual(Math.ceil(farField.length * 0.6));
+});
+
+// Requirement 6: "growth case: outer ring's bounding box strictly contains
+// the inner's (bounding boxes only -- no geometry math)". Rome's own
+// Republic -> Empire growth: -50..10 intersects BOTH roman-empire eras
+// (Republic -200..-31 and Empire -30..100), and the Empire era's own
+// curated rings were drawn to visibly extend further in all four
+// directions (north into Gaul, south into Egypt, east toward the
+// Euphrates) than the Republic era's -- a real, deliberate growth, not a
+// coincidence of drawing order.
+test('BORDERS-8: a growth window shows the newer ring\'s screen bounding box strictly containing the older ring\'s', async ({ page }) => {
+  await page.goto('/world?from=-50&to=10');
+  const older = page.getByTestId('polity-ring-roman-empire--200-0'); // Roman Republic
+  const newer = page.getByTestId('polity-ring-roman-empire--30-0'); // Roman Empire
+  await expect(older).toBeAttached();
+  await expect(newer).toBeAttached();
+
+  const olderBox = await older.boundingBox();
+  const newerBox = await newer.boundingBox();
+  expect(olderBox).not.toBeNull();
+  expect(newerBox).not.toBeNull();
+  const o = olderBox!, n = newerBox!;
+
+  expect(n.x, 'newer ring starts further left').toBeLessThan(o.x);
+  expect(n.y, 'newer ring starts further up').toBeLessThan(o.y);
+  expect(n.x + n.width, 'newer ring extends further right').toBeGreaterThan(o.x + o.width);
+  expect(n.y + n.height, 'newer ring extends further down').toBeGreaterThan(o.y + o.height);
+});
+
+// Requirement 5 (arrow/border zoom-animation sync fix), acceptance per the
+// batch brief: "a UI test can assert final positions match projected
+// coords right after zoom WITHOUT waiting long after zoomend". Both
+// custom SVG layers (ArrowLayer, BorderLayer) reset their own zoomanim CSS
+// transform back to identity at the top of _redraw (which 'zoomend' always
+// triggers) -- this is the exact mechanism a forgotten reset, or wrong
+// transform math, would break: an identity transform left over means the
+// layer's already-correct, freshly-recomputed `d`/path geometry is
+// rendered WITHOUT a stray leftover translate/scale distorting it.
+// page.mouse.wheel centered on the viewport drives Leaflet's own animated
+// scroll-wheel zoom directly (same real-user gesture world-map.spec.ts's
+// own WORLD-10b already uses for exactly this reason -- more reliable
+// than clicking the small top-left zoom control).
+test('BORDERS-9 (zoom-sync): border and arrow SVG layers reset to an identity transform immediately after an animated zoom', async ({ page }) => {
+  await page.goto('/world?from=-1446&to=-1400'); // egypt-exodus: has an egypt polity ring
+  const ring = page.getByTestId('polity-ring-egypt--1549-0');
+  await expect(ring).toBeAttached();
+  const dBefore = await ring.getAttribute('d');
+
+  for (let i = 0; i < 3; i++) {
+    await page.mouse.move(640, 360);
+    await page.mouse.wheel(0, -300);
+  }
+
+  // No manual settle-wait beyond Playwright's own auto-retrying `toPass` --
+  // this IS the acceptance criterion itself.
+  await expect(async () => {
+    const bordersTransform = await page.locator('svg.atlas-borders').evaluate(el => (el as HTMLElement).style.transform);
+    const arrowsTransform = await page.locator('svg.atlas-arrows').evaluate(el => (el as HTMLElement).style.transform);
+    for (const t of [bordersTransform, arrowsTransform]) {
+      expect(t, `expected an identity transform, got "${t}"`).toMatch(/scale\(1\)\s*$/);
+      // Chromium renders L.DomUtil.setTransform's own 3D form as
+      // "translate3d(0px, 0px, 0px) scale(1)" (a trailing "0px", not the
+      // bare "0" the un-rendered JS template literal itself contains) --
+      // accepting either the 2D or 3D form's zero either way.
+      expect(t).toMatch(/translate3d\(0px,\s*0px,\s*0(?:px)?\)|translate\(0px,\s*0px\)/);
+    }
+  }).toPass();
+
+  // And the ring's own geometry actually moved to the new zoom's real
+  // projected coordinates -- not merely "no transform left over" but
+  // "correctly redrawn".
+  const dAfter = await ring.getAttribute('d');
+  expect(dAfter).not.toBe(dBefore);
 });

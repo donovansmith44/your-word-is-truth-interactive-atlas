@@ -16,6 +16,7 @@ export const api = {
   // Batch E: `/api/place/{id}?from=&to=` -- the window-scoped `history` payload.
   placeHistory: (id: string, from: number, to: number) => getJson(`/api/place/${id}?from=${from}&to=${to}`),
   narratives: () => getJson('/api/narratives'),
-  borders: (from: number, to: number) => getJson(`/api/borders?from=${from}&to=${to}`),
+  // Batch B2: /api/borders -> /api/polities (per-polity timerange borders).
+  polities: (from: number, to: number) => getJson(`/api/polities?from=${from}&to=${to}`),
   landmarks: () => getJson('/api/landmarks'),
 };

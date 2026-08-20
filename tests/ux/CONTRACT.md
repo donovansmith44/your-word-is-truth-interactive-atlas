@@ -60,15 +60,35 @@ World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief
   `mode-chip-return`,
   `arrow-tip` (visible while an arrow is hovered; text contains the narrative name),
   `toast` (non-blocking error notice; last good scene stays rendered beneath it),
-  `border-tag` (visible in time mode when a border snapshot is loaded; text contains
-  "Borders c."; hidden in scripture mode and whenever no snapshot is loaded),
   `landmark-{slug}` (always-visible, non-interactive landmark label; slug = lowercase
   kebab-case of the landmark's name, e.g. "Mount Sinai" -> "mount-sinai"),
-  `polity-label-{slug}` (non-interactive polity-name label rendered from the
-  active border snapshot's own features; slug = lowercase kebab-case of the
-  feature's `name`, same rule as `landmark-{slug}`; visible in time mode
-  only, subject to its own per-feature zoom/viewport visibility rule --
-  absent entirely whenever no border snapshot is loaded, e.g. scripture mode)
+  `polity-label-{slug}` (batch-b2-brief.md; non-interactive polity-name label
+  rendered from the currently-active POLITY ERAS whose own `[from,to]` intersects
+  the window (`GET /api/polities`) -- slug = lowercase kebab-case of the era's
+  own `name`, same rule as `landmark-{slug}`; ONE label per unique (polity id,
+  era name) among the currently-visible eras, so a window spanning a border
+  change where the SAME polity carries two DIFFERENT era names shows both labels
+  at once (each centered on its own era's own rings) -- see `polity-ring-*`/
+  `polity-year-tag-*` below for the ring-level testids that same spanning window
+  also produces; visible in time mode only, subject to its own per-era zoom/
+  viewport visibility rule -- absent entirely whenever no polities are loaded,
+  e.g. scripture mode),
+  `polity-ring-{id}-{from}-{ringIndex}` (batch-b2-brief.md; the fine border LINE
+  path for one RING of one polity era -- `id` = the polity's own stable id (see
+  `data/curated/polities/{id}.toml`), `from` = that era's own signed `from` year,
+  `ringIndex` = that era's own 0-based ring index (almost always `0`; only a
+  handful of curated eras carry a second, disjoint ring); attr `data-age` =
+  `"oldest"` | `"middle"` | `"newest"` among that polity's OWN currently-visible
+  eras (a single visible era is always `"newest"`; ">=2 rings, distinct dash
+  classes" per the batch brief's own test list means at least two DIFFERENT
+  `data-age` values are observable in a spanning window) -- present in time mode
+  only, one per ring of every era whose `[from,to]` intersects the window,
+  absent entirely in scripture mode,
+  `polity-year-tag-{id}-{from}-{ringIndex}` (batch-b2-brief.md; a small mono
+  "c. {year}" tag -- e.g. "c. 1500 BC" -- next to one ring; present ONLY when
+  that ring's own polity has MORE than one currently-visible era, i.e. never
+  on a single-era window; same `id`/`from`/`ringIndex` addressing as
+  `polity-ring-*` above, one tag per ring, not per era)
 Picker (ScripturePicker, shared by world and reader):
   `picker-book` (select of 66 books), `picker-chapter` (select sized from TOC),
   `picker-verse-from`, `picker-verse-to` (numeric inputs bounded by TOC),
@@ -225,3 +245,34 @@ Notes:
   marker's own hit area overlaps it on the screen as currently rendered.
   Resolving this for real marker density (not just test-side mitigation) is
   deferred to a future marker-clustering/decluttering batch.
+- BORDER-1 (batch-b2-brief.md, "borders v2, the cartographer's edition"):
+  for every time-mode window, `GET /api/polities?from=&to=` returns one row
+  per (polity, era) pair whose era `[from,to]` intersects the window,
+  ordered by polity id then era `from` -- a polity with exactly one
+  intersecting era contributes one row; a polity with `N>=2` intersecting
+  eras (a window spanning a border change) contributes `N` rows, oldest
+  `from` first. The client renders every returned row (never picks a
+  single "nearest" one the retired snapshot-year model used to) and tags
+  each polity's own rows, independently, oldest-to-newest as `"oldest"`
+  (dotted line, lightest wash), `"middle"` (dashed, intermediate -- only
+  reachable with 3+ simultaneously-visible eras of one polity, none of
+  which exist in this app's own curated roster today), `"newest"` (solid
+  line, full wash -- ALSO the single-era case, i.e. `data-age="newest"`
+  covers both "the only visible era" and "the newest of several"). Rings
+  are painted in that same oldest-to-newest order (both across the whole
+  layer and within each polity's own rows), so a polity whose later era
+  is geographically LARGER paints its fuller wash last/on top over the
+  earlier era's own footprint, while a polity whose later era is SMALLER
+  still paints last, visibly inside the earlier, fainter ring -- either
+  way each ring's own LINE (never just its wash) stays visible regardless
+  of paint order, so growth or contraction is legible without the client
+  ever comparing two rings' own geometry. `polity-label-{slug}` follows
+  NAME-1's own spirit one layer up: one label per unique (polity id, era
+  name) currently visible, so two eras of the same polity with the SAME
+  name (a redraw, not a rename) still show only one label, while two eras
+  with DIFFERENT names both show theirs. The retired "Borders c. X" tag
+  (a single honest-about-its-snapshot readout) has no equivalent in this
+  model -- there is no single snapshot year to be honest about anymore,
+  only however many real eras intersect the window, each labeled on its
+  own ring via `polity-year-tag-*` (present only when its own polity has
+  more than one visible era).
