@@ -39,6 +39,11 @@ public sealed class AtlasClient
     // by sref -- same "instant on repeat visits/re-opens" rationale as
     // _chapterCache/_placeHistoryCache above.
     private readonly LruCache<string, List<CrossRefOut>> _xrefsCache = new(capacity: 24);
+    // Batch F: PassageNode's own catechism citation list, keyed by sref --
+    // same rationale/capacity as _xrefsCache above (its own direct sibling:
+    // CatechismSeamSection reads this exactly where CrossRefsSection reads
+    // Xrefs, for the SAME PassageNode).
+    private readonly LruCache<string, List<CatechismRefDto>> _catechismSpanCache = new(capacity: 24);
     private List<BookTocEntry>? _booksCache;
     private List<EraDto>? _erasCache;
     private List<LandmarkDto>? _landmarksCache;
@@ -174,6 +179,38 @@ public sealed class AtlasClient
         _xrefsCache.Put(sref, result);
         return result;
     }
+
+    /// <summary>
+    /// Batch F ("the small catechism"): <c>GET /api/catechism/{sref}</c> --
+    /// catechism items citing a verse or same-chapter passage span (union
+    /// across member verses, no "votes" -- an item is cited or it isn't).
+    /// Mirrors <see cref="Xrefs"/> exactly, same LRU-cached-by-sref
+    /// treatment (PassageNode's own popover can read this twice per open --
+    /// once to decide the section's conditional presence, once again if
+    /// re-resolved -- the cache is what makes the second read free).
+    /// </summary>
+    public async Task<List<CatechismRefDto>> Catechism(string sref)
+    {
+        if (_catechismSpanCache.TryGet(sref, out var cached))
+        {
+            return cached;
+        }
+
+        var result = await GetRequired<List<CatechismRefDto>>($"api/catechism/{sref}");
+        _catechismSpanCache.Put(sref, result);
+        return result;
+    }
+
+    /// <summary>
+    /// Batch F: <c>GET /api/catechism/item/{id}</c> -- one catechism item's
+    /// full content (text/explanation/where-written/proof verses). Uncached
+    /// at this layer, same as <see cref="Verse"/>/<see cref="Place(string)"/>
+    /// -- <see cref="Explore.CatechismNode"/> memoizes its own single fetch
+    /// per node instance instead (mirrors <c>VerseNode.DetailAsync</c>'s own
+    /// reasoning exactly).
+    /// </summary>
+    public Task<CatechismItemDetail> CatechismItem(string id) =>
+        GetRequired<CatechismItemDetail>($"api/catechism/item/{id}");
 
     public Task<List<NarrativeOut>> Narratives() =>
         GetRequired<List<NarrativeOut>>("api/narratives");

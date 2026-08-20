@@ -162,9 +162,28 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   -- see REGISTRY-1 below),
   `popover-section-{id}` (batch-r-brief.md; one wrapper per RESOLVED section
   the registry rendered for the current node, `id` one of `verse-text`,
-  `xrefs`, `place-dates`, `place-blurb`, `place-events` today -- see
-  REGISTRY-1; conditional presence, absent whenever that section's own
-  provider resolved no content this open),
+  `xrefs`, `catechism`, `place-dates`, `place-blurb`, `place-events`,
+  `catechism-text`, `catechism-explanation`, `catechism-where-written`,
+  `catechism-scriptures` today -- see REGISTRY-1/CATECH-1; conditional
+  presence, absent whenever that section's own provider resolved no content
+  this open),
+  `catechism-section-heading` (batch-f-brief.md; small-caps eyebrow rendered
+  INSIDE a section's own body by that section's provider -- not a separate
+  testid-bearing wrapper of its own; present on `popover-section-catechism`
+  ("THE SMALL CATECHISM"), `popover-section-catechism-explanation` (Luther's
+  own verbatim heading, e.g. "What does this mean?"),
+  `popover-section-catechism-where-written` ("Where is this written?"), and
+  `popover-section-catechism-scriptures` ("THE SCRIPTURES") -- see CATECH-1),
+  `catechism-item-{ID}` (batch-f-brief.md; button; one per catechism item
+  citing the current VERSE/PASSAGE, `ID` = the item's own curated id, text =
+  the item's own display name (e.g. "The First Commandment", "Baptism —
+  Part the Fourth"); opens a `CatechismNode` for that item -- see CATECH-1),
+  `catechism-verse-{VREF}` (batch-f-brief.md; button; one per a catechism
+  item's own curated proof verse, inside `popover-section-catechism-scriptures`;
+  text contains that verse's own FULL KJV text (never truncated); opens a
+  `VerseNode` for `VREF` -- onward navigation from there is ordinary VerseNode
+  behavior, unchanged (its own text/cross-references/catechism citations, if
+  any) -- see CATECH-1),
   `popover-verse-expand` (batch-r-brief.md requirement 4; button; present on
   every VERSE/PASSAGE node's own `popover-section-verse-text`; text "Read
   the whole chapter" collapsed / "Show just this verse" expanded, attr
@@ -214,24 +233,34 @@ Notes:
   sections, in this order: the verse's own text with its own expand
   affordance (`popover-section-verse-text`, see READER-1), cross-references
   inline (`popover-section-xrefs`, conditional -- absent for a verse with
-  zero recorded cross-references), an empty seam reserved for a future
-  catechism provider (renders nothing today -- registering or replacing
-  that ONE provider is the whole of adding it later, no other file changes).
-  PASSAGE nodes get the same verse-text and cross-references sections
-  (aggregating as before this batch). PLACE node sections, in this order: an
-  empty seam reserved for a future place-description provider (renders
-  nothing today), established/destroyed dates
-  (`popover-section-place-dates`, conditional), period blurb
-  (`popover-section-place-blurb`, conditional, BLURB-1), events
+  zero recorded cross-references), "THE SMALL CATECHISM"
+  (`popover-section-catechism`, batch-f-brief.md, conditional -- absent for
+  a verse citing zero catechism items -- see CATECH-1). PASSAGE nodes get
+  the same verse-text/cross-references/catechism sections (aggregating as
+  before this batch). PLACE node sections, in this order: an empty seam
+  reserved for a future place-description provider (renders nothing today),
+  established/destroyed dates (`popover-section-place-dates`, conditional),
+  period blurb (`popover-section-place-blurb`, conditional, BLURB-1), events
   (`popover-section-place-events`, one `place-event-{id}` row per event,
   pushes a `TimeAndPlaceNode` -- the thin, events-only PlaceNode popover
-  this batch's own brief calls out is retired). A node `Kind` no provider
-  claims at all (Chapter/Book/Author/TimeAndPlace/Year) keeps its own
-  PRE-BATCH-R rendering, byte for byte -- unaffected by this note. The
+  this batch's own brief calls out is retired). CATECHISM node sections
+  (batch-f-brief.md; a `CatechismNode`, reached by pushing a
+  `catechism-item-{ID}` row above), in this order: the item's own primary-
+  source text (`popover-section-catechism-text`, conditional -- absent for
+  Baptism/Confession/Sacrament-of-the-Altar items, which pose their own
+  question directly with no separate prompt -- see CATECH-1), the
+  explanation under Luther's own verbatim heading
+  (`popover-section-catechism-explanation`, always present), "Where is this
+  written?" (`popover-section-catechism-where-written`, conditional), "THE
+  SCRIPTURES" (`popover-section-catechism-scriptures`, conditional -- one
+  `catechism-verse-{VREF}` row per curated proof verse). A node `Kind` no
+  provider claims at all (Chapter/Book/Author/TimeAndPlace/Year) keeps its
+  own PRE-BATCH-R rendering, byte for byte -- unaffected by this note. The
   chips row (`popover-chip-map`/`-book`/`-context`/`-verse-{VREF}`) is
   UNCHANGED, pre-existing machinery, rendered below every section exactly as
   before -- "Explore" (the map affordance) is `popover-chip-map`, not a
-  registry section.
+  registry section; a CATECHISM node offers NO chips at all (no geography --
+  conditional presence extends to affordances too, per CATECH-1).
 - READER-1 (batch-r-brief.md requirement 4): `popover-verse-expand`
   collapsed shows exactly the compact text the popover always showed (one
   verse, or a passage's own already-known concatenated text); clicking it
@@ -269,6 +298,52 @@ Notes:
   KJV wording doesn't literally use, is simply not detected. Reader-wide
   (outside a popover's own mini-reader) place-name hovers are explicitly
   OUT of this batch's scope (Batch P).
+- CATECH-1 (batch-f-brief.md, "the small catechism" -- user direction, asked
+  three separate times: verses should surface catechism refs/relevance
+  alongside cross-references): Luther's Small Catechism (the 1921
+  Bente-Dau translation, Concordia Triglotta -- public domain, provenance in
+  LICENSES.md) is curated data (`data/curated/catechism.toml`, six chief
+  parts item by item) wired both directions. VERSE/PASSAGE -> ITEM: `GET
+  /api/verse/{vref}`'s own `catechism` field (Verse) / `GET
+  /api/catechism/{sref}` (Passage span aggregation, mirrors `GET
+  /api/xrefs/{sref}` exactly -- union of member verses' own citations, no
+  "votes", no self-target concept) populate `popover-section-catechism`
+  ("THE SMALL CATECHISM", conditional -- absent for a verse/passage citing
+  nothing), listing `catechism-item-{ID}` rows named by the item's own
+  curated display name (e.g. "The First Commandment", "Baptism — Part the
+  Fourth"). ITEM -> its own content: clicking one pushes a `CatechismNode`
+  (`GET /api/catechism/item/{id}`), whose OWN popover renders, in order:
+  `popover-section-catechism-text` (the item's own primary-source wording --
+  conditional, absent for Baptism/Confession/Sacrament-of-the-Altar items,
+  which pose their own question directly with no separate prompt to quote
+  first), `popover-section-catechism-explanation` (Luther's OWN verbatim
+  heading as its `catechism-section-heading` -- "What does this mean?" for the
+  overwhelming majority of items, a distinct real question for
+  Baptism/Confession/Sacrament-of-the-Altar items, e.g. "What does Baptism
+  give or profit?" -- never a generic placeholder), `popover-section-catechism-where-written`
+  ("Where is this written?", conditional -- present only for the items where
+  Luther's own text poses that exact question), `popover-section-catechism-scriptures`
+  ("THE SCRIPTURES", conditional -- one `catechism-verse-{VREF}` row per
+  curated proof verse, each showing that verse's own FULL KJV text, never
+  truncated). ITEM -> PROOF VERSE -> onward: clicking a `catechism-verse-{VREF}`
+  row pushes an ordinary `VerseNode` -- no bespoke code, so its own
+  cross-references and (if the SAME verse also happens to cite a DIFFERENT
+  catechism item) its own "THE SMALL CATECHISM" section work identically to
+  any other verse reached any other way (verse -> catechism -> proof verse ->
+  its own cross-references -> ..., the batch brief's own onward-navigation
+  requirement, verbatim). A `CatechismNode` offers NO chips
+  (`popover-chip-map`/`-book`/`-context`) at all -- catechism items have no
+  geography, so "Explore geo-temporally"/"Read in context" have nothing to
+  target; conditional presence extends to affordances, not just sections.
+  Verse-link sparsity is a REAL, disclosed property of the primary source,
+  not a bug: Luther's Small Catechism embeds explicit chapter-and-verse
+  citations in only a handful of places (Baptism's four parts, the Close of
+  the Ten Commandments, the Sacrament of the Altar's institution words) --
+  most items (every Commandment 1-10, every Creed article, every Lord's-
+  Prayer petition, both Confession items) cite none, so most catechism items
+  are reachable only by curating a future verse citation for them, not
+  reachable from any verse today; this is disclosed, not silently worked
+  around by inventing citations the primary source itself doesn't make.
 - ONE-RULE (batch-g1-brief.md, user direction 2026-08-19: "the little trinity button
   isn't clear... explorable elements display slightly darker on hover; click opens the
   pop-up menu" -- REPLACES the retired `verse-explore-{n}` ∴ button, which offered no
@@ -288,7 +363,10 @@ Notes:
   `popover-place-date-destroyed` (REGISTRY-1), and `place-event-{id}`
   (REGISTRY-1) -- `.atlas-label`/`.quiet-label` (LABEL-1) are DELIBERATELY NOT
   added to this list; a label is equivalent to its own dot (hover/click ->
-  place-card, per PIN-1), never a popover-opening target itself. Two kinds of
+  place-card, per PIN-1), never a popover-opening target itself. Batch F adds
+  `catechism-item-{ID}` (the "THE SMALL CATECHISM" section's own citing-item
+  rows) and `catechism-verse-{VREF}` ("THE SCRIPTURES" section's own
+  proof-verse rows) -- see CATECH-1. Two kinds of
   element are deliberately
   EXCLUDED, never explorable, and keep whatever hover treatment (if any) they already
   had: SELECTION controls (`verse-num-{n}` -- drives the anchor+extend passage-range

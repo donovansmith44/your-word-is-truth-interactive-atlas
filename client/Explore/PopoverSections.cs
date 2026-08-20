@@ -64,16 +64,23 @@ public interface IPopoverSectionProvider
 ///
 /// Requirement 3's own explicit ordering, realized as registration order:
 /// VERSE/PASSAGE get (a) the verse/passage itself with its own expand
-/// affordance (requirement 4), (b) cross-references inline, (c) the empty
-/// catechism seam (Batch F fills this -- register its own provider HERE,
-/// between CrossRefsSection and PlaceDescriptionSection, replacing or
-/// alongside CatechismSeamSection); PLACE gets (a) description (Batch P
-/// fills this -- register its own provider REPLACING PlaceDescriptionSection),
-/// (b) established/destroyed, (c) period blurb, (d) events. "Explore" (the
-/// map affordance) is deliberately NOT one of these providers -- it stays the
-/// pre-existing <c>popover-chip-map</c> chip, rendered by ExplorerPopover's
-/// own already-working chips row below every section, unchanged by this
-/// batch (see ExplorerPopover.razor's own comment on why).
+/// affordance (requirement 4), (b) cross-references inline, (c) Batch F's
+/// own "THE SMALL CATECHISM" seam (<see cref="CatechismSeamSection"/>,
+/// filled -- see that class's own doc comment); PLACE gets (a) description
+/// (Batch P fills this -- register its own provider REPLACING
+/// PlaceDescriptionSection), (b) established/destroyed, (c) period blurb,
+/// (d) events. CATECHISM (Batch F's own new node kind, reached by pushing a
+/// citing item from the seam above) gets, in this order: (a) the item's own
+/// text (conditional -- absent for Baptism/Confession/Sacrament-of-the-Altar
+/// items, see <see cref="CatechismTextSection"/>), (b) the explanation under
+/// Luther's own verbatim heading, (c) "Where is this written?" (conditional),
+/// (d) "THE SCRIPTURES" -- the item's own proof verses, each explorable
+/// (conditional). "Explore" (the map affordance) is deliberately NOT one of
+/// these providers -- it stays the pre-existing <c>popover-chip-map</c>
+/// chip, rendered by ExplorerPopover's own already-working chips row below
+/// every section, unchanged by this batch (see ExplorerPopover.razor's own
+/// comment on why) -- moot for CATECHISM nodes regardless, since
+/// <c>CatechismNode.ExploreAsync</c> offers no chips at all (no geography).
 ///
 /// A node kind no provider here claims at all (Chapter/Book/Author/
 /// TimeAndPlace/Year) falls back to that node's own <c>BodyAsync</c> --
@@ -91,5 +98,9 @@ public static class PopoverSectionRegistry
         new PlaceDatesSection(),
         new PlaceBlurbSection(),
         new PlaceEventsSection(),
+        new CatechismTextSection(),
+        new CatechismExplanationSection(),
+        new CatechismWhereWrittenSection(),
+        new CatechismScripturesSection(),
     };
 }

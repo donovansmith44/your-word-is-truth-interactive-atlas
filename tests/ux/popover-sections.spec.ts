@@ -77,20 +77,17 @@ test('REGISTRY-1: a verse with zero cross-references shows no xrefs section at a
   await expect(page.getByTestId(/^xref-item-/)).toHaveCount(0);
 });
 
-// The empty catechism seam: no THIRD section ever appears today (Batch F
-// hasn't landed) -- a verse's own section list is exactly verse-text
-// [+ xrefs], never more, regardless of cross-ref count.
-test('REGISTRY-1: the catechism seam renders nothing (no third section) -- Batch F not yet registered', async ({ page }) => {
-  const toc = await loadToc();
-  const found = await findVerse(toc, () => true, 1);
-  test.skip(!found, 'no verse sampled');
-  if (!found) return;
-  const v = parseVerse(found.vref);
-
-  await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
-  const count = await page.getByTestId(/^popover-section-/).count();
-  expect(count).toBeLessThanOrEqual(2);
+// CATECH-1 (batch-f-brief.md, "the small catechism"): a verse with zero
+// catechism citations shows no THIRD section -- the general conditional-
+// presence case (most verses cite nothing; see CONTRACT.md's own CATECH-1
+// note on why that sparsity is a real, disclosed property of Luther's own
+// text, not a bug). Genesis 1 cites no catechism item at all.
+test('CATECH-1: a verse with zero catechism citations shows no catechism section', async ({ page }) => {
+  await page.goto('/read/GEN/1');
+  await page.getByTestId('verse-line-1').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.1');
+  await expect(page.getByTestId('popover-section-catechism')).toHaveCount(0);
+  await expect(page.getByTestId(/^catechism-item-/)).toHaveCount(0);
 });
 
 // ---------------------------------------------------------------------
@@ -263,4 +260,102 @@ test('BLINK-1: prefers-reduced-motion disables the pulse animation on .atlas-bli
   await marker.evaluate(el => el.classList.add('atlas-blink'));
   const animationName = await marker.evaluate(el => getComputedStyle(el).animationName);
   expect(animationName).toBe('none');
+});
+
+// ---------------------------------------------------------------------
+// CATECH-1 (batch-f-brief.md, "the small catechism" -- user direction,
+// asked three separate times): the verse->item->proof-verse hop, Luther's
+// own verbatim explanation heading, and passage aggregation. All against
+// REAL curated data/curated/catechism.toml content (MAT.28.19, "Baptism —
+// Part the First," is Luther's own institution-of-Baptism proof text --
+// the exact "Baptism institution verse" example the batch brief itself
+// names) -- not the demo fixture (that's atlas-server's own Rust-level
+// integration test; this suite runs against the real compiled dataset).
+// ---------------------------------------------------------------------
+
+test('CATECH-1: the Baptism institution verse shows THE SMALL CATECHISM section with the right item', async ({ page }) => {
+  await page.goto('/read/MAT/28');
+  await page.getByTestId('verse-line-19').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('MAT.28.19');
+
+  await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
+  await expect(page.getByTestId('popover-section-catechism').getByTestId('catechism-section-heading')).toHaveText('THE SMALL CATECHISM');
+
+  const items = page.getByTestId(/^catechism-item-/);
+  await expect(items).toHaveCount(1);
+  await expect(page.getByTestId('catechism-item-baptism-1')).toHaveText('Baptism — Part the First');
+
+  // Section order: verse-text, then xrefs (if any), then catechism -- last,
+  // per REGISTRY-1's own VERSE ordering (verse-text, cross-references,
+  // catechism).
+  const sectionIds = await page.getByTestId(/^popover-section-/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
+  expect(sectionIds[sectionIds.length - 1]).toBe('popover-section-catechism');
+  expect(sectionIds[0]).toBe('popover-section-verse-text');
+});
+
+test('CATECH-1: verse -> catechism item -> proof verse hop, with Luther\'s own verbatim heading', async ({ page }) => {
+  await page.goto('/read/MAT/28');
+  await page.getByTestId('verse-line-19').click();
+  await page.getByTestId('catechism-item-baptism-1').click();
+
+  // The CatechismNode popover: title is the item's own display name.
+  await expect(page.getByTestId('popover-title')).toHaveText('Baptism — Part the First');
+
+  // "What is Baptism?" is Luther's OWN bespoke heading for this specific
+  // item (NOT the generic "What does this mean?") -- rendered verbatim as
+  // this section's own title, proving the heading genuinely varies per
+  // item rather than being a hardcoded placeholder string.
+  const explanationSection = page.getByTestId('popover-section-catechism-explanation');
+  await expect(explanationSection).toBeVisible();
+  await expect(explanationSection.getByTestId('catechism-section-heading')).toHaveText('What is Baptism?');
+  await expect(explanationSection).toContainText('Baptism is not simple water only');
+
+  // Baptism Part the First has no separate prompt text of its own (text is
+  // absent -- see CatechismItem's doc comment) -- no catechism-text section.
+  await expect(page.getByTestId('popover-section-catechism-text')).toHaveCount(0);
+
+  // "Where is this written?" -- Luther's own proof citation for this item.
+  const whereWritten = page.getByTestId('popover-section-catechism-where-written');
+  await expect(whereWritten).toBeVisible();
+  await expect(whereWritten.getByTestId('catechism-section-heading')).toHaveText('Where is this written?');
+  await expect(whereWritten).toContainText('Go ye into all the world');
+
+  // "THE SCRIPTURES" -- the proof verse itself, explorable, full text.
+  const scriptures = page.getByTestId('popover-section-catechism-scriptures');
+  await expect(scriptures).toBeVisible();
+  await expect(scriptures.getByTestId('catechism-section-heading')).toHaveText('THE SCRIPTURES');
+  const proofVerse = page.getByTestId('catechism-verse-MAT.28.19');
+  await expect(proofVerse).toBeVisible();
+  await expect(proofVerse).toContainText('MAT.28.19');
+  await expect(proofVerse).toContainText('baptizing them in the name of the Father');
+
+  // A CatechismNode offers no chips at all (no geography).
+  await expect(page.locator('.popover-chips')).toHaveCount(0);
+
+  // The hop: clicking the proof verse pushes an ordinary VerseNode for the
+  // SAME verse the item was originally reached from -- onward navigation
+  // works, no bespoke code (that verse's own sections render normally,
+  // INCLUDING its own "THE SMALL CATECHISM" section again, proving the loop
+  // is a real graph edge, not a dead end).
+  await proofVerse.click();
+  await expect(page.getByTestId('popover-title')).toHaveText('MAT.28.19');
+  await expect(page.getByTestId('popover-section-verse-text')).toBeVisible();
+  await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
+});
+
+test('CATECH-1: a same-chapter passage selection aggregates catechism citations across member verses', async ({ page }) => {
+  // MAT.26.26-28: all three verses cite the SAME item (altar-1, the
+  // Sacrament of the Altar's institution words) -- the passage's own
+  // section must list it exactly ONCE (union+dedup), not three times.
+  await page.goto('/read/MAT/26');
+  await page.getByTestId('verse-num-26').click();
+  await page.keyboard.down('Shift');
+  await page.getByTestId('verse-num-28').click();
+  await page.keyboard.up('Shift');
+  await page.getByTestId('passage-chip').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('MAT.26.26-28');
+
+  await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
+  await expect(page.getByTestId(/^catechism-item-/)).toHaveCount(1);
+  await expect(page.getByTestId('catechism-item-altar-1')).toHaveText('What Is the Sacrament of the Altar?');
 });

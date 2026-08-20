@@ -2954,6 +2954,131 @@ input:focus-visible,
     color: var(--ink-soft);
 }
 
+/* Batch F ("the small catechism"): the shared small-caps eyebrow every
+   catechism section title uses -- "THE SMALL CATECHISM" (the VERSE/PASSAGE
+   seam), Luther's own verbatim explanation heading ("What does this
+   mean?" or an item-specific question), "Where is this written?", and
+   "THE SCRIPTURES" -- design-direction.md's own letterspaced-eyebrow
+   convention (Type: "Labels/eyebrows... same serif in letterspaced small
+   caps"), --bronze-ink so it reads as quiet section chrome rather than an
+   interactive control (contrast against --parchment-raised already proven
+   >=10:1 by its own established uses elsewhere in this exact popover --
+   .popover-breadcrumb-back/.popover-reader-verse-num). Not itself
+   .explorable -- a title is not a click target. */
+.catechism-section-heading {
+    margin: 0 0 .3rem;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .06em;
+    font-size: .85rem;
+    color: var(--bronze-ink);
+}
+
+/* "THE SMALL CATECHISM" -- the VERSE/PASSAGE popover's own list of citing
+   items (CatechismSeamSection), same list/item shape as .popover-xref-list/
+   .popover-xref-item above (a bronze rule that goes lapis on hover), just a
+   single flowing name per row rather than a ref+preview pair -- each row IS
+   the item's own display name, already fully composed by the curated data
+   (see catechism.toml's own header comment for why). */
+.popover-catechism-list {
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+}
+
+.popover-catechism-item {
+    display: block;
+    width: 100%;
+    text-align: start;
+    font-family: var(--font-serif);
+    font-size: .92rem;
+    color: var(--ink);
+    background: none;
+    border: none;
+    border-inline-start: 2px solid var(--bronze);
+    padding: .2rem 0 .2rem .65rem;
+    cursor: pointer;
+}
+
+.popover-catechism-item:hover {
+    border-inline-start-color: var(--lapis);
+}
+
+/* A CATECHISM node's own primary-source content -- design-direction.md
+   requirement 4: "parchment treatment, quiet reverence -- the catechism
+   text is a primary source, not UI copy." Deliberately a touch larger/more
+   generous line-height than ordinary popover prose (matches
+   .popover-verse-text's own treatment of quoted Scripture one section up),
+   since this too is a quoted primary source, not app chrome. */
+.popover-catechism-text {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    font-style: italic;
+}
+
+/* margin-top (not margin-bottom, and not scoped to "every paragraph but the
+   first") on purpose -- single-class selectors only (app.css's own house
+   rule), so this can't be spelled as an adjacent-sibling rule between two
+   same-class paragraphs. A uniform top margin on every paragraph in a
+   sequence gives the SAME visual gap between multi-paragraph explanations
+   (Lord's-Prayer/Confession items whose curated `explanation` concatenates
+   two of Luther's own answers under one heading -- see
+   CatechismSectionRendering's own doc comment) while margin-collapsing
+   (adjacent block margins collapse to the larger, not the sum) keeps the
+   title-to-first-paragraph gap sane rather than doubled. */
+.popover-catechism-explanation,
+.popover-catechism-where-written {
+    margin: .5rem 0 0;
+    font-size: .96rem;
+    line-height: 1.65;
+    color: var(--ink);
+}
+
+/* "THE SCRIPTURES" -- an item's own proof verses, each explorable, full
+   verse text per house rendering (never a truncated preview): ref in the
+   instrument mono face (design-direction.md: "canonical refs... set them
+   like instrument readouts"), text in the reading serif -- same
+   ref-then-text shape .popover-xref-target/.popover-xref-preview already
+   use, reused verbatim rather than inventing a second pattern for
+   functionally the same row shape. */
+.popover-catechism-verse-list {
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+}
+
+.popover-catechism-verse {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .15rem;
+    width: 100%;
+    text-align: start;
+    background: none;
+    border: none;
+    border-inline-start: 2px solid var(--bronze);
+    padding: .2rem 0 .2rem .65rem;
+    cursor: pointer;
+}
+
+.popover-catechism-verse:hover {
+    border-inline-start-color: var(--lapis);
+}
+
+.popover-catechism-verse-ref {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    color: var(--lapis);
+}
+
+.popover-catechism-verse-text {
+    font-family: var(--font-serif);
+    font-size: .95rem;
+    line-height: 1.55;
+    color: var(--ink);
+}
+
 /* MiniWorld's own host (Task 15, READ-4/READ-5, design-direction.md: "the
    mini-map inside popovers... a small engraved figure on a paper card").
    MiniWorld.razor renders this whole element (data-testid="mini-map" lives
