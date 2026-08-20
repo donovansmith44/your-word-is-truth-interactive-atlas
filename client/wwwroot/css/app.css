@@ -740,6 +740,65 @@ input:focus-visible,
     animation: atlas-marker-in 180ms ease-out both, atlas-breathe 2.5s ease-in-out 180ms infinite;
 }
 
+/* Quiet dots (Batch E2, the ever-present graph -- user direction
+   2026-08-19: "all of the cities in our graph are available in any
+   timerange... period relevance is now expressed by GLOW, not existence";
+   escalated by a second, same-day direction: "there should be a clear
+   distinction between biblically active (per time period) places vs not...
+   take two steps further"). A HOLLOW RING -- the classic cartographic
+   "asleep" mark, deliberately the visual OPPOSITE of a filled, glowing
+   ember: a bronze outline around a barely-there parchment fill (NOT fully
+   transparent -- a dead-transparent ring can vanish against a same-hue
+   patch of terrain; a faint parchment tint keeps it a legible shape on any
+   ground this basemap paints, while still reading as empty/unlit next to a
+   solid glowing core). No glow-N class, ever (map.js's makeQuietIcon never
+   writes one), so none of .glow-1..5's box-shadow/breathe rules above ever
+   apply here -- there's nothing here that ever turns them on. Sized
+   smaller still than the first cut (5px vs .atlas-marker's 10px core, half
+   its diameter) specifically so the size gap alone reads at a glance,
+   before a viewer even registers fill vs outline. quietPane (map.js) sits
+   below Leaflet's default markerPane, so a quiet dot can never paint over
+   an ember regardless of on-screen position -- this rule doesn't need its
+   own z-index for that reason (unlike a same-pane trick would). */
+.quiet-marker {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(246, 241, 229, .5);
+    border: 1.5px solid var(--bronze);
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    /* Same child-level scale-in `.atlas-marker` itself uses, paired the same
+       way with the shared `.atlas-marker-icon` wrapper's own opacity-only
+       `atlas-fade-in` (map.js's makeQuietIcon reuses that exact wrapper
+       className) -- NOT `atlas-fade-in` again here, which would double up
+       two opacity fades on the same entrance instead of this wrapper-fades/
+       core-scales pairing every OTHER marker on this plate already uses. */
+    animation: atlas-marker-in 180ms ease-out both;
+}
+
+/* Same invisible hit-halo TECHNIQUE .atlas-marker::after uses -- identical
+   -8px inset, reused verbatim rather than re-derived for the smaller core
+   (batch-e2-brief.md Requirement 2: "the same invisible hit-halo treatment
+   as embers") -- which yields a ~21x21px total hit box on this 5px core
+   (smaller than the ember's own 26x26px, since the core itself is smaller,
+   but still comfortably clear of the >=14px accessibility floor every
+   marker on this plate carries). */
+.quiet-marker::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .quiet-marker {
+        animation: none;
+    }
+}
+
 /* Place labels read as dark ink on the plate now, not pale text on night sky
    -- design-direction.md "World -- REVISED": "place labels in small-caps
    --ink with a soft LIGHT halo (parchment text-shadow) for legibility over
@@ -749,7 +808,23 @@ input:focus-visible,
    old dark-halo's two-layer structure but a touch stronger -- terrain tiles
    vary from deep sea blue to green cover to white boundary strokes right
    under a label, so the halo needs to read as a solid cutout against any of
-   them, not just a soft glow. */
+   them, not just a soft glow.
+
+   Batch E2 (second scope amendment, same day: "lit places: nudge prominence
+   up one more notch... a subtle warm tint on the lit place's LABEL so label
+   and lamp read as one unit"): a FOURTH shadow layer, tight and warm (a
+   --lamp-family gold, 255,200,100 -- the same warm-gold hue --lamp itself
+   is, hand-picked over reading it through a custom property for the same
+   "text-shadow can't color-mix() a custom property cleanly" reason the
+   parchment layers above already accept), laid CLOSEST to the glyph, in
+   front of the three legibility layers (CSS paints text-shadow layers in
+   listed order, first-on-top) so it reads as the label's own inner glow
+   without displacing the parchment cutout that keeps it legible against any
+   terrain underneath. Screenshot-judged (see the batch report): this alone
+   was enough to visibly tie a label to its own glowing marker without
+   touching --ink itself (still the same reading-ink color at rest -- only
+   the halo warms), so a further glow-N intensity bump was judged
+   unnecessary on top of it. */
 .atlas-label {
     position: absolute;
     top: 50%;
@@ -762,7 +837,38 @@ input:focus-visible,
     letter-spacing: .06em;
     font-size: .78rem;
     color: var(--ink);
-    text-shadow: 0 0 2px rgba(246, 241, 229, .95), 0 0 4px rgba(246, 241, 229, .9), 0 1px 5px rgba(246, 241, 229, .8);
+    text-shadow: 0 0 3px rgba(255, 200, 100, .5), 0 0 2px rgba(246, 241, 229, .95), 0 0 4px rgba(246, 241, 229, .9), 0 1px 5px rgba(246, 241, 229, .8);
+    pointer-events: none;
+}
+
+/* Quiet-dot labels (Batch E2, escalated by a same-day second direction:
+   "quiet labels: visually subordinate -- a size step down, --ink-soft,
+   lighter halo; lit labels keep full strength"). A fully self-contained
+   class, not a compound `.atlas-label.quiet-label` selector, per this
+   file's own one-class-per-rule discipline (header comment) -- same
+   reasoning `.landmark-label`/`.polity-label` already follow for their own
+   kind rather than layering onto `.atlas-label`. Same anchor/offset
+   mechanics as `.atlas-label` (this file's marker+label pair is always
+   positioned the same way regardless of kind), but --ink-soft instead of
+   --ink, a size a full step BELOW even `.landmark-label`'s own .68rem (the
+   smallest text on the plate before this batch), and a thinner two-layer
+   halo at lower opacity than every other label kind's own three-layer one
+   -- reads as clearly kin to a place label (still small-caps serif, still
+   anchored the same way) while staying unmistakably the most minor text on
+   the plate, since a quiet place is furniture even landmarks aren't. */
+.quiet-label {
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    margin-inline-start: .4rem;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: .64rem;
+    color: var(--ink-soft);
+    text-shadow: 0 0 2px rgba(246, 241, 229, .6), 0 1px 3px rgba(246, 241, 229, .5);
     pointer-events: none;
 }
 
@@ -1209,6 +1315,26 @@ input:focus-visible,
     font-size: .68rem;
     color: var(--bronze-ink);
     margin-inline-end: .15rem;
+}
+
+/* Batch E2 (the ever-present graph): the quiet line -- replaces verse
+   content entirely for a quiet place's card (PlaceCard.razor's @if renders
+   this INSTEAD OF the verse/passage loop, never alongside it, whenever
+   Place.Events is empty), sitting in the exact spot a verse/passage block
+   would otherwise occupy inside .place-card-scroll. Italic, ink-soft --
+   .place-card-blurb's "curator's-note prose, not scripture" register
+   (design-direction.md's "an invitation, not an error" voice, the same one
+   .world-empty already uses for the page-level empty state) -- but no top
+   border of its own the way .place-card-blurb has: unlike that ADDITION
+   below the verse content, this REPLACES it, so it needs no separator from
+   content that isn't there. */
+.place-card-quiet {
+    margin: 0 0 .5rem;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: .88rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
 }
 
 /* place-card-more / place-card-collapse: the down/up arrow controls

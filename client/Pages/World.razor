@@ -704,7 +704,7 @@
     public void OnPlaceHover(string id, double x, double y)
     {
         _closeCts?.Cancel();
-        var place = _scene?.Places.FirstOrDefault(p => p.Id == id);
+        var place = _scene?.Places.FirstOrDefault(p => p.Id == id) ?? QuietAsScenePlace(id);
         if (place is null)
         {
             return;
@@ -714,6 +714,28 @@
         _hoverX = x;
         _hoverY = y;
         StateHasChanged();
+    }
+
+    // Batch E2: a quiet dot (map.js's own quiet-marker-{id}) reports through
+    // the SAME OnPlaceHover interop call a lit marker's own marker-{id} does
+    // (map.js's wireEvents is shared between the two icon kinds -- see its
+    // own comment) -- this is the one place that decides what "the SAME
+    // place card" (batch-e2-brief.md Requirement 3) means for an id that
+    // isn't in _scene.Places: a synthetic ScenePlace built from the scene's
+    // own QuietPlaces entry, with Events left empty. PlaceCard.razor reads
+    // that empty list as its own signal to render the quiet line instead of
+    // verse content (see its own comment) -- SCENE-2 guarantees every REAL
+    // lit ScenePlace already has >=1 event, so an empty Events list can only
+    // ever mean this synthetic path, never a genuinely lit place. Name is
+    // set to DisplayName (QuietPlace carries no separate plain "name" field
+    // at all -- the wire payload stays deliberately lean, see wire.rs's own
+    // QuietPlace comment) and Brightness to 0 (an unlit place has no glow to
+    // report, and nothing downstream of this synthetic object -- PlaceCard,
+    // OpenPlaceFromCard's PlaceNode -- ever reads Brightness off it anyway).
+    private ScenePlace? QuietAsScenePlace(string id)
+    {
+        var quiet = _scene?.QuietPlaces.FirstOrDefault(p => p.Id == id);
+        return quiet is null ? null : new ScenePlace(quiet.Id, quiet.DisplayName, quiet.DisplayName, quiet.Lat, quiet.Lon, 0, new List<SceneEvent>());
     }
 
     // Requirement 0c: does NOT unconditionally schedule a close anymore --

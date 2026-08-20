@@ -80,29 +80,42 @@
             var verses = MergedVerses();
             var visible = VisibleGroups(Groups(verses), _shownCount);
         }
-        @foreach (var g in visible)
+        @if (verses.Count == 0)
         {
-            @if (g.IsPassage)
+            @* Batch E2 (the ever-present graph): Place.Events is empty ONLY
+               for a quiet place -- World.razor's QuietAsScenePlace is the
+               one path that ever constructs a ScenePlace with no events;
+               SCENE-2 guarantees every REAL lit place has >=1, so this
+               branch can never fire for one. Exact text, CONTRACT-documented
+               (batch-e2-brief.md Requirement 3). *@
+            <p class="place-card-quiet" data-testid="place-card-quiet">No recorded events in this window &mdash; drag the timeline.</p>
+        }
+        else
+        {
+            @foreach (var g in visible)
             {
-                var blockVerses = verses.GetRange(g.Start, g.Length);
-                var span = SpanRef(blockVerses[0], blockVerses[^1]);
-                <p class="place-card-passage" data-testid="hover-passage-@span">
-                    <span class="place-card-passage-ref">@span</span>
-                    <span class="place-card-passage-text">
-                        @foreach (var vref in blockVerses)
-                        {
-                            <span data-testid="hover-verse-@vref"><sup class="place-card-verse-num">@VerseNumOf(vref)</sup>@VerseText(vref) </span>
-                        }
-                    </span>
-                </p>
-            }
-            else
-            {
-                var vref = verses[g.Start];
-                <p class="place-card-verse" data-testid="hover-verse-@vref">
-                    <span class="place-card-verse-ref">@vref</span>
-                    <span class="place-card-verse-text">@VerseText(vref)</span>
-                </p>
+                @if (g.IsPassage)
+                {
+                    var blockVerses = verses.GetRange(g.Start, g.Length);
+                    var span = SpanRef(blockVerses[0], blockVerses[^1]);
+                    <p class="place-card-passage" data-testid="hover-passage-@span">
+                        <span class="place-card-passage-ref">@span</span>
+                        <span class="place-card-passage-text">
+                            @foreach (var vref in blockVerses)
+                            {
+                                <span data-testid="hover-verse-@vref"><sup class="place-card-verse-num">@VerseNumOf(vref)</sup>@VerseText(vref) </span>
+                            }
+                        </span>
+                    </p>
+                }
+                else
+                {
+                    var vref = verses[g.Start];
+                    <p class="place-card-verse" data-testid="hover-verse-@vref">
+                        <span class="place-card-verse-ref">@vref</span>
+                        <span class="place-card-verse-text">@VerseText(vref)</span>
+                    </p>
+                }
             }
         }
     </div>

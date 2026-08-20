@@ -207,9 +207,29 @@ export function init(el, dotnetRef, opts) {
         map.createPane('landmarksPane');
         map.getPane('landmarksPane').style.zIndex = 500;
         map.getPane('landmarksPane').style.pointerEvents = 'none';
+
+        // quietPane (Batch E2, the ever-present graph): z-indexed ABOVE
+        // landmarksPane (500) but BELOW Leaflet's own default markerPane
+        // (600, where the lit ember markers live) -- guarantees a quiet dot
+        // can NEVER visually paint over an ember regardless of the two
+        // layers' own screen-Y stacking (Leaflet's default per-marker
+        // z-index is by screen position WITHIN a pane, not across panes; a
+        // separate, lower pane is the only way to make "embers always beat
+        // quiet dots" hold unconditionally -- see hoverSafety.ts's own
+        // comment on same-pane stacking for why THAT can't be trusted
+        // across two different marker kinds). Slots into design-direction.md's
+        // existing least-to-most-foreground order right where a "place
+        // marker, just unlit" belongs: polity names -> landmarks -> quiet
+        // dots -> lit places. Interactive (no pointerEvents override, unlike
+        // landmarksPane) -- quiet dots must stay hoverable/clickable.
+        map.createPane('quietPane');
+        map.getPane('quietPane').style.zIndex = 550;
     }
 
-    instances.set(id, { map, dotnetRef, mini, markers: new Map(), arrows, borders, landmarkMarkers: [], litByName: new Map() });
+    instances.set(id, {
+        map, dotnetRef, mini, markers: new Map(), arrows, borders, landmarkMarkers: [], litByName: new Map(),
+        quietMarkers: new Map(), // Batch E2 -- see setScene's own quiet-places diff for the shape each entry carries
+    });
 
     // Zoom-tiered label density (design-direction.md's declutter rule --
     // see applyLabelTier's own comment for the concrete tiers/thresholds).
@@ -303,6 +323,52 @@ export function setScene(id, sceneJson) {
         }
     }
 
+    // Batch E2 (the ever-present graph): quiet dots, diffed by id the exact
+    // same way lit markers just were above -- unseen ids added, vanished ids
+    // removed, unchanged ids left alone. Never nudged (no nudgeCloseLatLng
+    // call, no `placed` bookkeeping): quiet dots are furniture, not a
+    // precision-hover surface the way embers are (batch-e2-brief.md's own
+    // framing) -- rendering two coincident quiet dots exactly on top of each
+    // other, or a quiet dot exactly under an ember, is an acceptable, rare
+    // edge case for a background layer, not a bug worth a second nudge
+    // system. Skipped ENTIRELY on a mini instance (no quietPane was ever
+    // created for one -- see init()) -- `scene.quiet_places` is empty for
+    // every scene MiniWorld ever loads anyway (scripture-only), but this
+    // guard makes "no quiet dots on mini" a real, defensive guarantee
+    // (batch-e2-brief.md Requirement 2) rather than an incidental fact of
+    // what MiniWorld happens to fetch today.
+    if (!inst.mini) {
+        const quietPlaces = scene.quiet_places || [];
+        const quietSeen = new Set();
+        for (const p of quietPlaces) {
+            quietSeen.add(p.id);
+            const prior = inst.quietMarkers.get(p.id);
+
+            if (!prior) {
+                const marker = L.marker([p.lat, p.lon], { icon: makeQuietIcon(p), pane: 'quietPane' });
+                wireQuietEvents(marker, inst.dotnetRef, p.id);
+                marker.addTo(inst.map);
+                inst.quietMarkers.set(p.id, { marker, lat: p.lat, lon: p.lon, displayName: p.display_name });
+                continue;
+            }
+
+            if (prior.lat !== p.lat || prior.lon !== p.lon || prior.displayName !== p.display_name) {
+                prior.marker.setLatLng([p.lat, p.lon]);
+                prior.marker.setIcon(makeQuietIcon(p));
+                prior.lat = p.lat;
+                prior.lon = p.lon;
+                prior.displayName = p.display_name;
+            }
+        }
+
+        for (const [placeId, entry] of inst.quietMarkers) {
+            if (!quietSeen.has(placeId)) {
+                inst.map.removeLayer(entry.marker);
+                inst.quietMarkers.delete(placeId);
+            }
+        }
+    }
+
     // Fix round 1 addendum: rebuilt fresh here, every time `markers` just
     // changed (the only thing that can change it) -- see buildLitByName's
     // own comment for why this one Map feeds BOTH applyLabelTier's
@@ -318,10 +384,13 @@ export function setScene(id, sceneJson) {
     // no-ops on mini): a changed/new marker's icon was just rebuilt from
     // scratch by makeIcon above (setIcon replaces the DOM node, so any
     // display:none a PRIOR call left on the old node is gone with it), and
-    // even an unchanged marker's brightness could now sit on the far side of
-    // BRIGHT_LABEL_MIN if the scene itself didn't change but the zoom did
-    // between loads -- either way, every marker's label needs a fresh
-    // decision against the map's CURRENT zoom, every time.
+    // even an unchanged marker's own collision-cell claim could now differ
+    // if the scene itself didn't change but the zoom or the surrounding
+    // candidate set did between loads -- either way, every marker's label
+    // needs a fresh collision decision against the map's CURRENT zoom/pan,
+    // every time (place/quiet labels no longer have a brightness-vs-tier
+    // check to go stale here at all, per this batch's own scope amendment --
+    // see applyLabelTier's own comment -- but landmarks still do).
     applyLabelTier(inst);
 
     // Mini instances never render arrows at all (Task 15 controller ruling
@@ -464,42 +533,123 @@ function wireEvents(marker, dotnetRef, placeId) {
     marker.on('click', e => dotnetRef.invokeMethodAsync('OnPlaceClick', placeId, e.containerPoint.x, e.containerPoint.y));
 }
 
+// Batch E2 fix (self-review finding, not in the original brief): a real bug
+// root-caused while verifying this batch against world-hover-text.spec.ts's
+// own pre-existing place-card-more/collapse tests, which started failing
+// once quiet dots existed. Root cause, confirmed live via
+// `document.elementFromPoint` at every step of a real multi-step pointer
+// transit (not guessed): the existing hover-persistence design (batch-c2-
+// brief.md requirement 0c) makes ANY marker's plain `mouseover` immediately
+// adopt it as `_hoverPlace` -- correct and desired for a DELIBERATE hover,
+// but with ~200 more small quiet dots now scattered across a typical dense
+// scene (the exodus window's own 190), a pointer's ORDINARY straight-line
+// travel from an ember marker to that SAME place's own place-card-more
+// button (anchored at the CARD's position, not the marker's) has a real,
+// observed chance of grazing an unrelated quiet dot's hit-halo along the
+// way -- confirmed: hovering "jericho-1"/"timnath-serah" then moving toward
+// their card's place-card-more crossed "quiet-marker-caesarea" mid-transit,
+// silently swapping the open card to Caesarea (0 events, since it's quiet)
+// a split second before the click landed, breaking the "expand THIS
+// place's own verses" interaction the user (or a test) was actually doing.
+// This is a real UX regression this batch's own quiet-dot feature
+// introduces, not a pre-existing issue with lit markers (which were sparse
+// enough, and spaced apart enough, that an ordinary marker-to-its-own-card
+// transit rarely if ever crossed a DIFFERENT one).
+//
+// Fix: quiet markers alone (lit markers are completely untouched -- this
+// function is never called for them, so every existing CONTRACT-tested lit-
+// marker hover timing is byte-for-byte unchanged) get a short "hover
+// intent" debounce, a standard, well-understood UX pattern (the same idea
+// browser tooltips and libraries like hoverIntent use): a quiet marker only
+// actually adopts `_hoverPlace` (fires OnPlaceHover) after the pointer has
+// genuinely DWELLED on it for QUIET_HOVER_INTENT_MS -- a fast graze during
+// transit to somewhere else never accumulates that dwell time before
+// `mouseout` fires and cancels the pending call, so nothing ever happens
+// for a pass-through (neither OnPlaceHover NOR OnPlaceLeave fires -- from
+// World.razor's own point of view, a graze that never committed is
+// completely invisible, not a hover-then-immediate-leave pair). A genuine,
+// deliberate hover comfortably clears the delay (150ms is below the
+// ~100-200ms threshold most UX research puts at "still feels instant") and
+// opens the SAME quiet card exactly as before.
+const QUIET_HOVER_INTENT_MS = 150;
+
+function wireQuietEvents(marker, dotnetRef, placeId) {
+    let timer = null;
+    let committed = false;
+    marker.on('mouseover', e => {
+        const pt = e.containerPoint;
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            committed = true;
+            dotnetRef.invokeMethodAsync('OnPlaceHover', placeId, pt.x, pt.y);
+        }, QUIET_HOVER_INTENT_MS);
+    });
+    marker.on('mouseout', () => {
+        clearTimeout(timer);
+        // Only signal a leave if a hover was actually committed -- a graze
+        // that never fired OnPlaceHover has nothing to leave (see this
+        // function's own header comment for the full race this avoids).
+        if (committed) {
+            committed = false;
+            dotnetRef.invokeMethodAsync('OnPlaceLeave');
+        }
+    });
+    // Click is a discrete, deliberate action (not a continuous transit risk
+    // the way mouseover is) -- fires immediately, same as a lit marker's own.
+    marker.on('click', e => dotnetRef.invokeMethodAsync('OnPlaceClick', placeId, e.containerPoint.x, e.containerPoint.y));
+}
+
 function makeIcon(p) {
     const brightness = Math.min(5, Math.max(1, p.brightness | 0 || 1));
     const html = `<div class="atlas-marker glow-${brightness}" data-testid="marker-${esc(p.id)}"><span class="atlas-label">${esc(p.name)}</span></div>`;
     return L.divIcon({ html, className: 'atlas-marker-icon', iconSize: [0, 0] });
 }
 
-// Zoom-tiered label DENSITY (design-direction.md's declutter rule: "Never
-// everything at once; the plate must breathe" -- user feedback 2026-08-19:
-// "don't put literally everything at once -- it's overwhelming and
-// claustrophobic"; "ONLY place Biblically relevant cities... relevant at a
-// period in time" is already handled upstream (the API only ever lights
-// places touched by an event in the selected window) -- this is the
-// SEPARATE, purely visual declutter layer on top of that: which of the
-// already-period-true labels stay legible at once). Three tiers, gated on
-// the map's own current zoom:
+// Batch E2 (the ever-present graph): a quiet dot -- no glow-N class at all
+// (so none of .atlas-marker's own box-shadow/breathe rules, which key off
+// exactly that class, ever apply -- there is nothing here to "turn off" per
+// window, it simply never carries the class that turns them on), a small
+// muted `.quiet-marker` core instead of `.atlas-marker`'s ember one, and its
+// own `.quiet-label` (not `.atlas-label`) so app.css can style the two
+// registers independently while keeping the file's one-class-per-rule
+// discipline (see app.css's own header comment). Reuses the SAME
+// `atlas-marker-icon` wrapper className as makeIcon's ember (the plain
+// opacity-only entrance fade, `atlas-fade-in` -- there is no separate
+// "quiet-marker-icon" wrapper class because that fade is the only thing the
+// wrapper itself contributes, and it's identical for both kinds).
+// `p.display_name` is quiet_places' own (and ONLY) name field -- unlike a
+// lit ScenePlace, there is no separate `name` key to prefer here (see
+// wire.rs's own QuietPlace comment on why the payload stays lean).
+function makeQuietIcon(p) {
+    const html = `<div class="quiet-marker" data-testid="quiet-marker-${esc(p.id)}"><span class="quiet-label">${esc(p.display_name)}</span></div>`;
+    return L.divIcon({ html, className: 'atlas-marker-icon', iconSize: [0, 0] });
+}
+
+// Zoom-tiered label DENSITY -- LANDMARK/POLITY ONLY as of Batch E2 (the
+// ever-present graph). Originally (Batch C / design-direction.md's declutter
+// rule) gated PLACE labels too, keyed off brightness (see BRIGHT_LABEL_MIN,
+// removed) -- SUPERSEDED by a direct, mid-batch scope amendment (user
+// direction, this batch: "in general, have all biblically relevant names of
+// places showing on the map at all times, given the place existed at the
+// point in time that we're looking at... zooming in reveals what collision
+// dropped"). Place labels (BOTH lit `.atlas-label` and quiet `.quiet-label`)
+// now participate in applyLabelTier's shared candidates/collision pass
+// UNCONDITIONALLY, every zoom -- COLLISION DAMPING (see (b) below) is the
+// ONLY thing that ever hides one now, never the tier alone. Landmarks and
+// polity labels are explicitly UNCHANGED by this amendment ("polity/
+// landmark rules unchanged") -- they keep exactly the tier gate they always
+// had, below:
 //   FAR  (< ZOOM_TIER_MID):  polity names (own visibility rule, see
-//        BorderLayer) + seas (landmarks kind=water) + only the BRIGHTEST
-//        places (brightness >= BRIGHT_LABEL_MIN).
-//   MID  (< ZOOM_TIER_NEAR): every lit place's label + "major" landmarks
-//        (water + mountain).
-//   NEAR (>= ZOOM_TIER_NEAR): everything, including "dimmer" landmarks
-//        (region) too.
-// Markers (the lamp dots + their glow) are NEVER touched here -- design-
-// direction.md: markers "stay visible at every zoom -- only LABELS tier."
-// Thresholds are coupled to this basemap's own usable range (minZoom ~4,
-// see init(); maxZoom 16) and to fitScene's own maxZoom:8 cap -- a big,
-// spread-out scene (many markers = needs a lower zoom to fit them all)
-// naturally LANDS in the FAR tier on its own, so the worst-clutter case
-// (e.g. the full 10-era span) declutters itself without any scene-size
-// logic here. Picked by screenshot review against this file's own three
-// basemap-comparison windows (patriarchs/egypt-exodus/ACT.27), not derived
-// from a formula -- if minZoom/maxZoom/the basemap ever change, re-check
-// these by eye rather than assuming they still bracket the range usefully.
+//        BorderLayer) + seas (landmarks kind=water) only.
+//   MID  (< ZOOM_TIER_NEAR): + "major" landmarks (water + mountain).
+//   NEAR (>= ZOOM_TIER_NEAR): + "dimmer" landmarks (region) too.
+// Markers (the lamp/quiet dots themselves) are NEVER touched here -- design-
+// direction.md: markers "stay visible at every zoom -- only LABELS tier,"
+// and this batch's own amendment doesn't touch dot visibility either, only
+// which labels are ALLOWED to compete for a spot at all before collision
+// damping decides who wins one.
 const ZOOM_TIER_MID = 6;
 const ZOOM_TIER_NEAR = 9;
-const BRIGHT_LABEL_MIN = 4;
 
 // Fix round 1 (M1 -- review finding: "zoom-tiered label density does not
 // prevent local label collision; the new default view is visibly
@@ -570,6 +720,17 @@ const LANDMARK_DEDUPE_KM = 5; // == CLOSE_THRESHOLD_KM's own "same real-world sp
 const COLLISION_CELL_PX = 72; // picked by screenshot review (see batch report) against real rendered label widths at .atlas-label's .78rem / .landmark-label's .68rem (app.css)
 const PLACE_PRIORITY_BASE = 1000; // + brightness (1-5): unconditionally beats every landmark's own 0-2 priority below
 const LANDMARK_KIND_PRIORITY = { water: 2, mountain: 1, region: 0 };
+// Batch E2 (the ever-present graph): quiet-dot labels compete at the LOWEST
+// priority of any label kind -- strictly below every landmark's own 0-2 (a
+// quiet place is furniture, never contests a place or a curated landmark for
+// a crowded cell; it only ever wins a cell nothing else claimed). Originally
+// ALSO gated to the single highest zoom tier (batch-e2-brief.md's own
+// Requirement 2 wording); that tier gate was removed by this batch's own
+// mid-flight scope amendment alongside the lit-place one above (see the
+// "Zoom-tiered label DENSITY" comment) -- a quiet label now competes for a
+// cell at EVERY zoom, same as a lit place's, with only its (lowest, so it
+// loses first) priority setting it apart.
+const QUIET_LABEL_PRIORITY = -1;
 
 function labelTier(zoom) {
     if (zoom >= ZOOM_TIER_NEAR) {
@@ -613,15 +774,36 @@ function buildLitByName(markers) {
 //
 // Fix round 1 (M1): now THREE passes, not one -- see the DEDUPE/COLLISION
 // DAMPING comment above this file's LANDMARK_DEDUPE_KM etc. constants for
-// the full rule. (1) decide each label's own tier+dedupe visibility exactly
-// as before, hiding it immediately (and finally, for this pass) the moment
-// it fails either check; (2) collect every SURVIVOR -- places and
-// landmarks together, collision has to see both to damp one kind against
-// the other, not just within each kind separately -- into one shared
-// `candidates` list; (3) grid-bucket `candidates` and hide every cell's
-// non-winners. Markers (the lamp dots) are never touched by any of the
-// three passes -- only ever a place's `.atlas-label` child or a landmark's
-// own element (which IS just its label; landmarks have no separate dot).
+// the full rule. (1) decide each label's own tier+dedupe visibility (Batch
+// E2 scope amendment: PLACE labels -- lit and quiet both -- no longer have a
+// tier check here at all, only landmarks still do; see (2) below and the
+// "Zoom-tiered label DENSITY" comment above this file's ZOOM_TIER_MID/NEAR
+// constants), hiding it immediately (and finally, for this pass) the moment
+// it fails whatever check still applies to its kind; (2) collect every
+// SURVIVOR -- places, landmarks, and quiet dots together, collision has to
+// see all three to damp one kind against another, not just within each kind
+// separately -- into one shared `candidates` list; (3) grid-bucket
+// `candidates` and hide every cell's non-winners. Markers (the lamp/quiet
+// dots themselves) are never touched by any of the three passes -- only
+// ever a place's `.atlas-label` child, a quiet dot's `.quiet-label` child,
+// or a landmark's own element (which IS just its label; landmarks have no
+// separate dot).
+//
+// Batch E2 (the ever-present graph): a THIRD label source, quiet dots'
+// `.quiet-label` children, feeds the same shared `candidates`/collision
+// pass at the lowest priority of any kind (QUIET_LABEL_PRIORITY) -- see
+// that constant's own comment. Like the other two kinds, only the LABEL is
+// ever touched here; a quiet dot's own `.quiet-marker` core is NEVER
+// zoom-tiered (unlike a landmark's element, which IS its whole label) --
+// screenshot-judged deliberately, not an oversight: the brief's own named
+// stress case (primeval era, 2 lit places + 204 quiet dots, this file's own
+// worst-case density) was rendered and reviewed at the default whole-world
+// fit, and the small muted dots read as atlas-plate texture, not clutter --
+// the embers stayed the unmistakable foreground with zero dot-tiering
+// needed (see the batch report's own screenshots, both before AND after the
+// scope amendment below made every dot's LABEL always-contesting rather
+// than tier-gated -- collision damping alone was enough to keep that same
+// stress case legible with labels always in play too).
 function applyLabelTier(inst) {
     if (!inst || inst.mini) {
         return;
@@ -642,19 +824,24 @@ function applyLabelTier(inst) {
     // init()) if applyLabelTier is ever reached before the first setScene.
     const litByName = inst.litByName;
 
-    // Every label that cleared its own tier+dedupe check, still competing
-    // for a grid cell: { el, x, y, priority }.
+    // Every label that cleared its own tier+dedupe check (place labels, per
+    // the Batch E2 scope amendment above, have no tier check left at all --
+    // they always enter this list), still competing for a grid cell:
+    // { el, x, y, priority }.
     const candidates = [];
 
+    // Batch E2 scope amendment: place labels compete for a grid cell at
+    // EVERY zoom now, never hidden purely for being at a "wrong" tier --
+    // "have all biblically relevant names of places showing on the map at
+    // all times... zooming in reveals what collision dropped" (user
+    // direction, this batch). `entry.brightness` still sets a lit place's
+    // own PRIORITY (brighter wins a contested cell over dimmer, unchanged),
+    // it just no longer gates whether the label is EVEN OFFERED a chance to
+    // win one.
     for (const entry of inst.markers.values()) {
         const el = entry.marker.getElement();
         const label = el && el.querySelector('.atlas-label');
         if (!label) {
-            continue;
-        }
-        const tierShow = tier !== 'far' || entry.brightness >= BRIGHT_LABEL_MIN;
-        if (!tierShow) {
-            label.style.display = 'none';
             continue;
         }
         const pt = inst.map.latLngToContainerPoint([entry.lat, entry.lon]);
@@ -684,6 +871,29 @@ function applyLabelTier(inst) {
         }
         const pt = inst.map.latLngToContainerPoint([lm.lat, lm.lon]);
         candidates.push({ el, x: pt.x, y: pt.y, priority: LANDMARK_KIND_PRIORITY[lm.kind] ?? 0 });
+    }
+
+    // Batch E2: quiet-dot labels -- like lit place labels above (scope
+    // amendment), NO tier check at all now, always offered a chance to win
+    // a cell. No dedupe check either (unlike places/landmarks above): a
+    // quiet place sharing a name with a landmark or a lit place is already
+    // excluded from ever being quiet in the first place, since `places` and
+    // `quiet_places` are disjoint by construction -- see wire.rs's own
+    // QUIET-1 comment. Participates in the SAME collision grid as every
+    // other label kind, at QUIET_LABEL_PRIORITY (below every landmark's own
+    // 0-2) so a quiet label never wins a contested cell against anything
+    // else, only an empty one -- in a dense scene (the primeval era stress
+    // case: 204 quiet dots) collision damping alone does real, visible work
+    // here, exactly the "the plate must still breathe through pruning, not
+    // through tiers" the scope amendment asks for.
+    for (const entry of inst.quietMarkers.values()) {
+        const el = entry.marker.getElement();
+        const label = el && el.querySelector('.quiet-label');
+        if (!label) {
+            continue;
+        }
+        const pt = inst.map.latLngToContainerPoint([entry.lat, entry.lon]);
+        candidates.push({ el: label, x: pt.x, y: pt.y, priority: QUIET_LABEL_PRIORITY });
     }
 
     // Highest priority first (stable sort -- Array.prototype.sort has been

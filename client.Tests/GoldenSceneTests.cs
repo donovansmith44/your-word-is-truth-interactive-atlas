@@ -15,6 +15,11 @@ public class GoldenSceneTests
         Assert.Equal(-1450, scene.Window!.FromYear);
         Assert.Equal("jericho", scene.Places[0].Id);
         Assert.Equal(27, scene.Places[0].Events[0].VerseGroups[0].Count);
+        // Batch E2 (the ever-present graph): quiet_places round-trips too --
+        // the "both sides" golden regeneration the brief calls for.
+        Assert.Equal("shiloh", scene.QuietPlaces[0].Id);
+        Assert.Equal("Shiloh", scene.QuietPlaces[0].DisplayName);
+        Assert.Equal(3, scene.QuietPlaces[0].TotalEvents);
         Assert.Equal("conquest", scene.Arrows[0].Narrative);
         Assert.Equal(2, scene.Arrows[0].Order);
 

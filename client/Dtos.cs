@@ -15,6 +15,11 @@ public sealed record Scene(
     TimeRangeDto? Window,
     string? Ref,
     List<ScenePlace> Places,
+    // Batch E2 (the ever-present graph): every event-bearing place NOT in
+    // Places for this window -- always present (never null), always empty
+    // for a scripture-mode scene (server: wire.rs's own Scene::quiet_places
+    // doc comment has the full "always an array" rationale).
+    List<QuietPlace> QuietPlaces,
     List<SceneArrow> Arrows,
     List<SceneNarrative> Narratives);
 
@@ -32,6 +37,19 @@ public sealed record ScenePlace(
     double Lon,
     int Brightness,
     List<SceneEvent> Events);
+
+/// Batch E2: one "quiet" place -- an event-bearing place not lit (not in
+/// <see cref="Scene.Places"/>) for this window. Deliberately lean (no
+/// events/verse groups at all -- server: wire.rs's own QuietPlace doc
+/// comment). <see cref="DisplayName"/> uses the SAME window-resolution
+/// rules as <see cref="ScenePlace.DisplayName"/>; <see cref="TotalEvents"/>
+/// is the place's ALL-TIME count, not scoped to this window.
+public sealed record QuietPlace(
+    string Id,
+    string DisplayName,
+    double Lat,
+    double Lon,
+    int TotalEvents);
 
 public sealed record SceneEvent(
     string Id,
