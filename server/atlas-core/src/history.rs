@@ -527,6 +527,25 @@ mod tests {
     }
 
     #[test]
+    fn resolve_existence_destroyed_is_widened_by_a_later_curated_name() {
+        // The symmetric upper-bound case (review Minor-3: implemented,
+        // reachable, but previously untested directly -- no real curated
+        // place happens to have a name range outliving its own destroyed
+        // claim, per place-history.toml, so this is a synthetic shape,
+        // same treatment as several of this module's other pure-function
+        // tests). A curated name extending PAST `destroyed` means the place
+        // still carried SOME identity after its destroyed claim's own upper
+        // bound -- the upper bound widens to the name's own latest year,
+        // mirroring the lower-bound case above exactly. The lower bound
+        // (established, -1003) stays untouched -- this name's own `from`
+        // (-600) is later than established, so widening's `min` is a no-op
+        // on that side, isolating this test to the upper-bound branch alone.
+        let mut h = history_with_dates(Some(claim(-1003, -1003)), Some(claim(-700, -600)));
+        h.names = vec![name("Later Name", -600, -400)];
+        assert_eq!(resolve_existence(Some(&h)), (Some(-1003), Some(-400)));
+    }
+
+    #[test]
     fn resolve_existence_names_alone_never_introduce_a_bound() {
         // A place with curated names but NEITHER established nor destroyed
         // stays fully unbounded ("always labels") -- widening only ever

@@ -2527,6 +2527,30 @@ input:focus-visible,
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
+/* Batch H fix round 2 (review Minor-1): .world-page-scoped override, NOT a
+   change to the shared rule above -- .toast is shared markup between BOTH
+   pages, and the two need DIFFERENT positioning behavior. .reader-page
+   routinely grows past 100vh (a long chapter scrolls) and keeps
+   contain:layout (fix round 1's own reasoning: .header-parchment has no
+   z-index/position to conflict with), so its own toast stays
+   position:fixed -- pinned to the actual viewport regardless of scroll
+   position, which is what a reader mid-chapter needs. .world-page is
+   ALWAYS exactly one viewport tall (both standalone and the split pane --
+   .world-page's own `overflow: hidden`, and .split-pane-atlas's own
+   `height: 100vh; overflow: hidden`), so position:absolute against its own
+   `position: relative` reproduces the identical visual result standalone
+   while additionally confining the toast to the atlas pane's own corner in
+   split mode, instead of the full browser viewport (potentially overlapping
+   the reader pane) a bare position:fixed would still paint across -- same
+   fixed-to-absolute treatment fix round 1 already gave .slider/.legend/
+   .picker-dusk/.mode-chip/.split-open-dusk/.split-atlas-controls, and the
+   same reasoning (a plain position:relative confines position:absolute
+   descendants without creating a stacking context, so this carries none of
+   contain:layout's own z-index regression). */
+.world-page .toast {
+    position: absolute;
+}
+
 .toast-message {
     margin: 0;
     font-family: var(--font-serif);
