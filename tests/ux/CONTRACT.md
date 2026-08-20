@@ -136,3 +136,27 @@ Notes:
   Snapping is evaluated only at the release point -- never while the handle is
   still being dragged, so the brush visibly tracks the pointer exactly until the
   pointer is lifted.
+- Place-card hover persistence (batch-c2-brief.md requirement 0c): `place-card`
+  stays open for as long as the pointer is over its own marker OR the card
+  itself -- it never closes merely because the pointer crossed the gap between
+  them. Once the pointer has left BOTH the marker and the card, the card closes
+  within ~1s (an internal ~350ms grace timer started when the pointer leaves the
+  second of the two, plus ordinary event latency); re-entering either one before
+  that grace elapses cancels the pending close. This holds regardless of which
+  order the marker's own leave and the card's own pointer-enter resolve in -- a
+  marker `mouseout` that resolves (its own async map/interop round trip) AFTER
+  the card's pointer-enter already ran never schedules a close out from under a
+  pointer that is legitimately still on the card.
+- Marker hover-target resolution is best-effort, not a per-marker guarantee,
+  once two or more markers' own hit areas overlap on screen -- a disclosed
+  trade-off of the >=14px hit target every marker carries (batch-c2-brief.md
+  requirement 0c), which two or more genuinely different, merely-close-together
+  places can exceed at typical/dense zoom (the app's own richest scenes measure
+  a majority of their places mutually within this radius). Which marker a
+  pointer at an overlapping pixel resolves to is decided by the browser's own
+  hit-testing (Leaflet's default per-marker z-index, keyed off screen position,
+  not DOM or testid order) -- not a rule this app controls or a claim any test
+  should assume. A marker is only reliably, individually hoverable when no other
+  marker's own hit area overlaps it on the screen as currently rendered.
+  Resolving this for real marker density (not just test-side mitigation) is
+  deferred to a future marker-clustering/decluttering batch.

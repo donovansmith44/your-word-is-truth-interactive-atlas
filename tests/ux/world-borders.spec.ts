@@ -102,7 +102,18 @@ function hexToRgbString(hex: string): string {
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
 }
 
-test('BORDERS-5: every rendered border feature shares one fill-opacity inside the 0.10-0.14 range', async ({ page }) => {
+// Batch C2 fix round 1 (review M1): the brief's ORIGINAL 0.10-0.14 ceiling
+// was itself wrong -- screenshot + pixel-sampling review proved 0.14 (that
+// ceiling's own top) reads as indistinguishable from bare terrain, not a
+// hand-tinted wash. Re-ruled band: 0.22-0.35 (design-direction.md's own
+// Atlas plate detail addendum carries the same corrected number); shipped
+// value 0.32 (app.css's own .atlas-border comment has the full
+// screenshot-review history). This property still checks a RANGE, not a
+// hardcoded single value, for the same reason it always did: fill-opacity
+// is a shared, class-wide design value (like the palette hexes), not a
+// wire-level contract number CONTRACT.md pins -- see the batch report's own
+// "CONTRACT amendments" reasoning.
+test('BORDERS-5: every rendered border feature shares one fill-opacity inside the 0.22-0.35 range', async ({ page }) => {
   await page.goto('/world?from=-2000&to=-1900');
   const paths = page.locator('[data-testid="world-map"] .atlas-border');
   await expect(paths.first()).toBeAttached();
@@ -110,8 +121,8 @@ test('BORDERS-5: every rendered border feature shares one fill-opacity inside th
   expect(opacities.length).toBeGreaterThan(0);
 
   const chosen = parseFloat(opacities[0]);
-  expect(chosen).toBeGreaterThanOrEqual(0.10);
-  expect(chosen).toBeLessThanOrEqual(0.14);
+  expect(chosen).toBeGreaterThanOrEqual(0.22);
+  expect(chosen).toBeLessThanOrEqual(0.35);
   for (const raw of opacities) {
     // "±0" -- every feature's own fill-opacity is the exact same value,
     // not merely close to it (app.css sets this once, class-wide, never

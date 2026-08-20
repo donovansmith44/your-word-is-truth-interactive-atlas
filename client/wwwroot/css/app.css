@@ -580,27 +580,38 @@ input:focus-visible,
     pointer-events: none;
 }
 
-/* fill-opacity 0.14 -- the TOP of Requirement 1's own 0.10-0.14 range.
-   Screenshot review (batch report) tried 0.12 first (this file's own
-   muted plate palette -- rose/buff/sage/pale-lapis/lilac/tan/moss/coral,
-   all deliberately low-chroma -- read as barely-there against
-   World_Shaded_Relief's own already-textured, multi-toned terrain at that
-   value, distinguishable only on close inspection) and 0.20/0.32 (clearly
-   a hand-tinted wash, but both outside the brief's own bound). 0.14 is the
-   most visible option still inside range -- a real, if soft, cast on a
-   named polity (Hittite Empire's own tan wash, Babylonia's, etc., all
-   visible at a normal viewing distance in the batch report's own
-   screenshots), consistent with "soft translucent area wash" reading as
-   restraint by design, not a compromise. Deliberately NOT set on `fill`
-   itself here (unlike the old flat rgba(138,107,61,.07) this replaces):
-   every rendered feature gets its OWN fill color inline from BorderLayer
-   (a CSS declaration here would beat that inline style on specificity
-   grounds for the COLOR, but fill-opacity is genuinely shared/constant
-   across every feature, so it alone stays a plain class rule). The dash is
-   GONE (Requirement 1: "the dash goes -- dashes read as survey lines, not
-   atlas plates") -- solid stroke only. */
+/* fill-opacity 0.32 -- Batch C2 fix round 1 (M1): the ORIGINAL brief gave a
+   0.10-0.14 ceiling, screenshot review correctly found 0.14 (that ceiling's
+   own top) "barely-there" against World_Shaded_Relief's own already-
+   textured, multi-toned terrain -- distinguishable only on close pixel
+   inspection, not to the eye at a normal viewing distance -- and 0.20/0.32
+   read as a genuine hand-tinted wash but were discarded purely for sitting
+   outside that ceiling. The review (batch-c2-review.md, M1) confirmed this
+   with pixel sampling (a 3x3-patch RGB delta of only ~10-13 at 0.12-0.14,
+   dominated by terrain relief noise, not the tint) and re-ruled the ceiling
+   itself wrong -- design-direction.md's own addendum number is corrected
+   alongside this rule, band now 0.22-0.35. 0.32 is the reinstated top-end
+   value from the FIRST tuning pass (the review's own words: "0.32 ...
+   recognizably 'hand-tinted plate'") -- re-confirmed by a fresh screenshot
+   pass across all four reference eras (patriarchs/egypt-exodus/divided-
+   kingdom/early-church, batch report fix-round-1 section) including the
+   hardest case, "Roman Empire" (early-church), the single largest polygon
+   in the whole curated set: even there, terrain relief still visibly shows
+   through the wash -- a wash, not a flat fill, at this value. Screenshot
+   review (batch report) tried 0.12/0.14 first (barely-there, see above),
+   then, within the corrected band, 0.22/0.26/0.30/0.35 (all clearly
+   tinted; 0.35 starts reading closer to a flat colored fill than a wash on
+   the largest polygons) before settling back on 0.32 as the confident,
+   comfortably-inside-band choice. Deliberately NOT set on `fill` itself
+   here (unlike the old flat rgba(138,107,61,.07) this replaces): every
+   rendered feature gets its OWN fill color inline from BorderLayer (a CSS
+   declaration here would beat that inline style on specificity grounds for
+   the COLOR, but fill-opacity is genuinely shared/constant across every
+   feature, so it alone stays a plain class rule). The dash is GONE
+   (Requirement 1: "the dash goes -- dashes read as survey lines, not atlas
+   plates") -- solid stroke only. */
 .atlas-border {
-    fill-opacity: 0.14;
+    fill-opacity: 0.32;
     stroke: var(--bronze);
     stroke-width: 1.2px;
     stroke-opacity: 0.65;
