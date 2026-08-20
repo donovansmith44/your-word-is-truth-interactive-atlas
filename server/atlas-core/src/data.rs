@@ -610,6 +610,23 @@ pub fn demo_fixture() -> AtlasData {
             CrossRef { target: "GEN.13.18".into(), votes: 2 },   // single-verse target, different book
         ],
     );
+    // Batch G1 (GET /api/xrefs/{sref}): JOS.6.21's own list, added so
+    // atlas-server's own endpoint test can exercise the REAL span-
+    // aggregation handler end to end against the span JOS.6.20-21, not just
+    // atlas_core::xrefs's pure unit/property tests. Deliberately overlaps
+    // JOS.6.20's own JOS.1.3 target (5 + 4 = 9, proving votes are SUMMED
+    // across member verses, not just taken from whichever verse is seen
+    // first) and cites JOS.6.20 itself (a self-target once the span is
+    // JOS.6.20-21, proving the drop rule) -- see
+    // verse_chapter_place_and_404's own JOS.6.20 assertions above, which
+    // this entry (a different map key) leaves completely untouched.
+    cross_refs.insert(
+        "JOS.6.21".into(),
+        vec![
+            CrossRef { target: "JOS.1.3".into(), votes: 4 },
+            CrossRef { target: "JOS.6.20".into(), votes: 3 },
+        ],
+    );
 
     let mut data = AtlasData::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs).finish();
     // Batch E: one small curated history record (hebron -- already present

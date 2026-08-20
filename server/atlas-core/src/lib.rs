@@ -5,6 +5,7 @@ pub mod refs;
 pub mod scene;
 pub mod time;
 pub mod wire;
+pub mod xrefs;
 
 use thiserror::Error;
 

@@ -16,6 +16,7 @@ use atlas_core::refs::{ScriptureRef, VerseId};
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene, to_scene_event};
 use atlas_core::time::TimeRange;
 use atlas_core::wire::{Scene, SceneEvent, VerseGroup};
+use atlas_core::xrefs::aggregate_span_xrefs;
 
 use crate::error::ApiError;
 
@@ -331,6 +332,44 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
         events,
         cross_refs,
     }))
+}
+
+/// `GET /api/xrefs/{sref}` (batch-g1-brief.md requirement 2, "passage
+/// context -- passages give xrefs, not just geo"). `sref` must parse as
+/// exactly a `ScriptureRef::Verse` or `ScriptureRef::Passage` -- the brief's
+/// own two given examples, `GEN.1.1` and `GEN.1.1-5`, are read as an
+/// exhaustive pair (a single verse or a same-chapter span) rather than a
+/// representative sample of every `ScriptureRef` shape: a bare book or
+/// chapter ref (`GEN`, `GEN.1`) has no defined "member verses" for this
+/// endpoint to aggregate over, so both 400 as `bad_ref`, the same typed
+/// error every other ref-shaped endpoint already uses (requirement 2:
+/// "Typed errors (bad_ref) unchanged").
+///
+/// ruling-3-policy: unlike `/api/verse/{vref}`, an sref with no recorded
+/// cross-references at all -- including one naming a verse outside this
+/// atlas's compiled canon -- is NOT an error: 200 with an empty list, the
+/// same "gracefully empty, never a 404" policy `scene_scripture`/`chapter`
+/// already follow. This falls out of the aggregation itself needing no
+/// special-casing: `aggregate_span_xrefs` only ever reads `data.cross_refs`/
+/// `data.verses` by key, and a key simply absent from either map
+/// contributes nothing, which is exactly as true for a real, canonical verse
+/// with zero curated cross-references (the overwhelmingly common case) as
+/// for an out-of-canon one.
+///
+/// Business logic (the union-and-sum aggregation, self-target drop, sort,
+/// cap-at-20) lives in `atlas_core::xrefs::aggregate_span_xrefs` -- this
+/// handler is pure response-shape assembly, per this module's own file
+/// header. Reuses `data.cross_refs`/`data.verses` verbatim -- no new data
+/// source, no ETL change.
+pub async fn xrefs(State(data): State<Arc<AtlasData>>, Path(sref): Path<String>) -> Result<Json<Vec<CrossRefOut>>, ApiError> {
+    let span = match ScriptureRef::parse(&sref) {
+        Ok(span @ (ScriptureRef::Verse(_) | ScriptureRef::Passage { .. })) => span,
+        _ => return Err(ApiError::bad_ref(&sref)),
+    };
+
+    let aggregated = aggregate_span_xrefs(&span, &data.cross_refs, &data.verses);
+    let out = aggregated.into_iter().map(|x| CrossRefOut { target: x.target, votes: x.votes, preview: x.preview }).collect();
+    Ok(Json(out))
 }
 
 /// Batch E: one curated established/destroyed date claim, as served by

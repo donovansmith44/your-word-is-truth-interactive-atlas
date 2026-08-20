@@ -326,6 +326,64 @@ async fn polities_empty_fixture_shape_and_errors() {
     assert_eq!(body["polities"], serde_json::json!([]));
 }
 
+/// Batch G1: `GET /api/xrefs/{sref}` end to end, against `demo_fixture()`'s
+/// own JOS.6.20/JOS.6.21 cross-ref entries (see data.rs's own comment on the
+/// JOS.6.21 addition for exactly what this proves and why).
+#[tokio::test]
+async fn xrefs_span_aggregation_ok_and_bad_ref() {
+    let app = app();
+
+    // A single-verse span is just that one verse's own list, minus nothing
+    // (JOS.1.3/GEN.13.18 aren't self-targets of a 1-verse span) -- same
+    // shape/order /api/verse/JOS.6.20's own cross_refs already proves.
+    let (st, body) = call(&app, "/api/xrefs/JOS.6.20").await;
+    assert_eq!(st, 200);
+    let xrefs = body.as_array().unwrap();
+    assert_eq!(xrefs.len(), 3);
+    assert_eq!(xrefs[0]["target"], "JOS.6.20-21");
+    assert_eq!(xrefs[0]["votes"], 9);
+
+    // The real span-aggregation case: JOS.6.20-21 unions both member
+    // verses' own lists. JOS.6.20-21 (self, exactly the span) and JOS.6.20
+    // (self, a member verse) are both dropped; JOS.1.3 is cited by BOTH
+    // members and comes back SUMMED (5 + 4 = 9), not just the first hit;
+    // GEN.13.18 survives untouched at 2. Sorted votes desc -> JOS.1.3 (9)
+    // before GEN.13.18 (2).
+    let (st, body) = call(&app, "/api/xrefs/JOS.6.20-21").await;
+    assert_eq!(st, 200);
+    let xrefs = body.as_array().unwrap();
+    assert_eq!(xrefs.len(), 2, "{body}");
+    assert_eq!(xrefs[0]["target"], "JOS.1.3");
+    assert_eq!(xrefs[0]["votes"], 9);
+    assert!(xrefs[0]["preview"].as_str().unwrap().contains("sole of your foot"));
+    assert_eq!(xrefs[1]["target"], "GEN.13.18");
+    assert_eq!(xrefs[1]["votes"], 2);
+
+    // A structurally valid vref with no cross-refs recorded at all (never
+    // itself a `From` key in the fixture) -- 200, gracefully empty, not 404
+    // (ruling-3 policy: unlike /api/verse/{vref}, this endpoint never 404s).
+    let (st, body) = call(&app, "/api/xrefs/GEN.13.18").await;
+    assert_eq!(st, 200);
+    assert_eq!(body, serde_json::json!([]));
+
+    // Structurally invalid srefs -> 400 bad_ref, same typed error as every
+    // other ref-shaped endpoint.
+    for bad in ["/api/xrefs/NOPE.1.1", "/api/xrefs/GEN.0.1", "/api/xrefs/gen..1", "/api/xrefs/JOS.6.31-21"] {
+        let (st, body) = call(&app, bad).await;
+        assert_eq!(st, 400, "{bad}");
+        assert_eq!(body["error"]["code"], "bad_ref", "{bad}: {body}");
+    }
+
+    // Book/Chapter-shaped refs are structurally valid ScriptureRefs but not
+    // one of this endpoint's two accepted shapes (Verse/Passage) -- also
+    // bad_ref (handlers::xrefs's own doc comment explains why).
+    for bad in ["/api/xrefs/JOS", "/api/xrefs/JOS.6"] {
+        let (st, body) = call(&app, bad).await;
+        assert_eq!(st, 400, "{bad}");
+        assert_eq!(body["error"]["code"], "bad_ref", "{bad}: {body}");
+    }
+}
+
 fn square_ring() -> Vec<(f64, f64)> {
     vec![(10.0, 10.0), (10.0, 11.0), (11.0, 11.0), (11.0, 10.0), (10.0, 10.0)]
 }
