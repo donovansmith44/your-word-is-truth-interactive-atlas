@@ -120,11 +120,53 @@ public sealed record VerseDetail(
     string Text,
     BookMetaDto BookMeta,
     List<SceneEvent> Events,
-    List<CrossRefOut> CrossRefs);
+    List<CrossRefOut> CrossRefs,
+    // Batch F ("the small catechism"): catechism items citing this verse --
+    // shares this ALREADY-fetched verse-detail response (server:
+    // handlers::verse's own doc comment) rather than a second round trip,
+    // "one fetch, not four." Always present, possibly empty.
+    List<CatechismRefDto> Catechism);
 
 public sealed record BookMetaDto(string Author, string? WritePlace, int? WriteFrom, int? WriteTo);
 
 public sealed record CrossRefOut(string Target, int Votes, string Preview);
+
+/// Batch F: one catechism item citing a verse/span -- id + display name
+/// only (no preview text, unlike <see cref="CrossRefOut"/>: requirement 4's
+/// own UI lists citing items as plain named entries). Shared shape for
+/// <see cref="VerseDetail.Catechism"/> and <c>GET /api/catechism/{sref}</c>'s
+/// own array response.
+public sealed record CatechismRefDto(string Id, string Name);
+
+/// Batch F: one resolved proof verse -- <see cref="AtlasClient.CatechismItem"/>'s
+/// own <see cref="CatechismItemDetail.Verses"/> entries, each carrying its
+/// OWN FULL KJV text (design-direction.md's house rendering, not a
+/// truncated preview). Property named <see cref="Vref"/> (one leading
+/// capital, not "VRef") deliberately -- mirrors <c>ChapterOut.Ref</c>'s own
+/// naming exactly, since <c>Wire.Options</c>' snake_case policy maps a
+/// two-capital acronym-like run ("VRef") to "v_ref", not the server's own
+/// literal `vref` JSON key (a real bug caught live: the proof-verse button
+/// silently rendered with an EMPTY testid/ref before this fix, since a
+/// missing JSON property just deserializes to the type's default, `null`
+/// for a string, and interpolating `null` produces no text at all rather
+/// than throwing).
+public sealed record CatechismProofVerseDto(string Vref, string Text);
+
+/// <c>GET /api/catechism/item/{id}</c>. <see cref="Text"/> is null for an
+/// item with no separate prompt distinct from its own explanation (every
+/// Baptism/Confession/Sacrament-of-the-Altar item -- server:
+/// <c>CatechismItem.text</c>'s own doc comment); <see cref="WhereWritten"/>
+/// is null when Luther's text has no distinct "Where is this written?"
+/// proof-citation for this item.
+public sealed record CatechismItemDetail(
+    string Id,
+    string Name,
+    string PartTitle,
+    string? Text,
+    string ExplanationHeading,
+    string Explanation,
+    string? WhereWritten,
+    List<CatechismProofVerseDto> Verses);
 
 public sealed record PlaceDetail(
     string Id,

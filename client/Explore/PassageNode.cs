@@ -24,6 +24,7 @@ public sealed class PassageNode : IExplorable
     private readonly string _sref;
     private readonly string _text;
     private List<CrossRefOut>? _cachedXrefs;
+    private List<CatechismRefDto>? _cachedCatechism;
 
     public PassageNode(string sref, string text)
     {
@@ -71,6 +72,11 @@ public sealed class PassageNode : IExplorable
     // two -- the chip would otherwise re-request the exact same data it
     // just used to decide whether to render itself at all.
     public async Task<List<CrossRefOut>> XrefsAsync(AtlasClient api) => _cachedXrefs ??= await api.Xrefs(_sref);
+
+    // Batch F: PassageNode's own catechism citation list -- CatechismSeamSection's
+    // (Explore/PopoverSectionProviders.cs) exact PassageNode counterpart to
+    // XrefsAsync above, same memoize-once-per-instance reasoning.
+    public async Task<List<CatechismRefDto>> CatechismAsync(AtlasClient api) => _cachedCatechism ??= await api.Catechism(_sref);
 
     public Task<RenderFragment> BodyAsync(AtlasClient api)
     {

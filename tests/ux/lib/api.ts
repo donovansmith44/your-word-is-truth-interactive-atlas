@@ -14,6 +14,11 @@ export const api = {
   verse: (vref: string) => getJson(`/api/verse/${vref}`),
   // Batch G1: GET /api/xrefs/{sref} -- span-aggregated cross-references.
   xrefs: (sref: string) => getJson(`/api/xrefs/${sref}`),
+  // Batch F: GET /api/catechism/{sref} -- span-aggregated catechism
+  // citations (mirrors xrefs above); GET /api/catechism/item/{id} -- one
+  // catechism item's own full content.
+  catechism: (sref: string) => getJson(`/api/catechism/${sref}`),
+  catechismItem: (id: string) => getJson(`/api/catechism/item/${id}`),
   place: (id: string) => getJson(`/api/place/${id}`),
   // Batch E: `/api/place/{id}?from=&to=` -- the window-scoped `history` payload.
   placeHistory: (id: string, from: number, to: number) => getJson(`/api/place/${id}?from=${from}&to=${to}`),

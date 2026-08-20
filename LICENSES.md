@@ -21,7 +21,7 @@ file is the detailed version of record.
 | Carto basemap tiles | Carto terms of use | **Never redistributed by this repo.** Same live-fetch, attributed, fallback-only pattern as the Esri tiles above (used if the Esri service is unreachable). |
 | Leaflet ([leafletjs.com](https://leafletjs.com)) | BSD-2-Clause | Vendored AND COMMITTED at `client/wwwroot/vendor/leaflet/` (v1.9.4, upstream copyright banner retained in the files per BSD-2's notice condition) — committed so a fresh clone runs without any fetch step; `data/fetch-raw.ps1` can still refresh it |
 | All curated data — historical polity borders, the land mask, landmarks, narratives, eras, `events-extra.toml`, and future short blurbs of ours (e.g. era/place descriptions) | **CC0 1.0 Universal** (public domain dedication) | Ours. Everything under `data/curated/` and everything compiled purely from it (`narratives.json`, `eras.json`, `books-meta.json`, `landmarks.json`, `polities.json`, `land-mask.json`) |
-| Small Catechism — future feature, not yet in this repo | Public domain (1921 Bente–Dau translation) | Will be redistributed once the feature is added; recorded here ahead of time so the disposition is decided before the data lands |
+| Luther's Small Catechism, English (1921 Bente–Dau translation, *Triglot Concordia / Concordia Triglotta*) | Public domain (published 1921, USA) | Redistributed — compiled into `catechism.json`; provenance and verification below |
 
 ## Theographic CC BY-SA 4.0 — controller ruling
 
@@ -154,6 +154,88 @@ file's own header comment.
 to the public domain under
 [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).
 
+## The Small Catechism — public domain, 1921 Bente–Dau translation (Batch F)
+
+`data/curated/catechism.toml` (compiled to `catechism.json`), added Batch F
+("the small catechism" — the user asked for this feature three separate
+times): Luther's Small Catechism, English text, the six chief parts item by
+item (33 items) — Ten Commandments, Creed, Lord's Prayer, Sacrament of Holy
+Baptism, Confession, Sacrament of the Altar. Preface and the Daily Prayers/
+Table of Duties appendices were deliberately out of scope this batch
+(optional, not gating, per the batch brief).
+
+**Source.** *Triglot Concordia: The Symbolical Books of the Evangelical
+Lutheran Church: German-Latin-English*, published as a memorial of the
+Reformation's 400th anniversary (St. Louis: Concordia Publishing House,
+1921) — the Bente–Dau translation (Editor: Gerhard Friedrich Bente;
+English translators: F. Bente and W. H. T. Dau). Published 1921 in the USA:
+public domain.
+
+**Text obtained from.** Wikisource's own page-by-page, community-proofread
+transcription of the actual 1921 printing —
+[Index:Concordia_Triglotta.pdf](https://en.wikisource.org/wiki/Index:Concordia_Triglotta.pdf)
+(bibliographic metadata on that page: Editor Gerhard Friedrich Bente,
+Publisher "Concordia Pub. House", Address "St. Louis", Year 1921); the Small
+Catechism itself is pages 817–849 of that scan, fetched 2026-08-20 via each
+page's own `action=raw` wikitext export, e.g.
+[Page:Concordia_Triglotta.pdf/825](https://en.wikisource.org/wiki/Page:Concordia_Triglotta.pdf/825).
+Not a hand-typed transcription of our own — the actual scanned page text,
+proofread by Wikisource's own community process (`pagequality level="1"`
+tags on the fetched pages, meaning at least one human proofreading pass).
+
+**Verification (the batch's own gating requirement).** Two independent
+spot-checks, both required by the batch brief, both confirmed an EXACT
+match: (1) the First Commandment's explanation reads verbatim "We should
+fear, love, and trust in God above all things."; (2) the Sacrament of the
+Altar's institution wording matches the classic, widely-quoted rendering
+exactly. Independently cross-verified against a SECOND source,
+[bookofconcord.org](https://bookofconcord.org/about-the-translation/) (whose
+own "About the Translation" page states its texts are drawn from "Triglot
+Concordia... (St. Louis: Concordia Publishing House, 1921)" and are public
+domain): its own quoted answer to "What is the Sacrament of the Altar?"
+matches our transcription WORD FOR WORD.
+
+**Editorial handling (disclosed, not silent).** The 1921 Triglotta's own
+preface explains its bracket convention explicitly (fetched from
+Wikisource's own `Concordia_Triglotta` page): "Brackets in the English text
+contain words, phrases, sentences, or shorter or longer passages from the
+respective German or Latin text which is not the basis of the
+translation" — i.e. bracketed material is a cross-language comparison aid,
+not part of "the text proper" of the English translation itself. Every
+`text`/`explanation`/`where_written` value in `catechism.toml` is the
+UNBRACKETED "text proper" (e.g. the Eighth Commandment's explanation reads
+"...but defend him, speak well of him, and put the best construction on
+everything," the classic rendering, with the bracketed "[think and]"
+variant dropped). A handful of plain OCR scanno artifacts in the Wikisource
+transcription (old serif-font letter confusions — "de ceive"/"hut"/"he of
+service"/"hegotten"/"baptiam"/"Whhat"/"helieves") are silently corrected to
+the plainly-intended reading ("deceive"/"but"/"be of service"/"begotten"/
+"baptism"/"What"/"believes") — transcription artifacts of the SCAN, not
+variant wording of the 1921 print, so correcting them is more faithful to
+the actual 1921 text, not less. Full reasoning, including the
+`explanation_heading`/`text`-optionality schema choices and verse-link
+derivation, is documented in `catechism.toml`'s own header comment and in
+this batch's own report.
+
+**Verse links.** Come from citations Luther's own text embeds — the Small
+Catechism's own explicit chapter-and-verse citations are sparse (Baptism's
+four parts, the Close of the Ten Commandments, the Sacrament of the Altar's
+institution words); most items cite none, a real and disclosed property of
+the primary source, not a bug or an omission on our part (no verse link was
+invented to make an item "reachable" that Luther's own text doesn't itself
+cite).
+
+**Dedication of our own additions.** The curated TOML's structural
+choices — which items to split out, their ids/display names, and the small
+number of curator judgment calls disclosed in individual items' own
+`ref_note` fields (e.g. how an "f."/"ff." citation's endpoint was read) —
+are original organizational work of this project, dedicated to the public
+domain under
+[CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/),
+same as every other file under `data/curated/`; the QUOTED TEXT itself
+(Luther's own words, in the 1921 Bente–Dau translation) is public domain by
+its own 1921 US publication, not by our dedication.
+
 ## Per-artifact label (`data/compiled/*`)
 
 Compiled outputs are derived works: an artifact built from a
@@ -173,6 +255,7 @@ even though the file itself is generated, not hand-authored.
 | `landmarks.json` | CC0 (ours) | `data/curated/landmarks.toml` |
 | `polities.json` | CC0 (ours) | Compiled from `data/curated/polities/*.toml`; see "Historical polity borders" above |
 | `land-mask.json` | CC0 (ours) | Compiled from `data/curated/land-mask.toml`; see "Land mask" above |
+| `catechism.json` | Public domain (1921 Bente–Dau translation) + CC0 (our own organizational choices) | Compiled from `data/curated/catechism.toml`; see "The Small Catechism" above |
 | `report.txt` | Not a licensed dataset | Generated ETL build report (counts/warnings), not app content |
 
 ## Everything not listed here

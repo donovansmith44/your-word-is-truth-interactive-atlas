@@ -152,24 +152,325 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
 }
 
 /// <summary>
-/// Batch R requirement 3(c): THE SEAM for Batch F's own "THE SMALL
-/// CATECHISM" provider -- registered at exactly the position requirement 3
-/// asks for (between cross-references and Explore), renders NOTHING today
-/// (conditional presence: no catechism content exists yet in this app at
-/// all). Batch F either replaces this class's own <c>ResolveAsync</c> body
-/// with real content, or registers a new provider at this same
-/// <see cref="PopoverSectionRegistry"/> position and removes this
-/// placeholder -- either way, no other file changes. Deliberately scoped to
-/// VERSE only (per requirement 3's own "VERSE node sections" list) -- a
-/// passage's own catechism relevance, if any, is a Batch F design decision,
-/// not this seam's to anticipate.
+/// Batch F ("the small catechism"): fills Batch R's own seam (requirement
+/// 3(c)) with real content -- "THE SMALL CATECHISM" section for VERSE
+/// AND PASSAGE popovers (the seam's own doc comment scoped this to Verse
+/// only; the batch brief's own requirement 4 heading, "VERSE/PASSAGE
+/// popover," and requirement 3's "span/passage selections aggregate citing
+/// items the way xrefs already aggregate" both extend it to Passage too --
+/// same <c>AppliesTo</c> shape <see cref="CrossRefsSection"/> already uses).
+/// Same registry SLOT, same class NAME, per the task reviewer's own live
+/// verification that this batch needs only this one provider's
+/// <c>ResolveAsync</c> body replaced -- no other registry/ExplorerPopover
+/// change.
+///
+/// Lists citing items as explorable entries named by the item's own
+/// (curated) display name -- "The First Commandment", "Baptism — Part the
+/// Fourth" -- clicking one pushes a <see cref="CatechismNode"/> (the SAME
+/// drill-in <see cref="IPopoverSectionContext.PushAsync"/> mechanism every
+/// other section-native explorable row already uses). Conditional presence:
+/// a verse/passage citing nothing shows no section at all (no placeholder
+/// text), same rule <see cref="CrossRefsSection"/> already follows.
 /// </summary>
 public sealed class CatechismSeamSection : IPopoverSectionProvider
 {
-    public bool AppliesTo(IExplorable node) => node.Kind == "Verse";
+    public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
 
-    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
-        Task.FromResult<PopoverSection?>(null);
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        List<CatechismRefDto> items;
+        try
+        {
+            items = node switch
+            {
+                VerseNode v => (await v.DetailAsync(api)).Catechism, // memoized -- shares VerseTextSectionProvider's/CrossRefsSection's own fetch
+                PassageNode p => await p.CatechismAsync(api), // memoized -- its own dedicated cache, mirrors XrefsAsync
+                _ => new List<CatechismRefDto>(),
+            };
+        }
+        catch (Exception)
+        {
+            return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+        }
+
+        if (items.Count == 0)
+        {
+            return null;
+        }
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "catechism-section-heading");
+            builder.AddAttribute(seq++, "data-testid", "catechism-section-heading");
+            builder.AddContent(seq++, "THE SMALL CATECHISM");
+            builder.CloseElement();
+
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "popover-catechism-list");
+            foreach (var it in items)
+            {
+                var id = it.Id; // local copies -- captured per-row by the onclick closure below
+                var name = it.Name;
+                builder.OpenElement(seq++, "button");
+                builder.AddAttribute(seq++, "type", "button");
+                builder.AddAttribute(seq++, "class", "popover-catechism-item explorable");
+                builder.AddAttribute(seq++, "data-testid", $"catechism-item-{id}");
+                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new CatechismNode(id, name))));
+                builder.AddContent(seq++, name);
+                builder.CloseElement();
+            }
+            builder.CloseElement();
+        };
+        return new PopoverSection("catechism", body);
+    }
+}
+
+/// <summary>
+/// Batch F: shared rendering helper for every "Catechism" node-kind section
+/// below -- an optional small-caps title (Luther's own verbatim heading, or
+/// this app's own invented section chrome like "THE SCRIPTURES") followed by
+/// the body text, split on a literal blank line ("\n\n") into one
+/// &lt;p&gt; per paragraph. The blank-line split matters specifically for
+/// Lord's-Prayer/Confession items, whose curated `explanation` deliberately
+/// concatenates TWO of Luther's own answers (e.g. "What does this
+/// mean?" + "How is this done?") under one heading -- see
+/// data/curated/catechism.toml's own header comment -- rendering them as
+/// two separate paragraphs preserves that structure visually rather than
+/// running them together as one wall of text.
+/// </summary>
+file static class CatechismSectionRendering
+{
+    public static void TitledParagraphs(RenderTreeBuilder builder, ref int seq, string? title, string bodyClass, string body)
+    {
+        if (title is not null)
+        {
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "catechism-section-heading");
+            builder.AddAttribute(seq++, "data-testid", "catechism-section-heading");
+            builder.AddContent(seq++, title);
+            builder.CloseElement();
+        }
+
+        foreach (var para in body.Split("\n\n", StringSplitOptions.RemoveEmptyEntries))
+        {
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", bodyClass);
+            builder.AddContent(seq++, para);
+            builder.CloseElement();
+        }
+    }
+}
+
+/// <summary>
+/// Batch F: a <see cref="CatechismNode"/>'s own primary-source TEXT --
+/// the commandment/creed-article/Lord's-Prayer-petition wording itself,
+/// unlabeled (no heading precedes it -- requirement 4 lists it first,
+/// bare: "sections = the item's text"). Conditional presence: Baptism/
+/// Confession/Sacrament-of-the-Altar items have no separate prompt distinct
+/// from their own Q&amp;A (<c>CatechismItemDetail.Text</c> is null there --
+/// see that record's own doc comment), so this section is simply absent for
+/// them -- "no Explore/map section... conditional presence applies to
+/// affordances too" extends here too, one layer further in.
+/// </summary>
+public sealed class CatechismTextSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not CatechismNode item)
+        {
+            return null;
+        }
+
+        CatechismItemDetail detail;
+        try
+        {
+            detail = await item.DetailAsync(api); // memoized -- shared with the three sibling providers below
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (detail.Text is not { } text)
+        {
+            return null;
+        }
+
+        RenderFragment body = builder =>
+        {
+            builder.OpenElement(0, "p");
+            builder.AddAttribute(1, "class", "popover-catechism-text");
+            builder.AddContent(2, text);
+            builder.CloseElement();
+        };
+        return new PopoverSection("catechism-text", body);
+    }
+}
+
+/// <summary>
+/// Batch F: a <see cref="CatechismNode"/>'s own explanation -- Luther's OWN
+/// verbatim heading (<c>CatechismItemDetail.ExplanationHeading</c>, "What
+/// does this mean?" for the overwhelming majority of items, a distinct real
+/// question for Baptism/Confession/Sacrament-of-the-Altar items) as the
+/// section's own small-caps title, per requirement 4 verbatim. Always
+/// present -- every curated item has a non-empty explanation.
+/// </summary>
+public sealed class CatechismExplanationSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not CatechismNode item)
+        {
+            return null;
+        }
+
+        CatechismItemDetail detail;
+        try
+        {
+            detail = await item.DetailAsync(api);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            CatechismSectionRendering.TitledParagraphs(builder, ref seq, detail.ExplanationHeading, "popover-catechism-explanation", detail.Explanation);
+        };
+        return new PopoverSection("catechism-explanation", body);
+    }
+}
+
+/// <summary>
+/// Batch F: a <see cref="CatechismNode"/>'s own "Where is this written?"
+/// proof text -- present only for the items where Luther's own text poses
+/// that exact question (Baptism Part the First/Second/Fourth, the
+/// Sacrament of the Altar's institution words); conditional presence,
+/// absent otherwise (e.g. Baptism Part the Third's own Titus citation is
+/// embedded inline in its explanation instead -- see that item's own
+/// curated `ref_note`).
+/// </summary>
+public sealed class CatechismWhereWrittenSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not CatechismNode item)
+        {
+            return null;
+        }
+
+        CatechismItemDetail detail;
+        try
+        {
+            detail = await item.DetailAsync(api);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (detail.WhereWritten is not { } whereWritten)
+        {
+            return null;
+        }
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            CatechismSectionRendering.TitledParagraphs(builder, ref seq, "Where is this written?", "popover-catechism-where-written", whereWritten);
+        };
+        return new PopoverSection("catechism-where-written", body);
+    }
+}
+
+/// <summary>
+/// Batch F: "THE SCRIPTURES" -- a <see cref="CatechismNode"/>'s own proof
+/// verses, each rendered with its OWN FULL KJV text (house rendering, not a
+/// truncated preview -- <c>CatechismItemDetail.Verses</c>'s own doc
+/// comment) and explorable: clicking one pushes a fresh <see cref="VerseNode"/>,
+/// so onward navigation keeps working exactly as it does everywhere else in
+/// this app (verse -&gt; catechism -&gt; proof verse -&gt; its OWN cross-references
+/// -&gt; ..., requirement 4 verbatim) with no bespoke code here -- a plain
+/// VerseNode already carries every section (text/xrefs/its own catechism
+/// citations, if any) uniformly regardless of how it was reached.
+/// Conditional presence: absent for an item with zero curated proof verses
+/// (most items -- Luther's Small Catechism embeds few explicit citations;
+/// see this batch's own report for the full disclosure).
+/// </summary>
+public sealed class CatechismScripturesSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not CatechismNode item)
+        {
+            return null;
+        }
+
+        CatechismItemDetail detail;
+        try
+        {
+            detail = await item.DetailAsync(api);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (detail.Verses.Count == 0)
+        {
+            return null;
+        }
+
+        var verses = detail.Verses;
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "catechism-section-heading");
+            builder.AddAttribute(seq++, "data-testid", "catechism-section-heading");
+            builder.AddContent(seq++, "THE SCRIPTURES");
+            builder.CloseElement();
+
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "popover-catechism-verse-list");
+            foreach (var v in verses)
+            {
+                var vref = v.Vref; // local copies -- captured per-row by the onclick closure below
+                var text = v.Text;
+                builder.OpenElement(seq++, "button");
+                builder.AddAttribute(seq++, "type", "button");
+                builder.AddAttribute(seq++, "class", "popover-catechism-verse explorable");
+                builder.AddAttribute(seq++, "data-testid", $"catechism-verse-{vref}");
+                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new VerseNode(vref))));
+
+                builder.OpenElement(seq++, "span");
+                builder.AddAttribute(seq++, "class", "popover-catechism-verse-ref");
+                builder.AddContent(seq++, vref);
+                builder.CloseElement();
+
+                builder.OpenElement(seq++, "span");
+                builder.AddAttribute(seq++, "class", "popover-catechism-verse-text");
+                builder.AddContent(seq++, text);
+                builder.CloseElement();
+
+                builder.CloseElement();
+            }
+            builder.CloseElement();
+        };
+        return new PopoverSection("catechism-scriptures", body);
+    }
 }
 
 /// <summary>
