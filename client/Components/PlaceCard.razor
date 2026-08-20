@@ -227,9 +227,23 @@
        never disturb" layering. One row per narrative that has >=1 arrow
        touching THIS place in the CURRENT scene; entirely absent when
        Arrows/Narratives are null (scripture mode, or a scene not yet
-       loaded) or this place has no leg of any narrative here. *@
+       loaded) or this place has no leg of any narrative here.
+
+       Fix round 1 (batch-g1-review.md M1): also gated on Pinned. NarrativeRows()
+       is a pure function of Arrows/Narratives/Place alone -- it doesn't know or
+       care whether this card is pinned -- and World.razor passes Arrows/
+       Narratives into this component unconditionally (see its PlaceCard
+       invocation), same as every other parameter. Without an explicit Pinned
+       check here, a plain unpinned HOVER over a place with narrative legs
+       rendered the exact same fully-functional traversal controls a deliberate
+       click-to-pin is supposed to unlock -- verified live by the reviewer
+       (hovering marker-rameses in the exodus window left data-pinned="false"
+       but card-next-event-exodus present and clickable), and a direct
+       contradiction of this file's own place-card-close gate a few lines above
+       (~85) plus CONTRACT.md's already-correct "present ONLY when the pinned
+       place has >=1 narrative leg" text. *@
     @{ var narrativeRows = NarrativeRows(); }
-    @if (narrativeRows.Count > 0)
+    @if (Pinned && narrativeRows.Count > 0)
     {
         <div class="place-card-narratives" data-testid="place-card-narratives">
             @foreach (var row in narrativeRows)
