@@ -3075,8 +3075,14 @@ input:focus-visible,
    convention (Type: "Labels/eyebrows... same serif in letterspaced small
    caps"), --bronze-ink so it reads as quiet section chrome rather than an
    interactive control (contrast against --parchment-raised already proven
-   >=10:1 by its own established uses elsewhere in this exact popover --
-   .popover-breadcrumb-back/.popover-reader-verse-num). Not itself
+   7.85:1 by its own established uses elsewhere in this exact popover --
+   .popover-breadcrumb-back/.popover-reader-verse-num; HOTFIX batch: this
+   was previously misstated here as ">=10:1" -- corrected to the actual
+   computed ratio, WCAG relative-luminance formula against this file's own
+   --bronze-ink #654A2A / --parchment-raised #FDFAF2, matching the 7.85:1
+   the --bronze-ink token's own :root definition already documents;
+   comfortably above the 4.5:1 AA/7:1 AAA floors for this size of text,
+   just short of the 10:1 figure once claimed here). Not itself
    .explorable -- a title is not a click target. */
 .catechism-section-heading {
     margin: 0 0 .3rem;
