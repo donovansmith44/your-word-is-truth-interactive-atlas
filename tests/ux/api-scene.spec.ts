@@ -3,6 +3,7 @@ import fc from 'fast-check';
 import { api } from './lib/api';
 import { arbWindow, arbYear } from './lib/canon';
 import { fcAssert, RUNS_API } from './lib/fc';
+import { SPAN } from './lib/years';
 
 function arrowsByNarrative(scene: any): Map<string, any[]> {
   const m = new Map<string, any[]>();
@@ -135,4 +136,83 @@ test('SCENE-5: invalid windows are typed 400s', async () => {
     expect(r.error.code).toBe('bad_window');
     expect(typeof r.error.message).toBe('string');
   }
+});
+
+// Batch E2 (the ever-present graph, batch-e2-brief.md): QUIET-1. The full
+// atlas span's own `places` list IS the full, fixed-cardinality
+// event-bearing set ("cities in our graph") -- every real event's `when`
+// necessarily intersects [SPAN.from, SPAN.to] (that IS the whole atlas
+// span), so every event-bearing place is lit there. Fetched once, outside
+// the property loop, as this property's own ground truth to compare every
+// OTHER window's lit-union-quiet against -- cheaper than re-deriving the
+// full set from raw event data (which the black-box UX suite couldn't do
+// anyway -- CONTRACT.md: "couples ONLY to this contract... plus the HTTP
+// API").
+test('QUIET-1: lit union quiet is the fixed event-bearing set, disjoint, for every window', async () => {
+  const full = await api.sceneTime(SPAN.from, SPAN.to);
+  const fullIds = new Set(full.places.map((p: any) => p.id));
+  ok(fullIds.size > 0, 'QUIET-1 setup: the full-span scene must have places to compare against');
+
+  await fcAssert(fc.asyncProperty(arbWindow, async w => {
+    const s = await api.sceneTime(w.from, w.to);
+    ok(s.__status === undefined, 'QUIET-1: unexpected error status');
+    ok(Array.isArray(s.quiet_places), 'QUIET-1: quiet_places must always be an array, never missing');
+
+    const litIds = new Set(s.places.map((p: any) => p.id));
+    const quietIds = new Set(s.quiet_places.map((p: any) => p.id));
+    ok(litIds.size + quietIds.size === new Set([...litIds, ...quietIds]).size,
+      'QUIET-1: lit and quiet ids overlap -- must be disjoint');
+
+    const union = new Set([...litIds, ...quietIds]);
+    ok(union.size === fullIds.size,
+      `QUIET-1: union size ${union.size} != fixed event-bearing set size ${fullIds.size}`);
+    for (const id of fullIds) {
+      ok(union.has(id), `QUIET-1: event-bearing place ${id} missing from lit union quiet in window ${w.from}..${w.to}`);
+    }
+    for (const id of union) {
+      ok(fullIds.has(id), `QUIET-1: ${id} appears in lit union quiet but is not a real event-bearing place`);
+    }
+
+    // The quiet payload stays lean (batch-e2-brief.md Requirement 1: "NO
+    // events, NO verse groups") and every entry carries a positive
+    // ALL-TIME event count (a place only ever enters event_bearing_place_ids
+    // by having >=1 event somewhere).
+    for (const qp of s.quiet_places) {
+      ok(typeof qp.display_name === 'string' && qp.display_name.length > 0, `QUIET-1: ${qp.id} missing display_name`);
+      ok(typeof qp.lat === 'number' && typeof qp.lon === 'number', `QUIET-1: ${qp.id} missing lat/lon`);
+      ok(Number.isInteger(qp.total_events) && qp.total_events > 0, `QUIET-1: ${qp.id}.total_events must be a positive integer`);
+      ok(!('events' in qp) && !('verse_groups' in qp), `QUIET-1: ${qp.id} carries events/verse_groups -- payload must stay lean`);
+    }
+  }), RUNS_API);
+});
+
+test('QUIET-1: scripture-mode scenes never gain quiet places', async () => {
+  const s = await api.sceneScripture('EXO.14');
+  expect(Array.isArray(s.quiet_places)).toBe(true);
+  expect(s.quiet_places.length).toBe(0);
+});
+
+// QUIET-1 spot-assert (batch-e2-brief.md: "every quiet display_name matches
+// the same window-resolution the lit side uses -- spot-assert via a place
+// with a curated name range, e.g. Jerusalem in a pre-Jebus-cutover window").
+// Jerusalem's own compiled events all postdate David's conquest (theo-159 is
+// the earliest, -1055), so it is QUIET, never lit, throughout the primeval
+// era (data/curated/eras.toml: [-4004,-2167]) -- and its curated "Jebus"
+// name range (data/curated/place-history.toml: -4004..-1004) fully covers
+// that window, the exact resolution world-place-history.spec.ts's own
+// NAME-1 test already proves for the LIT side of this same place.
+test('QUIET-1 spot-assert: a quiet place\'s display_name matches the lit-side window-resolution rules (Jerusalem, primeval era)', async () => {
+  const w = { from: -4004, to: -2167 };
+  const s = await api.sceneTime(w.from, w.to);
+  expect(s.places.some((p: any) => p.id === 'jerusalem'), 'jerusalem must not be lit in the primeval era').toBe(false);
+
+  const jerusalem = s.quiet_places.find((p: any) => p.id === 'jerusalem');
+  expect(jerusalem, 'jerusalem should be quiet, not absent entirely, in the primeval era').toBeTruthy();
+  expect(jerusalem.display_name).toBe('Jebus');
+
+  // Cross-checked directly against the same resolve_display_name the lit
+  // side's own marker label/place-card-title call through -- proves the two
+  // paths agree, not just that this ONE value looks plausible.
+  const direct = await api.placeHistory('jerusalem', w.from, w.to);
+  expect(direct.history.display_name).toBe('Jebus');
 });

@@ -43,7 +43,12 @@ test('WORLD-8: place card title opens place history popover', async ({ page }) =
   expect(p, 'expected at least one independently-hoverable place in the exodus scene').toBeTruthy();
   await page.getByTestId(`marker-${p.id}`).hover({ force: true });
   await page.getByTestId('place-card-title').click();
-  await expect(page.getByTestId('popover-title')).toHaveText(p.name);
+  // World.razor's OpenPlaceFromCard builds the PlaceNode from
+  // hoverPlace.DisplayName, not .Name -- CONTRACT.md: popover-title (like
+  // place-card-title/marker labels) shows the scene's own display_name.
+  // The two only coincide when this place has no curated period name AND
+  // (Batch E2) no raw ETL slug-disambiguation suffix in its default name.
+  await expect(page.getByTestId('popover-title')).toHaveText(p.display_name);
   const detail = await api.place(p.id);
   await expect(page.getByTestId('popover'))
     .toContainText(String(Math.abs(detail.events[0].when.from_year)));

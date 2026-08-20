@@ -71,7 +71,15 @@ test('WORLD-2: hover card matches scene data', async ({ page }) => {
       await page.getByTestId(`marker-${p.id}`).hover({ force: true });
       const card = page.getByTestId('place-card');
       await expect(card).toBeVisible();
-      await expect(page.getByTestId('place-card-title')).toHaveText(p.name);
+      // CONTRACT.md: place-card-title shows the scene's own display_name,
+      // not the plain default name -- the two only ever coincided by
+      // accident before Batch E2's own display-name suffix cleanup (folded
+      // into resolve_display_name): a place like "red-sea-1" carries
+      // p.name "Red Sea 1" (a raw ETL slug-disambiguation suffix) but
+      // p.display_name (and therefore the card) "Red Sea" -- asserting
+      // against p.name here would fail for any such place now that the fix
+      // is live, not a hover-targeting bug.
+      await expect(page.getByTestId('place-card-title')).toHaveText(p.display_name);
 
       const verses = mergedVerses(p);
       const shown = initialShownCount(verses);
@@ -151,14 +159,26 @@ test('WORLD-3: three exactly-coincident places each land on a distinct marker sl
 // spec coverage. WORLD-10/11 close that; WORLD-12 covers this fix round's
 // OWN new dedupe mechanism (M1) on top, since it ships in the same round.
 //
-// A note on HOW WORLD-10 changes "zoom" without a manual zoom gesture:
-// map.js's applyLabelTier gates purely on `map.getZoom()`, which fitScene
-// (map.js) sets from a plain bounds-fit of whichever scene is currently
-// loaded -- a widely-spread scene needs a looser zoom to fit every marker
-// than a tightly-clustered one (applyLabelTier's own comment: "a big,
-// spread-out scene... naturally LANDS in the FAR tier on its own"). Picking
-// two windows whose NATURAL fitScene zoom already lands on opposite sides
-// of ZOOM_TIER_MID exercises the exact same production code path
+// Batch E2 (the ever-present graph) scope amendment (user direction, this
+// batch, mid-flight: "have all biblically relevant names of places showing
+// on the map at all times... zooming in reveals what collision dropped"):
+// PLACE labels (lit -- this test's own subject -- and quiet both) no longer
+// have ANY zoom-tier gate at all, only collision damping -- "zoom-tiered
+// label density" now describes LANDMARKS/POLITY LABELS ONLY (map.js's own
+// ZOOM_TIER_MID/NEAR comment has the amended rule). This test is UPDATED,
+// not retired: it still proves real, live behavior differences between a
+// wide-spread and a tight scene, just landmark-only for the tier half, and
+// a NEW assertion for the place half -- a place label that a wide scene's
+// OWN tier previously hid outright (Susa, isolated from any collision) is
+// now VISIBLE there too, since nothing (no tier, no collision) suppresses it.
+//
+// A note on HOW WORLD-10 changes "zoom" without a manual zoom gesture (still
+// relevant for the landmark half): map.js's applyLabelTier gates landmarks
+// purely on `map.getZoom()`, which fitScene (map.js) sets from a plain
+// bounds-fit of whichever scene is currently loaded -- a widely-spread scene
+// needs a looser zoom to fit every marker than a tightly-clustered one.
+// Picking two windows whose NATURAL fitScene zoom already lands on opposite
+// sides of ZOOM_TIER_MID exercises the exact same production code path
 // (map.getZoom() read at render time) a scripted zoom would, without
 // depending on one: Leaflet's own top-left zoom control sits partly under
 // this page's fixed dusk header at typical viewports and is unreliable to
@@ -169,39 +189,96 @@ test('WORLD-3: three exactly-coincident places each land on a distinct marker sl
 // scenes sidesteps both, and is arguably more representative of how a real
 // user actually reaches each density (visiting a wide-span window vs a
 // narrow one), not less.
-test('WORLD-10: zoom-tiered label density -- a wide-spread scene shows only the brightest place/water labels; a tight scene shows the fuller set', async ({ page }) => {
+test('WORLD-10a: place labels show at every zoom, collision damping only (no brightness-vs-tier gate left)', async ({ page }) => {
   // Full span (-4004..100): 200+ places across the entire biblical-world
-  // lock (Table-of-Nations entries included, e.g. Punt/Tarshish/India --
-  // see map.js's own BIBLICAL_WORLD_BOUNDS comment) -- fitScene's own
-  // bounds-fit zoom for a scene this spread out lands well under
-  // ZOOM_TIER_MID (6), the FAR tier, confirmed empirically while writing
-  // this test (not assumed) against the real running app.
+  // lock. "Egypt" (brightness 5) and "Susa" (brightness 1, geographically
+  // isolated in Persia/Elam -- no other PLACE label contests its cell; the
+  // only kind that could is another place, since place priority always
+  // beats landmark/quiet) both stay visible here -- Susa is the load-
+  // bearing case: under the OLD tier rule it was hidden outright at this
+  // window's FAR-tier zoom purely for being brightness < BRIGHT_LABEL_MIN,
+  // with no tier gate left to do that anymore, only collision (which it
+  // clears) decides.
   await page.goto('/world?from=-4004&to=100');
   await expect(page.getByTestId('marker-egypt').locator('.atlas-label'),
-    'brightness-5 place ("Egypt") stays visible at the FAR tier').toBeVisible();
+    'brightness-5 place ("Egypt") visible -- always was, tier or not').toBeVisible();
   await expect(page.getByTestId('marker-susa').locator('.atlas-label'),
-    'brightness-1 place ("Susa"), isolated from any collision, hidden at the FAR tier').toBeHidden();
-  await expect(page.getByTestId('landmark-euphrates'),
-    'water-kind landmark visible at every tier, incl. FAR').toBeVisible();
-  await expect(page.getByTestId('landmark-mount-sinai'),
-    'mountain-kind landmark hidden below the MID tier').toBeHidden();
+    'brightness-1 place ("Susa"), isolated from any collision -- NO tier gate left to hide it now').toBeVisible();
 
   // Gospels (-5..29, this batch's own new bare-/world default -- CONTRACT):
-  // a small, tightly-clustered scene (Galilee/Judea) whose fitScene zoom
-  // lands in the MID/NEAR tier -- this is exactly the density MAJOR 1
-  // itself reported on this same window. "Egypt" is a real place in BOTH
-  // scenes but at a different brightness per window (brightness is a
-  // per-window event count, not a fixed property of the place) -- here
-  // it's 2, so this is the SAME place's label toggling from hidden (FAR,
-  // full span) to shown (MID/NEAR, gospels) purely from the window/zoom
-  // change. "Mount Sinai" (not narrated anywhere in the Gospels, so no
-  // dedupe interaction with a lit place -- see WORLD-12) goes from hidden
-  // to shown the same way.
+  // "Egypt" is a real place in BOTH scenes at different brightness per
+  // window (a per-window event count, not a fixed property of the place) --
+  // visible in both regardless, now that brightness only ever affects
+  // COLLISION PRIORITY, never bare tier visibility.
   await page.goto('/world?from=-5&to=29');
   await expect(page.getByTestId('marker-egypt').locator('.atlas-label'),
-    'brightness-2 place now visible -- the fuller MID/NEAR set').toBeVisible();
+    'brightness-2 place, visible here too').toBeVisible();
+});
+
+// WORLD-10b: landmark/polity tiering is explicitly UNCHANGED by this
+// batch's scope amendment ("polity/landmark rules unchanged") -- but
+// proving that live against the REAL full-span/gospels scenes (as WORLD-10
+// did pre-amendment) is no longer reliable: with place labels now ALWAYS
+// competing for a cell too (WORLD-10a above), a landmark that used to have
+// an uncontested cell can legitimately lose that SAME cell to a nearby
+// place label the tier gate no longer keeps out of the race -- confirmed
+// live while writing this test: "landmark-euphrates" (water-kind, always
+// visible pre-amendment) is hidden at the real full-span scene's default
+// viewport, beaten by a now-always-on nearby place label, which is
+// COLLISION DAMPING working exactly as intended (batch-e2-brief.md's own
+// second amendment: "the plate must still breathe through pruning") --
+// NOT a landmark-tiering regression. Isolating the check from that (real,
+// working-as-designed) confound needs a scene with NO place labels in the
+// race at all -- `places: []` (route-mocked, same black-box "real /api/
+// scene response, edited" technique WORLD-3/WORLD-12 already use, never a
+// client-internals import) removes every place-label competitor so the
+// landmark's own tier gate is the only thing left deciding its visibility.
+// fitScene (map.js) no-ops when `markers.size === 0`, so the map's zoom
+// stays wherever a fresh page load leaves it (DEFAULT_ZOOM 5, itself
+// already < ZOOM_TIER_MID's 6 -- the FAR tier this test's first half needs).
+test('WORLD-10b: landmark labels are still zoom-tiered, isolated from place-label collision competition', async ({ page }) => {
+  const full = await api.sceneTime(-4004, 100);
+  await page.route(
+    url => url.pathname === '/api/scene' && url.searchParams.get('from') === '-4004' && url.searchParams.get('to') === '100',
+    route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ ...full, places: [], quiet_places: [], arrows: [], narratives: [] }),
+    }));
+  await page.goto('/world?from=-4004&to=100');
+  await expect(page.getByTestId(/^marker-/)).toHaveCount(0); // confirms the mock actually applied
+  await expect(page.getByTestId('landmark-euphrates'),
+    'water-kind landmark visible at every tier, incl. FAR -- landmark tiering unchanged, no place-label competition to lose to here').toBeVisible();
   await expect(page.getByTestId('landmark-mount-sinai'),
-    'mountain-kind landmark now visible -- the fuller MID/NEAR set').toBeVisible();
+    'mountain-kind landmark hidden below the MID tier -- landmark tiering unchanged').toBeHidden();
+
+  // The positive transition (FAR -> MID reveals mountain-kind landmarks)
+  // needs an actual zoom change -- fitScene never provides one here (it
+  // no-ops on the empty-places mock above), so this drives Leaflet's own
+  // scroll-wheel zoom directly (not the unreliable-to-click top-left
+  // control -- see this suite's own established reasoning for avoiding
+  // it), centered on the viewport, same real user gesture a person would
+  // use. 3 notches from DEFAULT_ZOOM (5) reliably clears ZOOM_TIER_MID (6),
+  // confirmed empirically while writing this test.
+  const otherWindow = await api.sceneTime(-5, 29);
+  await page.route(
+    url => url.pathname === '/api/scene' && url.searchParams.get('from') === '-5' && url.searchParams.get('to') === '29',
+    route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ ...otherWindow, places: [], quiet_places: [], arrows: [], narratives: [] }),
+    }));
+  await page.goto('/world?from=-5&to=29');
+  await expect(page.getByTestId(/^marker-/)).toHaveCount(0);
+  await expect(page.getByTestId('landmark-mount-sinai'), 'still hidden at the untouched default (FAR) zoom').toBeHidden();
+  for (let i = 0; i < 3; i++) {
+    await page.mouse.move(640, 360);
+    await page.mouse.wheel(0, -300);
+  }
+  await expect(page.getByTestId('landmark-mount-sinai'),
+    'mountain-kind landmark now visible after crossing into the MID tier -- landmark tiering unchanged').toBeVisible();
 });
 
 // Fix round 1 (M3, review MAJOR 3): polity-label-{slug} (CONTRACT, added by
