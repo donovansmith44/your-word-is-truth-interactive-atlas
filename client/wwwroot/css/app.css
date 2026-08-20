@@ -68,7 +68,7 @@
        with, so it's the one color that actually dips under the floor.
        Value derivation (real screenshot pixels, not a synthetic estimate --
        see the batch report's Fix round 1 section for every sampled ratio):
-       .border-tag-year/.mode-chip-ref measured 4.98:1 uncorrected. A FIRST
+       the retired .border-tag-year/.mode-chip-ref measured 4.98:1 uncorrected. A FIRST
        attempt at this token used the same rgba(0,0,0,.35) .slider-readout
        and --picker-verse-bg already used, unnamed, before this fix -- that
        only reached ~6.5-6.6:1 (still under the 7:1 floor) once measured
@@ -88,9 +88,10 @@
        top of dusk-panel's own blur. Applied to every bronze-bright-on-
        dusk-panel instrument-face text in the file: .slider-readout,
        --picker-verse-bg (dusk variant only -- the parchment variant has its
-       own, unrelated, already-passing value), .mode-chip-ref,
-       .border-tag-year -- one token, four consumers, instead of four
-       independent (and, it turned out, three UNDER-dosed) copies of the
+       own, unrelated, already-passing value), .mode-chip-ref, and (until
+       Batch B2 retired it along with the rest of the border-tag) the old
+       .border-tag-year -- one token, several consumers, instead of
+       independent (and, it turned out, mostly UNDER-dosed) copies of the
        same literal. */
     --panel-inset: rgba(0, 0, 0, 0.7);
 
@@ -553,25 +554,22 @@ input:focus-visible,
     font-family: var(--font-serif);
 }
 
-/* Historical borders (design-direction.md's Atlas plate detail, ADDED PER
-   USER FEEDBACK 2026-08-18: "Historical borders render as a vector
-   overlay -- thin ink-toned strokes... no fill or a barely-there wash";
-   HAND-TINTED per the SECOND ADDENDUM, USER FEEDBACK 2026-08-19: "make the
-   borders pretty like a real map"). map.js's BorderLayer authors one
-   <path class="atlas-border"> per feature directly into its own
-   <svg class="atlas-borders"> (by contract with it, like .atlas-arrows/
-   .atlas-arrow above) -- this file only owns the class-level presentation
-   that's shared by EVERY feature (stroke, fill-opacity); the per-feature
-   fill COLOR is set inline by BorderLayer.setData itself (style.fill, not
-   a CSS declaration here -- see that method's own polityFillColor comment
-   for the deterministic name-hash -> muted-plate-tint rule). --bronze is
-   the token this file's own :root comment already earmarks for "RULES/
-   BORDERS", so it's reused here rather than introducing a new one.
-   pointer-events:none is belt-and-suspenders with Leaflet's own default
-   `.leaflet-pane > svg path` rule (see .leaflet-pane > svg path.atlas-arrow
-   below, which has to fight and override that same default) -- borders
-   WANT to stay non-interactive, so no override is needed, just an explicit
-   restatement for clarity. */
+/* Hand-authored per-polity timerange borders (Batch B2, "borders v2, the
+   cartographer's edition" -- ground-up redo per direct user feedback
+   2026-08-19: "whatever you did for bordering looks absolutely
+   horrendous... color it in how a cartographer would color a map").
+   map.js's BorderLayer authors THREE stacked <path> elements per ring
+   directly into its own <svg class="atlas-borders"> (by contract with it,
+   like .atlas-arrows/.atlas-arrow above) -- this file owns every class-
+   level presentation value (fill-opacity, stroke widths/dashes, blend
+   mode) shared across every ring of every era; the per-polity fill/stroke
+   COLOR is set inline by BorderLayer itself (style.fill/style.stroke, not
+   a CSS declaration here -- see map.js's own POLITY_TINTS/POLITY_TINTS_DARK
+   comment). pointer-events:none is belt-and-suspenders with Leaflet's own
+   default `.leaflet-pane > svg path` rule (see .leaflet-pane > svg
+   path.atlas-arrow below, which has to fight and override that same
+   default) -- borders WANT to stay non-interactive, so no override is
+   needed, just an explicit restatement for clarity. */
 .atlas-borders {
     position: absolute;
     top: 0;
@@ -580,42 +578,133 @@ input:focus-visible,
     pointer-events: none;
 }
 
-/* fill-opacity 0.32 -- Batch C2 fix round 1 (M1): the ORIGINAL brief gave a
-   0.10-0.14 ceiling, screenshot review correctly found 0.14 (that ceiling's
-   own top) "barely-there" against World_Shaded_Relief's own already-
-   textured, multi-toned terrain -- distinguishable only on close pixel
-   inspection, not to the eye at a normal viewing distance -- and 0.20/0.32
-   read as a genuine hand-tinted wash but were discarded purely for sitting
-   outside that ceiling. The review (batch-c2-review.md, M1) confirmed this
-   with pixel sampling (a 3x3-patch RGB delta of only ~10-13 at 0.12-0.14,
-   dominated by terrain relief noise, not the tint) and re-ruled the ceiling
-   itself wrong -- design-direction.md's own addendum number is corrected
-   alongside this rule, band now 0.22-0.35. 0.32 is the reinstated top-end
-   value from the FIRST tuning pass (the review's own words: "0.32 ...
-   recognizably 'hand-tinted plate'") -- re-confirmed by a fresh screenshot
-   pass across all four reference eras (patriarchs/egypt-exodus/divided-
-   kingdom/early-church, batch report fix-round-1 section) including the
-   hardest case, "Roman Empire" (early-church), the single largest polygon
-   in the whole curated set: even there, terrain relief still visibly shows
-   through the wash -- a wash, not a flat fill, at this value. Screenshot
-   review (batch report) tried 0.12/0.14 first (barely-there, see above),
-   then, within the corrected band, 0.22/0.26/0.30/0.35 (all clearly
-   tinted; 0.35 starts reading closer to a flat colored fill than a wash on
-   the largest polygons) before settling back on 0.32 as the confident,
-   comfortably-inside-band choice. Deliberately NOT set on `fill` itself
-   here (unlike the old flat rgba(138,107,61,.07) this replaces): every
-   rendered feature gets its OWN fill color inline from BorderLayer (a CSS
-   declaration here would beat that inline style on specificity grounds for
-   the COLOR, but fill-opacity is genuinely shared/constant across every
-   feature, so it alone stays a plain class rule). The dash is GONE
-   (Requirement 1: "the dash goes -- dashes read as survey lines, not atlas
-   plates") -- solid stroke only. */
-.atlas-border {
-    fill-opacity: 0.32;
-    stroke: var(--bronze);
-    stroke-width: 1.2px;
-    stroke-opacity: 0.65;
+/* .atlas-border-wash -- the printed-ink fill. mix-blend-mode:multiply is
+   the whole of "printed, not overlaid": multiply blending DARKENS the
+   terrain pixel-by-pixel (each channel multiplied, never simply painted
+   over it) the way ink actually behaves soaking into a paper base map --
+   terrain relief shows through at every opacity below, by construction of
+   the blend mode itself, which a flat (non-blended) translucent fill never
+   guaranteed no matter how low its own opacity went (exactly the complaint
+   that sank the C2 rendering this batch replaces). fill-opacity tiers by
+   [data-age] (set by BorderLayer per ring, per this file's own header
+   comment): "newest" (a single visible era, OR the newest of several) is
+   0.32 -- carried over unchanged from Batch C2's own tuned, screenshot-
+   verified value (see git history for that tuning pass; still confirmed
+   against World_Shaded_Relief on this batch's own screenshots, now read
+   through multiply instead of flat alpha, which if anything reads MORE
+   like ink, not less). "oldest" (only present in a multi-era window) is
+   a deliberately lighter 0.14 -- NOT a repeat of C2's own rejected
+   "barely-there" ceiling (that finding was about a SINGLE, only wash
+   needing to read as tinted at all; here the brief explicitly wants the
+   older era to look fainter than the newer one it's sharing the plate
+   with, so a lower value is the correct choice, not a mistake). "middle"
+   (a third-or-later tier, rare at this app's own data scale) sits between
+   the two. */
+.atlas-border-wash {
+    mix-blend-mode: multiply;
+    stroke: none;
     pointer-events: none;
+}
+
+.atlas-border-wash[data-age="oldest"] {
+    fill-opacity: 0.14;
+}
+
+.atlas-border-wash[data-age="middle"] {
+    fill-opacity: 0.22;
+}
+
+.atlas-border-wash[data-age="newest"] {
+    fill-opacity: 0.32;
+}
+
+/* .atlas-border-band -- "a soft inner tint band along the border" (the
+   batch brief's own first-choice technique: "a wider, low-opacity stroke
+   clipped/behind" -- deliberately the SIMPLE option, not the inset-ring
+   fallback, since a plain wide stroke straddles its own path (half inside
+   the ring, half outside) with zero inset-polygon math). Same hue as the
+   wash (fill:none, stroke carries the color -- set inline by BorderLayer,
+   same POLITY_TINTS array), also multiply-blended so it reads as a
+   stronger patch of the same ink near the line rather than a separate
+   flat color. Tiered the same way the wash is, at roughly two-thirds its
+   own opacity -- a visible but genuinely SOFT accent, not a second border
+   line. */
+.atlas-border-band {
+    mix-blend-mode: multiply;
+    stroke-width: 6px;
+    pointer-events: none;
+}
+
+.atlas-border-band[data-age="oldest"] {
+    stroke-opacity: 0.09;
+}
+
+.atlas-border-band[data-age="middle"] {
+    stroke-opacity: 0.15;
+}
+
+.atlas-border-band[data-age="newest"] {
+    stroke-opacity: 0.22;
+}
+
+/* .atlas-border-line -- the fine border LINE itself, in the polity's own
+   hue DARKENED (map.js's POLITY_TINTS_DARK, set inline via style.stroke)
+   per the brief's own wording ("a fine solid stroke in the polity hue
+   (darkened)"). NOT blended (plain stroke color, no mix-blend-mode) --
+   unlike the translucent wash/band, the line is meant to read as a
+   definite drawn line, the way a cartographer's actual pen stroke would,
+   not a tint. Dash tiers are the cartographer's own convention the batch
+   brief asks for verbatim: "dotted for older, solid for newer" --
+   "newest" is a plain solid line (also the single-era-window default: no
+   dash at all, just a stroke + wash, per requirement 6's own "single-era
+   window: solid ring + wash"); "oldest" is a fine dotted line, thinnest
+   and lowest-opacity of the three (visually the least assertive, matching
+   its own lightest wash); "middle" is dashed, between the two both in
+   dash length and opacity. */
+.atlas-border-line {
+    pointer-events: none;
+}
+
+.atlas-border-line[data-age="oldest"] {
+    stroke-width: 1.1px;
+    stroke-opacity: 0.6;
+    stroke-dasharray: 1.4, 3.4;
+    stroke-linecap: round;
+}
+
+.atlas-border-line[data-age="middle"] {
+    stroke-width: 1.2px;
+    stroke-opacity: 0.75;
+    stroke-dasharray: 7, 4;
+}
+
+.atlas-border-line[data-age="newest"] {
+    stroke-width: 1.4px;
+    stroke-opacity: 0.88;
+}
+
+/* Polity year tags (Batch B2 requirement 3: "when >1 era of the same
+   polity is visible, each ring gets a small mono year tag" -- e.g.
+   "c. 1500 BC"). Instrument-face mono, same small-and-quiet treatment as
+   the retired border-tag's own year readout, positioned by map.js just
+   below its own ring's own polity-label (see BorderLayer._positionYearTag).
+   --bronze-ink (not the brighter --bronze-bright the dusk-glass panels use)
+   -- this sits directly on the light terrain plate, not on dusk glass, so
+   it wants the same ink-toned register every OTHER always-on plate label
+   (.landmark-label, .polity-label) already uses, just in the mono
+   instrument face to mark it as a YEAR the way every other year in this
+   app is set. */
+.polity-year-tag {
+    position: absolute;
+    top: 0;
+    left: 0;
+    white-space: nowrap;
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.02em;
+    color: var(--bronze-ink);
+    text-shadow: 0 0 2px rgba(246, 241, 229, .95), 0 0 4px rgba(246, 241, 229, .9), 0 1px 5px rgba(246, 241, 229, .8);
 }
 
 /* Lamp markers, adapted for the light ground (design-direction.md "World --
@@ -972,11 +1061,15 @@ input:focus-visible,
 /* Polity name labels (Batch C / design-direction.md World THIRD REVISION:
    "polity names rendered from the historical border features... Letterspaced
    small caps, sparse, sized to the polity's extent, --ink-soft-leaning with
-   a light parchment halo"). BorderLayer (map.js) authors one
-   <span class="polity-label" data-size="sm|md|lg"> per named feature into
-   its own polityLabelsPane and positions/hides it every redraw (see that
-   layer's own _positionLabel/_sizeTier comments for the pixel math and size
-   tiers) -- this file only owns the class-level look, same split as
+   a light parchment halo"; Batch B2 supersedes WHERE the feature/name comes
+   from -- an active POLITY ERA now, not a snapshot-year GeoJSON feature --
+   without changing this file's own class-level look at all). BorderLayer
+   (map.js) authors one <span class="polity-label" data-size="sm|md|lg">
+   per visible era (one per unique id+era-name -- see that layer's own
+   header comment) into its own polityLabelsPane and positions/hides it
+   every redraw (see that layer's own _positionLabel/_sizeTier comments for
+   the pixel math and size tiers) -- this file only owns the class-level
+   look, same split as
    .landmark-label's data-kind/data-dir. Centered on its own anchor point
    (translate(-50%,-50%), set alongside the position in JS) rather than
    offset like a landmark/place label -- a polity name reads as sitting
@@ -1509,9 +1602,9 @@ input:focus-visible,
    smaller footprint"; direct user feedback 2026-08-19: "UI extremely
    cramped; timeline -> bottom right, smaller"). Docked bottom-right, same
    corner .legend used to occupy -- .legend itself moves to bottom-left
-   below so the two never collide; .border-tag/.mode-chip (further down)
-   dock directly above this panel's new footprint, sharing its right
-   alignment. */
+   below so the two never collide; .mode-chip (further down; the retired
+   border-tag used to share this same slot) docks directly above this
+   panel's new footprint, sharing its right alignment. */
 .slider {
     position: fixed;
     bottom: 1.5rem;
@@ -1923,13 +2016,15 @@ input:focus-visible,
    back to time mode. RELOCATED, Batch C: docked directly above the (now-
    dimmed, now bottom-RIGHT) slider it overrides, sharing its right
    alignment instead of the old center alignment, so the override
-   relationship still reads visually without extra copy -- see .border-tag's
-   own comment just below for the shared bottom offset and why sharing one
-   slot with it (never shown at the same time) is safe. Same dusk-glass
-   material as every other docked panel; no entrance animation, same
-   precedent as .toast -- a status readout, not a "scene" transition
-   design-direction.md's motion section scopes animation to ("nothing else
-   moves"). */
+   relationship still reads visually without extra copy. Bottom offset
+   (7rem) clears .slider's own ~5.5rem footprint with margin, matching this
+   file's other "clear with margin, not exact measurement" panels -- this
+   slot used to be shared with the retired border-tag (mutually exclusive
+   by mode, so sharing it was safe); now .mode-chip is its only occupant.
+   Same dusk-glass material as every other docked panel; no entrance
+   animation, same precedent as .toast -- a status readout, not a "scene"
+   transition design-direction.md's motion section scopes animation to
+   ("nothing else moves"). */
 .mode-chip {
     position: fixed;
     bottom: 7rem;
@@ -1988,67 +2083,6 @@ input:focus-visible,
 
 .mode-chip-return:hover {
     background: rgba(201, 164, 92, 0.26);
-}
-
-/* border-tag (design-direction.md's Atlas plate detail: "a small dusk-glass
-   tag near the attribution corner reads 'Borders c. 1000 BC' (mono face
-   for the year) so the snapshot in use is always honest"). RELOCATED,
-   Batch C: still docked bottom-right -- same dusk-glass material as
-   .legend/.mode-chip/.picker -- but now ABOVE .slider's own new bottom-right
-   footprint (legend moved away to bottom-left, see its own comment) with a
-   fixed gap rather than a dynamically measured one. .slider's own new
-   dimensions (460px track, shrunk padding/readout/era font -- see its
-   comment) come out to roughly 5.5rem tall at any width; 7rem clears that
-   with margin, matching this file's other "clear with margin, not exact
-   measurement" panels. Never shown at the same time as .mode-chip
-   (World.razor renders border-tag only in time mode, mode-chip only in
-   scripture mode), so both safely share this exact slot -- see
-   .mode-chip's own comment. */
-.border-tag {
-    position: fixed;
-    right: 1.5rem;
-    bottom: 7rem;
-    z-index: 16;
-    padding: .4rem .7rem;
-    background: var(--dusk-panel);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid var(--bronze);
-    border-radius: 6px;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, .3);
-    white-space: nowrap;
-    pointer-events: none;
-}
-
-.border-tag-label {
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: .05em;
-    font-size: .78rem;
-    /* dusk-ink, not -soft -- same >=7:1 dusk contrast floor / same
-       measured shortfall (6.81:1) as .picker-eyebrow and .mode-chip-label
-       above. */
-    color: var(--dusk-ink);
-}
-
-.border-tag-year {
-    margin-inline-start: .35rem;
-    font-family: var(--font-mono);
-    font-size: .85rem;
-    letter-spacing: .02em;
-    color: var(--bronze-bright);
-    /* Fix round 1 (M2): --panel-inset backing -- see its own :root comment
-       and .mode-chip-ref's identical treatment just above. .border-tag
-       (unlike .mode-chip) isn't a flex container, so this plain span needs
-       its own inline-block to render the padding/radius as a clean chip
-       rather than an inline-only background that could clip awkwardly
-       against the line box. Measured post-fix from a real rendered
-       screenshot; ratio recorded in the batch report's Fix round 1
-       section. */
-    background: var(--panel-inset);
-    padding: .1rem .35rem;
-    border-radius: 3px;
-    display: inline-block;
 }
 
 /* Toast -- a small parchment slip, bottom-left, thin ochre rule; plain

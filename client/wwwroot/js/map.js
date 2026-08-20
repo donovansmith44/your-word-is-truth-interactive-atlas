@@ -180,7 +180,7 @@ export function init(el, dotnetRef, opts) {
     // from World.razor (see setLandmarks below), while place markers come
     // and go on every window change -- relying on relative insertion order
     // between the two would be racy.
-    let borders = null;
+    let polities = null;
     let arrows = null;
     if (!mini) {
         // polityLabelsPane (Batch C, design-direction.md World THIRD
@@ -192,14 +192,14 @@ export function init(el, dotnetRef, opts) {
         // background-most text on the plate, one step above the raw
         // border strokes/fill they're paired with (overlayPane, 400).
         // Created here (not inside BorderLayer.onAdd) so it exists before
-        // borders.addTo(map) below ever runs. BorderLayer itself reads it
+        // polities.addTo(map) below ever runs. BorderLayer itself reads it
         // back via map.getPane -- see its own onAdd.
         map.createPane('polityLabelsPane');
         map.getPane('polityLabelsPane').style.zIndex = 450;
         map.getPane('polityLabelsPane').style.pointerEvents = 'none';
 
-        borders = new BorderLayer();
-        borders.addTo(map);
+        polities = new BorderLayer();
+        polities.addTo(map);
 
         arrows = new ArrowLayer(dotnetRef);
         arrows.addTo(map);
@@ -227,7 +227,7 @@ export function init(el, dotnetRef, opts) {
     }
 
     instances.set(id, {
-        map, dotnetRef, mini, markers: new Map(), arrows, borders, landmarkMarkers: [], litByName: new Map(),
+        map, dotnetRef, mini, markers: new Map(), arrows, polities, landmarkMarkers: [], litByName: new Map(),
         quietMarkers: new Map(), // Batch E2 -- see setScene's own quiet-places diff for the shape each entry carries
     });
 
@@ -377,7 +377,7 @@ export function setScene(id, sceneJson) {
     // calls _redraw() itself) never races the marker-side pass.
     inst.litByName = buildLitByName(inst.markers);
     if (!inst.mini) {
-        inst.borders.setLitPlaces(inst.litByName);
+        inst.polities.setLitPlaces(inst.litByName);
     }
 
     // Re-applied on every scene load, unconditionally (applyLabelTier itself
@@ -1014,33 +1014,38 @@ export function setIsolate(id, narrativeId) {
     inst.arrows.setIsolate(narrativeId ?? null);
 }
 
-// Replaces the border layer's geojson wholesale (Task batch-B: "time
-// period accurate borders... swapped to the snapshot nearest the selected
-// window") and makes sure it's visible -- a fresh snapshot arriving is
-// always a reason to show it, even if scripture mode had it hidden most
-// recently (World.razor's own mode bookkeeping is what actually prevents
-// this from being CALLED during scripture mode in the first place; this
-// function doesn't need to know about modes at all).
-export function setBorders(id, geojsonString) {
+// Replaces the polity-border layer's data wholesale (Batch B2, "borders v2,
+// the cartographer's edition": per-polity timerange borders swapped on
+// every window change) and makes sure it's visible -- a fresh window's
+// polities are always a reason to show the layer, even if scripture mode
+// had it hidden most recently (World.razor's own mode bookkeeping is what
+// actually prevents this from being CALLED during scripture mode in the
+// first place; this function doesn't need to know about modes at all).
+// `politiesJson` is the flat `[{ id, name, from, to, rings, color_key },
+// ...]` array `GET /api/polities` returns (already deterministically
+// ordered by id then from -- see BorderLayer.setPolities's own comment for
+// why that order matters).
+export function setPolities(id, politiesJson) {
     const inst = instances.get(id);
-    if (!inst || !inst.borders) {
+    if (!inst || !inst.polities) {
         return;
     }
 
-    const fc = typeof geojsonString === 'string' ? JSON.parse(geojsonString) : (geojsonString || {});
-    inst.borders.setData(fc);
+    const list = typeof politiesJson === 'string' ? JSON.parse(politiesJson) : (politiesJson || []);
+    inst.polities.setPolities(list);
 }
 
-// Shows/hides the border layer without touching its data (Task batch-B:
-// "Scripture mode: hide the border layer AND the tag... restore on return
-// to time mode").
-export function setBordersVisible(id, visible) {
+// Shows/hides the polity-border layer without touching its data (Batch B2:
+// scripture mode has no time window, so no polities are shown there --
+// same "restore on return to time mode" pattern the retired border-tag's
+// own visibility toggle used).
+export function setPolitiesVisible(id, visible) {
     const inst = instances.get(id);
-    if (!inst || !inst.borders) {
+    if (!inst || !inst.polities) {
         return;
     }
 
-    inst.borders.setVisible(!!visible);
+    inst.polities.setVisible(!!visible);
 }
 
 // Renders the curated landmark list (Task batch-B: "always-visible
@@ -1084,6 +1089,67 @@ export function destroy(id) {
     instances.delete(id);
 }
 
+// --- Zoom-animation sync (Batch B2, user: "the narrative arrow graph
+// things scale at a different rate than the map does when zooming in/out.
+// fix that.") -----------------------------------------------------------
+//
+// ArrowLayer and BorderLayer each manage their own plain <svg> element,
+// positioned/sized via map.latLngToLayerPoint() at the CURRENT zoom every
+// time _redraw() runs (on 'zoomend'/'moveend'). That makes them track the
+// map correctly once a zoom finishes, but during Leaflet's own ANIMATED
+// zoom transition (the ~250ms smooth scale you get from a scroll-wheel
+// zoom or a double-click) neither layer repaints a single frame -- Leaflet
+// itself only fires 'zoomend' at the very end, and 'zoomstart'/'zoomend'
+// bracket the animation, never a per-frame progress event a naive listener
+// could redraw against. Leaflet's OWN built-in overlays (L.SVG/L.Canvas,
+// which is what draws every ordinary vector layer -- polygons, polylines,
+// GeoJSON) don't have this problem because L.Renderer (their common base
+// class) listens for the map's own 'zoomanim' event and, for exactly one
+// animation frame, applies a CSS transform (translate + scale) to its
+// WHOLE container that mirrors the animation in progress -- cheap (one
+// transform, no path recomputation) and exactly in sync with the tiles,
+// which get the identical transform applied to their own pane by Leaflet's
+// core. ArrowLayer/BorderLayer never went through L.Renderer (they own a
+// bare <svg> appended straight into overlayPane), so they never got that
+// treatment "for free" -- this is the missing piece, added once here and
+// shared by both layers rather than duplicated.
+//
+// attachZoomAnim mirrors Leaflet's own L.Renderer.prototype._onAnimZoom /
+// _updateTransform (see leaflet's src/layer/vector/Renderer.js) -- the
+// well-established, documented recipe every hand-rolled Leaflet SVG/D3
+// overlay plugin uses for this exact problem, not invented projection math:
+// on 'zoomanim', compute the scale between the CURRENT zoom and the
+// in-progress animated target zoom (map.getZoomScale), find where the
+// point that currently sits at the SVG's own origin (the current
+// viewport's own north-west corner -- svgEl is always position:absolute;
+// top:0;left:0, covering the whole map container, for both layers) will
+// land under the animated target zoom/center (map._latLngToNewLayerPoint,
+// Leaflet's own semi-public "reproject this latlng at a hypothetical
+// zoom/center" helper), and apply that as a single CSS transform via
+// L.DomUtil.setTransform -- the same low-level helper Leaflet's own panes
+// use, so this produces byte-identical CSS to what a real L.Renderer would.
+// Returns a cleanup function that detaches the listener (called from each
+// layer's own onRemove).
+function attachZoomAnim(map, svgEl) {
+    function onAnimZoom(e) {
+        const scale = map.getZoomScale(e.zoom, map.getZoom());
+        const offset = map._latLngToNewLayerPoint(map.getBounds().getNorthWest(), e.zoom, e.center);
+        L.DomUtil.setTransform(svgEl, offset, scale);
+    }
+    map.on('zoomanim', onAnimZoom);
+    return () => map.off('zoomanim', onAnimZoom);
+}
+
+// Clears whatever transform the last zoomanim frame left on svgEl. Called
+// at the top of both layers' own _redraw() (which recomputes every path's
+// real `d` at the NOW-current zoom) so the temporary animation transform
+// never compounds with the freshly-recomputed, already-correct geometry --
+// _redraw always runs at 'zoomend', i.e. exactly when the animation (and
+// therefore the transform it was driving) has just finished.
+function resetZoomAnimTransform(svgEl) {
+    L.DomUtil.setTransform(svgEl, L.point(0, 0), 1);
+}
+
 // --- ArrowLayer: narrative story-threads (Task 12, WORLD-3/WORLD-4) -------
 //
 // A custom L.Layer managing exactly one <svg data-testid="arrows-svg"> in
@@ -1116,10 +1182,15 @@ const ArrowLayer = L.Layer.extend({
         this._defs = svgEl('defs');
         this._svg.appendChild(this._defs);
         map.getPane('overlayPane').appendChild(this._svg);
+        this._offZoomAnim = attachZoomAnim(map, this._svg);
         return this;
     },
 
     onRemove() {
+        if (this._offZoomAnim) {
+            this._offZoomAnim();
+            this._offZoomAnim = null;
+        }
         this._svg.remove();
         this._paths.clear();
         this._markerIds.clear();
@@ -1344,10 +1415,15 @@ const ArrowLayer = L.Layer.extend({
     // once synchronously at the end of every setArrows (so a brand new
     // scene's arrows are positioned immediately, without waiting for a
     // zoom/pan event that may never come).
+    // Batch B2: clears any transform a mid-flight zoomanim frame left on
+    // the SVG before recomputing every path's real `d` at the now-current
+    // zoom -- see resetZoomAnimTransform's own comment for why this has to
+    // happen here, every time.
     _redraw() {
         if (!this._map) {
             return;
         }
+        resetZoomAnimTransform(this._svg);
         for (const entry of this._paths.values()) {
             this._position(entry);
         }
@@ -1422,59 +1498,88 @@ const ArrowLayer = L.Layer.extend({
     },
 });
 
-// --- BorderLayer: period-accurate country/culture-region strokes ---------
-// (Task batch-B, design-direction.md's "Atlas plate detail: the plate
-// carries period cartography").
+// --- BorderLayer: hand-authored per-polity timerange borders -------------
+// (Batch B2, "borders v2, the cartographer's edition" -- ground-up redo per
+// direct user feedback 2026-08-19: "whatever you did for bordering looks
+// absolutely horrendous... if you're overlaying it over the map, don't do
+// that... color it in how a cartographer would color a map"). Supersedes
+// this layer's ENTIRE Batch B/C/C2 rendering approach (translucent
+// snapshot-year GeoJSON polygons) while keeping its structural role
+// unchanged: a custom L.Layer managing exactly one <svg class=
+// "atlas-borders"> in the map's overlayPane, added to the map BEFORE
+// ArrowLayer in init() so DOM paint order puts it below the narrative
+// threads (see init()'s own comment), non-interactive (no event wiring;
+// app.css's .atlas-border* rules set pointer-events:none), no diffing (a
+// polity swap is a rare, 150ms-debounced window-change event, not a hot
+// per-frame path -- replacing the layer's content wholesale on every
+// setPolities call is simple and cheap enough).
 //
-// A custom L.Layer managing exactly one <svg class="atlas-borders"> in the
-// map's overlayPane, created and added to the map BEFORE ArrowLayer in
-// init() so its DOM node lands first: overlayPane assigns no z-index
-// between layers sharing it, so paint order is plain DOM order, and
-// borders must render BELOW the narrative threads (see init()'s own
-// comment). Both already sit below markerPane (places) via Leaflet's own
-// per-pane z-indices (400 vs 600), independent of DOM order.
+// "Printed, not overlaid": every ring gets THREE stacked <path> elements,
+// not one --
+//   .atlas-border-wash  the fill, mix-blend-mode:multiply (app.css) so the
+//                       tint DARKENS the terrain like ink soaking into
+//                       paper rather than a flat shape floating on top --
+//                       terrain relief shows through at every opacity this
+//                       batch uses, by construction of multiply blending.
+//   .atlas-border-band  a WIDE, low-opacity, no-fill stroke along the same
+//                       ring -- "a soft inner tint band along the border".
+//                       Deliberately the SIMPLEST version of this effect
+//                       the batch brief sanctions ("a wider, low-opacity
+//                       stroke clipped/behind" is the brief's own first
+//                       suggestion): SVG strokes straddle their path (half
+//                       in, half out) by default, so a wide soft stroke
+//                       reads as a band hugging the border without any
+//                       inset-polygon math (explicitly out of scope --
+//                       "do not try to get too fancy with mathematics").
+//   .atlas-border-line  the fine, crisp border LINE itself, in the
+//                       polity's own hue DARKENED (POLITY_TINTS_DARK) --
+//                       solid for the newest/only visible era of a polity,
+//                       dashed or dotted for an older one still in view
+//                       (see the "age" tiering below).
+// All three share one ring's own projected `d` (recomputed every redraw,
+// same as before); they are appended to the SVG in THREE PASSES across
+// EVERY ring (all washes, then all bands, then all lines) rather than
+// per-ring, so that even where one polity's later, larger ring visually
+// covers an earlier, smaller one's fill, every ring's own LINE still
+// paints on top of every fill/band and stays crisply visible -- the
+// mechanism "the older dotted ring visible around/inside the newer solid
+// one" actually depends on.
 //
-// Deliberately non-interactive -- no event wiring at all, unlike
-// ArrowLayer: borders are decoration, never a hover/click target. app.css's
-// .atlas-borders rule also sets pointer-events:none explicitly (Leaflet's
-// own default `.leaflet-pane > svg path` rule already implies it, but
-// relying on a rule documented as being about ARROWS -- see that rule's own
-// comment in app.css -- would be less clear here).
+// Multi-era windows (a window spanning a border change -- "the one-up on
+// timemap.org"): setPolities groups the incoming flat list by polity id
+// and tags each entry with an "age" (oldest/middle/newest) among that
+// polity's OWN currently-visible eras -- a single visible era is always
+// "newest" (solid line, full wash, no year tag: "single-era window: solid
+// ring + wash"); the OLDEST of >=2 visible eras is dotted and lightest;
+// any era strictly between the oldest and newest (rare at this app's own
+// scale) is dashed at an intermediate opacity. Entries are appended to the
+// SVG (and therefore painted) in the SAME oldest-to-newest order the
+// server's own deterministic "by id then from" ordering already gives --
+// see handlers::polities's own doc comment -- so a GROWING polity's later,
+// larger ring paints last/on top (its fuller wash reads over the earlier
+// ring's own footprint) while a SHRINKING polity's later, SMALLER ring
+// still paints last, sitting visibly inside the earlier, larger, fainter
+// one: either way, growth (or its mirror, contraction) is legible without
+// this layer ever having to compare two rings' own geometry to decide who
+// paints on top -- paint order is just "oldest first", always, and the
+// data (drawn to be geographically honest) does the rest. When a polity
+// has more than one currently-visible era, each of ITS OWN RINGS gets a
+// small mono "c. {year}" year tag (design-direction.md's instrument-face
+// convention for years) -- ringed, not per-era, since a single era can
+// itself carry more than one disjoint ring (e.g. Ptolemaic Egypt's Nile
+// valley + Cyrenaica) and each needs its own tag to stay legible.
 //
-// No diffing (unlike ArrowLayer.setArrows/setScene's marker diff): a
-// border-snapshot swap is a rare, deliberate window-change event driven by
-// a 150ms-debounced fetch, not a hot per-frame path, so replacing the
-// layer's content wholesale on every setData call is simple and cheap
-// enough.
-//
-// Batch C / design-direction.md World THIRD REVISION adds one thing this
-// layer didn't own before: the polity NAME labels themselves ("polity names
-// rendered from the historical border features active in the selected
-// window... place at the polygon's visual center... skip a label when its
-// polygon is mostly outside the viewport or too small at current zoom").
-// One plain <div class="polity-label"> per feature, positioned into
-// polityLabelsPane (created in init(), z-indexed between the border
-// strokes and landmarksPane -- see that pane's own comment) rather than
-// added as Leaflet markers: this layer already hand-projects every
-// feature's ring points every redraw for the border path itself, so
-// reusing that same per-feature projection pass for its label's bbox/
-// visibility check is simpler than standing up a second, parallel
-// marker-based mechanism. Sizing/visibility live here (not app.css) since
-// both are per-FEATURE decisions (this polygon's own extent, this
-// polygon's own on-screen coverage right now) -- app.css only owns the
-// resulting look for each tier via a single-class-plus-attribute selector,
-// same discipline as .landmark-label's data-kind/data-dir.
-//
-// Batch C2 / design-direction.md's Atlas plate detail SECOND ADDENDUM adds
-// a second thing: every feature's translucent area WASH ("the plate is
-// HAND-TINTED... every historical border feature carries a soft
-// translucent area wash... assigned deterministically from the polity
-// NAME (hash -> palette index), so the same power keeps its color as the
-// slider crosses snapshots"). POLITY_TINTS/polityFillColor below implement
-// exactly that hash; setData (this layer) sets each path's fill inline
-// from it once, at creation, since a feature's name never changes for the
-// life of that path element (no need to recompute on every zoom/pan
-// redraw the way position does).
+// Batch C / design-direction.md World THIRD REVISION's own polity NAME
+// labels survive unchanged in spirit ("place at the polygon's visual
+// center... skip a label when its polygon is mostly outside the viewport
+// or too small at current zoom", one plain <span class="polity-label">
+// per label positioned into polityLabelsPane) but now key off an ERA
+// (id + era name), not a whole snapshot-year feature -- "the polity name
+// label renders once per era-name (names may differ across eras -- that
+// is the point)": when two eras of the SAME polity are both visible with
+// DIFFERENT names (the ordinary case -- a name change usually accompanies
+// or follows a border change), BOTH get their own label, each centered on
+// its OWN era's own rings.
 const POLITY_TINTS = [
     '#C98A8A', // 0 rose
     '#C9B37E', // 1 buff
@@ -1486,43 +1591,49 @@ const POLITY_TINTS = [
     '#C08E7A', // 7 coral
 ];
 
-// Deterministic-by-NAME tint pick (Requirement 1: "hash the feature's name
-// -- sum of UTF-16 code units mod 8 -- simple and stable; comment the
-// algorithm"). Normalizing (trim + lowercase + collapse internal
-// whitespace runs to one space) before hashing means two spellings that
-// differ only in case/spacing -- never actually happens in this dataset's
-// own curated names today, but a defensive equivalence regardless, same
-// spirit as slugify's own case-insensitivity -- still land on the same
-// tint. Pure function of the name alone (no draw order, no array index,
-// no per-snapshot state), so "Roman Empire" hashes to the exact same
-// palette slot whether it's the only feature in a snapshot or the fifth --
-// which is the whole point: the SAME power keeps the SAME color as the
-// slider crosses from one border snapshot to another that also carries it
-// (verified by WORLD-13's own two-snapshot determinism property). Every
-// curated border feature carries a `name` today (data/curated/borders/
-// *.geojson), but this degrades harmlessly to hashing the empty string
-// (palette index 0, "rose") for a hypothetical unnamed one rather than
-// leaving it unfilled -- Requirement 1 says "every border feature", not
-// "every named one".
-function polityFillColor(name) {
-    const normalized = String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
-    let sum = 0;
-    for (let i = 0; i < normalized.length; i++) {
-        sum += normalized.charCodeAt(i);
-    }
-    return POLITY_TINTS[sum % POLITY_TINTS.length];
+// The SAME 8 hues as POLITY_TINTS, each channel scaled by a flat 0.62 --
+// "darkened" per the batch brief's own wording for the border LINE
+// ("a fine solid stroke in the polity hue (darkened)"), computed once by
+// hand rather than at runtime (no color-space math, "no fancy
+// mathematics" per the brief) so .atlas-border-line reads as a real ink
+// line against the same-hued, much lighter wash beneath it, at every
+// tint. Indices line up 1:1 with POLITY_TINTS -- always indexed by the
+// SAME color_key.
+const POLITY_TINTS_DARK = [
+    '#7D5656', // 0 rose, darkened
+    '#7D6F4E', // 1 buff, darkened
+    '#5B6956', // 2 sage, darkened
+    '#4E5F70', // 3 pale lapis, darkened
+    '#64576D', // 4 lilac, darkened
+    '#70604E', // 5 tan, darkened
+    '#59634C', // 6 moss, darkened
+    '#77584C', // 7 coral, darkened
+];
+
+// "c. 1500 BC" -- the year tag's own mono-face text (design-direction.md:
+// years "set them like instrument readouts"). Mirrors CONTRACT.md's plain
+// year format ("1447 BC" / "AD 30") with the cartographer's own "c."
+// (circa) prefix the batch brief's example uses verbatim, since a hand-
+// drawn era boundary is a curatorial choice, never a precise attested
+// date.
+function formatYearTag(year) {
+    const label = year < 0 ? `${-year} BC` : `AD ${year}`;
+    return `c. ${label}`;
 }
 
 const BorderLayer = L.Layer.extend({
     initialize() {
-        this._paths = []; // [{ path, feature }]
-        this._labels = []; // [{ el, feature, cLat, cLon }]
-        // Fix round 1 addendum: slugify(name) -> [{lat, lon}, ...] of every
-        // currently-lit place, fed in by setScene via setLitPlaces below --
-        // defaulted to empty here (not left undefined) so a redraw that
-        // happens to run before the first setLitPlaces call (borders can
-        // load before the first scene fetch resolves) degrades to "nothing
-        // to dedupe against" rather than a null-reference.
+        this._entries = []; // [{ id, name, from, to, rings, color_key, age, tierCount }]
+        this._ringGroups = []; // [{ wash, band, line, ring, entry, ringIndex }]
+        this._labels = []; // [{ el, entry, cLat, cLon, bbox }] -- one per unique (id, era name)
+        this._yearTags = []; // [{ el, ringGroup, cLat, cLon }]
+        // Fix round 1 addendum (Batch C2): slugify(name) -> [{lat, lon}, ...]
+        // of every currently-lit place, fed in by setScene via
+        // setLitPlaces below -- defaulted to empty here (not left
+        // undefined) so a redraw that happens to run before the first
+        // setLitPlaces call (polities can load before the first scene
+        // fetch resolves) degrades to "nothing to dedupe against" rather
+        // than a null-reference.
         this._litByName = new Map();
     },
 
@@ -1531,45 +1642,127 @@ const BorderLayer = L.Layer.extend({
         this._svg = svgEl('svg', { class: 'atlas-borders' });
         map.getPane('overlayPane').appendChild(this._svg);
         this._labelPane = map.getPane('polityLabelsPane'); // created in init(), before this layer's own addTo(map)
+        this._offZoomAnim = attachZoomAnim(map, this._svg);
         return this;
     },
 
     onRemove() {
+        if (this._offZoomAnim) {
+            this._offZoomAnim();
+            this._offZoomAnim = null;
+        }
         this._svg.remove();
-        this._paths = [];
+        this._ringGroups = [];
         for (const l of this._labels) {
             l.el.remove();
         }
         this._labels = [];
+        for (const t of this._yearTags) {
+            t.el.remove();
+        }
+        this._yearTags = [];
     },
 
     getEvents() {
         return { zoomend: this._redraw, moveend: this._redraw };
     },
 
-    setData(featureCollection) {
+    // `list` is the flat `[{ id, name, from, to, rings, color_key }, ...]`
+    // array `GET /api/polities` returns, already ordered by id then from.
+    // Groups by id (re-sorting by `from` defensively, even though the
+    // server already guarantees that order -- this layer's own painting
+    // logic depends on it, so it shouldn't silently trust an upstream
+    // invariant it can cheaply re-assert) to tag each entry with its own
+    // "age" among its polity's currently-visible eras.
+    setPolities(list) {
+        resetZoomAnimTransform(this._svg);
         this._svg.replaceChildren();
         for (const l of this._labels) {
             l.el.remove();
         }
-        const features = (featureCollection && featureCollection.features) || [];
-        this._paths = features.map(feature => {
-            const path = svgEl('path', { class: 'atlas-border' });
-            // Requirement 1: per-feature tint, set inline (style.fill, not
-            // the `fill` presentation attribute) so it beats app.css's own
-            // .atlas-border class rule on specificity regardless of source
-            // order -- an attribute alone sits BELOW any class selector.
-            // Computed once here, not in _redraw: a feature's name (the
-            // only input polityFillColor reads) never changes for the life
-            // of this path element, so there's nothing to recompute on a
-            // later zoom/pan.
-            path.style.fill = polityFillColor(feature.properties && feature.properties.name);
-            this._svg.appendChild(path);
-            return { path, feature };
-        });
-        this._labels = features
-            .filter(feature => feature.properties && feature.properties.name)
-            .map(feature => this._makeLabel(feature));
+        for (const t of this._yearTags) {
+            t.el.remove();
+        }
+
+        const byId = new Map();
+        for (const e of list || []) {
+            if (!byId.has(e.id)) {
+                byId.set(e.id, []);
+            }
+            byId.get(e.id).push(e);
+        }
+
+        this._entries = [];
+        for (const group of byId.values()) {
+            group.sort((a, b) => a.from - b.from);
+            const tierCount = group.length;
+            group.forEach((e, idx) => {
+                const age = tierCount === 1 ? 'newest' : idx === 0 ? 'oldest' : idx === tierCount - 1 ? 'newest' : 'middle';
+                this._entries.push({ ...e, age, tierCount });
+            });
+        }
+
+        // Three passes -- ALL washes, then ALL bands, then ALL lines --
+        // across every ring of every entry (in the entries' own
+        // oldest-to-newest-per-polity order): see this layer's own header
+        // comment for why paint order alone, with no geometry comparison,
+        // is what makes growth/contraction and the "older ring still
+        // visible under/around the newer one" effect both work.
+        this._ringGroups = [];
+        const washEls = [], bandEls = [], lineEls = [];
+        for (const entry of this._entries) {
+            const fillColor = POLITY_TINTS[((entry.color_key % POLITY_TINTS.length) + POLITY_TINTS.length) % POLITY_TINTS.length];
+            const lineColor = POLITY_TINTS_DARK[((entry.color_key % POLITY_TINTS_DARK.length) + POLITY_TINTS_DARK.length) % POLITY_TINTS_DARK.length];
+            (entry.rings || []).forEach((ring, ringIndex) => {
+                const wash = svgEl('path', { class: 'atlas-border-wash', 'data-age': entry.age });
+                wash.style.fill = fillColor;
+                const band = svgEl('path', { class: 'atlas-border-band', fill: 'none', 'data-age': entry.age });
+                band.style.stroke = fillColor;
+                const line = svgEl('path', {
+                    class: 'atlas-border-line',
+                    fill: 'none',
+                    'data-age': entry.age,
+                    'data-testid': `polity-ring-${esc(entry.id)}-${entry.from}-${ringIndex}`,
+                });
+                line.style.stroke = lineColor;
+                washEls.push(wash);
+                bandEls.push(band);
+                lineEls.push(line);
+                this._ringGroups.push({ wash, band, line, ring, entry, ringIndex });
+            });
+        }
+        for (const el of washEls) {
+            this._svg.appendChild(el);
+        }
+        for (const el of bandEls) {
+            this._svg.appendChild(el);
+        }
+        for (const el of lineEls) {
+            this._svg.appendChild(el);
+        }
+
+        // Labels: once per unique (id, era name) among the currently
+        // visible entries -- see this layer's own header comment.
+        const seenNameKeys = new Set();
+        this._labels = [];
+        for (const entry of this._entries) {
+            const key = `${entry.id} ${entry.name}`;
+            if (seenNameKeys.has(key)) {
+                continue;
+            }
+            seenNameKeys.add(key);
+            this._labels.push(this._makeLabel(entry));
+        }
+
+        // Year tags: one per RING (not per era), only for a polity with
+        // more than one currently-visible era.
+        this._yearTags = [];
+        for (const g of this._ringGroups) {
+            if (g.entry.tierCount > 1) {
+                this._yearTags.push(this._makeYearTag(g));
+            }
+        }
+
         this.setVisible(true);
         this._redraw();
     },
@@ -1579,88 +1772,89 @@ const BorderLayer = L.Layer.extend({
         for (const l of this._labels) {
             l.el.style.display = visible ? '' : 'none';
         }
+        for (const t of this._yearTags) {
+            t.el.style.display = visible ? '' : 'none';
+        }
     },
 
-    // Fix round 1 addendum: called from setScene (map.js) every time the
-    // lit-place set changes, so a polity label's dedupe state (see
-    // _isDedupedByLitPlace below) is never more than one scene load stale.
-    // Triggers an immediate _redraw() -- unlike a mere zoom/pan, a WINDOW
-    // change can flip dedupe state with no zoomend/moveend of its own to
-    // ride along on (e.g. "Egypt" the place stops being lit -- the polity
-    // label must reappear right away, not wait for the next pan).
+    // Fix round 1 addendum (Batch C2): called from setScene (map.js) every
+    // time the lit-place set changes, so a polity label's dedupe state
+    // (see _isDedupedByLitPlace below) is never more than one scene load
+    // stale. Triggers an immediate _redraw() -- unlike a mere zoom/pan, a
+    // WINDOW change can flip dedupe state with no zoomend/moveend of its
+    // own to ride along on (e.g. "Egypt" the place stops being lit -- the
+    // polity label must reappear right away, not wait for the next pan).
     setLitPlaces(litByName) {
         this._litByName = litByName;
         this._redraw();
     },
 
+    // Batch B2: clears any transform a mid-flight zoomanim frame left on
+    // the SVG before recomputing every ring's real `d` at the now-current
+    // zoom -- see resetZoomAnimTransform's own comment for why this has to
+    // happen here, every time.
     _redraw() {
         if (!this._map) {
             return;
         }
-        for (const entry of this._paths) {
-            entry.path.setAttribute('d', this._pathData(entry.feature));
+        resetZoomAnimTransform(this._svg);
+        for (const g of this._ringGroups) {
+            const d = this._ringPathData(g.ring);
+            g.wash.setAttribute('d', d);
+            g.band.setAttribute('d', d);
+            g.line.setAttribute('d', d);
         }
         for (const l of this._labels) {
             this._positionLabel(l);
         }
-    },
-
-    // One <path> per feature, one "M...Z" subpath per ring of every
-    // polygon in its geometry (atlas-etl always compiles MultiPolygon --
-    // see atlas-etl/src/borders.rs -- but this reads plain
-    // geometry.coordinates structurally rather than assuming that, so it
-    // degrades harmlessly on any array-of-rings-of-points shape). A single
-    // SVG path element can represent a multi-ring/multi-polygon shape this
-    // way, exactly how Leaflet's own SVG renderer draws multi-ring
-    // polygons (holes and all -- fill-rule defaults to nonzero, which
-    // reads holes correctly given GeoJSON's right-hand-rule ring winding).
-    _pathData(feature) {
-        const polygons = (feature.geometry && feature.geometry.coordinates) || [];
-        let d = '';
-        for (const polygon of polygons) {
-            for (const ring of polygon) {
-                if (!ring || ring.length === 0) {
-                    continue;
-                }
-                const pts = ring.map(([lon, lat]) => this._map.latLngToLayerPoint([lat, lon]));
-                d += `M${pts.map(p => `${p.x},${p.y}`).join('L')}Z`;
-            }
+        for (const t of this._yearTags) {
+            this._positionYearTag(t);
         }
-        return d;
     },
 
-    // Geographic (lat/lon degree) bbox across every ring of every polygon --
-    // "centroid is fine" per the brief, so this uses the plain bbox CENTER
-    // as the label's anchor point rather than a true area-weighted polygon
-    // centroid, and also drives the size tier below (a polity's on-the-
-    // ground extent, not its on-screen pixel size, which changes with
-    // zoom).
-    _geoBBox(feature) {
+    // One <path> `d` string per RING: a single "M...Z" subpath, its points
+    // in the ring's own curated order. `ring` is a flat `[[lat, lon], ...]`
+    // array (Batch B2's own data model -- deliberately [lat, lon], NOT
+    // GeoJSON's [lon, lat]; see atlas_core::data::PolityEra's own doc
+    // comment) -- no destructure-and-flip needed here, unlike the retired
+    // GeoJSON-based renderer this replaces. Leaflet's own default
+    // smoothFactor handles path smoothing; nothing here simplifies or
+    // otherwise touches the curated points themselves.
+    _ringPathData(ring) {
+        if (!ring || ring.length === 0) {
+            return '';
+        }
+        const pts = ring.map(([lat, lon]) => this._map.latLngToLayerPoint([lat, lon]));
+        return `M${pts.map(p => `${p.x},${p.y}`).join('L')}Z`;
+    },
+
+    // Geographic (lat/lon degree) bbox across one or more rings -- "centroid
+    // is fine" per the brief, so this uses the plain bbox CENTER as a
+    // label/tag's anchor point rather than a true area-weighted centroid,
+    // and also drives the size tier below (a polity's on-the-ground
+    // extent, not its on-screen pixel size, which changes with zoom).
+    _geoBBoxOfRings(rings) {
         let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
-        const polygons = (feature.geometry && feature.geometry.coordinates) || [];
-        for (const polygon of polygons) {
-            for (const ring of polygon) {
-                for (const [lon, lat] of ring) {
-                    minLat = Math.min(minLat, lat);
-                    maxLat = Math.max(maxLat, lat);
-                    minLon = Math.min(minLon, lon);
-                    maxLon = Math.max(maxLon, lon);
-                }
+        for (const ring of rings || []) {
+            for (const [lat, lon] of ring) {
+                minLat = Math.min(minLat, lat);
+                maxLat = Math.max(maxLat, lat);
+                minLon = Math.min(minLon, lon);
+                maxLon = Math.max(maxLon, lon);
             }
         }
         return { minLat, maxLat, minLon, maxLon };
     },
 
     // Size tiers ("sized to the polity's extent"), thresholds picked
-    // against the real curated dataset (data/compiled/borders/*.json, all
-    // 12 snapshots): max(latSpan, lonSpan) ranges from 1 deg (Yehud,
-    // post-exile Judah) to 50 deg (Alexander's empire, Achaemenid Persia).
-    // SM covers city-state/small-kingdom-scale polities (<5 deg -- Judah,
-    // Yehud, Phoenicia, Herodian/Hasmonean Judea, early Assyria); MD covers
+    // against the real curated dataset (data/curated/polities/*.toml):
+    // max(latSpan, lonSpan) ranges from ~1 deg (Yehud, post-exile Judah)
+    // to ~50 deg (Alexander's empire, Achaemenid Persia). SM covers
+    // city-state/small-kingdom-scale polities (<5 deg -- Judah, Yehud,
+    // Phoenicia, Herodian/Hasmonean Judea, early Assyria); MD covers
     // regional kingdoms (5-16 deg -- Sumer, Elam, Babylonia, every Egypt
-    // snapshot, the Hittite Empire); LG covers the true empires (>=16 deg --
-    // Neo-Assyria, Rome, the Seleucids/Parthia, Alexander, Persia). See the
-    // batch report for the full measured list.
+    // era, the Hittite Empire); LG covers the true empires (>=16 deg --
+    // Neo-Assyria, Rome, the Seleucids/Parthia, Alexander, Persia).
     _sizeTier(bbox) {
         const span = Math.max(bbox.maxLat - bbox.minLat, bbox.maxLon - bbox.minLon);
         if (span >= 16) {
@@ -1669,23 +1863,38 @@ const BorderLayer = L.Layer.extend({
         return span >= 5 ? 'md' : 'sm';
     },
 
-    _makeLabel(feature) {
-        const bbox = this._geoBBox(feature);
+    _makeLabel(entry) {
+        const bbox = this._geoBBoxOfRings(entry.rings);
         const cLat = (bbox.minLat + bbox.maxLat) / 2;
         const cLon = (bbox.minLon + bbox.maxLon) / 2;
         const el = document.createElement('span');
         el.className = 'polity-label';
         el.dataset.size = this._sizeTier(bbox);
-        el.setAttribute('data-testid', `polity-label-${slugify(feature.properties.name)}`);
-        el.textContent = feature.properties.name;
+        el.setAttribute('data-testid', `polity-label-${slugify(entry.name)}`);
+        el.textContent = entry.name;
         this._labelPane.appendChild(el);
-        return { el, feature, cLat, cLon };
+        return { el, entry, cLat, cLon, bbox };
     },
 
-    // Fix round 1 addendum (coordinator follow-up to M1's own landmark
-    // dedupe): a polity label whose NAME matches a currently-lit place's
-    // name (case-insensitively -- slugify already lowercases, the same
-    // normalization applyLabelTier's own landmark dedupe and the
+    _makeYearTag(ringGroup) {
+        const bbox = this._geoBBoxOfRings([ringGroup.ring]);
+        const cLat = (bbox.minLat + bbox.maxLat) / 2;
+        const cLon = (bbox.minLon + bbox.maxLon) / 2;
+        const el = document.createElement('span');
+        el.className = 'polity-year-tag';
+        el.setAttribute(
+            'data-testid',
+            `polity-year-tag-${esc(ringGroup.entry.id)}-${ringGroup.entry.from}-${ringGroup.ringIndex}`
+        );
+        el.textContent = formatYearTag(ringGroup.entry.from);
+        this._labelPane.appendChild(el);
+        return { el, ringGroup, cLat, cLon };
+    },
+
+    // Fix round 1 addendum (Batch C2, coordinator follow-up to M1's own
+    // landmark dedupe): a polity label whose NAME matches a currently-lit
+    // place's name (case-insensitively -- slugify already lowercases, the
+    // same normalization applyLabelTier's own landmark dedupe and the
     // landmark-{slug}/polity-label-{slug} testids all use) AND whose
     // on-screen anchor sits within COLLISION_CELL_PX of that place's own
     // on-screen position is describing the identical real-world thing
@@ -1694,13 +1903,13 @@ const BorderLayer = L.Layer.extend({
     // the landmark dedupe: the place wins, the polity label is suppressed
     // for as long as its same-named place is lit, and returns the moment
     // that place drops out of the scene (setLitPlaces re-triggers a
-    // redraw for exactly this reason). Deliberately NARROW -- this is
-    // NOT polity labels joining applyLabelTier's general collision pass:
-    // a DIFFERENT-named polity sitting near a city (e.g. "Roman Empire"
-    // near "Jerusalem") is legitimate period cartography, not a
-    // duplicate, and must never be suppressed for proximity alone.
+    // redraw for exactly this reason). Deliberately NARROW -- this is NOT
+    // polity labels joining applyLabelTier's general collision pass: a
+    // DIFFERENT-named polity sitting near a city (e.g. "Roman Empire" near
+    // "Jerusalem") is legitimate period cartography, not a duplicate, and
+    // must never be suppressed for proximity alone.
     _isDedupedByLitPlace(l) {
-        const list = this._litByName.get(slugify(l.feature.properties.name));
+        const list = this._litByName.get(slugify(l.entry.name));
         if (!list) {
             return false;
         }
@@ -1711,37 +1920,26 @@ const BorderLayer = L.Layer.extend({
         });
     },
 
-    // Positions the label at its polygon's centroid and decides visibility
-    // for THIS redraw: "skip a label when its polygon is mostly outside the
-    // viewport or too small at current zoom" (both re-evaluated fresh every
-    // zoomend/moveend, since both depend on the current projection), PLUS
-    // the lit-place dedupe above (fix round 1 addendum).
-    // POLITY_LABEL_MIN_PX: below this on-screen span, the polygon reads as
-    // a sliver -- not worth a label (chosen as a bit under the smallest
-    // comfortable label width, ~2 letterspaced small-caps words at this
-    // tier's font-size). POLITY_LABEL_MIN_ONSCREEN_FRAC: below this
-    // fraction of the polygon's own bbox actually inside the viewport, the
-    // polygon reads as "elsewhere" even though its centroid (and thus the
-    // label) might still land on-screen -- e.g. zoomed into one corner of a
-    // 50-degree empire. Both are plain constants, not derived, same as
-    // this file's other zoom/pixel thresholds -- picked by screenshot
-    // review, not a formula.
+    // Positions the label at its era's own bbox centroid and decides
+    // visibility for THIS redraw: "skip a label when its polygon is mostly
+    // outside the viewport or too small at current zoom" (re-evaluated
+    // fresh every zoomend/moveend, since both depend on the current
+    // projection), PLUS the lit-place dedupe above. POLITY_LABEL_MIN_PX /
+    // POLITY_LABEL_MIN_ONSCREEN_FRAC: unchanged constants/reasoning from
+    // Batch C -- see below.
     _positionLabel(l) {
         const POLITY_LABEL_MIN_PX = 50;
         const POLITY_LABEL_MIN_ONSCREEN_FRAC = 0.35;
 
         const size = this._map.getSize();
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        const polygons = (l.feature.geometry && l.feature.geometry.coordinates) || [];
-        for (const polygon of polygons) {
-            for (const ring of polygon) {
-                for (const [lon, lat] of ring) {
-                    const p = this._map.latLngToContainerPoint([lat, lon]);
-                    minX = Math.min(minX, p.x);
-                    maxX = Math.max(maxX, p.x);
-                    minY = Math.min(minY, p.y);
-                    maxY = Math.max(maxY, p.y);
-                }
+        for (const ring of l.entry.rings || []) {
+            for (const [lat, lon] of ring) {
+                const p = this._map.latLngToContainerPoint([lat, lon]);
+                minX = Math.min(minX, p.x);
+                maxX = Math.max(maxX, p.x);
+                minY = Math.min(minY, p.y);
+                maxY = Math.max(maxY, p.y);
             }
         }
 
@@ -1757,6 +1955,19 @@ const BorderLayer = L.Layer.extend({
         l.el.style.display = (tooSmall || mostlyOffscreen || dedupedByLitPlace) ? 'none' : '';
         const center = this._map.latLngToLayerPoint([l.cLat, l.cLon]);
         l.el.style.transform = `translate(${center.x}px, ${center.y}px) translate(-50%, -50%)`;
+    },
+
+    // Year tags sit at their own RING's centroid, nudged down a fixed
+    // amount so a single-ring era's tag never sits exactly on top of that
+    // same era's own polity-label (both anchor near the same point in the
+    // common case). No offscreen/too-small gating (unlike labels) -- a
+    // year tag is small, always wanted whenever its ring is (tierCount>1),
+    // and "no fancy math" favors staying visible over a second geometric
+    // judgment call the brief never asked for.
+    _positionYearTag(t) {
+        const YEAR_TAG_OFFSET_PX = 14;
+        const center = this._map.latLngToLayerPoint([t.cLat, t.cLon]);
+        t.el.style.transform = `translate(${center.x}px, ${center.y + YEAR_TAG_OFFSET_PX}px) translate(-50%, -50%)`;
     },
 });
 

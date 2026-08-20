@@ -20,7 +20,7 @@ file is the detailed version of record.
 | Esri `NatGeo_World_Map` tile service | Esri terms of use | **Never redistributed by this repo.** Tiles are fetched live by the browser at runtime from Esri's own servers, with the attribution string carried verbatim in the app UI and in `client/wwwroot/js/map.js`'s `TILE_ATTRIBUTION`. |
 | Carto basemap tiles | Carto terms of use | **Never redistributed by this repo.** Same live-fetch, attributed, fallback-only pattern as the Esri tiles above (used if the Esri service is unreachable). |
 | Leaflet ([leafletjs.com](https://leafletjs.com)) | BSD-2-Clause | Vendored into `client/wwwroot/vendor/leaflet/` by `data/fetch-raw.ps1` (not committed; fetched at dev/build time) |
-| All curated data — historical borders, landmarks, narratives, eras, `events-extra.toml`, and future short blurbs of ours (e.g. era/place descriptions) | **CC0 1.0 Universal** (public domain dedication) | Ours. Everything under `data/curated/` and everything compiled purely from it (`narratives.json`, `eras.json`, `books-meta.json`, `landmarks.json`, `borders/*.json`, `borders-index.json`) |
+| All curated data — historical polity borders, landmarks, narratives, eras, `events-extra.toml`, and future short blurbs of ours (e.g. era/place descriptions) | **CC0 1.0 Universal** (public domain dedication) | Ours. Everything under `data/curated/` and everything compiled purely from it (`narratives.json`, `eras.json`, `books-meta.json`, `landmarks.json`, `polities.json`) |
 | Small Catechism — future feature, not yet in this repo | Public domain (1921 Bente–Dau translation) | Will be redistributed once the feature is added; recorded here ahead of time so the disposition is decided before the data lands |
 
 ## Theographic CC BY-SA 4.0 — controller ruling
@@ -54,71 +54,76 @@ never downloads, caches, or ships any tile image. Nothing under
 attributed in the app's Credits popover and in the on-map attribution
 control, per each service's terms of use.
 
-## Historical borders — CC0, hand-curated by this project
+## Historical polity borders — CC0, hand-curated by this project
 
 Earlier in this project's history, historical border snapshots were fetched
 from `aourednik/historical-basemaps`, a GPL-3.0-licensed dataset (see this
 repo's git history for that earlier determination and the removal below).
 **This project's license remediation removed that dependency entirely** so
-the repo can be published without carrying copyleft data:
+the repo can be published without carrying copyleft data — the download
+lines in `data/fetch-raw.ps1`, its `data/raw/borders/` section in
+`data/raw/README.md`, and the aourednik credit in the app's Credits popover
+are all gone, and `data/raw/borders/` is no longer read by anything.
 
-- The download lines in `data/fetch-raw.ps1` and its `data/raw/borders/`
-  section in `data/raw/README.md` are gone.
-- The aourednik credit in the app's Credits popover is gone.
-- `data/raw/borders/` is no longer read by anything (`server/atlas-etl/src/
-  borders.rs` now reads `data/curated/borders/` instead — see its module
-  doc comment).
-
-In its place: `data/curated/borders/{signed_year}.geojson`, 12 snapshots
-(`-4000` .. `100`, matching the app's `[-4004, 100]` era span) of coarse,
-original polygons — roughly a handful of named polities per snapshot
-(7–29 points per polygon; these render as thin ~1.2px ink strokes on a
-small map, so coarse is the right level of detail, not a corner cut).
+Batch B2 ("borders v2, the cartographer's edition," a ground-up redo of the
+rendering AND the data model per direct user feedback that the earlier
+snapshot-year rendering "looks absolutely horrendous") replaced that
+snapshot-year GeoJSON model in turn: in its place, `data/curated/polities/
+{id}.toml`, one hand-authored file per polity, each carrying one-or-more
+TIMERANGE ERAS (`[[era]]`, with its own `name`/`from`/`to`/`ref_note`/
+`rings`) rather than a single fixed-year snapshot — so a polity's borders
+AND name are both time-accurate across its own history, not pinned to
+whichever of 12 fixed years happened to be nearest. 14 polities, 25 eras,
+every ring redrawn from scratch for this batch (never copied forward from
+the retired snapshot data) — 30-80 points per ring is the working band
+(a handful of the smallest, genuinely tiny polities, e.g. the Persian-
+period province of Yehud, sit a little under it, proportionate to their
+own real small extent), coarse enough to render as thin ~1.1-1.4px ink
+strokes on a small map, never a corner cut.
 
 **Authorship.** Every polygon's coordinates were hand-drawn from scratch by
 the Bible Atlas project for this repo. None were copied, traced, digitized,
-or algorithmically derived from `aourednik/historical-basemaps` or any
-other geographic dataset — that GPL file was not opened at any point while
-authoring these replacements. The shapes reflect general, well-established
-historical-geography knowledge (the approximate territorial extent of
-polities like the Neo-Assyrian, Achaemenid Persian, and Roman empires is
-common knowledge repeated consistently across historical references,
-including pre-1929 public-domain atlases such as Shepherd's *Historical
-Atlas* (1911) and the 1911 *Encyclopaedia Britannica*'s historical maps).
-To ground the coarser/larger shapes accurately rather than relying on
-recollection alone, the following specific pages were fetched and read
-while authoring the corresponding snapshot years (each snapshot's
-`.geojson` file also carries this citation in its own `cc0_dedication`
-property where applicable):
+or algorithmically derived from any third-party geographic dataset. The
+shapes reflect general, well-established historical-geography knowledge
+(the approximate territorial extent of polities like the Neo-Assyrian,
+Achaemenid Persian, and Roman empires is common knowledge repeated
+consistently across historical references, including pre-1929
+public-domain atlases such as Shepherd's *Historical Atlas* and the 1911
+*Encyclopaedia Britannica*'s historical maps). To ground the coarser/larger
+shapes accurately rather than relying on recollection alone, the following
+specific pages were fetched and read on 2026-08-19 while authoring the
+corresponding polity's rings (each era's own `ref_note` in its own
+`data/curated/polities/{id}.toml` file carries this same citation):
 
-- [Neo-Assyrian Empire](https://en.wikipedia.org/wiki/Neo-Assyrian_Empire) — `-700.geojson`
-- [Achaemenid Empire](https://en.wikipedia.org/wiki/Achaemenid_Empire) — `-500.geojson`
-- [Wars of Alexander the Great](https://en.wikipedia.org/wiki/Wars_of_Alexander_the_Great) — `-323.geojson`
-- [Seleucid Empire](https://en.wikipedia.org/wiki/Seleucid_Empire) — `-200.geojson`
-- [Ptolemaic Kingdom](https://en.wikipedia.org/wiki/Ptolemaic_Kingdom) — `-200.geojson`
-- [Parthian Empire](https://en.wikipedia.org/wiki/Parthian_Empire) — `-100.geojson`, `-1.geojson`, `100.geojson`
-- [Hasmonean dynasty](https://en.wikipedia.org/wiki/Hasmonean_dynasty) — `-100.geojson`
-- [Roman Empire](https://en.wikipedia.org/wiki/Roman_Empire) — `-1.geojson`, `100.geojson`
-- [Hittites](https://en.wikipedia.org/wiki/Hittites) — `-1500.geojson`
-- [United Monarchy](https://en.wikipedia.org/wiki/United_Monarchy) — `-1000.geojson`
+- [Neo-Assyrian Empire](https://en.wikipedia.org/wiki/Neo-Assyrian_Empire) — `assyria.toml`'s "Neo-Assyrian Empire" era
+- [Achaemenid Empire](https://en.wikipedia.org/wiki/Achaemenid_Empire) — `persia.toml`
+- [Roman Empire](https://en.wikipedia.org/wiki/Roman_Empire) — `roman-empire.toml`'s two eras
+- [Hittites](https://en.wikipedia.org/wiki/Hittites) — `hittites.toml`
+- [Seleucid Empire](https://en.wikipedia.org/wiki/Seleucid_Empire) — `seleucid-empire.toml`'s two eras
+- [Ptolemaic Kingdom](https://en.wikipedia.org/wiki/Ptolemaic_Kingdom) — `egypt.toml`'s "Ptolemaic Egypt" era
 
 These pages were read only for textual, prose descriptions of territorial
 extent (e.g. "reached the Mediterranean," "bounded by the Euphrates") to
 inform coordinate placement — no coordinate data, geometry, or map image
 was copied from them or from any other source; every vertex was placed by
-hand. The remaining, smaller/simpler snapshots (`-4000`, `-3000`, `-2000`
-and the small polities within `-1000`/`-700`/`-1`) were authored from
-general historical-geography knowledge alone (e.g. Egypt's Nile Delta and
-valley up to the First Cataract at Aswan, Mesopotamia between the Tigris
-and Euphrates) without an additional fetch, since these extents are not
-seriously contested and don't hinge on any one source.
+hand. Every other era in the curated set (Egypt's earlier/later phases,
+Babylon, Elam, Sumer, Israel, Judah, Phoenicia, Alexander's empire, Parthia)
+was authored from general historical-geography knowledge alone, honestly
+disclosed as such in that era's own `ref_note` (no specific source
+consulted this session) — extents that are not seriously contested and
+don't hinge on any one source (e.g. Egypt's Nile Delta and valley up to the
+First Cataract at Aswan, Mesopotamia between the Tigris and Euphrates).
 
-**Dedication.** Every file in `data/curated/borders/` carries a
-`cc0_dedication` property at the `FeatureCollection` level with the CC0
-text and a pointer back to this section. All of it — the choice of which
-polities to depict, the simplification, and every coordinate — is an
-original work of this project, dedicated to the public domain under
-[CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).
+**Dedication.** All of it — the choice of which polities to depict, the
+era boundaries, and every coordinate — is an original work of this
+project, dedicated to the public domain under
+[CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/),
+same as every other file under `data/curated/` (see the per-source table
+above) — no separate per-file dedication property is needed here (Batch B2
+follows the SAME plain-TOML, no-embedded-license-text convention every
+other curated file in this repo already uses, e.g. `eras.toml`/
+`landmarks.toml`, rather than the retired GeoJSON model's own
+`cc0_dedication` property).
 
 ## Per-artifact label (`data/compiled/*`)
 
@@ -137,7 +142,7 @@ even though the file itself is generated, not hand-authored.
 | `books-meta.json` | CC0 (ours) | `data/curated/books.toml` |
 | `cross-refs.json` | Free to use with credit (OpenBible cross-references) | |
 | `landmarks.json` | CC0 (ours) | `data/curated/landmarks.toml` |
-| `borders/*.json`, `borders-index.json` | CC0 (ours) | Compiled from `data/curated/borders/*.geojson`; see "Historical borders" above |
+| `polities.json` | CC0 (ours) | Compiled from `data/curated/polities/*.toml`; see "Historical polity borders" above |
 | `report.txt` | Not a licensed dataset | Generated ETL build report (counts/warnings), not app content |
 
 ## Everything not listed here

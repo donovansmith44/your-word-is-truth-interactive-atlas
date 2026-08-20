@@ -81,35 +81,36 @@ public sealed class MapInterop : IAsyncDisposable
     public async Task FitScene() => await _module.InvokeVoidAsync("fitScene", _id);
 
     /// <summary>
-    /// Pushes a freshly-fetched border snapshot (design-direction.md's
-    /// Atlas plate detail: "historical borders render as a vector
-    /// overlay... swapped to the snapshot nearest the selected window").
-    /// Unlike <see cref="SetScene"/>, <paramref name="geojson"/> is already
-    /// a <see cref="JsonElement"/> -- a raw parsed-JSON tree with no C#
-    /// property names for a naming policy to rename in the first place, so
-    /// there is no snake_case/camelCase risk here the way there is for a
-    /// POCO like <see cref="Scene"/>. Still routed through
-    /// <see cref="Wire.Options"/> and sent as a string (rather than passed
-    /// as a bare interop argument) purely so every <c>SetX</c> method on
-    /// this class follows the exact same "serialize with Wire.Options,
-    /// then InvokeVoidAsync a string" shape -- one pattern to read, not two.
+    /// Pushes a freshly-fetched polity list (Batch B2, "borders v2, the
+    /// cartographer's edition": hand-authored per-polity timerange borders,
+    /// swapped wholesale on every window change). <paramref name="polities"/>
+    /// is the flat <c>polities</c> array <c>GET /api/polities</c> returns
+    /// (already deterministically ordered by id then <c>from</c>); each
+    /// element's own <see cref="PolityEraOut.Rings"/> is already a raw
+    /// <see cref="JsonElement"/> -- a parsed-JSON tree with no C# property
+    /// names for a naming policy to rename, so there is no snake_case/
+    /// camelCase risk there the way there is for the REST of a POCO like
+    /// <see cref="PolityEraOut"/> itself (still routed through
+    /// <see cref="Wire.Options"/> and sent as a string, same "serialize
+    /// with Wire.Options, then InvokeVoidAsync a string" shape every
+    /// <c>SetX</c> method on this class follows).
     /// </summary>
-    public async Task SetBorders(JsonElement geojson)
+    public async Task SetPolities(List<PolityEraOut> polities)
     {
-        var json = JsonSerializer.Serialize(geojson, Wire.Options);
-        await _module.InvokeVoidAsync("setBorders", _id, json);
+        var json = JsonSerializer.Serialize(polities, Wire.Options);
+        await _module.InvokeVoidAsync("setPolities", _id, json);
     }
 
     /// <summary>
-    /// Toggles the border layer's visibility without touching its data --
-    /// used only to hide it on entering scripture mode (design-direction.md:
-    /// "Scripture mode: hide the border layer AND the tag... restore on
-    /// return to time mode") and to unconditionally restore it at the start
-    /// of every time-mode border fetch (World.razor's LoadBordersFor), so a
-    /// transient fetch failure right after returning from scripture mode
-    /// still shows the last known-good snapshot instead of staying hidden.
+    /// Toggles the polity-border layer's visibility without touching its
+    /// data -- used only to hide it on entering scripture mode (scripture
+    /// mode has no time window, so no polities are shown there) and to
+    /// unconditionally restore it at the start of every time-mode polities
+    /// fetch (World.razor's LoadPolitiesFor), so a transient fetch failure
+    /// right after returning from scripture mode still shows the last
+    /// known-good polities instead of staying hidden.
     /// </summary>
-    public async Task SetBordersVisible(bool visible) => await _module.InvokeVoidAsync("setBordersVisible", _id, visible);
+    public async Task SetPolitiesVisible(bool visible) => await _module.InvokeVoidAsync("setPolitiesVisible", _id, visible);
 
     /// <summary>
     /// Pushes the curated landmark list (fetched once, see

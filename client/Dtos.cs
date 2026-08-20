@@ -121,11 +121,27 @@ public sealed record DateClaimOut(TimeRangeDto When, List<string> Verses, string
 
 public sealed record NarrativeOut(string Id, string Name, string Color, List<string> Legs);
 
-/// <c>GET /api/borders?from=&amp;to=</c>. <see cref="Geojson"/> stays a raw
-/// <see cref="JsonElement"/> rather than a typed geometry model -- the
-/// client never inspects border geometry, only forwards it to map.js
-/// (mirrors atlas-core's own <c>serde_json::Value</c> pass-through).
-public sealed record BordersOut(int? SnapshotYear, JsonElement Geojson);
+/// <c>GET /api/polities?from=&amp;to=</c> array element (Batch B2, "borders
+/// v2, the cartographer's edition" -- supersedes <c>BordersOut</c>'s own
+/// snapshot-year GeoJSON shape entirely). One polity ERA row: <see cref="Id"/>
+/// is the polity's own stable id (constant across every era it contributes
+/// to a response -- <see cref="ColorKey"/> is hashed from THIS, never the
+/// era name, so a polity keeps one plate hue across a rename); <see cref="Name"/>/
+/// <see cref="From"/>/<see cref="To"/>/<see cref="Rings"/> are this specific
+/// era's own fields. <see cref="Rings"/> stays a raw <see cref="JsonElement"/>
+/// (a `[[[lat,lon],...],...]` array of rings) rather than a typed geometry
+/// model -- the client never inspects ring coordinates, only forwards them
+/// to map.js (mirrors the retired <c>BordersOut.Geojson</c>'s own
+/// <see cref="JsonElement"/> pass-through pattern).
+public sealed record PolityEraOut(string Id, string Name, int From, int To, JsonElement Rings, int ColorKey);
+
+/// <c>GET /api/polities?from=&amp;to=</c>'s own top-level wire shape --
+/// every era (of every polity) whose own <c>[from,to]</c> intersects the
+/// requested window, deterministically ordered by id then <c>from</c> (see
+/// the server's own <c>handlers::polities</c> doc comment) -- the exact
+/// order <see cref="MapInterop.SetPolities"/>/map.js's <c>BorderLayer</c>
+/// need to paint an older era under a newer one without re-sorting.
+public sealed record PolitiesOut(List<PolityEraOut> Polities);
 
 /// <c>GET /api/landmarks</c> array element. <see cref="Size"/> is the
 /// optional Batch C2 far-field size hint ("sm"/"md"/"lg", null for every

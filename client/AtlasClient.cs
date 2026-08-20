@@ -24,13 +24,12 @@ public sealed class AtlasClient
     private readonly HttpClient _http;
     private readonly LruCache<string, Scene> _sceneCache = new(capacity: 48);
     private readonly LruCache<string, ChapterOut> _chapterCache = new(capacity: 24);
-    // Capacity ~12: keyed by the requested "{from}:{to}" window (not by the
-    // returned snapshot_year) -- simpler, and this is a low-traffic cache
-    // (one call per debounced time-mode window change, not a hot per-hover
-    // path like scenes/chapters), so caching every distinct requested
-    // window rather than deduping on the server's answer costs nothing
-    // meaningful in practice while being a one-line, obviously-correct key.
-    private readonly LruCache<string, BordersOut> _bordersCache = new(capacity: 12);
+    // Capacity ~12: keyed by the requested "{from}:{to}" window -- a
+    // low-traffic cache (one call per debounced time-mode window change,
+    // not a hot per-hover path like scenes/chapters), so caching every
+    // distinct requested window costs nothing meaningful in practice while
+    // being a one-line, obviously-correct key.
+    private readonly LruCache<string, PolitiesOut> _politiesCache = new(capacity: 12);
     // Batch E: PlaceCard's hover-lazy history fetch (place id + window),
     // same "instant on repeat hover" rationale and capacity ballpark as
     // _chapterCache above -- a scene's lit places cluster into a much
@@ -150,16 +149,16 @@ public sealed class AtlasClient
     public Task<List<NarrativeOut>> Narratives() =>
         GetRequired<List<NarrativeOut>>("api/narratives");
 
-    public async Task<BordersOut> Borders(int from, int to)
+    public async Task<PolitiesOut> Polities(int from, int to)
     {
-        var key = $"borders:{from}:{to}";
-        if (_bordersCache.TryGet(key, out var cached))
+        var key = $"polities:{from}:{to}";
+        if (_politiesCache.TryGet(key, out var cached))
         {
             return cached;
         }
 
-        var result = await GetRequired<BordersOut>($"api/borders?from={from}&to={to}");
-        _bordersCache.Put(key, result);
+        var result = await GetRequired<PolitiesOut>($"api/polities?from={from}&to={to}");
+        _politiesCache.Put(key, result);
         return result;
     }
 

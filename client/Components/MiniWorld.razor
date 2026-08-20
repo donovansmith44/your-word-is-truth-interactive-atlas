@@ -18,13 +18,15 @@
 
    CONTROLLER RULING (this task's dispatch): mini instances render markers
    ONLY -- no border overlay, no landmark labels, no arrows (320x240 is
-   too small to read any of the three). This component only ever calls
-   MapInterop.SetScene/FitScene -- never SetBorders/SetBordersVisible/
-   SetLandmarks -- and map.js's own init(mini: true) path independently
-   skips creating the border/arrow/landmark layers at all, and setScene's
-   own arrow push (arrows travel bundled inside every Scene payload,
-   unlike borders/landmarks which are separate calls this component simply
-   never makes) is gated on the same mini flag -- belt and suspenders.
+   too small to read any of the three; Batch B2's own rewrite keeps this
+   rule unchanged -- see its own brief, "mini:true maps stay borderless").
+   This component only ever calls MapInterop.SetScene/FitScene -- never
+   SetPolities/SetPolitiesVisible/SetLandmarks -- and map.js's own
+   init(mini: true) path independently skips creating the polity/arrow/
+   landmark layers at all, and setScene's own arrow push (arrows travel
+   bundled inside every Scene payload, unlike polities/landmarks which are
+   separate calls this component simply never makes) is gated on the same
+   mini flag -- belt and suspenders.
 
    Each MiniWorld instance owns exactly one MapInterop (and therefore one
    Leaflet map/DOM subtree); ExplorerPopover's own @if around <MiniWorld>

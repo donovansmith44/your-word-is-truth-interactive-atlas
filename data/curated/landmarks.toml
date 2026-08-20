@@ -10,7 +10,8 @@
 # (atlas-etl's validate::run_landmarks enforces this). `lat`/`lon` must
 # fall inside the biblical-world clip bbox (lat 7.6..48.9, lon -10.9..71.4
 # -- same constants as client/wwwroot/js/map.js's BIBLICAL_WORLD_BOUNDS and
-# atlas-etl's borders::BIBLICAL_WORLD_BBOX).
+# atlas-etl's polities::BIBLICAL_WORLD_BBOX, formerly borders::BIBLICAL_WORLD_BBOX
+# before Batch B2 retired that module).
 #
 # Batch C2 (design-direction.md's Atlas plate detail SECOND ADDENDUM,
 # "populated far field"): optional `size` = "sm" | "md" | "lg" (also
@@ -157,9 +158,11 @@ lon = 35.750000
 # carries a `size` hint so it renders tier-0 (visible even zoomed all the
 # way out; see the header comment above). None collides by NAME with any
 # currently-lit place OR any historical-border polity feature close enough
-# to read as the same real-world thing twice (checked by hand against both
-# data/compiled/places.json and every data/curated/borders/*.geojson
-# feature's own `name` -- see the batch report for the full cross-check);
+# to read as the same real-world thing twice (checked by hand at the time
+# against data/compiled/places.json and every data/curated/borders/*.geojson
+# feature's own `name` -- see the batch report for the full cross-check;
+# Batch B2 later replaced data/curated/borders/ with data/curated/polities/,
+# unrelated to this check's own original cross-referenced set);
 # where a candidate name DID already exist as a real geocoded place (most
 # of them, per Theographic's own Table-of-Nations-style entries), its
 # coordinate is reused verbatim, same "reuse a real geocoded coordinate"

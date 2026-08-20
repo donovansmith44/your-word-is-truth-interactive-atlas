@@ -58,18 +58,6 @@
         <Legend Narratives="_scene.Narratives" IsolatedId="@_isolated" OnIsolate="HandleIsolate" />
     }
 
-    @* Atlas plate detail (design-direction.md, ADDED PER USER FEEDBACK
-       2026-08-18): time-mode-only, honest about which snapshot is showing;
-       hidden whenever there's no time context (scripture mode) or no
-       snapshot has loaded yet. *@
-    @if (_scriptureRef is null && _borders?.SnapshotYear is not null)
-    {
-        <div class="border-tag" data-testid="border-tag">
-            <span class="border-tag-label">Borders c.</span>
-            <span class="border-tag-year">@YearText.Format(_borders.SnapshotYear.Value)</span>
-        </div>
-    }
-
     @if (_errorMessage is not null)
     {
         <div class="toast" data-testid="toast">
@@ -130,18 +118,19 @@
     private string? _scriptureRef;
 
     // Atlas plate detail (design-direction.md, ADDED PER USER FEEDBACK
-    // 2026-08-18): the last successfully-fetched border snapshot (border-
-    // tag's own text/visibility) and the curated landmark list (fetched
-    // once in OnInitializedAsync, pushed to the map once it exists). Both
-    // stay null until their first successful fetch and are never reset to
-    // null afterward -- a later failed refetch just leaves the prior
-    // (still-honest, if slightly stale) value in place, same "last good
-    // state stays" philosophy the toast already uses for _scene.
-    private BordersOut? _borders;
+    // 2026-08-18; data model replaced by Batch B2's own per-polity
+    // timerange borders): the last successfully-fetched polity list and
+    // the curated landmark list (fetched once in OnInitializedAsync,
+    // pushed to the map once it exists). Both stay null until their first
+    // successful fetch and are never reset to null afterward -- a later
+    // failed refetch just leaves the prior (still-honest, if slightly
+    // stale) value in place, same "last good state stays" philosophy the
+    // toast already uses for _scene.
+    private PolitiesOut? _polities;
     private List<LandmarkDto>? _landmarks;
 
     // Guards PushLandmarksIfReady below against double-pushing -- unlike
-    // _scene/_borders (each refetched on every window change, with their
+    // _scene/_polities (each refetched on every window change, with their
     // own natural "only apply if this fetch is still current" logic),
     // landmarks are fetched exactly ONCE, so the race between "the fetch
     // resolves" and "the map gets created" needs an explicit once-only
@@ -326,18 +315,18 @@
         }
 
         // Same "already resolved before the map existed" race as _scene
-        // above, for borders: only push them if we're not (by now) in
+        // above, for polities: only push them if we're not (by now) in
         // scripture mode -- a deep link straight into scripture mode must
-        // never show a border layer it never asked for, matching
-        // DebouncedLoadScriptureScene's own SetBordersVisible(false).
-        if (_borders is not null && _scriptureRef is null)
+        // never show a polity-border layer it never asked for, matching
+        // DebouncedLoadScriptureScene's own SetPolitiesVisible(false).
+        if (_polities is not null && _scriptureRef is null)
         {
-            await _mapInterop.SetBordersVisible(true);
-            await _mapInterop.SetBorders(_borders.Geojson);
+            await _mapInterop.SetPolitiesVisible(true);
+            await _mapInterop.SetPolities(_polities.Polities);
         }
 
         // Landmarks: same "whichever resolves second" race as _scene/
-        // _borders above, just fetched once in OnInitializedAsync instead
+        // _polities above, just fetched once in OnInitializedAsync instead
         // of on every window change -- see PushLandmarksIfReady/
         // _landmarksPushed's own comments for why a naive "OnInitializedAsync
         // always finishes before the first render" assumption is wrong.
@@ -360,19 +349,16 @@
         {
             _scriptureRef = RefQuery;
 
-            // Fix round 1 (finding 5): hide the border LAYER the moment
-            // scripture mode is entered -- unconditionally, right where
-            // _scriptureRef itself is set, before the scene fetch below
-            // even starts. Previously this only happened in
+            // Fix round 1 (finding 5): hide the polity-border LAYER the
+            // moment scripture mode is entered -- unconditionally, right
+            // where _scriptureRef itself is set, before the scene fetch
+            // below even starts. Previously this only happened in
             // DebouncedLoadScriptureScene's SUCCESS branch, so a failed
-            // scripture fetch left the vector layer painting even though
-            // the border-tag (already correctly driven by _scriptureRef,
-            // via the @if in the markup) had disappeared -- borders with no
-            // tag explaining what snapshot they're from. Both now hide
-            // together, regardless of the fetch's outcome.
+            // scripture fetch left the vector layer painting with no time
+            // window to justify it.
             if (_mapInterop is not null)
             {
-                await _mapInterop.SetBordersVisible(false);
+                await _mapInterop.SetPolitiesVisible(false);
             }
 
             await DebouncedLoadScriptureScene(RefQuery);
@@ -549,75 +535,61 @@
             StateHasChanged();
         }
 
-        // Borders share this same debounce/cancellation (`cts`) but are a
+        // Polities share this same debounce/cancellation (`cts`) but are a
         // fully independent try/catch from the scene fetch above -- a
-        // borders failure must never surface as the scene's own error
+        // polities failure must never surface as the scene's own error
         // toast (design-direction.md's Atlas plate detail: "failures
         // NON-fatal -- no toast, just skip borders, log-free"). Skipped
         // entirely (not just skipped-on-map-push) when this call was
         // already superseded, same as the scene fetch would have been.
         if (!cts.IsCancellationRequested)
         {
-            await LoadBordersFor(from, to, cts);
+            await LoadPolitiesFor(from, to, cts);
         }
     }
 
-    // Fetches the border snapshot for [from,to] and pushes it to the map.
-    // Unconditionally restores the layer's visibility FIRST, before the
-    // fetch even starts: entering/being in time mode should always show
-    // *some* border layer (the last successfully fetched snapshot, stale
+    // Fetches the polity-border list for [from,to] and pushes it to the
+    // map. Unconditionally restores the layer's visibility FIRST, before
+    // the fetch even starts: entering/being in time mode should always
+    // show *some* polity layer (the last successfully fetched list, stale
     // or not) rather than staying hidden from a previous scripture-mode
     // visit just because this particular refresh failed. Silent on failure
     // per the batch brief -- no toast, no logging, just keep showing
     // whatever was already there.
-    private async Task LoadBordersFor(int from, int to, CancellationTokenSource cts)
+    private async Task LoadPolitiesFor(int from, int to, CancellationTokenSource cts)
     {
-        // Fix round 1 (finding 3): this restore used to run AFTER the fetch
-        // resolved, inside the try's success branch only -- so a transient
-        // fetch failure right after returning from scripture mode left the
-        // layer hidden with nothing left to un-hide it until the NEXT
-        // successful fetch. Moved here, unconditionally, before the fetch
-        // even starts, matching what this comment (and MapInterop.
-        // SetBordersVisible's own doc comment) already promised. Runs even
-        // when the snapshot-year no-op guard below skips the data push.
+        // Fix round 1 (finding 3, carried from the retired border-tag
+        // model): this restore used to run AFTER the fetch resolved,
+        // inside the try's success branch only -- so a transient fetch
+        // failure right after returning from scripture mode left the layer
+        // hidden with nothing left to un-hide it until the NEXT successful
+        // fetch. Unconditional, before the fetch even starts, matching
+        // MapInterop.SetPolitiesVisible's own doc comment.
         if (_mapInterop is not null)
         {
-            await _mapInterop.SetBordersVisible(true);
+            await _mapInterop.SetPolitiesVisible(true);
         }
 
         try
         {
-            var borders = await Atlas.Borders(from, to);
+            var polities = await Atlas.Polities(from, to);
             if (cts.IsCancellationRequested)
             {
                 return;
             }
 
-            // Fix round 1 (finding 2, client half): a slider drag that
-            // stays within the same border snapshot's window still
-            // re-fetches (from/to changed) but very often resolves to the
-            // SAME snapshot_year -- pushing it again would re-serialize and
-            // rebuild an identical SVG layer for no visible change. Compare
-            // against the PRIOR _borders (captured before it's overwritten
-            // just below) so this only ever short-circuits the interop data
-            // push -- _borders itself always updates, so the border-tag's
-            // YearText stays correct, and the visibility restore above
-            // already ran regardless. Safe because a compiled snapshot's
-            // geojson for a given year never changes within a running
-            // server's lifetime (see atlas-core::data::AtlasData::borders).
-            var sameSnapshot = _borders?.SnapshotYear == borders.SnapshotYear;
-            _borders = borders;
+            _polities = polities;
 
-            if (_mapInterop is not null && !sameSnapshot)
+            if (_mapInterop is not null)
             {
-                await _mapInterop.SetBorders(borders.Geojson);
+                await _mapInterop.SetPolities(polities.Polities);
             }
         }
         catch (Exception)
         {
             // Silent per design-direction.md's Atlas plate detail -- skip
-            // this update, keep showing whatever border snapshot (if any)
-            // is already on the map. Visibility was already restored above,
+            // this update, keep showing whatever polities (if any) are
+            // already on the map. Visibility was already restored above,
             // independent of this failure.
         }
         finally
