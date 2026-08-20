@@ -1,7 +1,7 @@
 //! The atlas data model: the compiled-file schema that ETL writes and the
 //! server reads. Every record type derives `Serialize + Deserialize`.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -221,6 +221,21 @@ pub struct AtlasData {
     /// Derived: canonical verse id -> event ids that reference it. Built by `finish()`.
     #[serde(skip)]
     verse_to_events: HashMap<String, Vec<String>>,
+    /// Batch E2 (the ever-present graph): "cities in our graph" per the
+    /// user's own direction quoted in batch-e2-brief.md -- ids of every
+    /// place touched by >=1 event, ANY window (206 in the real compiled
+    /// data, but NEVER hardcoded -- always derived fresh from `events` by
+    /// `finish()`, so a future data change is picked up automatically).
+    /// `scene::quiet_places` subtracts a window's own lit set from this to
+    /// get that window's quiet places.
+    #[serde(skip)]
+    event_bearing_place_ids: HashSet<String>,
+    /// Batch E2: a place's ALL-TIME event count (every event touching it,
+    /// in ANY window, not just the scene's own) -- the source of
+    /// `QuietPlace::total_events`. Built alongside `event_bearing_place_ids`
+    /// by `finish()` in the same single pass over `events`.
+    #[serde(skip)]
+    event_counts_by_place: HashMap<String, u32>,
 }
 
 impl AtlasData {
@@ -284,6 +299,19 @@ impl AtlasData {
         }
         self.verse_to_events = verse_to_events;
 
+        // Batch E2: one pass over every event's `places` builds BOTH the
+        // event-bearing id set and each one's all-time event count -- "cities
+        // in our graph" is derived here, never hardcoded (see the two
+        // fields' own doc comments).
+        let mut event_counts_by_place: HashMap<String, u32> = HashMap::new();
+        for e in &self.events {
+            for pid in &e.places {
+                *event_counts_by_place.entry(pid.clone()).or_insert(0) += 1;
+            }
+        }
+        self.event_bearing_place_ids = event_counts_by_place.keys().cloned().collect();
+        self.event_counts_by_place = event_counts_by_place;
+
         self
     }
 
@@ -299,6 +327,24 @@ impl AtlasData {
     /// have none -- `place_history` only covers the curated ~15-25).
     pub fn place_history_for(&self, id: &str) -> Option<&PlaceHistory> {
         self.place_history.get(id)
+    }
+
+    /// Batch E2: ids of every event-bearing place ("cities in our graph",
+    /// user direction 2026-08-19 quoted in batch-e2-brief.md) -- the fixed-
+    /// cardinality set QUIET-1 checks `places` union `quiet_places` against
+    /// for every time-mode window. Derived from `events` by `finish()`.
+    pub fn event_bearing_place_ids(&self) -> &HashSet<String> {
+        &self.event_bearing_place_ids
+    }
+
+    /// Batch E2: a place's ALL-TIME event count (every event touching it, in
+    /// ANY window) -- `QuietPlace::total_events`'s source. 0 for a place
+    /// with no events at all; such a place is never actually looked up by
+    /// `scene::quiet_places` (it only iterates `event_bearing_place_ids`),
+    /// but 0 is a safe, honest default rather than panicking if ever called
+    /// directly.
+    pub fn total_events_for(&self, id: &str) -> u32 {
+        self.event_counts_by_place.get(id).copied().unwrap_or(0)
     }
 
     /// Event ids whose `verses` include the given canonical verse id.

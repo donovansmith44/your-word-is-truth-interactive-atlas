@@ -16,6 +16,12 @@ fn sample_scene() -> Scene {
                     verses: vec!["JOS.6.1".into(), "JOS.6.20".into()], count: 27 }],
             }],
         }],
+        // Batch E2 (the ever-present graph): one sample quiet place pins
+        // QuietPlace's own lean wire shape (id/display_name/lat/lon/
+        // total_events only -- no events/verse_groups keys at all).
+        quiet_places: vec![QuietPlace {
+            id: "shiloh".into(), display_name: "Shiloh".into(), lat: 32.0553, lon: 35.2897, total_events: 3,
+        }],
         arrows: vec![SceneArrow { narrative: "conquest".into(), color: "#7C3AED".into(),
             from_place: "gilgal".into(), to_place: "jericho".into(),
             from_event: "ev_camp_gilgal".into(), to_event: "ev_jericho_falls".into(), order: 2 }],

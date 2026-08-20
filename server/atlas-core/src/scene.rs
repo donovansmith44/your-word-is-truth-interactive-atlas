@@ -7,16 +7,19 @@ use crate::data::{AtlasData, Event};
 use crate::history::resolve_display_name;
 use crate::refs::{ScriptureRef, VerseId};
 use crate::time::TimeRange;
-use crate::wire::{Scene, SceneArrow, SceneEvent, SceneNarrative, ScenePlace, VerseGroup};
+use crate::wire::{QuietPlace, Scene, SceneArrow, SceneEvent, SceneNarrative, ScenePlace, VerseGroup};
 
 /// Time-mode scene: every event whose `when` intersects the window lights up
 /// all of its places; arrows connect each narrative's kept legs in order.
+/// Batch E2: every OTHER event-bearing place ("cities in our graph") goes
+/// quiet rather than vanishing -- see `quiet_places` below.
 pub fn compose_time_scene(d: &AtlasData, w: TimeRange) -> Scene {
     let kept: Vec<&Event> = d.events.iter().filter(|e| e.when.intersects(&w)).collect();
     let places = lit_places(d, &kept, None, Some(w)); // group kept events by ALL their places
+    let quiet = quiet_places(d, &places, w);
     let arrows = build_arrows(d, &w, None);
     let narratives = legend(d, &w, None, &arrows);
-    Scene { mode: "time".into(), window: Some(w), sref: None, places, arrows, narratives }
+    Scene { mode: "time".into(), window: Some(w), sref: None, places, quiet_places: quiet, arrows, narratives }
 }
 
 /// Scripture-mode scene: lit places are the union of (a) places touched by
@@ -80,7 +83,11 @@ pub fn compose_scripture_scene(d: &AtlasData, r: &ScriptureRef) -> Scene {
     let arrows = build_arrows(d, &span, Some(r));
     let narratives = legend(d, &span, Some(r), &arrows);
 
-    Scene { mode: "scripture".into(), window: None, sref: Some(r.to_string()), places, arrows, narratives }
+    // Batch E2: scripture-mode scenes never gain quiet places (no time
+    // window exists here to resolve "not yet biblically active" against --
+    // see wire.rs's own Scene::quiet_places doc comment for the "always an
+    // array, always empty here" wire choice).
+    Scene { mode: "scripture".into(), window: None, sref: Some(r.to_string()), places, quiet_places: vec![], arrows, narratives }
 }
 
 /// Book matches book; Chapter matches book+chapter; Passage matches
@@ -176,6 +183,38 @@ fn lit_places(d: &AtlasData, kept: &[&Event], r: Option<&ScriptureRef>, name_win
         .collect();
     places.sort_by(|a, b| a.id.cmp(&b.id));
     places
+}
+
+/// Batch E2 (the ever-present graph): every event-bearing place NOT already
+/// in `lit` for this window -- QUIET-1's `places` union `quiet_places` ==
+/// the full event-bearing set (`AtlasData::event_bearing_place_ids`, itself
+/// derived from `events`, never hardcoded) falls straight out of "every id
+/// in that set either landed in `lit` or lands here, and never both" (the
+/// `!lit_ids.contains` filter makes the two disjoint by construction).
+/// `display_name` resolves against the SAME `window` `lit_places` used for
+/// its own `name_window` -- the other half of QUIET-1 (a place's displayed
+/// name never contradicts itself between the lit and quiet sides for one
+/// window). Sorted by id, same determinism `lit_places` already gives its
+/// own list.
+fn quiet_places(d: &AtlasData, lit: &[ScenePlace], window: TimeRange) -> Vec<QuietPlace> {
+    let lit_ids: HashSet<&str> = lit.iter().map(|p| p.id.as_str()).collect();
+    let mut out: Vec<QuietPlace> = d
+        .event_bearing_place_ids()
+        .iter()
+        .filter(|id| !lit_ids.contains(id.as_str()))
+        .filter_map(|id| {
+            let place = d.place_by_id(id)?;
+            Some(QuietPlace {
+                id: place.id.clone(),
+                display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), Some(window)),
+                lat: place.lat,
+                lon: place.lon,
+                total_events: d.total_events_for(id),
+            })
+        })
+        .collect();
+    out.sort_by(|a, b| a.id.cmp(&b.id));
+    out
 }
 
 /// `pub` (not private) because atlas-server's verse/place-detail endpoints
@@ -278,7 +317,7 @@ mod tests {
     use crate::data::{Canon, Narrative, Place};
     use crate::time::next_year;
     use proptest::prelude::*;
-    use std::collections::HashMap;
+    use std::collections::{HashMap, HashSet};
 
     // The hand-built demo world used throughout this test module (4 places,
     // one narrative `conquest` with a same-place skip case, a second
@@ -297,6 +336,62 @@ mod tests {
         let ids: Vec<&str> = s.places.iter().map(|p| p.id.as_str()).collect();
         assert!(ids.contains(&"gilgal") && ids.contains(&"jericho") && ids.contains(&"ai"));
         assert!(!ids.contains(&"hebron")); // -2000 outside window
+    }
+
+    // --- Batch E2: quiet_places ---------------------------------------------
+    // demo_fixture's 4 places (gilgal/jericho/ai/hebron) are ALL event-bearing
+    // (each has >=1 event, e1..e5) -- so for every window below, lit union
+    // quiet is exactly those same 4 ids, just partitioned differently.
+
+    #[test]
+    fn quiet_places_are_every_event_bearing_place_not_lit() {
+        let d = crate::data::demo_fixture();
+        let s = compose_time_scene(&d, TimeRange::new(-1406, -1405).unwrap());
+        let lit_ids: HashSet<&str> = s.places.iter().map(|p| p.id.as_str()).collect();
+        let quiet_ids: HashSet<&str> = s.quiet_places.iter().map(|p| p.id.as_str()).collect();
+        // hebron's only event (e5, -2000) is outside this window -- exactly
+        // the one place that should have gone quiet rather than vanishing.
+        assert_eq!(quiet_ids, HashSet::from(["hebron"]));
+
+        // QUIET-1: disjoint...
+        assert!(lit_ids.is_disjoint(&quiet_ids), "lit and quiet must never overlap");
+        // ...and their union is the FULL event-bearing set, derived from the
+        // data (never hardcoded here).
+        let union: HashSet<&str> = lit_ids.union(&quiet_ids).cloned().collect();
+        let expected: HashSet<&str> = d.event_bearing_place_ids().iter().map(|s| s.as_str()).collect();
+        assert_eq!(union, expected);
+    }
+
+    #[test]
+    fn quiet_place_display_name_resolves_like_the_lit_side() {
+        // hebron's curated history (see demo_fixture's own comment): "Kirjath-
+        // arba" -4004..-2001, no other name entry. A window where hebron is
+        // NOT lit (its only event, e5, is dated exactly -2000) but still
+        // fully inside that curated range must resolve the SAME way
+        // `resolve_display_name`/the lit side would -- QUIET-1's own
+        // "spot-assert via a place with a curated name range" clause.
+        let d = crate::data::demo_fixture();
+        let s = compose_time_scene(&d, TimeRange::new(-2500, -2400).unwrap());
+        assert!(s.places.iter().all(|p| p.id != "hebron"), "hebron must be quiet, not lit, in this window");
+        let hebron = s.quiet_places.iter().find(|p| p.id == "hebron").expect("hebron should be quiet here");
+        assert_eq!(hebron.display_name, "Kirjath-arba");
+        assert_eq!(hebron.lat, 31.5326);
+        assert_eq!(hebron.lon, 35.0998);
+        assert_eq!(hebron.total_events, 1); // e5, ALL-TIME -- not window-scoped (would be 0 if it were)
+
+        // A window past the curated range entirely falls back to the
+        // (already-clean, no digit suffix) default name, same fallback rule
+        // as the lit side.
+        let s2 = compose_time_scene(&d, TimeRange::new(-1900, -1800).unwrap());
+        let hebron2 = s2.quiet_places.iter().find(|p| p.id == "hebron").expect("hebron should be quiet here too");
+        assert_eq!(hebron2.display_name, "Hebron");
+    }
+
+    #[test]
+    fn scripture_scene_has_no_quiet_places() {
+        let d = crate::data::demo_fixture();
+        let s = compose_scripture_scene(&d, &ScriptureRef::parse("GEN.13.18").unwrap());
+        assert!(s.quiet_places.is_empty(), "scripture-mode scenes never gain quiet places");
     }
 
     #[test]
@@ -723,6 +818,49 @@ mod tests {
             let (s1, s2) = (compose_time_scene(&d, w), compose_time_scene(&d, grow));
             let ids2: std::collections::HashSet<_> = s2.places.iter().map(|p| p.id.clone()).collect();
             for p in &s1.places { prop_assert!(ids2.contains(&p.id)); }
+        }
+
+        // Batch E2 (QUIET-1): Rust-side mirror of the same property the
+        // brief's own authoritative TS/fast-check suite proves against the
+        // live API (tests/ux/api-scene.spec.ts) -- cheap to run here too
+        // (no HTTP round trip), and catches a scene.rs-level regression
+        // before it ever reaches that slower live suite.
+        #[test]
+        fn quiet_place_invariants(w in window_strategy()) {
+            let d = big_fixture();
+            let s = compose_time_scene(&d, w);
+            let lit_ids: std::collections::HashSet<_> = s.places.iter().map(|p| p.id.as_str()).collect();
+            let quiet_ids: std::collections::HashSet<_> = s.quiet_places.iter().map(|p| p.id.as_str()).collect();
+
+            prop_assert!(lit_ids.is_disjoint(&quiet_ids)); // QUIET-1: disjoint
+            let union: std::collections::HashSet<_> = lit_ids.union(&quiet_ids).cloned().collect();
+            let expected: std::collections::HashSet<_> = d.event_bearing_place_ids().iter().map(|s| s.as_str()).collect();
+            prop_assert_eq!(union, expected); // QUIET-1: fixed-cardinality union, derived from the data
+
+            for qp in &s.quiet_places {
+                // A quiet entry stays lean -- no events/verse_groups keys exist
+                // on QuietPlace at all (compile-time guarantee), and its
+                // position matches the real place record.
+                let place = d.place_by_id(&qp.id).expect("quiet place id must resolve to a real place");
+                prop_assert_eq!(qp.lat, place.lat);
+                prop_assert_eq!(qp.lon, place.lon);
+                // total_events is the ALL-TIME count, so it must never be 0
+                // for a place that's a member of event_bearing_place_ids at
+                // all, and must match the same all-time derivation directly.
+                prop_assert_eq!(qp.total_events, d.total_events_for(&qp.id));
+                prop_assert!(qp.total_events > 0);
+            }
+
+            // display_name resolution consistency: re-resolving each quiet
+            // place's name against the SAME window via the public
+            // resolve_display_name function (what the lit side itself calls)
+            // must agree exactly with what quiet_places produced -- the two
+            // sides can never contradict each other for one window.
+            for qp in &s.quiet_places {
+                let place = d.place_by_id(&qp.id).unwrap();
+                let expected_name = resolve_display_name(&place.name, d.place_history_for(&place.id), Some(w));
+                prop_assert_eq!(&qp.display_name, &expected_name);
+            }
         }
     }
 }

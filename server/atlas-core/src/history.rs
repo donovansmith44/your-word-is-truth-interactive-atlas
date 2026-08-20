@@ -62,6 +62,7 @@ fn pick_by_window<T>(candidates: &[&T], window: TimeRange, when: impl Fn(&T) -> 
 /// displayed alongside it (see place-history.toml's own file-header comment
 /// on proleptic naming).
 pub fn resolve_display_name(default_name: &str, history: Option<&PlaceHistory>, window: Option<TimeRange>) -> String {
+    let default_name = strip_disambiguation_suffix(default_name);
     let (Some(h), Some(w)) = (history, window) else {
         return default_name.to_string();
     };
@@ -69,6 +70,29 @@ pub fn resolve_display_name(default_name: &str, history: Option<&PlaceHistory>, 
     match pick_by_window(&intersecting, w, |n| n.when) {
         Some(i) => intersecting[i].name.clone(),
         None => default_name.to_string(),
+    }
+}
+
+/// Batch E2 folded-in fix 1: strips a trailing " <digits>" ETL slug-
+/// disambiguation suffix from a DEFAULT display name -- "Beersheba 2",
+/// "Succoth 2", "Moab 2" were leaking onto the plate verbatim (313 of 1375
+/// compiled places carry one, e.g. `beersheba-2`/name "Beersheba 2";
+/// atlas-etl::geo's own doc comment: upstream `friendly_id` values already
+/// disambiguate same-named real-world sites this way -- the suffix exists
+/// to keep two places' NAMES apart in the *source* data, mirrored into our
+/// own `-2`/`-3`... id suffixes, never meant for a user-facing label). Only
+/// ever applied to the plain `default_name` a caller passes in -- CURATED
+/// period names (`PlaceNameEntry::name`, hand-written) are already clean and
+/// never run through this, so a curated name that happens to end in a
+/// number (none do today, but nothing here would assume otherwise) is never
+/// touched. Two same-named places may now show identical labels on the
+/// plate after this strip -- that's correct cartography (their ids, e.g.
+/// `beersheba-1`/`beersheba-2`, stay distinct; only the DISPLAYED text
+/// converges).
+fn strip_disambiguation_suffix(name: &str) -> &str {
+    match name.rsplit_once(' ') {
+        Some((base, suffix)) if !suffix.is_empty() && suffix.bytes().all(|b| b.is_ascii_digit()) => base,
+        _ => name,
     }
 }
 
@@ -148,7 +172,41 @@ mod tests {
 
     #[test]
     fn no_history_falls_back_to_default() {
-        assert_eq!(resolve_display_name("Bethel 1", None, Some(range(-2000, -1900))), "Bethel 1");
+        // Batch E2 folded-in fix 1: this pinned "Bethel 1" verbatim before
+        // the fix (the exact leak the fix closes) -- now the fallback path
+        // ALWAYS strips the disambiguation suffix first, so the observable
+        // fallback is "Bethel", not the raw default. See this file's own
+        // `trailing_numeral_stripped_*` tests below for the fix in isolation.
+        assert_eq!(resolve_display_name("Bethel 1", None, Some(range(-2000, -1900))), "Bethel");
+    }
+
+    // --- Batch E2 folded-in fix 1: strip_disambiguation_suffix -------------
+
+    #[test]
+    fn trailing_numeral_stripped_from_default_name_with_no_history() {
+        // Real shapes from the compiled data (data/compiled/places.json):
+        // "Beersheba 2"/"Succoth 2" leaked onto the plate verbatim before
+        // this fix -- both must now resolve to the clean, unsuffixed name.
+        assert_eq!(resolve_display_name("Beersheba 2", None, Some(range(-2000, -1900))), "Beersheba");
+        assert_eq!(resolve_display_name("Succoth 2", None, None), "Succoth");
+    }
+
+    #[test]
+    fn trailing_numeral_stripped_only_when_curated_name_does_not_apply() {
+        // A window inside the curated range still resolves to the curated
+        // name unchanged; a window OUTSIDE every curated range falls back to
+        // the stripped default -- the strip only ever touches the fallback
+        // branch, never a curated `PlaceNameEntry::name`.
+        let h = history(vec![name("Luz", -4004, -2092)]);
+        assert_eq!(resolve_display_name("Bethel 2", Some(&h), Some(range(-3000, -2500))), "Luz");
+        assert_eq!(resolve_display_name("Bethel 2", Some(&h), Some(range(-1000, -900))), "Bethel");
+    }
+
+    #[test]
+    fn multi_digit_and_no_suffix_cases() {
+        assert_eq!(resolve_display_name("Aphek 12", None, None), "Aphek"); // multi-digit suffix
+        assert_eq!(resolve_display_name("Jerusalem", None, None), "Jerusalem"); // no suffix: untouched
+        assert_eq!(resolve_display_name("Antioch of Pisidia", None, None), "Antioch of Pisidia"); // trailing word, not digits: untouched
     }
 
     #[test]
