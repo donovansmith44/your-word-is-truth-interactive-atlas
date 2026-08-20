@@ -558,19 +558,23 @@ input:focus-visible,
    cartographer's edition" -- ground-up redo per direct user feedback
    2026-08-19: "whatever you did for bordering looks absolutely
    horrendous... color it in how a cartographer would color a map").
-   map.js's BorderLayer authors THREE stacked <path> elements per ring
-   directly into its own <svg class="atlas-borders"> (by contract with it,
-   like .atlas-arrows/.atlas-arrow above) -- this file owns every class-
-   level presentation value (fill-opacity, stroke widths/dashes, blend
-   mode) shared across every ring of every era; the per-polity fill/stroke
-   COLOR is set inline by BorderLayer itself (style.fill/style.stroke, not
-   a CSS declaration here -- see map.js's own POLITY_TINTS/POLITY_TINTS_DARK
-   comment). pointer-events:none is belt-and-suspenders with Leaflet's own
-   default `.leaflet-pane > svg path` rule (see .leaflet-pane > svg
-   path.atlas-arrow below, which has to fight and override that same
-   default) -- borders WANT to stay non-interactive, so no override is
-   needed, just an explicit restatement for clarity. */
-.atlas-borders {
+   map.js's BorderLayer authors THREE stacked <path> elements per ring,
+   split across TWO <svg> elements in TWO Leaflet panes (fix round 1,
+   BLOCKER B1 -- see below): <svg class="atlas-borders-wash"> (the fill
+   only, in the dedicated washPane) and <svg class="atlas-borders"> (band +
+   line, in the ordinary overlayPane, like .atlas-arrows/.atlas-arrow
+   above) -- this file owns every class-level presentation value
+   (fill-opacity, stroke widths/dashes, blend mode) shared across every
+   ring of every era; the per-polity fill/stroke COLOR is set inline by
+   BorderLayer itself (style.fill/style.stroke, not a CSS declaration here
+   -- see map.js's own POLITY_TINTS/POLITY_TINTS_DARK comment).
+   pointer-events:none is belt-and-suspenders with Leaflet's own default
+   `.leaflet-pane > svg path` rule (see .leaflet-pane > svg path.atlas-arrow
+   below, which has to fight and override that same default) -- borders
+   WANT to stay non-interactive, so no override is needed, just an explicit
+   restatement for clarity. */
+.atlas-borders,
+.atlas-borders-wash {
     position: absolute;
     top: 0;
     left: 0;
@@ -578,30 +582,52 @@ input:focus-visible,
     pointer-events: none;
 }
 
-/* .atlas-border-wash -- the printed-ink fill. mix-blend-mode:multiply is
-   the whole of "printed, not overlaid": multiply blending DARKENS the
-   terrain pixel-by-pixel (each channel multiplied, never simply painted
-   over it) the way ink actually behaves soaking into a paper base map --
-   terrain relief shows through at every opacity below, by construction of
-   the blend mode itself, which a flat (non-blended) translucent fill never
-   guaranteed no matter how low its own opacity went (exactly the complaint
-   that sank the C2 rendering this batch replaces). fill-opacity tiers by
-   [data-age] (set by BorderLayer per ring, per this file's own header
-   comment): "newest" (a single visible era, OR the newest of several) is
-   0.32 -- carried over unchanged from Batch C2's own tuned, screenshot-
-   verified value (see git history for that tuning pass; still confirmed
-   against World_Shaded_Relief on this batch's own screenshots, now read
-   through multiply instead of flat alpha, which if anything reads MORE
-   like ink, not less). "oldest" (only present in a multi-era window) is
-   a deliberately lighter 0.14 -- NOT a repeat of C2's own rejected
-   "barely-there" ceiling (that finding was about a SINGLE, only wash
-   needing to read as tinted at all; here the brief explicitly wants the
-   older era to look fainter than the newer one it's sharing the plate
-   with, so a lower value is the correct choice, not a mistake). "middle"
-   (a third-or-later tier, rare at this app's own data scale) sits between
-   the two. */
-.atlas-border-wash {
+/* .atlas-wash-pane -- fix round 1 (BLOCKER B1: shipped `mix-blend-mode:
+   multiply` on `.atlas-border-wash` itself never actually reached the
+   tiles -- Leaflet's own panes are each their own CSS stacking context
+   [position:absolute + a numeric z-index, per leaflet.css], so a blend
+   mode set on a path living inside overlayPane can only ever blend
+   against OTHER overlayPane content, never tilePane's sibling stacking
+   context; a live A/B screenshot pixel-diff against `mix-blend-mode:
+   normal` at the identical opacity proved this -- 0.257/255 mean
+   difference, pixel-for-pixel indistinguishable). This class is set (via
+   `classList.add`, map.js's own init()) on the dedicated `washPane` div
+   itself, NOT on any wash <path> -- z-indexed 300, strictly between
+   tilePane's 200 and overlayPane's 400 in the SAME parent stacking context
+   (Leaflet's own `leaflet-map-pane`), so multiply blending set HERE
+   applies to the whole flattened pane (every wash path composited normally
+   among themselves first) against whatever painted immediately before it
+   in that shared parent context -- the actual tile imagery. This is the
+   fix: move the blending boundary from an individual shape to the pane
+   that shape lives in, so it lines up with a stacking-context sibling of
+   the tiles instead of a cousin three levels removed. See BorderLayer's
+   own header comment (map.js) for the full mechanism and the fix's own
+   verification screenshots. */
+.atlas-wash-pane {
     mix-blend-mode: multiply;
+}
+
+/* .atlas-border-wash -- the printed-ink fill, living in the washPane's own
+   `<svg class="atlas-borders-wash">` (fix round 1 -- see `.atlas-wash-pane`
+   above for why). fill-opacity tiers by [data-age] (set by BorderLayer per
+   ring, per this file's own header comment): "newest" (a single visible
+   era, OR the newest of several) is 0.32 -- carried over unchanged from
+   Batch C2's own tuned, screenshot-verified value (see git history for
+   that tuning pass; re-confirmed against World_Shaded_Relief on this fix
+   round's own A/B screenshots, now ACTUALLY multiply-blended for the first
+   time -- terrain relief visibly shows through at this opacity, by
+   construction of the blend mode itself, which the shipped-but-inert
+   blend never guaranteed no matter how low its own opacity went; exactly
+   the complaint that sank the C2 rendering this batch replaces, and that
+   the fix round re-verified is now actually fixed, not merely declared
+   fixed). "oldest" (only present in a multi-era window) is a deliberately
+   lighter 0.14 -- NOT a repeat of C2's own rejected "barely-there" ceiling
+   (that finding was about a SINGLE, only wash needing to read as tinted at
+   all; here the brief explicitly wants the older era to look fainter than
+   the newer one it's sharing the plate with, so a lower value is the
+   correct choice, not a mistake). "middle" (a third-or-later tier, rare at
+   this app's own data scale) sits between the two. */
+.atlas-border-wash {
     stroke: none;
     pointer-events: none;
 }
@@ -624,13 +650,24 @@ input:focus-visible,
    fallback, since a plain wide stroke straddles its own path (half inside
    the ring, half outside) with zero inset-polygon math). Same hue as the
    wash (fill:none, stroke carries the color -- set inline by BorderLayer,
-   same POLITY_TINTS array), also multiply-blended so it reads as a
-   stronger patch of the same ink near the line rather than a separate
-   flat color. Tiered the same way the wash is, at roughly two-thirds its
-   own opacity -- a visible but genuinely SOFT accent, not a second border
-   line. */
+   same POLITY_TINTS array). Tiered the same way the wash is, at roughly
+   two-thirds its own opacity -- a visible but genuinely SOFT accent, not a
+   second border line.
+   Fix round 1 (BLOCKER B1): NO LONGER multiply-blended. The band lives in
+   `this._svg` (overlayPane), alongside the line -- the same pane the wash
+   used to (wrongly) live in -- so a blend-mode here would be exactly the
+   same no-op the wash's own inert `mix-blend-mode:multiply` was (see
+   `.atlas-wash-pane`'s own comment above for the root cause). Rather than
+   move the band into washPane too (which would put it BEHIND the wash's
+   own paint order relative to the tiles, wrong for a border accent that's
+   meant to read as a stronger line-adjacent patch, not part of the ink
+   fill), this fix round moves the band OUT of blend-mode entirely, per its
+   own explicit "strokes/bands/year tags stay in the normal overlay pane,
+   unblended" scope -- a plain translucent stroke at the same opacity
+   tiers. Visually confirmed (fix round 1 screenshots) this still reads as
+   a soft accent near the line, just composited normally rather than
+   multiplied. */
 .atlas-border-band {
-    mix-blend-mode: multiply;
     stroke-width: 6px;
     pointer-events: none;
 }

@@ -198,6 +198,21 @@ export function init(el, dotnetRef, opts) {
         map.getPane('polityLabelsPane').style.zIndex = 450;
         map.getPane('polityLabelsPane').style.pointerEvents = 'none';
 
+        // washPane (fix round 1, BLOCKER B1): the wash's own dedicated pane,
+        // z-indexed BETWEEN tilePane (200, Leaflet's own vendored leaflet.css)
+        // and overlayPane (400, where BorderLayer's band/line/every other
+        // custom SVG layer lives) -- see BorderLayer's own header comment for
+        // why `mix-blend-mode` has to live on THIS PANE ELEMENT (app.css's
+        // `.atlas-wash-pane` rule), not on the individual wash <path>s inside
+        // it, and why that's what makes the blend actually reach the tiles.
+        // Created here, before `new BorderLayer()` below, same ordering
+        // reason polityLabelsPane already has to exist before BorderLayer's
+        // own onAdd runs (it reads both panes back via map.getPane).
+        map.createPane('washPane');
+        map.getPane('washPane').style.zIndex = 300;
+        map.getPane('washPane').style.pointerEvents = 'none';
+        map.getPane('washPane').classList.add('atlas-wash-pane');
+
         polities = new BorderLayer();
         polities.addTo(map);
 
@@ -1505,45 +1520,86 @@ const ArrowLayer = L.Layer.extend({
 // that... color it in how a cartographer would color a map"). Supersedes
 // this layer's ENTIRE Batch B/C/C2 rendering approach (translucent
 // snapshot-year GeoJSON polygons) while keeping its structural role
-// unchanged: a custom L.Layer managing exactly one <svg class=
-// "atlas-borders"> in the map's overlayPane, added to the map BEFORE
-// ArrowLayer in init() so DOM paint order puts it below the narrative
-// threads (see init()'s own comment), non-interactive (no event wiring;
-// app.css's .atlas-border* rules set pointer-events:none), no diffing (a
-// polity swap is a rare, 150ms-debounced window-change event, not a hot
-// per-frame path -- replacing the layer's content wholesale on every
-// setPolities call is simple and cheap enough).
+// unchanged: a custom L.Layer managing TWO plain <svg> elements (see the
+// fix round 1 / BLOCKER note just below for why two, not one), added to the
+// map BEFORE ArrowLayer in init() so DOM paint order puts the overlayPane
+// one below the narrative threads (see init()'s own comment), non-
+// interactive (no event wiring; app.css's .atlas-border* rules set
+// pointer-events:none), no diffing (a polity swap is a rare, 150ms-
+// debounced window-change event, not a hot per-frame path -- replacing the
+// layer's content wholesale on every setPolities call is simple and cheap
+// enough).
 //
-// "Printed, not overlaid": every ring gets THREE stacked <path> elements,
-// not one --
-//   .atlas-border-wash  the fill, mix-blend-mode:multiply (app.css) so the
+// Fix round 1 (BLOCKER B1 -- review finding: shipped `mix-blend-mode:
+// multiply` never actually reached the tiles; an A/B pixel-diff against
+// `mix-blend-mode:normal` at the same opacity came back 0.257/255 mean
+// difference, i.e. pixel-for-pixel indistinguishable, on real textured
+// relief). Root cause: Leaflet's own vendored `leaflet.css` gives every
+// pane `position:absolute` PLUS an explicit numeric `z-index`
+// (`.leaflet-tile-pane{z-index:200}`, `.leaflet-overlay-pane{z-index:400}`)
+// -- both of those alone make a pane its OWN CSS stacking context, so
+// `mix-blend-mode` set on a path living inside `overlayPane` can only ever
+// blend against OTHER content painted inside `overlayPane` (nothing, for a
+// lone wash path), never against `tilePane`'s own img elements, which sit
+// in a completely different, sibling stacking context. No amount of
+// `isolation`/blend-mode tweaking on the PATH itself can cross that
+// boundary -- the fix has to move the blending element itself to a
+// different point in the pane hierarchy.
+//
+// Fix: a dedicated `washPane` (created in init(), z-index 300 -- between
+// tilePane's 200 and overlayPane's 400, both siblings under Leaflet's own
+// `leaflet-map-pane`) holds ONLY the wash <path>s, in their own
+// `this._washSvg`. `mix-blend-mode:multiply` is set on the PANE element
+// itself (app.css's `.atlas-wash-pane` rule), not on the individual wash
+// paths -- because washPane sits at z-index 300, strictly between tilePane
+// and overlayPane in the SAME parent stacking context (`leaflet-map-pane`),
+// the browser first flattens washPane's own children into one layer
+// (ordinary, unblended compositing among the washes themselves, so an
+// overlapping older/newer ring pair of one polity still layers normally),
+// then blends THAT WHOLE LAYER via multiply against whatever painted before
+// it in `leaflet-map-pane`'s own stacking order -- i.e. the actual tile
+// imagery. This is the standard, documented way to blend a whole custom
+// Leaflet layer against the base map (the pane IS the blending unit, not
+// any one shape inside it). Band/line/labels/year-tags stay exactly where
+// they always were, in `this._svg` (overlayPane) -- per the fix round's own
+// scope, they are NOT blended (`.atlas-border-band`'s own now-inert
+// `mix-blend-mode:multiply` is removed too, for the same underlying reason
+// it never did anything there either; see app.css's own comment on why the
+// band now uses a plain, un-blended translucent stroke instead).
+//
+// "Printed, not overlaid": every ring still gets THREE stacked <path>
+// elements, just no longer all siblings of each other --
+//   .atlas-border-wash  the fill, living in `this._washSvg` (washPane) --
+//                       blended AS PART OF THE PANE (see above) so the
 //                       tint DARKENS the terrain like ink soaking into
 //                       paper rather than a flat shape floating on top --
 //                       terrain relief shows through at every opacity this
 //                       batch uses, by construction of multiply blending.
 //   .atlas-border-band  a WIDE, low-opacity, no-fill stroke along the same
-//                       ring -- "a soft inner tint band along the border".
-//                       Deliberately the SIMPLEST version of this effect
-//                       the batch brief sanctions ("a wider, low-opacity
-//                       stroke clipped/behind" is the brief's own first
-//                       suggestion): SVG strokes straddle their path (half
-//                       in, half out) by default, so a wide soft stroke
-//                       reads as a band hugging the border without any
-//                       inset-polygon math (explicitly out of scope --
-//                       "do not try to get too fancy with mathematics").
-//   .atlas-border-line  the fine, crisp border LINE itself, in the
-//                       polity's own hue DARKENED (POLITY_TINTS_DARK) --
-//                       solid for the newest/only visible era of a polity,
-//                       dashed or dotted for an older one still in view
-//                       (see the "age" tiering below).
+//                       ring -- "a soft inner tint band along the border",
+//                       living in `this._svg` (overlayPane), UNBLENDED (a
+//                       plain translucent stroke -- see app.css). SVG
+//                       strokes straddle their path (half in, half out) by
+//                       default, so a wide soft stroke reads as a band
+//                       hugging the border without any inset-polygon math
+//                       (explicitly out of scope -- "do not try to get too
+//                       fancy with mathematics").
+//   .atlas-border-line  the fine, crisp border LINE itself, in `this._svg`
+//                       (overlayPane), in the polity's own hue DARKENED
+//                       (POLITY_TINTS_DARK) -- solid for the newest/only
+//                       visible era of a polity, dashed or dotted for an
+//                       older one still in view (see the "age" tiering
+//                       below).
 // All three share one ring's own projected `d` (recomputed every redraw,
-// same as before); they are appended to the SVG in THREE PASSES across
-// EVERY ring (all washes, then all bands, then all lines) rather than
-// per-ring, so that even where one polity's later, larger ring visually
-// covers an earlier, smaller one's fill, every ring's own LINE still
-// paints on top of every fill/band and stays crisply visible -- the
-// mechanism "the older dotted ring visible around/inside the newer solid
-// one" actually depends on.
+// same as before, regardless of which SVG element each one's own `<path>`
+// lives in); within EACH of the two SVGs, elements are appended in
+// oldest-to-newest-per-polity order across every ring (all washes in
+// `this._washSvg`; all bands then all lines, in that order, in
+// `this._svg`) rather than per-ring, so that even where one polity's
+// later, larger ring visually covers an earlier, smaller one's fill, every
+// ring's own LINE still paints on top of every band and stays crisply
+// visible -- the mechanism "the older dotted ring visible around/inside
+// the newer solid one" actually depends on.
 //
 // Multi-era windows (a window spanning a border change -- "the one-up on
 // timemap.org"): setPolities groups the incoming flat list by polity id
@@ -1580,6 +1636,49 @@ const ArrowLayer = L.Layer.extend({
 // DIFFERENT names (the ordinary case -- a name change usually accompanies
 // or follows a border change), BOTH get their own label, each centered on
 // its OWN era's own rings.
+// Fix round 1 (M1 -- review finding B2: with only 8 hues and 14 curated
+// polities, the plain hash-mod-8 assignment collided 11 of 14 polities into
+// shared buckets, including geographically/temporally overlapping pairs
+// that most needed telling apart -- Judah/Neo-Assyrian-Empire, Judah/
+// Achaemenid-Persia, Judah's Herodian era/Rome). Widened 8 -> 16 tints,
+// within the design authority's own "12-16" suggestion: entries 0-7 are
+// Batch C2's own original 8, byte-identical (so any polity whose id
+// already hashed into 0-7 keeps the exact same color it always had);
+// entries 8-15 are new. NOT hand-picked/eyeballed (an earlier pass at this
+// fix that WAS hand-picked shipped a real, live-screenshot-caught defect --
+// see below) -- computed by a small throwaway Python script (farthest-point
+// / greedy dispersion: repeatedly add the hue that maximizes its OWN
+// minimum angular distance to every hue already placed, starting from the
+// 8 fixed originals) so every one of the 16 is as far as achievable from
+// its nearest neighbor given the original 8's own uneven, warm-clustered
+// spacing (rose/coral/tan/buff all sit within about 40 degrees of each
+// other, deliberately, "keep them plate-like on warm terrain" -- fixed,
+// unchangeable, see below), at the SAME muted saturation/lightness (S~26%,
+// L~58%) as the original 8 so the new hues still read as the same
+// hand-tinted plate, not a jarring addition. SERVER-SIDE assignment
+// (atlas_etl::polities::assign_color_keys) is what actually guarantees
+// collision-freedom -- see that function's own doc comment -- this array
+// is just the palette it indexes into; widening it alone would do nothing
+// without that algorithm change alongside it.
+//
+// Live-screenshot-caught defect, fixed by the above (not by hand-tuning
+// individual hex values further -- see the fix round's own report for the
+// full before/after numbers): an EARLIER version of this array picked its
+// 8 new hues by eye, hue-wheel-sorted, then interleaved to avoid nearby
+// ARRAY INDICES landing on nearby hues (linear probing tends to assign ids
+// with nearby hash seeds to nearby indices). That fixed the index-adjacency
+// risk but missed a DIFFERENT failure mode entirely: two hand-picked hues
+// (that pass's own "violet" and "indigo") were simply too close to EACH
+// OTHER in raw hue terms (30 degrees) regardless of which indices they
+// ended up at -- confirmed live when `sumer` and `elam` (this app's own
+// real curated roster) landed on exactly that pair and read as visually
+// similar in a screenshot. The greedy-dispersion approach here checks
+// EVERY pairwise distance among all 16, not just array-adjacent ones, so
+// it can't repeat that specific mistake.
+//
+// Entries 0-7 are Batch C2's own original 8, byte-identical (unchanged,
+// deliberately -- any polity whose id already hashed into 0-7 keeps
+// exactly the color it always had).
 const POLITY_TINTS = [
     '#C98A8A', // 0 rose
     '#C9B37E', // 1 buff
@@ -1589,9 +1688,17 @@ const POLITY_TINTS = [
     '#B59B7E', // 5 tan
     '#8FA07A', // 6 moss
     '#C08E7A', // 7 coral
+    '#78B09B', // 8 teal-jade
+    '#B078A0', // 9 mauve
+    '#7B78B0', // 10 indigo
+    '#78B082', // 11 jade
+    '#78ACB0', // 12 steel-cyan
+    '#ACB078', // 13 khaki
+    '#AC78B0', // 14 orchid
+    '#B0788C', // 15 wine-rose
 ];
 
-// The SAME 8 hues as POLITY_TINTS, each channel scaled by a flat 0.62 --
+// The SAME 16 hues as POLITY_TINTS, each channel scaled by a flat 0.62 --
 // "darkened" per the batch brief's own wording for the border LINE
 // ("a fine solid stroke in the polity hue (darkened)"), computed once by
 // hand rather than at runtime (no color-space math, "no fancy
@@ -1608,6 +1715,14 @@ const POLITY_TINTS_DARK = [
     '#70604E', // 5 tan, darkened
     '#59634C', // 6 moss, darkened
     '#77584C', // 7 coral, darkened
+    '#4A6D60', // 8 teal-jade, darkened
+    '#6D4A63', // 9 mauve, darkened
+    '#4C4A6D', // 10 indigo, darkened
+    '#4A6D51', // 11 jade, darkened
+    '#4A6B6D', // 12 steel-cyan, darkened
+    '#6B6D4A', // 13 khaki, darkened
+    '#6B4A6D', // 14 orchid, darkened
+    '#6D4A57', // 15 wine-rose, darkened
 ];
 
 // "c. 1500 BC" -- the year tag's own mono-face text (design-direction.md:
@@ -1641,8 +1756,33 @@ const BorderLayer = L.Layer.extend({
         this._map = map;
         this._svg = svgEl('svg', { class: 'atlas-borders' });
         map.getPane('overlayPane').appendChild(this._svg);
+        // Fix round 1 (BLOCKER B1): the wash's own SVG, living in washPane
+        // (created in init(), before this layer's own addTo(map) --  same
+        // ordering this layer already relies on for polityLabelsPane below)
+        // instead of overlayPane -- see this layer's own header comment for
+        // why the wash needs a separate pane at all. A DIFFERENT class from
+        // the main SVG's own `atlas-borders` (`atlas-borders-wash` instead)
+        // -- deliberately, so every existing `svg.atlas-borders` selector
+        // (BORDERS-4/BORDERS-9's own Playwright locators, both written
+        // before this fix and both requiring an unambiguous single-element
+        // match) keeps resolving to exactly the one element it always did,
+        // with zero test changes forced by this fix; app.css's shared
+        // position/overflow/pointer-events rule targets both classes via one
+        // comma selector, and `.atlas-wash-pane` (the actual blend-mode
+        // rule) targets the PANE, not either SVG -- see this layer's own
+        // header comment.
+        this._washSvg = svgEl('svg', { class: 'atlas-borders-wash' });
+        map.getPane('washPane').appendChild(this._washSvg);
         this._labelPane = map.getPane('polityLabelsPane'); // created in init(), before this layer's own addTo(map)
         this._offZoomAnim = attachZoomAnim(map, this._svg);
+        // Fix round 1: the wash SVG needs the SAME zoomanim treatment as the
+        // main one, independently -- two separate <svg> elements in two
+        // separate panes each need their own CSS transform applied during an
+        // animated zoom, or the wash would visibly lag/detach from its own
+        // ring's band+line mid-zoom (a new regression the original zoom-sync
+        // fix, requirement 5, didn't have to account for, since the wash
+        // lived in the same SVG as everything else at the time).
+        this._offZoomAnimWash = attachZoomAnim(map, this._washSvg);
         return this;
     },
 
@@ -1651,7 +1791,12 @@ const BorderLayer = L.Layer.extend({
             this._offZoomAnim();
             this._offZoomAnim = null;
         }
+        if (this._offZoomAnimWash) {
+            this._offZoomAnimWash();
+            this._offZoomAnimWash = null;
+        }
         this._svg.remove();
+        this._washSvg.remove();
         this._ringGroups = [];
         for (const l of this._labels) {
             l.el.remove();
@@ -1676,7 +1821,9 @@ const BorderLayer = L.Layer.extend({
     // "age" among its polity's currently-visible eras.
     setPolities(list) {
         resetZoomAnimTransform(this._svg);
+        resetZoomAnimTransform(this._washSvg); // fix round 1: second SVG, same reset (see onAdd's own comment)
         this._svg.replaceChildren();
+        this._washSvg.replaceChildren();
         for (const l of this._labels) {
             l.el.remove();
         }
@@ -1731,8 +1878,14 @@ const BorderLayer = L.Layer.extend({
                 this._ringGroups.push({ wash, band, line, ring, entry, ringIndex });
             });
         }
+        // Fix round 1 (BLOCKER B1): washEls go into `this._washSvg`
+        // (washPane) now, not `this._svg` -- see this layer's own header
+        // comment for why the wash needs to live in a different pane for
+        // its blend mode to actually reach the tiles. bandEls/lineEls are
+        // unaffected, still appended to `this._svg` (overlayPane) in the
+        // same oldest-to-newest, bands-then-lines order as before.
         for (const el of washEls) {
-            this._svg.appendChild(el);
+            this._washSvg.appendChild(el);
         }
         for (const el of bandEls) {
             this._svg.appendChild(el);
@@ -1756,11 +1909,35 @@ const BorderLayer = L.Layer.extend({
 
         // Year tags: one per RING (not per era), only for a polity with
         // more than one currently-visible era.
-        this._yearTags = [];
+        //
+        // Fix round 1 (M2 -- review finding B3: every tag anchored at its
+        // own ring's bbox CENTER with only a fixed downward offset, so
+        // concentric growth/contraction rings of the SAME polity -- the
+        // exact case this feature exists to showcase -- put their tags
+        // almost exactly on top of each other; visible in the batch's own
+        // egypt-exodus and spanning-1600-900bc screenshots). Fix: group
+        // this polity's own tag-needing ring groups first (still in the
+        // existing oldest-to-newest order _ringGroups already carries), then
+        // give each one an index within ITS OWN polity's group -- fed to
+        // _makeYearTag below, which uses it to stagger the tag at a
+        // DIFFERENT fractional position around ITS OWN ring's perimeter
+        // (see _ringPerimeterPoint's own comment) instead of every tag
+        // landing on the shared, near-identical bbox center concentric
+        // rings naturally have.
+        const tagGroupsById = new Map();
         for (const g of this._ringGroups) {
             if (g.entry.tierCount > 1) {
-                this._yearTags.push(this._makeYearTag(g));
+                if (!tagGroupsById.has(g.entry.id)) {
+                    tagGroupsById.set(g.entry.id, []);
+                }
+                tagGroupsById.get(g.entry.id).push(g);
             }
+        }
+        this._yearTags = [];
+        for (const group of tagGroupsById.values()) {
+            group.forEach((g, tagIndex) => {
+                this._yearTags.push(this._makeYearTag(g, tagIndex, group.length));
+            });
         }
 
         this.setVisible(true);
@@ -1769,6 +1946,7 @@ const BorderLayer = L.Layer.extend({
 
     setVisible(visible) {
         this._svg.style.display = visible ? '' : 'none';
+        this._washSvg.style.display = visible ? '' : 'none'; // fix round 1: second SVG, same visibility toggle (scripture mode must hide the wash too, not just the line/band SVG)
         for (const l of this._labels) {
             l.el.style.display = visible ? '' : 'none';
         }
@@ -1792,12 +1970,15 @@ const BorderLayer = L.Layer.extend({
     // Batch B2: clears any transform a mid-flight zoomanim frame left on
     // the SVG before recomputing every ring's real `d` at the now-current
     // zoom -- see resetZoomAnimTransform's own comment for why this has to
-    // happen here, every time.
+    // happen here, every time. Fix round 1: both SVGs now (this._washSvg
+    // too -- see onAdd's own comment on why it needs the identical
+    // treatment as this._svg).
     _redraw() {
         if (!this._map) {
             return;
         }
         resetZoomAnimTransform(this._svg);
+        resetZoomAnimTransform(this._washSvg);
         for (const g of this._ringGroups) {
             const d = this._ringPathData(g.ring);
             g.wash.setAttribute('d', d);
@@ -1876,10 +2057,18 @@ const BorderLayer = L.Layer.extend({
         return { el, entry, cLat, cLon, bbox };
     },
 
-    _makeYearTag(ringGroup) {
-        const bbox = this._geoBBoxOfRings([ringGroup.ring]);
-        const cLat = (bbox.minLat + bbox.maxLat) / 2;
-        const cLon = (bbox.minLon + bbox.maxLon) / 2;
+    // Fix round 1 (M2): `tagIndex`/`tagCount` come from setPolities' own
+    // per-polity grouping just above -- `tagIndex` is this ring's own
+    // position (0-based) among its polity's OWN currently-visible tag-
+    // needing rings, `tagCount` how many there are in total. Anchored at a
+    // point ALONG the ring's own perimeter (_ringPerimeterPoint below),
+    // fanned out by `tagIndex/tagCount`, rather than the ring's bbox
+    // center every tag used before this fix -- see that function's own
+    // comment for why this is enough to separate concentric rings without
+    // any new collision-detection machinery.
+    _makeYearTag(ringGroup, tagIndex, tagCount) {
+        const frac = tagCount > 1 ? tagIndex / tagCount : 0;
+        const [cLat, cLon] = this._ringPerimeterPoint(ringGroup.ring, frac);
         const el = document.createElement('span');
         el.className = 'polity-year-tag';
         el.setAttribute(
@@ -1889,6 +2078,32 @@ const BorderLayer = L.Layer.extend({
         el.textContent = formatYearTag(ringGroup.entry.from);
         this._labelPane.appendChild(el);
         return { el, ringGroup, cLat, cLon };
+    },
+
+    // Fix round 1 (M2 -- review finding B3, "stagger same-polity tags at
+    // different perimeter fractions of their ring" per the fix round's own
+    // brief). Picks the ring's OWN vertex at fractional position `frac`
+    // (0 = the ring's first curated point, cycling through its point list)
+    // rather than computing a true arc-length fraction -- deliberately
+    // array-index based, "no fancy mathematics": every curated ring already
+    // carries 30-80 roughly-evenly-spaced hand-placed points (the brief's
+    // own recognizability band), so indexing by point-COUNT fraction is a
+    // good enough stand-in for genuine arc-length fraction at this app's
+    // own scale, and it's a single array lookup, not a geometry
+    // computation. Concentric rings of one polity (the common, showcased
+    // case -- growth/contraction eras) are independently-authored shapes,
+    // so a DIFFERENT ring at the SAME fraction generally lands at a
+    // meaningfully different point (verified empirically against the real
+    // curated data via the fix round's own re-screenshot of the
+    // spanning-1600-900bc window -- see the fix round report); this is a
+    // cheap, deterministic improvement over the old shared-bbox-center
+    // anchor, not a guarantee for every conceivable ring pair.
+    _ringPerimeterPoint(ring, frac) {
+        if (!ring || ring.length === 0) {
+            return [0, 0];
+        }
+        const idx = Math.floor(frac * ring.length) % ring.length;
+        return ring[idx];
     },
 
     // Fix round 1 addendum (Batch C2, coordinator follow-up to M1's own
@@ -1957,13 +2172,14 @@ const BorderLayer = L.Layer.extend({
         l.el.style.transform = `translate(${center.x}px, ${center.y}px) translate(-50%, -50%)`;
     },
 
-    // Year tags sit at their own RING's centroid, nudged down a fixed
-    // amount so a single-ring era's tag never sits exactly on top of that
-    // same era's own polity-label (both anchor near the same point in the
-    // common case). No offscreen/too-small gating (unlike labels) -- a
-    // year tag is small, always wanted whenever its ring is (tierCount>1),
-    // and "no fancy math" favors staying visible over a second geometric
-    // judgment call the brief never asked for.
+    // Year tags sit at their own anchor point (fix round 1: a fractional
+    // perimeter point per _ringPerimeterPoint/_makeYearTag above, no longer
+    // the ring's bbox center), nudged down a fixed amount so a tag never
+    // sits exactly on top of whatever it's anchored near. No offscreen/
+    // too-small gating (unlike labels) -- a year tag is small, always
+    // wanted whenever its ring is (tierCount>1), and "no fancy math" favors
+    // staying visible over a second geometric judgment call the brief never
+    // asked for.
     _positionYearTag(t) {
         const YEAR_TAG_OFFSET_PX = 14;
         const center = this._map.latLngToLayerPoint([t.cLat, t.cLon]);
