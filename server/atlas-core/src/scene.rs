@@ -400,7 +400,13 @@ mod tests {
     // construction site (lit, quiet, AND the scripture-mode synthetic
     // mention branch) -- hebron's own curated history (demo_fixture's own
     // comment): established -2000 (a single year -> from_year==to_year),
-    // no destroyed claim at all (still standing, open-ended).
+    // no destroyed claim at all (still standing, open-ended). hebron ALSO
+    // carries a curated name ("Kirjath-arba", -4004..-2001), so per
+    // resolve_existence's own widening rule the effective existence_from is
+    // -4004 (the name's own earliest year), not -2000 -- established alone
+    // documents when the place became "Hebron", not when Kirjath-arba first
+    // stood (see history.rs's Jerusalem/Jebus doc comment for the full
+    // motivating case).
 
     #[test]
     fn existence_bounds_propagate_to_a_lit_scene_place() {
@@ -409,7 +415,7 @@ mod tests {
         // own comment) -- a window covering exactly that year lights it.
         let s = compose_time_scene(&d, TimeRange::new(-2000, -2000).unwrap());
         let hebron = s.places.iter().find(|p| p.id == "hebron").expect("hebron should be lit at exactly -2000");
-        assert_eq!(hebron.existence_from, Some(-2000));
+        assert_eq!(hebron.existence_from, Some(-4004)); // widened by the "Kirjath-arba" name range
         assert_eq!(hebron.existence_to, None); // no destroyed claim curated -- open-ended
     }
 
@@ -418,7 +424,7 @@ mod tests {
         let d = crate::data::demo_fixture();
         let s = compose_time_scene(&d, TimeRange::new(-1406, -1405).unwrap());
         let hebron = s.quiet_places.iter().find(|p| p.id == "hebron").expect("hebron is quiet in this window");
-        assert_eq!(hebron.existence_from, Some(-2000));
+        assert_eq!(hebron.existence_from, Some(-4004));
         assert_eq!(hebron.existence_to, None);
         // A place with no curated history at all (gilgal/jericho/ai carry
         // none in demo_fixture) always serializes both bounds absent.
@@ -438,7 +444,7 @@ mod tests {
         let s = compose_scripture_scene(&d, &ScriptureRef::parse("GEN.13.18").unwrap());
         let hebron = s.places.iter().find(|p| p.id == "hebron").expect("hebron should be mention-lit");
         assert!(hebron.events[0].id.starts_with("mention-"));
-        assert_eq!(hebron.existence_from, Some(-2000));
+        assert_eq!(hebron.existence_from, Some(-4004));
         assert_eq!(hebron.existence_to, None);
     }
 

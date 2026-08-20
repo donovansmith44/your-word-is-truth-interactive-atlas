@@ -488,3 +488,22 @@ Notes:
   window to test outside-ness against) -- `existence_from`/`existence_to`
   may still be present on a scripture-mode scene's own entries (the wire
   shape is unconditional), simply unused by the client there.
+  WIDENED BY CURATED NAMES: `established` documents when a place became
+  established AS ITS CURATED IDENTITY, not necessarily when a settlement
+  first stood on the ground -- Jerusalem's own curated `established` claim
+  is David's conquest (-1003, "traditional"), but the same place separately
+  carries the curated name "Jebus" from -4004 to -1004 (see NAME-1 above).
+  Gating on `established` alone would hide Jerusalem's label during its own
+  curated "Jebus" period, defeating the point of NAME-1's period-name
+  resolution existing at all. So `existence_from`/`existence_to` are each
+  WIDENED (never narrowed, and never introduced from nothing -- a place
+  with no `established` claim still has no lower gate even if it has
+  curated names) to also cover every curated `[[place.name]]` entry's own
+  range: the lower bound is `min(established, earliest name.from)`, the
+  upper is `max(destroyed, latest name.to)`. A place with no curated name
+  entries (e.g. Shiloh) is unaffected -- the widening is a no-op. This
+  widening happens server-side, inside `resolve_existence`
+  (`atlas-core/src/history.rs`) -- the wire already carries the final,
+  widened bounds, so the client's own `existenceGatesLabel` (map.js) needs
+  no knowledge of name ranges at all, just the plain inclusive-bounds
+  comparison.

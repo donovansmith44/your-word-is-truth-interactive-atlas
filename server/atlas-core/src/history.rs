@@ -25,9 +25,34 @@ use crate::time::{TimeRange, Year};
 /// a record with neither claim curated both return `(None, None)`, meaning
 /// "always labels regardless of window" per the brief -- callers never need
 /// a separate has-history check.
+///
+/// WIDENING BY CURATED NAMES: `established` documents when a place became
+/// established AS ITS CURATED IDENTITY -- not necessarily when a settlement
+/// first stood on the ground. Jerusalem is the motivating case: its
+/// `established` claim is David's conquest (-1003, "traditional"), but its
+/// own curated name history separately carries "Jebus" from -4004 to -1004
+/// -- the SAME place, under an earlier name, for three thousand years
+/// `established` alone knows nothing about. Gating on `established` alone
+/// would hide Jerusalem's label during its own curated "Jebus" period, which
+/// defeats the entire point of `resolve_display_name`'s period-name
+/// resolution existing in the first place. So each bound present is widened
+/// (never narrowed, and never introduced from nothing -- a place with no
+/// `established` claim still returns `None` on that side even if it has
+/// curated names) to also cover every curated `[[place.name]]` entry's own
+/// range: the lower bound becomes `min(established, earliest name.from)`,
+/// the upper becomes `max(destroyed, latest name.to)`. A place with no name
+/// entries (e.g. Shiloh) is unaffected -- the widening is a no-op.
 pub fn resolve_existence(history: Option<&PlaceHistory>) -> (Option<Year>, Option<Year>) {
     let Some(h) = history else { return (None, None) };
-    (h.established.as_ref().map(|c| c.when.from_year), h.destroyed.as_ref().map(|c| c.when.to_year))
+    let from = h.established.as_ref().map(|c| {
+        let earliest_name = h.names.iter().map(|n| n.when.from_year).min();
+        earliest_name.map_or(c.when.from_year, |n| c.when.from_year.min(n))
+    });
+    let to = h.destroyed.as_ref().map(|c| {
+        let latest_name = h.names.iter().map(|n| n.when.to_year).max();
+        latest_name.map_or(c.when.to_year, |n| c.when.to_year.max(n))
+    });
+    (from, to)
 }
 
 /// Batch H: true when `window` falls ENTIRELY outside the `[existence_from,
@@ -476,6 +501,48 @@ mod tests {
     fn resolve_existence_destroyed_only_is_open_ended_on_established_side() {
         let h = history_with_dates(None, Some(claim(-586, -586)));
         assert_eq!(resolve_existence(Some(&h)), (None, Some(-586)));
+    }
+
+    #[test]
+    fn resolve_existence_established_is_widened_by_an_earlier_curated_name() {
+        // Jerusalem's own real curated shape: established (as "Jerusalem",
+        // David's conquest) is -1003, but the SAME place carries an earlier
+        // curated name "Jebus" from -4004 to -1004. A window entirely inside
+        // the Jebus period (e.g. -1060..-1050) must NOT be gated -- the place
+        // demonstrably existed then, just under its earlier name, so the
+        // lower bound widens to the name's own earliest year.
+        let mut h = history_with_dates(Some(claim(-1003, -1003)), Some(claim(-586, -586)));
+        h.names = vec![name("Jebus", -4004, -1004)];
+        assert_eq!(resolve_existence(Some(&h)), (Some(-4004), Some(-586)));
+    }
+
+    #[test]
+    fn resolve_existence_never_widens_past_the_later_bound() {
+        // A curated name ending well before `destroyed` must not pull the
+        // upper bound backward -- widening is a max, never a replacement.
+        let mut h = history_with_dates(Some(claim(-1003, -1003)), Some(claim(-586, -586)));
+        h.names = vec![name("Jebus", -4004, -1004)];
+        let (_, to) = resolve_existence(Some(&h));
+        assert_eq!(to, Some(-586)); // NOT -1004
+    }
+
+    #[test]
+    fn resolve_existence_names_alone_never_introduce_a_bound() {
+        // A place with curated names but NEITHER established nor destroyed
+        // stays fully unbounded ("always labels") -- widening only ever
+        // widens an EXISTING bound, it never manufactures one from names.
+        let mut h = history_with_dates(None, None);
+        h.names = vec![name("Old Name", -4004, -1004)];
+        assert_eq!(resolve_existence(Some(&h)), (None, None));
+    }
+
+    #[test]
+    fn resolve_existence_with_no_names_is_unaffected_by_widening() {
+        // Shiloh has no curated name entries -- widening is a no-op and the
+        // bounds are exactly the established/destroyed claims, matching
+        // resolve_existence_reads_established_from_year_and_destroyed_to_year.
+        let h = history_with_dates(Some(claim(-1399, -1399)), Some(claim(-1104, -1050)));
+        assert_eq!(resolve_existence(Some(&h)), (Some(-1399), Some(-1050)));
     }
 
     #[test]
