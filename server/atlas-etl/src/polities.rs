@@ -67,39 +67,94 @@ impl Bbox {
 pub const ATLAS_START_YEAR: Year = -4004;
 pub const ATLAS_END_YEAR: Year = 100;
 
-/// Number of hues in map.js's own `POLITY_TINTS` palette (Batch C2, unchanged
-/// by this batch) -- [`color_key`] hashes into `0..POLITY_TINT_COUNT`.
-pub const POLITY_TINT_COUNT: u32 = 8;
+/// Number of hues in map.js's own `POLITY_TINTS` palette. Fix round 1 (M1
+/// -- review finding B2: 11 of 14 polities collided into shared hash
+/// buckets under the old 8-hue palette, including geographically/
+/// temporally overlapping pairs -- Judah/Neo-Assyrian-Empire, Judah/
+/// Achaemenid-Persia). Widened 8 -> 16 (within the design authority's own
+/// "12-16" suggestion) -- see map.js's own `POLITY_TINTS` comment for the
+/// actual added hex values. 16 stays `>=` today's 14 curated polities, with
+/// two slots of headroom before [`assign_color_keys`] is forced to accept a
+/// collision again.
+pub const POLITY_TINT_COUNT: u32 = 16;
 
-/// A polity's plate-tint palette index, hashed from its stable `id` --
-/// REFINES Batch C2's own client-side `polityFillColor`, which hashed
-/// whatever single border-feature NAME a snapshot year happened to carry
-/// that year. Hashing the id instead of the (per-era, time-accurate, and
-/// therefore sometimes-changing) name makes a polity's hue an invariant of
-/// the polity ITSELF, stable across every one of its own eras/renames by
-/// construction -- e.g. `egypt` keeps one hue through its "Egypt" eras and
-/// its later "Ptolemaic Egypt" era, exactly the property the batch brief
-/// asks for ("hash the POLITY ID, not the era name, so a polity keeps its
-/// hue across renames"). Computed ONCE per polity, here at ETL compile time
-/// (`curated::parse_polity` calls this directly), and stored on
-/// `atlas_core::data::Polity::color_key` -- `/api/polities` just copies it
-/// onto every era row it emits, no per-request hashing needed.
+/// A polity's DETERMINISTIC STARTING probe position in the tint palette,
+/// hashed from its stable `id` alone -- unchanged algorithm from this
+/// crate's original (pre-fix-round) `color_key` function (sum of
+/// normalized Unicode code-unit values, mod the palette length): a polity
+/// id is already a clean, hand-authored kebab-case slug (`"egypt"`,
+/// `"roman-empire"`) with no internal whitespace to collapse, so trim +
+/// lowercase is the whole of what's needed before summing. `id.chars()`
+/// (not `.bytes()`) mirrors the client's own (retired) `charCodeAt`-based
+/// hash -- both sum Unicode code-unit values, and every id in this app's
+/// curated set is plain ASCII, so the two only ever agree in practice;
+/// `.chars()` keeps this correct in principle for a hypothetical non-ASCII
+/// id too, not merely correct by accident of today's data.
 ///
-/// Same algorithm C2's own `polityFillColor` used (sum of normalized UTF-16
-/// code units, mod the palette length) minus its "collapse internal
-/// whitespace runs" normalization step: a polity id is already a clean,
-/// hand-authored kebab-case slug (`"egypt"`, `"roman-empire"`) with no
-/// internal whitespace to collapse in the first place, so trim + lowercase
-/// is the whole of what's left to do before summing. `id.chars()` (not
-/// `.bytes()`) mirrors the client's own `charCodeAt` -- both sum Unicode
-/// code-unit values, and every id in this app's curated set is plain ASCII,
-/// so the two only ever agree in practice; using `.chars()` here keeps the
-/// implementation correct in principle for a hypothetical non-ASCII id too,
-/// not merely correct by accident of today's data.
-pub fn color_key(id: &str) -> u8 {
+/// This is a SEED, not the final answer -- see [`assign_color_keys`], which
+/// resolves collisions between seeds computed from the same roster.
+fn color_seed(id: &str) -> u8 {
     let normalized = id.trim().to_lowercase();
     let sum: u32 = normalized.chars().map(|c| c as u32).sum();
     (sum % POLITY_TINT_COUNT) as u8
+}
+
+/// Fix round 1 (M1 -- review finding B2: "assign deterministically and
+/// collision-free: extend the palette... assign by SORTED polity id with
+/// linear probing computed from the full polity list at load -- same data,
+/// same colors, every run; no two polities share a tint while count <=
+/// palette size"). REFINES Batch C2's own client-side `polityFillColor`
+/// (retired) and this crate's own original `color_key` (retired as a public
+/// function, survives internally as [`color_seed`]) -- both hashed a SINGLE
+/// id in isolation, with no visibility into what else was in play, so
+/// collisions between ANY two ids sharing a bucket were silently accepted.
+/// This function sees every id in the roster AT ONCE and actively avoids
+/// re-using a bucket another id in the SAME call already claimed.
+///
+/// `sorted_ids` MUST already be sorted by the caller (this function does
+/// not re-sort -- `process_polities`, its sole caller in
+/// `server/atlas-etl/src/main.rs`, already reads its curated directory in
+/// filename/id order for its own report, so re-sorting here would just be a
+/// second, possibly-inconsistent source of truth for the same ordering).
+/// Determinism follows directly from that fixed order plus a purely
+/// deterministic probe: hashing the same id set, in the same order, always
+/// walks the same sequence of "is this bucket free yet" checks and lands on
+/// the same answer -- no `HashMap` iteration order, no randomness, nothing
+/// time-of-day-dependent ("same data, same colors, every run").
+///
+/// Algorithm: for each id, in the given order, start at that id's own
+/// [`color_seed`] and LINEAR-PROBE forward (seed, seed+1, seed+2, ...,
+/// wrapping mod [`POLITY_TINT_COUNT`]) for the first bucket no EARLIER id
+/// in this same call has already claimed; mark it claimed; move on. Because
+/// a full sweep of all `POLITY_TINT_COUNT` buckets can only fail to find a
+/// free one once every bucket is already claimed -- which requires at
+/// least `POLITY_TINT_COUNT` ids to have gone before -- every id is
+/// guaranteed its own distinct bucket as long as `sorted_ids.len() <=
+/// POLITY_TINT_COUNT` (true for today's 14 curated polities against a
+/// 16-slot palette). Past that point (not true today, but this function
+/// must degrade rather than panic or spin forever if it ever becomes true)
+/// a probe that finds no free bucket after a full sweep just falls back to
+/// its own plain seed, accepting a collision -- the same graceful
+/// degradation the palette was always documented to have once id count
+/// exceeds palette size (see the old `color_key_differs_for_most_distinct_ids`
+/// test's own comment, kept below under its fix-round name).
+pub fn assign_color_keys(sorted_ids: &[&str]) -> Vec<u8> {
+    let mut used = vec![false; POLITY_TINT_COUNT as usize];
+    let mut out = Vec::with_capacity(sorted_ids.len());
+    for id in sorted_ids {
+        let seed = color_seed(id);
+        let mut assigned = seed; // fallback if every bucket is already taken (see this function's own doc comment)
+        for step in 0..POLITY_TINT_COUNT {
+            let candidate = ((seed as u32 + step) % POLITY_TINT_COUNT) as u8;
+            if !used[candidate as usize] {
+                assigned = candidate;
+                break;
+            }
+        }
+        used[assigned as usize] = true;
+        out.push(assigned);
+    }
+    out
 }
 
 fn orientation(p: (f64, f64), q: (f64, f64), r: (f64, f64)) -> i32 {
@@ -212,30 +267,104 @@ mod tests {
     }
 
     #[test]
-    fn color_key_is_deterministic_and_in_range() {
+    fn color_seed_is_deterministic_and_in_range() {
         for id in ["egypt", "roman-empire", "judah", ""] {
-            let a = color_key(id);
-            let b = color_key(id);
-            assert_eq!(a, b, "color_key must be a pure function of id");
+            let a = color_seed(id);
+            let b = color_seed(id);
+            assert_eq!(a, b, "color_seed must be a pure function of id");
             assert!((a as u32) < POLITY_TINT_COUNT, "{a} out of range for {id:?}");
         }
     }
 
     #[test]
-    fn color_key_ignores_case_and_surrounding_whitespace() {
-        assert_eq!(color_key("Egypt"), color_key("egypt"));
-        assert_eq!(color_key(" egypt "), color_key("egypt"));
+    fn color_seed_ignores_case_and_surrounding_whitespace() {
+        assert_eq!(color_seed("Egypt"), color_seed("egypt"));
+        assert_eq!(color_seed(" egypt "), color_seed("egypt"));
     }
 
     #[test]
-    fn color_key_differs_for_most_distinct_ids() {
-        // Not a claim of no collisions (8 buckets, more than 8 real ids
-        // WILL collide somewhere -- that's fine, the palette is deliberately
-        // small) -- just a smoke check that the hash isn't degenerately
-        // constant across a handful of real ids from this batch's own roster.
+    fn color_seed_differs_for_most_distinct_ids() {
+        // Not a claim of no collisions among raw SEEDS (16 buckets, and
+        // nothing stops two different ids hashing to the same one) -- just
+        // a smoke check that the hash isn't degenerately constant across a
+        // handful of real ids from this batch's own roster. Collision-
+        // FREEDOM among real assignments is assign_color_keys's own job,
+        // tested below -- this test is about color_seed alone.
         let ids = ["egypt", "assyria", "babylon", "judah", "israel", "roman-empire"];
-        let keys: std::collections::HashSet<u8> = ids.iter().map(|id| color_key(id)).collect();
+        let keys: std::collections::HashSet<u8> = ids.iter().map(|id| color_seed(id)).collect();
         assert!(keys.len() > 1, "expected some variety across {ids:?}, got all-same");
+    }
+
+    // --- assign_color_keys (fix round 1, M1) --------------------------------
+
+    /// The real 14 curated polity ids, already sorted -- matches
+    /// `data/curated/polities/*.toml`'s own filenames (and therefore the
+    /// exact order `process_polities`, main.rs, reads and feeds this
+    /// function in production) at the time of this fix round. If a future
+    /// batch adds/removes a polity file, this list -- and the "collision-
+    /// free" assertion below -- should be updated to match.
+    const REAL_CURATED_POLITY_IDS_SORTED: [&str; 14] = [
+        "alexander-empire", "assyria", "babylon", "egypt", "elam", "hittites", "israel", "judah",
+        "parthian-empire", "persia", "phoenicia", "roman-empire", "seleucid-empire", "sumer",
+    ];
+
+    #[test]
+    fn assign_color_keys_is_collision_free_for_the_real_curated_roster() {
+        let keys = assign_color_keys(&REAL_CURATED_POLITY_IDS_SORTED);
+        assert_eq!(keys.len(), REAL_CURATED_POLITY_IDS_SORTED.len());
+        for &k in &keys {
+            assert!((k as u32) < POLITY_TINT_COUNT, "{k} out of range");
+        }
+        let distinct: std::collections::HashSet<u8> = keys.iter().copied().collect();
+        assert_eq!(
+            distinct.len(),
+            REAL_CURATED_POLITY_IDS_SORTED.len(),
+            "expected all {} real curated polities to get DISTINCT tints (16-slot palette, 14 polities); got {keys:?}",
+            REAL_CURATED_POLITY_IDS_SORTED.len()
+        );
+    }
+
+    #[test]
+    fn assign_color_keys_is_deterministic_same_data_same_colors_every_run() {
+        let a = assign_color_keys(&REAL_CURATED_POLITY_IDS_SORTED);
+        let b = assign_color_keys(&REAL_CURATED_POLITY_IDS_SORTED);
+        assert_eq!(a, b, "same sorted id list must produce the exact same assignment every call");
+    }
+
+    #[test]
+    fn assign_color_keys_is_collision_free_for_any_roster_up_to_palette_size() {
+        // General property, not just today's real roster: ANY set of
+        // POLITY_TINT_COUNT distinct synthetic ids, sorted, gets
+        // POLITY_TINT_COUNT distinct tints -- the exact guarantee the fix
+        // round's own brief asks for ("no two polities share a tint while
+        // count <= palette size").
+        let mut ids: Vec<String> = (0..POLITY_TINT_COUNT).map(|i| format!("synthetic-polity-{i}")).collect();
+        ids.sort();
+        let id_refs: Vec<&str> = ids.iter().map(String::as_str).collect();
+        let keys = assign_color_keys(&id_refs);
+        let distinct: std::collections::HashSet<u8> = keys.iter().copied().collect();
+        assert_eq!(distinct.len(), POLITY_TINT_COUNT as usize, "expected every one of {} synthetic ids to get a distinct tint; got {keys:?}", POLITY_TINT_COUNT);
+    }
+
+    #[test]
+    fn assign_color_keys_degrades_to_a_collision_rather_than_panicking_past_palette_size() {
+        // Past the palette size, collisions become unavoidable -- this must
+        // degrade gracefully (no panic, no infinite loop), not a claim of
+        // continued collision-freedom.
+        let mut ids: Vec<String> = (0..POLITY_TINT_COUNT + 3).map(|i| format!("synthetic-polity-{i}")).collect();
+        ids.sort();
+        let id_refs: Vec<&str> = ids.iter().map(String::as_str).collect();
+        let keys = assign_color_keys(&id_refs);
+        assert_eq!(keys.len(), id_refs.len());
+        for &k in &keys {
+            assert!((k as u32) < POLITY_TINT_COUNT, "{k} out of range even past palette size");
+        }
+    }
+
+    #[test]
+    fn assign_color_keys_handles_empty_input() {
+        let keys = assign_color_keys(&[]);
+        assert!(keys.is_empty());
     }
 
     // --- ring_is_simple ----------------------------------------------------

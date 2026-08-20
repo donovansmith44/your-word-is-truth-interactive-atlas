@@ -205,15 +205,22 @@ pub struct PolityEra {
 /// polity, "easily reversible/modifiable... I'm expecting you to get this
 /// wrong" per the user's own direction -- a wrong shape is ONE file, ONE
 /// `[[era]]` table, plain coordinate lists, nothing derived). `color_key` is
-/// computed ONCE at ETL compile time (`atlas_etl::polities::color_key`, hash
-/// of `id` -- never the era `name`, so a polity keeps its plate tint across a
-/// rename, e.g. Egypt staying the same hue through "Ptolemaic Egypt"; this
-/// REFINES Batch C2's own name-hash, which kept re-deriving the tint from
-/// whatever single name a snapshot-year feature happened to carry that year)
-/// -- an index into map.js's own 8-color `POLITY_TINTS` palette, unchanged
-/// since C2. Stored here (not recomputed per-request) since it's a pure
-/// function of `id` alone; `/api/polities` just copies it onto every emitted
-/// era row.
+/// computed ONCE at ETL compile time -- based on `id` alone, never the era
+/// `name`, so a polity keeps its plate tint across a rename, e.g. Egypt
+/// staying the same hue through "Ptolemaic Egypt"; this REFINES Batch C2's
+/// own name-hash, which kept re-deriving the tint from whatever single name
+/// a snapshot-year feature happened to carry that year -- an index into
+/// map.js's own `POLITY_TINTS` palette (16 tints as of fix round 1, M1; 8
+/// through Batch C2/B2). Fix round 1 (M1): assignment is no longer a plain
+/// per-id hash computed by `curated::parse_polity` in isolation (that
+/// collided too often -- 11 of the original batch's 14 polities shared a
+/// hue) -- `curated::parse_polity` now leaves this field provisional (`0`),
+/// and `atlas_etl::main::process_polities` overwrites every polity's real,
+/// collision-free value in one pass, via `atlas_etl::polities::
+/// assign_color_keys`, once the full sorted roster is available (see that
+/// function's own doc comment for the linear-probing algorithm). Stored
+/// here either way (not recomputed per-request); `/api/polities` just
+/// copies it onto every emitted era row.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Polity {
     pub id: String,

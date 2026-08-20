@@ -332,12 +332,28 @@ fn square_ring() -> Vec<(f64, f64)> {
 
 /// A tiny `AtlasData` carrying real, hand-built polities -- `demo_fixture()`
 /// plus an overwritten `polities` field, `.finish()`d again (idempotent per
-/// its own doc comment) so the derived indexes stay consistent. Two
+/// its own doc comment) so the derived indexes stay consistent. THREE
 /// polities: `egypt` with TWO non-overlapping eras (renamed across them,
 /// "Egypt" -> "Ptolemaic Egypt", mirroring the real curated data -- the
 /// exact shape `color_key`'s own "stable across a rename" guarantee needs a
-/// live test for) and `rome` with one era, so ordering ("by id then from")
-/// has more than one id to actually sort.
+/// live test for), `judah` (fix round 1, M1: a third id, so the "all
+/// distinct" assertion below has more than two rows to actually check), and
+/// `rome` with one era, so ordering ("by id then from") has more than one
+/// id to actually sort.
+///
+/// Fix round 1 (M1): color_key here is still hand-set on the fixture
+/// directly (3/9/5) rather than routed through the real
+/// `atlas_etl::polities::assign_color_keys` -- this test suite (atlas-
+/// server) builds its own `AtlasData` fixtures straight from `atlas_core`
+/// structs and has no ETL dependency to call that function with. The actual
+/// collision-free ALGORITHM is unit-tested directly where it lives
+/// (`server/atlas-etl/src/polities.rs`'s own
+/// `assign_color_keys_is_collision_free_for_the_real_curated_roster` and
+/// its sibling tests). What THIS test proves, honestly, is the wire-level
+/// half of the property: `/api/polities` faithfully passes through
+/// whatever `color_key` each polity already carries -- stably across a
+/// single polity's own eras, and distinctly across different polities'
+/// own ids -- without ever re-deriving or colliding them itself.
 fn app_with_test_polities() -> axum::Router {
     let mut data = demo_fixture();
     data.polities = vec![
@@ -348,6 +364,11 @@ fn app_with_test_polities() -> axum::Router {
                 PolityEra { name: "Egypt".into(), from: -2100, to: -1200, ref_note: "fixture".into(), rings: vec![square_ring()] },
                 PolityEra { name: "Ptolemaic Egypt".into(), from: -331, to: -30, ref_note: "fixture".into(), rings: vec![square_ring()] },
             ],
+        },
+        Polity {
+            id: "judah".into(),
+            color_key: 9,
+            eras: vec![PolityEra { name: "Kingdom of Judah".into(), from: -900, to: -600, ref_note: "fixture".into(), rings: vec![square_ring()] }],
         },
         Polity {
             id: "rome".into(),
@@ -363,8 +384,9 @@ fn app_with_test_polities() -> axum::Router {
 async fn polities_intersection_ordering_and_color_key_stability() {
     let app = app_with_test_polities();
 
-    // A window inside egypt's FIRST era only -- exactly one row, and rome
-    // (whose only era starts at -30, after this window ends) never appears.
+    // A window inside egypt's FIRST era only -- exactly one row; neither
+    // judah (era starts at -900, well after this window ends) nor rome
+    // (whose only era starts at -30) appears.
     let (st, body) = call(&app, "/api/polities?from=-2000&to=-1900").await;
     assert_eq!(st, 200);
     let polities = body["polities"].as_array().unwrap();
@@ -373,20 +395,23 @@ async fn polities_intersection_ordering_and_color_key_stability() {
     assert_eq!(polities[0]["name"], "Egypt");
     assert_eq!(polities[0]["color_key"], 3);
 
-    // A window spanning BOTH of egypt's eras plus rome's own -- three rows,
-    // deterministically ordered "by id then from": egypt's OLDER era first,
-    // egypt's newer era second, rome last (id "rome" > "egypt").
+    // A window spanning BOTH of egypt's eras plus judah's and rome's own --
+    // four rows, deterministically ordered "by id then from": egypt's OLDER
+    // era first, egypt's newer era second, judah third ("judah" sorts
+    // between "egypt" and "rome"), rome last.
     let (st, body) = call(&app, "/api/polities?from=-1500&to=50").await;
     assert_eq!(st, 200);
     let polities = body["polities"].as_array().unwrap();
-    assert_eq!(polities.len(), 3, "{polities:?}");
+    assert_eq!(polities.len(), 4, "{polities:?}");
     assert_eq!(polities[0]["id"], "egypt");
     assert_eq!(polities[0]["name"], "Egypt");
     assert_eq!(polities[0]["from"], -2100);
     assert_eq!(polities[1]["id"], "egypt");
     assert_eq!(polities[1]["name"], "Ptolemaic Egypt");
     assert_eq!(polities[1]["from"], -331);
-    assert_eq!(polities[2]["id"], "rome");
+    assert_eq!(polities[2]["id"], "judah");
+    assert_eq!(polities[2]["from"], -900);
+    assert_eq!(polities[3]["id"], "rome");
 
     // color_key stability across eras of the SAME polity: both egypt rows
     // above carry the SAME color_key (3) despite their different era NAMES
@@ -396,7 +421,25 @@ async fn polities_intersection_ordering_and_color_key_stability() {
     assert_eq!(polities[1]["color_key"], 3);
     assert_eq!(polities[0]["color_key"], polities[1]["color_key"]);
 
-    // A window touching neither polity at all -- empty, not an error.
+    // Fix round 1 (M1 -- review finding B2: "update the color-stability
+    // property test to also assert all-distinct"). Among the DIFFERENT
+    // polities visible together in this same window, every color_key is
+    // pairwise distinct -- egypt/judah/rome never share a tint. This is the
+    // wire-level half of the "no two polities share a tint" property --
+    // see app_with_test_polities's own doc comment for where the actual
+    // collision-free ASSIGNMENT algorithm is unit-tested instead. Grouped
+    // by (id, color_key) first so repeated era rows for the SAME id (egypt
+    // appears twice above) count once, not twice.
+    let distinct_id_key_pairs: std::collections::HashSet<(&str, i64)> =
+        polities.iter().map(|p| (p["id"].as_str().unwrap(), p["color_key"].as_i64().unwrap())).collect();
+    let distinct_keys: std::collections::HashSet<i64> = distinct_id_key_pairs.iter().map(|&(_, k)| k).collect();
+    assert_eq!(
+        distinct_id_key_pairs.len(),
+        distinct_keys.len(),
+        "expected every DIFFERENT polity id in this response to carry a DISTINCT color_key; got {polities:?}"
+    );
+
+    // A window touching none of the three polities -- empty, not an error.
     let (st, body) = call(&app, "/api/polities?from=-4004&to=-2500").await;
     assert_eq!(st, 200);
     assert_eq!(body["polities"], serde_json::json!([]));

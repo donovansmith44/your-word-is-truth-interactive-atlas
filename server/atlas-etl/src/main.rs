@@ -209,6 +209,14 @@ fn main() -> Result<()> {
 /// that check is `validate::run_polities`'s job instead (its own
 /// `check_duplicate_ids` call), same single-source-of-truth split every
 /// OTHER duplicate-id check in this crate already follows.
+///
+/// Fix round 1 (M1): this is also where every polity's REAL `color_key`
+/// gets assigned now -- `curated::parse_polity` leaves it provisional (0)
+/// per-file, since a lone file can't see the rest of the roster it might
+/// collide with. `paths` is already sorted (by filename, i.e. by id) above,
+/// so `compiled` comes out of the parse loop in that exact same order --
+/// exactly the "SORTED polity id" order `polities::assign_color_keys`
+/// needs, with no second sort required.
 fn process_polities(polities_curated_dir: &Path) -> Result<(Vec<Polity>, Vec<PolityStats>)> {
     let mut paths: Vec<PathBuf> = fs::read_dir(polities_curated_dir)
         .with_context(|| format!("reading directory {} -- these are hand-authored and committed, not fetched; see LICENSES.md", polities_curated_dir.display()))?
@@ -230,6 +238,13 @@ fn process_polities(polities_curated_dir: &Path) -> Result<(Vec<Polity>, Vec<Pol
         stats.push(PolityStats { id: polity.id.clone(), eras: polity.eras.len(), points });
         compiled.push(polity);
     }
+
+    let ids: Vec<&str> = compiled.iter().map(|p| p.id.as_str()).collect();
+    let keys = polities::assign_color_keys(&ids);
+    for (polity, key) in compiled.iter_mut().zip(keys) {
+        polity.color_key = key;
+    }
+
     Ok((compiled, stats))
 }
 

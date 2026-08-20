@@ -407,9 +407,15 @@ fn test_bbox() -> atlas_etl::polities::Bbox {
 }
 
 fn one_era_polity(id: &str, name: &str, from: i32, to: i32, ring: Vec<(f64, f64)>) -> Polity {
+    // Fix round 1 (M1): color_key is no longer a per-id hash reachable from
+    // outside the crate (see `polities::assign_color_keys`'s own doc
+    // comment) -- these fixtures only exercise `validate::run_polities`,
+    // which never reads color_key at all, so a plain 0 (matching this
+    // file's own other polity fixtures below, e.g. `polities_overlapping_
+    // eras_fail_validation`) is exactly as good as a real hash here.
     Polity {
         id: id.into(),
-        color_key: atlas_etl::polities::color_key(id),
+        color_key: 0,
         eras: vec![PolityEra { name: name.into(), from, to, ref_note: "fixture".into(), rings: vec![ring] }],
     }
 }

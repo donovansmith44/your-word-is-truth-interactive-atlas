@@ -24,8 +24,6 @@ use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
 
-use crate::polities::color_key;
-
 #[derive(Deserialize)]
 struct ErasFile {
     era: Vec<Era>,
@@ -312,21 +310,26 @@ struct PolityEraToml {
 /// "parse then cross-validate, don't fail fast mid-file" reasoning as
 /// `parse_place_history`'s own doc comment.
 ///
-/// `color_key` IS computed here, eagerly, even though it isn't itself part
-/// of the curated TOML shape at all -- unlike every semantic check above, it
-/// has nothing to cross-validate (it's a pure function of `id` alone, see
-/// `polities::color_key`'s own doc comment), so there's no reason to defer
-/// it to a later pass the way the brief's own aggregate validation checks
-/// are deferred.
+/// `color_key` is LEFT PROVISIONAL (`0`) here -- fix round 1 (M1): it used
+/// to be computed eagerly in this function (a pure hash of `id` alone), but
+/// a collision-free assignment needs to see every OTHER polity in the same
+/// roster too, which a single file being parsed in isolation never has
+/// visibility into (exactly the same "needs the FULL picture" reasoning the
+/// doc comment above already gives for deferring the zero-year/overlap/
+/// ring-closure checks to `validate::run_polities` instead of checking them
+/// here). `process_polities` (`server/atlas-etl/src/main.rs`) overwrites
+/// every polity's `color_key` in one pass, via
+/// `polities::assign_color_keys`, once the full sorted roster this
+/// function's own caller reads is available -- see that function's own doc
+/// comment for the collision-free assignment algorithm itself.
 pub fn parse_polity(input: &str) -> Result<Polity> {
     let f: PolityToml = toml::from_str(input).context("polity TOML: invalid TOML or does not match the id/[[era]] schema")?;
-    let color_key = color_key(&f.id);
     let eras = f
         .eras
         .into_iter()
         .map(|e| PolityEra { name: e.name, from: e.from, to: e.to, ref_note: e.ref_note, rings: e.rings })
         .collect();
-    Ok(Polity { id: f.id, color_key, eras })
+    Ok(Polity { id: f.id, color_key: 0, eras })
 }
 
 #[cfg(test)]
@@ -367,10 +370,15 @@ mod tests {
         assert_eq!(polity.eras[0].rings[0][0], (10.0, 10.0), "rings are [lat, lon], first pair verbatim");
         assert_eq!(polity.eras[1].name, "Greater Testland");
 
-        // color_key is a pure function of `id` alone (crate::polities::color_key's
-        // own unit tests cover the hash itself in detail) -- this just proves
-        // parse_polity actually threads it through rather than defaulting to 0.
-        assert_eq!(polity.color_key, crate::polities::color_key("testland"));
+        // Fix round 1 (M1): color_key is now LEFT PROVISIONAL (0) by
+        // parse_polity -- a single file has no visibility into the rest of
+        // the roster it might collide with, so the real, collision-free
+        // value is assigned later by `process_polities` (main.rs), over the
+        // FULL sorted roster at once, via `polities::assign_color_keys`
+        // (see that function's own unit tests for the collision-free
+        // assignment algorithm itself). This just proves parse_polity
+        // doesn't reach for the old per-file hash anymore.
+        assert_eq!(polity.color_key, 0);
     }
 
     #[test]
