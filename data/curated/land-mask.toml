@@ -1,0 +1,122 @@
+# land-mask.toml -- Batch R requirement 1 ("borders become part of the
+# plate"): ONE hand-drawn land/coastline mask for the eastern-Mediterranean
+# plate, used ONLY to clip polity washes (map.js's BorderLayer) so they never
+# spill into open sea -- never rendered as its own visible layer. Stored like
+# the polity rings (data/curated/polities/*.toml): one file, plain
+# [lat, lon] coordinate lists, a comment per region naming what it covers and
+# how it was drawn, easily hand-editable/reversible per the same discipline
+# design-direction.md's Borders THIRD REVISION asks of polity rings.
+#
+# COORDINATES ARE OUR OWN APPROXIMATIONS -- general geographic knowledge of
+# well-known coastal cities/landmarks (Beirut, Alexandria, the Nile Delta,
+# the Persian Gulf's own shores, etc.), hand-typed against that knowledge,
+# NOT traced from any copyrighted vector coastline dataset (CC0, see
+# LICENSES.md). "Enough vertices to make the coastline RECOGNIZABLE," not
+# survey-grade -- the same bar the polity rings are held to. Every ring was
+# checked with the same ring-simplicity algorithm atlas-etl runs at ETL time
+# (atlas_etl::polities::ring_is_simple) before being committed here.
+#
+# Six independent regions (rings), most-detailed first: the brief's own
+# explicit ask is a "recognizable Levant/Nile/Mesopotamia coastline," so the
+# Levant/Sinai/Egypt/Anatolia ring (region 1) and the Mesopotamia/Persian
+# Gulf ring (region 2) carry the most points and the most careful coastal
+# tracing; the three peripheral regions (Persia's own eastern reach,
+# southern Europe, North Africa west of Egypt) exist only so the curated
+# polities that reach that far (Alexander's empire, Persia, the Seleucids,
+# Parthia, Rome) aren't clipped away on THEIR OWN legitimate territory --
+# they are deliberately coarser, generous rather than precise, erring on the
+# side of extra "land" rather than clipping real polity wash. A `<clipPath>`
+# unions every ring's own filled area (SVG's own documented behavior for
+# multiple children of one clipPath), so these six regions need no shared
+# edges or matching seams -- deliberate overlap where two regions meet (e.g.
+# region 1's Anatolia edge and region 4's Aegean edge) is safe and used
+# freely to guarantee no gap.
+#
+# Known, deliberate simplifications (honestly disclosed, not oversights):
+# the Gulf of Aqaba is not traced as its own notch (too narrow to matter at
+# this app's own hand-drawn scale); Arabia's own landmass is never included
+# at all (no curated polity has ever had territory there) -- only enough of
+# the Red Sea's/Persian Gulf's OWN shorelines nearest Egypt/Mesopotamia/
+# Persia are traced to keep those two seas correctly excluded; the Black Sea
+# and Caspian Sea are not excluded (no curated polity reaches them either);
+# region 4 (southern Europe) is a rough sketch, not a precise trace of
+# Iberia/Gaul/Italy/Greece's own coastlines -- Roman Empire's own hand-drawn
+# ring already approximates its own territory, and this mask's only job
+# there is "don't clip it," not "look like an atlas of Europe."
+
+[[region]]
+name = "Anatolia, the Levant, Sinai, and the Nile Delta and valley"
+ref_note = "Our own approximation from general geographic knowledge of well-known coastal cities (Iskenderun, Latakia, Beirut, Tyre, Haifa, Jaffa, Gaza, Alexandria, the Nile's own Delta and valley) and Anatolia's own outline -- not traced from any copyrighted vector coastline. The primary 'recognizable Levant/Nile' coastline this batch's own brief asks for; carries the most points of any region here."
+rings = [
+  [
+    [36.6, 36.2], [35.9, 35.9], [34.9, 35.9], [33.9, 35.5], [33.27, 35.2],
+    [32.9, 35.05], [32.8, 34.98], [32.3, 34.85], [32.05, 34.75], [31.5, 34.45],
+    [31.13, 33.8], [31.25, 32.3], [31.5, 31.8], [31.55, 31.3], [31.45, 30.8],
+    [31.4, 30.4], [31.25, 29.95], [31.05, 29.3], [30.95, 28.5], [31.1, 27.4],
+    [29.5, 27.0], [27.5, 28.0], [25.5, 29.0], [23.5, 30.5], [22.0, 31.5],
+    [20.0, 33.0], [18.3, 35.5], [19.0, 37.3], [21.0, 36.9], [23.0, 35.5],
+    [24.5, 34.9], [26.0, 34.0], [27.7, 33.9], [28.9, 33.0], [29.9, 32.5],
+    [30.0, 34.0], [30.5, 35.0], [31.5, 35.9], [32.5, 36.3], [33.5, 36.6],
+    [34.8, 37.0], [35.5, 37.5], [36.5, 38.0], [37.5, 39.5], [38.5, 40.5],
+    [39.5, 41.5], [40.3, 39.5], [41.0, 36.0], [41.2, 33.0], [41.0, 30.0],
+    [40.3, 27.5], [39.0, 27.0], [37.0, 27.5], [36.9, 30.7], [36.8, 32.5],
+    [36.8, 34.6], [36.6, 36.2]
+  ]
+]
+
+[[region]]
+name = "Mesopotamia and the Persian Gulf's own Persian shore, into west Persia"
+ref_note = "Our own approximation from general geographic knowledge of the Tigris-Euphrates valley (Nineveh, Babylon, Ur, Susa) and Iran's own Gulf coast toward the Strait of Hormuz -- not traced from any copyrighted vector coastline. Deliberately traces only the Gulf's NE (Persian) shore, never the Arabian side -- no curated polity has territory in Arabia, so the Gulf is correctly excluded (and Arabia along with it) without ever tracing Arabia's own coast at all."
+rings = [
+  [
+    [37.5, 40.5], [35.0, 40.0], [33.0, 41.5], [30.5, 43.5], [29.0, 45.0],
+    [29.5, 47.5], [30.0, 48.3], [29.0, 49.5], [28.0, 51.0], [27.0, 53.0],
+    [26.5, 55.0], [27.0, 56.3], [29.0, 57.0], [32.0, 56.0], [35.0, 53.0],
+    [37.5, 51.0], [39.0, 47.0], [39.2, 43.0], [37.5, 40.5]
+  ]
+]
+
+[[region]]
+name = "Persia's own eastern reach, Parthia, Bactria"
+ref_note = "A deliberately coarse envelope, generous rather than precise, sized only to keep Alexander's/Persia's/the Seleucids'/Parthia's own curated eastern territory (up to lon 68.5 in data/curated/polities/*.toml) from being clipped -- not a real coastline trace (this stretch is mostly landlocked); overlaps region 2 near the Gulf on purpose, per this file's own header comment on why overlap between regions is always safe."
+rings = [
+  [
+    [40.0, 44.0], [41.5, 50.0], [41.5, 58.0], [40.0, 65.0], [38.0, 69.0],
+    [34.0, 69.5], [30.0, 68.5], [26.5, 66.0], [24.0, 61.0], [23.0, 57.0],
+    [24.5, 55.5], [27.5, 54.0], [30.0, 52.0], [34.0, 46.0], [38.0, 43.5],
+    [40.0, 44.0]
+  ]
+]
+
+[[region]]
+name = "Southern Europe: Greece, Italy, Iberia, Gaul"
+ref_note = "A rough sketch, generous rather than precise, sized only to keep Rome's own curated western/northern territory (down to lon -2.0 in roman-empire.toml, up to lat 47.6) from being clipped -- not a survey of Europe's own coastline. Overlaps region 1's own Aegean-facing Anatolia edge on purpose."
+rings = [
+  [
+    [41.0, 24.0], [43.0, 23.0], [45.0, 19.0], [46.5, 14.0], [47.6, 8.0],
+    [47.5, 2.5], [46.0, -1.5], [43.5, -3.8], [40.0, -6.5], [37.0, -6.0],
+    [36.2, -5.4], [36.0, -2.0], [43.0, 3.0], [44.0, 8.0], [41.5, 12.5],
+    [40.5, 17.5], [39.0, 20.0], [38.0, 23.5], [40.5, 23.0], [41.0, 24.0]
+  ]
+]
+
+[[region]]
+name = "North Africa, west of Egypt"
+ref_note = "A rough sketch, generous rather than precise, so Rome's own curated North African territory is not clipped at the Egypt/Libya seam -- not a survey of the Maghreb's own coastline."
+rings = [
+  [
+    [31.1, 25.0], [32.3, 20.0], [33.0, 13.0], [37.3, 10.0], [36.8, 5.0],
+    [35.7, -1.0], [35.2, -5.9], [31.5, -9.5], [29.0, -9.0], [29.5, -2.0],
+    [32.0, 5.0], [32.0, 20.0], [31.1, 25.0]
+  ]
+]
+
+[[region]]
+name = "Cyprus"
+ref_note = "A small, simple oval approximating Cyprus's own outline from general geographic knowledge (Kyrenia/Morphou/Paphos/Larnaca/Famagusta/the Karpas peninsula) -- not traced from any copyrighted vector coastline. Not load-bearing for any curated polity (none extend there); included for a more populated, recognizable plate, matching design-direction.md's own 'no quadrant bereft' framing."
+rings = [
+  [
+    [35.7, 32.9], [35.3, 32.35], [34.85, 32.5], [34.75, 33.4], [34.9, 34.0],
+    [35.0, 34.4], [35.35, 34.55], [35.65, 34.0], [35.7, 33.4], [35.7, 32.9]
+  ]
+]

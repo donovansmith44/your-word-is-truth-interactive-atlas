@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityEra};
+use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityEra};
 use atlas_core::time::TimeRange;
 
 // ---------------------------------------------------------------------
@@ -510,6 +510,49 @@ fn polities_duplicate_id_fails_validation() {
 }
 
 // ---------------------------------------------------------------------
+// land-mask (Batch R requirement 1: curated::parse_land_mask + validate::run_land_mask)
+// ---------------------------------------------------------------------
+
+#[test]
+fn land_mask_valid_toml_parses_and_validates() {
+    let regions = atlas_etl::curated::parse_land_mask(include_str!("fixtures/land-mask-sample.toml")).unwrap();
+    assert_eq!(regions.len(), 2);
+    assert_eq!(regions[0].name, "Testland coast");
+    assert_eq!(regions[0].rings[0][0], (10.0, 10.0), "rings are [lat, lon], first pair verbatim");
+    assert!(atlas_etl::validate::run_land_mask(&regions, &test_bbox()).is_ok());
+}
+
+#[test]
+fn land_mask_empty_regions_fail_validation() {
+    let err = atlas_etl::validate::run_land_mask(&[], &test_bbox()).unwrap_err();
+    assert!(err.to_string().contains("no regions"), "{err}");
+}
+
+#[test]
+fn land_mask_unclosed_ring_fails_validation() {
+    let mut ring = square_ring(10.0, 10.0, 20.0, 20.0);
+    ring.pop();
+    let region = LandMaskRegion { name: "u".into(), ref_note: "fixture".into(), rings: vec![ring] };
+    let err = atlas_etl::validate::run_land_mask(&[region], &test_bbox()).unwrap_err();
+    assert!(err.to_string().contains("not a closed ring"), "{err}");
+}
+
+#[test]
+fn land_mask_self_intersecting_ring_fails_validation() {
+    let bowtie = vec![(10.0, 10.0), (20.0, 20.0), (20.0, 10.0), (10.0, 20.0), (10.0, 10.0)];
+    let region = LandMaskRegion { name: "b".into(), ref_note: "fixture".into(), rings: vec![bowtie] };
+    let err = atlas_etl::validate::run_land_mask(&[region], &test_bbox()).unwrap_err();
+    assert!(err.to_string().contains("self-intersects"), "{err}");
+}
+
+#[test]
+fn land_mask_out_of_bbox_point_fails_validation() {
+    let region = LandMaskRegion { name: "far".into(), ref_note: "fixture".into(), rings: vec![square_ring(60.0, 60.0, 70.0, 70.0)] }; // outside test_bbox()'s 0..50
+    let err = atlas_etl::validate::run_land_mask(&[region], &test_bbox()).unwrap_err();
+    assert!(err.to_string().contains("outside the clip bbox"), "{err}");
+}
+
+// ---------------------------------------------------------------------
 // osis.rs
 // ---------------------------------------------------------------------
 
@@ -550,6 +593,9 @@ fn report_contains_expected_sections() {
         xref_dropped_missing_first_verse: 2,
         polities: vec![atlas_etl::report::PolityStats { id: "egypt".to_string(), eras: 4, points: 180 }],
         landmarks_count: 19,
+        land_mask_regions: 6,
+        land_mask_rings: 6,
+        land_mask_points: 135,
     };
     let text = atlas_etl::report::write(&report);
     assert!(text.contains("66"), "{text}");
@@ -560,6 +606,7 @@ fn report_contains_expected_sections() {
     assert!(text.contains("4 era(s)"), "{text}");
     assert!(text.contains("180 points"), "{text}");
     assert!(text.contains("19 curated landmarks"), "{text}");
+    assert!(text.contains("6 region(s), 6 ring(s), 135 points"), "{text}");
 }
 
 // ---------------------------------------------------------------------

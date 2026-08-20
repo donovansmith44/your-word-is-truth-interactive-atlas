@@ -20,7 +20,7 @@ file is the detailed version of record.
 | Esri `NatGeo_World_Map` tile service | Esri terms of use | **Never redistributed by this repo.** Tiles are fetched live by the browser at runtime from Esri's own servers, with the attribution string carried verbatim in the app UI and in `client/wwwroot/js/map.js`'s `TILE_ATTRIBUTION`. |
 | Carto basemap tiles | Carto terms of use | **Never redistributed by this repo.** Same live-fetch, attributed, fallback-only pattern as the Esri tiles above (used if the Esri service is unreachable). |
 | Leaflet ([leafletjs.com](https://leafletjs.com)) | BSD-2-Clause | Vendored into `client/wwwroot/vendor/leaflet/` by `data/fetch-raw.ps1` (not committed; fetched at dev/build time) |
-| All curated data — historical polity borders, landmarks, narratives, eras, `events-extra.toml`, and future short blurbs of ours (e.g. era/place descriptions) | **CC0 1.0 Universal** (public domain dedication) | Ours. Everything under `data/curated/` and everything compiled purely from it (`narratives.json`, `eras.json`, `books-meta.json`, `landmarks.json`, `polities.json`) |
+| All curated data — historical polity borders, the land mask, landmarks, narratives, eras, `events-extra.toml`, and future short blurbs of ours (e.g. era/place descriptions) | **CC0 1.0 Universal** (public domain dedication) | Ours. Everything under `data/curated/` and everything compiled purely from it (`narratives.json`, `eras.json`, `books-meta.json`, `landmarks.json`, `polities.json`, `land-mask.json`) |
 | Small Catechism — future feature, not yet in this repo | Public domain (1921 Bente–Dau translation) | Will be redistributed once the feature is added; recorded here ahead of time so the disposition is decided before the data lands |
 
 ## Theographic CC BY-SA 4.0 — controller ruling
@@ -125,6 +125,35 @@ other curated file in this repo already uses, e.g. `eras.toml`/
 `landmarks.toml`, rather than the retired GeoJSON model's own
 `cc0_dedication` property).
 
+## Land mask — CC0, hand-drawn by this project (Batch R)
+
+`data/curated/land-mask.toml` (compiled to `land-mask.json`), added Batch R
+("borders become part of the plate"): ONE coastline/land mask, used only as
+an SVG clip so polity washes never spill into open sea — never rendered as
+its own visible layer. Six regions (a detailed Levant/Sinai/Nile/Anatolia
+ring, a Mesopotamia/Persian Gulf ring, and four coarser regions sized only
+to avoid clipping the largest curated polities' own legitimate territory —
+Persia's eastern reach, southern Europe, North Africa west of Egypt, and
+Cyprus), 135 points total.
+
+**Authorship.** Every coordinate was hand-drawn from scratch by this
+project, from general, well-established geographic knowledge of well-known
+coastal cities and landmarks (Beirut, Alexandria, the Nile's own Delta and
+valley, the Persian Gulf's own shores toward the Strait of Hormuz, etc.).
+None were copied, traced, digitized, or algorithmically derived from any
+third-party coastline/vector dataset, satellite imagery, or map service —
+the same authorship discipline `data/curated/polities/*.toml` is already
+held to (see "Historical polity borders" above). No specific source page
+was fetched while drawing it (unlike several polity eras above); every
+vertex reflects ordinary, non-contested geographic knowledge (where the
+Nile Delta is, that the Persian Gulf sits between Mesopotamia and Iran) that
+doesn't hinge on any one source, honestly disclosed as such in the TOML
+file's own header comment.
+
+**Dedication.** Same as every other file under `data/curated/`: dedicated
+to the public domain under
+[CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).
+
 ## Per-artifact label (`data/compiled/*`)
 
 Compiled outputs are derived works: an artifact built from a
@@ -143,6 +172,7 @@ even though the file itself is generated, not hand-authored.
 | `cross-refs.json` | Free to use with credit (OpenBible cross-references) | |
 | `landmarks.json` | CC0 (ours) | `data/curated/landmarks.toml` |
 | `polities.json` | CC0 (ours) | Compiled from `data/curated/polities/*.toml`; see "Historical polity borders" above |
+| `land-mask.json` | CC0 (ours) | Compiled from `data/curated/land-mask.toml`; see "Land mask" above |
 | `report.txt` | Not a licensed dataset | Generated ETL build report (counts/warnings), not app content |
 
 ## Everything not listed here

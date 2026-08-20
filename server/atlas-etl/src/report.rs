@@ -36,6 +36,15 @@ pub struct Report {
     /// `PolityStats`).
     pub polities: Vec<PolityStats>,
     pub landmarks_count: usize,
+    /// Batch R requirement 1 ("borders become part of the plate"): the
+    /// curated land mask's own coverage figures -- how many named regions,
+    /// how many rings across them (a region may itself carry >1 ring, though
+    /// none do yet), and the total point count (the same "how much
+    /// hand-authoring" figure `PolityStats::points` already reports for
+    /// polities).
+    pub land_mask_regions: usize,
+    pub land_mask_rings: usize,
+    pub land_mask_points: usize,
 }
 
 /// Batch B2: per-polity report line -- how many eras it carries, and the
@@ -112,6 +121,15 @@ pub fn write(r: &Report) -> String {
 
     writeln!(s, "Landmarks:").unwrap();
     writeln!(s, "  {} curated landmarks compiled", r.landmarks_count).unwrap();
+    writeln!(s).unwrap();
+
+    writeln!(s, "Land mask (Batch R requirement 1):").unwrap();
+    writeln!(
+        s,
+        "  {} region(s), {} ring(s), {} points total",
+        r.land_mask_regions, r.land_mask_rings, r.land_mask_points
+    )
+    .unwrap();
 
     s
 }

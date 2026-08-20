@@ -152,6 +152,19 @@ fn main() -> Result<()> {
     validate::run_landmarks(&landmarks, &polities::BIBLICAL_WORLD_BBOX)
         .context("data/compiled/landmarks.json was NOT written; fix data/curated/landmarks.toml and re-run")?;
 
+    // --- data/curated/land-mask.toml (Batch R requirement 1: "borders
+    // become part of the plate" -- the land/coastline mask that clips polity
+    // washes so they never spill into open sea) ---------------------------
+    let land_mask_regions = curated::parse_land_mask(&read(&curated_dir.join("land-mask.toml"))?)?;
+    validate::run_land_mask(&land_mask_regions, &polities::BIBLICAL_WORLD_BBOX)
+        .context("data/compiled/land-mask.json was NOT written; fix data/curated/land-mask.toml and re-run")?;
+    // Flattened to a plain Vec<Vec<(f64,f64)>> for the compiled file/wire --
+    // region names/ref_notes are curator documentation only (see
+    // atlas_core::data::AtlasData::land_mask's own doc comment); the client
+    // only ever needs the raw ring geometry to clip against.
+    let land_mask: Vec<Vec<(f64, f64)>> = land_mask_regions.iter().flat_map(|r| r.rings.clone()).collect();
+    let land_mask_points: usize = land_mask.iter().map(|r| r.len()).sum();
+
     // --- data/curated/place-history.toml (Batch E: time-accurate places) -
     let place_history = curated::parse_place_history(&read(&curated_dir.join("place-history.toml"))?)?;
     let compiled_place_ids: HashSet<&str> = data.places.iter().map(|p| p.id.as_str()).collect();
@@ -172,6 +185,7 @@ fn main() -> Result<()> {
     write_json(&compiled_dir.join("polities.json"), &compiled_polities)?;
     write_json(&compiled_dir.join("landmarks.json"), &landmarks)?;
     write_json(&compiled_dir.join("place-history.json"), &place_history)?;
+    write_json(&compiled_dir.join("land-mask.json"), &land_mask)?;
 
     let rpt = Report {
         counts,
@@ -185,6 +199,9 @@ fn main() -> Result<()> {
         xref_dropped_missing_first_verse,
         polities: polity_stats,
         landmarks_count: landmarks.len(),
+        land_mask_regions: land_mask_regions.len(),
+        land_mask_rings: land_mask.len(),
+        land_mask_points,
     };
     let text = report::write(&rpt);
     fs::write(compiled_dir.join("report.txt"), &text).context("writing data/compiled/report.txt")?;
@@ -309,6 +326,10 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     let landmarks_path = curated_dir.join("landmarks.toml");
     if !landmarks_path.is_file() {
         missing.push(format!("{}", landmarks_path.display()));
+    }
+    let land_mask_path = curated_dir.join("land-mask.toml");
+    if !land_mask_path.is_file() {
+        missing.push(format!("{}", land_mask_path.display()));
     }
     let place_history_path = curated_dir.join("place-history.toml");
     if !place_history_path.is_file() {

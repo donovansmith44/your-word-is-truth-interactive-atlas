@@ -84,6 +84,24 @@ pub async fn landmarks(State(data): State<Arc<AtlasData>>) -> Json<Vec<Landmark>
     Json(data.landmarks.clone())
 }
 
+/// `GET /api/land-mask` (Batch R requirement 1, "borders become part of the
+/// plate"): the curated land/coastline mask (`data/curated/land-mask.toml`)
+/// used ONLY to clip polity washes so they never spill into open sea --
+/// static geometry, no query params, no time dependence (unlike
+/// `/api/polities`). `rings` is a flat `[[[lat,lon],...],...]` array -- every
+/// region's own rings, already flattened at ETL time (see
+/// `AtlasData::land_mask`'s own doc comment) -- the client never needs
+/// region names/ref_notes, only the raw geometry to build an SVG clipPath
+/// from.
+#[derive(Debug, Serialize)]
+pub struct LandMaskOut {
+    pub rings: Vec<Vec<(f64, f64)>>,
+}
+
+pub async fn land_mask(State(data): State<Arc<AtlasData>>) -> Json<LandMaskOut> {
+    Json(LandMaskOut { rings: data.land_mask.clone() })
+}
+
 /// Batch B2 ("borders v2, the cartographer's edition"): one polity-era row
 /// on the wire, `{ id, name, from, to, rings, color_key }` per the batch
 /// brief verbatim -- field names deliberately match
@@ -154,10 +172,32 @@ pub async fn polities(
     Ok(Json(PolitiesOut { polities: out }))
 }
 
+/// Batch R requirement 5 (place-in-verse hover -> marker blink): one place
+/// mentioned in a verse, per `AtlasData::places_for_verse` (the reverse of
+/// `Place::verse_links`). Deliberately lean -- id (to target a map marker)
+/// and display name (for the client's own plain-text substring match against
+/// the verse's rendered text, see `chapter`'s own doc comment for why there
+/// is no richer per-mention offset data) -- mirrors `QuietPlace`'s own
+/// "no more than the consumer needs" wire philosophy.
+#[derive(Debug, Serialize)]
+pub struct PlaceRefOut {
+    pub id: String,
+    pub name: String,
+}
+
 #[derive(Debug, Serialize)]
 pub struct VerseOut {
     pub verse: u16,
     pub text: String,
+    /// Batch R requirement 5: every curated place whose OWN `verse_links`
+    /// names this verse, in place-id order (stable, not meaningful --
+    /// there is no "primary mention" concept). Always present, possibly
+    /// empty (most verses geocode to zero places) -- conditional presence
+    /// lives on the CLIENT side (a mini-reader renders no hoverable span at
+    /// all when this is empty), not as an omitted wire key, matching every
+    /// other "always an array" field in this app's own wire (e.g.
+    /// `Scene.quiet_places`).
+    pub places: Vec<PlaceRefOut>,
 }
 
 #[derive(Debug, Serialize)]
@@ -203,7 +243,13 @@ pub async fn chapter(State(data): State<Arc<AtlasData>>, Path(cref): Path<String
     for v in 1..=verse_count {
         let key = format!("{code}.{chapter}.{v}");
         if let Some(text) = data.verses.get(&key) {
-            verses.push(VerseOut { verse: v, text: text.clone() });
+            let places = data
+                .places_for_verse(&key)
+                .iter()
+                .filter_map(|pid| data.place_by_id(pid))
+                .map(|p| PlaceRefOut { id: p.id.clone(), name: p.name.clone() })
+                .collect();
+            verses.push(VerseOut { verse: v, text: text.clone(), places });
         }
     }
 

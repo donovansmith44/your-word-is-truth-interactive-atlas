@@ -59,3 +59,6 @@ Polities (14 polities, 25 eras, 1139 points total):
 
 Landmarks:
   34 curated landmarks compiled
+
+Land mask (Batch R requirement 1):
+  6 region(s), 6 ring(s), 135 points total

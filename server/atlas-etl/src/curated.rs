@@ -19,7 +19,7 @@
 //! trust class scene composition relies on).
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookMeta, Era, Event, Landmark, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityEra};
+use atlas_core::data::{BookMeta, Era, Event, Landmark, LandMaskRegion, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityEra};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -332,6 +332,35 @@ pub fn parse_polity(input: &str) -> Result<Polity> {
     Ok(Polity { id: f.id, color_key: 0, eras })
 }
 
+// --- Batch R requirement 1: land-mask.toml ("borders become part of the plate") ---
+
+#[derive(Deserialize)]
+struct LandMaskFile {
+    region: Vec<LandMaskRegionToml>,
+}
+
+#[derive(Deserialize)]
+struct LandMaskRegionToml {
+    name: String,
+    ref_note: String,
+    rings: Vec<Vec<(f64, f64)>>,
+}
+
+/// Parses `land-mask.toml` (schema: one or more `[[region]]` tables --
+/// `name`/`ref_note`/`rings`, mirroring `PolityEra`'s own `rings` shape
+/// exactly -- see `atlas_core::data::LandMaskRegion`'s own doc comment).
+/// Pure and STRUCTURAL only, same split every other curated geometry schema
+/// in this module follows (`parse_polity`'s own doc comment): a TOML file
+/// that doesn't even parse into this shape is a curator authoring mistake,
+/// held to the same immediate-bail bar; ring closure/simplicity/bbox
+/// containment all need the full picture and so are deliberately deferred to
+/// `validate::run_land_mask` instead.
+pub fn parse_land_mask(input: &str) -> Result<Vec<LandMaskRegion>> {
+    let f: LandMaskFile =
+        toml::from_str(input).context("land-mask.toml: invalid TOML or does not match the [[region]] schema")?;
+    Ok(f.region.into_iter().map(|r| LandMaskRegion { name: r.name, ref_note: r.ref_note, rings: r.rings }).collect())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -385,6 +414,39 @@ mod tests {
     fn parse_polity_rejects_malformed_toml() {
         assert!(parse_polity("not = [valid").is_err());
         assert!(parse_polity("id = \"x\"").is_err(), "missing [[era]] array entirely");
+    }
+
+    // --- Batch R requirement 1: parse_land_mask -----------------------------
+
+    #[test]
+    fn parse_land_mask_reads_valid_toml() {
+        let toml = r#"
+[[region]]
+name = "Testland coast"
+ref_note = "test fixture, not a real coastline"
+rings = [
+  [[10.0, 10.0], [10.0, 20.0], [20.0, 20.0], [20.0, 10.0], [10.0, 10.0]]
+]
+
+[[region]]
+name = "Testisle"
+ref_note = "test fixture"
+rings = [
+  [[30.0, 30.0], [30.0, 32.0], [32.0, 31.0], [30.0, 30.0]]
+]
+"#;
+        let regions = parse_land_mask(toml).unwrap();
+        assert_eq!(regions.len(), 2);
+        assert_eq!(regions[0].name, "Testland coast");
+        assert_eq!(regions[0].rings.len(), 1);
+        assert_eq!(regions[0].rings[0][0], (10.0, 10.0), "rings are [lat, lon], first pair verbatim");
+        assert_eq!(regions[1].name, "Testisle");
+    }
+
+    #[test]
+    fn parse_land_mask_rejects_malformed_toml() {
+        assert!(parse_land_mask("not = [valid").is_err());
+        assert!(parse_land_mask("foo = 1").is_err(), "missing [[region]] array entirely");
     }
 
     #[test]

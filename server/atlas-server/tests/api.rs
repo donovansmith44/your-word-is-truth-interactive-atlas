@@ -149,6 +149,16 @@ async fn verse_chapter_place_and_404() {
     assert_eq!(verses[0]["verse"], 1);
     assert_eq!(verses[2]["verse"], 3);
     assert!(verses[0]["text"].as_str().unwrap().contains("Moses"));
+    // Batch R requirement 5 (place-in-verse hover -> marker blink): `places`
+    // is ALWAYS present (never an omitted key), empty here since none of
+    // JOS.1's own fixture verses are in any place's `verse_links`. Real
+    // resolution (a verse that DOES have a linked place) is covered by
+    // atlas-core's own `places_for_verse` unit test -- see data.rs -- since
+    // exercising it here would mean growing demo_fixture()'s own GEN canon
+    // entry (currently a deliberately tiny `chapters: vec![31]`, asserted
+    // verbatim by health_books_eras_narratives_shapes above) just to reach a
+    // chapter 13 the chapter handler can serve at all.
+    assert_eq!(verses[0]["places"], serde_json::json!([]));
 
     // Structurally invalid cref -> 400 bad_ref.
     let (st, body) = call(&app, "/api/chapter/NOPE.1").await;
@@ -514,6 +524,20 @@ async fn landmarks_empty_fixture_list() {
     let (st, body) = call(&app, "/api/landmarks").await;
     assert_eq!(st, 200);
     assert_eq!(body, serde_json::json!([]));
+}
+
+// Batch R requirement 1 ("borders become part of the plate"): GET
+// /api/land-mask, same "empty on the fixture, real shape checked by the
+// ETL's own validate::run_land_mask + curated::parse_land_mask tests"
+// treatment as landmarks_empty_fixture_list above -- demo_fixture() carries
+// no real coastline geometry (no server test needs one), so this just pins
+// the wire shape (`{"rings": [...]}`, always present, empty here).
+#[tokio::test]
+async fn land_mask_empty_fixture_shape() {
+    let app = app();
+    let (st, body) = call(&app, "/api/land-mask").await;
+    assert_eq!(st, 200);
+    assert_eq!(body, serde_json::json!({ "rings": [] }));
 }
 
 /// `app::build`'s `static_dir` branch: API routes still win over the static

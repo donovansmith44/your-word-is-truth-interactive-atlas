@@ -201,6 +201,23 @@ pub struct PolityEra {
     pub rings: Vec<Vec<(f64, f64)>>,
 }
 
+/// Batch R requirement 1 ("borders become part of the plate"): ONE named
+/// region of the curated land mask (`data/curated/land-mask.toml`) -- used
+/// ONLY to clip polity washes (map.js's `BorderLayer`) so they never spill
+/// into open sea, never rendered as its own visible layer. `rings` reuses
+/// `PolityEra::rings`'s own shape/convention exactly (`[lat, lon]`, one or
+/// more closed simple polygons; a curator's own comment lives on `ref_note`,
+/// same "cite what you actually consulted" discipline every other curated
+/// geometry file in this app already follows). No time dimension (a land
+/// mask doesn't change era to era) and no color -- this is geometry only,
+/// consumed purely as a clip path.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LandMaskRegion {
+    pub name: String,
+    pub ref_note: String,
+    pub rings: Vec<Vec<(f64, f64)>>,
+}
+
 /// One hand-authored polity, `data/curated/polities/{id}.toml` (one file per
 /// polity, "easily reversible/modifiable... I'm expecting you to get this
 /// wrong" per the user's own direction -- a wrong shape is ONE file, ONE
@@ -271,6 +288,16 @@ pub struct AtlasData {
     #[serde(skip)]
     pub place_history: HashMap<String, PlaceHistory>,
 
+    /// Batch R requirement 1: the curated land mask (`data/curated/land-mask.toml`,
+    /// compiled to `land-mask.json`) -- every region's own rings, flattened
+    /// (region names/ref_notes are curator documentation only; the wire and
+    /// the client never need them, only the raw ring geometry to clip
+    /// against). Same `#[serde(skip)]`-plus-bespoke-`load()` treatment as
+    /// `polities`/`landmarks`/`place_history` above. `demo_fixture()` leaves
+    /// this empty (no server test needs real coastline geometry).
+    #[serde(skip)]
+    pub land_mask: Vec<Vec<(f64, f64)>>,
+
     /// Derived: place id -> index into `places`. Built by `finish()`.
     #[serde(skip)]
     place_index: HashMap<String, usize>,
@@ -280,6 +307,20 @@ pub struct AtlasData {
     /// Derived: canonical verse id -> event ids that reference it. Built by `finish()`.
     #[serde(skip)]
     verse_to_events: HashMap<String, Vec<String>>,
+    /// Batch R requirement 5 (place-in-verse hover -> marker blink): derived,
+    /// canonical verse id -> ids of every place whose OWN `verse_links`
+    /// names it -- the reverse of `Place::verse_links` (which lists, per
+    /// PLACE, every verse the geocoder attached to it). Built by `finish()`
+    /// in one pass over `places`, same shape as `verse_to_events` just above.
+    /// `handlers::chapter` uses this to populate each `VerseOut.places` --
+    /// the client-side seam (a mini-reader rendering a chapter) needs to
+    /// know, per verse, which curated places to offer as hoverable mentions;
+    /// this is the ONLY data source for that (no separate "NER offsets"
+    /// exist in this app -- the client itself does the plain-text substring
+    /// match against each returned place's own name, see World.razor's/the
+    /// mini-reader's own comment).
+    #[serde(skip)]
+    verse_to_places: HashMap<String, Vec<String>>,
     /// Batch E2 (the ever-present graph): "cities in our graph" per the
     /// user's own direction quoted in batch-e2-brief.md -- ids of every
     /// place touched by >=1 event, ANY window (206 in the real compiled
@@ -358,6 +399,17 @@ impl AtlasData {
         }
         self.verse_to_events = verse_to_events;
 
+        // Batch R requirement 5: one pass over every place's own
+        // `verse_links` builds the reverse index -- see `verse_to_places`'s
+        // own doc comment.
+        let mut verse_to_places: HashMap<String, Vec<String>> = HashMap::new();
+        for p in &self.places {
+            for v in &p.verse_links {
+                verse_to_places.entry(v.clone()).or_default().push(p.id.clone());
+            }
+        }
+        self.verse_to_places = verse_to_places;
+
         // Batch E2: one pass over every event's `places` builds BOTH the
         // event-bearing id set and each one's all-time event count -- "cities
         // in our graph" is derived here, never hardcoded (see the two
@@ -411,6 +463,13 @@ impl AtlasData {
         self.verse_to_events.get(verse).map(|v| v.as_slice()).unwrap_or(&[])
     }
 
+    /// Batch R requirement 5: place ids whose own `verse_links` include the
+    /// given canonical verse id (the reverse of `Place::verse_links`) -- see
+    /// `verse_to_places`'s own doc comment.
+    pub fn places_for_verse(&self, verse: &str) -> &[String] {
+        self.verse_to_places.get(verse).map(|v| v.as_slice()).unwrap_or(&[])
+    }
+
     /// Reads the compiled JSON files ETL writes under `dir` (exact
     /// filenames mirror `atlas-etl/src/main.rs`'s `write_json` calls:
     /// `canon.json`, `places.json`, `events.json`, `narratives.json`,
@@ -435,11 +494,17 @@ impl AtlasData {
         let place_history_list: Vec<PlaceHistory> = read_json(dir, "place-history.json")?;
         let place_history: HashMap<String, PlaceHistory> =
             place_history_list.into_iter().map(|h| (h.id.clone(), h)).collect();
+        // Batch R requirement 1: `land-mask.json` is already the flattened
+        // `Vec<Vec<(f64, f64)>>` shape (see `curated::parse_land_mask`'s own
+        // doc comment for why region names/ref_notes never leave the ETL
+        // step) -- a direct read, no per-region unwrapping needed here.
+        let land_mask: Vec<Vec<(f64, f64)>> = read_json(dir, "land-mask.json")?;
 
         let mut data = Self::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs);
         data.polities = polities;
         data.place_history = place_history;
         data.landmarks = landmarks;
+        data.land_mask = land_mask;
         Ok(data)
     }
 }
@@ -658,6 +723,31 @@ pub fn demo_fixture() -> AtlasData {
         },
     );
     data
+}
+
+#[cfg(test)]
+mod verse_to_places_tests {
+    use super::*;
+
+    // Batch R requirement 5 (place-in-verse hover -> marker blink):
+    // `places_for_verse` is the reverse of `Place::verse_links` -- proven
+    // here against `demo_fixture()`'s own `hebron` place (GEN.13.18 is its
+    // one curated verse_link) rather than in atlas-server's own endpoint
+    // test, since exercising this through `GET /api/chapter/{cref}` would
+    // require growing the fixture's deliberately tiny GEN canon entry (see
+    // atlas-server's `verse_chapter_place_and_404`'s own comment on why it
+    // doesn't).
+    #[test]
+    fn places_for_verse_resolves_the_reverse_of_verse_links() {
+        let data = demo_fixture();
+        assert_eq!(data.places_for_verse("GEN.13.18"), &["hebron".to_string()]);
+    }
+
+    #[test]
+    fn places_for_verse_is_empty_for_an_unlinked_verse() {
+        let data = demo_fixture();
+        assert!(data.places_for_verse("JOS.1.1").is_empty());
+    }
 }
 
 #[cfg(test)]

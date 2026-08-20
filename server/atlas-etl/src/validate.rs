@@ -45,7 +45,7 @@
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{bail, Result};
-use atlas_core::data::{AtlasData, Era, Event, Landmark, PlaceHistory, Polity};
+use atlas_core::data::{AtlasData, Era, Event, Landmark, LandMaskRegion, PlaceHistory, Polity};
 use atlas_core::refs::VerseId;
 use atlas_core::time::{next_year, TimeRange};
 
@@ -263,6 +263,58 @@ pub fn run_polities(polities: &[Polity], bbox: &Bbox) -> Result<()> {
     }
     let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
     bail!("polity validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// Batch R requirement 1 ("borders become part of the plate"): validates the
+/// curated land mask (`data/curated/land-mask.toml`, parsed separately by
+/// `curated::parse_land_mask` -- same distinct-entry-point pattern as
+/// `run_polities`/`run_landmarks`: this needs the clip bbox, which the pure
+/// parse step doesn't own). Checks, all aggregated (never fail-fast) same as
+/// every other check in this file: at least one region, every region has at
+/// least one ring, every ring closed (first point repeats as the last, >=4
+/// points) AND simple (reuses `ring_is_simple`, the SAME segment-crossing
+/// test `run_polities` already applies to polity rings -- "no fancy geometry
+/// math anywhere," one algorithm for every hand-authored ring in this app),
+/// and every ring point falls inside `bbox` (same "a curator's typo
+/// shouldn't silently draw off in the ocean somewhere this app never
+/// renders" reason `run_polities`/`run_landmarks` already check their own
+/// coordinates against it).
+pub fn run_land_mask(regions: &[LandMaskRegion], bbox: &Bbox) -> Result<()> {
+    let mut errors: Vec<String> = Vec::new();
+
+    if regions.is_empty() {
+        errors.push("land-mask.toml defines no regions".to_string());
+    }
+
+    for region in regions {
+        if region.rings.is_empty() {
+            errors.push(format!("land-mask region '{}' has no rings", region.name));
+        }
+        for (ri, ring) in region.rings.iter().enumerate() {
+            let ring_ctx = format!("land-mask region '{}' ring {ri}", region.name);
+            if ring.len() < 4 || ring.first() != ring.last() {
+                errors.push(format!(
+                    "{ring_ctx}: not a closed ring ({} points; the first point must repeat as the last, >=4 points total)",
+                    ring.len()
+                ));
+                continue;
+            }
+            if !ring_is_simple(ring) {
+                errors.push(format!("{ring_ctx}: self-intersects (not a simple polygon)"));
+            }
+            for &(lat, lon) in ring {
+                if !bbox.contains(lat, lon) {
+                    errors.push(format!("{ring_ctx}: point (lat={lat}, lon={lon}) is outside the clip bbox"));
+                }
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        return Ok(());
+    }
+    let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("land-mask validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
 /// Batch E: validates curated place histories (`data/curated/place-history.toml`,
