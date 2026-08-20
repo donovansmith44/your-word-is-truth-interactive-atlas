@@ -19,7 +19,12 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
 
 ## data-testid inventory
 Header: `nav-reader`, `nav-world`, `translation-select`, `attribution`
-World: `world-map`, `marker-{placeId}`, `place-card`, `place-card-title`,
+World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief.md,
+  "the ever-present graph": one per currently QUIET place -- an event-bearing place not
+  lit this window, see QUIET-1 below -- distinct from and never overlapping
+  `marker-{placeId}`'s own ids for the same scene, per QUIET-1's disjointness; a small,
+  unlit, non-glowing dot, hoverable/clickable exactly like a lit marker; absent entirely
+  in scripture mode and on mini-maps), `place-card`, `place-card-title`,
   `hover-verse-{VREF}` (one element per currently shown verse, VREF = canonical id e.g.
   `EXO.14.21`, whether it renders as its own lone-verse row or as one verse inside a
   passage block; element text contains that verse's own KJV text verbatim -- never
@@ -36,6 +41,12 @@ World: `world-map`, `marker-{placeId}`, `place-card`, `place-card-title`,
   `place-card-date-established` / `place-card-date-destroyed`, each a button whose
   text contains that date's own formatted year/range and which opens the
   ExplorerPopover, listing the curated supporting verses first, on click),
+  `place-card-quiet` (batch-e2-brief.md; present ONLY when the card's place has no
+  events in the scene's own window -- i.e. it was opened from a `quiet-marker-{id}`,
+  never from a lit `marker-{id}` -- text is exactly "No recorded events in this window
+  — drag the timeline."; mutually exclusive with every `hover-verse-{VREF}`/
+  `hover-passage-{SPAN}`/`place-card-more`/`place-card-collapse` on the same card, which
+  never appear together with it),
   `arrows-svg`, `arrow-{narrativeId}-{order}` (SVG path; attr `stroke` = narrative color;
   attr `data-faded` = "true"|"false"; `marker-end` set),
   `legend`, `legend-item-{narrativeId}` (button; `aria-pressed` = isolated),
@@ -87,7 +98,14 @@ Notes:
   the later-starting one it still intersects); a window matching no curated
   range falls back to the place's plain default name. Scripture mode always
   shows the plain default name (no curated period name is ever resolved
-  there -- there is no time window to resolve one against).
+  there -- there is no time window to resolve one against). A place's plain
+  default name is ALWAYS stripped of a trailing ETL slug-disambiguation
+  numeral first (batch-e2-brief.md fold-in: "Beersheba 2" displays as
+  "Beersheba", never the raw suffixed source name) -- this only ever affects
+  the DEFAULT-name fallback; a curated name (already hand-written, never
+  suffixed) is untouched. Two places sharing a stripped default name may
+  therefore show identical labels at once (their ids stay distinct) --
+  correct cartography, not a collision bug.
 - Every curated place-history range (a `[[place.name]]`, a `[[place.blurb]]`,
   or `established`/`destroyed`'s own `when`) is INCLUSIVE on both ends --
   its own `from`/`to` year is itself covered, matching `TimeRange`'s general
@@ -108,6 +126,29 @@ Notes:
   branch existed since the first batch-e commits but was undocumented
   here; a window inside such a gap is still, truthfully, inside the
   place's whole history, so the broad summary is shown rather than nothing).
+- QUIET-1 (batch-e2-brief.md, "the ever-present graph" -- user direction 2026-08-19:
+  "all of the cities in our graph are available in any timerange rather than just
+  loading those which are biblically active at the time"): for every time-mode window,
+  the lit place set (`marker-{placeId}`) and the quiet place set (`quiet-marker-{placeId}`)
+  are DISJOINT and their union is the full, fixed-cardinality set of event-bearing
+  places ("cities in our graph" -- every place with >=1 event anywhere in the compiled
+  data, 206 places as of this batch, derived from the data rather than hardcoded by
+  either side) -- a place is always exactly one of lit or quiet, never both, never
+  neither. A quiet place's own displayed name resolves against the SAME window using
+  the SAME rules `marker-{placeId}`'s own label does (NAME-1), so a place's name never
+  contradicts itself as it crosses from quiet to lit (or back) while a window is
+  dragged. Scripture mode has no quiet places at all (`quiet-marker-{placeId}` is
+  entirely absent there, same as on a mini-map) -- period relevance without a time
+  window has nothing for GLOW to mean.
+- Quiet-place hover card (batch-e2-brief.md): hovering (or clicking) a `quiet-marker-{id}`
+  opens the exact SAME `place-card` a lit marker does -- same title (`place-card-title`
+  = the place's own `display_name`, per NAME-1), same Batch E history content
+  (`place-card-blurb`/`place-card-dates`) when curated for this place, same explorable
+  `PlaceNode` behind the title. The one content difference is conditional presence:
+  `place-card-quiet` replaces the verse content entirely (no `hover-verse-{VREF}`,
+  no `hover-passage-{SPAN}`, no `place-card-more`/`place-card-collapse` -- a quiet
+  place has no events THIS window to show, so there is nothing for those controls to
+  page through).
 - Hover place card content (batch-d-brief.md): the card is place name + verse
   content + controls, nothing else -- no per-(book,chapter) count rows, bare
   canonical-ref rows, or chapter-identifier lines anywhere on it. From the
@@ -151,8 +192,12 @@ Notes:
   once two or more markers' own hit areas overlap on screen -- a disclosed
   trade-off of the >=14px hit target every marker carries (batch-c2-brief.md
   requirement 0c), which two or more genuinely different, merely-close-together
-  places can exceed at typical/dense zoom (the app's own richest scenes measure
-  a majority of their places mutually within this radius). Which marker a
+  places can exceed at typical/dense zoom (the exodus scene alone measures a
+  majority of its own places mutually within this radius -- 75%, 12 of 16;
+  other comparably rich scenes measure lower, e.g. 29% for the apostolic
+  window and 33% for the -2100..-2085 window, so "a majority" is a property
+  of the exodus scene specifically, not a general claim about every rich
+  scene -- batch-c2-rereview.md). Which marker a
   pointer at an overlapping pixel resolves to is decided by the browser's own
   hit-testing (Leaflet's default per-marker z-index, keyed off screen position,
   not DOM or testid order) -- not a rule this app controls or a claim any test
