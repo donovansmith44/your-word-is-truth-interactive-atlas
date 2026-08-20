@@ -140,15 +140,20 @@ Notes:
   dragged. Scripture mode has no quiet places at all (`quiet-marker-{placeId}` is
   entirely absent there, same as on a mini-map) -- period relevance without a time
   window has nothing for GLOW to mean.
-- Quiet-place hover card (batch-e2-brief.md): hovering (or clicking) a `quiet-marker-{id}`
-  opens the exact SAME `place-card` a lit marker does -- same title (`place-card-title`
-  = the place's own `display_name`, per NAME-1), same Batch E history content
+- Quiet-place hover card (batch-e2-brief.md): hovering a `quiet-marker-{id}` opens the
+  exact SAME `place-card` a lit marker does -- same title (`place-card-title` = the
+  place's own `display_name`, per NAME-1), same Batch E history content
   (`place-card-blurb`/`place-card-dates`) when curated for this place, same explorable
   `PlaceNode` behind the title. The one content difference is conditional presence:
   `place-card-quiet` replaces the verse content entirely (no `hover-verse-{VREF}`,
   no `hover-passage-{SPAN}`, no `place-card-more`/`place-card-collapse` -- a quiet
   place has no events THIS window to show, so there is nothing for those controls to
-  page through).
+  page through). Clicking a marker -- lit OR quiet -- is a no-op today: `OnPlaceClick`
+  is an intentional, documented empty handler, unchanged by this batch (WORLD-1/2's own
+  original hover-only design). The brief's own wording for this card was conditional --
+  "hover (and click/pin, if Batch G1's pinning has landed by your HEAD -- check)" -- and
+  G1 had not landed at this batch's own HEAD, so no click/pin behavior was added; that
+  half is deferred to Batch G1, whenever it lands.
 - Hover place card content (batch-d-brief.md): the card is place name + verse
   content + controls, nothing else -- no per-(book,chapter) count rows, bare
   canonical-ref rows, or chapter-identifier lines anywhere on it. From the
@@ -188,6 +193,21 @@ Notes:
   marker `mouseout` that resolves (its own async map/interop round trip) AFTER
   the card's pointer-enter already ran never schedules a close out from under a
   pointer that is legitimately still on the card.
+- Quiet-marker hover-intent debounce (batch-e2-brief.md self-review fix): unlike a lit
+  `marker-{id}`, which opens its `place-card` immediately on `mouseover`, a
+  `quiet-marker-{id}` only opens it once the pointer has DWELLED on that marker for
+  >=150ms. A graze shorter than that -- e.g. a pointer merely transiting toward some
+  OTHER nearby target, such as that very place's own already-open card -- fires neither
+  `OnPlaceHover` nor `OnPlaceLeave`; from the card's own point of view a sub-150ms graze
+  never happened at all. This exists specifically to stop a fast pass-through over an
+  unrelated quiet dot from silently hijacking an already-open card mid-transit (a real,
+  confirmed regression risk once ~200 more small hoverable dots share the plate with
+  every lit marker) -- protection a lit marker, being comparatively sparse, has never
+  needed and does not get: `marker-{id}` hover timing is completely unaffected by this,
+  every existing hover-persistence guarantee above applies to it exactly as before. A
+  genuine, deliberate quiet-marker hover clears 150ms comfortably and opens the SAME
+  place-card any other hover does (see "Quiet-place hover card" above), just ~150ms
+  later than a lit marker's own immediate open.
 - Marker hover-target resolution is best-effort, not a per-marker guarantee,
   once two or more markers' own hit areas overlap on screen -- a disclosed
   trade-off of the >=14px hit target every marker carries (batch-c2-brief.md
