@@ -224,3 +224,65 @@ test('NAV-3: chapter-nav never overlaps the verse text column in split view at t
   }, { prevBox, nextBox });
   expect(overlaps).toEqual([]);
 });
+
+// HOTFIX batch (batch-hotfix-brief.md requirement 2, NAV-4, user report
+// 2026-08-20: "the buttons to go chapter to chapter on the Bible in split
+// screen are too tiny to see" -- measured live before this fix: 14.8x22.8px
+// at a 13.6px font, well under any real hit-target floor). Same documented
+// 1024px floor NAV-3 already uses (the tightest realistic split width -- a
+// wider split only ever has MORE gutter room, never less, so this floor is
+// the binding case for both "big enough" and "never overlaps").
+test('NAV-4: reader-prev/reader-next measure a real, >=40x40px hit target in split view -- legible label, parchment contrast, quiet-until-hover, NAV-3 stays green', async ({ page }) => {
+  const toc = await loadToc();
+  let longest = { book: toc[0].code, chapter: 1, verses: toc[0].chapters[0] };
+  for (const b of toc) {
+    b.chapters.forEach((v, i) => {
+      if (v > longest.verses) longest = { book: b.code, chapter: i + 1, verses: v };
+    });
+  }
+
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await page.goto(`/read/${longest.book}/${longest.chapter}?split=1`);
+
+  const prev = page.getByTestId('reader-prev');
+  const next = page.getByTestId('reader-next');
+  await expect(prev).toBeInViewport();
+  await expect(next).toBeInViewport();
+
+  const prevBox = await prev.boundingBox();
+  const nextBox = await next.boundingBox();
+  expect(prevBox && nextBox).toBeTruthy();
+  for (const [name, box] of [['reader-prev', prevBox], ['reader-next', nextBox]] as const) {
+    expect(box!.width, `${name} width`).toBeGreaterThanOrEqual(40);
+    expect(box!.height, `${name} height`).toBeGreaterThanOrEqual(40);
+  }
+
+  // "Arrow glyph + chapter label legible" (the brief's own phrase, verbatim)
+  // -- both present, not just the glyph: fix round 1's own chevron-only
+  // `display:none` treatment for .reader-nav-label is gone in split view.
+  await expect(prev.locator('.reader-nav-label')).toBeVisible();
+  await expect(next.locator('.reader-nav-label')).toBeVisible();
+
+  // Parchment contrast >= 10:1 (this requirement's own floor, up from the
+  // pre-batch --ink-soft's 5.66:1) -- computed live against the reader
+  // page's own background, not assumed. rgb(43,33,23) is --ink (#2B2117),
+  // rgb(246,241,229) is --parchment (#F6F1E5); 13.98:1 by the WCAG relative-
+  // luminance formula (see the batch report for the computation).
+  const [color, bg] = await prev.evaluate(el => [
+    getComputedStyle(el).color,
+    getComputedStyle(document.querySelector('.reader-page')!).backgroundColor,
+  ]);
+  expect(color).toBe('rgb(43, 33, 23)');
+  expect(bg).toBe('rgb(246, 241, 229)');
+
+  // Quiet-until-hover still holds (visible always, amplified on hover) --
+  // same smoke check NAV-2 already runs for the standalone reader.
+  const restColor = await next.evaluate(el => getComputedStyle(el).color);
+  await next.hover();
+  await expect.poll(() => next.evaluate(el => getComputedStyle(el).color)).not.toBe(restColor);
+
+  // NAV-3 (chapter-nav/verse-column non-overlap) is a SEPARATE, unchanged
+  // test above in this same file -- re-run it as part of the same suite
+  // invocation this batch verifies with, rather than duplicating its own
+  // geometric intersection check here.
+});

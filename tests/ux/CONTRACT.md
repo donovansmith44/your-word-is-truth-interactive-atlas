@@ -131,15 +131,14 @@ Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   confines this to the reader PANE specifically in split view, not the
   whole window. Review fix round 1, Critical-1 (2026-08-20): the vertically-
   centered position exposed a real overlap with mid-chapter verse text in
-  split view at the documented 1024px floor (the reading column fills a
-  narrow pane almost edge-to-edge; the buttons' own full "‹ Book NN" text
-  printed across it) -- split view now shows a chevron-only compact form
-  (the "Book NN" text lives in a `.reader-nav-label` span, `display:none`
-  only inside `.split-pane-reader`; the full `<a>` keeps an `aria-label`
-  with the complete "Previous/Next chapter: Book NN" text regardless, so
-  nothing is lost for a screen reader). Standalone reader keeps the full
-  label, unconditionally, at every width -- unaffected by this fix, per
-  NAV-2), `passage-chip`
+  split view at the documented 1024px floor -- fix round 1's own answer was
+  a chevron-only compact form with the "Book NN" label hidden entirely
+  (`display:none`) in split view, since SUPERSEDED (batch-hotfix-brief.md
+  requirement 2, user report 2026-08-20: "the buttons to go chapter to
+  chapter on the Bible in split screen are too tiny to see" -- measured
+  live, 14.8x22.8px) by NAV-4 below: a real, legible presence in BOTH
+  panes, sharing one set of rules (no split-specific fork) -- see NAV-4 for
+  the current shape and exact numbers), `passage-chip`
 Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
   FOLLOW-1/VIEWSTATE-1 below for the full behavior these wire up):
   `split-open-reader` (button, reader only, absent once split is open;
@@ -801,3 +800,38 @@ Notes:
   callbacks are deliberate no-ops, per that component's own comment,
   unaffected by and unrelated to this note) -- there is nothing there for
   CARD-FLIP-1 to apply to.
+- NAV-4 (batch-hotfix-brief.md requirement 2, user report 2026-08-20: "the
+  buttons to go chapter to chapter on the Bible in split screen are too
+  tiny to see" -- measured live before this fix, split view: 14.8x22.8px at
+  a 13.6px font): `reader-prev`/`reader-next` share ONE set of rules across
+  BOTH standalone and split (no per-pane fork) -- a vertical arrow-glyph-
+  over-chapter-label stack, `position:fixed`, vertically centered exactly as
+  NAV-2 already established, unchanged. The rendered hit target measures
+  comfortably over 40x40px in both dimensions in EITHER pane (a real
+  margin, not a last-pixel fit) -- split view's own box is a fixed 44x72px
+  (min-width/max-width both 2.75rem), standalone's grows to fit its own
+  larger content, never below that same 44/72px floor either. The label
+  text is the SAME "Book NN" content `.reader-nav-label` always carried
+  (present now in split view too, no longer `display:none` there) --
+  unabbreviated, just laid out compactly, wrapping across more lines
+  (never growing wider than its fixed box, even for an outlier long
+  single-word book name like "1 Thessalonians", which wraps mid-word if it
+  must) rather than ever risking a re-overlap with verse text; the `<a>`'s
+  own `aria-label` still separately carries the complete "Previous/Next
+  chapter: Book NN" phrase regardless, unchanged. Rest-state color is
+  `--ink` (13.98:1 against `--parchment`, computed) -- clears this
+  requirement's own >=10:1 parchment floor with real margin, up from the
+  pre-batch `--ink-soft` (5.66:1, short of it); hover amplifies to
+  `--lapis`, the same quiet-until-hover color swap this file already uses
+  identically elsewhere (`.verse-num`, etc.), unchanged by this batch.
+  `.reader-column`'s own left/right padding widens in split view
+  specifically (a CSS custom property inherited down from
+  `.split-pane-reader`, never a two-class descendant selector -- see
+  app.css's own comment on both rules for the CSS-discipline fix this folds
+  in, deferred from Batch R's re-review) so the nav's own footprint still
+  clears verse text with real margin at the documented 1024px floor
+  (NAV-3, unaffected, stays green) -- standalone is unaffected (that
+  padding's own fallback matches the pre-batch value exactly). No layout
+  shift, no animation, keyboard focus visible (this file's own global
+  `a:focus-visible` rule, unchanged) -- all unaffected by this batch, same
+  as before it.

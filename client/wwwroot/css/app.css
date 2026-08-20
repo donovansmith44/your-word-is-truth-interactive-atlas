@@ -247,9 +247,31 @@ input:focus-visible,
     width: 100%;
 }
 
+/* HOTFIX batch (requirement 2, CSS discipline fix folded in from Batch R's
+   re-review): every property below that used to need a
+   `.split-pane-reader .reader-prev`-style two-class descendant selector to
+   override is now a plain CSS custom property set HERE and read via var()
+   in the single-class .reader-column/.reader-prev/.reader-next rules
+   themselves -- this file's own header technique ("Contextual theming...
+   done with CSS custom properties set by a theme class and inherited
+   down"), the same one .header-dusk already uses for --header-fg/etc.
+   --reader-col-pad-x widens .reader-column's own left/right padding in
+   split view specifically (see that rule's own comment for why: the
+   >=40x40px chapter-nav hit target this batch adds needs real clearance
+   before verse text starts, and the standalone-sized 1.5rem gutter measured
+   only ~41px total at the documented 1024px floor -- not enough). The
+   --nav-* set shrinks the chapter-nav affordance itself to fit inside that
+   widened gutter with real margin -- see .reader-prev/.reader-next's own
+   comment for the full picture (both panes share ONE set of rules; only
+   these numbers differ). */
 .split-pane-reader {
     flex: 1 1 55%;
     min-width: 0;
+    --reader-col-pad-x: 3rem;
+    --nav-left: .375rem;
+    --nav-max-width: 2.75rem;
+    --nav-glyph-size: 1.3rem;
+    --nav-label-size: .62rem;
 }
 
 .split-divider {
@@ -431,22 +453,29 @@ input:focus-visible,
 
    Batch R review fix round 1, Critical-1: reader-prev/reader-next's own
    horizontal footprint does NOT stay clear of this column at every
-   viewport on its own -- max-width:66ch (~700px) only ever CLAMPS a wide
-   box down; it never GUARANTEES a gutter once the box it's clamping is
-   already narrower than that, which is exactly what happens in split view
-   (.split-pane-reader below caps the pane at ~55% of the viewport). At the
-   brief's own documented 1024px floor that leaves the column filling the
-   pane almost edge-to-edge, sharing the SAME 1.5rem offset the nav buttons
-   themselves sit at -- confirmed live, reviewer-measured: the buttons'
-   own full "‹ Book NN" text printed directly across mid-chapter verse
-   text (review-diag-split-1024-overlap.png). See .reader-nav-label below
-   for the fix: split view gets a chevron-only, real-gutter-clearing
-   treatment; standalone keeps the full label (already proven clear, ~172px
-   of real clearance measured at the same 1024px floor). */
+   viewport on its own -- max-width:66ch only ever CLAMPS a wide box down;
+   it never GUARANTEES a gutter once the box it's clamping is already
+   narrower than that. In split view (.split-pane-reader below caps the
+   pane at ~55% of the viewport) 66ch in this file's own --font-serif stack
+   DOES actually bind (measured live at the brief's documented 1024px
+   floor: a 562.6px-wide pane, a 528px-wide .reader-column -- 66ch here, not
+   the wider figure an earlier revision of this comment assumed -- centered
+   inside it), which is exactly why the nav buttons' own footprint, sized
+   for a full-width standalone reader, printed directly across mid-chapter
+   verse text at that floor (review-diag-split-1024-overlap.png, fix round
+   1). HOTFIX batch (requirement 2): the fix is no longer "hide the label"
+   -- the nav redesign needs its own real gutter instead, so
+   --reader-col-pad-x (set on .split-pane-reader, HOTFIX batch) widens
+   THIS padding specifically in split view, pushing verse text further from
+   the pane edge without touching .reader-column's own outer width/position
+   (border-box: padding lives INSIDE the same 66ch cap, so widening it only
+   trades space with the text content area, centered exactly where it
+   always was). Standalone is unaffected (--reader-col-pad-x's own fallback
+   below matches the pre-batch 1.5rem exactly). */
 .reader-column {
     width: 100%;
     max-width: 66ch;
-    padding: 2.5rem 1.5rem 6rem;
+    padding: 2.5rem var(--reader-col-pad-x, 1.5rem) 6rem;
 }
 
 .reader-loading {
@@ -570,12 +599,57 @@ input:focus-visible,
    specifically in split view, not the whole window -- see that rule's own
    comment, no change needed here for that half of the requirement).
    `top: 50%` + `translateY(-50%)` centers vertically in whatever box this
-   is fixed against (the viewport standalone, the reader pane in split);
-   z-index/max-width/typography/quiet-until-hovered treatment (--ink-soft ->
-   --lapis) all UNCHANGED from before this batch. No layout shift (still
-   fully out of normal flow); no animation added, so nothing here needs its
-   own reduced-motion guard. Two independent rules (not comma-grouped) per
-   this file's own single-class discipline. */
+   is fixed against (the viewport standalone, the reader pane in split).
+   No layout shift (still fully out of normal flow); no animation added, so
+   nothing here needs its own reduced-motion guard. Two independent rules
+   (not comma-grouped) per this file's own single-class discipline.
+
+   HOTFIX batch (requirement 2, user report: "the buttons to go chapter to
+   chapter on the Bible in split screen are too tiny to see" -- measured
+   live before this fix: 14.8x22.8px at a 13.6px font in split view, well
+   under any real hit-target floor): CSS DISCIPLINE FIX folded in (deferred
+   from Batch R's re-review) alongside the size fix itself -- the split-only
+   compact treatment used to live in three separate
+   `.split-pane-reader .reader-prev`-style two-class descendant selectors
+   below this comment; those are GONE, replaced by the --nav- and --reader-
+   prefixed custom properties `.split-pane-reader` itself now sets (see that
+   rule's own comment) and reads here via var(), this file's own prescribed
+   technique, zero descendant selectors in the result. One shared shape for
+   BOTH panes now (a vertical glyph-over-label stack, `display:flex;
+   flex-direction:column`, replacing the old plain-inline "‹ Book NN" flow)
+   rather than a fork that only shrinks split's -- standalone was never the
+   reported problem, but forking a duplicate rule set JUST to keep it
+   pixel-identical would be the opposite of "share the code path" (the
+   brief's own words); every var() below still falls back to a generous,
+   standalone-appropriate default, so standalone's actual rendered size
+   only ever GROWS from its pre-batch 68.9x18px (also under 40px tall, just
+   never reported) to a comfortably-over-the-floor stack, unchanged in
+   POSITION (still 1.5rem from the column edge) and still passing NAV-2's
+   own position/hover-color assertions, which never depended on the old
+   horizontal shape. min-width/min-height (2.75rem/4.5rem = 44/72px) are
+   UNCONDITIONAL, not var()-driven -- both panes need the same real
+   above-the-40px-floor margin, and neither ever needs to shrink below it.
+   --nav-max-width is the one dimension split genuinely must cap -- set
+   equal to the SAME 2.75rem floor (a fixed 44px box in split view, content
+   reflowing across more lines rather than growing wider) so it can never
+   grow past .reader-column's own --reader-col-pad-x-widened gutter
+   regardless of label length (see that rule's own comment for the exact
+   measured numbers: a first attempt at 3.5rem/56px measured a real, if
+   small, overlap with verse text at the documented 1024px floor -- caught
+   live, not assumed -- before landing here); standalone keeps the original
+   generous 10rem. overflow-wrap:break-word on .reader-nav-label below is
+   what keeps an outlier long single-word book name (e.g. "1 Thessalonians")
+   from ever spilling past that cap sideways into verse text, at the cost of
+   a mid-word break in that rare case rather than a wider box. color is now
+   --ink (13.98:1 on --parchment, computed -- WCAG luminance formula, not a
+   guess) rather than the old --ink-soft (5.66:1, short of the >=10:1
+   parchment floor this redesign's own brief requires) -- :hover stays
+   --lapis, UNCHANGED, the same quiet-until-hover amplification this file
+   already uses identically on .verse-num and elsewhere ("visible always,
+   amplified on hover" -- the REST state is the one this batch's own 10:1
+   floor binds; a hover color swap has always been treated as its own
+   separate, momentary affordance throughout this file, never independently
+   re-proven against the same static-text floor). */
 /* top: var(--chapter-nav-top, 50vh) -- deliberately NOT a bare `top: 50%`
    or `top: 50vh`. `.reader-page`'s own pre-existing `contain: layout`
    (Batch H, split-view) makes THIS PAGE'S OWN border box -- not the
@@ -598,16 +672,25 @@ input:focus-visible,
    correct at scroll position 0. */
 .reader-prev {
     position: fixed;
-    left: 1.5rem;
+    left: var(--nav-left, 1.5rem);
     top: var(--chapter-nav-top, 50vh);
     transform: translateY(-50%);
     z-index: 15;
-    max-width: 10rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .2rem;
+    min-width: 2.75rem;
+    max-width: var(--nav-max-width, 10rem);
+    min-height: 4.5rem;
+    padding: .3rem .2rem;
+    text-align: center;
     font-family: var(--font-serif);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
-    font-size: .85rem;
-    color: var(--ink-soft);
+    font-size: var(--nav-glyph-size, 1.1rem);
+    color: var(--ink);
 }
 
 .reader-prev:hover {
@@ -616,57 +699,44 @@ input:focus-visible,
 
 .reader-next {
     position: fixed;
-    right: 1.5rem;
+    right: var(--nav-left, 1.5rem);
     top: var(--chapter-nav-top, 50vh);
     transform: translateY(-50%);
     z-index: 15;
-    max-width: 10rem;
-    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .2rem;
+    min-width: 2.75rem;
+    max-width: var(--nav-max-width, 10rem);
+    min-height: 4.5rem;
+    padding: .3rem .2rem;
+    text-align: center;
     font-family: var(--font-serif);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
-    font-size: .85rem;
-    color: var(--ink-soft);
+    font-size: var(--nav-glyph-size, 1.1rem);
+    color: var(--ink);
 }
 
 .reader-next:hover {
     color: var(--lapis);
 }
 
-/* Batch R review fix round 1, Critical-1: split view gets a compact,
-   chevron-only treatment -- .reader-nav-label (the "Book NN" text
-   Reader.razor now wraps separately) is hidden entirely, and the button's
-   own footprint is pulled in near the pane's real edge, comfortably inside
-   the real gutter .reader-column's own padding leaves before verse text
-   starts at the documented 1024px floor (measured: this compact button
-   occupies roughly 8..26px from the pane edge there, verse text starts
-   ~41px in -- real clearance, not a last-pixel fit). The <a>'s own
-   aria-label (Reader.razor) still carries the full "Previous/Next chapter:
-   Book NN" text regardless, so nothing is lost for a screen reader even
-   though the glyph is now the only VISIBLE content. Unconditional across
-   the WHOLE split range (not just near 1024px) -- .split-pane-reader never
-   exceeds ~55% of the viewport, so .reader-column's own 66ch clamp never
-   actually binds in split view at any realistic width, meaning the tight-
-   gutter problem this fixes never goes away at a wider split either.
-   Standalone reader is UNCHANGED -- these three rules only ever match
-   inside .split-pane-reader; the full "‹ Book NN" label at left/
-   right:1.5rem stays exactly as NAV-2 already proved it (~172px of real
-   clearance at the same 1024px floor, nothing near this tight). No layout
-   shift (still fully out of flow), no animation (nothing here needs its
-   own reduced-motion guard), contrast/quiet-until-hovered treatment
-   untouched (only position/content visibility change). */
-.split-pane-reader .reader-prev {
-    left: .5rem;
-    padding: .15rem .3rem;
-}
-
-.split-pane-reader .reader-next {
-    right: .5rem;
-    padding: .15rem .3rem;
-}
-
-.split-pane-reader .reader-nav-label {
-    display: none;
+/* The label's own font-size shrinks independently of the glyph's (the
+   glyph is a bare text node sized by .reader-prev/.reader-next's own
+   font-size directly -- see their shared comment above; this span
+   overrides just itself). `inherit` fallback keeps standalone reading
+   EXACTLY the parent's own --nav-glyph-size default when
+   --nav-label-size is unset, same "one shared rule, only the numbers
+   differ" shape every other property in this block already follows.
+   overflow-wrap:break-word -- see .reader-prev/.reader-next's own comment
+   for why: the one thing that keeps an outlier long book name from ever
+   spilling past --nav-max-width sideways into verse text. */
+.reader-nav-label {
+    font-size: var(--nav-label-size, inherit);
+    overflow-wrap: break-word;
 }
 
 /* passage-chip (READ-5/Task 15): "floats bottom-center like a paper tag:
