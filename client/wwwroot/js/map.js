@@ -1321,6 +1321,41 @@ export function blinkPlace(placeId, active) {
     }
 }
 
+// HOTFIX batch (batch-hotfix-brief.md requirement 1, "the hover menu can be
+// cut off by the top of the screen"): measures a PlaceCard's own just-
+// rendered box, ONE-SHOT -- ID-less, not bound to any one map instance,
+// same reasoning as blinkPlace's own STATIC-helper comment above (this
+// card has no live MapInterop of its own to hang a call off; it just needs
+// whatever DOM element Blazor's own @ref already handed it). `cardEl` is
+// the `.place-card` root div itself; its DOM parent is ALWAYS the map
+// container this card is currently rendered inside (`.world-page`
+// standalone, `.split-pane-atlas` embedded -- World.razor renders
+// `<PlaceCard>` as a direct child, never through an intermediate wrapper --
+// see PlaceCard.razor's own file header), so `clientWidth` there is exactly
+// the box CardPlacement.Compute (client/CardPlacement.cs) needs to clamp
+// against: the SAME box `.world-page`'s own `overflow:hidden` actually
+// clips to, in EITHER context, with no separate selector/plumbing per page.
+// offsetWidth/offsetHeight (not getBoundingClientRect) -- cheaper, and
+// transform (app.css's own `.place-card` translate) never affects either:
+// transform is purely a paint-time visual offset, not a layout-box size.
+// A detached/gone element (the card closed while an in-flight measurement
+// call was still pending -- see PlaceCard.razor's own OnAfterRenderAsync
+// comment for the exact race this guards) simply measures 0 everywhere,
+// same graceful-degradation shape as panToPlace's own `if (!inst)` above --
+// never throws.
+export function measureCardPlacement(cardEl) {
+    if (!cardEl || !cardEl.isConnected) {
+        return { width: 0, height: 0, containerWidth: 0 };
+    }
+
+    const container = cardEl.parentElement;
+    return {
+        width: cardEl.offsetWidth,
+        height: cardEl.offsetHeight,
+        containerWidth: container ? container.clientWidth : 0,
+    };
+}
+
 // Shows/hides the polity-border layer without touching its data (Batch B2:
 // scripture mode has no time window, so no polities are shown there --
 // same "restore on return to time mode" pattern the retired border-tag's

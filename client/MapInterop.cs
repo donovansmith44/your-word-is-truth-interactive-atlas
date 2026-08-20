@@ -239,6 +239,28 @@ public sealed class MapInterop : IAsyncDisposable
         await module.InvokeVoidAsync("blinkPlace", placeId, active);
     }
 
+    /// <summary>
+    /// HOTFIX batch (batch-hotfix-brief.md requirement 1): measures a
+    /// PlaceCard's own just-rendered box plus its DOM parent's clientWidth
+    /// (the map container this card is currently inside -- see map.js's own
+    /// <c>measureCardPlacement</c> for why that parent is always exactly the
+    /// right box), so <see cref="CardPlacement.Compute"/> can decide whether
+    /// to flip below the marker and/or clamp horizontally. A static helper,
+    /// same shape as <see cref="BlinkPlace"/> above -- the card has no live
+    /// <see cref="MapInterop"/> of its own to hang this off, it just needs
+    /// the one already-loaded module. Deliberately deferred until BOTH
+    /// PlaceCard.razor's own chapter-text and history fetches have settled
+    /// -- see its OnAfterRenderAsync's own comment for why measuring any
+    /// earlier would size against not-yet-loaded content (the blurb/dates
+    /// sections specifically, conditionally absent from the DOM until then)
+    /// and produce a wrong decision.
+    /// </summary>
+    public static async Task<CardMeasurementDto> MeasureCardPlacement(IJSRuntime js, ElementReference cardEl)
+    {
+        var module = await js.InvokeAsync<IJSObjectReference>("import", "./js/map.js");
+        return await module.InvokeAsync<CardMeasurementDto>("measureCardPlacement", cardEl);
+    }
+
     public async ValueTask DisposeAsync()
     {
         try
@@ -288,3 +310,13 @@ public sealed class MapEventsSink
 /// panToPlace, which returns a plain <c>{x, y}</c> object).
 /// </summary>
 public sealed record ContainerPointDto(double X, double Y);
+
+/// <summary>
+/// HOTFIX batch: <see cref="MapInterop.MeasureCardPlacement"/>'s own return
+/// shape -- deserialized via Blazor's DEFAULT (camelCase) JS-interop JSON
+/// options, not <see cref="Wire.Options"/> (this never crosses the real
+/// HTTP API either, same reasoning as <see cref="ContainerPointDto"/> above
+/// -- see map.js's own <c>measureCardPlacement</c>, which returns a plain
+/// <c>{width, height, containerWidth}</c> object).
+/// </summary>
+public sealed record CardMeasurementDto(double Width, double Height, double ContainerWidth);

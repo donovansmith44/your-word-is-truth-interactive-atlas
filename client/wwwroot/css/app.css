@@ -1607,7 +1607,12 @@ input:focus-visible,
    shipped). max-height has no effect on a card whose content already fits
    under it, so this is a strict no-op for every small card -- safe to
    apply always rather than re-litigate "is this render tall enough to
-   need it" per state.
+   need it" per state. HOTFIX batch: max-height bounds HOW TALL the card
+   can ever get, which reduces but never eliminated a marker-near-the-top
+   cutoff (a still-tall-enough card could clear even the capped height and
+   cross the container's own top edge -- the user's own live report, "the
+   hover menu can be cut off by the top of the screen") -- see --card-dy
+   below for the actual general fix.
 
    The scroll itself lives on .place-card-scroll (below), NOT this element:
    a flex column with place-card-controls (the down/up arrows) as a second,
@@ -1618,11 +1623,29 @@ input:focus-visible,
    property started timing out, Playwright retrying an unreachable/
    reflowing target, when both lived in one shared scrolling box; a real
    user hunting for the down arrow at the bottom of a long scroll would
-   have hit the same problem). */
+   have hit the same problem).
+
+   HOTFIX batch (requirement 1, flip-below-when-cut-off): --card-dx/
+   --card-dy are two plain CSS custom properties PlaceCard.razor now always
+   sets inline (never left to a var() fallback here -- see that file's own
+   CardDxCss/CardDyCss). --card-dy alone still does "-50%"/"-100%"-style
+   percentage math NATIVELY, resolved against this element's OWN rendered
+   size -- CardPlacement.Compute (client/CardPlacement.cs) never computes
+   an absolute pixel position itself, only the two things CSS can't derive
+   on its own: --card-dy swaps between the ORIGINAL `calc(-100% - 18px)`
+   (above the marker, unchanged default) and a plain `18px` (below it, once
+   PlaceCard.razor's own post-render measurement finds no room above) --
+   both keep the SAME 18px gap, just on opposite sides; --card-dx layers a
+   plain pixel nudge on top of the native `-50%` horizontal centering,
+   clamping the card off either container edge (0 for the common case --
+   see CardPlacement's own header for exactly when it's nonzero). Applies
+   identically wherever this card renders (full /world, split pane) since
+   the transform is the only thing positioning it -- no separate rule
+   needed per context. */
 .place-card {
     position: absolute;
     z-index: 30;
-    transform: translate(-50%, calc(-100% - 18px));
+    transform: translate(calc(-50% + var(--card-dx)), var(--card-dy));
     display: flex;
     flex-direction: column;
     min-width: 12rem;
@@ -1840,9 +1863,29 @@ input:focus-visible,
     color: var(--lapis);
 }
 
+/* HOTFIX batch: `from`/`to` used to hardcode `calc(-100% - Npx)` directly --
+   harmless before this batch (the base `.place-card` rule's own transform
+   was the exact same hardcoded expression, so the keyframes' own `to` state
+   and the base rule always agreed). Now that the base rule reads
+   --card-dx/--card-dy (this file's own comment on .place-card explains why),
+   a keyframe animation's own declared values OUTRANK the base rule's for as
+   long as the animation applies, and animation-fill-mode:both (below) keeps
+   the `to` state applied FOREVER after it finishes -- a keyframes block
+   still hardcoding the OLD "always above" expression would silently pin
+   every card there regardless of --card-dy, undoing the flip entirely
+   (caught live: a flipped card's own computed transform kept resolving to
+   the pre-flip matrix even with data-flip="true" and the correct --card-dy
+   already set inline, until this fix). Both stops now read the SAME custom
+   properties the base rule does, --card-dy-from (PlaceCard.razor's own
+   CardDyFromCss, mirroring --card-dy's own flip logic with a 10px gap
+   instead of 18px) for the entrance offset, --card-dy for the settled one
+   -- so the animation's own `to` state and the base rule's resting state
+   are ALWAYS identical, in both orientations, and the original "settles
+   down 8px" pop-in feel (Batch D) survives unchanged in the non-flipped
+   case while gaining the same nuance, mirrored, in the flipped one. */
 @keyframes place-card-in {
-    from { opacity: 0; transform: translate(-50%, calc(-100% - 10px)); }
-    to { opacity: 1; transform: translate(-50%, calc(-100% - 18px)); }
+    from { opacity: 0; transform: translate(calc(-50% + var(--card-dx)), var(--card-dy-from)); }
+    to { opacity: 1; transform: translate(calc(-50% + var(--card-dx)), var(--card-dy)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -36,7 +36,8 @@ World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief
   `marker-{placeId}`'s own ids for the same scene, per QUIET-1's disjointness; a small,
   unlit, non-glowing dot, hoverable/clickable exactly like a lit marker; absent entirely
   in scripture mode and on mini-maps), `place-card` (attr `data-pinned` = "true"|"false" --
-  batch-g1-brief.md requirement 3, PIN-1 below), `place-card-title`,
+  batch-g1-brief.md requirement 3, PIN-1 below; attr `data-flip` = "true"|"false" --
+  batch-hotfix-brief.md requirement 1, CARD-FLIP-1 below), `place-card-title`,
   `place-card-close` (batch-g1-brief.md; button; present ONLY while `data-pinned="true"`;
   closes the pinned card -- see PIN-1), `place-card-narratives` (batch-g1-brief.md; present
   ONLY when the pinned place has >=1 narrative leg in the current scene; wraps one row per
@@ -768,3 +769,35 @@ Notes:
   widened bounds, so the client's own `existenceGatesLabel` (map.js) needs
   no knowledge of name ranges at all, just the plain inclusive-bounds
   comparison.
+- CARD-FLIP-1 (batch-hotfix-brief.md requirement 1, user report 2026-08-20:
+  "if there are locations at the top of the screen and you hover for your
+  hover menu, the hover menu can be cut off by the top of the screen"):
+  `place-card` renders ABOVE its marker (the pre-existing default, unchanged)
+  UNLESS there is no room above it within the map container it is currently
+  rendered inside (`.world-page` standalone, `.split-pane-atlas` embedded --
+  the SAME box that box's own `overflow:hidden` clips to, in either
+  context), in which case it renders BELOW instead (`data-flip="true"`,
+  mirrored across the marker -- same 18px gap on the opposite side).
+  Independently, horizontally: the card is clamped so it never crosses
+  either side of that same container, nudged inward from its normal
+  centered-on-the-marker position only exactly as far as needed (most cards
+  need no nudge at all). Both decisions are made ONCE, the first time this
+  place's own card has fully loaded (verse text AND, if curated,
+  blurb/dates -- measuring any earlier would size against not-yet-loaded
+  content) after opening -- never reconsidered afterward for that same open
+  (not on ShowMore/Collapse growing the card, not on the map panning
+  underneath an already-open card) -- a fresh decision is only ever made on
+  a genuine re-open (hovering/clicking/traversing to a DIFFERENT place, or
+  re-hovering the same one after it fully closed). The pre-existing
+  hover-persistence/grace mechanism ("Place-card hover persistence" above)
+  is completely unaffected by either orientation -- it tracks pointer
+  entry/exit of the marker and the card as plain DOM elements, never their
+  relative screen position, so the pointer can travel from a marker down
+  into a flipped card exactly as reliably as it travels up into a
+  non-flipped one. Applies identically everywhere this card renders (full
+  `/world`, split view's embedded atlas pane) -- one shared positioning
+  rule, no per-page fork. The reader's own mini-map (`mini-map`,
+  `MiniWorld.razor`) never renders this card at all (its own marker hover
+  callbacks are deliberate no-ops, per that component's own comment,
+  unaffected by and unrelated to this note) -- there is nothing there for
+  CARD-FLIP-1 to apply to.
