@@ -175,6 +175,26 @@ public sealed class MapInterop : IAsyncDisposable
         return (point.X, point.Y);
     }
 
+    /// <summary>
+    /// Batch H (view-state service): the map's own current center/zoom --
+    /// read by World.razor's DisposeAsync before the underlying Leaflet
+    /// instance is torn down (<see cref="DisposeAsync"/> below), so a later
+    /// visit can restore it exactly via <see cref="SetCamera"/>. Null only
+    /// if the JS-side instance is already gone (defensive; not expected in
+    /// normal use -- DisposeAsync calls this while its own MapInterop is
+    /// still live).
+    /// </summary>
+    public async Task<CameraDto?> GetCamera() => await _module.InvokeAsync<CameraDto?>("getCamera", _id);
+
+    /// <summary>
+    /// Batch H: sets the map's view directly to a previously-captured
+    /// camera (see <see cref="GetCamera"/>) -- instant, not animated, same
+    /// reasoning <see cref="FitScene"/>/<see cref="PanToPlace"/> already
+    /// document for their own `{animate:false}`.
+    /// </summary>
+    public async Task SetCamera(double lat, double lon, double zoom) =>
+        await _module.InvokeVoidAsync("setCamera", _id, lat, lon, zoom);
+
     public async ValueTask DisposeAsync()
     {
         try
@@ -223,3 +243,10 @@ public sealed class MapEventsSink
 /// panToPlace, which returns a plain <c>{x, y}</c> object).
 /// </summary>
 public sealed record ContainerPointDto(double X, double Y);
+
+/// <summary>
+/// Batch H: <see cref="MapInterop.GetCamera"/>'s own return shape -- same
+/// default (camelCase) JS-interop JSON options as <see cref="ContainerPointDto"/>
+/// (this never crosses the real HTTP API either, see map.js's own getCamera).
+/// </summary>
+public sealed record CameraDto(double Lat, double Lng, double Zoom);

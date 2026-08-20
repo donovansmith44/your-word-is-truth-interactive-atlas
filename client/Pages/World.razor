@@ -5,11 +5,43 @@
 @inject AtlasClient Atlas
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject ViewStateService ViewState
 
 <PageTitle>Bible Explorer &mdash; World</PageTitle>
 
-<div class="world-page">
+<div class="world-page @(SplitMode ? "split-pane-atlas" : null)" data-testid="@(SplitMode ? "split-pane-atlas" : null)">
     <div id="world-map" class="world-map" data-testid="world-map" @ref="_mapEl"></div>
+
+    @* Batch H: the split affordances -- mutually exclusive by construction
+       (SplitMode is only ever true for the pane a HOST already embedded, so
+       "open" and "close/follow" never both apply to the same instance).
+       !SplitMode (standalone /world, unchanged today) gets the "Read beside
+       the map" affordance; SplitMode (embedded guest) gets the follow chip
+       and its own close button instead -- see their own comments below. *@
+    @if (!SplitMode)
+    {
+        <button type="button" class="split-open split-open-dusk" data-testid="split-open-world" @onclick="OpenReadBesideMap">
+            Read beside the map
+        </button>
+    }
+    else
+    {
+        @* A shared positioning wrapper -- not just the two buttons placed
+           independently -- because their combined width depends on
+           FollowRef's own text ("Following GEN.12" vs "Following EXO.3"),
+           which a fixed pixel offset for the second button can't account
+           for; the flex wrapper lays them out naturally instead. *@
+        <div class="split-atlas-controls" data-testid="split-atlas-controls">
+            <button type="button" class="follow-chip" data-testid="follow-chip"
+                    aria-pressed="@(_follow ? "true" : "false")" @onclick="ToggleFollow">
+                @(_follow && FollowRef is not null ? $"Following {FollowRef}" : "Follow the text")
+            </button>
+            <button type="button" class="split-close split-close-dusk" data-testid="split-close-atlas"
+                    aria-label="Close the map, keep reading" @onclick="() => OnRequestClose.InvokeAsync()">
+                &times;
+            </button>
+        </div>
+    }
 
     <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-dusk" />
 
@@ -44,7 +76,15 @@
                     Disabled="@(_scriptureRef is not null)" OnWindowChange="HandleWindowChange" />
     }
 
-    @if (_scriptureRef is not null)
+    @* Batch H: suppressed while following -- the follow-chip above is
+       already the ONE control for "you're locked to the reader's chapter,
+       click to stop" in that state; showing mode-chip's OWN "Return to
+       time" alongside it would be a second, redundant way to do the exact
+       same thing. Not suppressed when SplitMode but NOT following (a
+       manually-applied ref while free-browsing the pane) -- there the two
+       chips say genuinely different things (which ref you're viewing vs.
+       whether you're following) and both stay useful. *@
+    @if (_scriptureRef is not null && !(SplitMode && _follow))
     {
         <div class="mode-chip" data-testid="mode-chip">
             <span class="mode-chip-label">Scripture</span>
@@ -78,7 +118,8 @@
    up the dusk page's own sepia warmth filter by CSS accident. *@
 @if (_activeNode is not null)
 {
-    <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover" />
+    <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover"
+                      InSplit="SplitMode" OnNavigateWorldInSplit="ApplyExternalQuery" />
 }
 
 @code {
@@ -113,6 +154,38 @@
     [SupplyParameterFromQuery(Name = "ref")]
     [Parameter]
     public string? RefQuery { get; set; }
+
+    // Batch H (split-view study): true exactly when this instance is the
+    // embedded ATLAS PANE of a split (always hosted by Reader.razor, per
+    // this batch's own design -- see the report's layout section for why
+    // Reader is always the split's host/orchestrator, never World). Gates
+    // every split-specific behavior below: the follow chip/close button
+    // (markup), which half of OnParametersSetAsync runs (query-string
+    // SyncFromQuery vs. FollowRef-reactive SyncFollowRef), and the
+    // ApplyScriptureRef/HandleWindowChange/ReturnToTime SplitMode branches
+    // (the pane's host URL never carries ref=/from=/to= at all). Standalone
+    // /world never sets this -- every behavior it gates is unreachable
+    // there, so standalone behavior is untouched byte-for-byte.
+    [Parameter] public bool SplitMode { get; set; }
+
+    // Batch H: the split HOST's own current chapter ref ("GEN.12"), fed down
+    // fresh every time Reader.razor's own _book/_chapterNum change (a normal
+    // parameter re-render -- Reader stays the SAME component instance across
+    // chapter-to-chapter navigation, so this arrives as an ordinary changed
+    // parameter, not a fresh component). Applied via the EXACT SAME
+    // DebouncedLoadScriptureScene /world?ref= already uses (SyncFollowRef
+    // below) -- ONLY while following (_follow); a null value (should never
+    // happen in practice -- Reader always has a current chapter once loaded,
+    // but SplitMode is set before that first load resolves) simply means
+    // "nothing to follow yet."
+    [Parameter] public string? FollowRef { get; set; }
+
+    // Batch H: the atlas pane's own close button (data-testid
+    // split-close-atlas) invokes this -- Reader.razor wires it to set its
+    // own _splitOpen = false, returning to "full reader" per the brief.
+    // World itself has no notion of what closing even means beyond "tell
+    // whoever embedded me."
+    [Parameter] public EventCallback OnRequestClose { get; set; }
 
     private List<EraDto>? _eras;
     private Scene? _scene;
@@ -241,6 +314,28 @@
     // themselves -- see PlaceCard.razor's own file header.
     private IExplorable? _activeNode;
 
+    // Batch H (split-view study, follow mode). _follow defaults true (the
+    // brief's "follow mode default ON") and is only ever MEANINGFUL while
+    // SplitMode -- standalone /world never reads or writes it. Restored from
+    // ViewState.Map.Follow on a SplitMode instance's own first
+    // OnParametersSetAsync pass (_splitInitialized guards that pass running
+    // more than once); captured back into ViewState.Map.Follow on dispose,
+    // but ONLY for a SplitMode instance (see DisposeAsync's own comment for
+    // why a standalone visit must never overwrite it).
+    private bool _follow = true;
+    private bool _splitInitialized;
+    private string? _lastFollowRef;
+
+    // Batch H (view-state round-trip): non-null exactly when a saved camera
+    // (center/zoom) is waiting to be applied once the map instance exists --
+    // set by RestoreMapState, consumed by PushPendingCameraIfReady. Mirrors
+    // _landmarks/_landmarksPushed's own "whichever resolves second" pattern
+    // for the identical underlying race: OnAfterRenderAsync's own
+    // MapInterop.Create call is asynchronous, so a restore decided in
+    // OnInitializedAsync/OnParametersSetAsync can easily land before the map
+    // itself exists yet.
+    private (double Lat, double Lon, double Zoom)? _pendingCamera;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -299,7 +394,221 @@
             return;
         }
 
+        // Batch H: SplitMode branches to a COMPLETELY separate path --
+        // SyncFollowRef below, never SyncFromQuery -- since this instance's
+        // host URL (/read/{Book}/{Chapter}) never carries ref=/from=/to= at
+        // all; reading them here would just see three permanently-absent
+        // query keys and fall into SyncFromQuery's own "bare /world"
+        // branch, silently ignoring FollowRef entirely. Standalone
+        // (!SplitMode) behavior below this check is completely untouched.
+        if (SplitMode)
+        {
+            await SyncFollowRef();
+            return;
+        }
+
         await SyncFromQuery();
+    }
+
+    // Batch H: the SplitMode counterpart to SyncFromQuery -- reacts to
+    // FollowRef parameter changes (the split host's own current chapter,
+    // see FollowRef's own doc comment) instead of the URL's query string.
+    // The FIRST call (per instance) also restores follow/window state from
+    // the shared ViewState -- _splitInitialized guards that one-time part
+    // only; FollowRef-change reactivity below it runs on every call.
+    private async Task SyncFollowRef()
+    {
+        if (!_splitInitialized)
+        {
+            _splitInitialized = true;
+            _follow = ViewState.Map.Follow;
+            _lastFollowRef = FollowRef;
+
+            if (_follow && FollowRef is not null)
+            {
+                await EnterScriptureMode(FollowRef);
+            }
+            else if (ViewState.Map.HasData)
+            {
+                await RestoreMapState();
+            }
+            else
+            {
+                await EnterTimeMode(_from, _to);
+            }
+
+            return;
+        }
+
+        if (FollowRef == _lastFollowRef)
+        {
+            return;
+        }
+
+        _lastFollowRef = FollowRef;
+        if (_follow && FollowRef is not null)
+        {
+            await EnterScriptureMode(FollowRef);
+        }
+    }
+
+    // Batch H: the shared "enter scripture mode" sequence every direct
+    // (non-URL) scene-loading call site below needs -- SyncFromQuery's own
+    // ref-branch already inlines these exact three steps (stamp
+    // _scriptureRef, hide the polity layer, THEN fetch -- fix round 1,
+    // finding 5's own ordering, preserved here); this is the same sequence,
+    // factored out so every SplitMode call site (which never goes through
+    // SyncFromQuery at all -- see FollowRef's own doc comment) gets it too,
+    // rather than each one re-deriving/risking missing a step.
+    // SyncFromQuery's own two call sites are intentionally left as they
+    // are (not refactored onto this) -- battle-tested, unrelated to this
+    // batch's own risk surface.
+    private async Task EnterScriptureMode(string sref)
+    {
+        _scriptureRef = sref;
+        if (_mapInterop is not null)
+        {
+            await _mapInterop.SetPolitiesVisible(false);
+        }
+
+        await DebouncedLoadScriptureScene(sref);
+    }
+
+    // Batch H: the time-mode counterpart to EnterScriptureMode above.
+    // Unlike scripture mode, no extra polities call is needed here --
+    // DebouncedLoadScene's own LoadPolitiesFor already unconditionally
+    // restores SetPolitiesVisible(true) before its fetch even starts (see
+    // that method's own doc comment), so a bare _scriptureRef=null plus the
+    // ordinary time-mode load is the complete, correct sequence.
+    private Task EnterTimeMode(int from, int to)
+    {
+        _scriptureRef = null;
+        _from = from;
+        _to = to;
+        return DebouncedLoadScene(from, to);
+    }
+
+    // Batch H (view-state round-trip): restores whatever the LAST live
+    // World instance -- standalone OR the split pane, ONE shared map state,
+    // per the brief -- left behind, in place of a fresh default. A saved
+    // scripture ref restores into scripture mode via the SAME
+    // DebouncedLoadScriptureScene every /world?ref= visit already uses,
+    // which always fits/recenters on its own (a scripture jump is a
+    // deliberate destination, not a snapshot to recreate pixel-for-pixel --
+    // its own camera is deliberately NOT restored, matching a fresh
+    // /world?ref= deep link's own behavior). A saved time window restores
+    // via DebouncedLoadScene with _lastFitMode pre-stamped "time" so its
+    // usual auto-fit is suppressed -- see that field's own comment for why
+    // "the load's own mode already equals _lastFitMode" is what skips it --
+    // then the saved camera (center/zoom) is queued via _pendingCamera
+    // instead, applied once the map instance actually exists.
+    private async Task RestoreMapState()
+    {
+        if (ViewState.Map.ScriptureRef is { } sref)
+        {
+            await EnterScriptureMode(sref);
+            return;
+        }
+
+        _lastFitMode = "time"; // suppress the load's own usual auto-fit -- see this field's own comment
+        await EnterTimeMode(ViewState.Map.From, ViewState.Map.To);
+
+        if (ViewState.Map.CenterLat is double lat && ViewState.Map.CenterLon is double lon && ViewState.Map.Zoom is double zoom)
+        {
+            _pendingCamera = (lat, lon, zoom);
+            await PushPendingCameraIfReady();
+        }
+    }
+
+    // Consumes _pendingCamera the moment the map instance actually exists --
+    // see that field's own comment for the exact race this covers (the same
+    // "whichever resolves second" shape PushLandmarksIfReady already uses).
+    private async Task PushPendingCameraIfReady()
+    {
+        if (_pendingCamera is not { } cam || _mapInterop is null)
+        {
+            return;
+        }
+
+        _pendingCamera = null;
+        await _mapInterop.SetCamera(cam.Lat, cam.Lon, cam.Zoom);
+    }
+
+    // follow-chip (Batch H). Toggling OFF frees the pane to full time-mode
+    // -- reloads the last-applied time window (_from/_to) exactly like
+    // ReturnToTime's own effect, via DebouncedLoadScene directly (SplitMode
+    // has no URL to round-trip through, see ReturnToTime's own SplitMode
+    // branch). Toggling back ON re-syncs to FollowRef, the SAME mechanism a
+    // chapter change already uses (SyncFollowRef) -- both directions reuse
+    // the one system-wide scene-loading primitive, never a parallel path.
+    private async Task ToggleFollow()
+    {
+        _follow = !_follow;
+        if (_follow)
+        {
+            if (FollowRef is not null)
+            {
+                await EnterScriptureMode(FollowRef);
+            }
+        }
+        else
+        {
+            await EnterTimeMode(_from, _to);
+        }
+    }
+
+    // Batch H ("no nested-popup rule" + the SplitMode ApplyScriptureRef/
+    // HandleWindowChange/ReturnToTime branches): applies a NavigateWorld-
+    // shaped query string ("ref=X" or "from=X&to=Y", the EXACT shape
+    // ExplorationTarget.NavigateWorld.Query already carries, values already
+    // escaped) directly to THIS pane's own state, bypassing the URL
+    // entirely -- the mechanism a SplitMode instance needs for every manual
+    // "look at something specific" action, since its own OnParametersSetAsync
+    // never reads the URL's query string at all (see SyncFollowRef's own
+    // comment: there is no ref=/from=/to= on /read's route to read).
+    // Reused identically by ExplorerPopover's own OnNavigateWorldInSplit
+    // callback (a popover chip clicked from EITHER pane while a split is
+    // showing) and by this component's own picker/slider/mode-chip-return
+    // handlers once SplitMode -- one method, every manual-override path.
+    // Turns follow OFF first: an explicit "go look at this" action always
+    // supersedes following (mirrors ToggleFollow's own "toggling off frees
+    // the pane" semantics) -- there is nothing left to stay synced to once
+    // the pane shows something the reader didn't ask for; a later chapter
+    // change leaves it off until the user turns following back on
+    // themselves, per the brief's own explicit-toggle precedence.
+    public async Task ApplyExternalQuery(string query)
+    {
+        _follow = false;
+        StateHasChanged(); // snappy chip feedback -- see this method's own doc comment; the load below still runs its own debounce/fetch on top of this
+
+        var parts = query.Split('&')
+            .Select(p => p.Split('=', 2))
+            .Where(kv => kv.Length == 2)
+            .ToDictionary(kv => kv[0], kv => Uri.UnescapeDataString(kv[1]));
+
+        if (parts.TryGetValue("ref", out var sref))
+        {
+            await EnterScriptureMode(sref);
+            return;
+        }
+
+        if (parts.TryGetValue("from", out var fromText) && parts.TryGetValue("to", out var toText)
+            && int.TryParse(fromText, out var from) && int.TryParse(toText, out var to))
+        {
+            await EnterTimeMode(from, to);
+        }
+    }
+
+    // "Read beside the map" (Batch H, standalone /world only -- SplitMode
+    // never renders this button). Lands directly in split, per the brief
+    // ("both land in the same split layout"): ?split=1 tells Reader.razor to
+    // set its own _splitOpen = true on arrival (see its own SplitQuery
+    // param). The reader's own last-known position (ViewState.Reader) picks
+    // which chapter to open beside -- GEN 1 if this session never visited
+    // the reader at all yet (ReaderViewState's own field defaults).
+    private void OpenReadBesideMap()
+    {
+        Nav.NavigateTo($"/read/{ViewState.Reader.Book}/{ViewState.Reader.Chapter}?split=1");
     }
 
     // The Leaflet map can only be created once #world-map is actually in
@@ -320,12 +629,36 @@
         if (_scene is not null)
         {
             await _mapInterop.SetScene(_scene);
-            await _mapInterop.FitScene();
             // _scriptureRef is already set (SyncFromQuery sets it synchronously,
             // before either fetch method's first await) by the time a scene can
             // possibly be non-null here, so it accurately names which mode
             // produced _scene.
-            _lastFitMode = _scriptureRef is not null ? "scripture" : "time";
+            var thisMode = _scriptureRef is not null ? "scripture" : "time";
+            // Batch H fix (self-review, a real bug the view-state round-trip
+            // test itself caught): this branch used to fit UNCONDITIONALLY,
+            // regardless of _lastFitMode -- correct under the ORIGINAL
+            // assumption that a scene already loaded by first-render could
+            // only mean "the very first scene of the page's life" (nothing
+            // else ever set _scene before this ran). RestoreMapState breaks
+            // that assumption: it pre-stamps _lastFitMode to the mode it's
+            // ABOUT to load, specifically so DebouncedLoadScene's OWN
+            // fit-check skips its auto-fit and a restored camera (applied
+            // via _pendingCamera below) isn't immediately overwritten by
+            // one -- but this race can land the OTHER way too (the scene
+            // finishes loading, via that same debounced fetch, before this
+            // method's own await MapInterop.Create resolves), reaching this
+            // branch instead with _lastFitMode already correctly set and
+            // the fit already correctly skipped once. Fitting AGAIN here,
+            // unconditionally, undid that -- confirmed live: a restored
+            // time-mode camera came back at a different zoom than what was
+            // saved. Same "skip when this mode already fit" check
+            // DebouncedLoadScene's own branch uses.
+            if (_lastFitMode != thisMode)
+            {
+                await _mapInterop.FitScene();
+            }
+
+            _lastFitMode = thisMode;
         }
 
         // Same "already resolved before the map existed" race as _scene
@@ -345,6 +678,10 @@
         // _landmarksPushed's own comments for why a naive "OnInitializedAsync
         // always finishes before the first render" assumption is wrong.
         await PushLandmarksIfReady();
+
+        // Batch H: same race, for a restored camera (view-state round-trip)
+        // -- see _pendingCamera's own comment.
+        await PushPendingCameraIfReady();
     }
 
     // Single path for every window/ref change, whether it comes from the
@@ -385,7 +722,22 @@
         {
             if (_scene is null)
             {
-                await DebouncedLoadScene(_from, _to);
+                // Batch H (view-state round-trip): a bare /world visit
+                // restores wherever the LAST live World instance (this
+                // session) left the atlas, rather than always defaulting to
+                // the Gospels era -- "full-page /world and the split pane
+                // share ONE map state" (the brief). A deep link WITH an
+                // explicit from=/to=/ref= (below/above) is completely
+                // unaffected -- this only ever applies to the truly bare
+                // "/world" case, unchanged from before this batch otherwise.
+                if (ViewState.Map.HasData)
+                {
+                    await RestoreMapState();
+                }
+                else
+                {
+                    await DebouncedLoadScene(_from, _to);
+                }
             }
 
             return;
@@ -414,8 +766,18 @@
         await DebouncedLoadScene(from, to);
     }
 
+    // Batch H: SplitMode has no ref=/from=/to= on its own host URL at all
+    // (/read's route never carries them -- see SyncFollowRef's own comment)
+    // -- so a SplitMode instance applies a window/ref change DIRECTLY via
+    // ApplyExternalQuery instead of a Nav.NavigateTo that nothing would ever
+    // read back. Standalone (!SplitMode) behavior is completely unchanged.
     private Task HandleWindowChange((int From, int To) window)
     {
+        if (SplitMode)
+        {
+            return ApplyExternalQuery($"from={window.From}&to={window.To}");
+        }
+
         var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["from"] = window.From,
@@ -431,9 +793,15 @@
     // `ref` REPLACES from/to in the URL (both explicitly nulled out, not
     // just left stale/ignored) so the two modes are never simultaneously
     // present in the query string -- SyncFromQuery's own RefQuery-first
-    // check depends on that invariant.
+    // check depends on that invariant. Batch H: SplitMode branch, same
+    // reasoning as HandleWindowChange above.
     private Task ApplyScriptureRef(string sref)
     {
+        if (SplitMode)
+        {
+            return ApplyExternalQuery($"ref={Uri.EscapeDataString(sref)}");
+        }
+
         var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["ref"] = sref,
@@ -447,9 +815,17 @@
     // mode-chip-return (WORLD-6). _from/_to are already exactly "the last
     // applied time-mode window" (see their own field comment) -- restoring
     // it is just navigating back to it, symmetric with ApplyScriptureRef
-    // above (ref explicitly nulled out this time).
+    // above (ref explicitly nulled out this time). Batch H: SplitMode
+    // branch, same reasoning as HandleWindowChange above -- reachable there
+    // only while SplitMode && !_follow (the mode-chip itself is suppressed
+    // while following, see its own markup comment).
     private Task ReturnToTime()
     {
+        if (SplitMode)
+        {
+            return ApplyExternalQuery($"from={_from}&to={_to}");
+        }
+
         var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["from"] = _from,
@@ -1053,8 +1429,39 @@
     {
         _fetchCts?.Cancel();
         _closeCts?.Cancel();
+
+        // Batch H (view-state round-trip): capture wherever this instance is
+        // CURRENTLY sitting -- standalone /world navigated away from, OR a
+        // split pane closed/torn down -- into the shared ViewState BEFORE
+        // the underlying Leaflet instance (and its camera) is gone. Only
+        // when a real map instance existed at all (a page that never
+        // finished OnAfterRenderAsync's own MapInterop.Create has nothing
+        // meaningful to capture).
         if (_mapInterop is not null)
         {
+            var camera = await _mapInterop.GetCamera();
+            ViewState.Map.HasData = true;
+            ViewState.Map.From = _from;
+            ViewState.Map.To = _to;
+            ViewState.Map.ScriptureRef = _scriptureRef;
+            if (SplitMode)
+            {
+                // Follow is a split-only concept -- a standalone /world
+                // visit has no toggle chip to ever change it FROM, so only a
+                // split-pane dispose writes this half of the state, keeping
+                // whatever the user last explicitly set even across an
+                // intervening standalone visit (see MapViewState.Follow's
+                // own doc comment).
+                ViewState.Map.Follow = _follow;
+            }
+
+            if (camera is not null)
+            {
+                ViewState.Map.CenterLat = camera.Lat;
+                ViewState.Map.CenterLon = camera.Lng;
+                ViewState.Map.Zoom = camera.Zoom;
+            }
+
             await _mapInterop.DisposeAsync();
         }
     }

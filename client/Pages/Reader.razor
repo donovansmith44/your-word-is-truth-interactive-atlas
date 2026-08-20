@@ -5,6 +5,7 @@
 @inject AtlasClient Atlas
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject ViewStateService ViewState
 
 <PageTitle>Bible Explorer &mdash; @BookName @_chapterNum</PageTitle>
 
@@ -44,8 +45,31 @@
    (vh units are viewport-relative regardless of ancestor nesting) and
    .popover keeps its own position:fixed centering (an unstyled wrapper
    introduces no new containing block). *@
-<div class="@(_shiftHeld ? "reader-shift-active" : null)" @onkeydown="OnPageKeyDown" @onkeyup="OnPageKeyUp">
-    <div class="reader-page" data-testid="reader-root">
+@* Batch H (split-view study): this SAME outer wrapper -- pre-existing,
+   originally just the Shift-tracking scope (see OnPageKeyDown/OnPageKeyUp
+   below) -- doubles as .split-view's own flex container once _splitOpen.
+   A position:fixed element (ExplorerPopover's own backdrop/panel) is
+   removed from normal flow regardless of its DOM parent's own display,
+   so adding display:flex here never affects them -- they still render
+   exactly like "normal", full-viewport, per the brief. *@
+<div class="@(_shiftHeld ? "reader-shift-active" : "") @(_splitOpen ? "split-view" : "")"
+     @onkeydown="OnPageKeyDown" @onkeyup="OnPageKeyUp" data-testid="@(_splitOpen ? "split-view" : null)">
+    <div class="@(_splitOpen ? "reader-page split-pane-reader" : "reader-page")" data-testid="reader-root">
+        @if (!_splitOpen)
+        {
+            <button type="button" class="split-open split-open-parchment" data-testid="split-open-reader"
+                    @onclick="() => _splitOpen = true">
+                Open the map beside the text
+            </button>
+        }
+        else
+        {
+            <button type="button" class="split-close split-close-parchment" data-testid="split-close-reader"
+                    aria-label="Close the reader, keep the map" @onclick="CloseReaderPane">
+                &times;
+            </button>
+        }
+
         <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" />
 
         @if (ChapterMatchesRoute)
@@ -128,9 +152,26 @@
         }
     </div>
 
+    @* Batch H: the atlas pane -- the EXISTING World.razor page componentry,
+       reused directly as a child component (not a copy), narrowed to its
+       own split-pane-atlas layout via SplitMode's markup branch. FollowRef
+       re-renders World with a new value every time _book/_chapterNum below
+       change (this Reader instance is REUSED, not recreated, across
+       chapter-to-chapter navigation -- see ComputeAdjacent's own <a href>
+       targets, which stay plain /read/... links precisely because that
+       reuse already keeps _splitOpen/this whole pane alive across it), so
+       "Reader navigation re-scenes the map automatically" falls out of
+       ordinary Blazor parameter diffing, no event bus needed. *@
+    @if (_splitOpen)
+    {
+        <div class="split-divider" aria-hidden="true"></div>
+        <World @ref="_worldPane" SplitMode="true" FollowRef="@CurrentRef" OnRequestClose="@(() => _splitOpen = false)" />
+    }
+
     @if (_activeNode is not null)
     {
-        <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover" />
+        <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover"
+                          InSplit="_splitOpen" OnNavigateWorldInSplit="NavigateWorldInSplit" />
     }
 </div>
 
@@ -139,6 +180,33 @@
 
     [Parameter] public string? Book { get; set; }
     [Parameter] public int? Chapter { get; set; }
+
+    // Batch H (split-view study): "Read beside the map" (World.razor)
+    // navigates here with ?split=1 so the two entry points ("Open the map
+    // beside the text" here, "Read beside the map" there) land in the SAME
+    // split layout, per the brief -- read once, on arrival, by
+    // OnParametersSetAsync (_splitQueryConsumed guards that so a LATER,
+    // unrelated OnParametersSetAsync call -- e.g. a plain chapter nav that
+    // happens to leave a stale ?split=1 sitting in the URL, see this
+    // param's own consumption site for the full reasoning -- can never
+    // reopen a split the user already explicitly closed).
+    [SupplyParameterFromQuery(Name = "split")]
+    [Parameter]
+    public string? SplitQuery { get; set; }
+
+    // Batch H: local, in-memory split-open state -- NOT query/route driven
+    // beyond the one-shot SplitQuery arrival above. Reader.razor is reused
+    // (never recreated) across ordinary chapter-to-chapter navigation (see
+    // ComputeAdjacent's own plain /read/... links), so this field -- and
+    // therefore an open split -- survives that navigation for free, with no
+    // extra plumbing: World.razor's own FollowRef parameter re-renders with
+    // each new CurrentRef automatically. Reader.razor is the split's ONLY
+    // ever host/orchestrator (World.razor is always the embedded guest,
+    // never the other way around -- see World.razor's own OnRequestClose
+    // param and the batch report's layout section for why).
+    private bool _splitOpen;
+    private bool _splitQueryConsumed;
+    private World? _worldPane;
 
     private List<BookTocEntry>? _toc;
     private string _book = "GEN";
@@ -163,6 +231,17 @@
     private string? _scrolledFragment;
     private IJSObjectReference? _readerJs;
 
+    // Batch H (view-state round-trip): guards the ViewState.Reader scroll
+    // restore (OnAfterRenderAsync below) to at most ONCE per component
+    // INSTANCE -- the first chapter this instance ever renders, never a
+    // LATER in-session chapter navigation (this component is reused, not
+    // recreated, across those -- see _splitOpen's own comment). Without
+    // this, returning (in-session) to a chapter that happens to numerically
+    // match whatever ViewState.Reader.Book/Chapter was left over from a
+    // PRIOR, unrelated visit could restore a stale, unrelated scroll
+    // position instead of that chapter's own natural top.
+    private bool _scrollRestoreAttempted;
+
     // Backdrop-inertness while Shift is held (fix round 1) -- see the
     // wrapper div's own comment above and OnPageKeyDown/OnPageKeyUp below.
     // _selfRef is only ever used for reader.js's watchShiftRelease ->
@@ -172,6 +251,36 @@
     private DotNetObjectReference<Reader>? _selfRef;
 
     private string BookName => _toc?.FirstOrDefault(b => b.Code == _book)?.Name ?? _book;
+
+    // Batch H: the split host's own current chapter ref ("GEN.12"), fed to
+    // World.razor's FollowRef parameter -- see <World> above's own comment
+    // for why re-rendering with a new value on every chapter change is
+    // enough (no callback/event needed). Computed from _book/_chapterNum
+    // directly (not gated on ChapterMatchesRoute/_chapter having actually
+    // loaded yet) so the atlas pane's own fetch starts in PARALLEL with
+    // this page's own chapter-text fetch, not after it.
+    private string CurrentRef => $"{_book}.{_chapterNum}";
+
+    // ExplorerPopover.OnNavigateWorldInSplit ("no nested-popup rule"): a
+    // popover chip that would otherwise open a second full /world instead
+    // hands its query straight to the ALREADY-EMBEDDED atlas pane, in
+    // place. _worldPane is null only in the impossible case this callback
+    // fires while _splitOpen is false (InSplit gates ExplorerPopover's own
+    // choice to invoke this at all) or before <World>'s own @ref has
+    // landed (a popover cannot exist yet at that point either -- opening
+    // one is itself a later user action) -- the null-coalesce is pure
+    // defensive belt-and-suspenders, not an expected path.
+    private Task NavigateWorldInSplit(string query) => _worldPane?.ApplyExternalQuery(query) ?? Task.CompletedTask;
+
+    // split-close-reader ("close the reader pane -> full /world" per the
+    // brief). A bare navigate -- the atlas pane's own CURRENT position
+    // (follow ref/window/camera) is captured into ViewState.Map by its own
+    // DisposeAsync as part of THIS navigation tearing it down, and the
+    // fresh standalone World instance that mounts at /world reads it
+    // straight back (RestoreMapState) -- the same view-state round-trip
+    // machinery already does the work; this method doesn't need to know
+    // the atlas's own current state at all.
+    private void CloseReaderPane() => Nav.NavigateTo("/world");
 
     // Fix round 1 finding: _book/_chapterNum are updated to the NEW route's
     // values SYNCHRONOUSLY in OnParametersSetAsync, before LoadChapter's
@@ -221,6 +330,24 @@
     // happens to be loaded.
     protected override async Task OnParametersSetAsync()
     {
+        // Batch H: consumed exactly once per component instance (never
+        // re-applied on a later, unrelated OnParametersSetAsync call) --
+        // World.razor's own "Read beside the map" link is the only writer
+        // of ?split=1, and only on the FIRST navigation TO this instance;
+        // the guard means a user who explicitly closes split (leaving the
+        // stale query key sitting in an unchanged URL, since closing is a
+        // local field flip, not a Nav.NavigateTo -- see the split-close-atlas
+        // button's own handler) can never have it silently reopened by some
+        // later, unrelated re-render.
+        if (!_splitQueryConsumed)
+        {
+            _splitQueryConsumed = true;
+            if (SplitQuery == "1")
+            {
+                _splitOpen = true;
+            }
+        }
+
         var book = string.IsNullOrWhiteSpace(Book) ? "GEN" : Book.ToUpperInvariant();
         var chapterNum = Chapter ?? 1;
 
@@ -263,10 +390,17 @@
             // tab/window isn't focused never fires a DOM keyup ON THIS
             // PAGE at all), so this tiny JS-side watcher exists purely to
             // guarantee _shiftHeld can't get stuck true -- see reader.js's
-            // own comment. ResetShiftHeld is the only [JSInvokable] this
-            // page exposes, and _selfRef is disposed in DisposeAsync below.
+            // own comment. _selfRef is disposed in DisposeAsync below.
             _selfRef = DotNetObjectReference.Create(this);
             await _readerJs.InvokeVoidAsync("watchShiftRelease", _selfRef);
+
+            // Batch H (view-state round-trip): continuously reports scroll
+            // position into ViewState.Reader (OnScroll below) -- NOT a
+            // dispose-time read. See reader.js's own watchScroll comment
+            // for the real, confirmed race a dispose-time read loses to
+            // (Blazor's own router resets window scroll on navigation
+            // before DisposeAsync ever runs).
+            await _readerJs.InvokeVoidAsync("watchScroll", _selfRef);
         }
 
         if (!ChapterMatchesRoute || _readerJs is null)
@@ -285,6 +419,22 @@
         if (m.Success)
         {
             await _readerJs.InvokeVoidAsync("scrollToVerse", int.Parse(m.Groups[1].Value));
+        }
+        else if (!_scrollRestoreAttempted)
+        {
+            // Batch H (view-state round-trip): no verse fragment driving
+            // scroll this navigation -- see _scrollRestoreAttempted's own
+            // comment for why this only ever runs once per component
+            // instance. Only restores when genuinely RETURNING to the exact
+            // chapter last left (Book AND Chapter both match) -- landing on
+            // a DIFFERENT chapter (HasData true but a mismatch) correctly
+            // falls through to no special scroll at all, an ordinary
+            // top-of-page start like any other fresh navigation.
+            _scrollRestoreAttempted = true;
+            if (ViewState.Reader.HasData && ViewState.Reader.Book == _book && ViewState.Reader.Chapter == _chapterNum)
+            {
+                await _readerJs.InvokeVoidAsync("setScrollY", ViewState.Reader.ScrollY);
+            }
         }
     }
 
@@ -395,6 +545,23 @@
             _shiftHeld = false;
             StateHasChanged();
         }
+    }
+
+    // reader.js's watchScroll (view-state round-trip) -- fired continuously
+    // (rAF-throttled) for as long as this component is mounted. Stamps
+    // Book/Chapter alongside ScrollY on every call, not just once, so
+    // ViewState.Reader always describes "the current chapter's own current
+    // scroll" -- correct even across an in-session chapter change (the
+    // SAME Reader instance, and therefore the SAME listener, stays wired
+    // straight through one, per OnParametersSetAsync's own reuse). No
+    // StateHasChanged -- this never affects Reader's own rendering.
+    [JSInvokable]
+    public void OnScroll(double y)
+    {
+        ViewState.Reader.HasData = true;
+        ViewState.Reader.Book = _book;
+        ViewState.Reader.Chapter = _chapterNum;
+        ViewState.Reader.ScrollY = y;
     }
 
     // READ-2/READ-5 interplay -- REVISED, Batch G1 requirement 1
@@ -546,6 +713,18 @@
         {
             try
             {
+                // Batch H (view-state round-trip): NOT a dispose-time
+                // getScrollY read -- see reader.js's own watchScroll comment
+                // for the real, confirmed race that loses (Blazor's own
+                // router resets window scroll on navigation before
+                // DisposeAsync ever runs, so a read here would reliably
+                // capture 0). ViewState.Reader is already correct by this
+                // point, kept that way continuously by OnScroll while this
+                // component was mounted -- this call just stops the
+                // listener, same "unwire before disposing the module"
+                // ordering unwatchShiftRelease below already follows.
+                await _readerJs.InvokeVoidAsync("unwatchScroll");
+
                 // Removes reader.js's own window/document-level blur and
                 // visibilitychange listeners (see watchShiftRelease's own
                 // comment) BEFORE disposing the module reference itself --

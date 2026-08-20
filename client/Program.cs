@@ -14,4 +14,9 @@ builder.Services.AddSingleton(_ =>
     return new AtlasClient(new HttpClient { BaseAddress = baseAddress });
 });
 
+// Batch H (split-view study): lightweight in-memory view-state service --
+// see ViewStateService.cs's own header comment for why AddSingleton (not
+// AddScoped) is the right, deliberate choice in Blazor WASM specifically.
+builder.Services.AddSingleton<ViewStateService>();
+
 await builder.Build().RunAsync();

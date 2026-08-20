@@ -7,10 +7,21 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
 - `/` — reader, defaults to GEN 1
 - `/read/{BOOK}/{chapter}` — reader deep link (BOOK = canonical 3-letter code)
 - `/read/{BOOK}/{chapter}#v{n}` — verse anchor
+- `/read/{BOOK}/{chapter}?split=1` — batch-h-brief.md: lands directly in
+  split view (reader left, atlas right, following this chapter) -- the
+  ONE-SHOT arrival signal both split entry points funnel through (see
+  SPLIT-1 below); consumed exactly once per Reader.razor instance, never
+  re-applied by a later, unrelated navigation
 - `/world?from={year}&to={year}` — time mode (signed years, no zero)
 - `/world?ref={REF}` — scripture mode (canonical ref)
 - `/world` (no `from`/`to`/`ref` at all) — defaults to the `gospels` era's
-  exact window (`[-5, 29]`, see `data/curated/eras.toml`)
+  exact window (`[-5, 29]`, see `data/curated/eras.toml`) UNLESS this
+  session already has a saved atlas position (batch-h-brief.md, VIEWSTATE-1
+  below), in which case that position wins instead
+- Split view has NO route of its own -- `/read/{BOOK}/{chapter}` (with
+  split open, local component state) IS the split; there is no `/split/...`
+  path. Closing the atlas pane returns to plain `/read/{BOOK}/{chapter}`;
+  closing the reader pane navigates to plain `/world` (see SPLIT-1)
 
 ## Displayed text formats
 - Year: `1447 BC` or `AD 30`
@@ -112,6 +123,24 @@ Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   for that verse -- see ONE-RULE below; the retired `verse-explore-{n}` ∴
   button's replacement, not an addition alongside it), `verse-num-{n}`,
   `reader-prev`, `reader-next`, `passage-chip`
+Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
+  FOLLOW-1/VIEWSTATE-1 below for the full behavior these wire up):
+  `split-open-reader` (button, reader only, absent once split is open;
+  "Open the map beside the text"; opens split, reader stays the route),
+  `split-open-world` (button, /world only, absent once split is open;
+  "Read beside the map"; navigates to `/read/{book}/{chapter}?split=1` for
+  the reader's own last-known chapter, GEN 1 if none this session),
+  `split-view` (the split's own flex-row container; present only while
+  split is open -- element and testid both, on Reader.razor's own outer
+  wrapper),
+  `split-pane-atlas` (present on the atlas pane's own root only while
+  embedded in a split -- absent on a standalone /world visit),
+  `split-close-reader` (button, closes the READER pane -> full `/world`),
+  `split-close-atlas` (button, closes the ATLAS pane -> full reader, same
+  route),
+  `follow-chip` (button; attr `aria-pressed` = follow state; text "Following
+  {REF}" while following with a REF to show, else "Follow the text"; present
+  only on the embedded atlas pane, i.e. only while split is open)
 Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `popover-chip-xrefs` (batch-g1-brief.md requirement 2: offered by BOTH VerseNode
   -- unconditionally, unchanged -- AND PassageNode -- CONDITIONALLY, present only
@@ -358,3 +387,104 @@ Notes:
   only however many real eras intersect the window, each labeled on its
   own ring via `polity-year-tag-*` (present only when its own polity has
   more than one visible era).
+- SPLIT-1 (batch-h-brief.md, "study without page-turning"): the reader
+  (`split-open-reader`) and `/world` (`split-open-world`) each offer an
+  affordance into the SAME split layout -- reader pane left (~55% width),
+  atlas pane right (~45%), a thin bronze `split-divider` between them, both
+  fully functional. The atlas pane IS the existing World.razor page
+  componentry (a real child-component instance, `SplitMode=true`, never a
+  copy); the reader pane is the existing Reader.razor content, unchanged,
+  just narrowed. Reader.razor is ALWAYS the split's host (the URL always
+  stays `/read/{BOOK}/{chapter}`, with or without split open) -- `/world`'s
+  own affordance works by navigating TO the reader (`?split=1`, consumed
+  once on arrival) rather than embedding a reader guest into `/world`
+  itself; "closing" is what actually returns you to a full `/world` (see
+  below). Closable both ways, independently: `split-close-atlas` closes the
+  atlas pane only, leaving a full reader on the SAME `/read/{BOOK}/{chapter}`
+  URL (a local toggle -- no navigation, no refetch, the reader instance and
+  its scroll position are completely undisturbed); `split-close-reader`
+  closes the reader pane only, navigating to a bare `/world` (the atlas's
+  own current position round-trips via VIEWSTATE-1 below, since a bare-URL
+  `/world` visit is exactly what that mechanism restores from). Both close
+  buttons are real `<button>` elements, keyboard-reachable, with visible
+  focus (the app's own global `:focus-visible` rule). Reader navigation
+  (`reader-prev`/`reader-next`, a book jump, the reader's own picker) keeps
+  the split open across it -- Reader.razor is REUSED, not recreated, for an
+  ordinary chapter-to-chapter navigation (same as it always was, pre-Batch
+  H), so `split-view`'s own open/closed state simply survives.
+  NO-NESTED-POPUP: an ExplorerPopover opened from EITHER pane while split
+  is open still renders normally -- full-viewport backdrop/panel, unchanged
+  (this includes VerseNode/PassageNode's own `popover-chip-map` ->
+  ShowMiniMap, "Explore geo-temporally": still a mini-map revealed in place,
+  never affected by split at all) -- but a chip that would otherwise
+  `Nav.NavigateTo("/world?...")` (opening what would be a SECOND full atlas)
+  instead applies its exact query (a scripture ref or a time window) to the
+  atlas pane THAT'S ALREADY SHOWING, in place; no second atlas ever opens
+  while a split is up, from either pane's own popover.
+- FOLLOW-1 (batch-h-brief.md): follow is ON by default the moment a split
+  opens. While following, the atlas pane shows the scripture scene of the
+  reader's CURRENT chapter via the exact same mechanism `/world?ref=`
+  itself uses (no parallel scene-loading path) -- `follow-chip` reads
+  "Following {BOOK.chapter}" and `aria-pressed="true"`. Reader navigation
+  (`reader-prev`/`reader-next`, a book jump) re-scenes the atlas pane
+  automatically, with no user action beyond navigating the text. Scripture-
+  mode rules apply while following, unchanged from time mode's own contract
+  elsewhere in this document: `slider`'s own `aria-disabled="true"`, zero
+  `quiet-marker-*` elements (scripture-mode scenes never carry quiet
+  places). Clicking `follow-chip` toggles it: OFF frees the pane to full
+  time-mode (the slider re-enables, `mode-chip`/eras/everything `/world`
+  itself has becomes reachable, `aria-pressed="false"`, chip reads "Follow
+  the text"); ON re-syncs to the reader's current chapter's scene
+  immediately. PRECEDENCE (the brief's own explicit requirement): a
+  restored window (VIEWSTATE-1) is a snapshot; following is a live link --
+  when a split opens with follow ON (the default, and whatever it was last
+  explicitly left at, per VIEWSTATE-1), the reader's current chapter's
+  scene ALWAYS wins over any restored time-mode window/camera, even if one
+  was saved. A restored window only ever actually shows when the pane is
+  NOT following (follow was last explicitly turned off, or this session has
+  no saved state at all yet -- see VIEWSTATE-1's own field for the exact
+  "which one wins" order).
+- VIEWSTATE-1 (batch-h-brief.md): a lightweight, in-memory (NOT
+  localStorage-persisted -- explicitly out of scope this batch; a hard
+  reload starts fresh), app-lifetime view-state service remembers where the
+  reader and the atlas were each left, independent of split. Map state
+  (window OR scripture ref, follow on/off, camera center/zoom, captured on
+  every World.razor dispose -- standalone page-nav-away OR a split pane
+  closing, either one) is ONE shared value: full-page `/world` and the
+  split's own atlas pane read and write the SAME saved position -- "it is
+  the same atlas." Reader state (book/chapter + a plain scroll-Y pixel
+  offset) is tracked continuously while Reader.razor is mounted (a
+  throttled scroll listener, not a dispose-time read -- Blazor's own router
+  resets window scroll on navigation before a dispose-time read could ever
+  see anything but 0) and restored only when landing back on the EXACT
+  book+chapter last left (a different chapter always starts at its own
+  natural top, same as any ordinary navigation). Round-trip acceptance:
+  reader (scroll down) -> `/world` (drag/zoom) -> back to reader (same
+  scroll) -> back to `/world` (same window/camera) == exactly where left,
+  each leg an ordinary full-page navigation. Split open/close preserves
+  both sides the same way, since opening/closing on the READER side is a
+  local toggle (nothing to restore, the reader instance never moved) and
+  closing the ATLAS side is itself a navigation this same round-trip
+  covers. `follow` itself is written back ONLY by a `SplitMode` (embedded
+  atlas pane) dispose -- an intervening STANDALONE `/world` visit (which has
+  no follow chip to change it from) never resets it, so the split's own
+  follow state survives a detour through the full-page atlas untouched.
+- EXISTENCE-1 (batch-h-brief.md, existence gating, deferred from E2): a
+  place's NAME -- the `.atlas-label`/`.quiet-label` span inside
+  `marker-{placeId}`/`quiet-marker-{placeId}`, never the dot/marker itself
+  -- is hidden when the CURRENT time-mode window falls ENTIRELY outside
+  that place's own curated existence bounds (established/destroyed, from
+  `data/curated/place-history.toml` via `GET /api/scene`'s own
+  `existence_from`/`existence_to` wire fields on each `places`/
+  `quiet_places` entry -- both plain years, absent when uncurated). The dot
+  stays fully present, hoverable, and clickable regardless -- "for
+  availability," per the brief; existence gating is a LABEL rendering
+  decision only, never a filter on which places even reach the wire. A
+  place with no curated existence bounds at all (`existence_from` and
+  `existence_to` both absent) always labels, at every window, with no
+  exception. Inclusive on both ends, matching every other curated range in
+  this document's own convention: a window reaching exactly a bound's own
+  year does NOT gate. Scripture mode never gates anything (there is no
+  window to test outside-ness against) -- `existence_from`/`existence_to`
+  may still be present on a scripture-mode scene's own entries (the wire
+  shape is unconditional), simply unused by the client there.

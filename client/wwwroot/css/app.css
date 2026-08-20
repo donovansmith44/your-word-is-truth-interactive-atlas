@@ -171,6 +171,43 @@ input:focus-visible,
 /* Page scenes (design-direction.md "Page treatments"). Reader is daylight
    parchment; World is dusk indigo. Each page's root element carries one of
    these two classes -- they are never combined on the same element. */
+/* contain:layout (Batch H, split-view study): establishes a NEW containing
+   block for every position:fixed DESCENDANT of this element -- the
+   standard, spec-defined effect of CSS containment, not a hack -- so this
+   page's own overlay chrome (reader-prev/-next/passage-chip/toast) confines
+   to WHATEVER BOX this element occupies rather than always the full
+   viewport. A no-op in the existing standalone, full-page use (the box
+   already IS the viewport there); it only starts doing real work once
+   .split-pane-reader below narrows the box to one half of a split.
+   ExplorerPopover (ALWAYS a sibling of this element, never a descendant --
+   see its own file header comment on both pages) is deliberately
+   UNAFFECTED either way: "ExplorerPopover still renders normally in either
+   pane" per the brief means its own position:fixed backdrop/panel keep
+   covering the FULL viewport regardless of split.
+   ONLY on .reader-page, deliberately NOT on .world-page below -- fix round
+   1 (a real regression this batch's own self-review caught, not guessed):
+   contain:layout ALSO establishes a new STACKING CONTEXT (the two effects
+   are spec-coupled, not independently selectable), which on .world-page
+   specifically traps every descendant's own z-index -- place-card (30),
+   arrow-tip (30), toast (25), all deliberately tuned against
+   .header-dusk's own z-index:20 -- so the WHOLE trapped stacking context
+   (itself un-indexed, "auto") loses to the header's explicit 20
+   regardless, silently reversing "toast floats above the header" and
+   breaking "place-card is clickable near the top of the map" (confirmed
+   live: Playwright's own actionability retry reported the header
+   intercepting a place-card-title click). .reader-page has no such
+   conflict -- .header-parchment carries no z-index/position of its own at
+   all, so nothing outside .reader-page ever competes with what's inside
+   it. .world-page's own fixed-position chrome gets the SAME "confine to
+   whichever box this element occupies" result a different way instead --
+   see .slider/.legend/.picker-dusk/.mode-chip/.split-open-dusk/
+   .split-atlas-controls below, each position:absolute against this
+   element's own PRE-EXISTING position:relative (no new stacking context;
+   position:relative alone, with no z-index of its own, never creates one)
+   -- visually identical to position:fixed here specifically because
+   .world-page is always exactly viewport-sized with overflow:hidden (never
+   internally scrolled), so there is no scroll behavior for the two to ever
+   differ over. */
 .reader-page {
     min-height: 100vh;
     background: var(--parchment);
@@ -178,6 +215,7 @@ input:focus-visible,
     display: flex;
     flex-direction: column;
     align-items: center;
+    contain: layout;
 }
 
 .world-page {
@@ -186,6 +224,62 @@ input:focus-visible,
     color: var(--dusk-ink);
     position: relative;
     overflow: hidden;
+}
+
+/* Split view (Batch H, study without page-turning): reader-left/atlas-right.
+   .split-view is Reader.razor's own outer wrapper, reused (see its file
+   header) -- .split-pane-reader/.split-pane-atlas are ADDITIONAL classes
+   layered onto the EXISTING .reader-page/.world-page above (never a
+   replacement -- both page roots keep their own full page treatment,
+   "panes keep their own page treatments" per the brief: parchment left,
+   plate right). Desktop+tablet only (>=1024px -- see the media query at
+   the bottom of this section); the split affordance itself hides below
+   that width, so .split-view is never actually reachable there either.
+   align-items:flex-start (not the flex default, stretch) is load-bearing
+   for .split-pane-atlas's own position:sticky below -- a flex item
+   stretched to match a normal-height sibling cannot compute the "room to
+   move" sticky positioning needs the same way an explicitly-sized item
+   can; the standard, widely-documented fix is exactly this: a sticky flex
+   item's own cross-axis alignment must not be stretch. */
+.split-view {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.split-pane-reader {
+    flex: 1 1 55%;
+    min-width: 0;
+}
+
+.split-divider {
+    flex: 0 0 1px;
+    align-self: stretch;
+    background: var(--bronze);
+}
+
+/* Sticky, not scrolling-away: the atlas pane stays pinned at the top of the
+   viewport as the reader column scrolls beside it -- a chapter is routinely
+   taller than one screen, and "the map follows what you're reading" loses
+   its whole point the moment the map itself scrolls out of view first.
+   height:100vh + overflow:hidden together mean .world-page's own
+   min-height:100vh (unchanged, the same rule every standalone /world visit
+   already uses) exactly fills this box instead of overflowing it. */
+.split-pane-atlas {
+    flex: 1 1 45%;
+    min-width: 0;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow: hidden;
+}
+
+@media (max-width: 1023.98px) {
+    .split-open,
+    .split-atlas-controls,
+    .split-close {
+        display: none;
+    }
 }
 
 /* Header (both pages). Shared layout lives on .app-header; the material --
@@ -1774,7 +1868,13 @@ input:focus-visible,
    border-tag used to share this same slot) docks directly above this
    panel's new footprint, sharing its right alignment. */
 .slider {
-    position: fixed;
+    /* position:absolute, not fixed -- see .world-page's own fix-round-1
+       comment for why (a stacking-context regression contain:layout would
+       have caused). Confines against .world-page's pre-existing
+       position:relative instead; visually identical to fixed here since
+       .world-page is always exactly viewport-sized, never internally
+       scrolled. */
+    position: absolute;
     bottom: 1.5rem;
     right: 1.5rem;
     z-index: 15;
@@ -1940,7 +2040,9 @@ input:focus-visible,
    panels still read as one system despite sitting in opposite corners
    now. */
 .legend {
-    position: fixed;
+    /* position:absolute -- see .slider's own comment just above (same
+       reasoning, same fix-round-1 regression avoided). */
+    position: absolute;
     left: 1.5rem;
     bottom: 1.5rem;
     z-index: 15;
@@ -2042,7 +2144,9 @@ input:focus-visible,
 /* /world is full-bleed and never scrolls, so a fixed top-right overlay has
    nothing beneath it to ever collide with -- unchanged from Task 13. */
 .picker-dusk {
-    position: fixed;
+    /* position:absolute -- see .slider's own comment (world-page section,
+       same reasoning, same fix-round-1 regression avoided). */
+    position: absolute;
     top: 4.75rem;
     right: 1.5rem;
     --picker-bg: var(--dusk-panel);
@@ -2194,7 +2298,9 @@ input:focus-visible,
    transition design-direction.md's motion section scopes animation to
    ("nothing else moves"). */
 .mode-chip {
-    position: fixed;
+    /* position:absolute -- see .slider's own comment (world-page section,
+       same reasoning, same fix-round-1 regression avoided). */
+    position: absolute;
     bottom: 7rem;
     right: 1.5rem;
     z-index: 16;
@@ -2251,6 +2357,152 @@ input:focus-visible,
 
 .mode-chip-return:hover {
     background: rgba(201, 164, 92, 0.26);
+}
+
+/* Split-view affordances (Batch H). .split-open/.split-close carry the
+   shared layout/typography of the OPEN and CLOSE buttons respectively --
+   each has TWO consumers (World's own standalone "Read beside the map" /
+   split-close-atlas; Reader's own standalone "Open the map beside the
+   text" / split-close-reader) -- the per-page MATERIAL (dusk glass vs
+   parchment card) is a second, independent class, exactly the
+   .picker/.picker-dusk/.picker-parchment split this file already
+   establishes for the identical "shared shape, two page materials"
+   problem. Quiet small-caps on the open affordances (design-direction.md's
+   own instrument-face vocabulary, matching .mode-chip-label/.picker-eyebrow/
+   .nav-link); the close buttons are a plain glyph, matching .popover-close's
+   own treatment. */
+.split-open {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .06em;
+    font-size: .85rem;
+    padding: .45rem .8rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* top:4.75rem, not 1.5rem -- clears .header-dusk's own fixed footprint
+   (position:fixed, top:0, z-index:20), same offset .picker-dusk already
+   uses for the identical reason (fix round 1, Task 13). A plain 1.5rem
+   here sits fully UNDER the header, which -- being both fixed and painted
+   later in the DOM -- silently intercepts every click aimed at a button
+   drawn under it (confirmed live: Playwright's own actionability retry
+   reported "<header>...</header> intercepts pointer events" until this
+   fix). */
+.split-open-dusk {
+    /* position:absolute -- see .slider's own comment (world-page section,
+       same reasoning, same fix-round-1 regression avoided). */
+    position: absolute;
+    top: 4.75rem;
+    left: 1.5rem;
+    z-index: 15;
+    color: var(--dusk-ink);
+    background: var(--dusk-panel);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--bronze-bright);
+}
+
+.split-open-dusk:hover {
+    background: rgba(16, 22, 36, .95);
+}
+
+/* Not position:fixed -- same reasoning .picker-parchment's own comment
+   documents (fix round 1 finding 3): the reader is a normal scrolling
+   document, so a fixed overlay here sits in a viewport-fixed band that
+   real verse text would scroll behind. A normal in-flow child, right
+   before the picker, instead. */
+.split-open-parchment {
+    display: inline-block;
+    margin-block-end: .75rem;
+    color: var(--bronze-ink);
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+}
+
+.split-open-parchment:hover {
+    background: var(--parchment);
+}
+
+/* .split-atlas-controls (Batch H): the shared fixed-position wrapper for
+   follow-chip + split-close-atlas -- see World.razor's own markup comment
+   for why a wrapper, not two independently-offset elements. top:4.75rem,
+   same header-clearance reasoning as .split-open-dusk above. */
+.split-atlas-controls {
+    /* position:absolute -- see .slider's own comment (world-page section,
+       same reasoning, same fix-round-1 regression avoided). */
+    position: absolute;
+    top: 4.75rem;
+    left: 1.5rem;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.follow-chip {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .06em;
+    font-size: .85rem;
+    padding: .45rem .8rem;
+    color: var(--dusk-ink);
+    background: var(--dusk-panel);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--bronze-bright);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* Following (aria-pressed="true"): the ember hue, same color family the
+   glowing lit markers themselves use -- a quiet visual echo of "this pane
+   is a live link to something lit," not a new color vocabulary. */
+.follow-chip[aria-pressed="true"] {
+    color: var(--lamp-core);
+    border-color: var(--ember);
+}
+
+.follow-chip:hover {
+    background: rgba(16, 22, 36, .95);
+}
+
+.split-close {
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    line-height: 1;
+    padding: .25rem .6rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* No position:fixed of its own -- .split-atlas-controls (above) already
+   positions this alongside follow-chip; this class only ever supplies the
+   dusk material (background/border/color), same "shared shape, per-page
+   material" split as .split-open-dusk/-parchment. */
+.split-close-dusk {
+    color: var(--dusk-ink);
+    background: var(--dusk-panel);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--bronze-bright);
+}
+
+.split-close-dusk:hover {
+    background: rgba(16, 22, 36, .95);
+}
+
+.split-close-parchment {
+    display: inline-block;
+    margin-inline-start: .6rem;
+    vertical-align: middle;
+    color: var(--bronze-ink);
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+}
+
+.split-close-parchment:hover {
+    background: var(--parchment);
 }
 
 /* Toast -- a small parchment slip, bottom-left, thin ochre rule; plain

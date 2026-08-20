@@ -55,3 +55,61 @@ export function unwatchShiftRelease() {
         _shiftReleaseCleanup();
     }
 }
+
+// Batch H (view-state round-trip). setScrollY is the restore half -- plain
+// window-level scroll, covering BOTH the standalone reader (the whole
+// document scrolls) and the split-view reader pane (app.css's own
+// .split-pane-reader is a normal in-flow flex child, not its own
+// overflow:auto container, so the document itself is still what scrolls
+// there too -- no separate code path needed for either).
+export function setScrollY(y) {
+    window.scrollTo(0, y);
+}
+
+// watchScroll/unwatchScroll -- the CAPTURE half, and NOT a plain "read
+// window.scrollY once in DisposeAsync" the way it might look like it should
+// be: confirmed live (a real failing round-trip test, not a guess) that
+// Blazor's own router resets the window's scroll position to (0,0) as part
+// of committing a navigation to a new page -- BEFORE the outgoing
+// component's own DisposeAsync gets a chance to run, so a dispose-time
+// `getScrollY()` read reliably captures 0, not wherever the page actually
+// was. Continuously reporting the scroll position INTO ViewStateService
+// instead (throttled to one call per animation frame, same "cheap, no
+// missed final position" trade-off a scroll listener normally makes)
+// sidesteps the ordering question entirely: by the time ANYTHING reads
+// ViewStateService.Reader.ScrollY -- regardless of exactly when Blazor's
+// own reset fires relative to disposal -- the last real scroll position is
+// already sitting there, written well before navigation ever started.
+// Same module-scoped-single-cleanup shape as watchShiftRelease above (this
+// app never mounts more than one Reader.razor instance at a time).
+let _scrollCleanup = null;
+
+export function watchScroll(dotnetRef) {
+    if (_scrollCleanup) {
+        _scrollCleanup();
+    }
+
+    let ticking = false;
+    const onScroll = () => {
+        if (ticking) {
+            return;
+        }
+        ticking = true;
+        requestAnimationFrame(() => {
+            ticking = false;
+            dotnetRef.invokeMethodAsync('OnScroll', window.scrollY);
+        });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    _scrollCleanup = () => {
+        window.removeEventListener('scroll', onScroll);
+        _scrollCleanup = null;
+    };
+}
+
+export function unwatchScroll() {
+    if (_scrollCleanup) {
+        _scrollCleanup();
+    }
+}

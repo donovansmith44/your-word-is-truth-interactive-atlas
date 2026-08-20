@@ -244,6 +244,7 @@ export function init(el, dotnetRef, opts) {
     instances.set(id, {
         map, dotnetRef, mini, markers: new Map(), arrows, polities, landmarkMarkers: [], litByName: new Map(),
         quietMarkers: new Map(), // Batch E2 -- see setScene's own quiet-places diff for the shape each entry carries
+        window: null, // Batch H (existence gating): set by setScene from the scene's own `window` (null in scripture mode); applyLabelTier's existenceGatesLabel check reads this
     });
 
     // Zoom-tiered label density (design-direction.md's declutter rule --
@@ -341,6 +342,12 @@ export function setScene(id, sceneJson) {
 
     const scene = typeof sceneJson === 'string' ? JSON.parse(sceneJson) : (sceneJson || {});
     const places = scene.places || [];
+    // Batch H (existence gating): the window this scene was composed for --
+    // present (time mode) or null (scripture mode, and the field's own
+    // absence on a bare {} scene) -- stashed on the instance so
+    // applyLabelTier's existenceGatesLabel check (run again on every
+    // zoomend, not just here) doesn't need it re-threaded as a parameter.
+    inst.window = scene.window || null;
     const seen = new Set();
     const placed = []; // {lat, lon, origLat, origLon} already resolved this call, in scene order -- nudgeCloseLatLng checks each new candidate's ORIGINAL coords against these (fix round 1 / M3: not the nudged lat/lon, see nudgeCloseLatLng's own comment)
 
@@ -354,7 +361,15 @@ export function setScene(id, sceneJson) {
             const marker = L.marker([lat, lon], { icon: makeIcon(p) });
             wireEvents(marker, inst.dotnetRef, p.id);
             marker.addTo(inst.map);
-            inst.markers.set(p.id, { marker, lat, lon, brightness: p.brightness, name: p.name });
+            // existenceFrom/existenceTo (Batch H): curated once per place id,
+            // never re-derived on update below -- a place's own curated
+            // established/destroyed bounds never change scene to scene, only
+            // the WINDOW being tested against them does (see
+            // existenceGatesLabel/applyLabelTier).
+            inst.markers.set(p.id, {
+                marker, lat, lon, brightness: p.brightness, name: p.name,
+                existenceFrom: p.existence_from ?? null, existenceTo: p.existence_to ?? null,
+            });
             continue;
         }
 
@@ -400,7 +415,12 @@ export function setScene(id, sceneJson) {
                 const marker = L.marker([p.lat, p.lon], { icon: makeQuietIcon(p), pane: 'quietPane' });
                 wireQuietEvents(marker, inst.dotnetRef, p.id);
                 marker.addTo(inst.map);
-                inst.quietMarkers.set(p.id, { marker, lat: p.lat, lon: p.lon, displayName: p.display_name });
+                // existenceFrom/existenceTo (Batch H) -- same "set once at
+                // creation, never re-derived" reasoning as the lit side above.
+                inst.quietMarkers.set(p.id, {
+                    marker, lat: p.lat, lon: p.lon, displayName: p.display_name,
+                    existenceFrom: p.existence_from ?? null, existenceTo: p.existence_to ?? null,
+                });
                 continue;
             }
 
@@ -798,6 +818,30 @@ const LANDMARK_KIND_PRIORITY = { water: 2, mountain: 1, region: 0 };
 // loses first) priority setting it apart.
 const QUIET_LABEL_PRIORITY = -1;
 
+// Batch H (existence gating, deferred from E2): true when `window` (`inst.window`,
+// set by setScene -- null in scripture mode) falls ENTIRELY outside a
+// place's own curated existence bounds -- mirrors atlas-core::history's own
+// `existence_gates_label` exactly (inclusive on both ends, either bound
+// absent never gates on that side, both absent never gates at all). Scripture
+// mode never gates (there is no window to test outside-ness against) --
+// `!window` alone covers that, independent of the two bounds. This decides
+// whether a place/quiet LABEL even enters applyLabelTier's own candidates
+// list at all (see its two call sites below) -- the marker/dot itself is
+// never touched here, only ever the label span, per the brief's "the dot
+// stays for availability."
+function existenceGatesLabel(existenceFrom, existenceTo, window) {
+    if (!window) {
+        return false;
+    }
+    if (existenceFrom != null && window.to_year < existenceFrom) {
+        return true;
+    }
+    if (existenceTo != null && window.from_year > existenceTo) {
+        return true;
+    }
+    return false;
+}
+
 function labelTier(zoom) {
     if (zoom >= ZOOM_TIER_NEAR) {
         return 'near';
@@ -910,6 +954,15 @@ function applyLabelTier(inst) {
         if (!label) {
             continue;
         }
+        // Batch H (existence gating): a label whose curated existence bounds
+        // don't reach this scene's own window is hidden outright -- same
+        // "hidden and skipped, never entered into candidates" treatment the
+        // landmark loop below already gives its own tier/dedupe failures.
+        // The marker itself (and its hit box) is completely untouched.
+        if (existenceGatesLabel(entry.existenceFrom, entry.existenceTo, inst.window)) {
+            label.style.display = 'none';
+            continue;
+        }
         const pt = inst.map.latLngToContainerPoint([entry.lat, entry.lon]);
         candidates.push({ el: label, x: pt.x, y: pt.y, priority: PLACE_PRIORITY_BASE + entry.brightness });
     }
@@ -956,6 +1009,15 @@ function applyLabelTier(inst) {
         const el = entry.marker.getElement();
         const label = el && el.querySelector('.quiet-label');
         if (!label) {
+            continue;
+        }
+        // Batch H: same existence gate as the lit loop above -- this is
+        // exactly where it matters most in practice (a quiet dot's whole
+        // point is showing regardless of window, so without this its label
+        // would happily caption a long-destroyed place with a name it never
+        // bore at the window's own moment in time).
+        if (existenceGatesLabel(entry.existenceFrom, entry.existenceTo, inst.window)) {
+            label.style.display = 'none';
             continue;
         }
         const pt = inst.map.latLngToContainerPoint([entry.lat, entry.lon]);
@@ -1086,6 +1148,54 @@ export function panToPlace(id, lat, lon) {
     inst.map.setView([lat, lon], inst.map.getZoom(), { animate: false });
     const pt = inst.map.latLngToContainerPoint([lat, lon]);
     return { x: pt.x, y: pt.y };
+}
+
+// Batch H (view-state service): reads the map's own CURRENT center/zoom --
+// captured by World.razor's DisposeAsync (both the standalone page and the
+// split pane share ONE saved MapViewState, per the brief) so a later
+// restore (setCamera below) can put the view back exactly where it was
+// left, rather than re-fitting to whatever the restored scene's own markers
+// happen to bound. Returns null for an unknown id (defensive -- DisposeAsync
+// only ever calls this while its own MapInterop is still live, but a
+// disposed-out-from-under-it id costs nothing extra to guard here).
+export function getCamera(id) {
+    const inst = instances.get(id);
+    if (!inst) {
+        return null;
+    }
+
+    const c = inst.map.getCenter();
+    return { lat: c.lat, lng: c.lng, zoom: inst.map.getZoom() };
+}
+
+// Batch H: the other half of getCamera above -- sets the map's view
+// directly to a previously-captured (lat, lng, zoom), instant (not
+// animated, same `{animate:false}` reasoning fitScene/panToPlace already
+// use: a restore is a snapshot being put back, not a journey to animate).
+export function setCamera(id, lat, lng, zoom) {
+    const inst = instances.get(id);
+    if (!inst) {
+        return;
+    }
+
+    inst.map.setView([lat, lng], zoom, { animate: false });
+}
+
+// Batch H: test-support-only, read-only introspection -- lets a Playwright
+// test (which can reach this same already-loaded module instance via a
+// dynamic import, since ES modules are cached per specifier/document) ask
+// "what map instance id(s) currently exist" instead of assuming a specific
+// number. Needed because `nextId` keeps incrementing across an in-page
+// navigation away from and back to /world within ONE test (the document,
+// and therefore this module's own state, never resets the way a fresh
+// page.goto would) -- exactly VIEWSTATE-1's own round-trip shape, which
+// needs EXACT getCamera() values rather than a rendered pixel position
+// (fragile: subject to Leaflet's own animated zoom transitions and
+// per-marker glow/breathe CSS, neither relevant to what this test actually
+// verifies). Never called from production Blazor code -- MapInterop.cs has
+// no wrapper for it.
+export function debugLiveInstanceIds() {
+    return [...instances.keys()];
 }
 
 // Sets/clears the legend's isolate filter (Task 12, WORLD-4): `narrativeId`

@@ -86,6 +86,18 @@
     [Parameter, EditorRequired] public IExplorable Root { get; set; } = default!;
     [Parameter] public EventCallback OnClose { get; set; }
 
+    // Batch H (split-view study, "no nested-popup rule"): true when this
+    // popover instance is currently sharing the screen with the OTHER pane
+    // (Reader.razor passes its own _splitOpen; World.razor passes its own
+    // SplitMode) -- the one signal Activate's NavigateWorld case below needs
+    // to know "a second full atlas must never open here; target the pane
+    // that's already showing instead." OnNavigateWorldInSplit only needs a
+    // delegate when InSplit is true (Reader.razor supplies one; standalone
+    // Reader/World never do, and InSplit stays false there, so the fallback
+    // Nav.NavigateTo branch is exactly today's unchanged behavior).
+    [Parameter] public bool InSplit { get; set; }
+    [Parameter] public EventCallback<string> OnNavigateWorldInSplit { get; set; }
+
     private readonly Stack<IExplorable> _stack = new();
     private IExplorable Current => _stack.Peek();
 
@@ -218,7 +230,21 @@
 
             case ExplorationTarget.NavigateWorld world:
                 await RequestClose();
-                Nav.NavigateTo($"/world?{world.Query}");
+                // Batch H: "the split IS the atlas" -- while a split is
+                // showing, a chip that would otherwise open a SECOND full
+                // /world instead hands its exact query (a scripture ref or a
+                // from/to window, unescaped from ExplorationTarget's own
+                // ready-to-append shape) to whichever pane is already
+                // showing the atlas, in place. InSplit false (every
+                // standalone page) keeps today's behavior byte-for-byte.
+                if (InSplit && OnNavigateWorldInSplit.HasDelegate)
+                {
+                    await OnNavigateWorldInSplit.InvokeAsync(world.Query);
+                }
+                else
+                {
+                    Nav.NavigateTo($"/world?{world.Query}");
+                }
                 break;
 
             case ExplorationTarget.NavigateReader reader:
