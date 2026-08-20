@@ -1,6 +1,7 @@
 @using System.Globalization
 @using BibleAtlas.Client.Explore
 @inject AtlasClient Atlas
+@inject IJSRuntime JS
 @* A parchment hover card floating over the atlas plate (design-direction.md's
    "popovers and hover cards are parchment artifacts on both pages" --
    lamplit paper over the world). World.razor owns the hover/close-delay
@@ -66,12 +67,50 @@
    component instance with a new Place parameter, rather than
    destroying/recreating it -- OnParametersSetAsync's _lastPlaceId guard
    below is what resets expand/verse-text state for the new place instead
-   of silently showing the previous place's already-fetched text. *@
+   of silently showing the previous place's already-fetched text.
+
+   HOTFIX batch (batch-hotfix-brief.md requirement 1, user report: "if there
+   are locations at the top of the screen and you hover for your hover
+   menu, the hover menu can be cut off by the top of the screen" -- the card
+   ALWAYS rendered above its marker before this batch, per app.css's own
+   pre-existing `calc(-100% - 18px)` transform, with nothing to catch a
+   marker too close to the container's own top edge). X/Y stay the raw
+   marker anchor point, unchanged; app.css's `.place-card` transform now
+   reads two additional CSS custom properties this file sets inline,
+   --card-dx/--card-dy, computed by CardPlacement.Compute (client/
+   CardPlacement.cs, a standalone pure function -- see its own header for
+   why it isn't a method here) from a JS-measured render box
+   (MapInterop.MeasureCardPlacement). Deliberately a SNAPSHOT decision, not
+   a continuously-tracked one ("Flip decision at open time... recompute on
+   re-open, not on pan" -- the brief's own words): OnAfterRenderAsync below
+   only measures once per genuinely NEW place (keyed off the same Place.Id
+   change OnParametersSetAsync's own _lastPlaceId guard already detects),
+   and only once this place's own chapter-text/history fetches have BOTH
+   settled (_contentReady) -- measuring any earlier would size against
+   not-yet-loaded content (LoadHistory's blurb/dates sections specifically,
+   entirely absent from the DOM until it resolves) and risk exactly the
+   under-measurement this fix exists to prevent. Until that first
+   measurement lands, CardDxCss/CardDyCss below (Blazor-side, not a CSS
+   var() fallback -- see app.css's own comment on .place-card for why)
+   return the exact pre-batch values, so the card renders at its ORIGINAL
+   default position (a plain center-above placement byte-identical to
+   today) -- so the common,
+   fast-cache case (LoadChaptersFor/LoadHistory both resolve well inside a
+   single frame) never shows anything BUT the final, correct placement, and
+   even a slow-network open only ever shows a BRIEF default-placed frame
+   before self-correcting, never a permanently wrong one. The existing
+   hover-persistence/grace machinery below (_pointerOverCard et al, owned by
+   World.razor) is completely unaware of any of this -- OnPointerEnter/
+   OnPointerLeave fire off this component's OWN root element regardless of
+   which side of the marker it currently renders on, so the corridor works
+   identically in both orientations with no changes needed here or there. *@
 
 <div class="place-card"
      data-testid="place-card"
      data-pinned="@(Pinned ? "true" : "false")"
-     style="left: @X.ToString(CultureInfo.InvariantCulture)px; top: @Y.ToString(CultureInfo.InvariantCulture)px;"
+     data-flip="@(_flipped ? "true" : "false")"
+     @ref="_cardEl"
+     style="left: @X.ToString(CultureInfo.InvariantCulture)px; top: @Y.ToString(CultureInfo.InvariantCulture)px; --card-dx: @(CardDxCss)px; --card-dy: @(CardDyCss); --card-dy-from: @(CardDyFromCss);"
      @onpointerenter="OnPointerEnter"
      @onpointerleave="OnPointerLeave">
     <div class="place-card-scroll">
@@ -341,6 +380,59 @@
     // per CONTRACT's conditional-presence rule).
     private PlaceHistoryOut? _history;
 
+    // HOTFIX batch (requirement 1, flip-below-when-cut-off): the card's own
+    // root element, measured post-render by OnAfterRenderAsync below via
+    // MapInterop.MeasureCardPlacement -- see the file header comment for
+    // the full mechanism and why this is a deliberate one-shot-per-open
+    // snapshot, not a continuous tracker.
+    private ElementReference _cardEl;
+
+    // True once BOTH LoadChaptersFor and LoadHistory have settled for the
+    // CURRENT place (OnParametersSetAsync's own Task.WhenAll below) -- the
+    // earliest point at which this card's own rendered height reflects
+    // every CONDITIONALLY-present section (blurb/dates specifically) it
+    // will ever have for this open, so the earliest point a measurement can
+    // be trusted. Reset to false alongside _lastPlaceId on every genuinely
+    // new place.
+    private bool _contentReady;
+
+    // Which place _dxPx/_flipped's own numbers were measured FOR -- distinct
+    // from _lastPlaceId (that one gates the verse-text/history fetch reset;
+    // this one gates the separate, async-JS-interop-driven measurement
+    // below, which can legitimately still be in flight after _lastPlaceId
+    // has already moved on to a newer place -- see OnAfterRenderAsync's own
+    // stale-result guard). Null (never measured yet) renders at the default
+    // CSS placement -- see CardDxCss/CardDyCss below.
+    private string? _placedForId;
+    private double _dxPx;
+    private bool _flipped;
+
+    // app.css's `.place-card` transform (its resting state) AND its
+    // `@keyframes place-card-in` (its entrance animation, both stops --
+    // see that rule's own comment for why it needs the SAME custom
+    // properties, not the flat hardcoded expression it used to) read
+    // --card-dx/--card-dy/--card-dy-from unconditionally, no CSS-side
+    // var() fallback -- these three always supply a concrete value, "0" /
+    // the pre-batch default vertical calc() before the first real
+    // measurement lands, so a not-yet-measured card renders EXACTLY where
+    // every card always rendered before this batch.
+    private bool IsFlippedNow => _placedForId == Place.Id && _flipped;
+    private string CardDxCss => (_placedForId == Place.Id ? _dxPx : 0).ToString(CultureInfo.InvariantCulture);
+    private string CardDyCss => VerticalCss(CardPlacement.GapPx);
+
+    // The entrance animation's OWN "from" stop -- Batch D's original
+    // pop-in settled down 8px (10px -> 18px, above the marker); this
+    // mirrors that exact nuance for a flipped card too (10px -> 18px,
+    // BELOW the marker instead), keyed off the SAME flip decision as
+    // CardDyCss, just a smaller gap.
+    private string CardDyFromCss => VerticalCss(CardPlacement.GapPx - 8);
+
+    private string VerticalCss(double gapPx)
+    {
+        var gap = gapPx.ToString(CultureInfo.InvariantCulture);
+        return IsFlippedNow ? $"{gap}px" : $"calc(-100% - {gap}px)";
+    }
+
     // A maximal run of consecutive same-book/chapter verses within a
     // MergedVerses() list, identified by its start index into that list.
     // Length >= 2 is Requirement 2's "passage" (renders as one flowing
@@ -499,6 +591,19 @@
         _lastPlaceId = Place.Id;
         _verseText.Clear();
         _history = null;
+        // HOTFIX batch: a genuinely new place always starts back at the
+        // default (unmeasured) placement -- see CardDxCss/CardDyCss's own
+        // _placedForId comparison, which already treats "not yet measured
+        // for THIS place" as the default regardless of whatever _dxPx/
+        // _flipped happen to still hold from the PREVIOUS place, so those
+        // two don't need resetting here too. _contentReady DOES need an
+        // explicit reset: OnAfterRenderAsync's own guard checks it directly
+        // (not via an id comparison), so leaving it true from a previous
+        // place would let a measurement fire against THIS place's
+        // synchronous-prefix-only render, before its own blurb/dates have
+        // had any chance to load -- exactly the under-measurement this
+        // batch exists to prevent.
+        _contentReady = false;
         var verses = MergedVerses();
         _initialShownCount = InitialShownCount(verses);
         _shownCount = _initialShownCount;
@@ -507,6 +612,77 @@
         // one must not delay or break the other (each has its own try/catch,
         // see LoadChaptersFor's and LoadHistory's own comments).
         await Task.WhenAll(LoadChaptersFor(verses.Take(_shownCount)), LoadHistory());
+
+        // HOTFIX batch: only NOW does this place's own rendered content
+        // (verse text filled in, blurb/dates sections present-or-absent per
+        // LoadHistory's own result) reflect what it will actually settle
+        // at -- the earliest safe point for OnAfterRenderAsync's own
+        // post-render measurement to trust what it sees. Setting this here
+        // (rather than leaving it to a separate lifecycle hook) means
+        // Blazor's own implicit re-render-after-this-method-completes is
+        // what carries the news to OnAfterRenderAsync, the same "state
+        // change in an async lifecycle method triggers its own render, no
+        // manual StateHasChanged needed" shape as every other WhenAll-await
+        // in this codebase.
+        _contentReady = true;
+    }
+
+    // HOTFIX batch (requirement 1): fires after EVERY render, including the
+    // two (at least) a genuinely new place always produces -- see
+    // OnParametersSetAsync's own comment for exactly which one this must
+    // wait for. Measures ONCE per place (the _placedForId guard below) and
+    // never again for that same open, matching the brief's own "flip
+    // decision at open time... recompute on re-open, not on pan": nothing
+    // here re-fires just because ShowMore/Collapse/a later render changes
+    // this card's own height afterward, by design.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_contentReady || _placedForId == Place.Id)
+        {
+            return;
+        }
+
+        // Captured before the await below -- if a NEWER place supersedes
+        // this one while MeasureCardPlacement is still in flight (a fast
+        // marker-to-marker hover, or GoToAdjacent's own re-pin),
+        // OnParametersSetAsync above has already reset _contentReady for
+        // that newer place by the time this continuation resumes; comparing
+        // against the CURRENT Place.Id after the await (not this captured
+        // copy) is what actually detects that and drops the now-stale
+        // result -- same "compare a captured id against current state after
+        // an await" shape World.razor's own GoToAdjacent/OpenPlaceFromCard
+        // and MiniWorld.razor's own _disposed dance already use elsewhere
+        // in this codebase for the identical class of race.
+        var placeId = Place.Id;
+        CardMeasurementDto measurement;
+        try
+        {
+            measurement = await MapInterop.MeasureCardPlacement(JS, _cardEl);
+        }
+        catch (Exception)
+        {
+            // Positioning is a nicety, not load-bearing -- same graceful-
+            // degradation stance every other JS interop call on this card
+            // takes (LoadChaptersFor/LoadHistory's own try/catch): a failed
+            // measurement just leaves the card at its default above-anchor
+            // placement, exactly what every card rendered before this
+            // batch, never an unhandled exception taking down the card.
+            return;
+        }
+
+        if (placeId != Place.Id)
+        {
+            // Stale -- a newer place already superseded this measurement
+            // while it was in flight. Drop it; THAT place's own
+            // OnAfterRenderAsync (once ITS content settles) measures fresh.
+            return;
+        }
+
+        var (dx, flipped) = CardPlacement.Compute(X, Y, measurement.Width, measurement.Height, measurement.ContainerWidth);
+        _dxPx = dx;
+        _flipped = flipped;
+        _placedForId = placeId;
+        StateHasChanged();
     }
 
     // Batch E: fetches this place's window-scoped history (blurb/dates) via

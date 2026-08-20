@@ -492,3 +492,131 @@ test('hover place card: clicking a passage block (outside a specific verse) open
   await expect(card).toHaveCount(0);
   await expect(page.getByTestId('popover-title')).toHaveText(span);
 });
+
+// HOTFIX batch (batch-hotfix-brief.md requirement 1, CARD-FLIP-1, user report
+// 2026-08-20: "if there are locations at the top of the screen and you hover
+// for your hover menu, the hover menu can be cut off by the top of the
+// screen"). Controller-reproduced (WebKit, 1440x900, demo at the batch's own
+// base): "Sidon marker at viewport y=82 -> place card boundingBox y=-171
+// (171px cut off above the top)" -- the DEFAULT `/world` view (no from/to/ref
+// at all, CONTRACT's own gospels-era default) reliably renders Sidon at the
+// very top of the plate (its own marker's real, live boundingBox.y measured
+// well under 100px, confirmed while writing this test), so this uses that
+// SAME real scenario directly -- CONTRACT-named ("the DEFAULT /world view"),
+// not a search, and the one place-name the controller's own repro already
+// names. Explicit 1440x900 (Playwright's own default, 1280x720, is narrower/
+// shorter, which shifts fitScene's own auto-fit enough that Sidon no longer
+// reliably lands this close to the top -- confirmed live while writing this
+// test) -- the SAME viewport the controller's own reproduction used. A
+// `precondition` guard (not a hardcoded pixel expectation) still skips
+// gracefully rather than asserting the wrong thing if curated data ever
+// repositions Sidon or shrinks its card enough that flipping stops being
+// necessary -- same "skip rather than fail on a data-dependent precondition"
+// shape bestHoverablePlace's own callers already use above.
+test('CARD-FLIP-1: a marker near the viewport top flips its place-card below, staying fully within the viewport, and the corridor survives the pointer traveling DOWN onto it', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/world');
+  const marker = page.getByTestId('marker-sidon');
+  await expect(marker).toBeVisible();
+  const markerBox = await marker.boundingBox();
+  if (!markerBox || markerBox.y > 150) {
+    test.skip(true, 'Sidon is not currently rendered near the viewport top in the default /world view -- precondition for this exact regression no longer holds');
+    return;
+  }
+
+  await marker.hover({ force: true });
+  const card = page.getByTestId('place-card');
+  await expect(card).toBeVisible();
+
+  // The card's own rendered height comfortably exceeds the room actually
+  // available above the marker (markerBox.y itself) -- i.e. this specific
+  // hover genuinely NEEDS to flip, not just happens to pass. Confirms the
+  // precondition rather than assuming it.
+  const cardBox = await card.boundingBox();
+  expect(cardBox).toBeTruthy();
+  const GAP = 18;
+  expect(cardBox!.height + GAP, 'expected this card to be tall enough that it would NOT fit above the marker unflipped -- precondition for this regression').toBeGreaterThan(markerBox.y);
+
+  // The actual fix: flipped below, attr says so, and the rendered box never
+  // crosses the viewport's own top edge (the exact cut-off the user hit).
+  await expect(card).toHaveAttribute('data-flip', 'true');
+  expect(cardBox!.y, 'place-card boundingBox.y must stay >= 0 -- never cut off by the top of the screen').toBeGreaterThanOrEqual(0);
+  // Mirrored below the marker, not just "somewhere on screen": its own top
+  // edge sits at (or past) the marker's own Y, the opposite relationship a
+  // non-flipped card has (whose BOTTOM sits at the marker's Y instead).
+  expect(cardBox!.y).toBeGreaterThanOrEqual(markerBox.y);
+
+  // The corridor itself: moveAndClick's own many-small-steps pointer move
+  // (this file's header comment) travels DOWNWARD now (marker above, card
+  // below) onto place-card-more specifically -- the SAME safe, non-closing
+  // target the pre-existing "hover robustness" test above uses (clicking
+  // place-card-title, by contrast, deliberately PROMOTES into a popover and
+  // closes the card -- the wrong target for "does the card survive the
+  // pointer landing on it"). Success here (more verses reveal, card stays
+  // open) is only possible if the existing hover-persistence/grace
+  // machinery (_pointerOverCard et al, World.razor) keeps working in this
+  // mirrored geometry exactly as it always has in the unflipped one.
+  const moreBtn = card.getByTestId('place-card-more');
+  await expect(moreBtn).toBeVisible();
+  const shownBefore = await card.getByTestId(/^hover-verse-/).count();
+  await moveAndClick(page, moreBtn);
+  await expect(card).toBeVisible();
+  await expect(card).toHaveAttribute('data-flip', 'true');
+  await expect(card.getByTestId(/^hover-verse-/)).not.toHaveCount(shownBefore);
+
+  // And it still closes normally once the pointer leaves both entirely --
+  // the grace/close half of the SAME mechanism, unaffected by orientation.
+  await page.mouse.move(0, 0, { steps: 10 });
+  await expect(card).toBeHidden({ timeout: 1200 });
+});
+
+// The paired "normal" orientation -- CONTRACT's own pre-existing default
+// (card renders above, unflipped) MUST keep working byte-for-byte once the
+// flip logic exists at all, for the overwhelming common case (a marker with
+// genuine room above it). Picks whichever independently-hoverable place in
+// WINDOWS has the most merged verses, same discovery bestHoverablePlace's
+// other callers in this file already use -- these candidates sit well clear
+// of the fitScene padding's own top edge in practice (unlike Sidon's own
+// default-view position), so data-flip="false" here is a real, live-
+// verified property of this scenario, not an assumption.
+test('CARD-FLIP-1 (paired): a marker with room above keeps rendering its place-card there, unflipped, and the corridor survives the pointer traveling UP onto it', async ({ page }) => {
+  const best = await bestHoverablePlace(
+    page,
+    verses => verses.length > initialShownCount(verses),
+    verses => verses.length,
+  );
+  if (!best) {
+    test.skip(true, 'no independently-hoverable place with more than its own initial verse count found in any candidate window');
+    return;
+  }
+  const { place } = best;
+
+  const marker = page.getByTestId(`marker-${place.id}`);
+  const markerBox = await marker.boundingBox();
+  await marker.hover({ force: true });
+  const card = page.getByTestId('place-card');
+  await expect(card).toBeVisible();
+
+  await expect(card).toHaveAttribute('data-flip', 'false');
+  const cardBox = await card.boundingBox();
+  expect(cardBox).toBeTruthy();
+  expect(cardBox!.y).toBeGreaterThanOrEqual(0);
+  // Above the marker, not below: the card's own BOTTOM edge sits at (or
+  // before) the marker's own Y -- the mirror-image relationship
+  // CARD-FLIP-1's own flipped assertion checks.
+  expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(markerBox!.y + 1);
+
+  // Corridor traveling UP (marker below, card above) -- the ORIGINAL
+  // direction every pre-existing hover-persistence test already covers
+  // elsewhere in this file; asserted again here specifically alongside
+  // CARD-FLIP-1's own flipped/downward case so "both orientations" is
+  // proven by this SAME pair of tests, not split across unrelated ones.
+  const moreBtn = card.getByTestId('place-card-more');
+  await expect(moreBtn).toBeVisible();
+  await moveAndClick(page, moreBtn);
+  await expect(card).toBeVisible();
+  await expect(card).toHaveAttribute('data-flip', 'false');
+
+  await page.mouse.move(0, 0, { steps: 10 });
+  await expect(card).toBeHidden({ timeout: 1200 });
+});
