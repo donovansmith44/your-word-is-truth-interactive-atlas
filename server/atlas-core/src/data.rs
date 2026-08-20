@@ -218,6 +218,63 @@ pub struct LandMaskRegion {
     pub rings: Vec<Vec<(f64, f64)>>,
 }
 
+/// Batch F ("the small catechism"): one item of one chief part of Luther's
+/// Small Catechism (`data/curated/catechism.toml`, compiled to
+/// `catechism.json`) -- id/name/text/explanation/where_written/verses per
+/// the batch brief's own schema verbatim, PLUS `explanation_heading` and
+/// `ref_note`, both well-justified additions (see `catechism.toml`'s own
+/// header comment for the full reasoning, and this batch's report for the
+/// short version):
+/// - `text` is `Option<String>` -- present only for items whose own
+///   commandment/creed-article/petition WORDING is a distinct prompt
+///   separate from its "what does this mean" gloss (every Ten-Commandments/
+///   Creed/Lord's-Prayer item); Baptism/Confession/Sacrament-of-the-Altar
+///   items pose and answer their own bespoke question directly with no
+///   separate prompt to quote first, so `text` is simply `None` there --
+///   conditional presence, matching this app's own "no content, no
+///   section" rule throughout, rather than a padded or duplicated value.
+/// - `explanation_heading` is Luther's own VERBATIM heading for the
+///   explanation that follows -- "What does this mean?" for the
+///   overwhelming majority of items (commandments/creed articles/Lord's
+///   Prayer petitions), but a distinct, real, bespoke question for
+///   Baptism/Confession/Sacrament-of-the-Altar items (e.g. "What does
+///   Baptism give or profit?"), where hardcoding the generic phrase would
+///   have silently misquoted Luther's own actual wording at those specific
+///   spots. Defaults to "What does this mean?" (`default_explanation_heading`)
+///   so the curated TOML only spells it out where it actually differs.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CatechismItem {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub text: Option<String>,
+    #[serde(default = "default_explanation_heading")]
+    pub explanation_heading: String,
+    pub explanation: String,
+    #[serde(default)]
+    pub where_written: Option<String>,
+    #[serde(default)]
+    pub verses: Vec<String>,
+    #[serde(default)]
+    pub ref_note: Option<String>,
+}
+
+fn default_explanation_heading() -> String {
+    "What does this mean?".to_string()
+}
+
+/// Batch F: one chief part of the Small Catechism (`[[part]]` in
+/// `data/curated/catechism.toml`) -- id/title/items, the curated TOML's own
+/// nesting kept all the way to the compiled/wire shape (same "keep the
+/// curated shape the compiled shape" reasoning `Polity`/`PolityEra` already
+/// follow for polities).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CatechismPart {
+    pub id: String,
+    pub title: String,
+    pub items: Vec<CatechismItem>,
+}
+
 /// One hand-authored polity, `data/curated/polities/{id}.toml` (one file per
 /// polity, "easily reversible/modifiable... I'm expecting you to get this
 /// wrong" per the user's own direction -- a wrong shape is ONE file, ONE
@@ -298,6 +355,17 @@ pub struct AtlasData {
     #[serde(skip)]
     pub land_mask: Vec<Vec<(f64, f64)>>,
 
+    /// Batch F ("the small catechism"): curated catechism parts/items
+    /// (`data/curated/catechism.toml`, compiled to `catechism.json`), kept
+    /// in their own curated PART nesting (not flattened) -- same
+    /// `#[serde(skip)]`-plus-bespoke-`load()` treatment as `polities`/
+    /// `landmarks`/`place_history`/`land_mask` above. `demo_fixture()`
+    /// carries a small real entry (see below) so atlas-server's own
+    /// integration tests can exercise the real verse<->catechism pipeline
+    /// end to end, not just atlas_core's pure functions in isolation.
+    #[serde(skip)]
+    pub catechism: Vec<CatechismPart>,
+
     /// Derived: place id -> index into `places`. Built by `finish()`.
     #[serde(skip)]
     place_index: HashMap<String, usize>,
@@ -336,6 +404,25 @@ pub struct AtlasData {
     /// by `finish()` in the same single pass over `events`.
     #[serde(skip)]
     event_counts_by_place: HashMap<String, u32>,
+
+    /// Batch F: derived, canonical verse id -> ids of every catechism item
+    /// whose own `verses` names it -- built in one pass over `catechism` by
+    /// `finish()`, same shape as `verse_to_events`/`verse_to_places` above.
+    /// `catechism_items_for_span` (and, through it, `handlers::verse`'s own
+    /// `catechism` field and `handlers::catechism_for_span`) is the only
+    /// consumer.
+    #[serde(skip)]
+    verse_to_catechism: HashMap<String, Vec<String>>,
+    /// Batch F: derived, catechism item id -> its own display `name` --
+    /// built alongside `verse_to_catechism` by `finish()`, so resolving a
+    /// cited item's display name never needs a second pass over `catechism`.
+    #[serde(skip)]
+    catechism_item_names: HashMap<String, String>,
+    /// Batch F: derived, catechism item id -> (part index, item index) --
+    /// built alongside `verse_to_catechism` by `finish()`; `catechism_item_by_id`
+    /// is the one lookup that needs this (item fetch by id, requirement 3).
+    #[serde(skip)]
+    catechism_item_index: HashMap<String, (usize, usize)>,
 }
 
 impl AtlasData {
@@ -423,6 +510,25 @@ impl AtlasData {
         self.event_bearing_place_ids = event_counts_by_place.keys().cloned().collect();
         self.event_counts_by_place = event_counts_by_place;
 
+        // Batch F: one pass over every catechism item builds the reverse
+        // verse index, the id->name lookup, and the id->(part,item) index
+        // together -- see the three fields' own doc comments.
+        let mut verse_to_catechism: HashMap<String, Vec<String>> = HashMap::new();
+        let mut catechism_item_names: HashMap<String, String> = HashMap::new();
+        let mut catechism_item_index: HashMap<String, (usize, usize)> = HashMap::new();
+        for (pi, part) in self.catechism.iter().enumerate() {
+            for (ii, item) in part.items.iter().enumerate() {
+                catechism_item_names.insert(item.id.clone(), item.name.clone());
+                catechism_item_index.insert(item.id.clone(), (pi, ii));
+                for v in &item.verses {
+                    verse_to_catechism.entry(v.clone()).or_default().push(item.id.clone());
+                }
+            }
+        }
+        self.verse_to_catechism = verse_to_catechism;
+        self.catechism_item_names = catechism_item_names;
+        self.catechism_item_index = catechism_item_index;
+
         self
     }
 
@@ -470,6 +576,30 @@ impl AtlasData {
         self.verse_to_places.get(verse).map(|v| v.as_slice()).unwrap_or(&[])
     }
 
+    /// Batch F: every catechism item cited by any member verse of `span`
+    /// (a single verse OR a same-chapter passage), in first-seen order, no
+    /// duplicates -- the pure aggregation core lives in
+    /// `crate::catechism::items_for_span` (mirrors
+    /// `crate::xrefs::aggregate_span_xrefs`'s own split: pure function takes
+    /// narrow borrowed inputs, this method is the thin "hand it this
+    /// instance's own derived indexes" wrapper `atlas-server::handlers` calls
+    /// directly, keeping business logic out of handlers.rs). Used for BOTH
+    /// `GET /api/catechism/{sref}` (passages) and `GET /api/verse/{vref}`'s
+    /// own embedded `catechism` field (a single-verse span) -- one function,
+    /// no duplicated logic between the two.
+    pub fn catechism_items_for_span(&self, span: &crate::refs::ScriptureRef) -> Vec<crate::catechism::CatechismRef> {
+        crate::catechism::items_for_span(span, &self.verse_to_catechism, &self.catechism_item_names)
+    }
+
+    /// Batch F: one catechism item's own full record, plus the `CatechismPart`
+    /// it belongs to (its `title` is part of the item-detail wire payload) --
+    /// `GET /api/catechism/item/{id}`'s own lookup, O(1) via
+    /// `catechism_item_index` rather than a linear scan of every part/item.
+    pub fn catechism_item_by_id(&self, id: &str) -> Option<(&CatechismPart, &CatechismItem)> {
+        let &(pi, ii) = self.catechism_item_index.get(id)?;
+        Some((&self.catechism[pi], &self.catechism[pi].items[ii]))
+    }
+
     /// Reads the compiled JSON files ETL writes under `dir` (exact
     /// filenames mirror `atlas-etl/src/main.rs`'s `write_json` calls:
     /// `canon.json`, `places.json`, `events.json`, `narratives.json`,
@@ -499,12 +629,17 @@ impl AtlasData {
         // doc comment for why region names/ref_notes never leave the ETL
         // step) -- a direct read, no per-region unwrapping needed here.
         let land_mask: Vec<Vec<(f64, f64)>> = read_json(dir, "land-mask.json")?;
+        // Batch F: `catechism.json` is already the curated `Vec<CatechismPart>`
+        // shape (see `CatechismPart`'s own doc comment) -- a direct read, no
+        // per-part unwrapping needed here, same as `polities.json` above.
+        let catechism: Vec<CatechismPart> = read_json(dir, "catechism.json")?;
 
         let mut data = Self::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs);
         data.polities = polities;
         data.place_history = place_history;
         data.landmarks = landmarks;
         data.land_mask = land_mask;
+        data.catechism = catechism;
         Ok(data)
     }
 }
@@ -722,7 +857,39 @@ pub fn demo_fixture() -> AtlasData {
             destroyed: None,
         },
     );
-    data
+
+    // Batch F: one small curated catechism entry, citing JOS.6.20 -- a verse
+    // already present above AND already carrying its own cross-refs (see the
+    // `cross_refs` map), deliberately reused rather than inventing an
+    // unrelated verse id: this proves a verse can carry cross-refs AND a
+    // catechism citation at once without either system disturbing the
+    // other, exactly the kind of layered content this batch's own wire
+    // (`VerseDetailOut.catechism` alongside `.cross_refs`) is built to
+    // support. `text` is `None` -- mirrors a REAL Baptism/Confession/
+    // Sacrament-of-the-Altar item's own shape (see `CatechismItem`'s doc
+    // comment), so this fixture exercises that conditional-presence branch
+    // too, not just the more common `Some(...)` case.
+    data.catechism = vec![CatechismPart {
+        id: "demo-part".into(),
+        title: "Demo Part".into(),
+        items: vec![CatechismItem {
+            id: "demo-item-1".into(),
+            name: "Demo Catechism Item".into(),
+            text: None,
+            explanation_heading: "What does this mean?".into(),
+            explanation: "Demo item explanation.".into(),
+            where_written: Some("Demo where-written text.".into()),
+            verses: vec!["JOS.6.20".into()],
+            ref_note: None,
+        }],
+    }];
+    // `finish()` is documented idempotent (safe to call more than once) --
+    // re-run here, exactly as the place_history insert above relies on NOT
+    // needing to, because unlike place_history, the catechism-derived
+    // indexes (`verse_to_catechism`/`catechism_item_names`/
+    // `catechism_item_index`) are only built INSIDE finish(), which already
+    // ran (empty) before `data.catechism` was ever populated.
+    data.finish()
 }
 
 #[cfg(test)]
@@ -747,6 +914,56 @@ mod verse_to_places_tests {
     fn places_for_verse_is_empty_for_an_unlinked_verse() {
         let data = demo_fixture();
         assert!(data.places_for_verse("JOS.1.1").is_empty());
+    }
+}
+
+#[cfg(test)]
+mod catechism_tests {
+    use super::*;
+    use crate::refs::ScriptureRef;
+
+    // Batch F: `catechism_items_for_span`/`catechism_item_by_id` against
+    // `demo_fixture()`'s own small catechism entry (citing JOS.6.20 -- see
+    // that fixture's own comment for why that particular, already-busy
+    // verse was deliberately reused).
+    #[test]
+    fn catechism_items_for_span_resolves_a_cited_verse() {
+        let data = demo_fixture();
+        let span = ScriptureRef::Verse(crate::refs::VerseId {
+            book: crate::canon::resolve_alias("JOS").unwrap(),
+            chapter: 6,
+            verse: 20,
+        });
+        let out = data.catechism_items_for_span(&span);
+        assert_eq!(out, vec![crate::catechism::CatechismRef { id: "demo-item-1".into(), name: "Demo Catechism Item".into() }]);
+    }
+
+    #[test]
+    fn catechism_items_for_span_is_empty_for_an_uncited_verse() {
+        let data = demo_fixture();
+        let span = ScriptureRef::Verse(crate::refs::VerseId {
+            book: crate::canon::resolve_alias("JOS").unwrap(),
+            chapter: 1,
+            verse: 1,
+        });
+        assert!(data.catechism_items_for_span(&span).is_empty());
+    }
+
+    #[test]
+    fn catechism_item_by_id_resolves_the_owning_part_and_item() {
+        let data = demo_fixture();
+        let (part, item) = data.catechism_item_by_id("demo-item-1").expect("demo-item-1 must resolve");
+        assert_eq!(part.id, "demo-part");
+        assert_eq!(part.title, "Demo Part");
+        assert_eq!(item.name, "Demo Catechism Item");
+        assert_eq!(item.text, None);
+        assert_eq!(item.verses, vec!["JOS.6.20".to_string()]);
+    }
+
+    #[test]
+    fn catechism_item_by_id_returns_none_for_an_unknown_id() {
+        let data = demo_fixture();
+        assert!(data.catechism_item_by_id("no-such-item").is_none());
     }
 }
 

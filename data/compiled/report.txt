@@ -62,3 +62,6 @@ Landmarks:
 
 Land mask (Batch R requirement 1):
   6 region(s), 6 ring(s), 135 points total
+
+Catechism (Batch F):
+  6 chief part(s), 33 item(s) total

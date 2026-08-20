@@ -45,7 +45,7 @@
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{bail, Result};
-use atlas_core::data::{AtlasData, Era, Event, Landmark, LandMaskRegion, PlaceHistory, Polity};
+use atlas_core::data::{AtlasData, CatechismPart, Era, Event, Landmark, LandMaskRegion, PlaceHistory, Polity};
 use atlas_core::refs::VerseId;
 use atlas_core::time::{next_year, TimeRange};
 
@@ -405,6 +405,50 @@ pub fn run_place_history(history: &[PlaceHistory], place_ids: &HashSet<&str>, ve
     }
     let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
     bail!("place-history validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// Batch F ("the small catechism"): validates the curated catechism
+/// (`data/curated/catechism.toml`, parsed separately by
+/// `curated::parse_catechism` -- same distinct-entry-point pattern as
+/// `run_place_history`/`run_landmarks`: this needs the compiled KJV text,
+/// which the pure parse step doesn't own). `verses` is the compiled KJV text
+/// map, same stricter-than-`run`'s-own-check bar `run_place_history` already
+/// applies to hand-typed verse refs (must both parse canonically AND exist).
+/// Checks, all aggregated (never fail-fast) same as every other check in
+/// this file: duplicate part ids, duplicate item ids (GLOBAL across every
+/// part, since item lookup by id -- `AtlasData::catechism_item_by_id` --  is
+/// itself global, not scoped to a part), every part has >=1 item, and every
+/// item's `verses` both parse canonically and exist in the compiled KJV
+/// text.
+pub fn run_catechism(parts: &[CatechismPart], verses: &HashMap<String, String>) -> Result<()> {
+    let mut errors: Vec<String> = Vec::new();
+
+    check_duplicate_ids(parts.iter().map(|p| p.id.as_str()), "catechism part", &mut errors);
+    check_duplicate_ids(parts.iter().flat_map(|p| p.items.iter()).map(|i| i.id.as_str()), "catechism item", &mut errors);
+
+    for part in parts {
+        if part.items.is_empty() {
+            errors.push(format!("catechism part '{}' has no items", part.id));
+        }
+        for item in &part.items {
+            let ctx = format!("catechism item '{}' ({})", item.id, item.name);
+            for v in &item.verses {
+                match VerseId::parse_canonical(v) {
+                    Err(err) => errors.push(format!("{ctx}: verse '{v}' is not a canonical single-verse ref: {err}")),
+                    Ok(_) if !verses.contains_key(v) => {
+                        errors.push(format!("{ctx}: verse '{v}' parses but does not exist in the compiled KJV text"))
+                    }
+                    Ok(_) => {}
+                }
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        return Ok(());
+    }
+    let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("catechism validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
 fn check_duplicate_ids<'a>(ids: impl Iterator<Item = &'a str>, kind: &str, errors: &mut Vec<String>) {

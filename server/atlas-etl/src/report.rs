@@ -45,6 +45,12 @@ pub struct Report {
     pub land_mask_regions: usize,
     pub land_mask_rings: usize,
     pub land_mask_points: usize,
+    /// Batch F ("the small catechism"): how many chief parts and total
+    /// items compiled from `data/curated/catechism.toml` -- the same coarse
+    /// "how much curated content is there" figure `landmarks_count`/
+    /// `land_mask_regions` already report for their own curated files.
+    pub catechism_parts: usize,
+    pub catechism_items: usize,
 }
 
 /// Batch B2: per-polity report line -- how many eras it carries, and the
@@ -130,6 +136,10 @@ pub fn write(r: &Report) -> String {
         r.land_mask_regions, r.land_mask_rings, r.land_mask_points
     )
     .unwrap();
+    writeln!(s).unwrap();
+
+    writeln!(s, "Catechism (Batch F):").unwrap();
+    writeln!(s, "  {} chief part(s), {} item(s) total", r.catechism_parts, r.catechism_items).unwrap();
 
     s
 }

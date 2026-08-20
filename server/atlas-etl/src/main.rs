@@ -171,6 +171,12 @@ fn main() -> Result<()> {
     validate::run_place_history(&place_history, &compiled_place_ids, &data.verses)
         .context("data/compiled/place-history.json was NOT written; fix data/curated/place-history.toml and re-run")?;
 
+    // --- data/curated/catechism.toml (Batch F: "the small catechism") ----
+    let catechism = curated::parse_catechism(&read(&curated_dir.join("catechism.toml"))?)?;
+    validate::run_catechism(&catechism, &data.verses)
+        .context("data/compiled/catechism.json was NOT written; fix data/curated/catechism.toml and re-run")?;
+    let catechism_items_count: usize = catechism.iter().map(|p| p.items.len()).sum();
+
     // --- write compiled output ------------------------------------------
     fs::create_dir_all(&compiled_dir).with_context(|| format!("creating {}", compiled_dir.display()))?;
     write_json(&compiled_dir.join("canon.json"), &data.canon)?;
@@ -186,6 +192,7 @@ fn main() -> Result<()> {
     write_json(&compiled_dir.join("landmarks.json"), &landmarks)?;
     write_json(&compiled_dir.join("place-history.json"), &place_history)?;
     write_json(&compiled_dir.join("land-mask.json"), &land_mask)?;
+    write_json(&compiled_dir.join("catechism.json"), &catechism)?;
 
     let rpt = Report {
         counts,
@@ -202,6 +209,8 @@ fn main() -> Result<()> {
         land_mask_regions: land_mask_regions.len(),
         land_mask_rings: land_mask.len(),
         land_mask_points,
+        catechism_parts: catechism.len(),
+        catechism_items: catechism_items_count,
     };
     let text = report::write(&rpt);
     fs::write(compiled_dir.join("report.txt"), &text).context("writing data/compiled/report.txt")?;
@@ -334,6 +343,10 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     let place_history_path = curated_dir.join("place-history.toml");
     if !place_history_path.is_file() {
         missing.push(format!("{}", place_history_path.display()));
+    }
+    let catechism_path = curated_dir.join("catechism.toml");
+    if !catechism_path.is_file() {
+        missing.push(format!("{}", catechism_path.display()));
     }
     let polities_dir = curated_dir.join("polities");
     let has_polity_files = polities_dir.is_dir()

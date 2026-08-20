@@ -19,7 +19,7 @@
 //! trust class scene composition relies on).
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookMeta, Era, Event, Landmark, LandMaskRegion, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityEra};
+use atlas_core::data::{BookMeta, CatechismItem, CatechismPart, Era, Event, Landmark, LandMaskRegion, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityEra};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -95,7 +95,13 @@ struct EventsFile {
 /// Expands one curated `verses` entry (a single canonical verse, e.g.
 /// `"EXO.12.37"`, or a same-chapter range, e.g. `"EXO.14.21-31"`, using our
 /// own book codes) into one-or-more canonical single-verse strings.
-fn expand_verse_ref(raw: &str, event_id: &str, out: &mut Vec<String>) -> Result<()> {
+/// `context` names whatever curated record this ref came from (an event id,
+/// a catechism item id, ...) purely for the error message -- shared by every
+/// curated schema in this module that accepts a curator-friendly
+/// single-verse-or-range string (originally `parse_events_extra`'s own
+/// helper; Batch F's `parse_catechism` reuses it verbatim rather than
+/// re-implementing the same expansion a second time).
+fn expand_verse_ref(raw: &str, context: &str, out: &mut Vec<String>) -> Result<()> {
     match ScriptureRef::parse(raw) {
         Ok(ScriptureRef::Verse(v)) => out.push(format!("{}.{}.{}", v.book.code(), v.chapter, v.verse)),
         Ok(ScriptureRef::Passage { book, chapter, from_verse, to_verse }) => {
@@ -103,7 +109,7 @@ fn expand_verse_ref(raw: &str, event_id: &str, out: &mut Vec<String>) -> Result<
                 out.push(format!("{}.{}.{}", book.code(), chapter, verse));
             }
         }
-        _ => bail!("curated event '{event_id}' has an unparseable verse ref '{raw}' (expected e.g. 'EXO.12.37' or 'EXO.14.21-31')"),
+        _ => bail!("curated data '{context}' has an unparseable verse ref '{raw}' (expected e.g. 'EXO.12.37' or 'EXO.14.21-31')"),
     }
     Ok(())
 }
@@ -361,6 +367,83 @@ pub fn parse_land_mask(input: &str) -> Result<Vec<LandMaskRegion>> {
     Ok(f.region.into_iter().map(|r| LandMaskRegion { name: r.name, ref_note: r.ref_note, rings: r.rings }).collect())
 }
 
+// --- Batch F: catechism.toml ("the small catechism") -----------------------
+
+#[derive(Deserialize)]
+struct CatechismFile {
+    part: Vec<CatechismPartToml>,
+}
+
+#[derive(Deserialize)]
+struct CatechismPartToml {
+    id: String,
+    title: String,
+    item: Vec<CatechismItemToml>,
+}
+
+#[derive(Deserialize)]
+struct CatechismItemToml {
+    id: String,
+    name: String,
+    #[serde(default)]
+    text: Option<String>,
+    #[serde(default)]
+    explanation_heading: Option<String>,
+    explanation: String,
+    #[serde(default)]
+    where_written: Option<String>,
+    #[serde(default)]
+    verses: Vec<String>,
+    #[serde(default)]
+    ref_note: Option<String>,
+}
+
+/// Parses `catechism.toml` (schema: `[[part]]` -- `id`/`title` -> nested
+/// `[[part.item]]` -- `id`/`name`/optional `text`/optional
+/// `explanation_heading`/`explanation`/optional `where_written`/`verses`/
+/// optional `ref_note`, see `CatechismItem`'s own doc comment for why `text`
+/// is optional and `explanation_heading` defaults). Pure and STRUCTURAL
+/// only, same split every other curated schema in this module follows: a
+/// TOML file that doesn't even parse into this shape is a curator authoring
+/// mistake, held to the same immediate-bail bar `parse_place_history`/
+/// `parse_polity` already apply to hand-authored data. `verses` accepts the
+/// SAME curator-friendly single-verse-or-range strings `parse_events_extra`
+/// does (reuses `expand_verse_ref` verbatim), expanded here into individual
+/// canonical verse ids; a verse ref's own validity against the compiled KJV
+/// text (does it parse AND actually exist) needs the full picture and so is
+/// deliberately deferred to `validate::run_catechism` instead, same
+/// pure-parse-then-cross-validate split `parse_place_history`'s own doc
+/// comment already establishes. Duplicate part/item ids across the whole
+/// file are ALSO `validate::run_catechism`'s job (needs the full roster at
+/// once), not checked here.
+pub fn parse_catechism(input: &str) -> Result<Vec<CatechismPart>> {
+    let f: CatechismFile =
+        toml::from_str(input).context("catechism.toml: invalid TOML or does not match the [[part]]/[[part.item]] schema")?;
+
+    let mut parts = Vec::with_capacity(f.part.len());
+    for p in f.part {
+        let mut items = Vec::with_capacity(p.item.len());
+        for it in p.item {
+            let mut verses = Vec::new();
+            for v in &it.verses {
+                expand_verse_ref(v, &it.id, &mut verses)?;
+            }
+            items.push(CatechismItem {
+                id: it.id,
+                name: it.name,
+                text: it.text,
+                explanation_heading: it.explanation_heading.unwrap_or_else(|| "What does this mean?".to_string()),
+                explanation: it.explanation,
+                where_written: it.where_written,
+                verses,
+                ref_note: it.ref_note,
+            });
+        }
+        parts.push(CatechismPart { id: p.id, title: p.title, items });
+    }
+    Ok(parts)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -447,6 +530,95 @@ rings = [
     fn parse_land_mask_rejects_malformed_toml() {
         assert!(parse_land_mask("not = [valid").is_err());
         assert!(parse_land_mask("foo = 1").is_err(), "missing [[region]] array entirely");
+    }
+
+    // --- Batch F: parse_catechism --------------------------------------------
+
+    #[test]
+    fn parse_catechism_reads_valid_toml_with_defaults_applied() {
+        let toml = r#"
+[[part]]
+id = "ten-commandments"
+title = "The Ten Commandments"
+
+  [[part.item]]
+  id = "commandment-1"
+  name = "The First Commandment"
+  text = "Thou shalt have no other gods."
+  explanation = "We should fear, love, and trust in God above all things."
+
+  [[part.item]]
+  id = "commandments-close"
+  name = "What Does God Say of All These Commandments?"
+  text = "I the LORD thy God am a jealous God..."
+  explanation = "God threatens to punish all that transgress these commandments."
+  verses = ["EXO.20.5-6"]
+  ref_note = "f. read as covering v.6"
+
+[[part]]
+id = "baptism"
+title = "The Sacrament of Holy Baptism"
+
+  [[part.item]]
+  id = "baptism-1"
+  name = "Baptism — Part the First"
+  explanation_heading = "What is Baptism?"
+  explanation = "Baptism is not simple water only..."
+  where_written = "Christ, our Lord, says..."
+  verses = ["MAT.28.19"]
+"#;
+        let parts = parse_catechism(toml).unwrap();
+        assert_eq!(parts.len(), 2);
+
+        let commandments = &parts[0];
+        assert_eq!(commandments.id, "ten-commandments");
+        assert_eq!(commandments.title, "The Ten Commandments");
+        assert_eq!(commandments.items.len(), 2);
+
+        let first = &commandments.items[0];
+        assert_eq!(first.id, "commandment-1");
+        assert_eq!(first.text.as_deref(), Some("Thou shalt have no other gods."));
+        // Default applied: no explanation_heading line in the TOML above.
+        assert_eq!(first.explanation_heading, "What does this mean?");
+        assert_eq!(first.where_written, None);
+        assert!(first.verses.is_empty());
+        assert_eq!(first.ref_note, None);
+
+        let close = &commandments.items[1];
+        // "EXO.20.5-6" expands to two individual canonical verse ids, same
+        // range-expansion expand_verse_ref already gives parse_events_extra.
+        assert_eq!(close.verses, vec!["EXO.20.5".to_string(), "EXO.20.6".to_string()]);
+        assert_eq!(close.ref_note.as_deref(), Some("f. read as covering v.6"));
+
+        let baptism = &parts[1];
+        let b1 = &baptism.items[0];
+        assert_eq!(b1.text, None, "Baptism items have no separate prompt text -- see CatechismItem's own doc comment");
+        // Explicit override, NOT the default.
+        assert_eq!(b1.explanation_heading, "What is Baptism?");
+        assert_eq!(b1.where_written.as_deref(), Some("Christ, our Lord, says..."));
+        assert_eq!(b1.verses, vec!["MAT.28.19".to_string()]);
+    }
+
+    #[test]
+    fn parse_catechism_rejects_malformed_toml() {
+        assert!(parse_catechism("not = [valid").is_err());
+        assert!(parse_catechism("id = \"x\"").is_err(), "missing [[part]] array entirely");
+    }
+
+    #[test]
+    fn parse_catechism_rejects_an_unparseable_verse_ref() {
+        let toml = r#"
+[[part]]
+id = "p"
+title = "P"
+  [[part.item]]
+  id = "i1"
+  name = "N"
+  explanation = "E"
+  verses = ["not-a-ref"]
+"#;
+        let err = parse_catechism(toml).unwrap_err();
+        assert!(err.to_string().contains("i1"), "{err}");
     }
 
     #[test]

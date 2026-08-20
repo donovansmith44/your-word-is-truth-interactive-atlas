@@ -553,6 +553,96 @@ fn land_mask_out_of_bbox_point_fails_validation() {
 }
 
 // ---------------------------------------------------------------------
+// catechism (Batch F: curated.rs::parse_catechism + validate.rs::run_catechism)
+// ---------------------------------------------------------------------
+
+#[test]
+fn catechism_valid_toml_parses_and_validates() {
+    let parts = atlas_etl::curated::parse_catechism(include_str!("fixtures/catechism-sample.toml")).unwrap();
+    assert_eq!(parts.len(), 2);
+    let commandments = parts.iter().find(|p| p.id == "ten-commandments").unwrap();
+    assert_eq!(commandments.items.len(), 2);
+    let close = commandments.items.iter().find(|i| i.id == "commandments-close").unwrap();
+    assert_eq!(close.verses, vec!["EXO.20.5".to_string(), "EXO.20.6".to_string()]);
+
+    let baptism = parts.iter().find(|p| p.id == "baptism").unwrap();
+    let b1 = &baptism.items[0];
+    assert_eq!(b1.text, None);
+    assert_eq!(b1.explanation_heading, "What is Baptism?");
+
+    let mut verses = HashMap::new();
+    verses.insert("EXO.20.5".to_string(), "text".to_string());
+    verses.insert("EXO.20.6".to_string(), "text".to_string());
+    verses.insert("MAT.28.19".to_string(), "text".to_string());
+    assert!(atlas_etl::validate::run_catechism(&parts, &verses).is_ok(), "{:?}", atlas_etl::validate::run_catechism(&parts, &verses).err());
+}
+
+fn catechism_item(id: &str, name: &str, verses: &[&str]) -> atlas_core::data::CatechismItem {
+    atlas_core::data::CatechismItem {
+        id: id.into(),
+        name: name.into(),
+        text: None,
+        explanation_heading: "What does this mean?".into(),
+        explanation: "E".into(),
+        where_written: None,
+        verses: verses.iter().map(|v| v.to_string()).collect(),
+        ref_note: None,
+    }
+}
+
+#[test]
+fn catechism_duplicate_part_id_fails_validation() {
+    let parts = vec![
+        atlas_core::data::CatechismPart { id: "dup".into(), title: "A".into(), items: vec![catechism_item("a1", "A1", &[])] },
+        atlas_core::data::CatechismPart { id: "dup".into(), title: "B".into(), items: vec![catechism_item("b1", "B1", &[])] },
+    ];
+    let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
+    assert!(err.to_string().contains("duplicate catechism part"), "{err}");
+}
+
+#[test]
+fn catechism_duplicate_item_id_across_different_parts_fails_validation() {
+    // Item ids are looked up GLOBALLY (AtlasData::catechism_item_by_id is
+    // not scoped to a part), so a collision across two DIFFERENT parts must
+    // be caught too, not just within one part.
+    let parts = vec![
+        atlas_core::data::CatechismPart { id: "p1".into(), title: "P1".into(), items: vec![catechism_item("shared", "A", &[])] },
+        atlas_core::data::CatechismPart { id: "p2".into(), title: "P2".into(), items: vec![catechism_item("shared", "B", &[])] },
+    ];
+    let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
+    assert!(err.to_string().contains("duplicate catechism item"), "{err}");
+}
+
+#[test]
+fn catechism_empty_part_fails_validation() {
+    let parts = vec![atlas_core::data::CatechismPart { id: "empty".into(), title: "Empty".into(), items: vec![] }];
+    let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
+    assert!(err.to_string().contains("has no items"), "{err}");
+}
+
+#[test]
+fn catechism_verse_missing_from_compiled_kjv_text_fails_validation() {
+    let parts = vec![atlas_core::data::CatechismPart {
+        id: "p".into(),
+        title: "P".into(),
+        items: vec![catechism_item("i1", "I1", &["GEN.99.99"])],
+    }];
+    let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
+    assert!(err.to_string().contains("does not exist in the compiled KJV text"), "{err}");
+}
+
+#[test]
+fn catechism_non_canonical_verse_fails_validation() {
+    let parts = vec![atlas_core::data::CatechismPart {
+        id: "p".into(),
+        title: "P".into(),
+        items: vec![catechism_item("i1", "I1", &["NOT.A.VERSE"])],
+    }];
+    let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
+    assert!(err.to_string().contains("not a canonical single-verse ref"), "{err}");
+}
+
+// ---------------------------------------------------------------------
 // osis.rs
 // ---------------------------------------------------------------------
 
@@ -596,6 +686,8 @@ fn report_contains_expected_sections() {
         land_mask_regions: 6,
         land_mask_rings: 6,
         land_mask_points: 135,
+        catechism_parts: 6,
+        catechism_items: 33,
     };
     let text = atlas_etl::report::write(&report);
     assert!(text.contains("66"), "{text}");
@@ -607,6 +699,7 @@ fn report_contains_expected_sections() {
     assert!(text.contains("180 points"), "{text}");
     assert!(text.contains("19 curated landmarks"), "{text}");
     assert!(text.contains("6 region(s), 6 ring(s), 135 points"), "{text}");
+    assert!(text.contains("6 chief part(s), 33 item(s) total"), "{text}");
 }
 
 // ---------------------------------------------------------------------

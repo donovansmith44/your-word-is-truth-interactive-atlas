@@ -284,6 +284,25 @@ pub struct CrossRefOut {
     pub preview: String,
 }
 
+/// Batch F ("the small catechism"): one catechism item citing a verse/span,
+/// as embedded in `VerseDetailOut.catechism` AND returned (as a list) by
+/// `GET /api/catechism/{sref}` -- deliberately lean (id + display name only,
+/// no preview text unlike `CrossRefOut`): requirement 4's own UI description
+/// lists citing items as plain named entries, nothing more, and the full
+/// item content is a separate fetch (`GET /api/catechism/item/{id}`, see
+/// `CatechismItemOut` below), made only once the user actually opens one.
+#[derive(Debug, Serialize)]
+pub struct CatechismRefOut {
+    pub id: String,
+    pub name: String,
+}
+
+impl From<atlas_core::catechism::CatechismRef> for CatechismRefOut {
+    fn from(c: atlas_core::catechism::CatechismRef) -> Self {
+        CatechismRefOut { id: c.id, name: c.name }
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct VerseDetailOut {
     #[serde(rename = "ref")]
@@ -292,6 +311,18 @@ pub struct VerseDetailOut {
     pub book_meta: BookMetaOut,
     pub events: Vec<VerseEventOut>,
     pub cross_refs: Vec<CrossRefOut>,
+    /// Batch F: catechism items citing this verse, via the SAME aggregation
+    /// core `GET /api/catechism/{sref}` uses for a passage
+    /// (`AtlasData::catechism_items_for_span`, a single-verse span here) --
+    /// folded directly into this ALREADY-shared verse-detail fetch (rather
+    /// than requiring a second round trip) so `CatechismSeamSection`
+    /// (client) reads it off the exact same memoized `AtlasClient.Verse`
+    /// call `VerseTextSectionProvider`/`CrossRefsSection` already share --
+    /// "one fetch, not three," now not four either. Always present, possibly
+    /// empty (most verses cite none) -- conditional presence lives on the
+    /// CLIENT side (no section at all when empty), matching every other
+    /// "always an array" field in this app's own wire.
+    pub catechism: Vec<CatechismRefOut>,
 }
 
 /// Mirrors atlas-etl's private `xrefs::first_verse_of_target` (duplicated,
@@ -366,6 +397,13 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
         })
         .collect();
 
+    // Batch F: same aggregation core `catechism_for_span` below uses for a
+    // passage, called here with a single-verse span -- see
+    // `VerseDetailOut.catechism`'s own doc comment for why this is folded
+    // into the already-shared verse-detail fetch rather than a second call.
+    let catechism: Vec<CatechismRefOut> =
+        data.catechism_items_for_span(&ScriptureRef::Verse(vid)).into_iter().map(CatechismRefOut::from).collect();
+
     Ok(Json(VerseDetailOut {
         sref: canonical,
         text,
@@ -377,6 +415,92 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
         },
         events,
         cross_refs,
+        catechism,
+    }))
+}
+
+/// `GET /api/catechism/{sref}` (Batch F, "verse -> citing catechism items
+/// lookup" -- requirement 3): `sref` must parse as exactly a
+/// `ScriptureRef::Verse` or `ScriptureRef::Passage`, mirroring
+/// `handlers::xrefs`'s own accepted-shapes precedent exactly (a bare book or
+/// chapter ref has no defined "member verses" to aggregate over, so both 400
+/// as `bad_ref`). ruling-3-policy: an sref with no citing catechism items at
+/// all is NOT an error -- 200 with an empty list, same "gracefully empty,
+/// never a 404" policy `xrefs`/`chapter`/`scene_scripture` already follow.
+/// Business logic (the union-across-member-verses aggregation) lives in
+/// `atlas_core::catechism::items_for_span`, reached here via
+/// `AtlasData::catechism_items_for_span` -- this handler is pure
+/// response-shape assembly, same as every other handler in this file.
+pub async fn catechism_for_span(
+    State(data): State<Arc<AtlasData>>,
+    Path(sref): Path<String>,
+) -> Result<Json<Vec<CatechismRefOut>>, ApiError> {
+    let span = match ScriptureRef::parse(&sref) {
+        Ok(span @ (ScriptureRef::Verse(_) | ScriptureRef::Passage { .. })) => span,
+        _ => return Err(ApiError::bad_ref(&sref)),
+    };
+
+    let out = data.catechism_items_for_span(&span).into_iter().map(CatechismRefOut::from).collect();
+    Ok(Json(out))
+}
+
+/// Batch F: one resolved proof verse -- `vref` + its own FULL KJV text
+/// (design-direction.md's house rendering, per requirement 4: "THE
+/// SCRIPTURES -- the item's proof verses... full verse text per house
+/// rendering" -- not a truncated preview the way `CrossRefOut.preview` is).
+#[derive(Debug, Serialize)]
+pub struct CatechismProofVerseOut {
+    pub vref: String,
+    pub text: String,
+}
+
+/// `GET /api/catechism/item/{id}`'s own wire shape -- `part_title` alongside
+/// the item's own fields so the client never needs a second fetch to show
+/// "Baptism" as this item's own chief-part context. `where_written` is
+/// omitted (not `null`) when absent -- same conditional-presence wire
+/// convention `HistoryOut.blurb`/`established`/`destroyed` already use.
+#[derive(Debug, Serialize)]
+pub struct CatechismItemOut {
+    pub id: String,
+    pub name: String,
+    pub part_title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
+    pub explanation_heading: String,
+    pub explanation: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub where_written: Option<String>,
+    pub verses: Vec<CatechismProofVerseOut>,
+}
+
+/// `GET /api/catechism/item/{id}` (Batch F, "item fetch by id" --
+/// requirement 3). Unknown id -> 404 `not_found`, same precedent
+/// `handlers::place` already set for an exact-identifier lookup (not a ref
+/// with its own "out of canon but still valid shape" middle ground). Each
+/// proof verse resolves to its own full KJV text (`CatechismProofVerseOut`'s
+/// own doc comment); a verse id that fails to resolve (should never happen
+/// -- `validate::run_catechism` already guarantees every curated verse
+/// exists in the compiled KJV text) is skipped rather than panicking, same
+/// ruling-4 soft-fail policy `handlers::verse`'s own cross-ref preview
+/// lookup already follows.
+pub async fn catechism_item(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -> Result<Json<CatechismItemOut>, ApiError> {
+    let (part, item) = data.catechism_item_by_id(&id).ok_or_else(|| ApiError::not_found("catechism item"))?;
+
+    let verses = item
+        .verses
+        .iter()
+        .filter_map(|v| data.verses.get(v).map(|text| CatechismProofVerseOut { vref: v.clone(), text: text.clone() }))
+        .collect();
+
+    Ok(Json(CatechismItemOut {
+        id: item.id.clone(),
+        name: item.name.clone(),
+        part_title: part.title.clone(),
+        text: item.text.clone(),
+        explanation_heading: item.explanation_heading.clone(),
+        explanation: item.explanation.clone(),
+        where_written: item.where_written.clone(),
+        verses,
     }))
 }
 

@@ -1,0 +1,304 @@
+# Luther's Small Catechism, English text, from THE 1921 TRIGLOT CONCORDIA /
+# CONCORDIA TRIGLOTTA (the Bente-Dau translation) -- Triglot Concordia: The
+# Symbolical Books of the Evangelical Lutheran Church: German-Latin-English
+# (St. Louis: Concordia Publishing House, 1921). Public domain (published
+# 1921, USA).
+#
+# PROVENANCE: obtained from Wikisource's page-by-page, scan-verified
+# transcription of the actual 1921 printing (Index:Concordia_Triglotta.pdf --
+# bibliographic metadata: Editor Gerhard Friedrich Bente, Publisher
+# "Concordia Pub. House", Address "St. Louis", Year 1921; the Small
+# Catechism itself is pages 817-849 of that scan, fetched
+# 2026-08-20 via each page's own `action=raw` wikitext, e.g.
+# https://en.wikisource.org/wiki/Page:Concordia_Triglotta.pdf/825).
+# Cross-verified against bookofconcord.org (whose own "About the
+# Translation" page states its texts are drawn from the same "Triglot
+# Concordia... (St. Louis: Concordia Publishing House, 1921)" and are public
+# domain): the Sacrament of the Altar's "What is the Sacrament of the
+# Altar?" answer matches WORD FOR WORD between both sources. Spot-checks
+# required by the batch brief both confirmed exactly: the First
+# Commandment's explanation is verbatim "We should fear, love, and trust in
+# God above all things."; the Sacrament of the Altar institution wording
+# matches the well-known classic rendering exactly.
+#
+# EDITORIAL NOTES (disclosed, not silent):
+# - The Triglotta's own preface states its bracket convention explicitly
+#   (fetched from Wikisource's Concordia_Triglotta page): "Brackets in the
+#   English text contain words, phrases, sentences, or shorter or longer
+#   passages from the respective German or Latin text which is not the
+#   basis of the translation" -- i.e. bracketed material is a
+#   cross-language comparison aid, not part of "the text proper" of the
+#   English translation itself. Every `text`/`explanation`/`where_written`
+#   value below is the UNBRACKETED "text proper" -- e.g. the Eighth
+#   Commandment's explanation reads "...but defend him, speak well of him,
+#   and put the best construction on everything." (the bracketed "[think
+#   and]" variant dropped), which is also the classic, widely-quoted
+#   rendering of this line.
+# - A handful of plain OCR scanno artifacts in the Wikisource transcription
+#   (old serif-font letter confusions, e.g. "de ceive"/"hut"/"he of
+#   service"/"hegotten"/"baptiam"/"Whhat"/"helieves") are silently corrected
+#   here to the plainly-intended reading ("deceive"/"but"/"be of
+#   service"/"begotten"/"baptism"/"What"/"believes") -- these are
+#   transcription artifacts of the scan, not variant WORDING of the 1921
+#   print, so correcting them is MORE faithful to the actual 1921 text, not
+#   less.
+# - `explanation_heading` defaults to Luther's own "What does this mean?"
+#   (the heading used for the overwhelming majority of items -- every
+#   Commandment/Creed-Article/Lord's-Prayer-Petition) and is set EXPLICITLY,
+#   verbatim, wherever the source actually uses a different heading
+#   (Baptism/Confession/Sacrament of the Altar, each of which poses its own
+#   bespoke question instead of the generic "What does this mean?", e.g.
+#   "What does Baptism give or profit?"): a per-item literal default would
+#   have silently misquoted those items' own real heading.
+# - `text` is present only for items whose own commandment/creed-article/
+#   petition WORDING is a distinct prompt separate from its "what does this
+#   mean" gloss (Commandments/Creed/Lord's-Prayer); Baptism/Confession/
+#   Sacrament-of-the-Altar items pose and answer their own question directly
+#   with no separate prompt to quote first, so `text` is simply absent there
+#   (conditional presence, matching this app's own "no content, no section"
+#   rule throughout) rather than a duplicated or padded value.
+# - Verse links come from citations Luther's OWN text embeds (there is no
+#   supplementary proof-text apparatus in this edition's Small Catechism
+#   beyond what the running text itself cites) -- most items cite none at
+#   all; `ref_note` discloses the derivation wherever real judgment was
+#   needed (an "f."/"ff." endpoint, or a citation spanning more than one
+#   book).
+#
+# SCOPE: the six chief parts, item by item (Preface and the Daily
+# Prayers/Table of Duties appendices are out of scope for this batch, per
+# the batch brief -- optional, not gating).
+
+[[part]]
+id = "ten-commandments"
+title = "The Ten Commandments"
+
+  [[part.item]]
+  id = "commandment-1"
+  name = "The First Commandment"
+  text = "Thou shalt have no other gods."
+  explanation = "We should fear, love, and trust in God above all things."
+
+  [[part.item]]
+  id = "commandment-2"
+  name = "The Second Commandment"
+  text = "Thou shalt not take the name of the Lord, thy God, in vain."
+  explanation = "We should fear and love God that we may not curse, swear, use witchcraft, lie, or deceive by His name, but call upon it in every trouble, pray, praise, and give thanks."
+
+  [[part.item]]
+  id = "commandment-3"
+  name = "The Third Commandment"
+  text = "Thou shalt sanctify the holy-day."
+  explanation = "We should fear and love God that we may not despise preaching and His Word, but hold it sacred, and gladly hear and learn it."
+
+  [[part.item]]
+  id = "commandment-4"
+  name = "The Fourth Commandment"
+  text = "Thou shalt honor thy father and thy mother."
+  explanation = "We should fear and love God that we may not despise nor anger our parents and masters, but give them honor, serve, obey, and hold them in love and esteem."
+
+  [[part.item]]
+  id = "commandment-5"
+  name = "The Fifth Commandment"
+  text = "Thou shalt not kill."
+  explanation = "We should fear and love God that we may not hurt nor harm our neighbor in his body, but help and befriend him in every bodily need."
+
+  [[part.item]]
+  id = "commandment-6"
+  name = "The Sixth Commandment"
+  text = "Thou shalt not commit adultery."
+  explanation = "We should fear and love God that we may lead a chaste and decent life in words and deeds, and each love and honor his spouse."
+
+  [[part.item]]
+  id = "commandment-7"
+  name = "The Seventh Commandment"
+  text = "Thou shalt not steal."
+  explanation = "We should fear and love God that we may not take our neighbor's money or property, nor get them by false ware or dealing, but help him to improve and protect his property and business."
+
+  [[part.item]]
+  id = "commandment-8"
+  name = "The Eighth Commandment"
+  text = "Thou shalt not bear false witness against thy neighbor."
+  explanation = "We should fear and love God that we may not deceitfully belie, betray, slander, or defame our neighbor, but defend him, speak well of him, and put the best construction on everything."
+
+  [[part.item]]
+  id = "commandment-9"
+  name = "The Ninth Commandment"
+  text = "Thou shalt not covet thy neighbor's house."
+  explanation = "We should fear and love God that we may not craftily seek to get our neighbor's inheritance or house, and obtain it by a show of right, etc., but help and be of service to him in keeping it."
+
+  [[part.item]]
+  id = "commandment-10"
+  name = "The Tenth Commandment"
+  text = "Thou shalt not covet thy neighbor's wife, nor his man servant, nor his maid-servant, nor his cattle, nor anything that is his."
+  explanation = "We should fear and love God that we may not estrange, force, or entice away our neighbor's wife, servants, or cattle, but urge them to stay and do their duty."
+
+  [[part.item]]
+  id = "commandments-close"
+  name = "What Does God Say of All These Commandments?"
+  text = "I the LORD thy God am a jealous God, visiting the iniquity of the fathers upon the children unto the third and fourth generation of them that hate Me, and showing mercy unto thousands of them that love Me and keep My commandments."
+  explanation = "God threatens to punish all that transgress these commandments. Therefore we should dread His wrath and not act contrary to these commandments. But He promises grace and every blessing to all that keep these commandments. Therefore we should also love and trust in Him, and gladly do according to His commandments."
+  verses = ["EXO.20.5-6"]
+  ref_note = "Luther's own text cites '[Exod. 20, 5 f.]' inline before the quoted Law; 'f.' (following) read as covering v.6, matching the quoted wording through 'and shewing mercy... keep my commandments.'"
+
+[[part]]
+id = "creed"
+title = "The Creed"
+
+  [[part.item]]
+  id = "creed-1"
+  name = "The First Article — Of Creation"
+  text = "I believe in God the Father Almighty, Maker of heaven and earth."
+  explanation = "I believe that God has made me and all creatures; that He has given me my body and soul, eyes, ears, and all my limbs, my reason, and all my senses, and still preserves them; in addition thereto, clothing and shoes, meat and drink, house and homestead, wife and children, fields, cattle, and all my goods; that He provides me richly and daily with all that I need to support this body and life, protects me from all danger, and guards me and preserves me from all evil; and all this out of pure, fatherly, divine goodness and mercy, without any merit or worthiness in me; for all which I owe it to Him to thank, praise, serve, and obey Him. This is most certainly true."
+
+  [[part.item]]
+  id = "creed-2"
+  name = "The Second Article — Of Redemption"
+  text = "And in Jesus Christ, His only Son, our Lord; who was conceived by the Holy Ghost, born of the Virgin Mary; suffered under Pontius Pilate, was crucified, dead, and buried; He descended into hell; the third day He rose again from the dead; He ascended into heaven, and sitteth on the right hand of God the Father Almighty; from thence He shall come to judge the quick and the dead."
+  explanation = "I believe that Jesus Christ, true God, begotten of the Father from eternity, and also true man, born of the Virgin Mary, is my Lord, who has redeemed me, a lost and condemned creature, purchased and won me from all sins, from death, and from the power of the devil, not with gold or silver, but with His holy, precious blood and with His innocent suffering and death, in order that I may be His own, and live under Him in His kingdom, and serve Him in everlasting righteousness, innocence, and blessedness, even as He is risen from the dead, lives and reigns to all eternity. This is most certainly true."
+
+  [[part.item]]
+  id = "creed-3"
+  name = "The Third Article — Of Sanctification"
+  text = "I believe in the Holy Ghost; one holy Christian Church, the communion of saints; the forgiveness of sins; the resurrection of the body; and the life everlasting. Amen."
+  explanation = "I believe that I cannot by my own reason or strength believe in Jesus Christ, my Lord, or come to Him; but the Holy Ghost has called me by the Gospel, enlightened me with His gifts, sanctified and kept me in the true faith; even as He calls, gathers, enlightens, and sanctifies the whole Christian Church on earth, and keeps it with Jesus Christ in the one true faith; in which Christian Church He forgives daily and richly all sins to me and all believers, and at the last day will raise up me and all the dead, and will give to me and to all believers in Christ everlasting life. This is most certainly true."
+
+[[part]]
+id = "lords-prayer"
+title = "The Lord's Prayer"
+
+  [[part.item]]
+  id = "lords-prayer-intro"
+  name = "The Introduction"
+  text = "Our Father who art in heaven."
+  explanation = "God would thereby tenderly urge us to believe that He is our true Father, and that we are His true children, so that we may ask Him confidently, with all assurance, as dear children ask their dear father."
+
+  [[part.item]]
+  id = "lords-prayer-1"
+  name = "The First Petition"
+  text = "Hallowed be Thy name."
+  explanation = "God's name is indeed holy in itself; but we pray in this petition that it may become holy among us also.\n\nWhen the Word of God is taught in its truth and purity, and we as the children of God also lead holy lives in accordance with it. To this end help us, dear Father in heaven. But he that teaches and lives otherwise than God's Word teaches profanes the name of God among us. From this preserve us, Heavenly Father."
+
+  [[part.item]]
+  id = "lords-prayer-2"
+  name = "The Second Petition"
+  text = "Thy kingdom come."
+  explanation = "The kingdom of God comes indeed without our prayer, of itself; but we pray in this petition that it may come unto us also.\n\nWhen our heavenly Father gives us His Holy Spirit, so that by His grace we believe His holy Word and lead a godly life here in time and yonder in eternity."
+
+  [[part.item]]
+  id = "lords-prayer-3"
+  name = "The Third Petition"
+  text = "Thy will be done on earth as it is in heaven."
+  explanation = "The good and gracious will of God is done indeed without our prayer; but we pray in this petition that it may be done among us also.\n\nWhen God breaks and hinders every evil counsel and will which would not let us hallow the name of God nor let His kingdom come, such as the will of the devil, the world, and our flesh; but strengthens and keeps us steadfast in His Word and in faith unto our end. This is His gracious and good will."
+
+  [[part.item]]
+  id = "lords-prayer-4"
+  name = "The Fourth Petition"
+  text = "Give us this day our daily bread."
+  explanation = "God gives daily bread, even without our prayer, to all wicked men; but we pray in this petition that He would lead us to know it, and to receive our daily bread with thanksgiving.\n\nEverything that belongs to the support and wants of the body, such as meat, drink, clothing, shoes, house, homestead, field, cattle, money, goods, a pious spouse, pious children, pious servants, pious and faithful magistrates, good government, good weather, peace, health, discipline, honor, good friends, faithful neighbors, and the like."
+
+  [[part.item]]
+  id = "lords-prayer-5"
+  name = "The Fifth Petition"
+  text = "And forgive us our trespasses, as we forgive those who trespass against us."
+  explanation = "We pray in this petition that our Father in heaven would not look upon our sins, nor deny such petitions on account of them; for we are worthy of none of the things for which we pray, neither have we deserved them; but that He would grant them all to us by grace; for we daily sin much, and indeed deserve nothing but punishment. So will we verily, on our part, also heartily forgive and also readily do good to those who sin against us."
+
+  [[part.item]]
+  id = "lords-prayer-6"
+  name = "The Sixth Petition"
+  text = "And lead us not into temptation."
+  explanation = "God, indeed, tempts no one; but we pray in this petition that God would guard and keep us, so that the devil, the world, and our flesh may not deceive us, nor seduce us into misbelief, despair, and other great shame and vice; and though we be assailed by them, that still we may finally overcome and gain the victory."
+
+  [[part.item]]
+  id = "lords-prayer-7"
+  name = "The Seventh Petition"
+  text = "But deliver us from evil."
+  explanation = "We pray in this petition, as in a summary, that our Father in heaven would deliver us from all manner of evil, of body and soul, property and honor, and at last, when our last hour shall come, grant us a blessed end, and graciously take us from this vale of tears to Himself into heaven."
+
+  [[part.item]]
+  id = "lords-prayer-amen"
+  name = "Amen"
+  text = "Amen."
+  explanation = "That I should be certain that these petitions are acceptable to our Father in heaven and heard; for He Himself has commanded us so to pray, and has promised that He will hear us. Amen, Amen; that is, Yea, yea, it shall be so."
+
+[[part]]
+id = "baptism"
+title = "The Sacrament of Holy Baptism"
+
+  [[part.item]]
+  id = "baptism-1"
+  name = "Baptism — Part the First"
+  explanation_heading = "What is Baptism?"
+  explanation = "Baptism is not simple water only, but it is the water comprehended in God's command and connected with God's Word."
+  where_written = "Christ, our Lord, says in the last chapter of Matthew: Go ye into all the world and teach all nations, baptizing them in the name of the Father, and of the Son, and of the Holy Ghost."
+  verses = ["MAT.28.19"]
+
+  [[part.item]]
+  id = "baptism-2"
+  name = "Baptism — Part the Second"
+  explanation_heading = "What does Baptism give or profit?"
+  explanation = "It works forgiveness of sins, delivers from death and the devil, and gives eternal salvation to all who believe this, as the words and promises of God declare."
+  where_written = "Christ, our Lord, says in the last chapter of Mark: He that believeth and is baptized shall be saved, but he that believeth not shall be damned."
+  verses = ["MRK.16.16"]
+
+  [[part.item]]
+  id = "baptism-3"
+  name = "Baptism — Part the Third"
+  explanation_heading = "How can water do such great things?"
+  explanation = "It is not the water indeed that does them, but the word of God which is in and with the water, and faith, which trusts such word of God in the water. For without the word of God the water is simple water and no baptism. But with the word of God it is a baptism, that is, a gracious water of life and a washing of regeneration in the Holy Ghost, as St. Paul says, Titus, chapter three: By the washing of regeneration and renewing of the Holy Ghost, which He shed on us abundantly through Jesus Christ, our Savior, that, being justified by His grace, we should be made heirs according to the hope of eternal life. This is a faithful saying."
+  verses = ["TIT.3.5-8"]
+  ref_note = "The Titus quotation is embedded inline in Luther's own explanation, not posed as a separate 'Where is this written?' question (unlike Part the Fourth below) -- verses cited cover the full quoted wording through 'This is a faithful saying' (Titus 3:5-8)."
+
+  [[part.item]]
+  id = "baptism-4"
+  name = "Baptism — Part the Fourth"
+  explanation_heading = "What does such baptizing with water signify?"
+  explanation = "It signifies that the old Adam in us should, by daily contrition and repentance, be drowned and die with all sins and evil lusts, and, again, a new man daily come forth and arise, who shall live before God in righteousness and purity forever."
+  where_written = "St. Paul says Romans, chapter 6: We are buried with Christ by Baptism into death, that, like as He was raised up from the dead by the glory of the Father, even so we also should walk in newness of life."
+  verses = ["ROM.6.4"]
+
+[[part]]
+id = "confession"
+title = "Confession"
+
+  [[part.item]]
+  id = "confession-1"
+  name = "What Is Confession?"
+  explanation_heading = "What is Confession?"
+  explanation = "Confession embraces two parts: the one is, that we confess our sins; the other, that we receive absolution, or forgiveness, from the confessor, as from God Himself, and in no wise doubt, but firmly believe, that our sins are thereby forgiven before God in heaven.\n\nBefore God we should plead guilty of all sins, even of those which we do not know, as we do in the Lord's Prayer. But before the confessor we should confess those sins alone which we know and feel in our hearts. Here consider your station according to the Ten Commandments, whether you are a father, mother, son, daughter, master, mistress, a man-servant or maid-servant; whether you have been disobedient, unfaithful, slothful; whether you have grieved any one by words or deeds; whether you have stolen, neglected, or wasted aught, or done other injury."
+
+  [[part.item]]
+  id = "confession-2"
+  name = "The Absolution"
+  explanation_heading = "What does the confessor say in absolving?"
+  explanation = "As thou believest, so be it done unto thee. And by the command of our Lord Jesus Christ I forgive thee thy sins, in the name of the Father and of the Son and of the Holy Ghost. Amen. Depart in peace."
+
+[[part]]
+id = "sacrament-of-the-altar"
+title = "The Sacrament of the Altar"
+
+  [[part.item]]
+  id = "altar-1"
+  name = "What Is the Sacrament of the Altar?"
+  explanation_heading = "What is the Sacrament of the Altar?"
+  explanation = "It is the true body and blood of our Lord Jesus Christ, under the bread and wine, for us Christians to eat and to drink, instituted by Christ Himself."
+  where_written = "The holy Evangelists, Matthew, Mark, Luke, and St. Paul, write thus: Our Lord Jesus Christ, the same night in which He was betrayed, took bread: and when He had given thanks, He brake it, and gave it to His disciples, and said, Take, eat; this is My body, which is given for you. This do in remembrance of Me. After the same manner also He took the cup, when He had supped, gave thanks, and gave it to them, saying, Take, drink ye all of it. This cup is the new testament in My blood, which is shed for you for the remission of sins. This do ye, as oft as ye drink it, in remembrance of Me."
+  verses = ["MAT.26.26-28", "MRK.14.22-24", "LUK.22.19-20", "1CO.11.23-25"]
+  ref_note = "The institution narrative is attributed by Luther to 'Matthew, Mark, Luke, and St. Paul' collectively (a harmonized quotation, not a verbatim single-Gospel excerpt); verses cited here are each account's own institution passage."
+
+  [[part.item]]
+  id = "altar-2"
+  name = "The Benefit of the Sacrament"
+  explanation_heading = "What is the benefit of such eating and drinking?"
+  explanation = "That is shown us in these words: Given, and shed for you, for the remission of sins; namely, that in the Sacrament forgiveness of sins, life, and salvation are given us through these words. For where there is forgiveness of sins, there is also life and salvation."
+
+  [[part.item]]
+  id = "altar-3"
+  name = "How Bodily Eating Can Do Such Great Things"
+  explanation_heading = "How can bodily eating and drinking do such great things?"
+  explanation = "It is not the eating and drinking, indeed, that does them, but the words which stand here, namely: Given, and shed for you, for the remission of sins. Which words are, beside the bodily eating and drinking, as the chief thing in the Sacrament; and he that believes these words has what they say and express, namely, the forgiveness of sins."
+
+  [[part.item]]
+  id = "altar-4"
+  name = "Who Receives the Sacrament Worthily"
+  explanation_heading = "Who, then, receives such Sacrament worthily?"
+  explanation = "Fasting and bodily preparation is, indeed, a fine outward training; but he is truly worthy and well prepared who has faith in these words: Given, and shed for you, for the remission of sins. But he that does not believe these words, or doubts, is unworthy and unfit; for the words For you require altogether believing hearts."

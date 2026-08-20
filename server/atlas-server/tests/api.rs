@@ -209,6 +209,22 @@ async fn verse_chapter_place_and_404() {
     assert_eq!(cross_refs[2]["target"], "GEN.13.18");
     assert!(cross_refs[2]["preview"].as_str().unwrap().contains("Hebron"));
 
+    // Batch F: JOS.6.20 ALSO carries demo_fixture()'s own small catechism
+    // citation ("demo-item-1") -- proving cross_refs and catechism coexist
+    // on the same verse detail response without either disturbing the other
+    // (see demo_fixture()'s own comment for why this exact verse was
+    // deliberately reused rather than an unrelated one).
+    let catechism = body["catechism"].as_array().unwrap();
+    assert_eq!(catechism.len(), 1, "{body}");
+    assert_eq!(catechism[0]["id"], "demo-item-1");
+    assert_eq!(catechism[0]["name"], "Demo Catechism Item");
+
+    // A verse with zero catechism citations still carries the key, empty
+    // (always-an-array wire convention, same as `places` on ChapterOut/VerseOut).
+    let (st, body) = call(&app, "/api/verse/JOS.6.21").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["catechism"], serde_json::json!([]));
+
     // Structurally invalid vref -> 400 bad_ref.
     let (st, body) = call(&app, "/api/verse/NOPE.1.1").await;
     assert_eq!(st, 400);
@@ -392,6 +408,80 @@ async fn xrefs_span_aggregation_ok_and_bad_ref() {
         assert_eq!(st, 400, "{bad}");
         assert_eq!(body["error"]["code"], "bad_ref", "{bad}: {body}");
     }
+}
+
+/// Batch F ("the small catechism"): `GET /api/catechism/{sref}` and
+/// `GET /api/catechism/item/{id}` end to end, against `demo_fixture()`'s own
+/// "demo-item-1" (citing JOS.6.20, `where_written` present, `text` absent --
+/// see that fixture's own comment). The rich multi-item union/dedup/order
+/// behavior is already covered directly against
+/// `atlas_core::catechism::items_for_span` (server/atlas-core/src/catechism.rs's
+/// own unit tests) and `AtlasData::catechism_items_for_span`
+/// (server/atlas-core/src/data.rs's own `catechism_tests` module) -- this
+/// test's job, mirroring `xrefs_span_aggregation_ok_and_bad_ref`'s own
+/// division of labor, is proving the HTTP plumbing (routing, ref-shape
+/// gating, 404 vs. gracefully-empty) end to end, not re-proving the pure
+/// aggregation logic a third time.
+#[tokio::test]
+async fn catechism_span_and_item_endpoints() {
+    let app = app();
+
+    // Single-verse span: JOS.6.20 cites demo-item-1.
+    let (st, body) = call(&app, "/api/catechism/JOS.6.20").await;
+    assert_eq!(st, 200);
+    let items = body.as_array().unwrap();
+    assert_eq!(items.len(), 1, "{body}");
+    assert_eq!(items[0]["id"], "demo-item-1");
+    assert_eq!(items[0]["name"], "Demo Catechism Item");
+
+    // Passage span aggregation: JOS.6.20-21 unions member verses 20 (cites
+    // demo-item-1) and 21 (cites nothing) -- the union still surfaces the
+    // one item, exactly the "span/passage selections aggregate citing items
+    // the way xrefs already aggregate" requirement.
+    let (st, body) = call(&app, "/api/catechism/JOS.6.20-21").await;
+    assert_eq!(st, 200);
+    let items = body.as_array().unwrap();
+    assert_eq!(items.len(), 1, "{body}");
+    assert_eq!(items[0]["id"], "demo-item-1");
+
+    // A structurally valid span with zero citing items -- 200, gracefully
+    // empty, never a 404 (ruling-3 policy, same as /api/xrefs/{sref}).
+    let (st, body) = call(&app, "/api/catechism/JOS.1.1").await;
+    assert_eq!(st, 200);
+    assert_eq!(body, serde_json::json!([]));
+
+    // Structurally invalid srefs, and Book/Chapter-shaped refs (not one of
+    // the two accepted Verse/Passage shapes) -> 400 bad_ref, same typed
+    // error every other ref-shaped endpoint uses.
+    for bad in ["/api/catechism/NOPE.1.1", "/api/catechism/gen..1", "/api/catechism/JOS", "/api/catechism/JOS.6"] {
+        let (st, body) = call(&app, bad).await;
+        assert_eq!(st, 400, "{bad}");
+        assert_eq!(body["error"]["code"], "bad_ref", "{bad}: {body}");
+    }
+
+    // --- /api/catechism/item/{id} ------------------------------------------
+    let (st, body) = call(&app, "/api/catechism/item/demo-item-1").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["id"], "demo-item-1");
+    assert_eq!(body["name"], "Demo Catechism Item");
+    assert_eq!(body["part_title"], "Demo Part");
+    // `text` is None on this fixture item (mirrors a real Baptism/Confession/
+    // Sacrament-of-the-Altar item's own shape) -- omitted from the wire
+    // entirely (skip_serializing_if), not present-as-null.
+    assert!(body.get("text").is_none(), "{body}");
+    assert_eq!(body["explanation_heading"], "What does this mean?");
+    assert_eq!(body["explanation"], "Demo item explanation.");
+    assert_eq!(body["where_written"], "Demo where-written text.");
+    let verses = body["verses"].as_array().unwrap();
+    assert_eq!(verses.len(), 1, "{body}");
+    assert_eq!(verses[0]["vref"], "JOS.6.20");
+    assert!(verses[0]["text"].as_str().unwrap().contains("wall fell down flat"));
+
+    // Unknown item id -> 404 not_found, same exact-identifier precedent
+    // `/api/place/{id}` already set.
+    let (st, body) = call(&app, "/api/catechism/item/does-not-exist").await;
+    assert_eq!(st, 404);
+    assert_eq!(body["error"]["code"], "not_found");
 }
 
 fn square_ring() -> Vec<(f64, f64)> {

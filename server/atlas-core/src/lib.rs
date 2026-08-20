@@ -1,4 +1,5 @@
 pub mod canon;
+pub mod catechism;
 pub mod data;
 pub mod history;
 pub mod refs;

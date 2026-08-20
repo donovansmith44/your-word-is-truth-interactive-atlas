@@ -1,0 +1,29 @@
+[[part]]
+id = "ten-commandments"
+title = "The Ten Commandments"
+
+  [[part.item]]
+  id = "commandment-1"
+  name = "The First Commandment"
+  text = "Thou shalt have no other gods."
+  explanation = "We should fear, love, and trust in God above all things."
+
+  [[part.item]]
+  id = "commandments-close"
+  name = "What Does God Say of All These Commandments?"
+  text = "I the LORD thy God am a jealous God..."
+  explanation = "God threatens to punish all that transgress these commandments."
+  verses = ["EXO.20.5-6"]
+  ref_note = "test fixture -- mirrors the real curated data's own range citation"
+
+[[part]]
+id = "baptism"
+title = "The Sacrament of Holy Baptism"
+
+  [[part.item]]
+  id = "baptism-1"
+  name = "Baptism — Part the First"
+  explanation_heading = "What is Baptism?"
+  explanation = "Baptism is not simple water only, but it is the water comprehended in God's command and connected with God's Word."
+  where_written = "Christ, our Lord, says in the last chapter of Matthew..."
+  verses = ["MAT.28.19"]

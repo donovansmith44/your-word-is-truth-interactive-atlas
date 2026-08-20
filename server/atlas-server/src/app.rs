@@ -60,6 +60,8 @@ pub fn build(data: Arc<AtlasData>, static_dir: Option<PathBuf>) -> Router {
         .route("/api/chapter/{cref}", get(handlers::chapter))
         .route("/api/verse/{vref}", get(handlers::verse))
         .route("/api/xrefs/{sref}", get(handlers::xrefs))
+        .route("/api/catechism/item/{id}", get(handlers::catechism_item))
+        .route("/api/catechism/{sref}", get(handlers::catechism_for_span))
         .route("/api/place/{id}", get(handlers::place))
         .route("/api/narratives", get(handlers::narratives))
         .route("/api/eras", get(handlers::eras))
