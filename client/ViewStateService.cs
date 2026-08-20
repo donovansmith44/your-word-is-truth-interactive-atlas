@@ -12,7 +12,10 @@ namespace BibleAtlas.Client;
 ///
 /// Two independent halves, deliberately not coupled to each other by this
 /// service itself -- World.razor and Reader.razor each read/write their OWN
-/// half, on their own lifecycle (restore on init, capture on dispose); a
+/// half, on their own lifecycle (restore on init, synced continuously at
+/// each mutation -- never captured at dispose, since a concurrent
+/// dispose+mount navigation guarantees no ordering between the old
+/// instance's DisposeAsync and the new instance's mount); a
 /// split host composes the two pages, but nothing here has any notion of
 /// "split" -- it is just "the atlas's last position" and "the reader's last
 /// position," full stop, exactly as true for two ordinary full-page visits
@@ -26,7 +29,8 @@ public sealed class ViewStateService
 
 /// <summary>
 /// The atlas's last-known position. <see cref="HasData"/> is false until the
-/// first real capture (World.razor's DisposeAsync) -- distinguishes "never
+/// first real write (World.razor's SyncViewState, at each window/mode
+/// mutation; the camera fields via OnCameraChanged) -- distinguishes "never
 /// visited this session" (fall back to the DefaultFrom/DefaultTo Gospels-era
 /// default) from "visited, and genuinely left sitting at a window/ref" (restore
 /// THAT, even where it happens to coincide with the default numbers).
@@ -41,8 +45,8 @@ public sealed class ViewStateService
 /// <see cref="Follow"/> is a split-only concept (standalone /world has no
 /// toggle chip to ever change it), but travels here rather than being scoped
 /// to the split pane specifically, per the brief's "one map state, it is the
-/// same atlas" -- only a split-mode pane's own dispose ever writes it,
-/// though, so an intervening standalone visit can never reset it.
+/// same atlas" -- only a split-mode instance's own SyncViewState ever
+/// writes it, though, so an intervening standalone visit can never reset it.
 /// </summary>
 public sealed class MapViewState
 {
