@@ -92,7 +92,18 @@ public sealed record EraDto(string Id, string Name, int FromYear, int ToYear);
 
 public sealed record ChapterOut(string Ref, string Book, int Chapter, List<VerseOut> Verses);
 
-public sealed record VerseOut(int Verse, string Text);
+/// Batch R requirement 5 (place-in-verse hover -> marker blink):
+/// <see cref="Places"/> is the reverse-index list <c>GET /api/chapter/{cref}</c>
+/// now carries per verse -- every curated place whose own <c>verse_links</c>
+/// names this verse. Always present (possibly empty); the mini-reader
+/// (Explore/VerseTextSection) is what decides, per verse, whether to wrap any
+/// substring as a hoverable mention -- see that file's own comment for why a
+/// plain-text name search against <see cref="PlaceRefDto.Name"/> is this
+/// app's only mention-detection mechanism (there is no richer per-mention
+/// character-offset data anywhere in this pipeline).
+public sealed record VerseOut(int Verse, string Text, List<PlaceRefDto> Places);
+
+public sealed record PlaceRefDto(string Id, string Name);
 
 /// <summary>
 /// <c>GET /api/verse/{vref}</c>. Its wire <c>events</c> array is
@@ -165,3 +176,14 @@ public sealed record PolitiesOut(List<PolityEraOut> Polities);
 /// <c>Landmark::size</c> doc comment. Forwarded to map.js verbatim by
 /// <see cref="MapInterop.SetLandmarks"/>; the client itself never inspects it.
 public sealed record LandmarkDto(string Name, string Kind, double Lat, double Lon, string? Size);
+
+/// <c>GET /api/land-mask</c> (Batch R requirement 1, "borders become part of
+/// the plate"): the curated land/coastline mask, used ONLY to clip polity
+/// washes (map.js's <c>BorderLayer</c>) so they never spill into open sea --
+/// static geometry (no <c>from</c>/<c>to</c>, unlike <see cref="PolitiesOut"/>),
+/// fetched once and cached forever, same treatment as <see cref="LandmarkDto"/>.
+/// <see cref="Rings"/> stays a raw <see cref="JsonElement"/> -- a flat
+/// <c>[[[lat,lon],...],...]</c> array -- same "the client never inspects ring
+/// coordinates, only forwards them to map.js" reasoning as
+/// <see cref="PolityEraOut.Rings"/>.
+public sealed record LandMaskOut(JsonElement Rings);

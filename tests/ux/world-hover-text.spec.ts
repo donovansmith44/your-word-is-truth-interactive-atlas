@@ -441,15 +441,16 @@ test('hover place card: clicking a verse in an UNPINNED card opens its VerseNode
   const text = await verseText(vref);
   await expect(popover).toContainText(text);
 
-  const xrefsChip = page.getByTestId('popover-chip-xrefs');
-  await expect(xrefsChip).toBeVisible(); // VerseNode always offers it, unconditionally
-  await xrefsChip.click();
+  // Batch R requirement 3(b): no popover-chip-xrefs toggle anymore --
+  // cross-references render INLINE, immediately (conditional presence: a
+  // verse with zero recorded cross-refs shows no xrefs section at all,
+  // never a "No cross-references recorded." placeholder).
   const detail = await api.verse(vref);
-  if (detail.cross_refs.length === 0) {
-    await expect(popover).toContainText('No cross-references recorded.');
-  } else {
-    await expect(page.getByTestId(/^xref-item-/)).toHaveCount(detail.cross_refs.length);
+  await expect(page.getByTestId(/^xref-item-/)).toHaveCount(detail.cross_refs.length);
+  if (detail.cross_refs.length > 0) {
     await expect(page.getByTestId(`xref-item-${detail.cross_refs[0].target}`)).toBeVisible();
+  } else {
+    await expect(page.getByTestId('popover-section-xrefs')).toHaveCount(0);
   }
 });
 

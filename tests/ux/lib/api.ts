@@ -21,4 +21,7 @@ export const api = {
   // Batch B2: /api/borders -> /api/polities (per-polity timerange borders).
   polities: (from: number, to: number) => getJson(`/api/polities?from=${from}&to=${to}`),
   landmarks: () => getJson('/api/landmarks'),
+  // Batch R requirement 1: GET /api/land-mask -- the curated coastline
+  // clip geometry.
+  landMask: () => getJson('/api/land-mask'),
 };

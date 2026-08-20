@@ -79,6 +79,10 @@ test('READ-2d: a plain verse-num click never opens a popover, but still sets a u
   }), RUNS_UI);
 });
 
+// Batch R requirement 3(b): the old popover-chip-xrefs TOGGLE is gone --
+// cross-references render INLINE, immediately, no button press -- so each
+// loop iteration below reads xref-item-* directly rather than clicking a
+// chip to reveal them first.
 test('READ-3: cross-ref chains push and pop breadcrumbs faithfully', async ({ page }) => {
   const toc = await loadToc();
   await fcAssert(fc.asyncProperty(arbVerseRef(toc), fc.array(fc.nat(4), { maxLength: 3 }), async (vref, picks) => {
@@ -87,7 +91,6 @@ test('READ-3: cross-ref chains push and pop breadcrumbs faithfully', async ({ pa
     await page.getByTestId(`verse-line-${v}`).click();
     const titles = [vref];
     for (const pick of picks) {
-      await page.getByTestId('popover-chip-xrefs').click();
       const items = page.getByTestId(/^xref-item-/);
       const n = await items.count();
       if (n === 0) break;
@@ -108,4 +111,49 @@ test('READ-3: cross-ref chains push and pop breadcrumbs faithfully', async ({ pa
       await expect(page.getByTestId('popover-title')).toHaveText(titles[titles.length - 1]);
     }
   }), RUNS_UI);
+});
+
+// Batch R requirement 6 (user 2026-08-19: "the buttons for going to the next
+// chapter should always be visible as being middle-aligned on the page even
+// as i scroll"): reader-prev/reader-next are REPOSITIONED from quiet bottom
+// corners to vertically-centered at the reading column's own left/right
+// edges, position:fixed (unchanged), so they neither move nor disappear as
+// the page scrolls. Uses the actual longest chapter in the canon (found from
+// the live TOC, not hardcoded) so there is real scroll room to prove the
+// "even as i scroll" half of the claim, not just "fixed at page load".
+test('NAV-2: chapter-nav stays fixed, vertically centered, and visible while scrolled deep into a long chapter', async ({ page }) => {
+  const toc = await loadToc();
+  let longest = { book: toc[0].code, chapter: 1, verses: toc[0].chapters[0] };
+  for (const b of toc) {
+    b.chapters.forEach((v, i) => {
+      if (v > longest.verses) longest = { book: b.code, chapter: i + 1, verses: v };
+    });
+  }
+  expect(longest.verses, 'expected a real long chapter to test scroll persistence against').toBeGreaterThan(30);
+
+  await page.goto(`/read/${longest.book}/${longest.chapter}`);
+  const next = page.getByTestId('reader-next');
+  const prev = page.getByTestId('reader-prev');
+  await expect(next).toBeVisible();
+  const boxAtTop = await next.boundingBox();
+
+  // position:fixed -- unaffected by ordinary CSS layout, but confirm the
+  // ACTUAL rendered position doesn't drift as real content scrolls past it.
+  await page.getByTestId(`verse-line-${Math.floor(longest.verses / 2)}`).scrollIntoViewIfNeeded();
+  await expect(next).toBeInViewport();
+  await expect(prev).toBeInViewport();
+  const boxScrolled = await next.boundingBox();
+  expect(boxScrolled!.y).toBeCloseTo(boxAtTop!.y, 0);
+  expect(boxScrolled!.x).toBeCloseTo(boxAtTop!.x, 0);
+
+  // Vertically centered in the viewport (requirement 6's own "middle-
+  // aligned"), not pinned to a bottom corner anymore.
+  const viewport = page.viewportSize()!;
+  const center = boxScrolled!.y + boxScrolled!.height / 2;
+  expect(Math.abs(center - viewport.height / 2)).toBeLessThan(viewport.height * 0.15);
+
+  // Quiet until hovered -- unchanged treatment, still worth a smoke check.
+  const restColor = await next.evaluate(el => getComputedStyle(el).color);
+  await next.hover();
+  await expect.poll(() => next.evaluate(el => getComputedStyle(el).color)).not.toBe(restColor);
 });

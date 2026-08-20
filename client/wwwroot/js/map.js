@@ -1218,6 +1218,30 @@ export function debugLiveInstanceIds() {
     return [...instances.keys()];
 }
 
+// Batch R requirement 1 ("borders become part of the plate"), test-support-
+// only, same treatment as debugLiveInstanceIds above (never called from
+// production Blazor code -- MapInterop.cs has no wrapper for it): is (lat,
+// lon) inside the CURRENTLY-LOADED land mask? Uses the real SVG
+// SVGGeometryElement.isPointInFill() API against BorderLayer's own actual
+// clipPath child <path> elements (map.js's own `_landMaskPaths`) -- the
+// EXACT geometry `_washGroup`'s own `clip-path: url(#atlas-land-clip)`
+// clips against, in the SAME coordinate space (`map.latLngToLayerPoint`,
+// the pre-zoomanim-transform space every ring `d` is drawn in -- see
+// BorderLayer._redraw's own comment) -- so this is a precise, deterministic
+// answer, not a pixel-color heuristic subject to anti-aliasing/compression
+// noise a screenshot-based check would carry. Returns null if no land mask
+// has loaded yet (so a test can tell "not ready" apart from "false").
+export function debugIsPointOnLand(id, lat, lon) {
+    const inst = instances.get(id);
+    if (!inst || !inst.polities || !inst.polities._landMaskPaths || inst.polities._landMaskPaths.length === 0) {
+        return null;
+    }
+
+    const pt = inst.map.latLngToLayerPoint([lat, lon]);
+    const domPoint = new DOMPoint(pt.x, pt.y);
+    return inst.polities._landMaskPaths.some(p => p.isPointInFill(domPoint));
+}
+
 // Sets/clears the legend's isolate filter (Task 12, WORLD-4): `narrativeId`
 // null clears every arrow back to data-faded="false"; any other value fades
 // every arrow whose narrative doesn't match it.
@@ -1249,6 +1273,52 @@ export function setPolities(id, politiesJson) {
 
     const list = typeof politiesJson === 'string' ? JSON.parse(politiesJson) : (politiesJson || []);
     inst.polities.setPolities(list);
+}
+
+// Batch R requirement 1 ("borders become part of the plate"): pushes the
+// curated land mask (fetched once, World.razor's own PushLandMaskIfReady) to
+// the border layer's own clipPath -- see BorderLayer.setLandMask's own
+// comment. `landMaskJson` is the flat `[[[lat,lon],...],...]` array
+// `GET /api/land-mask`'s own `rings` field carries.
+export function setLandMask(id, landMaskJson) {
+    const inst = instances.get(id);
+    if (!inst || !inst.polities) {
+        return;
+    }
+
+    const rings = typeof landMaskJson === 'string' ? JSON.parse(landMaskJson) : (landMaskJson || []);
+    inst.polities.setLandMask(rings);
+}
+
+// Batch R requirement 5 (place-in-verse hover -> marker blink): toggles the
+// `.atlas-blink` class (app.css) on `placeId`'s own marker core -- across
+// EVERY currently-live, non-mini map instance (this module's own
+// module-level `instances` registry, the same one `debugLiveInstanceIds`
+// already exposes read-only) -- so this one call reaches whichever of the
+// full `/world` page's own map or a split view's embedded atlas pane's own
+// map (or both, or neither) is currently showing this place, with no
+// Blazor-side wiring beyond the single interop call itself (see
+// MapInterop.BlinkPlace's own comment for why this is a STATIC helper, not
+// bound to any one map instance). Looks the id up in BOTH `markers` (lit)
+// and `quietMarkers` (quiet) -- a place is always exactly one of the two for
+// a live time-mode scene (QUIET-1), so exactly one lookup ever hits.
+// Harmlessly a no-op wherever the place isn't currently on the map at all
+// (Reader.razor standalone, or a place off the current scene's own window).
+export function blinkPlace(placeId, active) {
+    for (const inst of instances.values()) {
+        if (inst.mini) {
+            continue;
+        }
+        const entry = inst.markers.get(placeId) || inst.quietMarkers.get(placeId);
+        if (!entry) {
+            continue;
+        }
+        const el = entry.marker.getElement();
+        const core = el && el.querySelector('.atlas-marker, .quiet-marker');
+        if (core) {
+            core.classList.toggle('atlas-blink', !!active);
+        }
+    }
 }
 
 // Shows/hides the polity-border layer without touching its data (Batch B2:
@@ -1990,6 +2060,38 @@ const BorderLayer = L.Layer.extend({
         // header comment.
         this._washSvg = svgEl('svg', { class: 'atlas-borders-wash' });
         map.getPane('washPane').appendChild(this._washSvg);
+
+        // Batch R requirement 1 ("borders become part of the plate"): a
+        // permanent <defs> holding the land-mask clipPath and the wash
+        // feather filter -- SIBLING of `_washGroup` below (never a child of
+        // it), so `setPolities`' own wholesale wipe-and-repaint (see its own
+        // comment) never has to touch, and can never accidentally delete,
+        // this static geometry. `_washGroup` is the ACTUAL wash-paint target
+        // from here on (every wash <path> setPolities creates is appended to
+        // IT, not to `_washSvg` directly) -- `clip-path` lives on this one
+        // group (set once here, static, referencing the clipPath below by
+        // id) so it clips the group's WHOLE flattened rendering, including
+        // each wash path's own feather blur (CSS Filter Effects/Masking's
+        // own documented order: filter first, then clip-path -- so a
+        // blurred wash edge bleeding toward open water is still cut off
+        // exactly at the coastline, never past it). Feather (feGaussianBlur)
+        // itself is applied per-path instead, via app.css's own
+        // `.atlas-border-wash { filter: ... }` rule -- each path's own
+        // filter region sizes to ITS OWN bounding box, not one shared huge
+        // region for the whole plate.
+        this._washDefs = svgEl('defs');
+        this._washSvg.appendChild(this._washDefs);
+        this._clipPath = svgEl('clipPath', { id: 'atlas-land-clip' });
+        this._washDefs.appendChild(this._clipPath);
+        const feather = svgEl('filter', { id: 'atlas-wash-feather', x: '-40%', y: '-40%', width: '180%', height: '180%' });
+        feather.appendChild(svgEl('feGaussianBlur', { stdDeviation: '2.4' }));
+        this._washDefs.appendChild(feather);
+        this._landMaskRings = [];
+        this._landMaskPaths = [];
+
+        this._washGroup = svgEl('g', { class: 'atlas-wash-clip-group' });
+        this._washSvg.appendChild(this._washGroup);
+
         this._labelPane = map.getPane('polityLabelsPane'); // created in init(), before this layer's own addTo(map)
         this._offZoomAnim = attachZoomAnim(map, this._svg);
         // Fix round 1: the wash SVG needs the SAME zoomanim treatment as the
@@ -1998,7 +2100,10 @@ const BorderLayer = L.Layer.extend({
         // animated zoom, or the wash would visibly lag/detach from its own
         // ring's band+line mid-zoom (a new regression the original zoom-sync
         // fix, requirement 5, didn't have to account for, since the wash
-        // lived in the same SVG as everything else at the time).
+        // lived in the same SVG as everything else at the time). Batch R:
+        // the land-mask clip lives in the SAME `_washSvg`, so it tracks this
+        // exact same transform for free -- no separate zoomanim wiring
+        // needed for req 1's own "clip must track zoomanim" ask.
         this._offZoomAnimWash = attachZoomAnim(map, this._washSvg);
         return this;
     },
@@ -2040,7 +2145,12 @@ const BorderLayer = L.Layer.extend({
         resetZoomAnimTransform(this._svg);
         resetZoomAnimTransform(this._washSvg); // fix round 1: second SVG, same reset (see onAdd's own comment)
         this._svg.replaceChildren();
-        this._washSvg.replaceChildren();
+        // Batch R requirement 1: wipes `_washGroup` (the wash paint target),
+        // NOT `_washSvg` itself -- `_washSvg` also holds `_washDefs` (the
+        // land-mask clipPath + feather filter, a SIBLING of `_washGroup`,
+        // see onAdd's own comment) as a permanent fixture that must survive
+        // every polity reload, not just the very first one.
+        this._washGroup.replaceChildren();
         for (const l of this._labels) {
             l.el.remove();
         }
@@ -2100,9 +2210,12 @@ const BorderLayer = L.Layer.extend({
         // comment for why the wash needs to live in a different pane for
         // its blend mode to actually reach the tiles. bandEls/lineEls are
         // unaffected, still appended to `this._svg` (overlayPane) in the
-        // same oldest-to-newest, bands-then-lines order as before.
+        // same oldest-to-newest, bands-then-lines order as before. Batch R:
+        // specifically into `_washGroup` (the land-mask-clipped, per-path-
+        // feathered group), not `_washSvg` directly -- see onAdd's own
+        // comment.
         for (const el of washEls) {
-            this._washSvg.appendChild(el);
+            this._washGroup.appendChild(el);
         }
         for (const el of bandEls) {
             this._svg.appendChild(el);
@@ -2161,6 +2274,36 @@ const BorderLayer = L.Layer.extend({
         this._redraw();
     },
 
+    // Batch R requirement 1: sets the land-mask clip geometry ONCE (called
+    // by World.razor's own PushLandMaskIfReady the moment BOTH the fetch and
+    // this map instance are ready, then never again for the life of the
+    // instance -- the mask is static, unlike `setPolities`' own per-window
+    // reload). `rings` is the flat `[[[lat,lon],...],...]` array
+    // `GET /api/land-mask` returns. Rebuilds `_clipPath`'s own child <path>
+    // elements from scratch (cheap -- this runs once) and wires
+    // `_washGroup`'s own `clip-path` to reference it: an SVG `<clipPath>`
+    // with multiple children UNIONS their filled areas (the spec's own
+    // documented behavior), so the mask's own several independent regions
+    // (see land-mask.toml's own header comment) need no special handling
+    // here beyond "one <path> per ring". A `_redraw()` at the end positions
+    // every ring immediately, same as `setPolities` already does for its
+    // own rings -- this can run before OR after the first `setPolities`
+    // call (whichever of the two async fetches resolves first), and either
+    // order produces the same final, fully-clipped result.
+    setLandMask(rings) {
+        this._landMaskRings = rings || [];
+        while (this._clipPath.firstChild) {
+            this._clipPath.removeChild(this._clipPath.firstChild);
+        }
+        this._landMaskPaths = this._landMaskRings.map(() => {
+            const p = svgEl('path', {});
+            this._clipPath.appendChild(p);
+            return p;
+        });
+        this._washGroup.style.clipPath = 'url(#atlas-land-clip)';
+        this._redraw();
+    },
+
     setVisible(visible) {
         this._svg.style.display = visible ? '' : 'none';
         this._washSvg.style.display = visible ? '' : 'none'; // fix round 1: second SVG, same visibility toggle (scripture mode must hide the wash too, not just the line/band SVG)
@@ -2202,6 +2345,17 @@ const BorderLayer = L.Layer.extend({
             g.band.setAttribute('d', d);
             g.line.setAttribute('d', d);
         }
+        // Batch R requirement 1: the land-mask clip geometry lives in the
+        // SAME `_washSvg` as the wash paths (see onAdd's own comment), so it
+        // needs the identical "recompute every ring's real `d` at the
+        // now-current zoom" treatment every _redraw -- `_ringPathData` is
+        // the exact same helper `setPolities`' own rings already use above,
+        // reused verbatim (both are plain `[[lat,lon],...]` ring arrays).
+        this._landMaskRings.forEach((ring, i) => {
+            if (this._landMaskPaths[i]) {
+                this._landMaskPaths[i].setAttribute('d', this._ringPathData(ring));
+            }
+        });
         for (const l of this._labels) {
             this._positionLabel(l);
         }

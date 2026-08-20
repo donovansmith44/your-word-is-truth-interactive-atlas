@@ -546,16 +546,49 @@ input:focus-visible,
     color: var(--ink);
 }
 
-/* reader-prev/reader-next: quiet bottom corners (design-direction.md
-   "Reader"), always reachable without scrolling to the end of a long
-   chapter. Two independent rules (not comma-grouped) per this file's own
-   single-class discipline. */
+/* reader-prev/reader-next -- Batch R requirement 6 (user 2026-08-19: "the
+   buttons for going to the next chapter should always be visible as being
+   middle-aligned on the page even as i scroll"): REPOSITIONED from quiet
+   bottom corners to vertically-centered at the reading column's own left/
+   right edges -- a book-reader's classic prev/next placement, persistent
+   through scroll (unchanged `position: fixed`; `.reader-page`'s own
+   `contain: layout`, Batch H, already confines this to the READER PANE
+   specifically in split view, not the whole window -- see that rule's own
+   comment, no change needed here for that half of the requirement).
+   `top: 50%` + `translateY(-50%)` centers vertically in whatever box this
+   is fixed against (the viewport standalone, the reader pane in split);
+   z-index/max-width/typography/quiet-until-hovered treatment (--ink-soft ->
+   --lapis) all UNCHANGED from before this batch. No layout shift (still
+   fully out of normal flow); no animation added, so nothing here needs its
+   own reduced-motion guard. Two independent rules (not comma-grouped) per
+   this file's own single-class discipline. */
+/* top: var(--chapter-nav-top, 50vh) -- deliberately NOT a bare `top: 50%`
+   or `top: 50vh`. `.reader-page`'s own pre-existing `contain: layout`
+   (Batch H, split-view) makes THIS PAGE'S OWN border box -- not the
+   viewport -- the CSS containing block for every position:fixed
+   descendant, including these two: correct and load-bearing for `left`/
+   `right` (this page's own width always tracks the viewport/pane width
+   regardless of content length, so it correctly confines them to the
+   reader PANE's own width in split view) but WRONG for any static `top`
+   value on a long chapter, where the page's own HEIGHT grows far past the
+   viewport's -- confirmed live: both a plain `50%` AND `50vh` centered
+   correctly only at scroll position 0, then drifted with the page (glued
+   to an absolute position on the PAGE, not the viewport) as soon as it
+   actually scrolled, the opposite of "middle-aligned... even as i scroll".
+   `--chapter-nav-top` is reader.js's own watchChapterNavCenter -- a small,
+   continuously-recomputed (scroll + resize) custom property set on
+   `.reader-page` itself, correcting JUST this one axis for the containing-
+   block substitution above (see that function's own comment for the exact
+   math) -- the `50vh` fallback only ever covers the brief instant before
+   its first call lands (or the JS-disabled case), and is itself already
+   correct at scroll position 0. */
 .reader-prev {
     position: fixed;
     left: 1.5rem;
-    bottom: 1.5rem;
+    top: var(--chapter-nav-top, 50vh);
+    transform: translateY(-50%);
     z-index: 15;
-    max-width: 12rem;
+    max-width: 10rem;
     font-family: var(--font-serif);
     font-variant-caps: small-caps;
     letter-spacing: .05em;
@@ -570,9 +603,10 @@ input:focus-visible,
 .reader-next {
     position: fixed;
     right: 1.5rem;
-    bottom: 1.5rem;
+    top: var(--chapter-nav-top, 50vh);
+    transform: translateY(-50%);
     z-index: 15;
-    max-width: 12rem;
+    max-width: 10rem;
     text-align: right;
     font-family: var(--font-serif);
     font-variant-caps: small-caps;
@@ -741,9 +775,23 @@ input:focus-visible,
    the newer one it's sharing the plate with, so a lower value is the
    correct choice, not a mistake). "middle" (a third-or-later tier, rare at
    this app's own data scale) sits between the two. */
+/* Batch R requirement 1 ("borders become part of the plate"): the FILL
+   (this rule) gets the feather -- "printed tint soaking into paper, not
+   neon glow" -- via the SVG filter map.js's BorderLayer builds once per
+   instance (`#atlas-wash-feather`, a single subtle feGaussianBlur). The
+   STROKE elements (.atlas-border-band/.atlas-border-line below) are
+   deliberately NEVER touched by this filter or by the land-mask clip --
+   "dotted-vs-solid multi-era treatment and ink border strokes stay crisp,"
+   per the batch brief -- only the fill soaks/gets clipped. `_washGroup`
+   (map.js) carries the land-mask `clip-path` one level up, so a blurred
+   wash edge bleeding toward open water is still cut off hard exactly at
+   the coastline (filter resolves before clip-path, the standard order) --
+   the feather softens ring-to-ring edges inland; the clip stays a real
+   coastline. */
 .atlas-border-wash {
     stroke: none;
     pointer-events: none;
+    filter: url(#atlas-wash-feather);
 }
 
 .atlas-border-wash[data-age="oldest"] {
@@ -980,6 +1028,41 @@ input:focus-visible,
     animation: atlas-marker-in 180ms ease-out both, atlas-breathe 2.5s ease-in-out 180ms infinite;
 }
 
+/* Batch R requirement 5 (place-in-verse hover -> marker blink -- user
+   2026-08-19: "if i hover over a place within that verse, then the glowy
+   dot associated with that location... should blink and be noticeable"):
+   toggled by map.js's own blinkPlace on `.atlas-marker`/`.quiet-marker`
+   directly (whichever the place actually is) from a mini-reader's own
+   place-mention hover (Explore/VerseTextSection). Single-class selector,
+   placed AFTER every .glow-1..5 rule above so it wins the SAME `box-shadow`
+   property on an already-lit marker at equal (single-class) specificity via
+   plain source order -- no !important, matching this file's own discipline
+   -- while still applying cleanly to a quiet marker (which has no
+   competing box-shadow rule of its own to begin with). "A few beats, then
+   steady-lit while hover holds": 3 pulses (~1.7s), then the animation ends
+   and this rule's own BASE (non-animated) box-shadow -- already the
+   amplified, steady value -- is what's left showing for as long as the
+   place-mention hover continues (map.js only ever removes the class on
+   hover-leave). */
+.atlas-blink {
+    box-shadow: 0 0 26px 10px rgba(255, 160, 60, .78), 0 0 48px 19px rgba(255, 180, 90, .45);
+    animation: atlas-blink-pulse 550ms ease-in-out 3;
+}
+
+@keyframes atlas-blink-pulse {
+    0%, 100% { box-shadow: 0 0 10px 3px rgba(231, 90, 20, .55); }
+    50% { box-shadow: 0 0 34px 13px rgba(255, 160, 60, .95), 0 0 58px 24px rgba(255, 180, 90, .55); }
+}
+
+/* prefers-reduced-motion: "steady amplified glow instead" of a pulse -- the
+   base .atlas-blink rule's own box-shadow (above) already IS that steady,
+   amplified value; only the pulsing animation itself needs to be removed. */
+@media (prefers-reduced-motion: reduce) {
+    .atlas-blink {
+        animation: none;
+    }
+}
+
 /* Quiet dots (Batch E2, the ever-present graph -- user direction
    2026-08-19: "all of the cities in our graph are available in any
    timerange... period relevance is now expressed by GLOW, not existence";
@@ -1065,6 +1148,25 @@ input:focus-visible,
    touching --ink itself (still the same reading-ink color at rest -- only
    the halo warms), so a further glow-N intensity bump was judged
    unnecessary on top of it. */
+/* Batch R requirement 2 (regression + enhancement -- user 2026-08-19: "i can
+   no longer click on a location's name, where i used to be able to and i
+   would get the est/dest dates. we need that functionality back"):
+   pointer-events RESTORED to `auto` (was `none`) -- the label is a DOM
+   descendant of the marker's own `.atlas-marker-icon` wrapper (map.js's
+   makeIcon), the exact element Leaflet's own marker interaction listens on,
+   so a real mouseover/click landing on the label text bubbles straight into
+   the SAME wireEvents handlers the dot's own `::after` hit-halo already
+   uses -- no map.js change needed for the wiring itself, just letting the
+   label participate in hit-testing at all. `::after` below gives the label
+   the SAME generous-hit-area treatment `.atlas-marker::after`/
+   `.quiet-marker::after` already give the dot (design-direction.md's
+   ">=14px floor... generous invisible padding"). No `.explorable`/darken
+   treatment here -- a label is equivalent to its OWN dot (hover raises the
+   place card, click pins it, CONTRACT's PIN-1), not a popover-opening
+   affordance; the resulting card IS the hover feedback, same as hovering
+   the bare dot already was before this batch. Polity/landmark labels are
+   deliberately UNCHANGED (still pointer-events:none) -- only place labels
+   (lit and quiet) become explorable targets. */
 .atlas-label {
     position: absolute;
     top: 50%;
@@ -1078,7 +1180,18 @@ input:focus-visible,
     font-size: .78rem;
     color: var(--ink);
     text-shadow: 0 0 3px rgba(255, 200, 100, .5), 0 0 2px rgba(246, 241, 229, .95), 0 0 4px rgba(246, 241, 229, .9), 0 1px 5px rgba(246, 241, 229, .8);
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+/* Same "generous, >=14px" hit-halo technique as .atlas-marker::after (see
+   that rule's own comment) -- a short one-word label's own rendered box can
+   sit under 14px tall on its own; this guarantees the floor regardless of
+   label length. */
+.atlas-label::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
 }
 
 /* Quiet-dot labels (Batch E2, escalated by a same-day second direction:
@@ -1096,6 +1209,10 @@ input:focus-visible,
    -- reads as clearly kin to a place label (still small-caps serif, still
    anchored the same way) while staying unmistakably the most minor text on
    the plate, since a quiet place is furniture even landmarks aren't. */
+/* Batch R requirement 2: same pointer-events restoration and hit-halo
+   treatment as .atlas-label above -- a quiet place's label is equivalent to
+   its own hollow-ring dot (hover opens the SAME place-card-quiet card, click
+   pins it), not a popover-opening .explorable target. */
 .quiet-label {
     position: absolute;
     top: 50%;
@@ -1109,7 +1226,14 @@ input:focus-visible,
     font-size: .64rem;
     color: var(--ink-soft);
     text-shadow: 0 0 2px rgba(246, 241, 229, .6), 0 1px 3px rgba(246, 241, 229, .5);
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.quiet-label::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
 }
 
 /* Landmark labels (design-direction.md's Atlas plate detail: "curated:
@@ -2739,12 +2863,16 @@ input:focus-visible,
     background: rgba(138, 107, 61, .2);
 }
 
+/* Batch R: the divider (border-top/padding-top) this rule used to carry
+   itself is gone -- CrossRefsSection's own xref-item list now renders
+   inside .popover-section (Explore/PopoverSectionProviders.cs), which
+   already supplies ONE consistent section-to-section divider for every
+   section kind; keeping a second one here doubled it up. Layout
+   (flex-column + gap, the vertical rhythm BETWEEN xref rows) stays. */
 .popover-xref-list {
     display: flex;
     flex-direction: column;
     gap: .45rem;
-    padding-top: .5rem;
-    border-top: 1px solid rgba(138, 107, 61, .3);
 }
 
 .popover-xref-item {
@@ -2871,6 +2999,162 @@ input:focus-visible,
     font-family: var(--font-mono);
     font-size: .82rem;
     color: var(--bronze-ink);
+}
+
+/* Batch R requirement 3: one section's own wrapper -- a stable hook
+   (data-testid="popover-section-{id}") independent of whatever a provider
+   renders inside it; visually just a vertical rhythm/divider between
+   sections, never its own card. First section in the body gets no leading
+   rule (border-top on every one but the first, the standard "divider
+   between siblings" trick -- no :first-child exception needed on this class
+   itself). */
+.popover-section {
+    padding-top: .6rem;
+    margin-top: .6rem;
+    border-top: 1px solid rgba(138, 107, 61, .18);
+}
+
+.popover-section:first-child {
+    padding-top: 0;
+    margin-top: 0;
+    border-top: none;
+}
+
+/* Batch R requirement 4 (expandable popover + in-context chapter reading).
+   The toggle itself: small-caps, quiet -- design-direction.md's own
+   letterspaced-eyebrow convention for controls, --lapis so it reads as
+   distinctly interactive against the section's own prose. */
+.popover-verse-expand {
+    display: block;
+    margin-top: .5rem;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .06em;
+    font-size: .8rem;
+    color: var(--lapis);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.popover-verse-expand:hover {
+    color: var(--bronze-ink);
+}
+
+/* The mini-reader itself: a bounded, independently-scrollable region (NOT
+   relying solely on .popover's own outer overflow -- requirement 4: "the
+   verse section becomes a SCROLLABLE mini-reader") so the popover's own
+   head/chips stay in place while the chapter scrolls underneath them. */
+.popover-reader {
+    display: flex;
+    flex-direction: column;
+    max-height: min(46vh, 26rem);
+    overflow-y: auto;
+    margin-bottom: .4rem;
+    padding-right: .3rem;
+}
+
+.popover-reader-verse {
+    display: flex;
+    align-items: baseline;
+    gap: .6rem;
+    padding: .3rem .35rem;
+    border-radius: 3px;
+}
+
+.popover-reader-verse-num {
+    flex: none;
+    width: 1.9rem;
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--bronze-ink);
+}
+
+.popover-reader-verse-text {
+    font-size: 1.02rem;
+    line-height: 1.7;
+}
+
+/* The focal verse (or every verse of a focal passage range): a calm, warm
+   highlight -- "visually distinguished... calm highlight, not a flash" --
+   a static tint, no animation at all, so it needs no reduced-motion guard. */
+.popover-reader-verse[data-focal="true"] {
+    background: rgba(255, 200, 100, .2);
+}
+
+/* Requirement 5 (place-in-verse hover -> marker blink): the hoverable
+   mention span itself -- same quiet ink-wash-on-hover language as
+   .explorable (this file's ONE interaction rule), but its own class rather
+   than reusing .explorable directly: a mention's click behavior is "blink
+   the map," never "open a popover," so it is deliberately NOT one of the
+   ONE-RULE's own covered elements (CONTRACT.md's own note on what
+   .explorable means). */
+.popover-reader-mention {
+    cursor: pointer;
+    border-radius: 2px;
+    background-color: rgba(44, 74, 112, 0);
+    transition: background-color 120ms ease-out;
+}
+
+.popover-reader-mention:hover,
+.popover-reader-mention:focus-visible {
+    background-color: rgba(44, 74, 112, .14);
+    color: var(--lapis);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .popover-reader-mention {
+        transition: none;
+    }
+}
+
+/* Batch R requirement 3 (PLACE sections): established/destroyed dates,
+   period blurb -- popover-native renderings of the SAME content
+   PlaceCard's own place-card-date-established/-destroyed/place-card-blurb
+   already show one hop further out (see PlaceDatesSection/PlaceBlurbSection,
+   Explore/PopoverSectionProviders.cs, for exactly what's shared). Layout
+   mirrors PlaceCard's own instrument-face date row rather than copying its
+   classes outright -- a different component, its own class names, per this
+   file's single-class discipline. */
+.popover-place-dates {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+}
+
+.popover-place-date {
+    display: flex;
+    align-items: baseline;
+    gap: .5rem;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: .2rem 0;
+    text-align: start;
+    cursor: pointer;
+}
+
+.popover-place-date-label {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .04em;
+    font-size: .85rem;
+    color: var(--ink-soft);
+}
+
+.popover-place-date-value {
+    font-family: var(--font-mono);
+    font-size: .92rem;
+    color: var(--bronze-ink);
+}
+
+.popover-place-blurb {
+    margin: 0;
+    font-size: .96rem;
+    line-height: 1.6;
+    color: var(--ink);
 }
 
 /* --- Blazor WebAssembly framework chrome (boot loader + unhandled-error

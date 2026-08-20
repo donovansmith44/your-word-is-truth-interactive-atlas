@@ -212,6 +212,13 @@
     // flag instead of reusing that machinery.
     private bool _landmarksPushed;
 
+    // Batch R requirement 1 ("borders become part of the plate"): the
+    // curated land mask, fetched once (like _landmarks above) and pushed to
+    // the map exactly once -- same "whichever of the fetch or the map's own
+    // creation resolves second" race/guard as _landmarksPushed.
+    private LandMaskOut? _landMask;
+    private bool _landMaskPushed;
+
     // The most recently APPLIED time-mode window -- i.e. the last from/to
     // SyncFromQuery validated, which is exactly "the window to return to"
     // (WORLD-6's mode-chip-return). Only the time-mode branch below ever
@@ -360,6 +367,18 @@
             // plate detail): the map still works fine with no labels.
         }
 
+        try
+        {
+            _landMask = await Atlas.LandMask();
+        }
+        catch (Exception)
+        {
+            // Batch R requirement 1: a failed land-mask fetch degrades to NO
+            // clip at all (BorderLayer.setLandMask is simply never called --
+            // see PushLandMaskIfReady below) -- washes fall back to their
+            // pre-Batch-R, unclipped rendering rather than the page breaking.
+        }
+
         // If OnInitializedAsync's own await above didn't complete
         // synchronously (the normal case -- it's a real network fetch),
         // Blazor already rendered once with _mapInterop still unset, so
@@ -371,6 +390,21 @@
         // gets an interim render, not a delayed one). Covers that case;
         // OnAfterRenderAsync's own call covers the reverse ordering.
         await PushLandmarksIfReady();
+        await PushLandMaskIfReady();
+    }
+
+    // Batch R requirement 1: pushes the curated land mask to the map exactly
+    // once -- same "whichever of the fetch or the map's own creation
+    // resolves second" race/guard as PushLandmarksIfReady just below.
+    private async Task PushLandMaskIfReady()
+    {
+        if (_landMaskPushed || _landMask is null || _mapInterop is null)
+        {
+            return;
+        }
+
+        _landMaskPushed = true;
+        await _mapInterop.SetLandMask(_landMask.Rings);
     }
 
     // Pushes the curated landmark list to the map exactly once, whichever
@@ -727,6 +761,9 @@
         // _landmarksPushed's own comments for why a naive "OnInitializedAsync
         // always finishes before the first render" assumption is wrong.
         await PushLandmarksIfReady();
+        // Batch R requirement 1: same "whichever resolves second" race, for
+        // the land mask.
+        await PushLandMaskIfReady();
 
         // Batch H: same race, for a restored camera (view-state round-trip)
         // -- see _pendingCamera's own comment.
@@ -1328,7 +1365,15 @@
     {
         if (_hoverPlace is { } place)
         {
-            _activeNode = new PlaceNode(place.Id, place.DisplayName);
+            // Batch R requirement 3 (PlaceDatesSection/PlaceBlurbSection):
+            // the SAME WindowFrom/WindowTo the <PlaceCard> markup above
+            // already computes for its own blurb/dates fetch -- the popover's
+            // own PlaceNode resolves against the identical window so its
+            // blurb section never contradicts what the hover card it was
+            // promoted from just showed.
+            var windowFrom = _scriptureRef is null ? _from : (int?)null;
+            var windowTo = _scriptureRef is null ? _to : (int?)null;
+            _activeNode = new PlaceNode(place.Id, place.DisplayName, windowFrom, windowTo);
         }
 
         CloseCardNow();

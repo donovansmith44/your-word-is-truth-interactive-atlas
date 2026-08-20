@@ -34,21 +34,27 @@ public sealed class PassageNode : IExplorable
     public string Title => _sref;
     public string Kind => "Passage";
 
-    // Batch G1 requirement 2 ("passage context -- passages give xrefs, not
-    // just geo"): unlike every OTHER chip on every node type in this file
-    // (all derivable from the ref string alone -- see VerseNode.ExploreAsync's
-    // own comment on that general rule), the "Cross-references" chip here
-    // is CONDITIONAL: it appears only when GET /api/xrefs/{sref} actually
-    // returns >=1 target (the brief's own words, verbatim). That can only be
-    // known by actually fetching -- a deliberate, documented exception to
-    // the "no fetch needed to decide which explorations exist" rule, scoped
-    // to this one node/chip. Fails soft (no chip, not an exception bubbling
-    // out of the popover) on a network error, same graceful-degradation
-    // policy every other lazy fetch in this app already follows.
-    public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
+    /// Batch R requirement 4 (the verse-text section's own compact view):
+    /// the passage's own already-known text, exposed publicly so
+    /// VerseTextSectionProvider (Explore/PopoverSectionProviders.cs) can
+    /// read it without a second network round trip -- the SAME text
+    /// <see cref="BodyAsync"/> already rendered pre-Batch-R, now surfaced
+    /// as a plain property since BodyAsync itself is no longer the
+    /// popover's own rendering path for this node kind (see the registry's
+    /// own doc comment for why BodyAsync survives regardless, as a fallback).
+    public string Text => _text;
+
+    // Every chip below is derivable from the sref string alone. Batch R
+    // requirement 3: cross-references are no longer a CONDITIONAL chip here
+    // (Batch G1's own original behavior) -- they render INLINE now via the
+    // registry's own CrossRefsSection (Explore/PopoverSections.cs), which
+    // does its own presence-checking fetch (reusing XrefsAsync below) rather
+    // than this method eagerly fetching just to decide a chip's presence --
+    // see CONTRACT.md's own amendment for this batch.
+    public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
         var (book, chapter, verse) = CanonRef.ParseVerse(CanonRef.FirstVerseOf(_sref));
-        var list = new List<Exploration>
+        IReadOnlyList<Exploration> list = new[]
         {
             new Exploration("Explore geo-temporally", "popover-chip-map", new ExplorationTarget.ShowMiniMap(_sref)),
             new Exploration("Read in context", "popover-chip-context",
@@ -56,24 +62,7 @@ public sealed class PassageNode : IExplorable
             new Exploration("About this book", "popover-chip-book",
                 new ExplorationTarget.Push(new AuthorNode(book))),
         };
-
-        try
-        {
-            var xrefs = await XrefsAsync(api);
-            if (xrefs.Count > 0)
-            {
-                // Target/Push(this) is the same "chip's real behavior is
-                // ExplorerPopover's own special-cased popover-chip-xrefs
-                // handling, never generically dispatched" placeholder
-                // VerseNode's own xrefs chip uses -- see its comment.
-                list.Add(new Exploration("Cross-references", "popover-chip-xrefs", new ExplorationTarget.Push(this)));
-            }
-        }
-        catch (Exception)
-        {
-        }
-
-        return list;
+        return Task.FromResult(list);
     }
 
     // Public + memoized (mirrors VerseNode.DetailAsync's own reasoning

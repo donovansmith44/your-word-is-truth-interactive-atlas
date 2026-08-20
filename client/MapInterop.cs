@@ -159,6 +159,24 @@ public sealed class MapInterop : IAsyncDisposable
     }
 
     /// <summary>
+    /// Batch R requirement 1 ("borders become part of the plate"): pushes the
+    /// curated land mask once (fetched once, see <see cref="AtlasClient.LandMask"/>)
+    /// -- the clip geometry <c>BorderLayer</c> builds its SVG
+    /// <c>&lt;clipPath&gt;</c> from, so polity washes never spill into open
+    /// sea. <paramref name="rings"/> is the flat <c>[[[lat,lon],...],...]</c>
+    /// array <c>LandMaskOut.Rings</c> carries, forwarded verbatim (a raw
+    /// <see cref="JsonElement"/>, same "the client never inspects ring
+    /// coordinates" reasoning <see cref="SetPolities"/> already documents for
+    /// its own <c>Rings</c>). Never diffed/updated again for the life of the
+    /// map instance -- the mask is static.
+    /// </summary>
+    public async Task SetLandMask(JsonElement rings)
+    {
+        var json = JsonSerializer.Serialize(rings, Wire.Options);
+        await _module.InvokeVoidAsync("setLandMask", _id, json);
+    }
+
+    /// <summary>
     /// WORLD-4 legend isolate: <paramref name="narrativeId"/> null clears
     /// every arrow back to unfaded; any other value fades every arrow whose
     /// narrative doesn't match it. A bare string argument has no properties
@@ -197,6 +215,29 @@ public sealed class MapInterop : IAsyncDisposable
     /// </summary>
     public async Task SetCamera(double lat, double lon, double zoom) =>
         await _module.InvokeVoidAsync("setCamera", _id, lat, lon, zoom);
+
+    /// <summary>
+    /// Batch R requirement 5 (place-in-verse hover -> marker blink): a
+    /// STATIC helper, not an instance method -- unlike every other member on
+    /// this class, the caller (Explore/VerseTextSection's own mini-reader)
+    /// owns no <see cref="MapInterop"/>/map instance of its own; it just
+    /// needs to reach WHICHEVER live, non-mini map instance(s) currently
+    /// exist (the full <c>/world</c> page's own map, and/or a split view's
+    /// embedded atlas pane's own map -- map.js's own module-level
+    /// <c>instances</c> registry already tracks every one of them, keyed by
+    /// id, independent of which C# component created it). map.js's own
+    /// <c>blinkPlace</c> loops that registry directly, so this is a single,
+    /// ID-less JS interop call -- "works against the live map in split view
+    /// and full /world+popover contexts" falls out of that for free, with no
+    /// Blazor-side component wiring at all. A no-op, harmlessly, when no
+    /// live non-mini map currently has this place on it (e.g. Reader.razor
+    /// standalone, or a place off the current scene's own window).
+    /// </summary>
+    public static async Task BlinkPlace(IJSRuntime js, string placeId, bool active)
+    {
+        var module = await js.InvokeAsync<IJSObjectReference>("import", "./js/map.js");
+        await module.InvokeVoidAsync("blinkPlace", placeId, active);
+    }
 
     public async ValueTask DisposeAsync()
     {

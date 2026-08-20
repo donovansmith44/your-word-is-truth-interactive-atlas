@@ -28,12 +28,29 @@ public sealed class PlaceNode : IExplorable
 {
     private readonly string _placeId;
     private readonly string _placeName;
+    private readonly int? _windowFrom;
+    private readonly int? _windowTo;
     private PlaceDetail? _cached;
 
-    public PlaceNode(string placeId, string placeName)
+    /// <param name="windowFrom">
+    /// Batch R requirement 3 (the PLACE section registry -- established/
+    /// destroyed/blurb sections): the scene's own active time-mode window
+    /// (null in scripture mode / when opened with no window in hand), so
+    /// <see cref="DetailAsync"/>'s fetch resolves the SAME window-scoped
+    /// blurb/display-name PlaceCard already shows for this place, per
+    /// <c>AtlasClient.PlaceHistory</c>'s own doc comment. World.razor's
+    /// OpenPlaceFromCard supplies this from the exact same
+    /// <c>WindowFrom</c>/<c>WindowTo</c> values it already passes to
+    /// PlaceCard. Established/destroyed dates are window-INDEPENDENT (still
+    /// returned regardless), so a null window here only ever costs the blurb
+    /// section, never the dates one.
+    /// </param>
+    public PlaceNode(string placeId, string placeName, int? windowFrom = null, int? windowTo = null)
     {
         _placeId = placeId;
         _placeName = placeName;
+        _windowFrom = windowFrom;
+        _windowTo = windowTo;
     }
 
     public string Title => _placeName;
@@ -114,5 +131,17 @@ public sealed class PlaceNode : IExplorable
         return fragment;
     }
 
-    private async Task<PlaceDetail> Load(AtlasClient api) => _cached ??= await api.Place(_placeId);
+    // Public + memoized (mirrors VerseNode.DetailAsync/PassageNode.XrefsAsync's
+    // own reasoning exactly) so Batch R's own PlaceDatesSection/
+    // PlaceBlurbSection/PlaceEventsSection providers -- each of which need
+    // THIS node's fetched PlaceDetail -- share one fetch rather than one each
+    // (3-4x per popover open otherwise, for identical data). Batch R: reads
+    // via AtlasClient.PlaceHistory (window-aware), not the older plain
+    // AtlasClient.Place -- the SAME `/api/place/{id}` endpoint either way
+    // (PlaceHistory just forwards the optional `?from=&to=`), so this is a
+    // strict superset (adds `History`) of what the old call returned, not a
+    // behavior change for `Events`.
+    public async Task<PlaceDetail> DetailAsync(AtlasClient api) => _cached ??= await api.PlaceHistory(_placeId, _windowFrom, _windowTo);
+
+    private Task<PlaceDetail> Load(AtlasClient api) => DetailAsync(api);
 }

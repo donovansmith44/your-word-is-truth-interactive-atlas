@@ -1,29 +1,40 @@
 @* The shared parchment popover (design-direction.md: "popovers and hover
    cards are parchment artifacts on both pages... One popover style
    everywhere -- it renders the same ExplorerPopover -- the design mirrors
-   the architecture"). Renders ANY IExplorable: title, body, exploration
-   chips, and a breadcrumb Stack for drilling in (Push) and walking back out.
+   the architecture"). Renders ANY IExplorable: title, a body built from the
+   Batch R section-provider REGISTRY (Explore/PopoverSections.cs), the
+   pre-existing exploration chips, and a breadcrumb Stack for drilling in
+   (Push) and walking back out.
 
-   Two node-specific behaviors are special-cased here rather than being
-   generic ExplorationTarget dispatch, because CONTRACT.md's testids are
-   fixed rather than parameterized per node kind:
-     - popover-chip-xrefs (only ever offered by VerseNode) expands an inline
-       xref-item-{TARGET} list read from the current VerseNode's own
-       (memoized) VerseDetail.CrossRefs -- see ToggleXrefs's own comment for
-       why this reuses the node's cache instead of issuing a second fetch.
-     - Any ShowMiniMap-targeted chip reveals a mini-map area IN PLACE
-       (no stack push) -- CONTRACT's mini-map testid lives inside the still-
-       open popover beside its own chips/breadcrumb, not as a separate node.
-       Renders a real <MiniWorld> (Task 15); MiniWorld's own root carries
-       the mini-map testid, so this file adds no extra wrapping element
-       around it.
+   Batch R requirement 3 ("the popover becomes a content-first section
+   platform"): the body is no longer one node-specific IExplorable.BodyAsync
+   fragment. LoadCurrent asks PopoverSectionRegistry.Providers which ones
+   apply to the CURRENT node's own Kind (Verse/Passage/Place, today); each
+   applicable one resolves independently (conditional presence -- null means
+   no section), and every non-null result renders, IN REGISTRY ORDER, inside
+   .popover-body. A node kind NO provider claims (Chapter/Book/Author/
+   TimeAndPlace/Year) falls back to that node's own BodyAsync, UNCHANGED --
+   this file's pre-Batch-R rendering path for those five kinds, byte-for-byte.
+   This component implements IPopoverSectionContext itself (PushAsync below)
+   -- a provider's own section can drill into a new node the exact same way
+   a chip already could, without ExplorerPopover growing a bespoke callback
+   per provider ("no popover surgery" for Batch F/P, whichever content they
+   add).
 
-   A third, narrower escape (Task 15): PlaceNode's event rows need a way to
-   push a fresh TimeAndPlaceNode onto THIS popover's own Stack from inside
-   PlaceNode's own BodyAsync-rendered markup. LoadCurrent wires PlaceNode.
-   OnSelectEvent to a closure that does exactly that -- see PlaceNode.cs's
-   own doc comment for why this lives on the node (a settable delegate)
-   rather than as a fourth ChipTestId-string-match special case here.
+   One node-specific behavior stays special-cased here (unrelated to the
+   registry): any ShowMiniMap-targeted chip reveals a mini-map area IN PLACE
+   (no stack push) -- CONTRACT's mini-map testid lives inside the still-open
+   popover beside its own chips/breadcrumb, not as a separate node. Renders a
+   real <MiniWorld> (Task 15); MiniWorld's own root carries the mini-map
+   testid, so this file adds no extra wrapping element around it. (The old
+   popover-chip-xrefs toggle -- VerseNode/PassageNode's own retired chip --
+   and its ToggleXrefs/_xrefs machinery are GONE: cross-references render
+   inline now, via the registry's own CrossRefsSection, "no extra button
+   press" per requirement 3(b). Same for PlaceNode's own OnSelectEvent wiring
+   -- PlaceEventsSection pushes TimeAndPlaceNode via PushAsync directly now,
+   so PlaceNode's own BodyAsync/OnSelectEvent survive only as its defensive,
+   never-called-in-practice IExplorable fallback -- see that class's own
+   comment.)
 
    Backdrop is a sibling element, not a wrapper, so clicking the popover
    itself never needs stopPropagation to avoid closing through a parent
@@ -31,6 +42,7 @@
    own @onclick at all. *@
 @inject AtlasClient Atlas
 @inject NavigationManager Nav
+@implements IPopoverSectionContext
 
 <div class="popover-backdrop" data-testid="popover-backdrop" @onclick="RequestClose"></div>
 
@@ -45,8 +57,37 @@
         <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" @onclick="RequestClose">&times;</button>
     </div>
 
-    <div class="popover-body">
-        @_body
+    @* Batch R requirement 3: keyed by the CURRENT node's own Title (changes
+       on every push/pop -- every node kind's Title is unique to what it
+       names, e.g. a vref, a place name, a composed label) so every section's
+       own rendered subtree -- INCLUDING any child component a section opens
+       (VerseTextSection's own expanded/fetched-chapter state, in
+       particular) -- is torn down and rebuilt fresh on every navigation,
+       never silently reused across two different nodes that happen to
+       render a same-shaped section in the same registry slot. A "body:"
+       prefix (NOT the bare Title) -- fix, a real bug caught live: a
+       VerseNode's own Title and its ShowMiniMap chip's own SRef are
+       routinely the EXACT SAME string (e.g. both "GEN.1.1"), and
+       <MiniWorld @key="miniMapSref"> below is this element's own SIBLING,
+       not a descendant -- Blazor's own key-uniqueness check is scoped to
+       the sibling group being diffed regardless of element/component type,
+       so two unrelated siblings sharing the bare "GEN.1.1" key crashed the
+       renderer outright ("More than one sibling... has the same key
+       value") the instant a mini-map was opened. *@
+    <div class="popover-body" data-testid="popover-body" @key="@($"body:{Current.Title}")">
+        @if (_usingSectionRegistry)
+        {
+            @foreach (var section in _sections)
+            {
+                <div class="popover-section" data-testid="popover-section-@section.Testid">
+                    @section.Body
+                </div>
+            }
+        }
+        else
+        {
+            @_body
+        }
     </div>
 
     @if (_explorations.Count > 0)
@@ -55,23 +96,6 @@
             @foreach (var ex in _explorations)
             {
                 <button type="button" class="popover-chip" data-testid="@ex.ChipTestId" @onclick="() => Activate(ex)">@ex.Label</button>
-            }
-        </div>
-    }
-
-    @if (_xrefs is not null)
-    {
-        <div class="popover-xref-list">
-            @if (_xrefs.Count == 0)
-            {
-                <p class="popover-meta">No cross-references recorded.</p>
-            }
-            @foreach (var x in _xrefs)
-            {
-                <button type="button" class="popover-xref-item" data-testid="xref-item-@x.Target" @onclick="() => FollowXref(x.Target)">
-                    <span class="popover-xref-target">@x.Target</span>
-                    <span class="popover-xref-preview">@x.Preview</span>
-                </button>
             }
         </div>
     }
@@ -103,7 +127,14 @@
 
     private IReadOnlyList<Exploration> _explorations = Array.Empty<Exploration>();
     private RenderFragment _body = _ => { };
-    private List<CrossRefOut>? _xrefs;
+    // Batch R requirement 3: true when >=1 registered provider claims the
+    // CURRENT node's own Kind -- Verse/Passage/Place today (see
+    // PopoverSectionRegistry's own doc comment for exactly which). Decides
+    // which of _sections/_body the markup above renders; a node kind no
+    // provider claims (Chapter/Book/Author/TimeAndPlace/Year) leaves this
+    // false and _body is exactly this file's own pre-Batch-R rendering.
+    private bool _usingSectionRegistry;
+    private IReadOnlyList<PopoverSection> _sections = Array.Empty<PopoverSection>();
     private string? _miniMapSref;
     private ElementReference _panelRef;
     private bool _focused;
@@ -139,64 +170,54 @@
         }
     }
 
+    // Batch R requirement 3: builds this node's own popover body. Two
+    // disjoint paths, decided by whether ANY registered provider claims the
+    // current node's Kind at all (_usingSectionRegistry):
+    //   - Verse/Passage/Place: every APPLICABLE provider's own ResolveAsync
+    //     runs CONCURRENTLY (Task.WhenAll, same "independent fetches never
+    //     serialize" rule Batch G1 already established for
+    //     ExploreAsync/BodyAsync below), and every non-null result becomes
+    //     one _sections entry, IN REGISTRY ORDER (List.FindAll/Select
+    //     preserve source order; Task.WhenAll resolves all of them before
+    //     this method returns, so the ORDER the results are READ back in --
+    //     the original applicable list's own order -- is what actually
+    //     renders, regardless of which fetch happened to finish first).
+    //   - every other kind (Chapter/Book/Author/TimeAndPlace/Year): the
+    //     exact pre-Batch-R path, byte-for-byte -- Current.BodyAsync.
+    // ExploreAsync (the chips row) runs in EITHER case, alongside whichever
+    // path is taken, same concurrency reasoning.
     private async Task LoadCurrent()
     {
-        _xrefs = null;
         _miniMapSref = null;
 
-        // PlaceNode's event rows need a way back into THIS popover's own
-        // Stack -- see PlaceNode.OnSelectEvent's own doc comment for why
-        // this lives here rather than as a fourth ChipTestId-style special
-        // case. Reassigned on every LoadCurrent, including a Back() that
-        // returns TO a PlaceNode, so the closure always captures the
-        // CURRENT _stack/LoadCurrent, never a stale one from an earlier push.
-        //
-        // The explicit StateHasChanged() (found via systematic-debugging,
-        // tracing a real "click does nothing visible" failure) is load-
-        // bearing, not defensive: the row's own onclick is bound via
-        // EventCallback.Factory.Create(this, ...) INSIDE PlaceNode.BodyAsync,
-        // where "this" is the PlaceNode instance, not a component -- so it
-        // doesn't implement IHandleEvent, and ComponentBase.HandleEventAsync
-        // (the mechanism that gives EVERY normal @onclick="Method" its
-        // automatic post-invoke re-render) never runs for it. Confirmed by
-        // instrumenting the click end-to-end: the callback fires, select()
-        // (this exact closure) is awaited and returns, _stack genuinely
-        // gains the new node -- but the DOM stayed on the stale content
-        // until this call was added, exactly like World.razor's own
-        // OnPlaceHover/OnArrowHover already need it for JS-interop-sourced
-        // events that arrive outside Blazor's normal event dispatch.
-        if (Current is PlaceNode placeNode)
-        {
-            placeNode.OnSelectEvent = async node =>
-            {
-                _stack.Push(node);
-                await LoadCurrent();
-                StateHasChanged();
-            };
-        }
+        var applicable = PopoverSectionRegistry.Providers.Where(p => p.AppliesTo(Current)).ToList();
+        _usingSectionRegistry = applicable.Count > 0;
 
         try
         {
-            // Batch G1: run concurrently, not sequentially -- PassageNode's
-            // own ExploreAsync now does a network fetch (requirement 2's
-            // conditional-presence chip), which used to mean BodyAsync's
-            // already-instant text (PassageNode never fetches for its own
-            // body -- see PassageNode.cs's doc comment) would wait on it
-            // too, since Blazor renders once only after THIS WHOLE METHOD
-            // returns, not between two sequential awaits inside it. Mirrors
-            // PlaceCard.OnParametersSetAsync's own established "independent
-            // fetches run concurrently via Task.WhenAll" rule for the exact
-            // same reason -- neither call depends on the other's result for
-            // ANY node type today.
             var explorationsTask = Current.ExploreAsync(Atlas);
-            var bodyTask = Current.BodyAsync(Atlas);
-            await Task.WhenAll(explorationsTask, bodyTask);
-            _explorations = explorationsTask.Result;
-            _body = bodyTask.Result;
+
+            if (_usingSectionRegistry)
+            {
+                var sectionTasks = applicable.Select(p => p.ResolveAsync(Current, Atlas, this)).ToList();
+                await Task.WhenAll(sectionTasks.Cast<Task>().Append(explorationsTask));
+                _sections = sectionTasks.Select(t => t.Result).Where(s => s is not null).Select(s => s!).ToList();
+                _explorations = explorationsTask.Result;
+            }
+            else
+            {
+                var bodyTask = Current.BodyAsync(Atlas);
+                await Task.WhenAll(explorationsTask, bodyTask);
+                _sections = Array.Empty<PopoverSection>();
+                _explorations = explorationsTask.Result;
+                _body = bodyTask.Result;
+            }
         }
         catch (Exception)
         {
             _explorations = Array.Empty<Exploration>();
+            _sections = Array.Empty<PopoverSection>();
+            _usingSectionRegistry = false;
             _body = builder =>
             {
                 builder.OpenElement(0, "p");
@@ -207,14 +228,27 @@
         }
     }
 
+    // IPopoverSectionContext: a provider's own section (VerseTextSection's
+    // xref/date/event rows, etc.) drills into a new node THIS SAME way an
+    // ExplorationTarget.Push chip already does. Explicit StateHasChanged()
+    // -- load-bearing, not defensive, per the EXACT same reasoning
+    // PlaceNode.OnSelectEvent's own (now-retired-as-primary) closure already
+    // documented: a provider's own onclick is bound via
+    // EventCallback.Factory.Create(ctx, ...) where ctx is passed as the
+    // IPopoverSectionContext INTERFACE reference -- the underlying object IS
+    // this component (so automatic re-render should, in principle, already
+    // fire), but this call removes any doubt rather than leaning on that
+    // subtlety a second time.
+    public async Task PushAsync(IExplorable node)
+    {
+        _miniMapSref = null;
+        _stack.Push(node);
+        await LoadCurrent();
+        StateHasChanged();
+    }
+
     private async Task Activate(Exploration ex)
     {
-        if (ex.ChipTestId == "popover-chip-xrefs")
-        {
-            await ToggleXrefs();
-            return;
-        }
-
         switch (ex.Target)
         {
             case ExplorationTarget.Push push:
@@ -224,7 +258,6 @@
                 break;
 
             case ExplorationTarget.ShowMiniMap map:
-                _xrefs = null;
                 _miniMapSref = _miniMapSref == map.SRef ? null : map.SRef;
                 break;
 
@@ -253,56 +286,6 @@
                 Nav.NavigateTo(url);
                 break;
         }
-    }
-
-    // Reads the CURRENT node's own (memoized) VerseDetail/xrefs cache
-    // rather than issuing a fresh fetch every time this is clicked (fix
-    // round 1 finding, VerseNode's own case: that duplicated the fetch
-    // BodyAsync/LoadCurrent already made when the node was pushed, 2-4x per
-    // popover for no freshness benefit). Freshness across hops still holds
-    // -- each hop pushes a BRAND NEW node instance with its own empty
-    // cache, so "the current node's own cache" and "a fresh fetch for the
-    // current ref" are exactly the same data; only re-toggling xrefs on the
-    // SAME node (no navigation) now reuses the cache, which is correct
-    // since nothing could have changed underneath it in that time.
-    //
-    // Batch G1 requirement 2: PassageNode offers the SAME chip now (backed
-    // by GET /api/xrefs/{sref}'s span aggregation, not VerseNode's own
-    // per-verse VerseDetail.CrossRefs) -- its own XrefsAsync is ALREADY
-    // memoized from the ExploreAsync call that decided this chip should
-    // even be offered (requirement 2's conditional-presence rule), so this
-    // click is a free cache hit, never a second network round trip.
-    private async Task ToggleXrefs()
-    {
-        _miniMapSref = null;
-        if (_xrefs is not null)
-        {
-            _xrefs = null;
-            return;
-        }
-
-        try
-        {
-            _xrefs = Current switch
-            {
-                VerseNode verseNode => (await verseNode.DetailAsync(Atlas)).CrossRefs,
-                PassageNode passageNode => await passageNode.XrefsAsync(Atlas),
-                // Invariant guard, not a real path: only VerseNode/
-                // PassageNode ever offer popover-chip-xrefs (see each
-                // node's own ExploreAsync).
-                _ => new List<CrossRefOut>(),
-            };
-        }
-        catch (Exception)
-        {
-            _xrefs = new List<CrossRefOut>();
-        }
-    }
-
-    private async Task FollowXref(string target)
-    {
-        _stack.Push(new VerseNode(CanonRef.FirstVerseOf(target)));
-        await LoadCurrent();
     }
 
     private async Task Back()

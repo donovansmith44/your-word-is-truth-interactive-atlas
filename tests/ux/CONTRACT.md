@@ -122,7 +122,13 @@ Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   ChapterNode), `verse-line-{n}` (batch-g1-brief.md; THE explorable element
   for that verse -- see ONE-RULE below; the retired `verse-explore-{n}` ∴
   button's replacement, not an addition alongside it), `verse-num-{n}`,
-  `reader-prev`, `reader-next`, `passage-chip`
+  `reader-prev`, `reader-next` (batch-r-brief.md requirement 6, "always
+  visible... middle-aligned... even as i scroll": REPOSITIONED from quiet
+  bottom corners to vertically-centered at the reading column's own left/
+  right edges -- `position:fixed`, unchanged testids/content/quiet-until-
+  hovered treatment; `.reader-page`'s own `contain:layout`, Batch H, already
+  confines this to the reader PANE specifically in split view, not the
+  whole window), `passage-chip`
 Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
   FOLLOW-1/VIEWSTATE-1 below for the full behavior these wire up):
   `split-open-reader` (button, reader only, absent once split is open;
@@ -142,19 +148,117 @@ Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
   {REF}" while following with a REF to show, else "Follow the text"; present
   only on the embedded atlas pane, i.e. only while split is open)
 Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
-  `popover-chip-xrefs` (batch-g1-brief.md requirement 2: offered by BOTH VerseNode
-  -- unconditionally, unchanged -- AND PassageNode -- CONDITIONALLY, present only
-  when `GET /api/xrefs/{sref}` returns >=1 target for that passage's own span;
-  expands the SAME inline `xref-item-{TARGET}` list either way, backed by
-  `VerseDetail.CrossRefs` for a VerseNode or the new span-aggregation endpoint for a
-  PassageNode),
+  `popover-body` (batch-r-brief.md; the section-registry's own render target
+  -- see REGISTRY-1 below),
+  `popover-section-{id}` (batch-r-brief.md; one wrapper per RESOLVED section
+  the registry rendered for the current node, `id` one of `verse-text`,
+  `xrefs`, `place-dates`, `place-blurb`, `place-events` today -- see
+  REGISTRY-1; conditional presence, absent whenever that section's own
+  provider resolved no content this open),
+  `popover-verse-expand` (batch-r-brief.md requirement 4; button; present on
+  every VERSE/PASSAGE node's own `popover-section-verse-text`; text "Read
+  the whole chapter" collapsed / "Show just this verse" expanded, attr
+  `aria-expanded`; toggles the compact text vs. the scrollable mini-reader
+  below -- see READER-1),
+  `popover-verse-reader` (batch-r-brief.md requirement 4; the mini-reader's
+  own scrollable container; present only while expanded),
+  `popover-reader-verse-{n}` (batch-r-brief.md requirement 4; one per verse
+  of the lazily-fetched chapter, `n` = verse number within it; attr
+  `data-focal` = `"true"` for every verse in the node's own focal
+  verse/passage range, `"false"` otherwise -- see READER-1),
+  `popover-reader-mention-{n}-{placeId}` (batch-r-brief.md requirement 5;
+  one per detected place-name mention inside verse `n`'s own text -- see
+  BLINK-1 below; hovering or keyboard-focusing it blinks `placeId`'s own map
+  marker),
+  `popover-place-date-established` / `popover-place-date-destroyed`
+  (batch-r-brief.md requirement 3; button; the popover-native rendering of
+  the SAME curated established/destroyed claim PlaceCard's own
+  `place-card-date-established`/`-destroyed` already show one hop further
+  out -- opens the SAME `YearNode`, listing its curated supporting verses
+  first, per DATE-1; conditional presence, one or both present exactly when
+  PlaceCard's own equivalents would be),
+  `popover-place-blurb` (batch-r-brief.md requirement 3; the popover-native
+  rendering of the SAME BLURB-1-resolved text `place-card-blurb` already
+  shows; conditional presence, same BLURB-1 rule),
+  `place-event-{id}` (button; one per this place's own recorded event,
+  pushes a `TimeAndPlaceNode`; PRE-EXISTING since Task 15, undocumented
+  before this batch -- see REGISTRY-1),
   `popover-chip-map`, `popover-chip-book`, `popover-chip-context`,
   `popover-chip-verse-{VREF}` (batch-e-brief.md; one per a `YearNode`'s own curated
   supporting verses, in curated order, ALWAYS rendered before that same node's
   `popover-chip-map` chip -- DATE-1: opening a date's popover lists its supporting
   verses first),
-  `xref-item-{TARGET}` (TARGET = canonical ref/span text), `mini-map`, `mini-map-open-world`
+  `xref-item-{TARGET}` (TARGET = canonical ref/span text; batch-r-brief.md:
+  now rendered INLINE, unconditionally offered where present -- see
+  REGISTRY-1; the retired `popover-chip-xrefs` toggle is GONE for VerseNode/
+  PassageNode, no button press needed to see it), `mini-map`, `mini-map-open-world`
 Notes:
+- REGISTRY-1 (batch-r-brief.md requirement 3, "the popover becomes a
+  content-first section platform"): the popover body is a composable,
+  ordered, CLIENT-SIDE registry of section providers
+  (`client/Explore/PopoverSections.cs`'s own `PopoverSectionRegistry`), not
+  one fixed per-node-kind fragment -- each provider declares which node
+  `Kind`s it applies to and independently answers "does THIS node have
+  content for me" (conditional presence: no content -> no
+  `popover-section-{id}` at all, not an empty placeholder). VERSE node
+  sections, in this order: the verse's own text with its own expand
+  affordance (`popover-section-verse-text`, see READER-1), cross-references
+  inline (`popover-section-xrefs`, conditional -- absent for a verse with
+  zero recorded cross-references), an empty seam reserved for a future
+  catechism provider (renders nothing today -- registering or replacing
+  that ONE provider is the whole of adding it later, no other file changes).
+  PASSAGE nodes get the same verse-text and cross-references sections
+  (aggregating as before this batch). PLACE node sections, in this order: an
+  empty seam reserved for a future place-description provider (renders
+  nothing today), established/destroyed dates
+  (`popover-section-place-dates`, conditional), period blurb
+  (`popover-section-place-blurb`, conditional, BLURB-1), events
+  (`popover-section-place-events`, one `place-event-{id}` row per event,
+  pushes a `TimeAndPlaceNode` -- the thin, events-only PlaceNode popover
+  this batch's own brief calls out is retired). A node `Kind` no provider
+  claims at all (Chapter/Book/Author/TimeAndPlace/Year) keeps its own
+  PRE-BATCH-R rendering, byte for byte -- unaffected by this note. The
+  chips row (`popover-chip-map`/`-book`/`-context`/`-verse-{VREF}`) is
+  UNCHANGED, pre-existing machinery, rendered below every section exactly as
+  before -- "Explore" (the map affordance) is `popover-chip-map`, not a
+  registry section.
+- READER-1 (batch-r-brief.md requirement 4): `popover-verse-expand`
+  collapsed shows exactly the compact text the popover always showed (one
+  verse, or a passage's own already-known concatenated text); clicking it
+  fetches the WHOLE chapter (`GET /api/chapter/{cref}`, lazily -- not before
+  expand, cached like every other chapter fetch) and replaces the compact
+  text with `popover-verse-reader`, a bounded, independently-scrollable
+  region (the popover's own head/chips stay in place; only this region
+  scrolls) listing every verse of that chapter, auto-scrolled once so the
+  node's own focal verse (or, for a passage, its own first focal verse) is
+  immediately visible, with every verse in the focal range carrying
+  `data-focal="true"` and a calm, static highlight (no flash/animation).
+  Collapsing restores the exact compact view; a later re-expand reuses the
+  already-fetched chapter (no second fetch).
+- BLINK-1 (batch-r-brief.md requirement 5, user 2026-08-19: "if i hover
+  over a place within that verse, then the glowy dot associated with that
+  location... should blink and be noticeable"): every verse rendered inside
+  `popover-verse-reader` is scanned (`GET /api/chapter/{cref}`'s own,
+  per-verse `places` array -- server: `AtlasData.places_for_verse`, the
+  reverse of a place's curated `verse_links`) for a plain, case-insensitive
+  substring match of each linked place's own name; the FIRST (longest-name-
+  wins on overlap) match per place becomes `popover-reader-mention-{n}-
+  {placeId}`, hoverable and keyboard-focusable. Hovering/focusing one
+  toggles `.atlas-blink` (`app.css`) on `placeId`'s own marker CORE
+  (`.atlas-marker`/`.quiet-marker`) across EVERY currently-live, non-mini
+  map instance at once (map.js's own `blinkPlace`, looping its
+  module-level `instances` registry) -- so this works identically whether
+  the live map is the full `/world` page's own (a popover opened over it)
+  or a split view's embedded atlas pane's own, with no page-specific
+  wiring. A few beats of an ember-glow pulse (~1.7s, 3 cycles), then a
+  steady, amplified glow for as long as the hover/focus holds;
+  `prefers-reduced-motion: reduce` skips the pulse and shows the steady
+  amplified glow immediately instead, never a moving animation. A mention
+  is a plain, best-effort text match, not a claim of exhaustive recall --
+  a place named only by a pronoun, or under a curated name the verse's own
+  KJV wording doesn't literally use, is simply not detected. Reader-wide
+  (outside a popover's own mini-reader) place-name hovers are explicitly
+  OUT of this batch's scope (Batch P).
 - ONE-RULE (batch-g1-brief.md, user direction 2026-08-19: "the little trinity button
   isn't clear... explorable elements display slightly darker on hover; click opens the
   pop-up menu" -- REPLACES the retired `verse-explore-{n}` ∴ button, which offered no
@@ -168,7 +272,14 @@ Notes:
   {SPAN}` in the world place card (VerseNode/PassageNode -- requirement 1b), and
   `place-card-title`/`place-card-date-established`/`place-card-date-destroyed`
   (PlaceNode/YearNode, pre-existing testids, RESTYLED onto this same rule -- their own
-  prior per-element hover color is gone). Two kinds of element are deliberately
+  prior per-element hover color is gone). Batch R adds, all opening a real
+  ExplorerPopover node exactly like every element above: `xref-item-{TARGET}`
+  (inline cross-reference rows, REGISTRY-1), `popover-place-date-established`/
+  `popover-place-date-destroyed` (REGISTRY-1), and `place-event-{id}`
+  (REGISTRY-1) -- `.atlas-label`/`.quiet-label` (LABEL-1) are DELIBERATELY NOT
+  added to this list; a label is equivalent to its own dot (hover/click ->
+  place-card, per PIN-1), never a popover-opening target itself. Two kinds of
+  element are deliberately
   EXCLUDED, never explorable, and keep whatever hover treatment (if any) they already
   had: SELECTION controls (`verse-num-{n}` -- drives the anchor+extend passage-range
   mechanic, shift-click still forms `passage-chip`; a plain click on it no longer opens
@@ -353,6 +464,27 @@ Notes:
   marker's own hit area overlaps it on the screen as currently rendered.
   Resolving this for real marker density (not just test-side mitigation) is
   deferred to a future marker-clustering/decluttering batch.
+- LABEL-1 (batch-r-brief.md requirement 2, regression + enhancement, user
+  2026-08-19: "i can no longer click on a location's name, where i used to
+  be able to and i would get the est/dest dates. we need that functionality
+  back"): a place's name -- `.atlas-label` inside `marker-{placeId}`,
+  `.quiet-label` inside `quiet-marker-{placeId}` -- is a full hover/click
+  target EQUIVALENT to its own dot: hovering the label opens the exact SAME
+  `place-card` a dot-hover would (same content, same
+  `QUIET_HOVER_INTENT_MS` debounce on a quiet label), clicking it pins the
+  SAME card a dot-click would (PIN-1) -- both by simple DOM event bubbling
+  (the label is a descendant of the marker's own icon root map.js's
+  `wireEvents`/`wireQuietEvents` already listen on; no map.js change was
+  needed for the wiring itself, only restoring `pointer-events` on the label
+  from the earlier `none`), never a `.explorable`/ExplorerPopover-opening
+  target itself (a label is equivalent to its DOT, not to a verse line --
+  the resulting `place-card` IS the hover feedback, same as a bare dot
+  always had none of its own). `place-card-title`'s own click still promotes
+  the card into a real `PlaceNode` popover (est/dest dates, reachable via
+  `popover-place-date-established`/`-destroyed` inside it -- REGISTRY-1) --
+  so a date is reachable in exactly 2 clicks from a label: the label pins
+  the card, the title opens the popover. Polity-label/landmark-label stay
+  entirely non-interactive, unchanged.
 - BORDER-1 (batch-b2-brief.md, "borders v2, the cartographer's edition"):
   for every time-mode window, `GET /api/polities?from=&to=` returns one row
   per (polity, era) pair whose era `[from,to]` intersects the window,
@@ -387,6 +519,30 @@ Notes:
   only however many real eras intersect the window, each labeled on its
   own ring via `polity-year-tag-*` (present only when its own polity has
   more than one visible era).
+- LAND-1 (batch-r-brief.md requirement 1, "borders become part of the
+  plate", user 2026-08-19: "the borders still suck and are overlays on the
+  actual map, when they need to be PART of the actual map"): every polity
+  wash (`.atlas-border-wash`) is clipped to a hand-drawn land/coastline mask
+  (`GET /api/land-mask`, `data/curated/land-mask.toml`) -- an SVG
+  `<clipPath id="atlas-land-clip">` map.js's `BorderLayer` builds once,
+  applied to the `<g class="atlas-wash-clip-group">` every wash `<path>`
+  lives in (never to the band/line strokes, which stay in the unclipped,
+  unblended `overlayPane` exactly as before -- "ink border strokes stay
+  crisp"), so a wash never paints over open sea regardless of how a
+  hand-drawn polity ring's own edge happens to fall relative to the real
+  coastline. The wash's own fill is separately feathered (a single, subtle
+  `feGaussianBlur`, `filter: url(#atlas-wash-feather)` on
+  `.atlas-border-wash` itself -- "printed tint soaking into paper, not neon
+  glow") -- filter resolves before clip-path (the standard order), so a
+  blurred edge bleeding toward open water is still cut off hard exactly at
+  the coastline; only a wash's OWN inland edges (against another era, or
+  simply its own boundary well inside the mask) read as soft. Both the clip
+  geometry and the filter live inside the SAME `washPane` SVG the wash
+  paths themselves do, so both track zoomanim identically to every other
+  layer in this app (no separate wiring). The mask itself is never rendered
+  as its own visible layer -- it exists only as clip geometry, mix-blend
+  multiply on the pane (Batch B2/B2-fix-round-1) stays completely
+  unchanged.
 - SPLIT-1 (batch-h-brief.md, "study without page-turning"): the reader
   (`split-open-reader`) and `/world` (`split-open-world`) each offer an
   affordance into the SAME split layout -- reader pane left (~55% width),

@@ -19,23 +19,17 @@ public sealed class VerseNode : IExplorable
     public string Kind => "Verse";
 
     // Every chip below is derivable from the vref string alone -- no fetch
-    // needed to decide WHICH explorations exist; only a chip's eventual
-    // content (e.g. the cross-ref list itself) needs the network, and that
-    // happens lazily (ExplorerPopover's popover-chip-xrefs handling), not here.
+    // needed to decide WHICH explorations exist. Batch R requirement 3:
+    // cross-references are no longer one of these chips -- they render
+    // INLINE now, unconditionally offered, via the registry's own
+    // CrossRefsSection (Explore/PopoverSections.cs) -- "no extra button
+    // press" -- so the old popover-chip-xrefs toggle entry is gone (see
+    // CONTRACT.md's own amendment for this batch).
     public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
         var (book, chapter, verse) = CanonRef.ParseVerse(_vref);
         IReadOnlyList<Exploration> list = new[]
         {
-            // ExplorerPopover special-cases this exact ChipTestId to expand an
-            // inline xref-item-{TARGET} list fetched fresh from
-            // VerseDetail.CrossRefs, rather than dispatching through Target --
-            // see its own comment. Target still needs a value to satisfy the
-            // record shape; Push(this) is the closest honest placeholder (if
-            // ever generically dispatched, "explore this verse's
-            // cross-references" degrades to "stay on this verse" rather than
-            // crashing) and is never actually reached in practice.
-            new Exploration("Cross-references", "popover-chip-xrefs", new ExplorationTarget.Push(this)),
             new Exploration("Explore geo-temporally", "popover-chip-map", new ExplorationTarget.ShowMiniMap(_vref)),
             new Exploration("About this book", "popover-chip-book", new ExplorationTarget.Push(new AuthorNode(book))),
             new Exploration("Read in context", "popover-chip-context", new ExplorationTarget.NavigateReader(book, chapter, verse)),

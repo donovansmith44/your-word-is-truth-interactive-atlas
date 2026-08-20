@@ -42,6 +42,7 @@ public sealed class AtlasClient
     private List<BookTocEntry>? _booksCache;
     private List<EraDto>? _erasCache;
     private List<LandmarkDto>? _landmarksCache;
+    private LandMaskOut? _landMaskCache;
 
     public AtlasClient(HttpClient http)
     {
@@ -196,6 +197,15 @@ public sealed class AtlasClient
     {
         _landmarksCache ??= await GetRequired<List<LandmarkDto>>("api/landmarks");
         return _landmarksCache;
+    }
+
+    // Batch R requirement 1: the curated land mask (clip geometry only, no
+    // from/to) never changes within a running session either -- same
+    // fetch-once-cache-forever treatment as Landmarks() above.
+    public async Task<LandMaskOut> LandMask()
+    {
+        _landMaskCache ??= await GetRequired<LandMaskOut>("api/land-mask");
+        return _landMaskCache;
     }
 
     private async Task<T> GetRequired<T>(string relativeUrl)

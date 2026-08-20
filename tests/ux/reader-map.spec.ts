@@ -81,13 +81,16 @@ test('READ-5: shift-click passage selection', async ({ page }) => {
 });
 
 // Batch G1 requirement 2 ("passage context -- passages give xrefs, not just
-// geo"): the passage-chip's own popover (a PassageNode) gains the SAME
-// popover-chip-xrefs chip VerseNode already had -- CONDITIONALLY, backed by
-// the new GET /api/xrefs/{sref} span-aggregation endpoint. Both branches
-// (present/absent) are real, reachable outcomes depending on the random
-// passage's own real cross-ref data, so this property asserts whichever one
-// actually holds for each generated passage rather than assuming either.
-test('READ-6: passage cross-references chip is conditional on the endpoint actually having targets, and lists them when present', async ({ page }) => {
+// geo"): the passage-chip's own popover (a PassageNode) shows cross-refs
+// CONDITIONALLY, backed by GET /api/xrefs/{sref}'s span-aggregation. Both
+// branches (present/absent) are real, reachable outcomes depending on the
+// random passage's own real cross-ref data, so this property asserts
+// whichever one actually holds for each generated passage rather than
+// assuming either. Batch R (requirement 3(b)): the old popover-chip-xrefs
+// TOGGLE is gone -- xref-item-* now renders INLINE, immediately, with no
+// button press, via the registry's own CrossRefsSection (conditional
+// presence: zero items when the endpoint has none, not an absent chip).
+test('READ-6: passage cross-references render inline, conditional on the endpoint actually having targets', async ({ page }) => {
   const toc = await loadToc();
   const arb = arbChapterRef(toc).filter(c => c.verses >= 4).chain(c =>
     fc.tuple(fc.integer({ min: 1, max: c.verses - 1 }), fc.integer({ min: 1, max: c.verses }))
@@ -104,14 +107,6 @@ test('READ-6: passage cross-references chip is conditional on the endpoint actua
     await page.getByTestId('passage-chip').click();
     await expect(page.getByTestId('popover-title')).toHaveText(pref);
 
-    const chip = page.getByTestId('popover-chip-xrefs');
-    if (xrefs.length === 0) {
-      await expect(chip).toHaveCount(0);
-      return;
-    }
-
-    await expect(chip).toBeVisible();
-    await chip.click();
     const items = page.getByTestId(/^xref-item-/);
     await expect(items).toHaveCount(xrefs.length);
     for (let i = 0; i < xrefs.length; i++) {

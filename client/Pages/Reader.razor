@@ -401,6 +401,14 @@
             // (Blazor's own router resets window scroll on navigation
             // before DisposeAsync ever runs).
             await _readerJs.InvokeVoidAsync("watchScroll", _selfRef);
+
+            // Batch R requirement 6 (chapter nav always visible, middle-
+            // aligned, even as i scroll): see reader.js's own
+            // watchChapterNavCenter comment for why this needs a JS-side
+            // listener at all (a plain CSS `top` value can't, by itself,
+            // stay viewport-centered through `.reader-page`'s own
+            // pre-existing `contain: layout` containing-block substitution).
+            await _readerJs.InvokeVoidAsync("watchChapterNavCenter");
         }
 
         if (!ChapterMatchesRoute || _readerJs is null)
@@ -724,6 +732,12 @@
                 // listener, same "unwire before disposing the module"
                 // ordering unwatchShiftRelease below already follows.
                 await _readerJs.InvokeVoidAsync("unwatchScroll");
+
+                // Batch R requirement 6: unwires watchChapterNavCenter's own
+                // scroll/resize listeners -- same "unwire before disposing
+                // the module" ordering every other reader.js watcher here
+                // already follows.
+                await _readerJs.InvokeVoidAsync("unwatchChapterNavCenter");
 
                 // Removes reader.js's own window/document-level blur and
                 // visibilitychange listeners (see watchShiftRelease's own
