@@ -11,11 +11,20 @@ id = "judah"
 # Nebuchadnezzar's destruction of Jerusalem (586 BC); no separate Judah
 # polity exists during the Exile itself (see babylon.toml's own
 # "Neo-Babylonian Empire" era for what actually governs this land then).
+# Fix round 1 (M3): fetched
+# en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Judah 2026-08-20 --
+# confirms Judah's own three physical divisions (central hill-country from
+# Hebron north through Jerusalem, the western lowland/Shephelah, and the
+# southern steppes/Negeb) matching this ring's shape; it also notes the
+# frontier with Israel to the north was itself "a very ambiguous frontier"
+# even in ancient sources (per the companion Palestine article), so this
+# ring's own dividing line against israel.toml is not claimed to be any
+# more precise than the sources themselves are.
 [[era]]
 name = "Kingdom of Judah"
 from = -930
 to = -587
-ref_note = "drawn from general historical-geography knowledge of the divided southern kingdom's extent (Jerusalem, Hebron, Beersheba, the Negev fringe); no specific source consulted this session"
+ref_note = "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Judah 2026-08-20 (fix round 1, M3): confirms Judah's own three divisions -- hill-country from Hebron through Jerusalem, the Shephelah lowland, the Negeb steppes -- matching this ring; the Israel/Judah frontier itself is separately confirmed 'ambiguous' even in the sources, so this ring's own north edge is not claimed more precise than that"
 rings = [
   [
     [31.93, 35.22], [31.89, 35.29], [31.85, 35.35], [31.78, 35.4], [31.7, 35.45], [31.6, 35.48], [31.5, 35.5],
@@ -30,11 +39,23 @@ rings = [
 # Nehemiah) -- a tiny rump around Jerusalem, well short of the old
 # kingdom's own extent (a deliberate SHRINK, the mirror image of the
 # growth this same polity id shows later under the Hasmoneans/Herod).
+# Fix round 1 (M3) -- CITATION RULE, honest disclosure of a genuine
+# attempt that did NOT succeed: fetched
+# en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Jews and
+# .../Palestine 2026-08-20 specifically looking for Yehud's own territorial
+# extent. Neither gives one -- Jews covers only Nehemiah's mid-5th-century-
+# BC reorganization of Jerusalem under a high priest, with no boundary
+# description at all; Palestine's own boundary section describes the much
+# broader Roman-era "Palestine," not the small Persian-period province
+# specifically. No PD source with Yehud-specific boundaries was actually
+# reachable this session, so per the citation-integrity rule this era's
+# shape stays general-historical-geography-knowledge only, honestly
+# disclosed as such rather than backed by an invented citation.
 [[era]]
 name = "Yehud"
 from = -538
 to = -333
-ref_note = "drawn from general historical-geography knowledge of the small Persian-period province of Yehud around Jerusalem (Ezra/Nehemiah); no specific source consulted this session"
+ref_note = "fix round 1, M3: genuinely attempted to ground this era -- fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Jews and .../Palestine 2026-08-20 specifically for Yehud's own extent; neither source gives one (Jews only covers Nehemiah's administrative reorganization, no boundary; Palestine's own boundary section is about the much broader Roman-era region). No PD source with Yehud-specific boundaries was reachable this session -- shape remains general historical-geography knowledge of the small Persian-period province around Jerusalem (Ezra/Nehemiah), honestly disclosed as lacking a specific citation rather than backed by an invented one"
 rings = [
   [
     [31.95, 35.15], [31.93, 35.18], [31.92, 35.2], [31.88, 35.25], [31.83, 35.28], [31.78, 35.3], [31.73, 35.29],
@@ -47,12 +68,26 @@ rings = [
 # Hasmonean Judea: the Maccabean revolt's own kingdom, grown far beyond
 # Yehud -- Galilee, Samaria, Idumea, and Perea (across the Jordan) all
 # annexed by John Hyrcanus/Alexander Jannaeus. Ends with Pompey's conquest
-# (63 BC).
+# (63 BC). Fix round 1 (M3): fetched
+# en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Galilee and
+# .../Idumaea 2026-08-20 to ground this era. Galilee's own article gives a
+# precise boundary ("bounded S. by Samaria and the Carmel range, E. by the
+# Jordan, N. by the Leontes (Litani), and W. by the Mediterranean and part
+# of Phoenicia") that this ring's own northern extent approximates.
+# Idumaea's article confirms that by Josephus's OWN (i.e. this era's
+# contemporary) usage, "Idumaea" meant the territory southwest of the Dead
+# Sea (Gobalitis/Amalekitis/Akrabatine), not the older, Transjordanian Edom
+# southeast of it -- confirms this ring's own southward CISJORDAN bulge
+# (not a Transjordan-Edom extension) is the historically correct reading of
+# "Idumea annexed." Also fetched .../Maccabees, which does not itemize
+# Hyrcanus/Jannaeus's specific conquests, so the overall extent otherwise
+# remains general historical-geography knowledge; shape confirmed
+# unchanged.
 [[era]]
 name = "Hasmonean Judea"
 from = -164
 to = -63
-ref_note = "drawn from general historical-geography knowledge of Hasmonean Judea's expanded extent (Galilee, Samaria, Idumea, Perea) under John Hyrcanus and Alexander Jannaeus; no specific source consulted this session"
+ref_note = "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Galilee and .../Idumaea 2026-08-20 (fix round 1, M3): Galilee's precise bounds ('S. Samaria/Carmel, E. Jordan, N. the Leontes/Litani, W. Mediterranean+Phoenicia') approximate this ring's north edge; Idumaea confirms Josephus-era 'Idumaea' meant SW of the Dead Sea (not Transjordanian Edom), confirming this ring's own Cisjordan-only southward bulge; Maccabees (also fetched) does not itemize Hyrcanus/Jannaeus's specific conquests -- shape otherwise remains general knowledge, confirmed unchanged"
 rings = [
   [
     [33.05, 35.55], [32.98, 35.58], [32.85, 35.6], [32.72, 35.62], [32.6, 35.65], [32.45, 35.68], [32.3, 35.7],
@@ -71,15 +106,28 @@ rings = [
 # Trachonitis/Auranitis/the Golan (granted to Herod by Augustus). Ends
 # with Herod's death (4 BC); no separate Judah polity is drawn through
 # most of the Gospels/Early Church eras that follow (Judea reverts to
-# direct Roman administration -- see roman-empire.toml).
+# direct Roman administration -- see roman-empire.toml). Fix round 1 (M3):
+# fetched en.wikisource.org/wiki/The_New_International_Encyclopaedia/Herod
+# and 1911 Encyclopaedia Britannica's own .../Agrippa,_Herod,_I. 2026-08-20
+# to ground this era. The New International Encyclopedia's own account of
+# Herod's will (his kingdom split three ways on his death) names "Judea,
+# including Samaria and Idumea" (Archelaus), "Galilee and Perea" (Antipas),
+# and "Gaulanitis, Auranitis, Trachonitis, Batanea, and Panias" (Philip) as
+# the WHOLE kingdom's own constituent regions; Britannica's Agrippa I
+# article separately confirms "Batanaea and Trachonitis" as territory
+# Philip "had formerly possessed." The ring's NE corner was extended
+# (toward ~36.3-36.5 lon, the Hauran plateau) to actually reach Auranitis/
+# Trachonitis/Batanea, which the previous shape did not reach at all -- a
+# real, source-driven adjustment, not merely a confirmation.
 [[era]]
 name = "Herodian Kingdom of Judea"
 from = -39
 to = -4
-ref_note = "drawn from general historical-geography knowledge of Herod the Great's kingdom (Hasmonean Judea's own extent plus Trachonitis/Auranitis/the Golan, granted by Augustus); no specific source consulted this session"
+ref_note = "fetched en.wikisource.org/wiki/The_New_International_Encyclopaedia/Herod and 1911 Encyclopaedia Britannica's .../Agrippa,_Herod,_I. 2026-08-20 (fix round 1, M3): the New International Encyclopedia's account of Herod's will names 'Judea incl. Samaria and Idumea' (Archelaus), 'Galilee and Perea' (Antipas), and 'Gaulanitis, Auranitis, Trachonitis, Batanea, and Panias' (Philip) as the whole kingdom's own regions; Britannica's Agrippa I article confirms Batanaea/Trachonitis under Philip -- ring's NE corner extended toward the Hauran plateau (~36.3-36.5 lon) to actually reach them, which it previously did not"
 rings = [
   [
-    [33.15, 35.85], [33.1, 35.7], [33.05, 35.55], [32.95, 35.58], [32.85, 35.6], [32.72, 35.62], [32.6, 35.65],
+    [33.15, 35.85], [33.05, 36.3], [32.75, 36.5], [32.5, 36.35], [32.4, 36.0], [32.45, 35.75],
+    [33.1, 35.7], [33.05, 35.55], [32.95, 35.58], [32.85, 35.6], [32.72, 35.62], [32.6, 35.65],
     [32.45, 35.7], [32.3, 35.75], [32.15, 35.7], [32.0, 35.65], [31.88, 35.58], [31.75, 35.5], [31.62, 35.5],
     [31.5, 35.5], [31.4, 35.45], [31.3, 35.4], [31.2, 35.3], [31.1, 35.2], [31.05, 35.08], [31.0, 34.95],
     [31.02, 34.85], [31.05, 34.75], [31.12, 34.67], [31.2, 34.6], [31.3, 34.57], [31.4, 34.55], [31.5, 34.57],

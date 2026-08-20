@@ -30,12 +30,21 @@ rings = [
 # own border at Gaza; ends with Cyrus's conquest of Babylon (539 BC). Fills
 # a real gap the old snapshot-year borders never covered at all -- the
 # EXILE era (see data/curated/eras.toml, -586..-539) previously had no
-# polity feature showing the very empire that exiled Judah.
+# polity feature showing the very empire that exiled Judah. Fix round 1
+# (M3): fetched
+# en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Nebuchadrezzar
+# 2026-08-20 -- directly confirms this ring's own drawn extent: Necho
+# defeated at Carchemish 605 BC, "annexing Syria to the Babylonian empire";
+# Tyre besieged 13 years and later "under Babylonian officials"; the king's
+# own inscriptions found at Nahr el-Kelb near Beirut and Wadi Brissa in
+# Lebanon; Jerusalem "taken and destroyed" 586 BC. Every one of these sits
+# comfortably inside this ring's own existing Levant-coast-to-old-Assyria
+# footprint -- shape confirmed unchanged.
 [[era]]
 name = "Neo-Babylonian Empire"
 from = -626
 to = -539
-ref_note = "drawn from general historical-geography knowledge of the Neo-Babylonian Empire's inherited Neo-Assyrian western reach (Mesopotamia to the Levantine coast and Egypt's border); no specific source consulted this session"
+ref_note = "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Nebuchadrezzar 2026-08-20 (fix round 1, M3): confirms Carchemish 605 BC 'annexing Syria'; Tyre besieged then under Babylonian officials; inscriptions at Nahr el-Kelb (near Beirut) and Wadi Brissa (Lebanon); Jerusalem taken and destroyed 586 BC -- all comfortably inside this ring's existing footprint; shape confirmed unchanged"
 rings = [
   [
     [36.5, 43.3], [36.6, 42.0], [36.5, 40.5], [36.2, 39.0], [36.2, 37.1], [35.9, 36.2], [35.5, 35.9],

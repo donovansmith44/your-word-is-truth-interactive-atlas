@@ -3,12 +3,23 @@ id = "israel"
 
 # The United Monarchy (Saul, David, Solomon): "from Dan to Beersheba" --
 # the full Israelite heartland west of the Jordan, plus Gilead/Ammon/Moab
-# across the Jordan as David's own tributary holdings.
+# across the Jordan as David's own tributary holdings. Fix round 1 (M3):
+# fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Palestine and
+# .../Jews 2026-08-20 to ground this era. Palestine confirms "Dan to
+# Beersheba" numerically -- the Hebrews' own "indication of the normal
+# north-and-south limits of their land" -- glossing Dan's own latitude near
+# the Litani's mouth (33 deg 20' N); this ring's own northern tip (33.25)
+# already sits almost exactly there -- shape confirmed, not moved. Jews
+# separately notes Solomon's own WIDER political hegemony "extended from
+# the Euphrates to the border of Egypt" (echoing 1 Kings 4:21's tributary
+# reach) -- deliberately NOT what this ring draws: the ring stays the core
+# settled kingdom plus its own Transjordan tributary belt, not Solomon's
+# much larger and more historically-disputed maximal-hegemony claim.
 [[era]]
 name = "Kingdom of Israel (United Monarchy)"
 from = -1050
 to = -931
-ref_note = "drawn from general historical-geography knowledge of the United Monarchy's traditional extent (\"from Dan to Beersheba\", plus Transjordan); no specific source consulted this session"
+ref_note = "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Palestine and .../Jews 2026-08-20 (fix round 1, M3): Palestine confirms 'Dan to Beersheba' numerically (Dan near the Litani's mouth, 33 deg 20' N) -- this ring's own northern tip (33.25) already matches, confirmed unchanged; Jews notes Solomon's wider hegemony reaching the Euphrates, deliberately NOT drawn here (this ring is the core settled kingdom, not that much larger, disputed maximal claim)"
 rings = [
   [
     [32.83, 34.95], [32.95, 35.0], [33.05, 35.1], [33.15, 35.3], [33.25, 35.5], [33.25, 35.65], [33.15, 35.8],
@@ -22,12 +33,17 @@ rings = [
 # The (northern) Kingdom of Israel after the division under Rehoboam/
 # Jeroboam: Samaria and Galilee west of the Jordan, plus Gilead across it --
 # Judah splits off to the south (see judah.toml). Ends with Shalmaneser
-# V/Sargon II's fall of Samaria (722 BC).
+# V/Sargon II's fall of Samaria (722 BC). Fix round 1 (M3): fetched
+# en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Jews 2026-08-20 --
+# confirms the northern kingdom's own territory lay "on both sides of the
+# Jordan" (i.e. including Gilead) with close relations to Phoenicia to the
+# north/coast -- matches this ring's Samaria/Galilee-plus-Gilead footprint
+# exactly. Shape confirmed unchanged.
 [[era]]
 name = "Kingdom of Israel"
 from = -930
 to = -722
-ref_note = "drawn from general historical-geography knowledge of the divided northern kingdom's extent (Samaria, Galilee, Gilead); no specific source consulted this session"
+ref_note = "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Jews 2026-08-20 (fix round 1, M3): confirms the northern kingdom's own territory lay 'on both sides of the Jordan' (Gilead included), with close relations to Phoenicia -- matches this ring's Samaria/Galilee-plus-Gilead footprint; shape confirmed unchanged"
 rings = [
   [
     [32.83, 34.95], [32.92, 35.0], [33.0, 35.05], [33.08, 35.17], [33.15, 35.3], [33.2, 35.4], [33.25, 35.5],

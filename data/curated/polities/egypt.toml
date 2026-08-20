@@ -7,14 +7,24 @@ id = "egypt"
 
 # Old + Middle Kingdom (through the Second Intermediate Period): the
 # classic core -- Nile valley from the First Cataract at Aswan down through
-# the Delta fan, nothing beyond it. General historical-geography knowledge
-# (the Nile's own course and the Aswan/First-Cataract southern limit are not
-# seriously contested); no specific source fetched for this era.
+# the Delta fan, nothing beyond it. Fix round 1 (M3): fetched
+# en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Egypt/3_History
+# 2026-08-20 specifically to ground this era -- it confirms the First
+# Cataract at Aswan as Egypt's classic southern limit and separately
+# records that the MIDDLE KINGDOM'S OWN frontier under Senwosri III reached
+# further south still ("marked the south frontier of his kingdom by a
+# statue and stelae at Semna beyond the Second Cataract"). This ring is
+# reused unchanged below for the Late Period era (whose own real extent, per
+# the same article, contracted back to "the Nile valley proper" after the
+# Empire fell), so it stays drawn at the more conservative, First-Cataract
+# extent common to both eras rather than being pushed south to Semna on the
+# strength of the Middle Kingdom's own, narrower, temporary high-water
+# mark -- shape confirmed, not moved.
 [[era]]
 name = "Egypt"
 from = -4004
 to = -1550
-ref_note = "drawn from general historical-geography knowledge of the Nile valley and delta (First Cataract at Aswan to the Mediterranean); no specific source consulted this session"
+ref_note = "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Egypt/3_History 2026-08-20 (fix round 1, M3): confirms the First Cataract at Aswan as the classic southern limit; the Middle Kingdom's own attested frontier reached further south still (Semna, beyond the Second Cataract) but this ring is shared with the Late Period era below, whose own real extent did not reach that far, so it stays at the more conservative common extent -- shape confirmed unchanged"
 rings = [
   [
     [31.35, 29.9], [31.55, 30.35], [31.55, 30.9], [31.5, 31.4], [31.5, 31.9], [31.45, 32.25], [31.3, 32.35],
@@ -28,25 +38,34 @@ rings = [
 ]
 
 # New Kingdom (the Egyptian Empire): the Exodus-era Egypt of Thutmose III /
-# Ramesses II, reaching south into Nubia past the Second Cataract and north
+# Ramesses II, reaching south into Nubia past the Fourth Cataract and north
 # along the Canaan/Phoenician coast -- the era the "1600 BC - 900 BC"
 # spanning-window screenshot is built to show shrinking back down to the
-# next era's Nile-only footprint. General historical-geography knowledge
-# (New Kingdom Egypt's Levantine reach to around Ugarit and its Nubian
-# holdings past the Second Cataract are standard, uncontested facts); no
-# specific source fetched for this era.
+# next era's Nile-only footprint. Fix round 1 (M3): fetched
+# en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Egypt/3_History
+# 2026-08-20 -- its own account of "Tethmosis" (Thutmose III) states the
+# Nubian province of Cush he set up "extended from Napata just below the
+# Fourth Cataract on the south to El Kab in the north"; the ring's southern
+# tip was extended from ~20.0N to ~18.6N (near Napata) to actually reach
+# that attested frontier, a real adjustment, not merely a confirmation. The
+# same article also names Thutmose III's own campaign reaching Carchemish/
+# across the Euphrates -- a single high-water-mark raid, not the empire's
+# sustained vassal frontier, so the drawn northern/eastern edge stays at
+# its existing Levant-coast extent (toward Ugarit) rather than being pushed
+# out to Carchemish on the strength of one campaign.
 [[era]]
 name = "Egypt"
 from = -1549
 to = -1069
-ref_note = "drawn from general historical-geography knowledge of New Kingdom Egypt's empire at its height (Nubia past the Second Cataract; the Canaan/Phoenician coast north to Ugarit); no specific source consulted this session"
+ref_note = "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Egypt/3_History 2026-08-20 (fix round 1, M3): 'Tethmosis... subdued Cush, which... extended from Napata just below the Fourth Cataract on the south to El Kab in the north' -- ring's southern tip extended to ~18.6N to match; Carchemish/Euphrates campaign also named there but treated as a raid, not the sustained frontier, so the north/east edge is unchanged"
 rings = [
   [
     [35.6, 35.8], [35.3, 35.9], [34.8, 35.85], [34.2, 35.6], [33.6, 35.35], [33.0, 35.15], [32.4, 34.9],
     [31.8, 34.5], [31.5, 33.9], [31.5, 33.2], [31.5, 32.6], [31.45, 32.2], [31.3, 32.35], [31.0, 32.15],
     [30.6, 32.1], [30.2, 32.35], [29.8, 32.55], [29.6, 32.4], [29.5, 31.9], [29.2, 31.4], [28.9, 30.95],
     [28.0, 31.0], [27.0, 31.1], [26.0, 31.5], [25.0, 32.0], [24.0, 32.6], [23.2, 32.75], [22.4, 32.85],
-    [21.6, 32.9], [20.8, 32.85], [20.2, 32.6], [20.0, 32.1], [20.3, 31.6], [21.0, 31.3], [21.8, 31.1],
+    [21.6, 32.9], [20.8, 32.85], [20.2, 32.6], [19.2, 32.3], [18.6, 31.9], [19.2, 31.5], [20.3, 31.6],
+    [21.0, 31.3], [21.8, 31.1],
     [22.6, 31.0], [23.4, 31.0], [24.2, 30.9], [24.9, 30.8], [25.7, 30.55], [26.5, 30.4], [27.3, 30.2],
     [28.1, 30.2], [28.9, 30.4], [29.6, 30.5], [30.2, 30.5], [30.7, 30.15], [31.0, 29.95], [31.35, 29.9],
     [31.5, 30.35], [35.6, 35.8]
@@ -56,13 +75,19 @@ rings = [
 # Third Intermediate + Late Period: after the Empire contracts, back to the
 # Nile-only footprint (same recognizable core as the Old/Middle Kingdom era
 # above), through the Persian satrapy period and up to Alexander's conquest
-# (332 BC). General historical-geography knowledge; no specific source
-# fetched for this era.
+# (332 BC). Fix round 1 (M3): fetched
+# en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Egypt/3_History
+# 2026-08-20 -- directly confirms the contraction this ring depicts: "by
+# the Persian period, Egyptian control was restricted largely to the Nile
+# valley proper, with Syria completely lost and Ethiopia independent."
+# Shape confirmed unchanged (identical ring to the Old/Middle Kingdom era
+# above, by this batch's own original design -- the footprint returns to
+# the same Nile-only shape).
 [[era]]
 name = "Egypt"
 from = -1068
 to = -332
-ref_note = "drawn from general historical-geography knowledge of Egypt's contracted post-Empire footprint (Nile valley and delta only); no specific source consulted this session"
+ref_note = "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Egypt/3_History 2026-08-20 (fix round 1, M3): confirms directly -- 'Egyptian control was restricted largely to the Nile valley proper, with Syria completely lost and Ethiopia independent' by the Persian period; shape confirmed unchanged (same ring as the Old/Middle Kingdom era above)"
 rings = [
   [
     [31.35, 29.9], [31.55, 30.35], [31.55, 30.9], [31.5, 31.4], [31.5, 31.9], [31.45, 32.25], [31.3, 32.35],

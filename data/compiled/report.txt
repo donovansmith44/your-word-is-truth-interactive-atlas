@@ -41,15 +41,15 @@ Cross-reference drops:
 Warnings:
   (none)
 
-Polities (14 polities, 25 eras, 1132 points total):
+Polities (14 polities, 25 eras, 1139 points total):
   alexander-empire: 1 era(s), 68 points
   assyria: 2 era(s), 92 points
   babylon: 2 era(s), 78 points
-  egypt: 4 era(s), 205 points
+  egypt: 4 era(s), 207 points
   elam: 1 era(s), 41 points
   hittites: 1 era(s), 34 points
   israel: 2 era(s), 77 points
-  judah: 4 era(s), 156 points
+  judah: 4 era(s), 161 points
   parthian-empire: 1 era(s), 30 points
   persia: 1 era(s), 54 points
   phoenicia: 1 era(s), 35 points

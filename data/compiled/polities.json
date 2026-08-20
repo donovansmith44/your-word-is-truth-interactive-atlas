@@ -291,7 +291,7 @@
   },
   {
     "id": "assyria",
-    "color_key": 4,
+    "color_key": 12,
     "eras": [
       {
         "name": "Assyria",
@@ -837,7 +837,7 @@
         "name": "Neo-Babylonian Empire",
         "from": -626,
         "to": -539,
-        "ref_note": "drawn from general historical-geography knowledge of the Neo-Babylonian Empire's inherited Neo-Assyrian western reach (Mesopotamia to the Levantine coast and Egypt's border); no specific source consulted this session",
+        "ref_note": "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Nebuchadrezzar 2026-08-20 (fix round 1, M3): confirms Carchemish 605 BC 'annexing Syria'; Tyre besieged then under Babylonian officials; inscriptions at Nahr el-Kelb (near Beirut) and Wadi Brissa (Lebanon); Jerusalem taken and destroyed 586 BC -- all comfortably inside this ring's existing footprint; shape confirmed unchanged",
         "rings": [
           [
             [
@@ -1023,13 +1023,13 @@
   },
   {
     "id": "egypt",
-    "color_key": 1,
+    "color_key": 9,
     "eras": [
       {
         "name": "Egypt",
         "from": -4004,
         "to": -1550,
-        "ref_note": "drawn from general historical-geography knowledge of the Nile valley and delta (First Cataract at Aswan to the Mediterranean); no specific source consulted this session",
+        "ref_note": "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Egypt/3_History 2026-08-20 (fix round 1, M3): confirms the First Cataract at Aswan as the classic southern limit; the Middle Kingdom's own attested frontier reached further south still (Semna, beyond the Second Cataract) but this ring is shared with the Late Period era below, whose own real extent did not reach that far, so it stays at the more conservative common extent -- shape confirmed unchanged",
         "rings": [
           [
             [
@@ -1211,7 +1211,7 @@
         "name": "Egypt",
         "from": -1549,
         "to": -1069,
-        "ref_note": "drawn from general historical-geography knowledge of New Kingdom Egypt's empire at its height (Nubia past the Second Cataract; the Canaan/Phoenician coast north to Ugarit); no specific source consulted this session",
+        "ref_note": "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Egypt/3_History 2026-08-20 (fix round 1, M3): 'Tethmosis... subdued Cush, which... extended from Napata just below the Fourth Cataract on the south to El Kab in the north' -- ring's southern tip extended to ~18.6N to match; Carchemish/Euphrates campaign also named there but treated as a raid, not the sustained frontier, so the north/east edge is unchanged",
         "rings": [
           [
             [
@@ -1339,8 +1339,16 @@
               32.6
             ],
             [
-              20.0,
-              32.1
+              19.2,
+              32.3
+            ],
+            [
+              18.6,
+              31.9
+            ],
+            [
+              19.2,
+              31.5
             ],
             [
               20.3,
@@ -1425,7 +1433,7 @@
         "name": "Egypt",
         "from": -1068,
         "to": -332,
-        "ref_note": "drawn from general historical-geography knowledge of Egypt's contracted post-Empire footprint (Nile valley and delta only); no specific source consulted this session",
+        "ref_note": "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Egypt/3_History 2026-08-20 (fix round 1, M3): confirms directly -- 'Egyptian control was restricted largely to the Nile valley proper, with Syria completely lost and Ethiopia independent' by the Persian period; shape confirmed unchanged (same ring as the Old/Middle Kingdom era above)",
         "rings": [
           [
             [
@@ -1891,7 +1899,7 @@
   },
   {
     "id": "elam",
-    "color_key": 7,
+    "color_key": 15,
     "eras": [
       {
         "name": "Elam",
@@ -2071,7 +2079,7 @@
   },
   {
     "id": "hittites",
-    "color_key": 6,
+    "color_key": 14,
     "eras": [
       {
         "name": "Hittite Empire",
@@ -2229,7 +2237,7 @@
         "name": "Kingdom of Israel (United Monarchy)",
         "from": -1050,
         "to": -931,
-        "ref_note": "drawn from general historical-geography knowledge of the United Monarchy's traditional extent (\"from Dan to Beersheba\", plus Transjordan); no specific source consulted this session",
+        "ref_note": "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Palestine and .../Jews 2026-08-20 (fix round 1, M3): Palestine confirms 'Dan to Beersheba' numerically (Dan near the Litani's mouth, 33 deg 20' N) -- this ring's own northern tip (33.25) already matches, confirmed unchanged; Jews notes Solomon's wider hegemony reaching the Euphrates, deliberately NOT drawn here (this ring is the core settled kingdom, not that much larger, disputed maximal claim)",
         "rings": [
           [
             [
@@ -2375,7 +2383,7 @@
         "name": "Kingdom of Israel",
         "from": -930,
         "to": -722,
-        "ref_note": "drawn from general historical-geography knowledge of the divided northern kingdom's extent (Samaria, Galilee, Gilead); no specific source consulted this session",
+        "ref_note": "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Jews 2026-08-20 (fix round 1, M3): confirms the northern kingdom's own territory lay 'on both sides of the Jordan' (Gilead included), with close relations to Phoenicia -- matches this ring's Samaria/Galilee-plus-Gilead footprint; shape confirmed unchanged",
         "rings": [
           [
             [
@@ -2557,13 +2565,13 @@
   },
   {
     "id": "judah",
-    "color_key": 4,
+    "color_key": 13,
     "eras": [
       {
         "name": "Kingdom of Judah",
         "from": -930,
         "to": -587,
-        "ref_note": "drawn from general historical-geography knowledge of the divided southern kingdom's extent (Jerusalem, Hebron, Beersheba, the Negev fringe); no specific source consulted this session",
+        "ref_note": "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Judah 2026-08-20 (fix round 1, M3): confirms Judah's own three divisions -- hill-country from Hebron through Jerusalem, the Shephelah lowland, the Negeb steppes -- matching this ring; the Israel/Judah frontier itself is separately confirmed 'ambiguous' even in the sources, so this ring's own north edge is not claimed more precise than that",
         "rings": [
           [
             [
@@ -2713,7 +2721,7 @@
         "name": "Yehud",
         "from": -538,
         "to": -333,
-        "ref_note": "drawn from general historical-geography knowledge of the small Persian-period province of Yehud around Jerusalem (Ezra/Nehemiah); no specific source consulted this session",
+        "ref_note": "fix round 1, M3: genuinely attempted to ground this era -- fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Jews and .../Palestine 2026-08-20 specifically for Yehud's own extent; neither source gives one (Jews only covers Nehemiah's administrative reorganization, no boundary; Palestine's own boundary section is about the much broader Roman-era region). No PD source with Yehud-specific boundaries was reachable this session -- shape remains general historical-geography knowledge of the small Persian-period province around Jerusalem (Ezra/Nehemiah), honestly disclosed as lacking a specific citation rather than backed by an invented one",
         "rings": [
           [
             [
@@ -2831,7 +2839,7 @@
         "name": "Hasmonean Judea",
         "from": -164,
         "to": -63,
-        "ref_note": "drawn from general historical-geography knowledge of Hasmonean Judea's expanded extent (Galilee, Samaria, Idumea, Perea) under John Hyrcanus and Alexander Jannaeus; no specific source consulted this session",
+        "ref_note": "fetched en.wikisource.org/wiki/1911_Encyclopaedia_Britannica/Galilee and .../Idumaea 2026-08-20 (fix round 1, M3): Galilee's precise bounds ('S. Samaria/Carmel, E. Jordan, N. the Leontes/Litani, W. Mediterranean+Phoenicia') approximate this ring's north edge; Idumaea confirms Josephus-era 'Idumaea' meant SW of the Dead Sea (not Transjordanian Edom), confirming this ring's own Cisjordan-only southward bulge; Maccabees (also fetched) does not itemize Hyrcanus/Jannaeus's specific conquests -- shape otherwise remains general knowledge, confirmed unchanged",
         "rings": [
           [
             [
@@ -3021,12 +3029,32 @@
         "name": "Herodian Kingdom of Judea",
         "from": -39,
         "to": -4,
-        "ref_note": "drawn from general historical-geography knowledge of Herod the Great's kingdom (Hasmonean Judea's own extent plus Trachonitis/Auranitis/the Golan, granted by Augustus); no specific source consulted this session",
+        "ref_note": "fetched en.wikisource.org/wiki/The_New_International_Encyclopaedia/Herod and 1911 Encyclopaedia Britannica's .../Agrippa,_Herod,_I. 2026-08-20 (fix round 1, M3): the New International Encyclopedia's account of Herod's will names 'Judea incl. Samaria and Idumea' (Archelaus), 'Galilee and Perea' (Antipas), and 'Gaulanitis, Auranitis, Trachonitis, Batanea, and Panias' (Philip) as the whole kingdom's own regions; Britannica's Agrippa I article confirms Batanaea/Trachonitis under Philip -- ring's NE corner extended toward the Hauran plateau (~36.3-36.5 lon) to actually reach them, which it previously did not",
         "rings": [
           [
             [
               33.15,
               35.85
+            ],
+            [
+              33.05,
+              36.3
+            ],
+            [
+              32.75,
+              36.5
+            ],
+            [
+              32.5,
+              36.35
+            ],
+            [
+              32.4,
+              36.0
+            ],
+            [
+              32.45,
+              35.75
             ],
             [
               33.1,
@@ -3595,7 +3623,7 @@
   },
   {
     "id": "phoenicia",
-    "color_key": 0,
+    "color_key": 1,
     "eras": [
       {
         "name": "Phoenicia",
@@ -3751,7 +3779,7 @@
   },
   {
     "id": "roman-empire",
-    "color_key": 4,
+    "color_key": 2,
     "eras": [
       {
         "name": "Roman Republic",
@@ -4663,7 +4691,7 @@
   },
   {
     "id": "sumer",
-    "color_key": 4,
+    "color_key": 8,
     "eras": [
       {
         "name": "Sumer",
