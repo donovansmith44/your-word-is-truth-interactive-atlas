@@ -15,12 +15,27 @@ fn sample_scene() -> Scene {
                 verse_groups: vec![VerseGroup { book: "JOS".into(), chapter: 6,
                     verses: vec!["JOS.6.1".into(), "JOS.6.20".into()], count: 27 }],
             }],
+            // Batch H (existence gating): jericho has no curated
+            // established/destroyed claim in this hand-built fixture -- both
+            // omitted from the wire (`skip_serializing_if`), pinning the
+            // "no curated history -> always labels" shape.
+            existence_from: None,
+            existence_to: None,
         }],
         // Batch E2 (the ever-present graph): one sample quiet place pins
         // QuietPlace's own lean wire shape (id/display_name/lat/lon/
-        // total_events only -- no events/verse_groups keys at all).
+        // total_events -- plus, Batch H, existence_from/existence_to -- no
+        // events/verse_groups keys at all).
         quiet_places: vec![QuietPlace {
             id: "shiloh".into(), display_name: "Shiloh".into(), lat: 32.0553, lon: 35.2897, total_events: 3,
+            // Batch H: shiloh's own REAL curated shape (data/curated/
+            // place-history.toml) -- established -1399 (a single year),
+            // destroyed a range collapsing to -1050 (`to_year`) here. Picked
+            // deliberately (not an arbitrary placeholder) so this fixture
+            // doubles as a worked example of the wire shape requirement 4's
+            // own UI test exercises live.
+            existence_from: Some(-1399),
+            existence_to: Some(-1050),
         }],
         arrows: vec![SceneArrow { narrative: "conquest".into(), color: "#7C3AED".into(),
             from_place: "gilgal".into(), to_place: "jericho".into(),

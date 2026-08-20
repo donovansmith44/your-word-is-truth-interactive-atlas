@@ -4,7 +4,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::data::{AtlasData, Event};
-use crate::history::resolve_display_name;
+use crate::history::{resolve_display_name, resolve_existence};
 use crate::refs::{ScriptureRef, VerseId};
 use crate::time::TimeRange;
 use crate::wire::{QuietPlace, Scene, SceneArrow, SceneEvent, SceneNarrative, ScenePlace, VerseGroup};
@@ -64,6 +64,7 @@ pub fn compose_scripture_scene(d: &AtlasData, r: &ScriptureRef) -> Scene {
             verse_groups: verse_groups_for(&matched, Some(r)),
         };
         let events = vec![mention];
+        let (existence_from, existence_to) = resolve_existence(d.place_history_for(&place.id));
         places.push(ScenePlace {
             id: place.id.clone(),
             name: place.name.clone(),
@@ -72,6 +73,8 @@ pub fn compose_scripture_scene(d: &AtlasData, r: &ScriptureRef) -> Scene {
             lon: place.lon,
             brightness: (events.len().min(5)) as u8,
             events,
+            existence_from,
+            existence_to,
         });
     }
     places.sort_by(|a, b| a.id.cmp(&b.id));
@@ -162,6 +165,7 @@ fn lit_places(d: &AtlasData, kept: &[&Event], r: Option<&ScriptureRef>, name_win
         .into_iter()
         .filter_map(|(pid, evs)| {
             let place = d.place_by_id(pid)?;
+            let (existence_from, existence_to) = resolve_existence(d.place_history_for(&place.id));
             Some(ScenePlace {
                 id: place.id.clone(),
                 name: place.name.clone(),
@@ -178,6 +182,8 @@ fn lit_places(d: &AtlasData, kept: &[&Event], r: Option<&ScriptureRef>, name_win
                         verse_groups: verse_groups_for(&e.verses, r),
                     })
                     .collect(),
+                existence_from,
+                existence_to,
             })
         })
         .collect();
@@ -204,12 +210,15 @@ fn quiet_places(d: &AtlasData, lit: &[ScenePlace], window: TimeRange) -> Vec<Qui
         .filter(|id| !lit_ids.contains(id.as_str()))
         .filter_map(|id| {
             let place = d.place_by_id(id)?;
+            let (existence_from, existence_to) = resolve_existence(d.place_history_for(&place.id));
             Some(QuietPlace {
                 id: place.id.clone(),
                 display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), Some(window)),
                 lat: place.lat,
                 lon: place.lon,
                 total_events: d.total_events_for(id),
+                existence_from,
+                existence_to,
             })
         })
         .collect();
@@ -385,6 +394,52 @@ mod tests {
         let s2 = compose_time_scene(&d, TimeRange::new(-1900, -1800).unwrap());
         let hebron2 = s2.quiet_places.iter().find(|p| p.id == "hebron").expect("hebron should be quiet here too");
         assert_eq!(hebron2.display_name, "Hebron");
+    }
+
+    // --- Batch H: existence_from/existence_to propagate through every scene
+    // construction site (lit, quiet, AND the scripture-mode synthetic
+    // mention branch) -- hebron's own curated history (demo_fixture's own
+    // comment): established -2000 (a single year -> from_year==to_year),
+    // no destroyed claim at all (still standing, open-ended).
+
+    #[test]
+    fn existence_bounds_propagate_to_a_lit_scene_place() {
+        let d = crate::data::demo_fixture();
+        // hebron's only event (e5) is dated exactly -2000 (see demo_fixture's
+        // own comment) -- a window covering exactly that year lights it.
+        let s = compose_time_scene(&d, TimeRange::new(-2000, -2000).unwrap());
+        let hebron = s.places.iter().find(|p| p.id == "hebron").expect("hebron should be lit at exactly -2000");
+        assert_eq!(hebron.existence_from, Some(-2000));
+        assert_eq!(hebron.existence_to, None); // no destroyed claim curated -- open-ended
+    }
+
+    #[test]
+    fn existence_bounds_propagate_to_a_quiet_scene_place() {
+        let d = crate::data::demo_fixture();
+        let s = compose_time_scene(&d, TimeRange::new(-1406, -1405).unwrap());
+        let hebron = s.quiet_places.iter().find(|p| p.id == "hebron").expect("hebron is quiet in this window");
+        assert_eq!(hebron.existence_from, Some(-2000));
+        assert_eq!(hebron.existence_to, None);
+        // A place with no curated history at all (gilgal/jericho/ai carry
+        // none in demo_fixture) always serializes both bounds absent.
+        for p in &s.places {
+            if p.id != "hebron" {
+                assert_eq!((p.existence_from, p.existence_to), (None, None), "{} has no curated history", p.id);
+            }
+        }
+    }
+
+    #[test]
+    fn existence_bounds_propagate_to_a_scripture_mode_mention_place() {
+        let d = crate::data::demo_fixture();
+        // hebron is geocoding-linked to GEN.13.18 (demo_fixture's own
+        // comment) -- lit here via the synthetic mention-* pseudo-event, the
+        // third (and only remaining) ScenePlace construction site.
+        let s = compose_scripture_scene(&d, &ScriptureRef::parse("GEN.13.18").unwrap());
+        let hebron = s.places.iter().find(|p| p.id == "hebron").expect("hebron should be mention-lit");
+        assert!(hebron.events[0].id.starts_with("mention-"));
+        assert_eq!(hebron.existence_from, Some(-2000));
+        assert_eq!(hebron.existence_to, None);
     }
 
     #[test]

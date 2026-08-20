@@ -36,7 +36,18 @@ public sealed record ScenePlace(
     double Lat,
     double Lon,
     int Brightness,
-    List<SceneEvent> Events);
+    List<SceneEvent> Events,
+    // Batch H (existence gating, deferred from E2): curated established/
+    // destroyed YEARS (server: atlas_core::history::resolve_existence) --
+    // not the richer PlaceDateClaim shape (that's PlaceHistoryOut's own
+    // Established/Destroyed, with verses/note; this is deliberately lean,
+    // matching QuietPlace's own "no events on the wire unless load-bearing"
+    // philosophy). Both null when this place has no curated history, or a
+    // curated history with neither claim -- "always labels" per the brief.
+    // Trailing + optional so every existing positional-record construction
+    // site (e.g. World.razor's QuietAsScenePlace) keeps compiling unchanged.
+    int? ExistenceFrom = null,
+    int? ExistenceTo = null);
 
 /// Batch E2: one "quiet" place -- an event-bearing place not lit (not in
 /// <see cref="Scene.Places"/>) for this window. Deliberately lean (no
@@ -49,7 +60,12 @@ public sealed record QuietPlace(
     string DisplayName,
     double Lat,
     double Lon,
-    int TotalEvents);
+    int TotalEvents,
+    // Batch H: same fields, same rule, as ScenePlace.ExistenceFrom/-To above
+    // -- a quiet place is exactly where this matters most (the ever-present
+    // graph shows a dot for every event-bearing place regardless of window).
+    int? ExistenceFrom = null,
+    int? ExistenceTo = null);
 
 public sealed record SceneEvent(
     string Id,

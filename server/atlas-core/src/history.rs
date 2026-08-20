@@ -10,6 +10,51 @@
 use crate::data::{year_index, PlaceBlurbEntry, PlaceHistory, PlaceNameEntry};
 use crate::time::{TimeRange, Year};
 
+/// Batch H (existence gating, deferred from E2): the `[from, to]` bounds
+/// within which curated evidence places `history` as EXISTING, derived from
+/// its `established`/`destroyed` date claims -- a DIFFERENT concept from
+/// `resolve_display_name`'s period-NAME ranges (a place can carry one, the
+/// other, both, or neither, independently). `established.when.from_year` is
+/// used (not `to_year`) because a range like "founded sometime between X and
+/// Y" means the place plausibly existed from as early as X; symmetrically
+/// `destroyed.when.to_year` is used because "destroyed sometime between X
+/// and Y" means it plausibly still stood as late as Y. Either half of the
+/// returned tuple is `None` when nothing is curated for that end (still
+/// standing / no known founding date) -- open-ended, never gates on that
+/// side. `history: None` (no `PlaceHistory` record at all for this place) or
+/// a record with neither claim curated both return `(None, None)`, meaning
+/// "always labels regardless of window" per the brief -- callers never need
+/// a separate has-history check.
+pub fn resolve_existence(history: Option<&PlaceHistory>) -> (Option<Year>, Option<Year>) {
+    let Some(h) = history else { return (None, None) };
+    (h.established.as_ref().map(|c| c.when.from_year), h.destroyed.as_ref().map(|c| c.when.to_year))
+}
+
+/// Batch H: true when `window` falls ENTIRELY outside the `[existence_from,
+/// existence_to]` bounds `resolve_existence` produces -- the one place this
+/// rule is decided, so both the server (were it ever to gate server-side)
+/// and this file's own unit tests below share exactly one definition. The
+/// CLIENT (map.js) re-applies this same inclusive-both-ends comparison
+/// itself against the wire's `existence_from`/`existence_to` fields, since
+/// gating is a rendering decision (hide the LABEL, keep the dot) made at
+/// paint time, not a filter on which places even reach the wire -- see
+/// wire.rs's own `ScenePlace`/`QuietPlace` doc comments. Either bound absent
+/// never gates on that side, matching `resolve_existence`'s own "open-ended"
+/// reading; both absent always returns `false`.
+pub fn existence_gates_label(existence_from: Option<Year>, existence_to: Option<Year>, window: TimeRange) -> bool {
+    if let Some(from) = existence_from {
+        if window.to_year < from {
+            return true;
+        }
+    }
+    if let Some(to) = existence_to {
+        if window.from_year > to {
+            return true;
+        }
+    }
+    false
+}
+
 /// The zero-aware "midpoint year" of a window: floors toward the earlier
 /// (more-BC) year when the window spans an even number of years, so there
 /// is always exactly one canonical midpoint year to test range coverage
@@ -384,6 +429,117 @@ mod tests {
         ];
         for w in [range(-4004, 100), range(-600, -500), range(-4004, -2167), range(1, 50)] {
             let _ = resolve_blurb(&blurbs, w); // must not panic for any window shape
+        }
+    }
+
+    // --- Batch H: resolve_existence / existence_gates_label ----------------
+
+    use crate::data::PlaceDateClaim;
+
+    fn claim(from: Year, to: Year) -> PlaceDateClaim {
+        PlaceDateClaim { when: range(from, to), verses: vec![], note: None }
+    }
+
+    fn history_with_dates(established: Option<PlaceDateClaim>, destroyed: Option<PlaceDateClaim>) -> PlaceHistory {
+        PlaceHistory { id: "x".into(), names: vec![], blurbs: vec![], established, destroyed }
+    }
+
+    #[test]
+    fn resolve_existence_no_history_is_unbounded() {
+        assert_eq!(resolve_existence(None), (None, None));
+    }
+
+    #[test]
+    fn resolve_existence_history_with_neither_claim_is_unbounded() {
+        let h = history_with_dates(None, None);
+        assert_eq!(resolve_existence(Some(&h)), (None, None));
+    }
+
+    #[test]
+    fn resolve_existence_reads_established_from_year_and_destroyed_to_year() {
+        // Shiloh's own real curated shape (data/curated/place-history.toml):
+        // established a single year (-1399, so from_year == to_year), destroyed
+        // a genuine range (-1104..-1050) -- from_year of the FIRST, to_year of
+        // the SECOND, per this function's own doc comment ("plausibly existed
+        // from as early as X" / "plausibly still stood as late as Y").
+        let h = history_with_dates(Some(claim(-1399, -1399)), Some(claim(-1104, -1050)));
+        assert_eq!(resolve_existence(Some(&h)), (Some(-1399), Some(-1050)));
+    }
+
+    #[test]
+    fn resolve_existence_established_only_is_open_ended_on_destroyed_side() {
+        let h = history_with_dates(Some(claim(-2000, -2000)), None);
+        assert_eq!(resolve_existence(Some(&h)), (Some(-2000), None));
+    }
+
+    #[test]
+    fn resolve_existence_destroyed_only_is_open_ended_on_established_side() {
+        let h = history_with_dates(None, Some(claim(-586, -586)));
+        assert_eq!(resolve_existence(Some(&h)), (None, Some(-586)));
+    }
+
+    #[test]
+    fn existence_gates_label_no_bounds_never_gates() {
+        assert!(!existence_gates_label(None, None, range(1, 100)));
+        assert!(!existence_gates_label(None, None, range(-4004, -4004)));
+    }
+
+    #[test]
+    fn existence_gates_label_window_entirely_before_established() {
+        // Shiloh established -1399; a window ending before that gates.
+        assert!(existence_gates_label(Some(-1399), Some(-1050), range(-2000, -1400)));
+        // The boundary year itself is INCLUSIVE (CONTRACT's own "every curated
+        // range is inclusive on both ends" rule) -- a window reaching exactly
+        // -1399 must NOT gate.
+        assert!(!existence_gates_label(Some(-1399), Some(-1050), range(-2000, -1399)));
+    }
+
+    #[test]
+    fn existence_gates_label_window_entirely_after_destroyed() {
+        // Shiloh destroyed by -1050 (the range's own upper bound); a window
+        // starting after that gates -- this is the brief's own named UI case
+        // ("a destroyed-before-window place shows dot, no label").
+        assert!(existence_gates_label(Some(-1399), Some(-1050), range(-900, -800)));
+        // Exactly -1050 is still inclusive: must NOT gate.
+        assert!(!existence_gates_label(Some(-1399), Some(-1050), range(-1050, -900)));
+    }
+
+    #[test]
+    fn existence_gates_label_window_overlapping_existence_never_gates() {
+        assert!(!existence_gates_label(Some(-1399), Some(-1050), range(-1399, -1050))); // exact match
+        assert!(!existence_gates_label(Some(-1399), Some(-1050), range(-4004, 100))); // window contains it
+        assert!(!existence_gates_label(Some(-1399), Some(-1050), range(-1200, -1100))); // window inside it
+    }
+
+    #[test]
+    fn existence_gates_label_open_ended_bound_never_gates_on_that_side() {
+        // established only (Some(-2000), None): a place with no curated
+        // destruction date is understood to still stand -- no window, however
+        // late, ever gates it on the destroyed side.
+        assert!(!existence_gates_label(Some(-2000), None, range(1, 100)));
+        assert!(existence_gates_label(Some(-2000), None, range(-4004, -2001))); // still gates on the established side
+        // destroyed only (None, Some(-586)): no curated founding date -- no
+        // window, however early, ever gates it on the established side.
+        assert!(!existence_gates_label(None, Some(-586), range(-4004, -4004)));
+        assert!(existence_gates_label(None, Some(-586), range(-500, -400))); // still gates on the destroyed side
+    }
+
+    proptest! {
+        // API property: resolve_existence's own output, fed straight back
+        // into existence_gates_label, must never gate a window that genuinely
+        // intersects [existence_from, existence_to] (both bounds present) --
+        // the two functions must agree with TimeRange::intersects itself.
+        #[test]
+        fn existence_gating_agrees_with_time_range_intersects(
+            est in -4004i32..=100, dest_delta in 0i32..500, w in window_strategy(),
+        ) {
+            let est = if est == 0 { 1 } else { est };
+            let dest = (est + dest_delta).min(100);
+            let dest = if dest == 0 { 1 } else { dest };
+            prop_assume!(est <= dest);
+            let existence = TimeRange::new(est, dest).unwrap();
+            let gated = existence_gates_label(Some(est), Some(dest), w);
+            prop_assert_eq!(gated, !existence.intersects(&w));
         }
     }
 

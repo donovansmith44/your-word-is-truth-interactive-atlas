@@ -20,6 +20,15 @@ public class GoldenSceneTests
         Assert.Equal("shiloh", scene.QuietPlaces[0].Id);
         Assert.Equal("Shiloh", scene.QuietPlaces[0].DisplayName);
         Assert.Equal(3, scene.QuietPlaces[0].TotalEvents);
+        // Batch H (existence gating): shiloh's own real curated bounds
+        // (established -1399, destroyed's own upper bound -1050) round-trip
+        // onto the wire; jericho (no curated history in this fixture) keeps
+        // both null -- pinning "no curated bounds -> always labels" on the
+        // client side of the SAME golden regeneration.
+        Assert.Equal(-1399, scene.QuietPlaces[0].ExistenceFrom);
+        Assert.Equal(-1050, scene.QuietPlaces[0].ExistenceTo);
+        Assert.Null(scene.Places[0].ExistenceFrom);
+        Assert.Null(scene.Places[0].ExistenceTo);
         Assert.Equal("conquest", scene.Arrows[0].Narrative);
         Assert.Equal(2, scene.Arrows[0].Order);
 

@@ -41,7 +41,9 @@
       "display_name": "Shiloh",
       "lat": 32.0553,
       "lon": 35.2897,
-      "total_events": 3
+      "total_events": 3,
+      "existence_from": -1399,
+      "existence_to": -1050
     }
   ],
   "arrows": [

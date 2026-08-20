@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::time::TimeRange;
+use crate::time::{TimeRange, Year};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Scene {
@@ -44,6 +44,24 @@ pub struct ScenePlace {
     pub lon: f64,
     pub brightness: u8,
     pub events: Vec<SceneEvent>,
+    /// Batch H (existence gating, deferred from E2): the curated
+    /// established/destroyed bounds this place's name resolves against
+    /// (`crate::history::resolve_existence`) -- plain years, never the full
+    /// established/destroyed `PlaceDateClaim` (verses/note; that richer
+    /// shape is `/api/place/{id}`'s own `HistoryOut`, not a per-marker wire
+    /// cost). Both omitted (not `null` -- see `skip_serializing_if`) when
+    /// this place has no curated history at all, or a curated history with
+    /// neither claim -- the client's own gate never fires in that case
+    /// (`existence_gates_label`'s own "always labels" reading). The map
+    /// renders every place regardless of these bounds (a lit place is only
+    /// ever here because a real event justifies it THIS window -- see
+    /// `scene::lit_places`); it's the client's own label -- never the
+    /// marker/dot -- that these bounds gate, and only in time mode (there is
+    /// no window to test outside-ness against in scripture mode).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub existence_from: Option<Year>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub existence_to: Option<Year>,
 }
 
 /// Batch E2: one "quiet" place on a time-mode scene -- an event-bearing
@@ -67,6 +85,16 @@ pub struct QuietPlace {
     /// place has zero events IN this window by definition; a window-scoped
     /// count would always read zero and tell the client nothing.
     pub total_events: u32,
+    /// Batch H (existence gating): same fields, same rule, as
+    /// `ScenePlace::existence_from`/`existence_to` -- see that doc comment.
+    /// A quiet place is exactly where this matters most in practice (the
+    /// "ever-present graph" shows a dot for every event-bearing place
+    /// regardless of window, so a long-destroyed place's dot can otherwise
+    /// sit on a plate captioned with a name it never bore at that time).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub existence_from: Option<Year>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub existence_to: Option<Year>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
