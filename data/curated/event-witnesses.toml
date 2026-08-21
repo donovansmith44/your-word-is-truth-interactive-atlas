@@ -1350,3 +1350,532 @@ book = "LUK"
 verses = ["LUK.18.35-43"]
 ref_note = "Luke 18:35-43 read directly against the compiled KJV text"
 robertson_section = "Robertson (1922) §126"
+
+
+# ===========================================================================
+# Batch T2 fix (owner's own live-review ruling, 2026-08-21): a systemic gap
+# across ~72 of this batch's own multi-witness sections -- once ANY
+# [[witness]] row exists for an event, `heading_anchors_for` (server,
+# atlas-core/src/data.rs) reads ONLY `e.witnesses`, never falling back to
+# the event's own top-level `verses` field at all. Every one of these 72
+# sections had top-level `verses` in ONE book (matching pw_bethany's own
+# established precedent: "included here too, explicitly, so THIS event's
+# own PARALLEL ACCOUNTS section is complete... rather than silently
+# relying on the top-level field to stand in for one of them") but was
+# missing the matching explicit witness row for THAT SAME book -- meaning
+# that book's own reader heading anchor was silently absent, and its own
+# PARALLEL ACCOUNTS passage-list entry was silently missing from the
+# EVENT popover, even though the event's own top-level `verses` field
+# still (correctly) carried its content everywhere else (verse-membership
+# popovers, the map, etc.). Caught live by the owner during review of
+# this batch's own dense-chapter payload check (MAT.26 showed only 2
+# headings where ~10 were expected). Every row below adds EXACTLY the
+# missing top-level-book witness, verbatim-identical to that event's own
+# existing `verses` field (never widened/narrowed) -- a pure completeness
+# fix, not a re-citation.
+# ===========================================================================
+
+[[witness]]
+event_id = "rob_four_fishers"
+book = "MAT"
+verses = ["MAT.4.18-22"]
+ref_note = "Matthew 4:18-22 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §41"
+
+[[witness]]
+event_id = "rob_capernaum_demoniac"
+book = "MRK"
+verses = ["MRK.1.21-28"]
+ref_note = "Mark 1:21-28 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §42"
+
+[[witness]]
+event_id = "rob_peters_mother_in_law"
+book = "MAT"
+verses = ["MAT.8.14-17"]
+ref_note = "Matthew 8:14-17 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §43"
+
+[[witness]]
+event_id = "rob_first_galilee_tour"
+book = "MAT"
+verses = ["MAT.4.23-25"]
+ref_note = "Matthew 4:23-25 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §44"
+
+[[witness]]
+event_id = "rob_leper_healed"
+book = "MAT"
+verses = ["MAT.8.2-4"]
+ref_note = "Matthew 8:2-4 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §45"
+
+[[witness]]
+event_id = "rob_paralytic_roof"
+book = "MAT"
+verses = ["MAT.9.1-8"]
+ref_note = "Matthew 9:1-8 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §46"
+
+[[witness]]
+event_id = "rob_call_of_matthew"
+book = "MAT"
+verses = ["MAT.9.9-13"]
+ref_note = "Matthew 9:9-13 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §47"
+
+[[witness]]
+event_id = "rob_fasting_parables"
+book = "MAT"
+verses = ["MAT.9.14-17"]
+ref_note = "Matthew 9:14-17 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §48"
+
+[[witness]]
+event_id = "rob_grain_sabbath"
+book = "MAT"
+verses = ["MAT.12.1-8"]
+ref_note = "Matthew 12:1-8 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §50"
+
+[[witness]]
+event_id = "rob_withered_hand"
+book = "MAT"
+verses = ["MAT.12.9-14"]
+ref_note = "Matthew 12:9-14 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §51"
+
+[[witness]]
+event_id = "rob_multitudes_by_sea"
+book = "MAT"
+verses = ["MAT.12.15-21"]
+ref_note = "Matthew 12:15-21 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §52"
+
+[[witness]]
+event_id = "rob_twelve_apostles"
+book = "MRK"
+verses = ["MRK.3.13-19"]
+ref_note = "Mark 3:13-19 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §53"
+
+[[witness]]
+event_id = "rob_sermon_on_the_mount"
+book = "LUK"
+verses = ["LUK.6.17-49"]
+ref_note = "Luke 6:17-49 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §54"
+
+[[witness]]
+event_id = "rob_centurion_servant"
+book = "MAT"
+verses = ["MAT.8.5-13"]
+ref_note = "Matthew 8:5-13 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §55"
+
+[[witness]]
+event_id = "rob_message_from_baptist"
+book = "MAT"
+verses = ["MAT.11.2-19"]
+ref_note = "Matthew 11:2-19 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §57"
+
+[[witness]]
+event_id = "rob_beelzebub_accusation"
+book = "MAT"
+verses = ["MAT.12.22-37"]
+ref_note = "Matthew 12:22-37 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §61"
+
+[[witness]]
+event_id = "rob_mother_brethren"
+book = "MAT"
+verses = ["MAT.12.46-50"]
+ref_note = "Matthew 12:46-50 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §63"
+
+[[witness]]
+event_id = "rob_first_parable_group"
+book = "MAT"
+verses = ["MAT.13.1-53"]
+ref_note = "Matthew 13:1-53 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §64"
+
+[[witness]]
+event_id = "rob_stills_tempest"
+book = "MAT"
+verses = ["MAT.8.18", "MAT.8.23-27"]
+ref_note = "Matthew 8:18, Matthew 8:23-27 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §65"
+
+[[witness]]
+event_id = "rob_gadarene_demoniac"
+book = "MRK"
+verses = ["MRK.5.1-20"]
+ref_note = "Mark 5:1-20 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §66"
+
+[[witness]]
+event_id = "rob_jairus_daughter"
+book = "MAT"
+verses = ["MAT.9.18-26"]
+ref_note = "Matthew 9:18-26 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §67"
+
+[[witness]]
+event_id = "rob_last_nazareth_visit"
+book = "MAT"
+verses = ["MAT.13.54-58"]
+ref_note = "Matthew 13:54-58 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §69"
+
+[[witness]]
+event_id = "rob_third_tour_sending_twelve"
+book = "MAT"
+verses = ["MAT.9.35-38", "MAT.10.1-42", "MAT.11.1"]
+ref_note = "Matthew 9:35-38, Matthew 10:1-42, Matthew 11:1 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §70"
+
+[[witness]]
+event_id = "rob_herod_fears"
+book = "MAT"
+verses = ["MAT.14.1-12"]
+ref_note = "Matthew 14:1-12 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §71"
+
+[[witness]]
+event_id = "rob_prevents_kingship"
+book = "MAT"
+verses = ["MAT.14.22-23"]
+ref_note = "Matthew 14:22-23 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §73"
+
+[[witness]]
+event_id = "rob_walks_on_water"
+book = "MAT"
+verses = ["MAT.14.24-33"]
+ref_note = "Matthew 14:24-33 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §74"
+
+[[witness]]
+event_id = "rob_gennesaret_reception"
+book = "MAT"
+verses = ["MAT.14.34-36"]
+ref_note = "Matthew 14:34-36 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §75"
+
+[[witness]]
+event_id = "rob_defilement_controversy"
+book = "MAT"
+verses = ["MAT.15.1-20"]
+ref_note = "Matthew 15:1-20 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §77"
+
+[[witness]]
+event_id = "rob_syrophoenician_woman"
+book = "MAT"
+verses = ["MAT.15.21-28"]
+ref_note = "Matthew 15:21-28 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §78"
+
+[[witness]]
+event_id = "rob_deaf_mute_feeding_4000"
+book = "MAT"
+verses = ["MAT.15.29-38"]
+ref_note = "Matthew 15:29-38 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §79"
+
+[[witness]]
+event_id = "rob_dalmanutha_sign"
+book = "MAT"
+verses = ["MAT.15.39", "MAT.16.1-4"]
+ref_note = "Matthew 15:39, Matthew 16:1-4 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §80"
+
+[[witness]]
+event_id = "rob_bethsaida_blind_man"
+book = "MRK"
+verses = ["MRK.8.22-26"]
+ref_note = "Mark 8:22-26 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §81"
+
+[[witness]]
+event_id = "rob_foretells_death_1"
+book = "MAT"
+verses = ["MAT.16.21-26"]
+ref_note = "Matthew 16:21-26 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §83"
+
+[[witness]]
+event_id = "rob_coming_of_son_of_man"
+book = "MAT"
+verses = ["MAT.16.27-28"]
+ref_note = "Matthew 16:27-28 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §84"
+
+[[witness]]
+event_id = "rob_transfiguration"
+book = "MAT"
+verses = ["MAT.17.1-8"]
+ref_note = "Matthew 17:1-8 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §85"
+
+[[witness]]
+event_id = "rob_elijah_puzzle"
+book = "MAT"
+verses = ["MAT.17.9-13"]
+ref_note = "Matthew 17:9-13 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §86"
+
+[[witness]]
+event_id = "rob_demoniac_boy"
+book = "MAT"
+verses = ["MAT.17.14-20"]
+ref_note = "Matthew 17:14-20 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §87"
+
+[[witness]]
+event_id = "rob_foretells_death_2"
+book = "MAT"
+verses = ["MAT.17.22-23"]
+ref_note = "Matthew 17:22-23 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §88"
+
+[[witness]]
+event_id = "rob_who_is_greatest"
+book = "MAT"
+verses = ["MAT.18.1-5"]
+ref_note = "Matthew 18:1-5 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §90"
+
+[[witness]]
+event_id = "rob_johns_zeal_rebuked"
+book = "MAT"
+verses = ["MAT.18.6-14"]
+ref_note = "Matthew 18:6-14 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §91"
+
+[[witness]]
+event_id = "rob_cost_of_discipleship_1"
+book = "MAT"
+verses = ["MAT.8.19-22"]
+ref_note = "Matthew 8:19-22 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §93"
+
+[[witness]]
+event_id = "rob_authority_challenged"
+book = "MAT"
+verses = ["MAT.21.23-46", "MAT.22.1-14"]
+ref_note = "Matthew 21:23-46, Matthew 22:1-14 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §132"
+
+[[witness]]
+event_id = "rob_tribute_to_caesar"
+book = "MAT"
+verses = ["MAT.22.15-22"]
+ref_note = "Matthew 22:15-22 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §133"
+
+[[witness]]
+event_id = "rob_sadducees_resurrection"
+book = "MAT"
+verses = ["MAT.22.23-33"]
+ref_note = "Matthew 22:23-33 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §134"
+
+[[witness]]
+event_id = "rob_great_commandment"
+book = "MAT"
+verses = ["MAT.22.34-40"]
+ref_note = "Matthew 22:34-40 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §135"
+
+[[witness]]
+event_id = "rob_davids_son"
+book = "MAT"
+verses = ["MAT.22.41-46"]
+ref_note = "Matthew 22:41-46 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §136"
+
+[[witness]]
+event_id = "rob_woes_on_scribes"
+book = "MAT"
+verses = ["MAT.23.1-39"]
+ref_note = "Matthew 23:1-39 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §137"
+
+[[witness]]
+event_id = "rob_widows_mite"
+book = "MRK"
+verses = ["MRK.12.41-44"]
+ref_note = "Mark 12:41-44 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §138"
+
+[[witness]]
+event_id = "rob_olivet_discourse"
+book = "MRK"
+verses = ["MRK.13.1-37"]
+ref_note = "Mark 13:1-37 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §139"
+
+[[witness]]
+event_id = "rob_predicts_crucifixion_timing"
+book = "MAT"
+verses = ["MAT.26.1-5"]
+ref_note = "Matthew 26:1-5 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §140"
+
+[[witness]]
+event_id = "rob_judas_bargains"
+book = "MAT"
+verses = ["MAT.26.14-16"]
+ref_note = "Matthew 26:14-16 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §142"
+
+[[witness]]
+event_id = "rob_passover_preparation"
+book = "MAT"
+verses = ["MAT.26.17-19"]
+ref_note = "Matthew 26:17-19 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §143"
+
+[[witness]]
+event_id = "rob_paschal_meal_begins"
+book = "MAT"
+verses = ["MAT.26.20"]
+ref_note = "Matthew 26:20 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §144"
+
+[[witness]]
+event_id = "rob_judas_pointed_out"
+book = "MAT"
+verses = ["MAT.26.21-25"]
+ref_note = "Matthew 26:21-25 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §146"
+
+[[witness]]
+event_id = "rob_warns_against_desertion"
+book = "MAT"
+verses = ["MAT.26.31-35"]
+ref_note = "Matthew 26:31-35 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §147"
+
+[[witness]]
+event_id = "rob_lords_supper"
+book = "MAT"
+verses = ["MAT.26.26-29"]
+ref_note = "Matthew 26:26-29 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §148"
+
+[[witness]]
+event_id = "rob_tried_by_caiaphas"
+book = "MAT"
+verses = ["MAT.26.57", "MAT.26.59-68"]
+ref_note = "Matthew 26:57, Matthew 26:59-68 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §155"
+
+[[witness]]
+event_id = "rob_peter_denies"
+book = "MAT"
+verses = ["MAT.26.58", "MAT.26.69-75"]
+ref_note = "Matthew 26:58, Matthew 26:69-75 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §156"
+
+[[witness]]
+event_id = "rob_formally_condemned"
+book = "MAT"
+verses = ["MAT.27.1"]
+ref_note = "Matthew 27:1 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §157"
+
+[[witness]]
+event_id = "rob_before_pilate_1"
+book = "MAT"
+verses = ["MAT.27.2", "MAT.27.11-14"]
+ref_note = "Matthew 27:2, Matthew 27:11-14 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §159"
+
+[[witness]]
+event_id = "rob_before_pilate_2"
+book = "MAT"
+verses = ["MAT.27.15-26"]
+ref_note = "Matthew 27:15-26 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §161"
+
+[[witness]]
+event_id = "rob_soldiers_mock"
+book = "MAT"
+verses = ["MAT.27.27-30"]
+ref_note = "Matthew 27:27-30 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §162"
+
+[[witness]]
+event_id = "rob_way_to_golgotha"
+book = "MAT"
+verses = ["MAT.27.31-34"]
+ref_note = "Matthew 27:31-34 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §163"
+
+[[witness]]
+event_id = "rob_death_phenomena"
+book = "MAT"
+verses = ["MAT.27.51-56"]
+ref_note = "Matthew 27:51-56 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §166"
+
+[[witness]]
+event_id = "rob_burial"
+book = "MAT"
+verses = ["MAT.27.57-60"]
+ref_note = "Matthew 27:57-60 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §167"
+
+[[witness]]
+event_id = "rob_appears_to_mary_magdalene"
+book = "MRK"
+verses = ["MRK.16.9-11"]
+ref_note = "Mark 16:9-11 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §173"
+
+[[witness]]
+event_id = "rob_appears_thomas_absent"
+book = "LUK"
+verses = ["LUK.24.36-43"]
+ref_note = "Luke 24:36-43 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §178"
+
+[[witness]]
+event_id = "rob_teaching_on_divorce"
+book = "MAT"
+verses = ["MAT.19.1-12"]
+ref_note = "Matthew 19:1-12 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §122"
+
+[[witness]]
+event_id = "rob_christ_and_children"
+book = "MAT"
+verses = ["MAT.19.13-15"]
+ref_note = "Matthew 19:13-15 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §123"
+
+[[witness]]
+event_id = "rob_rich_young_ruler"
+book = "MAT"
+verses = ["MAT.19.16-30", "MAT.20.1-16"]
+ref_note = "Matthew 19:16-30, Matthew 20:1-16 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §124"
+
+[[witness]]
+event_id = "rob_foretells_death_3"
+book = "MAT"
+verses = ["MAT.20.17-28"]
+ref_note = "Matthew 20:17-28 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §125"
+
+[[witness]]
+event_id = "rob_blind_bartimaeus"
+book = "MAT"
+verses = ["MAT.20.29-34"]
+ref_note = "Matthew 20:29-34 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+robertson_section = "Robertson (1922) §126"
+
