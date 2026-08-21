@@ -1,0 +1,177 @@
+# Batch W1 (whole-Bible titled verse containers). Deuteronomy, in the SAME
+# `[[event]]` schema `events-extra.toml` uses -- see
+# `data/curated/passages/genesis.toml`'s own header comment for the full
+# reconciliation/provenance framing.
+#
+# RECONCILIATION: 4 pre-existing events touch Deuteronomy before this file
+# (theo-127's own DEU witness, the Ten Commandments, req 1b's own named
+# case, landed in this batch's own first commit; theo-129 "Death of
+# Moses," ex_moab, theo-121 -- all covering only chapter 34/the plains of
+# Moab camp). theo-129 is enriched via atlas-sections.toml (already
+# well-scoped, 12 verses, exactly Deuteronomy 34's own "Death of Moses"
+# content) rather than duplicated with a new container.
+#
+# GRANULARITY: the whole book is ONE continuous discourse, dated "the
+# fortieth year" (1:3, explicit) -- Moses's own three farewell addresses
+# at the plains of Moab. Chapters 1-11 and 27-33 (historical recap,
+# exhortation, the covenant ceremony, the Song and Blessing of Moses) are
+# event-kind, same narrative/rhetorical-progression reasoning as this
+# batch's own Numbers narrative chapters. Chapters 12-26 (the Deuteronomic
+# law code proper, formally marked by its own "these are the statutes and
+# judgments," 12:1) are general-kind, same "law = code units" reasoning
+# as this file's own Leviticus/Numbers siblings, even though delivered
+# within the same Moab speech.
+#
+# CHRONOLOGY: "the fortieth year" (1:3) = -1451 under the theo-*/Ussher
+# scale this batch's own Numbers containers already established (against
+# theo-125's own -1491 Exodus anchor) -- see numbers.toml's own header
+# for the full disclosed two-layer tension against the pre-existing
+# ex_moab (-1407, the "early date" scale).
+
+[[event]]
+id = "deu_recounts_journey"
+label = "Moses recounts the journey from Horeb to Moab"
+from_year = -1451
+to_year = -1451
+places = ["moab-1"]
+verses = ["DEU.1.1-46", "DEU.2.1-37", "DEU.3.1-29"]
+atlas_section = "Deuteronomy pericope (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 1-3, Moses's own historical review -- the journey from Horeb, the spies' own rebellion recalled, Edom and Moab passed, and the defeats of Sihon and Og."
+ref_note = "'The fortieth year' (1:3), explicit. Place: 'on this side Jordan' (1:1, 1:5), the plains of Moab."
+
+[[event]]
+id = "deu_exhorts_obedience"
+label = "Moses exhorts Israel to obey; cities of refuge appointed"
+from_year = -1451
+to_year = -1451
+places = ["moab-1"]
+verses = ["DEU.4.1-49"]
+atlas_section = "Deuteronomy pericope (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 4, Moses's own exhortation against idolatry, and the three cities of refuge east of Jordan appointed."
+ref_note = "Same traditional year, continuing the same discourse. Place: Moab."
+
+[[event]]
+id = "deu_recalls_horeb_commandment"
+label = "Moses recalls Horeb; the people's fear, and the whole commandment"
+from_year = -1451
+to_year = -1451
+places = ["moab-1"]
+verses = ["DEU.5.1-5", "DEU.5.22-33"]
+atlas_section = "Deuteronomy pericope (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 5:1-5 and 5:22-33, Moses's own framing of the Ten Commandments (5:6-21, already this batch's own req 1b named-case witness on theo-127) -- his own recollection of the assembly's fear at Horeb, and the LORD's own charge to teach 'all the commandments.'"
+ref_note = "Same traditional year. Fills the two small gaps this chapter's own middle portion (the Commandments themselves) does not cover, deliberately not re-covering that portion again -- see theo-127's own witness row, data/curated/event-witnesses.toml."
+
+[[event]]
+id = "deu_love_and_obey"
+label = "The great commandment; further exhortations to love and obey the LORD"
+from_year = -1451
+to_year = -1451
+places = ["moab-1"]
+verses = ["DEU.6.1-25", "DEU.7.1-26", "DEU.8.1-20", "DEU.9.1-29", "DEU.10.1-22", "DEU.11.1-32"]
+atlas_section = "Deuteronomy pericope (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 6-11, the Shema ('Hear, O Israel'), the command to destroy the Canaanite nations, the warning against forgetting the LORD in prosperity, the golden calf recalled, and the choice of blessing or curse."
+ref_note = "Same traditional year, continuing the same discourse. Place: Moab."
+
+[[event]]
+id = "deu_worship_idolatry_laws"
+label = "Worship at one place only; laws against idolatry"
+kind = "general"
+verses = ["DEU.12.1-32", "DEU.13.1-18"]
+atlas_section = "Deuteronomy code unit (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 12-13, sacrifice restricted to the place the LORD would choose, and the law against any who entice Israel to other gods."
+ref_note = "General-kind, per this file's own header note on the law-code chapters."
+
+[[event]]
+id = "deu_food_sabbatical_firstborn"
+label = "Clean and unclean food; the sabbatical year; the firstborn"
+kind = "general"
+verses = ["DEU.14.1-29", "DEU.15.1-23"]
+atlas_section = "Deuteronomy code unit (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 14-15, clean and unclean animals, the tithe, the seventh-year release of debts and servants, and the firstborn of the herd and flock."
+ref_note = "General-kind, per this file's own header note."
+
+[[event]]
+id = "deu_feasts_judges_kings"
+label = "The three feasts; judges, kings, priests, and prophets"
+kind = "general"
+verses = ["DEU.16.1-22", "DEU.17.1-20", "DEU.18.1-22"]
+atlas_section = "Deuteronomy code unit (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 16-18, Passover, Weeks, and Tabernacles, the appointment of judges, the law of a future king, the priests' own portion, and the true prophet."
+ref_note = "General-kind, per this file's own header note."
+
+[[event]]
+id = "deu_refuge_warfare_civil"
+label = "Cities of refuge; laws of warfare; various civil laws"
+kind = "general"
+verses = ["DEU.19.1-21", "DEU.20.1-20", "DEU.21.1-23"]
+atlas_section = "Deuteronomy code unit (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 19-21, the cities of refuge, the law of witnesses, the conduct of warfare, the unsolved murder, and family/civil case law."
+ref_note = "General-kind, per this file's own header note."
+
+[[event]]
+id = "deu_civil_family_laws"
+label = "Various civil and family laws"
+kind = "general"
+verses = ["DEU.22.1-30", "DEU.23.1-25", "DEU.24.1-22", "DEU.25.1-19"]
+atlas_section = "Deuteronomy code unit (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 22-25, lost property, forbidden mixtures, sexual morality, admission to the assembly, divorce, pledges, gleaning, and just weights."
+ref_note = "General-kind, per this file's own header note."
+
+[[event]]
+id = "deu_firstfruits_covenant_formula"
+label = "Firstfruits and tithes; the covenant formula"
+kind = "general"
+verses = ["DEU.26.1-19"]
+atlas_section = "Deuteronomy code unit (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 26, the offering of firstfruits, the third-year tithe, and the mutual covenant declaration closing the statutes and judgments."
+ref_note = "General-kind, per this file's own header note -- closes the law-code section (chapters 12-26)."
+
+[[event]]
+id = "deu_blessings_curses_ebal"
+label = "The blessings and curses; the altar on Mount Ebal"
+from_year = -1451
+to_year = -1451
+places = ["moab-1"]
+verses = ["DEU.27.1-26", "DEU.28.1-68"]
+atlas_section = "Deuteronomy pericope (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 27-28, Moses's own command to build an altar on Mount Ebal once in the land, the tribes divided for blessing and cursing, and the long roster of covenant blessings and curses."
+ref_note = "Same traditional year as deu_love_and_obey, continuing the discourse. Place: Moses's own address at Moab, commanding a future ceremony at Ebal (not yet performed -- see Joshua 8)."
+
+[[event]]
+id = "deu_covenant_renewed_moab"
+label = "The covenant renewed in Moab; the choice of life and death"
+from_year = -1451
+to_year = -1451
+places = ["moab-1"]
+verses = ["DEU.29.1-29", "DEU.30.1-20"]
+atlas_section = "Deuteronomy pericope (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 29-30, the covenant made in Moab besides the one at Horeb, the promise of restoration after exile, and Moses's own charge: 'I have set before you life and death... therefore choose life.'"
+ref_note = "Same traditional year. Place: 'the land of Moab' (29:1), explicit."
+
+[[event]]
+id = "deu_commissions_joshua"
+label = "Moses commissions Joshua; the Law to be read every seven years"
+from_year = -1451
+to_year = -1451
+places = ["moab-1"]
+verses = ["DEU.31.1-30"]
+atlas_section = "Deuteronomy pericope (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 31, Moses's own charge to Joshua and to Israel, the Law written and given to the priests, and the command to read it publicly every seventh year."
+ref_note = "Same traditional year. Place: Moab."
+
+[[event]]
+id = "deu_song_of_moses"
+label = "The Song of Moses"
+from_year = -1451
+to_year = -1451
+places = ["moab-1"]
+verses = ["DEU.32.1-52"]
+atlas_section = "Deuteronomy pericope (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 32, Moses's own song recounting the LORD's own faithfulness and Israel's own future unfaithfulness, and the LORD's own instruction to Moses to view the land from Nebo."
+ref_note = "'Moses came and spake all the words of this song in the ears of the people' (32:44), same traditional year. Place: Moab."
+
+[[event]]
+id = "deu_blessing_of_moses"
+label = "The blessing of Moses on the twelve tribes"
+from_year = -1451
+to_year = -1451
+places = ["moab-1"]
+verses = ["DEU.33.1-29"]
+atlas_section = "Deuteronomy pericope (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 33, Moses's own final blessing on each of the twelve tribes 'before his death' (33:1)."
+ref_note = "Same traditional year, Moses's own last recorded words before his death (Deuteronomy 34). Place: Moab."
+
+[[event]]
+id = "deu_death_of_moses"
+label = "The death of Moses"
+from_year = -1451
+to_year = -1451
+places = ["mount-nebo"]
+verses = ["DEU.34.1-12"]
+atlas_section = "Deuteronomy pericope (this project's own sectioning, CC0 -- no external PD source claimed): Deuteronomy 34, Moses's own view of the promised land from Nebo, his death, burial, and epitaph, closing the Torah. Authored fresh, deliberately NOT an atlas-sections.toml enrichment of the pre-existing theo-129 (same title/content) -- see that file's own header note on the genuine pre-existing data anomaly (a stray GEN.34.1 verse) this batch's own real ETL run caught as a within-layer anchor collision against gen_dinah_shechem."
+ref_note = "Matches theo-129's own -1452 (this batch's own -1451 for 'the fortieth year,' one year prior to Israel's own crossing of the Jordan -1451->-1450 in the traditional reckoning this batch's own Numbers/Deuteronomy containers use -- a one-year rounding difference from theo-129's pre-existing -1452, immaterial at this atlas's year-granular resolution). Place: 'the mountain of Nebo, to the top of Pisgah' (34:1), matching theo-129's own place mapping (mount-nebo)."

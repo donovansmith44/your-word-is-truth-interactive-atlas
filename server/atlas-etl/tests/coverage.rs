@@ -518,11 +518,11 @@ fn every_declared_book_is_fully_covered_by_the_real_compiled_data() {
 /// hardcoded floor is the audit trail (grep this file's own git blame for
 /// when each book was added) and fails loud the moment a future edit
 /// accidentally drops one. Gospels+Acts (Batch T/T2) plus Genesis, Exodus,
-/// Leviticus, Ruth, and Numbers (Batch W1, this run) are the floor as of
-/// this commit.
+/// Leviticus, Ruth, Numbers, and Deuteronomy (Batch W1, this run) are the
+/// floor as of this commit.
 #[test]
 fn declared_books_never_shrink_below_the_established_floor() {
-    const FLOOR: &[&str] = &["MAT", "MRK", "LUK", "JHN", "ACT", "GEN", "EXO", "LEV", "RUT", "NUM"];
+    const FLOOR: &[&str] = &["MAT", "MRK", "LUK", "JHN", "ACT", "GEN", "EXO", "LEV", "RUT", "NUM", "DEU"];
 
     let manifest_toml = read_curated("coverage-manifest.toml");
     let declared: HashSet<String> =
