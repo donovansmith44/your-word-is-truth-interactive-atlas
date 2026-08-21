@@ -1508,3 +1508,212 @@ verses = ["LUK.4.16-31"]
 order_key = 390
 robertson_section = "Robertson (1922) §39, \"The First Rejection at Nazareth\""
 ref_note = "Luke 4:16-31 read directly against the compiled KJV text"
+
+# --- Period 4: Early Galilean ministry (Robertson Part VI cont'd, SS41-58) -
+# All AD 30/31 -- the "great Galilean ministry," the year Batch T's own
+# sparse skeleton left entirely uncovered (it jumped straight from
+# jm_sychar/30 to jm_bethsaida/32). SS41-53 continue AD 30 (immediately
+# following S39/S40 above); S54 onward (the Sermon on the Mount and after)
+# cross into AD 31 -- a full year of continuous Galilean ministry with no
+# single datable feast/anchor of its own within it, so this batch places
+# the boundary at the Sermon (a natural narrative hinge: the Twelve are
+# now chosen, S53, and the Sermon is commonly read as inaugurating a new,
+# more organized phase) rather than claiming false precision about
+# exactly which of SS41-58 falls in which specific month.
+[[event]]
+id = "rob_four_fishers"
+label = "Jesus calls four fishermen to follow him"
+from_year = 30
+to_year = 30
+places = ["sea-of-galilee"]
+verses = ["MAT.4.18-22"]
+order_key = 410
+robertson_section = "Robertson (1922) §41, \"Jesus Finds Four Fishers of Men in Four Fishermen\""
+ref_note = "Matthew 4:18-22 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_capernaum_demoniac"
+label = "Jesus heals a demoniac in the Capernaum synagogue"
+from_year = 30
+to_year = 30
+places = ["capernaum"]
+verses = ["MRK.1.21-28"]
+order_key = 420
+robertson_section = "Robertson (1922) §42, \"The Excitement in the Synagogue because of the Teaching of Jesus and the Healing of a Demoniac on the Sabbath\""
+ref_note = "Mark 1:21-28 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_peters_mother_in_law"
+label = "Jesus heals Peter's mother-in-law and many others"
+from_year = 30
+to_year = 30
+places = ["capernaum"]
+verses = ["MAT.8.14-17"]
+order_key = 430
+robertson_section = "Robertson (1922) §43, \"He Heals Peter's Mother-in-law and Many Others\""
+ref_note = "Matthew 8:14-17 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_first_galilee_tour"
+label = "The first tour of Galilee"
+from_year = 30
+to_year = 30
+places = ["galilee-1"]
+verses = ["MAT.4.23-25"]
+order_key = 440
+robertson_section = "Robertson (1922) §44, \"The First Tour of Galilee with the Four Fishermen\""
+ref_note = "Matthew 4:23-25 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_leper_healed"
+label = "A leper healed; great popular excitement"
+from_year = 30
+to_year = 30
+places = ["galilee-1"]
+verses = ["MAT.8.2-4"]
+order_key = 450
+robertson_section = "Robertson (1922) §45, \"A Leper Healed and Much Popular Excitement\""
+ref_note = "Matthew 8:2-4 read directly against the compiled KJV text; Luke's own witness (5:12) names only 'a certain city,' unspecified -- galilee-1 kept as the broad, defensible region"
+
+[[event]]
+id = "rob_paralytic_roof"
+label = "A paralytic lowered through the roof at Capernaum"
+from_year = 30
+to_year = 30
+places = ["capernaum"]
+verses = ["MAT.9.1-8"]
+order_key = 460
+robertson_section = "Robertson (1922) §46, \"Thronged in Capernaum, He Heals a Paralytic Lowered through the Roof of Peter's House\""
+ref_note = "Matthew 9:1-8 read directly against the compiled KJV text; Matthew's own text alone does not name Capernaum, but Mark's own parallel (2:1) does explicitly"
+
+[[event]]
+id = "rob_call_of_matthew"
+label = "The call of Matthew (Levi) the tax collector"
+from_year = 30
+to_year = 30
+places = ["capernaum"]
+verses = ["MAT.9.9-13"]
+order_key = 470
+robertson_section = "Robertson (1922) §47, \"The Call of Matthew (Levi) and His Reception in Honor of Jesus\""
+ref_note = "Matthew 9:9-13 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_fasting_parables"
+label = "Jesus defends his disciples for feasting instead of fasting"
+from_year = 30
+to_year = 30
+places = ["capernaum"]
+verses = ["MAT.9.14-17"]
+order_key = 480
+robertson_section = "Robertson (1922) §48, \"Jesus in Three Parables Defends His Disciples for Feasting instead of Fasting\""
+ref_note = "Matthew 9:14-17 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_jerusalem_feast_healing"
+label = "Jesus heals a lame man at a Jerusalem feast on the sabbath"
+from_year = 30
+to_year = 30
+places = ["jerusalem"]
+verses = ["JHN.5.1-47"]
+order_key = 490
+robertson_section = "Robertson (1922) §49, \"At a Feast in Jerusalem (Possibly the Passover) Jesus Heals a Lame Man on the Sabbath and Defends This Action to the Pharisees in a Great Discourse\""
+ref_note = "John 5:1-47 read directly against the compiled KJV text; single witness (John alone)"
+
+[[event]]
+id = "rob_grain_sabbath"
+label = "The disciples pluck grain on the sabbath"
+from_year = 30
+to_year = 30
+places = ["galilee-1"]
+verses = ["MAT.12.1-8"]
+order_key = 500
+robertson_section = "Robertson (1922) §50, \"Another Sabbath Controversy with the Pharisees When the Disciples Pluck Ears of Grain in the Fields\""
+ref_note = "Matthew 12:1-8 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_withered_hand"
+label = "Jesus heals a man's withered hand on the sabbath"
+from_year = 30
+to_year = 30
+places = ["galilee-1"]
+verses = ["MAT.12.9-14"]
+order_key = 510
+robertson_section = "Robertson (1922) §51, \"A Third Sabbath Controversy with the Pharisees over the Healing of a Man with a Withered Hand in a Synagogue\""
+ref_note = "Matthew 12:9-14 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_multitudes_by_sea"
+label = "Jesus teaches and heals great multitudes by the Sea of Galilee"
+from_year = 30
+to_year = 30
+places = ["sea-of-galilee"]
+verses = ["MAT.12.15-21"]
+order_key = 520
+robertson_section = "Robertson (1922) §52, \"Jesus Teaches and Heals Great Multitudes by the Sea of Galilee\""
+ref_note = "Matthew 12:15-21 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_twelve_apostles"
+label = "Jesus selects the twelve apostles after a night of prayer"
+from_year = 31
+to_year = 31
+places = ["galilee-1"]
+verses = ["MRK.3.13-19"]
+order_key = 530
+robertson_section = "Robertson (1922) §53, \"After a Night of Prayer Jesus Selects Twelve Apostles\""
+ref_note = "Mark 3:13-19 read directly against the compiled KJV text; the batch's own AD 30/31 boundary is placed here -- see this period's own header comment"
+
+[[event]]
+id = "rob_sermon_on_the_mount"
+label = "The Sermon on the Mount"
+from_year = 31
+to_year = 31
+places = ["galilee-1"]
+verses = ["LUK.6.17-49"]
+order_key = 540
+robertson_section = "Robertson (1922) §54, \"The Sermon on the Mount. Privileges and Requirements of the Messianic Reign, Christ's Standard of Righteousness\""
+ref_note = "Matthew 5-7 and Luke 6:17-49 both read directly against the compiled KJV text; Luke's own single-range account used as this event's top-level verses (Matthew's own 3-chapter span is written as 3 same-chapter ranges under its own witness row, see event-witnesses.toml)"
+
+[[event]]
+id = "rob_centurion_servant"
+label = "Jesus heals a centurion's servant at Capernaum"
+from_year = 31
+to_year = 31
+places = ["capernaum"]
+verses = ["MAT.8.5-13"]
+order_key = 550
+robertson_section = "Robertson (1922) §55, \"Jesus Heals a Centurion's Servant at Capernaum\""
+ref_note = "Matthew 8:5-13 and Luke 7:1-10 both read directly against the compiled KJV text; both name Capernaum explicitly"
+
+[[event]]
+id = "rob_widow_of_nain"
+label = "Jesus raises a widow's son at Nain"
+from_year = 31
+to_year = 31
+places = ["nain"]
+verses = ["LUK.7.11-17"]
+order_key = 560
+robertson_section = "Robertson (1922) §56, \"He Raises a Widow's Son at Nain\""
+ref_note = "Luke 7:11-17 read directly against the compiled KJV text; single witness (Luke alone)"
+
+[[event]]
+id = "rob_message_from_baptist"
+label = "John's disciples ask Jesus 'Art thou he that should come?'"
+from_year = 31
+to_year = 31
+places = ["galilee-1"]
+verses = ["MAT.11.2-19"]
+order_key = 570
+robertson_section = "Robertson (1922) §57, \"The Message from the Baptist and the Eulogy of Jesus\""
+ref_note = "Matthew 11:2-19 and Luke 7:18-35 both read directly against the compiled KJV text; John himself is imprisoned at this point (Matthew 11:2) -- this event's own place is scoped to where Jesus (the narrative's own subject here) receives and answers the message, a broad Galilee setting, not John's own prison"
+
+[[event]]
+id = "rob_woes_on_cities"
+label = "Jesus denounces the unrepentant cities of Galilee"
+from_year = 31
+to_year = 31
+places = ["galilee-1"]
+verses = ["MAT.11.20-30"]
+order_key = 580
+robertson_section = "Robertson (1922) §58, \"Woes upon the Cities of Opportunity. The Claims of Christ as the Teacher about the Father\""
+ref_note = "Matthew 11:20-30 read directly against the compiled KJV text; single witness (Matthew alone); Chorazin, Bethsaida, and Capernaum are each named within the text itself, so the broad Galilee region is kept rather than any one of the three"
