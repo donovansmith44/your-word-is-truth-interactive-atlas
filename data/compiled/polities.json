@@ -294,6 +294,14 @@
             "DAN.8.21"
           ],
           "ref_note": "Daniel 8:5,20-21 (KJV, verified against the compiled text) -- the he-goat 'from the west' (v.5), self-interpreted in the text as Grecia overthrowing Media-Persia (vv.20-21); traditionally dated 334-330 BC -- see egypt.toml's own mirrored transition for the same conquest's reach into Egypt"
+        },
+        "fall": {
+          "event": "Alexander dies; his empire divides among four successor kingdoms",
+          "verses": [
+            "DAN.8.8",
+            "DAN.8.22"
+          ],
+          "ref_note": "Daniel 8:8,22 (KJV, verified against the compiled text) -- the he-goat's great horn 'broken,' replaced by 'four notable ones toward the four winds of heaven' (v.8), self-interpreted a few verses later as 'four kingdoms shall stand up out of the nation' (v.22); traditionally dated to Alexander's 323 BC death -- see this era's own rise-transition for the same vision's earlier verses"
         }
       }
     ]
@@ -442,12 +450,7 @@
               42.3
             ]
           ]
-        ],
-        "transition": {
-          "event": "The Neo-Assyrian resurgence begins under Adad-nirari II",
-          "verses": [],
-          "ref_note": "general Assyriological knowledge (the 10th-9th century BC resurgence that becomes the Neo-Assyrian Empire); no specific source consulted this session; not scripture-narrated at this specific boundary -- the KJV text's own Assyria narrative picks up later, once the empire already presses on Israel (e.g. 2 Kings 15:19)"
-        }
+        ]
       },
       {
         "name": "Neo-Assyrian Empire",
@@ -694,6 +697,11 @@
             ]
           ]
         ],
+        "transition": {
+          "event": "The Neo-Assyrian resurgence begins under Adad-nirari II",
+          "verses": [],
+          "ref_note": "general Assyriological knowledge (the 10th-9th century BC resurgence that becomes the Neo-Assyrian Empire); no specific source consulted this session; not scripture-narrated at this specific boundary -- the KJV text's own Assyria narrative picks up later, once the empire already presses on Israel (e.g. 2 Kings 15:19)"
+        },
         "fall": {
           "event": "The Medes and Neo-Babylonians destroy Nineveh",
           "verses": [
@@ -853,12 +861,7 @@
               40.9
             ]
           ]
-        ],
-        "transition": {
-          "event": "Nabopolassar revolts against Assyria, founding the Neo-Babylonian dynasty",
-          "verses": [],
-          "ref_note": "general historical knowledge (Nabopolassar's own 626 BC revolt, allied with the Medes, that leads to Nineveh's fall -- see assyria.toml's own fall); no specific source consulted this session; Nabopolassar himself is not named in the KJV text"
-        }
+        ]
       },
       {
         "name": "Neo-Babylonian Empire",
@@ -1045,6 +1048,11 @@
             ]
           ]
         ],
+        "transition": {
+          "event": "Nabopolassar revolts against Assyria, founding the Neo-Babylonian dynasty",
+          "verses": [],
+          "ref_note": "general historical knowledge (Nabopolassar's own 626 BC revolt, allied with the Medes, that leads to Nineveh's fall -- see assyria.toml's own fall); no specific source consulted this session; Nabopolassar himself is not named in the KJV text"
+        },
         "fall": {
           "event": "Babylon falls; Belshazzar is slain in the night",
           "verses": [
@@ -1240,12 +1248,7 @@
               29.9
             ]
           ]
-        ],
-        "transition": {
-          "event": "The Hyksos are expelled; the New Kingdom and the Egyptian Empire begin",
-          "verses": [],
-          "ref_note": "general Egyptological knowledge (Ahmose I's expulsion of the Hyksos, founding the 18th Dynasty); no specific source consulted this session; not otherwise scripture-narrated at this specific boundary"
-        }
+        ]
       },
       {
         "name": "Egypt",
@@ -1469,9 +1472,9 @@
           ]
         ],
         "transition": {
-          "event": "The New Kingdom collapses; Egypt contracts back to the Nile valley",
+          "event": "The Hyksos are expelled; the New Kingdom and the Egyptian Empire begin",
           "verses": [],
-          "ref_note": "general Egyptological knowledge (the Late Bronze Age Collapse; Ramesses XI's own weak final reign ending the Empire); no specific source consulted this session; not otherwise scripture-narrated"
+          "ref_note": "general Egyptological knowledge (Ahmose I's expulsion of the Hyksos, founding the 18th Dynasty); no specific source consulted this session; not otherwise scripture-narrated at this specific boundary"
         }
       },
       {
@@ -1656,12 +1659,9 @@
           ]
         ],
         "transition": {
-          "event": "Alexander the Great conquers Egypt, ending Persian rule",
-          "verses": [
-            "DAN.8.20",
-            "DAN.8.21"
-          ],
-          "ref_note": "Daniel 8:20-21 (KJV, verified against the compiled text) -- Daniel's own vision, self-interpreted in the text as Media-Persia (the ram) overthrown by Grecia (the goat); Egypt was a Persian satrapy at the time (persia.toml), so this same prophecy applies here as it does to Persia's own fall/alexander-empire.toml's own rise"
+          "event": "The New Kingdom collapses; Egypt contracts back to the Nile valley",
+          "verses": [],
+          "ref_note": "general Egyptological knowledge (the Late Bronze Age Collapse; Ramesses XI's own weak final reign ending the Empire); no specific source consulted this session; not otherwise scripture-narrated"
         }
       },
       {
@@ -1947,6 +1947,14 @@
             ]
           ]
         ],
+        "transition": {
+          "event": "Alexander the Great conquers Egypt, ending Persian rule",
+          "verses": [
+            "DAN.8.20",
+            "DAN.8.21"
+          ],
+          "ref_note": "Daniel 8:20-21 (KJV, verified against the compiled text) -- Daniel's own vision, self-interpreted in the text as Media-Persia (the ram) overthrown by Grecia (the goat); Egypt was a Persian satrapy at the time (persia.toml), so this same prophecy applies here as it does to Persia's own fall/alexander-empire.toml's own rise"
+        },
         "fall": {
           "event": "Rome annexes Egypt after Actium; Cleopatra dies",
           "verses": [],
@@ -4156,14 +4164,7 @@
               0.5
             ]
           ]
-        ],
-        "transition": {
-          "event": "Octavian defeats Antony and Cleopatra at Actium; the Senate names him Augustus",
-          "verses": [
-            "LUK.2.1"
-          ],
-          "ref_note": "Actium (31 BC) and the Augustus title (27 BC) are general Roman history, not scripture-narrated; Luke 2:1 (KJV, verified against the compiled text) attests Caesar Augustus's own later reign, at Jesus's birth -- a related but not contemporaneous scriptural touchpoint, disclosed as such"
-        }
+        ]
       },
       {
         "name": "Roman Empire",
@@ -4469,7 +4470,14 @@
               0.5
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "Octavian defeats Antony and Cleopatra at Actium; the Senate names him Augustus",
+          "verses": [
+            "LUK.2.1"
+          ],
+          "ref_note": "Actium (31 BC) and the Augustus title (27 BC) are general Roman history, not scripture-narrated; Luke 2:1 (KJV, verified against the compiled text) attests Caesar Augustus's own later reign, at Jesus's birth -- a related but not contemporaneous scriptural touchpoint, disclosed as such"
+        }
       }
     ]
   },
@@ -4637,12 +4645,7 @@
               27.0
             ]
           ]
-        ],
-        "transition": {
-          "event": "Parthian and Armenian conquests reduce the Seleucid realm to a rump state",
-          "verses": [],
-          "ref_note": "general Hellenistic-era historical knowledge (Parthia's own mid-2nd-century BC eastward conquests under Mithridates I; Tigranes of Armenia's own later inroads); no specific source consulted this session; not scripture-narrated"
-        }
+        ]
       },
       {
         "name": "Seleucid Empire (rump)",
@@ -4833,6 +4836,11 @@
             ]
           ]
         ],
+        "transition": {
+          "event": "Parthian and Armenian conquests reduce the Seleucid realm to a rump state",
+          "verses": [],
+          "ref_note": "general Hellenistic-era historical knowledge (Parthia's own mid-2nd-century BC eastward conquests under Mithridates I; Tigranes of Armenia's own later inroads); no specific source consulted this session; not scripture-narrated"
+        },
         "fall": {
           "event": "Pompey annexes Syria as a Roman province, ending Seleucid rule",
           "verses": [],

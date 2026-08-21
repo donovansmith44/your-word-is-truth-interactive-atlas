@@ -20,6 +20,12 @@ id = "egypt"
 # extent common to both eras rather than being pushed south to Semna on the
 # strength of the Middle Kingdom's own, narrower, temporary high-water
 # mark -- shape confirmed, not moved.
+#
+# Batch M requirement 1: no [era.transition] here -- this is Egypt's OWN
+# first curated era; there is no PRIOR era of this polity whose own end it
+# could describe, and this app's own curated span (-4004, Ussher's creation
+# year) is a modeling convention, not an attested historical "Egypt begins
+# here" moment to invent a citation for. An honest omission, not a gap.
 [[era]]
 name = "Egypt"
 from = -4004
@@ -36,18 +42,6 @@ rings = [
     [31.35, 29.9]
   ]
 ]
-
-# Batch M requirement 1: this era's own RISE into the New Kingdom below --
-# the Hyksos expulsion (Ahmose I) that begins the 18th Dynasty and the
-# Empire. Egyptology, not Scripture -- the Exodus itself (traditionally
-# ~1446 BC per this app's own israel.toml chronology) falls well INSIDE the
-# New Kingdom era's own span, not at this boundary, so it is not cited
-# here. Honestly disclosed as general history rather than an invented
-# citation.
-[era.transition]
-event = "The Hyksos are expelled; the New Kingdom and the Egyptian Empire begin"
-verses = []
-ref_note = "general Egyptological knowledge (Ahmose I's expulsion of the Hyksos, founding the 18th Dynasty); no specific source consulted this session; not otherwise scripture-narrated at this specific boundary"
 
 # New Kingdom (the Egyptian Empire): the Exodus-era Egypt of Thutmose III /
 # Ramesses II, reaching south into Nubia past the Fourth Cataract and north
@@ -84,16 +78,24 @@ rings = [
   ]
 ]
 
-# Batch M requirement 1: this era's own RISE into the Third Intermediate +
-# Late Period below -- the New Kingdom's own collapse (the wider Late
-# Bronze Age Collapse, Ramesses XI's own weak final reign) that ends the
-# Empire and contracts Egypt back to the Nile valley. Egyptology, not
-# Scripture. Honestly disclosed as general history rather than an invented
-# citation.
+# Batch M requirement 1: this era's own RISE -- the Hyksos expulsion (Ahmose
+# I) that begins the 18th Dynasty and the Empire. Egyptology, not Scripture
+# -- the Exodus itself (traditionally ~1446 BC per this app's own
+# israel.toml chronology) falls well INSIDE this era's own span, not at its
+# boundary, so it is not cited here. Honestly disclosed as general history
+# rather than an invented citation. FIX ROUND (self-caught live, running the
+# app -- a delta click showed the wrong era's own name/years beside this
+# event text): originally mis-attached to the PRECEDING era (the Old/Middle
+# Kingdom) by TOML's own array-of-tables rule -- the comment said "this
+# era's own rise into the New Kingdom BELOW" but the block itself sat
+# BEFORE this era's own [[era]] header, so it silently became the OTHER
+# era's own transition instead. Moved here, to the era it actually
+# describes the start of -- see assyria.toml's own identical fix for the
+# full story.
 [era.transition]
-event = "The New Kingdom collapses; Egypt contracts back to the Nile valley"
+event = "The Hyksos are expelled; the New Kingdom and the Egyptian Empire begin"
 verses = []
-ref_note = "general Egyptological knowledge (the Late Bronze Age Collapse; Ramesses XI's own weak final reign ending the Empire); no specific source consulted this session; not otherwise scripture-narrated"
+ref_note = "general Egyptological knowledge (Ahmose I's expulsion of the Hyksos, founding the 18th Dynasty); no specific source consulted this session; not otherwise scripture-narrated at this specific boundary"
 
 # Third Intermediate + Late Period: after the Empire contracts, back to the
 # Nile-only footprint (same recognizable core as the Old/Middle Kingdom era
@@ -123,18 +125,17 @@ rings = [
   ]
 ]
 
-# Batch M requirement 1: this era's own RISE into Ptolemaic Egypt below --
-# Alexander's own conquest, ending Persian control of Egypt (a Persian
-# satrapy since Cambyses, see persia.toml). Daniel 8's own vision, with the
-# angelic interpretation given directly in the text (8:20-21): the ram is
-# "the kings of Media and Persia," the goat "the king of Grecia" -- the
-# SAME prophecy alexander-empire.toml's own rise-transition cites, since
-# this is one conquest seen from two polities' own sides. Verses read
-# directly against the compiled KJV text before citing.
+# Batch M requirement 1: this era's own RISE -- the New Kingdom's own
+# collapse (the wider Late Bronze Age Collapse, Ramesses XI's own weak
+# final reign) that ends the Empire and contracts Egypt back to the Nile
+# valley. Egyptology, not Scripture. Honestly disclosed as general history
+# rather than an invented citation. FIX ROUND (self-caught live): same
+# mis-attachment as this file's own New Kingdom transition above -- moved
+# here, to the era it actually describes the start of.
 [era.transition]
-event = "Alexander the Great conquers Egypt, ending Persian rule"
-verses = ["DAN.8.20", "DAN.8.21"]
-ref_note = "Daniel 8:20-21 (KJV, verified against the compiled text) -- Daniel's own vision, self-interpreted in the text as Media-Persia (the ram) overthrown by Grecia (the goat); Egypt was a Persian satrapy at the time (persia.toml), so this same prophecy applies here as it does to Persia's own fall/alexander-empire.toml's own rise"
+event = "The New Kingdom collapses; Egypt contracts back to the Nile valley"
+verses = []
+ref_note = "general Egyptological knowledge (the Late Bronze Age Collapse; Ramesses XI's own weak final reign ending the Empire); no specific source consulted this session; not otherwise scripture-narrated"
 
 # Ptolemaic Egypt: same Nile core plus the Ptolemies' own signature
 # holdings beyond it -- Cyrenaica to the west (a SEPARATE, disjoint ring --
@@ -167,6 +168,21 @@ rings = [
     [31.0, 25.3], [31.5, 25.4], [32.0, 25.3], [32.4, 25.1], [32.7, 24.9]
   ]
 ]
+
+# Batch M requirement 1: this era's own RISE -- Alexander's own conquest,
+# ending Persian control of Egypt (a Persian satrapy since Cambyses, see
+# persia.toml). Daniel 8's own vision, with the angelic interpretation
+# given directly in the text (8:20-21): the ram is "the kings of Media and
+# Persia," the goat "the king of Grecia" -- the SAME prophecy
+# alexander-empire.toml's own rise-transition cites, since this is one
+# conquest seen from two polities' own sides. Verses read directly against
+# the compiled KJV text before citing. FIX ROUND (self-caught live): same
+# mis-attachment as this file's own two transitions above -- moved here,
+# to the era it actually describes the start of.
+[era.transition]
+event = "Alexander the Great conquers Egypt, ending Persian rule"
+verses = ["DAN.8.20", "DAN.8.21"]
+ref_note = "Daniel 8:20-21 (KJV, verified against the compiled text) -- Daniel's own vision, self-interpreted in the text as Media-Persia (the ram) overthrown by Grecia (the goat); Egypt was a Persian satrapy at the time (persia.toml), so this same prophecy applies here as it does to Persia's own fall/alexander-empire.toml's own rise"
 
 # Batch M requirement 1: this era's own FALL -- Octavian's victory at
 # Actium and Cleopatra's death (30 BC), after which Egypt is annexed as a

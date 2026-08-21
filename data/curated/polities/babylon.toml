@@ -22,17 +22,6 @@ rings = [
   ]
 ]
 
-# Batch M requirement 1: this era's own RISE into the Neo-Babylonian Empire
-# below -- Nabopolassar's own revolt against Assyria (626 BC, this era's
-# own from= year) that founds the dynasty Nebuchadnezzar inherits.
-# Assyriology/Babylonology, not Scripture -- Nabopolassar himself is not
-# named in the KJV text. Honestly disclosed as general history rather than
-# an invented citation.
-[era.transition]
-event = "Nabopolassar revolts against Assyria, founding the Neo-Babylonian dynasty"
-verses = []
-ref_note = "general historical knowledge (Nabopolassar's own 626 BC revolt, allied with the Medes, that leads to Nineveh's fall -- see assyria.toml's own fall); no specific source consulted this session; Nabopolassar himself is not named in the KJV text"
-
 # Neo-Babylonian (Chaldean) Empire: the Nebuchadnezzar-era empire that
 # destroys Jerusalem (586 BC) and inherits most of the fallen Neo-Assyrian
 # Empire's own western reach -- Mesopotamia, north to old Assyria's
@@ -67,6 +56,20 @@ rings = [
     [36.1, 42.9], [36.5, 43.3]
   ]
 ]
+
+# Batch M requirement 1: this era's own RISE -- Nabopolassar's own revolt
+# against Assyria (626 BC, this era's own from= year) that founds the
+# dynasty Nebuchadnezzar inherits. Assyriology/Babylonology, not Scripture
+# -- Nabopolassar himself is not named in the KJV text. Honestly disclosed
+# as general history rather than an invented citation. FIX ROUND
+# (self-caught live): originally mis-attached to the PRECEDING era
+# ("Babylonia") by TOML's own array-of-tables rule -- moved here, to the
+# era it actually describes the start of -- see assyria.toml's own
+# identical fix for the full story.
+[era.transition]
+event = "Nabopolassar revolts against Assyria, founding the Neo-Babylonian dynasty"
+verses = []
+ref_note = "general historical knowledge (Nabopolassar's own 626 BC revolt, allied with the Medes, that leads to Nineveh's fall -- see assyria.toml's own fall); no specific source consulted this session; Nabopolassar himself is not named in the KJV text"
 
 # Batch M requirement 1: this era's own FALL -- the fall of Babylon (539
 # BC), narrated directly in Daniel 5: Belshazzar's own feast, the

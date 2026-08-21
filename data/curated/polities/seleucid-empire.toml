@@ -24,19 +24,6 @@ rings = [
   ]
 ]
 
-# Batch M requirement 1: this era's own RISE into the Seleucid "rump" below
-# -- Parthia's own eastern conquests (Mithridates I taking Media/Mesopotamia
-# from the mid-2nd century BC) and Tigranes of Armenia's own inroads that
-# shrink the empire down to Antioch and a handful of Syrian cities.
-# Hellenistic-era secular history, not Scripture (Parthia itself is later
-# named in Acts 2:9, but that is about Pentecost, centuries after and
-# unrelated to these SPECIFIC 2nd-century-BC conquests). Honestly disclosed
-# as general history rather than an invented citation.
-[era.transition]
-event = "Parthian and Armenian conquests reduce the Seleucid realm to a rump state"
-verses = []
-ref_note = "general Hellenistic-era historical knowledge (Parthia's own mid-2nd-century BC eastward conquests under Mithridates I; Tigranes of Armenia's own later inroads); no specific source consulted this session; not scripture-narrated"
-
 # The Seleucid "rump state": after Parthia's own eastern conquests and
 # Tigranes of Armenia's inroads, by the early-mid 1st century BC little
 # more than Antioch and a handful of Syrian cities remained (a real
@@ -59,6 +46,22 @@ rings = [
     [36.6, 35.85], [36.7, 35.87], [36.8, 35.9]
   ]
 ]
+
+# Batch M requirement 1: this era's own RISE -- Parthia's own eastern
+# conquests (Mithridates I taking Media/Mesopotamia from the mid-2nd
+# century BC) and Tigranes of Armenia's own inroads that shrink the empire
+# down to Antioch and a handful of Syrian cities. Hellenistic-era secular
+# history, not Scripture (Parthia itself is later named in Acts 2:9, but
+# that is about Pentecost, centuries after and unrelated to these SPECIFIC
+# 2nd-century-BC conquests). Honestly disclosed as general history rather
+# than an invented citation. FIX ROUND (self-caught live): originally
+# mis-attached to the PRECEDING era ("Seleucid Empire") by TOML's own
+# array-of-tables rule -- moved here, to the era it actually describes the
+# start of -- see assyria.toml's own identical fix for the full story.
+[era.transition]
+event = "Parthian and Armenian conquests reduce the Seleucid realm to a rump state"
+verses = []
+ref_note = "general Hellenistic-era historical knowledge (Parthia's own mid-2nd-century BC eastward conquests under Mithridates I; Tigranes of Armenia's own later inroads); no specific source consulted this session; not scripture-narrated"
 
 # Batch M requirement 1: this era's own FALL -- Pompey's annexation of
 # Syria as a Roman province (64/63 BC, this era's own to=-64 year), ending
