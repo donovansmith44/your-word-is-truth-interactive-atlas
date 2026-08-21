@@ -206,6 +206,25 @@ verses = ["JHN.20.1-10"]
 ref_note = "John 20:1-10 read directly against the compiled KJV text (scoped to the empty-tomb discovery; Mary Magdalene's own encounter with the risen Christ, 20:11-18, is a related but distinct scene this event does not extend into)"
 robertson_section = "Robertson (1922) §171"
 
+# --- pw_emmaus: the road to Emmaus (Robertson §176) -- 2 witnesses --------
+# Batch T2 fix (owner's own live-review ruling, 2026-08-21 -- see this
+# event's own comment in events-extra.toml for the full correction):
+# Mark's own disputed longer ending is INCLUDED here, not omitted --
+# same house model as pw_galilee's own S181 MRK witness below.
+[[witness]]
+event_id = "pw_emmaus"
+book = "LUK"
+verses = ["LUK.24.13-35"]
+ref_note = "Luke 24:13-35 read directly against the compiled KJV text -- this event's own pre-existing top-level `verses` already (Task 3); included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent"
+robertson_section = "Robertson (1922) §176"
+
+[[witness]]
+event_id = "pw_emmaus"
+book = "MRK"
+verses = ["MRK.16.12-13"]
+ref_note = "Mark 16:12-13 read directly against the compiled KJV text (Mark's own disputed longer ending, 16:9-20 -- part of the KJV/Textus Receptus tradition this app's own compiled text follows, disclosed here rather than silently smoothed over -- same disclosure pw_galilee's own S181 MRK witness already uses)"
+robertson_section = "Robertson (1922) §176"
+
 # --- pw_galilee: the Great Commission (Robertson §181) -- 2 witnesses -----
 [[witness]]
 event_id = "pw_galilee"
@@ -221,7 +240,12 @@ verses = ["MRK.16.15-18"]
 ref_note = "Mark 16:15-18 read directly against the compiled KJV text (Mark's own disputed longer ending, 16:9-20 -- part of the KJV/Textus Receptus tradition this app's own compiled text follows, disclosed here rather than silently smoothed over)"
 robertson_section = "Robertson (1922) §181"
 
-# --- pw_mount_of_olives: the Ascension (Robertson §184) -- 2 witnesses ----
+# --- pw_mount_of_olives: the Ascension (Robertson §184) -- 3 witnesses ----
+# Batch T2 fix (owner's own live-review ruling, 2026-08-21 -- see this
+# event's own comment in events-extra.toml for the full correction):
+# Mark's own disputed longer ending is INCLUDED here, not omitted, and
+# "Luke/Acts already cover it" is not grounds to drop Mark's own
+# independent witness -- same house model as pw_galilee's own S181.
 [[witness]]
 event_id = "pw_mount_of_olives"
 book = "LUK"
@@ -234,6 +258,13 @@ event_id = "pw_mount_of_olives"
 book = "ACT"
 verses = ["ACT.1.9-12"]
 ref_note = "Acts 1:9-12 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §184"
+
+[[witness]]
+event_id = "pw_mount_of_olives"
+book = "MRK"
+verses = ["MRK.16.19-20"]
+ref_note = "Mark 16:19-20 read directly against the compiled KJV text (Mark's own disputed longer ending, 16:9-20 -- part of the KJV/Textus Receptus tradition this app's own compiled text follows, disclosed here rather than silently smoothed over -- same disclosure pw_galilee's own S181 MRK witness already uses)"
 robertson_section = "Robertson (1922) §184"
 
 # ===========================================================================

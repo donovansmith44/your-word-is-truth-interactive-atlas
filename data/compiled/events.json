@@ -18560,7 +18560,7 @@
     "witnesses": [],
     "robertson_section": "Robertson (1922) §15, \"The Child Jesus Carried to Egypt, and the Children at Bethlehem Slain\"",
     "acts_section": null,
-    "ref_note": "Matthew 2:16-18 read directly against the compiled KJV text; Robertson's own §15 groups this with the flight to Egypt (jm_egypt, enriched further up this file with the same robertson_section) as one section -- split here into two titled containers since they are textually distinct scenes (a widening of Robertson's own section boundary in the other direction from pw_golgotha's precedent, disclosed the same way)",
+    "ref_note": "Matthew 2:16-18 read directly against the compiled KJV text; Robertson's own §15 groups this with the flight to Egypt (jm_egypt, enriched further up this file with the same robertson_section) as ONE undivided section -- unlike §128, Robertson's own table never splits §15 into lettered sub-sections, so neither does this app (both containers cite the plain '§15', not an invented '§15a'/'§15b'); the two-container split here is this app's own DISPLAY choice (a widening of Robertson's own section boundary in the other direction from pw_golgotha's precedent, disclosed the same way), not a claim about Robertson's own numbering. Owner's own live-review sweep (2026-08-21) confirmed this disposition -- see jm_egypt's own comment for the cross-reference.",
     "order_key": 150
   },
   {
@@ -29774,7 +29774,7 @@
     "witnesses": [],
     "robertson_section": "Robertson (1922) §97, \"Story of an Adulterous Woman Brought to Jesus for Judgment\"",
     "acts_section": null,
-    "ref_note": "John 7:53-8:11 read directly against the compiled KJV text; single witness (John alone); written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string",
+    "ref_note": "John 7:53-8:11 (the pericope adulterae) read directly against the compiled KJV text; single witness (John alone -- Robertson lists no other Gospel column for this section, so there is no additional witness to include); written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string. This passage is itself part of the KJV/Textus Receptus tradition this app's own compiled text follows -- textual scholars widely note it is absent from the earliest Greek manuscripts and floats to different locations in some later ones -- disclosed here honestly rather than silently smoothed over, per the owner's own live-review ruling (2026-08-21)",
     "order_key": 970
   },
   {
@@ -33329,7 +33329,7 @@
     ],
     "robertson_section": "Robertson (1922) §171, \"The Visit of the Women to the Tomb of Jesus about Sunrise Sunday Morning and the Message of the Angels about the Empty Tomb\"",
     "acts_section": null,
-    "ref_note": "Matthew 28:1-10 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml). Batch T2 (period 11): these same witness ranges already fully subsume Robertson's own separate SS169 (\"The Visit of the Women to the Tomb,\" Matt 28:1/Mark 16:1 -- the women SETTING OUT, a finer-grained moment Robertson distinguishes from this event's own arrival), 170 (\"The Earthquake...,\" Matt 28:2-4), and 174 (\"The Appearance to the Other Women,\" Matt 28:9-10) -- no separate containers authored for any of the three.",
+    "ref_note": "Matthew 28:1-10 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml). Batch T2 (period 11): these same witness ranges already fully subsume Robertson's own separate SS169 (\"The Visit of the Women to the Tomb,\" Matt 28:1/Mark 16:1 -- the women SETTING OUT, a finer-grained moment Robertson distinguishes from this event's own arrival), 170 (\"The Earthquake...,\" Matt 28:2-4), 172 (\"The Visit of the Women... and Peter and John Visit the Empty Tomb,\" Luke 24:9-12/John 20:2-10, both already within this event's own LUK.24.1-12/JHN.20.1-10 witness ranges), and 174 (\"The Appearance to the Other Women,\" Matt 28:9-10) -- no separate containers authored for any of the four.",
     "order_key": 8000
   },
   {
@@ -33555,10 +33555,54 @@
       "LUK.24.35"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.24.13",
+            "LUK.24.14",
+            "LUK.24.15",
+            "LUK.24.16",
+            "LUK.24.17",
+            "LUK.24.18",
+            "LUK.24.19",
+            "LUK.24.20",
+            "LUK.24.21",
+            "LUK.24.22",
+            "LUK.24.23",
+            "LUK.24.24",
+            "LUK.24.25",
+            "LUK.24.26",
+            "LUK.24.27",
+            "LUK.24.28",
+            "LUK.24.29",
+            "LUK.24.30",
+            "LUK.24.31",
+            "LUK.24.32",
+            "LUK.24.33",
+            "LUK.24.34",
+            "LUK.24.35"
+          ]
+        },
+        "ref_note": "Luke 24:13-35 read directly against the compiled KJV text -- this event's own pre-existing top-level `verses` already (Task 3); included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent",
+        "robertson_section": "Robertson (1922) §176"
+      },
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.16.12",
+            "MRK.16.13"
+          ]
+        },
+        "ref_note": "Mark 16:12-13 read directly against the compiled KJV text (Mark's own disputed longer ending, 16:9-20 -- part of the KJV/Textus Receptus tradition this app's own compiled text follows, disclosed here rather than silently smoothed over -- same disclosure pw_galilee's own S181 MRK witness already uses)",
+        "robertson_section": "Robertson (1922) §176"
+      }
+    ],
     "robertson_section": "Robertson (1922) §176, \"The Appearance to Two Disciples (Cleopas and Another) on the Way to Emmaus\"",
     "acts_section": null,
-    "ref_note": "Luke 24:13-35 read directly; Robertson also lists Mark 16:12-13 (a two-verse mention in Mark's disputed longer ending) but this event is curated single-witness (Luke alone) -- requirement 4's own 'no parallel framing when n=1' case. Batch T2 (period 11): this same range already fully subsumes Robertson's own separate S177 (\"The Report of the Two Disciples and the News of the Appearance to Simon Peter,\" Luke 24:33-35) -- no separate container authored for it.",
+    "ref_note": "Luke 24:13-35 read directly against the compiled KJV text. Batch T2 fix (owner's own live-review ruling, 2026-08-21: 'the compiled KJV text is the canon of witnesses... a witness Robertson lists that exists in the KJV is INCLUDED; textual-critical dispute is NEVER grounds for omission'): Mark 16:12-13 (also listed by Robertson for this section) is now curated as a genuine 2nd witness -- see event-witnesses.toml -- correcting this event's own earlier single-witness framing, which had wrongly treated Mark's disputed longer ending as grounds for omission (inconsistent with pw_galilee's own S181, which already kept its own longer-ending witness with a disclosure note instead of dropping it -- that note is the house model, applied here too). This same range already fully subsumes Robertson's own separate S177 (\"The Report of the Two Disciples and the News of the Appearance to Simon Peter,\" Luke 24:33-35) -- no separate container authored for it.",
     "order_key": 9000
   },
   {
@@ -33681,11 +33725,22 @@
         },
         "ref_note": "Acts 1:9-12 read directly against the compiled KJV text",
         "robertson_section": "Robertson (1922) §184"
+      },
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.16.19",
+            "MRK.16.20"
+          ]
+        },
+        "ref_note": "Mark 16:19-20 read directly against the compiled KJV text (Mark's own disputed longer ending, 16:9-20 -- part of the KJV/Textus Receptus tradition this app's own compiled text follows, disclosed here rather than silently smoothed over -- same disclosure pw_galilee's own S181 MRK witness already uses)",
+        "robertson_section": "Robertson (1922) §184"
       }
     ],
     "robertson_section": "Robertson (1922) §184, \"The Last Appearance and the Ascension\"",
     "acts_section": null,
-    "ref_note": "Acts 1:9-12, Luke 24:50-53 read directly (see event-witnesses.toml); Robertson also lists Mark 16:19-20 (Mark's own disputed longer ending), omitted here -- Luke/Acts (same author) already give two solid, undisputed witnesses",
+    "ref_note": "Acts 1:9-12, Luke 24:50-53 read directly (see event-witnesses.toml). Batch T2 fix (owner's own live-review ruling, 2026-08-21: 'the compiled KJV text is the canon of witnesses... a witness Robertson lists that exists in the KJV is INCLUDED; textual-critical dispute is NEVER grounds for omission; same-author-already-covers-it is NEVER grounds for omission'): Mark 16:19-20 (also listed by Robertson for this section) is now curated as a genuine 3rd witness -- see event-witnesses.toml -- correcting this event's own earlier omission, which had wrongly treated Mark's disputed longer ending AND Luke/Acts's shared authorship as grounds for exclusion (the same inconsistency pw_galilee's own S181 never had -- that event's own note is the house model, applied here too)",
     "order_key": 11000
   },
   {
@@ -34219,7 +34274,7 @@
     "witnesses": [],
     "robertson_section": "Robertson (1922) §127, \"Jesus Visits Zacchæus, and Speaks the Parable of the Pounds, and Sets out for Jerusalem\"",
     "acts_section": null,
-    "ref_note": "Luke 19:11-28 read directly against the compiled KJV text; single witness (Luke alone); split out from jm_jericho (enriched with this SAME robertson_section further up this file, LUK.19.1-10, the Zacchaeus encounter itself, pre-existing Task 3) -- Robertson's own §127 covers both the Zacchaeus encounter and the parable that follows it, a real, deliberate split into two titled containers (a parable is a distinct teaching unit from the narrative encounter that occasions it), not a duplication",
+    "ref_note": "Luke 19:11-28 read directly against the compiled KJV text; single witness (Luke alone); split out from jm_jericho (enriched with this SAME robertson_section further up this file, LUK.19.1-10, the Zacchaeus encounter itself, pre-existing Task 3) -- Robertson's own §127 covers both the Zacchaeus encounter and the parable that follows it as ONE undivided section (unlike §128, which Robertson himself splits into 128a/128b, §127 carries no such split in his own table, so neither container here invents one -- both cite the plain '§127'); the two-container split is this app's own DISPLAY choice (a parable is a distinct teaching unit from the narrative encounter that occasions it), not a claim about Robertson's own numbering. Owner's own live-review sweep (2026-08-21) confirmed this disposition.",
     "order_key": 1275
   },
   {
