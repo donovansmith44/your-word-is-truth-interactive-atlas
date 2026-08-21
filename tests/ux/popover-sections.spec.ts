@@ -944,14 +944,28 @@ test('EVENT-1/PASSAGE-1: the Crucifixion event shows 4 witness passages under "P
 });
 
 test('EVENT-1: a single-witness event shows the one passage with no "PARALLEL ACCOUNTS" framing (requirement 4, n=1)', async ({ page }) => {
-  const detail = await api.event('pw_emmaus');
+  // Batch T2 (owner's own live-review ruling, 2026-08-21): pw_emmaus,
+  // this test's own original n=1 example, is no longer single-witness --
+  // Mark 16:12-13 (also listed by Robertson for that section) is now
+  // correctly curated as a genuine 2nd witness (the compiled KJV text is
+  // the canon of witnesses; textual-critical dispute is never grounds for
+  // omission -- see batch-t2-report.md). jm_temple_cleansing (John's own
+  // FIRST cleansing, John 2:13-22) is genuinely, deliberately
+  // single-witness -- Robertson's own table lists no Matthew/Mark/Luke
+  // parallel for it -- and was Batch T's own original n=1 precedent
+  // (batch-t-report.md's own words: "single witness (John alone)...
+  // requirement 4's own 'no parallel framing when n=1' is exactly the
+  // case this event demonstrates"), so it replaces pw_emmaus here as the
+  // still-accurate n=1 acceptance case; the assertions themselves are
+  // unchanged in shape.
+  const detail = await api.event('jm_temple_cleansing');
   expect(detail.witnesses.length).toBe(1);
-  expect(detail.witnesses[0].book).toBe('LUK');
+  expect(detail.witnesses[0].book).toBe('JHN');
 
-  await page.goto('/read/LUK/24');
+  await page.goto('/read/JHN/2');
   await page.getByTestId('verse-line-13').click();
-  await page.getByTestId('verse-event-pw_emmaus').click();
-  await expect(page.getByTestId('popover-title')).toHaveText('The road to Emmaus');
+  await page.getByTestId('verse-event-jm_temple_cleansing').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('Jesus cleanses the temple for the first time');
 
   // Singular section id (event-witness, not event-witnesses) -- no eyebrow at all.
   await expect(page.getByTestId('popover-section-event-witness')).toBeVisible();
