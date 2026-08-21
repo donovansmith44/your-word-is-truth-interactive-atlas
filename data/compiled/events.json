@@ -286,6 +286,41 @@
     "order_key": 0
   },
   {
+    "id": "rob_childhood_nazareth",
+    "label": "Jesus grows up at Nazareth",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "LUK.2.40"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §17, \"The Childhood of Jesus at Nazareth\"",
+    "ref_note": "Luke 2:40 read directly against the compiled KJV text; general-kind -- a growth summary, not a discrete dateable happening",
+    "order_key": 0
+  },
+  {
+    "id": "rob_eighteen_years",
+    "label": "The hidden years at Nazareth",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "LUK.2.51",
+      "LUK.2.52"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §19, \"The Eighteen Years at Nazareth\"",
+    "ref_note": "Luke 2:51-52 read directly against the compiled KJV text; general-kind, same reasoning as rob_childhood_nazareth above",
+    "order_key": 0
+  },
+  {
     "id": "theo-5",
     "label": "Cain kills Abel",
     "when": {
@@ -17311,6 +17346,172 @@
     "order_key": 0
   },
   {
+    "id": "rob_zacharias_vision",
+    "label": "The angel Gabriel appears to Zacharias in the temple",
+    "when": {
+      "from_year": -6,
+      "to_year": -6
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "LUK.1.5",
+      "LUK.1.6",
+      "LUK.1.7",
+      "LUK.1.8",
+      "LUK.1.9",
+      "LUK.1.10",
+      "LUK.1.11",
+      "LUK.1.12",
+      "LUK.1.13",
+      "LUK.1.14",
+      "LUK.1.15",
+      "LUK.1.16",
+      "LUK.1.17",
+      "LUK.1.18",
+      "LUK.1.19",
+      "LUK.1.20",
+      "LUK.1.21",
+      "LUK.1.22",
+      "LUK.1.23",
+      "LUK.1.24",
+      "LUK.1.25"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §4, \"The Annunciation of the Birth of the Baptist to Zacharias\"",
+    "ref_note": "Luke 1:5-25 read directly against the compiled KJV text; the vision itself (1:9-23) happens in the temple, the section's own dominant scene -- place scoped there rather than the wider Judean setting 1:5 alone names",
+    "order_key": 40
+  },
+  {
+    "id": "rob_annunciation_mary",
+    "label": "The angel Gabriel announces Jesus's birth to Mary",
+    "when": {
+      "from_year": -6,
+      "to_year": -6
+    },
+    "places": [
+      "nazareth"
+    ],
+    "verses": [
+      "LUK.1.26",
+      "LUK.1.27",
+      "LUK.1.28",
+      "LUK.1.29",
+      "LUK.1.30",
+      "LUK.1.31",
+      "LUK.1.32",
+      "LUK.1.33",
+      "LUK.1.34",
+      "LUK.1.35",
+      "LUK.1.36",
+      "LUK.1.37",
+      "LUK.1.38"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §5, \"The Annunciation to the Virgin Mary of the Birth of Jesus\"",
+    "ref_note": "Luke 1:26-38 read directly against the compiled KJV text",
+    "order_key": 50
+  },
+  {
+    "id": "rob_elizabeth_greets_mary",
+    "label": "Elizabeth greets Mary; the babe leaps for joy",
+    "when": {
+      "from_year": -6,
+      "to_year": -6
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.1.39",
+      "LUK.1.40",
+      "LUK.1.41",
+      "LUK.1.42",
+      "LUK.1.43",
+      "LUK.1.44",
+      "LUK.1.45"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §6, \"The Song of Elizabeth to Mary upon Her Visit\"",
+    "ref_note": "Luke 1:39-45 read directly against the compiled KJV text",
+    "order_key": 60
+  },
+  {
+    "id": "rob_magnificat",
+    "label": "Mary's Magnificat",
+    "when": {
+      "from_year": -6,
+      "to_year": -6
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.1.46",
+      "LUK.1.47",
+      "LUK.1.48",
+      "LUK.1.49",
+      "LUK.1.50",
+      "LUK.1.51",
+      "LUK.1.52",
+      "LUK.1.53",
+      "LUK.1.54",
+      "LUK.1.55",
+      "LUK.1.56"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §7, \"The Magnificat of Mary\"",
+    "ref_note": "Luke 1:46-56 read directly against the compiled KJV text",
+    "order_key": 70
+  },
+  {
+    "id": "rob_baptist_birth",
+    "label": "The birth of John the Baptist",
+    "when": {
+      "from_year": -6,
+      "to_year": -6
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.1.57",
+      "LUK.1.58",
+      "LUK.1.59",
+      "LUK.1.60",
+      "LUK.1.61",
+      "LUK.1.62",
+      "LUK.1.63",
+      "LUK.1.64",
+      "LUK.1.65",
+      "LUK.1.66",
+      "LUK.1.67",
+      "LUK.1.68",
+      "LUK.1.69",
+      "LUK.1.70",
+      "LUK.1.71",
+      "LUK.1.72",
+      "LUK.1.73",
+      "LUK.1.74",
+      "LUK.1.75",
+      "LUK.1.76",
+      "LUK.1.77",
+      "LUK.1.78",
+      "LUK.1.79",
+      "LUK.1.80"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §8, \"The Birth and Childhood of the Baptist and His Desert Life\"",
+    "ref_note": "Luke 1:57-80 read directly against the compiled KJV text",
+    "order_key": 80
+  },
+  {
     "id": "theo-253",
     "label": "An Angel Speaks to Joseph in a Dream",
     "when": {
@@ -17458,9 +17659,120 @@
     ],
     "kind": "event",
     "witnesses": [],
-    "robertson_section": null,
-    "ref_note": null,
-    "order_key": 0
+    "robertson_section": "Robertson (1922) §10, \"The Birth of Jesus\"",
+    "ref_note": "Luke 2:4-7 read directly against the compiled KJV text; scoped narrower than Robertson's own §10 (Luke 2:1-7) -- see this event's own comment above",
+    "order_key": 100
+  },
+  {
+    "id": "rob_joseph_annunciation",
+    "label": "An angel reassures Joseph in a dream",
+    "when": {
+      "from_year": -5,
+      "to_year": -5
+    },
+    "places": [
+      "nazareth"
+    ],
+    "verses": [
+      "MAT.1.18",
+      "MAT.1.19",
+      "MAT.1.20",
+      "MAT.1.21",
+      "MAT.1.22",
+      "MAT.1.23",
+      "MAT.1.24",
+      "MAT.1.25"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §9, \"The Annunciation to Joseph of the Birth of Jesus\"",
+    "ref_note": "Matthew 1:18-25 read directly against the compiled KJV text",
+    "order_key": 90
+  },
+  {
+    "id": "rob_shepherds",
+    "label": "The angels and the shepherds at Bethlehem",
+    "when": {
+      "from_year": -5,
+      "to_year": -5
+    },
+    "places": [
+      "bethlehem-1"
+    ],
+    "verses": [
+      "LUK.2.8",
+      "LUK.2.9",
+      "LUK.2.10",
+      "LUK.2.11",
+      "LUK.2.12",
+      "LUK.2.13",
+      "LUK.2.14",
+      "LUK.2.15",
+      "LUK.2.16",
+      "LUK.2.17",
+      "LUK.2.18",
+      "LUK.2.19",
+      "LUK.2.20"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §11, \"The Praise of the Angels and the Homage of the Shepherds\"",
+    "ref_note": "Luke 2:8-20 read directly against the compiled KJV text",
+    "order_key": 110
+  },
+  {
+    "id": "rob_circumcision",
+    "label": "The circumcision of Jesus",
+    "when": {
+      "from_year": -5,
+      "to_year": -5
+    },
+    "places": [
+      "bethlehem-1"
+    ],
+    "verses": [
+      "LUK.2.21"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §12, \"The Circumcision of Jesus\"",
+    "ref_note": "Luke 2:21 read directly against the compiled KJV text; no place is named in this one verse -- scoped to Bethlehem as the immediately preceding/following scenes both are (the family does not travel to Jerusalem until the purification, 2:22)",
+    "order_key": 120
+  },
+  {
+    "id": "rob_presentation",
+    "label": "The presentation in the temple; Simeon and Anna",
+    "when": {
+      "from_year": -5,
+      "to_year": -5
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "LUK.2.22",
+      "LUK.2.23",
+      "LUK.2.24",
+      "LUK.2.25",
+      "LUK.2.26",
+      "LUK.2.27",
+      "LUK.2.28",
+      "LUK.2.29",
+      "LUK.2.30",
+      "LUK.2.31",
+      "LUK.2.32",
+      "LUK.2.33",
+      "LUK.2.34",
+      "LUK.2.35",
+      "LUK.2.36",
+      "LUK.2.37",
+      "LUK.2.38"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §13, \"The Presentation in the Temple with the Homage of Simeon and Anna\"",
+    "ref_note": "Luke 2:22-38 read directly against the compiled KJV text",
+    "order_key": 130
   },
   {
     "id": "theo-255",
@@ -17721,9 +18033,9 @@
     ],
     "kind": "event",
     "witnesses": [],
-    "robertson_section": null,
-    "ref_note": null,
-    "order_key": 0
+    "robertson_section": "Robertson (1922) §15, \"The Child Jesus Carried to Egypt, and the Children at Bethlehem Slain\"",
+    "ref_note": "Matthew 2:13-15 read directly against the compiled KJV text; see rob_slaughter_innocents for the companion scene Robertson's own §15 also covers",
+    "order_key": 150
   },
   {
     "id": "jm_nazareth",
@@ -17743,10 +18055,114 @@
       "MAT.2.23"
     ],
     "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.2.19",
+            "MAT.2.20",
+            "MAT.2.21",
+            "MAT.2.22",
+            "MAT.2.23"
+          ]
+        },
+        "ref_note": "Matthew 2:19-23 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §16"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.2.39"
+          ]
+        },
+        "ref_note": "Luke 2:39 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §16"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §16, \"The Child Brought from Egypt to Nazareth\"",
+    "ref_note": "Matthew 2:19-23 read directly against the compiled KJV text; Luke 2:39 (the parallel witness) also read directly -- see event-witnesses.toml",
+    "order_key": 160
+  },
+  {
+    "id": "rob_magi",
+    "label": "The Magi visit the young child with gifts",
+    "when": {
+      "from_year": -4,
+      "to_year": -4
+    },
+    "places": [
+      "bethlehem-1"
+    ],
+    "verses": [
+      "MAT.2.1",
+      "MAT.2.2",
+      "MAT.2.3",
+      "MAT.2.4",
+      "MAT.2.5",
+      "MAT.2.6",
+      "MAT.2.7",
+      "MAT.2.8",
+      "MAT.2.9",
+      "MAT.2.10",
+      "MAT.2.11",
+      "MAT.2.12"
+    ],
+    "kind": "event",
     "witnesses": [],
-    "robertson_section": null,
-    "ref_note": null,
-    "order_key": 0
+    "robertson_section": "Robertson (1922) §14, \"Magi Visit the New-Born King of the Jews\"",
+    "ref_note": "Matthew 2:1-12 read directly against the compiled KJV text; dated -4 for consistency with the pre-existing jm_egypt date immediately following -- Matthew's own text (2:16) allows a wider margin ('two years old and under'), disclosed rather than claimed precisely",
+    "order_key": 140
+  },
+  {
+    "id": "rob_slaughter_innocents",
+    "label": "Herod slaughters the children of Bethlehem",
+    "when": {
+      "from_year": -4,
+      "to_year": -4
+    },
+    "places": [
+      "bethlehem-1"
+    ],
+    "verses": [
+      "MAT.2.16",
+      "MAT.2.17",
+      "MAT.2.18"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §15, \"The Child Jesus Carried to Egypt, and the Children at Bethlehem Slain\"",
+    "ref_note": "Matthew 2:16-18 read directly against the compiled KJV text; Robertson's own §15 groups this with the flight to Egypt (jm_egypt, enriched further up this file with the same robertson_section) as one section -- split here into two titled containers since they are textually distinct scenes (a widening of Robertson's own section boundary in the other direction from pw_golgotha's precedent, disclosed the same way)",
+    "order_key": 150
+  },
+  {
+    "id": "rob_boy_in_temple",
+    "label": "The boy Jesus among the teachers in the temple",
+    "when": {
+      "from_year": 8,
+      "to_year": 8
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "LUK.2.41",
+      "LUK.2.42",
+      "LUK.2.43",
+      "LUK.2.44",
+      "LUK.2.45",
+      "LUK.2.46",
+      "LUK.2.47",
+      "LUK.2.48",
+      "LUK.2.49",
+      "LUK.2.50"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §18, \"The Visit of the Boy Jesus to Jerusalem When Twelve Years Old\"",
+    "ref_note": "Luke 2:41-50 read directly against the compiled KJV text; year computed from the text's own explicit 'twelve years old' (2:42) against this atlas's own established birth year (jm_bethlehem, -5) with no year zero (-5 -> age 12 lands in AD 8) -- an arithmetic extrapolation, not an independently-attested tradition, disclosed as such; Gospel chronology at this level of precision is inherently approximate (cf. the ~3-year gap between this same arithmetic and jm_jordan's own 'about thirty years of age' baptism date, a pre-existing tension in the birth/baptism-year data this batch does not attempt to resolve)",
+    "order_key": 180
   },
   {
     "id": "theo-264",

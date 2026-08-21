@@ -719,6 +719,17 @@ from_year = -5
 to_year = -5
 places = ["bethlehem-1"]
 verses = ["LUK.2.4-7"]
+order_key = 100
+# Batch T2: enriched with provenance (was pre-existing, Task 3). Robertson's
+# own §10 spans Luke 2:1-7 (the census decree, 2:1-3, as scene-setting);
+# this event's own verses stay the narrower 2:4-7 (the journey + birth
+# itself, this event's own label's actual subject) -- a disclosed,
+# deliberately narrower scope than Robertson's own section boundary, the
+# same "citation integrity over literal Robertson-copying" precedent
+# pw_golgotha already established in the other direction (wider than its
+# own Robertson section).
+robertson_section = "Robertson (1922) §10, \"The Birth of Jesus\""
+ref_note = "Luke 2:4-7 read directly against the compiled KJV text; scoped narrower than Robertson's own §10 (Luke 2:1-7) -- see this event's own comment above"
 [[event]]
 id = "jm_egypt"
 label = "The holy family flees to Egypt"
@@ -726,6 +737,14 @@ from_year = -4
 to_year = -4
 places = ["egypt"]
 verses = ["MAT.2.13-15"]
+order_key = 150
+# Batch T2: enriched with provenance (was pre-existing, Task 3). Robertson's
+# own §15 also covers the slaughter of the innocents (Matt 2:16-18),
+# split out into its own titled container (rob_slaughter_innocents,
+# further down this file) -- a disclosed, deliberate split of Robertson's
+# own section boundary, since the two are textually distinct scenes.
+robertson_section = "Robertson (1922) §15, \"The Child Jesus Carried to Egypt, and the Children at Bethlehem Slain\""
+ref_note = "Matthew 2:13-15 read directly against the compiled KJV text; see rob_slaughter_innocents for the companion scene Robertson's own §15 also covers"
 [[event]]
 id = "jm_nazareth"
 label = "The family settles in Nazareth"
@@ -733,6 +752,13 @@ from_year = -4
 to_year = -4
 places = ["nazareth"]
 verses = ["MAT.2.19-23"]
+order_key = 160
+# Batch T2: enriched with provenance (was pre-existing, Task 3). Robertson's
+# own §16 lists BOTH Matt 2:19-23 and Luke 2:39 as parallel witnesses of
+# this same return -- Luke's own verse added as a genuine 2nd witness
+# (event-witnesses.toml), not merely noted.
+robertson_section = "Robertson (1922) §16, \"The Child Brought from Egypt to Nazareth\""
+ref_note = "Matthew 2:19-23 read directly against the compiled KJV text; Luke 2:39 (the parallel witness) also read directly -- see event-witnesses.toml"
 # places: brief guessed "jordan-river"; the real friendly_id is just
 # "Jordan" (kebab "jordan", 31.7614, 35.5583, no "-river" suffix in the
 # dataset). verse_links include MAT.3.13, this event's opening verse.
@@ -1116,3 +1142,178 @@ kind = "general"
 verses = ["MAT.1.1-17"]
 robertson_section = "Robertson (1922) §3, \"Apparently Joseph's Genealogy in Matthew and Mary's in Luke\""
 ref_note = "Matthew 1:1-17 and Luke 3:23-38 both read directly against the compiled KJV text; Luke's own text (3:23) states the line 'as was supposed' through Joseph, not explicitly Mary -- Robertson's own section title's 'Apparently' is disclosed here rather than smoothed into a firmer claim than the text itself makes (a real, longstanding harmonization crux, per the ambiguity ruling's own Eusebian-tradition guidance -- not a transcription error)"
+
+# --- Period 2: Birth & childhood (Robertson Part IV, SS4-19) ---------------
+# jm_bethlehem/jm_egypt/jm_nazareth already exist (pre-Batch-T2, Task 3) --
+# enriched IN PLACE, further up this file, with their own robertson_section/
+# order_key rather than duplicated here; see each one's own comment there.
+# Dating: Luke's own internal chronology (Baptist conceived -> six months
+# later Gabriel visits Mary -> Mary's three-month stay with Elizabeth ->
+# Baptist born -> ~15 months total before Jesus's own birth, already
+# anchored at -5) places SS4-8 at -6 and SS9 (Joseph's own annunciation,
+# during Mary's pregnancy, before birth) at -5. SS11-13 (shepherds,
+# circumcision, presentation) follow Jesus's own birth within the SAME
+# year (-5, days/weeks later). SS14/15 (Magi, slaughter) are placed at -4,
+# consistent with the PRE-EXISTING jm_egypt date -- Matthew's own text
+# (2:16, "from two years old and under") allows a wider margin than this,
+# disclosed rather than claimed as precise. Places: judea-1 (the broad
+# "hill country... a city of Juda" of Zacharias/Elizabeth's own unnamed
+# home town, LUK.1.39, its own verse_links include LUK.1.5/1.39) and
+# jerusalem (the temple itself, where Zacharias's own vision and Simeon/
+# Anna's own homage happen) are both real, already-established places
+# distinguished by which specific scene each section narrates, not
+# interchangeable.
+[[event]]
+id = "rob_zacharias_vision"
+label = "The angel Gabriel appears to Zacharias in the temple"
+from_year = -6
+to_year = -6
+places = ["jerusalem"]
+verses = ["LUK.1.5-25"]
+order_key = 40
+robertson_section = "Robertson (1922) §4, \"The Annunciation of the Birth of the Baptist to Zacharias\""
+ref_note = "Luke 1:5-25 read directly against the compiled KJV text; the vision itself (1:9-23) happens in the temple, the section's own dominant scene -- place scoped there rather than the wider Judean setting 1:5 alone names"
+
+[[event]]
+id = "rob_annunciation_mary"
+label = "The angel Gabriel announces Jesus's birth to Mary"
+from_year = -6
+to_year = -6
+places = ["nazareth"]
+verses = ["LUK.1.26-38"]
+order_key = 50
+robertson_section = "Robertson (1922) §5, \"The Annunciation to the Virgin Mary of the Birth of Jesus\""
+ref_note = "Luke 1:26-38 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_elizabeth_greets_mary"
+label = "Elizabeth greets Mary; the babe leaps for joy"
+from_year = -6
+to_year = -6
+places = ["judea-1"]
+verses = ["LUK.1.39-45"]
+order_key = 60
+robertson_section = "Robertson (1922) §6, \"The Song of Elizabeth to Mary upon Her Visit\""
+ref_note = "Luke 1:39-45 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_magnificat"
+label = "Mary's Magnificat"
+from_year = -6
+to_year = -6
+places = ["judea-1"]
+verses = ["LUK.1.46-56"]
+order_key = 70
+robertson_section = "Robertson (1922) §7, \"The Magnificat of Mary\""
+ref_note = "Luke 1:46-56 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_baptist_birth"
+label = "The birth of John the Baptist"
+from_year = -6
+to_year = -6
+places = ["judea-1"]
+verses = ["LUK.1.57-80"]
+order_key = 80
+robertson_section = "Robertson (1922) §8, \"The Birth and Childhood of the Baptist and His Desert Life\""
+ref_note = "Luke 1:57-80 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_joseph_annunciation"
+label = "An angel reassures Joseph in a dream"
+from_year = -5
+to_year = -5
+places = ["nazareth"]
+verses = ["MAT.1.18-25"]
+order_key = 90
+robertson_section = "Robertson (1922) §9, \"The Annunciation to Joseph of the Birth of Jesus\""
+ref_note = "Matthew 1:18-25 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_shepherds"
+label = "The angels and the shepherds at Bethlehem"
+from_year = -5
+to_year = -5
+places = ["bethlehem-1"]
+verses = ["LUK.2.8-20"]
+order_key = 110
+robertson_section = "Robertson (1922) §11, \"The Praise of the Angels and the Homage of the Shepherds\""
+ref_note = "Luke 2:8-20 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_circumcision"
+label = "The circumcision of Jesus"
+from_year = -5
+to_year = -5
+places = ["bethlehem-1"]
+verses = ["LUK.2.21"]
+order_key = 120
+robertson_section = "Robertson (1922) §12, \"The Circumcision of Jesus\""
+ref_note = "Luke 2:21 read directly against the compiled KJV text; no place is named in this one verse -- scoped to Bethlehem as the immediately preceding/following scenes both are (the family does not travel to Jerusalem until the purification, 2:22)"
+
+[[event]]
+id = "rob_presentation"
+label = "The presentation in the temple; Simeon and Anna"
+from_year = -5
+to_year = -5
+places = ["jerusalem"]
+verses = ["LUK.2.22-38"]
+order_key = 130
+robertson_section = "Robertson (1922) §13, \"The Presentation in the Temple with the Homage of Simeon and Anna\""
+ref_note = "Luke 2:22-38 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_magi"
+label = "The Magi visit the young child with gifts"
+from_year = -4
+to_year = -4
+places = ["bethlehem-1"]
+verses = ["MAT.2.1-12"]
+order_key = 140
+robertson_section = "Robertson (1922) §14, \"Magi Visit the New-Born King of the Jews\""
+ref_note = "Matthew 2:1-12 read directly against the compiled KJV text; dated -4 for consistency with the pre-existing jm_egypt date immediately following -- Matthew's own text (2:16) allows a wider margin ('two years old and under'), disclosed rather than claimed precisely"
+
+[[event]]
+id = "rob_slaughter_innocents"
+label = "Herod slaughters the children of Bethlehem"
+from_year = -4
+to_year = -4
+places = ["bethlehem-1"]
+verses = ["MAT.2.16-18"]
+order_key = 150
+robertson_section = "Robertson (1922) §15, \"The Child Jesus Carried to Egypt, and the Children at Bethlehem Slain\""
+ref_note = "Matthew 2:16-18 read directly against the compiled KJV text; Robertson's own §15 groups this with the flight to Egypt (jm_egypt, enriched further up this file with the same robertson_section) as one section -- split here into two titled containers since they are textually distinct scenes (a widening of Robertson's own section boundary in the other direction from pw_golgotha's precedent, disclosed the same way)"
+
+# Robertson's own §17/§19 (Luke 2:40, 2:51-52) are brief, non-specific
+# growth SUMMARIES, not discrete happenings -- no traditional single-year
+# (or defensible narrow-range) date exists for either beyond "sometime in
+# the ~18 silent years between the return from Egypt and the baptism";
+# general-kind per requirement 2's own "otherwise it ships general-kind...
+# the honest default, never a failure" (single witness each -- no
+# [[witness]] row authored, relying on the implicit fallback).
+[[event]]
+id = "rob_childhood_nazareth"
+label = "Jesus grows up at Nazareth"
+kind = "general"
+verses = ["LUK.2.40"]
+robertson_section = "Robertson (1922) §17, \"The Childhood of Jesus at Nazareth\""
+ref_note = "Luke 2:40 read directly against the compiled KJV text; general-kind -- a growth summary, not a discrete dateable happening"
+
+[[event]]
+id = "rob_boy_in_temple"
+label = "The boy Jesus among the teachers in the temple"
+from_year = 8
+to_year = 8
+places = ["jerusalem"]
+verses = ["LUK.2.41-50"]
+order_key = 180
+robertson_section = "Robertson (1922) §18, \"The Visit of the Boy Jesus to Jerusalem When Twelve Years Old\""
+ref_note = "Luke 2:41-50 read directly against the compiled KJV text; year computed from the text's own explicit 'twelve years old' (2:42) against this atlas's own established birth year (jm_bethlehem, -5) with no year zero (-5 -> age 12 lands in AD 8) -- an arithmetic extrapolation, not an independently-attested tradition, disclosed as such; Gospel chronology at this level of precision is inherently approximate (cf. the ~3-year gap between this same arithmetic and jm_jordan's own 'about thirty years of age' baptism date, a pre-existing tension in the birth/baptism-year data this batch does not attempt to resolve)"
+
+[[event]]
+id = "rob_eighteen_years"
+label = "The hidden years at Nazareth"
+kind = "general"
+verses = ["LUK.2.51-52"]
+robertson_section = "Robertson (1922) §19, \"The Eighteen Years at Nazareth\""
+ref_note = "Luke 2:51-52 read directly against the compiled KJV text; general-kind, same reasoning as rob_childhood_nazareth above"
