@@ -11508,6 +11508,191 @@
     "order_key": 0
   },
   {
+    "id": "rut_elimelech_moab",
+    "label": "Elimelech's family in Moab; Naomi is widowed",
+    "when": {
+      "from_year": -1200,
+      "to_year": -1190
+    },
+    "places": [
+      "moab-1"
+    ],
+    "verses": [
+      "RUT.1.1",
+      "RUT.1.2",
+      "RUT.1.3",
+      "RUT.1.4",
+      "RUT.1.5"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Ruth pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ruth 1:1-5, the famine, Elimelech's own family sojourning in Moab, and the deaths of Elimelech, Mahlon, and Chilion.",
+    "ref_note": "See this file's own header note on Ruth's own broad traditional dating. Place: 'the country of Moab' (1:1-2), explicit.",
+    "order_key": 0
+  },
+  {
+    "id": "rut_naomi_returns",
+    "label": "Naomi returns to Bethlehem; Ruth's own loyalty",
+    "when": {
+      "from_year": -1200,
+      "to_year": -1190
+    },
+    "places": [
+      "bethlehem-1"
+    ],
+    "verses": [
+      "RUT.1.6",
+      "RUT.1.7",
+      "RUT.1.8",
+      "RUT.1.9",
+      "RUT.1.10",
+      "RUT.1.11",
+      "RUT.1.12",
+      "RUT.1.13",
+      "RUT.1.14",
+      "RUT.1.15",
+      "RUT.1.16",
+      "RUT.1.17",
+      "RUT.1.18",
+      "RUT.1.19",
+      "RUT.1.20",
+      "RUT.1.21",
+      "RUT.1.22"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Ruth pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ruth 1:6-22, Naomi's own decision to return, Orpah's own farewell, Ruth's own 'whither thou goest, I will go,' and their arrival at Bethlehem.",
+    "ref_note": "Same traditional period as rut_elimelech_moab, immediately following. Place: 'Beth-lehem-judah' (1:19), explicit.",
+    "order_key": 0
+  },
+  {
+    "id": "rut_gleans_boaz_field",
+    "label": "Ruth gleans in the field of Boaz",
+    "when": {
+      "from_year": -1200,
+      "to_year": -1190
+    },
+    "places": [
+      "bethlehem-1"
+    ],
+    "verses": [
+      "RUT.2.1",
+      "RUT.2.2",
+      "RUT.2.3",
+      "RUT.2.4",
+      "RUT.2.5",
+      "RUT.2.6",
+      "RUT.2.7",
+      "RUT.2.8",
+      "RUT.2.9",
+      "RUT.2.10",
+      "RUT.2.11",
+      "RUT.2.12",
+      "RUT.2.13",
+      "RUT.2.14",
+      "RUT.2.15",
+      "RUT.2.16",
+      "RUT.2.17",
+      "RUT.2.18",
+      "RUT.2.19",
+      "RUT.2.20",
+      "RUT.2.21",
+      "RUT.2.22",
+      "RUT.2.23"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Ruth pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ruth 2, Ruth's own gleaning, Boaz's own kindness to her, and Naomi's own recognition of a near kinsman.",
+    "ref_note": "Same traditional period, 'in the beginning of barley harvest' (1:22). Place: Boaz's own field near Bethlehem.",
+    "order_key": 0
+  },
+  {
+    "id": "rut_threshing_floor",
+    "label": "Ruth at the threshing floor",
+    "when": {
+      "from_year": -1200,
+      "to_year": -1190
+    },
+    "places": [
+      "bethlehem-1"
+    ],
+    "verses": [
+      "RUT.3.1",
+      "RUT.3.2",
+      "RUT.3.3",
+      "RUT.3.4",
+      "RUT.3.5",
+      "RUT.3.6",
+      "RUT.3.7",
+      "RUT.3.8",
+      "RUT.3.9",
+      "RUT.3.10",
+      "RUT.3.11",
+      "RUT.3.12",
+      "RUT.3.13",
+      "RUT.3.14",
+      "RUT.3.15",
+      "RUT.3.16",
+      "RUT.3.17",
+      "RUT.3.18"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Ruth pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ruth 3, Naomi's own plan, Ruth's own request at the threshing floor, and Boaz's own promise.",
+    "ref_note": "Same traditional period, at the end of barley and wheat harvest (2:23). Place: the threshing floor near Bethlehem.",
+    "order_key": 0
+  },
+  {
+    "id": "rut_boaz_redeems",
+    "label": "Boaz redeems Ruth; the genealogy to David",
+    "when": {
+      "from_year": -1200,
+      "to_year": -1190
+    },
+    "places": [
+      "bethlehem-1"
+    ],
+    "verses": [
+      "RUT.4.1",
+      "RUT.4.2",
+      "RUT.4.3",
+      "RUT.4.4",
+      "RUT.4.5",
+      "RUT.4.6",
+      "RUT.4.7",
+      "RUT.4.8",
+      "RUT.4.9",
+      "RUT.4.10",
+      "RUT.4.11",
+      "RUT.4.12",
+      "RUT.4.13",
+      "RUT.4.14",
+      "RUT.4.15",
+      "RUT.4.16",
+      "RUT.4.17",
+      "RUT.4.18",
+      "RUT.4.19",
+      "RUT.4.20",
+      "RUT.4.21",
+      "RUT.4.22"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Ruth pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ruth 4, Boaz's own redemption of the land and of Ruth at the city gate, the birth of Obed, and the genealogy from Pharez to David, closing the book.",
+    "ref_note": "Same traditional period. Place: 'the gate' of Bethlehem (4:1), explicit. The closing genealogy (4:18-22) names Pharez (theo-106, -1721 BC, unmodified) as its own first-named ancestor -- consistent with, not contradicting, this file's own dating note above.",
+    "order_key": 0
+  },
+  {
     "id": "theo-144",
     "label": "Oppression by Ammon and Philistia",
     "when": {
