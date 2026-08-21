@@ -3,6 +3,7 @@ pub mod catechism;
 pub mod data;
 pub mod history;
 pub mod merge;
+pub mod narrative;
 pub mod refs;
 pub mod scene;
 pub mod time;

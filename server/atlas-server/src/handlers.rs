@@ -331,6 +331,78 @@ pub struct VerseDetailOut {
     /// CLIENT side (no section at all when empty), matching every other
     /// "always an array" field in this app's own wire.
     pub catechism: Vec<CatechismRefOut>,
+    /// Batch N ("narratives as first-class graph structure"): this verse's
+    /// own position(s) in the narrative graph, via
+    /// `atlas_core::narrative::positions_for_events` -- folded into this
+    /// ALREADY-shared verse-detail fetch for the EXACT same "one fetch, not
+    /// N" reason `catechism` above already documents (the reader popover's
+    /// PRIOR EVENT / FOLLOWING EVENT sections read this off the SAME
+    /// memoized `AtlasClient.Verse` call every other Verse-node section
+    /// shares). Always present, possibly empty (most verses touch no
+    /// narrative) -- conditional presence lives client-side, same
+    /// convention as `catechism`. Requirement 1's OWN OTHER half --
+    /// event-id-keyed traversal, so a PRIOR/FOLLOWING click never has to
+    /// re-search verses -- is `GET /api/narrative/event/{id}` below,
+    /// mirroring `catechism`'s OWN two-tier precedent exactly (verse-keyed
+    /// via this field, id-keyed via `GET /api/catechism/item/{id}`).
+    pub narrative_positions: Vec<NarrativePositionOut>,
+}
+
+/// Batch N: one event ADJACENT to a `NarrativePositionOut` (its own PRIOR or
+/// FOLLOWING leg) -- id/label/places/verse_groups, per requirement 1
+/// verbatim ("each adjacent event carrying its id, label, place(s), and
+/// verse groups"). `verse_groups` is built by
+/// `atlas_core::scene::to_scene_event` -- the SAME function every other
+/// "an event's own verses on the wire" case in this file already calls
+/// (`to_scene_event` above, `VerseEventOut`'s own construction) -- so this
+/// is provably the same data a map arrow's own endpoint would show for the
+/// identical event id, not a parallel re-derivation.
+#[derive(Debug, Serialize)]
+pub struct NarrativeAdjacentEventOut {
+    pub id: String,
+    pub label: String,
+    pub places: Vec<String>,
+    pub verse_groups: Vec<VerseGroup>,
+}
+
+impl From<atlas_core::narrative::NarrativeAdjacentEvent> for NarrativeAdjacentEventOut {
+    fn from(e: atlas_core::narrative::NarrativeAdjacentEvent) -> Self {
+        NarrativeAdjacentEventOut { id: e.id, label: e.label, places: e.places, verse_groups: e.verse_groups }
+    }
+}
+
+/// Batch N: one (narrative, event) position a queried verse or event
+/// touches -- `prior`/`following` omitted (not null) exactly at a
+/// narrative's own first/last leg, same conditional-presence wire
+/// convention `HistoryOut.blurb`/`CatechismRefOut.question` etc. already
+/// use throughout this file. See
+/// `atlas_core::narrative::NarrativePosition`'s own doc comment for why
+/// `event_id`/`event_label` are carried (map-focus-sync + disambiguating
+/// two positions sharing one `narrative_id`) even though they restate
+/// something the CALLER usually already knows.
+#[derive(Debug, Serialize)]
+pub struct NarrativePositionOut {
+    pub narrative_id: String,
+    pub narrative_name: String,
+    pub event_id: String,
+    pub event_label: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prior: Option<NarrativeAdjacentEventOut>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub following: Option<NarrativeAdjacentEventOut>,
+}
+
+impl From<atlas_core::narrative::NarrativePosition> for NarrativePositionOut {
+    fn from(p: atlas_core::narrative::NarrativePosition) -> Self {
+        NarrativePositionOut {
+            narrative_id: p.narrative_id,
+            narrative_name: p.narrative_name,
+            event_id: p.event_id,
+            event_label: p.event_label,
+            prior: p.prior.map(Into::into),
+            following: p.following.map(Into::into),
+        }
+    }
 }
 
 /// Mirrors atlas-etl's private `xrefs::first_verse_of_target` (duplicated,
@@ -412,6 +484,13 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
     let catechism: Vec<CatechismRefOut> =
         data.catechism_items_for_span(&ScriptureRef::Verse(vid)).into_iter().map(CatechismRefOut::from).collect();
 
+    // Batch N: this verse's own narrative position(s) -- shares
+    // `events_for_verse` with the `events` field just above (already
+    // computed the identifier list; `positions_for_events` takes it
+    // directly, no second reverse-index lookup).
+    let narrative_positions: Vec<NarrativePositionOut> =
+        atlas_core::narrative::positions_for_events(&data, data.events_for_verse(&canonical)).into_iter().map(Into::into).collect();
+
     Ok(Json(VerseDetailOut {
         sref: canonical,
         text,
@@ -424,7 +503,34 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
         events,
         cross_refs,
         catechism,
+        narrative_positions,
     }))
+}
+
+/// `GET /api/narrative/event/{id}` (Batch N requirement 1's own "endpoint/
+/// payload also supports event-id lookup" half): every narrative position
+/// the given event id occupies -- mirrors `GET /api/catechism/item/{id}`'s
+/// own precedent exactly (an id-keyed follow-on lookup alongside a
+/// verse-keyed field on the already-shared verse payload). Reached by the
+/// client ONLY with an event id already handed back by a prior response
+/// (this endpoint's own, or `VerseDetailOut.narrative_positions`'s own
+/// `prior`/`following` -- never typed by a user), so an id that names no
+/// real event at all is a genuine "not found," same `place`/`catechism_item`
+/// precedent as every other exact-identifier lookup in this file;
+/// ruling-3-policy still applies one layer in -- a REAL event that simply
+/// isn't a leg of any narrative 200s with an empty array (the "no results"
+/// case, not the "bad identifier" case), same as `positions_for_events`
+/// itself naturally returns for a bare, narrative-less event (see
+/// `narrative::tests::event_in_no_narrative_returns_no_positions`).
+pub async fn narrative_event_positions(
+    State(data): State<Arc<AtlasData>>,
+    Path(id): Path<String>,
+) -> Result<Json<Vec<NarrativePositionOut>>, ApiError> {
+    if data.event_by_id(&id).is_none() {
+        return Err(ApiError::not_found("event"));
+    }
+    let out = atlas_core::narrative::positions_for_events(&data, std::slice::from_ref(&id)).into_iter().map(Into::into).collect();
+    Ok(Json(out))
 }
 
 /// `GET /api/catechism/{sref}` (Batch F, "verse -> citing catechism items
