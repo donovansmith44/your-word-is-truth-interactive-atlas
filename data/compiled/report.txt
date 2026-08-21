@@ -3,7 +3,7 @@ Bible Atlas ETL report
 
 Compiled file counts:
   canon.json        66 books
-  places.json       1375 places
+  places.json       1373 places
   events.json       552 events
   narratives.json   13 narratives
   eras.json         10 eras
@@ -63,5 +63,13 @@ Landmarks:
 Land mask (Batch R requirement 1):
   6 region(s), 6 ring(s), 135 points total
 
-Catechism (Batch F):
+Catechism (Batch F, extended Batch F2):
   6 chief part(s), 33 item(s) total
+  33/33 items reachable from >=1 verse (was 6/33 before Batch F2's own repo mapping + Deut5 supplement)
+  4828 distinct verse(s) link into the catechism
+    The Ten Commandments: 11/11 reachable
+    The Creed: 3/3 reachable
+    The Lord's Prayer: 9/9 reachable
+    The Sacrament of Holy Baptism: 4/4 reachable
+    Confession: 2/2 reachable
+    The Sacrament of the Altar: 4/4 reachable

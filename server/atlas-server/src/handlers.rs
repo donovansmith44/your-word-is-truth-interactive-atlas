@@ -284,22 +284,30 @@ pub struct CrossRefOut {
     pub preview: String,
 }
 
-/// Batch F ("the small catechism"): one catechism item citing a verse/span,
-/// as embedded in `VerseDetailOut.catechism` AND returned (as a list) by
-/// `GET /api/catechism/{sref}` -- deliberately lean (id + display name only,
-/// no preview text unlike `CrossRefOut`): requirement 4's own UI description
-/// lists citing items as plain named entries, nothing more, and the full
-/// item content is a separate fetch (`GET /api/catechism/item/{id}`, see
-/// `CatechismItemOut` below), made only once the user actually opens one.
+/// Batch F ("the small catechism"), extended Batch F2 (question-level
+/// citations): one catechism item citing a verse/span, as embedded in
+/// `VerseDetailOut.catechism` AND returned (as a list) by `GET
+/// /api/catechism/{sref}` -- deliberately lean (id + display name + an
+/// optional question title, no preview text unlike `CrossRefOut`):
+/// requirement 4's own UI description lists citing items (now
+/// question-aware, "<Item> — <Question title>") as plain named entries,
+/// nothing more, and the full item content is a separate fetch (`GET
+/// /api/catechism/item/{id}`, see `CatechismItemOut` below), made only once
+/// the user actually opens one. `question` is omitted from the wire
+/// entirely (not null) when this hit came from Luther's own item-level
+/// embedded citation rather than a question -- same conditional-presence
+/// convention `where_written`/`blurb` etc. already use throughout this file.
 #[derive(Debug, Serialize)]
 pub struct CatechismRefOut {
     pub id: String,
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub question: Option<String>,
 }
 
 impl From<atlas_core::catechism::CatechismRef> for CatechismRefOut {
     fn from(c: atlas_core::catechism::CatechismRef) -> Self {
-        CatechismRefOut { id: c.id, name: c.name }
+        CatechismRefOut { id: c.id, name: c.name, question: c.question }
     }
 }
 
@@ -448,10 +456,19 @@ pub async fn catechism_for_span(
 /// (design-direction.md's house rendering, per requirement 4: "THE
 /// SCRIPTURES -- the item's proof verses... full verse text per house
 /// rendering" -- not a truncated preview the way `CrossRefOut.preview` is).
+/// Batch F2: `question` (omitted when absent, same convention as
+/// `CatechismRefOut.question`) names which question this proof verse came
+/// from, when it came from one -- `None` for Luther's own item-level
+/// embedded citations. This is requirement 4's own "if cheap, highlight/
+/// deep-link the question context": a small caption next to the verse in
+/// THE SCRIPTURES, cheap because it needs no new fetch or scroll machinery,
+/// just this one extra field already available at merge time.
 #[derive(Debug, Serialize)]
 pub struct CatechismProofVerseOut {
     pub vref: String,
     pub text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub question: Option<String>,
 }
 
 /// `GET /api/catechism/item/{id}`'s own wire shape -- `part_title` alongside
@@ -486,11 +503,38 @@ pub struct CatechismItemOut {
 pub async fn catechism_item(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -> Result<Json<CatechismItemOut>, ApiError> {
     let (part, item) = data.catechism_item_by_id(&id).ok_or_else(|| ApiError::not_found("catechism item"))?;
 
-    let verses = item
-        .verses
-        .iter()
-        .filter_map(|v| data.verses.get(v).map(|text| CatechismProofVerseOut { vref: v.clone(), text: text.clone() }))
-        .collect();
+    // Batch F2: THE SCRIPTURES is the item-level `verses` (Luther's own
+    // embedded citations, Batch F, `question: None`, listed FIRST -- "items
+    // keep their F-batch embedded-citation links too" reads naturally as
+    // the primary, first-listed source) followed by each of `questions[]`,
+    // in curated order, each contributing its OWN verses tagged with its
+    // OWN question title. Deduped by (vref, question) -- a verse cited
+    // twice under the exact same question (or twice with no question) never
+    // renders as two identical rows; a verse legitimately cited BOTH ways
+    // (once bare, once under a question) still shows once per way, since
+    // that's genuinely two different pieces of information (see this
+    // handler's own module-level citation-integrity discipline: never
+    // silently drop a real distinction).
+    let mut seen: std::collections::HashSet<(String, Option<String>)> = std::collections::HashSet::new();
+    let mut verses: Vec<CatechismProofVerseOut> = Vec::new();
+    for v in &item.verses {
+        if !seen.insert((v.clone(), None)) {
+            continue;
+        }
+        if let Some(text) = data.verses.get(v) {
+            verses.push(CatechismProofVerseOut { vref: v.clone(), text: text.clone(), question: None });
+        }
+    }
+    for q in &item.questions {
+        for v in &q.verses {
+            if !seen.insert((v.clone(), Some(q.title.clone()))) {
+                continue;
+            }
+            if let Some(text) = data.verses.get(v) {
+                verses.push(CatechismProofVerseOut { vref: v.clone(), text: text.clone(), question: Some(q.title.clone()) });
+            }
+        }
+    }
 
     Ok(Json(CatechismItemOut {
         id: item.id.clone(),

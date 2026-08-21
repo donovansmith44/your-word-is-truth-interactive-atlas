@@ -1,0 +1,204 @@
+# Batch F2, requirement 3: the file -> catechism-item mapping table for the
+# ingested brain-fuel/catechism repo (https://github.com/brain-fuel/catechism,
+# pinned at commit 0be24fee92e6333f817c4c2a08f99cf7c5274295 -- see
+# data/fetch-raw.ps1 and LICENSES.md for the full fetch/provenance record).
+# Hand-checkable, by design: one [[file]] row per INGESTED resources/*.yaml
+# file, naming the catechism item (data/curated/catechism.toml, [[part.item]]
+# id) its own numbered questions attach to.
+#
+# 37 of the repo's ~45 files are ingested here. 7 are DELIBERATELY DEFERRED
+# (fetched -- data/raw/ carries all of them -- but not modeled as questions
+# this batch, same disclosed-not-forgotten treatment Batch F already gave
+# the Preface/Daily-Prayers/Table-of-Duties appendices):
+#   - resources/01-What-Is-Christianity.yaml       (no existing item to attach to)
+#   - resources/02.0-The-Ten-Commandments.yaml      (part-overview content, not one commandment)
+#   - resources/03.0-The-Apostles'-Creed.yaml       (part-overview content, not one article)
+#   - resources/04.0-The-Lord's-Prayer.yaml         (part-overview content, not one petition)
+#   - resources/05.0-The-Means-of-Grace.yaml        (no existing item -- Means of Grace isn't a
+#                                                     Batch F chief part on its own)
+#   - resources/06-Daily-Prayers.yaml               (appendix, already deferred by Batch F)
+#   - resources/07-The-Table-of-Duties.yaml         (appendix, already deferred by Batch F)
+# The svebilius/ directory (the Svebilius Catechism explanation text, en/fin)
+# is likewise out of scope this batch per the brief -- noted here again for
+# completeness, ingested nothing.
+#
+# Two files need a curator judgment call, both disclosed here AND in
+# batch-f2-report.md:
+#   - resources/02.9-10-The-Ninth-and-Tenth-Commandments.yaml covers BOTH
+#     commandments in one undifferentiated set of questions (no per-question
+#     split signal in the source itself -- confirmed by reading every
+#     question title, none of which names "house" vs. "wife/servants/cattle"
+#     specifically). Attached here to commandment-9 only, so the two
+#     commandments don't show byte-identical repo content twice; commandment-10
+#     is still reachable via its own Deuteronomy 5 parallel supplement
+#     (data/curated/catechism-deut5.toml, requirement 5b).
+#   - resources/05.2.1-Confession-and-Absolution.yaml DOES have a clear
+#     thematic split (personal confession/examination vs. the absolution
+#     pronouncement and the Office of the Keys) -- overridden per-question
+#     below rather than dumped on one item, so confession-2 (previously
+#     unreachable from any verse) becomes reachable too.
+
+[[file]]
+path = "resources/02.1-The-First-Commandment.yaml"
+item = "commandment-1"
+
+[[file]]
+path = "resources/02.2-The-Second-Commandment.yaml"
+item = "commandment-2"
+
+[[file]]
+path = "resources/02.3-The-Third-Commandment.yaml"
+item = "commandment-3"
+
+[[file]]
+path = "resources/02.4-The-Fourth-Commandment.yaml"
+item = "commandment-4"
+
+[[file]]
+path = "resources/02.5-The-Fifth-Commandment.yaml"
+item = "commandment-5"
+
+[[file]]
+path = "resources/02.6-The-Sixth-Commandment.yaml"
+item = "commandment-6"
+
+[[file]]
+path = "resources/02.7-The-Seventh-Commandment.yaml"
+item = "commandment-7"
+
+[[file]]
+path = "resources/02.8-The-Eighth-Commandment.yaml"
+item = "commandment-8"
+
+[[file]]
+path = "resources/02.9-10-The-Ninth-and-Tenth-Commandments.yaml"
+item = "commandment-9"
+
+[[file]]
+path = "resources/02.11-The-Close-Of-The-Commandments.yaml"
+item = "commandments-close"
+
+[[file]]
+path = "resources/03.1.1-The-Apostles'-Creed-First-Article-Part-1.yaml"
+item = "creed-1"
+
+[[file]]
+path = "resources/03.1.2-The-Apostles'-Creed-First-Article-Part-2.yaml"
+item = "creed-1"
+
+[[file]]
+path = "resources/03.1.3-The-Apostles'-Creed-First-Article-Part-3.yaml"
+item = "creed-1"
+
+[[file]]
+path = "resources/03.2.1-The-Apostles'-Creed-Second-Article-Part-1.yaml"
+item = "creed-2"
+
+[[file]]
+path = "resources/03.2.2-The-Apostles'-Creed-Second-Article-Part-2.yaml"
+item = "creed-2"
+
+[[file]]
+path = "resources/03.2.3-The-Apostles'-Creed-Second-Article-Part-3.yaml"
+item = "creed-2"
+
+[[file]]
+path = "resources/03.3.1-The-Apostles'-Creed-Third-Article-Part-1.yaml"
+item = "creed-3"
+
+[[file]]
+path = "resources/03.3.2-The-Apostles'-Creed-Third-Article-Part-2.yaml"
+item = "creed-3"
+
+[[file]]
+path = "resources/03.3.3-The-Apostles'-Creed-Third-Article-Part-3.yaml"
+item = "creed-3"
+
+[[file]]
+path = "resources/04.1-The-Lord's-Prayer-The-Introduction.yaml"
+item = "lords-prayer-intro"
+
+[[file]]
+path = "resources/04.2.1-The-Lord's-Prayer-The-First-Petition.yaml"
+item = "lords-prayer-1"
+
+[[file]]
+path = "resources/04.2.2-The-Lord's-Prayer-The-Second-Petition.yaml"
+item = "lords-prayer-2"
+
+[[file]]
+path = "resources/04.2.3-The-Lord's-Prayer-The-Third-Petition.yaml"
+item = "lords-prayer-3"
+
+[[file]]
+path = "resources/04.2.4-The-Lord's-Prayer-The-Fourth-Petition.yaml"
+item = "lords-prayer-4"
+
+[[file]]
+path = "resources/04.2.5-The-Lord's-Prayer-The-Fifth-Petition.yaml"
+item = "lords-prayer-5"
+
+[[file]]
+path = "resources/04.2.6-The-Lord's-Prayer-The-Sixth-Petition.yaml"
+item = "lords-prayer-6"
+
+[[file]]
+path = "resources/04.2.7-The-Lord's-Prayer-The-Seventh-Petition.yaml"
+item = "lords-prayer-7"
+
+[[file]]
+path = "resources/04.3-The-Lord's-Prayer-The-Conclusion.yaml"
+item = "lords-prayer-amen"
+
+[[file]]
+path = "resources/05.1.1-The-Nature-of-Holy-Baptism.yaml"
+item = "baptism-1"
+
+[[file]]
+path = "resources/05.1.2-The-Benefits-and-Promises-of-Baptism.yaml"
+item = "baptism-2"
+
+[[file]]
+path = "resources/05.1.3-The-Power-of-Baptism.yaml"
+item = "baptism-3"
+
+[[file]]
+path = "resources/05.1.4-What-Baptism-Signifies.yaml"
+item = "baptism-4"
+
+# Curator judgment call (disclosed above and in batch-f2-report.md): this
+# ONE file covers both confession-1 ("What Is Confession?" -- confessing/
+# examining) and confession-2 ("The Absolution" -- the forgiveness
+# pronouncement and the Office of the Keys). `item` below is the DEFAULT for
+# every question NOT named in `override.questions`; the override list is the
+# absolution/keys-themed subset (read question-by-question against the real
+# titles in resources/05.2.1-Confession-and-Absolution.yaml).
+[[file]]
+path = "resources/05.2.1-Confession-and-Absolution.yaml"
+item = "confession-1"
+
+  [[file.override]]
+  item = "confession-2"
+  # 6 Ministry of Reconciliation; 7 Forgiven on Earth, Forgiven in Heaven;
+  # 8 As Far as the East Is from the West; 9 Your Sins Are Forgiven;
+  # 12 Peace Be with You; 13 Binding and Loosing; 14 The Keys of the Kingdom;
+  # 18 Gathered in His Name; 22 Shepherds and Overseers; 23 How Shall They
+  # Preach Unless Sent?; 24 The Priesthood of the Baptized; 25 Qualifications
+  # for the Office; 26 Order and Gifts in the Church.
+  questions = [6, 7, 8, 9, 12, 13, 14, 18, 22, 23, 24, 25, 26]
+
+[[file]]
+path = "resources/05.3.1-Holy-Communion-Part-1.yaml"
+item = "altar-1"
+
+[[file]]
+path = "resources/05.3.2-Holy-Communion-Part-2.yaml"
+item = "altar-2"
+
+[[file]]
+path = "resources/05.3.3-Holy-Communion-Part-3.yaml"
+item = "altar-3"
+
+[[file]]
+path = "resources/05.3.4-Holy-Communion-Part-4.yaml"
+item = "altar-4"

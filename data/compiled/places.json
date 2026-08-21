@@ -10604,7 +10604,8 @@
     "verse_links": [
       "JDG.4.9",
       "JDG.4.10",
-      "JDG.4.11"
+      "JDG.4.11",
+      "JDG.4.6"
     ]
   },
   {
@@ -10615,15 +10616,6 @@
     "verse_links": [
       "JOS.19.37",
       "JOS.20.7"
-    ]
-  },
-  {
-    "id": "kedesh-naphtali",
-    "name": "Kedesh-naphtali",
-    "lat": 32.735,
-    "lon": 35.55555,
-    "verse_links": [
-      "JDG.4.6"
     ]
   },
   {
@@ -18233,13 +18225,6 @@
     "name": "Moab",
     "lat": 31.499159,
     "lon": 35.780512,
-    "verse_links": []
-  },
-  {
-    "id": "hazor_545",
-    "name": "Hazor",
-    "lat": 33.01746212803129,
-    "lon": 35.56813718,
     "verse_links": []
   },
   {

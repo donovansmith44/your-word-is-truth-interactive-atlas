@@ -22,6 +22,7 @@ file is the detailed version of record.
 | Leaflet ([leafletjs.com](https://leafletjs.com)) | BSD-2-Clause | Vendored AND COMMITTED at `client/wwwroot/vendor/leaflet/` (v1.9.4, upstream copyright banner retained in the files per BSD-2's notice condition) — committed so a fresh clone runs without any fetch step; `data/fetch-raw.ps1` can still refresh it |
 | All curated data — historical polity borders, the land mask, landmarks, narratives, eras, `events-extra.toml`, and future short blurbs of ours (e.g. era/place descriptions) | **CC0 1.0 Universal** (public domain dedication) | Ours. Everything under `data/curated/` and everything compiled purely from it (`narratives.json`, `eras.json`, `books-meta.json`, `landmarks.json`, `polities.json`, `land-mask.json`) |
 | Luther's Small Catechism, English (1921 Bente–Dau translation, *Triglot Concordia / Concordia Triglotta*) | Public domain (published 1921, USA) | Redistributed — compiled into `catechism.json`; provenance and verification below |
+| Catechism verse mapping ([brain-fuel/catechism](https://github.com/brain-fuel/catechism)) | No license file — used by the project owner's explicit direction (see "Batch F2" below) | Redistributed — canonicalized and compiled into `catechism.json` (`CatechismItem.questions`) |
 
 ## Theographic CC BY-SA 4.0 — controller ruling
 
@@ -236,6 +237,62 @@ same as every other file under `data/curated/`; the QUOTED TEXT itself
 (Luther's own words, in the 1921 Bente–Dau translation) is public domain by
 its own 1921 US publication, not by our dedication.
 
+## Catechism verse mapping — brain-fuel/catechism (Batch F2)
+
+`data/curated/catechism-mapping.toml` + the ingested `resources/*.yaml` files
+compiled into `catechism.json` (`CatechismItem.questions`, `source =
+"brain-fuel/catechism"`), added Batch F2 in direct response to the project
+owner's own report that Batch F "derived verse links only from citations
+embedded in Luther's own text (6 of 33 items reachable) and FAILED to use —
+or even record checking — the user's mapping repo."
+
+**Source.** [brain-fuel/catechism](https://github.com/brain-fuel/catechism),
+pinned at commit `0be24fee92e6333f817c4c2a08f99cf7c5274295`. Fetched
+2026-08-20 as a GitHub commit-archive zip (`data/fetch-raw.ps1`) —
+`resources/*.yaml` (44 files, one per catechism topic — see
+`data/curated/catechism-mapping.toml`'s own header for exactly which 37 are
+ingested vs. deliberately deferred) and `svebilius/` (the Svebilius
+Catechism explanation text, en/fin — fetched, NOT ingested, out of scope
+this batch, a candidate for a future one).
+
+**License disposition — controller ruling, recorded verbatim.** The repo
+carries no license file. It is used by the EXPLICIT DIRECTION of this
+project's owner (2026-08-20, "I gave you the mapping very explicitly in the
+catechism repo"), who controls the brain-fuel repository. No evidence
+contradicting that was found while fetching: all 50 commits in the repo's
+history (as of the pinned SHA) share one author (`brain-fuel
+<matt@brain-fuel.co>`), and the repo carries no README/LICENSE asserting
+third-party or organizational ownership (the two `svebilius/{en,fin}/README.md`
+files describe that subdirectory's own separate source material — the
+Svebilius Catechism translation project — not the repo's own ownership).
+
+**What was ingested and how.** Each ingested YAML file is a plain mapping of
+QUESTION number -> `{ title, refs: !!set of "Book Chapter:Verse" }`; every
+human-readable ref (single verse, same-chapter range, bare chapter, bare
+chapter range, cross-chapter range, comma-compound — the full catalog
+verified against every one of the ~1550 distinct ref strings actually
+present in the fetched data before this ingestion was written) canonicalizes
+to this app's own ref grammar (`server/atlas-etl/src/catechism_map.rs`) and
+is validated (parses AND exists in the compiled KJV text) the same
+fail-loud way every other curated citation in this app already is. Each
+question attaches to one of the 33 existing `catechism.toml` items via the
+file->item mapping table (`data/curated/catechism-mapping.toml`,
+hand-checkable); two files needed a disclosed curator judgment call (the
+combined Ninth/Tenth-Commandments file, and the Confession-and-Absolution
+file's own thematic split) — see that TOML file's own header and
+`batch-f2-report.md` for the full reasoning.
+
+**Dedication of this project's own ingestion work.** The canonicalization
+code, the file->item mapping table, and the curated Deuteronomy 5
+supplement (`data/curated/catechism-deut5.toml`, requirement 5b — entirely
+this project's own authored cross-reference, CC0, see that file's own
+header) are original work of this project, dedicated to the public domain
+under [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/),
+same as every other file under `data/curated/`. The MAPPING DATA itself
+(question titles + verse citations) retains whatever rights the
+brain-fuel/catechism repo's own author holds, used here by that same
+author's explicit direction as this project's owner.
+
 ## Per-artifact label (`data/compiled/*`)
 
 Compiled outputs are derived works: an artifact built from a
@@ -255,7 +312,7 @@ even though the file itself is generated, not hand-authored.
 | `landmarks.json` | CC0 (ours) | `data/curated/landmarks.toml` |
 | `polities.json` | CC0 (ours) | Compiled from `data/curated/polities/*.toml`; see "Historical polity borders" above |
 | `land-mask.json` | CC0 (ours) | Compiled from `data/curated/land-mask.toml`; see "Land mask" above |
-| `catechism.json` | Public domain (1921 Bente–Dau translation) + CC0 (our own organizational choices) | Compiled from `data/curated/catechism.toml`; see "The Small Catechism" above |
+| `catechism.json` | Public domain (1921 Bente–Dau translation) + CC0 (our own organizational choices + Deut5 supplement) + brain-fuel/catechism (owner-directed use, no license file) | Compiled from `data/curated/catechism.toml` + `catechism-mapping.toml` + `catechism-deut5.toml`; see "The Small Catechism" and "Catechism verse mapping" above |
 | `report.txt` | Not a licensed dataset | Generated ETL build report (counts/warnings), not app content |
 
 ## Everything not listed here

@@ -257,10 +257,44 @@ pub struct CatechismItem {
     pub verses: Vec<String>,
     #[serde(default)]
     pub ref_note: Option<String>,
+    /// Batch F2 ("the user's own catechism verse mapping"): QUESTION-level
+    /// citations -- distinct from `verses` above (Luther's OWN embedded
+    /// citations, item-level, no question context) -- sourced from the
+    /// brain-fuel/catechism repo's own per-topic YAML (question titles +
+    /// refs) and, for the Ten Commandments, this project's own Deuteronomy 5
+    /// parallel supplement (`data/curated/catechism-deut5.toml`, requirement
+    /// 5b). Kept as a SEPARATE list rather than merged into `verses` -- see
+    /// this batch's own report for why ("items keep their F-batch
+    /// embedded-citation links too," requirement 3 verbatim -- two distinct
+    /// granularities, not a parallel implementation of the same concept).
+    /// `#[serde(default)]` so every catechism.json written before this batch
+    /// (and any test fixture that doesn't care about it) keeps deserializing
+    /// with an empty list, no schema migration needed.
+    #[serde(default)]
+    pub questions: Vec<CatechismQuestion>,
 }
 
 fn default_explanation_heading() -> String {
     "What does this mean?".to_string()
+}
+
+/// Batch F2: one QUESTION-level catechism citation, attached to a
+/// `CatechismItem` via `CatechismItem::questions`. `verses` is a flat list
+/// of individually-canonical verse refs (never a range string) -- the SAME
+/// convention `CatechismItem::verses`/`curated::expand_verse_ref` already
+/// use, produced here by `atlas_etl::catechism_map::canonicalize_ref`.
+/// `source` is a plain provenance tag (`"brain-fuel/catechism"` or
+/// `"deut5-parallel"` today) -- requirement 5b's own "keep it separate...
+/// distinct source field so provenance stays clean," kept on the WIRE too
+/// (not curator-only documentation) so a future UI could distinguish them
+/// if ever useful, though this batch's own UI does not (see
+/// `catechism-section-heading`/`popover-catechism-verse` -- the client
+/// renders every question's own verses uniformly regardless of source).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CatechismQuestion {
+    pub title: String,
+    pub verses: Vec<String>,
+    pub source: String,
 }
 
 /// Batch F: one chief part of the Small Catechism (`[[part]]` in
@@ -405,14 +439,18 @@ pub struct AtlasData {
     #[serde(skip)]
     event_counts_by_place: HashMap<String, u32>,
 
-    /// Batch F: derived, canonical verse id -> ids of every catechism item
-    /// whose own `verses` names it -- built in one pass over `catechism` by
-    /// `finish()`, same shape as `verse_to_events`/`verse_to_places` above.
-    /// `catechism_items_for_span` (and, through it, `handlers::verse`'s own
-    /// `catechism` field and `handlers::catechism_for_span`) is the only
-    /// consumer.
+    /// Batch F, extended Batch F2: derived, canonical verse id -> ordered
+    /// `(item_id, question_title)` hits -- built in one pass over
+    /// `catechism` by `finish()`, same shape as `verse_to_events`/
+    /// `verse_to_places` above, but a PAIR per hit rather than a bare id:
+    /// `question_title` is `None` for a hit from `CatechismItem::verses`
+    /// (Luther's own item-level embedded citation, Batch F, unchanged) and
+    /// `Some(title)` for a hit from one of `CatechismItem::questions[]`
+    /// (Batch F2's own question-level citations). `catechism_items_for_span`
+    /// (and, through it, `handlers::verse`'s own `catechism` field and
+    /// `handlers::catechism_for_span`) is the only consumer.
     #[serde(skip)]
-    verse_to_catechism: HashMap<String, Vec<String>>,
+    verse_to_catechism: HashMap<String, Vec<(String, Option<String>)>>,
     /// Batch F: derived, catechism item id -> its own display `name` --
     /// built alongside `verse_to_catechism` by `finish()`, so resolving a
     /// cited item's display name never needs a second pass over `catechism`.
@@ -522,10 +560,19 @@ impl AtlasData {
         self.event_bearing_place_ids = event_counts_by_place.keys().cloned().collect();
         self.event_counts_by_place = event_counts_by_place;
 
-        // Batch F: one pass over every catechism item builds the reverse
-        // verse index, the id->name lookup, and the id->(part,item) index
-        // together -- see the three fields' own doc comments.
-        let mut verse_to_catechism: HashMap<String, Vec<String>> = HashMap::new();
+        // Batch F, extended Batch F2: one pass over every catechism item
+        // builds the reverse verse index, the id->name lookup, and the
+        // id->(part,item) index together -- see the three fields' own doc
+        // comments. Each item contributes TWO kinds of hit to the reverse
+        // index: its own item-level `verses` (question `None`, Batch F,
+        // unchanged order/behavior) THEN each of its `questions[]`, in
+        // curated order, each contributing its OWN verses tagged with its
+        // OWN question title (Batch F2) -- so a verse cited both ways for
+        // the SAME item (rare, but not assumed impossible) sees the
+        // item-level hit first, matching "items keep their F-batch
+        // embedded-citation links too" reading naturally as the primary,
+        // first-listed source.
+        let mut verse_to_catechism: HashMap<String, Vec<(String, Option<String>)>> = HashMap::new();
         let mut catechism_item_names: HashMap<String, String> = HashMap::new();
         let mut catechism_item_index: HashMap<String, (usize, usize)> = HashMap::new();
         for (pi, part) in self.catechism.iter().enumerate() {
@@ -533,7 +580,12 @@ impl AtlasData {
                 catechism_item_names.insert(item.id.clone(), item.name.clone());
                 catechism_item_index.insert(item.id.clone(), (pi, ii));
                 for v in &item.verses {
-                    verse_to_catechism.entry(v.clone()).or_default().push(item.id.clone());
+                    verse_to_catechism.entry(v.clone()).or_default().push((item.id.clone(), None));
+                }
+                for q in &item.questions {
+                    for v in &q.verses {
+                        verse_to_catechism.entry(v.clone()).or_default().push((item.id.clone(), Some(q.title.clone())));
+                    }
                 }
             }
         }
@@ -893,6 +945,16 @@ pub fn demo_fixture() -> AtlasData {
             where_written: Some("Demo where-written text.".into()),
             verses: vec!["JOS.6.20".into()],
             ref_note: None,
+            // Batch F2: a QUESTION-level citation on the SAME item, citing a
+            // DIFFERENT already-real verse (JOS.6.21, already present above)
+            // -- exercises both citation granularities on one item, so
+            // server integration tests can assert a verse's own catechism
+            // hit carries the right `question` without a second fixture.
+            questions: vec![CatechismQuestion {
+                title: "Demo Question".into(),
+                verses: vec!["JOS.6.21".into()],
+                source: "brain-fuel/catechism".into(),
+            }],
         }],
     }];
     // `finish()` is documented idempotent (safe to call more than once) --
@@ -947,7 +1009,34 @@ mod catechism_tests {
             verse: 20,
         });
         let out = data.catechism_items_for_span(&span);
-        assert_eq!(out, vec![crate::catechism::CatechismRef { id: "demo-item-1".into(), name: "Demo Catechism Item".into() }]);
+        assert_eq!(
+            out,
+            vec![crate::catechism::CatechismRef { id: "demo-item-1".into(), name: "Demo Catechism Item".into(), question: None }]
+        );
+    }
+
+    // Batch F2: JOS.6.21 is cited only via demo-item-1's own QUESTION-level
+    // `questions` entry (not its item-level `verses`) -- the resulting hit
+    // must carry that question's own title, proving the new citation
+    // granularity flows end to end through AtlasData, not just through
+    // atlas_core::catechism's own unit tests.
+    #[test]
+    fn catechism_items_for_span_resolves_a_question_level_citation() {
+        let data = demo_fixture();
+        let span = ScriptureRef::Verse(crate::refs::VerseId {
+            book: crate::canon::resolve_alias("JOS").unwrap(),
+            chapter: 6,
+            verse: 21,
+        });
+        let out = data.catechism_items_for_span(&span);
+        assert_eq!(
+            out,
+            vec![crate::catechism::CatechismRef {
+                id: "demo-item-1".into(),
+                name: "Demo Catechism Item".into(),
+                question: Some("Demo Question".into()),
+            }]
+        );
     }
 
     #[test]

@@ -24,6 +24,8 @@ use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
 
+use crate::catechism_map::{Deut5Entry, MappingFile, MappingOverride};
+
 #[derive(Deserialize)]
 struct ErasFile {
     era: Vec<Era>,
@@ -101,7 +103,14 @@ struct EventsFile {
 /// single-verse-or-range string (originally `parse_events_extra`'s own
 /// helper; Batch F's `parse_catechism` reuses it verbatim rather than
 /// re-implementing the same expansion a second time).
-fn expand_verse_ref(raw: &str, context: &str, out: &mut Vec<String>) -> Result<()> {
+/// `pub` (not private) specifically so `main.rs` -- a SEPARATE crate from
+/// this library's own perspective, even though it's the same Cargo package
+/// -- can reuse it for `catechism-deut5.toml`'s own `verses` field (see
+/// `main.rs`'s own Batch F2 catechism section): those entries use this
+/// project's OWN canonical-ref convention (e.g. `"DEU.5.9-10"`), identical
+/// in shape to `catechism.toml`'s own `verses` field, so this is the exact
+/// same expansion, not a second implementation of it.
+pub fn expand_verse_ref(raw: &str, context: &str, out: &mut Vec<String>) -> Result<()> {
     match ScriptureRef::parse(raw) {
         Ok(ScriptureRef::Verse(v)) => out.push(format!("{}.{}.{}", v.book.code(), v.chapter, v.verse)),
         Ok(ScriptureRef::Passage { book, chapter, from_verse, to_verse }) => {
@@ -437,11 +446,92 @@ pub fn parse_catechism(input: &str) -> Result<Vec<CatechismPart>> {
                 where_written: it.where_written,
                 verses,
                 ref_note: it.ref_note,
+                // Batch F2: question-level citations are merged in SEPARATELY,
+                // by main.rs (after this pure parse of catechism.toml itself),
+                // from the brain-fuel/catechism mapping + the Deut5 supplement
+                // -- see `merge_catechism_questions` there. Always empty here.
+                questions: Vec::new(),
             });
         }
         parts.push(CatechismPart { id: p.id, title: p.title, items });
     }
     Ok(parts)
+}
+
+// --- Batch F2: catechism-mapping.toml (requirement 3) + catechism-deut5.toml (requirement 5b) ---
+
+#[derive(Deserialize)]
+struct CatechismMappingFileToml {
+    file: Vec<MappingFileToml>,
+}
+
+#[derive(Deserialize)]
+struct MappingFileToml {
+    path: String,
+    item: String,
+    #[serde(default, rename = "override")]
+    overrides: Vec<MappingOverrideToml>,
+}
+
+#[derive(Deserialize)]
+struct MappingOverrideToml {
+    item: String,
+    questions: Vec<u32>,
+}
+
+/// Parses `catechism-mapping.toml` (schema: `[[file]]` -- `path`/`item`/
+/// optional `[[file.override]]` -- `item`/`questions`, see that file's own
+/// header comment for the full convention). Pure and STRUCTURAL only, same
+/// split every other curated schema in this module follows: a TOML file
+/// that doesn't even parse into this shape is a curator authoring mistake,
+/// held to the same immediate-bail bar `parse_catechism`/`parse_polity`
+/// already apply. Does NOT check that every named `item`/override `item`
+/// actually exists in `catechism.toml`, or that every named `path` actually
+/// exists under `data/raw/` -- both need the fuller picture (the compiled
+/// catechism parts, and the filesystem) and so are
+/// `catechism_map::merge_questions_into_parts`'s / `catechism_map::
+/// build_questions_from_mapping`'s own job respectively, same
+/// pure-parse-then-cross-validate split every other curated schema here
+/// follows.
+pub fn parse_catechism_mapping(input: &str) -> Result<Vec<MappingFile>> {
+    let f: CatechismMappingFileToml =
+        toml::from_str(input).context("catechism-mapping.toml: invalid TOML or does not match the [[file]] schema")?;
+    Ok(f.file
+        .into_iter()
+        .map(|row| MappingFile {
+            path: row.path,
+            item: row.item,
+            overrides: row.overrides.into_iter().map(|o| MappingOverride { item: o.item, questions: o.questions }).collect(),
+        })
+        .collect())
+}
+
+#[derive(Deserialize)]
+struct CatechismDeut5File {
+    entry: Vec<Deut5EntryToml>,
+}
+
+#[derive(Deserialize)]
+struct Deut5EntryToml {
+    item: String,
+    verses: Vec<String>,
+    ref_note: String,
+}
+
+/// Parses `catechism-deut5.toml` (requirement 5b; schema: `[[entry]]` --
+/// `item`/`verses`/`ref_note`, all required -- see that file's own header).
+/// Pure and STRUCTURAL only, same split as `parse_catechism_mapping` above:
+/// verse expansion/validation against the compiled KJV text and the item-id
+/// cross-check both happen later (`curated::expand_verse_ref` is reused
+/// verbatim for the actual range expansion, at the SAME call site
+/// `main.rs` already uses for `catechism.toml`'s own `verses` field --
+/// these are OUR OWN canonical-ref strings, e.g. `"DEU.5.9-10"`, not the
+/// brain-fuel repo's human-readable form, so `catechism_map::
+/// canonicalize_ref` is deliberately NOT used here).
+pub fn parse_catechism_deut5(input: &str) -> Result<Vec<Deut5Entry>> {
+    let f: CatechismDeut5File =
+        toml::from_str(input).context("catechism-deut5.toml: invalid TOML or does not match the [[entry]] schema")?;
+    Ok(f.entry.into_iter().map(|e| Deut5Entry { item: e.item, verses: e.verses, ref_note: e.ref_note }).collect())
 }
 
 #[cfg(test)]
@@ -619,6 +709,66 @@ title = "P"
 "#;
         let err = parse_catechism(toml).unwrap_err();
         assert!(err.to_string().contains("i1"), "{err}");
+    }
+
+    // --- Batch F2: parse_catechism_mapping / parse_catechism_deut5 ---------
+
+    #[test]
+    fn parse_catechism_mapping_reads_valid_toml_with_and_without_overrides() {
+        let toml = r#"
+[[file]]
+path = "resources/02.1-The-First-Commandment.yaml"
+item = "commandment-1"
+
+[[file]]
+path = "resources/05.2.1-Confession-and-Absolution.yaml"
+item = "confession-1"
+
+  [[file.override]]
+  item = "confession-2"
+  questions = [6, 7, 9]
+"#;
+        let rows = parse_catechism_mapping(toml).unwrap();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].path, "resources/02.1-The-First-Commandment.yaml");
+        assert_eq!(rows[0].item, "commandment-1");
+        assert!(rows[0].overrides.is_empty());
+        assert_eq!(rows[1].overrides.len(), 1);
+        assert_eq!(rows[1].overrides[0].item, "confession-2");
+        assert_eq!(rows[1].overrides[0].questions, vec![6, 7, 9]);
+    }
+
+    #[test]
+    fn parse_catechism_mapping_rejects_malformed_toml() {
+        assert!(parse_catechism_mapping("not = [valid").is_err());
+        assert!(parse_catechism_mapping("foo = 1").is_err(), "missing [[file]] array entirely");
+    }
+
+    #[test]
+    fn parse_catechism_deut5_reads_valid_toml() {
+        let toml = r#"
+[[entry]]
+item = "commandment-1"
+verses = ["DEU.5.7"]
+ref_note = "test note"
+
+[[entry]]
+item = "commandments-close"
+verses = ["DEU.5.9-10"]
+ref_note = "another note"
+"#;
+        let entries = parse_catechism_deut5(toml).unwrap();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].item, "commandment-1");
+        assert_eq!(entries[0].verses, vec!["DEU.5.7".to_string()]);
+        assert_eq!(entries[0].ref_note, "test note");
+        assert_eq!(entries[1].verses, vec!["DEU.5.9-10".to_string()]);
+    }
+
+    #[test]
+    fn parse_catechism_deut5_rejects_malformed_toml() {
+        assert!(parse_catechism_deut5("not = [valid").is_err());
+        assert!(parse_catechism_deut5("item = \"x\"").is_err(), "missing [[entry]] array entirely");
     }
 
     #[test]

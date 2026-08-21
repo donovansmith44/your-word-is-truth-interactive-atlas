@@ -51,6 +51,20 @@ pub struct Report {
     /// `land_mask_regions` already report for their own curated files.
     pub catechism_parts: usize,
     pub catechism_items: usize,
+    /// Batch F2 (requirement 5, "report the before/after"): how many of
+    /// `catechism_items` are reachable from >=1 verse today -- an item
+    /// counts if EITHER its own item-level `verses` (Luther's embedded
+    /// citations, Batch F) OR any of its `questions[].verses` (the repo
+    /// mapping / Deut5 supplement, Batch F2) is non-empty. Was 6 (of 33)
+    /// before this batch.
+    pub catechism_items_reachable: usize,
+    /// Batch F2: distinct verse ids that link into the catechism from
+    /// EITHER citation source (the compiled `verse_to_catechism` index's
+    /// own key count).
+    pub catechism_distinct_verses: usize,
+    /// Batch F2: per-part reachability, `(part title, reachable items,
+    /// total items)`, in `catechism.toml`'s own part order.
+    pub catechism_per_part: Vec<(String, usize, usize)>,
 }
 
 /// Batch B2: per-polity report line -- how many eras it carries, and the
@@ -138,8 +152,18 @@ pub fn write(r: &Report) -> String {
     .unwrap();
     writeln!(s).unwrap();
 
-    writeln!(s, "Catechism (Batch F):").unwrap();
+    writeln!(s, "Catechism (Batch F, extended Batch F2):").unwrap();
     writeln!(s, "  {} chief part(s), {} item(s) total", r.catechism_parts, r.catechism_items).unwrap();
+    writeln!(
+        s,
+        "  {}/{} items reachable from >=1 verse (was 6/33 before Batch F2's own repo mapping + Deut5 supplement)",
+        r.catechism_items_reachable, r.catechism_items
+    )
+    .unwrap();
+    writeln!(s, "  {} distinct verse(s) link into the catechism", r.catechism_distinct_verses).unwrap();
+    for (title, reachable, total) in &r.catechism_per_part {
+        writeln!(s, "    {title}: {reachable}/{total} reachable").unwrap();
+    }
 
     s
 }

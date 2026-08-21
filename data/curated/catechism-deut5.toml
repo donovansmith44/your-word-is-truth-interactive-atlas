@@ -1,0 +1,97 @@
+# Batch F2, requirement 5b: the Deuteronomy 5 parallel supplement. The
+# brain-fuel/catechism repo maps the Ten Commandments to their Exodus 20
+# enumeration only (Deuteronomy appears in that repo only topically, e.g.
+# Deut 21:18-21 under "Consequences of Disobedience" -- verified 2026-08-20,
+# not the parallel Decalogue text itself). The user asked for both
+# enumerations ("in exodus 20 and deuteronomy where the law is enumerated").
+# This file is CLEARLY OURS, not repo-derived -- kept as its own curated
+# file (a distinct `source` on every compiled CatechismQuestion this
+# produces, "deut5-parallel") so provenance never blurs with the
+# brain-fuel/catechism-derived mapping.
+#
+# CC0 1.0 Universal (public domain dedication) -- same as every other
+# data/curated/ file this project authors itself (see LICENSES.md); the
+# cited verse TEXT is the KJV, already public domain.
+#
+# Every verse number below was checked against the ACTUAL KJV text of both
+# Deuteronomy 5 and Exodus 20 (data/compiled/verses-kjv.json, read directly
+# -- not assumed from memory) BEFORE writing this file, precisely because
+# the brief warns the two enumerations differ in versification. They do:
+# Exodus 20 reaches "Remember the sabbath day" at v8 and "Honour thy father"
+# at v12, while Deuteronomy 5 reaches the same content one verse later each
+# (v12, v16) because Deuteronomy's own v6 ("I am the LORD thy God...") and
+# v15 (a sabbath-observance rationale clause Exodus doesn't carry at all)
+# shift everything after them down by one. The two accounts are otherwise
+# near-verbatim parallel, verse for verse, through the Ninth/Tenth
+# Commandments' content -- EXCEPT that Deuteronomy 5:21 states the coveting
+# clauses in the OPPOSITE order from Exodus 20:17 (wife named BEFORE house;
+# Exodus names house first) -- see the two commandment-9/-10 entries below
+# for how that's handled.
+#
+# Luther's Small Catechism numbers the Commandments its own way (distinct
+# from Deuteronomy 5's own KJV verse boundaries): the First Commandment
+# covers only "no other gods" (Deut 5:7; the "graven image" clause, Deut
+# 5:8, is treated as part of the First Commandment in Lutheran catechetical
+# tradition, not numbered as its own commandment) -- matching
+# catechism.toml's own commandment-1.text ("Thou shalt have no other
+# gods."), which likewise quotes only Exodus 20:3, not 20:4.
+
+[[entry]]
+item = "commandment-1"
+verses = ["DEU.5.7"]
+ref_note = "Deuteronomy 5:7 parallels Exodus 20:3 (\"Thou shalt have no other gods\") -- Luther's First Commandment covers only this clause, not the following graven-image clause (Deut 5:8 / Exod 20:4), per Lutheran catechetical numbering."
+
+[[entry]]
+item = "commandment-2"
+verses = ["DEU.5.11"]
+ref_note = "Deuteronomy 5:11 parallels Exodus 20:7 (\"Thou shalt not take the name of the LORD thy God in vain\") -- near-verbatim between the two accounts."
+
+[[entry]]
+item = "commandment-3"
+verses = ["DEU.5.12"]
+ref_note = "Deuteronomy 5:12 parallels Exodus 20:8 (the Sabbath commandment) -- one verse later in Deuteronomy's own numbering because of the intervening v6 (\"I am the LORD thy God\", paralleling Exod 20:2, which this project's numbering treats as narration, not commandment text, in both accounts)."
+
+[[entry]]
+item = "commandment-4"
+verses = ["DEU.5.16"]
+ref_note = "Deuteronomy 5:16 parallels Exodus 20:12 (\"Honour thy father and thy mother\") -- four verses later in Deuteronomy because of the intervening vv.13-15, which expand the Sabbath commandment with an extra rationale clause (deliverance from Egypt) Exodus 20 does not carry at that point."
+
+[[entry]]
+item = "commandment-5"
+verses = ["DEU.5.17"]
+ref_note = "Deuteronomy 5:17 parallels Exodus 20:13 (\"Thou shalt not kill\") verbatim."
+
+[[entry]]
+item = "commandment-6"
+verses = ["DEU.5.18"]
+ref_note = "Deuteronomy 5:18 parallels Exodus 20:14 (\"[Neither] shalt thou commit adultery\") verbatim but for the opening conjunction."
+
+[[entry]]
+item = "commandment-7"
+verses = ["DEU.5.19"]
+ref_note = "Deuteronomy 5:19 parallels Exodus 20:15 (\"[Neither] shalt thou steal\") verbatim but for the opening conjunction."
+
+[[entry]]
+item = "commandment-8"
+verses = ["DEU.5.20"]
+ref_note = "Deuteronomy 5:20 parallels Exodus 20:16 (bearing false witness) verbatim but for the opening conjunction."
+
+[[entry]]
+item = "commandment-9"
+verses = ["DEU.5.21"]
+ref_note = "Deuteronomy 5:21 combines the coveting-house and coveting-wife/servants/cattle content in ONE verse, same as Exodus 20:17 -- but in the OPPOSITE clause order (Deuteronomy names the wife FIRST, \"Neither shalt thou desire thy neighbour's wife\", then the house/field/servants/animals, \"neither shalt thou covet...\"; Exodus names the house first). Since this app's verse-citation grammar is whole-verse, not clause-level, the SAME verse is cited here and on commandment-10 below, honestly reflecting that Deuteronomy's own wording does not divide as cleanly along Luther's Ninth/Tenth boundary as Exodus 20:17 (quoted, item by item, in catechism.toml's own commandment-9/commandment-10 text) does."
+
+[[entry]]
+item = "commandment-10"
+verses = ["DEU.5.21"]
+ref_note = "See commandment-9's own ref_note above -- Deuteronomy 5:21 states both the house-coveting and wife/servants/cattle-coveting content in one verse, wife first, so the same verse parallels both Luther's Ninth and Tenth Commandments here."
+
+# Bonus, beyond the brief's own literal "each Commandment item" scope but
+# directly in its spirit (verse-for-verse the very next lines of the same
+# giving-of-the-law passage, already verified against the real KJV text
+# above): the Close of the Commandments' own Exodus 20:5-6 citation
+# (catechism.toml, commandments-close) has a Deuteronomy parallel too.
+[[entry]]
+item = "commandments-close"
+verses = ["DEU.5.9-10"]
+ref_note = "Deuteronomy 5:9-10 parallels Exodus 20:5-6 (\"visiting the iniquity of the fathers... and shewing mercy unto thousands of them that love me and keep my commandments\") near-verbatim -- the same warning-and-promise catechism.toml's own commandments-close item quotes from Exodus."
