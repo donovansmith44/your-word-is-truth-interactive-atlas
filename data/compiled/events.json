@@ -15703,6 +15703,86 @@
     "order_key": 0
   },
   {
+    "id": "sam_hannah_vow",
+    "label": "Hannah's grief and vow at Shiloh",
+    "when": {
+      "from_year": -1158,
+      "to_year": -1158
+    },
+    "places": [
+      "shiloh"
+    ],
+    "verses": [
+      "1SA.1.1",
+      "1SA.1.2",
+      "1SA.1.3",
+      "1SA.1.4",
+      "1SA.1.5",
+      "1SA.1.6",
+      "1SA.1.7",
+      "1SA.1.8",
+      "1SA.1.9",
+      "1SA.1.10",
+      "1SA.1.11",
+      "1SA.1.12",
+      "1SA.1.13",
+      "1SA.1.14",
+      "1SA.1.15",
+      "1SA.1.16",
+      "1SA.1.17",
+      "1SA.1.18"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Samuel pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Samuel 1:1-18, Elkanah's two wives, Hannah's barrenness, and her vow at Shiloh that a son given her would be lent to the Lord.",
+    "ref_note": "Place: 'to worship... in Shiloh' (1:3), explicit. See this file's own header note on the theo-*/Ussher-adjacent interpolated dating.",
+    "order_key": 0
+  },
+  {
+    "id": "sam_samuel_born",
+    "label": "Samuel is born and given to the Lord at Shiloh",
+    "when": {
+      "from_year": -1155,
+      "to_year": -1155
+    },
+    "places": [
+      "ramah-4",
+      "shiloh"
+    ],
+    "verses": [
+      "1SA.1.19",
+      "1SA.1.20",
+      "1SA.1.21",
+      "1SA.1.22",
+      "1SA.1.23",
+      "1SA.1.24",
+      "1SA.1.25",
+      "1SA.1.26",
+      "1SA.1.27",
+      "1SA.1.28",
+      "1SA.2.1",
+      "1SA.2.2",
+      "1SA.2.3",
+      "1SA.2.4",
+      "1SA.2.5",
+      "1SA.2.6",
+      "1SA.2.7",
+      "1SA.2.8",
+      "1SA.2.9",
+      "1SA.2.10",
+      "1SA.2.11"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 1:19-2:11, Samuel's own birth at Ramah, his weaning, Hannah's own song of praise, and the child's dedication to the Lord's service at Shiloh under Eli.",
+    "ref_note": "Places: conception/birth 'to their house to Ramah' (1:19-20), explicit; the child brought 'to the house of the Lord in Shiloh' (1:24), explicit. Closing verse (2:11) is a deliberate structural pivot -- 'the child did minister unto the Lord before Eli' -- the same transitional sentence this file's own next container picks up from.",
+    "order_key": 0
+  },
+  {
     "id": "theo-146",
     "label": "Deliverance by Jephthah",
     "when": {
@@ -15767,6 +15847,41 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "sam_elis_sons_wicked",
+    "label": "The sin of Eli's sons; Samuel grows in favour",
+    "when": {
+      "from_year": -1150,
+      "to_year": -1124
+    },
+    "places": [
+      "shiloh"
+    ],
+    "verses": [
+      "1SA.2.12",
+      "1SA.2.13",
+      "1SA.2.14",
+      "1SA.2.15",
+      "1SA.2.16",
+      "1SA.2.17",
+      "1SA.2.18",
+      "1SA.2.19",
+      "1SA.2.20",
+      "1SA.2.21",
+      "1SA.2.22",
+      "1SA.2.23",
+      "1SA.2.24",
+      "1SA.2.25",
+      "1SA.2.26"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 2:12-26, the wickedness of Hophni and Phinehas contrasted with young Samuel's own growth 'in favour both with the Lord, and also with men' (2:26).",
+    "ref_note": "A broad growth-period range (not a single false-precision year), bracketed between Samuel's dedication (sam_samuel_born, -1155) and Eli's own death (-1122, matching the pre-existing theo-152 exactly) -- see this file's own header note.",
     "order_key": 0
   },
   {
@@ -15859,6 +15974,47 @@
     "acts_section": null,
     "atlas_section": "Judges pericope (this project's own sectioning, CC0 -- no external PD source claimed): Judges 13, the angel of the LORD's own appearance to Manoah and his wife, and the birth of Samson the Nazarite.",
     "ref_note": "Matches theo-148's own -1141 BC ('Philistine Dominion,' this same chapter's own opening verse, 13:1). Place: 'Zorah, of the family of the Danites' (13:2), explicit.",
+    "order_key": 0
+  },
+  {
+    "id": "sam_lord_calls_samuel",
+    "label": "The Lord calls Samuel by night",
+    "when": {
+      "from_year": -1140,
+      "to_year": -1140
+    },
+    "places": [
+      "shiloh"
+    ],
+    "verses": [
+      "1SA.3.1",
+      "1SA.3.2",
+      "1SA.3.3",
+      "1SA.3.4",
+      "1SA.3.5",
+      "1SA.3.6",
+      "1SA.3.7",
+      "1SA.3.8",
+      "1SA.3.9",
+      "1SA.3.10",
+      "1SA.3.11",
+      "1SA.3.12",
+      "1SA.3.13",
+      "1SA.3.14",
+      "1SA.3.15",
+      "1SA.3.16",
+      "1SA.3.17",
+      "1SA.3.18",
+      "1SA.3.19",
+      "1SA.3.20",
+      "1SA.3.21"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 3, the Lord's own threefold call to the child Samuel, Eli's own recognition of it, and the confirming oracle repeating the house-of-Eli judgment -- closing with Samuel established 'from Dan even to Beer-sheba' as a prophet (3:20).",
+    "ref_note": "A specific moment within sam_elis_sons_wicked's own wider growth-period range (achronological overlap between two non-narrative-leg standalone containers is legal in this data model -- see CONTRACT.md's own decisive-container model; this container is not a member of any curated Narrative.legs chain, so the chronological-leg validator does not apply to it).",
     "order_key": 0
   },
   {
@@ -16006,6 +16162,36 @@
     "order_key": 0
   },
   {
+    "id": "sam_prophecy_against_eli",
+    "label": "A man of God pronounces judgment on the house of Eli",
+    "when": {
+      "from_year": -1123,
+      "to_year": -1123
+    },
+    "places": [
+      "shiloh"
+    ],
+    "verses": [
+      "1SA.2.27",
+      "1SA.2.28",
+      "1SA.2.29",
+      "1SA.2.30",
+      "1SA.2.31",
+      "1SA.2.32",
+      "1SA.2.33",
+      "1SA.2.34",
+      "1SA.2.35",
+      "1SA.2.36"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 2:27-36, an unnamed man of God's own oracle against Eli's house, foretelling the death of both his sons in one day -- fulfilled at sam_ark_captured, immediately below.",
+    "ref_note": "Placed the year before its own fulfillment (4:11, Eli's sons both die at the Aphek battle, -1122).",
+    "order_key": 0
+  },
+  {
     "id": "theo-152",
     "label": "Death of Eli, Ark Captured",
     "when": {
@@ -16025,6 +16211,124 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "sam_ark_captured",
+    "label": "Israel defeated at Aphek; the ark captured; Eli dies",
+    "when": {
+      "from_year": -1122,
+      "to_year": -1122
+    },
+    "places": [
+      "ebenezer-1",
+      "aphek-2",
+      "shiloh"
+    ],
+    "verses": [
+      "1SA.4.1",
+      "1SA.4.2",
+      "1SA.4.3",
+      "1SA.4.4",
+      "1SA.4.5",
+      "1SA.4.6",
+      "1SA.4.7",
+      "1SA.4.8",
+      "1SA.4.9",
+      "1SA.4.10",
+      "1SA.4.11",
+      "1SA.4.12",
+      "1SA.4.13",
+      "1SA.4.14",
+      "1SA.4.15",
+      "1SA.4.16",
+      "1SA.4.17",
+      "1SA.4.18",
+      "1SA.4.19",
+      "1SA.4.20",
+      "1SA.4.21",
+      "1SA.4.22"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 4, Israel's own defeat by the Philistines at Aphek, the death of Hophni and Phinehas fulfilling sam_prophecy_against_eli, Eli's own fall and death upon hearing the ark was taken (his 40th year of judging Israel, 4:18), and the naming of Ichabod.",
+    "ref_note": "Dated to match the pre-existing theo-152 ('Death of Eli, Ark Captured,' -1122) exactly -- see this file's own header note. Places: Israel 'pitched beside Eben-ezer... the Philistines pitched in Aphek' (4:1), both explicit; Eli's own fall at Shiloh (4:13, 'sat upon a seat by the wayside, watching').",
+    "order_key": 0
+  },
+  {
+    "id": "sam_ark_among_philistines",
+    "label": "The ark among the Philistines; Dagon falls; the emerods",
+    "when": {
+      "from_year": -1122,
+      "to_year": -1122
+    },
+    "places": [
+      "ashdod"
+    ],
+    "verses": [
+      "1SA.5.1",
+      "1SA.5.2",
+      "1SA.5.3",
+      "1SA.5.4",
+      "1SA.5.5",
+      "1SA.5.6",
+      "1SA.5.7",
+      "1SA.5.8",
+      "1SA.5.9",
+      "1SA.5.10",
+      "1SA.5.11",
+      "1SA.5.12"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 5, the ark brought to Ashdod, Dagon's own image falling before it, and the plague of emerods spreading through the Philistine cities.",
+    "ref_note": "Place: 'brought it from Eben-ezer unto Ashdod' (5:1), explicit. Same year as its own immediate cause, sam_ark_captured.",
+    "order_key": 0
+  },
+  {
+    "id": "sam_ark_returned",
+    "label": "The ark is returned to Kirjath-jearim",
+    "when": {
+      "from_year": -1122,
+      "to_year": -1122
+    },
+    "places": [
+      "kiriath-jearim"
+    ],
+    "verses": [
+      "1SA.6.1",
+      "1SA.6.2",
+      "1SA.6.3",
+      "1SA.6.4",
+      "1SA.6.5",
+      "1SA.6.6",
+      "1SA.6.7",
+      "1SA.6.8",
+      "1SA.6.9",
+      "1SA.6.10",
+      "1SA.6.11",
+      "1SA.6.12",
+      "1SA.6.13",
+      "1SA.6.14",
+      "1SA.6.15",
+      "1SA.6.16",
+      "1SA.6.17",
+      "1SA.6.18",
+      "1SA.6.19",
+      "1SA.6.20",
+      "1SA.6.21",
+      "1SA.7.1"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 6:1-7:1, the Philistine priests' own counsel, the ark's return on a new cart drawn by milch kine, the men of Beth-shemesh smitten for looking into it, and its final placing in the house of Abinadab at Kirjath-jearim.",
+    "ref_note": "Place: 'fetched up the ark of the Lord, and brought it into the house of Abinadab in the hill' at Kirjath-jearim (7:1), explicit ('Kirjath-jearim' in the KJV's own spelling; this atlas's own place data uses the alternate spelling 'Kiriath-jearim' for the identical place, confirmed by matching coordinates/verse_links).",
     "order_key": 0
   },
   {
@@ -16077,6 +16381,43 @@
     "order_key": 0
   },
   {
+    "id": "sam_mizpeh_victory",
+    "label": "Samuel's assembly at Mizpeh; the Philistines are subdued",
+    "when": {
+      "from_year": -1102,
+      "to_year": -1102
+    },
+    "places": [
+      "mizpah-3",
+      "ebenezer-2"
+    ],
+    "verses": [
+      "1SA.7.2",
+      "1SA.7.3",
+      "1SA.7.4",
+      "1SA.7.5",
+      "1SA.7.6",
+      "1SA.7.7",
+      "1SA.7.8",
+      "1SA.7.9",
+      "1SA.7.10",
+      "1SA.7.11",
+      "1SA.7.12",
+      "1SA.7.13",
+      "1SA.7.14",
+      "1SA.7.15",
+      "1SA.7.16",
+      "1SA.7.17"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 7:2-17, Israel's own twenty years of lament, Samuel's own call to put away foreign gods, the assembly and fasting at Mizpeh, the Lord's own thunder against the Philistines, the memorial stone Samuel named Eben-ezer, and Samuel's own lifelong circuit as judge.",
+    "ref_note": "Dated twenty years after the ark's own capture (-1122 - 20 = -1102), per the text's own explicit interval, 'the ark abode in Kirjath-jearim... it was twenty years' (7:2). Places: the assembly 'to Mizpeh' (7:5-6), explicit -- the same physical Mizpah of Benjamin data/curated/events-extra.toml's own pre-existing exl_mizpah (2 Kings 25) already places at slug mizpah-3, kept consistent; the memorial stone 'between Mizpeh and Shen... Eben-ezer' (7:12) is a second, distinct location from the Aphek battle's own Eben-ezer (slug ebenezer-2, not ebenezer-1 -- two real, distinct geo entries).",
+    "order_key": 0
+  },
+  {
     "id": "jdg_samson_delilah_death",
     "label": "Samson and Delilah; his own death at Gaza",
     "when": {
@@ -16125,6 +16466,95 @@
     "acts_section": null,
     "atlas_section": "Judges pericope (this project's own sectioning, CC0 -- no external PD source claimed): Judges 16, Samson at Gaza, Delilah's own betrayal, his own eyes put out, and his own death pulling down the temple of Dagon -- see also theo-154's own pre-existing account of the temple's own destruction, unmodified, this SAME climactic scene.",
     "ref_note": "Matches theo-154's own -1102 BC. Place: Gaza, explicit (16:1, 16:21).",
+    "order_key": 0
+  },
+  {
+    "id": "sam_israel_demands_king",
+    "label": "Israel's elders demand a king",
+    "when": {
+      "from_year": -1097,
+      "to_year": -1097
+    },
+    "places": [
+      "ramah-4"
+    ],
+    "verses": [
+      "1SA.8.1",
+      "1SA.8.2",
+      "1SA.8.3",
+      "1SA.8.4",
+      "1SA.8.5",
+      "1SA.8.6",
+      "1SA.8.7",
+      "1SA.8.8",
+      "1SA.8.9",
+      "1SA.8.10",
+      "1SA.8.11",
+      "1SA.8.12",
+      "1SA.8.13",
+      "1SA.8.14",
+      "1SA.8.15",
+      "1SA.8.16",
+      "1SA.8.17",
+      "1SA.8.18",
+      "1SA.8.19",
+      "1SA.8.20",
+      "1SA.8.21",
+      "1SA.8.22"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 8, Samuel's own sons' corruption as judges, the elders' own demand for a king 'like all the nations,' Samuel's own warning of what a king would take, and the Lord's own instruction to heed the people's voice.",
+    "ref_note": "Place: the elders 'gathered themselves together, and came to Samuel unto Ramah' (8:4), explicit. Placed shortly before Saul's own private anointing (sam_saul_seeks_asses, immediately below) and the pre-existing theo-155/156 anchor at -1095.",
+    "order_key": 0
+  },
+  {
+    "id": "sam_saul_seeks_asses",
+    "label": "Saul seeks the asses and meets Samuel",
+    "when": {
+      "from_year": -1096,
+      "to_year": -1095
+    },
+    "places": [
+      "ramah-4"
+    ],
+    "verses": [
+      "1SA.9.1",
+      "1SA.9.2",
+      "1SA.9.3",
+      "1SA.9.4",
+      "1SA.9.5",
+      "1SA.9.6",
+      "1SA.9.7",
+      "1SA.9.8",
+      "1SA.9.9",
+      "1SA.9.10",
+      "1SA.9.11",
+      "1SA.9.12",
+      "1SA.9.13",
+      "1SA.9.14",
+      "1SA.9.15",
+      "1SA.9.16",
+      "1SA.9.17",
+      "1SA.9.18",
+      "1SA.9.19",
+      "1SA.9.20",
+      "1SA.9.21",
+      "1SA.9.22",
+      "1SA.9.23",
+      "1SA.9.24",
+      "1SA.9.25",
+      "1SA.9.26",
+      "1SA.9.27"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 9, Kish's own lost asses, Saul's own search leading him to 'the city' where the seer Samuel is, Samuel's own private word from the Lord the day before, and their meeting at the high place and Samuel's own house.",
+    "ref_note": "Place: the unnamed city (9:6, 9:10-14) is a disclosed contextual identification with Samuel's own home town, established explicitly at 1:19/7:17 -- Ramah (geographic identification from context, not textual criticism; the chapter itself never re-names the city). Closes the year before the pre-existing theo-155/156 anchor ('Reign of Saul'/'United Kingdom,' -1095, 1 Samuel 10:1 onward, untouched by this file) -- Saul's own private anointing, 10:1, is the very next verse after this container's own close at 9:27.",
     "order_key": 0
   },
   {

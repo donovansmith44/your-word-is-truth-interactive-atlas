@@ -1,0 +1,178 @@
+# Batch W2 (whole-Bible titled verse containers, second run -- historical
+# books). 1 Samuel, in the SAME `[[event]]` schema `events-extra.toml`/
+# W1's `passages/*.toml` files use -- see `data/curated/passages/genesis.toml`'s
+# own header comment for the full reconciliation/provenance framing.
+#
+# RECONCILIATION (per the brief: "1SA is already 609/810 covered by existing
+# narrative chains -- complete it via reconciliation, absorb never
+# duplicate"): verified against the REAL compiled `events.json` before
+# authoring anything (a Python analysis script against the real merged
+# event set, not a guess, mirroring W1's own inventory discipline) --
+# 1 Samuel 10:1 through 31:13 is ALREADY fully covered: `theo-155`/`156`/
+# `157`/`158` (bare Theographic "Reign of Saul"/"David Kills Goliath"/
+# "Death of Saul" events) plus the pre-existing `david-flight` narrative's
+# own 9 legs (`df_ramah` through `df_hebron`, chapters 19-27, already
+# heading-worthy for free via the narrative-leg rule -- untouched, not
+# duplicated here). ONLY chapters 1-9 (Samuel's birth through Saul's
+# private anointing, immediately before `theo-155`/`156` begin at 10:1)
+# were genuinely uncovered by anything -- confirmed by the real coverage
+# gap report: 1SA.1.1-4.14, 1SA.4.19-9.1, 1SA.9.3-9.27 (a few individual
+# verses inside that span, e.g. 9:2, "Birth of Saul" `theo-150`, were
+# already bare-covered; this file's own wider pericope containers legally
+# OVERLAP those bare freebies -- per the decisive-container model, overlap
+# lives in the data, never an error -- rather than awkwardly slicing
+# around them). This file closes exactly that gap, chapters 1-9 only.
+#
+# CHRONOLOGY, disclosed: dated on the theo-*/Ussher scale already
+# established by two EXISTING anchors this file's own new containers lead
+# directly into and never contradict: `theo-152` ("Death of Eli, Ark
+# Captured," pre-existing, -1122 BC) and `theo-155`/`156` ("Reign of
+# Saul"/"United Kingdom," pre-existing, -1095 BC, chapter 10:1 onward,
+# untouched). The text's own two explicit interval statements anchor
+# everything between: "he had judged Israel forty years" (Eli, 4:18) and
+# "the ark abode in Kirjath-jearim... twenty years" (7:2). Eli's own
+# 40-year judgeship is read as ending at his death (-1122, matching
+# `theo-152` exactly), so beginning circa -1162 (matching the ALSO
+# pre-existing, untouched `theo-145` "Judgeship of Eli," -1162 -- the two
+# pre-existing Theographic dates for Eli, read together, already imply
+# this same 40-year span, confirming rather than inventing it). Samuel's
+# own birth/dedication is placed a reasonable generation before Eli's
+# death, inside that judgeship; the ark's 20 years at Kirjath-jearim
+# (7:2) place the Mizpeh victory 20 years after the ark's own capture
+# (-1122 - 20 = -1102); Israel's demand for a king and Saul's own search
+# for the asses follow shortly after, leading directly into the
+# pre-existing -1095 anchor. No single verse in 1-9 states an absolute
+# year (this book never does, until the "forty years"/"twenty years"
+# intervals above) -- every year below is this file's own disclosed
+# interpolation between the two pre-existing anchors, not an
+# independently-attested date, same "bracketed by two real anchors, no
+# false precision beyond what the text's own stated intervals support"
+# standard as `ruth.toml` and `deuteronomy.toml` already establish.
+#
+# PLACES: `ramah-4` (Elkanah/Samuel's own home town) is the ONLY Ramah
+# slug among 9 collisions in geo `ancient.jsonl` whose own `verse_links`
+# directly include 1SA.1.19/2.11/7.17 -- confirmed, not guessed.
+# `aphek-2`/`ebenezer-1` (not `aphek-1`/`aphek-3`/`aphek-4`, three
+# unrelated same-named places) resolve the same way, `verse_links`
+# including 1SA.4.1/5.1 directly. `mizpah-3` (not the coordinate-identical
+# `mizpeh-1`, an alternate-spelling duplicate entry) is used for 7:2-17 --
+# the SAME slug `data/curated/events-extra.toml`'s own pre-existing
+# `exl_mizpah` (2 Kings 25, Gedaliah) already uses for this identical
+# physical location (Mizpah of Benjamin), kept consistent rather than
+# splitting one real place across two ids. Chapter 9 (Saul seeks the
+# asses) never re-names the city where Saul finally meets Samuel, but
+# every detail matches Samuel's own home (established 1:19/7:17) --
+# `ramah-4` again, a disclosed contextual (not explicit-in-chapter)
+# identification, the same class of inference `genesis.toml` already
+# discloses for Genesis 20/21 (permitted: geographic identification from
+# context, never textual criticism).
+
+[[event]]
+id = "sam_hannah_vow"
+label = "Hannah's grief and vow at Shiloh"
+from_year = -1158
+to_year = -1158
+places = ["shiloh"]
+verses = ["1SA.1.1-18"]
+atlas_section = "1 Samuel pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Samuel 1:1-18, Elkanah's two wives, Hannah's barrenness, and her vow at Shiloh that a son given her would be lent to the Lord."
+ref_note = "Place: 'to worship... in Shiloh' (1:3), explicit. See this file's own header note on the theo-*/Ussher-adjacent interpolated dating."
+
+[[event]]
+id = "sam_samuel_born"
+label = "Samuel is born and given to the Lord at Shiloh"
+from_year = -1155
+to_year = -1155
+places = ["ramah-4", "shiloh"]
+verses = ["1SA.1.19-28", "1SA.2.1-11"]
+atlas_section = "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 1:19-2:11, Samuel's own birth at Ramah, his weaning, Hannah's own song of praise, and the child's dedication to the Lord's service at Shiloh under Eli."
+ref_note = "Places: conception/birth 'to their house to Ramah' (1:19-20), explicit; the child brought 'to the house of the Lord in Shiloh' (1:24), explicit. Closing verse (2:11) is a deliberate structural pivot -- 'the child did minister unto the Lord before Eli' -- the same transitional sentence this file's own next container picks up from."
+
+[[event]]
+id = "sam_elis_sons_wicked"
+label = "The sin of Eli's sons; Samuel grows in favour"
+from_year = -1150
+to_year = -1124
+places = ["shiloh"]
+verses = ["1SA.2.12-26"]
+atlas_section = "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 2:12-26, the wickedness of Hophni and Phinehas contrasted with young Samuel's own growth 'in favour both with the Lord, and also with men' (2:26)."
+ref_note = "A broad growth-period range (not a single false-precision year), bracketed between Samuel's dedication (sam_samuel_born, -1155) and Eli's own death (-1122, matching the pre-existing theo-152 exactly) -- see this file's own header note."
+
+[[event]]
+id = "sam_prophecy_against_eli"
+label = "A man of God pronounces judgment on the house of Eli"
+from_year = -1123
+to_year = -1123
+places = ["shiloh"]
+verses = ["1SA.2.27-36"]
+atlas_section = "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 2:27-36, an unnamed man of God's own oracle against Eli's house, foretelling the death of both his sons in one day -- fulfilled at sam_ark_captured, immediately below."
+ref_note = "Placed the year before its own fulfillment (4:11, Eli's sons both die at the Aphek battle, -1122)."
+
+[[event]]
+id = "sam_lord_calls_samuel"
+label = "The Lord calls Samuel by night"
+from_year = -1140
+to_year = -1140
+places = ["shiloh"]
+verses = ["1SA.3.1-21"]
+atlas_section = "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 3, the Lord's own threefold call to the child Samuel, Eli's own recognition of it, and the confirming oracle repeating the house-of-Eli judgment -- closing with Samuel established 'from Dan even to Beer-sheba' as a prophet (3:20)."
+ref_note = "A specific moment within sam_elis_sons_wicked's own wider growth-period range (achronological overlap between two non-narrative-leg standalone containers is legal in this data model -- see CONTRACT.md's own decisive-container model; this container is not a member of any curated Narrative.legs chain, so the chronological-leg validator does not apply to it)."
+
+[[event]]
+id = "sam_ark_captured"
+label = "Israel defeated at Aphek; the ark captured; Eli dies"
+from_year = -1122
+to_year = -1122
+places = ["ebenezer-1", "aphek-2", "shiloh"]
+verses = ["1SA.4.1-22"]
+atlas_section = "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 4, Israel's own defeat by the Philistines at Aphek, the death of Hophni and Phinehas fulfilling sam_prophecy_against_eli, Eli's own fall and death upon hearing the ark was taken (his 40th year of judging Israel, 4:18), and the naming of Ichabod."
+ref_note = "Dated to match the pre-existing theo-152 ('Death of Eli, Ark Captured,' -1122) exactly -- see this file's own header note. Places: Israel 'pitched beside Eben-ezer... the Philistines pitched in Aphek' (4:1), both explicit; Eli's own fall at Shiloh (4:13, 'sat upon a seat by the wayside, watching')."
+
+[[event]]
+id = "sam_ark_among_philistines"
+label = "The ark among the Philistines; Dagon falls; the emerods"
+from_year = -1122
+to_year = -1122
+places = ["ashdod"]
+verses = ["1SA.5.1-12"]
+atlas_section = "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 5, the ark brought to Ashdod, Dagon's own image falling before it, and the plague of emerods spreading through the Philistine cities."
+ref_note = "Place: 'brought it from Eben-ezer unto Ashdod' (5:1), explicit. Same year as its own immediate cause, sam_ark_captured."
+
+[[event]]
+id = "sam_ark_returned"
+label = "The ark is returned to Kirjath-jearim"
+from_year = -1122
+to_year = -1122
+places = ["kiriath-jearim"]
+verses = ["1SA.6.1-21", "1SA.7.1"]
+atlas_section = "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 6:1-7:1, the Philistine priests' own counsel, the ark's return on a new cart drawn by milch kine, the men of Beth-shemesh smitten for looking into it, and its final placing in the house of Abinadab at Kirjath-jearim."
+ref_note = "Place: 'fetched up the ark of the Lord, and brought it into the house of Abinadab in the hill' at Kirjath-jearim (7:1), explicit ('Kirjath-jearim' in the KJV's own spelling; this atlas's own place data uses the alternate spelling 'Kiriath-jearim' for the identical place, confirmed by matching coordinates/verse_links)."
+
+[[event]]
+id = "sam_mizpeh_victory"
+label = "Samuel's assembly at Mizpeh; the Philistines are subdued"
+from_year = -1102
+to_year = -1102
+places = ["mizpah-3", "ebenezer-2"]
+verses = ["1SA.7.2-17"]
+atlas_section = "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 7:2-17, Israel's own twenty years of lament, Samuel's own call to put away foreign gods, the assembly and fasting at Mizpeh, the Lord's own thunder against the Philistines, the memorial stone Samuel named Eben-ezer, and Samuel's own lifelong circuit as judge."
+ref_note = "Dated twenty years after the ark's own capture (-1122 - 20 = -1102), per the text's own explicit interval, 'the ark abode in Kirjath-jearim... it was twenty years' (7:2). Places: the assembly 'to Mizpeh' (7:5-6), explicit -- the same physical Mizpah of Benjamin data/curated/events-extra.toml's own pre-existing exl_mizpah (2 Kings 25) already places at slug mizpah-3, kept consistent; the memorial stone 'between Mizpeh and Shen... Eben-ezer' (7:12) is a second, distinct location from the Aphek battle's own Eben-ezer (slug ebenezer-2, not ebenezer-1 -- two real, distinct geo entries)."
+
+[[event]]
+id = "sam_israel_demands_king"
+label = "Israel's elders demand a king"
+from_year = -1097
+to_year = -1097
+places = ["ramah-4"]
+verses = ["1SA.8.1-22"]
+atlas_section = "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 8, Samuel's own sons' corruption as judges, the elders' own demand for a king 'like all the nations,' Samuel's own warning of what a king would take, and the Lord's own instruction to heed the people's voice."
+ref_note = "Place: the elders 'gathered themselves together, and came to Samuel unto Ramah' (8:4), explicit. Placed shortly before Saul's own private anointing (sam_saul_seeks_asses, immediately below) and the pre-existing theo-155/156 anchor at -1095."
+
+[[event]]
+id = "sam_saul_seeks_asses"
+label = "Saul seeks the asses and meets Samuel"
+from_year = -1096
+to_year = -1095
+places = ["ramah-4"]
+verses = ["1SA.9.1-27"]
+atlas_section = "1 Samuel pericope (this project's own sectioning, CC0): 1 Samuel 9, Kish's own lost asses, Saul's own search leading him to 'the city' where the seer Samuel is, Samuel's own private word from the Lord the day before, and their meeting at the high place and Samuel's own house."
+ref_note = "Place: the unnamed city (9:6, 9:10-14) is a disclosed contextual identification with Samuel's own home town, established explicitly at 1:19/7:17 -- Ramah (geographic identification from context, not textual criticism; the chapter itself never re-names the city). Closes the year before the pre-existing theo-155/156 anchor ('Reign of Saul'/'United Kingdom,' -1095, 1 Samuel 10:1 onward, untouched by this file) -- Saul's own private anointing, 10:1, is the very next verse after this container's own close at 9:27."

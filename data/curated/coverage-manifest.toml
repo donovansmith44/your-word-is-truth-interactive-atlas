@@ -25,7 +25,13 @@
 # in this same batch, LUK.21.37-38 and ACT.1.1-3, see events-extra.toml's
 # own "Batch W1" section and batch-w1-report.md) stay declared from day
 # one, per the brief's own explicit instruction.
+# Batch W2 (whole-Bible titled verse containers, second run): 1 Samuel
+# added below once every one of its own verses was confirmed covered (see
+# batch-w2-report.md's own coverage table) -- 2 Samuel, 1/2 Kings, 1/2
+# Chronicles, Ezra, Nehemiah, and Esther follow as each lands in turn,
+# same one-book-at-a-time growth discipline W1 established.
 declared = [
   "MAT", "MRK", "LUK", "JHN", "ACT",
   "GEN", "EXO", "LEV", "RUT", "NUM", "DEU", "JOS", "JDG",
+  "1SA",
 ]
