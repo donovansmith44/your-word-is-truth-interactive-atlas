@@ -1,0 +1,102 @@
+# Batch W1 (whole-Bible titled verse containers). Joshua, in the SAME
+# `[[event]]` schema `events-extra.toml` uses -- see
+# `data/curated/passages/genesis.toml`'s own header comment for the full
+# reconciliation/provenance framing.
+#
+# RECONCILIATION: 12 pre-existing events already touch Joshua (theo-130
+# through theo-133, the conquest narrative's own cq_* legs, ex_jordan) --
+# 349/658 verses (53%). This batch's own gap analysis found 3 remaining
+# ranges, all in the land-division/closing chapters (14:11-24:33) theo-131
+# ("War with Canaanites") and theo-132/133 do not reach or only partly
+# cover.
+#
+# CHRONOLOGY: theo-132's own -1445 ("Dividing the land") is used for the
+# land-allotment containers below, consistent with the SAME pre-existing
+# event they directly continue from; theo-133's own -1424 ("Death of
+# Joshua") anchors the closing farewell/covenant-renewal containers,
+# placed shortly before it ("a long time after," 23:1). No new disclosed
+# chronology tension here -- this book's own pre-existing events (theo-*
+# AND cq_*/ex_jordan) already agree on ONE scale (-1451 to -1399), unlike
+# Genesis/Exodus/Numbers/Deuteronomy's own disclosed two-layer tension.
+
+[[event]]
+id = "jos_calebs_inheritance"
+label = "Caleb's own inheritance at Hebron"
+from_year = -1445
+to_year = -1445
+places = ["hebron"]
+verses = ["JOS.14.11-15"]
+atlas_section = "Joshua pericope (this project's own sectioning, CC0 -- no external PD source claimed): Joshua 14:11-15, Caleb's own request for Hebron granted, and the land's own rest from war."
+ref_note = "Same traditional year as theo-132, immediately following its own account of Caleb's request (14:6-10). Place: Hebron, explicit (14:13-15)."
+
+[[event]]
+id = "jos_inheritance_judah"
+label = "The inheritance of Judah"
+kind = "general"
+verses = ["JOS.15.1-63"]
+atlas_section = "Joshua code unit (this project's own sectioning, CC0 -- no external PD source claimed): Joshua 15, the full boundary description of Judah's own inheritance, and its cities."
+ref_note = "General-kind: a boundary/list description, no single narrative moment of its own."
+
+[[event]]
+id = "jos_inheritance_ephraim_manasseh"
+label = "The inheritance of Ephraim and Manasseh"
+kind = "general"
+verses = ["JOS.16.1-10", "JOS.17.1-18"]
+atlas_section = "Joshua code unit (this project's own sectioning, CC0 -- no external PD source claimed): Joshua 16-17, the boundaries of Ephraim and Manasseh, including Zelophehad's own daughters receiving their inheritance again and Joshua's own counsel to the tribe of Joseph."
+ref_note = "General-kind: a boundary/list description, no single narrative moment of its own."
+
+[[event]]
+id = "jos_remaining_allotments"
+label = "The remaining tribal allotments: Benjamin through Dan"
+kind = "general"
+verses = ["JOS.18.2-28", "JOS.19.1-51"]
+atlas_section = "Joshua code unit (this project's own sectioning, CC0 -- no external PD source claimed): Joshua 18:2-19:51, the tabernacle at Shiloh, the land surveyed and divided by lot among the remaining seven tribes, and Joshua's own inheritance at Timnath-serah."
+ref_note = "General-kind: a boundary/list description, no single narrative moment of its own. Place: the allotment itself takes place 'in Shiloh before the Lord' (19:51), same as the existing cq_shiloh narrative leg's own place."
+
+[[event]]
+id = "jos_refuge_levitical_cities"
+label = "The cities of refuge; the Levitical cities"
+kind = "general"
+verses = ["JOS.20.1-9", "JOS.21.1-45"]
+atlas_section = "Joshua code unit (this project's own sectioning, CC0 -- no external PD source claimed): Joshua 20-21, the six cities of refuge appointed (per Numbers 35), and the forty-eight Levitical cities assigned, closing with 'there failed not ought of any good thing which the Lord had spoken.'"
+ref_note = "General-kind: a list, mirroring Numbers 35's own content, no single narrative moment of its own."
+
+[[event]]
+id = "jos_altar_of_witness"
+label = "The altar of witness by the Jordan"
+from_year = -1445
+to_year = -1445
+places = ["shiloh"]
+verses = ["JOS.22.1-34"]
+atlas_section = "Joshua pericope (this project's own sectioning, CC0 -- no external PD source claimed): Joshua 22, the Reubenites, Gadites, and half-Manasseh sent home, their own altar of witness by the Jordan, and the western tribes' own alarm and resolution."
+ref_note = "Same general period as the land-division chapters, immediately following. Place: the sending-off itself is from Shiloh (the tabernacle's own site); the altar itself is built 'in the borders of Jordan' (22:10), not independently mapped in this atlas's own compiled place set."
+
+[[event]]
+id = "jos_farewell_address"
+label = "Joshua's own farewell address"
+from_year = -1425
+to_year = -1425
+places = ["shiloh"]
+verses = ["JOS.23.1-16"]
+atlas_section = "Joshua pericope (this project's own sectioning, CC0 -- no external PD source claimed): Joshua 23, Joshua's own final charge to Israel's leaders, now old, to cleave to the LORD and shun the nations left in the land."
+ref_note = "'A long time after' the conquest (23:1), placed shortly before theo-133's own -1424 ('Death of Joshua'). Place: not independently restated in this chapter; Shiloh, the tabernacle's own site through this period, used as the nearest explicit anchor."
+
+[[event]]
+id = "jos_covenant_shechem"
+label = "The covenant renewed at Shechem"
+from_year = -1425
+to_year = -1425
+places = ["shechem"]
+verses = ["JOS.24.1-28"]
+atlas_section = "Joshua pericope (this project's own sectioning, CC0 -- no external PD source claimed): Joshua 24:1-28, Joshua's own recital of Israel's history, 'choose you this day whom ye will serve... as for me and my house, we will serve the Lord,' and the covenant renewed at Shechem."
+ref_note = "Same traditional period as jos_farewell_address, immediately following. Place: Shechem, explicit (24:1)."
+
+[[event]]
+id = "jos_closing_notices"
+label = "Israel's own faithfulness under the elders; Joseph's bones buried; Eleazar's death"
+from_year = -1424
+to_year = -1424
+places = ["shechem"]
+verses = ["JOS.24.31-33"]
+atlas_section = "Joshua pericope (this project's own sectioning, CC0 -- no external PD source claimed): Joshua 24:31-33, Israel's own faithfulness through the days of the elders who outlived Joshua, Joseph's own bones buried at Shechem, and Eleazar's own death -- closing the book, fills the gap around theo-133's own Death of Joshua (24:29-30, immediately prior, unmodified)."
+ref_note = "Same traditional year as theo-133. Place: Joseph's bones are buried 'in Shechem' (24:32), explicit."
