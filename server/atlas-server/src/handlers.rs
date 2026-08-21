@@ -692,27 +692,32 @@ pub async fn event(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -
     // bare Theographic default -- this is the "PARALLEL ACCOUNTS place
     // lines" surface (an EVENT node's own `event-places`/`event-place-{id}`
     // rows render right alongside its PARALLEL ACCOUNTS witness section).
-    // Window = this event's own `e.when`: unlike the other three call sites
-    // (which each already had a well-defined "no window" reason -- scripture
-    // mode, a plain reader chapter with no time concept), this row previously
-    // resolved NEITHER a period name NOR an alias at all (always the bare,
-    // even un-stripped, default `p.name`) -- so using the event's own date
-    // here is a strict improvement on every axis, not a behavior change with
-    // a downside, and keeps this row consistent with what the SAME place
-    // would show on the map for the SAME event's own window.
+    // Window = this event's own `e.when`, gated on `e.kind == "event"` --
+    // Fix round 1 (I-1): a `kind != "event"` ("general") passage's `e.when`
+    // is `TimeRange::undated()` (the WHOLE atlas span, [-4004,100] -- see
+    // its own doc comment), not an out-of-range sentinel, so passing it as a
+    // real window trivially intersects every curated period-name range and
+    // lets `resolve_display_name` spuriously pick a period name (or an
+    // arbitrary one among several) for a passage that structurally has no
+    // date at all. Mirrors the SAME kind-gate this handler already applies
+    // to the wire `when` field below (the SAME "no real window here"
+    // reasoning `handlers::chapter`/`compose_scripture_scene` already use)
+    // -- computed once here, reused for both the places resolution and
+    // `when`, so the two can never drift apart again.
+    let window = if e.kind == "event" { Some(e.when) } else { None };
     let places = e
         .places
         .iter()
         .filter_map(|pid| data.place_by_id(pid))
         .map(|p| EventPlaceOut {
             id: p.id.clone(),
-            name: resolve_display_name(&p.name, data.place_history_for(&p.id), Some(e.when), data.place_name_alias_for(&p.id)),
+            name: resolve_display_name(&p.name, data.place_history_for(&p.id), window, data.place_name_alias_for(&p.id)),
         })
         .collect();
     let witnesses = atlas_core::scene::witnesses_for(e).into_iter().map(EventWitnessOut::from).collect();
     // Batch T2: never surface the undated() sentinel to the wire for a
     // general-kind passage -- see EventDetailOut's own doc comment.
-    let when = if e.kind == "event" { Some(e.when) } else { None };
+    let when = window;
 
     Ok(Json(EventDetailOut {
         id: e.id.clone(),

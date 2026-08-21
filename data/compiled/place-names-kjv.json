@@ -55,7 +55,7 @@
   {
     "id": "diviners-oak",
     "translations": {
-      "kjv": "The Plain of Meonenim"
+      "kjv": "the plain of Meonenim"
     },
     "verses": [
       "JDG.9.37"
@@ -306,6 +306,44 @@
     },
     "verses": [
       "1KI.4.10"
+    ]
+  },
+  {
+    "id": "heliopolis",
+    "translations": {
+      "kjv": "On"
+    },
+    "verses": [
+      "GEN.41.45"
+    ]
+  },
+  {
+    "id": "thebes",
+    "translations": {
+      "kjv": "No"
+    },
+    "verses": [
+      "NAM.3.8"
+    ]
+  },
+  {
+    "id": "gerasa",
+    "translations": {
+      "kjv": "Gadarenes"
+    },
+    "verses": [
+      "MRK.5.1",
+      "LUK.8.26",
+      "LUK.8.37"
+    ]
+  },
+  {
+    "id": "jokmeam-1",
+    "translations": {
+      "kjv": "Jokneam"
+    },
+    "verses": [
+      "1KI.4.12"
     ]
   }
 ]

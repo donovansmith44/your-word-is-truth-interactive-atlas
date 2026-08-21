@@ -352,6 +352,73 @@ async fn event_endpoint_omits_when_for_general_kind_passages() {
     assert_eq!(body["when"]["from_year"], -1406);
 }
 
+/// Fix round 1 (I-1): a `kind == "general"` passage's own `event-places` row
+/// must resolve the alias/default tier, NEVER a spurious curated period
+/// name -- `e.when` is `TimeRange::undated()` for a general-kind passage
+/// (the whole atlas span, [-4004,100]), which trivially intersects
+/// `demo_fixture()`'s own curated `hebron` history (`Kirjath-arba`,
+/// [-4004,-2001] -- entirely inside `undated()`'s span) if it's ever passed
+/// through as a real window. Pre-fix, this test's own "g-hebron" event
+/// would have shown "Kirjath-arba" here (a fabricated period claim for a
+/// passage that structurally has no date at all); post-fix it must show the
+/// plain default "Hebron" -- hebron carries no curated KJV alias in this
+/// fixture, so the resolution falls all the way to the bottom tier.
+#[tokio::test]
+async fn general_kind_event_places_never_resolve_a_spurious_period_name() {
+    let mut data = demo_fixture();
+    data.events.push(Event {
+        id: "g-hebron".into(),
+        label: "A general-kind passage mentioning Hebron".into(),
+        when: TimeRange::undated(),
+        places: vec!["hebron".into()],
+        verses: vec![],
+        kind: "general".into(),
+        ..Default::default()
+    });
+    let data = data.finish();
+    let app = atlas_server::app::build(Arc::new(data), None);
+
+    let (st, body) = call(&app, "/api/event/g-hebron").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["kind"], "general");
+    assert!(body.get("when").is_none(), "general-kind passage must not carry a `when` key: {body}");
+    assert_eq!(
+        body["places"],
+        serde_json::json!([{"id": "hebron", "name": "Hebron"}]),
+        "must resolve the plain default, NOT the curated period name \"Kirjath-arba\" that undated()'s [-4004,100] span would spuriously intersect: {body}"
+    );
+
+    // Control: the SAME place, on a REAL event-kind passage whose own date
+    // genuinely falls inside the curated range, still correctly resolves
+    // the period name -- proving the fix is a kind-gate, not a blanket
+    // "never resolve period names on event-places" regression.
+    data_hebron_period_name_still_resolves_for_a_real_event_kind_window().await;
+}
+
+/// Helper for the test above: confirms the kind-gate fix didn't collaterally
+/// break the case it must keep working -- a genuine `kind == "event"`
+/// passage dated inside a curated period-name range still resolves that
+/// name on its own `event-places` row.
+async fn data_hebron_period_name_still_resolves_for_a_real_event_kind_window() {
+    let mut data = demo_fixture();
+    data.events.push(Event {
+        id: "e-hebron-period".into(),
+        label: "A real event-kind passage, dated inside Kirjath-arba's range".into(),
+        when: TimeRange::new(-2500, -2500).unwrap(),
+        places: vec!["hebron".into()],
+        verses: vec![],
+        ..Default::default()
+    });
+    let data = data.finish();
+    let app = atlas_server::app::build(Arc::new(data), None);
+
+    let (st, body) = call(&app, "/api/event/e-hebron-period").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["kind"], "event");
+    assert_eq!(body["when"]["from_year"], -2500);
+    assert_eq!(body["places"], serde_json::json!([{"id": "hebron", "name": "Kirjath-arba"}]), "{body}");
+}
+
 /// Batch T2 (Acts provenance): `acts_section` is Acts's own sibling
 /// provenance field to `robertson_section` (owner's own ambiguity ruling --
 /// "acts sections get their own provenance key, NOT robertson_section").
