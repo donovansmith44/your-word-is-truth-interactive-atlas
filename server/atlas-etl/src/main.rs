@@ -85,6 +85,33 @@ fn main() -> Result<()> {
         all_events.push(e);
     }
 
+    // --- data/curated/event-witnesses.toml (Batch T requirement 1: PARALLEL
+    // WITNESSES) -- attached AFTER every event id is known (Theographic +
+    // events-extra.toml combined), so a witness naming an unknown event id
+    // fails loud here, at merge time, rather than silently vanishing.
+    // Grouped by event id first (a flat file, `[[witness]]` per row -- see
+    // `curated::parse_event_witnesses`'s own doc comment for why this
+    // schema carries no nested-table mis-attachment risk to guard against
+    // in the first place) so each matching event's own `witnesses` gets the
+    // FULL group in one assignment, in curated (file) order.
+    let event_witnesses = curated::parse_event_witnesses(&read(&curated_dir.join("event-witnesses.toml"))?)?;
+    let mut witnesses_by_event: HashMap<String, Vec<atlas_core::data::EventWitness>> = HashMap::new();
+    for (event_id, witness) in event_witnesses {
+        witnesses_by_event.entry(event_id).or_default().push(witness);
+    }
+    // Owned `String` keys (not `&str`) deliberately -- a borrowed key would
+    // keep `all_events` borrowed immutably for as long as this map lives,
+    // which conflicts with mutating `all_events[idx]` just below.
+    let event_by_id: HashMap<String, usize> = all_events.iter().enumerate().map(|(i, e)| (e.id.clone(), i)).collect();
+    for (event_id, witnesses) in witnesses_by_event {
+        match event_by_id.get(&event_id) {
+            Some(&idx) => all_events[idx].witnesses = witnesses,
+            None => bail!(
+                "data/curated/event-witnesses.toml: witness row names event_id '{event_id}', which does not match any compiled event id (Theographic or events-extra.toml)"
+            ),
+        }
+    }
+
     let mut all_places = geo_places;
     let mut seen_place_ids: HashSet<String> = all_places.iter().map(|p| p.id.clone()).collect();
     for p in theo_new_places {
@@ -424,6 +451,10 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     let events_extra_path = curated_dir.join("events-extra.toml");
     if !events_extra_path.is_file() {
         missing.push(format!("{}", events_extra_path.display()));
+    }
+    let event_witnesses_path = curated_dir.join("event-witnesses.toml");
+    if !event_witnesses_path.is_file() {
+        missing.push(format!("{}", event_witnesses_path.display()));
     }
     let narratives_dir = curated_dir.join("narratives");
     let has_narrative_files = narratives_dir.is_dir()

@@ -294,8 +294,8 @@ fn validate_era_coverage_bounds_fail() {
 fn validate_nonchronological_legs_fail() {
     let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
     let events = vec![
-        Event { id: "e1".into(), label: "E1".into(), when: TimeRange::new(-5, -5).unwrap(), places: vec!["p".into()], verses: vec![] },
-        Event { id: "e2".into(), label: "E2".into(), when: TimeRange::new(-9, -9).unwrap(), places: vec!["p".into()], verses: vec![] },
+        Event { id: "e1".into(), label: "E1".into(), when: TimeRange::new(-5, -5).unwrap(), places: vec!["p".into()], verses: vec![], ..Default::default() },
+        Event { id: "e2".into(), label: "E2".into(), when: TimeRange::new(-9, -9).unwrap(), places: vec!["p".into()], verses: vec![], ..Default::default() },
     ];
     let narratives = vec![Narrative { id: "n".into(), name: "N".into(), color: "#fff".into(), legs: vec!["e1".into(), "e2".into()] }];
     let mut data = empty_atlas();
@@ -311,8 +311,8 @@ fn validate_nonchronological_legs_fail() {
 fn validate_duplicate_event_ids_fail() {
     let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
     let events = vec![
-        Event { id: "dup".into(), label: "A".into(), when: TimeRange::new(-5, -5).unwrap(), places: vec!["p".into()], verses: vec![] },
-        Event { id: "dup".into(), label: "B".into(), when: TimeRange::new(-3, -3).unwrap(), places: vec!["p".into()], verses: vec![] },
+        Event { id: "dup".into(), label: "A".into(), when: TimeRange::new(-5, -5).unwrap(), places: vec!["p".into()], verses: vec![], ..Default::default() },
+        Event { id: "dup".into(), label: "B".into(), when: TimeRange::new(-3, -3).unwrap(), places: vec!["p".into()], verses: vec![], ..Default::default() },
     ];
     let mut data = empty_atlas();
     data.places = places;
@@ -349,8 +349,8 @@ fn validate_valid_data_passes() {
         Place { id: "jericho".into(), name: "Jericho".into(), lat: 31.87, lon: 35.44, verse_links: vec![] },
     ];
     let events = vec![
-        Event { id: "e1".into(), label: "E1".into(), when: TimeRange::new(-1406, -1406).unwrap(), places: vec!["gilgal".into()], verses: vec!["JOS.4.19".into()] },
-        Event { id: "e2".into(), label: "E2".into(), when: TimeRange::new(-1405, -1405).unwrap(), places: vec!["jericho".into()], verses: vec!["JOS.6.1".into()] },
+        Event { id: "e1".into(), label: "E1".into(), when: TimeRange::new(-1406, -1406).unwrap(), places: vec!["gilgal".into()], verses: vec!["JOS.4.19".into()], ..Default::default() },
+        Event { id: "e2".into(), label: "E2".into(), when: TimeRange::new(-1405, -1405).unwrap(), places: vec!["jericho".into()], verses: vec!["JOS.6.1".into()], ..Default::default() },
     ];
     let narratives = vec![Narrative { id: "n".into(), name: "N".into(), color: "#fff".into(), legs: vec!["e1".into(), "e2".into()] }];
     let books_meta = vec![BookMeta { book: "GEN".into(), author: "Moses".into(), write_place: None, write_from: None, write_to: None }];

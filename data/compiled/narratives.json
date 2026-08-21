@@ -112,6 +112,7 @@
       "jm_jordan",
       "jm_cana",
       "jm_capernaum",
+      "jm_temple_cleansing",
       "jm_sychar",
       "jm_bethsaida",
       "jm_caesarea_philippi",
@@ -139,6 +140,7 @@
     "legs": [
       "pw_bethany",
       "pw_jerusalem_entry",
+      "pw_temple_cleansing",
       "pw_gethsemane",
       "pw_golgotha",
       "pw_jerusalem_resurrection",

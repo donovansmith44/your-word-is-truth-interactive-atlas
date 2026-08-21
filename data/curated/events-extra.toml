@@ -737,32 +737,62 @@ verses = ["MAT.2.19-23"]
 # "Jordan" (kebab "jordan", 31.7614, 35.5583, no "-river" suffix in the
 # dataset). verse_links include MAT.3.13, this event's opening verse.
 # Using jordan.
+# Batch T (AD 33 Passion anchor, batch-t-brief.md): every ministry-relative
+# date below (jm_jordan through jm_bethany, and every Passion Week event
+# further down) is shifted +3 years from its pre-Batch-T value (baptism 26
+# -> 29, etc.) -- a uniform, mechanical offset that PRESERVES every existing
+# date's own relative spacing/ordering while re-anchoring the whole ministry
+# consistently on the owner's own binding ruling (AD 33 Passion, not the
+# AD 30 tradition the pre-Batch-T dates were internally consistent with:
+# baptism 26 -> Passion 30 is itself a real, common alternative tradition,
+# just not the one the owner ruled for this atlas). See batch-t-report.md's
+# own chronology table for the full before/after and the reasoning.
 [[event]]
 id = "jm_jordan"
 label = "Jesus is baptized in the Jordan"
-from_year = 26
-to_year = 26
+from_year = 29
+to_year = 29
 places = ["jordan"]
 verses = ["MAT.3.13-17"]
 [[event]]
 id = "jm_cana"
 label = "Jesus turns water to wine at Cana"
-from_year = 27
-to_year = 27
+from_year = 30
+to_year = 30
 places = ["cana"]
 verses = ["JHN.2.1-11"]
 [[event]]
 id = "jm_capernaum"
 label = "Jesus makes Capernaum his base"
-from_year = 27
-to_year = 27
+from_year = 30
+to_year = 30
 places = ["capernaum"]
 verses = ["MAT.4.13"]
+# Batch T requirement 5 (reader headings; req 6/7's own "a JHN event whose
+# FOLLOWING is not the next pericope in JHN"): the FIRST of two temple
+# cleansings the Gospels narrate -- John places this one early (John 2,
+# right after Cana/Capernaum, following his own narrative order exactly);
+# the Synoptics narrate a SECOND, textually distinct cleansing during
+# Passion Week (pw_temple_cleansing, below) that John never repeats --
+# Robertson's Harmony (1922, public domain; LICENSES.md) treats these as
+# two separate cleansings, section 31 for this one. Single witness (John
+# alone) -- no [[witness]] row authored; the implicit single-witness
+# fallback (scene::witnesses_for) covers it, and requirement 4's own "no
+# parallel framing when n=1" is exactly the case this event demonstrates.
+[[event]]
+id = "jm_temple_cleansing"
+label = "Jesus cleanses the temple for the first time"
+from_year = 30
+to_year = 30
+places = ["jerusalem"]
+verses = ["JHN.2.13-22"]
+robertson_section = "Robertson (1922) §31, \"The First Cleansing of the Temple at the Passover\""
+ref_note = "John 2:13-22 read directly; Robertson section number/title verified against Project Gutenberg #36264 (both the HTML and plain-text mirrors of the 1922 first edition)"
 [[event]]
 id = "jm_sychar"
 label = "Jesus speaks with the woman at the well in Sychar"
-from_year = 27
-to_year = 27
+from_year = 30
+to_year = 30
 places = ["sychar"]
 verses = ["JHN.4.4-26"]
 # places: brief guessed "bethsaida", but geo ancient.jsonl collides into
@@ -774,15 +804,15 @@ verses = ["JHN.4.4-26"]
 [[event]]
 id = "jm_bethsaida"
 label = "Jesus feeds the five thousand near Bethsaida"
-from_year = 29
-to_year = 29
+from_year = 32
+to_year = 32
 places = ["bethsaida-2"]
 verses = ["LUK.9.10-17"]
 [[event]]
 id = "jm_caesarea_philippi"
 label = "Peter's confession at Caesarea Philippi"
-from_year = 29
-to_year = 29
+from_year = 32
+to_year = 32
 places = ["caesarea-philippi"]
 verses = ["MAT.16.13-20"]
 # places: same Jericho 1/2 split as cq_jericho above, opposite pick:
@@ -792,8 +822,8 @@ verses = ["MAT.16.13-20"]
 [[event]]
 id = "jm_jericho"
 label = "Jesus calls Zacchaeus at Jericho"
-from_year = 30
-to_year = 30
+from_year = 33
+to_year = 33
 places = ["jericho-2"]
 verses = ["LUK.19.1-10"]
 # places: brief guessed "bethany", but geo ancient.jsonl collides into
@@ -805,35 +835,86 @@ verses = ["LUK.19.1-10"]
 [[event]]
 id = "jm_bethany"
 label = "Jesus dines at Bethany before the Passover"
-from_year = 30
-to_year = 30
+from_year = 33
+to_year = 33
 places = ["bethany-1"]
 verses = ["JHN.12.1"]
 
 # --- Passion Week ---
+# Batch T (batch-t-brief.md): CHRONOLOGY ANCHOR -- AD 33 Passion (Nisan 14,
+# April 3, AD 33 traditional; the owner's own binding ruling). Every event
+# below is re-dated 30 -> 33 (see jm_jordan's own comment, further up, for
+# the uniform +3-year shift applied to the whole ministry timeline so it
+# stays internally consistent with this anchor). `order_key` gives each leg
+# an explicit sub-year (day-of-week) position within the SAME traditional
+# year -- this app's own Year model is year-granular, so a fake year offset
+# is not an option (req 2, verbatim) -- following the traditional Holy Week
+# schedule (Palm Sunday through the Ascension) that has broad, longstanding
+# confessional-Lutheran acceptance: Sunday (entry), Monday (temple
+# cleansing, Mark 11:12 "on the morrow" dates it explicitly), Wednesday
+# (the anointing dinner -- kept at John 12:1's own explicit "six days
+# before the passover" placement, i.e. immediately BEFORE the triumphal
+# entry in leg order below, not Robertson's own Wed-of-Passion-Week
+# section numbering, a more contested harmonization choice this batch
+# declines to adopt -- see batch-t-report.md's own disclosed reasoning),
+# Thursday night (Gethsemane), Friday (Golgotha), Sunday (resurrection,
+# Emmaus), later in Galilee, and the Ascension 40 days after the
+# resurrection (Acts 1:3).
+#
 # places: same bethany-1 as jm_bethany above (the Jerusalem-area Bethany,
 # not "Bethany beyond Jordan").
 [[event]]
 id = "pw_bethany"
 label = "Mary anoints Jesus at Bethany"
-from_year = 30
-to_year = 30
+from_year = 33
+to_year = 33
 places = ["bethany-1"]
 verses = ["JHN.12.1-11"]
+order_key = 10
+robertson_section = "Robertson (1922) §141, \"At the Feast in the House of Simon the Leper Mary of Bethany Anoints Jesus for His Burial\""
+ref_note = "John 12:1-11, Matthew 26:6-13, Mark 14:3-9 all read directly (see event-witnesses.toml); dated per John 12:1's own explicit 'six days before the passover', kept ahead of the triumphal entry rather than Robertson's own Wednesday placement (a real, disclosed harmonization choice -- see batch-t-report.md)"
 [[event]]
 id = "pw_jerusalem_entry"
 label = "The triumphal entry into Jerusalem"
-from_year = 30
-to_year = 30
+from_year = 33
+to_year = 33
 places = ["jerusalem"]
 verses = ["MAT.21.1-11"]
+order_key = 20
+robertson_section = "Robertson (1922) §128b, \"His Triumphal Entry into Jerusalem as the Messiah\""
+ref_note = "Matthew 21:1-11, Mark 11:1-11, Luke 19:29-44, John 12:12-19 all read directly (see event-witnesses.toml)"
+# Batch T requirement 5/7 (req 7's own "chronological-vs-reading-order" test):
+# the SECOND of the two temple cleansings (see jm_temple_cleansing's own
+# comment, further up, for the first) -- narrated by Matthew, Mark, and
+# Luke, but NOT John, who already told his own distinct early-ministry
+# cleansing back in John 2 and does not repeat it here. This is precisely
+# why pw_jerusalem_entry's own chronological FOLLOWING (this event) is NOT
+# "the next pericope in JHN": John 12:19's own immediately-following text
+# (12:20-36, the Greeks seeking Jesus) is a DIFFERENT scene entirely --
+# reading John's own book forward from the triumphal entry never reaches a
+# second temple-cleansing at all, while the graph's own chronological
+# adjacency (Narrative.legs, ETL-validated non-decreasing by
+# (from_year, order_key)) correctly walks straight to it.
+[[event]]
+id = "pw_temple_cleansing"
+label = "Jesus cleanses the temple a second time"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.21.12-13"]
+order_key = 30
+robertson_section = "Robertson (1922) §129, \"The Barren Fig Tree Cursed, and the Second Cleansing of the Temple\""
+ref_note = "Matthew 21:12-13, Mark 11:15-18, Luke 19:45-48 all read directly (see event-witnesses.toml); witnesses scoped to the cleansing itself, not Mark/Matthew's own fig-tree-cursing motif (a related but textually distinct pericope this batch does not separately model)"
 [[event]]
 id = "pw_gethsemane"
 label = "Jesus prays and is arrested at Gethsemane"
-from_year = 30
-to_year = 30
+from_year = 33
+to_year = 33
 places = ["gethsemane"]
 verses = ["MAT.26.36-56"]
+order_key = 40
+robertson_section = "Robertson (1922) §152, \"Going Forth to Gethsemane, Jesus Suffers Long in Agony\""
+ref_note = "Matthew 26:36-56, Mark 14:32-52, Luke 22:39-53, John 18:1-12 all read directly (see event-witnesses.toml)"
 # places: brief flagged "golgotha" as a likely-missing slug (suggesting
 # a merge into jerusalem if so); it resolves directly (31.7784, 35.2298)
 # with verse_links MAT.27.33/MRK.15.22/LUK.23.33/JHN.19.17 -- exactly
@@ -842,24 +923,33 @@ verses = ["MAT.26.36-56"]
 [[event]]
 id = "pw_golgotha"
 label = "The crucifixion at Golgotha"
-from_year = 30
-to_year = 30
+from_year = 33
+to_year = 33
 places = ["golgotha"]
 verses = ["JHN.19.16-30"]
+order_key = 50
+robertson_section = "Robertson (1922) §164, \"The First Three Hours on the Cross\""
+ref_note = "Matthew 27:33-50, Mark 15:22-37, Luke 23:33-46, John 19:17-30 all read directly (see event-witnesses.toml); Robertson's own §164 covers only the first three hours of a longer sequence of Harmony sections -- this app's own coarser 'event' groups the whole crucifixion scene per Gospel, a disclosed widening of Robertson's own narrower section boundary, not a mis-citation"
 [[event]]
 id = "pw_jerusalem_resurrection"
 label = "The empty tomb in Jerusalem"
-from_year = 30
-to_year = 30
+from_year = 33
+to_year = 33
 places = ["jerusalem"]
 verses = ["MAT.28.1-10"]
+order_key = 60
+robertson_section = "Robertson (1922) §171, \"The Visit of the Women to the Tomb of Jesus about Sunrise Sunday Morning and the Message of the Angels about the Empty Tomb\""
+ref_note = "Matthew 28:5-8 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml)"
 [[event]]
 id = "pw_emmaus"
 label = "The road to Emmaus"
-from_year = 30
-to_year = 30
+from_year = 33
+to_year = 33
 places = ["emmaus"]
 verses = ["LUK.24.13-35"]
+order_key = 70
+robertson_section = "Robertson (1922) §176, \"The Appearance to Two Disciples (Cleopas and Another) on the Way to Emmaus\""
+ref_note = "Luke 24:13-35 read directly; Robertson also lists Mark 16:12-13 (a two-verse mention in Mark's disputed longer ending) but this event is curated single-witness (Luke alone) -- requirement 4's own 'no parallel framing when n=1' case"
 # places: brief guessed "galilee", but geo ancient.jsonl collides into
 # "Galilee 1"/"Galilee 2" (identical coords, 32.7600, 35.5270).
 # galilee-1's verse_links include MAT.28.16, this event's verse (68
@@ -868,17 +958,23 @@ verses = ["LUK.24.13-35"]
 [[event]]
 id = "pw_galilee"
 label = "Jesus commissions the disciples in Galilee"
-from_year = 30
-to_year = 30
+from_year = 33
+to_year = 33
 places = ["galilee-1"]
 verses = ["MAT.28.16-20"]
+order_key = 80
+robertson_section = "Robertson (1922) §181, \"The Appearance to about Five Hundred on an Appointed Mountain in Galilee, and a Commission Given\""
+ref_note = "Matthew 28:16-20, Mark 16:15-18 read directly (see event-witnesses.toml); Robertson also lists 1 Corinthians 15:6, outside this app's Gospels+Acts witness scope"
 [[event]]
 id = "pw_mount_of_olives"
 label = "The ascension from the Mount of Olives"
-from_year = 30
-to_year = 30
+from_year = 33
+to_year = 33
 places = ["mount-of-olives"]
 verses = ["ACT.1.9-12"]
+order_key = 90
+robertson_section = "Robertson (1922) §184, \"The Last Appearance and the Ascension\""
+ref_note = "Acts 1:9-12, Luke 24:50-53 read directly (see event-witnesses.toml); Robertson also lists Mark 16:19-20 (Mark's own disputed longer ending), omitted here -- Luke/Acts (same author) already give two solid, undisputed witnesses"
 
 # --- Paul's Voyage to Rome ---
 [[event]]

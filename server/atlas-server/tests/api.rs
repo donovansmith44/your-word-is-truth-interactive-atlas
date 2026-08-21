@@ -198,22 +198,15 @@ async fn verse_chapter_place_and_404() {
     assert_eq!(events[0]["places"], serde_json::json!(["jericho"]));
     assert!(events[0]["verse_groups"].as_array().unwrap().iter().any(|g| g["book"] == "JOS" && g["chapter"] == 6));
 
-    // Batch N: JOS.6.20's own event (e3, "Jericho falls") is conquest's
-    // third leg (e1 Gilgal, e2 Jericho besieged, e3 Jericho falls, e4 Ai
-    // defeated) -- mid-chain, so this position carries BOTH a prior (e2)
-    // and a following (e4), and its own verse_groups equal e3's real ones
-    // already asserted via `events[0]` above (same to_scene_event call).
-    let narrative_positions = body["narrative_positions"].as_array().unwrap();
-    assert_eq!(narrative_positions.len(), 1, "{body}");
-    assert_eq!(narrative_positions[0]["narrative_id"], "conquest");
-    assert_eq!(narrative_positions[0]["narrative_name"], "The Conquest");
-    assert_eq!(narrative_positions[0]["event_id"], "e3");
-    assert_eq!(narrative_positions[0]["event_label"], "Jericho falls");
-    assert_eq!(narrative_positions[0]["prior"]["id"], "e2");
-    assert_eq!(narrative_positions[0]["prior"]["label"], "Jericho besieged");
-    assert_eq!(narrative_positions[0]["prior"]["places"], serde_json::json!(["jericho"]));
-    assert_eq!(narrative_positions[0]["following"]["id"], "e4");
-    assert_eq!(narrative_positions[0]["following"]["label"], "Ai defeated");
+    // Batch T requirement 3 ("verse popover: event membership replaces
+    // prev/next"): `VerseDetailOut.narrative_positions` is RETIRED --
+    // JOS.6.20's own chronological PRIOR (e2)/FOLLOWING (e4) now live
+    // entirely on the EVENT node (`GET /api/narrative/event/e3`, see
+    // `narrative_event_positions_endpoint`), never on the verse response.
+    // The verse's own "EVENT" membership (naming e3, "Jericho falls," as
+    // explorable) is exactly the PRE-EXISTING `events` field already
+    // asserted above (`events[0]`) -- no new wire field needed for that
+    // half, so there is nothing further to assert here.
 
     let cross_refs = body["cross_refs"].as_array().unwrap();
     assert_eq!(cross_refs.len(), 3);
@@ -272,6 +265,27 @@ async fn verse_chapter_place_and_404() {
     assert_eq!(st, 404);
     assert_eq!(body["error"]["code"], "not_found");
 
+    // --- /api/event (Batch T requirement 4: the EVENT node's own rich fetch) ---
+    let (st, body) = call(&app, "/api/event/e3").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["id"], "e3");
+    assert_eq!(body["title"], "Jericho falls");
+    assert_eq!(body["when"]["from_year"], -1405);
+    assert_eq!(body["places"], serde_json::json!([{"id": "jericho", "name": "Jericho"}]));
+    // No curated `witnesses` for e3 (demo_fixture's own Task-3-era events
+    // predate this batch) -- the single-implicit-witness synthesis
+    // (`scene::witnesses_for`) still resolves exactly ONE witness, grouped
+    // from e3's own `verses` (all JOS.6, one book) -- requirement 4's own
+    // "single-witness events show the one passage" case.
+    let witnesses = body["witnesses"].as_array().unwrap();
+    assert_eq!(witnesses.len(), 1, "{body}");
+    assert_eq!(witnesses[0]["book"], "JOS");
+    assert!(body.get("robertson_section").is_none(), "{body}");
+
+    let (st, body) = call(&app, "/api/event/does-not-exist").await;
+    assert_eq!(st, 404);
+    assert_eq!(body["error"]["code"], "not_found");
+
     // --- /api/place -----------------------------------------------------
     let (st, body) = call(&app, "/api/place/jericho").await;
     assert_eq!(st, 200);
@@ -288,61 +302,42 @@ async fn verse_chapter_place_and_404() {
     assert_eq!(body["error"]["code"], "not_found");
 }
 
-/// Batch N ("narratives as first-class graph structure"): the verse-keyed
-/// (`VerseDetailOut.narrative_positions`) and event-id-keyed
-/// (`GET /api/narrative/event/{id}`) lookups end to end, through the real
-/// HTTP handlers -- proving they AGREE (the one-graph property, at the wire
-/// level this time; `atlas_core::narrative`'s own unit tests already prove
-/// it at the pure-function level).
+/// Batch N ("narratives as first-class graph structure"), retired
+/// verse-keyed half per Batch T requirement 3 ("verse popover: event
+/// membership replaces prev/next" -- `VerseDetailOut.narrative_positions`
+/// is GONE; see `verse_chapter_place_and_404`'s own updated assertions for
+/// the verse popover's new "EVENT" membership, which reads the
+/// pre-existing `events` field instead). The event-id-keyed endpoint itself
+/// (`GET /api/narrative/event/{id}`) is UNCHANGED plumbing -- still the
+/// EVENT node's own PRIOR/FOLLOWING source (`GET /api/event/{id}` is a
+/// separate, richer fetch for the rest of that node's own content) -- this
+/// test now exercises it alone, end to end through the real HTTP handler.
 #[tokio::test]
-async fn narrative_positions_verse_and_event_lookups_agree() {
+async fn narrative_event_positions_endpoint() {
     let app = app();
 
-    // A verse whose only event (e5, Sarah buried at Machpelah) is a leg of
-    // NO narrative -- the "non-narrative verse" case: present, empty array,
-    // never an omitted key or a 404.
-    let (st, body) = call(&app, "/api/verse/GEN.23.1").await;
+    // e2 ("Jericho besieged") is a leg of BOTH conquest (mid-chain:
+    // prior=e1, following=e3) AND patriarchs-demo (its OWN only leg:
+    // neither) -- both positions come back from ONE event-id-keyed call,
+    // "an event in multiple narratives returns all positions."
+    let (st, body) = call(&app, "/api/narrative/event/e2").await;
     assert_eq!(st, 200);
-    assert_eq!(body["narrative_positions"], serde_json::json!([]), "{body}");
+    let positions = body.as_array().unwrap().clone();
+    assert_eq!(positions.len(), 2, "{body}");
 
-    // JOS.6.1/JOS.6.2 both belong to e2 ("Jericho besieged"), a leg of BOTH
-    // conquest (mid-chain: prior=e1, following=e3) AND patriarchs-demo (its
-    // OWN only leg: neither). Both positions must come back from the SAME
-    // verse-detail response -- "a verse in multiple narratives returns all
-    // positions," verbatim.
-    let (st, body) = call(&app, "/api/verse/JOS.6.1").await;
-    assert_eq!(st, 200);
-    let via_verse = body["narrative_positions"].as_array().unwrap().clone();
-    assert_eq!(via_verse.len(), 2, "{body}");
-
-    let conquest = via_verse.iter().find(|p| p["narrative_id"] == "conquest").expect("e2 is a conquest leg");
+    let conquest = positions.iter().find(|p| p["narrative_id"] == "conquest").expect("e2 is a conquest leg");
     assert_eq!(conquest["event_id"], "e2");
     assert_eq!(conquest["event_label"], "Jericho besieged");
     assert_eq!(conquest["prior"]["id"], "e1");
     assert_eq!(conquest["prior"]["label"], "Camp at Gilgal");
     assert_eq!(conquest["following"]["id"], "e3");
 
-    let patriarchs = via_verse.iter().find(|p| p["narrative_id"] == "patriarchs-demo").expect("e2 is patriarchs-demo's own leg");
+    let patriarchs = positions.iter().find(|p| p["narrative_id"] == "patriarchs-demo").expect("e2 is patriarchs-demo's own leg");
     assert_eq!(patriarchs["narrative_name"], "Patriarchs (demo)");
     // Conditional presence, no disabled stub: patriarchs-demo's ONLY leg has
     // neither a prior nor a following -- the keys are ABSENT, not null.
     assert!(patriarchs.get("prior").is_none(), "{patriarchs}");
     assert!(patriarchs.get("following").is_none(), "{patriarchs}");
-
-    // The event-id-keyed lookup, queried directly by e2's own id (exactly
-    // what a PRIOR/FOLLOWING traversal click would carry -- never a
-    // re-searched verse), must return the SAME two positions.
-    let (st, body) = call(&app, "/api/narrative/event/e2").await;
-    assert_eq!(st, 200);
-    let via_event = body.as_array().unwrap().clone();
-    assert_eq!(
-        via_event.len(),
-        via_verse.len(),
-        "verse-keyed and event-id-keyed lookups must agree on the number of positions"
-    );
-    for p in &via_verse {
-        assert!(via_event.contains(p), "event-id lookup missing a position the verse-keyed lookup found: {p}\nevent-id lookup returned: {via_event:?}");
-    }
 
     // A real event that is a leg of no narrative -- 200, empty array (the
     // "no results" case), not a 404 (the identifier itself is real).

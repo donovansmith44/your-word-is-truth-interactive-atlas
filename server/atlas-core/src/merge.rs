@@ -222,6 +222,7 @@ mod tests {
             when: TimeRange::new(1, 1).unwrap(),
             places: places.iter().map(|s| s.to_string()).collect(),
             verses: vec![],
+            ..Default::default()
         }
     }
 

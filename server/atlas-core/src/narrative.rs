@@ -219,6 +219,7 @@ mod tests {
                 when: crate::time::TimeRange::new(-1000, -1000).unwrap(),
                 places: vec!["p1".into()],
                 verses: vec![], // the case under test
+                ..Default::default()
             },
             Event {
                 id: "silent-2".into(),
@@ -226,6 +227,7 @@ mod tests {
                 when: crate::time::TimeRange::new(-999, -999).unwrap(),
                 places: vec!["p1".into()],
                 verses: vec![],
+                ..Default::default()
             },
         ];
         let narratives = vec![Narrative {

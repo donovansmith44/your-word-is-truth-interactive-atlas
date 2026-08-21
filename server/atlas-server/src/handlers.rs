@@ -10,7 +10,7 @@ use axum::extract::{Path, Query, State};
 use axum::Json;
 use serde::Serialize;
 
-use atlas_core::data::{AtlasData, BookMeta, CanonBook, Era, Landmark, Narrative};
+use atlas_core::data::{AtlasData, BookMeta, CanonBook, Era, Event, Landmark, Narrative};
 use atlas_core::history::{resolve_blurb, resolve_display_name};
 use atlas_core::refs::{ScriptureRef, VerseId};
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene, to_scene_event};
@@ -216,6 +216,27 @@ pub struct PlaceRefOut {
     pub name: String,
 }
 
+/// Batch T requirement 5: one resolved pericope heading, folded onto its own
+/// anchor verse (`VerseOut.heading`) -- the SAME "fold onto the already-
+/// shared fetch" precedent `VerseDetailOut.catechism`/`.events` already
+/// establish, here for the CHAPTER fetch instead of the verse-detail one
+/// (a reader rendering a whole chapter needs to know, per verse, whether a
+/// heading belongs above it -- a second per-verse round trip would be
+/// absurd). `event_id` is what a click opens (a new `EventNode`, client-side);
+/// `title` is rendered directly, so the reader never needs a second fetch
+/// just to show the heading text itself.
+#[derive(Debug, Serialize)]
+pub struct HeadingOut {
+    pub event_id: String,
+    pub title: String,
+}
+
+impl From<&atlas_core::data::HeadingEntry> for HeadingOut {
+    fn from(h: &atlas_core::data::HeadingEntry) -> Self {
+        HeadingOut { event_id: h.event_id.clone(), title: h.title.clone() }
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct VerseOut {
     pub verse: u16,
@@ -229,6 +250,13 @@ pub struct VerseOut {
     /// other "always an array" field in this app's own wire (e.g.
     /// `Scene.quiet_places`).
     pub places: Vec<PlaceRefOut>,
+    /// Batch T requirement 5: this verse's own pericope heading, when it is
+    /// a heading ANCHOR (`AtlasData::heading_for_verse`) -- omitted (not
+    /// null), matching `PolityOut.transition`/`.fall`'s own conditional-
+    /// presence convention, since the overwhelming majority of verses never
+    /// anchor a heading at all.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub heading: Option<HeadingOut>,
 }
 
 #[derive(Debug, Serialize)]
@@ -280,7 +308,8 @@ pub async fn chapter(State(data): State<Arc<AtlasData>>, Path(cref): Path<String
                 .filter_map(|pid| data.place_by_id(pid))
                 .map(|p| PlaceRefOut { id: p.id.clone(), name: p.name.clone() })
                 .collect();
-            verses.push(VerseOut { verse: v, text: text.clone(), places });
+            let heading = data.heading_for_verse(&key).map(HeadingOut::from);
+            verses.push(VerseOut { verse: v, text: text.clone(), places, heading });
         }
     }
 
@@ -362,21 +391,19 @@ pub struct VerseDetailOut {
     /// CLIENT side (no section at all when empty), matching every other
     /// "always an array" field in this app's own wire.
     pub catechism: Vec<CatechismRefOut>,
-    /// Batch N ("narratives as first-class graph structure"): this verse's
-    /// own position(s) in the narrative graph, via
-    /// `atlas_core::narrative::positions_for_events` -- folded into this
-    /// ALREADY-shared verse-detail fetch for the EXACT same "one fetch, not
-    /// N" reason `catechism` above already documents (the reader popover's
-    /// PRIOR EVENT / FOLLOWING EVENT sections read this off the SAME
-    /// memoized `AtlasClient.Verse` call every other Verse-node section
-    /// shares). Always present, possibly empty (most verses touch no
-    /// narrative) -- conditional presence lives client-side, same
-    /// convention as `catechism`. Requirement 1's OWN OTHER half --
-    /// event-id-keyed traversal, so a PRIOR/FOLLOWING click never has to
-    /// re-search verses -- is `GET /api/narrative/event/{id}` below,
-    /// mirroring `catechism`'s OWN two-tier precedent exactly (verse-keyed
-    /// via this field, id-keyed via `GET /api/catechism/item/{id}`).
-    pub narrative_positions: Vec<NarrativePositionOut>,
+    // Batch T requirement 3 ("verse popover: event membership replaces
+    // prev/next"): Batch N's own `narrative_positions` field (chronological
+    // PRIOR/FOLLOWING, verse-keyed) is RETIRED here, cleanly -- verse-level
+    // traversal no longer exists (see CONTRACT.md's own retirement note).
+    // The PRE-EXISTING `events` field above (`Vec<VerseEventOut>`, id +
+    // label + verse_groups + places, populated the same way since before
+    // this batch) is what the client's own NEW "EVENT" section reads
+    // instead: it already names every EVENT-kind PASSAGE citing this verse,
+    // which is exactly "event membership" -- no new wire field needed for
+    // that half. Chronological PRIOR/FOLLOWING now lives entirely on the
+    // EVENT node (`GET /api/narrative/event/{id}`, unchanged plumbing,
+    // called by a new client-side caller -- see `handlers::event` below for
+    // the richer id-keyed EVENT fetch that node also uses).
 }
 
 /// Batch N: one event ADJACENT to a `NarrativePositionOut` (its own PRIOR or
@@ -515,13 +542,6 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
     let catechism: Vec<CatechismRefOut> =
         data.catechism_items_for_span(&ScriptureRef::Verse(vid)).into_iter().map(CatechismRefOut::from).collect();
 
-    // Batch N: this verse's own narrative position(s) -- shares
-    // `events_for_verse` with the `events` field just above (already
-    // computed the identifier list; `positions_for_events` takes it
-    // directly, no second reverse-index lookup).
-    let narrative_positions: Vec<NarrativePositionOut> =
-        atlas_core::narrative::positions_for_events(&data, data.events_for_verse(&canonical)).into_iter().map(Into::into).collect();
-
     Ok(Json(VerseDetailOut {
         sref: canonical,
         text,
@@ -534,19 +554,23 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
         events,
         cross_refs,
         catechism,
-        narrative_positions,
     }))
 }
 
 /// `GET /api/narrative/event/{id}` (Batch N requirement 1's own "endpoint/
-/// payload also supports event-id lookup" half): every narrative position
-/// the given event id occupies -- mirrors `GET /api/catechism/item/{id}`'s
-/// own precedent exactly (an id-keyed follow-on lookup alongside a
-/// verse-keyed field on the already-shared verse payload). Reached by the
-/// client ONLY with an event id already handed back by a prior response
-/// (this endpoint's own, or `VerseDetailOut.narrative_positions`'s own
-/// `prior`/`following` -- never typed by a user), so an id that names no
-/// real event at all is a genuine "not found," same `place`/`catechism_item`
+/// payload also supports event-id lookup" half; Batch T requirement 2: the
+/// resolver itself is UNCHANGED -- `positions_for_events`'s own leg-array-
+/// adjacency walk was already exactly "chronologically adjacent given a
+/// validated leg order," so no new logic was needed; what changed is WHO
+/// calls this endpoint -- `client/Explore/EventNode.cs` replaces the
+/// retired `NarrativeEventNode.cs` as its own caller -- and that ETL now
+/// ALSO validates same-year legs via `Event::order_key`, not just
+/// `when.from_year`, see `atlas_etl::validate::run`): every narrative
+/// position the given event id occupies -- mirrors `GET
+/// /api/catechism/item/{id}`'s own precedent exactly (an id-keyed follow-on
+/// lookup). Reached by the client ONLY with an event id already handed back
+/// by a prior response (never typed by a user), so an id that names no real
+/// event at all is a genuine "not found," same `place`/`catechism_item`
 /// precedent as every other exact-identifier lookup in this file;
 /// ruling-3-policy still applies one layer in -- a REAL event that simply
 /// isn't a leg of any narrative 200s with an empty array (the "no results"
@@ -562,6 +586,85 @@ pub async fn narrative_event_positions(
     }
     let out = atlas_core::narrative::positions_for_events(&data, std::slice::from_ref(&id)).into_iter().map(Into::into).collect();
     Ok(Json(out))
+}
+
+/// Batch T requirement 4: one EVENT-kind PASSAGE's own resolved place --
+/// id (to open a `PlaceNode`/target the map) + display name (so the client
+/// never needs a second lookup just to label an explorable place row).
+#[derive(Debug, Serialize)]
+pub struct EventPlaceOut {
+    pub id: String,
+    pub name: String,
+}
+
+/// Batch T requirement 4: one resolved witness -- "book, verse-range,
+/// translation-mapped," the owner's own words verbatim, ALREADY resolved to
+/// this app's one compiled translation (`atlas_core::translation::resolve`,
+/// real fail-loud lookup, not a silent default) and grouped via the SAME
+/// `verse_groups_for` every other verse list on this wire already uses
+/// (`atlas_core::scene::witnesses_for` -- one function, so a heading's own
+/// anchor verse and this section's own witness list can never disagree).
+#[derive(Debug, Serialize)]
+pub struct EventWitnessOut {
+    pub book: String,
+    pub verse_groups: Vec<VerseGroup>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ref_note: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub robertson_section: Option<String>,
+}
+
+impl From<atlas_core::scene::ResolvedWitness> for EventWitnessOut {
+    fn from(w: atlas_core::scene::ResolvedWitness) -> Self {
+        EventWitnessOut { book: w.book, verse_groups: w.verse_groups, ref_note: w.ref_note, robertson_section: w.robertson_section }
+    }
+}
+
+/// `GET /api/event/{id}`'s own wire shape (Batch T requirement 4, "EVENT
+/// node popover"): `title` (this event's own `Event::label`), `when`, every
+/// resolved place, every resolved witness (ALWAYS >=1 -- see
+/// `scene::witnesses_for`'s own doc comment for the single-implicit-witness
+/// synthesis; requirement 4's "single-witness events show the one passage,
+/// no parallel framing when n=1" is a CLIENT-side rendering decision keyed
+/// off `witnesses.len()`, not a server-side omission), and provenance
+/// (`robertson_section`/`ref_note`, each omitted, not null, when this
+/// event's own date/grouping needed no note beyond the other).
+#[derive(Debug, Serialize)]
+pub struct EventDetailOut {
+    pub id: String,
+    pub title: String,
+    pub when: TimeRange,
+    pub places: Vec<EventPlaceOut>,
+    pub witnesses: Vec<EventWitnessOut>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub robertson_section: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ref_note: Option<String>,
+}
+
+/// `GET /api/event/{id}` (Batch T requirement 4): the EVENT node's own rich
+/// fetch -- id-keyed, same exact-identifier "unknown id -> 404 not_found"
+/// precedent `narrative_event_positions`/`catechism_item`/`place` already
+/// set (never a user-typed id; always one a prior response, or a reader
+/// heading, already handed back). Reads `data.events` directly (not the
+/// scene/narrative machinery) since this is a passage's own STANDALONE
+/// content -- title/date/places/witnesses -- not anything scoped to a
+/// window or a narrative position.
+pub async fn event(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -> Result<Json<EventDetailOut>, ApiError> {
+    let e: &Event = data.event_by_id(&id).ok_or_else(|| ApiError::not_found("event"))?;
+
+    let places = e.places.iter().filter_map(|pid| data.place_by_id(pid)).map(|p| EventPlaceOut { id: p.id.clone(), name: p.name.clone() }).collect();
+    let witnesses = atlas_core::scene::witnesses_for(e).into_iter().map(EventWitnessOut::from).collect();
+
+    Ok(Json(EventDetailOut {
+        id: e.id.clone(),
+        title: e.label.clone(),
+        when: e.when,
+        places,
+        witnesses,
+        robertson_section: e.robertson_section.clone(),
+        ref_note: e.ref_note.clone(),
+    }))
 }
 
 /// `GET /api/catechism/{sref}` (Batch F, "verse -> citing catechism items

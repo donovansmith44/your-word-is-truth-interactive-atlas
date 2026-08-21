@@ -42,7 +42,12 @@
       "GEN.2.1",
       "GEN.2.2",
       "GEN.2.3"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-2",
@@ -75,7 +80,12 @@
       "GEN.2.23",
       "GEN.2.24",
       "GEN.2.25"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-3",
@@ -110,7 +120,12 @@
       "GEN.3.22",
       "GEN.3.23",
       "GEN.3.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-4",
@@ -124,7 +139,12 @@
       "GEN.5.3",
       "GEN.5.4",
       "GEN.5.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-5",
@@ -145,7 +165,12 @@
       "GEN.4.8",
       "GEN.4.9",
       "GEN.4.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-6",
@@ -162,7 +187,12 @@
       "GEN.4.14",
       "GEN.4.15",
       "GEN.4.16"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-7",
@@ -177,7 +207,12 @@
       "GEN.5.3",
       "LUK.3.38",
       "1CH.1.1"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-8",
@@ -191,7 +226,12 @@
       "GEN.5.6",
       "GEN.5.7",
       "GEN.5.8"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-9",
@@ -205,7 +245,12 @@
       "GEN.4.26",
       "GEN.5.6",
       "1CH.1.1"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-10",
@@ -219,7 +264,12 @@
       "GEN.5.9",
       "GEN.5.10",
       "GEN.5.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-11",
@@ -233,7 +283,12 @@
       "GEN.5.9",
       "1CH.1.2",
       "LUK.3.37"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-12",
@@ -247,7 +302,12 @@
       "GEN.5.12",
       "GEN.5.13",
       "GEN.5.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-13",
@@ -259,7 +319,12 @@
     "places": [],
     "verses": [
       "GEN.5.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-14",
@@ -273,7 +338,12 @@
       "GEN.5.15",
       "GEN.5.16",
       "GEN.5.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-15",
@@ -285,7 +355,12 @@
     "places": [],
     "verses": [
       "GEN.5.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-16",
@@ -299,7 +374,12 @@
       "GEN.5.18",
       "GEN.5.19",
       "GEN.5.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-17",
@@ -311,7 +391,12 @@
     "places": [],
     "verses": [
       "GEN.5.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-18",
@@ -326,7 +411,12 @@
       "GEN.5.22",
       "GEN.5.23",
       "GEN.5.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-19",
@@ -338,7 +428,12 @@
     "places": [],
     "verses": [
       "GEN.5.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-20",
@@ -352,7 +447,12 @@
       "GEN.5.25",
       "GEN.5.26",
       "GEN.5.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-21",
@@ -364,7 +464,12 @@
     "places": [],
     "verses": [
       "GEN.5.25"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-22",
@@ -379,7 +484,12 @@
       "GEN.5.30",
       "GEN.5.31",
       "GEN.5.29"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-23",
@@ -391,7 +501,12 @@
     "places": [],
     "verses": [
       "GEN.5.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-24",
@@ -404,7 +519,12 @@
     "verses": [
       "GEN.5.24",
       "HEB.11.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-25",
@@ -416,7 +536,12 @@
     "places": [],
     "verses": [
       "GEN.5.8"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-26",
@@ -429,7 +554,12 @@
     "verses": [
       "GEN.5.28",
       "GEN.5.29"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-27",
@@ -444,7 +574,12 @@
       "GEN.7.6",
       "GEN.9.28",
       "GEN.9.29"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-28",
@@ -456,7 +591,12 @@
     "places": [],
     "verses": [
       "GEN.5.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-29",
@@ -468,7 +608,12 @@
     "places": [],
     "verses": [
       "GEN.5.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-30",
@@ -480,7 +625,12 @@
     "places": [],
     "verses": [
       "GEN.5.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-31",
@@ -492,7 +642,12 @@
     "places": [],
     "verses": [
       "GEN.5.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-32",
@@ -510,7 +665,12 @@
       "GEN.6.3",
       "GEN.6.2",
       "GEN.6.1"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-33",
@@ -522,7 +682,12 @@
     "places": [],
     "verses": [
       "GEN.5.32"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-34",
@@ -535,7 +700,12 @@
     "verses": [
       "GEN.11.10",
       "GEN.11.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-35",
@@ -566,7 +736,12 @@
       "GEN.7.4",
       "GEN.6.8",
       "GEN.7.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-36",
@@ -578,7 +753,12 @@
     "places": [],
     "verses": [
       "GEN.5.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-37",
@@ -590,7 +770,12 @@
     "places": [],
     "verses": [
       "GEN.5.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-38",
@@ -613,7 +798,12 @@
       "GEN.7.15",
       "GEN.7.16",
       "GEN.7.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-39",
@@ -664,7 +854,12 @@
       "GEN.8.17",
       "GEN.8.18",
       "GEN.8.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-40",
@@ -682,7 +877,12 @@
       "GEN.7.22",
       "GEN.7.23",
       "GEN.7.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-41",
@@ -709,7 +909,12 @@
       "GEN.8.12",
       "GEN.8.13",
       "GEN.8.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-42",
@@ -727,7 +932,12 @@
       "GEN.8.17",
       "GEN.8.18",
       "GEN.8.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-43",
@@ -758,7 +968,12 @@
       "GEN.9.15",
       "GEN.9.16",
       "GEN.9.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-44",
@@ -777,7 +992,12 @@
       "GEN.9.25",
       "GEN.9.26",
       "GEN.9.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-45",
@@ -789,7 +1009,12 @@
     "places": [],
     "verses": [
       "GEN.11.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-46",
@@ -802,7 +1027,12 @@
     "verses": [
       "GEN.11.12",
       "GEN.11.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-47",
@@ -814,7 +1044,12 @@
     "places": [],
     "verses": [
       "GEN.11.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-48",
@@ -827,7 +1062,12 @@
     "verses": [
       "GEN.11.14",
       "GEN.11.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-49",
@@ -839,7 +1079,12 @@
     "places": [],
     "verses": [
       "GEN.11.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-50",
@@ -852,7 +1097,12 @@
     "verses": [
       "GEN.11.16",
       "GEN.11.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-51",
@@ -864,7 +1114,12 @@
     "places": [],
     "verses": [
       "GEN.11.16"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-52",
@@ -877,7 +1132,12 @@
     "verses": [
       "GEN.11.18",
       "GEN.11.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-53",
@@ -899,7 +1159,12 @@
       "GEN.11.7",
       "GEN.11.8",
       "GEN.11.9"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-54",
@@ -911,7 +1176,12 @@
     "places": [],
     "verses": [
       "GEN.11.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-55",
@@ -924,7 +1194,12 @@
     "verses": [
       "GEN.11.20",
       "GEN.11.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-56",
@@ -936,7 +1211,12 @@
     "places": [],
     "verses": [
       "GEN.11.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-57",
@@ -949,7 +1229,12 @@
     "verses": [
       "GEN.11.22",
       "GEN.11.23"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-58",
@@ -961,7 +1246,12 @@
     "places": [],
     "verses": [
       "GEN.11.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-59",
@@ -974,7 +1264,12 @@
     "verses": [
       "GEN.11.24",
       "GEN.11.25"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-60",
@@ -986,7 +1281,12 @@
     "places": [],
     "verses": [
       "GEN.11.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-61",
@@ -1000,7 +1300,12 @@
       "GEN.11.26",
       "GEN.11.28",
       "GEN.11.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ab_ur",
@@ -1015,7 +1320,12 @@
     "verses": [
       "GEN.11.28",
       "GEN.11.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ab_haran",
@@ -1031,7 +1341,12 @@
       "GEN.11.31",
       "GEN.12.1",
       "GEN.12.4"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ab_shechem",
@@ -1046,7 +1361,12 @@
     "verses": [
       "GEN.12.6",
       "GEN.12.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ab_bethel",
@@ -1060,7 +1380,12 @@
     ],
     "verses": [
       "GEN.12.8"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ab_egypt",
@@ -1081,7 +1406,12 @@
       "GEN.12.18",
       "GEN.12.19",
       "GEN.12.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ab_hebron",
@@ -1096,7 +1426,12 @@
     "verses": [
       "GEN.13.1",
       "GEN.13.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-62",
@@ -1108,7 +1443,12 @@
     "places": [],
     "verses": [
       "GEN.11.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-63",
@@ -1120,7 +1460,12 @@
     "places": [],
     "verses": [
       "GEN.11.25"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-64",
@@ -1132,7 +1477,12 @@
     "places": [],
     "verses": [
       "GEN.9.29"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-65",
@@ -1147,7 +1497,12 @@
     "verses": [
       "GEN.11.26",
       "GEN.11.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-66",
@@ -1160,7 +1515,12 @@
     "verses": [
       "GEN.21.5",
       "GEN.25.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-67",
@@ -1176,7 +1536,12 @@
       "JDG.10.3",
       "JDG.10.4",
       "JDG.10.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-68",
@@ -1188,7 +1553,12 @@
     "places": [],
     "verses": [
       "GEN.11.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-69",
@@ -1200,7 +1570,12 @@
     "places": [],
     "verses": [
       "GEN.11.23"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "jj_beersheba",
@@ -1214,7 +1589,12 @@
     ],
     "verses": [
       "GEN.28.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "jj_bethel_dream",
@@ -1236,7 +1616,12 @@
       "GEN.28.17",
       "GEN.28.18",
       "GEN.28.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "jj_haran",
@@ -1263,7 +1648,12 @@
       "GEN.29.12",
       "GEN.29.13",
       "GEN.29.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-70",
@@ -1277,7 +1667,12 @@
     ],
     "verses": [
       "GEN.11.32"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-71",
@@ -1307,7 +1702,12 @@
       "GEN.12.9",
       "GEN.11.32",
       "GEN.11.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-72",
@@ -1321,7 +1721,12 @@
       "GEN.12.1",
       "GEN.12.2",
       "GEN.12.3"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-73",
@@ -1345,7 +1750,12 @@
       "GEN.12.18",
       "GEN.12.19",
       "GEN.12.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-74",
@@ -1360,7 +1770,12 @@
     "verses": [
       "EXO.12.40",
       "GAL.3.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-75",
@@ -1394,7 +1809,12 @@
       "GEN.13.16",
       "GEN.13.17",
       "GEN.13.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-76",
@@ -1411,7 +1831,12 @@
       "GEN.16.14",
       "GEN.16.15",
       "GEN.16.16"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-77",
@@ -1424,7 +1849,12 @@
     "verses": [
       "GEN.16.16",
       "GEN.25.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "jj_mahanaim",
@@ -1439,7 +1869,12 @@
     "verses": [
       "GEN.32.1",
       "GEN.32.2"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "jj_peniel",
@@ -1462,7 +1897,12 @@
       "GEN.32.29",
       "GEN.32.30",
       "GEN.32.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "jj_shechem",
@@ -1476,7 +1916,12 @@
     ],
     "verses": [
       "GEN.33.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-78",
@@ -1488,7 +1933,12 @@
     "places": [],
     "verses": [
       "GEN.11.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "jj_bethel_return",
@@ -1508,7 +1958,12 @@
       "GEN.35.5",
       "GEN.35.6",
       "GEN.35.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "jj_hebron",
@@ -1522,7 +1977,12 @@
     ],
     "verses": [
       "GEN.35.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "je_hebron",
@@ -1536,7 +1996,12 @@
     ],
     "verses": [
       "GEN.37.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "je_dothan",
@@ -1561,7 +2026,12 @@
       "GEN.37.26",
       "GEN.37.27",
       "GEN.37.28"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-79",
@@ -1618,7 +2088,12 @@
       "GEN.19.27",
       "GEN.19.28",
       "GEN.19.29"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "je_egypt_sold",
@@ -1633,7 +2108,12 @@
     "verses": [
       "GEN.37.36",
       "GEN.39.1"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-80",
@@ -1646,7 +2126,12 @@
     "verses": [
       "GEN.17.19",
       "GEN.21.3"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-81",
@@ -1660,7 +2145,12 @@
       "GEN.17.19",
       "GEN.21.3",
       "GEN.35.28"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "je_egypt_ruler",
@@ -1679,7 +2169,12 @@
       "GEN.41.44",
       "GEN.41.45",
       "GEN.41.46"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-82",
@@ -1691,7 +2186,12 @@
     "places": [],
     "verses": [
       "GEN.11.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "je_beersheba",
@@ -1709,7 +2209,12 @@
       "GEN.46.3",
       "GEN.46.4",
       "GEN.46.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "je_goshen",
@@ -1730,7 +2235,12 @@
       "GEN.46.33",
       "GEN.46.34",
       "GEN.47.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-83",
@@ -1742,7 +2252,12 @@
     "places": [],
     "verses": [
       "GEN.25.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-84",
@@ -1754,7 +2269,12 @@
     "places": [],
     "verses": [
       "GEN.11.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-85",
@@ -1768,7 +2288,12 @@
       "GEN.25.25",
       "GEN.25.24",
       "GEN.25.26"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-86",
@@ -1783,7 +2308,12 @@
       "GEN.25.24",
       "GEN.25.26",
       "GEN.49.33"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-87",
@@ -1810,7 +2340,12 @@
       "GEN.10.10",
       "GEN.10.11",
       "GEN.10.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-88",
@@ -1824,7 +2359,12 @@
     ],
     "verses": [
       "GEN.25.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-89",
@@ -1836,7 +2376,12 @@
     "places": [],
     "verses": [
       "GEN.11.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-90",
@@ -1848,7 +2393,12 @@
     "places": [],
     "verses": [
       "GEN.25.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-91",
@@ -1860,7 +2410,12 @@
     "places": [],
     "verses": [
       "GEN.29.32"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-92",
@@ -1872,7 +2427,12 @@
     "places": [],
     "verses": [
       "GEN.29.33"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-93",
@@ -1884,7 +2444,12 @@
     "places": [],
     "verses": [
       "GEN.29.34"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-94",
@@ -1896,7 +2461,12 @@
     "places": [],
     "verses": [
       "GEN.29.35"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-95",
@@ -1908,7 +2478,12 @@
     "places": [],
     "verses": [
       "GEN.30.6"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-96",
@@ -1921,7 +2496,12 @@
     "verses": [
       "GEN.30.7",
       "GEN.30.8"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-97",
@@ -1934,7 +2514,12 @@
     "verses": [
       "GEN.30.10",
       "GEN.30.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-98",
@@ -1947,7 +2532,12 @@
     "verses": [
       "GEN.30.12",
       "GEN.30.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-99",
@@ -1960,7 +2550,12 @@
     "verses": [
       "GEN.30.17",
       "GEN.30.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-100",
@@ -1973,7 +2568,12 @@
     "verses": [
       "GEN.30.19",
       "GEN.30.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-101",
@@ -1985,7 +2585,12 @@
     "places": [],
     "verses": [
       "GEN.30.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-102",
@@ -2000,7 +2605,12 @@
     "verses": [
       "GEN.30.23",
       "GEN.30.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-103",
@@ -2016,7 +2626,12 @@
       "GEN.30.23",
       "GEN.30.24",
       "GEN.50.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-104",
@@ -2041,7 +2656,12 @@
       "GEN.35.25",
       "GEN.35.26",
       "GEN.35.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-105",
@@ -2088,7 +2708,12 @@
       "GEN.37.34",
       "GEN.37.35",
       "GEN.37.36"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-106",
@@ -2100,7 +2725,12 @@
     "places": [],
     "verses": [
       "GEN.38.29"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-107",
@@ -2112,7 +2742,12 @@
     "places": [],
     "verses": [
       "GEN.46.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-108",
@@ -2126,7 +2761,12 @@
       "GEN.46.13",
       "JOB.42.16",
       "JOB.42.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-109",
@@ -2180,7 +2820,12 @@
       "GEN.41.11",
       "GEN.41.12",
       "GEN.41.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-110",
@@ -2195,7 +2840,12 @@
     "verses": [
       "GEN.35.28",
       "GEN.35.29"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-111",
@@ -2218,7 +2868,12 @@
       "GEN.41.44",
       "GEN.41.45",
       "GEN.41.46"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-112",
@@ -2238,7 +2893,12 @@
       "GEN.41.51",
       "GEN.41.52",
       "GEN.41.53"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-113",
@@ -2325,7 +2985,12 @@
       "GEN.42.36",
       "GEN.42.37",
       "GEN.42.38"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-114",
@@ -2374,7 +3039,12 @@
       "GEN.42.36",
       "GEN.42.37",
       "GEN.42.38"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-115",
@@ -2483,7 +3153,12 @@
       "GEN.45.26",
       "GEN.45.27",
       "GEN.45.28"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-116",
@@ -2501,7 +3176,12 @@
       "GEN.49.30",
       "GEN.49.31",
       "GEN.47.28"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-117",
@@ -3582,7 +4262,12 @@
       "JOB.42.15",
       "JOB.42.16",
       "JOB.42.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-118",
@@ -3600,7 +4285,12 @@
       "GEN.50.24",
       "GEN.50.25",
       "GEN.50.26"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-119",
@@ -3613,7 +4303,12 @@
     "verses": [
       "JOB.42.16",
       "JOB.42.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-120",
@@ -3636,7 +4331,12 @@
       "EXO.2.8",
       "EXO.2.9",
       "EXO.2.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-121",
@@ -3651,7 +4351,12 @@
     "verses": [
       "EXO.2.2",
       "DEU.34.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-122",
@@ -3667,7 +4372,12 @@
       "EXO.2.13",
       "EXO.2.14",
       "EXO.2.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-123",
@@ -3679,7 +4389,12 @@
     "places": [],
     "verses": [
       "NUM.13.6"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-124",
@@ -3691,7 +4406,12 @@
     "places": [],
     "verses": [
       "JDG.2.8"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-125",
@@ -3927,7 +4647,12 @@
       "EXO.13.15",
       "EXO.13.16",
       "EXO.13.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-126",
@@ -4097,7 +4822,12 @@
       "EXO.18.25",
       "EXO.18.26",
       "EXO.18.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-127",
@@ -4152,7 +4882,12 @@
       "EXO.20.15",
       "EXO.20.16",
       "EXO.20.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-128",
@@ -4464,7 +5199,12 @@
       "EXO.33.20",
       "EXO.33.21",
       "EXO.33.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-129",
@@ -4490,7 +5230,12 @@
       "DEU.34.10",
       "DEU.34.11",
       "DEU.34.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-130",
@@ -4562,7 +5307,12 @@
       "JOS.3.15",
       "JOS.3.16",
       "JOS.3.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-131",
@@ -4817,7 +5567,12 @@
       "JOS.12.21",
       "JOS.12.22",
       "JOS.12.23"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ex_rameses",
@@ -4831,7 +5586,12 @@
     ],
     "verses": [
       "EXO.12.37"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ex_succoth",
@@ -4846,7 +5606,12 @@
     "verses": [
       "EXO.12.37",
       "EXO.13.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ex_red_sea",
@@ -4870,7 +5635,12 @@
       "EXO.14.29",
       "EXO.14.30",
       "EXO.14.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ex_marah",
@@ -4886,7 +5656,12 @@
       "EXO.15.23",
       "EXO.15.24",
       "EXO.15.25"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ex_elim",
@@ -4900,7 +5675,12 @@
     ],
     "verses": [
       "EXO.15.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ex_rephidim",
@@ -4920,7 +5700,12 @@
       "EXO.17.11",
       "EXO.17.12",
       "EXO.17.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ex_sinai",
@@ -4938,7 +5723,12 @@
       "EXO.19.18",
       "EXO.19.19",
       "EXO.19.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-132",
@@ -4992,7 +5782,12 @@
       "JOS.13.31",
       "JOS.13.32",
       "JOS.13.33"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ex_kadesh",
@@ -5010,7 +5805,12 @@
       "NUM.14.2",
       "NUM.14.3",
       "NUM.14.4"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-133",
@@ -5026,7 +5826,12 @@
       "JOS.24.29",
       "JDG.2.8",
       "JOS.24.30"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-134",
@@ -5042,7 +5847,12 @@
     "verses": [
       "JDG.3.7",
       "JDG.3.8"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-135",
@@ -5066,7 +5876,12 @@
       "JDG.3.9",
       "JDG.3.10",
       "JDG.3.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ex_moab",
@@ -5085,7 +5900,12 @@
       "DEU.34.3",
       "DEU.34.4",
       "DEU.34.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ex_jordan",
@@ -5102,7 +5922,12 @@
       "JOS.3.15",
       "JOS.3.16",
       "JOS.3.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "cq_shittim",
@@ -5116,7 +5941,12 @@
     ],
     "verses": [
       "JOS.2.1"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "cq_gilgal",
@@ -5135,7 +5965,12 @@
       "JOS.4.22",
       "JOS.4.23",
       "JOS.4.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "cq_jericho",
@@ -5175,7 +6010,12 @@
       "JOS.6.25",
       "JOS.6.26",
       "JOS.6.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "cq_ai",
@@ -5217,7 +6057,12 @@
       "JOS.8.27",
       "JOS.8.28",
       "JOS.8.29"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "cq_gibeon",
@@ -5239,7 +6084,12 @@
       "JOS.10.12",
       "JOS.10.13",
       "JOS.10.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "cq_hazor",
@@ -5254,7 +6104,12 @@
     "verses": [
       "JOS.11.10",
       "JOS.11.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "cq_shiloh",
@@ -5268,7 +6123,12 @@
     ],
     "verses": [
       "JOS.18.1"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-136",
@@ -5285,7 +6145,12 @@
       "JDG.3.12",
       "JDG.3.13",
       "JDG.3.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-137",
@@ -5314,7 +6179,12 @@
       "JDG.3.28",
       "JDG.3.29",
       "JDG.3.30"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-138",
@@ -5331,7 +6201,12 @@
       "JDG.4.1",
       "JDG.4.2",
       "JDG.4.3"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-139",
@@ -5396,7 +6271,12 @@
       "JDG.5.29",
       "JDG.5.30",
       "JDG.5.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-140",
@@ -5420,7 +6300,12 @@
       "JDG.6.8",
       "JDG.6.9",
       "JDG.6.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-141",
@@ -5516,7 +6401,12 @@
       "JDG.8.26",
       "JDG.8.27",
       "JDG.8.28"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-142",
@@ -5593,7 +6483,12 @@
       "JDG.9.55",
       "JDG.9.56",
       "JDG.9.57"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-143",
@@ -5608,7 +6503,12 @@
     "verses": [
       "JDG.10.1",
       "JDG.10.2"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-144",
@@ -5634,7 +6534,12 @@
       "JDG.10.16",
       "JDG.10.17",
       "JDG.10.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-145",
@@ -5651,7 +6556,12 @@
       "1SA.4.16",
       "1SA.4.17",
       "1SA.4.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-146",
@@ -5711,7 +6621,12 @@
       "JDG.12.5",
       "JDG.12.6",
       "JDG.12.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-147",
@@ -5727,7 +6642,12 @@
       "JDG.12.8",
       "JDG.12.9",
       "JDG.12.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-148",
@@ -5744,7 +6664,12 @@
       "JDG.14.4",
       "JDG.15.11",
       "JDG.15.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-149",
@@ -5759,7 +6684,12 @@
     "verses": [
       "JDG.12.11",
       "JDG.12.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-150",
@@ -5771,7 +6701,12 @@
     "places": [],
     "verses": [
       "1SA.9.2"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-151",
@@ -5787,7 +6722,12 @@
       "JDG.12.13",
       "JDG.12.14",
       "JDG.12.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-152",
@@ -5802,7 +6742,12 @@
       "1SA.4.16",
       "1SA.4.17",
       "1SA.4.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-153",
@@ -5817,7 +6762,12 @@
     "verses": [
       "JDG.15.20",
       "JDG.16.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-154",
@@ -5837,7 +6787,12 @@
       "JDG.16.29",
       "JDG.16.30",
       "JDG.16.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-155",
@@ -6441,7 +7396,12 @@
       "1SA.17.56",
       "1SA.17.57",
       "1SA.17.58"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-156",
@@ -6453,7 +7413,12 @@
     "places": [],
     "verses": [
       "1SA.10.1"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-157",
@@ -6522,7 +7487,12 @@
       "1SA.17.56",
       "1SA.17.57",
       "1SA.17.58"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-158",
@@ -6546,7 +7516,12 @@
       "1SA.31.3",
       "1SA.31.4",
       "1SA.31.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-159",
@@ -7228,7 +8203,12 @@
       "2SA.24.23",
       "2SA.24.24",
       "2SA.24.25"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-160",
@@ -7243,7 +8223,12 @@
     "verses": [
       "1KI.2.10",
       "1KI.2.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-161",
@@ -7625,7 +8610,12 @@
       "1KI.5.16",
       "1KI.5.17",
       "1KI.5.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "df_ramah",
@@ -7639,7 +8629,12 @@
     ],
     "verses": [
       "1SA.19.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "df_nob",
@@ -7661,7 +8656,12 @@
       "1SA.21.7",
       "1SA.21.8",
       "1SA.21.9"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "df_gath",
@@ -7680,7 +8680,12 @@
       "1SA.21.13",
       "1SA.21.14",
       "1SA.21.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "df_adullam",
@@ -7695,7 +8700,12 @@
     "verses": [
       "1SA.22.1",
       "1SA.22.2"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-162",
@@ -7815,7 +8825,12 @@
       "1KI.5.16",
       "1KI.5.17",
       "1KI.5.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "df_keilah",
@@ -7841,7 +8856,12 @@
       "1SA.23.11",
       "1SA.23.12",
       "1SA.23.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "df_ziph",
@@ -7865,7 +8885,12 @@
       "1SA.23.22",
       "1SA.23.23",
       "1SA.23.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "df_en_gedi",
@@ -7900,7 +8925,12 @@
       "1SA.24.20",
       "1SA.24.21",
       "1SA.24.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "df_ziklag",
@@ -7916,7 +8946,12 @@
       "1SA.27.5",
       "1SA.27.6",
       "1SA.27.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "df_hebron",
@@ -7933,7 +8968,12 @@
       "2SA.2.2",
       "2SA.2.3",
       "2SA.2.4"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-163",
@@ -7945,7 +8985,12 @@
     "places": [],
     "verses": [
       "1KI.11.43"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-164",
@@ -7959,7 +9004,12 @@
     ],
     "verses": [
       "1KI.11.43"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-165",
@@ -7980,7 +9030,12 @@
       "1KI.12.22",
       "1KI.12.23",
       "1KI.12.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-166",
@@ -7992,7 +9047,12 @@
     "places": [],
     "verses": [
       "1KI.12.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-167",
@@ -8069,7 +9129,12 @@
       "1KI.14.18",
       "1KI.14.19",
       "1KI.14.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-168",
@@ -8090,7 +9155,12 @@
       "1KI.15.6",
       "1KI.15.7",
       "1KI.15.8"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-169",
@@ -8104,7 +9174,12 @@
     ],
     "verses": [
       "1KI.15.8"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-170",
@@ -8133,7 +9208,12 @@
       "1KI.15.22",
       "1KI.15.23",
       "1KI.15.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-171",
@@ -8148,7 +9228,12 @@
     "verses": [
       "1KI.15.25",
       "1KI.15.26"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-172",
@@ -8168,7 +9253,12 @@
       "1KI.16.3",
       "1KI.16.4",
       "1KI.16.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-173",
@@ -8184,7 +9274,12 @@
       "1KI.16.6",
       "1KI.16.7",
       "1KI.16.8"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-174",
@@ -8199,7 +9294,12 @@
     "verses": [
       "1KI.16.15",
       "1KI.16.16"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-175",
@@ -8214,7 +9314,12 @@
     "verses": [
       "1KI.16.21",
       "1KI.16.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-176",
@@ -8234,7 +9339,12 @@
       "1KI.16.27",
       "1KI.16.22",
       "1KI.16.28"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-177",
@@ -8246,7 +9356,12 @@
     "places": [],
     "verses": [
       "1KI.16.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-178",
@@ -8262,7 +9377,12 @@
       "1KI.16.28",
       "1KI.16.29",
       "1KI.16.30"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-179",
@@ -8276,7 +9396,12 @@
     ],
     "verses": [
       "1KI.16.28"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-180",
@@ -8290,7 +9415,12 @@
     ],
     "verses": [
       "1KI.15.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-181",
@@ -8312,7 +9442,12 @@
       "1KI.22.48",
       "1KI.22.49",
       "1KI.22.50"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-182",
@@ -8486,7 +9621,12 @@
       "2KI.2.12",
       "2KI.2.13",
       "2KI.2.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-183",
@@ -8500,7 +9640,12 @@
     ],
     "verses": [
       "1KI.22.50"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-184",
@@ -8516,7 +9661,12 @@
       "1KI.22.51",
       "1KI.22.52",
       "1KI.22.53"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-185",
@@ -8541,7 +9691,12 @@
       "2KI.2.12",
       "2KI.2.13",
       "2KI.2.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-186",
@@ -8700,7 +9855,12 @@
       "2KI.13.19",
       "2KI.13.20",
       "2KI.13.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-187",
@@ -8719,7 +9879,12 @@
       "2KI.3.4",
       "2KI.3.5",
       "2KI.3.6"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-188",
@@ -8742,7 +9907,12 @@
       "2KI.8.22",
       "2KI.8.23",
       "2KI.8.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-189",
@@ -8760,7 +9930,12 @@
       "2KI.8.27",
       "2KI.8.28",
       "2KI.8.29"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-190",
@@ -8845,7 +10020,12 @@
       "2KI.10.34",
       "2KI.10.35",
       "2KI.10.36"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-191",
@@ -8861,7 +10041,12 @@
       "2KI.11.1",
       "2KI.11.2",
       "2KI.11.3"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-192",
@@ -8875,7 +10060,12 @@
     ],
     "verses": [
       "2KI.8.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-193",
@@ -8910,7 +10100,12 @@
       "2KI.12.20",
       "2KI.12.21",
       "2KI.11.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "el_tishbe",
@@ -8924,7 +10119,12 @@
     ],
     "verses": [
       "1KI.17.1"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "el_cherith",
@@ -8943,7 +10143,12 @@
       "1KI.17.5",
       "1KI.17.6",
       "1KI.17.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "el_zarephath",
@@ -8973,7 +10178,12 @@
       "1KI.17.22",
       "1KI.17.23",
       "1KI.17.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "el_carmel",
@@ -9007,7 +10217,12 @@
       "1KI.18.38",
       "1KI.18.39",
       "1KI.18.40"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "el_jezreel",
@@ -9022,7 +10237,12 @@
     "verses": [
       "1KI.18.45",
       "1KI.18.46"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "el_beersheba",
@@ -9036,7 +10256,12 @@
     ],
     "verses": [
       "1KI.19.3"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "el_horeb",
@@ -9060,7 +10285,12 @@
       "1KI.19.16",
       "1KI.19.17",
       "1KI.19.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "el_abel_meholah",
@@ -9076,7 +10306,12 @@
       "1KI.19.19",
       "1KI.19.20",
       "1KI.19.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-194",
@@ -9090,7 +10325,12 @@
     ],
     "verses": [
       "2KI.10.35"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-195",
@@ -9112,7 +10352,12 @@
       "2KI.13.7",
       "2KI.13.8",
       "2KI.13.9"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-196",
@@ -9126,7 +10371,12 @@
     ],
     "verses": [
       "2KI.13.9"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-197",
@@ -9143,7 +10393,12 @@
       "2KI.13.11",
       "2KI.13.12",
       "2KI.13.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-198",
@@ -9178,7 +10433,12 @@
       "2KI.14.20",
       "2KI.14.21",
       "2KI.14.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-199",
@@ -9198,7 +10458,12 @@
       "2KI.14.27",
       "2KI.14.28",
       "2KI.14.29"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-200",
@@ -9257,7 +10522,12 @@
       "JON.4.9",
       "JON.4.10",
       "JON.4.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-201",
@@ -9271,7 +10541,12 @@
     ],
     "verses": [
       "2KI.13.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-202",
@@ -9355,7 +10630,12 @@
       "JOL.3.19",
       "JOL.3.20",
       "JOL.3.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-203",
@@ -9367,7 +10647,12 @@
     "places": [],
     "verses": [
       "2KI.14.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-204",
@@ -9387,7 +10672,12 @@
       "2KI.15.5",
       "2KI.15.6",
       "2KI.15.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-205",
@@ -9544,7 +10834,12 @@
       "AMO.9.13",
       "AMO.9.14",
       "AMO.9.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-206",
@@ -9752,7 +11047,12 @@
       "HOS.14.7",
       "HOS.14.8",
       "HOS.14.9"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-207",
@@ -9764,7 +11064,12 @@
     "places": [],
     "verses": [
       "2KI.14.29"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-208",
@@ -9779,7 +11084,12 @@
     "verses": [
       "2KI.15.8",
       "2KI.15.9"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-209",
@@ -9793,7 +11103,12 @@
     ],
     "verses": [
       "2KI.15.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-210",
@@ -9805,7 +11120,12 @@
     "places": [],
     "verses": [
       "2KI.15.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-211",
@@ -9819,7 +11139,12 @@
     ],
     "verses": [
       "2KI.15.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-212",
@@ -9838,7 +11163,12 @@
       "2KI.15.20",
       "2KI.15.21",
       "2KI.15.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-213",
@@ -9850,7 +11180,12 @@
     "places": [],
     "verses": [
       "2KI.15.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-214",
@@ -9867,7 +11202,12 @@
       "2KI.15.24",
       "2KI.15.25",
       "2KI.15.26"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-215",
@@ -9881,7 +11221,12 @@
     ],
     "verses": [
       "2KI.15.25"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-216",
@@ -9899,7 +11244,12 @@
       "2KI.15.29",
       "2KI.15.30",
       "2KI.15.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-217",
@@ -11202,7 +12552,12 @@
       "ISA.66.22",
       "ISA.66.23",
       "ISA.66.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-218",
@@ -11216,7 +12571,12 @@
     ],
     "verses": [
       "2KI.15.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-219",
@@ -11236,7 +12596,12 @@
       "2KI.15.36",
       "2KI.15.37",
       "2KI.15.38"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-220",
@@ -11352,7 +12717,12 @@
       "MIC.7.18",
       "MIC.7.19",
       "MIC.7.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-221",
@@ -11385,7 +12755,12 @@
       "2KI.16.18",
       "2KI.16.19",
       "2KI.16.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-222",
@@ -11399,7 +12774,12 @@
     ],
     "verses": [
       "2KI.15.38"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-223",
@@ -11411,7 +12791,12 @@
     "places": [],
     "verses": [
       "2KI.15.30"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-224",
@@ -11428,7 +12813,12 @@
       "2KI.17.2",
       "2KI.17.3",
       "2KI.17.4"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-225",
@@ -11442,7 +12832,12 @@
     ],
     "verses": [
       "2KI.16.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-226",
@@ -11550,7 +12945,12 @@
       "2KI.20.19",
       "2KI.20.20",
       "2KI.20.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-227",
@@ -11562,7 +12962,12 @@
     "places": [],
     "verses": [
       "2KI.20.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-228",
@@ -11593,7 +12998,12 @@
       "2KI.21.16",
       "2KI.21.17",
       "2KI.21.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-229",
@@ -11651,7 +13061,12 @@
       "NAM.3.17",
       "NAM.3.18",
       "NAM.3.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-230",
@@ -11665,7 +13080,12 @@
     ],
     "verses": [
       "2KI.21.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-231",
@@ -11686,7 +13106,12 @@
       "2KI.21.24",
       "2KI.21.25",
       "2KI.21.26"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-232",
@@ -11700,7 +13125,12 @@
     ],
     "verses": [
       "2KI.21.23"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-233",
@@ -11763,7 +13193,12 @@
       "2KI.23.28",
       "2KI.23.29",
       "2KI.23.30"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-234",
@@ -13138,7 +14573,12 @@
       "JER.52.32",
       "JER.52.33",
       "JER.52.34"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-235",
@@ -13202,7 +14642,12 @@
       "ZEP.3.18",
       "ZEP.3.19",
       "ZEP.3.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-236",
@@ -13216,7 +14661,12 @@
     ],
     "verses": [
       "2KI.23.29"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-237",
@@ -13234,7 +14684,12 @@
       "2KI.23.33",
       "2KI.23.34",
       "2KI.23.35"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-238",
@@ -13256,7 +14711,12 @@
       "2KI.24.5",
       "2KI.24.6",
       "2KI.24.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-239",
@@ -13323,7 +14783,12 @@
       "HAB.3.17",
       "HAB.3.18",
       "HAB.3.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-240",
@@ -13691,7 +15156,12 @@
       "DAN.12.11",
       "DAN.12.12",
       "DAN.12.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-241",
@@ -13714,7 +15184,12 @@
       "2KI.24.15",
       "2KI.24.16",
       "2KI.24.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-242",
@@ -13737,7 +15212,12 @@
       "2KI.25.5",
       "2KI.25.6",
       "2KI.25.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-243",
@@ -15021,7 +16501,12 @@
       "EZK.48.33",
       "EZK.48.34",
       "EZK.48.35"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "exl_jerusalem",
@@ -15044,7 +16529,12 @@
       "2KI.25.8",
       "2KI.25.9",
       "2KI.25.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "exl_riblah",
@@ -15061,7 +16551,12 @@
       "2KI.25.7",
       "2KI.25.20",
       "2KI.25.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "exl_babylon",
@@ -15076,7 +16571,12 @@
     "verses": [
       "2KI.25.11",
       "PSA.137.1"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "exl_mizpah",
@@ -15093,7 +16593,12 @@
       "2KI.25.23",
       "2KI.25.24",
       "2KI.25.25"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-244",
@@ -15125,7 +16630,12 @@
       "OBA.1.19",
       "OBA.1.20",
       "OBA.1.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "exl_tahpanhes",
@@ -15141,7 +16651,12 @@
       "JER.43.5",
       "JER.43.6",
       "JER.43.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ret_babylon",
@@ -15158,7 +16673,12 @@
       "EZR.1.2",
       "EZR.1.3",
       "EZR.1.4"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ret_jerusalem_altar",
@@ -15174,7 +16694,12 @@
       "EZR.2.1",
       "EZR.3.1",
       "EZR.3.2"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-245",
@@ -15223,7 +16748,12 @@
       "HAG.2.21",
       "HAG.2.22",
       "HAG.2.23"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-246",
@@ -15445,7 +16975,12 @@
       "ZEC.14.19",
       "ZEC.14.20",
       "ZEC.14.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ret_jerusalem_temple",
@@ -15460,7 +16995,12 @@
     "verses": [
       "EZR.6.14",
       "EZR.6.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ret_susa",
@@ -15474,7 +17014,12 @@
     ],
     "verses": [
       "NEH.1.1"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "ret_jerusalem_wall",
@@ -15489,7 +17034,12 @@
     "verses": [
       "NEH.2.11",
       "NEH.6.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-247",
@@ -15555,7 +17105,12 @@
       "MAL.4.4",
       "MAL.4.5",
       "MAL.4.6"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-249",
@@ -15570,7 +17125,12 @@
     "verses": [
       "MAT.1.18",
       "LUK.1.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-248",
@@ -15604,7 +17164,12 @@
       "LUK.1.23",
       "LUK.1.24",
       "LUK.1.25"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-253",
@@ -15624,7 +17189,12 @@
       "MAT.1.24",
       "MAT.1.25",
       "MAT.1.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-250",
@@ -15650,7 +17220,12 @@
       "LUK.1.36",
       "LUK.1.37",
       "LUK.1.38"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-251",
@@ -15679,7 +17254,12 @@
       "LUK.1.54",
       "LUK.1.55",
       "LUK.1.56"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-252",
@@ -15714,7 +17294,12 @@
       "LUK.1.78",
       "LUK.1.79",
       "LUK.1.80"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "jm_bethlehem",
@@ -15731,7 +17316,12 @@
       "LUK.2.5",
       "LUK.2.6",
       "LUK.2.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-255",
@@ -15752,7 +17342,12 @@
       "MAT.2.6",
       "MAT.2.7",
       "MAT.2.8"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-256",
@@ -15769,7 +17364,12 @@
       "MAT.2.10",
       "MAT.2.11",
       "MAT.2.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-257",
@@ -15785,7 +17385,12 @@
       "MAT.2.13",
       "MAT.2.14",
       "MAT.2.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-258",
@@ -15801,7 +17406,12 @@
       "MAT.2.16",
       "MAT.2.17",
       "MAT.2.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-260",
@@ -15818,7 +17428,12 @@
       "MAT.2.20",
       "MAT.2.21",
       "MAT.2.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-262",
@@ -15834,7 +17449,12 @@
       "MAT.2.22",
       "MAT.2.23",
       "LUK.2.39"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-254",
@@ -15867,7 +17487,12 @@
       "LUK.2.18",
       "LUK.2.19",
       "LUK.2.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-259",
@@ -15879,7 +17504,12 @@
     "places": [],
     "verses": [
       "LUK.2.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-261",
@@ -15909,7 +17539,12 @@
       "LUK.2.36",
       "LUK.2.37",
       "LUK.2.38"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-263",
@@ -15923,7 +17558,12 @@
     ],
     "verses": [
       "LUK.2.40"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "jm_egypt",
@@ -15939,7 +17579,12 @@
       "MAT.2.13",
       "MAT.2.14",
       "MAT.2.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "jm_nazareth",
@@ -15957,7 +17602,12 @@
       "MAT.2.21",
       "MAT.2.22",
       "MAT.2.23"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-264",
@@ -15980,7 +17630,12 @@
       "LUK.2.48",
       "LUK.2.49",
       "LUK.2.50"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-265",
@@ -15995,7 +17650,12 @@
     "verses": [
       "LUK.2.51",
       "LUK.2.52"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-266",
@@ -16049,7 +17709,12 @@
       "JHN.1.6",
       "JHN.1.7",
       "JHN.1.8"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-267",
@@ -16072,7 +17737,12 @@
       "MRK.1.11",
       "LUK.3.21",
       "LUK.3.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-268",
@@ -16109,25 +17779,12 @@
       "LUK.4.11",
       "LUK.4.12",
       "LUK.4.13"
-    ]
-  },
-  {
-    "id": "jm_jordan",
-    "label": "Jesus is baptized in the Jordan",
-    "when": {
-      "from_year": 26,
-      "to_year": 26
-    },
-    "places": [
-      "jordan"
     ],
-    "verses": [
-      "MAT.3.13",
-      "MAT.3.14",
-      "MAT.3.15",
-      "MAT.3.16",
-      "MAT.3.17"
-    ]
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-277",
@@ -16148,7 +17805,12 @@
       "JHN.4.2",
       "JHN.4.3",
       "JHN.4.4"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-279",
@@ -16178,7 +17840,12 @@
       "JHN.4.52",
       "JHN.4.53",
       "JHN.4.54"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-281",
@@ -16197,7 +17864,12 @@
       "MAT.4.16",
       "MAT.4.17",
       "LUK.4.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-282",
@@ -16231,7 +17903,12 @@
       "LUK.5.9",
       "LUK.5.10",
       "LUK.5.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-284",
@@ -16258,7 +17935,12 @@
       "MRK.1.34",
       "LUK.4.40",
       "LUK.4.41"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-276",
@@ -16283,7 +17965,12 @@
       "MRK.6.14",
       "MRK.6.15",
       "MRK.6.16"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-283",
@@ -16310,7 +17997,12 @@
       "LUK.4.35",
       "LUK.4.36",
       "LUK.4.37"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-280",
@@ -16338,7 +18030,12 @@
       "LUK.4.28",
       "LUK.4.29",
       "LUK.4.30"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-269",
@@ -16369,7 +18066,12 @@
       "JHN.1.32",
       "JHN.1.33",
       "JHN.1.34"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-270",
@@ -16397,7 +18099,12 @@
       "JHN.1.49",
       "JHN.1.50",
       "JHN.1.51"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-271",
@@ -16421,7 +18128,12 @@
       "JHN.2.9",
       "JHN.2.10",
       "JHN.2.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-272",
@@ -16435,7 +18147,12 @@
     ],
     "verses": [
       "JHN.2.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-273",
@@ -16461,7 +18178,12 @@
       "JHN.2.23",
       "JHN.2.24",
       "JHN.2.25"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-274",
@@ -16495,7 +18217,12 @@
       "JHN.3.19",
       "JHN.3.20",
       "JHN.3.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-275",
@@ -16523,7 +18250,12 @@
       "JHN.3.34",
       "JHN.3.35",
       "JHN.3.36"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-278",
@@ -16574,81 +18306,12 @@
       "JHN.4.40",
       "JHN.4.41",
       "JHN.4.42"
-    ]
-  },
-  {
-    "id": "jm_cana",
-    "label": "Jesus turns water to wine at Cana",
-    "when": {
-      "from_year": 27,
-      "to_year": 27
-    },
-    "places": [
-      "cana"
     ],
-    "verses": [
-      "JHN.2.1",
-      "JHN.2.2",
-      "JHN.2.3",
-      "JHN.2.4",
-      "JHN.2.5",
-      "JHN.2.6",
-      "JHN.2.7",
-      "JHN.2.8",
-      "JHN.2.9",
-      "JHN.2.10",
-      "JHN.2.11"
-    ]
-  },
-  {
-    "id": "jm_capernaum",
-    "label": "Jesus makes Capernaum his base",
-    "when": {
-      "from_year": 27,
-      "to_year": 27
-    },
-    "places": [
-      "capernaum"
-    ],
-    "verses": [
-      "MAT.4.13"
-    ]
-  },
-  {
-    "id": "jm_sychar",
-    "label": "Jesus speaks with the woman at the well in Sychar",
-    "when": {
-      "from_year": 27,
-      "to_year": 27
-    },
-    "places": [
-      "sychar"
-    ],
-    "verses": [
-      "JHN.4.4",
-      "JHN.4.5",
-      "JHN.4.6",
-      "JHN.4.7",
-      "JHN.4.8",
-      "JHN.4.9",
-      "JHN.4.10",
-      "JHN.4.11",
-      "JHN.4.12",
-      "JHN.4.13",
-      "JHN.4.14",
-      "JHN.4.15",
-      "JHN.4.16",
-      "JHN.4.17",
-      "JHN.4.18",
-      "JHN.4.19",
-      "JHN.4.20",
-      "JHN.4.21",
-      "JHN.4.22",
-      "JHN.4.23",
-      "JHN.4.24",
-      "JHN.4.25",
-      "JHN.4.26"
-    ]
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-296",
@@ -16802,7 +18465,12 @@
       "LUK.6.47",
       "LUK.6.48",
       "LUK.6.49"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-286",
@@ -16827,7 +18495,12 @@
       "LUK.5.12",
       "LUK.5.13",
       "LUK.5.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-297",
@@ -16859,7 +18532,12 @@
       "LUK.7.8",
       "LUK.7.9",
       "LUK.7.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-387",
@@ -16911,7 +18589,12 @@
       "LUK.8.37",
       "LUK.8.38",
       "LUK.8.39"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-287",
@@ -16957,7 +18640,12 @@
       "LUK.5.24",
       "LUK.5.25",
       "LUK.5.26"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-288",
@@ -16986,7 +18674,12 @@
       "LUK.5.30",
       "LUK.5.31",
       "LUK.5.32"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-289",
@@ -17007,7 +18700,12 @@
       "LUK.5.33",
       "LUK.5.34",
       "LUK.5.35"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-290",
@@ -17028,7 +18726,12 @@
       "LUK.5.37",
       "LUK.5.38",
       "LUK.5.39"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-388",
@@ -17090,7 +18793,12 @@
       "LUK.8.46",
       "LUK.8.47",
       "LUK.8.48"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-295",
@@ -17117,7 +18825,12 @@
       "LUK.6.16",
       "MAT.10.3",
       "MAT.10.4"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-299",
@@ -17166,7 +18879,12 @@
       "LUK.7.33",
       "LUK.7.34",
       "LUK.7.35"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-300",
@@ -17190,7 +18908,12 @@
       "MAT.11.28",
       "MAT.11.29",
       "MAT.11.30"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-292",
@@ -17222,7 +18945,12 @@
       "LUK.6.3",
       "LUK.6.4",
       "LUK.6.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-293",
@@ -17253,7 +18981,12 @@
       "LUK.6.9",
       "LUK.6.10",
       "LUK.6.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-294",
@@ -17282,7 +19015,12 @@
       "LUK.6.17",
       "LUK.6.18",
       "LUK.6.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-303",
@@ -17362,7 +19100,12 @@
       "LUK.8.19",
       "LUK.8.20",
       "LUK.8.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-386",
@@ -17504,7 +19247,12 @@
       "LUK.8.23",
       "LUK.8.24",
       "LUK.8.25"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-285",
@@ -17528,7 +19276,12 @@
       "LUK.4.42",
       "LUK.4.43",
       "LUK.4.44"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-298",
@@ -17548,7 +19301,12 @@
       "LUK.7.15",
       "LUK.7.16",
       "LUK.7.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-301",
@@ -17576,7 +19334,12 @@
       "LUK.7.48",
       "LUK.7.49",
       "LUK.7.50"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-302",
@@ -17592,7 +19355,12 @@
       "LUK.8.1",
       "LUK.8.2",
       "LUK.8.3"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-291",
@@ -17652,7 +19420,12 @@
       "JHN.5.45",
       "JHN.5.46",
       "JHN.5.47"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-390",
@@ -17725,7 +19498,12 @@
       "LUK.9.4",
       "LUK.9.5",
       "LUK.9.6"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-389",
@@ -17749,7 +19527,12 @@
       "MRK.6.4",
       "MRK.6.5",
       "MRK.6.6"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-391",
@@ -17779,7 +19562,12 @@
       "LUK.9.7",
       "LUK.9.8",
       "LUK.9.9"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-393",
@@ -17838,7 +19626,12 @@
       "JHN.6.12",
       "JHN.6.13",
       "JHN.6.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-394",
@@ -17878,7 +19671,12 @@
       "JHN.6.19",
       "JHN.6.20",
       "JHN.6.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-396",
@@ -17898,7 +19696,12 @@
       "MRK.6.54",
       "MRK.6.55",
       "MRK.6.56"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-397",
@@ -17961,7 +19764,12 @@
       "JHN.6.69",
       "JHN.6.70",
       "JHN.6.71"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-398",
@@ -18017,7 +19825,12 @@
       "MRK.7.21",
       "MRK.7.22",
       "MRK.7.23"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-399",
@@ -18046,7 +19859,12 @@
       "MRK.7.28",
       "MRK.7.29",
       "MRK.7.30"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-400",
@@ -18070,7 +19888,12 @@
       "MAT.15.29",
       "MAT.15.30",
       "MAT.15.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-401",
@@ -18100,7 +19923,12 @@
       "MRK.8.7",
       "MRK.8.8",
       "MRK.8.9"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-402",
@@ -18137,7 +19965,12 @@
       "MAT.16.10",
       "MAT.16.11",
       "MAT.16.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-403",
@@ -18155,7 +19988,12 @@
       "MRK.8.24",
       "MRK.8.25",
       "MRK.8.26"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-404",
@@ -18184,7 +20022,12 @@
       "LUK.9.19",
       "LUK.9.20",
       "LUK.9.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-405",
@@ -18220,7 +20063,12 @@
       "LUK.9.25",
       "LUK.9.26",
       "LUK.9.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-406",
@@ -18267,7 +20115,12 @@
       "LUK.9.34",
       "LUK.9.35",
       "LUK.9.36"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-407",
@@ -18310,7 +20163,12 @@
       "LUK.9.40",
       "LUK.9.41",
       "LUK.9.42"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-408",
@@ -18331,7 +20189,12 @@
       "LUK.9.43",
       "LUK.9.44",
       "LUK.9.45"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-409",
@@ -18348,7 +20211,12 @@
       "MAT.17.25",
       "MAT.17.26",
       "MAT.17.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-410",
@@ -18419,7 +20287,12 @@
       "LUK.9.48",
       "LUK.9.49",
       "LUK.9.50"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-412",
@@ -18485,7 +20358,12 @@
       "JHN.7.50",
       "JHN.7.51",
       "JHN.7.52"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-419",
@@ -18510,7 +20388,12 @@
       "JHN.8.9",
       "JHN.8.10",
       "JHN.8.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-420",
@@ -18571,7 +20454,12 @@
       "JHN.8.57",
       "JHN.8.58",
       "JHN.8.59"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-421",
@@ -18590,7 +20478,12 @@
       "LUK.9.54",
       "LUK.9.55",
       "LUK.9.56"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-422",
@@ -18625,7 +20518,12 @@
       "LUK.10.22",
       "LUK.10.23",
       "LUK.10.24"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-423",
@@ -18651,7 +20549,12 @@
       "LUK.10.35",
       "LUK.10.36",
       "LUK.10.37"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-424",
@@ -18669,7 +20572,12 @@
       "LUK.10.40",
       "LUK.10.41",
       "LUK.10.42"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-425",
@@ -18693,7 +20601,12 @@
       "LUK.11.11",
       "LUK.11.12",
       "LUK.11.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-426",
@@ -18747,7 +20660,12 @@
       "JHN.9.39",
       "JHN.9.40",
       "JHN.9.41"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-427",
@@ -18781,7 +20699,12 @@
       "JHN.10.19",
       "JHN.10.20",
       "JHN.10.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-428",
@@ -18878,7 +20801,12 @@
       "LUK.13.7",
       "LUK.13.8",
       "LUK.13.9"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-429",
@@ -18897,7 +20825,12 @@
       "LUK.13.15",
       "LUK.13.16",
       "LUK.13.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-430",
@@ -18912,7 +20845,12 @@
       "LUK.13.19",
       "LUK.13.20",
       "LUK.13.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-431",
@@ -18943,49 +20881,35 @@
       "JHN.10.37",
       "JHN.10.38",
       "JHN.10.39"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
-    "id": "jm_bethsaida",
-    "label": "Jesus feeds the five thousand near Bethsaida",
+    "id": "jm_jordan",
+    "label": "Jesus is baptized in the Jordan",
     "when": {
       "from_year": 29,
       "to_year": 29
     },
     "places": [
-      "bethsaida-2"
+      "jordan"
     ],
     "verses": [
-      "LUK.9.10",
-      "LUK.9.11",
-      "LUK.9.12",
-      "LUK.9.13",
-      "LUK.9.14",
-      "LUK.9.15",
-      "LUK.9.16",
-      "LUK.9.17"
-    ]
-  },
-  {
-    "id": "jm_caesarea_philippi",
-    "label": "Peter's confession at Caesarea Philippi",
-    "when": {
-      "from_year": 29,
-      "to_year": 29
-    },
-    "places": [
-      "caesarea-philippi"
+      "MAT.3.13",
+      "MAT.3.14",
+      "MAT.3.15",
+      "MAT.3.16",
+      "MAT.3.17"
     ],
-    "verses": [
-      "MAT.16.13",
-      "MAT.16.14",
-      "MAT.16.15",
-      "MAT.16.16",
-      "MAT.16.17",
-      "MAT.16.18",
-      "MAT.16.19",
-      "MAT.16.20"
-    ]
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-304",
@@ -19000,7 +20924,12 @@
     "verses": [
       "ACT.1.4",
       "ACT.1.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-305",
@@ -19019,7 +20948,12 @@
       "ACT.1.9",
       "ACT.1.10",
       "ACT.1.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-306",
@@ -19047,7 +20981,12 @@
       "ACT.1.24",
       "ACT.1.25",
       "ACT.1.26"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-307",
@@ -19073,7 +21012,12 @@
       "ACT.2.11",
       "ACT.2.12",
       "ACT.2.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-308",
@@ -19114,7 +21058,12 @@
       "ACT.2.39",
       "ACT.2.40",
       "ACT.2.41"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-309",
@@ -19133,7 +21082,12 @@
       "ACT.2.45",
       "ACT.2.46",
       "ACT.2.47"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-310",
@@ -19156,7 +21110,12 @@
       "ACT.3.8",
       "ACT.3.9",
       "ACT.3.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-311",
@@ -19185,7 +21144,12 @@
       "ACT.3.24",
       "ACT.3.25",
       "ACT.3.26"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-312",
@@ -19220,7 +21184,12 @@
       "ACT.4.20",
       "ACT.4.21",
       "ACT.4.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-313",
@@ -19242,7 +21211,12 @@
       "ACT.4.29",
       "ACT.4.30",
       "ACT.4.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-314",
@@ -19261,7 +21235,12 @@
       "ACT.4.35",
       "ACT.4.36",
       "ACT.4.37"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-315",
@@ -19285,7 +21264,12 @@
       "ACT.5.9",
       "ACT.5.10",
       "ACT.5.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-316",
@@ -19304,7 +21288,12 @@
       "ACT.5.15",
       "ACT.5.16",
       "ACT.5.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-317",
@@ -19333,7 +21322,12 @@
       "ACT.5.31",
       "ACT.5.32",
       "ACT.5.33"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-318",
@@ -19355,7 +21349,12 @@
       "ACT.5.40",
       "ACT.5.41",
       "ACT.5.42"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-319",
@@ -19375,7 +21374,12 @@
       "ACT.6.5",
       "ACT.6.6",
       "ACT.6.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-320",
@@ -19396,7 +21400,12 @@
       "ACT.6.13",
       "ACT.6.14",
       "ACT.6.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-321",
@@ -19462,7 +21471,12 @@
       "ACT.7.51",
       "ACT.7.52",
       "ACT.7.53"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-432",
@@ -19600,7 +21614,12 @@
       "LUK.17.8",
       "LUK.17.9",
       "LUK.17.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-433",
@@ -19659,7 +21678,12 @@
       "JHN.11.44",
       "JHN.11.45",
       "JHN.11.46"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-434",
@@ -19679,7 +21703,12 @@
       "JHN.11.51",
       "JHN.11.52",
       "JHN.11.53"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-435",
@@ -19696,7 +21725,12 @@
       "JHN.11.55",
       "JHN.11.56",
       "JHN.11.57"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-436",
@@ -19718,7 +21752,12 @@
       "LUK.17.17",
       "LUK.17.18",
       "LUK.17.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-437",
@@ -19763,7 +21802,12 @@
       "LUK.18.12",
       "LUK.18.13",
       "LUK.18.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-438",
@@ -19897,7 +21941,12 @@
       "LUK.18.32",
       "LUK.18.33",
       "LUK.18.34"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-439",
@@ -19932,7 +21981,12 @@
       "MAT.20.32",
       "MAT.20.33",
       "MAT.20.34"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-440",
@@ -19973,7 +22027,12 @@
       "LUK.19.26",
       "LUK.19.27",
       "LUK.19.28"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-441",
@@ -19997,7 +22056,12 @@
       "JHN.12.9",
       "JHN.12.10",
       "JHN.12.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-443",
@@ -21196,7 +23260,12 @@
       "JHN.20.29",
       "JHN.20.30",
       "JHN.20.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-444",
@@ -21254,7 +23323,12 @@
       "JHN.12.17",
       "JHN.12.18",
       "JHN.12.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-445",
@@ -21282,7 +23356,12 @@
       "LUK.19.47",
       "LUK.19.48",
       "MRK.11.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-446",
@@ -21301,7 +23380,12 @@
       "MRK.11.12",
       "MRK.11.13",
       "MRK.11.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-447",
@@ -21324,7 +23408,12 @@
       "MAT.21.22",
       "MRK.11.25",
       "MRK.11.26"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-448",
@@ -21548,7 +23637,12 @@
       "LUK.21.2",
       "LUK.21.3",
       "LUK.21.4"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-449",
@@ -21727,7 +23821,12 @@
       "LUK.21.34",
       "LUK.21.35",
       "LUK.21.36"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-450",
@@ -21749,7 +23848,12 @@
       "MRK.14.2",
       "LUK.22.1",
       "LUK.22.2"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-451",
@@ -21771,7 +23875,12 @@
       "LUK.22.4",
       "LUK.22.5",
       "LUK.22.6"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-452",
@@ -21885,7 +23994,12 @@
       "JHN.13.28",
       "JHN.13.29",
       "JHN.13.30"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-453",
@@ -22023,7 +24137,12 @@
       "JHN.17.24",
       "JHN.17.25",
       "JHN.17.26"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-454",
@@ -22105,7 +24224,12 @@
       "JHN.18.10",
       "JHN.18.11",
       "JHN.18.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-455",
@@ -22192,7 +24316,12 @@
       "JHN.18.25",
       "JHN.18.26",
       "JHN.18.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-456",
@@ -22300,7 +24429,12 @@
       "JHN.19.14",
       "JHN.19.15",
       "JHN.19.16"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-457",
@@ -22321,7 +24455,12 @@
       "MAT.27.8",
       "MAT.27.9",
       "MAT.27.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-458",
@@ -22348,7 +24487,12 @@
       "MAT.27.34",
       "MRK.15.23",
       "LUK.23.32"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-459",
@@ -22466,7 +24610,12 @@
       "LUK.23.54",
       "LUK.23.55",
       "LUK.23.56"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-460",
@@ -22605,72 +24754,64 @@
       "JHN.20.29",
       "JHN.20.30",
       "JHN.20.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
-    "id": "jm_jericho",
-    "label": "Jesus calls Zacchaeus at Jericho",
+    "id": "jm_cana",
+    "label": "Jesus turns water to wine at Cana",
     "when": {
       "from_year": 30,
       "to_year": 30
     },
     "places": [
-      "jericho-2"
+      "cana"
     ],
     "verses": [
-      "LUK.19.1",
-      "LUK.19.2",
-      "LUK.19.3",
-      "LUK.19.4",
-      "LUK.19.5",
-      "LUK.19.6",
-      "LUK.19.7",
-      "LUK.19.8",
-      "LUK.19.9",
-      "LUK.19.10"
-    ]
+      "JHN.2.1",
+      "JHN.2.2",
+      "JHN.2.3",
+      "JHN.2.4",
+      "JHN.2.5",
+      "JHN.2.6",
+      "JHN.2.7",
+      "JHN.2.8",
+      "JHN.2.9",
+      "JHN.2.10",
+      "JHN.2.11"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
-    "id": "jm_bethany",
-    "label": "Jesus dines at Bethany before the Passover",
+    "id": "jm_capernaum",
+    "label": "Jesus makes Capernaum his base",
     "when": {
       "from_year": 30,
       "to_year": 30
     },
     "places": [
-      "bethany-1"
+      "capernaum"
     ],
     "verses": [
-      "JHN.12.1"
-    ]
-  },
-  {
-    "id": "pw_bethany",
-    "label": "Mary anoints Jesus at Bethany",
-    "when": {
-      "from_year": 30,
-      "to_year": 30
-    },
-    "places": [
-      "bethany-1"
+      "MAT.4.13"
     ],
-    "verses": [
-      "JHN.12.1",
-      "JHN.12.2",
-      "JHN.12.3",
-      "JHN.12.4",
-      "JHN.12.5",
-      "JHN.12.6",
-      "JHN.12.7",
-      "JHN.12.8",
-      "JHN.12.9",
-      "JHN.12.10",
-      "JHN.12.11"
-    ]
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
-    "id": "pw_jerusalem_entry",
-    "label": "The triumphal entry into Jerusalem",
+    "id": "jm_temple_cleansing",
+    "label": "Jesus cleanses the temple for the first time",
     "when": {
       "from_year": 30,
       "to_year": 30
@@ -22679,174 +24820,63 @@
       "jerusalem"
     ],
     "verses": [
-      "MAT.21.1",
-      "MAT.21.2",
-      "MAT.21.3",
-      "MAT.21.4",
-      "MAT.21.5",
-      "MAT.21.6",
-      "MAT.21.7",
-      "MAT.21.8",
-      "MAT.21.9",
-      "MAT.21.10",
-      "MAT.21.11"
-    ]
+      "JHN.2.13",
+      "JHN.2.14",
+      "JHN.2.15",
+      "JHN.2.16",
+      "JHN.2.17",
+      "JHN.2.18",
+      "JHN.2.19",
+      "JHN.2.20",
+      "JHN.2.21",
+      "JHN.2.22"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §31, \"The First Cleansing of the Temple at the Passover\"",
+    "ref_note": "John 2:13-22 read directly; Robertson section number/title verified against Project Gutenberg #36264 (both the HTML and plain-text mirrors of the 1922 first edition)",
+    "order_key": 0
   },
   {
-    "id": "pw_gethsemane",
-    "label": "Jesus prays and is arrested at Gethsemane",
+    "id": "jm_sychar",
+    "label": "Jesus speaks with the woman at the well in Sychar",
     "when": {
       "from_year": 30,
       "to_year": 30
     },
     "places": [
-      "gethsemane"
+      "sychar"
     ],
     "verses": [
-      "MAT.26.36",
-      "MAT.26.37",
-      "MAT.26.38",
-      "MAT.26.39",
-      "MAT.26.40",
-      "MAT.26.41",
-      "MAT.26.42",
-      "MAT.26.43",
-      "MAT.26.44",
-      "MAT.26.45",
-      "MAT.26.46",
-      "MAT.26.47",
-      "MAT.26.48",
-      "MAT.26.49",
-      "MAT.26.50",
-      "MAT.26.51",
-      "MAT.26.52",
-      "MAT.26.53",
-      "MAT.26.54",
-      "MAT.26.55",
-      "MAT.26.56"
-    ]
-  },
-  {
-    "id": "pw_golgotha",
-    "label": "The crucifixion at Golgotha",
-    "when": {
-      "from_year": 30,
-      "to_year": 30
-    },
-    "places": [
-      "golgotha"
+      "JHN.4.4",
+      "JHN.4.5",
+      "JHN.4.6",
+      "JHN.4.7",
+      "JHN.4.8",
+      "JHN.4.9",
+      "JHN.4.10",
+      "JHN.4.11",
+      "JHN.4.12",
+      "JHN.4.13",
+      "JHN.4.14",
+      "JHN.4.15",
+      "JHN.4.16",
+      "JHN.4.17",
+      "JHN.4.18",
+      "JHN.4.19",
+      "JHN.4.20",
+      "JHN.4.21",
+      "JHN.4.22",
+      "JHN.4.23",
+      "JHN.4.24",
+      "JHN.4.25",
+      "JHN.4.26"
     ],
-    "verses": [
-      "JHN.19.16",
-      "JHN.19.17",
-      "JHN.19.18",
-      "JHN.19.19",
-      "JHN.19.20",
-      "JHN.19.21",
-      "JHN.19.22",
-      "JHN.19.23",
-      "JHN.19.24",
-      "JHN.19.25",
-      "JHN.19.26",
-      "JHN.19.27",
-      "JHN.19.28",
-      "JHN.19.29",
-      "JHN.19.30"
-    ]
-  },
-  {
-    "id": "pw_jerusalem_resurrection",
-    "label": "The empty tomb in Jerusalem",
-    "when": {
-      "from_year": 30,
-      "to_year": 30
-    },
-    "places": [
-      "jerusalem"
-    ],
-    "verses": [
-      "MAT.28.1",
-      "MAT.28.2",
-      "MAT.28.3",
-      "MAT.28.4",
-      "MAT.28.5",
-      "MAT.28.6",
-      "MAT.28.7",
-      "MAT.28.8",
-      "MAT.28.9",
-      "MAT.28.10"
-    ]
-  },
-  {
-    "id": "pw_emmaus",
-    "label": "The road to Emmaus",
-    "when": {
-      "from_year": 30,
-      "to_year": 30
-    },
-    "places": [
-      "emmaus"
-    ],
-    "verses": [
-      "LUK.24.13",
-      "LUK.24.14",
-      "LUK.24.15",
-      "LUK.24.16",
-      "LUK.24.17",
-      "LUK.24.18",
-      "LUK.24.19",
-      "LUK.24.20",
-      "LUK.24.21",
-      "LUK.24.22",
-      "LUK.24.23",
-      "LUK.24.24",
-      "LUK.24.25",
-      "LUK.24.26",
-      "LUK.24.27",
-      "LUK.24.28",
-      "LUK.24.29",
-      "LUK.24.30",
-      "LUK.24.31",
-      "LUK.24.32",
-      "LUK.24.33",
-      "LUK.24.34",
-      "LUK.24.35"
-    ]
-  },
-  {
-    "id": "pw_galilee",
-    "label": "Jesus commissions the disciples in Galilee",
-    "when": {
-      "from_year": 30,
-      "to_year": 30
-    },
-    "places": [
-      "galilee-1"
-    ],
-    "verses": [
-      "MAT.28.16",
-      "MAT.28.17",
-      "MAT.28.18",
-      "MAT.28.19",
-      "MAT.28.20"
-    ]
-  },
-  {
-    "id": "pw_mount_of_olives",
-    "label": "The ascension from the Mount of Olives",
-    "when": {
-      "from_year": 30,
-      "to_year": 30
-    },
-    "places": [
-      "mount-of-olives"
-    ],
-    "verses": [
-      "ACT.1.9",
-      "ACT.1.10",
-      "ACT.1.11",
-      "ACT.1.12"
-    ]
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-322",
@@ -22866,7 +24896,12 @@
       "ACT.7.58",
       "ACT.7.59",
       "ACT.7.60"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-323",
@@ -22882,7 +24917,12 @@
       "ACT.8.1",
       "ACT.8.2",
       "ACT.8.3"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-324",
@@ -22917,7 +24957,12 @@
       "ACT.8.23",
       "ACT.8.24",
       "ACT.8.25"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-325",
@@ -22945,7 +24990,12 @@
       "ACT.8.38",
       "ACT.8.39",
       "ACT.8.40"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-326",
@@ -22978,7 +25028,887 @@
       "ACT.9.17",
       "ACT.9.18",
       "ACT.9.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jm_bethsaida",
+    "label": "Jesus feeds the five thousand near Bethsaida",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "bethsaida-2"
+    ],
+    "verses": [
+      "LUK.9.10",
+      "LUK.9.11",
+      "LUK.9.12",
+      "LUK.9.13",
+      "LUK.9.14",
+      "LUK.9.15",
+      "LUK.9.16",
+      "LUK.9.17"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jm_caesarea_philippi",
+    "label": "Peter's confession at Caesarea Philippi",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "caesarea-philippi"
+    ],
+    "verses": [
+      "MAT.16.13",
+      "MAT.16.14",
+      "MAT.16.15",
+      "MAT.16.16",
+      "MAT.16.17",
+      "MAT.16.18",
+      "MAT.16.19",
+      "MAT.16.20"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jm_jericho",
+    "label": "Jesus calls Zacchaeus at Jericho",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jericho-2"
+    ],
+    "verses": [
+      "LUK.19.1",
+      "LUK.19.2",
+      "LUK.19.3",
+      "LUK.19.4",
+      "LUK.19.5",
+      "LUK.19.6",
+      "LUK.19.7",
+      "LUK.19.8",
+      "LUK.19.9",
+      "LUK.19.10"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jm_bethany",
+    "label": "Jesus dines at Bethany before the Passover",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "bethany-1"
+    ],
+    "verses": [
+      "JHN.12.1"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "pw_bethany",
+    "label": "Mary anoints Jesus at Bethany",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "bethany-1"
+    ],
+    "verses": [
+      "JHN.12.1",
+      "JHN.12.2",
+      "JHN.12.3",
+      "JHN.12.4",
+      "JHN.12.5",
+      "JHN.12.6",
+      "JHN.12.7",
+      "JHN.12.8",
+      "JHN.12.9",
+      "JHN.12.10",
+      "JHN.12.11"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.26.6",
+            "MAT.26.7",
+            "MAT.26.8",
+            "MAT.26.9",
+            "MAT.26.10",
+            "MAT.26.11",
+            "MAT.26.12",
+            "MAT.26.13"
+          ]
+        },
+        "ref_note": "Matthew 26:6-13 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §141"
+      },
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.14.3",
+            "MRK.14.4",
+            "MRK.14.5",
+            "MRK.14.6",
+            "MRK.14.7",
+            "MRK.14.8",
+            "MRK.14.9"
+          ]
+        },
+        "ref_note": "Mark 14:3-9 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §141"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.12.1",
+            "JHN.12.2",
+            "JHN.12.3",
+            "JHN.12.4",
+            "JHN.12.5",
+            "JHN.12.6",
+            "JHN.12.7",
+            "JHN.12.8",
+            "JHN.12.9",
+            "JHN.12.10",
+            "JHN.12.11"
+          ]
+        },
+        "ref_note": "John 12:1-11 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §141"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §141, \"At the Feast in the House of Simon the Leper Mary of Bethany Anoints Jesus for His Burial\"",
+    "ref_note": "John 12:1-11, Matthew 26:6-13, Mark 14:3-9 all read directly (see event-witnesses.toml); dated per John 12:1's own explicit 'six days before the passover', kept ahead of the triumphal entry rather than Robertson's own Wednesday placement (a real, disclosed harmonization choice -- see batch-t-report.md)",
+    "order_key": 10
+  },
+  {
+    "id": "pw_jerusalem_entry",
+    "label": "The triumphal entry into Jerusalem",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.21.1",
+      "MAT.21.2",
+      "MAT.21.3",
+      "MAT.21.4",
+      "MAT.21.5",
+      "MAT.21.6",
+      "MAT.21.7",
+      "MAT.21.8",
+      "MAT.21.9",
+      "MAT.21.10",
+      "MAT.21.11"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.21.1",
+            "MAT.21.2",
+            "MAT.21.3",
+            "MAT.21.4",
+            "MAT.21.5",
+            "MAT.21.6",
+            "MAT.21.7",
+            "MAT.21.8",
+            "MAT.21.9",
+            "MAT.21.10",
+            "MAT.21.11"
+          ]
+        },
+        "ref_note": "Matthew 21:1-11 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §128b"
+      },
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.11.1",
+            "MRK.11.2",
+            "MRK.11.3",
+            "MRK.11.4",
+            "MRK.11.5",
+            "MRK.11.6",
+            "MRK.11.7",
+            "MRK.11.8",
+            "MRK.11.9",
+            "MRK.11.10",
+            "MRK.11.11"
+          ]
+        },
+        "ref_note": "Mark 11:1-11 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §128b"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.19.29",
+            "LUK.19.30",
+            "LUK.19.31",
+            "LUK.19.32",
+            "LUK.19.33",
+            "LUK.19.34",
+            "LUK.19.35",
+            "LUK.19.36",
+            "LUK.19.37",
+            "LUK.19.38",
+            "LUK.19.39",
+            "LUK.19.40",
+            "LUK.19.41",
+            "LUK.19.42",
+            "LUK.19.43",
+            "LUK.19.44"
+          ]
+        },
+        "ref_note": "Luke 19:29-44 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §128b"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.12.12",
+            "JHN.12.13",
+            "JHN.12.14",
+            "JHN.12.15",
+            "JHN.12.16",
+            "JHN.12.17",
+            "JHN.12.18",
+            "JHN.12.19"
+          ]
+        },
+        "ref_note": "John 12:12-19 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §128b"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §128b, \"His Triumphal Entry into Jerusalem as the Messiah\"",
+    "ref_note": "Matthew 21:1-11, Mark 11:1-11, Luke 19:29-44, John 12:12-19 all read directly (see event-witnesses.toml)",
+    "order_key": 20
+  },
+  {
+    "id": "pw_temple_cleansing",
+    "label": "Jesus cleanses the temple a second time",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.21.12",
+      "MAT.21.13"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.21.12",
+            "MAT.21.13"
+          ]
+        },
+        "ref_note": "Matthew 21:12-13 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §129"
+      },
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.11.15",
+            "MRK.11.16",
+            "MRK.11.17",
+            "MRK.11.18"
+          ]
+        },
+        "ref_note": "Mark 11:15-18 read directly against the compiled KJV text (Mark's own fig-tree-cursing verses, 11:12-14, are a related but textually distinct pericope, not included here)",
+        "robertson_section": "Robertson (1922) §129"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.19.45",
+            "LUK.19.46",
+            "LUK.19.47",
+            "LUK.19.48"
+          ]
+        },
+        "ref_note": "Luke 19:45-48 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §129"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §129, \"The Barren Fig Tree Cursed, and the Second Cleansing of the Temple\"",
+    "ref_note": "Matthew 21:12-13, Mark 11:15-18, Luke 19:45-48 all read directly (see event-witnesses.toml); witnesses scoped to the cleansing itself, not Mark/Matthew's own fig-tree-cursing motif (a related but textually distinct pericope this batch does not separately model)",
+    "order_key": 30
+  },
+  {
+    "id": "pw_gethsemane",
+    "label": "Jesus prays and is arrested at Gethsemane",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "gethsemane"
+    ],
+    "verses": [
+      "MAT.26.36",
+      "MAT.26.37",
+      "MAT.26.38",
+      "MAT.26.39",
+      "MAT.26.40",
+      "MAT.26.41",
+      "MAT.26.42",
+      "MAT.26.43",
+      "MAT.26.44",
+      "MAT.26.45",
+      "MAT.26.46",
+      "MAT.26.47",
+      "MAT.26.48",
+      "MAT.26.49",
+      "MAT.26.50",
+      "MAT.26.51",
+      "MAT.26.52",
+      "MAT.26.53",
+      "MAT.26.54",
+      "MAT.26.55",
+      "MAT.26.56"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.26.36",
+            "MAT.26.37",
+            "MAT.26.38",
+            "MAT.26.39",
+            "MAT.26.40",
+            "MAT.26.41",
+            "MAT.26.42",
+            "MAT.26.43",
+            "MAT.26.44",
+            "MAT.26.45",
+            "MAT.26.46",
+            "MAT.26.47",
+            "MAT.26.48",
+            "MAT.26.49",
+            "MAT.26.50",
+            "MAT.26.51",
+            "MAT.26.52",
+            "MAT.26.53",
+            "MAT.26.54",
+            "MAT.26.55",
+            "MAT.26.56"
+          ]
+        },
+        "ref_note": "Matthew 26:36-56 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §152"
+      },
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.14.32",
+            "MRK.14.33",
+            "MRK.14.34",
+            "MRK.14.35",
+            "MRK.14.36",
+            "MRK.14.37",
+            "MRK.14.38",
+            "MRK.14.39",
+            "MRK.14.40",
+            "MRK.14.41",
+            "MRK.14.42",
+            "MRK.14.43",
+            "MRK.14.44",
+            "MRK.14.45",
+            "MRK.14.46",
+            "MRK.14.47",
+            "MRK.14.48",
+            "MRK.14.49",
+            "MRK.14.50",
+            "MRK.14.51",
+            "MRK.14.52"
+          ]
+        },
+        "ref_note": "Mark 14:32-52 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §152"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.22.39",
+            "LUK.22.40",
+            "LUK.22.41",
+            "LUK.22.42",
+            "LUK.22.43",
+            "LUK.22.44",
+            "LUK.22.45",
+            "LUK.22.46",
+            "LUK.22.47",
+            "LUK.22.48",
+            "LUK.22.49",
+            "LUK.22.50",
+            "LUK.22.51",
+            "LUK.22.52",
+            "LUK.22.53"
+          ]
+        },
+        "ref_note": "Luke 22:39-53 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §152"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.18.1",
+            "JHN.18.2",
+            "JHN.18.3",
+            "JHN.18.4",
+            "JHN.18.5",
+            "JHN.18.6",
+            "JHN.18.7",
+            "JHN.18.8",
+            "JHN.18.9",
+            "JHN.18.10",
+            "JHN.18.11",
+            "JHN.18.12"
+          ]
+        },
+        "ref_note": "John 18:1-12 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §152"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §152, \"Going Forth to Gethsemane, Jesus Suffers Long in Agony\"",
+    "ref_note": "Matthew 26:36-56, Mark 14:32-52, Luke 22:39-53, John 18:1-12 all read directly (see event-witnesses.toml)",
+    "order_key": 40
+  },
+  {
+    "id": "pw_golgotha",
+    "label": "The crucifixion at Golgotha",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "golgotha"
+    ],
+    "verses": [
+      "JHN.19.16",
+      "JHN.19.17",
+      "JHN.19.18",
+      "JHN.19.19",
+      "JHN.19.20",
+      "JHN.19.21",
+      "JHN.19.22",
+      "JHN.19.23",
+      "JHN.19.24",
+      "JHN.19.25",
+      "JHN.19.26",
+      "JHN.19.27",
+      "JHN.19.28",
+      "JHN.19.29",
+      "JHN.19.30"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.27.33",
+            "MAT.27.34",
+            "MAT.27.35",
+            "MAT.27.36",
+            "MAT.27.37",
+            "MAT.27.38",
+            "MAT.27.39",
+            "MAT.27.40",
+            "MAT.27.41",
+            "MAT.27.42",
+            "MAT.27.43",
+            "MAT.27.44",
+            "MAT.27.45",
+            "MAT.27.46",
+            "MAT.27.47",
+            "MAT.27.48",
+            "MAT.27.49",
+            "MAT.27.50"
+          ]
+        },
+        "ref_note": "Matthew 27:33-50 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §164"
+      },
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.15.22",
+            "MRK.15.23",
+            "MRK.15.24",
+            "MRK.15.25",
+            "MRK.15.26",
+            "MRK.15.27",
+            "MRK.15.28",
+            "MRK.15.29",
+            "MRK.15.30",
+            "MRK.15.31",
+            "MRK.15.32",
+            "MRK.15.33",
+            "MRK.15.34",
+            "MRK.15.35",
+            "MRK.15.36",
+            "MRK.15.37"
+          ]
+        },
+        "ref_note": "Mark 15:22-37 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §164"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.23.33",
+            "LUK.23.34",
+            "LUK.23.35",
+            "LUK.23.36",
+            "LUK.23.37",
+            "LUK.23.38",
+            "LUK.23.39",
+            "LUK.23.40",
+            "LUK.23.41",
+            "LUK.23.42",
+            "LUK.23.43",
+            "LUK.23.44",
+            "LUK.23.45",
+            "LUK.23.46"
+          ]
+        },
+        "ref_note": "Luke 23:33-46 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §164"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.19.17",
+            "JHN.19.18",
+            "JHN.19.19",
+            "JHN.19.20",
+            "JHN.19.21",
+            "JHN.19.22",
+            "JHN.19.23",
+            "JHN.19.24",
+            "JHN.19.25",
+            "JHN.19.26",
+            "JHN.19.27",
+            "JHN.19.28",
+            "JHN.19.29",
+            "JHN.19.30"
+          ]
+        },
+        "ref_note": "John 19:17-30 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §164"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §164, \"The First Three Hours on the Cross\"",
+    "ref_note": "Matthew 27:33-50, Mark 15:22-37, Luke 23:33-46, John 19:17-30 all read directly (see event-witnesses.toml); Robertson's own §164 covers only the first three hours of a longer sequence of Harmony sections -- this app's own coarser 'event' groups the whole crucifixion scene per Gospel, a disclosed widening of Robertson's own narrower section boundary, not a mis-citation",
+    "order_key": 50
+  },
+  {
+    "id": "pw_jerusalem_resurrection",
+    "label": "The empty tomb in Jerusalem",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.28.1",
+      "MAT.28.2",
+      "MAT.28.3",
+      "MAT.28.4",
+      "MAT.28.5",
+      "MAT.28.6",
+      "MAT.28.7",
+      "MAT.28.8",
+      "MAT.28.9",
+      "MAT.28.10"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.28.1",
+            "MAT.28.2",
+            "MAT.28.3",
+            "MAT.28.4",
+            "MAT.28.5",
+            "MAT.28.6",
+            "MAT.28.7",
+            "MAT.28.8",
+            "MAT.28.9",
+            "MAT.28.10"
+          ]
+        },
+        "ref_note": "Matthew 28:1-10 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §171"
+      },
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.16.1",
+            "MRK.16.2",
+            "MRK.16.3",
+            "MRK.16.4",
+            "MRK.16.5",
+            "MRK.16.6",
+            "MRK.16.7",
+            "MRK.16.8"
+          ]
+        },
+        "ref_note": "Mark 16:1-8 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §171"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.24.1",
+            "LUK.24.2",
+            "LUK.24.3",
+            "LUK.24.4",
+            "LUK.24.5",
+            "LUK.24.6",
+            "LUK.24.7",
+            "LUK.24.8",
+            "LUK.24.9",
+            "LUK.24.10",
+            "LUK.24.11",
+            "LUK.24.12"
+          ]
+        },
+        "ref_note": "Luke 24:1-12 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §171"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.20.1",
+            "JHN.20.2",
+            "JHN.20.3",
+            "JHN.20.4",
+            "JHN.20.5",
+            "JHN.20.6",
+            "JHN.20.7",
+            "JHN.20.8",
+            "JHN.20.9",
+            "JHN.20.10"
+          ]
+        },
+        "ref_note": "John 20:1-10 read directly against the compiled KJV text (scoped to the empty-tomb discovery; Mary Magdalene's own encounter with the risen Christ, 20:11-18, is a related but distinct scene this event does not extend into)",
+        "robertson_section": "Robertson (1922) §171"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §171, \"The Visit of the Women to the Tomb of Jesus about Sunrise Sunday Morning and the Message of the Angels about the Empty Tomb\"",
+    "ref_note": "Matthew 28:5-8 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml)",
+    "order_key": 60
+  },
+  {
+    "id": "pw_emmaus",
+    "label": "The road to Emmaus",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "emmaus"
+    ],
+    "verses": [
+      "LUK.24.13",
+      "LUK.24.14",
+      "LUK.24.15",
+      "LUK.24.16",
+      "LUK.24.17",
+      "LUK.24.18",
+      "LUK.24.19",
+      "LUK.24.20",
+      "LUK.24.21",
+      "LUK.24.22",
+      "LUK.24.23",
+      "LUK.24.24",
+      "LUK.24.25",
+      "LUK.24.26",
+      "LUK.24.27",
+      "LUK.24.28",
+      "LUK.24.29",
+      "LUK.24.30",
+      "LUK.24.31",
+      "LUK.24.32",
+      "LUK.24.33",
+      "LUK.24.34",
+      "LUK.24.35"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §176, \"The Appearance to Two Disciples (Cleopas and Another) on the Way to Emmaus\"",
+    "ref_note": "Luke 24:13-35 read directly; Robertson also lists Mark 16:12-13 (a two-verse mention in Mark's disputed longer ending) but this event is curated single-witness (Luke alone) -- requirement 4's own 'no parallel framing when n=1' case",
+    "order_key": 70
+  },
+  {
+    "id": "pw_galilee",
+    "label": "Jesus commissions the disciples in Galilee",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "MAT.28.16",
+      "MAT.28.17",
+      "MAT.28.18",
+      "MAT.28.19",
+      "MAT.28.20"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.28.16",
+            "MAT.28.17",
+            "MAT.28.18",
+            "MAT.28.19",
+            "MAT.28.20"
+          ]
+        },
+        "ref_note": "Matthew 28:16-20 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §181"
+      },
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.16.15",
+            "MRK.16.16",
+            "MRK.16.17",
+            "MRK.16.18"
+          ]
+        },
+        "ref_note": "Mark 16:15-18 read directly against the compiled KJV text (Mark's own disputed longer ending, 16:9-20 -- part of the KJV/Textus Receptus tradition this app's own compiled text follows, disclosed here rather than silently smoothed over)",
+        "robertson_section": "Robertson (1922) §181"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §181, \"The Appearance to about Five Hundred on an Appointed Mountain in Galilee, and a Commission Given\"",
+    "ref_note": "Matthew 28:16-20, Mark 16:15-18 read directly (see event-witnesses.toml); Robertson also lists 1 Corinthians 15:6, outside this app's Gospels+Acts witness scope",
+    "order_key": 80
+  },
+  {
+    "id": "pw_mount_of_olives",
+    "label": "The ascension from the Mount of Olives",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "mount-of-olives"
+    ],
+    "verses": [
+      "ACT.1.9",
+      "ACT.1.10",
+      "ACT.1.11",
+      "ACT.1.12"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.24.50",
+            "LUK.24.51",
+            "LUK.24.52",
+            "LUK.24.53"
+          ]
+        },
+        "ref_note": "Luke 24:50-53 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §184"
+      },
+      {
+        "book": "ACT",
+        "translations": {
+          "kjv": [
+            "ACT.1.9",
+            "ACT.1.10",
+            "ACT.1.11",
+            "ACT.1.12"
+          ]
+        },
+        "ref_note": "Acts 1:9-12 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §184"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §184, \"The Last Appearance and the Ascension\"",
+    "ref_note": "Acts 1:9-12, Luke 24:50-53 read directly (see event-witnesses.toml); Robertson also lists Mark 16:19-20 (Mark's own disputed longer ending), omitted here -- Luke/Acts (same author) already give two solid, undisputed witnesses",
+    "order_key": 90
   },
   {
     "id": "theo-327",
@@ -23006,7 +25936,12 @@
       "ACT.9.29",
       "ACT.9.30",
       "ACT.9.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-328",
@@ -23033,7 +25968,12 @@
       "ACT.9.41",
       "ACT.9.42",
       "ACT.9.43"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-329",
@@ -23080,7 +26020,12 @@
       "ACT.10.31",
       "ACT.10.32",
       "ACT.10.33"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-330",
@@ -23108,7 +26053,12 @@
       "ACT.10.46",
       "ACT.10.47",
       "ACT.10.48"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-331",
@@ -23139,7 +26089,12 @@
       "ACT.11.16",
       "ACT.11.17",
       "ACT.11.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-332",
@@ -23164,7 +26119,12 @@
       "ACT.11.28",
       "ACT.11.29",
       "ACT.11.30"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-333",
@@ -23179,7 +26139,12 @@
     "verses": [
       "ACT.12.1",
       "ACT.12.2"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-334",
@@ -23195,7 +26160,12 @@
       "ACT.12.3",
       "ACT.12.4",
       "ACT.12.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-335",
@@ -23222,7 +26192,12 @@
       "ACT.12.17",
       "ACT.12.18",
       "ACT.12.19"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-336",
@@ -23239,7 +26214,12 @@
       "ACT.12.21",
       "ACT.12.22",
       "ACT.12.23"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-337",
@@ -23257,7 +26237,12 @@
       "ACT.13.1",
       "ACT.13.2",
       "ACT.13.3"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-338",
@@ -23364,7 +26349,12 @@
       "ACT.14.26",
       "ACT.14.27",
       "ACT.14.28"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-339",
@@ -23389,7 +26379,12 @@
       "ACT.13.10",
       "ACT.13.11",
       "ACT.13.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-340",
@@ -23447,7 +26442,12 @@
       "ACT.13.50",
       "ACT.13.51",
       "ACT.13.52"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-341",
@@ -23465,7 +26465,12 @@
       "ACT.14.3",
       "ACT.14.4",
       "ACT.14.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-342",
@@ -23494,7 +26499,12 @@
       "ACT.14.18",
       "ACT.14.19",
       "ACT.14.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-343",
@@ -23522,7 +26532,12 @@
       "ACT.14.26",
       "ACT.14.27",
       "ACT.14.28"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-344",
@@ -23569,7 +26584,12 @@
       "ACT.15.32",
       "ACT.15.33",
       "ACT.15.34"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-345",
@@ -23718,7 +26738,12 @@
       "ACT.18.21",
       "ACT.18.22",
       "ACT.18.23"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "p1_antioch",
@@ -23734,7 +26759,12 @@
       "ACT.13.1",
       "ACT.13.2",
       "ACT.13.3"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "p1_seleucia",
@@ -23748,7 +26778,12 @@
     ],
     "verses": [
       "ACT.13.4"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "p1_salamis",
@@ -23762,7 +26797,12 @@
     ],
     "verses": [
       "ACT.13.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "p1_paphos",
@@ -23782,7 +26822,12 @@
       "ACT.13.10",
       "ACT.13.11",
       "ACT.13.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-346",
@@ -23801,7 +26846,12 @@
       "ACT.15.37",
       "ACT.15.38",
       "ACT.15.39"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-348",
@@ -23818,7 +26868,12 @@
     "verses": [
       "ACT.15.40",
       "ACT.15.41"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-349",
@@ -23837,7 +26892,12 @@
       "ACT.16.3",
       "ACT.16.4",
       "ACT.16.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-350",
@@ -23857,7 +26917,12 @@
       "ACT.16.6",
       "ACT.16.7",
       "ACT.16.8"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-351",
@@ -23878,7 +26943,12 @@
       "ACT.16.10",
       "ACT.16.11",
       "ACT.16.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-352",
@@ -23894,7 +26964,12 @@
       "ACT.16.13",
       "ACT.16.14",
       "ACT.16.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-353",
@@ -23910,7 +26985,12 @@
       "ACT.16.16",
       "ACT.16.17",
       "ACT.16.18"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-354",
@@ -23939,7 +27019,12 @@
       "ACT.16.32",
       "ACT.16.33",
       "ACT.16.34"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-355",
@@ -23962,7 +27047,12 @@
       "ACT.16.32",
       "ACT.16.33",
       "ACT.16.34"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-356",
@@ -23981,7 +27071,12 @@
       "ACT.16.38",
       "ACT.16.39",
       "ACT.16.40"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "p1_perga",
@@ -23995,7 +27090,12 @@
     ],
     "verses": [
       "ACT.13.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "p1_pisidian_antioch",
@@ -24047,7 +27147,12 @@
       "ACT.13.50",
       "ACT.13.51",
       "ACT.13.52"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "p1_iconium",
@@ -24067,7 +27172,12 @@
       "ACT.14.5",
       "ACT.14.6",
       "ACT.14.7"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-357",
@@ -24089,7 +27199,12 @@
       "ACT.17.7",
       "ACT.17.8",
       "ACT.17.9"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-358",
@@ -24108,7 +27223,12 @@
       "ACT.17.13",
       "ACT.17.14",
       "ACT.17.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-359",
@@ -24141,7 +27261,12 @@
       "ACT.17.32",
       "ACT.17.33",
       "ACT.17.34"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "p1_lystra",
@@ -24167,7 +27292,12 @@
       "ACT.14.18",
       "ACT.14.19",
       "ACT.14.20"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "p1_derbe",
@@ -24182,7 +27312,12 @@
     "verses": [
       "ACT.14.20",
       "ACT.14.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "p1_return",
@@ -24198,7 +27333,12 @@
       "ACT.14.24",
       "ACT.14.25",
       "ACT.14.26"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-347",
@@ -24210,7 +27350,12 @@
     "places": [],
     "verses": [
       "GAL.1.1"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-360",
@@ -24241,7 +27386,12 @@
       "ACT.18.15",
       "ACT.18.16",
       "ACT.18.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-361",
@@ -24266,7 +27416,12 @@
       "ACT.18.21",
       "ACT.18.22",
       "ACT.18.23"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-362",
@@ -24285,7 +27440,12 @@
       "ACT.18.26",
       "ACT.18.27",
       "ACT.18.28"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-363",
@@ -24358,7 +27518,12 @@
       "ACT.19.39",
       "ACT.19.40",
       "ACT.19.41"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-364",
@@ -24394,7 +27559,12 @@
       "ACT.19.20",
       "ACT.19.21",
       "ACT.19.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-365",
@@ -24427,7 +27597,12 @@
       "ACT.19.39",
       "ACT.19.40",
       "ACT.19.41"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-366",
@@ -24449,7 +27624,12 @@
       "ACT.20.3",
       "ACT.20.4",
       "ACT.20.5"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-367",
@@ -24468,7 +27648,12 @@
       "ACT.20.9",
       "ACT.20.10",
       "ACT.20.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-368",
@@ -24491,7 +27676,12 @@
       "ACT.20.13",
       "ACT.20.14",
       "ACT.20.15"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-369",
@@ -24526,7 +27716,12 @@
       "ACT.20.36",
       "ACT.20.37",
       "ACT.20.38"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-370",
@@ -24566,7 +27761,12 @@
       "ACT.21.15",
       "ACT.21.16",
       "ACT.21.17"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-371",
@@ -24588,7 +27788,12 @@
       "ACT.21.24",
       "ACT.21.25",
       "ACT.21.26"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-372",
@@ -24611,7 +27816,12 @@
       "ACT.21.34",
       "ACT.21.35",
       "ACT.21.36"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-373",
@@ -24657,7 +27867,12 @@
       "ACT.22.27",
       "ACT.22.28",
       "ACT.22.29"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-374",
@@ -24682,7 +27897,12 @@
       "ACT.23.9",
       "ACT.23.10",
       "ACT.23.11"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-375",
@@ -24706,7 +27926,12 @@
       "ACT.23.20",
       "ACT.23.21",
       "ACT.23.22"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-376",
@@ -24760,7 +27985,12 @@
       "ACT.24.25",
       "ACT.24.26",
       "ACT.24.27"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-377",
@@ -24785,7 +28015,12 @@
       "ACT.25.10",
       "ACT.25.11",
       "ACT.25.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-378",
@@ -24807,7 +28042,12 @@
       "ACT.25.19",
       "ACT.25.20",
       "ACT.25.21"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-379",
@@ -24858,7 +28098,12 @@
       "ACT.26.30",
       "ACT.26.31",
       "ACT.26.32"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-380",
@@ -24898,7 +28143,12 @@
       "ACT.27.10",
       "ACT.27.11",
       "ACT.27.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-381",
@@ -25009,7 +28259,12 @@
       "ACT.28.29",
       "ACT.28.30",
       "ACT.28.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-382",
@@ -25056,7 +28311,12 @@
       "ACT.27.42",
       "ACT.27.43",
       "ACT.27.44"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-383",
@@ -25079,7 +28339,12 @@
       "ACT.28.8",
       "ACT.28.9",
       "ACT.28.10"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-384",
@@ -25103,7 +28368,12 @@
       "ACT.28.14",
       "ACT.28.15",
       "ACT.28.16"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "theo-385",
@@ -25131,7 +28401,12 @@
       "ACT.28.29",
       "ACT.28.30",
       "ACT.28.31"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "pr_caesarea",
@@ -25146,7 +28421,12 @@
     "verses": [
       "ACT.27.1",
       "ACT.27.2"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "pr_sidon",
@@ -25160,7 +28440,12 @@
     ],
     "verses": [
       "ACT.27.3"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "pr_myra",
@@ -25175,7 +28460,12 @@
     "verses": [
       "ACT.27.5",
       "ACT.27.6"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "pr_fair_havens",
@@ -25189,7 +28479,12 @@
     ],
     "verses": [
       "ACT.27.8"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "pr_malta",
@@ -25203,7 +28498,12 @@
     ],
     "verses": [
       "ACT.28.1"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "pr_syracuse",
@@ -25217,7 +28517,12 @@
     ],
     "verses": [
       "ACT.28.12"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "pr_rhegium",
@@ -25231,7 +28536,12 @@
     ],
     "verses": [
       "ACT.28.13"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "pr_puteoli",
@@ -25246,7 +28556,12 @@
     "verses": [
       "ACT.28.13",
       "ACT.28.14"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   },
   {
     "id": "pr_rome",
@@ -25260,6 +28575,11 @@
     ],
     "verses": [
       "ACT.28.16"
-    ]
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "ref_note": null,
+    "order_key": 0
   }
 ]

@@ -65,6 +65,7 @@ pub fn build(data: Arc<AtlasData>, static_dir: Option<PathBuf>) -> Router {
         .route("/api/place/{id}", get(handlers::place))
         .route("/api/narratives", get(handlers::narratives))
         .route("/api/narrative/event/{id}", get(handlers::narrative_event_positions))
+        .route("/api/event/{id}", get(handlers::event))
         .route("/api/eras", get(handlers::eras))
         .route("/api/polities", get(handlers::polities))
         .route("/api/landmarks", get(handlers::landmarks))
