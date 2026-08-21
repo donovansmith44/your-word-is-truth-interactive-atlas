@@ -155,7 +155,16 @@ Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   chapter on the Bible in split screen are too tiny to see" -- measured
   live, 14.8x22.8px) by NAV-4 below: a real, legible presence in BOTH
   panes, sharing one set of rules (no split-specific fork) -- see NAV-4 for
-  the current shape and exact numbers), `passage-chip`
+  the current shape and exact numbers), `passage-chip`,
+  `pericope-heading-{eventId}` (batch-t-brief.md requirement 5; a real
+  `<h2>`, explorable (ONE-RULE) -- a quiet small-caps title rendered
+  immediately above its own first verse's `verse-line-{n}`, present
+  whenever `GET /api/chapter/{cref}`'s own per-verse `heading` field is
+  present (server: `AtlasData::heading_for_verse`) -- conditional presence,
+  absent entirely for an uncovered book/chapter (no verse there is ever a
+  heading anchor); clicking opens a fresh `EventNode` for that heading's own
+  `event_id` -- see EVENT-1. Shares this SAME code path for the split-view
+  reader pane (Reader.razor is reused, not copied, for both -- SPLIT-1))
 Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
   FOLLOW-1/VIEWSTATE-1 below for the full behavior these wire up):
   `split-open-reader` (button, reader only, absent once split is open;
@@ -181,11 +190,13 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   the registry rendered for the current node, `id` one of `verse-text`,
   `xrefs`, `catechism`, `place-dates`, `place-blurb`, `place-events`,
   `catechism-text`, `catechism-explanation`, `catechism-where-written`,
-  `catechism-scriptures`, `narrative-event-text`, `narrative-prior`,
-  `narrative-following`, `polity-delta-event`, `polity-delta-scriptures`,
-  `polity-delta-grounding` today -- see REGISTRY-1/CATECH-1/NARRATIVE-1/
-  DELTA-1; conditional presence, absent whenever that section's own
-  provider resolved no content this open),
+  `catechism-scriptures`, `event-membership`, `event-date-places`,
+  `event-witnesses` (or `event-witness`, singular, for a single-witness
+  event -- see EVENT-1), `event-prior`, `event-following`,
+  `polity-delta-event`, `polity-delta-scriptures`, `polity-delta-grounding`
+  today -- see REGISTRY-1/CATECH-1/EVENT-1/DELTA-1; conditional presence,
+  absent whenever that section's own provider resolved no content this
+  open),
   `catechism-section-heading` (batch-f-brief.md; small-caps eyebrow rendered
   INSIDE a section's own body by that section's provider -- not a separate
   testid-bearing wrapper of its own; present on `popover-section-catechism`
@@ -290,38 +301,51 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   the down-arrow reveal / up-arrow snap-back for the cross-references list
   -- present only when there are more entries than the current cap; see
   XREF-1),
-  `narrative-section-heading` (batch-n-brief.md; small-caps eyebrow rendered
-  INSIDE `popover-section-narrative-prior`/`-following`'s own body, same
-  "shared testid, many different texts" convention as
-  `catechism-section-heading` -- text is "PRIOR EVENT"/"FOLLOWING EVENT"
-  bare when the current node touches exactly one qualifying narrative in
-  that direction, else one heading per qualifying narrative, each reading
+  `event-section-heading` (batch-n-brief.md, retargeted batch-t-brief.md;
+  small-caps eyebrow, the SAME shared testid every section-registry heading
+  in this popover platform uses -- `catechism-section-heading`'s own class,
+  reused directly, not a fourth copy under a fourth name (Batch T retires
+  the pixel-identical `narrative-section-heading`) -- rendered on FOUR
+  different section bodies with FOUR different texts: "EVENT" (a VERSE
+  node's own event-membership list, see EVENT-1), "PARALLEL ACCOUNTS" (an
+  EVENT node's own witness list, conditional -- absent for a single-witness
+  event, see EVENT-1), and "PRIOR EVENT"/"FOLLOWING EVENT" bare when the
+  current EVENT node touches exactly one qualifying narrative in that
+  direction, else one heading per qualifying narrative, each reading
   "PRIOR EVENT — {narrative name}" (`FOLLOWING EVENT` symmetrically) --
-  see NARRATIVE-1),
-  `narrative-prior-event-{narrativeId}` / `narrative-following-event-{narrativeId}`
-  (batch-n-brief.md; button; the adjacent event's own label; present once
-  per qualifying narrative position in that direction -- a SECOND position
-  sharing the same `narrativeId` (a real case in the compiled data, see
-  NARRATIVE-1) gets a numbered `--2`/`--3` suffix, same disambiguation
-  shape as `catechism-item-{ID}--q2`; clicking (or Enter) traverses --
-  pushes a fresh `NarrativeEventNode` re-anchoring the popover onto that
-  event, recursively -- see NARRATIVE-1),
-  `narrative-prior-verse-{narrativeId}-{SPAN}` / `narrative-following-verse-{narrativeId}-{SPAN}`
-  (batch-n-brief.md; one per passage entry among the adjacent event's own
-  verses, via the shared passage-list component -- PASSAGE-1's own
-  `popover-verse-expand{-ENTRY-ID}`/etc. nested testids apply here
-  identically; opens a `VerseNode`/`PassageNode` for `SPAN`, same as any
-  other passage-list entry; fix-round-1 (batch-n-review.md Minor-1): when
-  the event-row testid above carries a `--2`/`--3` disambiguation suffix,
-  this verse-row's own `{narrativeId}` segment inherits that EXACT suffix
-  verbatim too (e.g. `narrative-prior-verse-exodus--2-EXO.12.37`), never
-  the bare `{narrativeId}` form -- see NARRATIVE-1),
-  `narrative-event-narrative-name` (batch-n-brief.md; present on a
-  `NarrativeEventNode`'s own popover only -- names which narrative this
-  traversed event belongs to), `narrative-event-verse-{SPAN}` (batch-n-brief.md;
-  one per passage entry among a `NarrativeEventNode`'s own verses, same
-  shared-component treatment as above; absent entirely for an event with
-  zero curated verses -- see NARRATIVE-1),
+  see EVENT-1),
+  `verse-event-{eventId}` (batch-t-brief.md; button; one per EVENT-kind
+  PASSAGE citing the current VERSE, inside `popover-section-event-membership`
+  -- REPLACES batch-n-brief.md's own verse-level PRIOR/FOLLOWING (retired,
+  see EVENT-1); clicking pushes a fresh `EventNode` for that event, id-keyed),
+  `event-date` (batch-t-brief.md; an EVENT node's own quiet date line,
+  non-interactive -- carries the event's own curated `ref_note`, if any, as
+  a plain hover tooltip, per requirement 4's own "ref_note provenance on
+  hover or a quiet note"), `event-places` (wraps one or more `event-place-{placeId}`
+  rows, present only when the event has >=1 resolved place), `event-place-{placeId}`
+  (button; opens a `PlaceNode` for that place -- "place opens the place
+  node," requirement 4 verbatim), `event-witness-{SPAN}` (one per passage
+  entry among an EVENT node's own PARALLEL ACCOUNTS/single-passage list, via
+  the shared passage-list component, clamped per PASSAGE-1's own
+  `ClampVerses` extension -- see EVENT-1),
+  `event-prior-event-{narrativeId}` / `event-following-event-{narrativeId}`
+  (batch-n-brief.md, retargeted batch-t-brief.md; button; the adjacent
+  event's own label; present once per qualifying narrative position in
+  that direction -- a SECOND position sharing the same `narrativeId` (a
+  real case in the compiled data, see EVENT-1) gets a numbered `--2`/`--3`
+  suffix, same disambiguation shape as `catechism-item-{ID}--q2`; clicking
+  (or Enter) traverses -- pushes a fresh `EventNode` re-anchoring the
+  popover onto that event, recursively -- see EVENT-1),
+  `event-prior-verse-{narrativeId}-{SPAN}` / `event-following-verse-{narrativeId}-{SPAN}`
+  (batch-n-brief.md, retargeted batch-t-brief.md; one per passage entry
+  among the adjacent event's own verses, via the shared passage-list
+  component -- PASSAGE-1's own `popover-verse-expand{-ENTRY-ID}`/etc.
+  nested testids apply here identically; opens a `VerseNode`/`PassageNode`
+  for `SPAN`, same as any other passage-list entry; when the event-row
+  testid above carries a `--2`/`--3` disambiguation suffix, this verse-row's
+  own `{narrativeId}` segment inherits that EXACT suffix verbatim too (e.g.
+  `event-prior-verse-exodus--2-EXO.12.37`), never the bare `{narrativeId}`
+  form -- see EVENT-1),
   `polity-delta-verse-{SPAN}` (batch-m-brief.md requirement 4; one per
   passage entry among a `PolityDelta` node's own curated verses, same
   shared-component (PASSAGE-1) treatment as every list above -- nested
@@ -343,22 +367,35 @@ Notes:
   inline (`popover-section-xrefs`, conditional -- absent for a verse with
   zero recorded cross-references, truncated per XREF-1), "THE SMALL
   CATECHISM" (`popover-section-catechism`, batch-f-brief.md, conditional --
-  absent for a verse citing zero catechism items -- see CATECH-1),
-  "PRIOR EVENT" (`popover-section-narrative-prior`, batch-n-brief.md,
-  conditional -- absent for a verse touching no narrative, or touching one
-  only at its own FIRST leg -- see NARRATIVE-1) and "FOLLOWING EVENT"
-  (`popover-section-narrative-following`, symmetric, absent at a
-  narrative's own LAST leg). PASSAGE nodes get the same verse-text/
-  cross-references/catechism sections (aggregating as before this batch) --
-  NOT the narrative sections (batch-n-brief.md scopes PRIOR/FOLLOWING to
-  VERSE only, a disclosed choice -- see NARRATIVE-1). NARRATIVE-EVENT node
-  sections (batch-n-brief.md; a `NarrativeEventNode`, reached by traversing
-  a PRIOR/FOLLOWING row above), in this order: the event's own subject text
-  (`popover-section-narrative-event-text`, always present -- a small meta
-  line naming the narrative, then the event's own verses via the shared
-  passage-list component, absent entirely when the event has zero curated
-  verses), then the SAME "PRIOR EVENT"/"FOLLOWING EVENT" sections again
-  (recursion -- see NARRATIVE-1). PLACE node sections, in this order:
+  absent for a verse citing zero catechism items -- see CATECH-1), "EVENT"
+  (`popover-section-event-membership`, batch-t-brief.md, conditional --
+  absent for a verse citing zero EVENT-kind PASSAGEs -- see EVENT-1;
+  REPLACES batch-n-brief.md's own verse-level "PRIOR EVENT"/"FOLLOWING
+  EVENT" sections, retired by batch-t-brief.md requirement 3: "rather than
+  putting the next/previous event on every verse, add titles of events...
+  traversal lives on event nodes," the owner verbatim). PASSAGE nodes get
+  the same verse-text/cross-references/catechism sections (aggregating as
+  before) -- NOT the EVENT section either (unchanged Batch N scope: a
+  shift-click passage span's own per-verse narrative/event membership is
+  genuinely ambiguous in a way a single verse never is). EVENT node
+  sections (batch-t-brief.md; an `EventNode`, reached by a verse's own
+  "EVENT" row above, a reader heading, or a PRIOR/FOLLOWING traversal row
+  below, recursively), in this order: date + place(s)
+  (`popover-section-event-date-places`, always present -- the date line
+  always renders; the place row is itself conditional, absent only if the
+  event somehow resolves zero places), PARALLEL ACCOUNTS
+  (`popover-section-event-witnesses`, conditional heading -- present with
+  the "PARALLEL ACCOUNTS" eyebrow only when the event has >=2 witnesses;
+  exactly one witness renders the SAME section id as `event-witness`
+  (singular) with no eyebrow at all, requirement 4's own "no 'parallel'
+  framing when n=1" -- see EVENT-1), then "PRIOR EVENT"
+  (`popover-section-event-prior`, conditional -- absent for an event
+  touching no narrative, or touching one only at its own FIRST leg -- see
+  EVENT-1) and "FOLLOWING EVENT" (`popover-section-event-following`,
+  symmetric, absent at a narrative's own LAST leg) -- recursion falls out
+  of an EventNode's own traversal row pushing ANOTHER EventNode, the SAME
+  `AppliesTo` clause matching it too, not a second mechanism. PLACE node
+  sections, in this order:
   an empty seam reserved for a future place-description provider (renders
   nothing today), established/destroyed dates (`popover-section-place-dates`,
   conditional -- batch-f2-brief.md requirement 6b: each date's own
@@ -428,6 +465,39 @@ Notes:
   is common, not an edge case), verified by `reader.spec.ts`'s own READ-3
   property test. `PassageList.razor`'s own `ExploreAsVerse` parameter
   (default false; `CrossRefsSection` sets it true) is the mechanism.
+
+  batch-n2's own requirement 2 (folded into batch-t-brief.md, which needed
+  the identical mechanism for EVENT-kind PASSAGE witnesses -- see EVENT-1 --
+  the owner, near-verbatim: "if in hover menu we show passage, we don't
+  show more than two verses of the passage at a time, and you can click
+  button to expand/collapse that passage, and also read the whole chapter
+  like we've already got"): `PassageList.razor`'s own `ClampVerses`
+  parameter caps a PASSAGE entry's own COMPACT text at N verses --
+  independent of, and orthogonal to, `Cap` above (which counts whole
+  ENTRIES; `ClampVerses` clamps WITHIN one entry). A per-entry
+  `popover-passage-clamp-expand-{ENTRY-ID}` button (text "Show the rest of
+  this passage") reveals the entry's own remaining verses in place;
+  `popover-passage-clamp-collapse-{ENTRY-ID}` (text "Show fewer verses",
+  `aria-expanded="true"` on the expand button throughout) restores the
+  clamped view -- `ENTRY-ID` is ALWAYS present here (unlike
+  `popover-verse-expand{-ENTRY-ID}`'s own optional suffix, READER-1: this
+  control has no bare, single-instance context the way that one's
+  VerseTextSection caller does -- it only ever exists inside a
+  `PassageList` entry, so the suffix is unconditional, no empty-string
+  case). Visually and testid-distinct from `popover-verse-expand` (italic,
+  bronze-ink-resting vs. that control's own small-caps lapis-resting) so
+  the two independent affordances on one entry
+  -- "expand THIS passage" vs. "read the whole CHAPTER" -- never read as
+  the same control; both are keyboard-reachable, and expanding/collapsing
+  one never disturbs the other's own state on the same entry. Conditional
+  presence: a lone-verse entry, or a passage entry whose own verse count is
+  already `<=` `ClampVerses`, shows no clamp affordance at all. Currently
+  applied only where a caller passes `ClampVerses` (EVENT-1's own PARALLEL
+  ACCOUNTS/single-witness section, `ClampVerses="2"`) -- every other
+  `PassageList` consumer (xrefs, THE SCRIPTURES, place est/dest,
+  PRIOR/FOLLOWING) leaves it unset (no clamp, unchanged behavior), since the
+  mechanism is implemented ONCE, generically, and each caller opts in
+  independently.
 - XREF-1 (batch-f2-brief.md requirement 6, user direction 2026-08-20,
   near-verbatim: "truncate the cross references to show no more than 3 if
   cross references are the only kind of context that we're pulling into the
@@ -565,102 +635,184 @@ Notes:
   reachability path: batch-f2-brief.md's own coverage report
   (batch-f2-report.md) shows all 33 items reachable from >=1 verse once the
   repo mapping and Deut5 supplement are both counted.
-- NARRATIVE-1 (batch-n-brief.md, "narratives as first-class graph
-  structure" -- user direction 2026-08-20, verbatim: "narratives need to be
-  represented as internal structures - not merely dots on a graph that you
-  draw a line between... i expect to see, if i'm exploring a verse that is
-  part of a narrative, the ability to traverse the narrative graph on the
-  side of the reader... so, we have one graph representing narratives, and
-  i can traverse arbitrarily far... and the appropriate narrative lines on
-  the map side ought to be brought into particular focus"):
+- EVENT-1 (batch-t-brief.md, "events as the narrative nodes" -- SUPERSEDES
+  batch-n-brief.md's own NARRATIVE-1 note, retired -- owner direction
+  2026-08-21, near-verbatim: "you have names for events like 'The Road to
+  Emmaus' and 'The Crucifixion at Golgotha'... rather than putting the
+  next/previous event on every verse, add titles of events that correspond
+  to passages. These events are explorable, part of the graph, have time
+  and place data, and you can traverse in time... the narrative is
+  traversed by time, which means that the previous/next event is the one
+  that is chronologically NEXT, and not necessarily the next event that
+  you read (for instance the Gospel of John doesn't have everything in
+  order)... add the event titles throughout the reader, and identify
+  parallel accounts... internal representation is that the Bible has a set
+  of books and a set of passages... this set of passages with their titles
+  maps to a mapping of translation to a set of verses"):
 
-  ONE GRAPH, TWO SURFACES. `Narrative.legs` (an ORDERED chain of event ids
-  -- unchanged since Task 3) is the single source both surfaces read:
-  `scene::build_arrows` walks it to build a time/scripture-mode scene's own
-  `arrows` (`SceneArrow`, the map's own threads); `atlas_core::narrative::positions_for_events`
-  (new) walks the SAME `legs`, for a given event id, to find its own
-  immediate PRIOR (`legs[idx-1]`) and FOLLOWING (`legs[idx+1]`) neighbors --
-  each neighbor's own `verse_groups` built by the exact same
-  `scene::to_scene_event` call `SceneEvent`/`VerseEventOut` already use
-  everywhere else on the wire, so a PRIOR/FOLLOWING event's own verses are
-  PROVABLY the same data an arrow endpoint's own place-card would show for
-  that identical event id (not merely styled the same -- see
+  PASSAGE/EVENT DATA MODEL. `atlas_core::data::Event` IS the EVENT-kind
+  half of the owner's own PASSAGE abstraction: `id`/`label` (this passage's
+  own title -- kept under its pre-existing field name, a disclosed decision,
+  not a rename), `kind` (`"event"` for every real record today -- `"general"`
+  is modeled, ETL-validated, but zero passages use it this batch, per the
+  owner's own coverage decision: "Gospels-first... PLUS every event in the
+  existing 13 narratives... General-passage titles outside these come
+  later"), `when`/`places` (unchanged since Task 3), and PARALLEL WITNESSES
+  (`witnesses: Vec<EventWitness>` -- "the set of per-book passages that
+  recount the same event... one witness passage per Gospel," the owner
+  verbatim). Each witness is `{book, translations, ref_note,
+  robertson_section}` -- `translations` a REAL `HashMap<String, Vec<String>>`
+  (translation code -> flat canonical verse ids), the "mapping of
+  translation to a set of verses" the owner's own words ask for, resolved
+  fail-loud (`atlas_core::translation::resolve`, unit-tested: KJV present,
+  any other code an `Err`, never a silent fallback) -- KJV is the only
+  translation this atlas compiles today; the indirection exists so a future
+  translation keeps this SAME witness identity (book + span) without
+  restructuring. An event with `witnesses` EMPTY (the overwhelming
+  majority -- every event this batch does not explicitly curate parallel
+  accounts for) has exactly ONE IMPLICIT witness, synthesized server-side
+  from its own `verses` grouped by book (`scene::witnesses_for`) -- never a
+  fabricated placeholder, and the SAME function the reader-heading index
+  and the EVENT popover's own wire both call, so they can never disagree
+  about how many witnesses an event has.
+
+  ONE GRAPH, THREE SURFACES. `Narrative.legs` (an ORDERED chain of event ids
+  -- unchanged since Task 3, ETL-validated non-chronological AND, new this
+  batch, non-decreasing by `(when.from_year, order_key)` -- `order_key` is
+  an explicit SUB-YEAR tiebreak for events sharing one traditional year,
+  e.g. Passion Week's own day-of-week ordering, never a fake year offset)
+  is the single source EVERY surface reads: `scene::build_arrows` walks it
+  to build a time/scripture-mode scene's own `arrows` (the map's own
+  threads); `atlas_core::narrative::positions_for_events` (Batch N, UNCHANGED
+  by this batch -- its own leg-array-adjacency walk was already exactly
+  "chronologically adjacent given a validated leg order," so nothing about
+  the resolver itself needed to change) walks the SAME `legs` to find an
+  event's own immediate PRIOR/FOLLOWING neighbors; and the READER HEADING
+  index (`AtlasData::heading_for_verse`, new) walks `events` directly to
+  anchor a title above each witness's own first verse. All three read
+  `scene::to_scene_event`/`scene::witnesses_for` for "an event's own verses
+  on the wire" -- PROVABLY the same data (see
   `atlas_core::narrative`'s own
   `adjacent_event_verse_groups_equal_the_map_arrows_own_scene_event` test,
-  which `assert_eq!`s the two independently-derived values).
+  which `assert_eq!`s two independently-derived values).
 
-  WIRE. `GET /api/verse/{vref}`'s own `narrative_positions` array (folded
-  into the already-shared verse-detail fetch, same "one fetch, not N"
-  precedent `catechism` already set) answers "which narrative position(s)
-  does this VERSE occupy" -- one entry per (narrative, event) pair the
-  verse's own event(s) touch (a verse cited by >1 event, or an event that
-  is itself a leg of >1 narrative -- BOTH real in the compiled data, not
-  hypothetical: `EXO.12.37` is cited by both the exodus narrative's
-  `ex_rameses` AND `ex_succoth` legs -- each yields its OWN entry, never
-  silently collapsed). `GET /api/narrative/event/{id}` (new) answers the
-  SAME question keyed by EVENT id instead -- requirement 1's own "traversal
-  steps resolve by event, not by re-searching verses": some events carry
-  zero curated verses at all, so a verse-based re-lookup would have nothing
-  to click, but the event-id lookup always works. Each entry: `narrative_id`/
-  `narrative_name`/`event_id`/`event_label` (the CURRENT position) plus
-  `prior`/`following` (each, when present, an adjacent event's own
-  `id`/`label`/`places`/`verse_groups`) -- `prior`/`following` OMITTED (not
-  null) exactly at a narrative's own first/last leg.
+  WIRE. `GET /api/verse/{vref}`'s own PRE-EXISTING `events` array (id/label/
+  verse_groups/places, unchanged since before Batch N) is what the VERSE
+  popover's new "EVENT" section reads -- "which titled EVENT-kind PASSAGE(s)
+  does this verse belong to," a DIFFERENT question from Batch N's own
+  retired `narrative_positions` field (which answered "which chronological
+  POSITION," now irrelevant at the verse level since traversal moved
+  entirely to the EVENT node). `GET /api/event/{id}` (new) is an EVENT
+  node's own rich fetch: `id`/`title`/`when`/`places` (id+name pairs) /
+  `witnesses` (ALWAYS >=1, see the data-model paragraph above) /
+  `robertson_section`/`ref_note` (each omitted, not null, when uncurated).
+  `GET /api/narrative/event/{id}` (Batch N, UNCHANGED route AND resolver)
+  is still the chronological PRIOR/FOLLOWING source -- only its CALLER
+  changed (`EventNode` replaces the retired `NarrativeEventNode`). `GET
+  /api/chapter/{cref}`'s own per-verse `heading` field (new,
+  `{event_id, title}`, omitted when this verse is not a heading ANCHOR) is
+  what Reader.razor reads to place a `pericope-heading-{eventId}` directly
+  in the reading flow.
+
+  HEADING-WORTHY RULE (server: `AtlasData::finish`). An event anchors a
+  reader heading -- one per WITNESS, at that witness's own first verse, in
+  THAT witness's own book -- exactly when it is a leg of one of the 13
+  curated narratives (OT included; every existing narrative event already
+  carries a real title via `Event::label`, so this needed zero new
+  authoring for those), OR was explicitly curated with `witnesses`, OR
+  carries a `robertson_section`. This realizes the owner's own coverage
+  decision ("Gospels-first... PLUS every event in the existing 13
+  narratives... General-passage titles outside these come later") without
+  a separate curated flag: a Theographic event this batch never touches,
+  and that is a leg of no narrative, correctly anchors NO heading anywhere.
 
   PROVIDER (no popover surgery -- registered exactly like every other
-  section, Explore/PopoverSections.cs). VERSE nodes gain two MORE sections,
-  appended after catechism (`NarrativePriorEventSection`/
-  `NarrativeFollowingEventSection`, "PRIOR EVENT"/"FOLLOWING EVENT"),
-  each conditional (absent when the verse has no qualifying narrative
-  position in that direction). A verse touching >1 narrative renders one
-  block per qualifying narrative inside the SAME section, each named "PRIOR
-  EVENT — {narrative name}" (bare "PRIOR EVENT" when there is only one);
-  the rare case where TWO qualifying positions share one narrative name
-  (the `EXO.12.37` case above) additionally names the current event, "PRIOR
-  EVENT — {narrative name} ({event label})", so the two stay
-  distinguishable. Each block's own adjacent event renders via the SAME
-  shared passage-list component (PASSAGE-1) every other verse list in this
-  app uses -- grouped passages, truncation-free (no cap asked for),
-  expand-to-chapter all inherited, zero parallel implementation.
+  section, Explore/PopoverSections.cs). VERSE nodes gain ONE new section,
+  appended after catechism: "EVENT" (`VerseEventMembershipSection`,
+  conditional -- absent for a verse touching zero titled events), one
+  `verse-event-{eventId}` row per event, explorable, opening a fresh
+  `EventNode`. EVENT nodes get their own two-to-four sections (always
+  date+places and the witness passage(s); PRIOR/FOLLOWING each
+  conditional), in order:
+  date + place(s) (`event-date`, always present; `event-places`, one
+  `event-place-{placeId}` row per resolved place, each explorable, opening
+  a `PlaceNode` -- "place opens the place node," requirement 4 verbatim;
+  the date line carries the event's own curated `ref_note`, when present,
+  as a plain hover tooltip -- "ref_note provenance on hover or a quiet
+  note"), PARALLEL ACCOUNTS (`EventWitnessesSection` -- one passage-list
+  unit per witness, captioned with that witness's own book's DISPLAY name
+  -- "Gospel name + passage ref" falls out of the shared component's
+  existing Caption + auto-rendered Span, no bespoke rendering needed --
+  each clamped to 2 verses via `PassageList`'s own `ClampVerses` (PASSAGE-1);
+  the "PARALLEL ACCOUNTS" eyebrow itself is conditional -- present only for
+  >=2 witnesses; exactly one witness renders the single passage directly,
+  no eyebrow, no "parallel" framing at all, requirement 4 verbatim), then
+  "PRIOR EVENT"/"FOLLOWING EVENT" (`EventPriorSection`/`EventFollowingSection`
+  -- the SAME shared resolver Batch N's own retired Verse-scoped providers
+  used, just retargeted onto Event; unlike Batch N's own `NarrativeEventNode`,
+  an `EventNode` is NEVER locked to one narrative -- it has no single
+  "reached through" narrative the way a Verse-originated traversal did (it
+  may be reached from a heading, a verse's own EVENT row, OR a PRIOR/
+  FOLLOWING traversal), so it always surfaces the FULL, unfiltered position
+  list, one block per qualifying narrative, each named "PRIOR EVENT —
+  {narrative name}" (bare when there is only one); the rare case where TWO
+  qualifying positions share one narrative name additionally names the
+  current event, "PRIOR EVENT — {narrative name} ({event label})," so the
+  two stay distinguishable). Each PRIOR/FOLLOWING block's own adjacent
+  event renders via the SAME shared passage-list component (PASSAGE-1)
+  every other verse list in this app uses -- grouped passages,
+  truncation-free (no cap asked for), expand-to-chapter all inherited,
+  zero parallel implementation.
 
   TRAVERSAL. Each adjacent event is EXPLORABLE (ONE-RULE): its own row
-  (`narrative-prior-event-{narrativeId}`/`narrative-following-event-{narrativeId}`,
-  the event's own label) is the traversal target -- clicking pushes a
-  `NarrativeEventNode`, re-anchoring the popover onto that event ("its
-  verses become the subject" -- a new NARRATIVE-EVENT node kind, see the
-  testid-inventory's own REGISTRY-1 addendum above), locked to the ONE
-  narrative it was reached through (a disclosed scope choice: an event that
-  also happens to be a leg of a DIFFERENT narrative does not silently
-  surface that OTHER narrative's own chain here -- opening one of the
-  event's own VERSES instead, an ordinary passage-list click, resolves
-  EVERY narrative it belongs to, same as any other verse). The traversed
-  node's OWN PRIOR/FOLLOWING sections resolve by ITS event id (never a
-  re-derived verse), recursing exactly as far as the underlying
+  (`event-prior-event-{narrativeId}`/`event-following-event-{narrativeId}`,
+  the event's own label) is the traversal target -- clicking pushes a fresh
+  `EventNode`, re-anchoring the popover onto that event ("its verses become
+  the subject," now richer -- date/places/witnesses too, not just verses).
+  The traversed node's OWN PRIOR/FOLLOWING sections resolve by ITS event id
+  (never a re-derived verse), recursing exactly as far as the underlying
   `Narrative.legs` chain goes -- first leg has no PRIOR section, last has
   no FOLLOWING, both by plain conditional presence, never a disabled stub.
   Also explorable, independently: each adjacent event's own passage-list
-  entries (`narrative-prior-verse-*`/`narrative-following-verse-*`/
-  `narrative-event-verse-*`) -- clicking one of THOSE opens an ordinary
-  `VerseNode`/`PassageNode` for that specific verse/span instead of
-  traversing the event as a whole (PASSAGE-1's own default click contract,
-  unmodified) -- a second, independent way into the same graph, not a
-  competing mechanism.
+  entries (`event-prior-verse-*`/`event-following-verse-*`) and each
+  witness's own passage-list entries (`event-witness-{SPAN}`) -- clicking
+  one of THOSE opens an ordinary `VerseNode`/`PassageNode` for that
+  specific verse/span instead of traversing the event as a whole
+  (PASSAGE-1's own default click contract, unmodified) -- a second,
+  independent way into the same graph, not a competing mechanism.
 
-  CONSISTENCY WITH G1 (requirement 3's own "reuse, don't fork"):
-  `PlaceCard.razor`'s own `NarrativeRows`/`PickAdjacent` (TRAVERSAL-1) is
-  UNCHANGED by this batch and remains client-side, place-centric adjacency
-  derived from a scene's own `arrows` -- a DIFFERENT code path from this
-  note's own event/verse-centric one, but never a DIFFERENT ANSWER: both
-  ultimately walk the SAME `Narrative.legs` chain (G1's own arrows are
-  built from it via `scene::build_arrows`; this batch's own positions read
-  it directly) and both resolve an event's own verses via the SAME
-  `scene::to_scene_event`, so a place card's "next event" and a popover's
-  "FOLLOWING EVENT" can never disagree about which event, or which verses,
-  come next.
+  CHRONOLOGICAL-VS-READING-ORDER (requirement 6/7's own worked example, the
+  owner's own "the Gospel of John doesn't have everything in order"): the
+  Passion Week narrative's own `pw_jerusalem_entry` (witnessed by all four
+  Gospels, including John, `JHN.12.12-19`) is chronologically FOLLOWED by
+  `pw_temple_cleansing` (Robertson §129 -- Matthew/Mark/Luke ONLY; John
+  narrates a DIFFERENT, EARLIER temple cleansing back in John 2 and never
+  repeats one during Passion Week). So `pw_jerusalem_entry`'s own FOLLOWING
+  EVENT is an event with NO John witness at all -- reading John's own text
+  forward from 12:19 never reaches a second temple-cleansing scene (it
+  reaches 12:20-36, the Greeks seeking Jesus, a different scene entirely),
+  while the graph's own chronological adjacency (via `Narrative.legs`,
+  ETL-validated) correctly walks straight to it regardless. This is a real,
+  data-grounded case of "the FOLLOWING event is not the next pericope in
+  {book}," not merely a hypothetical the acceptance test asserts against.
 
-  MAP FOCUS SYNC. While the popover's own CURRENT node has >=1 narrative
-  position (open on a narrative verse, or mid-traversal on a
-  NarrativeEventNode): every currently-live, non-mini map instance (the
+  CONSISTENCY WITH G1 (requirement 3's own "reuse, don't fork," carried
+  forward unchanged from Batch N): `PlaceCard.razor`'s own narrative
+  traversal (TRAVERSAL-1) is UNCHANGED by this batch and remains
+  client-side, resolved via the SAME event-id-keyed
+  `GET /api/narrative/event/{id}` this note's own EVENT popover traversal
+  uses (unified onto that one full-chain resolver by Batch N's own
+  fix-round-1, see TRAVERSAL-3) -- so a place card's "next event" and a
+  popover's "FOLLOWING EVENT" can never disagree about which event, or
+  which verses, come next.
+
+  MAP FOCUS SYNC (mechanism UNCHANGED from Batch N -- only which node kind
+  triggers it changed: `EventNode` implements `INarrativeAware` where the
+  retired `NarrativeEventNode`/`VerseNode` used to; `VerseNode` no longer
+  does, since it no longer carries a narrative POSITION of its own, only
+  EVENT membership). While the popover's own CURRENT node has >=1 narrative
+  position (mid-traversal on an EventNode): every currently-live, non-mini
+  map instance (the
   split-view atlas pane AND/OR the full `/world` page -- map.js's own
   `instances` registry, same mechanism BLINK-1 already established for
   "reach whichever map is actually showing, with no page-specific wiring")
@@ -717,13 +869,20 @@ Notes:
   Batch F adds
   `catechism-item-{ID}` (the "THE SMALL CATECHISM" section's own citing-item
   rows) and `catechism-verse-{SPAN}` ("THE SCRIPTURES" section's own
-  proof-verse rows) -- see CATECH-1. batch-n-brief.md adds
-  `narrative-prior-event-{narrativeId}`/`narrative-following-event-{narrativeId}`
-  (the PRIOR/FOLLOWING sections' own event-traversal rows) and
-  `narrative-prior-verse-{narrativeId}-{SPAN}`/`narrative-following-verse-{narrativeId}-{SPAN}`/
-  `narrative-event-verse-{SPAN}` (their own passage-list entries,
-  PASSAGE-1's existing "every passage-list entry is explorable" rule
-  already covers these generically) -- see NARRATIVE-1. batch-m-brief.md
+  proof-verse rows) -- see CATECH-1. batch-t-brief.md RETIRES batch-n-brief.md's
+  own `narrative-prior-event-{narrativeId}`/`narrative-following-event-{narrativeId}`/
+  `narrative-prior-verse-*`/`narrative-following-verse-*`/`narrative-event-verse-{SPAN}`
+  (verse-level traversal is gone) and adds, in their place: `verse-event-{eventId}`
+  (a VERSE node's own "EVENT" membership rows), `event-place-{placeId}` (an
+  EVENT node's own explorable places), `event-prior-event-{narrativeId}`/
+  `event-following-event-{narrativeId}` (the PRIOR/FOLLOWING sections' own
+  event-traversal rows, now EVENT-node-only) and
+  `event-prior-verse-{narrativeId}-{SPAN}`/`event-following-verse-{narrativeId}-{SPAN}`/
+  `event-witness-{SPAN}` (their own passage-list entries, PASSAGE-1's
+  existing "every passage-list entry is explorable" rule already covers
+  these generically) -- see EVENT-1. `pericope-heading-{eventId}`
+  (Reader.razor's own reader-flow heading, batch-t-brief.md requirement 5)
+  is ALSO explorable under this same rule -- see EVENT-1. batch-m-brief.md
   adds `polity-delta-{id}-{from}-{ringIndex}` (a border ring's own delta
   hit-stroke, ONE-RULE's language adapted for an SVG shape -- see DELTA-1's
   own comment on why plain `.explorable` itself doesn't reach an SVG path)
@@ -862,8 +1021,10 @@ Notes:
   name, small caps. Adjacency comes from the ONE full-chain narrative resolver
   (`GET /api/narrative/event/{id}`, one call per shown event, `Task.WhenAll`,
   server-side `positions_for_events` over the FULL unwindowed `Narrative.legs`
-  chain) -- the exact same endpoint and resolver the reader popover's
-  PRIOR/FOLLOWING sections (NARRATIVE-1) consume, so both surfaces answer from
+  chain) -- the exact same endpoint and resolver the EVENT node popover's
+  own PRIOR/FOLLOWING sections (EVENT-1, batch-t-brief.md; UNCHANGED
+  endpoint/resolver from Batch N, just retargeted onto EventNode) consume,
+  so both surfaces answer from
   one computation BY CONSTRUCTION (the previous client-side windowed-arrows
   derivation, and this note's former claim that the two paths "can never
   disagree," were WRONG -- they split on real data under a window ending
@@ -1058,7 +1219,7 @@ Notes:
   this era's own `from`/`to`), ALWAYS present, minimal or full alike.
 
   SECTIONS (PopoverSectionRegistry, Kind == "PolityDelta" -- no
-  `ExplorerPopover.razor` surgery, the SAME seam REGISTRY-1/NARRATIVE-1
+  `ExplorerPopover.razor` surgery, the SAME seam REGISTRY-1/EVENT-1
   already prove), in order: `popover-section-polity-delta-event` (the
   delta's own curated `event` prose, conditional -- absent for the minimal
   case), `popover-section-polity-delta-scriptures` ("THE SCRIPTURES",

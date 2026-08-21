@@ -20,9 +20,10 @@ file is the detailed version of record.
 | Esri `NatGeo_World_Map` tile service | Esri terms of use | **Never redistributed by this repo.** Tiles are fetched live by the browser at runtime from Esri's own servers, with the attribution string carried verbatim in the app UI and in `client/wwwroot/js/map.js`'s `TILE_ATTRIBUTION`. |
 | Carto basemap tiles | Carto terms of use | **Never redistributed by this repo.** Same live-fetch, attributed, fallback-only pattern as the Esri tiles above (used if the Esri service is unreachable). |
 | Leaflet ([leafletjs.com](https://leafletjs.com)) | BSD-2-Clause | Vendored AND COMMITTED at `client/wwwroot/vendor/leaflet/` (v1.9.4, upstream copyright banner retained in the files per BSD-2's notice condition) — committed so a fresh clone runs without any fetch step; `data/fetch-raw.ps1` can still refresh it |
-| All curated data — historical polity borders, the land mask, landmarks, narratives, eras, `events-extra.toml`, and future short blurbs of ours (e.g. era/place descriptions) | **CC0 1.0 Universal** (public domain dedication) | Ours. Everything under `data/curated/` and everything compiled purely from it (`narratives.json`, `eras.json`, `books-meta.json`, `landmarks.json`, `polities.json`, `land-mask.json`) |
+| All curated data — historical polity borders, the land mask, landmarks, narratives, eras, `events-extra.toml`, `event-witnesses.toml` (Batch T), and future short blurbs of ours (e.g. era/place descriptions) | **CC0 1.0 Universal** (public domain dedication) | Ours. Everything under `data/curated/` and everything compiled purely from it (`narratives.json`, `eras.json`, `books-meta.json`, `landmarks.json`, `polities.json`, `land-mask.json`) |
 | Luther's Small Catechism, English (1921 Bente–Dau translation, *Triglot Concordia / Concordia Triglotta*) | Public domain (published 1921, USA) | Redistributed — compiled into `catechism.json`; provenance and verification below |
 | Catechism verse mapping ([brain-fuel/catechism](https://github.com/brain-fuel/catechism)) | No license file — used by the project owner's explicit direction (see "Batch F2" below) | Redistributed — canonicalized and compiled into `catechism.json` (`CatechismItem.questions`) |
+| A.T. Robertson, *A Harmony of the Gospels for Students of the Life of Christ* (1922) | Public domain (published 1922, USA; copyright notice reads "COPYRIGHT, 1922, BY HARPER & BROTHERS") | Not redistributed as text — section titles/numbers and parallel-account groupings consulted as PROVENANCE for our own curated `event-witnesses.toml`/`events-extra.toml` fields (`robertson_section`, `ref_note`); every displayed event title/date/verse citation is independently authored (CC0) or Theographic-credited, per the mapping below |
 
 ## Theographic CC BY-SA 4.0 — controller ruling
 
@@ -293,6 +294,66 @@ same as every other file under `data/curated/`. The MAPPING DATA itself
 brain-fuel/catechism repo's own author holds, used here by that same
 author's explicit direction as this project's owner.
 
+## Robertson's Harmony of the Gospels — public domain (Batch T)
+
+Batch T ("events as the narrative nodes: pericopes, chronology, parallel
+Gospel accounts") required the owner's own named PRIMARY source for Gospel
+section titles, parallel-account groupings, and chronological order: A.T.
+Robertson, *A Harmony of the Gospels for Students of the Life of Christ*
+(New York, 1922).
+
+**Source and provenance.** Public domain (published 1922, USA — the work's
+own copyright page, confirmed directly against two independent digital
+mirrors below, reads "COPYRIGHT, 1922, BY HARPER & BROTHERS"). Obtained via
+Project Gutenberg eBook #36264 — the HTML edition
+(`https://www.gutenberg.org/files/36264/36264-h/36264-h.htm`) and the
+plain-text edition (`https://www.gutenberg.org/cache/epub/36264/pg36264.txt`),
+fetched live (WebFetch) rather than redistributed here, since only the
+section STRUCTURE (numbers, titles, which Gospel passages Robertson groups
+together) was needed, never the book's own prose.
+
+**Verification (per the batch brief's own "verify it IS Robertson, spot-
+check famous sections" instruction).** Both mirrors were fetched
+independently and cross-checked against each other, not trusted from a
+single source: section 164 ("THE FIRST THREE HOURS ON THE CROSS," Mark
+15:24-32; Matt. 27:35-44; Luke 23:33-43; John 19:18-27) and section 171
+("THE VISIT OF THE WOMEN TO THE TOMB OF JESUS...") returned byte-identical
+titles and Scripture references from both the HTML and the plain-text
+mirror. Section 31 ("THE FIRST CLEANSING OF THE TEMPLE AT THE PASSOVER,"
+John 2:13-22) and section 141 ("AT THE FEAST IN THE HOUSE OF SIMON THE
+LEPER MARY OF BETHANY ANOINTS JESUS FOR HIS BURIAL") were independently
+confirmed the same way. No evidence of a garbled/misattributed OCR text was
+found — Project Gutenberg's own edition is a verified, curated transcription
+(that's Gutenberg's own standing editorial bar, and this project's fetch
+found nothing contradicting it).
+
+**What was used, and how.** Robertson's SECTION NUMBERS/TITLES and his own
+grouping of which Gospel passages narrate the same event (e.g. section 128b
+grouping Mark 11:1-11, Matt. 21:1-11+14-17, Luke 19:29-44, and John
+12:12-19 as one harmonized moment, the Triumphal Entry) directly grounded
+this batch's own curated `event-witnesses.toml` (which book+verse-range
+pairs are PARALLEL WITNESSES of the same event) and `events-extra.toml`'s
+new `robertson_section` field (a provenance tag, auditable back to the
+section named). Robertson's own CHRONOLOGICAL ORDER (which section
+precedes which) grounded this batch's own `order_key` field for Passion
+Week's day-by-day ordering — with ONE disclosed exception: Robertson's own
+numbering implies the anointing at Bethany (his section 141) falls AFTER
+the triumphal entry/second cleansing (his sections 128b/129), reading John
+12:1's own "six days before the passover" as topical rather than strictly
+sequential; this app instead keeps the anointing FIRST, at John 12:1's own
+explicit chronological placement — a real, disclosed harmonization choice
+(see batch-t-report.md), not a transcription error.
+
+Every DISPLAYED event title in this app is our own phrasing (CC0), not
+Robertson's own archaic wording, per the batch's own ambiguity ruling:
+"the displayed event titles may be our own clearer phrasings... keep a
+robertson_section provenance field so the mapping stays auditable." Every
+verse citation in `event-witnesses.toml` was independently read against the
+compiled KJV text (`data/compiled/verses-kjv.json`) before being written —
+Robertson's own section groupings were consulted for STRUCTURE (which
+passages belong together, in what order), never trusted as a substitute for
+reading the actual cited verses ourselves.
+
 ## Per-artifact label (`data/compiled/*`)
 
 Compiled outputs are derived works: an artifact built from a
@@ -304,7 +365,7 @@ even though the file itself is generated, not hand-authored.
 | `canon.json` | Public domain (KJV) | Book/chapter structure derived from parsing the KJV text |
 | `verses-kjv.json` | Public domain (KJV) | |
 | `places.json` | CC-BY 4.0 (OpenBible geocoding) + CC BY-SA 4.0 (Theographic, for places synthesized only from Theographic's `places.json`) | Merged; the Theographic-derived subset carries share-alike |
-| `events.json` | CC BY-SA 4.0 (Theographic `events.json`) + CC0 (`data/curated/events-extra.toml`, ours) | Merged |
+| `events.json` | CC BY-SA 4.0 (Theographic `events.json`) + CC0 (`data/curated/events-extra.toml` + `data/curated/event-witnesses.toml`, ours) | Merged; Batch T's own `witnesses`/`robertson_section`/`order_key` fields are CC0 curated additions, GROUNDED IN (not copied from) the public-domain Robertson Harmony structure — see "Robertson's Harmony of the Gospels" above |
 | `narratives.json` | CC0 (ours) | `data/curated/narratives/*.toml` |
 | `eras.json` | CC0 (ours) | `data/curated/eras.toml` |
 | `books-meta.json` | CC0 (ours) | `data/curated/books.toml` |

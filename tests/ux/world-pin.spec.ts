@@ -304,12 +304,17 @@ test('TRAVERSAL-3: the place card\'s next-event traversal agrees with the popove
   await expect(page.getByTestId('place-card-title')).toHaveText(quietTarget.display_name);
   await expect(page.getByTestId('place-card-quiet')).toBeVisible();
 
-  // --- Surface 2: the verse popover, independently, on an ex_kadesh verse ---
+  // --- Surface 2: the EVENT node popover, independently, reached from an
+  // ex_kadesh verse (Batch T requirement 3: verse-level PRIOR/FOLLOWING is
+  // retired -- the verse popover itself now shows EVENT membership only;
+  // traversal lives on the EVENT node reached from its own "EVENT" row) ---
   await page.goto('/read/NUM/13');
   await page.getByTestId('verse-line-26').click(); // NUM.13.26, one of ex_kadesh's own curated verses
   await expect(page.getByTestId('popover-title')).toHaveText('NUM.13.26');
-  const followingSection = page.getByTestId('popover-section-narrative-following');
+  await page.getByTestId('verse-event-ex_kadesh').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('Spies return to Kadesh-barnea');
+  const followingSection = page.getByTestId('popover-section-event-following');
   await expect(followingSection).toBeVisible();
-  const followingBtn = followingSection.getByTestId('narrative-following-event-exodus');
+  const followingBtn = followingSection.getByTestId('event-following-event-exodus');
   await expect(followingBtn).toHaveText(followingLabel);
 });
