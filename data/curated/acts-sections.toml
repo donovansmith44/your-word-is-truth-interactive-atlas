@@ -45,3 +45,142 @@
 # dating tension this batch noticed but did not attempt to fix (out of
 # this batch's own scope: authoring pericope coverage, not auditing
 # pre-existing Theographic date assignments).
+#
+# Every citation below was spot-verified directly against the compiled
+# KJV text before being enriched (a representative sample across the
+# full range -- Pentecost, the lame man healed, Stephen's own arc,
+# Saul's conversion, Cornelius -- documented in batch-t2-report.md); the
+# FULL run of boundary verses for every row here was read at least once
+# during this batch's own authoring session.
+
+[[section]]
+event_id = "theo-304"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 1:4-5, the Holy Spirit promised"
+
+[[section]]
+event_id = "theo-305"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 1:6-11, the ascension. Overlaps pw_mount_of_olives's own narrower Passion-Week leg (Acts 1:9-12, robertson_section) at 1:9-11 -- legal, overlapping containers with different anchors (1:6 vs 1:9), disclosed rather than silently duplicated"
+
+[[section]]
+event_id = "theo-306"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 1:12-26, Matthias replaces Judas"
+
+[[section]]
+event_id = "theo-307"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 2:1-13, the Holy Spirit comes at Pentecost"
+
+[[section]]
+event_id = "theo-308"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 2:14-41, Peter's own Pentecost sermon"
+
+[[section]]
+event_id = "theo-309"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 2:42-47, the church's own early life together"
+
+[[section]]
+event_id = "theo-310"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 3:1-10, a lame man healed at the temple gate"
+
+[[section]]
+event_id = "theo-311"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 3:11-26, Peter preaches in Solomon's Portico"
+
+[[section]]
+event_id = "theo-312"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 4:1-22, Peter and John's own trial before the council"
+
+[[section]]
+event_id = "theo-313"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 4:23-31, the believers pray for boldness"
+
+[[section]]
+event_id = "theo-314"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 4:32-37, the believers share all things in common"
+
+[[section]]
+event_id = "theo-315"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 5:1-11, Ananias and Sapphira"
+
+[[section]]
+event_id = "theo-316"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 5:12-17, the apostles' own signs and wonders in Solomon's Portico"
+
+[[section]]
+event_id = "theo-317"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 5:18-33, the apostles arrested and put on trial again"
+
+[[section]]
+event_id = "theo-318"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 5:34-42, Gamaliel's own counsel; the apostles freed"
+
+[[section]]
+event_id = "theo-319"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 6:1-7, the Seven chosen to serve"
+
+[[section]]
+event_id = "theo-320"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 6:8-15, Stephen is seized"
+
+[[section]]
+event_id = "theo-321"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 7:1-53, Stephen's own defense before the council"
+
+[[section]]
+event_id = "theo-322"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 7:54-60, Stephen is stoned"
+
+[[section]]
+event_id = "theo-323"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 8:1-3, Saul persecutes the church"
+
+[[section]]
+event_id = "theo-324"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 8:4-25, Philip preaches in Samaria"
+
+[[section]]
+event_id = "theo-325"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 8:26-40, Philip and the Ethiopian eunuch"
+
+[[section]]
+event_id = "theo-326"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 9:1-19, Saul's own conversion on the road to Damascus"
+
+[[section]]
+event_id = "theo-327"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 9:20-31, Saul proclaims Jesus and escapes Damascus"
+
+[[section]]
+event_id = "theo-328"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 9:32-43, Peter heals Aeneas and raises Dorcas"
+
+[[section]]
+event_id = "theo-329"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 10:1-33, Peter and Cornelius"
+
+[[section]]
+event_id = "theo-330"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 10:34-48, Peter preaches to Gentiles at Caesarea"
+
+[[section]]
+event_id = "theo-331"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 11:1-18, Peter defends Gentile salvation in Jerusalem"
+
+[[section]]
+event_id = "theo-332"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 11:19-30, disciples first called Christians at Antioch"
+
+[[section]]
+event_id = "theo-333"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 12:1-2, Herod kills James"
+
+[[section]]
+event_id = "theo-334"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 12:3-5, Herod imprisons Peter"
+
+[[section]]
+event_id = "theo-335"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 12:6-19, an angel rescues Peter from prison"
+
+[[section]]
+event_id = "theo-336"
+acts_section = "Acts pericope (this project's own natural-narrative-unit sectioning, CC0 -- no external PD source claimed): Acts 12:20-23, Herod's own death"
