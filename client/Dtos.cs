@@ -132,11 +132,21 @@ public sealed record BookMetaDto(string Author, string? WritePlace, int? WriteFr
 public sealed record CrossRefOut(string Target, int Votes, string Preview);
 
 /// Batch F: one catechism item citing a verse/span -- id + display name
-/// only (no preview text, unlike <see cref="CrossRefOut"/>: requirement 4's
-/// own UI lists citing items as plain named entries). Shared shape for
+/// (no preview text, unlike <see cref="CrossRefOut"/>: requirement 4's own
+/// UI lists citing items as plain named entries). Shared shape for
 /// <see cref="VerseDetail.Catechism"/> and <c>GET /api/catechism/{sref}</c>'s
 /// own array response.
-public sealed record CatechismRefDto(string Id, string Name);
+///
+/// Batch F2 (requirement 4, "verse -&gt; catechism lookup now returns
+/// question-level hits"): <see cref="Question"/> is the QUESTION title this
+/// citation came from (e.g. "God the Holy Trinity"), null for a citation
+/// from Luther's own item-level embedded citation (Batch F, unchanged).
+/// The SAME item can legitimately appear more than once in one response if
+/// a passage span cites it via two DIFFERENT questions (or one question
+/// plus the bare embedded citation) -- see
+/// <c>CatechismSeamSection</c>'s own doc comment for how the client
+/// disambiguates their testids.
+public sealed record CatechismRefDto(string Id, string Name, string? Question = null);
 
 /// Batch F: one resolved proof verse -- <see cref="AtlasClient.CatechismItem"/>'s
 /// own <see cref="CatechismItemDetail.Verses"/> entries, each carrying its
@@ -150,7 +160,13 @@ public sealed record CatechismRefDto(string Id, string Name);
 /// missing JSON property just deserializes to the type's default, `null`
 /// for a string, and interpolating `null` produces no text at all rather
 /// than throwing).
-public sealed record CatechismProofVerseDto(string Vref, string Text);
+/// Batch F2: <see cref="Question"/> names which question (if any) this
+/// proof verse came from -- see <see cref="CatechismRefDto.Question"/>'s
+/// own doc comment for the same convention. Requirement 4's own "if cheap,
+/// highlight/deep-link the question context": rendered as a small caption
+/// next to the verse in THE SCRIPTURES (<c>PassageList.razor</c>'s own
+/// <c>Caption</c>).
+public sealed record CatechismProofVerseDto(string Vref, string Text, string? Question = null);
 
 /// <c>GET /api/catechism/item/{id}</c>. <see cref="Text"/> is null for an
 /// item with no separate prompt distinct from its own explanation (every

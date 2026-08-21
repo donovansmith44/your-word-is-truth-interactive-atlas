@@ -19,6 +19,27 @@ public interface IPopoverSectionContext
     /// reachable from inside a section's own body instead of only from the
     /// chips row.
     Task PushAsync(IExplorable node);
+
+    /// <summary>
+    /// Batch F2 requirement 6 (cross-reference truncation, "no more than 3
+    /// if xrefs are the ONLY kind of context... no more than 2 if there are
+    /// OTHER types of context (small catechism, etc.)"): how many OTHER
+    /// resolved sections (excluding the verse-text section itself -- "the
+    /// subject, not context" -- and the xrefs section's own count of
+    /// itself) are present for the CURRENT node, at the moment this is
+    /// read. Read from a <c>RenderFragment</c> at RENDER time (not
+    /// captured into a local at <c>ResolveAsync</c> time, when sibling
+    /// providers may not have resolved yet -- concurrent resolution means
+    /// no provider can know its own siblings' outcomes during its own
+    /// <c>ResolveAsync</c> call) -- by the time ANY section's fragment
+    /// actually renders, every provider has already finished (<c>LoadCurrent</c>
+    /// awaits the whole batch before the render that shows any of them), so
+    /// this always reflects the FINAL section list. Generic by construction
+    /// -- counts whatever is actually in the resolved section list, never a
+    /// hardcoded "is catechism present" check -- so this keeps working
+    /// unchanged when Batch P (or any later batch) adds a new provider.
+    /// </summary>
+    int OtherContextSectionCount { get; }
 }
 
 /// <summary>

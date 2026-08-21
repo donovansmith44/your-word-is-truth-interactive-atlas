@@ -2900,6 +2900,26 @@ input:focus-visible,
     background: rgba(43, 33, 23, .18);
 }
 
+/* Batch F2 requirement 6d ("the hover windows ought not be smack dab in
+   the center of the screen, but on the side of the screen where the hover
+   exploration originated"): while a split is open, the backdrop dims and
+   catches clicks ONLY over the originating pane's own currently-visible
+   region (--pane-center-x/-y/-width/-height, set inline by
+   ExplorerPopover.razor once its own one-shot measurement lands -- see
+   that file's own header) -- the OTHER pane stays fully undimmed and
+   clickable, "explore on both sides independently" per the brief. Falls
+   back to the base, full-viewport rule above until the measurement lands
+   (a graceful, brief default, same discipline PlaceCard/CardPlacement
+   already established) or on any full-page (non-split) popover, where
+   this class is never applied at all. */
+.popover-backdrop.popover-pane-anchored {
+    left: calc(var(--pane-center-x) - var(--pane-width) / 2);
+    top: calc(var(--pane-center-y) - var(--pane-height) / 2);
+    width: var(--pane-width);
+    height: var(--pane-height);
+    inset: auto;
+}
+
 /* Fix round 1 (Task 15 finding, Reader.razor): Reader.razor toggles
    .reader-shift-active on its own outer wrapper for exactly as long as
    Shift is held (cleared on keyup, or via reader.js's blur/visibilitychange
@@ -2930,6 +2950,25 @@ input:focus-visible,
     border-radius: 6px;
     box-shadow: 0 16px 44px rgba(0, 0, 0, .4);
     animation: popover-in 120ms ease-out both;
+}
+
+/* Batch F2 requirement 6d: overrides ONLY top/left/width/max-height (the
+   panel's own centering point and outer size bound) -- transform stays the
+   SAME translate(-50%,-50%) the base rule already uses, now centering on
+   the PANE's own midpoint instead of the viewport's; every other property
+   (padding, background, border, shadow, the entrance animation) is
+   untouched. "Bounded within the pane... the mini-reader expand stays
+   usable in the pane's width" per the brief -- this popover simply never
+   grows wider/taller than the originating pane's own currently-visible
+   region (same 3rem/4rem margins the base rule already subtracts from the
+   viewport, now subtracted from the pane instead), so an expanded
+   mini-reader inside it is bounded the same way automatically, with no
+   separate rule needed. */
+.popover.popover-pane-anchored {
+    top: var(--pane-center-y);
+    left: var(--pane-center-x);
+    width: min(34rem, calc(var(--pane-width) - 3rem));
+    max-height: calc(var(--pane-height) - 4rem);
 }
 
 @keyframes popover-in {
@@ -3067,45 +3106,107 @@ input:focus-visible,
     background: rgba(138, 107, 61, .2);
 }
 
-/* Batch R: the divider (border-top/padding-top) this rule used to carry
-   itself is gone -- CrossRefsSection's own xref-item list now renders
-   inside .popover-section (Explore/PopoverSectionProviders.cs), which
-   already supplies ONE consistent section-to-section divider for every
-   section kind; keeping a second one here doubled it up. Layout
-   (flex-column + gap, the vertical rhythm BETWEEN xref rows) stays. */
-.popover-xref-list {
+/* Batch F2, 6-ARCH: the ONE shared passage-list visual language --
+   PassageList.razor/PassageEntry rows -- used by cross-references (req 6),
+   THE SCRIPTURES, and place est/dest supporting verses (req 6b) alike.
+   Supersedes/retires the formerly-separate .popover-xref-*/
+   .popover-catechism-verse-* rules, which were structurally identical
+   (bronze left-rule item that goes lapis on hover, mono ref + serif text)
+   -- one rule family, not three near-duplicates. The divider (border-top/
+   padding-top) a list like this might otherwise carry is still omitted
+   here: it renders inside .popover-section (Explore/PopoverSectionProviders.cs),
+   which already supplies ONE consistent section-to-section divider for
+   every section kind; a second one here would double it up. */
+.popover-passage-list {
     display: flex;
     flex-direction: column;
     gap: .45rem;
 }
 
-.popover-xref-item {
+/* The WHOLE entry (ref label + caption + compact text, or the expanded
+   mini-reader in their place) is ONE explorable target -- matches
+   PlaceCard.razor's own .place-card-passage/.place-card-verse precedent
+   exactly (ref and text together inside one clickable container), not a
+   ref-only button beside a separate paragraph. See PassageList.razor's own
+   comment for the real, live-caught bug this fixes (a testid on a
+   ref-only element left full-text assertions against it seeing only the
+   ref). `.popover-verse-expand`/`.popover-reader` (MiniReaderExpand.razor,
+   nested inside) each stop click propagation, so toggling the mini-reader
+   or interacting inside it never ALSO fires this entry's own explore
+   click -- the SAME "the more specific target always wins" rule ONE-RULE
+   already documents for a passage's nested per-verse spans. */
+.popover-passage-entry {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
     gap: .15rem;
     text-align: start;
-    background: none;
-    border: none;
     border-inline-start: 2px solid var(--bronze);
     padding: .2rem 0 .2rem .65rem;
     cursor: pointer;
 }
 
-.popover-xref-item:hover {
+.popover-passage-entry:hover,
+.popover-passage-entry:focus-visible {
     border-inline-start-color: var(--lapis);
 }
 
-.popover-xref-target {
+.popover-passage-ref-label {
     font-family: var(--font-mono);
     font-size: .85rem;
     color: var(--lapis);
 }
 
-.popover-xref-preview {
+/* A question title (Batch F2 requirement 4's own "if cheap, highlight/
+   deep-link the question context") or, for a future provider, any other
+   short per-block label -- quiet italic, never competing with the ref's
+   own mono instrument-readout treatment. */
+.popover-passage-caption {
+    margin-inline-start: .5rem;
     font-family: var(--font-serif);
-    font-size: .85rem;
+    font-style: italic;
+    font-size: .78rem;
     color: var(--ink-soft);
+}
+
+.popover-passage-text {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: .95rem;
+    line-height: 1.55;
+    color: var(--ink);
+}
+
+/* A passage block's own per-verse number, inline before that verse's own
+   text -- same small-mono-superscript treatment PlaceCard's own
+   .place-card-verse-num already established for the map hover card's
+   identical passage shape (6-ARCH: same underlying structure, same
+   reading). */
+.popover-passage-verse-num {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    color: var(--bronze-ink);
+}
+
+/* The down-arrow reveal / up-arrow snap-back (req 6/6b) -- same quiet
+   "no border/background, ink-soft resting / lapis hover" control language
+   PlaceCard's own place-card-more/-collapse already established (Batch D),
+   reused verbatim rather than inventing a second interaction language for
+   the same gesture. */
+.popover-passage-reveal {
+    display: block;
+    margin: .3rem 0 0 .65rem;
+    padding: 0;
+    font-family: var(--font-serif);
+    font-size: .95rem;
+    line-height: 1;
+    color: var(--ink-soft);
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.popover-passage-reveal:hover {
+    color: var(--lapis);
 }
 
 /* Batch F ("the small catechism"): the shared small-caps eyebrow every
@@ -3196,48 +3297,13 @@ input:focus-visible,
 }
 
 /* "THE SCRIPTURES" -- an item's own proof verses, each explorable, full
-   verse text per house rendering (never a truncated preview): ref in the
-   instrument mono face (design-direction.md: "canonical refs... set them
-   like instrument readouts"), text in the reading serif -- same
-   ref-then-text shape .popover-xref-target/.popover-xref-preview already
-   use, reused verbatim rather than inventing a second pattern for
-   functionally the same row shape. */
-.popover-catechism-verse-list {
-    display: flex;
-    flex-direction: column;
-    gap: .45rem;
-}
-
-.popover-catechism-verse {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: .15rem;
-    width: 100%;
-    text-align: start;
-    background: none;
-    border: none;
-    border-inline-start: 2px solid var(--bronze);
-    padding: .2rem 0 .2rem .65rem;
-    cursor: pointer;
-}
-
-.popover-catechism-verse:hover {
-    border-inline-start-color: var(--lapis);
-}
-
-.popover-catechism-verse-ref {
-    font-family: var(--font-mono);
-    font-size: .78rem;
-    color: var(--lapis);
-}
-
-.popover-catechism-verse-text {
-    font-family: var(--font-serif);
-    font-size: .95rem;
-    line-height: 1.55;
-    color: var(--ink);
-}
+   verse text per house rendering (never a truncated preview) -- Batch F2,
+   6-ARCH: now rendered via the SHARED .popover-passage-* family
+   (PassageList.razor), same as cross-references and place est/dest
+   supporting verses. This section's own former dedicated
+   .popover-catechism-verse-* rules are retired (superseded), not kept
+   alongside -- "parallel implementations are a defect," per the user's own
+   words. */
 
 /* MiniWorld's own host (Task 15, READ-4/READ-5, design-direction.md: "the
    mini-map inside popovers... a small engraved figure on a paper card").
@@ -3452,23 +3518,29 @@ input:focus-visible,
    Explore/PopoverSectionProviders.cs, for exactly what's shared). Layout
    mirrors PlaceCard's own instrument-face date row rather than copying its
    classes outright -- a different component, its own class names, per this
-   file's single-class discipline. */
+   file's single-class discipline.
+
+   Batch F2 requirement 6b: each date's own supporting verses/passages now
+   render immediately below its label/value row (PassageList.razor, a
+   sibling element, not nested inside .popover-place-date) -- the wider gap
+   here (.4rem, up from Batch R's own .3rem) gives that extra content room
+   to breathe between the established and destroyed groups. */
 .popover-place-dates {
     display: flex;
     flex-direction: column;
-    gap: .3rem;
+    gap: .4rem;
 }
 
+/* Batch F2 requirement 6b: no longer a <button> (the "click to reveal
+   verses" gate is retired -- see PlaceDatesSection's own doc comment) --
+   a plain instrument-face label/value row, same visual treatment, just
+   non-interactive chrome now rather than a control. */
 .popover-place-date {
     display: flex;
     align-items: baseline;
     gap: .5rem;
     width: 100%;
-    background: none;
-    border: none;
-    padding: .2rem 0;
-    text-align: start;
-    cursor: pointer;
+    padding: .2rem 0 0;
 }
 
 .popover-place-date-label {
