@@ -1,0 +1,571 @@
+# Batch W1 (whole-Bible titled verse containers, owner directive
+# 2026-08-21: "do everything that you did for the Gospels and acts with the
+# labeled containers of verses for the whole Bible"). Genesis, in the SAME
+# `[[event]]` schema `events-extra.toml` uses (`atlas_etl::curated::
+# parse_events_extra`, reused unmodified -- see main.rs's own `read_passages`
+# doc comment for why this lives in a separate per-book file rather than
+# growing events-extra.toml further).
+#
+# RECONCILIATION (req 1, "an existing event container absorbs its verses;
+# new containers cover the rest"): every container below fills a verse
+# range this batch's own gap analysis (against the real compiled
+# events.json, not a guess) found in NO existing container -- 136
+# pre-existing events already touch Genesis (Theographic's own dated
+# events, the abraham-migration/jacob-journeys/joseph-to-egypt narratives'
+# own legs) -- see batch-w1-report.md's own coverage table for the full
+# before/after. A few containers below deliberately WIDEN slightly past a
+# strict gap boundary to close on a natural pericope edge (e.g. absorbing
+# one already-covered verse at a chapter's start/close) -- legal overlap
+# per the container-algebra doctrine, never a duplicate (no container here
+# re-covers a whole existing container's own span).
+#
+# PROVENANCE: every title below is this project's OWN CC0 phrasing
+# (`atlas_section`, the sanctioned Acts-precedent fallback -- no external
+# PD OT-sectioning source consulted or claimed); genealogical/list material
+# (kind="general") follows the brief's own explicit granularity guidance
+# ("genealogies = their own units").
+#
+# CHRONOLOGY, DISCLOSED TENSION: this batch discovered a genuine
+# PRE-EXISTING two-layer dating inconsistency in the already-shipped OT
+# data -- the abraham-migration/jacob-journeys/joseph-to-egypt narratives'
+# own legs (ab_*/jj_*/je_* ids) date the patriarchal period roughly 90-190
+# years EARLIER than Theographic's own dense birth/death/lifetime event
+# chain (theo-* ids) for the SAME approximate narrative period (e.g.
+# jj_beersheba dates Jacob's own departure for Haran to -1930, while
+# Theographic's own theo-85 dates Jacob's BIRTH to -1836 -- 94 years after
+# his own narrative-leg departure date, an impossibility taken together).
+# Neither scale is this batch's own to re-date (both are already-shipped,
+# previously-reviewed data from prior batches; a full OT chronology
+# reconciliation is real, substantial future work, out of this batch's own
+# authoring-scope, exactly the class of thing batch-t2-report.md already
+# disclosed for a parallel Acts-dating tension). This batch's OWN new
+# events below are dated against the theo-* chain specifically (denser,
+# and independently cross-checked against real Ussher-tradition years for
+# the handful of well-attested anchors -- Ishmael born 1910 BC, Sodom/
+# circumcision 1897-1898 BC, Isaac born 1896 BC -- all confirmed to match
+# theo-76/79/80 exactly), so THIS file's own dates are internally
+# consistent with each other and with Theographic's own chain, but will
+# read as chronologically offset from the pre-existing ab_*/jj_*/je_*
+# narrative legs on the map's own time slider -- disclosed here and in the
+# batch report, not silently smoothed over. Where several of this file's
+# own events fall within one tightly-packed narrative stretch with no
+# independent yearly anchor of their own (Jacob's return from Haran through
+# Rachel's death, all traditionally "that same year"), `order_key` records
+# their relative sequence within one shared year -- the SAME sub-year
+# tiebreak mechanism Passion Week already established -- rather than
+# fabricating fake distinct years.
+
+# --- Primeval history gaps (Gen 4-11) ---
+
+[[event]]
+id = "gen_line_of_cain"
+label = "The line of Cain, and Lamech's song"
+kind = "general"
+verses = ["GEN.4.17-24"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 4:17-24, Cain's descendants through Lamech, closing with Lamech's own song of vengeance."
+ref_note = "General-kind: a genealogical list spanning many generations, no single dateable moment or place of its own."
+
+[[event]]
+id = "gen_generations_adam_to_noah"
+label = "The generations of Adam to Noah"
+kind = "general"
+verses = ["GEN.5.1-32"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 5, the toledoth of Adam through Noah's own sons -- one container for the whole genealogical chapter, per this batch's own granularity guidance ('genealogies = their own units'), rather than a separate heading for each of the 26 already-compiled Theographic birth/lifetime/death micro-events this range also touches (theo-4 through theo-37) -- those stay legally reachable via the verse's own EVENT membership popover; this container is the chapter's own reader heading."
+ref_note = "General-kind: spans ~1,500 years of genealogy, no single dateable moment or place."
+
+[[event]]
+id = "gen_table_of_nations"
+label = "Noah's three sons, and the Table of Nations"
+kind = "general"
+verses = ["GEN.9.18-19", "GEN.10.1-32"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 9:18-19 (Noah's three sons, of whom the whole earth was overspread) through Genesis 10 (the Table of Nations proper) -- one container for the whole list, same 'genealogies = their own units' reasoning as gen_generations_adam_to_noah; overlaps theo-87's own narrower 'Nimrod's kingdom begins' (10:8-12) legally."
+ref_note = "General-kind: a genealogical/national list, no single dateable moment or place of its own."
+
+[[event]]
+id = "gen_shem_to_terah"
+label = "The generations of Shem to Terah"
+kind = "general"
+verses = ["GEN.11.10-32"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 11:10-32, the toledoth of Shem through Terah (Abram's own father) -- one container for the whole genealogical chapter, closing with Terah's family in Ur, same reasoning as gen_generations_adam_to_noah; overlaps the existing theo-34..theo-70 birth/lifetime/death micro-events and ab_ur's own narrative leg legally (those stay reachable via EVENT membership; this container is the chapter's own reader heading)."
+ref_note = "General-kind: spans centuries of genealogy, no single dateable moment or place of its own."
+
+# --- Abraham (Gen 14-25) ---
+
+[[event]]
+id = "gen_war_of_kings"
+label = "The war of the kings; Abram rescues Lot"
+from_year = -1913
+to_year = -1913
+places = ["sodom"]
+verses = ["GEN.14.1-16"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 14:1-16, Chedorlaomer's coalition, the capture of Lot, and Abram's own rescue."
+ref_note = "Dated to the traditional (Ussher) year for Chedorlaomer's invasion, 1913 BC. Place: the battle's own object is Sodom (Lot dwelt there, 14:12); the pursuit itself ranges to Dan and Hobah (14:14-15), not independently mapped here."
+
+[[event]]
+id = "gen_melchizedek"
+label = "Melchizedek blesses Abram"
+from_year = -1913
+to_year = -1913
+places = ["salem"]
+verses = ["GEN.14.17-24"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 14:17-24, Melchizedek king of Salem's own blessing, and Abram's tithe."
+ref_note = "Same traditional year as gen_war_of_kings (14:17, 'after his return from the slaughter'). Place: Salem, explicitly named (14:18)."
+
+[[event]]
+id = "gen_covenant_pieces"
+label = "The LORD's covenant with Abram"
+from_year = -1911
+to_year = -1911
+places = ["mamre"]
+verses = ["GEN.15.1-21"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 15, the covenant of the smoking furnace and the burning lamp."
+ref_note = "Dated by interpolation against this atlas's own established anchors (after Lot's rescue, before Hagar's flight, theo-76's own 1910 BC). Place: not stated within the chapter itself; Abram's own most recently stated dwelling is Mamre (13:18), a contextual (not explicit-in-chapter) inference, disclosed."
+
+[[event]]
+id = "gen_hagar_flees"
+label = "Hagar flees to the well Beer-lahai-roi"
+from_year = -1911
+to_year = -1910
+places = ["shur"]
+verses = ["GEN.16.1-16"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 16, Sarai gives Hagar to Abram, Hagar's flight, and Ishmael's birth."
+ref_note = "Closes at Ishmael's own birth (16:16), matching theo-76's own 1910 BC exactly. Place: 'the way to Shur' (16:7), explicit."
+
+[[event]]
+id = "gen_circumcision_covenant"
+label = "The covenant of circumcision; Isaac promised"
+from_year = -1898
+to_year = -1898
+places = ["mamre"]
+verses = ["GEN.17.1-27"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 17, Abram renamed Abraham, the covenant of circumcision, and God's promise of Isaac."
+ref_note = "Abram's own stated age, ninety-nine (17:1), against theo-65's own 1997 BC birth year, dates this to 1898 BC -- matching the traditional (Ussher) year for this covenant. Place: Abraham's own dwelling, Mamre, contextual (not restated within this chapter itself)."
+
+[[event]]
+id = "gen_three_visitors"
+label = "The three visitors at Mamre; Sarah laughs"
+from_year = -1898
+to_year = -1898
+places = ["mamre"]
+verses = ["GEN.18.1-19"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 18:1-19, the three visitors, the promise renewed to Sarah, and the LORD's own resolve concerning Sodom."
+ref_note = "Same traditional year as gen_circumcision_covenant, immediately following. Place: 'the plains of Mamre' (18:1), explicit."
+
+[[event]]
+id = "gen_abraham_pleads"
+label = "Abraham pleads for Sodom"
+from_year = -1897
+to_year = -1897
+places = ["hebron"]
+verses = ["GEN.18.20-33"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 18:20-33, Abraham's own intercession for the righteous of Sodom."
+ref_note = "Traditional (Ussher) year for Sodom's destruction, 1897 BC. Place: Abraham himself remains near his own dwelling while the two angels go on to Sodom (18:22, 'Abraham stood yet before the LORD') -- Hebron, the nearest explicitly-named dwelling (13:18, 23:19), used as his own location, not Sodom's."
+
+[[event]]
+id = "gen_sodom_destroyed"
+label = "The destruction of Sodom and Gomorrah; Lot's escape"
+from_year = -1897
+to_year = -1897
+places = ["sodom"]
+verses = ["GEN.19.1-29"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 19:1-29, the two angels at Lot's house, and the overthrow of the cities of the plain."
+ref_note = "Traditional (Ussher) year, 1897 BC -- matches Theographic's own theo-79 exactly. Place: Sodom, explicit throughout."
+
+[[event]]
+id = "gen_lots_daughters"
+label = "Lot's daughters, and the origins of Moab and Ammon"
+from_year = -1897
+to_year = -1897
+places = ["zoar"]
+verses = ["GEN.19.30-38"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 19:30-38, Lot's flight from Zoar to the mountain, and the births of Moab and Ammon."
+ref_note = "Same traditional year, immediately following Sodom's destruction. Place: Lot flees FROM Zoar (19:30) to an unnamed mountain cave; Zoar is the nearest explicit anchor."
+
+[[event]]
+id = "gen_gerar_abimelech"
+label = "Abraham and Sarah at Gerar; Abimelech"
+from_year = -1897
+to_year = -1897
+places = ["gerar"]
+verses = ["GEN.20.1-18"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 20, Abraham's own 'she is my sister' deception repeated at Gerar, and Abimelech's rebuke."
+ref_note = "Placed immediately before Isaac's own birth (21:1-8), per this chapter's own narrative position. Place: Gerar, explicit (20:1-2)."
+
+[[event]]
+id = "gen_isaac_born"
+label = "The birth of Isaac"
+from_year = -1896
+to_year = -1896
+places = ["gerar"]
+verses = ["GEN.21.1-8"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 21:1-8, Isaac's own birth, circumcision, and weaning."
+ref_note = "Matches theo-80's own 1896 BC exactly. Place: continues from Gerar (ch.20); not independently restated within this passage."
+
+[[event]]
+id = "gen_hagar_ishmael_sent"
+label = "Hagar and Ishmael sent away"
+from_year = -1896
+to_year = -1896
+places = ["beersheba-1"]
+verses = ["GEN.21.9-21"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 21:9-21, Sarah's own demand, and Hagar and Ishmael sent into the wilderness."
+ref_note = "Same traditional year as Isaac's birth. Place: 'the wilderness of Beersheba' (21:14), explicit."
+
+[[event]]
+id = "gen_abimelech_covenant"
+label = "Abraham's covenant with Abimelech at Beersheba"
+from_year = -1896
+to_year = -1896
+places = ["beersheba-1"]
+verses = ["GEN.21.22-34"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 21:22-34, the well of the oath, and Beersheba named."
+ref_note = "Same traditional year. Place: Beersheba, explicit (21:31, 'he called that place Beersheba')."
+
+[[event]]
+id = "gen_binding_isaac"
+label = "The binding of Isaac on Mount Moriah"
+from_year = -1872
+to_year = -1872
+places = ["moriah"]
+verses = ["GEN.22.1-19"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 22:1-19, God's own test of Abraham, and the ram caught in the thicket."
+ref_note = "Traditional (Ussher-consistent) estimate of Isaac's own youth (his exact age is not stated in the text); placed between Isaac's birth (1896 BC) and Sarah's death (1860 BC, per her own stated age at death, 23:1). Place: Moriah, explicit (22:2)."
+
+[[event]]
+id = "gen_children_of_nahor"
+label = "The children of Nahor"
+kind = "general"
+verses = ["GEN.22.20-24"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 22:20-24, a brief genealogical notice of Nahor's own children (including Rebekah's own father Bethuel)."
+ref_note = "General-kind: a brief genealogical notice, no place or date of its own stated."
+
+[[event]]
+id = "gen_death_of_sarah"
+label = "The death and burial of Sarah"
+from_year = -1860
+to_year = -1860
+places = ["machpelah"]
+verses = ["GEN.23.1-20"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 23, Sarah's own death at Kirjatharba (Hebron), and Abraham's purchase of the cave of Machpelah."
+ref_note = "Sarah's own stated age at death, 127 (23:1), against her own birth (~10 years after Abraham's, per 17:17), dates this to ~1860 BC. Place: Machpelah, explicit (23:9, 23:19); also Hebron (23:2, 23:19)."
+
+[[event]]
+id = "gen_servant_seeks_wife"
+label = "Abraham's servant seeks a wife for Isaac"
+from_year = -1857
+to_year = -1857
+places = ["haran"]
+verses = ["GEN.24.1-27"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 24:1-27, Abraham's servant's own oath and journey, and his meeting Rebekah at the well."
+ref_note = "Placed the year before Isaac's own marriage (theo-83, 1856 BC), since this journey directly precedes it. Place: 'the city of Nahor' (24:10), in the Haran region."
+
+[[event]]
+id = "gen_isaac_marries_rebekah"
+label = "Rebekah agrees to go; Isaac marries Rebekah"
+from_year = -1856
+to_year = -1856
+places = ["beersheba-1"]
+verses = ["GEN.24.28-67"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 24:28-67, Rebekah's own family's consent, her journey, and her marriage to Isaac."
+ref_note = "Matches theo-83's own 1856 BC exactly (Isaac's own stated age, forty, 25:20). Place: Isaac himself dwelt 'in the south country' near Beer-lahai-roi (24:62) when Rebekah arrived; Beersheba is the nearest explicit regional anchor this atlas's own compiled places already carry."
+
+[[event]]
+id = "gen_abraham_later_years"
+label = "Abraham's later years; the sons of Keturah"
+kind = "general"
+verses = ["GEN.25.1-6"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 25:1-6, Abraham's marriage to Keturah, and gifts to his sons by his concubines."
+ref_note = "General-kind: spans an unstated number of Abraham's own remaining years, no single dateable moment or place of its own."
+
+[[event]]
+id = "gen_burial_abraham"
+label = "The burial of Abraham; the generations of Ishmael"
+from_year = -1821
+to_year = -1821
+places = ["machpelah"]
+verses = ["GEN.25.7-18"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 25:7-18, Abraham's own death and burial by Isaac and Ishmael together, and Ishmael's own genealogy."
+ref_note = "Matches theo-88's own 1821 BC exactly. Place: 'the cave of Machpelah' (25:9), explicit."
+
+[[event]]
+id = "gen_jacob_esau_born"
+label = "Isaac prays for Rebekah; the birth of Jacob and Esau"
+from_year = -1836
+to_year = -1836
+places = ["beersheba-1"]
+verses = ["GEN.25.19-26"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 25:19-26, Isaac's own intercession for barren Rebekah, the oracle of the two nations, and the births of Esau and Jacob."
+ref_note = "Isaac's own stated age, sixty (25:26), against his own 1896 BC birth, dates this to 1836 BC -- matching theo-85 exactly. Place: Isaac dwelt at Beer-lahai-roi (25:11); Beersheba is the nearest explicit regional anchor this atlas's own compiled places carry."
+
+# --- Jacob and Esau (Gen 25:27-35) ---
+
+[[event]]
+id = "gen_esau_birthright"
+label = "Esau sells his birthright"
+from_year = -1820
+to_year = -1820
+places = ["beersheba-1"]
+verses = ["GEN.25.27-34"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 25:27-34, Esau despises his own birthright for a meal."
+ref_note = "Placed in Jacob and Esau's own youth ('when the boys grew,' 25:27), a traditional estimate, not independently attested to a precise year. Place: the family's own dwelling, Beersheba region, contextual."
+
+[[event]]
+id = "gen_isaac_gerar"
+label = "Isaac and Abimelech at Gerar; the wells re-dug"
+from_year = -1801
+to_year = -1796
+places = ["gerar"]
+verses = ["GEN.26.1-33"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 26:1-33, Isaac's own famine, the 'she is my sister' deception repeated, the wells of Esek/Sitnah/Rehoboth re-dug, and the covenant at Beersheba."
+ref_note = "Closes near Esau's own marriage at forty (26:34, dated 1796 BC against his own 1836 BC birth); the chapter's own opening famine is placed some years earlier, a traditional range, not independently attested year by year. Place: Gerar, explicit (26:1, 26:6); the covenant itself closes at Beersheba (26:23, 26:33)."
+
+[[event]]
+id = "gen_jacob_deceives_isaac"
+label = "Jacob deceives Isaac, and receives the blessing"
+from_year = -1760
+to_year = -1760
+places = ["beersheba-1"]
+verses = ["GEN.26.34-35", "GEN.27.1-40"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 26:34-27:40, Esau's Hittite wives, Isaac's own old age, and Jacob's deception to obtain the blessing."
+ref_note = "Traditional estimate of Jacob's own age at his flight (seventy-seven, per longstanding tradition -- Jacob served Laban twenty years, 31:38,41, and was described as 130 before Pharaoh, 47:9, thirty years after leaving Laban's house, working back to ~77 at departure), against his own 1836 BC birth. Place: Isaac's own dwelling, Beersheba (28:10 names it as Jacob's own point of departure just after)."
+
+[[event]]
+id = "gen_esau_fury_jacob_sent"
+label = "Esau's fury; Jacob sent away to Haran"
+from_year = -1760
+to_year = -1760
+places = ["beersheba-1"]
+verses = ["GEN.27.41-46", "GEN.28.1-9"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 27:41-28:9, Esau's own resolve to kill Jacob, Rebekah's plan, and Isaac's own charge sending Jacob to Padan-aram."
+ref_note = "Same traditional year as gen_jacob_deceives_isaac, immediately following. Place: 'Jacob went out from Beersheba' (28:10), explicit."
+
+# --- Jacob's journey to Haran and back (Gen 28-35) ---
+# Dated against Theographic's own dense birth-chain for Jacob's children
+# (theo-91 through theo-102, 1758-1745 BC) -- see this file's own header
+# comment for the disclosed tension against the pre-existing jj_* narrative
+# leg dates (1930-1898 BC) for this SAME approximate period.
+
+[[event]]
+id = "gen_jacob_vow_bethel"
+label = "Jacob's vow at Bethel"
+from_year = -1760
+to_year = -1760
+places = ["bethel-1"]
+verses = ["GEN.28.20-22"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 28:20-22, Jacob's own vow following the ladder dream (the dream itself is jj_bethel_dream's own pre-existing narrative leg, unmodified)."
+ref_note = "Same traditional year as Jacob's own departure. Place: Bethel, explicit, same as jj_bethel_dream's own place."
+
+[[event]]
+id = "gen_jacob_serves_for_rachel"
+label = "Jacob serves seven years for Rachel, but is given Leah"
+from_year = -1760
+to_year = -1758
+places = ["haran"]
+verses = ["GEN.29.15-30"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 29:15-30, Jacob's own contract with Laban, the wedding-night substitution, and Jacob's own second seven years for Rachel."
+ref_note = "Closes near Reuben's own birth (theo-91, 1758 BC). Place: Haran, same as jj_haran's own narrative leg."
+
+[[event]]
+id = "gen_jacobs_children_born"
+label = "The birth of Jacob's children by Leah, Bilhah, Zilpah, and Rachel"
+from_year = -1758
+to_year = -1745
+places = ["haran"]
+verses = ["GEN.29.31-35", "GEN.30.1-24"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 29:31-30:24, the births of Jacob's eleven sons and one daughter at Haran -- one container for the whole narrative block (Leah's rivalry with Rachel, the mandrakes, the maidservants given), overlapping the existing theo-91 through theo-102 birth micro-events legally (those stay reachable via EVENT membership; this container is the block's own reader heading)."
+ref_note = "Spans Reuben's own birth (theo-91, 1758 BC) through Joseph's own birth (theo-102, 1745 BC), both pre-existing anchors, unmodified. Place: Haran, throughout."
+
+[[event]]
+id = "gen_jacobs_wages"
+label = "Jacob's wages; the speckled and spotted flocks"
+from_year = -1745
+to_year = -1740
+places = ["haran"]
+verses = ["GEN.30.25-43"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 30:25-43, Jacob's own request to leave, Laban's counter-offer, and the peeled-rod breeding."
+ref_note = "Placed after Joseph's own birth (30:25, 'when Rachel had born Joseph'), before Jacob's own flight. Place: Haran."
+
+[[event]]
+id = "gen_jacob_flees_laban"
+label = "Jacob flees from Laban toward Gilead"
+from_year = -1739
+to_year = -1739
+order_key = 10
+places = ["haran"]
+verses = ["GEN.31.1-21"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 31:1-21, Laban's own changed countenance, the LORD's own charge to return, and Jacob's own flight with Rachel's theft of Laban's household gods."
+ref_note = "This event and the six following it (through Deborah's death, gen_deborah_bethel) all fall within one traditional year, Rachel's own own death year (theo-104, 1739 BC, unmodified) -- order_key records their own textual sequence within that shared year, the same sub-year tiebreak mechanism Passion Week's own chain already established, rather than fabricating fake distinct years. Place: Haran, Jacob's own departure point."
+
+[[event]]
+id = "gen_laban_covenant_galeed"
+label = "Laban overtakes Jacob; the covenant at Galeed and Mizpah"
+from_year = -1739
+to_year = -1739
+order_key = 20
+places = ["gilead-1"]
+verses = ["GEN.31.22-55"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 31:22-55, Laban's own pursuit and search, and the covenant-heap named Galeed and Mizpah."
+ref_note = "See gen_jacob_flees_laban's own note on this shared traditional year. Place: 'mount Gilead' (31:21, 31:23, 31:25), explicit; Mizpah is also explicitly named (31:49)."
+
+[[event]]
+id = "gen_jacob_prepares_esau"
+label = "Jacob prepares to meet Esau"
+from_year = -1739
+to_year = -1739
+order_key = 30
+places = ["mahanaim"]
+verses = ["GEN.32.3-21"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 32:3-21, Jacob's own messengers to Esau, his fear, and the appeasement gifts sent ahead -- the passage between the existing jj_mahanaim (32:1-2) and jj_peniel (32:22-31) narrative legs."
+ref_note = "See gen_jacob_flees_laban's own note. Place: Mahanaim, same as the surrounding jj_* narrative legs."
+
+[[event]]
+id = "gen_jacob_esau_reconciled"
+label = "Jacob and Esau are reconciled"
+from_year = -1739
+to_year = -1739
+order_key = 40
+places = ["penuel"]
+verses = ["GEN.32.32", "GEN.33.1-17"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 32:32-33:17, the dietary note on the sinew that shrank, and Jacob and Esau's own reunion and reconciliation."
+ref_note = "See gen_jacob_flees_laban's own note. Place: continues from Penuel (jj_peniel's own place), where Jacob had just lodged."
+
+[[event]]
+id = "gen_jacob_buys_shechem"
+label = "Jacob buys land at Shechem"
+from_year = -1739
+to_year = -1739
+order_key = 50
+places = ["shechem"]
+verses = ["GEN.33.19-20"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 33:19-20, Jacob's own purchase of land at Shechem and the altar El-elohe-Israel."
+ref_note = "See gen_jacob_flees_laban's own note. Place: Shechem, same as jj_shechem's own narrative leg (33:18, immediately prior, unmodified)."
+
+[[event]]
+id = "gen_dinah_shechem"
+label = "The defiling of Dinah, and the slaughter at Shechem"
+from_year = -1739
+to_year = -1739
+order_key = 60
+places = ["shechem"]
+verses = ["GEN.34.1-31"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 34, Shechem's own violation of Dinah, and Simeon and Levi's own revenge."
+ref_note = "Dinah's own exact age is not stated in the text; placed by narrative sequence (order_key), not an independent age calculation, within the same traditional year as the surrounding Shechem material -- see gen_jacob_flees_laban's own note. Place: Shechem, explicit throughout."
+
+[[event]]
+id = "gen_deborah_bethel"
+label = "Deborah's death; Jacob renamed Israel at Bethel"
+from_year = -1739
+to_year = -1739
+order_key = 70
+places = ["bethel-1"]
+verses = ["GEN.35.8-15"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 35:8-15, the death of Rebekah's own nurse Deborah, and God's own renewed appearance to Jacob at Bethel, renaming him Israel -- the passage between the existing jj_bethel_return (35:1-7) and Rachel's own death (theo-104, 35:16-20) narrative content."
+ref_note = "The last of this shared traditional year's own sequence (see gen_jacob_flees_laban's own note), immediately preceding Rachel's own death (theo-104, 1739 BC, unmodified). Place: Bethel, same as jj_bethel_return's own place."
+
+# --- Esau's line, and Joseph (Gen 36-50) ---
+
+[[event]]
+id = "gen_generations_esau"
+label = "The generations of Esau"
+kind = "general"
+verses = ["GEN.36.1-43"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 36, Esau's own descendants and the kings of Edom -- one container for the whole genealogical/king-list chapter, same 'genealogies = their own units' reasoning as this file's other list containers."
+ref_note = "General-kind: a genealogical and king list spanning generations, no single dateable moment or place of its own."
+
+[[event]]
+id = "gen_jacob_settles_canaan"
+label = "Jacob settles in Canaan; the generations of Jacob begin"
+from_year = -1728
+to_year = -1728
+places = ["hebron"]
+verses = ["GEN.37.1-2"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 37:1-2, Jacob's own settlement in Canaan and the toledoth formula opening the Joseph narrative."
+ref_note = "Joseph's own stated age, seventeen (37:2), against his own 1745 BC birth, dates this to 1728 BC -- matching Theographic's own theo-105 (Joseph sold to Egypt) exactly, the very next container. Place: Jacob's own dwelling, Hebron (matches je_hebron's own place, 37:14, immediately following)."
+
+[[event]]
+id = "gen_judah_tamar"
+label = "Judah and Tamar"
+from_year = -1728
+to_year = -1721
+places = ["adullam"]
+verses = ["GEN.38.1-30"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 38, Judah's own withdrawal from his brothers, Tamar's deception, and the births of Pharez and Zarah."
+ref_note = "Closes at Pharez's own birth (theo-106, 1721 BC, unmodified). Place: 'a certain Adullamite' (38:1, 38:12, 38:20), explicit."
+
+[[event]]
+id = "gen_joseph_potiphar"
+label = "Joseph in Potiphar's house; falsely accused"
+from_year = -1728
+to_year = -1718
+places = ["egypt"]
+verses = ["GEN.39.1-19"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 39:1-19, Joseph's own service in Potiphar's house, and his mistress's own false accusation."
+ref_note = "Closes just before theo-109's own 'Joseph imprisoned' (1718 BC, unmodified). Place: Egypt, per the surrounding je_egypt_sold/theo-105 narrative."
+
+[[event]]
+id = "gen_joseph_dreams_interpreted"
+label = "Joseph interprets Pharaoh's dreams, and counsels him"
+from_year = -1715
+to_year = -1715
+places = ["egypt"]
+verses = ["GEN.41.15-36"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 41:15-36, Joseph's own interpretation of the seven years of plenty and famine, and his own counsel to Pharaoh -- the passage between the existing theo-109 (Joseph imprisoned, closing at 41:14) and theo-111 (Joseph promoted, opening at 41:37)."
+ref_note = "Matches theo-111/theo-112's own 1715 BC. Place: Egypt, Pharaoh's own court."
+
+[[event]]
+id = "gen_seventy_genealogy"
+label = "The genealogy of the seventy who came into Egypt"
+kind = "general"
+verses = ["GEN.46.6-27"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 46:6-27, the full genealogical list of Jacob's own household who came into Egypt, closing 'all the souls... were threescore and ten' -- one container for the whole list, same 'genealogies = their own units' reasoning."
+ref_note = "General-kind: a genealogical list, no single dateable moment or place of its own beyond the surrounding je_beersheba/je_goshen narrative legs' own dating."
+
+[[event]]
+id = "gen_family_settles_egypt"
+label = "Jacob's family settles in Egypt; Joseph's famine policy"
+from_year = -1706
+to_year = -1706
+places = ["goshen-1"]
+verses = ["GEN.47.1-26"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 47:1-26, Joseph presenting his family to Pharaoh, Jacob's own blessing on Pharaoh, and Joseph's own land-for-grain policy during the famine."
+ref_note = "Matches theo-115's own arrival year, 1706 BC. Place: 'the land of Goshen' (47:1), explicit."
+
+[[event]]
+id = "gen_jacob_blesses_grandsons"
+label = "Jacob's oath; Jacob blesses Ephraim and Manasseh"
+from_year = -1689
+to_year = -1689
+places = ["goshen-1"]
+verses = ["GEN.47.29-31", "GEN.48.1-22"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 47:29-48:22, Jacob's own oath to be buried in Canaan, and his own blessing on Joseph's two sons, crossing his hands to favor the younger."
+ref_note = "Matches theo-116's own death year, 1689 BC ('the time drew nigh that Israel must die,' 47:29). Place: Goshen, Jacob's own dwelling in Egypt."
+
+[[event]]
+id = "gen_jacob_blesses_sons"
+label = "Jacob's blessing on his twelve sons"
+from_year = -1689
+to_year = -1689
+places = ["goshen-1"]
+verses = ["GEN.49.1-28"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 49:1-28, Jacob's own prophetic blessing on each of his twelve sons in turn."
+ref_note = "Same traditional year as gen_jacob_blesses_grandsons, immediately preceding Jacob's own death. Place: Goshen."
+
+[[event]]
+id = "gen_burial_of_jacob"
+label = "The burial of Jacob at Machpelah"
+from_year = -1689
+to_year = -1689
+places = ["machpelah"]
+verses = ["GEN.49.29-33", "GEN.50.1-14"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 49:29-50:14, Jacob's own final charge, his death, and the great funeral procession to bury him at Machpelah."
+ref_note = "Matches theo-116's own 1689 BC. Place: 'the cave of the field of Machpelah' (49:30, 50:13), explicit."
+
+[[event]]
+id = "gen_joseph_forgives"
+label = "Joseph comforts and forgives his brothers"
+from_year = -1689
+to_year = -1689
+places = ["egypt"]
+verses = ["GEN.50.15-21"]
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 50:15-21, the brothers' own fear after Jacob's death, and Joseph's own words of comfort and forgiveness."
+ref_note = "Same traditional year as Jacob's own burial, immediately following. Place: Egypt."

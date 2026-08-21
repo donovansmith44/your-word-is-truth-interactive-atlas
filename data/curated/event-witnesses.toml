@@ -1879,3 +1879,30 @@ verses = ["MAT.20.29-34"]
 ref_note = "Matthew 20:29-34 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
 robertson_section = "Robertson (1922) §126"
 
+# --- Batch W1 (whole-Bible titled verse containers), req 1b's own NAMED
+# CASE in the W1 window: "Exodus 20 ∥ Deuteronomy 5 (the Commandments --
+# the catechism layer already maps both sides; your witness rows must
+# agree with it)". theo-127 ("Ten Commandments Given", pre-existing
+# Theographic event, EXO.19.1-20.17, enriched with atlas_section in
+# data/curated/atlas-sections.toml) is the EVENT; its own top-level
+# verses are EXO, so per the witness-completeness rule (once ANY witness
+# exists, every top-level book needs its own explicit row too, the
+# pw_bethany/72-row precedent) an EXO witness row is REQUIRED alongside
+# the DEU parallel, not merely the DEU side alone. Deuteronomy 5 is
+# Moses's OWN later recitation of this SAME giving of the law to the
+# second generation, forty years on at Moab -- modeled as a witness of
+# the SAME event exactly like a Gospel harmony parallel, per the owner's
+# own "I'd expect to see parallels between kings and chronicles" framing
+# generalized to this pairing.
+[[witness]]
+event_id = "theo-127"
+book = "EXO"
+verses = ["EXO.20.1-17"]
+ref_note = "Exodus 20:1-17 read directly against the compiled KJV text -- the Ten Commandments themselves (the event's own wider top-level span, EXO.19.1-20.17, also includes the Sinai theophany's own build-up; this witness row is scoped to 'Exodus 20' precisely, per req 1b's own named case). Included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete (the pw_bethany/72-row precedent: once any witness exists, the top-level book needs its own explicit row)."
+
+[[witness]]
+event_id = "theo-127"
+book = "DEU"
+verses = ["DEU.5.6-21"]
+ref_note = "Deuteronomy 5:6-21 read directly against the compiled KJV text -- Moses's own recitation of the Ten Commandments to the second generation at Moab, forty years after Sinai (the wider chapter, DEU.5.1-33, also carries Moses's own introduction, vv.1-5, and the people's own fearful response, vv.22-33; this witness row is scoped to the Commandments themselves, matching data/curated/catechism-deut5.toml's own per-commandment citations exactly, DEU.5.7 through DEU.5.21). Verse-for-verse alignment against Exodus 20 (Deuteronomy runs one verse ahead of Exodus from the Sabbath commandment onward, owing to Deuteronomy's own intervening vv.6,15) is independently established in that same file, per-commandment -- this witness row's own range agrees with it, the same primary/parallel relationship the catechism layer already establishes (Exodus 20 the item-level citation, Deuteronomy 5 the 'deut5-parallel' supplement). NOTE (disclosed): the full chapter (33 verses) exceeds this codebase's own pre-existing 20-verse-per-witness-group wire cap (scene::verse_groups_for's own `take(20)`, a general wire-economy limit predating this batch, never before exercised by any curated witness -- see batch-w1-report.md); scoping to the 16-verse Commandments-proper span is both a MORE precise citation for 'the Commandments' specifically and avoids that cap, rather than silently truncating a wider claim."
+

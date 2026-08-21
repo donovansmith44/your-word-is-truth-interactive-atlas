@@ -1,0 +1,107 @@
+# Batch W1 (whole-Bible titled verse containers): the general, whole-Bible
+# sibling of acts-sections.toml -- see atlas_core::data::Event::
+# atlas_section's own doc comment. Same schema, same purpose: PROMOTING a
+# pre-existing bare Theographic-sourced event (already real title/date/
+# place, CC BY-SA 4.0, already credited in LICENSES.md) to heading-worthy
+# with no duplicate [[event]] row, for a well-scoped, single-scene span
+# Theographic's own event data already draws sensibly. Deliberately NOT
+# exhaustive -- most of the 190 pre-existing OT events this batch's own
+# books touch are either genealogical micro-stubs (a single "birth of X"/
+# "lifetime of X"/"death of X" verse or two, better served by ONE wider
+# curated genealogy container in data/curated/passages/*.toml than by
+# individually heading every stub) or already heading-worthy for free as
+# an existing narrative's own leg -- enrichment here is reserved for
+# events this batch judged BOTH well-scoped (a real single coherent scene,
+# not a multi-scene mega-span better split by a purpose-built passages/
+# container) AND collision-free against every passages/*.toml container
+# this same batch authored (checked anchor-by-anchor before authoring,
+# not merely hoped) and against every existing narrative leg's own anchor
+# (narrative legs are LAYER 0, so no collision risk there structurally,
+# but shadowing an already-shipped, already-tested narrative-leg heading
+# with a same-or-earlier anchor was avoided anyway, on judgment, to keep
+# this batch's blast radius narrow and reviewable).
+#
+# Every citation below was read directly against the compiled KJV text
+# (data/compiled/verses-kjv.json) before being enriched, same
+# citation-integrity discipline as every other curated file in this
+# project.
+
+# --- Genesis ---
+
+[[section]]
+event_id = "theo-1"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 1:1-2:3, the six days of creation and the sabbath rest. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited in LICENSES.md); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-2"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 2:4-25, the forming of Adam, the garden, and Eve. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-3"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 3, the serpent's temptation, the Fall, and the curse. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-5"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 4:1-10, Cain and Abel's own offerings, and Cain's murder of Abel. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-6"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 4:11-16, the LORD's own curse on Cain, and Cain's own mark. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-32"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 6:1-7, mankind's own corruption, and God's own resolve to destroy every living thing. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-35"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 6:8-7:5, God's own instructions to Noah for the ark. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-39"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 7:6-8:19, the Great Flood, from the ark's own entry through the earth's own drying. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance. Chosen over the narrower, overlapping theo-38/theo-40/theo-41/theo-42 (each a finer sub-scene of this SAME flood narrative, all sharing or nesting within this span) specifically to avoid a within-layer anchor collision -- only ONE of the overlapping cluster is enriched, per this file's own header note."
+
+[[section]]
+event_id = "theo-43"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 8:20-9:17, Noah's own altar, and God's own covenant and rainbow sign. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-53"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 11:1-9, the tower of Babel and the confusion of languages. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-104"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 35:16-27, Rachel's own death giving birth to Benjamin, and Reuben's own sin. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-105"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 37:3-36, Joseph's own coat, his dreams, his brothers' own hatred, and his sale into Egypt. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-109"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 39:20-41:14, Joseph's own imprisonment, the butler and baker's own dreams, and Pharaoh's own dreams. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-111"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 41:37-46, Joseph's own promotion to rule over Egypt. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-112"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 41:47-53, the seven years of plenty. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-113"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 41:54-43:34, the seven years of famine, through the brothers' own second visit to Egypt with Benjamin. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-114"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 42, Joseph's own brothers' first journey to Egypt for grain. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+[[section]]
+event_id = "theo-115"
+atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 43:1-45:28, the brothers' own second journey, the silver cup, and Joseph's own revelation of himself to his brothers. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance."
+
+# --- Exodus ---
+
+[[section]]
+event_id = "theo-127"
+atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 19:1-20:17, Israel's arrival at Sinai and the giving of the Ten Commandments. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance -- req 1b's own NAMED CASE (Exodus 20 vs Deuteronomy 5): its own DEU witness (data/curated/event-witnesses.toml) is this event's own PARALLEL ACCOUNTS partner."

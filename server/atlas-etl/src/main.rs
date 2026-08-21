@@ -85,6 +85,24 @@ fn main() -> Result<()> {
         all_events.push(e);
     }
 
+    // --- data/curated/passages/ (Batch W1: whole-Bible titled verse
+    // containers) -- one *.toml file per book (`genesis.toml`, `exodus.toml`,
+    // ...), each in the EXACT SAME `[[event]]` schema as events-extra.toml
+    // (reuses `curated::parse_events_extra` unmodified -- see that file's
+    // own doc comment) -- kept in a SEPARATE per-book directory rather than
+    // growing one already-3000-line events-extra.toml further, mirroring the
+    // established "one file per unit when there's a natural per-unit split"
+    // precedent `narratives/`/`polities/` already set. Same collision-guard
+    // merge as events-extra.toml just above (a passages/*.toml id colliding
+    // with an existing Theographic OR events-extra.toml id fails loud here).
+    let passages = read_passages(&curated_dir.join("passages"))?;
+    for e in passages {
+        if !seen_event_ids.insert(e.id.clone()) {
+            bail!("data/curated/passages/ defines event id '{}', which collides with an existing event id", e.id);
+        }
+        all_events.push(e);
+    }
+
     // --- data/curated/event-witnesses.toml (Batch T requirement 1: PARALLEL
     // WITNESSES) -- attached AFTER every event id is known (Theographic +
     // events-extra.toml combined), so a witness naming an unknown event id
@@ -127,6 +145,24 @@ fn main() -> Result<()> {
             Some(&idx) => all_events[idx].acts_section = Some(acts_section),
             None => bail!(
                 "data/curated/acts-sections.toml: section row names event_id '{event_id}', which does not match any compiled event id (Theographic or events-extra.toml)"
+            ),
+        }
+    }
+
+    // --- data/curated/atlas-sections.toml (Batch W1: whole-Bible provenance,
+    // the general sibling of acts-sections.toml) -- same merge timing/
+    // mechanism, immediately after it, for the SAME reason: promoting a bare
+    // pre-existing Theographic event (no [[event]] row of its own to attach
+    // an inline atlas_section to) to a heading-worthy real container with no
+    // duplicate row. A passages/*.toml-authored event sets atlas_section
+    // inline instead (see EventToml's own doc comment) and simply never
+    // appears as a row here -- both paths write the SAME field.
+    let atlas_sections = curated::parse_atlas_sections(&read(&curated_dir.join("atlas-sections.toml"))?)?;
+    for (event_id, atlas_section) in atlas_sections {
+        match event_by_id.get(&event_id) {
+            Some(&idx) => all_events[idx].atlas_section = Some(atlas_section),
+            None => bail!(
+                "data/curated/atlas-sections.toml: section row names event_id '{event_id}', which does not match any compiled event id (Theographic, events-extra.toml, or passages/*.toml)"
             ),
         }
     }
@@ -442,6 +478,32 @@ fn write_json<T: serde::Serialize>(path: &Path, value: &T) -> Result<()> {
     fs::write(path, text).with_context(|| format!("writing {}", path.display()))
 }
 
+/// Parses every `*.toml` file directly under `passages_dir` (one book per
+/// file, e.g. `genesis.toml`, `exodus.toml` -- Batch W1's own new
+/// `data/curated/passages/` directory), each in the SAME `[[event]]` schema
+/// `events-extra.toml` uses (reuses `curated::parse_events_extra`
+/// unmodified), concatenated in sorted filename order for reproducible
+/// output. Mirrors `read_narratives` immediately below exactly -- same
+/// "one hand-authored unit per file, directory-scanned" shape
+/// `narratives/`/`polities/` already establish.
+fn read_passages(passages_dir: &Path) -> Result<Vec<atlas_core::data::Event>> {
+    let mut paths: Vec<PathBuf> = fs::read_dir(passages_dir)
+        .with_context(|| format!("reading directory {}", passages_dir.display()))?
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| p.extension().is_some_and(|ext| ext == "toml"))
+        .collect();
+    paths.sort();
+
+    let mut events = Vec::new();
+    for path in paths {
+        let content = read(&path)?;
+        let parsed = curated::parse_events_extra(&content).with_context(|| format!("parsing {}", path.display()))?;
+        events.extend(parsed);
+    }
+    Ok(events)
+}
+
 /// Parses every `*.toml` file directly under `narratives_dir` (one narrative
 /// per file), in sorted filename order for reproducible output.
 fn read_narratives(narratives_dir: &Path) -> Result<Vec<atlas_core::data::Narrative>> {
@@ -490,6 +552,18 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     let acts_sections_path = curated_dir.join("acts-sections.toml");
     if !acts_sections_path.is_file() {
         missing.push(format!("{}", acts_sections_path.display()));
+    }
+    let atlas_sections_path = curated_dir.join("atlas-sections.toml");
+    if !atlas_sections_path.is_file() {
+        missing.push(format!("{}", atlas_sections_path.display()));
+    }
+    let passages_dir = curated_dir.join("passages");
+    let has_passages_files = passages_dir.is_dir()
+        && fs::read_dir(&passages_dir)
+            .map(|entries| entries.filter_map(|e| e.ok()).any(|e| e.path().extension().is_some_and(|ext| ext == "toml")))
+            .unwrap_or(false);
+    if !has_passages_files {
+        missing.push(format!("{} (expected one or more *.toml passage files -- Batch W1)", passages_dir.display()));
     }
     let narratives_dir = curated_dir.join("narratives");
     let has_narrative_files = narratives_dir.is_dir()

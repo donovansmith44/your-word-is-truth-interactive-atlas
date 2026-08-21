@@ -683,7 +683,19 @@ Notes:
   Theographic + events-extra.toml -- by `data/curated/acts-sections.toml`,
   the SAME flat event_id-keyed merge mechanism `event-witnesses.toml`
   already uses, so it can target a bare Theographic-sourced event
-  directly with no duplicate `[[event]]` row needed), and PARALLEL
+  directly with no duplicate `[[event]]` row needed), `atlas_section`
+  (Batch W1, "whole-Bible titled verse containers": the GENERAL,
+  whole-Bible sibling of `acts_section` -- req 1's own provenance
+  vocabulary, "atlas_section (our own sectioning, the sanctioned
+  Acts-precedent fallback)" -- used for every book outside the Gospels/
+  Acts once W1's own OT sectioning starts, same shape, same layer-1
+  treatment, set TWO ways: inline on a brand-new `[[event]]` row in
+  `data/curated/passages/*.toml` (one file per book, reusing
+  `events-extra.toml`'s own exact `[[event]]` schema), or via
+  `data/curated/atlas-sections.toml` (the SAME flat event_id-keyed merge
+  mechanism as `acts-sections.toml`, for promoting a bare pre-existing
+  Theographic event with no `[[event]]` row of its own to attach to)),
+  and PARALLEL
   WITNESSES
   (`witnesses: Vec<EventWitness>` -- "the set of per-book passages that
   recount the same event... one witness passage per Gospel," the owner
@@ -702,6 +714,24 @@ Notes:
   fabricated placeholder, and the SAME function the reader-heading index
   and the EVENT popover's own wire both call, so they can never disagree
   about how many witnesses an event has.
+
+  KIND-AGNOSTIC (Batch W1 requirement 1b, "MODEL GENERALIZATION... parallel
+  witnesses attach to PASSAGES of any kind, not only EVENT-kind"): nothing
+  in this witness machinery -- `scene::witnesses_for`, `handlers::event`,
+  `heading_anchors_for`, the client's own `EventWitnessesSection` (keyed
+  only on `node.Kind == "Event"`, the CLIENT's own UI-node-kind
+  discriminator, distinct from and never checked against the DATA's own
+  `Event::kind`) -- branches on `Event::kind` at all; a `kind == "general"`
+  passage carrying `witnesses` renders PARALLEL ACCOUNTS identically to a
+  `kind == "event"` one (2-verse clamp per witness, per-entry expand,
+  single-witness = no parallel framing, all unchanged). Proven at the wire
+  level (`event_endpoint_general_kind_with_multiple_witnesses_shows_
+  parallel_accounts`, `server/atlas-server/tests/api.rs`) and, live, by
+  W1's own req-1b NAMED CASE: `theo-127` ("Ten Commandments Given",
+  EXO.19.1-20.17) carries an EXO witness (its own top-level book) and a
+  DEU witness (Deuteronomy 5, Moses's own later recitation to the second
+  generation at Moab) -- the SAME verse alignment
+  `data/curated/catechism-deut5.toml` already establishes per-commandment.
 
   ONE GRAPH, THREE SURFACES. `Narrative.legs` (an ORDERED chain of event ids
   -- unchanged since Task 3, ETL-validated non-chronological AND, new this
@@ -732,9 +762,9 @@ Notes:
   entirely to the EVENT node). `GET /api/event/{id}` (new) is an EVENT
   node's own rich fetch: `id`/`title`/`kind` (Batch T2, ALWAYS present) /
   `when`/`places` (id+name pairs) / `witnesses` (ALWAYS >=1, see the
-  data-model paragraph above) / `robertson_section`/`acts_section`
-  (Batch T2, Acts's own sibling field -- see the data-model paragraph
-  above)/`ref_note` (each omitted, not null, when uncurated). Batch T2: `when` is OMITTED (not
+  data-model paragraph above) / `robertson_section`/`acts_section`/
+  `atlas_section` (Batch T2/W1, Acts's and the whole-Bible's own sibling
+  fields -- see the data-model paragraph above)/`ref_note` (each omitted, not null, when uncurated). Batch T2: `when` is OMITTED (not
   null) when `kind == "general"` -- the fabrication guard extends to the
   wire itself, not just the curated source (see the data-model paragraph
   above); `places` is always present, possibly empty (a general-kind
@@ -755,11 +785,18 @@ Notes:
   curated narratives (OT included; every existing narrative event already
   carries a real title via `Event::label`, so this needed zero new
   authoring for those), OR was explicitly curated with `witnesses`, OR
-  carries a `robertson_section`. This realizes the owner's own coverage
-  decision ("Gospels-first... PLUS every event in the existing 13
-  narratives... General-passage titles outside these come later") without
-  a separate curated flag: a Theographic event this batch never touches,
-  and that is a leg of no narrative, correctly anchors NO heading anywhere.
+  carries a `robertson_section`, OR carries an `acts_section` (Batch T2),
+  OR carries an `atlas_section` (Batch W1 -- the general, whole-Bible
+  sibling of the two -- see the data-model paragraph above; fixed in this
+  same commit alongside the code, correcting THIS paragraph's own
+  pre-existing omission of `acts_section`, which `AtlasData::finish`'s own
+  code already checked since Batch T2 but this prose never named).
+  Originally realized the owner's own coverage decision ("Gospels-first...
+  PLUS every event in the existing 13 narratives... General-passage titles
+  outside these come later"); Batch W1 begins that "outside these" work.
+  Still no separate curated flag needed: a Theographic event no batch has
+  yet touched, and that is a leg of no narrative, correctly anchors NO
+  heading anywhere.
 
   DECISIVE-CONTAINER MODEL, COLLISION PRECEDENCE (fix-round-1,
   batch-t-review.md Important-1, amended by the owner's own 2026-08-21
@@ -784,9 +821,11 @@ Notes:
   grouping, chosen by `AtlasData::heading_precedence`'s own 3-tier rule,
   never by incidental file/vec order:
   1. LAYER -- a REAL container (curated `witnesses` non-empty and/or
-     `robertson_section` present) beats a bare "freebie" container
-     (heading-worthy only because it happens to be a narrative leg riding
-     its own pre-existing `Event::label`). Decides every real collision in
+     `robertson_section`/`acts_section`/`atlas_section` present -- Batch
+     W1 added the third; all three count identically, see the data-model
+     paragraph above) beats a bare "freebie" container (heading-worthy
+     only because it happens to be a narrative leg riding its own
+     pre-existing `Event::label`). Decides every real collision in
      today's curated data outright (`pw_bethany` real container beats
      `jm_bethany` freebie).
   2. KIND -- `"event"` beats `"general"`, a tiebreak reached only when both

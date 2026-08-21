@@ -1,0 +1,31 @@
+# Batch W1 (whole-Bible titled verse containers -- the coverage-manifest
+# infrastructure the whole W series builds on, per batch-w-brief.md's own
+# "Scale protocol" section). Declares which books this project claims are
+# FULLY covered -- every one of that book's own verses belongs to >=1
+# titled container (`atlas_core::data::Event`, any kind, any layer).
+# Checked by `server/atlas-etl/tests/coverage.rs`'s own
+# `every_declared_book_is_fully_covered` test against the REAL compiled
+# `events.json`/`canon.json` (genuinely independent ground truth -- the
+# verse universe comes from the compiled KJV canon itself, never a
+# hand-typed count; the coverage claim is checked against the real
+# compiled event set, never re-derived from curated TOML alone, so a
+# Theographic-only-covered verse with no curated-TOML footprint at all
+# still counts correctly).
+#
+# RULE (per the brief): this list only ever GROWS. A book is added here
+# only once every one of its own verses is confirmed covered (see each
+# batch's own report for the coverage table); a book is NEVER removed.
+# `coverage.rs`'s own `declared_books_never_shrink_below_the_established_floor`
+# test hardcodes the CURRENT floor as an independent, second check -- so
+# an accidental deletion here fails loud even if this file itself were
+# edited carelessly.
+#
+# Gospels+Acts (Batch T/T2, verified gap-free by THIS batch's own
+# verse-ground-truth sweep -- two small pre-existing gaps found and closed
+# in this same batch, LUK.21.37-38 and ACT.1.1-3, see events-extra.toml's
+# own "Batch W1" section and batch-w1-report.md) stay declared from day
+# one, per the brief's own explicit instruction.
+declared = [
+  "MAT", "MRK", "LUK", "JHN", "ACT",
+  "GEN",
+]

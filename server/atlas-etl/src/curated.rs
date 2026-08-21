@@ -111,6 +111,31 @@ struct EventToml {
     /// overwhelming majority) keeps parsing with no migration.
     #[serde(default)]
     robertson_section: Option<String>,
+    /// Batch W1: inline `acts_section` provenance -- until this batch,
+    /// `Event::acts_section` was only ever SET via the separate
+    /// `data/curated/acts-sections.toml` merge file (every prior Acts
+    /// event was a pre-existing Theographic id being enriched, never a
+    /// brand-new `[[event]]` row -- see `parse_acts_sections`'s own doc
+    /// comment). W1 closes a genuine coverage gap with NO pre-existing
+    /// Theographic event to enrich (Acts 1:1-3, Luke's own preface to
+    /// Theophilus, before the acts-sections.toml-enriched narrative even
+    /// begins at 1:4) -- this field lets a brand-new Acts passage carry
+    /// its own provenance inline, the SAME way `robertson_section` already
+    /// does for brand-new Gospel events, without disturbing
+    /// `acts-sections.toml`'s own existing enrichment-only role.
+    #[serde(default)]
+    acts_section: Option<String>,
+    /// Batch W1: inline `atlas_section` provenance for a brand-new passage
+    /// authored directly in a `data/curated/passages/*.toml` file (this
+    /// batch's own new one-file-per-book directory, reusing this exact
+    /// `EventToml`/`EventsFile`/`parse_events_extra` schema unmodified) --
+    /// see `atlas_core::data::Event::atlas_section`'s own doc comment for
+    /// the sibling "enrich a pre-existing Theographic event instead" path
+    /// (`parse_atlas_sections`, below), which this field does NOT cover
+    /// (that path has no `[[event]]` row to attach an inline field to in
+    /// the first place).
+    #[serde(default)]
+    atlas_section: Option<String>,
     #[serde(default)]
     ref_note: Option<String>,
     #[serde(default)]
@@ -223,6 +248,8 @@ pub fn parse_events_extra(input: &str) -> Result<Vec<Event>> {
             verses,
             kind,
             robertson_section: e.robertson_section,
+            acts_section: e.acts_section,
+            atlas_section: e.atlas_section,
             ref_note: e.ref_note,
             order_key: e.order_key,
             ..Default::default()
@@ -328,6 +355,66 @@ pub fn parse_acts_sections(input: &str) -> Result<Vec<(String, String)>> {
     let f: ActsSectionsFile =
         toml::from_str(input).context("acts-sections.toml: invalid TOML or does not match the [[section]] schema")?;
     Ok(f.section.into_iter().map(|s| (s.event_id, s.acts_section)).collect())
+}
+
+// --- Batch W1: atlas-sections.toml (whole-Bible provenance, the general
+// sibling of acts-sections.toml) ---
+
+#[derive(Deserialize)]
+struct AtlasSectionsFile {
+    #[serde(default)]
+    section: Vec<AtlasSectionToml>,
+}
+
+#[derive(Deserialize)]
+struct AtlasSectionToml {
+    event_id: String,
+    atlas_section: String,
+}
+
+/// Parses `atlas-sections.toml` (Batch W1, whole-Bible titled verse
+/// containers -- req 1's own provenance vocabulary: "atlas_section (our own
+/// sectioning, the sanctioned Acts-precedent fallback)"). Schema and
+/// purpose are IDENTICAL to `parse_acts_sections` immediately above, just
+/// for `Event::atlas_section` instead of `Event::acts_section` -- a flat
+/// `[[section]]` array, each row explicitly naming its own `event_id`,
+/// letting a bare pre-existing Theographic-sourced event (already real
+/// title/date/place, CC BY-SA 4.0, already credited in LICENSES.md) gain
+/// heading-worthy provenance with no duplicate `[[event]]` row. `main.rs`
+/// merges it onto the FULL combined event set (Theographic +
+/// events-extra.toml + passages/*.toml) by id, the same merge timing/
+/// mechanism `acts-sections.toml`/`event-witnesses.toml` already use.
+///
+/// Pure and STRUCTURAL only, same split every other curated schema in this
+/// module follows: a malformed file bails immediately; cross-checking each
+/// `event_id` against the real compiled event set is `main.rs`'s own job.
+pub fn parse_atlas_sections(input: &str) -> Result<Vec<(String, String)>> {
+    let f: AtlasSectionsFile =
+        toml::from_str(input).context("atlas-sections.toml: invalid TOML or does not match the [[section]] schema")?;
+    Ok(f.section.into_iter().map(|s| (s.event_id, s.atlas_section)).collect())
+}
+
+// --- Batch W1: coverage-manifest.toml (the whole-Bible coverage-manifest
+// infrastructure the W series builds on) ---
+
+#[derive(Deserialize)]
+struct CoverageManifestFile {
+    declared: Vec<String>,
+}
+
+/// Parses `coverage-manifest.toml` -- a flat list of canonical 3-letter book
+/// codes this project claims are FULLY covered (every one of that book's
+/// own verses belongs to >=1 titled container). Pure and STRUCTURAL only,
+/// same split every other curated schema in this module follows -- a
+/// malformed file bails immediately; checking each declared code is a real
+/// canon code, has no duplicates, and is ACTUALLY fully covered against the
+/// real compiled data is `server/atlas-etl/tests/coverage.rs`'s own job
+/// (it needs the compiled `events.json`/`canon.json`, which this pure
+/// parser deliberately does not read).
+pub fn parse_coverage_manifest(input: &str) -> Result<Vec<String>> {
+    let f: CoverageManifestFile =
+        toml::from_str(input).context("coverage-manifest.toml: invalid TOML or does not match the 'declared' schema")?;
+    Ok(f.declared)
 }
 
 #[derive(Deserialize)]

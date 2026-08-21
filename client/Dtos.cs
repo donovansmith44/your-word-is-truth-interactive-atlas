@@ -211,6 +211,11 @@ public sealed record EventDetail(
     // (server, atlas-core/src/data.rs) for why it's separate. Wire-only,
     // like RobertsonSection itself -- no UI element renders either today.
     string? ActsSection = null,
+    // Batch W1 (whole-Bible titled verse containers): the general,
+    // whole-Bible sibling of ActsSection -- see Event::atlas_section's own
+    // doc comment (server, atlas-core/src/data.rs). Wire-only, like its two
+    // siblings -- no UI element renders any of the three today.
+    string? AtlasSection = null,
     string? RefNote = null);
 
 public sealed record BookMetaDto(string Author, string? WritePlace, int? WriteFrom, int? WriteTo);
