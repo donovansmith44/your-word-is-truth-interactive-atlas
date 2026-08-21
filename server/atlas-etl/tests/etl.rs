@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityDelta, PolityEra};
+use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, EventWitness, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityDelta, PolityEra};
 use atlas_core::merge::PlaceMerge;
 use atlas_core::time::TimeRange;
 
@@ -358,6 +358,249 @@ fn validate_valid_data_passes() {
     verses.insert("GEN.1.1".to_string(), "In the beginning...".to_string());
 
     let data = AtlasData::new(Canon { books: vec![] }, places, events, narratives, full_eras(), books_meta, verses, HashMap::new()).finish();
+    assert!(atlas_etl::validate::run(&data).is_ok(), "{:?}", atlas_etl::validate::run(&data).err());
+}
+
+// ---------------------------------------------------------------------
+// Batch T requirement 1: PASSAGE/EVENT data model validation --
+// date-outside-span, kind enum, witness book/verse/overlap checks, and
+// requirement 2's order_key chronological-leg tiebreak.
+// ---------------------------------------------------------------------
+
+fn mat_verses() -> HashMap<String, String> {
+    // A handful of real-shaped (not necessarily literal) verse keys under
+    // one book/chapter, enough for the "exists in the compiled KJV text"
+    // half of every witness-verse check below.
+    let mut verses = HashMap::new();
+    for v in 1..=10 {
+        verses.insert(format!("MAT.27.{v}"), format!("Verse {v} text."));
+    }
+    for v in 1..=10 {
+        verses.insert(format!("MRK.15.{v}"), format!("Verse {v} text."));
+    }
+    verses
+}
+
+#[test]
+fn validate_event_date_before_atlas_span_fails() {
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![Event {
+        id: "e1".into(),
+        label: "Too early".into(),
+        when: TimeRange::new(-5000, -5000).unwrap(), // outside [-4004,100]
+        places: vec!["p".into()],
+        ..Default::default()
+    }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    let data = data.finish();
+    let err = atlas_etl::validate::run(&data).unwrap_err();
+    assert!(err.to_string().contains("outside"), "{err}");
+}
+
+#[test]
+fn validate_event_date_after_atlas_span_fails() {
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![Event {
+        id: "e1".into(),
+        label: "Too late".into(),
+        when: TimeRange::new(200, 200).unwrap(), // outside [-4004,100]
+        places: vec!["p".into()],
+        ..Default::default()
+    }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    let data = data.finish();
+    let err = atlas_etl::validate::run(&data).unwrap_err();
+    assert!(err.to_string().contains("outside"), "{err}");
+}
+
+#[test]
+fn validate_event_invalid_kind_fails() {
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![Event {
+        id: "e1".into(),
+        label: "E1".into(),
+        when: TimeRange::new(-5, -5).unwrap(),
+        places: vec!["p".into()],
+        kind: "bogus".into(),
+        ..Default::default()
+    }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    let data = data.finish();
+    let err = atlas_etl::validate::run(&data).unwrap_err();
+    assert!(err.to_string().contains("invalid kind"), "{err}");
+}
+
+fn witness(book: &str, verses: &[&str]) -> EventWitness {
+    EventWitness {
+        book: book.into(),
+        translations: HashMap::from([("kjv".to_string(), verses.iter().map(|s| s.to_string()).collect())]),
+        ref_note: Some("test fixture".into()),
+        robertson_section: None,
+    }
+}
+
+#[test]
+fn validate_event_witness_unknown_book_code_fails() {
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![Event {
+        id: "e1".into(),
+        label: "E1".into(),
+        when: TimeRange::new(33, 33).unwrap(),
+        places: vec!["p".into()],
+        witnesses: vec![witness("XYZ", &["MAT.27.1"])],
+        ..Default::default()
+    }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    data.verses = mat_verses();
+    let data = data.finish();
+    let err = atlas_etl::validate::run(&data).unwrap_err();
+    assert!(err.to_string().contains("not a real canonical book code"), "{err}");
+}
+
+#[test]
+fn validate_event_witness_zero_verses_fails() {
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![Event {
+        id: "e1".into(),
+        label: "E1".into(),
+        when: TimeRange::new(33, 33).unwrap(),
+        places: vec!["p".into()],
+        witnesses: vec![witness("MAT", &[])],
+        ..Default::default()
+    }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    data.verses = mat_verses();
+    let data = data.finish();
+    let err = atlas_etl::validate::run(&data).unwrap_err();
+    assert!(err.to_string().contains("zero verses"), "{err}");
+}
+
+#[test]
+fn validate_event_witness_noncanonical_verse_fails() {
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![Event {
+        id: "e1".into(),
+        label: "E1".into(),
+        when: TimeRange::new(33, 33).unwrap(),
+        places: vec!["p".into()],
+        witnesses: vec![witness("MAT", &["not-a-ref"])],
+        ..Default::default()
+    }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    data.verses = mat_verses();
+    let data = data.finish();
+    let err = atlas_etl::validate::run(&data).unwrap_err();
+    assert!(err.to_string().contains("not a canonical single-verse ref"), "{err}");
+}
+
+#[test]
+fn validate_event_witness_verse_missing_from_compiled_kjv_text_fails() {
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![Event {
+        id: "e1".into(),
+        label: "E1".into(),
+        when: TimeRange::new(33, 33).unwrap(),
+        places: vec!["p".into()],
+        witnesses: vec![witness("MAT", &["MAT.27.999"])], // parses canonically, but not in mat_verses()
+        ..Default::default()
+    }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    data.verses = mat_verses();
+    let data = data.finish();
+    let err = atlas_etl::validate::run(&data).unwrap_err();
+    assert!(err.to_string().contains("does not exist in the compiled KJV text"), "{err}");
+}
+
+#[test]
+fn validate_event_witness_overlapping_ranges_in_the_same_book_fails() {
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![Event {
+        id: "e1".into(),
+        label: "E1".into(),
+        when: TimeRange::new(33, 33).unwrap(),
+        places: vec!["p".into()],
+        witnesses: vec![witness("MAT", &["MAT.27.1", "MAT.27.2", "MAT.27.3"]), witness("MAT", &["MAT.27.3", "MAT.27.4"])],
+        ..Default::default()
+    }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    data.verses = mat_verses();
+    let data = data.finish();
+    let err = atlas_etl::validate::run(&data).unwrap_err();
+    assert!(err.to_string().contains("overlapping verse ranges"), "{err}");
+}
+
+#[test]
+fn validate_event_witnesses_valid_multi_book_data_passes() {
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![Event {
+        id: "e1".into(),
+        label: "E1".into(),
+        when: TimeRange::new(33, 33).unwrap(),
+        places: vec!["p".into()],
+        witnesses: vec![witness("MAT", &["MAT.27.1", "MAT.27.2"]), witness("MRK", &["MRK.15.1", "MRK.15.2"])],
+        ..Default::default()
+    }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    data.verses = mat_verses();
+    data.eras = full_eras();
+    let data = data.finish();
+    assert!(atlas_etl::validate::run(&data).is_ok(), "{:?}", atlas_etl::validate::run(&data).err());
+}
+
+#[test]
+fn validate_narrative_legs_order_key_tiebreak_fails_when_reversed() {
+    // Two events sharing the SAME year -- year alone can't order them, so
+    // the leg array's own order must match order_key. Here it doesn't:
+    // legs = [e1 (order_key=20), e2 (order_key=10)] is a REVERSED tiebreak.
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![
+        Event { id: "e1".into(), label: "E1".into(), when: TimeRange::new(33, 33).unwrap(), places: vec!["p".into()], order_key: 20, ..Default::default() },
+        Event { id: "e2".into(), label: "E2".into(), when: TimeRange::new(33, 33).unwrap(), places: vec!["p".into()], order_key: 10, ..Default::default() },
+    ];
+    let narratives = vec![Narrative { id: "n".into(), name: "N".into(), color: "#fff".into(), legs: vec!["e1".into(), "e2".into()] }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    data.narratives = narratives;
+    let data = data.finish();
+    let err = atlas_etl::validate::run(&data).unwrap_err();
+    assert!(err.to_string().to_lowercase().contains("chronolog"), "{err}");
+    assert!(err.to_string().contains("order_key"), "{err}");
+}
+
+#[test]
+fn validate_narrative_legs_order_key_tiebreak_passes_when_ascending() {
+    // Same same-year pair, correctly ordered by order_key this time.
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![
+        Event { id: "e1".into(), label: "E1".into(), when: TimeRange::new(33, 33).unwrap(), places: vec!["p".into()], order_key: 10, ..Default::default() },
+        Event { id: "e2".into(), label: "E2".into(), when: TimeRange::new(33, 33).unwrap(), places: vec!["p".into()], order_key: 20, ..Default::default() },
+    ];
+    let narratives = vec![Narrative { id: "n".into(), name: "N".into(), color: "#fff".into(), legs: vec!["e1".into(), "e2".into()] }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    data.narratives = narratives;
+    data.eras = full_eras();
+    let data = data.finish();
     assert!(atlas_etl::validate::run(&data).is_ok(), "{:?}", atlas_etl::validate::run(&data).err());
 }
 
