@@ -1,0 +1,139 @@
+# Batch W1 (whole-Bible titled verse containers). Exodus, in the SAME
+# `[[event]]` schema `events-extra.toml` uses -- see
+# `data/curated/passages/genesis.toml`'s own header comment for the full
+# reconciliation/provenance/chronology-disclosure framing, which applies
+# identically here.
+#
+# RECONCILIATION: 15 pre-existing events already touch Exodus (Theographic's
+# own theo-120..128, the exodus narrative's own ex_* legs) -- see
+# batch-w1-report.md's own coverage table. This batch's own gap analysis
+# (against the real compiled events.json) found 4 large uncovered ranges;
+# every container below fills one of them. theo-128 ("Tabernacle Built",
+# EXO.25.1-33.23) is deliberately left UN-enriched: its own span mixes the
+# tabernacle instructions (25-31) with the wholly separate golden-calf
+# apostasy (32-33), a coarse, mis-scoped grouping for a single reader
+# heading -- this batch's own finer containers below (gen_tabernacle_
+# instructions, gen_golden_calf, gen_moses_intercedes) cover that same
+# range with real natural-scene granularity instead; theo-128 stays legal
+# background coverage (still reachable via the verse's own EVENT
+# membership), never duplicated content, just not the heading winner.
+#
+# CHRONOLOGY: dated against the exodus narrative's own established anchor
+# (-1491, the Exodus year, matching theo-125/126/127) and, for the
+# tabernacle's own completion, Exodus 40:17's own explicit "the first day
+# of the first month, in the second year" (-1490, matching theo-128's own
+# to_year).
+
+[[event]]
+id = "exo_affliction_egypt"
+label = "Israel's affliction in Egypt; the Hebrew midwives"
+kind = "general"
+verses = ["EXO.1.1-22"]
+atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 1, Israel's own growth, the new king who knew not Joseph, and Pharaoh's own decree against the Hebrew boys."
+ref_note = "General-kind: spans an unstated number of years of oppression, no single dateable moment or place of its own beyond 'Egypt' broadly."
+
+[[event]]
+id = "exo_midian_zipporah"
+label = "Moses in Midian; he marries Zipporah"
+from_year = -1531
+to_year = -1531
+places = ["midian"]
+verses = ["EXO.2.16-22"]
+atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 2:16-22, Moses's own arrival in Midian, his defense of Jethro's daughters at the well, and his marriage to Zipporah."
+ref_note = "Same traditional year as theo-122 (Moses flees Pharaoh), immediately following. Place: Midian, explicit (2:15-16)."
+
+[[event]]
+id = "exo_burning_bush"
+label = "The burning bush; God calls Moses"
+from_year = -1491
+to_year = -1491
+places = ["horeb_576"]
+verses = ["EXO.2.23-25", "EXO.3.1-22", "EXO.4.1-17"]
+atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 2:23-4:17, the death of the king of Egypt, the burning bush, God's own name revealed, and Moses's own objections answered."
+ref_note = "Traditional (Ussher-consistent) year for the call of Moses, immediately before the Exodus itself (theo-125, 1491 BC) -- Acts 7:30's own 'forty years' places this roughly forty years after Moses fled Pharaoh (theo-122, 1531 BC). Place: 'the mountain of God, even to Horeb' (3:1), explicit."
+
+[[event]]
+id = "exo_moses_returns_egypt"
+label = "Moses returns to Egypt; Aaron meets him"
+from_year = -1491
+to_year = -1491
+places = ["egypt"]
+verses = ["EXO.4.18-31"]
+atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 4:18-31, Moses's own farewell to Jethro, his journey back to Egypt, and Aaron's own meeting with him."
+ref_note = "Same traditional year as exo_burning_bush, immediately following. Place: Egypt, the journey's own destination."
+
+[[event]]
+id = "exo_before_pharaoh_straw"
+label = "Moses and Aaron before Pharaoh; bricks without straw"
+from_year = -1491
+to_year = -1491
+places = ["egypt"]
+verses = ["EXO.5.1-23", "EXO.6.1-6"]
+atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 5:1-6:6, Moses and Aaron's own first appeal to Pharaoh, his refusal, the harsher labor imposed, and the LORD's own renewed promise of deliverance."
+ref_note = "Same traditional year, the passage between exo_moses_returns_egypt and theo-125's own 'Exodus from Egypt' (which opens at EXO.6.7). Place: Egypt, Pharaoh's own court."
+
+[[event]]
+id = "exo_book_of_covenant"
+label = "The people's fear; the Book of the Covenant"
+kind = "general"
+verses = ["EXO.20.18-26", "EXO.21.1-36", "EXO.22.1-31", "EXO.23.1-33"]
+atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 20:18-23:33, the people's own fear at the theophany, and the case-law code traditionally called the Book of the Covenant (servants, injuries, property, justice, feasts, and the promise of the land)."
+ref_note = "General-kind, same 'law = code units' reasoning as this project's own Leviticus containers: a law code, not a single narrative moment, even though situated within the Sinai narrative (Exodus 19-31) chronologically."
+
+[[event]]
+id = "exo_covenant_ratified"
+label = "The covenant ratified; Moses on the mountain forty days"
+from_year = -1491
+to_year = -1491
+places = ["mount-sinai"]
+verses = ["EXO.24.1-18"]
+atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 24, the blood of the covenant, the elders' own vision of God, and Moses's own forty days and nights on the mountain."
+ref_note = "Same traditional year as theo-127 (Ten Commandments Given), immediately following. Place: 'mount Sinai' (24:16), explicit."
+
+[[event]]
+id = "exo_tabernacle_instructions"
+label = "The instructions for the tabernacle, the ark, and the priesthood"
+kind = "general"
+verses = ["EXO.25.1-40", "EXO.26.1-37", "EXO.27.1-21", "EXO.28.1-43", "EXO.29.1-46", "EXO.30.1-38", "EXO.31.1-18"]
+atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 25-31, the LORD's own detailed instructions for the ark, the tabernacle furnishings, the priestly garments, the altar of incense, and the sabbath sign, closing with Bezaleel and Aholiab appointed and the two tables given."
+ref_note = "General-kind, same 'law = code units' reasoning as exo_book_of_covenant: specifications, not a single narrative moment, even though received at Sinai in -1491."
+
+[[event]]
+id = "exo_golden_calf"
+label = "The golden calf; Moses breaks the tablets"
+from_year = -1491
+to_year = -1491
+places = ["mount-sinai"]
+verses = ["EXO.32.1-35"]
+atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 32, Aaron's own golden calf, Moses's own intercession, the shattered tablets, and the Levites' own judgment."
+ref_note = "Same traditional year, while Moses is still on the mountain (exo_covenant_ratified's own forty days). Place: the camp below Sinai."
+
+[[event]]
+id = "exo_moses_intercedes"
+label = "Moses intercedes for Israel; the glory of the LORD"
+from_year = -1491
+to_year = -1491
+places = ["mount-sinai"]
+verses = ["EXO.33.1-23"]
+atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 33, the LORD's own threat to withdraw, the tent of meeting outside the camp, and Moses's own request to see God's own glory."
+ref_note = "Same traditional year, immediately following the golden calf. Place: Sinai/the camp."
+
+[[event]]
+id = "exo_second_tablets"
+label = "The second tablets; Moses's face shines"
+from_year = -1491
+to_year = -1491
+places = ["mount-sinai"]
+verses = ["EXO.34.1-35"]
+atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 34, the LORD's own proclamation of his name, the covenant renewed, and Moses's own shining face after speaking with God."
+ref_note = "Same traditional year, immediately following. Place: 'mount Sinai' (34:4), explicit."
+
+[[event]]
+id = "exo_tabernacle_built"
+label = "The people offer freely; the tabernacle is built and set up"
+from_year = -1490
+to_year = -1490
+places = ["mount-sinai"]
+verses = ["EXO.35.1-35", "EXO.36.1-38", "EXO.37.1-29", "EXO.38.1-31", "EXO.39.1-43", "EXO.40.1-38"]
+atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 35-40, Israel's own freewill offerings, Bezaleel and Aholiab's own craftsmanship, the tabernacle's own construction exactly as commanded, and the glory of the LORD filling it -- closing the book."
+ref_note = "Dated by Exodus 40:17's own explicit statement, 'the first day of the first month, in the second year' (of the Exodus, -1490) -- matching theo-128's own to_year exactly. Place: continues at Sinai, same as the instructions given there."
