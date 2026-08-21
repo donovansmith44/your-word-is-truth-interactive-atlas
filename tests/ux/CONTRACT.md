@@ -301,7 +301,11 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   verses, via the shared passage-list component -- PASSAGE-1's own
   `popover-verse-expand{-ENTRY-ID}`/etc. nested testids apply here
   identically; opens a `VerseNode`/`PassageNode` for `SPAN`, same as any
-  other passage-list entry -- see NARRATIVE-1),
+  other passage-list entry; fix-round-1 (batch-n-review.md Minor-1): when
+  the event-row testid above carries a `--2`/`--3` disambiguation suffix,
+  this verse-row's own `{narrativeId}` segment inherits that EXACT suffix
+  verbatim too (e.g. `narrative-prior-verse-exodus--2-EXO.12.37`), never
+  the bare `{narrativeId}` form -- see NARRATIVE-1),
   `narrative-event-narrative-name` (batch-n-brief.md; present on a
   `NarrativeEventNode`'s own popover only -- names which narrative this
   traversed event belongs to), `narrative-event-verse-{SPAN}` (batch-n-brief.md;
