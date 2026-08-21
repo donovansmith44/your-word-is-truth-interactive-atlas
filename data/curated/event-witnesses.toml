@@ -235,3 +235,30 @@ book = "ACT"
 verses = ["ACT.1.9-12"]
 ref_note = "Acts 1:9-12 read directly against the compiled KJV text"
 robertson_section = "Robertson (1922) §184"
+
+# ===========================================================================
+# Batch T2: witness rows for the remaining Robertson Harmony sections
+# (append-only, matching events-extra.toml's own append-only block; ordered
+# the same way, by Robertson section number). Only GENUINELY multi-witness
+# sections get explicit rows here -- a single-witness section just carries
+# its own `verses` on the top-level event (events-extra.toml) and relies on
+# the implicit single-witness fallback (scene::witnesses_for), the SAME
+# jm_temple_cleansing precedent Batch T already established. Every citation
+# below was read directly against the compiled KJV text before being
+# written.
+# ===========================================================================
+
+# --- Period 1: SS1-3 -------------------------------------------------------
+[[witness]]
+event_id = "rob_genealogies"
+book = "MAT"
+verses = ["MAT.1.1-17"]
+ref_note = "Matthew 1:1-17 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §3"
+
+[[witness]]
+event_id = "rob_genealogies"
+book = "LUK"
+verses = ["LUK.3.23-38"]
+ref_note = "Luke 3:23-38 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §3"
