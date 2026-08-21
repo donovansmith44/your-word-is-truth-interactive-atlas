@@ -1586,6 +1586,58 @@ input:focus-visible,
     opacity: .06;
 }
 
+/* Batch N requirement 3 ("map focus sync -- the same graph, seen twice"):
+   set by map.js's own ArrowLayer.setFocus (never a second class -- see
+   that function's own header comment on why this is a SEPARATE attribute
+   from data-faded, not a second caller of it). Placed BEFORE
+   data-faded="true" below (both here and for the colored path further
+   down) so an explicit legend isolate -- a deliberate, sticky user action
+   -- keeps winning at equal specificity via plain source order, the SAME
+   textually-later-wins technique .atlas-blink's own comment already
+   documents for an analogous two-mechanism overlap.
+
+   "amplify (stroke/opacity)" (the brief's own words) reads as a small,
+   disciplined step up from baseline (3px colored / 5px casing) for
+   "active", a further step for "current" (the leg actually being read,
+   strongest emphasis) -- the SAME +2px colored-to-casing gap the base
+   rules already keep is preserved at each step, not just the colored
+   path amplified alone. "recede (do not vanish)" is deliberately a much
+   gentler dim than isolate's own near-invisible .12/.06 -- receded
+   narratives stay clearly legible as threads on the plate, just quieted
+   relative to the one(s) actually in focus. No transition here,
+   deliberately -- same "an instant snap needs no prefers-reduced-motion
+   carve-out" precedent this file already applies to the zoom/pan-driven
+   `d` recompute a few rules up (this batch's own requirement: "state
+   change without animated transition," trivially true when there is
+   never a transition to begin with). */
+.atlas-arrow[data-narrative-focus="current"] {
+    stroke-width: 5px;
+    opacity: 1;
+}
+
+.atlas-arrow-casing[data-narrative-focus="current"] {
+    stroke-width: 7px;
+    opacity: .6;
+}
+
+.atlas-arrow[data-narrative-focus="active"] {
+    stroke-width: 4px;
+    opacity: 1;
+}
+
+.atlas-arrow-casing[data-narrative-focus="active"] {
+    stroke-width: 6px;
+    opacity: .5;
+}
+
+.atlas-arrow[data-narrative-focus="receded"] {
+    opacity: .35;
+}
+
+.atlas-arrow-casing[data-narrative-focus="receded"] {
+    opacity: .2;
+}
+
 /* Leaflet's own leaflet.css ships `.leaflet-pane > svg path { pointer-events:
    none; }` at specificity (0,0,1,2) -- since our arrow paths live inside
    overlayPane (a `.leaflet-pane`), that rule matches them too and beats a
@@ -3239,6 +3291,22 @@ input:focus-visible,
    just short of the 10:1 figure once claimed here). Not itself
    .explorable -- a title is not a click target. */
 .catechism-section-heading {
+    margin: 0 0 .3rem;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .06em;
+    font-size: .85rem;
+    color: var(--bronze-ink);
+}
+
+/* Batch N ("narratives as first-class graph structure"): the SAME quiet
+   eyebrow treatment as .catechism-section-heading directly above (own
+   name, not a reuse of that literally-catechism-named class -- see
+   PopoverSectionProviders.cs's own NarrativeDirectionSection comment) for
+   "PRIOR EVENT"/"FOLLOWING EVENT" (bare, or "-- {narrative name}" once a
+   verse touches more than one narrative). Not itself .explorable -- a
+   title is not a click target, same as every other section eyebrow. */
+.narrative-section-heading {
     margin: 0 0 .3rem;
     font-family: var(--font-serif);
     font-variant-caps: small-caps;

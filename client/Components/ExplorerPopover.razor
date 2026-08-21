@@ -333,6 +333,54 @@
                 builder.CloseElement();
             };
         }
+
+        await SyncNarrativeFocusAsync();
+    }
+
+    // Batch N requirement 3 ("map focus sync -- the same graph, seen
+    // twice"): a SECOND small, node-specific special case in this file,
+    // alongside the pre-existing ShowMiniMap one this file's own header
+    // comment already documents -- map-focus is a cross-cutting concern
+    // (it targets the MAP, not this popover's own body), not a section, so
+    // it does not belong in the registry the way PRIOR/FOLLOWING's own
+    // CONTENT does (see Explore/PopoverSectionProviders.cs). Runs at the
+    // end of EVERY LoadCurrent (the initial open, every push, every pop,
+    // every chip Activate that re-resolves Current in place) -- HOUSE
+    // PATTERN: synced continuously at the point Current actually changes,
+    // never captured lazily at dispose time. `INarrativeAware` (a small,
+    // focused interface -- Explore/NarrativeEventNode.cs) is how this stays
+    // decoupled from concrete node types: VerseNode and NarrativeEventNode
+    // opt in; every other node kind (Place/Chapter/Book/Author/
+    // TimeAndPlace/Year/Passage/Catechism) falls into the `else` branch and
+    // clears focus, so navigating from a narrative verse to anything else
+    // never leaves stale emphasis on the map. Reads the SAME memoized
+    // NarrativePositionsAsync the Prior/Following section providers
+    // already call for THIS SAME Current node -- when both run (the common
+    // case), this is a cache hit, not a second network round trip.
+    private async Task SyncNarrativeFocusAsync()
+    {
+        try
+        {
+            if (Current is INarrativeAware aware)
+            {
+                var positions = await aware.NarrativePositionsAsync(Atlas);
+                var narrativeIds = positions.Select(p => p.NarrativeId).Distinct().ToList();
+                var eventIds = positions.Select(p => p.EventId).Distinct().ToList();
+                await MapInterop.SetNarrativeFocus(JS, narrativeIds, eventIds);
+            }
+            else
+            {
+                await MapInterop.SetNarrativeFocus(JS, Array.Empty<string>(), Array.Empty<string>());
+            }
+        }
+        catch (Exception)
+        {
+            // Map focus is a nicety layered on top of an already-rendered
+            // popover, never load-bearing for the popover's own
+            // functionality -- same graceful-degradation stance
+            // PaneRectMeasured/BlinkPlace already take for their own JS
+            // interop calls.
+        }
     }
 
     // IPopoverSectionContext: a provider's own section (VerseTextSection's
@@ -424,7 +472,25 @@
         await LoadCurrent();
     }
 
-    private Task RequestClose() => OnClose.InvokeAsync();
+    // Batch N requirement 3: "Popover closes / context ends -> arrows
+    // return to normal." Cleared HERE, synchronously at the close ACTION
+    // itself (the genuine mutation point), rather than in a DisposeAsync
+    // this component doesn't have and, per HOUSE PATTERN, must not gain
+    // for this purpose -- RequestClose is the one choke point every close
+    // path (backdrop click, the close button, Escape) already funnels
+    // through, same as it always was.
+    private async Task RequestClose()
+    {
+        try
+        {
+            await MapInterop.SetNarrativeFocus(JS, Array.Empty<string>(), Array.Empty<string>());
+        }
+        catch (Exception)
+        {
+            // Same graceful-degradation stance SyncNarrativeFocusAsync above takes.
+        }
+        await OnClose.InvokeAsync();
+    }
 
     private async Task OnKeyDown(KeyboardEventArgs e)
     {

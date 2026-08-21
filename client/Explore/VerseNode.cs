@@ -8,7 +8,7 @@ namespace BibleAtlas.Client.Explore;
 /// used both here and by ExplorerPopover's own cross-ref-expansion special
 /// case (Current.Title IS the vref for any node on the stack of this type).
 /// </summary>
-public sealed class VerseNode : IExplorable
+public sealed class VerseNode : IExplorable, INarrativeAware
 {
     private readonly string _vref;
     private VerseDetail? _cached;
@@ -60,4 +60,11 @@ public sealed class VerseNode : IExplorable
     // call only ever happens once per node instance regardless of how many
     // times BodyAsync/this are each called.
     public async Task<VerseDetail> DetailAsync(AtlasClient api) => _cached ??= await api.Verse(_vref);
+
+    // Batch N (INarrativeAware): shares DetailAsync's own memoized fetch --
+    // NO second network call, same reasoning CrossRefsSection/
+    // CatechismSeamSection already document for reading THEIR OWN slice of
+    // this exact response.
+    public async Task<IReadOnlyList<NarrativePositionDto>> NarrativePositionsAsync(AtlasClient api) =>
+        (await DetailAsync(api)).NarrativePositions;
 }

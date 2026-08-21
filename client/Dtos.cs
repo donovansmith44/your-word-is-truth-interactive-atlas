@@ -123,7 +123,38 @@ public sealed record VerseDetail(
     // shares this ALREADY-fetched verse-detail response (server:
     // handlers::verse's own doc comment) rather than a second round trip,
     // "one fetch, not four." Always present, possibly empty.
-    List<CatechismRefDto> Catechism);
+    List<CatechismRefDto> Catechism,
+    // Batch N ("narratives as first-class graph structure"): this verse's
+    // own position(s) in the narrative graph -- shares this SAME
+    // already-fetched response too, "one fetch, not five" (server:
+    // handlers::verse's own doc comment on VerseDetailOut.narrative_positions).
+    // Always present, possibly empty (most verses touch no narrative).
+    List<NarrativePositionDto> NarrativePositions);
+
+/// Batch N: one (narrative, event) position a verse or event touches --
+/// mirrors <c>atlas_core::narrative::NarrativePosition</c> exactly. Shared
+/// shape for <see cref="VerseDetail.NarrativePositions"/> (verse-keyed) and
+/// <c>GET /api/narrative/event/{id}</c>'s own array response (event-id-keyed,
+/// requirement 1's own "traversal steps resolve by event, not by
+/// re-searching verses" half). <see cref="Prior"/>/<see cref="Following"/>
+/// are null exactly at the narrative's own first/last leg -- conditional
+/// presence, never a disabled stub.
+public sealed record NarrativePositionDto(
+    string NarrativeId,
+    string NarrativeName,
+    string EventId,
+    string EventLabel,
+    NarrativeAdjacentEventDto? Prior,
+    NarrativeAdjacentEventDto? Following);
+
+/// Batch N: one event ADJACENT to a <see cref="NarrativePositionDto"/> (its
+/// own prior or following leg) -- id (for the event-id-keyed traversal
+/// lookup), label, place ids (wire-complete per requirement 1, not
+/// rendered textually by this batch's own UI -- the event's own label
+/// already names the moment), and its verse groups via the SAME
+/// <c>to_scene_event</c> a map arrow's own endpoint uses server-side (the
+/// one-graph property).
+public sealed record NarrativeAdjacentEventDto(string Id, string Label, List<string> Places, List<VerseGroup> VerseGroups);
 
 public sealed record BookMetaDto(string Author, string? WritePlace, int? WriteFrom, int? WriteTo);
 

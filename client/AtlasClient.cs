@@ -215,6 +215,23 @@ public sealed class AtlasClient
     public Task<List<NarrativeOut>> Narratives() =>
         GetRequired<List<NarrativeOut>>("api/narratives");
 
+    /// <summary>
+    /// Batch N requirement 1's own event-id-keyed lookup half:
+    /// <c>GET /api/narrative/event/{id}</c> -- every narrative position the
+    /// given event id occupies (mirrors <see cref="CatechismItem"/>'s own
+    /// id-keyed precedent). Uncached at this layer, same as
+    /// <see cref="Verse"/>/<see cref="CatechismItem"/> --
+    /// <see cref="Explore.NarrativeEventNode"/> memoizes its own single
+    /// fetch per node instance instead (mirrors <c>VerseNode.DetailAsync</c>'s
+    /// own reasoning exactly). Never called with a user-typed id -- always
+    /// an id a PRIOR response (this same endpoint's own, or
+    /// <see cref="VerseDetail.NarrativePositions"/>'s own <c>prior</c>/
+    /// <c>following</c>) already handed back, per requirement 1's own
+    /// "traversal steps resolve by event, not by re-searching verses."
+    /// </summary>
+    public Task<List<NarrativePositionDto>> NarrativeEventPositions(string eventId) =>
+        GetRequired<List<NarrativePositionDto>>($"api/narrative/event/{Uri.EscapeDataString(eventId)}");
+
     public async Task<PolitiesOut> Polities(int from, int to)
     {
         var key = $"polities:{from}:{to}";
