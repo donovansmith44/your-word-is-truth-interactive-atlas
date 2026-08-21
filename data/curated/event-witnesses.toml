@@ -1079,6 +1079,161 @@ verses = ["LUK.22.17-20"]
 ref_note = "Luke 22:17-20 read directly against the compiled KJV text"
 robertson_section = "Robertson (1922) §148"
 
+# --- Period 10: SS154-163, 166-168 ------------------------------------------
+[[witness]]
+event_id = "rob_tried_by_caiaphas"
+book = "MRK"
+verses = ["MRK.14.53", "MRK.14.55-65"]
+ref_note = "Mark 14:53, 55-65 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §155"
+
+[[witness]]
+event_id = "rob_tried_by_caiaphas"
+book = "LUK"
+verses = ["LUK.22.63-65"]
+ref_note = "Luke 22:63-65 read directly against the compiled KJV text; Robertson's own table also lists Luke 22:54, but that verse is rob_peter_denies's own anchor -- see this event's own ref_note above"
+robertson_section = "Robertson (1922) §155"
+
+[[witness]]
+event_id = "rob_tried_by_caiaphas"
+book = "JHN"
+verses = ["JHN.18.24"]
+ref_note = "John 18:24 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §155"
+
+[[witness]]
+event_id = "rob_peter_denies"
+book = "MRK"
+verses = ["MRK.14.54", "MRK.14.66-72"]
+ref_note = "Mark 14:54, 66-72 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §156"
+
+[[witness]]
+event_id = "rob_peter_denies"
+book = "LUK"
+verses = ["LUK.22.54-62"]
+ref_note = "Luke 22:54-62 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §156"
+
+[[witness]]
+event_id = "rob_peter_denies"
+book = "JHN"
+verses = ["JHN.18.15-18", "JHN.18.25-27"]
+ref_note = "John 18:15-18, 25-27 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §156"
+
+[[witness]]
+event_id = "rob_formally_condemned"
+book = "LUK"
+verses = ["LUK.22.66-71"]
+ref_note = "Luke 22:66-71 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §157"
+
+[[witness]]
+event_id = "rob_before_pilate_1"
+book = "MRK"
+verses = ["MRK.15.1-5"]
+ref_note = "Mark 15:1-5 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §159"
+
+[[witness]]
+event_id = "rob_before_pilate_1"
+book = "LUK"
+verses = ["LUK.23.1-5"]
+ref_note = "Luke 23:1-5 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §159"
+
+[[witness]]
+event_id = "rob_before_pilate_1"
+book = "JHN"
+verses = ["JHN.18.28-38"]
+ref_note = "John 18:28-38 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §159"
+
+[[witness]]
+event_id = "rob_before_pilate_2"
+book = "MRK"
+verses = ["MRK.15.6-15"]
+ref_note = "Mark 15:6-15 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §161"
+
+[[witness]]
+event_id = "rob_before_pilate_2"
+book = "LUK"
+verses = ["LUK.23.13-25"]
+ref_note = "Luke 23:13-25 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §161"
+
+[[witness]]
+event_id = "rob_before_pilate_2"
+book = "JHN"
+verses = ["JHN.18.39", "JHN.19.1-16"]
+ref_note = "John 18:39-19:16 read directly against the compiled KJV text; written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string"
+robertson_section = "Robertson (1922) §161"
+
+[[witness]]
+event_id = "rob_soldiers_mock"
+book = "MRK"
+verses = ["MRK.15.16-19"]
+ref_note = "Mark 15:16-19 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §162"
+
+[[witness]]
+event_id = "rob_way_to_golgotha"
+book = "MRK"
+verses = ["MRK.15.20-23"]
+ref_note = "Mark 15:20-23 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §163"
+
+[[witness]]
+event_id = "rob_way_to_golgotha"
+book = "LUK"
+verses = ["LUK.23.26-33"]
+ref_note = "Luke 23:26-33 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §163"
+
+[[witness]]
+event_id = "rob_way_to_golgotha"
+book = "JHN"
+verses = ["JHN.19.16-17"]
+ref_note = "John 19:16-17 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §163"
+
+[[witness]]
+event_id = "rob_death_phenomena"
+book = "MRK"
+verses = ["MRK.15.38-41"]
+ref_note = "Mark 15:38-41 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §166"
+
+[[witness]]
+event_id = "rob_death_phenomena"
+book = "LUK"
+verses = ["LUK.23.45", "LUK.23.47-49"]
+ref_note = "Luke 23:45, 47-49 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §166"
+
+[[witness]]
+event_id = "rob_burial"
+book = "MRK"
+verses = ["MRK.15.42-46"]
+ref_note = "Mark 15:42-46 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §167"
+
+[[witness]]
+event_id = "rob_burial"
+book = "LUK"
+verses = ["LUK.23.50-54"]
+ref_note = "Luke 23:50-54 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §167"
+
+[[witness]]
+event_id = "rob_burial"
+book = "JHN"
+verses = ["JHN.19.31-42"]
+ref_note = "John 19:31-42 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §167"
+
 # --- Period 8: SS112-127 -----------------------------------------------------
 [[witness]]
 event_id = "rob_teaching_on_divorce"

@@ -1252,7 +1252,7 @@ places = ["gethsemane"]
 verses = ["MAT.26.36-56"]
 order_key = 6000 # Batch T2: renumbered 40 -> 6000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §152, \"Going Forth to Gethsemane, Jesus Suffers Long in Agony\""
-ref_note = "Matthew 26:36-56, Mark 14:32-52, Luke 22:39-53, John 18:1-12 all read directly (see event-witnesses.toml)"
+ref_note = "Matthew 26:36-56, Mark 14:32-52, Luke 22:39-53, John 18:1-12 all read directly (see event-witnesses.toml). Batch T2 (period 10): this event's own witness ranges already fully subsume Robertson's own separate §153 (\"Jesus Is Betrayed, Arrested, and Forsaken,\" Matt 26:47-56 etc.) -- a disclosed widening from Batch T's own original curation (same precedent as pw_golgotha's own §164 note below), not a gap; no separate container authored for §153."
 # places: brief flagged "golgotha" as a likely-missing slug (suggesting
 # a merge into jerusalem if so); it resolves directly (31.7784, 35.2298)
 # with verse_links MAT.27.33/MRK.15.22/LUK.23.33/JHN.19.17 -- exactly
@@ -1267,7 +1267,153 @@ places = ["golgotha"]
 verses = ["JHN.19.16-30"]
 order_key = 7000 # Batch T2: renumbered 50 -> 7000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §164, \"The First Three Hours on the Cross\""
-ref_note = "Matthew 27:33-50, Mark 15:22-37, Luke 23:33-46, John 19:17-30 all read directly (see event-witnesses.toml); Robertson's own §164 covers only the first three hours of a longer sequence of Harmony sections -- this app's own coarser 'event' groups the whole crucifixion scene per Gospel, a disclosed widening of Robertson's own narrower section boundary, not a mis-citation"
+ref_note = "Matthew 27:33-50, Mark 15:22-37, Luke 23:33-46, John 19:17-30 all read directly (see event-witnesses.toml); Robertson's own §164 covers only the first three hours of a longer sequence of Harmony sections -- this app's own coarser 'event' groups the whole crucifixion scene per Gospel, a disclosed widening of Robertson's own narrower section boundary, not a mis-citation. Batch T2 (period 10): this same widening also fully subsumes Robertson's own separate §165 (\"The Three Hours of Darkness,\" Matt 27:45-50 etc., a subset of this event's own MAT/MRK/LUK/JHN witness ranges) -- no separate container authored for §165. It does NOT reach §166 (the phenomena accompanying Christ's death, Matt 27:51-56 -- outside this event's own MAT.27.33-50 upper bound), which is curated as its own container below."
+# --- Period 10: the trial, crucifixion aftermath, and burial (SS154-163,
+# 166-168 -- SS153/165 already subsumed by pw_gethsemane/pw_golgotha
+# above; S164/S152 already curated in Batch T) --------------------------
+[[event]]
+id = "rob_before_annas"
+label = "Jesus is first examined by Annas"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["JHN.18.12-14", "JHN.18.19-23"]
+order_key = 6100
+robertson_section = "Robertson (1922) §154, \"Jesus First Examined by Annas, the Ex-High Priest\""
+ref_note = "John 18:12-14, 19-23 read directly against the compiled KJV text; single witness (John alone)"
+
+[[event]]
+id = "rob_tried_by_caiaphas"
+label = "Jesus is tried and condemned by Caiaphas and the Sanhedrin"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.26.57", "MAT.26.59-68"]
+order_key = 6200
+robertson_section = "Robertson (1922) §155, \"Jesus Hurriedly Tried and Condemned by Caiaphas and the Sanhedrin, Who Mock and Buffet Him\""
+ref_note = "Matthew 26:57, 59-68, Mark 14:53, 55-65, Luke 22:63-65, and John 18:24 all read directly against the compiled KJV text; Robertson's own table also lists Luke 22:54, but that verse is rob_peter_denies's own anchor (Luke interleaves the trial and Peter's denial starting from that same scene-setting verse, 'brought him into the high priest's house. And Peter followed afar off') -- kept there instead of duplicated here, a within-layer anchor collision this batch's own validation caught directly"
+
+[[event]]
+id = "rob_peter_denies"
+label = "Peter thrice denies his Lord"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.26.58", "MAT.26.69-75"]
+order_key = 6300
+robertson_section = "Robertson (1922) §156, \"Peter Thrice Denies His Lord\""
+ref_note = "Matthew 26:58, 69-75, Mark 14:54, 66-72, Luke 22:54-62, and John 18:15-18, 25-27 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_formally_condemned"
+label = "After dawn, Jesus is formally condemned by the Sanhedrin"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.27.1"]
+order_key = 6400
+robertson_section = "Robertson (1922) §157, \"After Dawn, Jesus Is Formally Condemned by the Sanhedrin\""
+ref_note = "Matthew 27:1 and Luke 22:66-71 both read directly against the compiled KJV text; Robertson's own table also lists Mark 15:1, but that single verse conflates BOTH the formal condemnation and the handover to Pilate ('bound Jesus, and carried him away, and delivered him to Pilate') -- Mark's own account does not cleanly separate the two the way Matthew/Luke do, so it is kept as rob_before_pilate_1's own anchor instead (its own clean 15:1-5 span) rather than duplicated here, a within-layer anchor collision this batch's own validation caught directly"
+
+[[event]]
+id = "rob_judas_suicide"
+label = "The remorse and suicide of Judas"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.27.3-10"]
+order_key = 6500
+robertson_section = "Robertson (1922) §158, \"Remorse and Suicide of Judas the Betrayer\""
+ref_note = "Matthew 27:3-10 read directly against the compiled KJV text; single witness (Matthew alone)"
+
+[[event]]
+id = "rob_before_pilate_1"
+label = "Jesus before Pilate the first time"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.27.2", "MAT.27.11-14"]
+order_key = 6600
+robertson_section = "Robertson (1922) §159, \"Jesus before Pilate the First Time\""
+ref_note = "Matthew 27:2, 11-14, Mark 15:1-5, Luke 23:1-5, and John 18:28-38 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_before_herod"
+label = "Jesus before Herod Antipas the tetrarch"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["LUK.23.6-12"]
+order_key = 6700
+robertson_section = "Robertson (1922) §160, \"Jesus before Herod Antipas the Tetrarch\""
+ref_note = "Luke 23:6-12 read directly against the compiled KJV text; single witness (Luke alone)"
+
+[[event]]
+id = "rob_before_pilate_2"
+label = "Jesus the second time before Pilate; Barabbas released"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.27.15-26"]
+order_key = 6800
+robertson_section = "Robertson (1922) §161, \"Jesus the Second Time before Pilate\""
+ref_note = "Matthew 27:15-26, Mark 15:6-15, Luke 23:13-25, and John 18:39-19:16 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_soldiers_mock"
+label = "The Roman soldiers mock Jesus"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.27.27-30"]
+order_key = 6900
+robertson_section = "Robertson (1922) §162, \"The Roman Soldiers Mock Jesus\""
+ref_note = "Matthew 27:27-30 and Mark 15:16-19 both read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_way_to_golgotha"
+label = "Jesus is led away on the road to Golgotha"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.27.31-34"]
+order_key = 6950
+robertson_section = "Robertson (1922) §163, \"Jesus on the Way to the Cross (Via Dolorosa) on Golgotha\""
+ref_note = "Matthew 27:31-34, Mark 15:20-23, Luke 23:26-33, and John 19:16-17 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_death_phenomena"
+label = "The phenomena accompanying the death of Christ"
+from_year = 33
+to_year = 33
+places = ["golgotha"]
+verses = ["MAT.27.51-56"]
+order_key = 7100
+robertson_section = "Robertson (1922) §166, \"The Phenomena Accompanying the Death of Christ\""
+ref_note = "Matthew 27:51-56, Mark 15:38-41, and Luke 23:45, 47-49 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_burial"
+label = "The burial of Jesus's body in Joseph of Arimathea's tomb"
+from_year = 33
+to_year = 33
+places = ["golgotha"]
+verses = ["MAT.27.57-60"]
+order_key = 7200
+robertson_section = "Robertson (1922) §167, \"The Burial of the Body of Jesus in the Tomb of Joseph of Arimathea after Proof of His Death\""
+ref_note = "Matthew 27:57-60, Mark 15:42-46, Luke 23:50-54, and John 19:31-42 all read directly against the compiled KJV text; John's own text (19:41) places the tomb 'in the garden,' near Golgotha -- golgotha kept as the nearest named compiled place"
+
+[[event]]
+id = "rob_watch_of_women"
+label = "The women keep watch by the tomb"
+from_year = 33
+to_year = 33
+places = ["golgotha"]
+verses = ["MAT.27.61-66"]
+order_key = 7300
+robertson_section = "Robertson (1922) §168, \"The Watch of the Women by the Tomb of Jesus\""
+ref_note = "Matthew 27:61-66, Mark 15:47, and Luke 23:55-56 all read directly against the compiled KJV text"
+
 [[event]]
 id = "pw_jerusalem_resurrection"
 label = "The empty tomb in Jerusalem"
