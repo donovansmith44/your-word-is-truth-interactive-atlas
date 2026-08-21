@@ -1640,6 +1640,53 @@ Notes:
   shift, no animation, keyboard focus visible (this file's own global
   `a:focus-visible` rule, unchanged) -- all unaffected by this batch, same
   as before it.
+- NAV-5 (batch-hotfix3-brief.md, user report 2026-08-21, near-verbatim: "the
+  next/previous chapter buttons shouldn't be redrawn on every scroll. they
+  should be fixed in place like on bible.com"): `reader-prev`/`reader-next`
+  hold an EXACT, unchanging screen position across every rendered frame of
+  an active scroll, not just at rest -- root-caused live (rAF-timestamped
+  `getBoundingClientRect` traces, both a scripted continuous scroll and
+  discrete `mouse.wheel` bursts, standalone and split) to a one-frame
+  scheduling gap in reader.js's `watchChapterNavCenter`: its compensating
+  write (the `--chapter-nav-top` custom property NAV-2 already documents)
+  used to be deferred one EXTRA `requestAnimationFrame` tick beyond the
+  `scroll` event itself, so for exactly one painted frame per discrete
+  scroll input, the browser had already moved the page but the
+  compensation hadn't caught up -- reader-next visibly "teleported" by
+  exactly that gesture's own scroll delta (measured: a 300px wheel notch
+  -> a clean 300px jump) then snapped back the next frame, on 100% of
+  sampled gestures, identically in both panes. Two suspects the batch
+  brief raised going in were RULED OUT by this same evidence, not left
+  unconfirmed: (a) reader.js's `watchScroll` -> `ViewStateService`
+  continuous sync triggering a Blazor re-render -- `Reader.razor`'s own
+  `OnScroll` has no `StateHasChanged` (unchanged by this fix) and a
+  MutationObserver on the whole `<nav aria-label="Chapter navigation">`
+  subtree recorded ZERO mutations across every traced scroll; (b) a
+  second, split-specific containing-block ancestor beyond `.reader-page`'s
+  own documented `contain: layout` (NAV-2) -- none exists
+  (`.split-pane-reader` carries no transform/filter/contain of its own),
+  and the glitch measured IDENTICALLY in both panes. Fix: `recompute()`
+  now runs synchronously as the `scroll`/`resize` listener itself (no rAF
+  deferral, no throttle) -- landing the write inside the same task the
+  browser already uses to apply the scroll before that frame paints; the
+  underlying `--chapter-nav-top` mechanism, its viewport-centering math,
+  and the pane-confined `left`/`right` values NAV-2/NAV-3/NAV-4 already
+  cover are ALL otherwise unchanged (no CSS touched by this batch).
+  `reader.js`'s own `watchChapterNavCenter` comment carries the full trace
+  and the accepted trade-off (recompute can now run more than once inside
+  a single frame if the browser fires multiple `scroll` events before
+  paint -- accepted, since the work is one `getBoundingClientRect` + one
+  style write for a single element, not a cost a throttle is needed to
+  protect against). Confirmed holding on MAT.26 (this app's own
+  heading-dense jank test bed, batch-t-brief.md's `pericope-heading-*`)
+  under the same scripted scroll, with headings still rendering and still
+  explorable -- this fix touches only `watchChapterNavCenter`'s own
+  scheduling, nothing render-path-adjacent. NAV-6 is the same assertion,
+  split view. NAV-7 is a permanent render-churn guard (kept even though
+  suspect (a) above proved false) -- reader-prev/reader-next's own DOM
+  node identity, stamped before a multi-tick scroll, survives it unchanged
+  (never recreated), insurance against a future regression reintroducing a
+  Blazor re-render on scroll.
 - PANE-ANCHOR-1 (batch-f2-brief.md requirement 6d, user direction
   2026-08-20, near-verbatim: "if i am exploring anything on either side of
   the split screen, the hover windows ought not be smack dab in the center

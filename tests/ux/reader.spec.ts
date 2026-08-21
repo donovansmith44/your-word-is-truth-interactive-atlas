@@ -286,3 +286,159 @@ test('NAV-4: reader-prev/reader-next measure a real, >=40x40px hit target in spl
   // invocation this batch verifies with, rather than duplicating its own
   // geometric intersection check here.
 });
+
+// HOTFIX-3 (batch-hotfix3-brief.md, user report 2026-08-21, near-verbatim:
+// "the next/previous chapter buttons shouldn't be redrawn on every scroll.
+// they should be fixed in place like on bible.com"). NAV-2 above only ever
+// samples boundingBox() at REST -- once before scrolling, once after a
+// single scrollIntoViewIfNeeded settles -- so it already passed on the
+// buggy code: the actual bug (root-caused live, not assumed -- see
+// reader.js's own watchChapterNavCenter comment for the full
+// rAF-timestamped trace and evidence) was a TRANSIENT one-frame position
+// "teleport" of the whole nav, sized to that gesture's own scroll delta,
+// exactly at the START of every discrete scroll input, gone again one
+// frame later -- invisible to any test that only checks two rest points.
+// This samples EVERY frame DURING a scripted, continuous scroll instead,
+// so that transient can't hide between two rest-state checks the way it
+// did before. `toBeCloseTo(_, 0)` matches NAV-2's own precision choice
+// (within 0.5px, i.e. sub-pixel rounding only).
+test('NAV-5: reader-prev/reader-next stay pixel-IDENTICAL across every sampled frame of a scripted >=3-viewport-height scroll -- no reposition jitter, standalone', async ({ page }) => {
+  const toc = await loadToc();
+  let longest = { book: toc[0].code, chapter: 1, verses: toc[0].chapters[0] };
+  for (const b of toc) {
+    b.chapters.forEach((v, i) => {
+      if (v > longest.verses) longest = { book: b.code, chapter: i + 1, verses: v };
+    });
+  }
+  expect(longest.verses, 'expected a real long chapter for real scroll room').toBeGreaterThan(30);
+
+  await page.goto(`/read/${longest.book}/${longest.chapter}`);
+  await expect(page.getByTestId('reader-next')).toBeVisible();
+
+  for (const testId of ['reader-prev', 'reader-next']) {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const trace = await page.evaluate(({ testId }) => new Promise<{ x: number; y: number }[]>(resolve => {
+      const pts: { x: number; y: number }[] = [];
+      const frames = 90; // well over the brief's own >=5-sample floor
+      const delta = (window.innerHeight * 3) / frames; // >=3 viewport heights total
+      let frame = 0;
+      const step = () => {
+        const el = document.querySelector(`[data-testid="${testId}"]`) as HTMLElement | null;
+        const r = el ? el.getBoundingClientRect() : null;
+        if (r) pts.push({ x: r.x, y: r.y });
+        if (frame < frames) {
+          window.scrollBy(0, delta);
+          frame++;
+          requestAnimationFrame(step);
+        } else {
+          resolve(pts);
+        }
+      };
+      requestAnimationFrame(step);
+    }), { testId });
+
+    expect(trace.length, `${testId}: expected >=5 samples across the scroll`).toBeGreaterThanOrEqual(5);
+    for (const p of trace) {
+      expect(p.x, `${testId}.x drifted mid-scroll`).toBeCloseTo(trace[0].x, 0);
+      expect(p.y, `${testId}.y drifted mid-scroll`).toBeCloseTo(trace[0].y, 0);
+    }
+  }
+});
+
+// Same assertion as NAV-5, split view -- the brief's own root-cause leads
+// named a SECOND, split-specific suspect (an undocumented transform/filter
+// ancestor demoting position:fixed further inside the pane). Root-causing
+// live found no such ancestor (`.reader-page`'s own `contain: layout`,
+// Batch H, is the SAME single containing-block-creating element in both
+// panes -- .split-pane-reader carries no transform/filter/contain of its
+// own, confirmed by reading app.css directly) and the measured glitch was
+// IDENTICAL in both panes -- but this asserts the split pane explicitly
+// rather than only trusting that reading, since split view is exactly
+// where NAV-3's own history shows a standalone-only check can miss a real,
+// pane-specific regression.
+test('NAV-6: reader-prev/reader-next stay pixel-IDENTICAL across every sampled frame of a scripted >=3-viewport-height scroll -- no reposition jitter, split view', async ({ page }) => {
+  const toc = await loadToc();
+  let longest = { book: toc[0].code, chapter: 1, verses: toc[0].chapters[0] };
+  for (const b of toc) {
+    b.chapters.forEach((v, i) => {
+      if (v > longest.verses) longest = { book: b.code, chapter: i + 1, verses: v };
+    });
+  }
+
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await page.goto(`/read/${longest.book}/${longest.chapter}?split=1`);
+  await expect(page.getByTestId('reader-next')).toBeVisible();
+
+  for (const testId of ['reader-prev', 'reader-next']) {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const trace = await page.evaluate(({ testId }) => new Promise<{ x: number; y: number }[]>(resolve => {
+      const pts: { x: number; y: number }[] = [];
+      const frames = 90;
+      const delta = (window.innerHeight * 3) / frames;
+      let frame = 0;
+      const step = () => {
+        const el = document.querySelector(`[data-testid="${testId}"]`) as HTMLElement | null;
+        const r = el ? el.getBoundingClientRect() : null;
+        if (r) pts.push({ x: r.x, y: r.y });
+        if (frame < frames) {
+          window.scrollBy(0, delta);
+          frame++;
+          requestAnimationFrame(step);
+        } else {
+          resolve(pts);
+        }
+      };
+      requestAnimationFrame(step);
+    }), { testId });
+
+    expect(trace.length, `${testId}: expected >=5 samples across the scroll`).toBeGreaterThanOrEqual(5);
+    for (const p of trace) {
+      expect(p.x, `${testId}.x drifted mid-scroll`).toBeCloseTo(trace[0].x, 0);
+      expect(p.y, `${testId}.y drifted mid-scroll`).toBeCloseTo(trace[0].y, 0);
+    }
+  }
+});
+
+// Render-churn guard (batch-hotfix3-brief.md requirement 4: "if suspect (a)
+// proved real, assert the nav element is not re-created during scroll").
+// Root-causing this batch found suspect (a) -- reader.js's watchScroll ->
+// ViewStateService continuous sync triggering a Blazor re-render -- did
+// NOT prove real: Reader.razor's own OnScroll has no StateHasChanged (see
+// its own comment), and a MutationObserver on the whole nav subtree
+// recorded ZERO mutations across every scripted-scroll trace this batch
+// ran. This test is kept anyway as cheap, permanent insurance against a
+// FUTURE regression reintroducing exactly that (e.g. a later change adding
+// StateHasChanged to OnScroll) -- stamps the real DOM node identity before
+// a multi-tick scroll and confirms the SAME node, not a same-testid
+// replacement, is still there and still connected afterward.
+test('NAV-7: reader-prev/reader-next are never re-created by the continuous scroll-position view-state sync', async ({ page }) => {
+  const toc = await loadToc();
+  let longest = { book: toc[0].code, chapter: 1, verses: toc[0].chapters[0] };
+  for (const b of toc) {
+    b.chapters.forEach((v, i) => {
+      if (v > longest.verses) longest = { book: b.code, chapter: i + 1, verses: v };
+    });
+  }
+
+  await page.goto(`/read/${longest.book}/${longest.chapter}`);
+  const next = page.getByTestId('reader-next');
+  const prev = page.getByTestId('reader-prev');
+  await expect(next).toBeVisible();
+  const nextHandle = await next.elementHandle();
+  const prevHandle = await prev.elementHandle();
+
+  // Several distinct scroll ticks, not one jump -- watchScroll's own
+  // OnScroll (view-state sync) fires on each, same as a user scrolling in
+  // bursts.
+  for (let i = 0; i < 5; i++) {
+    await page.mouse.wheel(0, 300);
+    await page.waitForTimeout(150);
+  }
+
+  const nextStillSame = await page.evaluate(el => document.querySelector('[data-testid="reader-next"]') === el, nextHandle);
+  const prevStillSame = await page.evaluate(el => document.querySelector('[data-testid="reader-prev"]') === el, prevHandle);
+  expect(nextStillSame, 'reader-next was recreated during scroll').toBe(true);
+  expect(prevStillSame, 'reader-prev was recreated during scroll').toBe(true);
+  expect(await nextHandle!.evaluate(el => el.isConnected)).toBe(true);
+  expect(await prevHandle!.evaluate(el => el.isConnected)).toBe(true);
+});
