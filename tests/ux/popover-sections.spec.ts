@@ -49,12 +49,19 @@ test('REGISTRY-1: a verse with real cross-references shows them inline, no butto
   await page.getByTestId(`verse-line-${v.verse}`).click();
   await expect(page.getByTestId('popover-title')).toHaveText(vref);
 
-  // Section order: verse-text first, xrefs second -- REGISTRY-1's own
-  // explicit ordering, checked structurally (DOM order), not just presence.
+  // Section order: verse-text first, xrefs second (catechism, if present,
+  // third -- this predicate only requires >0 xrefs, so a catechism section
+  // may or may not also be showing; check structurally either way).
   const sectionIds = await page.getByTestId(/^popover-section-/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
-  expect(sectionIds).toEqual(['popover-section-verse-text', 'popover-section-xrefs']);
+  expect(sectionIds[0]).toBe('popover-section-verse-text');
+  expect(sectionIds[1]).toBe('popover-section-xrefs');
 
-  await expect(page.getByTestId(/^xref-item-/)).toHaveCount(detail.cross_refs.length);
+  // Batch F2 requirement 6 (XREF-1): capped at 3 (xrefs-only) or 2 (THE
+  // SMALL CATECHISM also present) on initial render.
+  const hasCatechism = sectionIds.includes('popover-section-catechism');
+  const cap = hasCatechism ? 2 : 3;
+  const expectedInitial = Math.min(detail.cross_refs.length, cap);
+  await expect(page.getByTestId(/^xref-item-/)).toHaveCount(expectedInitial);
   await expect(page.getByTestId(`xref-item-${detail.cross_refs[0].target}`)).toBeVisible();
   // No leftover toggle chip -- retired by this batch.
   await expect(page.getByTestId('popover-chip-xrefs')).toHaveCount(0);
@@ -79,13 +86,23 @@ test('REGISTRY-1: a verse with zero cross-references shows no xrefs section at a
 
 // CATECH-1 (batch-f-brief.md, "the small catechism"): a verse with zero
 // catechism citations shows no THIRD section -- the general conditional-
-// presence case (most verses cite nothing; see CONTRACT.md's own CATECH-1
-// note on why that sparsity is a real, disclosed property of Luther's own
-// text, not a bug). Genesis 1 cites no catechism item at all.
+// presence case; see CONTRACT.md's own CATECH-1 note. Batch F2 grew
+// coverage substantially (repo mapping + Deut5 supplement -- ~4800
+// distinct verses now link in, batch-f2-report.md's own coverage figure),
+// so a hardcoded "known-uncited" verse (Batch F's own GEN.1.1) is no
+// longer a safe assumption -- discovered dynamically instead, same
+// approach findVerse already uses for the sibling xrefs test above.
 test('CATECH-1: a verse with zero catechism citations shows no catechism section', async ({ page }) => {
-  await page.goto('/read/GEN/1');
-  await page.getByTestId('verse-line-1').click();
-  await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.1');
+  const toc = await loadToc();
+  const found = await findVerse(toc, d => d.catechism.length === 0);
+  test.skip(!found, 'no sampled verse had zero catechism citations');
+  if (!found) return;
+  const { vref } = found;
+  const v = parseVerse(vref);
+
+  await page.goto(`/read/${v.book}/${v.chapter}`);
+  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await expect(page.getByTestId('popover-title')).toHaveText(vref);
   await expect(page.getByTestId('popover-section-catechism')).toHaveCount(0);
   await expect(page.getByTestId(/^catechism-item-/)).toHaveCount(0);
 });
@@ -176,17 +193,66 @@ test('REGISTRY-1: a PLACE popover shows dates and events, in order, no thin even
   await expect(page.locator('[data-testid^="place-event-"]')).toHaveCount(detail.events.length);
 });
 
-test('REGISTRY-1: clicking a PLACE popover\'s established date opens its own YearNode with supporting verses first', async ({ page }) => {
+// Batch F2 requirement 6b (user direction 2026-08-20, verbatim: "on the
+// established/destroyed buttons just display verses/passages how we do on
+// every other hover menu... rather than the stupid buttons i have to click
+// to see"): the established/destroyed date's own supporting verses render
+// INLINE, immediately -- no click needed at all. The date row itself is no
+// longer a button (the "click to reveal" gate is retired); it stays a
+// plain, non-interactive instrument-face label.
+test('REGISTRY-1/XREF-1: a PLACE popover\'s established/destroyed verses render inline with no click, capped at 2', async ({ page }) => {
   await page.goto('/world?from=-1000&to=-900');
   const marker = page.getByTestId('marker-jerusalem').or(page.getByTestId('quiet-marker-jerusalem'));
   await marker.hover({ force: true });
   await page.getByTestId('place-card-title').click();
+  await expect(page.getByTestId('popover-section-place-dates')).toBeVisible();
 
-  await page.getByTestId('popover-place-date-established').click();
-  await expect(page.getByTestId('popover-title')).toContainText('Established');
-  // DATE-1: supporting verses first, always before popover-chip-map.
-  const firstChip = page.locator('.popover-chips button').first();
-  await expect(firstChip).toHaveAttribute('data-testid', /^popover-chip-verse-/);
+  // The date row itself is a plain label now, not a button -- no onclick,
+  // no explorable affordance.
+  const establishedRow = page.getByTestId('popover-place-date-established');
+  await expect(establishedRow).toBeVisible();
+  await expect(establishedRow).not.toHaveJSProperty('tagName', 'BUTTON');
+  await expect(establishedRow).toContainText('Established');
+
+  const detail = await api.placeHistory('jerusalem', -1000, -900);
+  const establishedVerseCount = detail.history.established.verses.length;
+  const cap = 2;
+
+  // Full verse TEXT is already visible -- no extra click needed at all.
+  // Note: the cap counts PASSAGE ENTRIES (blocks), not raw verses (XREF-1)
+  // -- consecutive curated verses group into one block, so the rendered
+  // entry count can be LESS than min(rawVerseCount, cap) whenever grouping
+  // applies (Jerusalem's own established claim, 2SA.5.6/5.7/5.9, groups
+  // into exactly 2 blocks: 5.6-7 together, 5.9 alone). This test reads the
+  // ACTUAL rendered state rather than predicting the block count
+  // independently (that would just re-implement PassageGrouping.Groups a
+  // second time here).
+  const estEntries = page.locator('[data-testid^="popover-place-date-established-verse-"]');
+  const initialCount = await estEntries.count();
+  expect(initialCount).toBeGreaterThan(0);
+  expect(initialCount).toBeLessThanOrEqual(cap);
+  const firstEntryText = await estEntries.first().textContent();
+  expect((firstEntryText ?? '').trim().length).toBeGreaterThan(15);
+
+  const moreButton = page.getByTestId('popover-place-date-established-more');
+  const hasMore = await moreButton.count() > 0;
+  if (hasMore) {
+    // Only reachable if the real curated data ever grows past 2 blocks for
+    // this place/window -- exercised for real whenever it does; asserted
+    // either way so this test stays meaningful if the data changes.
+    expect(initialCount).toBe(cap);
+    await moreButton.click();
+    const revealedCount = await estEntries.count();
+    expect(revealedCount).toBeGreaterThan(cap);
+    await expect(page.getByTestId('popover-place-date-established-collapse')).toBeVisible();
+    await page.getByTestId('popover-place-date-established-collapse').click();
+    await expect(estEntries).toHaveCount(initialCount);
+  } else {
+    // Fewer entries than the cap (or exactly at it) -- no arrow at all,
+    // per XREF-1's own "conditional presence" rule. Jerusalem's real
+    // curated data (2 blocks, at the cap) exercises this branch today.
+    expect(initialCount).toBeLessThanOrEqual(cap);
+  }
 });
 
 // ---------------------------------------------------------------------
@@ -273,7 +339,7 @@ test('BLINK-1: prefers-reduced-motion disables the pulse animation on .atlas-bli
 // integration test; this suite runs against the real compiled dataset).
 // ---------------------------------------------------------------------
 
-test('CATECH-1: the Baptism institution verse shows THE SMALL CATECHISM section with the right item', async ({ page }) => {
+test('CATECH-1: the Baptism institution verse keeps its item-level citation, now alongside Batch F2\'s own question-level ones', async ({ page }) => {
   await page.goto('/read/MAT/28');
   await page.getByTestId('verse-line-19').click();
   await expect(page.getByTestId('popover-title')).toHaveText('MAT.28.19');
@@ -281,9 +347,21 @@ test('CATECH-1: the Baptism institution verse shows THE SMALL CATECHISM section 
   await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
   await expect(page.getByTestId('popover-section-catechism').getByTestId('catechism-section-heading')).toHaveText('THE SMALL CATECHISM');
 
-  const items = page.getByTestId(/^catechism-item-/);
-  await expect(items).toHaveCount(1);
+  // Luther's OWN item-level embedded citation (Batch F, unchanged) -- the
+  // bare, unsuffixed "Baptism — Part One" row must still be exactly this
+  // text (batch-f2-brief.md's own acceptance spot-check: "MAT.28.19 keeps
+  // its Baptism links").
   await expect(page.getByTestId('catechism-item-baptism-1')).toHaveText('Baptism — Part One');
+
+  // Batch F2: the repo mapping now ALSO cites many items via this same
+  // verse (a real, disclosed richness -- MAT.28.19 is the Great Commission,
+  // cited from several different angles across the ~37 ingested files) --
+  // this section is no longer a single-item case.
+  const items = page.getByTestId(/^catechism-item-/);
+  const count = await items.count();
+  expect(count).toBeGreaterThan(1);
+  const texts = await items.allTextContents();
+  expect(texts.some(t => t.includes(' — '))).toBeTruthy(); // at least one question-titled row present
 
   // Section order: verse-text, then xrefs (if any), then catechism -- last,
   // per REGISTRY-1's own VERSE ordering (verse-text, cross-references,
@@ -343,10 +421,15 @@ test('CATECH-1: verse -> catechism item -> proof verse hop, with Luther\'s own v
   await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
 });
 
-test('CATECH-1: a same-chapter passage selection aggregates catechism citations across member verses', async ({ page }) => {
-  // MAT.26.26-28: all three verses cite the SAME item (altar-1, the
-  // Sacrament of the Altar's institution words) -- the passage's own
-  // section must list it exactly ONCE (union+dedup), not three times.
+test('CATECH-1: a same-chapter passage selection aggregates catechism citations across member verses (item-level dedup)', async ({ page }) => {
+  // MAT.26.26-28: all three verses cite the SAME item-level citation
+  // (altar-1's own `verses`, the Sacrament of the Altar's institution
+  // words, Luther's own embedded citation) -- the passage's own section
+  // must list that BARE hit exactly ONCE (union+dedup), not three times,
+  // even though (Batch F2) the repo mapping now ALSO cites altar-1 (and
+  // several other items) via multiple separate QUESTIONS across this same
+  // span -- dedup is by (item, question) pair, so those are each their own
+  // row, additional to (not replacing) the bare dedup this test pins.
   await page.goto('/read/MAT/26');
   await page.getByTestId('verse-num-26').click();
   await page.keyboard.down('Shift');
@@ -356,6 +439,143 @@ test('CATECH-1: a same-chapter passage selection aggregates catechism citations 
   await expect(page.getByTestId('popover-title')).toHaveText('MAT.26.26-28');
 
   await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
-  await expect(page.getByTestId(/^catechism-item-/)).toHaveCount(1);
+  // The bare (item-level, no question) altar-1 row -- first occurrence,
+  // unsuffixed testid -- appears exactly once despite being cited by all
+  // three member verses.
   await expect(page.getByTestId('catechism-item-altar-1')).toHaveText('What Is the Sacrament of the Altar?');
+  await expect(page.getByTestId('catechism-item-altar-1')).toHaveCount(1);
+
+  // Batch F2: the repo mapping also cites altar-1 via several DIFFERENT
+  // questions across this same span -- each is its own, separately
+  // numbered-suffix row (id, question) pair, not folded into the bare hit.
+  const altarRows = page.getByTestId(/^catechism-item-altar-1/);
+  const altarCount = await altarRows.count();
+  expect(altarCount).toBeGreaterThan(1);
+  const altarTexts = await altarRows.allTextContents();
+  expect(altarTexts.some(t => t.includes('What Is the Sacrament of the Altar? — '))).toBeTruthy();
+});
+
+// ---------------------------------------------------------------------
+// Batch F2 requirement 3/4 (user direction 2026-08-20, verbatim: "I gave
+// you the mapping very explicitly in the catechism repo"): a verse
+// reachable ONLY via the brain-fuel/catechism mapping (never one of
+// Luther's own embedded citations) shows THE SMALL CATECHISM section with
+// a QUESTION-TITLED entry. Luke 12:13-14 -> "The First Commandment" (via
+// its own repo question "God Alone as Judge") is the brief's own named
+// example.
+// ---------------------------------------------------------------------
+
+test('CATECH-1/6-ARCH: a verse reachable only via the repo mapping shows a question-titled entry (Luke 12:13-14)', async ({ page }) => {
+  await page.goto('/read/LUK/12');
+  await page.getByTestId('verse-line-13').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('LUK.12.13');
+  await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
+
+  const items = page.getByTestId(/^catechism-item-/);
+  const texts = await items.allTextContents();
+  expect(texts.some(t => t === 'The First Commandment — God Alone as Judge')).toBeTruthy();
+
+  // Onward: clicking it opens the item's own popover -- THE SCRIPTURES
+  // groups this question's OWN two verses (Luke 12:13-14, consecutive)
+  // into ONE passage entry, captioned with the question title (6-ARCH:
+  // "sequential verses display as one passage entry").
+  const row = items.filter({ hasText: 'God Alone as Judge' });
+  await row.click();
+  await expect(page.getByTestId('popover-title')).toContainText('First Commandment');
+  const scriptures = page.getByTestId('popover-section-catechism-scriptures');
+  await expect(scriptures).toBeVisible();
+  // The testid lives on the WHOLE entry (PassageList.razor: ref + caption +
+  // text together, one explorable target -- see that component's own
+  // header comment), not on a nested descendant, so the testid lookup and
+  // the caption-text check both target the SAME element.
+  const godAloneEntry = scriptures.getByTestId('catechism-verse-LUK.12.13-14');
+  await expect(godAloneEntry).toBeVisible();
+  await expect(godAloneEntry).toContainText('God Alone as Judge');
+});
+
+// ---------------------------------------------------------------------
+// XREF-1 (batch-f2-brief.md requirement 6, user direction 2026-08-20,
+// near-verbatim: "truncate the cross references to show no more than 3 if
+// cross references are the only kind of context... and no more than two
+// if there are other types of context pulled in (small catechism, etc.)").
+// ---------------------------------------------------------------------
+
+// Finds a real verse (scanning real chapters, not the demo fixture) whose
+// own /api/verse response satisfies `predicate` -- same discovery approach
+// this file's own findVerse already uses.
+async function findVerseWithCounts(toc: any, predicate: (d: any) => boolean, maxChapters = 40): Promise<{ vref: string; detail: any } | null> {
+  const books = fc.sample(fc.constantFrom(...toc), Math.min(maxChapters, toc.length));
+  for (const b of books) {
+    for (const ch of b.chapters.slice(0, 2)) {
+      const chapter = await api.chapter(`${b.code}.${ch}`);
+      for (const v of chapter.verses) {
+        const vref = `${b.code}.${ch}.${v.verse}`;
+        const detail = await api.verse(vref);
+        if (predicate(detail)) {
+          return { vref, detail };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+test('XREF-1: a verse with only cross-reference context caps at 3 with a down-arrow reveal', async ({ page }) => {
+  const toc = await loadToc();
+  const found = await findVerseWithCounts(toc, d => d.cross_refs.length > 3 && d.catechism.length === 0);
+  test.skip(!found, 'no sampled verse had >3 xrefs and 0 catechism');
+  if (!found) return;
+  const v = parseVerse(found.vref);
+
+  await page.goto(`/read/${v.book}/${v.chapter}`);
+  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await expect(page.getByTestId('popover-title')).toHaveText(found.vref);
+  await expect(page.getByTestId('popover-section-catechism')).toHaveCount(0);
+
+  const items = page.getByTestId(/^xref-item-/);
+  await expect(items).toHaveCount(3);
+  await expect(page.getByTestId('xrefs-more')).toBeVisible();
+  await expect(page.getByTestId('xrefs-collapse')).toHaveCount(0);
+
+  await page.getByTestId('xrefs-more').click();
+  await expect(items).toHaveCount(found.detail.cross_refs.length);
+  await expect(page.getByTestId('xrefs-collapse')).toBeVisible();
+  await expect(page.getByTestId('xrefs-more')).toHaveCount(0);
+
+  await page.getByTestId('xrefs-collapse').click();
+  await expect(items).toHaveCount(3);
+});
+
+test('XREF-1: a verse with catechism context ALSO present caps cross-references at 2', async ({ page }) => {
+  const toc = await loadToc();
+  const found = await findVerseWithCounts(toc, d => d.cross_refs.length > 2 && d.catechism.length > 0);
+  test.skip(!found, 'no sampled verse had >2 xrefs and >0 catechism');
+  if (!found) return;
+  const v = parseVerse(found.vref);
+
+  await page.goto(`/read/${v.book}/${v.chapter}`);
+  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await expect(page.getByTestId('popover-title')).toHaveText(found.vref);
+  await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
+
+  const items = page.getByTestId(/^xref-item-/);
+  await expect(items).toHaveCount(2);
+  await expect(page.getByTestId('xrefs-more')).toBeVisible();
+});
+
+test('XREF-1: a verse with at-or-under-cap cross-references shows no reveal arrow at all', async ({ page }) => {
+  const toc = await loadToc();
+  const found = await findVerseWithCounts(toc, d => d.cross_refs.length >= 1 && d.cross_refs.length <= 2 && d.catechism.length === 0);
+  test.skip(!found, 'no sampled verse had 1-2 xrefs and 0 catechism');
+  if (!found) return;
+  const v = parseVerse(found.vref);
+
+  await page.goto(`/read/${v.book}/${v.chapter}`);
+  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await expect(page.getByTestId('popover-section-xrefs')).toBeVisible();
+
+  const items = page.getByTestId(/^xref-item-/);
+  await expect(items).toHaveCount(found.detail.cross_refs.length);
+  await expect(page.getByTestId('xrefs-more')).toHaveCount(0);
+  await expect(page.getByTestId('xrefs-collapse')).toHaveCount(0);
 });

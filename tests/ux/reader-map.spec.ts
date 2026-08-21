@@ -107,9 +107,15 @@ test('READ-6: passage cross-references render inline, conditional on the endpoin
     await page.getByTestId('passage-chip').click();
     await expect(page.getByTestId('popover-title')).toHaveText(pref);
 
+    // Batch F2 requirement 6 (XREF-1): capped at 3 (xrefs-only context) or
+    // 2 (THE SMALL CATECHISM also present) on initial render -- see
+    // world-hover-text.spec.ts's own equivalent fix for the same reasoning.
+    const hasCatechism = await page.getByTestId('popover-section-catechism').count() > 0;
+    const cap = hasCatechism ? 2 : 3;
+    const expectedInitial = Math.min(xrefs.length, cap);
     const items = page.getByTestId(/^xref-item-/);
-    await expect(items).toHaveCount(xrefs.length);
-    for (let i = 0; i < xrefs.length; i++) {
+    await expect(items).toHaveCount(expectedInitial);
+    for (let i = 0; i < expectedInitial; i++) {
       await expect(items.nth(i)).toContainText(xrefs[i].target);
     }
   }), RUNS_UI);
