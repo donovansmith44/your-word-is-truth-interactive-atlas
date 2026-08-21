@@ -919,6 +919,23 @@
     // the URL or _from/_to (those stay "the last COMMITTED window," per
     // their own field comment, until release) -- this is a purely visual,
     // transient scrub.
+    //
+    // Fix round 1 (Critical C1): `window` IS the full, current live window
+    // already -- TimeSlider.razor's own OnHandlePointerDown seeds BOTH
+    // `_dragFrom`/`_dragTo` from the last committed From/To at drag start,
+    // and only the actively-dragged one ever moves on subsequent
+    // pointermoves (OnTrackPointerMove) -- so `window.From`/`window.To`
+    // here are exactly the pair to hand the morph engine every frame, the
+    // same pair HandleWindowChange below already correctly passes to
+    // SettleMorph on release. The pre-fix-round code instead derived an
+    // "anchor" from `_from`/`_to` -- the SAME handle's own PRE-DRAG value,
+    // not the OTHER handle's current one -- so the per-frame lookup window
+    // silently excluded anything beyond the still-committed edge for the
+    // whole gesture (six of twelve real polities in the review's own
+    // live-verified replay; see the batch report's own "Fix round 1"
+    // section). `probeYear` (still needed, separately from the full pair)
+    // is specifically whichever edge is actually moving -- the one
+    // `animate` sweeps against.
     private async Task HandleWindowDrag((int From, int To) window)
     {
         if (_mapInterop is null || _polityRoster is null)
@@ -926,22 +943,14 @@
             return; // morph engine has nothing to scrub with yet -- degrades to no live morph, same graceful-degrade spirit as a failed roster fetch
         }
 
-        // Whichever of From/To differs from the last COMMITTED window is
-        // the handle actually being dragged; the OTHER end is this
-        // gesture's own anchor (its own pre-drag committed value) -- see
-        // border-morph.js's own animate() doc comment for how the anchor
-        // bounds the swept range.
         int probeYear;
-        int anchorYear;
         if (window.From != _from)
         {
             probeYear = window.From;
-            anchorYear = _from;
         }
         else if (window.To != _to)
         {
             probeYear = window.To;
-            anchorYear = _to;
         }
         else
         {
@@ -951,9 +960,9 @@
         if (!_dragMorphing)
         {
             _dragMorphing = true;
-            await _mapInterop.BeginMorph(anchorYear);
+            await _mapInterop.BeginMorph();
         }
-        await _mapInterop.MorphFrame(probeYear);
+        await _mapInterop.MorphFrame(window.From, window.To, probeYear);
     }
 
     // Batch H: SplitMode has no ref=/from=/to= on its own host URL at all

@@ -174,11 +174,11 @@ public sealed class MapInterop : IAsyncDisposable
     /// Batch M requirement 3a: begins a morph gesture (TimeSlider.razor's
     /// own OnWindowDrag, fired on the FIRST drag-move update since the last
     /// settle -- World.razor's own HandleWindowDrag decides when this is a
-    /// "first" call). <paramref name="anchorYear"/> is the drag's own
-    /// pre-drag committed value -- the OTHER end of the swept range every
-    /// <see cref="MorphFrame"/> call sweeps.
+    /// "first" call). Fix round 1 (C1): no anchor-year parameter -- every
+    /// <see cref="MorphFrame"/> call now carries the full live window on its
+    /// own, so there is nothing left for this call itself to remember.
     /// </summary>
-    public async Task BeginMorph(int anchorYear) => await _module.InvokeVoidAsync("beginMorph", _id, anchorYear);
+    public async Task BeginMorph() => await _module.InvokeVoidAsync("beginMorph", _id);
 
     /// <summary>
     /// Batch M requirement 3a: the scrub itself -- called on every
@@ -186,8 +186,20 @@ public sealed class MapInterop : IAsyncDisposable
     /// coalesces however many of these land within one animation frame into
     /// a single actual evaluate+paint (the CPU evaluator, behind its own
     /// documented GPU/WebGL swap seam -- see map.js's own comment).
+    /// Fix round 1 (Critical C1): <paramref name="from"/>/<paramref
+    /// name="to"/> are the FULL, CURRENT live window (both handles' current
+    /// values -- World.razor's own HandleWindowDrag passes its own
+    /// `window.From`/`window.To` straight through, unchanged, the same pair
+    /// <see cref="SettleMorph"/> already correctly receives on release) --
+    /// NOT just the dragged handle's own pre-drag value paired with the
+    /// probe, which silently dropped any polity/era beyond the OTHER,
+    /// still-committed edge for the whole gesture (six of twelve real
+    /// polities in the review's own live-verified replay -- see the batch
+    /// report's own "Fix round 1" section). <paramref name="atYear"/> is
+    /// still specifically the DRAGGED handle's own live value, the one
+    /// `animate` sweeps against.
     /// </summary>
-    public async Task MorphFrame(double atYear) => await _module.InvokeVoidAsync("morphFrame", _id, atYear);
+    public async Task MorphFrame(int from, int to, double atYear) => await _module.InvokeVoidAsync("morphFrame", _id, from, to, atYear);
 
     /// <summary>
     /// Batch M requirement 3a: "on release, settle into the static
