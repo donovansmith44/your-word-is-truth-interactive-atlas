@@ -23,7 +23,26 @@
    is req 6/6b's own wording, a binary show-all rather than PlaceCard's own
    5/2-verse-at-a-time reveal, which is a DIFFERENT truncation model this
    batch doesn't touch -- see PlaceCard.razor's own comment on why it stays
-   on its own mechanism). *@
+   on its own mechanism).
+
+   Batch N2 requirement 2 (folded into Batch T's own event-witnesses work,
+   which needed the identical mechanism for PARALLEL ACCOUNTS -- "no more
+   than 2 verses of a passage at a time... a button to expand/collapse that
+   passage (and also read the whole chapter like we've already got)", the
+   owner verbatim): ClampVerses caps a PASSAGE entry's own COMPACT text at N
+   verses, independent of (and orthogonal to) Cap above, which counts whole
+   ENTRIES -- this clamps WITHIN one entry. A per-entry
+   popover-passage-clamp-expand{-ENTRY-ID}/-collapse toggle (visually and
+   testid-distinct from MiniReaderExpand's own popover-verse-expand -- "two
+   distinct affordances," the brief's own words) reveals/re-hides the rest
+   of THAT entry's own text; the chapter-wide mini-reader expand stays
+   completely unaffected, sitting alongside it on the SAME entry. Implemented
+   ONCE here so every consumer (xrefs, THE SCRIPTURES, place est/dest,
+   PRIOR/FOLLOWING event sections, EVENT witnesses) inherits it for free --
+   "parallel implementations are a defect," the owner's own F2 6-ARCH decree,
+   extended to this requirement too. A lone-verse entry, or a passage entry
+   whose own verse count is already <= ClampVerses, shows no clamp
+   affordance at all (conditional presence) -- unaffected, unchanged. *@
 @using BibleAtlas.Client.Explore
 
 @if (_blocks.Count > 0)
@@ -58,10 +77,22 @@
                 <MiniReaderExpand Book="@BookOf(entry.Block)" Chapter="@ChapterOf(entry.Block)" FocalFromVerse="@FocalFromOf(entry.Block)" FocalToVerse="@FocalToOf(entry.Block)"
                                    TestIdSuffix="@($"-{entry.TestId}")">
                     <CompactContent>
+                        @{
+                            // Batch N2 requirement 2: clamp THIS entry's own
+                            // compact text to ClampVerses verses, independent
+                            // of MiniReaderExpand's own (unaffected) chapter
+                            // expand above. Only ever narrows a PASSAGE entry
+                            // (IsPassage, >=2 verses) whose own verse count
+                            // exceeds the clamp -- a lone verse, or a passage
+                            // already at or under it, is never clamped.
+                            var clamps = entry.Block.IsPassage && ClampVerses is int clamp && entry.Block.Verses.Count > clamp;
+                            var clampExpanded = clamps && _clampExpanded.Contains(entry.TestId);
+                            var shown = clamps && !clampExpanded ? entry.Block.Verses.Take(ClampVerses!.Value) : entry.Block.Verses;
+                        }
                         <p class="popover-passage-text">
                             @if (entry.Block.IsPassage)
                             {
-                                @foreach (var v in entry.Block.Verses)
+                                @foreach (var v in shown)
                                 {
                                     <sup class="popover-passage-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup>@v.Text<text> </text>
                                 }
@@ -71,6 +102,23 @@
                                 @entry.Block.Verses[0].Text
                             }
                         </p>
+                        @if (clamps)
+                        {
+                            @if (!clampExpanded)
+                            {
+                                <button type="button" class="popover-passage-clamp-toggle" data-testid="@($"popover-passage-clamp-expand-{entry.TestId}")"
+                                        aria-expanded="false" @onclick="() => ToggleClamp(entry.TestId)" @onclick:stopPropagation="true">
+                                    Show the rest of this passage
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button" class="popover-passage-clamp-toggle" data-testid="@($"popover-passage-clamp-collapse-{entry.TestId}")"
+                                        aria-expanded="true" @onclick="() => ToggleClamp(entry.TestId)" @onclick:stopPropagation="true">
+                                    Show fewer verses
+                                </button>
+                            }
+                        }
                     </CompactContent>
                 </MiniReaderExpand>
             </div>
@@ -100,6 +148,28 @@
     [Parameter] public string CollapseTestId { get; set; } = "passage-list-collapse";
     [Parameter] public string RevealNoun { get; set; } = "entries";
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    // Batch N2 requirement 2: when set, caps a PASSAGE entry's own compact
+    // text at this many verses -- see this file's own header comment.
+    [Parameter] public int? ClampVerses { get; set; }
+
+    // Per-entry clamp-expanded state, keyed by TestId -- a plain HashSet
+    // (not a bool on PassageBlockData itself, which is rebuilt fresh every
+    // OnParametersSet) so re-expanding a specific entry survives an
+    // unrelated re-render of this component, same "state that must outlive
+    // a single render lives in @code, keyed by a stable id" discipline
+    // MiniReaderExpand's own `_expanded` field already follows one level
+    // down (there, per-component-instance; here, per-entry within ONE
+    // instance, since ClampVerses applies list-wide, not per sub-component).
+    private readonly HashSet<string> _clampExpanded = new();
+
+    private void ToggleClamp(string testId)
+    {
+        if (!_clampExpanded.Add(testId))
+        {
+            _clampExpanded.Remove(testId);
+        }
+    }
 
     // A real, live-caught regression (found by the full pre-existing suite,
     // not guessed): CrossRefsSection's OWN pre-Batch-F2 click contract --

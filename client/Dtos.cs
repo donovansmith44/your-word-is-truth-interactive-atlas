@@ -101,7 +101,14 @@ public sealed record ChapterOut(string Ref, string Book, int Chapter, List<Verse
 /// plain-text name search against <see cref="PlaceRefDto.Name"/> is this
 /// app's only mention-detection mechanism (there is no richer per-mention
 /// character-offset data anywhere in this pipeline).
-public sealed record VerseOut(int Verse, string Text, List<PlaceRefDto> Places);
+/// Batch T requirement 5: the reader-heading Reader.razor renders directly
+/// above this verse's own line, when this verse is a heading ANCHOR (server:
+/// `AtlasData::heading_for_verse`) -- `EventId` is what a click opens (a
+/// fresh `EventNode`); `Title` is rendered immediately, no second fetch
+/// needed just to show the heading text.
+public sealed record HeadingDto(string EventId, string Title);
+
+public sealed record VerseOut(int Verse, string Text, List<PlaceRefDto> Places, HeadingDto? Heading = null);
 
 public sealed record PlaceRefDto(string Id, string Name);
 
@@ -113,6 +120,14 @@ public sealed record PlaceRefDto(string Id, string Name);
 /// this reuses <see cref="SceneEvent"/> rather than a separate type,
 /// exactly as the brief's record list specifies.
 /// </summary>
+/// Batch T requirement 3 ("verse popover: event membership replaces
+/// prev/next"): Batch N's own `NarrativePositions` field is RETIRED here --
+/// verse-level chronological PRIOR/FOLLOWING no longer exists (it lives
+/// entirely on the EVENT node now, `GET /api/narrative/event/{id}`/
+/// `GET /api/event/{id}`, both id-keyed). `Events` (unchanged since before
+/// Batch N) is what the client's own NEW "EVENT" section reads instead --
+/// it already names every EVENT-kind PASSAGE citing this verse, which is
+/// exactly "event membership."
 public sealed record VerseDetail(
     string Ref,
     string Text,
@@ -123,13 +138,7 @@ public sealed record VerseDetail(
     // shares this ALREADY-fetched verse-detail response (server:
     // handlers::verse's own doc comment) rather than a second round trip,
     // "one fetch, not four." Always present, possibly empty.
-    List<CatechismRefDto> Catechism,
-    // Batch N ("narratives as first-class graph structure"): this verse's
-    // own position(s) in the narrative graph -- shares this SAME
-    // already-fetched response too, "one fetch, not five" (server:
-    // handlers::verse's own doc comment on VerseDetailOut.narrative_positions).
-    // Always present, possibly empty (most verses touch no narrative).
-    List<NarrativePositionDto> NarrativePositions);
+    List<CatechismRefDto> Catechism);
 
 /// Batch N: one (narrative, event) position a verse or event touches --
 /// mirrors <c>atlas_core::narrative::NarrativePosition</c> exactly. Shared
@@ -155,6 +164,37 @@ public sealed record NarrativePositionDto(
 /// <c>to_scene_event</c> a map arrow's own endpoint uses server-side (the
 /// one-graph property).
 public sealed record NarrativeAdjacentEventDto(string Id, string Label, List<string> Places, List<VerseGroup> VerseGroups);
+
+/// Batch T requirement 4: one EVENT-kind PASSAGE's own resolved place --
+/// id (to open a `PlaceNode`) + display name.
+public sealed record EventPlaceDto(string Id, string Name);
+
+/// Batch T requirement 4: one resolved witness -- "book, verse-range,
+/// translation-mapped" (the owner's own words), already resolved to this
+/// app's one compiled translation server-side. `RefNote`/`RobertsonSection`
+/// are this WITNESS's own provenance, distinct from the parent
+/// `EventDetail`'s own (which grounds the event's date/grouping as a whole).
+public sealed record EventWitnessDto(
+    string Book,
+    List<VerseGroup> VerseGroups,
+    string? RefNote = null,
+    string? RobertsonSection = null);
+
+/// <c>GET /api/event/{id}</c> (Batch T requirement 4, "EVENT node
+/// popover"). <see cref="Witnesses"/> is ALWAYS non-empty (>=1) -- see
+/// `scene::witnesses_for`'s own doc comment for the single-implicit-witness
+/// synthesis when no parallel accounts were explicitly curated;
+/// requirement 4's own "single-witness events show the one passage, no
+/// parallel framing when n=1" is realized client-side by branching on
+/// <c>Witnesses.Count</c>, not by a server-side omission.
+public sealed record EventDetail(
+    string Id,
+    string Title,
+    TimeRangeDto When,
+    List<EventPlaceDto> Places,
+    List<EventWitnessDto> Witnesses,
+    string? RobertsonSection = null,
+    string? RefNote = null);
 
 public sealed record BookMetaDto(string Author, string? WritePlace, int? WriteFrom, int? WriteTo);
 
