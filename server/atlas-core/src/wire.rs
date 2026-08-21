@@ -62,6 +62,18 @@ pub struct ScenePlace {
     pub existence_from: Option<Year>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub existence_to: Option<Year>,
+    /// Batch HOTFIX-2 (same-place dedupe): ids of every OTHER compiled place
+    /// record merged into this one at load time (`crate::merge::MERGE_PAIRS`)
+    /// -- e.g. `["hazor_545"]` on the place carrying id `hazor-1`. Wire
+    /// traceability only (no client behavior reads this today): the brief's
+    /// own "note the absorbed record's id in the wire for traceability" --
+    /// so a future investigation into "why does hazor-1 carry events from
+    /// two different upstream lineages" doesn't have to go spelunking
+    /// through source data by hand. Empty (and omitted -- `skip_serializing_if`,
+    /// matching `existence_from`/`_to`'s own lean-wire convention) for the
+    /// overwhelming majority of places, which were never part of a merge.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub merged_ids: Vec<String>,
 }
 
 /// Batch E2: one "quiet" place on a time-mode scene -- an event-bearing
@@ -95,6 +107,12 @@ pub struct QuietPlace {
     pub existence_from: Option<Year>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub existence_to: Option<Year>,
+    /// Batch HOTFIX-2: same field, same rule, as `ScenePlace::merged_ids`
+    /// above -- a quiet place is exactly where this can matter too (the
+    /// survivor of a merge is quiet in any window neither absorbed record's
+    /// own events intersect).
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub merged_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -76,14 +76,20 @@ test('BLURB-1: exactly one blurb shows, era inside one range, broad summary once
   await expect(blurb).toContainText('Jebusite stronghold');
 
   // The default bare-/world window (Gospels, -5..29) sits inside the
-  // SECOND curated era range only.
-  await page.goto('/world');
-  await page.getByTestId('marker-jerusalem').hover({ force: true });
-  await expect(page.getByTestId('place-card')).toBeVisible();
-  const gospelsBlurb = page.getByTestId('place-card-blurb');
-  await expect(gospelsBlurb).toBeVisible();
-  await expect(gospelsBlurb).toContainText('Second Temple city');
-  await expect(gospelsBlurb).not.toContainText('Jebusite stronghold');
+  // SECOND curated era range only. Checked at the API layer (same
+  // production resolve_blurb the card itself calls), not via a marker
+  // hover, for the same reason the whole-span check below already is:
+  // Jerusalem's own true position is, batch-hotfix2-report.md confirms,
+  // literally 1px from Bethesda's at this window's own fitScene zoom (both
+  // real, distinct places -- Bethesda's pool sits inside Jerusalem) --
+  // `debugTrueScreenPoint`-measured, not a guess -- so a force:true hover
+  // on `marker-jerusalem` here is exactly the "let them overlap" case the
+  // batch's own nudge redesign explicitly accepts (brief: "if two distinct
+  // places are so close that 20px cannot separate them at the current
+  // zoom, let them overlap"), not a bug in the merge/nudge fix itself.
+  const gospels = await api.placeHistory('jerusalem', -5, 29);
+  expect(gospels.history.blurb).toContain('Second Temple city');
+  expect(gospels.history.blurb).not.toContain('Jebusite stronghold');
 
   // A window spanning BOTH of Jerusalem's curated "era" ranges resolves to
   // the BROAD summary instead of either era one -- "a broad period -> a

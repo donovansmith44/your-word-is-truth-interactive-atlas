@@ -75,6 +75,7 @@ pub fn compose_scripture_scene(d: &AtlasData, r: &ScriptureRef) -> Scene {
             events,
             existence_from,
             existence_to,
+            merged_ids: crate::merge::absorbed_ids_for(&place.id), // Batch HOTFIX-2: see lit_places' own call site comment
         });
     }
     places.sort_by(|a, b| a.id.cmp(&b.id));
@@ -184,6 +185,11 @@ fn lit_places(d: &AtlasData, kept: &[&Event], r: Option<&ScriptureRef>, name_win
                     .collect(),
                 existence_from,
                 existence_to,
+                // Batch HOTFIX-2: wire traceability for a merged place (see
+                // crate::merge's own doc comment) -- empty for the
+                // overwhelming majority of places, which were never
+                // involved in a merge.
+                merged_ids: crate::merge::absorbed_ids_for(&place.id),
             })
         })
         .collect();
@@ -219,6 +225,7 @@ fn quiet_places(d: &AtlasData, lit: &[ScenePlace], window: TimeRange) -> Vec<Qui
                 total_events: d.total_events_for(id),
                 existence_from,
                 existence_to,
+                merged_ids: crate::merge::absorbed_ids_for(&place.id), // Batch HOTFIX-2: see lit_places' own call site comment
             })
         })
         .collect();

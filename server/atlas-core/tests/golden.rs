@@ -21,6 +21,13 @@ fn sample_scene() -> Scene {
             // "no curated history -> always labels" shape.
             existence_from: None,
             existence_to: None,
+            // Batch HOTFIX-2 (same-place dedupe): jericho was never merged
+            // -- empty, and (skip_serializing_if) omitted from the wire,
+            // same treatment as existence_from/_to above. The committed
+            // golden-scene.json fixture is therefore byte-identical, no
+            // update needed there -- only this struct literal, which every
+            // ScenePlace field must now name.
+            merged_ids: vec![],
         }],
         // Batch E2 (the ever-present graph): one sample quiet place pins
         // QuietPlace's own lean wire shape (id/display_name/lat/lon/
@@ -36,6 +43,9 @@ fn sample_scene() -> Scene {
             // own UI test exercises live.
             existence_from: Some(-1399),
             existence_to: Some(-1050),
+            // Batch HOTFIX-2: same "never merged, empty, omitted" shape as
+            // the places-side ScenePlace literal above.
+            merged_ids: vec![],
         }],
         arrows: vec![SceneArrow { narrative: "conquest".into(), color: "#7C3AED".into(),
             from_place: "gilgal".into(), to_place: "jericho".into(),

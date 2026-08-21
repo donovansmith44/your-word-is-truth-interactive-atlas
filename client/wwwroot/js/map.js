@@ -260,6 +260,14 @@ export function init(el, dotnetRef, opts) {
         map.on('zoomend', () => applyLabelTier(instances.get(id)));
     }
 
+    // Batch HOTFIX-2: re-derives every marker's own screen-pixel nudge on
+    // every zoom change -- see applyMarkerNudges' own doc comment for why
+    // this listener, UNLIKE applyLabelTier's just above, is NOT gated
+    // `!mini` (a mini instance still needs its own one-time FitScene zoom
+    // change to trigger a recompute against the REAL fit zoom, not
+    // whatever stale zoom was current when setScene's own inline call ran).
+    map.on('zoomend', () => applyMarkerNudges(instances.get(id)));
+
     // Batch G1 requirement 3 (click-to-pin/traversal): "clicking elsewhere
     // on the map" closes a pinned card, and Escape does too from anywhere
     // on the page. Both gated !mini -- pinning has no meaning for a 320x240
@@ -330,14 +338,21 @@ function watchEscape(dotnetRef) {
 // out of the `markers` map this loop maintains -- ArrowLayer.setArrows is
 // called after it so every place an arrow can reference is already there.
 //
-// Coordinates are run through nudgeCloseLatLng before use (both here and,
-// transitively, by ArrowLayer's arrow endpoints, which look positions up
-// from this same `markers` map): curated places occasionally geocode very
-// close together -- sometimes to the EXACT same lat/lon (e.g. Shittim and
-// the "plains of Moab" camp -- both real, distinct places per
-// data/curated's own disambiguation comments, just resolved identically by
-// the upstream geocoder), sometimes just close (Gilgal and Jericho, ~1.8km
-// apart -- accurate geography, Gilgal genuinely was that close to Jericho).
+// Coordinates are run through applyMarkerNudges (Batch HOTFIX-2 -- see its
+// own doc comment; called once markers are all added/updated below, before
+// buildLitByName/applyLabelTier/ArrowLayer.setArrows all read positions
+// back) before use, both here and, transitively, by ArrowLayer's arrow
+// endpoints, which look positions up from this same `markers` map: curated
+// places occasionally geocode very close together -- sometimes to the
+// EXACT same lat/lon (e.g. Shittim and the "plains of Moab" camp -- both
+// real, distinct places per data/curated's own disambiguation comments,
+// just resolved identically by the upstream geocoder), sometimes just close
+// (Gilgal and Jericho, ~1.8km apart -- accurate geography, Gilgal genuinely
+// was that close to Jericho). Two places CLOSE ENOUGH to be the same real
+// site instead of merely close neighbors (identical coordinates, or the
+// ~100m "same tel" case) are merged server-side into one record before a
+// scene is ever built (`atlas_core::merge`) -- ONLY genuinely distinct
+// places ever reach this nudge at all.
 // .atlas-marker's hit box is deliberately tiny (4x4px, unchanged since
 // WORLD-1/2 -- Batch C tried growing it and reverted, see app.css's own
 // .atlas-marker comment for the real regression that caught) specifically
@@ -350,10 +365,11 @@ function watchEscape(dotnetRef) {
 // deterministically to either place (caught by WORLD-2 and the arrow-hover
 // test once Task 16's narratives introduced both the exact Shittim/Moab
 // collision and the close-but-distinct Gilgal/Jericho pair). Nudging every
-// place that lands within CLOSE_THRESHOLD_KM of an already-placed one (a
-// real pairwise check across the scene, not just an exact-match shortcut)
-// keeps each one independently hoverable without visibly moving away from
-// its real-world location at any zoom this app uses.
+// place that lands within NUDGE_TRIGGER_PX (screen pixels, at the CURRENT
+// zoom -- Batch HOTFIX-2; see applyMarkerNudges' own doc comment) of an
+// already-placed one (a real pairwise check across the scene, not just an
+// exact-match shortcut) keeps each one independently hoverable without
+// visibly moving away from its real-world location at any zoom this app uses.
 export function setScene(id, sceneJson) {
     const inst = instances.get(id);
     if (!inst) {
@@ -369,16 +385,19 @@ export function setScene(id, sceneJson) {
     // zoomend, not just here) doesn't need it re-threaded as a parameter.
     inst.window = scene.window || null;
     const seen = new Set();
-    const placed = []; // {lat, lon, origLat, origLon} already resolved this call, in scene order -- nudgeCloseLatLng checks each new candidate's ORIGINAL coords against these (fix round 1 / M3: not the nudged lat/lon, see nudgeCloseLatLng's own comment)
 
     for (const p of places) {
         seen.add(p.id);
-        const [lat, lon] = nudgeCloseLatLng(p, placed);
-        placed.push({ lat, lon, origLat: p.lat, origLon: p.lon });
         const prior = inst.markers.get(p.id);
 
         if (!prior) {
-            const marker = L.marker([lat, lon], { icon: makeIcon(p) });
+            // Placed at its TRUE (server-provided, post-merge) position for
+            // now -- applyMarkerNudges below (Batch HOTFIX-2) immediately
+            // re-derives and, if needed, adjusts every marker's rendered
+            // lat/lon in a single pass once every place this call is either
+            // added or updated, so a brand new marker never paints at its
+            // true position for even one frame if it needs a nudge.
+            const marker = L.marker([p.lat, p.lon], { icon: makeIcon(p) });
             wireEvents(marker, inst.dotnetRef, p.id);
             marker.addTo(inst.map);
             // existenceFrom/existenceTo (Batch H): curated once per place id,
@@ -387,17 +406,20 @@ export function setScene(id, sceneJson) {
             // the WINDOW being tested against them does (see
             // existenceGatesLabel/applyLabelTier).
             inst.markers.set(p.id, {
-                marker, lat, lon, brightness: p.brightness, name: p.name,
+                marker, lat: p.lat, lon: p.lon, trueLat: p.lat, trueLon: p.lon,
+                brightness: p.brightness, name: p.name,
                 existenceFrom: p.existence_from ?? null, existenceTo: p.existence_to ?? null,
             });
             continue;
         }
 
-        if (prior.lat !== lat || prior.lon !== lon || prior.brightness !== p.brightness || prior.name !== p.name) {
-            prior.marker.setLatLng([lat, lon]);
+        if (prior.trueLat !== p.lat || prior.trueLon !== p.lon || prior.brightness !== p.brightness || prior.name !== p.name) {
+            prior.marker.setLatLng([p.lat, p.lon]);
             prior.marker.setIcon(makeIcon(p));
-            prior.lat = lat;
-            prior.lon = lon;
+            prior.lat = p.lat;
+            prior.lon = p.lon;
+            prior.trueLat = p.lat;
+            prior.trueLon = p.lon;
             prior.brightness = p.brightness;
             prior.name = p.name;
         }
@@ -412,8 +434,8 @@ export function setScene(id, sceneJson) {
 
     // Batch E2 (the ever-present graph): quiet dots, diffed by id the exact
     // same way lit markers just were above -- unseen ids added, vanished ids
-    // removed, unchanged ids left alone. Never nudged (no nudgeCloseLatLng
-    // call, no `placed` bookkeeping): quiet dots are furniture, not a
+    // removed, unchanged ids left alone. Never nudged (no applyMarkerNudges
+    // call, no trueLat/trueLon bookkeeping): quiet dots are furniture, not a
     // precision-hover surface the way embers are (batch-e2-brief.md's own
     // framing) -- rendering two coincident quiet dots exactly on top of each
     // other, or a quiet dot exactly under an ember, is an acceptable, rare
@@ -461,6 +483,14 @@ export function setScene(id, sceneJson) {
         }
     }
 
+    // Batch HOTFIX-2: derives every marker's final on-screen position from
+    // its TRUE lat/lon (just written above) plus a small SCREEN-PIXEL nudge
+    // at the map's CURRENT zoom -- see applyMarkerNudges' own doc comment.
+    // Before buildLitByName/applyLabelTier/setArrows below, all three of
+    // which read a marker's `lat`/`lon` back (label position, arrow
+    // endpoints) and must see the FINAL, already-nudged value.
+    applyMarkerNudges(inst);
+
     // Fix round 1 addendum: rebuilt fresh here, every time `markers` just
     // changed (the only thing that can change it) -- see buildLitByName's
     // own comment for why this one Map feeds BOTH applyLabelTier's
@@ -493,130 +523,177 @@ export function setScene(id, sceneJson) {
     }
 }
 
-// See setScene's own doc comment for why this exists. Distance is a plain
-// equirectangular approximation (not geodesically precise) -- more than
-// good enough to decide "too close to hover independently" at the few-km
-// scale this operates at, and far cheaper than a real haversine. `placed`
-// is fresh per setScene call but `places` arrives in a stable, deterministic
-// order (server-sorted by place id -- see atlas-core::scene::lit_places),
-// so the SAME place among the SAME neighbors always lands at the SAME
-// nudge index call to call, keeping a stable scene's markers from jittering
-// on every refetch.
+// Batch HOTFIX-2: replaces the PRE-existing `nudgeCloseLatLng`, which
+// nudged a close marker by a FIXED GEOGRAPHIC delta -- `NUDGE_STEP_DEG`,
+// 0.6 degrees (~63-67km depending on latitude), tuned (Batch C2) against
+// the exodus scene's own far-zoomed-OUT fit view, where a scene spans
+// hundreds of km and 0.6 degrees is a small, barely-noticeable shove. The
+// SAME 0.6-degree shove, replayed at a much closer-zoomed scene -- a
+// single chapter's own small, tight cluster of places, e.g. Judges 4's
+// Hazor/Kedesh-naphtali/Zaanannim (user report 2026-08-20: all three
+// rendering in the Mediterranean) -- is easily 80+ SCREEN PIXELS, more
+// than enough to cross the coastline into open water. A fixed geographic
+// delta simply cannot be tuned to work at every zoom a scene might fit to:
+// small enough for a tight scene is invisible for a wide one; large enough
+// for a wide scene is a wild, position-breaking jump for a tight one. See
+// batch-hotfix2-report.md for the full root-cause chain and before/after
+// measurements.
 //
-// NUDGE_STEP_DEG -- RE-TUNED, Batch C2 (requirement 0b: "scale
-// nudgeCloseLatLng's separation distance with the new marker radius so
-// hover targets never overlap"). Picked around the OLD 4x4px marker (2px
-// hit-radius, see the pre-Batch-C2 history below); the ember marker's own
-// 26x26px hit box (10px core + this batch's `::after` inset:-8px padding,
-// requirement 0c -- 13px radius) needed a fresh derivation, not a guess.
+// The fix: nudge in SCREEN PIXELS, at the map's CURRENT zoom, recomputed
+// fresh every time that zoom changes (setScene and the 'zoomend' listener
+// below both call applyMarkerNudges -- the same "recompute on zoom, never
+// persist a stale decision" pattern applyLabelTier already established for
+// LABEL collision). A pixel amount means the on-screen displacement is the
+// same small distance regardless of how close- or wide-zoomed the current
+// scene happens to be -- see NUDGE_STEP_PX/NUDGE_TRIGGER_PX below for the
+// exact numbers and their own reasoning.
 //
-// A throwaway script rendered the real exodus-window scene (this file's
-// own worst-case, richest test window -- WORLD-2/world-hover-text.spec.ts
-// both already pick it for exactly that richness) at this app's own
-// 1280x800 reference viewport, read every marker's REAL bounding-box
-// center via Playwright, and fit a local lat/lon->screen-px affine
-// transform from those (Web Mercator is locally linear at this scale, well
-// under 4px residual across the tight Levant/Sinai cluster this matters
-// for). Replaying nudgeCloseLatLng's own algorithm against that fitted
-// projection found NUDGE_STEP_DEG=0.6 (~63-67km, latitude-dependent)
-// separates both pairs THIS threshold (CLOSE_THRESHOLD_KM, unchanged --
-// see below for why it stays at 5) actually nudges to 29px+ (a real
-// margin over the 26px hit-box floor, not the old ~0.3px near-miss the
-// pre-Batch-C2 comment below describes): moab-2/shittim (the exact 0km
-// coincidence) to 29.2px, Gilgal/Jericho (~1.8km) to 29.3px.
-//
-// CLOSE_THRESHOLD_KM stays at 5 -- a first attempt at this fix raised it to
-// 15 specifically to ALSO reach two other, larger-but-still-real "close
-// neighbor" pairs the OLD tiny hit box tolerated (Marah/Elim ~10.5km,
-// Rephidim/Mount Sinai ~13km -- see the pre-Batch-C2 history below), and
-// the same grid search confirmed that DID separate them cleanly too
-// (32-35px). It was reverted after a DIFFERENT real scene caught a
-// concrete regression it caused: the apostolic window (AD 46-48) lights
-// both "Philippi" and its own port city "Neapolis", genuinely 13.92km
-// apart -- INSIDE the raised 15km threshold, OUTSIDE the original 5km one.
-// Nudged by the new, much larger NUDGE_STEP_DEG (needed for the exodus
-// cluster's OWN much-more-zoomed-OUT view), Philippi jumped ~60-70km from
-// its curated position -- at the apostolic scene's own, much CLOSER
-// fitScene zoom (a small two-year window, nowhere near as spread out as
-// the full exodus scene), that jump pushed its marker (and the hover card
-// anchored to it) most of the way off the top of the viewport, breaking
-// world-hover-text.spec.ts's own place-card-more test for it (confirmed
-// live: `document.elementFromPoint` at the button's own pre-move screen
-// position resolved to `place-card-more` before the pointer arrived, and
-// to the surrounding `place-card` div after -- the button had moved out
-// from under it mid-journey). This is the general problem with a single,
-// GLOBAL, zoom-INDEPENDENT threshold/step pair: whether two real places
-// need separating depends on how close THEIR OWN scene renders them, which
-// varies scene to scene, but nudging is decided once, before any zoom is
-// known, and the same result has to hold at every zoom the marker is ever
-// viewed at. 5km safely covers only the two pairs confirmed to need it
-// (the exact coincidence and its near-exact sibling) without reaching far
-// enough to catch a real, ordinary city/port pair like Philippi/Neapolis
-// in a DIFFERENT, more tightly-zoomed scene. Marah/Elim and Rephidim/Mount
-// Sinai's OWN new collision risk (introduced by the bigger hit target, in
-// the exodus scene specifically) is handled the same way the exodus
-// scene's other, structurally-unfixable close cluster already has to be --
-// see world-map.spec.ts's own WORLD-2 comment for the dynamic, real-
-// rendered-pixel filter that keeps the property suite honest about
-// exactly this.
-//
-// Everything below this point is the PRE-Batch-C2 history CLOSE_THRESHOLD_KM
-// and NUDGE_STEP_DEG already carried, unchanged in substance and (for
-// CLOSE_THRESHOLD_KM) unchanged in its own literal number too:
-// CLOSE_THRESHOLD_KM=5 sat deliberately between the one known-broken
-// distance (Gilgal/Jericho, ~1.8km -- see setScene's doc comment) and the
-// nearest known-working one (Marah/Elim, ~10.5km), so it fixed the former
-// without touching (renudging) pairs that already hovered correctly under
-// the OLD, much smaller hit box -- still exactly true today, just against
-// a bigger hit box needing a bigger NUDGE_STEP_DEG to clear it (see
-// above). NUDGE_STEP_DEG (~8.9km, now ~63-67km) was and is deliberately
-// LARGER than the threshold that triggers it, so a freshly nudged place
-// always clears the distance that flagged it, and was the same order of
-// magnitude as this app's already-working close-but-distinct neighbors AT
-// THE TIME. Successive collisions against the SAME neighborhood are spread
-// around it at the golden angle (same idea phyllotaxis/sunflower-seed
-// packing uses) rather than a single fixed direction, so a third or fourth
-// place crowding one spot -- none exist today outside WORLD-3's own
-// synthetic rig -- still lands at its own distinct spot instead of
-// stacking back onto an earlier nudge.
-//
-// Fix round 1 (M3): "nothing here assumes exactly two" was false until this
-// fix -- `placed` entries are compared by their ORIGINAL (pre-nudge)
-// coordinates (origLat/origLon), not their final nudged ones. Comparing
-// against final positions was the actual bug: NUDGE_STEP_DEG is deliberately
-// LARGER than CLOSE_THRESHOLD_KM (see above), so a nudged point always moves
-// itself outside CLOSE_THRESHOLD_KM of the cluster it came from -- meaning a
-// THIRD place at the same original spot would only ever count the still-
-// unmoved first point as "close" (the second point, already nudged away,
-// drops out of range), landing it on the exact same golden-angle slot as
-// the second place instead of a fresh one. Original coordinates never move,
-// so counting against those gives every coincident place in a cluster of
-// any size its own distinct running count (1, 2, 3, ...) and hence its own
-// slot, and preserves the existing call-to-call determinism (same place
-// among the same neighbors, in the same server-sorted order, always sees
-// the same count).
+// Two lessons from `nudgeCloseLatLng`'s own history survive unchanged in
+// the new algorithm, because they were never about DEGREES vs PIXELS in
+// the first place:
+// (1) compare each candidate's TRUE (pre-nudge) position against every
+//     ALREADY-PLACED marker's own TRUE position, never a final/nudged one
+//     (fix round 1 / M3's own hard-won lesson: comparing against nudged
+//     positions let a nudged point "escape" a cluster's own detection
+//     radius, collapsing a 3rd coincident place onto the 2nd's slot instead
+//     of getting its own) -- applyMarkerNudges below keeps `trueLat`/
+//     `trueLon` on every marker entry specifically so this comparison is
+//     always available, on every call, independent of whatever nudge (if
+//     any) a PRIOR call already applied.
+// (2) spread multiple ties at the SAME spot around the golden angle
+//     (phyllotaxis/sunflower-seed packing) rather than a single fixed
+//     direction, so a 3rd or 4th place crowding one exact point still lands
+//     on its own distinct slot instead of stacking back onto an earlier
+//     nudge. Batch HOTFIX-2 additionally requires this for the common
+//     TWO-marker case to point AWAY FROM the actual colliding neighbor
+//     (brief requirement 2: "spread apart along the axis between the two,
+//     not a fixed NW shove" -- the old algorithm's own n=1 case always
+//     pointed the same ~137.5 degrees, i.e. always northwest, regardless of
+//     where the colliding neighbor actually was) -- the golden angle is now
+//     only ever a FALLBACK, for the degenerate case where the true
+//     colliding neighbors' own directions cancel out or coincide exactly
+//     with the candidate itself (see the `mag > 0.01` branch below).
 const GOLDEN_ANGLE_RAD = 2.399963229728653;
-const CLOSE_THRESHOLD_KM = 5;
-const NUDGE_STEP_DEG = 0.6;
 
-function approxKm(lat1, lon1, lat2, lon2) {
-    const dLat = (lat1 - lat2) * 111.32;
-    const dLon = (lon1 - lon2) * 111.32 * Math.cos((lat1 + lat2) / 2 * Math.PI / 180);
-    return Math.sqrt(dLat * dLat + dLon * dLon);
-}
+// NUDGE_TRIGGER_PX -- "still visually colliding": matches the ember
+// marker's own 26x26px hit box (10px core + `::after` inset:-8px padding,
+// Batch C2 requirement 0c -- 13px radius; app.css's own `.atlas-marker`
+// comment), i.e. two markers are considered close enough to need
+// separating exactly when their hit circles overlap at all.
+//
+// NUDGE_STEP_PX -- brief requirement 2, verbatim: "a few marker-widths max,
+// ~12-18px" (the marker's own visual core is ~10px). 16px sits in the
+// middle of that range, comfortably inside the brief's own separate ~20px
+// sanity ceiling ("a nudge must never move a marker more than ~20px from
+// its true position at any zoom") with real margin, applied as ONE fixed
+// step per marker regardless of how many neighbors it collides with (never
+// compounded/added per colliding neighbor -- see the loop below), so the
+// ~20px bound holds unconditionally, not just in the common two-marker
+// case. A step this size does not guarantee two very tightly packed
+// markers end up hit-box-clear of each other (16px separation is still
+// less than the 26px trigger radius) -- that is deliberate, not a gap:
+// the brief's own sanity property continues, "if two distinct places are
+// so close that 20px cannot separate them at the current zoom, let them
+// overlap" -- full independent hoverability in a dense cluster remains
+// C3 clustering's job (queued, out of scope here), not this fix's.
+const NUDGE_TRIGGER_PX = 26;
+const NUDGE_STEP_PX = 16;
 
-function nudgeCloseLatLng(p, placed) {
-    let n = 0;
-    for (const q of placed) {
-        if (approxKm(p.lat, p.lon, q.origLat, q.origLon) < CLOSE_THRESHOLD_KM) {
-            n++;
+// Re-derives every marker's rendered position from its TRUE (server-
+// provided, post-merge) lat/lon plus a fresh screen-pixel nudge, at the
+// map's CURRENT zoom -- called by setScene (every scene load) and by the
+// 'zoomend' listener below (every zoom change, including the very first
+// fitScene fit that follows every setScene call -- see setScene's own call
+// site comment). Idempotent per call: NEVER reads a marker's own previous
+// `lat`/`lon` as input, only `trueLat`/`trueLon`, so a nudge never
+// compounds across repeated calls and a collision that resolves at a new
+// zoom (zooming in always increases the true on-screen distance between
+// two distinct points) cleanly snaps back to the true position with no
+// leftover offset.
+//
+// Runs for MINI instances too (unlike applyLabelTier, which no-ops on
+// mini): the pre-existing nudgeCloseLatLng ran unconditionally across both
+// kinds of instance, and a mini popover figure can still show two close-
+// but-distinct places needing separation. Mini has no user-driven zoom
+// (init()'s own `scrollWheelZoom: !mini`), but DOES still receive a
+// programmatic zoomend when its own one-time FitScene call changes the
+// zoom (Leaflet fires 'zoomend' for a programmatic setView/fitBounds
+// regardless of whether interactive zoom controls exist) -- so the
+// 'zoomend' listener below is registered unconditionally too, not gated
+// `!mini` the way applyLabelTier's own listener is, specifically so a mini
+// instance's nudge is recomputed against its REAL fit zoom, not whatever
+// stale zoom the map happened to be at when setScene's own inline call ran
+// (always BEFORE FitScene -- see World.razor/MiniWorld.razor's own call
+// order).
+function applyMarkerNudges(inst) {
+    if (!inst) {
+        return;
+    }
+    const map = inst.map;
+
+    // Server-sorted-by-id order (mirrors atlas-core::scene::lit_places' own
+    // sort) -- NOT necessarily `inst.markers`' own Map-iteration order,
+    // which only matches that on a fresh setScene and can drift after an
+    // incremental add/remove diff leaves survivors sitting at their
+    // ORIGINAL insertion position (plain JS Map semantics). Re-sorting here
+    // keeps "the same place among the same neighbors always lands at the
+    // same nudge slot" true even across a zoomend that fires with no
+    // intervening setScene -- the same determinism nudgeCloseLatLng's own
+    // history already established as load-bearing (a stable scene's
+    // markers must never jitter on an unrelated refetch/zoom).
+    const entries = [...inst.markers.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1));
+
+    const placedTrue = []; // {x, y} TRUE (unnudged) container points already resolved this pass, in the sorted order above
+    for (const [, entry] of entries) {
+        const truePt = map.latLngToContainerPoint([entry.trueLat, entry.trueLon]);
+
+        // Repulsion direction: the (normalized) sum of "away from each
+        // colliding neighbor's own TRUE point" vectors -- for the common
+        // two-marker collision this points exactly away from the one real
+        // neighbor (brief requirement 2's own "axis between the two");
+        // for a genuine multi-way tie the vectors partially cancel, which
+        // is exactly why the golden-angle fallback below still exists.
+        let dx = 0, dy = 0, n = 0;
+        for (const q of placedTrue) {
+            const ddx = truePt.x - q.x, ddy = truePt.y - q.y;
+            const dist = Math.sqrt(ddx * ddx + ddy * ddy);
+            if (dist < NUDGE_TRIGGER_PX) {
+                n++;
+                if (dist > 0.01) {
+                    dx += ddx / dist;
+                    dy += ddy / dist;
+                } // else: exactly coincident with this neighbor -- contributes no direction of its own; the golden-angle fallback below covers it
+            }
         }
+        placedTrue.push(truePt);
+
+        let finalPt = truePt;
+        if (n > 0) {
+            const mag = Math.sqrt(dx * dx + dy * dy);
+            let ux, uy;
+            if (mag > 0.01) {
+                ux = dx / mag;
+                uy = dy / mag;
+            } else {
+                // Degenerate case: every colliding neighbor's own direction
+                // cancelled out (e.g. two colliding neighbors sit on exactly
+                // opposite sides) or coincides exactly with this candidate --
+                // same golden-angle spread nudgeCloseLatLng always used,
+                // keyed off THIS marker's own running collision count `n` so
+                // a 3rd/4th place at one exact spot still gets its own
+                // distinct slot instead of stacking back onto an earlier one.
+                const angle = n * GOLDEN_ANGLE_RAD;
+                ux = Math.cos(angle);
+                uy = Math.sin(angle);
+            }
+            finalPt = { x: truePt.x + ux * NUDGE_STEP_PX, y: truePt.y + uy * NUDGE_STEP_PX };
+        }
+
+        const ll = map.containerPointToLatLng(finalPt);
+        entry.lat = ll.lat;
+        entry.lon = ll.lng;
+        entry.marker.setLatLng(ll);
     }
-    if (n === 0) {
-        return [p.lat, p.lon];
-    }
-    const angle = n * GOLDEN_ANGLE_RAD;
-    return [p.lat + NUDGE_STEP_DEG * Math.sin(angle), p.lon + NUDGE_STEP_DEG * Math.cos(angle)];
 }
 
 function wireEvents(marker, dotnetRef, placeId) {
@@ -787,11 +864,18 @@ const ZOOM_TIER_NEAR = 9;
 //     hidden would just trade one inconsistency for another, less legible
 //     one -- a name that's ACTIVE right now reading in the "decorative,
 //     never glows" landmark style). LANDMARK_DEDUPE_KM, not exact
-//     coordinate equality: nudgeCloseLatLng (this file) can move a place's
-//     rendered position up to NUDGE_STEP_DEG away from its curated
-//     original when another LIT PLACE (not landmarks -- nudging never
-//     looks at landmarks at all) crowds the same spot, which a same-point-
-//     only check would miss.
+//     coordinate equality: independently curated datasets (landmarks.toml
+//     vs the OpenBible/Theographic-derived place records) describing the
+//     same real-world feature are not guaranteed to carry byte-identical
+//     lat/lon, so a same-point-only check could miss a real duplicate.
+//     Compared against the place's own TRUE position (`p.trueLat`/
+//     `p.trueLon`, Batch HOTFIX-2), never its rendered one -- a place's
+//     anti-overlap screen-pixel nudge (applyMarkerNudges) is a cosmetic
+//     rendering adjustment against OTHER LIT PLACES, not a fact about this
+//     place's own real-world identity/position, so it must never leak into
+//     an identity/dedupe decision like this one (a place that happens to
+//     be nudged this exact zoom, for a reason having nothing to do with
+//     ITS landmark twin, must not therefore stop deduping against it).
 //
 // (b) COLLISION DAMPING -- even after dedupe, DIFFERENT labels with no
 //     name in common at all (Bethsaida/Chorazin/Cana/Nazareth) can still
@@ -822,7 +906,7 @@ const ZOOM_TIER_NEAR = 9;
 //     observed in review, so this stays scoped to the two label kinds the
 //     actual reported clutter (Galilee cluster, Mount Hermon dup) came
 //     from rather than a speculative cross-layer rewrite.
-const LANDMARK_DEDUPE_KM = 5; // == CLOSE_THRESHOLD_KM's own "same real-world spot" radius (see that constant's own comment) -- a coincidence of purpose, not a shared constant, so the two stay independently tunable
+const LANDMARK_DEDUPE_KM = 5; // "same real-world spot" radius for two independently curated datasets describing the same feature -- see the DEDUPE comment above for why this is checked against a place's TRUE position, never its rendered/nudged one
 const COLLISION_CELL_PX = 72; // picked by screenshot review (see batch report) against real rendered label widths at .atlas-label's .78rem / .landmark-label's .68rem (app.css)
 const PLACE_PRIORITY_BASE = 1000; // + brightness (1-5): unconditionally beats every landmark's own 0-2 priority below
 const LANDMARK_KIND_PRIORITY = { water: 2, mountain: 1, region: 0 };
@@ -1063,6 +1147,19 @@ function applyLabelTier(inst) {
     }
 }
 
+// Plain equirectangular-approximation distance in km (not geodesically
+// precise) -- more than good enough at the few-km scale isDedupedByLitPlace
+// below decides "same real-world feature" at, and far cheaper than a real
+// haversine. Batch HOTFIX-2: this is now used ONLY for that landmark/place
+// dedupe check -- marker anti-overlap nudging moved to screen-pixel space
+// (applyMarkerNudges above) and no longer needs a ground-distance function
+// at all.
+function approxKm(lat1, lon1, lat2, lon2) {
+    const dLat = (lat1 - lat2) * 111.32;
+    const dLon = (lon1 - lon2) * 111.32 * Math.cos((lat1 + lat2) / 2 * Math.PI / 180);
+    return Math.sqrt(dLat * dLat + dLon * dLon);
+}
+
 // See applyLabelTier's own DEDUPE comment (above this file's
 // LANDMARK_DEDUPE_KM constant) for the full rule. `litByName` is keyed by
 // slugify(name) -- the same normalization the landmark-{slug}/polity-
@@ -1073,7 +1170,9 @@ function isDedupedByLitPlace(landmark, litByName) {
     if (!list) {
         return false;
     }
-    return list.some(p => approxKm(landmark.lat, landmark.lon, p.lat, p.lon) <= LANDMARK_DEDUPE_KM);
+    // p.trueLat/p.trueLon (Batch HOTFIX-2), not p.lat/p.lon -- see the
+    // DEDUPE comment above LANDMARK_DEDUPE_KM's own declaration for why.
+    return list.some(p => approxKm(landmark.lat, landmark.lon, p.trueLat, p.trueLon) <= LANDMARK_DEDUPE_KM);
 }
 
 function esc(value) {
@@ -1240,6 +1339,29 @@ export function debugIsPointOnLand(id, lat, lon) {
     const pt = inst.map.latLngToLayerPoint([lat, lon]);
     const domPoint = new DOMPoint(pt.x, pt.y);
     return inst.polities._landMaskPaths.some(p => p.isPointInFill(domPoint));
+}
+
+// Batch HOTFIX-2, test-support-only (same treatment as debugLiveInstanceIds/
+// debugIsPointOnLand above -- never called from production Blazor code,
+// MapInterop.cs has no wrapper for it): where a WIRE (lat, lon) -- e.g. a
+// scene place's own `lat`/`lon` straight from `GET /api/scene...`, before
+// any anti-overlap nudge -- projects to on screen at the map's CURRENT
+// zoom/pan, via Leaflet's own real projection (not a reimplementation a
+// test would have to keep in sync by hand). Lets a UI test compare a
+// marker's ACTUAL rendered position (its own bounding box, measured the
+// same way every other test in this suite already does) against where its
+// TRUE, un-nudged position would render, and assert the gap stays within
+// the brief's own ~20px anti-overlap sanity bound -- see
+// applyMarkerNudges' own NUDGE_STEP_PX comment for why that bound always
+// holds. Returns null for an unknown id, same defensive shape
+// debugIsPointOnLand already uses.
+export function debugTrueScreenPoint(id, lat, lon) {
+    const inst = instances.get(id);
+    if (!inst) {
+        return null;
+    }
+    const pt = inst.map.latLngToContainerPoint([lat, lon]);
+    return { x: pt.x, y: pt.y };
 }
 
 // Sets/clears the legend's isolate filter (Task 12, WORLD-4): `narrativeId`
