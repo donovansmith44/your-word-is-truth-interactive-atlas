@@ -1906,3 +1906,45 @@ book = "DEU"
 verses = ["DEU.5.6-21"]
 ref_note = "Deuteronomy 5:6-21 read directly against the compiled KJV text -- Moses's own recitation of the Ten Commandments to the second generation at Moab, forty years after Sinai (the wider chapter, DEU.5.1-33, also carries Moses's own introduction, vv.1-5, and the people's own fearful response, vv.22-33; this witness row is scoped to the Commandments themselves, matching data/curated/catechism-deut5.toml's own per-commandment citations exactly, DEU.5.7 through DEU.5.21). Verse-for-verse alignment against Exodus 20 (Deuteronomy runs one verse ahead of Exodus from the Sabbath commandment onward, owing to Deuteronomy's own intervening vv.6,15) is independently established in that same file, per-commandment -- this witness row's own range agrees with it, the same primary/parallel relationship the catechism layer already establishes (Exodus 20 the item-level citation, Deuteronomy 5 the 'deut5-parallel' supplement). NOTE (disclosed): the full chapter (33 verses) exceeds this codebase's own pre-existing 20-verse-per-witness-group wire cap (scene::verse_groups_for's own `take(20)`, a general wire-economy limit predating this batch, never before exercised by any curated witness -- see batch-w1-report.md); scoping to the 16-verse Commandments-proper span is both a MORE precise citation for 'the Commandments' specifically and avoids that cap, rather than silently truncating a wider claim."
 
+# --- Batch W2 (whole-Bible titled verse containers, second run -- historical
+# books, Samuel/Kings/Chronicles). PRIMARY parallel source: William Day
+# Crockett, "A Harmony of the Books of Samuel, Kings and Chronicles" (1897,
+# public domain) -- obtained, verified, and licensed per LICENSES.md's own
+# "Crockett's Harmony of Samuel, Kings, and Chronicles" row and
+# batch-w2-report.md's own full fetch/verification record. Every citation
+# below (Crockett-sourced or otherwise) was independently read directly
+# against the compiled KJV text before being written, the SAME standing
+# citation-integrity rule Robertson's own witness rows follow above.
+# `robertson_section` is deliberately left `None` throughout this section
+# (that field names Robertson's own 1922 Gospel Harmony specifically, per
+# its own doc comment -- reusing it for a different, unrelated 1897 OT
+# harmony would be a false attribution); each Crockett-sourced citation
+# instead names its own section number plainly in `ref_note`, the same
+# disclosure convention `atlas_section`/`acts_section` already established
+# for non-Robertson provenance.
+
+# --- 2 Samuel 22 <-> Psalm 18 (req 1b's own NAMED CASE, Crockett section 93,
+# independently confirmed against the Appendix's own "VI. FROM THE PSALMS"
+# table: "David's Song of Thanksgiving. Psalm 18:1-50. 2 Samuel 22:1-51.")
+# -- PSA is not yet a container-covered book this run (W3/W4), but a
+# witness verse-range into a not-yet-covered book is legal per the brief's
+# own explicit cross-book note; authored now so the parallel is live
+# immediately. Boundary-verified directly: PSA.18.1's own superscription
+# ("who spake unto the Lord the words of this song in the day that the
+# Lord delivered him from the hand of all his enemies, and from the hand
+# of Saul") and PSA.18.50's own closing line ("sheweth mercy to his
+# anointed, to David, and to his seed for evermore") match 2SA.22.1/22.51
+# nearly verbatim -- genuinely the same song, not merely a thematic
+# echo. -----------------------------------------------------------------
+[[witness]]
+event_id = "sam2_davids_song"
+book = "2SA"
+verses = ["2SA.22.1-51"]
+ref_note = "2 Samuel 22:1-51 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete (the pw_bethany/72-row precedent: once any witness exists, the top-level book needs its own explicit row)."
+
+[[witness]]
+event_id = "sam2_davids_song"
+book = "PSA"
+verses = ["PSA.18.1-50"]
+ref_note = "Psalm 18:1-50 read directly against the compiled KJV text -- Crockett (1897) section 93, 'David's Song of Thanksgiving.'"
+
