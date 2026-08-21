@@ -31796,7 +31796,7 @@
       }
     ],
     "robertson_section": "Robertson (1922) §152, \"Going Forth to Gethsemane, Jesus Suffers Long in Agony\"",
-    "ref_note": "Matthew 26:36-56, Mark 14:32-52, Luke 22:39-53, John 18:1-12 all read directly (see event-witnesses.toml)",
+    "ref_note": "Matthew 26:36-56, Mark 14:32-52, Luke 22:39-53, John 18:1-12 all read directly (see event-witnesses.toml). Batch T2 (period 10): this event's own witness ranges already fully subsume Robertson's own separate §153 (\"Jesus Is Betrayed, Arrested, and Forsaken,\" Matt 26:47-56 etc.) -- a disclosed widening from Batch T's own original curation (same precedent as pw_golgotha's own §164 note below), not a gap; no separate container authored for §153.",
     "order_key": 6000
   },
   {
@@ -31928,8 +31928,688 @@
       }
     ],
     "robertson_section": "Robertson (1922) §164, \"The First Three Hours on the Cross\"",
-    "ref_note": "Matthew 27:33-50, Mark 15:22-37, Luke 23:33-46, John 19:17-30 all read directly (see event-witnesses.toml); Robertson's own §164 covers only the first three hours of a longer sequence of Harmony sections -- this app's own coarser 'event' groups the whole crucifixion scene per Gospel, a disclosed widening of Robertson's own narrower section boundary, not a mis-citation",
+    "ref_note": "Matthew 27:33-50, Mark 15:22-37, Luke 23:33-46, John 19:17-30 all read directly (see event-witnesses.toml); Robertson's own §164 covers only the first three hours of a longer sequence of Harmony sections -- this app's own coarser 'event' groups the whole crucifixion scene per Gospel, a disclosed widening of Robertson's own narrower section boundary, not a mis-citation. Batch T2 (period 10): this same widening also fully subsumes Robertson's own separate §165 (\"The Three Hours of Darkness,\" Matt 27:45-50 etc., a subset of this event's own MAT/MRK/LUK/JHN witness ranges) -- no separate container authored for §165. It does NOT reach §166 (the phenomena accompanying Christ's death, Matt 27:51-56 -- outside this event's own MAT.27.33-50 upper bound), which is curated as its own container below.",
     "order_key": 7000
+  },
+  {
+    "id": "rob_before_annas",
+    "label": "Jesus is first examined by Annas",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.18.12",
+      "JHN.18.13",
+      "JHN.18.14",
+      "JHN.18.19",
+      "JHN.18.20",
+      "JHN.18.21",
+      "JHN.18.22",
+      "JHN.18.23"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §154, \"Jesus First Examined by Annas, the Ex-High Priest\"",
+    "ref_note": "John 18:12-14, 19-23 read directly against the compiled KJV text; single witness (John alone)",
+    "order_key": 6100
+  },
+  {
+    "id": "rob_tried_by_caiaphas",
+    "label": "Jesus is tried and condemned by Caiaphas and the Sanhedrin",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.26.57",
+      "MAT.26.59",
+      "MAT.26.60",
+      "MAT.26.61",
+      "MAT.26.62",
+      "MAT.26.63",
+      "MAT.26.64",
+      "MAT.26.65",
+      "MAT.26.66",
+      "MAT.26.67",
+      "MAT.26.68"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.14.53",
+            "MRK.14.55",
+            "MRK.14.56",
+            "MRK.14.57",
+            "MRK.14.58",
+            "MRK.14.59",
+            "MRK.14.60",
+            "MRK.14.61",
+            "MRK.14.62",
+            "MRK.14.63",
+            "MRK.14.64",
+            "MRK.14.65"
+          ]
+        },
+        "ref_note": "Mark 14:53, 55-65 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §155"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.22.63",
+            "LUK.22.64",
+            "LUK.22.65"
+          ]
+        },
+        "ref_note": "Luke 22:63-65 read directly against the compiled KJV text; Robertson's own table also lists Luke 22:54, but that verse is rob_peter_denies's own anchor -- see this event's own ref_note above",
+        "robertson_section": "Robertson (1922) §155"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.18.24"
+          ]
+        },
+        "ref_note": "John 18:24 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §155"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §155, \"Jesus Hurriedly Tried and Condemned by Caiaphas and the Sanhedrin, Who Mock and Buffet Him\"",
+    "ref_note": "Matthew 26:57, 59-68, Mark 14:53, 55-65, Luke 22:63-65, and John 18:24 all read directly against the compiled KJV text; Robertson's own table also lists Luke 22:54, but that verse is rob_peter_denies's own anchor (Luke interleaves the trial and Peter's denial starting from that same scene-setting verse, 'brought him into the high priest's house. And Peter followed afar off') -- kept there instead of duplicated here, a within-layer anchor collision this batch's own validation caught directly",
+    "order_key": 6200
+  },
+  {
+    "id": "rob_peter_denies",
+    "label": "Peter thrice denies his Lord",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.26.58",
+      "MAT.26.69",
+      "MAT.26.70",
+      "MAT.26.71",
+      "MAT.26.72",
+      "MAT.26.73",
+      "MAT.26.74",
+      "MAT.26.75"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.14.54",
+            "MRK.14.66",
+            "MRK.14.67",
+            "MRK.14.68",
+            "MRK.14.69",
+            "MRK.14.70",
+            "MRK.14.71",
+            "MRK.14.72"
+          ]
+        },
+        "ref_note": "Mark 14:54, 66-72 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §156"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.22.54",
+            "LUK.22.55",
+            "LUK.22.56",
+            "LUK.22.57",
+            "LUK.22.58",
+            "LUK.22.59",
+            "LUK.22.60",
+            "LUK.22.61",
+            "LUK.22.62"
+          ]
+        },
+        "ref_note": "Luke 22:54-62 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §156"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.18.15",
+            "JHN.18.16",
+            "JHN.18.17",
+            "JHN.18.18",
+            "JHN.18.25",
+            "JHN.18.26",
+            "JHN.18.27"
+          ]
+        },
+        "ref_note": "John 18:15-18, 25-27 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §156"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §156, \"Peter Thrice Denies His Lord\"",
+    "ref_note": "Matthew 26:58, 69-75, Mark 14:54, 66-72, Luke 22:54-62, and John 18:15-18, 25-27 all read directly against the compiled KJV text",
+    "order_key": 6300
+  },
+  {
+    "id": "rob_formally_condemned",
+    "label": "After dawn, Jesus is formally condemned by the Sanhedrin",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.27.1"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.22.66",
+            "LUK.22.67",
+            "LUK.22.68",
+            "LUK.22.69",
+            "LUK.22.70",
+            "LUK.22.71"
+          ]
+        },
+        "ref_note": "Luke 22:66-71 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §157"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §157, \"After Dawn, Jesus Is Formally Condemned by the Sanhedrin\"",
+    "ref_note": "Matthew 27:1 and Luke 22:66-71 both read directly against the compiled KJV text; Robertson's own table also lists Mark 15:1, but that single verse conflates BOTH the formal condemnation and the handover to Pilate ('bound Jesus, and carried him away, and delivered him to Pilate') -- Mark's own account does not cleanly separate the two the way Matthew/Luke do, so it is kept as rob_before_pilate_1's own anchor instead (its own clean 15:1-5 span) rather than duplicated here, a within-layer anchor collision this batch's own validation caught directly",
+    "order_key": 6400
+  },
+  {
+    "id": "rob_judas_suicide",
+    "label": "The remorse and suicide of Judas",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.27.3",
+      "MAT.27.4",
+      "MAT.27.5",
+      "MAT.27.6",
+      "MAT.27.7",
+      "MAT.27.8",
+      "MAT.27.9",
+      "MAT.27.10"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §158, \"Remorse and Suicide of Judas the Betrayer\"",
+    "ref_note": "Matthew 27:3-10 read directly against the compiled KJV text; single witness (Matthew alone)",
+    "order_key": 6500
+  },
+  {
+    "id": "rob_before_pilate_1",
+    "label": "Jesus before Pilate the first time",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.27.2",
+      "MAT.27.11",
+      "MAT.27.12",
+      "MAT.27.13",
+      "MAT.27.14"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.15.1",
+            "MRK.15.2",
+            "MRK.15.3",
+            "MRK.15.4",
+            "MRK.15.5"
+          ]
+        },
+        "ref_note": "Mark 15:1-5 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §159"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.23.1",
+            "LUK.23.2",
+            "LUK.23.3",
+            "LUK.23.4",
+            "LUK.23.5"
+          ]
+        },
+        "ref_note": "Luke 23:1-5 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §159"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.18.28",
+            "JHN.18.29",
+            "JHN.18.30",
+            "JHN.18.31",
+            "JHN.18.32",
+            "JHN.18.33",
+            "JHN.18.34",
+            "JHN.18.35",
+            "JHN.18.36",
+            "JHN.18.37",
+            "JHN.18.38"
+          ]
+        },
+        "ref_note": "John 18:28-38 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §159"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §159, \"Jesus before Pilate the First Time\"",
+    "ref_note": "Matthew 27:2, 11-14, Mark 15:1-5, Luke 23:1-5, and John 18:28-38 all read directly against the compiled KJV text",
+    "order_key": 6600
+  },
+  {
+    "id": "rob_before_herod",
+    "label": "Jesus before Herod Antipas the tetrarch",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "LUK.23.6",
+      "LUK.23.7",
+      "LUK.23.8",
+      "LUK.23.9",
+      "LUK.23.10",
+      "LUK.23.11",
+      "LUK.23.12"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §160, \"Jesus before Herod Antipas the Tetrarch\"",
+    "ref_note": "Luke 23:6-12 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 6700
+  },
+  {
+    "id": "rob_before_pilate_2",
+    "label": "Jesus the second time before Pilate; Barabbas released",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.27.15",
+      "MAT.27.16",
+      "MAT.27.17",
+      "MAT.27.18",
+      "MAT.27.19",
+      "MAT.27.20",
+      "MAT.27.21",
+      "MAT.27.22",
+      "MAT.27.23",
+      "MAT.27.24",
+      "MAT.27.25",
+      "MAT.27.26"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.15.6",
+            "MRK.15.7",
+            "MRK.15.8",
+            "MRK.15.9",
+            "MRK.15.10",
+            "MRK.15.11",
+            "MRK.15.12",
+            "MRK.15.13",
+            "MRK.15.14",
+            "MRK.15.15"
+          ]
+        },
+        "ref_note": "Mark 15:6-15 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §161"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.23.13",
+            "LUK.23.14",
+            "LUK.23.15",
+            "LUK.23.16",
+            "LUK.23.17",
+            "LUK.23.18",
+            "LUK.23.19",
+            "LUK.23.20",
+            "LUK.23.21",
+            "LUK.23.22",
+            "LUK.23.23",
+            "LUK.23.24",
+            "LUK.23.25"
+          ]
+        },
+        "ref_note": "Luke 23:13-25 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §161"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.18.39",
+            "JHN.19.1",
+            "JHN.19.2",
+            "JHN.19.3",
+            "JHN.19.4",
+            "JHN.19.5",
+            "JHN.19.6",
+            "JHN.19.7",
+            "JHN.19.8",
+            "JHN.19.9",
+            "JHN.19.10",
+            "JHN.19.11",
+            "JHN.19.12",
+            "JHN.19.13",
+            "JHN.19.14",
+            "JHN.19.15",
+            "JHN.19.16"
+          ]
+        },
+        "ref_note": "John 18:39-19:16 read directly against the compiled KJV text; written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string",
+        "robertson_section": "Robertson (1922) §161"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §161, \"Jesus the Second Time before Pilate\"",
+    "ref_note": "Matthew 27:15-26, Mark 15:6-15, Luke 23:13-25, and John 18:39-19:16 all read directly against the compiled KJV text",
+    "order_key": 6800
+  },
+  {
+    "id": "rob_soldiers_mock",
+    "label": "The Roman soldiers mock Jesus",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.27.27",
+      "MAT.27.28",
+      "MAT.27.29",
+      "MAT.27.30"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.15.16",
+            "MRK.15.17",
+            "MRK.15.18",
+            "MRK.15.19"
+          ]
+        },
+        "ref_note": "Mark 15:16-19 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §162"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §162, \"The Roman Soldiers Mock Jesus\"",
+    "ref_note": "Matthew 27:27-30 and Mark 15:16-19 both read directly against the compiled KJV text",
+    "order_key": 6900
+  },
+  {
+    "id": "rob_way_to_golgotha",
+    "label": "Jesus is led away on the road to Golgotha",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.27.31",
+      "MAT.27.32",
+      "MAT.27.33",
+      "MAT.27.34"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.15.20",
+            "MRK.15.21",
+            "MRK.15.22",
+            "MRK.15.23"
+          ]
+        },
+        "ref_note": "Mark 15:20-23 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §163"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.23.26",
+            "LUK.23.27",
+            "LUK.23.28",
+            "LUK.23.29",
+            "LUK.23.30",
+            "LUK.23.31",
+            "LUK.23.32",
+            "LUK.23.33"
+          ]
+        },
+        "ref_note": "Luke 23:26-33 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §163"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.19.16",
+            "JHN.19.17"
+          ]
+        },
+        "ref_note": "John 19:16-17 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §163"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §163, \"Jesus on the Way to the Cross (Via Dolorosa) on Golgotha\"",
+    "ref_note": "Matthew 27:31-34, Mark 15:20-23, Luke 23:26-33, and John 19:16-17 all read directly against the compiled KJV text",
+    "order_key": 6950
+  },
+  {
+    "id": "rob_death_phenomena",
+    "label": "The phenomena accompanying the death of Christ",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "golgotha"
+    ],
+    "verses": [
+      "MAT.27.51",
+      "MAT.27.52",
+      "MAT.27.53",
+      "MAT.27.54",
+      "MAT.27.55",
+      "MAT.27.56"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.15.38",
+            "MRK.15.39",
+            "MRK.15.40",
+            "MRK.15.41"
+          ]
+        },
+        "ref_note": "Mark 15:38-41 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §166"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.23.45",
+            "LUK.23.47",
+            "LUK.23.48",
+            "LUK.23.49"
+          ]
+        },
+        "ref_note": "Luke 23:45, 47-49 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §166"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §166, \"The Phenomena Accompanying the Death of Christ\"",
+    "ref_note": "Matthew 27:51-56, Mark 15:38-41, and Luke 23:45, 47-49 all read directly against the compiled KJV text",
+    "order_key": 7100
+  },
+  {
+    "id": "rob_burial",
+    "label": "The burial of Jesus's body in Joseph of Arimathea's tomb",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "golgotha"
+    ],
+    "verses": [
+      "MAT.27.57",
+      "MAT.27.58",
+      "MAT.27.59",
+      "MAT.27.60"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.15.42",
+            "MRK.15.43",
+            "MRK.15.44",
+            "MRK.15.45",
+            "MRK.15.46"
+          ]
+        },
+        "ref_note": "Mark 15:42-46 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §167"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.23.50",
+            "LUK.23.51",
+            "LUK.23.52",
+            "LUK.23.53",
+            "LUK.23.54"
+          ]
+        },
+        "ref_note": "Luke 23:50-54 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §167"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.19.31",
+            "JHN.19.32",
+            "JHN.19.33",
+            "JHN.19.34",
+            "JHN.19.35",
+            "JHN.19.36",
+            "JHN.19.37",
+            "JHN.19.38",
+            "JHN.19.39",
+            "JHN.19.40",
+            "JHN.19.41",
+            "JHN.19.42"
+          ]
+        },
+        "ref_note": "John 19:31-42 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §167"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §167, \"The Burial of the Body of Jesus in the Tomb of Joseph of Arimathea after Proof of His Death\"",
+    "ref_note": "Matthew 27:57-60, Mark 15:42-46, Luke 23:50-54, and John 19:31-42 all read directly against the compiled KJV text; John's own text (19:41) places the tomb 'in the garden,' near Golgotha -- golgotha kept as the nearest named compiled place",
+    "order_key": 7200
+  },
+  {
+    "id": "rob_watch_of_women",
+    "label": "The women keep watch by the tomb",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "golgotha"
+    ],
+    "verses": [
+      "MAT.27.61",
+      "MAT.27.62",
+      "MAT.27.63",
+      "MAT.27.64",
+      "MAT.27.65",
+      "MAT.27.66"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §168, \"The Watch of the Women by the Tomb of Jesus\"",
+    "ref_note": "Matthew 27:61-66, Mark 15:47, and Luke 23:55-56 all read directly against the compiled KJV text",
+    "order_key": 7300
   },
   {
     "id": "pw_jerusalem_resurrection",
