@@ -68,7 +68,7 @@ pub fn compose_scripture_scene(d: &AtlasData, r: &ScriptureRef) -> Scene {
         places.push(ScenePlace {
             id: place.id.clone(),
             name: place.name.clone(),
-            display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), None),
+            display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), None, d.place_name_alias_for(&place.id)),
             lat: place.lat,
             lon: place.lon,
             brightness: (events.len().min(5)) as u8,
@@ -170,7 +170,7 @@ fn lit_places(d: &AtlasData, kept: &[&Event], r: Option<&ScriptureRef>, name_win
             Some(ScenePlace {
                 id: place.id.clone(),
                 name: place.name.clone(),
-                display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), name_window),
+                display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), name_window, d.place_name_alias_for(&place.id)),
                 lat: place.lat,
                 lon: place.lon,
                 brightness: (evs.len().min(5)) as u8,
@@ -219,7 +219,7 @@ fn quiet_places(d: &AtlasData, lit: &[ScenePlace], window: TimeRange) -> Vec<Qui
             let (existence_from, existence_to) = resolve_existence(d.place_history_for(&place.id));
             Some(QuietPlace {
                 id: place.id.clone(),
-                display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), Some(window)),
+                display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), Some(window), d.place_name_alias_for(&place.id)),
                 lat: place.lat,
                 lon: place.lon,
                 total_events: d.total_events_for(id),
@@ -999,7 +999,7 @@ mod tests {
             // sides can never contradict each other for one window.
             for qp in &s.quiet_places {
                 let place = d.place_by_id(&qp.id).unwrap();
-                let expected_name = resolve_display_name(&place.name, d.place_history_for(&place.id), Some(w));
+                let expected_name = resolve_display_name(&place.name, d.place_history_for(&place.id), Some(w), d.place_name_alias_for(&place.id));
                 prop_assert_eq!(&qp.display_name, &expected_name);
             }
         }

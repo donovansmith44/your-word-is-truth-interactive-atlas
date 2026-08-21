@@ -38,6 +38,18 @@ pub fn resolve<'a>(translations: &'a HashMap<String, Vec<String>>, code: &str) -
     translations.get(code).map(|v| v.as_slice()).ok_or_else(|| CoreError::UnknownTranslation(code.to_string()))
 }
 
+/// Batch E3 (KJV display-name alias layer): sibling to [`resolve`] above,
+/// same fail-loud lookup, same case-sensitive-by-design reasoning -- but for
+/// a `PlaceNameAlias::translations`-shaped map (translation code -> ONE
+/// display name), not `EventWitness::translations`'s translation -> verse
+/// SET shape. A place's curated KJV alias travels exactly this same
+/// indirection ("kjv is the only key today; identity survives future
+/// translations" -- batch-e3-brief.md requirement 1) so a future ESV/NASB
+/// alias can be added under the SAME place identity without restructuring.
+pub fn resolve_name<'a>(names: &'a HashMap<String, String>, code: &str) -> Result<&'a str, CoreError> {
+    names.get(code).map(|s| s.as_str()).ok_or_else(|| CoreError::UnknownTranslation(code.to_string()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -74,5 +86,36 @@ mod tests {
     fn resolve_against_an_empty_map_fails_loud_not_panics() {
         let translations: HashMap<String, Vec<String>> = HashMap::new();
         assert!(resolve(&translations, "kjv").is_err());
+    }
+
+    // --- Batch E3: resolve_name (place-alias sibling of resolve) -----------
+
+    fn name_map_with_kjv() -> HashMap<String, String> {
+        HashMap::from([(DEFAULT_TRANSLATION.to_string(), "Ethiopia".to_string())])
+    }
+
+    #[test]
+    fn resolve_name_kjv_returns_the_display_name() {
+        let names = name_map_with_kjv();
+        assert_eq!(resolve_name(&names, "kjv").expect("kjv is populated"), "Ethiopia");
+    }
+
+    #[test]
+    fn resolve_name_unknown_translation_fails_loud() {
+        let names = name_map_with_kjv();
+        let err = resolve_name(&names, "esv").expect_err("esv is not compiled by this atlas");
+        assert!(matches!(err, CoreError::UnknownTranslation(code) if code == "esv"));
+    }
+
+    #[test]
+    fn resolve_name_is_case_sensitive_not_a_silent_normalize() {
+        let names = name_map_with_kjv();
+        assert!(resolve_name(&names, "KJV").is_err());
+    }
+
+    #[test]
+    fn resolve_name_against_an_empty_map_fails_loud_not_panics() {
+        let names: HashMap<String, String> = HashMap::new();
+        assert!(resolve_name(&names, "kjv").is_err());
     }
 }

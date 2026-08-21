@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, EventWitness, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityDelta, PolityEra};
+use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, EventWitness, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
 use atlas_core::merge::PlaceMerge;
 use atlas_core::time::TimeRange;
 
@@ -1641,6 +1641,83 @@ fn place_history_valid_data_passes_validation() {
     }];
     let place_ids: HashSet<&str> = ["bethel-1"].into_iter().collect();
     let result = atlas_etl::validate::run_place_history(&history, &place_ids, &some_verses());
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+// ---------------------------------------------------------------------
+// place-names-kjv (Batch E3: curated.rs::parse_place_names_kjv +
+// validate.rs::run_place_names_kjv)
+// ---------------------------------------------------------------------
+
+fn cush_place() -> Place {
+    Place { id: "cush-2".into(), name: "Cush 2".into(), lat: 32.54, lon: 44.42, verse_links: vec!["GEN.2.13".into()] }
+}
+
+fn alias_row(id: &str, kjv_name: &str, verses: &[&str]) -> PlaceNameAlias {
+    PlaceNameAlias {
+        id: id.into(),
+        translations: HashMap::from([("kjv".to_string(), kjv_name.to_string())]),
+        verses: verses.iter().map(|v| v.to_string()).collect(),
+    }
+}
+
+#[test]
+fn place_names_kjv_valid_toml_parses_and_wraps_translation() {
+    let aliases = atlas_etl::curated::parse_place_names_kjv(include_str!("fixtures/place-names-kjv-sample.toml")).unwrap();
+    assert_eq!(aliases.len(), 2);
+    let cush = aliases.iter().find(|a| a.id == "cush-2").unwrap();
+    assert_eq!(cush.translations.get("kjv").map(String::as_str), Some("Ethiopia"));
+    assert_eq!(cush.verses, vec!["GEN.2.13".to_string()]);
+}
+
+#[test]
+fn place_names_kjv_unknown_place_id_fails_validation() {
+    let aliases = vec![alias_row("not-a-real-place", "Ethiopia", &["GEN.2.13"])];
+    let places = vec![cush_place()];
+    let err = atlas_etl::validate::run_place_names_kjv(&aliases, &places, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("unknown place id"), "{err}");
+}
+
+#[test]
+fn place_names_kjv_duplicate_alias_id_fails_validation() {
+    let aliases = vec![alias_row("cush-2", "Ethiopia", &["GEN.2.13"]), alias_row("cush-2", "Ethiopia", &["GEN.2.13"])];
+    let places = vec![cush_place()];
+    let err = atlas_etl::validate::run_place_names_kjv(&aliases, &places, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("duplicate"), "{err}");
+}
+
+#[test]
+fn place_names_kjv_alias_equal_to_canonical_name_fails_validation() {
+    // "Cush 2" strips (same ETL disambiguation-suffix rule resolve_display_name
+    // itself applies) to "Cush" -- an alias of exactly "Cush" for this place
+    // is pure noise, req 1's own named error case.
+    let aliases = vec![alias_row("cush-2", "Cush", &["GEN.2.13"])];
+    let places = vec![cush_place()];
+    let err = atlas_etl::validate::run_place_names_kjv(&aliases, &places, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("equal to") || err.to_string().contains("noise"), "{err}");
+}
+
+#[test]
+fn place_names_kjv_noncanonical_verse_fails_validation() {
+    let aliases = vec![alias_row("cush-2", "Ethiopia", &["NOT.A.VERSE"])];
+    let places = vec![cush_place()];
+    let err = atlas_etl::validate::run_place_names_kjv(&aliases, &places, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("not a canonical single-verse ref"), "{err}");
+}
+
+#[test]
+fn place_names_kjv_verse_missing_from_compiled_kjv_text_fails_validation() {
+    let aliases = vec![alias_row("cush-2", "Ethiopia", &["GEN.99.99"])];
+    let places = vec![cush_place()];
+    let err = atlas_etl::validate::run_place_names_kjv(&aliases, &places, &some_verses()).unwrap_err();
+    assert!(err.to_string().contains("does not exist in the compiled KJV text"), "{err}");
+}
+
+#[test]
+fn place_names_kjv_valid_data_passes_validation() {
+    let aliases = vec![alias_row("cush-2", "Ethiopia", &["GEN.28.19"])]; // reuses some_verses()'s own populated verse
+    let places = vec![cush_place()];
+    let result = atlas_etl::validate::run_place_names_kjv(&aliases, &places, &some_verses());
     assert!(result.is_ok(), "{:?}", result.err());
 }
 

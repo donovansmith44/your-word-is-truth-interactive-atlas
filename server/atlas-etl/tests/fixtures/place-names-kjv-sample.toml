@@ -1,0 +1,9 @@
+[[alias]]
+id = "cush-2"
+name = "Ethiopia"
+verses = ["GEN.2.13"]
+
+[[alias]]
+id = "tigris"
+name = "Hiddekel"
+verses = ["GEN.2.14", "DAN.10.4"]

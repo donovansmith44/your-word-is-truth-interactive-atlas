@@ -335,6 +335,33 @@ pub struct PlaceHistory {
     pub destroyed: Option<PlaceDateClaim>,
 }
 
+/// Batch E3 (KJV display-name alias layer -- owner bug report 2026-08-20:
+/// "there are two locations, cush and gihon, that are both lit up on
+/// genesis 2 even though cush isn't mentioned in gen 2:13"). ONE curated
+/// translation-keyed display-name override for a place whose plain default
+/// `Place.name` (Theographic's own canonical/modern name) is NOT the name
+/// the KJV text actually uses -- e.g. `cush-2` -> "Ethiopia" (GEN.2.13).
+/// Distinct axis from `PlaceHistory::names` (Batch E's period-accurate,
+/// TIME-windowed renames like Luz->Bethel): an alias is a single, flat,
+/// translation-keyed fact independent of any calendar window -- it is the
+/// FALLBACK `resolve_display_name` reaches for whenever no curated period
+/// name is active (including scripture mode, which has no window at all),
+/// never a competitor to an active period name. `translations` mirrors
+/// `EventWitness::translations`'s exact shape/philosophy (`crate::translation`'s
+/// own doc comment) -- `"kjv"` (`crate::translation::DEFAULT_TRANSLATION`)
+/// is the only key any curated alias carries today; the shape survives a
+/// future translation without restructuring. `verses` are the supporting
+/// citation(s) a curator checked this alias against (etl-validated: must
+/// parse and exist in the compiled KJV text) -- translation-agnostic (a
+/// canonical verse id names the same verse regardless of which
+/// translation's text is being read).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PlaceNameAlias {
+    pub id: String,
+    pub translations: HashMap<String, String>,
+    pub verses: Vec<String>,
+}
+
 /// Batch B2 ("borders v2, the cartographer's edition" -- supersedes the
 /// snapshot-year GeoJSON model Batch B/C2 shipped, `AtlasData::borders` +
 /// `nearest_border_year` below, both now deleted). One hand-authored
@@ -621,6 +648,16 @@ pub struct AtlasData {
     /// `demo_fixture()` leaves this empty too (no scene test depends on it).
     #[serde(skip)]
     pub place_history: HashMap<String, PlaceHistory>,
+
+    /// Batch E3: curated KJV display-name aliases, keyed by place id. Same
+    /// `#[serde(skip)]`-plus-bespoke-`load()` treatment as `place_history`
+    /// immediately above -- loaded from its own `place-names-kjv.json` (a
+    /// plain `Vec<PlaceNameAlias>` on disk), indexed into a map here since
+    /// every lookup site (`scene`/`handlers`) wants it by place id, same
+    /// pattern. `demo_fixture()` leaves this empty too (no scene test
+    /// depends on it).
+    #[serde(skip)]
+    pub place_name_aliases: HashMap<String, PlaceNameAlias>,
 
     /// Batch R requirement 1: the curated land mask (`data/curated/land-mask.toml`,
     /// compiled to `land-mask.json`) -- every region's own rings, flattened
@@ -1120,6 +1157,13 @@ impl AtlasData {
         self.place_history.get(id)
     }
 
+    /// Batch E3: this place's curated KJV display-name alias, if any (most
+    /// places have none -- `place_name_aliases` only covers the places a
+    /// curator hand-verified against the actual KJV text).
+    pub fn place_name_alias_for(&self, id: &str) -> Option<&PlaceNameAlias> {
+        self.place_name_aliases.get(id)
+    }
+
     /// Batch E2: ids of every event-bearing place ("cities in our graph",
     /// user direction 2026-08-19 quoted in batch-e2-brief.md) -- the fixed-
     /// cardinality set QUIET-1 checks `places` union `quiet_places` against
@@ -1237,6 +1281,9 @@ impl AtlasData {
         let place_history_list: Vec<PlaceHistory> = read_json(dir, "place-history.json")?;
         let place_history: HashMap<String, PlaceHistory> =
             place_history_list.into_iter().map(|h| (h.id.clone(), h)).collect();
+        let place_name_alias_list: Vec<PlaceNameAlias> = read_json(dir, "place-names-kjv.json")?;
+        let place_name_aliases: HashMap<String, PlaceNameAlias> =
+            place_name_alias_list.into_iter().map(|a| (a.id.clone(), a)).collect();
         // Batch R requirement 1: `land-mask.json` is already the flattened
         // `Vec<Vec<(f64, f64)>>` shape (see `curated::parse_land_mask`'s own
         // doc comment for why region names/ref_notes never leave the ETL
@@ -1250,6 +1297,7 @@ impl AtlasData {
         let mut data = Self::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs);
         data.polities = polities;
         data.place_history = place_history;
+        data.place_name_aliases = place_name_aliases;
         data.landmarks = landmarks;
         data.land_mask = land_mask;
         data.catechism = catechism;
