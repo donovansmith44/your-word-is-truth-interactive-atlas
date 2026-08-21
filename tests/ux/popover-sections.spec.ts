@@ -267,7 +267,7 @@ test('BLINK-1: prefers-reduced-motion disables the pulse animation on .atlas-bli
 // asked three separate times): the verse->item->proof-verse hop, Luther's
 // own verbatim explanation heading, and passage aggregation. All against
 // REAL curated data/curated/catechism.toml content (MAT.28.19, "Baptism —
-// Part the First," is Luther's own institution-of-Baptism proof text --
+// Part One," is Luther's own institution-of-Baptism proof text --
 // the exact "Baptism institution verse" example the batch brief itself
 // names) -- not the demo fixture (that's atlas-server's own Rust-level
 // integration test; this suite runs against the real compiled dataset).
@@ -283,7 +283,7 @@ test('CATECH-1: the Baptism institution verse shows THE SMALL CATECHISM section 
 
   const items = page.getByTestId(/^catechism-item-/);
   await expect(items).toHaveCount(1);
-  await expect(page.getByTestId('catechism-item-baptism-1')).toHaveText('Baptism — Part the First');
+  await expect(page.getByTestId('catechism-item-baptism-1')).toHaveText('Baptism — Part One');
 
   // Section order: verse-text, then xrefs (if any), then catechism -- last,
   // per REGISTRY-1's own VERSE ordering (verse-text, cross-references,
@@ -299,7 +299,7 @@ test('CATECH-1: verse -> catechism item -> proof verse hop, with Luther\'s own v
   await page.getByTestId('catechism-item-baptism-1').click();
 
   // The CatechismNode popover: title is the item's own display name.
-  await expect(page.getByTestId('popover-title')).toHaveText('Baptism — Part the First');
+  await expect(page.getByTestId('popover-title')).toHaveText('Baptism — Part One');
 
   // "What is Baptism?" is Luther's OWN bespoke heading for this specific
   // item (NOT the generic "What does this mean?") -- rendered verbatim as
@@ -310,7 +310,7 @@ test('CATECH-1: verse -> catechism item -> proof verse hop, with Luther\'s own v
   await expect(explanationSection.getByTestId('catechism-section-heading')).toHaveText('What is Baptism?');
   await expect(explanationSection).toContainText('Baptism is not simple water only');
 
-  // Baptism Part the First has no separate prompt text of its own (text is
+  // Baptism Part One has no separate prompt text of its own (text is
   // absent -- see CatechismItem's doc comment) -- no catechism-text section.
   await expect(page.getByTestId('popover-section-catechism-text')).toHaveCount(0);
 
