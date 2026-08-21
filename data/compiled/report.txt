@@ -4,7 +4,7 @@ Bible Atlas ETL report
 Compiled file counts:
   canon.json        66 books
   places.json       1373 places
-  events.json       605 events
+  events.json       618 events
   narratives.json   13 narratives
   eras.json         10 eras
   books-meta.json   66 rows
@@ -23,7 +23,7 @@ Narrative leg counts:
   exile: 5 legs
   exodus: 10 legs
   jacob-journeys: 8 legs
-  jesus-ministry: 55 legs
+  jesus-ministry: 68 legs
   joseph-to-egypt: 6 legs
   passion-week: 9 legs
   paul-first-journey: 10 legs

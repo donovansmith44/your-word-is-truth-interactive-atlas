@@ -27138,6 +27138,780 @@
     "order_key": 580
   },
   {
+    "id": "rob_sinful_woman",
+    "label": "A sinful woman anoints Jesus's feet in a Pharisee's house",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "LUK.7.36",
+      "LUK.7.37",
+      "LUK.7.38",
+      "LUK.7.39",
+      "LUK.7.40",
+      "LUK.7.41",
+      "LUK.7.42",
+      "LUK.7.43",
+      "LUK.7.44",
+      "LUK.7.45",
+      "LUK.7.46",
+      "LUK.7.47",
+      "LUK.7.48",
+      "LUK.7.49",
+      "LUK.7.50"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §59, \"The Anointing of Christ's Feet by a Sinful Woman in the House of Simon a Pharisee. The Parable of the Two Debtors\"",
+    "ref_note": "Luke 7:36-50 read directly against the compiled KJV text; single witness (Luke alone); no town is named -- galilee-1 kept as the broad region",
+    "order_key": 590
+  },
+  {
+    "id": "rob_second_galilee_tour",
+    "label": "The second tour of Galilee",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "LUK.8.1",
+      "LUK.8.2",
+      "LUK.8.3"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §60, \"The Second Tour of Galilee\"",
+    "ref_note": "Luke 8:1-3 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 600
+  },
+  {
+    "id": "rob_beelzebub_accusation",
+    "label": "The Pharisees accuse Jesus of league with Beelzebub",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.12.22",
+      "MAT.12.23",
+      "MAT.12.24",
+      "MAT.12.25",
+      "MAT.12.26",
+      "MAT.12.27",
+      "MAT.12.28",
+      "MAT.12.29",
+      "MAT.12.30",
+      "MAT.12.31",
+      "MAT.12.32",
+      "MAT.12.33",
+      "MAT.12.34",
+      "MAT.12.35",
+      "MAT.12.36",
+      "MAT.12.37"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.3.19",
+            "MRK.3.20",
+            "MRK.3.21",
+            "MRK.3.22",
+            "MRK.3.23",
+            "MRK.3.24",
+            "MRK.3.25",
+            "MRK.3.26",
+            "MRK.3.27",
+            "MRK.3.28",
+            "MRK.3.29",
+            "MRK.3.30"
+          ]
+        },
+        "ref_note": "Mark 3:19-30 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §61"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §61, \"Blasphemous Accusation of League with Beelzebub\"",
+    "ref_note": "Matthew 12:22-37 and Mark 3:19-30 both read directly against the compiled KJV text",
+    "order_key": 610
+  },
+  {
+    "id": "rob_sign_demanded",
+    "label": "The scribes and Pharisees demand a sign",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.12.38",
+      "MAT.12.39",
+      "MAT.12.40",
+      "MAT.12.41",
+      "MAT.12.42",
+      "MAT.12.43",
+      "MAT.12.44",
+      "MAT.12.45"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §62, \"Scribes and Pharisees Demand a Sign\"",
+    "ref_note": "Matthew 12:38-45 read directly against the compiled KJV text; single witness (Matthew alone)",
+    "order_key": 620
+  },
+  {
+    "id": "rob_mother_brethren",
+    "label": "Jesus's mother and brothers seek to take him home",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.12.46",
+      "MAT.12.47",
+      "MAT.12.48",
+      "MAT.12.49",
+      "MAT.12.50"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.3.31",
+            "MRK.3.32",
+            "MRK.3.33",
+            "MRK.3.34",
+            "MRK.3.35"
+          ]
+        },
+        "ref_note": "Mark 3:31-35 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §63"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.8.19",
+            "LUK.8.20",
+            "LUK.8.21"
+          ]
+        },
+        "ref_note": "Luke 8:19-21 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §63"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §63, \"Christ's Mother and Brethren Seek to Take Him Home\"",
+    "ref_note": "Matthew 12:46-50, Mark 3:31-35, and Luke 8:19-21 all read directly against the compiled KJV text",
+    "order_key": 630
+  },
+  {
+    "id": "rob_first_parable_group",
+    "label": "The first great group of parables",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "sea-of-galilee"
+    ],
+    "verses": [
+      "MAT.13.1",
+      "MAT.13.2",
+      "MAT.13.3",
+      "MAT.13.4",
+      "MAT.13.5",
+      "MAT.13.6",
+      "MAT.13.7",
+      "MAT.13.8",
+      "MAT.13.9",
+      "MAT.13.10",
+      "MAT.13.11",
+      "MAT.13.12",
+      "MAT.13.13",
+      "MAT.13.14",
+      "MAT.13.15",
+      "MAT.13.16",
+      "MAT.13.17",
+      "MAT.13.18",
+      "MAT.13.19",
+      "MAT.13.20",
+      "MAT.13.21",
+      "MAT.13.22",
+      "MAT.13.23",
+      "MAT.13.24",
+      "MAT.13.25",
+      "MAT.13.26",
+      "MAT.13.27",
+      "MAT.13.28",
+      "MAT.13.29",
+      "MAT.13.30",
+      "MAT.13.31",
+      "MAT.13.32",
+      "MAT.13.33",
+      "MAT.13.34",
+      "MAT.13.35",
+      "MAT.13.36",
+      "MAT.13.37",
+      "MAT.13.38",
+      "MAT.13.39",
+      "MAT.13.40",
+      "MAT.13.41",
+      "MAT.13.42",
+      "MAT.13.43",
+      "MAT.13.44",
+      "MAT.13.45",
+      "MAT.13.46",
+      "MAT.13.47",
+      "MAT.13.48",
+      "MAT.13.49",
+      "MAT.13.50",
+      "MAT.13.51",
+      "MAT.13.52",
+      "MAT.13.53"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.4.1",
+            "MRK.4.2",
+            "MRK.4.3",
+            "MRK.4.4",
+            "MRK.4.5",
+            "MRK.4.6",
+            "MRK.4.7",
+            "MRK.4.8",
+            "MRK.4.9",
+            "MRK.4.10",
+            "MRK.4.11",
+            "MRK.4.12",
+            "MRK.4.13",
+            "MRK.4.14",
+            "MRK.4.15",
+            "MRK.4.16",
+            "MRK.4.17",
+            "MRK.4.18",
+            "MRK.4.19",
+            "MRK.4.20",
+            "MRK.4.21",
+            "MRK.4.22",
+            "MRK.4.23",
+            "MRK.4.24",
+            "MRK.4.25",
+            "MRK.4.26",
+            "MRK.4.27",
+            "MRK.4.28",
+            "MRK.4.29",
+            "MRK.4.30",
+            "MRK.4.31",
+            "MRK.4.32",
+            "MRK.4.33",
+            "MRK.4.34"
+          ]
+        },
+        "ref_note": "Mark 4:1-34 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §64"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.8.4",
+            "LUK.8.5",
+            "LUK.8.6",
+            "LUK.8.7",
+            "LUK.8.8",
+            "LUK.8.9",
+            "LUK.8.10",
+            "LUK.8.11",
+            "LUK.8.12",
+            "LUK.8.13",
+            "LUK.8.14",
+            "LUK.8.15",
+            "LUK.8.16",
+            "LUK.8.17",
+            "LUK.8.18"
+          ]
+        },
+        "ref_note": "Luke 8:4-18 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §64"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §64, \"The First Great Group of Parables\"",
+    "ref_note": "Matthew 13:1-53, Mark 4:1-34, and Luke 8:4-18 all read directly against the compiled KJV text",
+    "order_key": 640
+  },
+  {
+    "id": "rob_stills_tempest",
+    "label": "Jesus stills the tempest on the lake",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "sea-of-galilee"
+    ],
+    "verses": [
+      "MAT.8.18",
+      "MAT.8.23",
+      "MAT.8.24",
+      "MAT.8.25",
+      "MAT.8.26",
+      "MAT.8.27"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.4.35",
+            "MRK.4.36",
+            "MRK.4.37",
+            "MRK.4.38",
+            "MRK.4.39",
+            "MRK.4.40",
+            "MRK.4.41"
+          ]
+        },
+        "ref_note": "Mark 4:35-41 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §65"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.8.22",
+            "LUK.8.23",
+            "LUK.8.24",
+            "LUK.8.25"
+          ]
+        },
+        "ref_note": "Luke 8:22-25 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §65"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §65, \"In Crossing the Lake, Jesus Stills the Tempest\"",
+    "ref_note": "Matthew 8:18, 23-27, Mark 4:35-41, and Luke 8:22-25 all read directly against the compiled KJV text; Matthew's own reference is itself non-contiguous (8:18 sets the scene, 8:19-22 is the separate 'foxes have holes' exchange Robertson does not include here, 8:23-27 resumes the crossing) -- written as two ranges, matching Robertson's own citation",
+    "order_key": 650
+  },
+  {
+    "id": "rob_gadarene_demoniac",
+    "label": "Jesus heals the demoniac(s) in the country of the Gadarenes",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "gadara"
+    ],
+    "verses": [
+      "MRK.5.1",
+      "MRK.5.2",
+      "MRK.5.3",
+      "MRK.5.4",
+      "MRK.5.5",
+      "MRK.5.6",
+      "MRK.5.7",
+      "MRK.5.8",
+      "MRK.5.9",
+      "MRK.5.10",
+      "MRK.5.11",
+      "MRK.5.12",
+      "MRK.5.13",
+      "MRK.5.14",
+      "MRK.5.15",
+      "MRK.5.16",
+      "MRK.5.17",
+      "MRK.5.18",
+      "MRK.5.19",
+      "MRK.5.20"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.8.28",
+            "MAT.8.29",
+            "MAT.8.30",
+            "MAT.8.31",
+            "MAT.8.32",
+            "MAT.8.33",
+            "MAT.8.34"
+          ]
+        },
+        "ref_note": "Matthew 8:28-34 read directly against the compiled KJV text (KJV: 'the Gergesenes')",
+        "robertson_section": "Robertson (1922) §66"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.8.26",
+            "LUK.8.27",
+            "LUK.8.28",
+            "LUK.8.29",
+            "LUK.8.30",
+            "LUK.8.31",
+            "LUK.8.32",
+            "LUK.8.33",
+            "LUK.8.34",
+            "LUK.8.35",
+            "LUK.8.36",
+            "LUK.8.37",
+            "LUK.8.38",
+            "LUK.8.39"
+          ]
+        },
+        "ref_note": "Luke 8:26-39 read directly against the compiled KJV text (KJV: 'the Gadarenes')",
+        "robertson_section": "Robertson (1922) §66"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §66, \"Beyond the Lake Jesus Heals the Gerasene Demoniac\"",
+    "ref_note": "Matthew 8:28-34, Mark 5:1-20, and Luke 8:26-39 all read directly against the compiled KJV text; the KJV itself reads 'Gergesenes' (Matthew 8:28) and 'Gadarenes' (Mark 5:1, Luke 8:26) -- NOT 'Gerasenes' as Robertson's own section title has it (the modern scholarly identification) -- gadara used as the place matching the KJV's own majority wording (2 of 3 witnesses), Mark's own fuller account (5:1-20) used as this event's top-level verses",
+    "order_key": 660
+  },
+  {
+    "id": "rob_jairus_daughter",
+    "label": "Jesus raises Jairus's daughter and heals the woman who touched his garment",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.9.18",
+      "MAT.9.19",
+      "MAT.9.20",
+      "MAT.9.21",
+      "MAT.9.22",
+      "MAT.9.23",
+      "MAT.9.24",
+      "MAT.9.25",
+      "MAT.9.26"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.5.21",
+            "MRK.5.22",
+            "MRK.5.23",
+            "MRK.5.24",
+            "MRK.5.25",
+            "MRK.5.26",
+            "MRK.5.27",
+            "MRK.5.28",
+            "MRK.5.29",
+            "MRK.5.30",
+            "MRK.5.31",
+            "MRK.5.32",
+            "MRK.5.33",
+            "MRK.5.34",
+            "MRK.5.35",
+            "MRK.5.36",
+            "MRK.5.37",
+            "MRK.5.38",
+            "MRK.5.39",
+            "MRK.5.40",
+            "MRK.5.41",
+            "MRK.5.42",
+            "MRK.5.43"
+          ]
+        },
+        "ref_note": "Mark 5:21-43 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §67"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.8.40",
+            "LUK.8.41",
+            "LUK.8.42",
+            "LUK.8.43",
+            "LUK.8.44",
+            "LUK.8.45",
+            "LUK.8.46",
+            "LUK.8.47",
+            "LUK.8.48",
+            "LUK.8.49",
+            "LUK.8.50",
+            "LUK.8.51",
+            "LUK.8.52",
+            "LUK.8.53",
+            "LUK.8.54",
+            "LUK.8.55",
+            "LUK.8.56"
+          ]
+        },
+        "ref_note": "Luke 8:40-56 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §67"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §67, \"The Return and the Healing of Jairus' Daughter and of the Woman Who Only Touched Christ's Garment\"",
+    "ref_note": "Matthew 9:18-26, Mark 5:21-43, and Luke 8:40-56 all read directly against the compiled KJV text; scene follows immediately from the return crossing (Mark 5:21), so scoped to Jesus's own base at Capernaum, unnamed directly in this specific passage",
+    "order_key": 670
+  },
+  {
+    "id": "rob_two_blind_men",
+    "label": "Jesus heals two blind men and a mute demoniac",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.9.27",
+      "MAT.9.28",
+      "MAT.9.29",
+      "MAT.9.30",
+      "MAT.9.31",
+      "MAT.9.32",
+      "MAT.9.33",
+      "MAT.9.34"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §68, \"He Heals Two Blind Men and a Dumb Demoniac, a Blasphemous Accusation\"",
+    "ref_note": "Matthew 9:27-34 read directly against the compiled KJV text; single witness (Matthew alone)",
+    "order_key": 680
+  },
+  {
+    "id": "rob_last_nazareth_visit",
+    "label": "The last visit to Nazareth",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "nazareth"
+    ],
+    "verses": [
+      "MAT.13.54",
+      "MAT.13.55",
+      "MAT.13.56",
+      "MAT.13.57",
+      "MAT.13.58"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.6.1",
+            "MRK.6.2",
+            "MRK.6.3",
+            "MRK.6.4",
+            "MRK.6.5",
+            "MRK.6.6"
+          ]
+        },
+        "ref_note": "Mark 6:1-6 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §69"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §69, \"The Last Visit to Nazareth\"",
+    "ref_note": "Matthew 13:54-58 and Mark 6:1-6 both read directly against the compiled KJV text",
+    "order_key": 690
+  },
+  {
+    "id": "rob_third_tour_sending_twelve",
+    "label": "The third tour of Galilee; the Twelve sent out by twos",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "MAT.9.35",
+      "MAT.9.36",
+      "MAT.9.37",
+      "MAT.9.38",
+      "MAT.10.1",
+      "MAT.10.2",
+      "MAT.10.3",
+      "MAT.10.4",
+      "MAT.10.5",
+      "MAT.10.6",
+      "MAT.10.7",
+      "MAT.10.8",
+      "MAT.10.9",
+      "MAT.10.10",
+      "MAT.10.11",
+      "MAT.10.12",
+      "MAT.10.13",
+      "MAT.10.14",
+      "MAT.10.15",
+      "MAT.10.16",
+      "MAT.10.17",
+      "MAT.10.18",
+      "MAT.10.19",
+      "MAT.10.20",
+      "MAT.10.21",
+      "MAT.10.22",
+      "MAT.10.23",
+      "MAT.10.24",
+      "MAT.10.25",
+      "MAT.10.26",
+      "MAT.10.27",
+      "MAT.10.28",
+      "MAT.10.29",
+      "MAT.10.30",
+      "MAT.10.31",
+      "MAT.10.32",
+      "MAT.10.33",
+      "MAT.10.34",
+      "MAT.10.35",
+      "MAT.10.36",
+      "MAT.10.37",
+      "MAT.10.38",
+      "MAT.10.39",
+      "MAT.10.40",
+      "MAT.10.41",
+      "MAT.10.42",
+      "MAT.11.1"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.6.6",
+            "MRK.6.7",
+            "MRK.6.8",
+            "MRK.6.9",
+            "MRK.6.10",
+            "MRK.6.11",
+            "MRK.6.12",
+            "MRK.6.13"
+          ]
+        },
+        "ref_note": "Mark 6:6-13 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §70"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.9.1",
+            "LUK.9.2",
+            "LUK.9.3",
+            "LUK.9.4",
+            "LUK.9.5",
+            "LUK.9.6"
+          ]
+        },
+        "ref_note": "Luke 9:1-6 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §70"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §70, \"The Third Tour of Galilee after Instructing the Twelve and Sending Them Forth by Twos\"",
+    "ref_note": "Matthew 9:35-11:1, Mark 6:6-13, and Luke 9:1-6 all read directly against the compiled KJV text; Matthew's own span crosses two chapter boundaries -- written as three ranges (9:35-38, all of chapter 10, 11:1), this project's own curator-friendly range syntax not spanning a chapter boundary in one string",
+    "order_key": 700
+  },
+  {
+    "id": "rob_herod_fears",
+    "label": "Herod Antipas's guilty fears about Jesus",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "tiberias"
+    ],
+    "verses": [
+      "MAT.14.1",
+      "MAT.14.2",
+      "MAT.14.3",
+      "MAT.14.4",
+      "MAT.14.5",
+      "MAT.14.6",
+      "MAT.14.7",
+      "MAT.14.8",
+      "MAT.14.9",
+      "MAT.14.10",
+      "MAT.14.11",
+      "MAT.14.12"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.6.14",
+            "MRK.6.15",
+            "MRK.6.16",
+            "MRK.6.17",
+            "MRK.6.18",
+            "MRK.6.19",
+            "MRK.6.20",
+            "MRK.6.21",
+            "MRK.6.22",
+            "MRK.6.23",
+            "MRK.6.24",
+            "MRK.6.25",
+            "MRK.6.26",
+            "MRK.6.27",
+            "MRK.6.28",
+            "MRK.6.29"
+          ]
+        },
+        "ref_note": "Mark 6:14-29 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §71"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.9.7",
+            "LUK.9.8",
+            "LUK.9.9"
+          ]
+        },
+        "ref_note": "Luke 9:7-9 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §71"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §71, \"The Guilty Fears of Herod Antipas in Tiberias about Jesus because He Had Beheaded the Baptist in Machaerus\"",
+    "ref_note": "Matthew 14:1-12, Mark 6:14-29, and Luke 9:7-9 all read directly against the compiled KJV text; Robertson's own section title places Herod's own fear/reaction in Tiberias (his capital, in the compiled place set) while the beheading itself happened at Machaerus (not in the compiled place set) -- this event's own place is scoped to the fear/reaction scene the title names, not the earlier beheading",
+    "order_key": 710
+  },
+  {
     "id": "theo-325",
     "label": "Conversion of Ethiopian Eunuch",
     "when": {
@@ -27229,10 +28003,92 @@
       "LUK.9.17"
     ],
     "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "ref_note": null,
-    "order_key": 0
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.14.13",
+            "MAT.14.14",
+            "MAT.14.15",
+            "MAT.14.16",
+            "MAT.14.17",
+            "MAT.14.18",
+            "MAT.14.19",
+            "MAT.14.20",
+            "MAT.14.21"
+          ]
+        },
+        "ref_note": "Matthew 14:13-21 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §72"
+      },
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.6.30",
+            "MRK.6.31",
+            "MRK.6.32",
+            "MRK.6.33",
+            "MRK.6.34",
+            "MRK.6.35",
+            "MRK.6.36",
+            "MRK.6.37",
+            "MRK.6.38",
+            "MRK.6.39",
+            "MRK.6.40",
+            "MRK.6.41",
+            "MRK.6.42",
+            "MRK.6.43",
+            "MRK.6.44"
+          ]
+        },
+        "ref_note": "Mark 6:30-44 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §72"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.6.1",
+            "JHN.6.2",
+            "JHN.6.3",
+            "JHN.6.4",
+            "JHN.6.5",
+            "JHN.6.6",
+            "JHN.6.7",
+            "JHN.6.8",
+            "JHN.6.9",
+            "JHN.6.10",
+            "JHN.6.11",
+            "JHN.6.12",
+            "JHN.6.13"
+          ]
+        },
+        "ref_note": "John 6:1-13 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §72"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.9.10",
+            "LUK.9.11",
+            "LUK.9.12",
+            "LUK.9.13",
+            "LUK.9.14",
+            "LUK.9.15",
+            "LUK.9.16",
+            "LUK.9.17"
+          ]
+        },
+        "ref_note": "Luke 9:10-17 read directly against the compiled KJV text -- this event's own pre-existing top-level `verses` already (Task 3); included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete (4 witnesses), same pw_bethany precedent",
+        "robertson_section": "Robertson (1922) §72"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §72, \"The First Retirement. The Twelve Return, and Jesus Retires with Them beyond the Lake to Rest. Feeding of the Five Thousand\"",
+    "ref_note": "Luke 9:10-17 read directly against the compiled KJV text; Matthew 14:13-21, Mark 6:30-44, John 6:1-13 also read directly -- see event-witnesses.toml",
+    "order_key": 720
   },
   {
     "id": "jm_caesarea_philippi",
@@ -27256,9 +28112,9 @@
     ],
     "kind": "event",
     "witnesses": [],
-    "robertson_section": null,
-    "ref_note": null,
-    "order_key": 0
+    "robertson_section": "Robertson (1922) §82, \"Near Caesarea Philippi Jesus Tests the Faith of the Twelve in His Messiahship\"",
+    "ref_note": "Matthew 16:13-20 read directly against the compiled KJV text",
+    "order_key": 820
   },
   {
     "id": "jm_jericho",

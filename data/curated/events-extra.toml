@@ -847,6 +847,13 @@ from_year = 32
 to_year = 32
 places = ["bethsaida-2"]
 verses = ["LUK.9.10-17"]
+order_key = 720
+# Batch T2: enriched with provenance and 3 additional witnesses (was
+# pre-existing, Task 3, Luke-only). Robertson's own §72 lists all four
+# Gospels for this one -- the feeding of the five thousand is the one
+# miracle (besides the resurrection) all four Gospels narrate.
+robertson_section = "Robertson (1922) §72, \"The First Retirement. The Twelve Return, and Jesus Retires with Them beyond the Lake to Rest. Feeding of the Five Thousand\""
+ref_note = "Luke 9:10-17 read directly against the compiled KJV text; Matthew 14:13-21, Mark 6:30-44, John 6:1-13 also read directly -- see event-witnesses.toml"
 [[event]]
 id = "jm_caesarea_philippi"
 label = "Peter's confession at Caesarea Philippi"
@@ -854,6 +861,11 @@ from_year = 32
 to_year = 32
 places = ["caesarea-philippi"]
 verses = ["MAT.16.13-20"]
+order_key = 820
+# Batch T2 (period 5's own validation fix, enriched ahead of period 6 for
+# ordering -- fully covered there too): Robertson's own §82.
+robertson_section = "Robertson (1922) §82, \"Near Caesarea Philippi Jesus Tests the Faith of the Twelve in His Messiahship\""
+ref_note = "Matthew 16:13-20 read directly against the compiled KJV text"
 # places: same Jericho 1/2 split as cq_jericho above, opposite pick:
 # jericho-2 (31.8519, 35.4362, the NT/Herodian-era site) carries only
 # Gospel verse_links, including LUK.19.1, this event's verse.
@@ -1717,3 +1729,152 @@ verses = ["MAT.11.20-30"]
 order_key = 580
 robertson_section = "Robertson (1922) §58, \"Woes upon the Cities of Opportunity. The Claims of Christ as the Teacher about the Father\""
 ref_note = "Matthew 11:20-30 read directly against the compiled KJV text; single witness (Matthew alone); Chorazin, Bethsaida, and Capernaum are each named within the text itself, so the broad Galilee region is kept rather than any one of the three"
+
+# --- Period 5: The great Galilean ministry continues (SS59-72) -----------
+# All AD 31, continuing straight from Period 4 (no year/period boundary
+# within this range). jm_bethsaida already exists (Task 3) for S72's own
+# feeding of the five thousand -- enriched IN PLACE, further up this file,
+# with the additional Matthew/Mark/John witnesses Robertson's own S72
+# names, rather than duplicated here.
+[[event]]
+id = "rob_sinful_woman"
+label = "A sinful woman anoints Jesus's feet in a Pharisee's house"
+from_year = 31
+to_year = 31
+places = ["galilee-1"]
+verses = ["LUK.7.36-50"]
+order_key = 590
+robertson_section = "Robertson (1922) §59, \"The Anointing of Christ's Feet by a Sinful Woman in the House of Simon a Pharisee. The Parable of the Two Debtors\""
+ref_note = "Luke 7:36-50 read directly against the compiled KJV text; single witness (Luke alone); no town is named -- galilee-1 kept as the broad region"
+
+[[event]]
+id = "rob_second_galilee_tour"
+label = "The second tour of Galilee"
+from_year = 31
+to_year = 31
+places = ["galilee-1"]
+verses = ["LUK.8.1-3"]
+order_key = 600
+robertson_section = "Robertson (1922) §60, \"The Second Tour of Galilee\""
+ref_note = "Luke 8:1-3 read directly against the compiled KJV text; single witness (Luke alone)"
+
+[[event]]
+id = "rob_beelzebub_accusation"
+label = "The Pharisees accuse Jesus of league with Beelzebub"
+from_year = 31
+to_year = 31
+places = ["capernaum"]
+verses = ["MAT.12.22-37"]
+order_key = 610
+robertson_section = "Robertson (1922) §61, \"Blasphemous Accusation of League with Beelzebub\""
+ref_note = "Matthew 12:22-37 and Mark 3:19-30 both read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_sign_demanded"
+label = "The scribes and Pharisees demand a sign"
+from_year = 31
+to_year = 31
+places = ["capernaum"]
+verses = ["MAT.12.38-45"]
+order_key = 620
+robertson_section = "Robertson (1922) §62, \"Scribes and Pharisees Demand a Sign\""
+ref_note = "Matthew 12:38-45 read directly against the compiled KJV text; single witness (Matthew alone)"
+
+[[event]]
+id = "rob_mother_brethren"
+label = "Jesus's mother and brothers seek to take him home"
+from_year = 31
+to_year = 31
+places = ["capernaum"]
+verses = ["MAT.12.46-50"]
+order_key = 630
+robertson_section = "Robertson (1922) §63, \"Christ's Mother and Brethren Seek to Take Him Home\""
+ref_note = "Matthew 12:46-50, Mark 3:31-35, and Luke 8:19-21 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_first_parable_group"
+label = "The first great group of parables"
+from_year = 31
+to_year = 31
+places = ["sea-of-galilee"]
+verses = ["MAT.13.1-53"]
+order_key = 640
+robertson_section = "Robertson (1922) §64, \"The First Great Group of Parables\""
+ref_note = "Matthew 13:1-53, Mark 4:1-34, and Luke 8:4-18 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_stills_tempest"
+label = "Jesus stills the tempest on the lake"
+from_year = 31
+to_year = 31
+places = ["sea-of-galilee"]
+verses = ["MAT.8.18", "MAT.8.23-27"]
+order_key = 650
+robertson_section = "Robertson (1922) §65, \"In Crossing the Lake, Jesus Stills the Tempest\""
+ref_note = "Matthew 8:18, 23-27, Mark 4:35-41, and Luke 8:22-25 all read directly against the compiled KJV text; Matthew's own reference is itself non-contiguous (8:18 sets the scene, 8:19-22 is the separate 'foxes have holes' exchange Robertson does not include here, 8:23-27 resumes the crossing) -- written as two ranges, matching Robertson's own citation"
+
+[[event]]
+id = "rob_gadarene_demoniac"
+label = "Jesus heals the demoniac(s) in the country of the Gadarenes"
+from_year = 31
+to_year = 31
+places = ["gadara"]
+verses = ["MRK.5.1-20"]
+order_key = 660
+robertson_section = "Robertson (1922) §66, \"Beyond the Lake Jesus Heals the Gerasene Demoniac\""
+ref_note = "Matthew 8:28-34, Mark 5:1-20, and Luke 8:26-39 all read directly against the compiled KJV text; the KJV itself reads 'Gergesenes' (Matthew 8:28) and 'Gadarenes' (Mark 5:1, Luke 8:26) -- NOT 'Gerasenes' as Robertson's own section title has it (the modern scholarly identification) -- gadara used as the place matching the KJV's own majority wording (2 of 3 witnesses), Mark's own fuller account (5:1-20) used as this event's top-level verses"
+
+[[event]]
+id = "rob_jairus_daughter"
+label = "Jesus raises Jairus's daughter and heals the woman who touched his garment"
+from_year = 31
+to_year = 31
+places = ["capernaum"]
+verses = ["MAT.9.18-26"]
+order_key = 670
+robertson_section = "Robertson (1922) §67, \"The Return and the Healing of Jairus' Daughter and of the Woman Who Only Touched Christ's Garment\""
+ref_note = "Matthew 9:18-26, Mark 5:21-43, and Luke 8:40-56 all read directly against the compiled KJV text; scene follows immediately from the return crossing (Mark 5:21), so scoped to Jesus's own base at Capernaum, unnamed directly in this specific passage"
+
+[[event]]
+id = "rob_two_blind_men"
+label = "Jesus heals two blind men and a mute demoniac"
+from_year = 31
+to_year = 31
+places = ["capernaum"]
+verses = ["MAT.9.27-34"]
+order_key = 680
+robertson_section = "Robertson (1922) §68, \"He Heals Two Blind Men and a Dumb Demoniac, a Blasphemous Accusation\""
+ref_note = "Matthew 9:27-34 read directly against the compiled KJV text; single witness (Matthew alone)"
+
+[[event]]
+id = "rob_last_nazareth_visit"
+label = "The last visit to Nazareth"
+from_year = 31
+to_year = 31
+places = ["nazareth"]
+verses = ["MAT.13.54-58"]
+order_key = 690
+robertson_section = "Robertson (1922) §69, \"The Last Visit to Nazareth\""
+ref_note = "Matthew 13:54-58 and Mark 6:1-6 both read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_third_tour_sending_twelve"
+label = "The third tour of Galilee; the Twelve sent out by twos"
+from_year = 31
+to_year = 31
+places = ["galilee-1"]
+verses = ["MAT.9.35-38", "MAT.10.1-42", "MAT.11.1"]
+order_key = 700
+robertson_section = "Robertson (1922) §70, \"The Third Tour of Galilee after Instructing the Twelve and Sending Them Forth by Twos\""
+ref_note = "Matthew 9:35-11:1, Mark 6:6-13, and Luke 9:1-6 all read directly against the compiled KJV text; Matthew's own span crosses two chapter boundaries -- written as three ranges (9:35-38, all of chapter 10, 11:1), this project's own curator-friendly range syntax not spanning a chapter boundary in one string"
+
+[[event]]
+id = "rob_herod_fears"
+label = "Herod Antipas's guilty fears about Jesus"
+from_year = 31
+to_year = 31
+places = ["tiberias"]
+verses = ["MAT.14.1-12"]
+order_key = 710
+robertson_section = "Robertson (1922) §71, \"The Guilty Fears of Herod Antipas in Tiberias about Jesus because He Had Beheaded the Baptist in Machaerus\""
+ref_note = "Matthew 14:1-12, Mark 6:14-29, and Luke 9:7-9 all read directly against the compiled KJV text; Robertson's own section title places Herod's own fear/reaction in Tiberias (his capital, in the compiled place set) while the beheading itself happened at Machaerus (not in the compiled place set) -- this event's own place is scoped to the fear/reaction scene the title names, not the earlier beheading"
