@@ -262,3 +262,22 @@ book = "LUK"
 verses = ["LUK.3.23-38"]
 ref_note = "Luke 3:23-38 read directly against the compiled KJV text"
 robertson_section = "Robertson (1922) §3"
+
+# --- Period 2: SS4-19 -------------------------------------------------------
+# jm_nazareth (Task 3, enriched this batch) is the ONLY genuinely
+# multi-witness section this period -- every other SS4-19 section is a
+# single Gospel account, relying on the implicit single-witness fallback
+# per that event's own comment in events-extra.toml.
+[[witness]]
+event_id = "jm_nazareth"
+book = "MAT"
+verses = ["MAT.2.19-23"]
+ref_note = "Matthew 2:19-23 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §16"
+
+[[witness]]
+event_id = "jm_nazareth"
+book = "LUK"
+verses = ["LUK.2.39"]
+ref_note = "Luke 2:39 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §16"
