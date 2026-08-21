@@ -189,10 +189,22 @@ public sealed record EventWitnessDto(
 /// requirement 4's own "single-witness events show the one passage, no
 /// parallel framing when n=1" is realized client-side by branching on
 /// <c>Witnesses.Count</c>, not by a server-side omission.
+///
+/// Batch T2 (general-kind PASSAGEs): <see cref="Kind"/> is `"event"` |
+/// `"general"`, ALWAYS present. <see cref="When"/> is `null` (the key is
+/// OMITTED on the wire, not sent as a JSON `null`) exactly when
+/// <c>Kind == "general"</c> -- a general-kind passage has no defensible
+/// date, so nothing client-side may ever render one; see
+/// <see cref="Explore.EventDateAndPlacesSection"/>. <see cref="Places"/>
+/// stays an ordinary possibly-empty list (a general-kind passage's own
+/// `Places` is always empty by construction, same "always an array,
+/// conditional presence is a client concern" convention every other list
+/// on this DTO already follows).
 public sealed record EventDetail(
     string Id,
     string Title,
-    TimeRangeDto When,
+    string Kind,
+    TimeRangeDto? When,
     List<EventPlaceDto> Places,
     List<EventWitnessDto> Witnesses,
     string? RobertsonSection = null,

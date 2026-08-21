@@ -321,7 +321,9 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `event-date` (batch-t-brief.md; an EVENT node's own quiet date line,
   non-interactive -- carries the event's own curated `ref_note`, if any, as
   a plain hover tooltip, per requirement 4's own "ref_note provenance on
-  hover or a quiet note"), `event-places` (wraps one or more `event-place-{placeId}`
+  hover or a quiet note"; batch-t2-brief.md: present only when this
+  passage HAS a date, i.e. `kind == "event"` -- absent for a general-kind
+  passage, never a fabricated line), `event-places` (wraps one or more `event-place-{placeId}`
   rows, present only when the event has >=1 resolved place), `event-place-{placeId}`
   (button; opens a `PlaceNode` for that place -- "place opens the place
   node," requirement 4 verbatim), `event-witness-{SPAN}` (one per passage
@@ -381,9 +383,13 @@ Notes:
   sections (batch-t-brief.md; an `EventNode`, reached by a verse's own
   "EVENT" row above, a reader heading, or a PRIOR/FOLLOWING traversal row
   below, recursively), in this order: date + place(s)
-  (`popover-section-event-date-places`, always present -- the date line
-  always renders; the place row is itself conditional, absent only if the
-  event somehow resolves zero places), PARALLEL ACCOUNTS
+  (`popover-section-event-date-places` -- batch-t2-brief.md: the WHOLE
+  section is conditional, absent for a general-kind passage with neither a
+  date nor a place to show; otherwise present, with the date line and
+  place row EACH independently conditional within it -- the date line
+  renders only when this passage `kind == "event"` (never a fabricated
+  line for a general-kind one), the place row only if >=1 place resolves),
+  PARALLEL ACCOUNTS
   (`popover-section-event-witnesses`, conditional heading -- present with
   the "PARALLEL ACCOUNTS" eyebrow only when the event has >=2 witnesses;
   exactly one witness renders the SAME section id as `event-witness`
@@ -650,14 +656,20 @@ Notes:
   of books and a set of passages... this set of passages with their titles
   maps to a mapping of translation to a set of verses"):
 
-  PASSAGE/EVENT DATA MODEL. `atlas_core::data::Event` IS the EVENT-kind
-  half of the owner's own PASSAGE abstraction: `id`/`label` (this passage's
-  own title -- kept under its pre-existing field name, a disclosed decision,
-  not a rename), `kind` (`"event"` for every real record today -- `"general"`
-  is modeled, ETL-validated, but zero passages use it this batch, per the
-  owner's own coverage decision: "Gospels-first... PLUS every event in the
-  existing 13 narratives... General-passage titles outside these come
-  later"), `when`/`places` (unchanged since Task 3), and PARALLEL WITNESSES
+  PASSAGE/EVENT DATA MODEL. `atlas_core::data::Event` IS the owner's own
+  PASSAGE abstraction: `id`/`label` (this passage's own title -- kept
+  under its pre-existing field name, a disclosed decision, not a rename),
+  `kind` (`"event"` | `"general"` -- both REAL curated data as of Batch T2,
+  see batch-t2-brief.md's own promotion rule: a section ships `"event"`
+  only when traditional dating AND a defensible place mapping both exist;
+  otherwise `"general"`, the honest default, never a failure), `when`/
+  `places` (unchanged since Task 3 for `kind == "event"`; for `kind ==
+  "general"`, `Event::when` still holds a structurally-required
+  `TimeRange` internally -- `atlas_core::time::TimeRange::undated()`, the
+  atlas's own `[-4004,100]` span bounds, never a curator-typed number,
+  see that function's own doc comment -- but is OMITTED from the wire
+  entirely, never presented to a reader as a real date; `places` stays
+  empty by construction), and PARALLEL WITNESSES
   (`witnesses: Vec<EventWitness>` -- "the set of per-book passages that
   recount the same event... one witness passage per Gospel," the owner
   verbatim). Each witness is `{book, translations, ref_note,
@@ -703,9 +715,16 @@ Notes:
   retired `narrative_positions` field (which answered "which chronological
   POSITION," now irrelevant at the verse level since traversal moved
   entirely to the EVENT node). `GET /api/event/{id}` (new) is an EVENT
-  node's own rich fetch: `id`/`title`/`when`/`places` (id+name pairs) /
-  `witnesses` (ALWAYS >=1, see the data-model paragraph above) /
-  `robertson_section`/`ref_note` (each omitted, not null, when uncurated).
+  node's own rich fetch: `id`/`title`/`kind` (Batch T2, ALWAYS present) /
+  `when`/`places` (id+name pairs) / `witnesses` (ALWAYS >=1, see the
+  data-model paragraph above) / `robertson_section`/`ref_note` (each
+  omitted, not null, when uncurated). Batch T2: `when` is OMITTED (not
+  null) when `kind == "general"` -- the fabrication guard extends to the
+  wire itself, not just the curated source (see the data-model paragraph
+  above); `places` is always present, possibly empty (a general-kind
+  passage's own `places` is empty by construction, same "array present,
+  conditional presence is a client concern" convention every other list
+  on this DTO already follows).
   `GET /api/narrative/event/{id}` (Batch N, UNCHANGED route AND resolver)
   is still the chronological PRIOR/FOLLOWING source -- only its CALLER
   changed (`EventNode` replaces the retired `NarrativeEventNode`). `GET
@@ -755,9 +774,11 @@ Notes:
      today's curated data outright (`pw_bethany` real container beats
      `jm_bethany` freebie).
   2. KIND -- `"event"` beats `"general"`, a tiebreak reached only when both
-     colliders are genuinely same-layer containers -- currently VACUOUS (no
-     real `"general"` passage exists yet), kept as principled
-     future-proofing.
+     colliders are genuinely same-layer containers -- LIVE as of Batch T2
+     (general-kind passages are now real curated data), though still rare
+     in practice: curated sections are expected to PARTITION (see
+     WITHIN-LAYER ANCHOR COLLISIONS below), so two same-layer containers
+     colliding at all is uncommon.
   3. CHRONOLOGY -- the earlier `(from_year, order_key)` wins, the SAME
      tuple `Narrative.legs`' own ordering already uses -- reached only
      between two real containers of the same kind, not observed anywhere
@@ -775,20 +796,42 @@ Notes:
   scoped subset, not the destination -- the full migration is real future
   work, not this fix.
 
+  WITHIN-LAYER ANCHOR COLLISIONS (Batch T2, owner's own ruling: "Robertson
+  sections within one Gospel should partition, not collide with each
+  other -- a within-layer anchor collision is a curation error your
+  validation must catch"). Distinct from the 3-tier precedence rule just
+  above, which decisively RESOLVES a collision for display and is fine
+  with a layer-1-vs-layer-0 one (the `pw_bethany`/`jm_bethany` case is
+  legal DATA, just decisively rendered). A collision between TWO real
+  (layer-1) containers is a DIFFERENT thing: correctly-partitioned curated
+  sections should never both claim the identical anchor verse in the first
+  place, so `atlas_etl::validate::run` fails loud on every such pair
+  (`AtlasData::heading_anchor_collisions`, `server/atlas-core/src/data.rs`)
+  rather than silently letting tier 2/3 pick a winner -- a real one
+  surfaces a curation mistake in THIS batch's own section boundaries, to
+  be fixed in the data, not the rule (see batch-t2-report.md for whether
+  any fired during authoring).
+
   PROVIDER (no popover surgery -- registered exactly like every other
   section, Explore/PopoverSections.cs). VERSE nodes gain ONE new section,
   appended after catechism: "EVENT" (`VerseEventMembershipSection`,
   conditional -- absent for a verse touching zero titled events), one
   `verse-event-{eventId}` row per event, explorable, opening a fresh
-  `EventNode`. EVENT nodes get their own two-to-four sections (always
-  date+places and the witness passage(s); PRIOR/FOLLOWING each
+  `EventNode`. EVENT nodes get their own one-to-four sections (the witness
+  passage(s) always present; date+places and PRIOR/FOLLOWING each
   conditional), in order:
-  date + place(s) (`event-date`, always present; `event-places`, one
-  `event-place-{placeId}` row per resolved place, each explorable, opening
-  a `PlaceNode` -- "place opens the place node," requirement 4 verbatim;
-  the date line carries the event's own curated `ref_note`, when present,
-  as a plain hover tooltip -- "ref_note provenance on hover or a quiet
-  note"), PARALLEL ACCOUNTS (`EventWitnessesSection` -- one passage-list
+  date + place(s) (`EventDateAndPlacesSection` -- Batch T2: the WHOLE
+  section is conditional, absent when a general-kind passage has neither a
+  date nor a place to show; for an `event`-kind passage, or a
+  `general`-kind one with resolved places, present as before: `event-date`
+  present only when this passage HAS a date (i.e. `kind == "event"` --
+  never the server's own internal undated placeholder, see the data-model
+  paragraph above); `event-places`, one `event-place-{placeId}` row per
+  resolved place, each explorable, opening a `PlaceNode` -- "place opens
+  the place node," requirement 4 verbatim; the date line carries the
+  event's own curated `ref_note`, when present, as a plain hover tooltip
+  -- "ref_note provenance on hover or a quiet note"), PARALLEL ACCOUNTS
+  (`EventWitnessesSection` -- one passage-list
   unit per witness, captioned with that witness's own book's DISPLAY name
   -- "Gospel name + passage ref" falls out of the shared component's
   existing Caption + auto-rendered Span, no bespoke rendering needed --
@@ -829,6 +872,12 @@ Notes:
   specific verse/span instead of traversing the event as a whole
   (PASSAGE-1's own default click contract, unmodified) -- a second,
   independent way into the same graph, not a competing mechanism.
+
+  Batch T2: a general-kind EVENT node's own `popover-chip-map` ("Show on
+  the map") chip is ABSENT, not merely inert -- there is no date/place to
+  bracket a map window with, same "conditional presence extends to
+  affordances too" principle CATECH-1 already establishes for a
+  CatechismNode's own geography-less chips.
 
   CHRONOLOGICAL-VS-READING-ORDER (requirement 6/7's own worked example, the
   owner's own "the Gospel of John doesn't have everything in order"): the

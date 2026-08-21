@@ -67,10 +67,19 @@ pub struct Event {
     pub places: Vec<String>,
     pub verses: Vec<String>,
     /// Batch T: `"event"` | `"general"` (validated by
-    /// `atlas_etl::validate::run`) -- see this struct's own doc comment for
-    /// why every REAL `Event` record is `"event"` today. Defaults to
-    /// `"event"` so every `events.json` written before this batch (and
-    /// every existing test fixture) keeps deserializing with no migration.
+    /// `atlas_etl::validate::run`). `"event"` carries a real `when`/
+    /// `places` (traditional date + defensible place mapping); `"general"`
+    /// (Batch T2: now real curated data, not just a modeled-but-unused
+    /// enum value -- see `atlas_core::time::TimeRange::undated`'s own doc
+    /// comment) is a titled container with neither -- `when` holds the
+    /// undated sentinel and `places` stays empty, both supplied by the ETL
+    /// parser itself, never curator-typed (`atlas_etl::curated::
+    /// parse_events_extra` hard-errors if a curator writes `kind =
+    /// "general"` together with a `from_year`/`to_year`/`places`, so "do
+    /// not fabricate a date/place" is structural, not just a convention).
+    /// Defaults to `"event"` so every `events.json` written before Batch T
+    /// (and every existing test fixture) keeps deserializing with no
+    /// migration.
     #[serde(default = "default_event_kind")]
     pub kind: String,
     /// Batch T requirement 1: PARALLEL WITNESSES -- "the set of per-book
@@ -690,6 +699,24 @@ pub struct AtlasData {
     /// witness's own first verse -- never just one heading in one book).
     #[serde(skip)]
     verse_heading: HashMap<String, HeadingEntry>,
+
+    /// Batch T2 (owner's own "within-layer anchor collision is a curation
+    /// error your validation must catch" ruling): every case where TWO
+    /// DIFFERENT real (layer-1 -- curated `witnesses` non-empty and/or
+    /// `robertson_section` present) containers anchor the identical verse
+    /// -- `(anchor_verse, first_event_id, second_event_id)`. Distinct from
+    /// `verse_heading`'s own collision RESOLUTION (which decisively picks
+    /// a winner for DISPLAY via `heading_precedence`, and is fine with a
+    /// layer-1-vs-layer-0 collision, e.g. `pw_bethany`/`jm_bethany`): two
+    /// real, independently-curated containers should never both claim the
+    /// exact same anchor point in the first place -- curated sectioning
+    /// (Robertson or otherwise) is supposed to PARTITION, not overlap, at
+    /// its own boundary. Built alongside `verse_heading` in the SAME
+    /// `finish()` pass (one iteration over `events`, not a second derived
+    /// pass); `atlas_etl::validate::run` turns each entry here into a
+    /// hard, fail-loud ETL error via `heading_anchor_collisions()` below.
+    #[serde(skip)]
+    heading_anchor_collisions: Vec<(String, String, String)>,
 }
 
 /// Batch T requirement 5: one resolved pericope heading -- an EVENT-kind
@@ -757,11 +784,14 @@ fn heading_anchors_for(e: &Event) -> Vec<String> {
 ///    container vs. `jm_bethany` freebie, both anchoring JHN.12.1).
 /// 2. KIND -- `1` for `"event"`, `0` for `"general"`, a tiebreak that only
 ///    matters "if both colliders are genuinely same-layer containers"
-///    (the owner's own words) -- currently VACUOUS (no real `"general"`
-///    passage exists yet, per the owner's own scoped coverage decision),
-///    kept anyway as principled future-proofing, matching this project's
-///    established "structurally ready, content deferred" pattern (e.g.
-///    translation indirection).
+///    (the owner's own words) -- LIVE as of Batch T2 (general-kind
+///    passages are now real curated data), though still rare in practice:
+///    curated sections are expected to PARTITION (see
+///    `heading_anchor_collisions`), so two same-layer containers colliding
+///    at all is uncommon; when it does happen (e.g. a general-kind
+///    "preface" container and a spine-narrative freebie both touching one
+///    verse -- a layer-0 freebie is not layer-1, so tier 1 already
+///    resolves that case) this tier is what remains to decide it.
 /// 3. CHRONOLOGY -- the EARLIER `(from_year, order_key)` wins, via
 ///    `std::cmp::Reverse` (NOT `i32::MAX - year` -- this atlas's own years
 ///    run deep negative, e.g. -4004 at the Ussher-consistent span floor,
@@ -1010,6 +1040,15 @@ impl AtlasData {
             self.narratives.iter().flat_map(|n| n.legs.iter().map(|s| s.as_str())).collect();
         let mut verse_heading: HashMap<String, HeadingEntry> = HashMap::new();
         let mut verse_heading_precedence: HashMap<String, (u8, u8, std::cmp::Reverse<i32>, std::cmp::Reverse<i32>)> = HashMap::new();
+        // Batch T2: tracks the FIRST real (layer-1) container to claim each
+        // anchor, purely to detect a SECOND, different real container
+        // claiming the identical anchor -- see `heading_anchor_collisions`'s
+        // own doc comment for why this is a separate, additional concern
+        // from `verse_heading_precedence`'s own decisive-winner resolution
+        // above (that one is fine with a layer-1-vs-layer-0 collision; this
+        // one only ever fires layer-1-vs-layer-1).
+        let mut real_anchor_owner: HashMap<String, String> = HashMap::new();
+        let mut heading_anchor_collisions: Vec<(String, String, String)> = Vec::new();
         for e in &self.events {
             let heading_worthy =
                 narrative_leg_ids.contains(e.id.as_str()) || !e.witnesses.is_empty() || e.robertson_section.is_some();
@@ -1017,7 +1056,19 @@ impl AtlasData {
                 continue;
             }
             let precedence = heading_precedence(e);
+            let is_real_container = precedence.0 == 1; // same LAYER bit heading_precedence itself uses
             for anchor in heading_anchors_for(e) {
+                if is_real_container {
+                    match real_anchor_owner.get(&anchor) {
+                        Some(owner) if owner != &e.id => {
+                            heading_anchor_collisions.push((anchor.clone(), owner.clone(), e.id.clone()));
+                        }
+                        Some(_) => {} // same event claims its own anchor more than once (e.g. two witnesses, same first verse) -- not a collision
+                        None => {
+                            real_anchor_owner.insert(anchor.clone(), e.id.clone());
+                        }
+                    }
+                }
                 let should_replace = match verse_heading_precedence.get(&anchor) {
                     None => true,
                     Some(&incumbent) => precedence > incumbent,
@@ -1029,6 +1080,7 @@ impl AtlasData {
             }
         }
         self.verse_heading = verse_heading;
+        self.heading_anchor_collisions = heading_anchor_collisions;
 
         self
     }
@@ -1068,6 +1120,17 @@ impl AtlasData {
     /// Event ids whose `verses` include the given canonical verse id.
     pub fn events_for_verse(&self, verse: &str) -> &[String] {
         self.verse_to_events.get(verse).map(|v| v.as_slice()).unwrap_or(&[])
+    }
+
+    /// Batch T2: every `(anchor_verse, event_id, event_id)` pair where two
+    /// DIFFERENT real (layer-1) curated containers anchor the identical
+    /// verse -- see the `heading_anchor_collisions` field's own doc comment
+    /// for what "real"/"layer-1" means and why this is checked separately
+    /// from `heading_precedence`'s own (legitimate) collision resolution.
+    /// Empty for well-formed curated data; `atlas_etl::validate::run` fails
+    /// loud on every entry here.
+    pub fn heading_anchor_collisions(&self) -> &[(String, String, String)] {
+        &self.heading_anchor_collisions
     }
 
     /// Batch R requirement 5: place ids whose own `verse_links` include the

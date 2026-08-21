@@ -1,0 +1,7 @@
+[[event]]
+id = "gen_bad_year"
+label = "Should fail: general-kind with a claimed date"
+kind = "general"
+from_year = 30
+to_year = 30
+verses = ["MAT.27.1"]

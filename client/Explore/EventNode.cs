@@ -67,6 +67,11 @@ public sealed class EventNode : IExplorable, INarrativeAware
     /// `when` (a single year for most events; a genuine range for a few) --
     /// resolved lazily, alongside the popover body, via the SAME memoized
     /// <see cref="DetailAsync"/> every section provider reads.
+    ///
+    /// Batch T2: a `Kind == "general"` passage has no `When` (`null`, see
+    /// <see cref="EventDetail"/>'s own doc comment) and, by construction,
+    /// no places either -- there is no map scene to bracket, so this chip
+    /// is simply absent (empty list, no error) for a general-kind passage.
     /// </summary>
     public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
@@ -80,10 +85,15 @@ public sealed class EventNode : IExplorable, INarrativeAware
             return Array.Empty<Exploration>();
         }
 
+        if (detail.When is not { } when)
+        {
+            return Array.Empty<Exploration>();
+        }
+
         IReadOnlyList<Exploration> list = new[]
         {
             new Exploration("Show on the map", "popover-chip-map",
-                new ExplorationTarget.NavigateWorld($"from={detail.When.FromYear}&to={detail.When.ToYear}")),
+                new ExplorationTarget.NavigateWorld($"from={when.FromYear}&to={when.ToYear}")),
         };
         return list;
     }

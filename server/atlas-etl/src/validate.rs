@@ -69,11 +69,13 @@ const ATLAS_END_YEAR: i32 = 100;
 /// names styled letterspaced small caps).
 const ALLOWED_LANDMARK_KINDS: [&str; 3] = ["water", "mountain", "region"];
 
-/// Batch T requirement 1: the curated `Event::kind` values -- "event" for
-/// every real record today (see that field's own doc comment for why
-/// "general" is modeled but unused this batch: an `Event` structurally
-/// always carries `when`/`places`, so it cannot represent a dateless/
-/// placeless passage).
+/// Batch T requirement 1, real data since Batch T2: the curated
+/// `Event::kind` values -- "event" (real date/place) or "general"
+/// (dateless/placeless titled container -- see `atlas_core::data::
+/// Event::kind`'s own doc comment for the shape each implies, and
+/// `atlas_etl::curated::parse_events_extra` for the fabrication guard
+/// that keeps a general-kind row from ever carrying a curator-typed
+/// date/place).
 const ALLOWED_EVENT_KINDS: [&str; 2] = ["event", "general"];
 
 /// Batch C2: the curated `size` hint `landmarks.toml` may optionally set
@@ -240,6 +242,21 @@ pub fn run(data: &AtlasData) -> Result<()> {
                 ));
             }
         }
+    }
+
+    // Batch T2 (owner's own ruling: "Robertson sections within one Gospel
+    // should partition, not collide with each other -- a within-layer
+    // anchor collision is a curation error your validation must catch").
+    // `AtlasData::finish()` already derives every such collision in ONE
+    // pass alongside `verse_heading` itself (see `heading_anchor_
+    // collisions`'s own doc comment, `atlas-core/src/data.rs`) -- this is
+    // purely the fail-loud reporting half, same split every other
+    // AtlasData-derived check in this function follows (era gaps/overlaps
+    // via `check_eras`, chronological legs above).
+    for (anchor, a, b) in data.heading_anchor_collisions() {
+        errors.push(format!(
+            "verse '{anchor}' is anchored by two real curated containers, '{a}' and '{b}' -- curated sections (Robertson or otherwise) must partition, never share an anchor verse (within-layer anchor collision)"
+        ));
     }
 
     check_eras(&data.eras, &mut errors);
