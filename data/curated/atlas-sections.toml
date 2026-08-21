@@ -105,3 +105,21 @@ atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no exte
 [[section]]
 event_id = "theo-127"
 atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Exodus 19:1-20:17, Israel's arrival at Sinai and the giving of the Ten Commandments. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance -- req 1b's own NAMED CASE (Exodus 20 vs Deuteronomy 5): its own DEU witness (data/curated/event-witnesses.toml) is this event's own PARALLEL ACCOUNTS partner."
+
+# --- Deuteronomy ---
+#
+# theo-129 ("Death of Moses") is deliberately NOT enriched here, unlike
+# this file's other well-scoped single-scene candidates: its own compiled
+# `verses` field carries a genuine pre-existing data anomaly (a stray
+# 'GEN.34.1' entry alongside its correct DEU.34.1-12 span -- likely a
+# Theographic upstream artifact, the SAME chapter:verse number colliding
+# across two different books; found via this batch's own real ETL run,
+# which failed loud with a within-layer anchor collision the MOMENT this
+# row was first attempted, against this batch's own correct
+# gen_dinah_shechem container). Fixing Theographic's own raw-data pipeline
+# is out of this batch's own authoring scope; deuteronomy.toml's own
+# fresh deu_death_of_moses container covers Deuteronomy 34 instead,
+# cleanly, with no stray verse. theo-129 stays legal, un-enriched
+# background coverage for Genesis 34:1 (harmlessly redundant with
+# gen_dinah_shechem, which correctly owns that verse's own heading).
+# Disclosed in full in batch-w1-report.md.

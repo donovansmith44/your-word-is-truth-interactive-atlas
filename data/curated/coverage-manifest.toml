@@ -27,5 +27,5 @@
 # one, per the brief's own explicit instruction.
 declared = [
   "MAT", "MRK", "LUK", "JHN", "ACT",
-  "GEN", "EXO", "LEV", "RUT", "NUM",
+  "GEN", "EXO", "LEV", "RUT", "NUM", "DEU",
 ]
