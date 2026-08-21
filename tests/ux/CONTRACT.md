@@ -9,9 +9,17 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
 - `/read/{BOOK}/{chapter}#v{n}` — verse anchor
 - `/read/{BOOK}/{chapter}?split=1` — batch-h-brief.md: lands directly in
   split view (reader left, atlas right, following this chapter) -- the
-  ONE-SHOT arrival signal both split entry points funnel through (see
-  SPLIT-1 below); consumed exactly once per Reader.razor instance, never
-  re-applied by a later, unrelated navigation
+  ARRIVAL signal both split entry points funnel through (see SPLIT-1
+  below). `?split=1` itself is consumed exactly once per Reader.razor
+  instance to SEED `_splitOpen` (never re-applied by a later, unrelated
+  navigation to the same instance) -- but batch-f2-brief.md requirement 6c
+  ("if i am in split screen mode and refresh, the split screen mode shalt
+  not be ceased on account of refresh") keeps the QUERY STRING ITSELF
+  continuously reflecting `_splitOpen` from then on (added the moment split
+  opens by either entry point, carried forward across reader navigation,
+  removed the moment split closes) -- so a refresh at ANY point while split
+  is open always lands back in split view on the SAME chapter, not just
+  immediately after the original arrival
 - `/world?from={year}&to={year}` — time mode (signed years, no zero)
 - `/world?ref={REF}` — scripture mode (canonical ref)
 - `/world` (no `from`/`to`/`ref` at all) — defaults to the `gospels` era's
@@ -174,38 +182,71 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   own verbatim heading, e.g. "What does this mean?"),
   `popover-section-catechism-where-written` ("Where is this written?"), and
   `popover-section-catechism-scriptures` ("THE SCRIPTURES") -- see CATECH-1),
-  `catechism-item-{ID}` (batch-f-brief.md; button; one per catechism item
-  citing the current VERSE/PASSAGE, `ID` = the item's own curated id, text =
-  the item's own display name (e.g. "The First Commandment", "Baptism —
-  Part Four"); opens a `CatechismNode` for that item -- see CATECH-1),
-  `catechism-verse-{VREF}` (batch-f-brief.md; button; one per a catechism
-  item's own curated proof verse, inside `popover-section-catechism-scriptures`;
-  text contains that verse's own FULL KJV text (never truncated); opens a
-  `VerseNode` for `VREF` -- onward navigation from there is ordinary VerseNode
-  behavior, unchanged (its own text/cross-references/catechism citations, if
-  any) -- see CATECH-1),
-  `popover-verse-expand` (batch-r-brief.md requirement 4; button; present on
-  every VERSE/PASSAGE node's own `popover-section-verse-text`; text "Read
-  the whole chapter" collapsed / "Show just this verse" expanded, attr
-  `aria-expanded`; toggles the compact text vs. the scrollable mini-reader
-  below -- see READER-1),
-  `popover-verse-reader` (batch-r-brief.md requirement 4; the mini-reader's
-  own scrollable container; present only while expanded),
-  `popover-reader-verse-{n}` (batch-r-brief.md requirement 4; one per verse
-  of the lazily-fetched chapter, `n` = verse number within it; attr
-  `data-focal` = `"true"` for every verse in the node's own focal
+  `catechism-item-{ID}` (batch-f-brief.md, extended batch-f2-brief.md
+  requirement 4; button; one per (item, question) hit citing the current
+  VERSE/PASSAGE, `ID` = the item's own curated id, text = "`<Item>`" for an
+  item-level hit (Luther's own embedded citation, Batch F, unchanged) or
+  "`<Item> — <Question title>`" for a question-level hit (batch-f2-brief.md's
+  own repo-mapping/Deut5-supplement citations, e.g. "The First Commandment —
+  God the Holy Trinity"); opens a `CatechismNode` for that item -- see
+  CATECH-1. The SAME item can legitimately produce >1 row in one span
+  (different questions, or a question plus the bare item-level hit) -- the
+  FIRST occurrence of a given `ID` keeps the bare `catechism-item-{ID}`
+  testid (every pre-F2 single-occurrence case, e.g. Baptism's own items,
+  unaffected); the second and later occurrences of the SAME id get a
+  numbered suffix, `catechism-item-{ID}--q2`, `--q3`, ...),
+  `catechism-verse-{SPAN}` (batch-f-brief.md, rebuilt batch-f2-brief.md
+  6-ARCH; button; one per PASSAGE ENTRY inside
+  `popover-section-catechism-scriptures` -- `SPAN` is a bare vref for a lone
+  verse or a ref-range (e.g. `EXO.20.5-6`) when >=2 consecutive proof verses
+  from the SAME source (Luther's own embedded citation, or one repo/Deut5
+  question) group into one passage entry, per the shared passage-list
+  component (see PASSAGE-1 below) -- text contains that block's own FULL KJV
+  text (never truncated), captioned with its own question title when it has
+  one; opens a `VerseNode` (lone verse) or `PassageNode` (passage) for
+  `SPAN` -- onward navigation from there is ordinary Verse/PassageNode
+  behavior, unchanged -- see CATECH-1),
+  `popover-verse-expand{-SPAN}` (batch-r-brief.md requirement 4, generalized
+  batch-f2-brief.md 6-ARCH; button; present on EVERY passage entry rendered
+  by the shared passage-list component (see PASSAGE-1 below) -- the
+  verse-text section's own SINGLE entry keeps the bare `popover-verse-expand`
+  testid, byte for byte (no suffix, unchanged since Batch R); every entry in
+  a MULTI-entry list (cross-references, THE SCRIPTURES, place est/dest) gets
+  its own uniquely-scoped `popover-verse-expand-{SPAN}` (`SPAN` = that
+  entry's own ref-range or bare vref), so several entries can each be
+  expanded independently in the same popover; text "Read the whole chapter"
+  collapsed / "Show just this verse" expanded, attr `aria-expanded`; toggles
+  the compact passage text vs. that entry's own scrollable mini-reader),
+  `popover-verse-reader{-SPAN}` (same generalization; the mini-reader's own
+  scrollable container; present only while that entry is expanded),
+  `popover-reader-verse-{n}{-SPAN}` (same generalization; one per verse of
+  the lazily-fetched chapter, `n` = verse number within it; attr
+  `data-focal` = `"true"` for every verse in that entry's own focal
   verse/passage range, `"false"` otherwise -- see READER-1),
-  `popover-reader-mention-{n}-{placeId}` (batch-r-brief.md requirement 5;
-  one per detected place-name mention inside verse `n`'s own text -- see
-  BLINK-1 below; hovering or keyboard-focusing it blinks `placeId`'s own map
-  marker),
+  `popover-reader-mention-{n}-{placeId}{-SPAN}` (batch-r-brief.md
+  requirement 5, same generalization; one per detected place-name mention
+  inside verse `n`'s own text -- see BLINK-1 below; hovering or
+  keyboard-focusing it blinks `placeId`'s own map marker),
   `popover-place-date-established` / `popover-place-date-destroyed`
-  (batch-r-brief.md requirement 3; button; the popover-native rendering of
-  the SAME curated established/destroyed claim PlaceCard's own
-  `place-card-date-established`/`-destroyed` already show one hop further
-  out -- opens the SAME `YearNode`, listing its curated supporting verses
-  first, per DATE-1; conditional presence, one or both present exactly when
-  PlaceCard's own equivalents would be),
+  (batch-r-brief.md requirement 3, REBUILT batch-f2-brief.md requirement 6b;
+  no longer a button -- the "click to reveal supporting verses" gate is
+  RETIRED; a plain instrument-face label+value row (e.g. "Established c.
+  1003 BC"), non-interactive, immediately followed by that date's own
+  supporting verses/passages rendered INLINE via the shared passage-list
+  component -- see PASSAGE-1/XREF-1 below and this file's own est/dest note
+  further down; conditional presence, one or both present exactly when
+  PlaceCard's own `place-card-date-established`/`-destroyed` equivalents
+  would be),
+  `popover-place-date-established-verse-{SPAN}` / `popover-place-date-destroyed-verse-{SPAN}`
+  (batch-f2-brief.md requirement 6b; button; one per passage entry among a
+  date claim's own supporting verses, capped at 2 -- see this file's own
+  est/dest note below; opens a `VerseNode`/`PassageNode`, same as every
+  other passage-list entry),
+  `popover-place-date-established-more` / `-collapse`,
+  `popover-place-date-destroyed-more` / `-collapse` (batch-f2-brief.md
+  requirement 6b; the down-arrow reveal / up-arrow snap-back for each
+  date's own supporting-verse list -- present only when that date has more
+  than 2 passage entries),
   `popover-place-blurb` (batch-r-brief.md requirement 3; the popover-native
   rendering of the SAME BLURB-1-resolved text `place-card-blurb` already
   shows; conditional presence, same BLURB-1 rule),
@@ -216,11 +257,21 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `popover-chip-verse-{VREF}` (batch-e-brief.md; one per a `YearNode`'s own curated
   supporting verses, in curated order, ALWAYS rendered before that same node's
   `popover-chip-map` chip -- DATE-1: opening a date's popover lists its supporting
-  verses first),
-  `xref-item-{TARGET}` (TARGET = canonical ref/span text; batch-r-brief.md:
-  now rendered INLINE, unconditionally offered where present -- see
-  REGISTRY-1; the retired `popover-chip-xrefs` toggle is GONE for VerseNode/
-  PassageNode, no button press needed to see it), `mini-map`, `mini-map-open-world`
+  verses first -- reached today only via `PlaceCard`'s own hover-card
+  established/destroyed line, unaffected by batch-f2-brief.md requirement
+  6b, which is scoped to the POPOVER's own est/dest section only),
+  `xref-item-{SPAN}` (`SPAN` = a cross-reference target's own ref-range or
+  bare vref; batch-r-brief.md: rendered INLINE, unconditionally offered
+  where present -- see REGISTRY-1; the retired `popover-chip-xrefs` toggle
+  is GONE for VerseNode/PassageNode, no button press needed to see it.
+  REBUILT batch-f2-brief.md 6-ARCH/requirement 6: a target spanning >=2
+  consecutive verses now renders as ONE passage entry with its OWN FULL text
+  for every member verse -- not just `CrossRefOut.preview`'s first-verse
+  text -- via the shared passage-list component; truncated per XREF-1
+  below), `xrefs-more` / `xrefs-collapse` (batch-f2-brief.md requirement 6;
+  the down-arrow reveal / up-arrow snap-back for the cross-references list
+  -- present only when there are more entries than the current cap; see
+  XREF-1), `mini-map`, `mini-map-open-world`
 Notes:
 - REGISTRY-1 (batch-r-brief.md requirement 3, "the popover becomes a
   content-first section platform"): the popover body is a composable,
@@ -233,13 +284,16 @@ Notes:
   sections, in this order: the verse's own text with its own expand
   affordance (`popover-section-verse-text`, see READER-1), cross-references
   inline (`popover-section-xrefs`, conditional -- absent for a verse with
-  zero recorded cross-references), "THE SMALL CATECHISM"
-  (`popover-section-catechism`, batch-f-brief.md, conditional -- absent for
-  a verse citing zero catechism items -- see CATECH-1). PASSAGE nodes get
-  the same verse-text/cross-references/catechism sections (aggregating as
-  before this batch). PLACE node sections, in this order: an empty seam
-  reserved for a future place-description provider (renders nothing today),
-  established/destroyed dates (`popover-section-place-dates`, conditional),
+  zero recorded cross-references, truncated per XREF-1), "THE SMALL
+  CATECHISM" (`popover-section-catechism`, batch-f-brief.md, conditional --
+  absent for a verse citing zero catechism items -- see CATECH-1). PASSAGE
+  nodes get the same verse-text/cross-references/catechism sections
+  (aggregating as before this batch). PLACE node sections, in this order:
+  an empty seam reserved for a future place-description provider (renders
+  nothing today), established/destroyed dates (`popover-section-place-dates`,
+  conditional -- batch-f2-brief.md requirement 6b: each date's own
+  supporting verses now render INLINE within this section, truncated per
+  the same XREF-1-family rule, see this file's own est/dest note below),
   period blurb (`popover-section-place-blurb`, conditional, BLURB-1), events
   (`popover-section-place-events`, one `place-event-{id}` row per event,
   pushes a `TimeAndPlaceNode` -- the thin, events-only PlaceNode popover
@@ -253,7 +307,8 @@ Notes:
   (`popover-section-catechism-explanation`, always present), "Where is this
   written?" (`popover-section-catechism-where-written`, conditional), "THE
   SCRIPTURES" (`popover-section-catechism-scriptures`, conditional -- one
-  `catechism-verse-{VREF}` row per curated proof verse). A node `Kind` no
+  `catechism-verse-{SPAN}` passage entry per run of curated proof verses,
+  grouped/captioned per PASSAGE-1 -- see CATECH-1). A node `Kind` no
   provider claims at all (Chapter/Book/Author/TimeAndPlace/Year) keeps its
   own PRE-BATCH-R rendering, byte for byte -- unaffected by this note. The
   chips row (`popover-chip-map`/`-book`/`-context`/`-verse-{VREF}`) is
@@ -261,6 +316,68 @@ Notes:
   before -- "Explore" (the map affordance) is `popover-chip-map`, not a
   registry section; a CATECHISM node offers NO chips at all (no geography --
   conditional presence extends to affordances too, per CATECH-1).
+- PASSAGE-1 (batch-f2-brief.md, 6-ARCH, user direction 2026-08-20,
+  near-verbatim: "it should use the same underlying data structure as the
+  hover menu everywhere else - showing sequential verses as passages...
+  reuse the bits that we have"): ONE shared, composable passage-list
+  component (`client/Components/PassageList.razor`) renders every verse
+  LIST in the popover platform -- cross-references (XREF-1), THE SCRIPTURES
+  (CATECH-1), and place est/dest supporting verses (this file's own est/dest
+  note below). Sequential verses from the SAME source (one cross-reference
+  target's own span, one catechism question's own citations, one date
+  claim's own verses) group into ONE passage entry (ref-range + contiguous
+  text, per-verse sup numbers) via the SAME grouping algorithm the map hover
+  card introduced (Batch D, `client/Explore/PassageGrouping.cs`, shared --
+  `PlaceCard.razor` itself now calls it too, rather than a second copy) --
+  never N separate verse rows for what's really one contiguous citation, and
+  never merged ACROSS two different sources even if numerically adjacent (a
+  question caption, or a distinct xref target, must never silently blur
+  into its neighbor's). Every passage entry is independently expandable, in
+  place, to read the whole chapter -- REUSES Batch R's own mini-reader
+  mechanism (`client/Components/MiniReaderExpand.razor`, extracted from
+  `VerseTextSection.razor`, which now wraps it too -- one mechanism, every
+  caller, per-entry-scoped testids, see this file's own
+  `popover-verse-expand{-SPAN}` note above). Truncation caps (XREF-1 and
+  this file's own est/dest note) count PASSAGE ENTRIES, not raw verses.
+  Clicking a multi-verse entry (not its own mini-reader expand button --
+  that stays in place) pushes a PassageNode by default (the group's own
+  span, aggregate view) EXCEPT for cross-references (XREF-1): an xref-item
+  always pushes a VerseNode at the TARGET's own first verse, regardless of
+  how many verses its own preview text spans -- restoring
+  `CrossRefsSection`'s pre-Batch-F2 contract (a cross-reference's own
+  identity is "where it points", not "how many verses its preview covers";
+  ~25% of real cross-reference targets span more than one verse, so this
+  is common, not an edge case), verified by `reader.spec.ts`'s own READ-3
+  property test. `PassageList.razor`'s own `ExploreAsVerse` parameter
+  (default false; `CrossRefsSection` sets it true) is the mechanism.
+- XREF-1 (batch-f2-brief.md requirement 6, user direction 2026-08-20,
+  near-verbatim: "truncate the cross references to show no more than 3 if
+  cross references are the only kind of context that we're pulling into the
+  hover menu... and no more than two if there are other types of context
+  pulled in (small catechism, etc.)"): in the VERSE/PASSAGE popover,
+  `popover-section-xrefs` initially shows AT MOST 3 passage entries
+  (`xref-item-{SPAN}`) when it is the ONLY context section present for the
+  current node, AT MOST 2 when any OTHER context section (THE SMALL
+  CATECHISM today; any future provider counts automatically -- the
+  determination reads the LIVE, fully-resolved section-registry list, never
+  a hardcoded "is catechism present" check, so this keeps working unchanged
+  as later batches add providers) is ALSO present. `xrefs-more` reveals the
+  rest (all remaining entries at once -- not an incremental step);
+  `xrefs-collapse` snaps back to the capped view -- same down-arrow-reveal/
+  up-arrow-snap-back interaction language `place-card-more`/`-collapse`
+  (Batch D) already established, reused rather than a second one. Fewer
+  entries than the cap -> no arrow at all (conditional presence). Counts
+  exclude the verse-text section itself (`popover-section-verse-text` is
+  the subject being read, not context pulled in alongside it).
+  batch-f2-brief.md requirement 6b extends the SAME cap/reveal MECHANISM
+  (via PASSAGE-1's shared component) to the PLACE popover's own
+  established/destroyed supporting verses -- but with an UNCONDITIONAL cap
+  of 2 passage entries per date (est and dest each), not context-dependent:
+  "the place popover always has sibling sections" (blurb/events routinely
+  present alongside dates), so there is no "only kind of context" case to
+  distinguish there the way there is for xrefs. See
+  `popover-place-date-established-verse-{SPAN}`/`-destroyed-verse-{SPAN}`
+  and their own `-more`/`-collapse` pair in the testid inventory above.
 - READER-1 (batch-r-brief.md requirement 4): `popover-verse-expand`
   collapsed shows exactly the compact text the popover always showed (one
   verse, or a passage's own already-known concatenated text); clicking it
@@ -307,11 +424,12 @@ Notes:
   /api/verse/{vref}`'s own `catechism` field (Verse) / `GET
   /api/catechism/{sref}` (Passage span aggregation, mirrors `GET
   /api/xrefs/{sref}` exactly -- union of member verses' own citations, no
-  "votes", no self-target concept) populate `popover-section-catechism`
-  ("THE SMALL CATECHISM", conditional -- absent for a verse/passage citing
-  nothing), listing `catechism-item-{ID}` rows named by the item's own
-  curated display name (e.g. "The First Commandment", "Baptism — Part Four"). ITEM -> its own content: clicking one pushes a `CatechismNode`
-  (`GET /api/catechism/item/{id}`), whose OWN popover renders, in order:
+  "votes") populate `popover-section-catechism` ("THE SMALL CATECHISM",
+  conditional -- absent for a verse/passage citing nothing), listing
+  `catechism-item-{ID}` rows named by the item's own curated display name
+  (e.g. "The First Commandment", "Baptism — Part Four"). ITEM -> its own
+  content: clicking one pushes a `CatechismNode` (`GET
+  /api/catechism/item/{id}`), whose OWN popover renders, in order:
   `popover-section-catechism-text` (the item's own primary-source wording --
   conditional, absent for Baptism/Confession/Sacrament-of-the-Altar items,
   which pose their own question directly with no separate prompt to quote
@@ -322,10 +440,11 @@ Notes:
   give or profit?" -- never a generic placeholder), `popover-section-catechism-where-written`
   ("Where is this written?", conditional -- present only for the items where
   Luther's own text poses that exact question), `popover-section-catechism-scriptures`
-  ("THE SCRIPTURES", conditional -- one `catechism-verse-{VREF}` row per
-  curated proof verse, each showing that verse's own FULL KJV text, never
-  truncated). ITEM -> PROOF VERSE -> onward: clicking a `catechism-verse-{VREF}`
-  row pushes an ordinary `VerseNode` -- no bespoke code, so its own
+  ("THE SCRIPTURES", conditional -- one `catechism-verse-{SPAN}` passage
+  entry per run of curated proof verses sharing the same source, per
+  PASSAGE-1, each captioned with its own question title when it has one).
+  ITEM -> PROOF VERSE -> onward: clicking a `catechism-verse-{SPAN}` row
+  pushes an ordinary `VerseNode`/`PassageNode` -- no bespoke code, so its own
   cross-references and (if the SAME verse also happens to cite a DIFFERENT
   catechism item) its own "THE SMALL CATECHISM" section work identically to
   any other verse reached any other way (verse -> catechism -> proof verse ->
@@ -334,15 +453,40 @@ Notes:
   (`popover-chip-map`/`-book`/`-context`) at all -- catechism items have no
   geography, so "Explore geo-temporally"/"Read in context" have nothing to
   target; conditional presence extends to affordances, not just sections.
-  Verse-link sparsity is a REAL, disclosed property of the primary source,
-  not a bug: Luther's Small Catechism embeds explicit chapter-and-verse
-  citations in only a handful of places (Baptism's four parts, the Close of
-  the Ten Commandments, the Sacrament of the Altar's institution words) --
-  most items (every Commandment 1-10, every Creed article, every Lord's-
-  Prayer petition, both Confession items) cite none, so most catechism items
-  are reachable only by curating a future verse citation for them, not
-  reachable from any verse today; this is disclosed, not silently worked
-  around by inventing citations the primary source itself doesn't make.
+
+  batch-f2-brief.md requirement 3/4 ("the user's own catechism verse
+  mapping" -- user direction 2026-08-20: "I gave you the mapping very
+  explicitly in the catechism repo"): Luther's own item-level embedded
+  citations (above) are no longer the only verse-link source. Each
+  catechism item ALSO carries QUESTION-level citations
+  (`CatechismItem.questions`, curated from the user's own
+  brain-fuel/catechism repo -- see LICENSES.md's own "Catechism verse
+  mapping" section -- plus this project's own Deuteronomy 5 parallel
+  supplement for the Ten Commandments, `data/curated/catechism-deut5.toml`,
+  requirement 5b, source-tagged separately from the repo-derived mapping).
+  A `catechism-item-{ID}` row's own text reads "`<Item>`" for an item-level
+  hit (unchanged) or "`<Item> — <Question title>`" for a question-level hit
+  (e.g. "The First Commandment — God the Holy Trinity") -- the wire's own
+  `question` field (`VerseDetail.catechism[].question` /
+  `GET /api/catechism/{sref}`'s own array entries), omitted (not null) when
+  the hit is item-level. The SAME item can legitimately produce more than
+  one row for one span (different questions, or a question plus the bare
+  item-level hit) -- deduplication is by the (item, question) PAIR, never
+  item id alone, so no real distinction is silently dropped; see this
+  file's own `catechism-item-{ID}` testid note above for the numbered-
+  suffix disambiguation this requires. "If cheap, highlight/deep-link the
+  question context" (requirement 4) is realized as a caption: each proof
+  verse in THE SCRIPTURES shows its own question's title next to it
+  (`.popover-passage-caption`), so opening the item from a question-titled
+  row visibly shows WHICH verses that question itself cited.
+
+  Verse-link sparsity for Luther's OWN embedded citations specifically is
+  still a real, disclosed property of the primary source (unchanged since
+  Batch F: explicit chapter-and-verse citations appear in only a handful of
+  places in the 1921 text itself) -- but this is no longer the ONLY
+  reachability path: batch-f2-brief.md's own coverage report
+  (batch-f2-report.md) shows all 33 items reachable from >=1 verse once the
+  repo mapping and Deut5 supplement are both counted.
 - ONE-RULE (batch-g1-brief.md, user direction 2026-08-19: "the little trinity button
   isn't clear... explorable elements display slightly darker on hover; click opens the
   pop-up menu" -- REPLACES the retired `verse-explore-{n}` ∴ button, which offered no
@@ -357,14 +501,20 @@ Notes:
   `place-card-title`/`place-card-date-established`/`place-card-date-destroyed`
   (PlaceNode/YearNode, pre-existing testids, RESTYLED onto this same rule -- their own
   prior per-element hover color is gone). Batch R adds, all opening a real
-  ExplorerPopover node exactly like every element above: `xref-item-{TARGET}`
-  (inline cross-reference rows, REGISTRY-1), `popover-place-date-established`/
-  `popover-place-date-destroyed` (REGISTRY-1), and `place-event-{id}`
+  ExplorerPopover node exactly like every element above: `xref-item-{SPAN}`
+  (inline cross-reference rows, REGISTRY-1/XREF-1), and `place-event-{id}`
   (REGISTRY-1) -- `.atlas-label`/`.quiet-label` (LABEL-1) are DELIBERATELY NOT
   added to this list; a label is equivalent to its own dot (hover/click ->
-  place-card, per PIN-1), never a popover-opening target itself. Batch F adds
+  place-card, per PIN-1), never a popover-opening target itself.
+  batch-f2-brief.md requirement 6b RETIRES `popover-place-date-established`/
+  `popover-place-date-destroyed` FROM this list -- they are no longer
+  buttons at all (a plain instrument-face label row now, see this file's
+  own testid-inventory note); the explorable entries in that section are
+  now `popover-place-date-established-verse-{SPAN}`/`-destroyed-verse-{SPAN}`
+  instead (PASSAGE-1/XREF-1), same as every other passage-list entry.
+  Batch F adds
   `catechism-item-{ID}` (the "THE SMALL CATECHISM" section's own citing-item
-  rows) and `catechism-verse-{VREF}` ("THE SCRIPTURES" section's own
+  rows) and `catechism-verse-{SPAN}` ("THE SCRIPTURES" section's own
   proof-verse rows) -- see CATECH-1. Two kinds of
   element are deliberately
   EXCLUDED, never explorable, and keep whatever hover treatment (if any) they already
@@ -685,6 +835,32 @@ Notes:
   the split open across it -- Reader.razor is REUSED, not recreated, for an
   ordinary chapter-to-chapter navigation (same as it always was, pre-Batch
   H), so `split-view`'s own open/closed state simply survives.
+
+  batch-f2-brief.md requirement 6c (user direction 2026-08-20, verbatim:
+  "if i am in split screen mode and refresh, the split screen mode shalt
+  not be ceased on account of refresh"): the reader's OWN `split-open-reader`
+  affordance now ALSO reflects `?split=1` into the URL the moment it opens
+  (previously a local field flip only, with no URL change at all --
+  `/world`'s own `split-open-world` already built `?split=1` into its
+  target URL, so only the reader-side entry point needed this fix), and
+  `split-close-atlas` removes it again ("closing the split cleans the
+  param") -- both via a query-string-only `NavigateTo(..., replace: true)`
+  that never triggers a refetch or disturbs scroll/popover state (book/
+  chapter route params are unchanged, so `OnParametersSetAsync`'s own
+  redundant-navigation guard short-circuits before touching anything else).
+  `reader-prev`/`reader-next`'s own hrefs, the reader's `ScripturePicker`
+  navigation, and a popover's "Read in context" chip (`ExplorationTarget.NavigateReader`)
+  all carry `?split=1` forward too whenever a split is currently open, so
+  the URL never silently drops it partway through an in-session reading
+  session. A browser refresh while the URL carries `?split=1` therefore
+  always lands back in split view, on the SAME book/chapter (the route
+  params, unaffected by any of this). Follow state (FOLLOW-1) is NOT
+  separately persisted across a refresh -- `ViewStateService` is a plain
+  in-memory singleton, and a hard reload restarts the whole WASM app, so
+  its own default (follow ON) simply applies again, same as any other
+  fresh session; this is the correct, intended behavior for "follow default
+  ON applies unless persisted" (VIEWSTATE-1's own explicitly-scoped
+  in-memory-only design), not a gap.
   NO-NESTED-POPUP: an ExplorerPopover opened from EITHER pane while split
   is open still renders normally -- full-viewport backdrop/panel, unchanged
   (this includes VerseNode/PassageNode's own `popover-chip-map` ->
@@ -871,3 +1047,38 @@ Notes:
   shift, no animation, keyboard focus visible (this file's own global
   `a:focus-visible` rule, unchanged) -- all unaffected by this batch, same
   as before it.
+- PANE-ANCHOR-1 (batch-f2-brief.md requirement 6d, user direction
+  2026-08-20, near-verbatim: "if i am exploring anything on either side of
+  the split screen, the hover windows ought not be smack dab in the center
+  of the screen, but on the side of the screen where the hover exploration
+  originated... particularly i am referring to when i click on a verse and
+  a hover box appears"): while a split is open, the ExplorerPopover
+  (`popover`/`popover-backdrop`) anchors to the ORIGINATING PANE's own
+  currently-visible region instead of the full viewport -- a verse clicked
+  in the reader pane opens centered within the reader pane; an exploration
+  started on the atlas pane (a marker/place card promoted into a popover)
+  opens centered within the atlas pane. The OTHER pane stays completely
+  undimmed and clickable (the backdrop itself is pane-scoped, not just the
+  panel) -- "explore on both sides of the screen independently, while still
+  following text," per the brief verbatim. Full-page (non-split) popovers
+  are byte-for-byte unchanged (still viewport-centered) -- this is purely a
+  split-mode behavior, gated on each host page's own split state
+  (`Reader.razor`'s `_splitOpen`, `World.razor`'s `SplitMode`), passed down
+  as a new `PaneAnchor` parameter (`"reader"` / `"atlas"` / `null`).
+  Measured ONCE, at popover-open time (`reader.js`'s `getPaneRect`,
+  viewport-clamped so a reader pane taller than one screen still centers
+  within the currently VISIBLE slice of it, never somewhere off-screen in
+  scrolled-past content) -- the SAME "snapshot at open, never re-measure on
+  scroll/pan" discipline `PlaceCard`/`CardPlacement` already established
+  for the map hover card's own flip/clamp decision, not a continuous
+  tracker. This batch keeps the existing ONE-popover-instance rule
+  unchanged (each pane's OWN ExplorerPopover instance -- Reader.razor and
+  World.razor each already render their own, per SPLIT-1 -- is what's being
+  anchored; this is a POSITION change, not concurrent popovers on both
+  panes at once, which stays a possible future extension, not built here).
+  Bounded within the pane on every axis (never overflows into the other
+  pane) -- the popover's own `max-width`/`max-height` are computed against
+  the pane's own measured size (the same margins the full-viewport rule
+  already subtracts, just from the pane instead), so an expanded mini-reader
+  (READER-1/PASSAGE-1) inside it is automatically confined the same way,
+  with no separate rule needed.

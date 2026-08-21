@@ -444,9 +444,15 @@ test('hover place card: clicking a verse in an UNPINNED card opens its VerseNode
   // Batch R requirement 3(b): no popover-chip-xrefs toggle anymore --
   // cross-references render INLINE, immediately (conditional presence: a
   // verse with zero recorded cross-refs shows no xrefs section at all,
-  // never a "No cross-references recorded." placeholder).
+  // never a "No cross-references recorded." placeholder). Batch F2
+  // requirement 6 (XREF-1): the initial render is CAPPED (3 when xrefs is
+  // the only context section, 2 when THE SMALL CATECHISM is also present)
+  // -- the full count is only reachable after xrefs-more.
   const detail = await api.verse(vref);
-  await expect(page.getByTestId(/^xref-item-/)).toHaveCount(detail.cross_refs.length);
+  const hasCatechism = await page.getByTestId('popover-section-catechism').count() > 0;
+  const cap = hasCatechism ? 2 : 3;
+  const expectedInitial = Math.min(detail.cross_refs.length, cap);
+  await expect(page.getByTestId(/^xref-item-/)).toHaveCount(expectedInitial);
   if (detail.cross_refs.length > 0) {
     await expect(page.getByTestId(`xref-item-${detail.cross_refs[0].target}`)).toBeVisible();
   } else {

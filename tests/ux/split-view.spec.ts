@@ -328,3 +328,130 @@ test('VIEWSTATE-1: reader scroll and atlas window/camera round-trip across page-
   await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
   await expect.poll(() => readCamera(page)).toEqual(afterDrag);
 });
+
+// ---------------------------------------------------------------------
+// Batch F2 requirement 6c (SPLIT-1, user direction 2026-08-20, verbatim:
+// "if i am in split screen mode and refresh, the split screen mode shalt
+// not be ceased on account of refresh"). Both entry points now keep
+// ?split=1 continuously in sync with the split's own open/closed state.
+// ---------------------------------------------------------------------
+
+test('SPLIT-1/6c: opening split via the reader reflects ?split=1 in the URL, and a refresh returns to split view on the same chapter', async ({ page }) => {
+  await page.goto('/read/GEN/12');
+  await expect(page).toHaveURL(/\/read\/GEN\/12$/); // no ?split=1 yet
+
+  await page.getByTestId('split-open-reader').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page).toHaveURL(/\/read\/GEN\/12\?split=1$/);
+
+  await page.reload();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
+  await expect(page.getByTestId('chapter-head')).toContainText('12');
+  await expect(page.getByTestId('verse-line-1')).toBeVisible();
+  await expect(page).toHaveURL(/\/read\/GEN\/12\?split=1$/);
+});
+
+test('SPLIT-1/6c: closing the atlas pane cleans ?split=1 from the URL, and a refresh stays out of split view', async ({ page }) => {
+  await page.goto('/read/GEN/12?split=1');
+  await expect(page.getByTestId('split-view')).toBeVisible();
+
+  await page.getByTestId('split-close-atlas').click();
+  await expect(page.getByTestId('split-view')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/read\/GEN\/12$/);
+
+  await page.reload();
+  await expect(page.getByTestId('split-view')).toHaveCount(0);
+  await expect(page.getByTestId('split-open-reader')).toBeVisible();
+});
+
+test('SPLIT-1/6c: chapter navigation while split is open keeps ?split=1 in the URL (so a later refresh still restores it)', async ({ page }) => {
+  await page.goto('/read/GEN/12?split=1');
+  await expect(page.getByTestId('split-view')).toBeVisible();
+
+  await page.getByTestId('reader-next').click();
+  await expect(page.getByTestId('chapter-head')).toContainText('13');
+  await expect(page).toHaveURL(/\/read\/GEN\/13\?split=1$/);
+  await expect(page.getByTestId('split-view')).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page.getByTestId('chapter-head')).toContainText('13');
+});
+
+// ---------------------------------------------------------------------
+// Batch F2 requirement 6d (PANE-ANCHOR-1, user direction 2026-08-20,
+// verbatim: "if i am exploring anything on either side of the split
+// screen, the hover windows ought not be smack dab in the center of the
+// screen, but on the side of the screen where the hover exploration
+// originated"). Both panes' own ExplorerPopover anchors to that pane's own
+// currently-visible region, never the full viewport, while split is open.
+// ---------------------------------------------------------------------
+
+test('PANE-ANCHOR-1: a verse popover opened from the reader pane stays fully within the reader pane\'s own region', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto('/read/GEN/12?split=1');
+  await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
+
+  await page.getByTestId('verse-line-1').click();
+  await expect(page.getByTestId('popover')).toBeVisible();
+
+  const readerBox = await page.getByTestId('reader-root').boundingBox();
+  const popoverBox = await page.getByTestId('popover').boundingBox();
+  expect(readerBox).toBeTruthy();
+  expect(popoverBox).toBeTruthy();
+  if (readerBox && popoverBox) {
+    expect(popoverBox.x).toBeGreaterThanOrEqual(readerBox.x - 1);
+    expect(popoverBox.x + popoverBox.width).toBeLessThanOrEqual(readerBox.x + readerBox.width + 1);
+    // Also genuinely on the LEFT side of the viewport (the reader pane's
+    // own side), not coincidentally still within bounds because the pane
+    // happens to span the whole window.
+    expect(popoverBox.x + popoverBox.width / 2).toBeLessThan(700);
+  }
+
+  // The OTHER pane (atlas) stays fully visible and interactive -- "explore
+  // on both sides of the screen independently."
+  await expect(page.getByTestId('world-map')).toBeVisible();
+});
+
+test('PANE-ANCHOR-1: a place popover opened from the atlas pane stays fully within the atlas pane\'s own region', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto('/read/GEN/12?split=1');
+  await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
+  await expect(page.getByTestId(/^marker-/).first()).toBeVisible({ timeout: 10000 });
+
+  await page.getByTestId(/^marker-/).first().click({ force: true });
+  await page.getByTestId('place-card-title').click();
+  await expect(page.getByTestId('popover')).toBeVisible();
+
+  const atlasBox = await page.getByTestId('split-pane-atlas').boundingBox();
+  const popoverBox = await page.getByTestId('popover').boundingBox();
+  expect(atlasBox).toBeTruthy();
+  expect(popoverBox).toBeTruthy();
+  if (atlasBox && popoverBox) {
+    expect(popoverBox.x).toBeGreaterThanOrEqual(atlasBox.x - 1);
+    expect(popoverBox.x + popoverBox.width).toBeLessThanOrEqual(atlasBox.x + atlasBox.width + 1);
+    // Genuinely on the RIGHT side of the viewport (the atlas pane's own
+    // side).
+    expect(popoverBox.x).toBeGreaterThan(700);
+  }
+
+  // The OTHER pane (reader) stays fully visible.
+  await expect(page.getByTestId('verse-line-1')).toBeVisible();
+});
+
+test('PANE-ANCHOR-1: full-page (non-split) popovers stay viewport-centered, unaffected', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto('/read/GEN/12');
+  await expect(page.getByTestId('split-view')).toHaveCount(0);
+
+  await page.getByTestId('verse-line-1').click();
+  await expect(page.getByTestId('popover')).toBeVisible();
+  const popoverBox = await page.getByTestId('popover').boundingBox();
+  expect(popoverBox).toBeTruthy();
+  if (popoverBox) {
+    const viewportCenterX = 700;
+    const popoverCenterX = popoverBox.x + popoverBox.width / 2;
+    expect(Math.abs(popoverCenterX - viewportCenterX)).toBeLessThan(5);
+  }
+});
