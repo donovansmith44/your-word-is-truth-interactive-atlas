@@ -877,6 +877,15 @@ from_year = 33
 to_year = 33
 places = ["jericho-2"]
 verses = ["LUK.19.1-10"]
+order_key = 1270
+# Batch T2: enriched with provenance (was pre-existing, Task 3). Robertson's
+# own §127 also covers the parable of the pounds that follows (Luke
+# 19:11-28), split out into its own titled container
+# (rob_parable_of_pounds, further down this file) -- a real, deliberate
+# split (a parable is a distinct teaching unit from the encounter that
+# occasions it), not a duplication.
+robertson_section = "Robertson (1922) §127, \"Jesus Visits Zacchæus, and Speaks the Parable of the Pounds, and Sets out for Jerusalem\""
+ref_note = "Luke 19:1-10 read directly against the compiled KJV text; see rob_parable_of_pounds for the companion teaching Robertson's own §127 also covers"
 # places: brief guessed "bethany", but geo ancient.jsonl collides into
 # "Bethany 1"/"Bethany 2". bethany-1 (31.7717, 35.2559, on the Mount of
 # Olives near Jerusalem, home of Mary/Martha/Lazarus) carries
@@ -890,6 +899,19 @@ from_year = 33
 to_year = 33
 places = ["bethany-1"]
 verses = ["JHN.12.1"]
+order_key = 1280
+# Batch T2: order_key added ONLY (period 8's own chronological-ordering
+# fix, jm_jericho/rob_parable_of_pounds now precede this leg with real
+# order_keys) -- robertson_section/witnesses deliberately left untouched.
+# This event is the documented "bare freebie" side of the
+# heading_precedence collision fix-round-1 established (CONTRACT.md's own
+# DECISIVE-CONTAINER MODEL note, and data.rs's heading_collision_tests) --
+# pw_bethany (Robertson §141, a real curated container) decisively wins
+# JHN.12.1's own reader heading over this event precisely BECAUSE this
+# event carries no robertson_section/witnesses of its own. Giving it one
+# now would collapse that real, live precedence example into an
+# ACTUAL within-layer anchor collision (this batch's own new validation
+# would then fail loud on it) -- so it stays bare, deliberately.
 
 # --- Passion Week ---
 # Batch T (batch-t-brief.md): CHRONOLOGY ANCHOR -- AD 33 Passion (Nisan 14,
@@ -2312,3 +2334,190 @@ verses = ["JHN.10.22-39"]
 order_key = 1110
 robertson_section = "Robertson (1922) §111, \"At the Feast of Dedication Jesus Will Not Yet Openly Say That He Is the Messiah. The Jews Try to Stone Him\""
 ref_note = "John 10:22-39 read directly against the compiled KJV text; single witness (John alone); the text's own date marker (10:22, 'it was winter') matches the Feast of Dedication (Hanukkah), roughly three months before the AD 33 Passion"
+
+# --- Period 8: The final approach to Jerusalem (SS112-127) ----------------
+# SS112-117 continue AD 32 (Perea, immediately after the Dedication feast);
+# the batch's own AD 32->33 boundary is placed at S118 (Lazarus raised) --
+# a real narrative/theological hinge, not an arbitrary cut: John's own
+# text places it close to the final Passover (11:55, "the Jews' passover
+# was nigh at hand," immediately following S119), and it is what
+# precipitates the Sanhedrin's own formal decision to kill Jesus (11:53),
+# directly setting up Passion Week. Most of SS112-117/120-125 carry no
+# more specific place than Luke's own broad Perea/Judea journey setting
+# (judea-1, same reasoning as period 7); S112/S126/S127 have real, named
+# anchors (Bethany beyond Jordan, Jericho).
+[[event]]
+id = "rob_withdrawal_beyond_jordan"
+label = "Jesus withdraws to Bethany beyond Jordan"
+from_year = 32
+to_year = 32
+places = ["bethany-2"]
+verses = ["JHN.10.40-42"]
+order_key = 1120
+robertson_section = "Robertson (1922) §112, \"The Withdrawal from Jerusalem to Bethany beyond Jordan\""
+ref_note = "John 10:40-42 read directly against the compiled KJV text; single witness (John alone); the same site as rob_sanhedrin_testimony (S26), John's own baptizing site"
+
+[[event]]
+id = "rob_teaching_in_perea"
+label = "Jesus teaches on the journey through Perea"
+from_year = 32
+to_year = 32
+places = ["judea-1"]
+verses = ["LUK.13.22-35"]
+order_key = 1130
+robertson_section = "Robertson (1922) §113, \"Teaching in Perea, on a Journey toward Jerusalem, Warned against Herod Antipas\""
+ref_note = "Luke 13:22-35 read directly against the compiled KJV text; single witness (Luke alone)"
+
+[[event]]
+id = "rob_pharisee_dinner_parables"
+label = "Dining with a chief Pharisee, Jesus tells three parables"
+from_year = 32
+to_year = 32
+places = ["judea-1"]
+verses = ["LUK.14.1-24"]
+order_key = 1140
+robertson_section = "Robertson (1922) §114, \"While Dining (Breakfasting) with a Chief Pharisee, He Again Heals on the Sabbath and Defends Himself (Comp. §§ 49 to 51 and 110) Three Parables Suggested by the Occasion\""
+ref_note = "Luke 14:1-24 read directly against the compiled KJV text; single witness (Luke alone)"
+
+[[event]]
+id = "rob_cost_of_discipleship_2"
+label = "Jesus warns great crowds to count the cost of discipleship"
+from_year = 32
+to_year = 32
+places = ["judea-1"]
+verses = ["LUK.14.25-35"]
+order_key = 1150
+robertson_section = "Robertson (1922) §115, \"Great Crowds Follow Him, and He Warns Them to Count the Cost of Discipleship to Him (Comp. §§ 70 and 83)\""
+ref_note = "Luke 14:25-35 read directly against the compiled KJV text; single witness (Luke alone)"
+
+[[event]]
+id = "rob_lost_sheep_coin_son"
+label = "The parables of the lost sheep, the lost coin, and the lost son"
+from_year = 32
+to_year = 32
+places = ["judea-1"]
+verses = ["LUK.15.1-32"]
+order_key = 1160
+robertson_section = "Robertson (1922) §116, \"The Pharisees and the Scribes Murmur against Jesus for Receiving Sinners. He Defends Himself by Three Great Parables (the Lost Sheep, the Lost Coin, the Lost Son)\""
+ref_note = "Luke 15 (the whole chapter) read directly against the compiled KJV text; single witness (Luke alone)"
+
+[[event]]
+id = "rob_stewardship_parables"
+label = "Three parables on stewardship"
+from_year = 32
+to_year = 32
+places = ["judea-1"]
+verses = ["LUK.16.1-31", "LUK.17.1-10"]
+order_key = 1170
+robertson_section = "Robertson (1922) §117, \"Three Parables on Stewardship (to the Disciples, the Parable of the Unjust Steward; to the Pharisees, the Parable of the Rich Man and Lazarus; to the Disciples, the Parable of the Unprofitable Servants)\""
+ref_note = "Luke 16:1-17:10 read directly against the compiled KJV text; single witness (Luke alone); written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string"
+
+[[event]]
+id = "rob_lazarus_raised"
+label = "Jesus raises Lazarus from the dead"
+from_year = 33
+to_year = 33
+places = ["bethany-1"]
+verses = ["JHN.11.1-44"]
+order_key = 1180
+robertson_section = "Robertson (1922) §118, \"Jesus Raises Lazarus from the Dead\""
+ref_note = "John 11:1-44 read directly against the compiled KJV text; single witness (John alone); the batch's own AD 32->33 boundary is placed here -- see this period's own header comment"
+
+[[event]]
+id = "rob_lazarus_effect"
+label = "The Sanhedrin resolves to kill Jesus after Lazarus's raising"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["JHN.11.45-54"]
+order_key = 1190
+robertson_section = "Robertson (1922) §119, \"The Effect of the Raising of Lazarus (on the People, on the Sanhedrin, on the Movements of Jesus)\""
+ref_note = "John 11:45-54 read directly against the compiled KJV text; single witness (John alone); the section's own title spans three effects in three places -- scoped here to the Sanhedrin's own formal decision (11:47-53), the dominant scene; the verses field's own closing verse (11:54) also covers Jesus's own withdrawal to Ephraim (a real compiled place, ephraim-1/2/3, not used as the anchor here since the council decision is this section's own narrative weight)"
+
+[[event]]
+id = "rob_last_journey_begins"
+label = "Jesus starts the last journey to Jerusalem, through Samaria and Galilee"
+from_year = 33
+to_year = 33
+places = ["samaria-2"]
+verses = ["LUK.17.11-37"]
+order_key = 1200
+robertson_section = "Robertson (1922) §120, \"Jesus Starts on the Last Journey to Jerusalem by Way of Samaria and Galilee\""
+ref_note = "Luke 17:11-37 read directly against the compiled KJV text; single witness (Luke alone); the text names Samaria first (17:11)"
+
+[[event]]
+id = "rob_prayer_parables"
+label = "Two parables on prayer: the persistent widow and the publican"
+from_year = 33
+to_year = 33
+places = ["judea-1"]
+verses = ["LUK.18.1-14"]
+order_key = 1210
+robertson_section = "Robertson (1922) §121, \"Two Parables on Prayer (the Importunate Widow, the Pharisee and the Publican)\""
+ref_note = "Luke 18:1-14 read directly against the compiled KJV text; single witness (Luke alone)"
+
+[[event]]
+id = "rob_teaching_on_divorce"
+label = "Jesus teaches on divorce, going through Perea"
+from_year = 33
+to_year = 33
+places = ["judea-1"]
+verses = ["MAT.19.1-12"]
+order_key = 1220
+robertson_section = "Robertson (1922) §122, \"Going from Galilee through Perea, He Teaches concerning Divorce\""
+ref_note = "Matthew 19:1-12 and Mark 10:1-12 both read directly against the compiled KJV text; both name 'the coasts of Judea' beyond Jordan"
+
+[[event]]
+id = "rob_christ_and_children"
+label = "Christ blesses the children brought to him"
+from_year = 33
+to_year = 33
+places = ["judea-1"]
+verses = ["MAT.19.13-15"]
+order_key = 1230
+robertson_section = "Robertson (1922) §123, \"Christ and Children and the Failure of the Disciples to Understand the Attitude of Jesus\""
+ref_note = "Matthew 19:13-15, Mark 10:13-16, and Luke 18:15-17 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_rich_young_ruler"
+label = "The rich young ruler and the perils of riches"
+from_year = 33
+to_year = 33
+places = ["judea-1"]
+verses = ["MAT.19.16-30", "MAT.20.1-16"]
+order_key = 1240
+robertson_section = "Robertson (1922) §124, \"The Rich Young Ruler, the Perils of Riches, and Amazement of the Disciples. The Rewards of Forsaking All to Follow the Messiah Will Be Great, but Will Be Sovereign (Parable of the Laborers in the Vineyard)\""
+ref_note = "Matthew 19:16-20:16, Mark 10:17-31, and Luke 18:18-30 all read directly against the compiled KJV text; Matthew's own range crosses a chapter boundary -- written as two ranges, see event-witnesses.toml"
+
+[[event]]
+id = "rob_foretells_death_3"
+label = "Jesus foretells his death a third time; James and John rebuked"
+from_year = 33
+to_year = 33
+places = ["judea-1"]
+verses = ["MAT.20.17-28"]
+order_key = 1250
+robertson_section = "Robertson (1922) §125, \"Jesus Again Foretells to the Disciples His Death and Resurrection (Comp. §§ 83, 85, 86, 88), and Rebukes the Selfish Ambition of James and John\""
+ref_note = "Matthew 20:17-28, Mark 10:32-45, and Luke 18:31-34 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_blind_bartimaeus"
+label = "Blind Bartimaeus healed at Jericho"
+from_year = 33
+to_year = 33
+places = ["jericho-2"]
+verses = ["MAT.20.29-34"]
+order_key = 1260
+robertson_section = "Robertson (1922) §126, \"Blind Bartimæus and His Companion Healed\""
+ref_note = "Matthew 20:29-34, Mark 10:46-52, and Luke 18:35-43 all read directly against the compiled KJV text; all three name Jericho, the same jericho-2 already established for jm_jericho"
+
+[[event]]
+id = "rob_parable_of_pounds"
+label = "The parable of the pounds, on the way out of Jericho"
+from_year = 33
+to_year = 33
+places = ["jericho-2"]
+verses = ["LUK.19.11-28"]
+order_key = 1275
+robertson_section = "Robertson (1922) §127, \"Jesus Visits Zacchæus, and Speaks the Parable of the Pounds, and Sets out for Jerusalem\""
+ref_note = "Luke 19:11-28 read directly against the compiled KJV text; single witness (Luke alone); split out from jm_jericho (enriched with this SAME robertson_section further up this file, LUK.19.1-10, the Zacchaeus encounter itself, pre-existing Task 3) -- Robertson's own §127 covers both the Zacchaeus encounter and the parable that follows it, a real, deliberate split into two titled containers (a parable is a distinct teaching unit from the narrative encounter that occasions it), not a duplication"
