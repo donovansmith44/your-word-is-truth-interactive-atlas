@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityEra};
+use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityDelta, PolityEra};
 use atlas_core::merge::PlaceMerge;
 use atlas_core::time::TimeRange;
 
@@ -407,6 +407,19 @@ fn test_bbox() -> atlas_etl::polities::Bbox {
     atlas_etl::polities::Bbox { south: 0.0, north: 50.0, west: 0.0, east: 50.0 }
 }
 
+// Batch M requirement 1: a tiny compiled-KJV-text stand-in covering exactly
+// the verses `polities-sample.toml`'s own [era.transition]/[era.fall]
+// blocks cite, so `polities_valid_toml_parses_and_validates` below exercises
+// the REAL "does this verse exist" path (not just "does it parse
+// canonically") the same way every other real caller does.
+fn test_verses() -> HashMap<String, String> {
+    HashMap::from([
+        ("GEN.1.1".to_string(), "In the beginning God created the heaven and the earth.".to_string()),
+        ("GEN.1.2".to_string(), "And the earth was without form, and void...".to_string()),
+        ("GEN.1.3".to_string(), "And God said, Let there be light: and there was light.".to_string()),
+    ])
+}
+
 fn one_era_polity(id: &str, name: &str, from: i32, to: i32, ring: Vec<(f64, f64)>) -> Polity {
     // Fix round 1 (M1): color_key is no longer a per-id hash reachable from
     // outside the crate (see `polities::assign_color_keys`'s own doc
@@ -417,34 +430,34 @@ fn one_era_polity(id: &str, name: &str, from: i32, to: i32, ring: Vec<(f64, f64)
     Polity {
         id: id.into(),
         color_key: 0,
-        eras: vec![PolityEra { name: name.into(), from, to, ref_note: "fixture".into(), rings: vec![ring] }],
+        eras: vec![PolityEra { name: name.into(), from, to, ref_note: "fixture".into(), rings: vec![ring], transition: None, fall: None }],
     }
 }
 
 #[test]
 fn polities_valid_toml_parses_and_validates() {
     let polity = atlas_etl::curated::parse_polity(include_str!("fixtures/polities-sample.toml")).unwrap();
-    assert!(atlas_etl::validate::run_polities(&[polity], &test_bbox()).is_ok());
+    assert!(atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).is_ok());
 }
 
 #[test]
 fn polities_zero_year_fails_validation() {
     let polity = one_era_polity("z", "Z", 0, 100, square_ring(10.0, 10.0, 20.0, 20.0));
-    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().to_lowercase().contains("zero"), "{err}");
 }
 
 #[test]
 fn polities_inverted_range_fails_validation() {
     let polity = one_era_polity("i", "I", 100, -100, square_ring(10.0, 10.0, 20.0, 20.0));
-    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().to_lowercase().contains("inverted"), "{err}");
 }
 
 #[test]
 fn polities_year_outside_atlas_span_fails_validation() {
     let polity = one_era_polity("o", "O", -5000, -4500, square_ring(10.0, 10.0, 20.0, 20.0));
-    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("outside [-4004,100]"), "{err}");
 }
 
@@ -454,11 +467,11 @@ fn polities_overlapping_eras_fail_validation() {
         id: "overlap".into(),
         color_key: 0,
         eras: vec![
-            PolityEra { name: "A".into(), from: -1000, to: -500, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)] },
-            PolityEra { name: "B".into(), from: -600, to: -100, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)] },
+            PolityEra { name: "A".into(), from: -1000, to: -500, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)], transition: None, fall: None },
+            PolityEra { name: "B".into(), from: -600, to: -100, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)], transition: None, fall: None },
         ],
     };
-    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("overlaps"), "{err}");
 }
 
@@ -468,11 +481,11 @@ fn polities_adjacent_non_overlapping_eras_pass_validation() {
         id: "adjacent".into(),
         color_key: 0,
         eras: vec![
-            PolityEra { name: "A".into(), from: -1000, to: -500, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)] },
-            PolityEra { name: "B".into(), from: -499, to: -100, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)] },
+            PolityEra { name: "A".into(), from: -1000, to: -500, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)], transition: None, fall: None },
+            PolityEra { name: "B".into(), from: -499, to: -100, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)], transition: None, fall: None },
         ],
     };
-    assert!(atlas_etl::validate::run_polities(&[polity], &test_bbox()).is_ok());
+    assert!(atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).is_ok());
 }
 
 #[test]
@@ -480,7 +493,7 @@ fn polities_unclosed_ring_fails_validation() {
     let mut ring = square_ring(10.0, 10.0, 20.0, 20.0);
     ring.pop(); // drop the closing repeat -- no longer a closed ring
     let polity = one_era_polity("u", "U", -1000, -500, ring);
-    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("not a closed ring"), "{err}");
 }
 
@@ -491,14 +504,14 @@ fn polities_self_intersecting_ring_fails_validation() {
     // just that the checker itself works in isolation.
     let bowtie = vec![(10.0, 10.0), (20.0, 20.0), (20.0, 10.0), (10.0, 20.0), (10.0, 10.0)];
     let polity = one_era_polity("b", "B", -1000, -500, bowtie);
-    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("self-intersects"), "{err}");
 }
 
 #[test]
 fn polities_out_of_bbox_point_fails_validation() {
     let polity = one_era_polity("far", "Far", -1000, -500, square_ring(60.0, 60.0, 70.0, 70.0)); // outside test_bbox()'s 0..50
-    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox()).unwrap_err();
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("outside the clip bbox"), "{err}");
 }
 
@@ -506,8 +519,112 @@ fn polities_out_of_bbox_point_fails_validation() {
 fn polities_duplicate_id_fails_validation() {
     let a = one_era_polity("dup", "A", -1000, -500, square_ring(10.0, 10.0, 20.0, 20.0));
     let b = one_era_polity("dup", "B", -400, -100, square_ring(10.0, 10.0, 20.0, 20.0));
-    let err = atlas_etl::validate::run_polities(&[a, b], &test_bbox()).unwrap_err();
+    let err = atlas_etl::validate::run_polities(&[a, b], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("duplicate"), "{err}");
+}
+
+// --- Batch M requirement 1: [era.transition]/[era.fall] delta validation ---
+
+fn one_era_polity_with_transition(id: &str, name: &str, from: i32, to: i32, transition: PolityDelta) -> Polity {
+    let mut p = one_era_polity(id, name, from, to, square_ring(10.0, 10.0, 20.0, 20.0));
+    p.eras[0].transition = Some(transition);
+    p
+}
+
+#[test]
+fn polities_transition_with_real_verses_passes_validation() {
+    let polity = one_era_polity_with_transition(
+        "t",
+        "T",
+        -1000,
+        -500,
+        PolityDelta { event: "T rises".into(), verses: vec!["GEN.1.1".into()], ref_note: "fixture".into() },
+    );
+    assert!(atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).is_ok());
+}
+
+#[test]
+fn polities_transition_empty_event_fails_validation() {
+    let polity = one_era_polity_with_transition(
+        "t",
+        "T",
+        -1000,
+        -500,
+        PolityDelta { event: "".into(), verses: vec![], ref_note: "fixture".into() },
+    );
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
+    assert!(err.to_string().contains("event is empty"), "{err}");
+}
+
+#[test]
+fn polities_transition_empty_ref_note_fails_validation() {
+    let polity = one_era_polity_with_transition(
+        "t",
+        "T",
+        -1000,
+        -500,
+        PolityDelta { event: "T rises".into(), verses: vec![], ref_note: "".into() },
+    );
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
+    assert!(err.to_string().contains("ref_note is empty"), "{err}");
+}
+
+#[test]
+fn polities_transition_verse_not_in_compiled_kjv_fails_validation() {
+    let polity = one_era_polity_with_transition(
+        "t",
+        "T",
+        -1000,
+        -500,
+        PolityDelta { event: "T rises".into(), verses: vec!["GEN.99.99".into()], ref_note: "fixture".into() },
+    );
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
+    assert!(err.to_string().contains("does not exist in the compiled KJV text"), "{err}");
+}
+
+#[test]
+fn polities_transition_malformed_verse_fails_validation() {
+    let polity = one_era_polity_with_transition(
+        "t",
+        "T",
+        -1000,
+        -500,
+        PolityDelta { event: "T rises".into(), verses: vec!["not a ref".into()], ref_note: "fixture".into() },
+    );
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
+    assert!(err.to_string().contains("not a canonical single-verse ref"), "{err}");
+}
+
+#[test]
+fn polities_fall_on_the_final_era_passes_validation() {
+    let mut polity = Polity {
+        id: "faller".into(),
+        color_key: 0,
+        eras: vec![
+            PolityEra { name: "A".into(), from: -1000, to: -500, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)], transition: None, fall: None },
+            PolityEra { name: "B".into(), from: -499, to: -100, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)], transition: None, fall: None },
+        ],
+    };
+    polity.eras[1].fall = Some(PolityDelta { event: "B falls".into(), verses: vec![], ref_note: "fixture".into() });
+    assert!(atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).is_ok());
+}
+
+#[test]
+fn polities_fall_on_a_non_final_era_fails_validation() {
+    let mut polity = Polity {
+        id: "wrongfall".into(),
+        color_key: 0,
+        eras: vec![
+            PolityEra { name: "A".into(), from: -1000, to: -500, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)], transition: None, fall: None },
+            PolityEra { name: "B".into(), from: -499, to: -100, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)], transition: None, fall: None },
+        ],
+    };
+    // "A" is NOT this polity's chronologically final era ("B" ends later) --
+    // a [era.fall] there describes an end that isn't actually this polity's
+    // own end, so it must fail loud rather than silently compile.
+    polity.eras[0].fall = Some(PolityDelta { event: "A falls (wrong)".into(), verses: vec![], ref_note: "fixture".into() });
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
+    assert!(err.to_string().contains("is not this polity's chronologically final era"), "{err}");
 }
 
 // ---------------------------------------------------------------------

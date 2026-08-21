@@ -31,6 +31,20 @@ rings = [
   ]
 ]
 
+# Batch M requirement 1: this era's own RISE into the Roman Empire below --
+# Octavian's victory at Actium (31 BC) and the Senate's own grant of the
+# title "Augustus" (27 BC, close to this era's own from=-30) that ends the
+# Republic. Actium itself is not scripture-narrated; Luke 2:1 attests
+# Caesar Augustus's own LATER reign at Jesus's birth (a real, if
+# chronologically later, scriptural touchpoint confirming this era's own
+# central political fact, honestly disclosed as such rather than claimed to
+# narrate Actium itself). Verse read directly against the compiled KJV text
+# before citing.
+[era.transition]
+event = "Octavian defeats Antony and Cleopatra at Actium; the Senate names him Augustus"
+verses = ["LUK.2.1"]
+ref_note = "Actium (31 BC) and the Augustus title (27 BC) are general Roman history, not scripture-narrated; Luke 2:1 (KJV, verified against the compiled text) attests Caesar Augustus's own later reign, at Jesus's birth -- a related but not contemporaneous scriptural touchpoint, disclosed as such"
+
 # The Roman Empire under the early Principate (Augustus through the
 # Flavians -- Acts' and the epistles' own imperial backdrop): the same
 # Mediterranean rim grown further -- Egypt annexed (30 BC, after Actium),

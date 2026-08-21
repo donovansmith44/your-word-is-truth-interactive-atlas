@@ -25,3 +25,15 @@ rings = [
     [34.5, 35.9], [36.0, 36.2], [37.5, 29.5], [38.5, 27.5], [40.5, 26.5]
   ]
 ]
+
+# Batch M requirement 1: this era's own RISE -- Cyrus's conquest of
+# Babylon (539 BC, this era's own from= year), the SAME event babylon.toml's
+# own fall-transition narrates from Daniel 5. Isaiah names Cyrus BY NAME
+# prophetically, generations before his own reign (Isaiah 44-45, widely
+# read as the strongest single case of predictive prophecy naming a
+# specific future ruler anywhere in the OT). Verses read directly against
+# the compiled KJV text before citing.
+[era.transition]
+event = "Cyrus conquers Babylon, founding the Achaemenid Persian Empire"
+verses = ["ISA.44.28", "ISA.45.1"]
+ref_note = "Isaiah 44:28, 45:1 (KJV, verified against the compiled text) -- Isaiah names Cyrus by name as the Lord's own 'anointed,' generations before his reign; the conquest itself is narrated in Daniel 5 (see babylon.toml's own mirrored fall-transition), traditionally dated 539 BC"

@@ -199,6 +199,66 @@ pub struct PolityEra {
     pub to: Year,
     pub ref_note: String,
     pub rings: Vec<Vec<(f64, f64)>>,
+    /// Batch M requirement 1 ("the DAG grows a node type: every era-boundary
+    /// delta inside a polity becomes a first-class DELTA with a Scripture-
+    /// mapped event"): the delta AT THIS ERA'S OWN START -- the change FROM
+    /// the previous era of the same [`Polity`], or, for a polity's very
+    /// first era, its own rise. Curated as a nested `[era.transition]` table
+    /// under this era's own `[[era]]` (TOML's standard "subtable of the most
+    /// recently opened array-of-tables element" shape -- no new top-level
+    /// array, no id-matching needed). `None` is a HONEST, curator-visible
+    /// choice, not a gap to paper over: "an uneventful boundary stays
+    /// visible but gets the minimal popover" (the batch brief, verbatim) --
+    /// see `atlas_etl::validate::run_polities`'s own delta checks for what
+    /// "present" must satisfy (non-empty event/ref_note, every verse
+    /// canonical AND real) and this crate's own `PolityDelta` doc comment
+    /// for the citation-integrity rule governing what's ALLOWED to be
+    /// `Some`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transition: Option<PolityDelta>,
+    /// Batch M requirement 1: the delta at this era's OWN END -- ONLY
+    /// meaningful (and only ever curated) on a polity's FINAL era, i.e. the
+    /// polity's own end/absorption/destruction. Curated as a nested
+    /// `[era.fall]` table, same mechanism as `transition` above. A polity
+    /// this app's own curated span (`[-4004,100]`) simply outlives (Rome,
+    /// Parthia, ...) legitimately has no `fall` on its last era -- absence
+    /// here does not imply an authoring gap the way an internal boundary's
+    /// missing `transition` might.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fall: Option<PolityDelta>,
+}
+
+/// Batch M requirement 1: one Scripture-mapped historical delta -- the
+/// event AT an era boundary (a polity's rise, an internal border/regime
+/// change, or its fall), curated as `[era.transition]`/`[era.fall]` nested
+/// under one `[[era]]` table (see `PolityEra::transition`/`PolityEra::fall`'s
+/// own doc comments). Shape is deliberately flat and small, mirroring
+/// `CatechismItem.ref_note`'s own "cite only what you actually consulted"
+/// discipline:
+/// - `event`: a short, sentence-cased prose description (e.g. "Assyria
+///   carries Israel captive") -- house prose, never a bare citation.
+/// - `verses`: individually-canonical verse refs (the SAME flat,
+///   already-canonical-string convention `CatechismItem::verses`/
+///   `Event::verses` already use -- no ranges, no re-expansion needed), each
+///   independently explorable once on the wire (POLITY-DELTA's own THE
+///   SCRIPTURES section, rendered through the shared passage-list
+///   component). MAY be empty (an event grounded only in Church-traditional
+///   history, with no single verse pinpointing it) -- the SCRIPTURES section
+///   is then simply absent (conditional presence), never a fabricated ref.
+/// - `ref_note`: names only the source(s) actually consulted -- 1911
+///   Britannica (already the era ring's own grounding source in most
+///   curated files), a specific scripture passage, or an explicit
+///   "tradition only" disclosure when that's the honest state of the
+///   evidence. Never invented, per this project's standing citation-
+///   integrity rule (6+ prior incidents) -- see the batch report's own
+///   delta-coverage table for exactly which boundaries got one and why the
+///   rest were honestly omitted.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PolityDelta {
+    pub event: String,
+    #[serde(default)]
+    pub verses: Vec<String>,
+    pub ref_note: String,
 }
 
 /// Batch R requirement 1 ("borders become part of the plate"): ONE named

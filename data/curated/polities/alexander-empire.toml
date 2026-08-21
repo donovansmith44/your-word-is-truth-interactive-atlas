@@ -34,3 +34,19 @@ rings = [
     [36.8, 28.5], [38.0, 28.0], [39.5, 27.0], [40.5, 25.5], [41.5, 23.0], [42.0, 21.0]
   ]
 ]
+
+# Batch M requirement 1: this era's own RISE -- Alexander's own conquest of
+# the Achaemenid Persian Empire (334-330 BC), the SAME event persia.toml
+# does NOT separately carry a fall-transition for (Persia has no
+# `[era.fall]` of its own in this app's data -- its single era simply ends
+# at -331 where this one begins; the conquest is told here, on the
+# conquering side, rather than duplicated as a second copy of the identical
+# citation on Persia's own file). Daniel 8's own vision, self-interpreted
+# directly in the text (8:20-21) -- the SAME prophecy egypt.toml's own
+# Ptolemaic-transition cites, since Alexander's conquest of Persia and of
+# Egypt (then a Persian satrapy) are one and the same historical event.
+# Verses read directly against the compiled KJV text before citing.
+[era.transition]
+event = "Alexander the Great conquers the Achaemenid Persian Empire"
+verses = ["DAN.8.5", "DAN.8.20", "DAN.8.21"]
+ref_note = "Daniel 8:5,20-21 (KJV, verified against the compiled text) -- the he-goat 'from the west' (v.5), self-interpreted in the text as Grecia overthrowing Media-Persia (vv.20-21); traditionally dated 334-330 BC -- see egypt.toml's own mirrored transition for the same conquest's reach into Egypt"
