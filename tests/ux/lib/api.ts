@@ -23,6 +23,11 @@ export const api = {
   // Batch E: `/api/place/{id}?from=&to=` -- the window-scoped `history` payload.
   placeHistory: (id: string, from: number, to: number) => getJson(`/api/place/${id}?from=${from}&to=${to}`),
   narratives: () => getJson('/api/narratives'),
+  // Batch N: GET /api/narrative/event/{id} -- every narrative position the
+  // given event id occupies (mirrors catechismItem's own id-keyed shape;
+  // verse.narrative_positions is the verse-keyed sibling, already present
+  // on the verse() response above -- no separate wrapper needed for it).
+  narrativeEventPositions: (eventId: string) => getJson(`/api/narrative/event/${encodeURIComponent(eventId)}`),
   // Batch B2: /api/borders -> /api/polities (per-polity timerange borders).
   polities: (from: number, to: number) => getJson(`/api/polities?from=${from}&to=${to}`),
   landmarks: () => getJson('/api/landmarks'),
