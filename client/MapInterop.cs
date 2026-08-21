@@ -53,6 +53,21 @@ public interface IMapEvents
     /// full account). Never fired for a mini instance.
     /// </summary>
     void OnCameraChanged(double lat, double lon, double zoom);
+
+    /// <summary>
+    /// Batch M requirement 4: a delta-bearing polity-era-boundary ring was
+    /// clicked (or Enter-activated while keyboard-focused) -- map.js's own
+    /// BorderLayer._makeDeltaHit. Every field this needs to build a
+    /// <c>PolityDeltaNode</c> and open it in the popover is ALREADY
+    /// resolved client-side (map.js's own in-memory roster) and handed
+    /// through directly -- no second fetch, no server-side lookup by id.
+    /// <paramref name="kind"/> is <c>"transition"</c> or <c>"fall"</c>;
+    /// <paramref name="eventText"/>/<paramref name="refNote"/> are
+    /// <c>null</c> and <paramref name="verses"/> empty for the MINIMAL-
+    /// popover case (an honestly uneventful boundary -- conditional
+    /// presence, not a placeholder).
+    /// </summary>
+    void OnPolityDeltaClick(string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote);
 }
 
 /// <summary>
@@ -127,13 +142,63 @@ public sealed class MapInterop : IAsyncDisposable
     /// <see cref="PolityEraOut"/> itself (still routed through
     /// <see cref="Wire.Options"/> and sent as a string, same "serialize
     /// with Wire.Options, then InvokeVoidAsync a string" shape every
-    /// <c>SetX</c> method on this class follows).
+    /// <c>SetX</c> method on this class follows). Batch M requirement 4:
+    /// <paramref name="from"/>/<paramref name="to"/> are the CURRENTLY
+    /// APPLIED window -- map.js's own <c>BorderLayer</c> needs it to decide
+    /// which era boundary (if any) each ring is an explorable delta target
+    /// for ("every boundary whose transition falls INSIDE the window").
     /// </summary>
-    public async Task SetPolities(List<PolityEraOut> polities)
+    public async Task SetPolities(List<PolityEraOut> polities, int from, int to)
     {
         var json = JsonSerializer.Serialize(polities, Wire.Options);
-        await _module.InvokeVoidAsync("setPolities", _id, json);
+        await _module.InvokeVoidAsync("setPolities", _id, json, from, to);
     }
+
+    /// <summary>
+    /// Batch M requirement 3a: pushes the FULL, unfiltered polity roster
+    /// (every era of every polity -- fetched once, World.razor's own
+    /// PushPolitiesRosterIfReady, mirroring PushLandMaskIfReady/
+    /// PushLandmarksIfReady's "fetch once, push once" shape) -- the one
+    /// thing the morph engine's own <c>lookup</c> (border-morph.js) needs
+    /// to answer an ARBITRARY drag-time window with zero network latency.
+    /// Same serialize-with-Wire.Options-then-string shape as
+    /// <see cref="SetPolities"/> above.
+    /// </summary>
+    public async Task SetPolitiesRoster(List<PolityEraOut> roster)
+    {
+        var json = JsonSerializer.Serialize(roster, Wire.Options);
+        await _module.InvokeVoidAsync("setPolitiesRoster", _id, json);
+    }
+
+    /// <summary>
+    /// Batch M requirement 3a: begins a morph gesture (TimeSlider.razor's
+    /// own OnWindowDrag, fired on the FIRST drag-move update since the last
+    /// settle -- World.razor's own HandleWindowDrag decides when this is a
+    /// "first" call). <paramref name="anchorYear"/> is the drag's own
+    /// pre-drag committed value -- the OTHER end of the swept range every
+    /// <see cref="MorphFrame"/> call sweeps.
+    /// </summary>
+    public async Task BeginMorph(int anchorYear) => await _module.InvokeVoidAsync("beginMorph", _id, anchorYear);
+
+    /// <summary>
+    /// Batch M requirement 3a: the scrub itself -- called on every
+    /// drag-move update; map.js's own BorderLayer.requestMorphFrame is what
+    /// coalesces however many of these land within one animation frame into
+    /// a single actual evaluate+paint (the CPU evaluator, behind its own
+    /// documented GPU/WebGL swap seam -- see map.js's own comment).
+    /// </summary>
+    public async Task MorphFrame(double atYear) => await _module.InvokeVoidAsync("morphFrame", _id, atYear);
+
+    /// <summary>
+    /// Batch M requirement 3a: "on release, settle into the static
+    /// layered-era presentation" -- INSTANTLY and LOCALLY from the
+    /// already-loaded roster (zero network wait; World.razor's own
+    /// separate, debounced network fetch -- LoadPolitiesFor, unchanged --
+    /// still lands a little later and repaints from the server's own
+    /// answer, byte-identical by construction, so this is a pure UX win
+    /// with no correctness risk from skipping ahead of it).
+    /// </summary>
+    public async Task SettleMorph(int from, int to) => await _module.InvokeVoidAsync("settleMorph", _id, from, to);
 
     /// <summary>
     /// Toggles the polity-border layer's visibility without touching its
@@ -328,6 +393,8 @@ public sealed class MapEventsSink
     [JSInvokable] public void OnMapClick() => _sink.OnMapClick();
     [JSInvokable] public void OnEscapePressed() => _sink.OnEscapePressed();
     [JSInvokable] public void OnCameraChanged(double lat, double lon, double zoom) => _sink.OnCameraChanged(lat, lon, zoom);
+    [JSInvokable] public void OnPolityDeltaClick(string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote) =>
+        _sink.OnPolityDeltaClick(polityName, kind, titleFromYear, titleToYear, eventText, verses, refNote);
 }
 
 /// <summary>

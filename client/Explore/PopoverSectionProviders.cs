@@ -1035,3 +1035,126 @@ public sealed class NarrativeFollowingEventSection : IPopoverSectionProvider
     public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
         NarrativeDirectionSection.ResolveAsync(node, api, ctx, p => p.Following, "narrative-following", "FOLLOWING EVENT", "narrative-following-event", "narrative-following-verse");
 }
+
+/// <summary>
+/// Batch M requirement 4: a <see cref="PolityDeltaNode"/>'s own event text
+/// -- the "event title + years" content beneath the popover's own Title
+/// header (which already carries "{polity}, {from} -&gt; {to}"). A plain
+/// <c>.popover-meta</c> line (the same quiet-secondary-text treatment
+/// <c>TimeAndPlaceNode</c>/<c>NarrativeEventTextSection</c> already use for
+/// an analogous "what is this node, in prose" line), present ONLY when
+/// <see cref="PolityDeltaNode.EventText"/> is non-null -- the minimal-
+/// popover case (an honestly uneventful boundary) renders NOTHING here,
+/// conditional presence, never a placeholder like "No event recorded."
+/// </summary>
+public sealed class PolityDeltaEventSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "PolityDelta";
+
+    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not PolityDeltaNode delta || delta.EventText is not { } eventText)
+        {
+            return Task.FromResult<PopoverSection?>(null);
+        }
+
+        RenderFragment body = builder =>
+        {
+            builder.OpenElement(0, "p");
+            builder.AddAttribute(1, "class", "popover-meta");
+            builder.AddContent(2, eventText);
+            builder.CloseElement();
+        };
+        return Task.FromResult<PopoverSection?>(new PopoverSection("polity-delta-event", body));
+    }
+}
+
+/// <summary>
+/// Batch M requirement 4: "THE SCRIPTURES" -- the delta's own curated
+/// verses, via the SAME shared <see cref="Components.PassageList"/>
+/// component every other verse list in this app renders through
+/// (PASSAGE-1) -- grouped, truncation-free (no cap asked for, same as
+/// CATECH-1's own THE SCRIPTURES and NARRATIVE-1's own event-text
+/// section), each entry independently expandable. Conditional presence:
+/// absent when <see cref="PolityDeltaNode.Verses"/> is empty (a delta MAY
+/// be grounded only in Church-traditional history, with no single verse to
+/// pinpoint it -- see the batch report's own delta-coverage table) OR when
+/// none of the curated refs actually resolve (a graceful-degrade floor
+/// every other verse-list section in this file already shares).
+/// </summary>
+public sealed class PolityDeltaScripturesSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "PolityDelta";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not PolityDeltaNode delta || delta.Verses.Count == 0)
+        {
+            return null;
+        }
+
+        List<PassageListVerse> verses;
+        try
+        {
+            verses = await VerseTextResolver.ResolveAsync(api, delta.Verses);
+        }
+        catch (Exception)
+        {
+            verses = new List<PassageListVerse>();
+        }
+        if (verses.Count == 0)
+        {
+            return null;
+        }
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "catechism-section-heading"); // the SAME "THE SCRIPTURES" small-caps eyebrow treatment CATECH-1/NARRATIVE-1 already establish -- one shared testid/class for one house convention, not a fourth copy
+            builder.AddAttribute(seq++, "data-testid", "catechism-section-heading");
+            builder.AddContent(seq++, "THE SCRIPTURES");
+            builder.CloseElement();
+
+            var units = new PassageSourceUnit[] { new(verses) };
+            builder.OpenComponent<Components.PassageList>(seq++);
+            builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
+            builder.AddAttribute(seq++, "RefTestIdPrefix", "polity-delta-verse");
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.CloseComponent();
+        };
+        return new PopoverSection("polity-delta-scriptures", body);
+    }
+}
+
+/// <summary>
+/// Batch M requirement 4: "grounding note (ref_note, quiet)" -- the
+/// curator's own citation for this delta (which source(s) were actually
+/// consulted, or an honest "tradition only" disclosure), rendered plainly
+/// and quietly (the SAME <c>.popover-meta</c> treatment as
+/// <see cref="PolityDeltaEventSection"/> above -- both are secondary,
+/// quiet-register text, not a second style). Conditional presence: absent
+/// when <see cref="PolityDeltaNode.RefNote"/> is null (the minimal-popover
+/// case).
+/// </summary>
+public sealed class PolityDeltaGroundingSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "PolityDelta";
+
+    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not PolityDeltaNode delta || delta.RefNote is not { } refNote)
+        {
+            return Task.FromResult<PopoverSection?>(null);
+        }
+
+        RenderFragment body = builder =>
+        {
+            builder.OpenElement(0, "p");
+            builder.AddAttribute(1, "class", "popover-meta");
+            builder.AddContent(2, refNote);
+            builder.CloseElement();
+        };
+        return Task.FromResult<PopoverSection?>(new PopoverSection("polity-delta-grounding", body));
+    }
+}

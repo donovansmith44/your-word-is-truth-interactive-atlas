@@ -249,7 +249,33 @@ public sealed record NarrativeOut(string Id, string Name, string Color, List<str
 /// model -- the client never inspects ring coordinates, only forwards them
 /// to map.js (mirrors the retired <c>BordersOut.Geojson</c>'s own
 /// <see cref="JsonElement"/> pass-through pattern).
-public sealed record PolityEraOut(string Id, string Name, int From, int To, JsonElement Rings, int ColorKey);
+/// Batch M requirement 1: the wire shape of one <c>atlas_core::data::PolityDelta</c>
+/// -- a Scripture-mapped event at a polity era boundary (its rise, an
+/// internal transition, or its fall). Plain field-for-field copy of the
+/// Rust struct via <see cref="Wire.Options"/>'s own snake_case policy
+/// (<c>Event</c>/<c>Verses</c>/<c>RefNote</c> -&gt; <c>event</c>/<c>verses</c>/
+/// <c>ref_note</c>), same "no rename, no reshaping" convention every other
+/// DTO in this file already follows.
+public sealed record PolityDeltaDto(string Event, List<string> Verses, string RefNote);
+
+/// <c>GET /api/polities?from=&amp;to=</c> array element (Batch B2, "borders
+/// v2, the cartographer's edition" -- supersedes <c>BordersOut</c>'s own
+/// snapshot-year GeoJSON shape entirely). One polity ERA row: <see cref="Id"/>
+/// is the polity's own stable id (constant across every era it contributes
+/// to a response -- <see cref="ColorKey"/> is hashed from THIS, never the
+/// era name, so a polity keeps one plate hue across a rename); <see cref="Name"/>/
+/// <see cref="From"/>/<see cref="To"/>/<see cref="Rings"/> are this specific
+/// era's own fields. <see cref="Rings"/> stays a raw <see cref="JsonElement"/>
+/// (a `[[[lat,lon],...],...]` array of rings) rather than a typed geometry
+/// model -- the client never inspects ring coordinates, only forwards them
+/// to map.js (mirrors the retired <c>BordersOut.Geojson</c>'s own
+/// <see cref="JsonElement"/> pass-through pattern). <see cref="Transition"/>/
+/// <see cref="Fall"/> (Batch M requirement 1) are <c>null</c> -- OMITTED on
+/// the wire, per <c>Option::is_none</c>'s own `skip_serializing_if`, which
+/// System.Text.Json deserializes to a plain absent-property default -- when
+/// a curator honestly left that boundary uneventful (see
+/// <c>Explore/PolityDeltaNode.cs</c>'s own conditional-presence handling).
+public sealed record PolityEraOut(string Id, string Name, int From, int To, JsonElement Rings, int ColorKey, PolityDeltaDto? Transition, PolityDeltaDto? Fall);
 
 /// <c>GET /api/polities?from=&amp;to=</c>'s own top-level wire shape --
 /// every era (of every polity) whose own <c>[from,to]</c> intersects the
