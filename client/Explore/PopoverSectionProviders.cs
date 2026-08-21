@@ -990,7 +990,12 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
         {
             resolvedFlat = new List<PassageListVerse>();
         }
-        var textByVref = resolvedFlat.ToDictionary(v => v.Vref, v => v.Text);
+        // GroupBy + first-wins (not a raw ToDictionary) -- defensive against a
+        // duplicate Vref across two witnesses, which server-side validation
+        // (validate::run's own overlap check) already prevents for real
+        // compiled data, but this is client code reading a network response,
+        // not something to assume well-formed a second time.
+        var textByVref = resolvedFlat.GroupBy(v => v.Vref).ToDictionary(g => g.Key, g => g.First().Text);
         units = units.Select(u => new PassageSourceUnit(
             u.Verses.Select(v => new PassageListVerse(v.Vref, textByVref.GetValueOrDefault(v.Vref, ""))).ToList(),
             u.Caption)).ToList();

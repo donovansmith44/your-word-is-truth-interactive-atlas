@@ -449,8 +449,27 @@ test('hover place card: clicking a verse in an UNPINNED card opens its VerseNode
   // the only context section, 2 when THE SMALL CATECHISM is also present)
   // -- the full count is only reachable after xrefs-more.
   const detail = await api.verse(vref);
-  const hasCatechism = await page.getByTestId('popover-section-catechism').count() > 0;
-  const cap = hasCatechism ? 2 : 3;
+  // Batch T: the real cap rule (ExplorerPopover.razor's own
+  // OtherContextSectionCount) is generic -- "any OTHER resolved context
+  // section, not just catechism" -- so it now ALSO counts the new
+  // `event-membership` section (VerseEventMembershipSection) a verse
+  // touching a titled event gets. A catechism-only check here would go
+  // stale again the next time a new context-section provider ships;
+  // mirror the product's own generalized rule instead (every
+  // popover-section-* except verse-text/xrefs themselves) so this stays
+  // correct without a matching test edit every time. Safe to read
+  // bare (no retry) here: `.toContainText(text)` above already proved
+  // _sections has been populated (verse-text is itself one of those
+  // section-registry providers, resolved in the SAME Task.WhenAll batch
+  // as catechism/event-membership -- see ExplorerPopover.razor's own
+  // LoadCurrent comment on the single-intermediate-render quirk).
+  const otherContextSectionCount = await page.getByTestId(/^popover-section-/).evaluateAll(
+    els => els.filter(el => {
+      const id = el.getAttribute('data-testid');
+      return id !== 'popover-section-verse-text' && id !== 'popover-section-xrefs';
+    }).length
+  );
+  const cap = otherContextSectionCount > 0 ? 2 : 3;
   const expectedInitial = Math.min(detail.cross_refs.length, cap);
   await expect(page.getByTestId(/^xref-item-/)).toHaveCount(expectedInitial);
   if (detail.cross_refs.length > 0) {

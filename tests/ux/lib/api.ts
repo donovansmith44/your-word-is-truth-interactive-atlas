@@ -28,6 +28,9 @@ export const api = {
   // verse.narrative_positions is the verse-keyed sibling, already present
   // on the verse() response above -- no separate wrapper needed for it).
   narrativeEventPositions: (eventId: string) => getJson(`/api/narrative/event/${encodeURIComponent(eventId)}`),
+  // Batch T requirement 4: GET /api/event/{id} -- an EVENT-kind PASSAGE's
+  // own rich content (title/when/places/witnesses/provenance).
+  event: (eventId: string) => getJson(`/api/event/${encodeURIComponent(eventId)}`),
   // Batch B2: /api/borders -> /api/polities (per-polity timerange borders).
   polities: (from: number, to: number) => getJson(`/api/polities?from=${from}&to=${to}`),
   landmarks: () => getJson('/api/landmarks'),
