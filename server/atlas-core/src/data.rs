@@ -692,6 +692,42 @@ pub struct HeadingEntry {
     pub title: String,
 }
 
+/// Batch T: one anchor verse per witness of `e` -- GRACEFUL (never panics)
+/// equivalent of `scene::witnesses_for`'s own "first verse of each witness"
+/// concept, used ONLY by `AtlasData::finish()`'s own heading-index build
+/// (see that call site's own comment for why gracefulness matters there
+/// specifically). An unparseable verse is simply skipped, never a reason to
+/// crash the whole ETL binary -- `atlas_etl::validate` is what turns a bad
+/// witness verse into a loud, aggregated, curator-facing error; this
+/// function's only job is to not stand in its way by panicking first.
+fn heading_anchors_for(e: &Event) -> Vec<String> {
+    if !e.witnesses.is_empty() {
+        return e
+            .witnesses
+            .iter()
+            .filter_map(|w| w.translations.get(crate::translation::DEFAULT_TRANSLATION))
+            .filter_map(|verses| verses.iter().find(|v| crate::refs::VerseId::parse_canonical(v).is_ok()))
+            .cloned()
+            .collect();
+    }
+
+    // No explicit witnesses -- one anchor per book actually touched by
+    // `e.verses`, first-seen-book order (mirrors `scene::witnesses_for`'s
+    // own synthesis, minus the grouping/sorting this narrower need doesn't
+    // require -- just each book's own FIRST verse in curated/imported order).
+    let mut seen_books: Vec<String> = Vec::new();
+    let mut anchors: Vec<String> = Vec::new();
+    for v in &e.verses {
+        let Ok(vid) = crate::refs::VerseId::parse_canonical(v) else { continue };
+        let book = vid.book.code().to_string();
+        if !seen_books.contains(&book) {
+            seen_books.push(book);
+            anchors.push(v.clone());
+        }
+    }
+    anchors
+}
+
 impl AtlasData {
     /// Builds an `AtlasData` from its eight schema fields, leaving the derived
     /// indexes empty (call `.finish()` to populate them). This is the
@@ -757,10 +793,31 @@ impl AtlasData {
             .map(|(i, e)| (e.id.clone(), i))
             .collect();
 
+        // Batch T requirement 3 ("verse popover: event membership"): a
+        // REAL, live-caught bug, self-caught via a hanging Playwright test
+        // before this shipped -- this reverse index used to be built from
+        // `e.verses` ALONE, so a verse cited ONLY by a witness (e.g.
+        // MAT.26.6, Matthew's own account of the Bethany anointing --
+        // `pw_bethany`'s own top-level `verses` field is JHN.12.1-11 only)
+        // never resolved to its own event here, even though the SAME verse
+        // correctly anchors a reader heading (`heading_anchors_for`, which
+        // already walked witnesses). That split meant a real user reading
+        // Matthew 26:6 would see a reader heading naming the event, but the
+        // verse's own popover would show NO "EVENT" section for it at all
+        // -- confusingly inconsistent, and the exact bug the owner's own
+        // requirement 3 exists to fix. Every witness's own verses are now
+        // unioned in too, per event, deduped (a verse present in BOTH
+        // `e.verses` and a witness must still yield this event id only
+        // ONCE, never twice).
         let mut verse_to_events: HashMap<String, Vec<String>> = HashMap::new();
         for e in &self.events {
-            for v in &e.verses {
-                verse_to_events.entry(v.clone()).or_default().push(e.id.clone());
+            let mut seen: HashSet<&str> = HashSet::new();
+            for v in e.verses.iter().chain(
+                e.witnesses.iter().filter_map(|w| w.translations.get(crate::translation::DEFAULT_TRANSLATION)).flatten(),
+            ) {
+                if seen.insert(v.as_str()) {
+                    verse_to_events.entry(v.clone()).or_default().push(e.id.clone());
+                }
             }
         }
         self.verse_to_events = verse_to_events;
@@ -831,6 +888,23 @@ impl AtlasData {
         // real curated data, but not assumed impossible) deterministically
         // keeps the chronologically EARLIER event's own heading, via
         // `entry().or_insert_with()` never overwriting a first hit.
+        //
+        // Deliberately does NOT call `scene::witnesses_for` here (a real,
+        // live-caught bug, self-caught via TDD before this shipped): that
+        // function -- like every other "verse groups on the wire" helper in
+        // `scene.rs` -- calls `VerseId::parse_canonical(v).expect(..)`, an
+        // invariant that holds everywhere else in this codebase because
+        // every OTHER caller only ever runs on ALREADY-VALIDATED compiled
+        // data (server-side, post-ETL). `finish()` is not that -- ETL's own
+        // `main.rs` calls `.finish()` BEFORE `validate::run`, specifically
+        // so validation can inspect the fully-derived `AtlasData`, which
+        // means a curator's own malformed witness verse would reach this
+        // loop BEFORE validation ever gets a chance to reject it loudly and
+        // reports it as a clean, aggregated error -- panicking here instead
+        // would crash the whole ETL binary on a single bad ref. `heading_anchors_for`
+        // below is a narrower, GRACEFUL equivalent (skip, never panic) --
+        // exactly the same "aggregate every violation, never fail fast on
+        // curator input" discipline `atlas_etl::validate` itself follows.
         let narrative_leg_ids: HashSet<&str> =
             self.narratives.iter().flat_map(|n| n.legs.iter().map(|s| s.as_str())).collect();
         let mut verse_heading: HashMap<String, HeadingEntry> = HashMap::new();
@@ -840,10 +914,9 @@ impl AtlasData {
             if !heading_worthy {
                 continue;
             }
-            for w in crate::scene::witnesses_for(e) {
-                let Some(anchor) = w.verse_groups.first().and_then(|g| g.verses.first()) else { continue };
+            for anchor in heading_anchors_for(e) {
                 verse_heading
-                    .entry(anchor.clone())
+                    .entry(anchor)
                     .or_insert_with(|| HeadingEntry { event_id: e.id.clone(), title: e.label.clone() });
             }
         }
@@ -1269,6 +1342,89 @@ mod verse_to_places_tests {
     fn places_for_verse_is_empty_for_an_unlinked_verse() {
         let data = demo_fixture();
         assert!(data.places_for_verse("JOS.1.1").is_empty());
+    }
+}
+
+#[cfg(test)]
+mod events_for_verse_witness_tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    // Batch T requirement 3: a REAL, live-caught bug (self-caught via a
+    // hanging Playwright test before this shipped, not guessed) --
+    // `events_for_verse` used to be built from `Event::verses` ALONE, so a
+    // verse cited ONLY by a witness (never in the event's own top-level
+    // `verses`) resolved to NO event at all, even though the identical
+    // verse correctly anchors a reader heading (`heading_anchors_for`,
+    // witness-aware from the start). Pinned here so it can never silently
+    // regress: a multi-witness event whose own top-level `verses` names
+    // only ONE book must still resolve via a DIFFERENT book's own
+    // witness-only verse.
+    fn multi_witness_fixture() -> AtlasData {
+        let places = vec![Place { id: "golgotha".into(), name: "Golgotha".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+        let events = vec![Event {
+            id: "pw_golgotha".into(),
+            label: "The crucifixion at Golgotha".into(),
+            when: crate::time::TimeRange::new(33, 33).unwrap(),
+            places: vec!["golgotha".into()],
+            verses: vec!["JHN.19.17".into()], // top-level: JOHN only, matching this batch's own real pw_golgotha shape
+            witnesses: vec![
+                EventWitness {
+                    book: "MAT".into(),
+                    translations: HashMap::from([("kjv".to_string(), vec!["MAT.27.33".to_string()])]),
+                    ref_note: None,
+                    robertson_section: None,
+                },
+                EventWitness {
+                    book: "MRK".into(),
+                    translations: HashMap::from([("kjv".to_string(), vec!["MRK.15.22".to_string()])]),
+                    ref_note: None,
+                    robertson_section: None,
+                },
+            ],
+            ..Default::default()
+        }];
+        AtlasData::new(Canon { books: vec![] }, places, events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish()
+    }
+
+    #[test]
+    fn events_for_verse_resolves_a_witness_only_verse_not_in_the_top_level_verses_field() {
+        let data = multi_witness_fixture();
+        // MAT.27.33 is ONLY in the Matthew witness, never in Event::verses
+        // (which names only JHN.19.17) -- this is exactly the bug: it must
+        // still resolve to pw_golgotha.
+        assert_eq!(data.events_for_verse("MAT.27.33"), &["pw_golgotha".to_string()]);
+        assert_eq!(data.events_for_verse("MRK.15.22"), &["pw_golgotha".to_string()]);
+    }
+
+    #[test]
+    fn events_for_verse_still_resolves_the_top_level_verses_field_too() {
+        let data = multi_witness_fixture();
+        assert_eq!(data.events_for_verse("JHN.19.17"), &["pw_golgotha".to_string()]);
+    }
+
+    #[test]
+    fn events_for_verse_never_double_lists_an_event_for_one_verse() {
+        // A verse present in BOTH Event::verses and a witness (an unusual
+        // but not-impossible curated shape) must yield the event id ONCE,
+        // never twice, for the same verse.
+        let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+        let events = vec![Event {
+            id: "e1".into(),
+            label: "E1".into(),
+            when: crate::time::TimeRange::new(33, 33).unwrap(),
+            places: vec!["p".into()],
+            verses: vec!["MAT.1.1".into()],
+            witnesses: vec![EventWitness {
+                book: "MAT".into(),
+                translations: HashMap::from([("kjv".to_string(), vec!["MAT.1.1".to_string()])]),
+                ref_note: None,
+                robertson_section: None,
+            }],
+            ..Default::default()
+        }];
+        let data = AtlasData::new(Canon { books: vec![] }, places, events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        assert_eq!(data.events_for_verse("MAT.1.1"), &["e1".to_string()]);
     }
 }
 

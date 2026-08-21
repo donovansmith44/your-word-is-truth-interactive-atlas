@@ -916,4 +916,61 @@ ref_note = "another note"
         assert_eq!(out2.first().unwrap(), "GEN.12.14");
         assert_eq!(out2.last().unwrap(), "GEN.12.20");
     }
+
+    // --- Batch T requirement 1: parse_event_witnesses -----------------------
+
+    #[test]
+    fn parse_event_witnesses_reads_a_flat_witness_list_with_translation_indirection() {
+        let toml = r#"
+[[witness]]
+event_id = "pw_golgotha"
+book = "MAT"
+verses = ["MAT.27.33-50"]
+ref_note = "Matthew 27:33-50 read directly"
+robertson_section = "Robertson (1922) §164"
+
+[[witness]]
+event_id = "pw_golgotha"
+book = "JHN"
+verses = ["JHN.19.17-30"]
+"#;
+        let rows = parse_event_witnesses(toml).unwrap();
+        assert_eq!(rows.len(), 2);
+
+        let (event_id, mat) = &rows[0];
+        assert_eq!(event_id, "pw_golgotha");
+        assert_eq!(mat.book, "MAT");
+        // "kjv" translation-mapped, expanded from the curator-friendly range
+        // string the SAME way events-extra.toml's own `verses` field is
+        // (expand_verse_ref, reused verbatim).
+        let kjv = mat.translations.get("kjv").expect("kjv translation must be populated");
+        assert_eq!(kjv.len(), 18); // MAT.27.33..=50
+        assert_eq!(kjv.first().unwrap(), "MAT.27.33");
+        assert_eq!(kjv.last().unwrap(), "MAT.27.50");
+        assert_eq!(mat.ref_note.as_deref(), Some("Matthew 27:33-50 read directly"));
+        assert_eq!(mat.robertson_section.as_deref(), Some("Robertson (1922) §164"));
+
+        let (event_id2, jhn) = &rows[1];
+        assert_eq!(event_id2, "pw_golgotha");
+        assert_eq!(jhn.book, "JHN");
+        assert_eq!(jhn.ref_note, None); // optional field, genuinely absent here
+    }
+
+    #[test]
+    fn parse_event_witnesses_rejects_malformed_toml() {
+        assert!(parse_event_witnesses("not = [valid").is_err());
+        assert!(parse_event_witnesses("foo = 1").is_err(), "missing [[witness]] array entirely");
+    }
+
+    #[test]
+    fn parse_event_witnesses_rejects_an_unparseable_verse_ref() {
+        let toml = r#"
+[[witness]]
+event_id = "e1"
+book = "MAT"
+verses = ["not-a-ref"]
+"#;
+        let err = parse_event_witnesses(toml).unwrap_err();
+        assert!(err.to_string().contains("e1"), "{err}");
+    }
 }
