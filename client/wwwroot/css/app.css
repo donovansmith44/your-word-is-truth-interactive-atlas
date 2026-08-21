@@ -1010,6 +1010,60 @@ input:focus-visible,
     stroke-opacity: 0.88;
 }
 
+/* Batch M requirement 4 ("every era boundary whose transition falls inside
+   the window is explorable"): the delta ring's own wide, TRANSPARENT hit
+   target -- ">=14px effective hit via a wide transparent hit-stroke,"
+   per the brief, verbatim. `stroke-width` is in the same PROJECTED pixel
+   space map.js's own _ringPathData draws every path's `d` in
+   (map.latLngToLayerPoint), so 14px of stroke width IS 14 real screen px
+   at any zoom -- no extra math needed on either side. `pointer-events:
+   stroke` (not the default `visiblePainted`, which would also treat a
+   `fill:none` path's own EMPTY interior as hittable) confines the actual
+   hit region to a band that hugs the ring's own line, matching "a wide
+   transparent hit-STROKE," not a wide hit-AREA. Real, keyboard-reachable
+   `<path tabindex="0">` -- the app's own global `[tabindex]:focus-visible`
+   rule (this file's own header block) supplies the visible focus outline
+   for free, same as every other tabbable element in this app. */
+.atlas-border-delta-hit {
+    stroke: transparent;
+    stroke-width: 14px;
+    pointer-events: stroke;
+    cursor: pointer;
+}
+
+/* ONE-RULE, adapted for an SVG shape (verbatim ONE-RULE -- "on hover AND
+   :focus-visible it darkens slightly... with cursor:pointer" -- targets
+   background-color, which an SVG path has no equivalent of; a plain
+   .explorable class on the hit-stroke itself would therefore be a silent
+   no-op there, so this is the SVG-shape reading of the identical rule
+   instead, toggled via JS on hover/focus of the sibling hit-stroke path
+   (map.js's own BorderLayer._makeDeltaHit), not a CSS :hover pseudo-class
+   -- the wash and the line live in TWO DIFFERENT panes/SVGs (washPane vs
+   overlayPane), so a same-element/sibling-combinator CSS :hover rule could
+   never reach both at once the way this attribute-toggle does. Darkens via
+   `filter: brightness(...)`, the direct SVG-shape analogue of "ink
+   deepening" -- amplifies opacity too, so the ring reads as MORE assertive
+   on hover, the same qualitative direction ONE-RULE's own ink-wash always
+   moves in. */
+.atlas-border-line[data-delta-hover="true"] {
+    filter: brightness(0.65);
+    stroke-opacity: 1;
+    transition: filter 120ms ease-out, stroke-opacity 120ms ease-out;
+}
+
+.atlas-border-wash[data-delta-hover="true"] {
+    filter: url(#atlas-wash-feather) brightness(0.8);
+    fill-opacity: 0.42;
+    transition: filter 120ms ease-out, fill-opacity 120ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .atlas-border-line[data-delta-hover="true"],
+    .atlas-border-wash[data-delta-hover="true"] {
+        transition: none;
+    }
+}
+
 /* Polity year tags (Batch B2 requirement 3: "when >1 era of the same
    polity is visible, each ring gets a small mono year tag" -- e.g.
    "c. 1500 BC"). Instrument-face mono, same small-and-quiet treatment as

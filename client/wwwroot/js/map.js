@@ -89,6 +89,14 @@ const BIBLICAL_WORLD_BOUNDS = [[7.6, -10.9], [48.9, 71.4]];
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+// Batch M requirement 3 ("the level of abstraction for animating change in
+// map is lookup lines 1, lookup lines 2, and animate 1->2... obviously it's
+// not just two things. we can look up n lines in a timerange," user
+// direction 2026-08-20, verbatim): BorderLayer below is the one DOM-
+// painting consumer of this pure, framework-agnostic module -- see its own
+// header comment for the full lookup/overlay/animate factoring.
+import { lookup, overlay, animate } from './border-morph.js';
+
 let nextId = 1;
 const instances = new Map();
 
@@ -213,7 +221,11 @@ export function init(el, dotnetRef, opts) {
         map.getPane('washPane').style.pointerEvents = 'none';
         map.getPane('washPane').classList.add('atlas-wash-pane');
 
-        polities = new BorderLayer();
+        // Batch M requirement 4: dotnetRef threaded through so a delta ring's
+        // own click can open the popover (mirrors ArrowLayer(dotnetRef) two
+        // lines below -- same "this layer owns its own interactive DOM
+        // elements, wires them directly" shape).
+        polities = new BorderLayer(dotnetRef);
         polities.addTo(map);
 
         arrows = new ArrowLayer(dotnetRef);
@@ -1364,6 +1376,52 @@ export function debugTrueScreenPoint(id, lat, lon) {
     return { x: pt.x, y: pt.y };
 }
 
+// Batch M requirement 5, test-support-only (same treatment as the three
+// debug exports above -- never called from production Blazor code,
+// MapInterop.cs has no wrapper for it): the CURRENT mid-morph `d` path data
+// for one polity's own morph-group lines (`[]` if that polity isn't
+// currently morphing at all, `null` if no morph engine is even ready).
+// Reads `_morphGroups` directly BY POLITY ID -- exact and scoped, unlike a
+// bare `.atlas-border-morph-group` CSS-class locator, which sweeps every
+// SIMULTANEOUSLY-morphing polity in a wide, multi-polity time window
+// (several real curated windows show more than one polity mid-drag at
+// once) and so cannot tell one polity's own line apart from another's.
+export function debugMorphLineData(id, polityId) {
+    const inst = instances.get(id);
+    if (!inst || !inst.polities || !inst.polities._morphGroups) {
+        return null;
+    }
+    const group = inst.polities._morphGroups.get(polityId);
+    if (!group) {
+        return [];
+    }
+    return group.lines.map(el => el.getAttribute('d'));
+}
+
+// Batch M requirement 5, test-support-only (same treatment above): the
+// SETTLED `d` path data an era WOULD render, computed via the exact same
+// `_ringPathData` projection `_syncMorphGroup`/`_paintSettled` themselves
+// call -- for ANY era of a polity in the full `_roster`, whether or not
+// that era's own window is the one currently applied. Lets a test capture
+// a "snap candidate" shape (e.g. an era just outside the current window)
+// with zero extra navigation and zero risk of hand-duplicating the
+// projection math -- the SAME real code path production rendering uses,
+// not a reimplementation a test would have to keep in sync by hand. `null`
+// for an unknown instance/roster, `[]` for a polity/from with no matching
+// era (defensive shapes matching debugIsPointOnLand/debugMorphLineData
+// above).
+export function debugSettledRingPathData(id, polityId, eraFrom) {
+    const inst = instances.get(id);
+    if (!inst || !inst.polities || !inst.polities._roster) {
+        return null;
+    }
+    const entry = inst.polities._roster.find(e => e.id === polityId && e.from === eraFrom);
+    if (!entry) {
+        return [];
+    }
+    return entry.rings.map(ring => inst.polities._ringPathData(ring));
+}
+
 // Sets/clears the legend's isolate filter (Task 12, WORLD-4): `narrativeId`
 // null clears every arrow back to data-faded="false"; any other value fades
 // every arrow whose narrative doesn't match it.
@@ -1387,14 +1445,76 @@ export function setIsolate(id, narrativeId) {
 // ...]` array `GET /api/polities` returns (already deterministically
 // ordered by id then from -- see BorderLayer.setPolities's own comment for
 // why that order matters).
-export function setPolities(id, politiesJson) {
+export function setPolities(id, politiesJson, from, to) {
     const inst = instances.get(id);
     if (!inst || !inst.polities) {
         return;
     }
 
     const list = typeof politiesJson === 'string' ? JSON.parse(politiesJson) : (politiesJson || []);
-    inst.polities.setPolities(list);
+    inst.polities.setPolities(list, from, to);
+}
+
+// Batch M requirement 3a: fetched ONCE (World.razor's own PushPolitiesRosterIfReady,
+// mirroring PushLandMaskIfReady/PushLandmarksIfReady's "fetch once, push once" shape) via
+// the SAME /api/polities endpoint, just with the full atlas span as its own window -- every
+// era of every polity necessarily intersects [-4004,100], so this is the complete, unfiltered
+// roster the morph engine's own `lookup` needs to answer an ARBITRARY drag-time window with
+// zero network latency. Never re-fetched -- curated polity data is static for the life of a
+// page load.
+export function setPolitiesRoster(id, politiesJson) {
+    const inst = instances.get(id);
+    if (!inst || !inst.polities) {
+        return;
+    }
+
+    const list = typeof politiesJson === 'string' ? JSON.parse(politiesJson) : (politiesJson || []);
+    inst.polities.setPolitiesRoster(list);
+}
+
+// Batch M requirement 3a: TimeSlider.razor's own OnWindowDrag fires this on every
+// pointermove while a handle is down (World.razor's HandleWindowDrag) -- begins a morph
+// gesture the first time it's called since the last settle (idempotent otherwise).
+// `anchorYear` is the drag's own pre-drag value (the handle's own committed year before
+// this gesture started) -- the OTHER end of the swept range every morphFrame call sweeps.
+export function beginMorph(id, anchorYear) {
+    const inst = instances.get(id);
+    if (!inst || !inst.polities) {
+        return;
+    }
+
+    inst.polities.beginMorph(anchorYear);
+}
+
+// Batch M requirement 3a: the scrub itself -- called on EVERY drag-move update (never
+// itself throttled; BorderLayer.requestMorphFrame is what coalesces however many of these
+// land within one animation frame into a single actual evaluate+paint -- see its own doc
+// comment for the full CPU evaluator interface / GPU swap seam). A no-op, harmlessly, once
+// a morph has already settled (e.g. a straggler call firing after release).
+export function morphFrame(id, atYear) {
+    const inst = instances.get(id);
+    if (!inst || !inst.polities) {
+        return;
+    }
+
+    inst.polities.requestMorphFrame(atYear);
+}
+
+// Batch M requirement 3a: "on release, settle into the static layered-era presentation."
+// Settles INSTANTLY and LOCALLY from the already-loaded roster (zero network wait -- the
+// morph engine already has every polity's own full history in memory) using the exact same
+// lookup+overlay path the committed-window network response also produces (see
+// BorderLayer.settleMorph's own comment) -- World.razor's own separate, debounced network
+// fetch still lands a little later and repaints from the server's answer, which is byte-
+// identical by construction, so this is a pure UX win (instant settle) with no correctness
+// risk from skipping ahead of it.
+export function settleMorph(id, from, to) {
+    const inst = instances.get(id);
+    if (!inst || !inst.polities) {
+        return;
+    }
+
+    inst.polities.settleMorph(from, to);
 }
 
 // Batch R requirement 1 ("borders become part of the plate"): pushes the
@@ -2265,10 +2385,108 @@ function formatYearTag(year) {
     return `c. ${label}`;
 }
 
+// --- Batch M requirement 4: delta-ring explorability helpers -------------
+
+// Is `entry`'s own end (`entry.to`) the polity's TRUE chronologically-final
+// era, across the FULL roster (not just whatever this narrow window's own
+// lookup happens to show)? A narrow window can show only ONE internal era
+// of a longer-lived polity, whose own `to` boundary is a transition INTO
+// the next era (simply not shown in this window), never a real "fall" --
+// `entry.fall`'s own presence already answers this precisely whenever
+// curated, but the MINIMAL-popover case (a true final era with no fall
+// authored) still needs this roster-wide check to avoid mistakenly
+// offering fall-explorability on every merely-newest-in-THIS-window ring.
+function isChronologicallyFinalEra(roster, entry) {
+    if (!roster || roster.length === 0) {
+        return entry.fall !== undefined; // roster not loaded yet -- fall back to what we do know
+    }
+    let maxTo = -Infinity;
+    for (const e of roster) {
+        if (e.id === entry.id) {
+            maxTo = Math.max(maxTo, e.to);
+        }
+    }
+    return entry.to === maxTo;
+}
+
+// The immediately-PRECEDING era of the same polity, by `from` order, in the
+// FULL roster -- used only for a transition delta's own TITLE years (the
+// year the PREVIOUS era ended is a more precise "when did the change
+// happen" than the new era's own `from`, which sits one year later by this
+// app's own adjacent-year convention -- see the batch report's own title-
+// format note). `null` when `entry` is the polity's own very first era (no
+// predecessor).
+function previousEra(roster, entry) {
+    let best = null;
+    for (const e of roster || []) {
+        if (e.id === entry.id && e.from < entry.from) {
+            if (!best || e.from > best.from) {
+                best = e;
+            }
+        }
+    }
+    return best;
+}
+
+// Which delta (if any) THIS ring is the explorable hit target for, given
+// the CURRENTLY APPLIED window -- "every era boundary whose transition
+// falls INSIDE the window is explorable," per the brief, verbatim. A ring
+// can be the target for at most ONE delta: FALL takes priority on the rare
+// occasion both this era's own start AND end boundaries sit inside one
+// (necessarily narrow) window simultaneously -- the more climactic moment
+// for a polity that's ending, a disclosed tie-break, not an oversight.
+// `delta` (the actual `{event, verses, ref_note}` payload) may be
+// `undefined` even when a `kind`/title IS returned -- "an uneventful
+// boundary stays visible but gets the minimal popover."
+function deltaForEntry(roster, entry, from, to) {
+    const startInWindow = entry.from >= from && entry.from <= to;
+    const endInWindow = entry.to >= from && entry.to <= to;
+
+    if (endInWindow && isChronologicallyFinalEra(roster, entry)) {
+        return { kind: 'fall', delta: entry.fall, titleFrom: entry.from, titleTo: entry.to };
+    }
+    if (startInWindow) {
+        const prev = previousEra(roster, entry);
+        const titleFrom = prev ? prev.to : entry.from;
+        return { kind: 'transition', delta: entry.transition, titleFrom, titleTo: entry.to };
+    }
+    return null;
+}
+
+function deltaAriaLabel(entry, found) {
+    const base = found.kind === 'fall' ? `${entry.name}, fall` : `${entry.name}, transition`;
+    return found.delta && found.delta.event ? `${base}: ${found.delta.event}` : `${base} (explore)`;
+}
+
+// prefers-reduced-motion (req 3a: "no morph -- snap directly"): rounds a
+// probe year to whichever bracketing KNOT (border-morph.js's own
+// knotYear -- each line's own [from,to] midpoint) it's numerically nearer,
+// so `animate(lines, snapYear(...))` returns an UN-interpolated line's own
+// rings unchanged -- the identical `animate` function every ordinary
+// (motion-allowed) frame also calls, just fed a year that always lands
+// exactly ON a knot instead of between two.
+function snapYear(lines, atYear) {
+    if (lines.length <= 1) {
+        return atYear;
+    }
+    let best = lines[0];
+    let bestDist = Infinity;
+    for (const line of lines) {
+        const knot = (line.from + line.to) / 2;
+        const dist = Math.abs(atYear - knot);
+        if (dist < bestDist) {
+            bestDist = dist;
+            best = line;
+        }
+    }
+    return (best.from + best.to) / 2;
+}
+
 const BorderLayer = L.Layer.extend({
-    initialize() {
-        this._entries = []; // [{ id, name, from, to, rings, color_key, age, tierCount }]
-        this._ringGroups = []; // [{ wash, band, line, ring, entry, ringIndex }]
+    initialize(dotnetRef) {
+        this._dotnetRef = dotnetRef; // Batch M requirement 4: a delta ring's own click calls back into World.razor (OnPolityDeltaClick)
+        this._entries = []; // [{ id, name, from, to, rings, color_key, age, tierCount, transition, fall }]
+        this._ringGroups = []; // [{ wash, band, line, ring, entry, ringIndex, hit? }]
         this._labels = []; // [{ el, entry, cLat, cLon, bbox }] -- one per unique (id, era name)
         this._yearTags = []; // [{ el, ringGroup, cLat, cLon }]
         // Fix round 1 addendum (Batch C2): slugify(name) -> [{lat, lon}, ...]
@@ -2279,6 +2497,26 @@ const BorderLayer = L.Layer.extend({
         // fetch resolves) degrades to "nothing to dedupe against" rather
         // than a null-reference.
         this._litByName = new Map();
+
+        // Batch M requirement 3a: the morph engine's own state. `_roster` is
+        // the FULL, unfiltered `/api/polities` roster (every era of every
+        // polity, fetched once -- setPolitiesRoster below), the one thing
+        // `lookup` needs to answer an arbitrary drag-time window without a
+        // network round trip. `_morphing`/`_morphGroups` exist only WHILE a
+        // drag gesture is in progress -- see beginMorph/morphFrame/settleMorph.
+        this._roster = [];
+        this._morphing = false;
+        this._morphAnchorYear = undefined;
+        this._morphGroups = new Map(); // polityId -> { washes: [], bands: [], lines: [] }
+        // The evaluator interface's own rAF-throttling state (requestMorphFrame/
+        // _evaluateMorphFrame below): coalesces however many drag-move
+        // updates arrive between two animation frames into a single actual
+        // evaluate+paint, the standard rAF-throttled-input-handler pattern.
+        this._rafHandle = null;
+        this._pendingProbeYear = null;
+        this._reducedMotion = typeof window !== 'undefined' && window.matchMedia
+            ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            : false;
     },
 
     onAdd(map) {
@@ -2334,6 +2572,34 @@ const BorderLayer = L.Layer.extend({
         this._washGroup = svgEl('g', { class: 'atlas-wash-clip-group' });
         this._washSvg.appendChild(this._washGroup);
 
+        // Batch M requirement 3a: two SIBLING sub-groups inside each of the
+        // two ring-painting parents (`_washGroup` for wash fills;
+        // `_svg`/overlayPane directly for band/line/hit strokes -- there is
+        // no equivalent "clip group" layer to nest under on the overlayPane
+        // side, so the morph/settled split happens directly on `_svg`
+        // itself there) -- one holds the SETTLED (overlay-combinator)
+        // display, one holds the MORPH (animate-combinator) display while a
+        // drag is in progress. Both a settled wash sub-group and a morph
+        // wash sub-group live INSIDE `_washGroup`, so BOTH inherit its one
+        // `clip-path` (the land mask) and both track zoomanim identically --
+        // "morphing content stays clipped to Batch R's land mask," per the
+        // brief, is true by construction, not a separate wiring concern.
+        // O(1) visibility toggling (display:none on one whole group) is
+        // what makes beginMorph/settleMorph cheap and avoids ever touching
+        // more than the ~14 polities' worth of individual path elements a
+        // frame.
+        this._washSettledGroup = svgEl('g', { class: 'atlas-wash-settled-group' });
+        this._washMorphGroup = svgEl('g', { class: 'atlas-wash-morph-group' });
+        this._washMorphGroup.style.display = 'none';
+        this._washGroup.appendChild(this._washSettledGroup);
+        this._washGroup.appendChild(this._washMorphGroup);
+
+        this._strokeSettledGroup = svgEl('g', { class: 'atlas-border-settled-group' });
+        this._strokeMorphGroup = svgEl('g', { class: 'atlas-border-morph-group' });
+        this._strokeMorphGroup.style.display = 'none';
+        this._svg.appendChild(this._strokeSettledGroup);
+        this._svg.appendChild(this._strokeMorphGroup);
+
         this._labelPane = map.getPane('polityLabelsPane'); // created in init(), before this layer's own addTo(map)
         this._offZoomAnim = attachZoomAnim(map, this._svg);
         // Fix round 1: the wash SVG needs the SAME zoomanim treatment as the
@@ -2359,9 +2625,18 @@ const BorderLayer = L.Layer.extend({
             this._offZoomAnimWash();
             this._offZoomAnimWash = null;
         }
+        if (this._rafHandle != null) {
+            cancelAnimationFrame(this._rafHandle);
+            this._rafHandle = null;
+        }
         this._svg.remove();
         this._washSvg.remove();
         this._ringGroups = [];
+        // Morph paths live inside _washGroup/_svg (children of the two SVGs
+        // just removed above) -- already gone from the DOM at this point;
+        // this just drops the now-stale element references.
+        this._morphGroups = new Map();
+        this._morphing = false;
         for (const l of this._labels) {
             l.el.remove();
         }
@@ -2376,23 +2651,58 @@ const BorderLayer = L.Layer.extend({
         return { zoomend: this._redraw, moveend: this._redraw };
     },
 
-    // `list` is the flat `[{ id, name, from, to, rings, color_key }, ...]`
-    // array `GET /api/polities` returns, already ordered by id then from.
-    // Groups by id (re-sorting by `from` defensively, even though the
-    // server already guarantees that order -- this layer's own painting
-    // logic depends on it, so it shouldn't silently trust an upstream
-    // invariant it can cheaply re-assert) to tag each entry with its own
-    // "age" among its polity's currently-visible eras.
-    setPolities(list) {
+    // `list` is the flat `[{ id, name, from, to, rings, color_key,
+    // transition, fall }, ...]` array `GET /api/polities` returns, already
+    // ordered by id then from. `from`/`to` are the CURRENTLY APPLIED window
+    // (Batch M requirement 4: needed to decide which era boundary, if any,
+    // each ring is the explorable delta target for -- "every era boundary
+    // whose transition falls INSIDE THE WINDOW is explorable").
+    //
+    // Batch M requirement 3: routes through `lookup`+`overlay`
+    // (border-morph.js) instead of the inline group/sort/age-tag logic this
+    // method used to own directly -- the SAME two functions the morph path
+    // (settleMorph below) also calls, so the settled display and a
+    // released-drag's own instant local settle can never disagree about
+    // what "this window's own lines, styled" means. Re-filtering `list`
+    // (already server-filtered to this exact window) through `lookup` again
+    // is a safe no-op -- `lookup` is idempotent under re-filtering with the
+    // SAME window -- and is what makes "the same function, the ONLY
+    // function, that resolves era geometry" literally true of this call
+    // site too, not just the morph one.
+    setPolities(list, from, to) {
+        const grouped = lookup(list, from ?? -Infinity, to ?? Infinity);
+        const entries = [];
+        for (const lines of grouped.values()) {
+            entries.push(...overlay(lines));
+        }
+        this._paintSettled(entries, from, to);
+    },
+
+    // Batch M requirement 3a: the FULL, unfiltered roster (every era of
+    // every polity) -- see map.js's own exported setPolitiesRoster's
+    // comment for why this is fetched once, separately, and stored here.
+    setPolitiesRoster(roster) {
+        this._roster = roster || [];
+    },
+
+    // The settled (overlay-combinator) paint -- shared by setPolities
+    // (network-fed) and settleMorph (locally computed from the already-
+    // loaded roster, zero network wait). `entries` is already grouped +
+    // age-tagged (overlay's own output); this method's ONLY job from here
+    // is DOM painting, unchanged in spirit from the pre-Batch-M
+    // setPolities this replaces -- see that method's own prior header
+    // comment (still accurate) for why paint order alone (oldest-to-newest
+    // per polity) is what makes growth/contraction legible with no
+    // geometry comparison.
+    _paintSettled(entries, from, to) {
         resetZoomAnimTransform(this._svg);
         resetZoomAnimTransform(this._washSvg); // fix round 1: second SVG, same reset (see onAdd's own comment)
-        this._svg.replaceChildren();
-        // Batch R requirement 1: wipes `_washGroup` (the wash paint target),
-        // NOT `_washSvg` itself -- `_washSvg` also holds `_washDefs` (the
-        // land-mask clipPath + feather filter, a SIBLING of `_washGroup`,
-        // see onAdd's own comment) as a permanent fixture that must survive
-        // every polity reload, not just the very first one.
-        this._washGroup.replaceChildren();
+        // Batch M requirement 3a: wipes the SETTLED sub-groups only (never
+        // the morph ones, never `_washDefs`/`_clipPath` -- see onAdd's own
+        // comment on why each of those needs to survive a repaint it isn't
+        // itself responsible for).
+        this._strokeSettledGroup.replaceChildren();
+        this._washSettledGroup.replaceChildren();
         for (const l of this._labels) {
             l.el.remove();
         }
@@ -2400,32 +2710,16 @@ const BorderLayer = L.Layer.extend({
             t.el.remove();
         }
 
-        const byId = new Map();
-        for (const e of list || []) {
-            if (!byId.has(e.id)) {
-                byId.set(e.id, []);
-            }
-            byId.get(e.id).push(e);
-        }
+        this._entries = entries;
+        this._windowFrom = from;
+        this._windowTo = to;
 
-        this._entries = [];
-        for (const group of byId.values()) {
-            group.sort((a, b) => a.from - b.from);
-            const tierCount = group.length;
-            group.forEach((e, idx) => {
-                const age = tierCount === 1 ? 'newest' : idx === 0 ? 'oldest' : idx === tierCount - 1 ? 'newest' : 'middle';
-                this._entries.push({ ...e, age, tierCount });
-            });
-        }
-
-        // Three passes -- ALL washes, then ALL bands, then ALL lines --
-        // across every ring of every entry (in the entries' own
-        // oldest-to-newest-per-polity order): see this layer's own header
-        // comment for why paint order alone, with no geometry comparison,
-        // is what makes growth/contraction and the "older ring still
-        // visible under/around the newer one" effect both work.
+        // Three passes -- ALL washes, then ALL bands, then ALL lines, then
+        // ALL delta hit-strokes -- across every ring of every entry (in the
+        // entries' own oldest-to-newest-per-polity order, `lookup`'s own
+        // guarantee, unchanged by the Batch M refactor).
         this._ringGroups = [];
-        const washEls = [], bandEls = [], lineEls = [];
+        const washEls = [], bandEls = [], lineEls = [], hitEls = [];
         for (const entry of this._entries) {
             const fillColor = POLITY_TINTS[((entry.color_key % POLITY_TINTS.length) + POLITY_TINTS.length) % POLITY_TINTS.length];
             const lineColor = POLITY_TINTS_DARK[((entry.color_key % POLITY_TINTS_DARK.length) + POLITY_TINTS_DARK.length) % POLITY_TINTS_DARK.length];
@@ -2444,26 +2738,45 @@ const BorderLayer = L.Layer.extend({
                 washEls.push(wash);
                 bandEls.push(band);
                 lineEls.push(line);
-                this._ringGroups.push({ wash, band, line, ring, entry, ringIndex });
+                const g = { wash, band, line, ring, entry, ringIndex };
+                this._ringGroups.push(g);
+
+                // Batch M requirement 4: is this ring's own era boundary
+                // explorable in the CURRENTLY APPLIED window? See
+                // deltaForEntry's own doc comment for the exact rule.
+                if (from !== undefined && to !== undefined) {
+                    const found = deltaForEntry(this._roster, entry, from, to);
+                    if (found) {
+                        const hit = this._makeDeltaHit(g, found);
+                        hitEls.push(hit);
+                        g.hit = hit;
+                        g.delta = found;
+                    }
+                }
             });
         }
-        // Fix round 1 (BLOCKER B1): washEls go into `this._washSvg`
-        // (washPane) now, not `this._svg` -- see this layer's own header
-        // comment for why the wash needs to live in a different pane for
-        // its blend mode to actually reach the tiles. bandEls/lineEls are
-        // unaffected, still appended to `this._svg` (overlayPane) in the
-        // same oldest-to-newest, bands-then-lines order as before. Batch R:
-        // specifically into `_washGroup` (the land-mask-clipped, per-path-
-        // feathered group), not `_washSvg` directly -- see onAdd's own
-        // comment.
+        // Fix round 1 (BLOCKER B1): washEls go into the wash SETTLED
+        // sub-group (washPane) -- see this layer's own header comment for
+        // why the wash needs to live in a different pane for its blend mode
+        // to actually reach the tiles; Batch R: `_washSettledGroup` sits
+        // INSIDE `_washGroup` (the land-mask-clipped, per-path-feathered
+        // group), not `_washSvg` directly -- see onAdd's own comment.
+        // bandEls/lineEls/hitEls go into the stroke SETTLED sub-group
+        // (overlayPane), oldest-to-newest, bands then lines then hit-
+        // strokes (hit-strokes paint LAST/topmost among the three so their
+        // own wide invisible stroke always wins hit-testing over a
+        // same-ring line/band, never the reverse).
         for (const el of washEls) {
-            this._washGroup.appendChild(el);
+            this._washSettledGroup.appendChild(el);
         }
         for (const el of bandEls) {
-            this._svg.appendChild(el);
+            this._strokeSettledGroup.appendChild(el);
         }
         for (const el of lineEls) {
-            this._svg.appendChild(el);
+            this._strokeSettledGroup.appendChild(el);
+        }
+        for (const el of hitEls) {
+            this._strokeSettledGroup.appendChild(el);
         }
 
         // Labels: once per unique (id, era name) among the currently
@@ -2514,6 +2827,256 @@ const BorderLayer = L.Layer.extend({
 
         this.setVisible(true);
         this._redraw();
+    },
+
+    // Batch M requirement 4: the wide, transparent hit-stroke a delta-
+    // eligible ring gets, ON TOP of (painted after) its own line/band --
+    // ">=14px effective hit via a wide transparent hit-stroke," per the
+    // brief. `stroke-width` is set (app.css) in the SAME projected-pixel
+    // coordinate space `_ringPathData` already draws in
+    // (map.latLngToLayerPoint), so 14 CSS px of stroke width IS 14 real
+    // screen px of hit target at any zoom, no extra math needed. Hover
+    // darkens the ring's own wash+line (ONE-RULE's spirit, adapted for an
+    // SVG shape -- see app.css's own `.atlas-border-line[data-delta-hover]`
+    // comment for why plain `.explorable` itself, background-color-based,
+    // doesn't apply to an SVG path); click/Enter opens the popover via
+    // OnPolityDeltaClick, with EVERY field the popover needs already
+    // resolved client-side (this._roster already has it all) -- no second
+    // fetch, no server-side lookup by id needed.
+    _makeDeltaHit(g, found) {
+        const hit = svgEl('path', {
+            class: 'atlas-border-delta-hit',
+            fill: 'none',
+            tabindex: '0',
+            role: 'button',
+            'aria-label': deltaAriaLabel(g.entry, found),
+            'data-testid': `polity-delta-${esc(g.entry.id)}-${g.entry.from}-${g.ringIndex}`,
+        });
+        const setHover = on => {
+            if (on) {
+                g.line.setAttribute('data-delta-hover', 'true');
+                g.wash.setAttribute('data-delta-hover', 'true');
+            } else {
+                g.line.removeAttribute('data-delta-hover');
+                g.wash.removeAttribute('data-delta-hover');
+            }
+        };
+        hit.addEventListener('mouseover', () => setHover(true));
+        hit.addEventListener('mouseout', () => setHover(false));
+        hit.addEventListener('focus', () => setHover(true));
+        hit.addEventListener('blur', () => setHover(false));
+        const activate = e => {
+            e.stopPropagation(); // never also register as a map-background click (OnMapClick would otherwise close a pinned card underneath)
+            const d = found.delta;
+            this._dotnetRef.invokeMethodAsync(
+                'OnPolityDeltaClick',
+                g.entry.name,
+                found.kind,
+                found.titleFrom,
+                found.titleTo,
+                d ? d.event : null,
+                d ? d.verses : [],
+                d ? d.ref_note : null
+            );
+        };
+        hit.addEventListener('click', activate);
+        hit.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                activate(e);
+            }
+        });
+        return hit;
+    },
+
+    // --- Batch M requirement 3a: the morph (animate-combinator) path -----
+
+    // `anchorYear` is the drag's own STARTING value (TimeSlider.razor's own
+    // pre-drag From/To -- see World.razor's HandleWindowDrag) -- the OTHER
+    // end of the swept range morphFrame below reads every frame. Idempotent
+    // -- calling again mid-drag (TimeSlider's own OnWindowDrag fires
+    // continuously) is a harmless no-op that never resets an
+    // already-in-progress gesture's own anchor. Swaps which sub-groups are
+    // visible (O(1), two `display` toggles) rather than touching any
+    // individual ring element -- the settled display's own paths stay
+    // fully intact underneath, ready to reappear the instant settleMorph
+    // runs on release.
+    beginMorph(anchorYear) {
+        if (this._morphing) {
+            return;
+        }
+        this._morphing = true;
+        this._morphAnchorYear = anchorYear;
+        this._washSettledGroup.style.display = 'none';
+        this._strokeSettledGroup.style.display = 'none';
+        this._washMorphGroup.style.display = '';
+        this._strokeMorphGroup.style.display = '';
+        for (const l of this._labels) {
+            l.el.style.display = 'none'; // no per-frame DOM churn beyond path `d` updates -- labels/year-tags simply sit out a morph, restored by the next settle
+        }
+        for (const t of this._yearTags) {
+            t.el.style.display = 'none';
+        }
+    },
+
+    // Batch M requirement 3a: THE EVALUATOR INTERFACE -- "evaluate on CPU in
+    // requestAnimationFrame behind a small evaluator interface... document
+    // the GPU/WebGL swap seam." Every drag-move update (World.razor's own
+    // HandleWindowDrag, fired on every native pointermove, NOT itself
+    // rAF-throttled) lands here and only records the latest probe year;
+    // the actual evaluate-and-paint work is scheduled AT MOST ONCE per
+    // animation frame, coalescing however many pointer events arrived
+    // since the last one -- the standard rAF-throttled-input-handler
+    // pattern, not fancy math. `_evaluateMorphFrame` below is the
+    // evaluator itself: a CPU implementation of `evaluate(lines, t) ->
+    // rings` (via border-morph.js's own `animate`). THE GPU SWAP SEAM: a
+    // WebGL evaluator would instead upload posA/posB per-vertex attribute
+    // buffers ONCE per correspondence pair (geo.js's own buildCorrespondence
+    // output) and vary a single `t` uniform, letting a vertex shader run
+    // the identical sin-weighted slerp math geo.js's own slerp() doc
+    // comment states, entirely on the GPU -- the CPU side would then update
+    // one float per frame instead of recomputing every vertex in JS here.
+    // Not built (per the brief's own explicit instruction) -- at this
+    // app's own real scale (14 polities, <=80 points/ring, resampled to
+    // 128) the CPU path costs microseconds per frame (see the batch
+    // report's own measurement), so this seam is documented as a FUTURE
+    // swap point, not a present need.
+    requestMorphFrame(atYear) {
+        this._pendingProbeYear = atYear;
+        if (this._rafHandle != null) {
+            return; // already scheduled -- the eventual frame uses whatever _pendingProbeYear is LATEST when it actually runs
+        }
+        this._rafHandle = requestAnimationFrame(() => {
+            this._rafHandle = null;
+            if (this._morphing) {
+                this._evaluateMorphFrame(this._pendingProbeYear);
+            }
+        });
+    },
+
+    // One scrub frame's own actual work. For EACH polity in the full
+    // roster, `lookup`s the swept range from wherever the drag itself began
+    // (`_morphAnchorYear`) through the current probe, then `animate`s that
+    // polity's own sequence to get its CURRENT ring(s) -- "the two modes
+    // share everything except the final combinator" is true by
+    // construction: this is the EXACT SAME `lookup` `setPolities` above
+    // calls, just fed a different (transient, drag-time) window every
+    // frame. `prefers-reduced-motion`: SNAPS instead of interpolating
+    // (rounds the probe to whichever bracketing knot it's nearer, so
+    // `animate` itself returns an UN-interpolated line's own rings -- no
+    // separate code path, just a different year fed to the identical
+    // function).
+    _evaluateMorphFrame(atYear) {
+        if (!this._morphing || !this._map || atYear == null) {
+            return;
+        }
+        resetZoomAnimTransform(this._washSvg);
+        resetZoomAnimTransform(this._svg);
+
+        const anchor = this._morphAnchorYear ?? atYear;
+        const lo = Math.min(anchor, atYear);
+        const hi = Math.max(anchor, atYear);
+        const grouped = lookup(this._roster, lo, hi);
+
+        const seen = new Set();
+        for (const [polityId, lines] of grouped) {
+            const evalYear = this._reducedMotion ? snapYear(lines, atYear) : atYear;
+            const rings = animate(lines, evalYear);
+            const color = lines[0].color_key;
+            this._syncMorphGroup(polityId, color, rings);
+            seen.add(polityId);
+        }
+        // A polity whose OWN full history doesn't reach this instant at all
+        // (not yet risen, or -- never happens in this app's real data, but
+        // handled -- already gone) shows nothing: drop any leftover morph
+        // group for it from a previous frame.
+        for (const [polityId, group] of this._morphGroups) {
+            if (!seen.has(polityId)) {
+                this._removeMorphGroup(polityId, group);
+            }
+        }
+    },
+
+    // Batch M requirement 3a: "on release, settle into the static layered-
+    // era presentation" -- INSTANTLY, from the already-loaded roster (zero
+    // network wait; see map.js's own exported settleMorph comment for why
+    // this never disagrees with the separate, still-in-flight network
+    // repaint that also lands a little later). Tears down the morph
+    // sub-groups, restores the settled ones, and repaints via the EXACT
+    // SAME `_paintSettled` the network-fed `setPolities` above calls.
+    settleMorph(from, to) {
+        this._morphing = false;
+        this._morphAnchorYear = undefined;
+        if (this._rafHandle != null) {
+            cancelAnimationFrame(this._rafHandle);
+            this._rafHandle = null;
+        }
+        this._washMorphGroup.replaceChildren();
+        this._strokeMorphGroup.replaceChildren();
+        this._washMorphGroup.style.display = 'none';
+        this._strokeMorphGroup.style.display = 'none';
+        this._morphGroups = new Map();
+        this._washSettledGroup.style.display = '';
+        this._strokeSettledGroup.style.display = '';
+
+        const grouped = lookup(this._roster, from, to);
+        const entries = [];
+        for (const lines of grouped.values()) {
+            entries.push(...overlay(lines));
+        }
+        this._paintSettled(entries, from, to);
+    },
+
+    // Creates (first call for this polity id) or updates (every later call)
+    // ONE wash+band+line triple PER RING `rings` currently has -- ring
+    // COUNT is stable frame-to-frame in the overwhelming common case (it
+    // only changes at all when `animate` itself snaps across a topology-
+    // mismatched boundary, a rare, discrete event -- see border-morph.js's
+    // own animate doc comment), so this is "no per-frame DOM churn beyond
+    // path `d` updates" for every ordinary frame, with an honest, disclosed
+    // exception exactly when the underlying SHAPE genuinely, discretely
+    // changes what it even IS.
+    _syncMorphGroup(polityId, colorKey, rings) {
+        let group = this._morphGroups.get(polityId);
+        if (!group) {
+            group = { washes: [], bands: [], lines: [] };
+            this._morphGroups.set(polityId, group);
+        }
+        const fillColor = POLITY_TINTS[((colorKey % POLITY_TINTS.length) + POLITY_TINTS.length) % POLITY_TINTS.length];
+        const lineColor = POLITY_TINTS_DARK[((colorKey % POLITY_TINTS_DARK.length) + POLITY_TINTS_DARK.length) % POLITY_TINTS_DARK.length];
+
+        while (group.washes.length < rings.length) {
+            const wash = svgEl('path', { class: 'atlas-border-wash', 'data-age': 'newest', 'data-morph-state': 'morphing' });
+            const band = svgEl('path', { class: 'atlas-border-band', fill: 'none', 'data-age': 'newest', 'data-morph-state': 'morphing' });
+            const line = svgEl('path', { class: 'atlas-border-line', fill: 'none', 'data-age': 'newest', 'data-morph-state': 'morphing' });
+            this._washMorphGroup.appendChild(wash);
+            this._strokeMorphGroup.appendChild(band);
+            this._strokeMorphGroup.appendChild(line);
+            group.washes.push(wash);
+            group.bands.push(band);
+            group.lines.push(line);
+        }
+        while (group.washes.length > rings.length) {
+            group.washes.pop().remove();
+            group.bands.pop().remove();
+            group.lines.pop().remove();
+        }
+
+        rings.forEach((ring, i) => {
+            const d = this._ringPathData(ring);
+            group.washes[i].style.fill = fillColor;
+            group.washes[i].setAttribute('d', d);
+            group.bands[i].style.stroke = fillColor;
+            group.bands[i].setAttribute('d', d);
+            group.lines[i].style.stroke = lineColor;
+            group.lines[i].setAttribute('d', d);
+        });
+    },
+
+    _removeMorphGroup(polityId, group) {
+        for (const el of [...group.washes, ...group.bands, ...group.lines]) {
+            el.remove();
+        }
+        this._morphGroups.delete(polityId);
     },
 
     // Batch R requirement 1: sets the land-mask clip geometry ONCE (called
@@ -2586,6 +3149,18 @@ const BorderLayer = L.Layer.extend({
             g.wash.setAttribute('d', d);
             g.band.setAttribute('d', d);
             g.line.setAttribute('d', d);
+            if (g.hit) {
+                g.hit.setAttribute('d', d); // Batch M requirement 4: the delta hit-stroke shares its own ring-group's geometry exactly
+            }
+        }
+        // Batch M requirement 3a: an animated zoom/pan mid-drag (unusual,
+        // but not impossible) must keep the MORPH paths in sync too, same
+        // "recompute every ring's real d at the now-current zoom" reasoning
+        // -- re-evaluates at whatever probe year the morph last held
+        // (_pendingProbeYear), no new geometry decision, just a
+        // reprojection of the same shapes.
+        if (this._morphing && this._pendingProbeYear != null) {
+            this._evaluateMorphFrame(this._pendingProbeYear);
         }
         // Batch R requirement 1: the land-mask clip geometry lives in the
         // SAME `_washSvg` as the wash paths (see onAdd's own comment), so it

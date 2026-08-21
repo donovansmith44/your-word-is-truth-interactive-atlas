@@ -192,6 +192,16 @@
     {
     }
 
+    // Batch M requirement 4: map.js's own BorderLayer is never even
+    // constructed for a mini instance (init()'s own mini path skips the
+    // whole polity/arrow/landmark layer trio -- this component's own header
+    // comment) -- no delta ring, no click, ever, on a 320x240 figure.
+    // Implemented anyway, same treatment as every OTHER IMapEvents member
+    // above.
+    public void OnPolityDeltaClick(string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote)
+    {
+    }
+
     public async ValueTask DisposeAsync()
     {
         // Set FIRST, before any await -- this is the flag OnAfterRenderAsync

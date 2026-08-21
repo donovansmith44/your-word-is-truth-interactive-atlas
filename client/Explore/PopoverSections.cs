@@ -148,5 +148,14 @@ public static class PopoverSectionRegistry
         new NarrativeEventTextSection(),
         new NarrativePriorEventSection(),
         new NarrativeFollowingEventSection(),
+        // Batch M ("the DAG grows a node type"): PolityDelta's own three
+        // sections, in order -- event text, THE SCRIPTURES, grounding note
+        // -- appended at the end, same "later batches append below, never
+        // disturb" convention. None of the three's own AppliesTo overlaps
+        // any earlier provider's (Kind == "PolityDelta" is brand new), so
+        // registration order here is ALSO render order for this node kind.
+        new PolityDeltaEventSection(),
+        new PolityDeltaScripturesSection(),
+        new PolityDeltaGroundingSection(),
     };
 }

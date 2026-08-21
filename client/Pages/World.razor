@@ -73,7 +73,7 @@
     @if (_eras is not null)
     {
         <TimeSlider Eras="_eras" From="_from" To="_to"
-                    Disabled="@(_scriptureRef is not null)" OnWindowChange="HandleWindowChange" />
+                    Disabled="@(_scriptureRef is not null)" OnWindowChange="HandleWindowChange" OnWindowDrag="HandleWindowDrag" />
     }
 
     @* Batch H: suppressed while following -- the follow-chip above is
@@ -218,6 +218,19 @@
     // creation resolves second" race/guard as _landmarksPushed.
     private LandMaskOut? _landMask;
     private bool _landMaskPushed;
+
+    // Batch M requirement 3a: the FULL, unfiltered polity roster (every era
+    // of every polity -- the whole atlas span necessarily intersects every
+    // one of them) the morph engine's own client-side `lookup` needs to
+    // answer an arbitrary drag-time window with zero network latency. Same
+    // "fetch once, push once, whichever of the fetch/map-creation race
+    // resolves second" shape as _landMask/_landMaskPushed immediately
+    // above -- deliberately a SEPARATE fetch from the per-window
+    // Atlas.Polities(from, to) call LoadPolitiesFor already makes (that one
+    // drives the SETTLED display only; this one is static for the life of
+    // the page, like the land mask).
+    private PolitiesOut? _polityRoster;
+    private bool _polityRosterPushed;
 
     // The most recently APPLIED time-mode window -- i.e. the last from/to
     // SyncFromQuery validated, which is exactly "the window to return to"
@@ -379,6 +392,26 @@
             // pre-Batch-R, unclipped rendering rather than the page breaking.
         }
 
+        try
+        {
+            // Batch M requirement 3a: the full atlas span -- every era of
+            // every polity necessarily intersects [-4004,100] (the same
+            // span PlaceNode's own "Show on /world" chip already uses,
+            // Explore/PlaceNode.cs), so this single call returns the
+            // COMPLETE roster the morph engine needs, via the exact same
+            // endpoint/DTO LoadPolitiesFor's own per-window fetch already
+            // uses.
+            _polityRoster = await Atlas.Polities(-4004, 100);
+        }
+        catch (Exception)
+        {
+            // Not load-bearing for the settled display (LoadPolitiesFor's
+            // own per-window fetch is independent) -- a failed roster fetch
+            // just means the morph engine has nothing to scrub with; a drag
+            // simply shows no live morph until the NEXT settle, same
+            // graceful-degrade spirit as a failed land-mask fetch above.
+        }
+
         // If OnInitializedAsync's own await above didn't complete
         // synchronously (the normal case -- it's a real network fetch),
         // Blazor already rendered once with _mapInterop still unset, so
@@ -391,6 +424,7 @@
         // OnAfterRenderAsync's own call covers the reverse ordering.
         await PushLandmarksIfReady();
         await PushLandMaskIfReady();
+        await PushPolityRosterIfReady();
     }
 
     // Batch R requirement 1: pushes the curated land mask to the map exactly
@@ -405,6 +439,19 @@
 
         _landMaskPushed = true;
         await _mapInterop.SetLandMask(_landMask.Rings);
+    }
+
+    // Batch M requirement 3a: pushes the full polity roster to the map
+    // exactly once -- same race/guard shape as PushLandMaskIfReady above.
+    private async Task PushPolityRosterIfReady()
+    {
+        if (_polityRosterPushed || _polityRoster is null || _mapInterop is null)
+        {
+            return;
+        }
+
+        _polityRosterPushed = true;
+        await _mapInterop.SetPolitiesRoster(_polityRoster.Polities);
     }
 
     // Pushes the curated landmark list to the map exactly once, whichever
@@ -752,7 +799,7 @@
         if (_polities is not null && _scriptureRef is null)
         {
             await _mapInterop.SetPolitiesVisible(true);
-            await _mapInterop.SetPolities(_polities.Polities);
+            await _mapInterop.SetPolities(_polities.Polities, _from, _to);
         }
 
         // Landmarks: same "whichever resolves second" race as _scene/
@@ -764,6 +811,8 @@
         // Batch R requirement 1: same "whichever resolves second" race, for
         // the land mask.
         await PushLandMaskIfReady();
+        // Batch M requirement 3a: same race, for the morph engine's own roster.
+        await PushPolityRosterIfReady();
 
         // Batch H: same race, for a restored camera (view-state round-trip)
         // -- see _pendingCamera's own comment.
@@ -855,16 +904,85 @@
         await DebouncedLoadScene(from, to);
     }
 
+    // Batch M requirement 3a: true for exactly the duration of an in-
+    // progress drag-morph gesture -- set by HandleWindowDrag's own first
+    // call since the last settle, cleared by HandleWindowChange below
+    // (release, or -- harmlessly, since it's simply already false there --
+    // an era click/readout Enter that never had a morph running at all).
+    private bool _dragMorphing;
+
+    // Batch M requirement 3a: fired on EVERY pointermove while a slider
+    // handle is down (TimeSlider.razor's own OnWindowDrag) -- drives the
+    // morph engine's own rAF-throttled evaluator (map.js's BorderLayer,
+    // requestMorphFrame/_evaluateMorphFrame -- see that file's own comment
+    // for the full CPU evaluator interface / GPU swap seam). Never touches
+    // the URL or _from/_to (those stay "the last COMMITTED window," per
+    // their own field comment, until release) -- this is a purely visual,
+    // transient scrub.
+    private async Task HandleWindowDrag((int From, int To) window)
+    {
+        if (_mapInterop is null || _polityRoster is null)
+        {
+            return; // morph engine has nothing to scrub with yet -- degrades to no live morph, same graceful-degrade spirit as a failed roster fetch
+        }
+
+        // Whichever of From/To differs from the last COMMITTED window is
+        // the handle actually being dragged; the OTHER end is this
+        // gesture's own anchor (its own pre-drag committed value) -- see
+        // border-morph.js's own animate() doc comment for how the anchor
+        // bounds the swept range.
+        int probeYear;
+        int anchorYear;
+        if (window.From != _from)
+        {
+            probeYear = window.From;
+            anchorYear = _from;
+        }
+        else if (window.To != _to)
+        {
+            probeYear = window.To;
+            anchorYear = _to;
+        }
+        else
+        {
+            return; // no-op drag tick (e.g. the very first pointerdown before any real movement) -- nothing changed
+        }
+
+        if (!_dragMorphing)
+        {
+            _dragMorphing = true;
+            await _mapInterop.BeginMorph(anchorYear);
+        }
+        await _mapInterop.MorphFrame(probeYear);
+    }
+
     // Batch H: SplitMode has no ref=/from=/to= on its own host URL at all
     // (/read's route never carries them -- see SyncFollowRef's own comment)
     // -- so a SplitMode instance applies a window/ref change DIRECTLY via
     // ApplyExternalQuery instead of a Nav.NavigateTo that nothing would ever
     // read back. Standalone (!SplitMode) behavior is completely unchanged.
-    private Task HandleWindowChange((int From, int To) window)
+    private async Task HandleWindowChange((int From, int To) window)
     {
+        // Batch M requirement 3a: "on release, settle into the static
+        // layered-era presentation" -- settles INSTANTLY, locally, before
+        // this method's own navigation/URL-driven reload even starts (see
+        // MapInterop.SettleMorph's own comment for why the two can never
+        // disagree). A no-op whenever this window change ISN'T the tail end
+        // of a drag (era click, readout Enter) -- _dragMorphing is simply
+        // already false there.
+        if (_dragMorphing)
+        {
+            _dragMorphing = false;
+            if (_mapInterop is not null)
+            {
+                await _mapInterop.SettleMorph(window.From, window.To);
+            }
+        }
+
         if (SplitMode)
         {
-            return ApplyExternalQuery($"from={window.From}&to={window.To}");
+            await ApplyExternalQuery($"from={window.From}&to={window.To}");
+            return;
         }
 
         var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
@@ -873,7 +991,6 @@
             ["to"] = window.To,
         });
         Nav.NavigateTo(uri, replace: true);
-        return Task.CompletedTask;
     }
 
     // ScripturePicker.OnApply (Task 13/WORLD-6). The picker itself is
@@ -1061,7 +1178,7 @@
 
             if (_mapInterop is not null)
             {
-                await _mapInterop.SetPolities(polities.Polities);
+                await _mapInterop.SetPolities(polities.Polities, from, to);
             }
         }
         catch (Exception)
@@ -1354,6 +1471,21 @@
         ViewState.Map.CenterLat = lat;
         ViewState.Map.CenterLon = lon;
         ViewState.Map.Zoom = zoom;
+    }
+
+    // Batch M requirement 4: a delta-bearing polity-era-boundary ring was
+    // clicked (or Enter-activated) -- map.js's own BorderLayer._makeDeltaHit
+    // already resolved every field this needs (its own in-memory roster),
+    // so this is a direct construction, no fetch. Opens the SAME
+    // ExplorerPopover every other explorable element on this page opens
+    // (OpenExploreNode's own "close any pinned card, push the node" shape),
+    // even though a delta ring has no hover-card precursor to close --
+    // CloseCardNow is harmless when nothing is pinned.
+    public void OnPolityDeltaClick(string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote)
+    {
+        _activeNode = new PolityDeltaNode(polityName, kind, titleFromYear, titleToYear, eventText, verses, refNote);
+        CloseCardNow();
+        StateHasChanged();
     }
 
     // PlaceCard.OnOpenPlace (WORLD-8/Task 15): closes the hover card

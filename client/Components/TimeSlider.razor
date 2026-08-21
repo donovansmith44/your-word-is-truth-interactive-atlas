@@ -119,6 +119,18 @@
     [Parameter] public int To { get; set; }
     [Parameter] public EventCallback<(int From, int To)> OnWindowChange { get; set; }
 
+    // Batch M requirement 3a: fired on EVERY pointermove while a handle is
+    // down (alongside the existing local _dragFrom/_dragTo visual update
+    // below) -- World.razor's own HandleWindowDrag drives the morph engine
+    // from this, entirely separate from OnWindowChange above (which only
+    // ever fires at RELEASE/era-click/readout-Enter, the "commit a new
+    // window" gesture; this is the "live-scrub while still deciding" one).
+    // Deliberately the SAME raw, un-throttled frequency native pointermove
+    // events arrive at -- BorderLayer.requestMorphFrame (map.js) is what
+    // coalesces however many of these land within one animation frame into
+    // a single actual evaluate+paint, not this component.
+    [Parameter] public EventCallback<(int From, int To)> OnWindowDrag { get; set; }
+
     // WORLD-6/CONTRACT: "the slider is aria-disabled=true while scripture
     // mode is active" -- World.razor passes this whenever a scripture ref is
     // driving the scene instead of a time window. Deliberately aria- rather
@@ -218,7 +230,7 @@
         _dragTo = To;
     }
 
-    private void OnTrackPointerMove(PointerEventArgs e)
+    private async Task OnTrackPointerMove(PointerEventArgs e)
     {
         if (_dragTarget is null || Eras.Count == 0)
         {
@@ -234,6 +246,11 @@
         {
             _dragTo = Math.Max(year, _dragFrom);
         }
+
+        // Batch M requirement 3a: fires on this SAME raw pointermove
+        // frequency -- see OnWindowDrag's own doc comment for why no
+        // throttling happens at this layer.
+        await OnWindowDrag.InvokeAsync((_dragFrom, _dragTo));
     }
 
     // Magnetic drag-release snap (CONTRACT amendment -- see SnapThresholdPx's
