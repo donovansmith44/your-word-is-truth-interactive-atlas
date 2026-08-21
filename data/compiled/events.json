@@ -32713,8 +32713,190 @@
       }
     ],
     "robertson_section": "Robertson (1922) §171, \"The Visit of the Women to the Tomb of Jesus about Sunrise Sunday Morning and the Message of the Angels about the Empty Tomb\"",
-    "ref_note": "Matthew 28:1-10 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml)",
+    "ref_note": "Matthew 28:1-10 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml). Batch T2 (period 11): these same witness ranges already fully subsume Robertson's own separate SS169 (\"The Visit of the Women to the Tomb,\" Matt 28:1/Mark 16:1 -- the women SETTING OUT, a finer-grained moment Robertson distinguishes from this event's own arrival), 170 (\"The Earthquake...,\" Matt 28:2-4), and 174 (\"The Appearance to the Other Women,\" Matt 28:9-10) -- no separate containers authored for any of the three.",
     "order_key": 8000
+  },
+  {
+    "id": "rob_appears_to_mary_magdalene",
+    "label": "The risen Jesus appears to Mary Magdalene",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "golgotha"
+    ],
+    "verses": [
+      "MRK.16.9",
+      "MRK.16.10",
+      "MRK.16.11"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.20.11",
+            "JHN.20.12",
+            "JHN.20.13",
+            "JHN.20.14",
+            "JHN.20.15",
+            "JHN.20.16",
+            "JHN.20.17",
+            "JHN.20.18"
+          ]
+        },
+        "ref_note": "John 20:11-18 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §173"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §173, \"The Appearance of Jesus to Mary Magdalene and the Message to the Disciples\"",
+    "ref_note": "Mark 16:9-11 and John 20:11-18 both read directly against the compiled KJV text",
+    "order_key": 8100
+  },
+  {
+    "id": "rob_guard_reports",
+    "label": "The guards report to the chief priests, who bribe them to lie",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.28.11",
+      "MAT.28.12",
+      "MAT.28.13",
+      "MAT.28.14",
+      "MAT.28.15"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §175, \"Some of the Guard Report to the Jewish Rulers\"",
+    "ref_note": "Matthew 28:11-15 read directly against the compiled KJV text; single witness (Matthew alone)",
+    "order_key": 8200
+  },
+  {
+    "id": "rob_appears_thomas_absent",
+    "label": "Jesus appears to the disciples; Thomas, absent, will not believe",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "LUK.24.36",
+      "LUK.24.37",
+      "LUK.24.38",
+      "LUK.24.39",
+      "LUK.24.40",
+      "LUK.24.41",
+      "LUK.24.42",
+      "LUK.24.43"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.16.14"
+          ]
+        },
+        "ref_note": "Mark 16:14 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §178"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.20.19",
+            "JHN.20.20",
+            "JHN.20.21",
+            "JHN.20.22",
+            "JHN.20.23",
+            "JHN.20.24",
+            "JHN.20.25"
+          ]
+        },
+        "ref_note": "John 20:19-25 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §178"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §178, \"The Appearance to the Astonished Disciples (Thomas Absent) with a Commission and Their Failure to Convince Thomas\"",
+    "ref_note": "Mark 16:14, Luke 24:36-43, and John 20:19-25 all read directly against the compiled KJV text; Luke's own fuller account used as this event's top-level verses",
+    "order_key": 9100
+  },
+  {
+    "id": "rob_appears_thomas_convinced",
+    "label": "Jesus appears again the next Sunday; Thomas is convinced",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.20.26",
+      "JHN.20.27",
+      "JHN.20.28",
+      "JHN.20.29",
+      "JHN.20.30",
+      "JHN.20.31"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §179, \"The Appearance to the Disciples the Next Sunday Night and the Convincing of Thomas\"",
+    "ref_note": "John 20:26-31 read directly against the compiled KJV text; single witness (John alone)",
+    "order_key": 9200
+  },
+  {
+    "id": "rob_appears_seven_galilee",
+    "label": "Jesus appears to seven disciples by the Sea of Galilee",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "sea-of-galilee"
+    ],
+    "verses": [
+      "JHN.21.1",
+      "JHN.21.2",
+      "JHN.21.3",
+      "JHN.21.4",
+      "JHN.21.5",
+      "JHN.21.6",
+      "JHN.21.7",
+      "JHN.21.8",
+      "JHN.21.9",
+      "JHN.21.10",
+      "JHN.21.11",
+      "JHN.21.12",
+      "JHN.21.13",
+      "JHN.21.14",
+      "JHN.21.15",
+      "JHN.21.16",
+      "JHN.21.17",
+      "JHN.21.18",
+      "JHN.21.19",
+      "JHN.21.20",
+      "JHN.21.21",
+      "JHN.21.22",
+      "JHN.21.23",
+      "JHN.21.24",
+      "JHN.21.25"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §180, \"The Appearance to Seven Disciples beside the Sea of Galilee. The Miraculous Draught of Fishes\"",
+    "ref_note": "John 21 (the whole chapter) read directly against the compiled KJV text; single witness (John alone)",
+    "order_key": 9900
   },
   {
     "id": "pw_emmaus",
@@ -32754,7 +32936,7 @@
     "kind": "event",
     "witnesses": [],
     "robertson_section": "Robertson (1922) §176, \"The Appearance to Two Disciples (Cleopas and Another) on the Way to Emmaus\"",
-    "ref_note": "Luke 24:13-35 read directly; Robertson also lists Mark 16:12-13 (a two-verse mention in Mark's disputed longer ending) but this event is curated single-witness (Luke alone) -- requirement 4's own 'no parallel framing when n=1' case",
+    "ref_note": "Luke 24:13-35 read directly; Robertson also lists Mark 16:12-13 (a two-verse mention in Mark's disputed longer ending) but this event is curated single-witness (Luke alone) -- requirement 4's own 'no parallel framing when n=1' case. Batch T2 (period 11): this same range already fully subsumes Robertson's own separate S177 (\"The Report of the Two Disciples and the News of the Appearance to Simon Peter,\" Luke 24:33-35) -- no separate container authored for it.",
     "order_key": 9000
   },
   {
@@ -32807,6 +32989,30 @@
     "robertson_section": "Robertson (1922) §181, \"The Appearance to about Five Hundred on an Appointed Mountain in Galilee, and a Commission Given\"",
     "ref_note": "Matthew 28:16-20, Mark 16:15-18 read directly (see event-witnesses.toml); Robertson also lists 1 Corinthians 15:6, outside this app's Gospels+Acts witness scope",
     "order_key": 10000
+  },
+  {
+    "id": "rob_final_commission",
+    "label": "Jesus gives a final commission and promises the Spirit",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "LUK.24.44",
+      "LUK.24.45",
+      "LUK.24.46",
+      "LUK.24.47",
+      "LUK.24.48",
+      "LUK.24.49"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §183, \"The Appearance to the Disciples with Another Commission\"",
+    "ref_note": "Luke 24:44-49 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 10500
   },
   {
     "id": "pw_mount_of_olives",
