@@ -19216,6 +19216,30 @@
     "order_key": 0
   },
   {
+    "id": "1ki_davids_old_age",
+    "label": "David's failing health; Abishag the Shunammite",
+    "when": {
+      "from_year": -1016,
+      "to_year": -1016
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "1KI.1.1",
+      "1KI.1.2",
+      "1KI.1.3",
+      "1KI.1.4"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 1:1-4, aged David's own failing health and the search for Abishag the Shunammite to attend him.",
+    "ref_note": "No Chronicles parallel. Dated the year before the pre-existing theo-160 ('Death of David,' -1015).",
+    "order_key": 0
+  },
+  {
     "id": "sam2_last_words",
     "label": "David's last words",
     "when": {
@@ -19654,6 +19678,124 @@
     "order_key": 0
   },
   {
+    "id": "1ki_adonijah_coup",
+    "label": "Adonijah's attempt to seize the throne",
+    "when": {
+      "from_year": -1015,
+      "to_year": -1015
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "1KI.1.5",
+      "1KI.1.6",
+      "1KI.1.7",
+      "1KI.1.8",
+      "1KI.1.9",
+      "1KI.1.10",
+      "1KI.1.11",
+      "1KI.1.12",
+      "1KI.1.13",
+      "1KI.1.14",
+      "1KI.1.15",
+      "1KI.1.16",
+      "1KI.1.17",
+      "1KI.1.18",
+      "1KI.1.19",
+      "1KI.1.20",
+      "1KI.1.21",
+      "1KI.1.22",
+      "1KI.1.23",
+      "1KI.1.24",
+      "1KI.1.25",
+      "1KI.1.26",
+      "1KI.1.27",
+      "1KI.1.28",
+      "1KI.1.29",
+      "1KI.1.30",
+      "1KI.1.31",
+      "1KI.1.32",
+      "1KI.1.33",
+      "1KI.1.34",
+      "1KI.1.35",
+      "1KI.1.36",
+      "1KI.1.37"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 1:5-37, Adonijah's own self-exaltation and feast at En-rogel, and Nathan and Bathsheba's own counter-appeal to David, who swears the throne to Solomon.",
+    "ref_note": "No substantial Chronicles parallel (Chronicles' own narrative resumes only at 1 Chronicles 29:22b-25, a brief summary of Solomon's SECOND anointing, immediately below -- Adonijah's own attempt itself goes unrecounted there).",
+    "order_key": 0
+  },
+  {
+    "id": "1ki_solomon_anointed",
+    "label": "Solomon is anointed king a second time",
+    "when": {
+      "from_year": -1015,
+      "to_year": -1015
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "1KI.1.38",
+      "1KI.1.39",
+      "1KI.1.40",
+      "1KI.1.41",
+      "1KI.1.42",
+      "1KI.1.43",
+      "1KI.1.44",
+      "1KI.1.45",
+      "1KI.1.46",
+      "1KI.1.47",
+      "1KI.1.48",
+      "1KI.1.49",
+      "1KI.1.50",
+      "1KI.1.51",
+      "1KI.1.52",
+      "1KI.1.53"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 1:38-53, Solomon's own anointing at Gihon by Zadok and Nathan, the people's own rejoicing, and Adonijah's own alarm and submission at the horns of the altar.",
+    "ref_note": "Crockett (1897) section 118(3) notes a fragmentary Chronicles echo (1 Chronicles 29:22b, 'and anointed him unto the Lord to be the chief governor'), but that verse is a single clause inside a much broader Chronicles verse about the coronation feast, too thin to witness formally as its own parallel passage without overstating the source -- declined per the standing citation-integrity rule (an honest subset, not a fabricated one), not silently omitted.",
+    "order_key": 0
+  },
+  {
+    "id": "1ki_davids_charge",
+    "label": "David's last charge to Solomon",
+    "when": {
+      "from_year": -1015,
+      "to_year": -1015
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "1KI.2.1",
+      "1KI.2.2",
+      "1KI.2.3",
+      "1KI.2.4",
+      "1KI.2.5",
+      "1KI.2.6",
+      "1KI.2.7",
+      "1KI.2.8",
+      "1KI.2.9"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 2:1-9, David's own final charge to Solomon to keep the Lord's own statutes, and his own instructions concerning Joab, Barzillai's sons, and Shimei.",
+    "ref_note": "No Chronicles parallel. Leads directly into the pre-existing theo-160 ('Death of David,' 2:10-11, -1015, untouched by this file).",
+    "order_key": 0
+  },
+  {
     "id": "df_ramah",
     "label": "David flees to Samuel at Ramah",
     "when": {
@@ -19672,6 +19814,41 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ki_solomon_gibeon",
+    "label": "Solomon's dream at Gibeon; the gift of wisdom",
+    "when": {
+      "from_year": -1014,
+      "to_year": -1014
+    },
+    "places": [
+      "gibeon"
+    ],
+    "verses": [
+      "1KI.3.1",
+      "1KI.3.2",
+      "1KI.3.3",
+      "1KI.3.4",
+      "1KI.3.5",
+      "1KI.3.6",
+      "1KI.3.7",
+      "1KI.3.8",
+      "1KI.3.9",
+      "1KI.3.10",
+      "1KI.3.11",
+      "1KI.3.12",
+      "1KI.3.13",
+      "1KI.3.14",
+      "1KI.3.15"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 3:1-15, Solomon's own sacrifice at the great high place of Gibeon, the Lord's own appearance to him in a dream, his own request for an understanding heart, and his own return to Jerusalem to sacrifice before the ark.",
+    "ref_note": "2 Chronicles parallel per Crockett Book Fourth: 2 Chronicles 1:1-13 -- witness row to be added with 2chronicles.toml's own coverage (see this file's own header note). Place: 'to Gibeon; for there was the great high place' (3:4), explicit.",
     "order_key": 0
   },
   {
@@ -19749,6 +19926,45 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ki_hiram_temple_prep",
+    "label": "Solomon's alliance with Hiram; preparation to build the temple",
+    "when": {
+      "from_year": -1013,
+      "to_year": -1013
+    },
+    "places": [
+      "jerusalem",
+      "tyre"
+    ],
+    "verses": [
+      "1KI.5.1",
+      "1KI.5.2",
+      "1KI.5.3",
+      "1KI.5.4",
+      "1KI.5.5",
+      "1KI.5.6",
+      "1KI.5.7",
+      "1KI.5.8",
+      "1KI.5.9",
+      "1KI.5.10",
+      "1KI.5.11",
+      "1KI.5.12",
+      "1KI.5.13",
+      "1KI.5.14",
+      "1KI.5.15",
+      "1KI.5.16",
+      "1KI.5.17",
+      "1KI.5.18"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 5, Hiram of Tyre's own embassy and covenant with Solomon, the cedar and fir timber floated to Joppa, and the levy of workmen and stonesquarers.",
+    "ref_note": "2 Chronicles parallel per Crockett Book Fourth: 2 Chronicles 2:1-18 -- witness row to be added with 2chronicles.toml (see header note).",
     "order_key": 0
   },
   {
@@ -20032,6 +20248,328 @@
     "order_key": 0
   },
   {
+    "id": "1ki_temple_furnishings",
+    "label": "The furnishings and vessels of Solomon's temple",
+    "when": {
+      "from_year": -1006,
+      "to_year": -1006
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "1KI.7.13",
+      "1KI.7.14",
+      "1KI.7.15",
+      "1KI.7.16",
+      "1KI.7.17",
+      "1KI.7.18",
+      "1KI.7.19",
+      "1KI.7.20",
+      "1KI.7.21",
+      "1KI.7.22",
+      "1KI.7.23",
+      "1KI.7.24",
+      "1KI.7.25",
+      "1KI.7.26",
+      "1KI.7.27",
+      "1KI.7.28",
+      "1KI.7.29",
+      "1KI.7.30",
+      "1KI.7.31",
+      "1KI.7.32",
+      "1KI.7.33",
+      "1KI.7.34",
+      "1KI.7.35",
+      "1KI.7.36",
+      "1KI.7.37",
+      "1KI.7.38",
+      "1KI.7.39",
+      "1KI.7.40",
+      "1KI.7.41",
+      "1KI.7.42",
+      "1KI.7.43",
+      "1KI.7.44",
+      "1KI.7.45",
+      "1KI.7.46",
+      "1KI.7.47",
+      "1KI.7.48",
+      "1KI.7.49",
+      "1KI.7.50",
+      "1KI.7.51"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 7:13-51, Hiram the craftsman of Tyre's own bronze work -- the two pillars Jachin and Boaz, the molten sea, the ten lavers -- and the golden furnishings of the house, closing with the treasures David had dedicated brought in.",
+    "ref_note": "2 Chronicles parallel per Crockett Book Fourth: 2 Chronicles 3:15-17 and 4:1-22 -- witness row to be added with 2chronicles.toml (see header note). Dated near the temple's own completion (7 years of building per 6:38, started -1012 per the 480th-year notice at 6:1).",
+    "order_key": 0
+  },
+  {
+    "id": "1ki_temple_dedication",
+    "label": "Solomon dedicates the temple",
+    "when": {
+      "from_year": -1004,
+      "to_year": -1004
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "1KI.8.1",
+      "1KI.8.2",
+      "1KI.8.3",
+      "1KI.8.4",
+      "1KI.8.5",
+      "1KI.8.6",
+      "1KI.8.7",
+      "1KI.8.8",
+      "1KI.8.9",
+      "1KI.8.10",
+      "1KI.8.11",
+      "1KI.8.12",
+      "1KI.8.13",
+      "1KI.8.14",
+      "1KI.8.15",
+      "1KI.8.16",
+      "1KI.8.17",
+      "1KI.8.18",
+      "1KI.8.19",
+      "1KI.8.20",
+      "1KI.8.21",
+      "1KI.8.22",
+      "1KI.8.23",
+      "1KI.8.24",
+      "1KI.8.25",
+      "1KI.8.26",
+      "1KI.8.27",
+      "1KI.8.28",
+      "1KI.8.29",
+      "1KI.8.30",
+      "1KI.8.31",
+      "1KI.8.32",
+      "1KI.8.33",
+      "1KI.8.34",
+      "1KI.8.35",
+      "1KI.8.36",
+      "1KI.8.37",
+      "1KI.8.38",
+      "1KI.8.39",
+      "1KI.8.40",
+      "1KI.8.41",
+      "1KI.8.42",
+      "1KI.8.43",
+      "1KI.8.44",
+      "1KI.8.45",
+      "1KI.8.46",
+      "1KI.8.47",
+      "1KI.8.48",
+      "1KI.8.49",
+      "1KI.8.50",
+      "1KI.8.51",
+      "1KI.8.52",
+      "1KI.8.53",
+      "1KI.8.54",
+      "1KI.8.55",
+      "1KI.8.56",
+      "1KI.8.57",
+      "1KI.8.58",
+      "1KI.8.59",
+      "1KI.8.60",
+      "1KI.8.61",
+      "1KI.8.62",
+      "1KI.8.63",
+      "1KI.8.64",
+      "1KI.8.65",
+      "1KI.8.66"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 8, the ark's own procession from the city of David into the newly-built house, Solomon's own address and blessing of the assembly, his own dedicatory prayer with its sevenfold petitions, and the great feast and sacrifice at the dedication.",
+    "ref_note": "req 1b OWNER ACCEPTANCE CASE (a reign/temple-dedication event expanding to per-account passages, the Crucifixion pattern): 2 Chronicles parallel per Crockett (1897) section 133: 2 Chronicles 5:2-14, 6:1-42, 7:1-10 -- witness row to be added with 2chronicles.toml's own coverage (see this file's own header note), and this specific pairing named as a dedicated test in tests/ux/w2-passages.spec.ts. Place: 'the feast in the month Ethanim, which is the seventh month' (8:2), traditionally dated the year following the temple's own completion.",
+    "order_key": 0
+  },
+  {
+    "id": "1ki_second_appearance",
+    "label": "The Lord appears to Solomon a second time",
+    "when": {
+      "from_year": -1004,
+      "to_year": -1004
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "1KI.9.1",
+      "1KI.9.2",
+      "1KI.9.3",
+      "1KI.9.4",
+      "1KI.9.5",
+      "1KI.9.6",
+      "1KI.9.7",
+      "1KI.9.8",
+      "1KI.9.9"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 9:1-9, the Lord's own second appearance to Solomon after the temple's own dedication, confirming the covenant and warning of exile for apostasy.",
+    "ref_note": "2 Chronicles parallel per Crockett Book Fourth: 2 Chronicles 7:11-22 -- witness row to be added with 2chronicles.toml (see header note). Same year as the dedication it directly follows.",
+    "order_key": 0
+  },
+  {
+    "id": "1ki_solomon_other_works",
+    "label": "Solomon's cities, forced labour, and navy",
+    "when": {
+      "from_year": -992,
+      "to_year": -992
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "1KI.9.10",
+      "1KI.9.11",
+      "1KI.9.12",
+      "1KI.9.13",
+      "1KI.9.14",
+      "1KI.9.15",
+      "1KI.9.16",
+      "1KI.9.17",
+      "1KI.9.18",
+      "1KI.9.19",
+      "1KI.9.20",
+      "1KI.9.21",
+      "1KI.9.22",
+      "1KI.9.23",
+      "1KI.9.24",
+      "1KI.9.25",
+      "1KI.9.26",
+      "1KI.9.27",
+      "1KI.9.28"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 9:10-28, the cities Solomon gave Hiram, his own building projects (Millo, Hazor, Megiddo, Gezer), the levy of forced labour on the remaining Canaanites, and the navy built at Ezion-geber for gold from Ophir.",
+    "ref_note": "2 Chronicles parallel per Crockett Book Fourth: 2 Chronicles 8:1-18 -- witness row to be added with 2chronicles.toml (see header note). 'At the end of twenty years' (9:10) from the start of building (-1012), i.e. -992.",
+    "order_key": 0
+  },
+  {
+    "id": "1ki_queen_of_sheba",
+    "label": "The queen of Sheba visits Solomon",
+    "when": {
+      "from_year": -990,
+      "to_year": -990
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "1KI.10.1",
+      "1KI.10.2",
+      "1KI.10.3",
+      "1KI.10.4",
+      "1KI.10.5",
+      "1KI.10.6",
+      "1KI.10.7",
+      "1KI.10.8",
+      "1KI.10.9",
+      "1KI.10.10",
+      "1KI.10.11",
+      "1KI.10.12",
+      "1KI.10.13",
+      "1KI.10.14",
+      "1KI.10.15",
+      "1KI.10.16",
+      "1KI.10.17",
+      "1KI.10.18",
+      "1KI.10.19",
+      "1KI.10.20",
+      "1KI.10.21",
+      "1KI.10.22",
+      "1KI.10.23",
+      "1KI.10.24",
+      "1KI.10.25",
+      "1KI.10.26",
+      "1KI.10.27",
+      "1KI.10.28",
+      "1KI.10.29"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 10, the queen of Sheba's own visit to test Solomon with hard questions, her own wonder at his wisdom and wealth, and the chapter's own closing catalogue of Solomon's gold, ivory throne, shields, and trade in horses and chariots.",
+    "ref_note": "2 Chronicles parallel per Crockett Book Fourth: 2 Chronicles 9:1-28 -- witness row to be added with 2chronicles.toml (see header note).",
+    "order_key": 0
+  },
+  {
+    "id": "1ki_solomon_apostasy",
+    "label": "Solomon's foreign wives and apostasy; his adversaries",
+    "when": {
+      "from_year": -980,
+      "to_year": -980
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "1KI.11.1",
+      "1KI.11.2",
+      "1KI.11.3",
+      "1KI.11.4",
+      "1KI.11.5",
+      "1KI.11.6",
+      "1KI.11.7",
+      "1KI.11.8",
+      "1KI.11.9",
+      "1KI.11.10",
+      "1KI.11.11",
+      "1KI.11.12",
+      "1KI.11.13",
+      "1KI.11.14",
+      "1KI.11.15",
+      "1KI.11.16",
+      "1KI.11.17",
+      "1KI.11.18",
+      "1KI.11.19",
+      "1KI.11.20",
+      "1KI.11.21",
+      "1KI.11.22",
+      "1KI.11.23",
+      "1KI.11.24",
+      "1KI.11.25",
+      "1KI.11.26",
+      "1KI.11.27",
+      "1KI.11.28",
+      "1KI.11.29",
+      "1KI.11.30",
+      "1KI.11.31",
+      "1KI.11.32",
+      "1KI.11.33",
+      "1KI.11.34",
+      "1KI.11.35",
+      "1KI.11.36",
+      "1KI.11.37",
+      "1KI.11.38",
+      "1KI.11.39",
+      "1KI.11.40"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 11:1-40, Solomon's own many strange wives turning his heart after other gods, the Lord's own sentence that the kingdom would be torn away, and the adversaries raised up against him -- Hadad, Rezon, and Jeroboam, to whom Ahijah the prophet tears a new garment into twelve pieces.",
+    "ref_note": "No Chronicles parallel -- a literary/content fact, not a manuscript-tradition claim: 2 Chronicles' own narrative of Solomon passes directly from his wealth and fame (9:1-28) to his own death and burial (9:29-31), omitting the entire apostasy and adversaries narrative. 'When Solomon was old' (11:4) places this broadly late in the reign.",
+    "order_key": 0
+  },
+  {
     "id": "theo-163",
     "label": "Southern Kingdom (Judah)",
     "when": {
@@ -20203,6 +20741,82 @@
     "order_key": 0
   },
   {
+    "id": "1ki_kingdom_divided",
+    "label": "Rehoboam's folly; the kingdom is divided",
+    "when": {
+      "from_year": -975,
+      "to_year": -975
+    },
+    "places": [
+      "shechem",
+      "jerusalem"
+    ],
+    "verses": [
+      "1KI.12.1",
+      "1KI.12.2",
+      "1KI.12.3",
+      "1KI.12.4",
+      "1KI.12.5",
+      "1KI.12.6",
+      "1KI.12.7",
+      "1KI.12.8",
+      "1KI.12.9",
+      "1KI.12.10",
+      "1KI.12.11",
+      "1KI.12.12",
+      "1KI.12.13",
+      "1KI.12.14",
+      "1KI.12.15",
+      "1KI.12.16",
+      "1KI.12.17",
+      "1KI.12.18",
+      "1KI.12.19",
+      "1KI.12.20",
+      "1KI.12.21",
+      "1KI.12.22",
+      "1KI.12.23",
+      "1KI.12.24"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 12:1-24, Rehoboam's own harsh answer to Israel at Shechem, the ten tribes' own revolt under Jeroboam, the stoning of Adoram, and Shemaiah the prophet's own word forbidding Rehoboam to make war on his brethren.",
+    "ref_note": "2 Chronicles parallel per Crockett Book Fifth Part I: 2 Chronicles 10:1-19 and 11:1-4 -- witness row to be added with 2chronicles.toml (see header note). Place: 'Rehoboam went to Shechem' (12:1), explicit; dated to match the pre-existing theo-163 through theo-167 cluster (Solomon's own death and the kingdom's own split, all -975).",
+    "order_key": 0
+  },
+  {
+    "id": "1ki_rehoboam_reign_summary",
+    "label": "Rehoboam's reign in Judah; Shishak's invasion",
+    "when": {
+      "from_year": -971,
+      "to_year": -958
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "1KI.14.21",
+      "1KI.14.22",
+      "1KI.14.23",
+      "1KI.14.24",
+      "1KI.14.25",
+      "1KI.14.26",
+      "1KI.14.27",
+      "1KI.14.28",
+      "1KI.14.29",
+      "1KI.14.30",
+      "1KI.14.31"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 14:21-31, a summary of Rehoboam's own reign in Judah, the idolatry that spread under him, Shishak king of Egypt's own invasion and plunder of the temple treasures in Rehoboam's fifth year, and the closing regnal formula.",
+    "ref_note": "2 Chronicles parallel per Crockett Book Fifth Part I: 2 Chronicles 12:1-16 -- witness row to be added with 2chronicles.toml (see header note; Chronicles' own account, unlike this chapter, also names Shemaiah's prophetic rebuke and Rehoboam's own humbling, a genuine expansion the witness relationship will make visible, not merely a duplicate). Shishak's invasion dated to Rehoboam's own fifth year (14:25), -975 - 5 = -970, rounded here to the disclosed range's own lower bound.",
+    "order_key": 0
+  },
+  {
     "id": "theo-168",
     "label": "Reign of Abijam",
     "when": {
@@ -20307,6 +20921,32 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ki_baasha_reign",
+    "label": "Baasha's conspiracy against Nadab; his reign over Israel",
+    "when": {
+      "from_year": -954,
+      "to_year": -954
+    },
+    "places": [
+      "gibbethon"
+    ],
+    "verses": [
+      "1KI.15.27",
+      "1KI.15.28",
+      "1KI.15.29",
+      "1KI.15.30",
+      "1KI.15.31",
+      "1KI.15.32"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 15:27-32, Baasha's own conspiracy against Nadab at the siege of Gibbethon, his own slaughter of the whole house of Jeroboam, and the continuing war between Asa and Baasha.",
+    "ref_note": "No Chronicles parallel (a northern-kingdom succession Chronicles' own Judah-only narrative does not recount in its own right, though Baasha himself is named later as Asa's own adversary, 2 Chronicles 16:1-6, a 2 Chronicles-side disclosure for that later container). Dated to match the pre-existing theo-171 ('Reign of Nadab,' -954).",
     "order_key": 0
   },
   {
@@ -20431,6 +21071,38 @@
     "order_key": 0
   },
   {
+    "id": "1ki_zimri_reign",
+    "label": "Elah's murder; Zimri's brief reign and death",
+    "when": {
+      "from_year": -929,
+      "to_year": -929
+    },
+    "places": [
+      "tirzah"
+    ],
+    "verses": [
+      "1KI.16.9",
+      "1KI.16.10",
+      "1KI.16.11",
+      "1KI.16.12",
+      "1KI.16.13",
+      "1KI.16.14",
+      "1KI.16.15",
+      "1KI.16.16",
+      "1KI.16.17",
+      "1KI.16.18",
+      "1KI.16.19",
+      "1KI.16.20"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 16:9-20, Zimri's own conspiracy and murder of Elah at Tirzah, his own extermination of Baasha's house fulfilling Jehu's own prophecy, and his own seven-day reign ending in suicide when Omri besieged the city.",
+    "ref_note": "No Chronicles parallel. Dated to match the pre-existing theo-173/theo-174 cluster ('Reign of Elah'/'Reign of Zimri,' both -929/-930).",
+    "order_key": 0
+  },
+  {
     "id": "theo-177",
     "label": "Death of Tibni",
     "when": {
@@ -20470,6 +21142,30 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ki_ahab_intro",
+    "label": "Ahab's marriage to Jezebel; Baal worship established",
+    "when": {
+      "from_year": -918,
+      "to_year": -918
+    },
+    "places": [
+      "samaria-1"
+    ],
+    "verses": [
+      "1KI.16.31",
+      "1KI.16.32",
+      "1KI.16.33",
+      "1KI.16.34"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 16:31-34, Ahab's own marriage to Jezebel daughter of the king of the Zidonians, the altar and grove raised for Baal in Samaria, and Hiel of Beth-el's own rebuilding of Jericho at the cost of his sons, fulfilling Joshua's own curse.",
+    "ref_note": "No Chronicles parallel. Dated to match the pre-existing theo-178 ('Reign of Ahab,' -918).",
     "order_key": 0
   },
   {
@@ -20541,6 +21237,36 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ki_jehoshaphat_summary",
+    "label": "The reign of Jehoshaphat: a summary",
+    "when": {
+      "from_year": -914,
+      "to_year": -889
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "1KI.22.41",
+      "1KI.22.42",
+      "1KI.22.43",
+      "1KI.22.44",
+      "1KI.22.45",
+      "1KI.22.46",
+      "1KI.22.47",
+      "1KI.22.48",
+      "1KI.22.49",
+      "1KI.22.50"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 22:41-50, a regnal summary of Jehoshaphat's own reign over Judah -- his own righteousness after his father Asa, the high places that remained, peace with the king of Israel, and the wrecked Tarshish-fleet built for Ophir gold.",
+    "ref_note": "2 Chronicles parallel per Crockett Book Fifth Part I: 2 Chronicles 20:31-37 -- witness row to be added with 2chronicles.toml (see header note; Chronicles' own account additionally names Ahaziah of Israel's own part in the fleet venture and Eliezer's own prophecy against it, a genuine expansion). Dated to match the pre-existing theo-181 ('Reign of Jehoshaphat,' -914) through a 25-year reign (22:42), -914 - 25 = -889.",
     "order_key": 0
   },
   {
@@ -20746,6 +21472,70 @@
     "order_key": 0
   },
   {
+    "id": "1ki_benhadad_wars",
+    "label": "Ben-hadad's two campaigns against Samaria",
+    "when": {
+      "from_year": -900,
+      "to_year": -900
+    },
+    "places": [
+      "samaria-1",
+      "aphek-3"
+    ],
+    "verses": [
+      "1KI.20.1",
+      "1KI.20.2",
+      "1KI.20.3",
+      "1KI.20.4",
+      "1KI.20.5",
+      "1KI.20.6",
+      "1KI.20.7",
+      "1KI.20.8",
+      "1KI.20.9",
+      "1KI.20.10",
+      "1KI.20.11",
+      "1KI.20.12",
+      "1KI.20.13",
+      "1KI.20.14",
+      "1KI.20.15",
+      "1KI.20.16",
+      "1KI.20.17",
+      "1KI.20.18",
+      "1KI.20.19",
+      "1KI.20.20",
+      "1KI.20.21",
+      "1KI.20.22",
+      "1KI.20.23",
+      "1KI.20.24",
+      "1KI.20.25",
+      "1KI.20.26",
+      "1KI.20.27",
+      "1KI.20.28",
+      "1KI.20.29",
+      "1KI.20.30",
+      "1KI.20.31",
+      "1KI.20.32",
+      "1KI.20.33",
+      "1KI.20.34",
+      "1KI.20.35",
+      "1KI.20.36",
+      "1KI.20.37",
+      "1KI.20.38",
+      "1KI.20.39",
+      "1KI.20.40",
+      "1KI.20.41",
+      "1KI.20.42",
+      "1KI.20.43"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 20, Ben-hadad of Syria's own siege of Samaria and defeat, his own second campaign at Aphek the following spring, Ahab's own covenant releasing him, and the unnamed prophet's own parable of judgment against Ahab for it.",
+    "ref_note": "No Chronicles parallel (a northern-kingdom military narrative). See this file's own header note on the disclosed, pre-existing Ahab-reign chronology tension (the theo-178 reign-length scale vs. the already-shipped elijah narrative's own later dates) -- this container stays on the former for consistency with the surrounding reign-formula chain.",
+    "order_key": 0
+  },
+  {
     "id": "theo-184",
     "label": "Reign of Ahaziah",
     "when": {
@@ -20766,6 +21556,55 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ki_naboths_vineyard",
+    "label": "Naboth's vineyard; Elijah's judgment on Ahab",
+    "when": {
+      "from_year": -898,
+      "to_year": -898
+    },
+    "places": [
+      "jezreel-2"
+    ],
+    "verses": [
+      "1KI.21.1",
+      "1KI.21.2",
+      "1KI.21.3",
+      "1KI.21.4",
+      "1KI.21.5",
+      "1KI.21.6",
+      "1KI.21.7",
+      "1KI.21.8",
+      "1KI.21.9",
+      "1KI.21.10",
+      "1KI.21.11",
+      "1KI.21.12",
+      "1KI.21.13",
+      "1KI.21.14",
+      "1KI.21.15",
+      "1KI.21.16",
+      "1KI.21.17",
+      "1KI.21.18",
+      "1KI.21.19",
+      "1KI.21.20",
+      "1KI.21.21",
+      "1KI.21.22",
+      "1KI.21.23",
+      "1KI.21.24",
+      "1KI.21.25",
+      "1KI.21.26",
+      "1KI.21.27",
+      "1KI.21.28",
+      "1KI.21.29"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 21, Ahab's own covetous desire for Naboth's vineyard, Jezebel's own conspiracy to have Naboth stoned on a false charge, Elijah's own confrontation and sentence upon Ahab's house, and Ahab's own humbling in sackcloth that delays the judgment.",
+    "ref_note": "No Chronicles parallel. See this file's own header note on the disclosed Ahab-reign chronology tension -- this container names Elijah directly (21:17-29), so it is placed nearer the pre-existing elijah narrative's own already-shipped scale (el_abel_meholah, -864) than the theo-178 reign-length scale that governs this file's OTHER, non-Elijah Ahab-era containers; both numbers cannot be simultaneously correct, a tension already present in this atlas's own shipped data before this batch, disclosed rather than silently resolved either way.",
     "order_key": 0
   },
   {
@@ -20990,6 +21829,67 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ki_micaiah_ahabs_death",
+    "label": "Micaiah's prophecy; the death of Ahab at Ramoth-gilead",
+    "when": {
+      "from_year": -896,
+      "to_year": -896
+    },
+    "places": [
+      "ramoth-gilead",
+      "samaria-1"
+    ],
+    "verses": [
+      "1KI.22.1",
+      "1KI.22.2",
+      "1KI.22.3",
+      "1KI.22.4",
+      "1KI.22.5",
+      "1KI.22.6",
+      "1KI.22.7",
+      "1KI.22.8",
+      "1KI.22.9",
+      "1KI.22.10",
+      "1KI.22.11",
+      "1KI.22.12",
+      "1KI.22.13",
+      "1KI.22.14",
+      "1KI.22.15",
+      "1KI.22.16",
+      "1KI.22.17",
+      "1KI.22.18",
+      "1KI.22.19",
+      "1KI.22.20",
+      "1KI.22.21",
+      "1KI.22.22",
+      "1KI.22.23",
+      "1KI.22.24",
+      "1KI.22.25",
+      "1KI.22.26",
+      "1KI.22.27",
+      "1KI.22.28",
+      "1KI.22.29",
+      "1KI.22.30",
+      "1KI.22.31",
+      "1KI.22.32",
+      "1KI.22.33",
+      "1KI.22.34",
+      "1KI.22.35",
+      "1KI.22.36",
+      "1KI.22.37",
+      "1KI.22.38",
+      "1KI.22.39",
+      "1KI.22.40"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 22:1-40, Jehoshaphat's own alliance with Ahab against Syria, the true prophet Micaiah's own vision of Israel scattered and his own imprisonment for it, the battle at Ramoth-gilead, and Ahab's own death from a random arrow, fulfilling Elijah's earlier word.",
+    "ref_note": "2 Chronicles parallel per Crockett Book Fifth Part I: 2 Chronicles 18:1-34 -- witness row to be added with 2chronicles.toml (see header note; Chronicles' own version of this one episode is close to verbatim, an instructive contrast with how much OTHER Ahab material Chronicles otherwise omits entirely). See this file's own header note on the disclosed Ahab-reign chronology tension -- dated on the theo-178 reign-length scale (3 years of peace per 22:1 following 1ki_benhadad_wars, then a 22-year reign ending near -896).",
     "order_key": 0
   },
   {
