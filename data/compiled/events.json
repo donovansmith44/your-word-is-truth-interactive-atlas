@@ -147,6 +147,145 @@
     "order_key": 0
   },
   {
+    "id": "rob_luke_preface",
+    "label": "Luke's preface to Theophilus",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "LUK.1.1",
+      "LUK.1.2",
+      "LUK.1.3",
+      "LUK.1.4"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §1, \"In the Dedication Luke Explains His Method of Research\"",
+    "ref_note": "Luke 1:1-4 read directly against the compiled KJV text",
+    "order_key": 0
+  },
+  {
+    "id": "rob_john_prologue",
+    "label": "John's prologue: Christ as the eternal Word",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JHN.1.1",
+      "JHN.1.2",
+      "JHN.1.3",
+      "JHN.1.4",
+      "JHN.1.5",
+      "JHN.1.6",
+      "JHN.1.7",
+      "JHN.1.8",
+      "JHN.1.9",
+      "JHN.1.10",
+      "JHN.1.11",
+      "JHN.1.12",
+      "JHN.1.13",
+      "JHN.1.14",
+      "JHN.1.15",
+      "JHN.1.16",
+      "JHN.1.17",
+      "JHN.1.18"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §2, \"In His Introduction John Pictures Christ as the Word (Logos)\"",
+    "ref_note": "John 1:1-18 read directly against the compiled KJV text",
+    "order_key": 0
+  },
+  {
+    "id": "rob_genealogies",
+    "label": "The genealogies of Jesus in Matthew and Luke",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MAT.1.1",
+      "MAT.1.2",
+      "MAT.1.3",
+      "MAT.1.4",
+      "MAT.1.5",
+      "MAT.1.6",
+      "MAT.1.7",
+      "MAT.1.8",
+      "MAT.1.9",
+      "MAT.1.10",
+      "MAT.1.11",
+      "MAT.1.12",
+      "MAT.1.13",
+      "MAT.1.14",
+      "MAT.1.15",
+      "MAT.1.16",
+      "MAT.1.17"
+    ],
+    "kind": "general",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.1.1",
+            "MAT.1.2",
+            "MAT.1.3",
+            "MAT.1.4",
+            "MAT.1.5",
+            "MAT.1.6",
+            "MAT.1.7",
+            "MAT.1.8",
+            "MAT.1.9",
+            "MAT.1.10",
+            "MAT.1.11",
+            "MAT.1.12",
+            "MAT.1.13",
+            "MAT.1.14",
+            "MAT.1.15",
+            "MAT.1.16",
+            "MAT.1.17"
+          ]
+        },
+        "ref_note": "Matthew 1:1-17 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §3"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.3.23",
+            "LUK.3.24",
+            "LUK.3.25",
+            "LUK.3.26",
+            "LUK.3.27",
+            "LUK.3.28",
+            "LUK.3.29",
+            "LUK.3.30",
+            "LUK.3.31",
+            "LUK.3.32",
+            "LUK.3.33",
+            "LUK.3.34",
+            "LUK.3.35",
+            "LUK.3.36",
+            "LUK.3.37",
+            "LUK.3.38"
+          ]
+        },
+        "ref_note": "Luke 3:23-38 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §3"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §3, \"Apparently Joseph's Genealogy in Matthew and Mary's in Luke\"",
+    "ref_note": "Matthew 1:1-17 and Luke 3:23-38 both read directly against the compiled KJV text; Luke's own text (3:23) states the line 'as was supposed' through Joseph, not explicitly Mary -- Robertson's own section title's 'Apparently' is disclosed here rather than smoothed into a firmer claim than the text itself makes (a real, longstanding harmonization crux, per the ambiguity ruling's own Eusebian-tradition guidance -- not a transcription error)",
+    "order_key": 0
+  },
+  {
     "id": "theo-5",
     "label": "Cain kills Abel",
     "when": {

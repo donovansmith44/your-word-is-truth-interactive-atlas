@@ -1043,3 +1043,76 @@ from_year = 60
 to_year = 60
 places = ["rome"]
 verses = ["ACT.28.16"]
+
+# ===========================================================================
+# Batch T2: the remaining Robertson Harmony sections (requirement 1) --
+# APPEND-ONLY block. Deliberately not interleaved with the pre-existing
+# content above (a pure append keeps this diff, and every subsequent
+# period's own diff, trivially reviewable -- nothing above this line is
+# touched by Batch T2 except three explicitly-enriched pre-existing events
+# (jm_bethlehem/jm_egypt/jm_nazareth, enriched in place with their own
+# robertson_section/order_key where they already live, further up).
+#
+# Ordered by Robertson's OWN section number throughout (matching
+# requirement 2's "sub-year order keys follow Robertson's section order" --
+# extended here to file organization for reviewability too). Every
+# citation below was read directly against the compiled KJV text
+# (data/compiled/verses-kjv.json) before being written, same discipline
+# event-witnesses.toml's own header describes. `order_key` is
+# `<Robertson section number> * 10` uniformly across the WHOLE ministry
+# (not just within one traditional year) -- harmless where years already
+# differ (order_key only matters as a same-year tiebreak) and keeps every
+# id's own order_key immediately legible against its own robertson_section
+# without a lookup table. Lettered sub-sections (128a/128b) get *10/*10+5.
+#
+# EVENT-vs-GENERAL (requirement 2's promotion rule): a section ships
+# "event" only when a traditional confessional-Lutheran-accepted
+# ministry-year date AND a defensible place mapping both exist; the
+# ministry-year scheme continues the one Batch T already established
+# (baptism AD 29; year running AD 30 through the first Passover and early
+# Judean/Galilean ministry; AD 31 the great Galilean ministry -- the
+# "silent year" Batch T's own sparse skeleton left entirely uncovered;
+# AD 32 the withdrawal/later-Galilean ministry through Caesarea Philippi
+# (matching the PRE-EXISTING jm_bethsaida/jm_caesarea_philippi dates,
+# unchanged); AD 32 continuing through the Perean ministry's own autumn
+# feasts (Tabernacles, Dedication); AD 33 the final journey to Jerusalem
+# through Passion Week (matching PRE-EXISTING jm_jericho/jm_bethany),
+# unchanged AD 33 anchor). A broad, already-established regional place
+# (e.g. galilee-1, judea-1, jerusalem) is used, per existing pw_galilee
+# precedent, when Robertson's own text sets a section generally within a
+# region without naming a specific town -- "a defensible place mapping"
+# is read to include a well-attested broad region, not only a pinpoint
+# town. A section with no honest place at all (a discourse/parable
+# collection untethered from one place or spanning several within one
+# Harmony section) ships general-kind -- the honest default, not a
+# failure. Every promotion call, and every disclosed judgment call, is
+# recorded in batch-t2-report.md.
+# ===========================================================================
+
+# --- Period 1: Sources & genealogies (Robertson Part I-III, SS1-3) --------
+# Ambiguity ruling (2026-08-21): material before/after the Gospels' own
+# narrative span -- prefaces, genealogies -- is reading structure even
+# where no datable event exists. general-kind throughout.
+[[event]]
+id = "rob_luke_preface"
+label = "Luke's preface to Theophilus"
+kind = "general"
+verses = ["LUK.1.1-4"]
+robertson_section = "Robertson (1922) §1, \"In the Dedication Luke Explains His Method of Research\""
+ref_note = "Luke 1:1-4 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_john_prologue"
+label = "John's prologue: Christ as the eternal Word"
+kind = "general"
+verses = ["JHN.1.1-18"]
+robertson_section = "Robertson (1922) §2, \"In His Introduction John Pictures Christ as the Word (Logos)\""
+ref_note = "John 1:1-18 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_genealogies"
+label = "The genealogies of Jesus in Matthew and Luke"
+kind = "general"
+verses = ["MAT.1.1-17"]
+robertson_section = "Robertson (1922) §3, \"Apparently Joseph's Genealogy in Matthew and Mary's in Luke\""
+ref_note = "Matthew 1:1-17 and Luke 3:23-38 both read directly against the compiled KJV text; Luke's own text (3:23) states the line 'as was supposed' through Joseph, not explicitly Mary -- Robertson's own section title's 'Apparently' is disclosed here rather than smoothed into a firmer claim than the text itself makes (a real, longstanding harmonization crux, per the ambiguity ruling's own Eusebian-tradition guidance -- not a transcription error)"
