@@ -24,6 +24,8 @@
 
 use std::collections::HashSet;
 
+use atlas_core::data::{Event, EventWitness};
+
 /// Robertson's own full section list, 1-184, with 128 split into 128a/128b
 /// exactly as his own table does (no other section carries a letter
 /// suffix). One entry per slot, as `&str` so "128a"/"128b" fit the same
@@ -59,8 +61,109 @@ fn robertson_table() -> Vec<String> {
 ///   exists to catch, confirmed working against real data before it ever
 ///   reached review.
 /// - 177 (the two disciples' own report) -> pw_emmaus (§176)
+///
+/// Fix round 1 (review finding M-2): this list used to be a bare
+/// `HashSet<&str>` of section numbers, checked only for bookkeeping
+/// (real section number, not stale) -- never for CONTENT (does the
+/// claimed subsuming event's own actual verse/witness coverage really
+/// reach the subsumed section's own citations?). `SUBSUMPTION_CLAIMS`
+/// below is now the single source of truth (this function derives its
+/// own `HashSet` from it, so the two can never drift) and carries enough
+/// structure -- the claimed subsuming event id, and Robertson's own
+/// literal per-book verse citation for the SUBSUMED section itself, NOT
+/// the wider subsuming section's own citation -- for
+/// `every_subsumption_claim_is_content_verified_against_real_curated_data`
+/// below to check real containment, not just list membership.
 fn subsumed() -> HashSet<&'static str> {
-    ["153", "165", "169", "170", "172", "174", "177"].into_iter().collect()
+    SUBSUMPTION_CLAIMS.iter().map(|c| c.section).collect()
+}
+
+/// One disclosed subsumption claim: `subsuming_event_id`'s own real,
+/// currently-shipping verse/witness coverage is claimed to fully contain
+/// every verse Robertson's primary source cites for `section` itself.
+struct SubsumptionClaim {
+    section: &'static str,
+    subsuming_event_id: &'static str,
+    /// Robertson's own literal reference for the SUBSUMED section --
+    /// (book, chapter, from_verse, to_verse) per citation fragment --
+    /// independently fetched from Project Gutenberg #36264
+    /// (`https://www.gutenberg.org/cache/epub/36264/pg36264.txt`) on
+    /// 2026-08-21, the SAME primary source `robertson_table()`'s own
+    /// structural claims (185 slots, only §128 splits) already come from
+    /// -- re-fetched fresh for this check, not copied from this
+    /// codebase's own pre-existing ref_note prose, so a stale or
+    /// mis-transcribed prose disclosure can't launder itself into a
+    /// passing test. A non-Gospel citation fragment (§177's own Robertson
+    /// reference also names "1 Cor. 15:5") is out of this project's own
+    /// citable KJV-Gospel scope -- the same class of thing §182's own
+    /// honest omission already discloses -- and is simply omitted here;
+    /// only the Gospel portion of each citation is checked.
+    refs: &'static [(&'static str, u16, u16, u16)],
+}
+
+const SUBSUMPTION_CLAIMS: &[SubsumptionClaim] = &[
+    SubsumptionClaim {
+        section: "153",
+        subsuming_event_id: "pw_gethsemane",
+        refs: &[("MRK", 14, 43, 52), ("MAT", 26, 47, 56), ("LUK", 22, 47, 53), ("JHN", 18, 2, 12)],
+    },
+    SubsumptionClaim {
+        section: "165",
+        subsuming_event_id: "pw_golgotha",
+        refs: &[("MRK", 15, 33, 37), ("MAT", 27, 45, 50), ("LUK", 23, 44, 46), ("JHN", 19, 28, 30)],
+    },
+    SubsumptionClaim { section: "169", subsuming_event_id: "pw_jerusalem_resurrection", refs: &[("MRK", 16, 1, 1), ("MAT", 28, 1, 1)] },
+    SubsumptionClaim { section: "170", subsuming_event_id: "pw_jerusalem_resurrection", refs: &[("MAT", 28, 2, 4)] },
+    SubsumptionClaim { section: "172", subsuming_event_id: "pw_jerusalem_resurrection", refs: &[("LUK", 24, 9, 12), ("JHN", 20, 2, 10)] },
+    SubsumptionClaim { section: "174", subsuming_event_id: "pw_jerusalem_resurrection", refs: &[("MAT", 28, 9, 10)] },
+    // 1 Cor. 15:5 (also part of Robertson's own §177 citation) omitted --
+    // not a Gospel reference, out of scope, see `refs`'s own doc comment.
+    SubsumptionClaim { section: "177", subsuming_event_id: "pw_emmaus", refs: &[("LUK", 24, 33, 35)] },
+];
+
+/// The actual containment check: for every claim in `claims`, the claimed
+/// `subsuming_event_id` must exist in `events`, and its own real coverage
+/// (top-level `verses` UNION every one of its own `witnesses`' verses --
+/// exactly what a reader heading's own PARALLEL ACCOUNTS section would
+/// show, the real-world stakes of this check) must contain every verse
+/// `refs` names. Aggregates every violation (never fails fast), same house
+/// pattern `atlas_etl::validate::run` itself follows. Parameterized over
+/// `claims`/`events`/`witnesses` (never reaches into a global or reads a
+/// file itself) specifically so it can be exercised against a small
+/// synthetic fixture in a unit test, not just the real curated files --
+/// see the two tests immediately below
+/// `every_subsumption_claim_is_content_verified_against_real_curated_data`.
+fn check_subsumption_content(claims: &[SubsumptionClaim], events: &[Event], witnesses: &[(String, EventWitness)]) -> Vec<String> {
+    let mut errors = Vec::new();
+    for claim in claims {
+        let Some(event) = events.iter().find(|e| e.id == claim.subsuming_event_id) else {
+            errors.push(format!(
+                "subsumption claim for §{}: claimed subsuming event '{}' does not exist in the real curated data",
+                claim.section, claim.subsuming_event_id
+            ));
+            continue;
+        };
+        let mut covered: HashSet<&str> = event.verses.iter().map(String::as_str).collect();
+        for (eid, w) in witnesses {
+            if eid == claim.subsuming_event_id {
+                if let Some(vs) = w.translations.get(atlas_core::translation::DEFAULT_TRANSLATION) {
+                    covered.extend(vs.iter().map(String::as_str));
+                }
+            }
+        }
+        for (book, chapter, from_verse, to_verse) in claim.refs {
+            for v in *from_verse..=*to_verse {
+                let vref = format!("{book}.{chapter}.{v}");
+                if !covered.contains(vref.as_str()) {
+                    errors.push(format!(
+                        "subsumption claim for §{} (claimed subsumed by '{}'): '{vref}' is part of Robertson's own §{} citation but is NOT covered by '{}''s own actual verse/witness ranges -- the subsumption claim is false or stale",
+                        claim.section, claim.subsuming_event_id, claim.section, claim.subsuming_event_id
+                    ));
+                }
+            }
+        }
+    }
+    errors
 }
 
 /// Batch T2's own disclosed honest omission: Robertson's own table lists
@@ -68,6 +171,17 @@ fn subsumed() -> HashSet<&'static str> {
 /// rests solely on 1 Corinthians 15:7, outside this project's Gospels+Acts
 /// scope. There is no verse to cite, so none is fabricated -- see
 /// data/curated/events-extra.toml's own period-11 header comment.
+///
+/// Fix round 1 (review finding M-2): unlike `subsumed()` above, this list
+/// has no content-containment check to give it the same automated teeth --
+/// "no Gospel reference exists" isn't a containment fact `check_subsumption_
+/// content` (or anything like it) can verify structurally, only a primary-
+/// source absence a human has to confirm by reading the actual table (both
+/// this batch's own implementer and, independently, the review that raised
+/// M-2, did exactly that for §182 against Gutenberg #36264 and found it
+/// genuinely empty). This list stays editorially asserted and
+/// human-reviewed, not independently derived the way `robertson_table()`
+/// itself is.
 fn honestly_omitted() -> HashSet<&'static str> {
     ["182"].into_iter().collect()
 }
@@ -182,6 +296,74 @@ fn every_robertson_section_is_accounted_for_in_the_real_curated_data() {
             "'{s}' is listed as subsumed/omitted in this test's own exception lists, but ALSO appears as its own literal robertson_section citation in the curated data -- the exception entry is stale, remove it"
         );
     }
+}
+
+// ---------------------------------------------------------------------
+// Fix round 1 (review finding M-2): proving `check_subsumption_content`
+// itself has real teeth BEFORE trusting it against the live curated data
+// -- a synthetic fixture, red then green, same discipline as every other
+// check in this codebase.
+// ---------------------------------------------------------------------
+
+#[test]
+fn subsumption_content_check_catches_a_genuinely_uncovered_citation() {
+    let claims = &[SubsumptionClaim { section: "153", subsuming_event_id: "pw_gethsemane", refs: &[("MAT", 26, 47, 56)] }];
+    // Only reaches MAT.26.36 -- does NOT reach 26.47-56, the claimed range.
+    let events = vec![Event { id: "pw_gethsemane".into(), verses: vec!["MAT.26.36".into()], ..Default::default() }];
+    let errors = check_subsumption_content(claims, &events, &[]);
+    // One error PER missing verse (26:47..=56, 10 verses) -- the check
+    // reports every gap individually, not just the first, same
+    // aggregate-don't-fail-fast policy `validate::run` itself follows.
+    assert_eq!(errors.len(), 10, "{errors:?}");
+    assert!(errors[0].contains("MAT.26.47"), "{}", errors[0]);
+}
+
+#[test]
+fn subsumption_content_check_catches_a_missing_subsuming_event() {
+    let claims = &[SubsumptionClaim { section: "153", subsuming_event_id: "pw_gethsemane", refs: &[("MAT", 26, 47, 56)] }];
+    let errors = check_subsumption_content(claims, &[], &[]); // pw_gethsemane doesn't exist at all
+    assert_eq!(errors.len(), 1, "{errors:?}");
+    assert!(errors[0].contains("does not exist"), "{}", errors[0]);
+}
+
+#[test]
+fn subsumption_content_check_passes_when_coverage_is_real() {
+    let claims = &[SubsumptionClaim { section: "153", subsuming_event_id: "pw_gethsemane", refs: &[("MAT", 26, 47, 56), ("MRK", 14, 43, 52)] }];
+    let events = vec![Event { id: "pw_gethsemane".into(), verses: (47..=56).map(|v| format!("MAT.26.{v}")).collect(), ..Default::default() }];
+    let witnesses = vec![(
+        "pw_gethsemane".to_string(),
+        EventWitness {
+            book: "MRK".into(),
+            translations: std::collections::HashMap::from([(
+                atlas_core::translation::DEFAULT_TRANSLATION.to_string(),
+                (43..=52).map(|v| format!("MRK.14.{v}")).collect(),
+            )]),
+            ref_note: None,
+            robertson_section: None,
+        },
+    )];
+    let errors = check_subsumption_content(claims, &events, &witnesses);
+    assert!(errors.is_empty(), "{errors:?}");
+}
+
+/// The live audit itself: runs `check_subsumption_content` against the REAL
+/// currently-shipping `events-extra.toml`/`event-witnesses.toml`, parsed
+/// through the exact same real parsers `main.rs`'s own ETL pipeline uses
+/// (`curated::parse_events_extra`/`curated::parse_event_witnesses`) -- never
+/// a second, parallel re-implementation of curated-TOML parsing. This is
+/// the actual M-2 hardening: every one of `SUBSUMPTION_CLAIMS`'s 7 entries
+/// must hold not just as a real section number (the pre-existing
+/// bookkeeping check above), but as a genuine, currently-true containment
+/// fact about the real data.
+#[test]
+fn every_subsumption_claim_is_content_verified_against_real_curated_data() {
+    let events_extra_toml = read_curated("events-extra.toml");
+    let witnesses_toml = read_curated("event-witnesses.toml");
+    let events = atlas_etl::curated::parse_events_extra(&events_extra_toml).expect("events-extra.toml must parse");
+    let witnesses = atlas_etl::curated::parse_event_witnesses(&witnesses_toml).expect("event-witnesses.toml must parse");
+
+    let errors = check_subsumption_content(SUBSUMPTION_CLAIMS, &events, &witnesses);
+    assert!(errors.is_empty(), "subsumption content check found {} problem(s):\n{}", errors.len(), errors.join("\n"));
 }
 
 /// Batch T2 requirement 1's own Acts ambiguity ruling: Acts sections carry
