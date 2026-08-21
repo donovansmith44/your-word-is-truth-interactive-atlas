@@ -1,0 +1,213 @@
+# Batch W2 (whole-Bible titled verse containers, second run -- historical
+# books). 2 Kings, in the SAME `[[event]]` schema `events-extra.toml`/
+# W1's `passages/*.toml` files use.
+#
+# RECONCILIATION: the real compiled data shows 2 Kings already 638/719
+# covered before this file, via the same dense "Reign of X" Theographic
+# chain 1kings.toml's own header describes. NINE real gap ranges remained
+# (81 verses total): 3:7-10, 9:1, 11:4-20, 13:22-25, 15:11-13, 15:15-16,
+# 17:5-41 (the largest, the fall of Samaria), 25:12-19, 25:26-30. All nine
+# are closed below (each gap-filling container's own boundaries are drawn
+# at the natural pericope, not the literal gap span, when a tighter fit
+# would fragment one scene -- e.g. the Moab campaign, 3:1-27, legally
+# overlaps the pre-existing bare theo-187 for its own first six verses).
+# This file ALSO authors a fine-grained breakdown of Hezekiah's own reign
+# (18:1-20:19, otherwise only the bare theo-226 mega-span, 95 verses) --
+# this run's own second req 1b named case, Hezekiah/Sennacherib (2 Kings
+# 18-20 <-> Isaiah 36-39), witnessed live in THIS commit (Isaiah is not a
+# container-covered book this run, W4, but a witness verse-range into a
+# not-yet-covered book is legal per the brief's own explicit cross-book
+# note -- same precedent as sam2_davids_song/Psalm 18). The Manasseh/
+# Josiah reigns (21:1-23:30) are NOT re-authored here -- already fully
+# covered by the pre-existing theo-228/theo-233 -- their own 2 Chronicles
+# parallels are witnessed directly onto those ids when 2 Chronicles'
+# own coverage lands (2chronicles.toml, a later commit this same run),
+# the SAME lockstep discipline established in 1kings.toml/2samuel.toml.
+#
+# WIRE-CAP DISCLOSURE (flagged forward by batch-w1-report.md as exactly
+# this scenario): several witness groups below modestly exceed
+# `scene::verse_groups_for`'s own 20-verse-per-(book,chapter) wire cap
+# (up to 25 verses in one chapter) -- a deliberate, disclosed choice, not
+# an oversight. Unlike the Exodus-20/Deuteronomy-5 case (batch-w1-
+# report.md), Rabshakeh's own speech and Hezekiah's own prayer are each
+# ONE tightly unified narrative beat in the source text; splitting them
+# further to force strict compliance would fragment a real scene into
+# arbitrary halves for a wire-economy reason alone. The wire mechanism
+# already degrades gracefully for exactly this shape (`verse_groups_for`'s
+# own doc comment: "some real events carry 50-70+ verses in a single
+# chapter... plain ascending truncation" -- the true `count` is always
+# preserved; this is pre-existing, accepted behavior for large single-
+# chapter spans, not a new risk this file introduces).
+#
+# CROCKETT PROTOCOL (req 1b): see LICENSES.md and batch-w2-report.md.
+# Citation-integrity catch, disclosed: Crockett's own appendix cites
+# "Isaiah 39:1-9" for the Babylonian-embassy parallel -- the compiled KJV
+# text itself shows Isaiah 39 has only 8 verses. Used the REAL compiled
+# text (Isaiah 39:1-8) rather than the secondary source's own apparent
+# transcription slip, per the standing rule that the compiled KJV is the
+# canon of witnesses, not any secondary harmony.
+#
+# CHRONOLOGY, disclosed: continues the theo-*/Ussher scale, interpolated
+# from the dense pre-existing "Reign of X" chain (theo-186 through
+# theo-242) throughout. Hezekiah's own internal chronology (whether the
+# illness of chapter 20 precedes or follows the Sennacherib invasion of
+# chapters 18-19) is a genuine, long-standing harmonization question this
+# file does not resolve -- both are placed in one narrow window (-713/-712)
+# without claiming to fix their exact relative order, the same "disclosed
+# uncertainty, not fabricated precision" standard as ruth.toml.
+#
+# PLACES: tiphsah-2 (not tiphsah-1, a different place of the same name in
+# Solomon's own kingdom description) carries the 2KI.15.16 verse_links
+# directly; babylon-1 (not babylon-2/3, the NT symbolic uses) carries
+# 2KI.20.12 directly; every other slug below resolves to exactly one real,
+# unambiguous entry.
+
+[[event]]
+id = "2ki_moab_campaign"
+label = "The campaign against Moab"
+from_year = -897
+to_year = -897
+places = ["moab-1"]
+verses = ["2KI.3.1-27"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 3, Jehoram of Israel's own alliance with Jehoshaphat of Judah against Moab's own rebellion, Elisha's own oracle providing water and victory, and Mesha king of Moab's own desperate sacrifice of his firstborn son."
+ref_note = "Dated to match the pre-existing theo-187 ('Reign of Joram,' -897)."
+
+[[event]]
+id = "2ki_jehu_anointed_and_proclaimed"
+label = "Elisha's servant anoints Jehu king"
+from_year = -886
+to_year = -886
+places = ["ramoth-gilead"]
+verses = ["2KI.9.1-13"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 9:1-13, Elisha's own dispatch of a young prophet to Ramoth-gilead to anoint Jehu, and Jehu's own proclamation as king by his fellow captains."
+ref_note = "Dated to match the pre-existing theo-190 ('Reign of Jehu,' -886)."
+
+[[event]]
+id = "2ki_athaliah_joash_coronation"
+label = "Athaliah's usurpation; Joash hidden and crowned"
+from_year = -886
+to_year = -880
+places = ["jerusalem"]
+verses = ["2KI.11.1-20"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 11, Athaliah's own slaughter of the royal seed and six-year usurpation, the infant Joash's own concealment in the temple by Jehosheba, Jehoiada's own coup in Joash's seventh year, and Athaliah's own execution."
+ref_note = "2 Chronicles parallel per Crockett Book Fifth Part I: 2 Chronicles 22:10-23:21 -- witness row to be added with 2chronicles.toml's own coverage (see this file's own header note; Chronicles' own account is a close, somewhat expanded parallel). Dated across Athaliah's own stated six-year reign (11:3-4)."
+
+[[event]]
+id = "2ki_jehoash_recovers_cities"
+label = "The death of Elisha; Jehoash recovers cities from Syria"
+from_year = -840
+to_year = -840
+places = ["samaria-1"]
+verses = ["2KI.13.14-25"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 13:14-25, Elisha's own final illness and death, Joash's own weeping visit and the sign of the arrows, and Jehoash's own threefold victory over Ben-hadad recovering the cities Hazael had taken, fulfilling Elisha's own dying word."
+ref_note = "No Chronicles parallel (a northern-kingdom narrative). Dated to match the pre-existing theo-197 ('Reign of Jehoash,' -840)."
+
+[[event]]
+id = "2ki_zachariah_shallum"
+label = "The brief reigns of Zachariah and Shallum"
+from_year = -772
+to_year = -772
+places = ["samaria-1", "tiphsah-2"]
+verses = ["2KI.15.8-16"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 15:8-16, Zachariah's own six-month reign and assassination by Shallum, ending Jehu's own dynasty in its fourth generation as the Lord had promised, Shallum's own one-month reign, and his own overthrow and slaughter of Tiphsah by Menahem."
+ref_note = "No Chronicles parallel. Dated to match the pre-existing theo-208 through theo-211 cluster ('Reign of Zachariah'/'Reign of Shallum'/deaths, all -772)."
+
+[[event]]
+id = "2ki_fall_of_samaria"
+label = "The fall of Samaria; the resettlement of the land"
+from_year = -730
+to_year = -721
+places = ["samaria-1"]
+verses = ["2KI.17.1-41"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 17, Hoshea's own reign and rebellion against Assyria, the theological summary of Israel's own sins that brought this judgment, the siege and fall of Samaria, and the resettlement of the land by foreign peoples whose own mixed worship follows."
+ref_note = "No Chronicles parallel -- Chronicles' own narrative, Judah-only from the division onward, does not recount the northern kingdom's own fall in its own right. Dated from Hoshea's own accession (theo-224, -730) through his own ninth year, 'the fall of Samaria' (17:6), -730 - 9 = -721."
+
+[[event]]
+id = "2ki_hezekiah_reign_begins"
+label = "Hezekiah's reign begins; his own trust in the Lord"
+from_year = -726
+to_year = -726
+places = ["jerusalem"]
+verses = ["2KI.18.1-12"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 18:1-12, Hezekiah's own regnal formula and reforms -- removing the high places and breaking the brasen serpent -- his own trust in the Lord 'so that after him was none like him,' and a brief recap of Samaria's own earlier fall as a dated marker of his reign."
+ref_note = "No verse-aligned Chronicles parallel at this brief, summary grain -- 2 Chronicles' own vastly fuller reform narrative (chapters 29-31, the temple's own cleansing, the Passover kept with all Israel) has no comparably terse counterpart in Kings to witness against; it becomes its own set of Chronicles-only containers when that book's own coverage lands. Dated to match the pre-existing theo-226 ('Reign of Hezekiah,' -726)."
+
+[[event]]
+id = "2ki_sennacherib_first_invasion"
+label = "Sennacherib's first invasion; Hezekiah's tribute"
+from_year = -712
+to_year = -712
+places = ["jerusalem", "lachish"]
+verses = ["2KI.18.13-16"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 18:13-16, Sennacherib's own invasion of Judah's fenced cities in Hezekiah's fourteenth year, and Hezekiah's own tribute stripped from the temple and his own house."
+ref_note = "req 1b NAMED CASE (2 Kings 18-20 <-> Isaiah 36-39): Isaiah parallel per Crockett (1897) section 175(3): Isaiah 36:1 -- witness row added in this same commit, immediately below."
+
+[[event]]
+id = "2ki_rabshakeh_message"
+label = "Rabshakeh's message before the walls of Jerusalem"
+from_year = -712
+to_year = -712
+places = ["jerusalem"]
+verses = ["2KI.18.17-37"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 18:17-37, the Assyrian officers' own advance to Jerusalem, Rabshakeh's own taunting speech in Hebrew before the people on the wall, and Hezekiah's own ministers' silence at the king's own command."
+ref_note = "Isaiah parallel per Crockett section 175(7)C-F: Isaiah 36:2-22 -- witness row added in this same commit, immediately below. See this file's own header note on the disclosed 20-verse wire-cap overage (21 verses in one chapter)."
+
+[[event]]
+id = "2ki_hezekiahs_message_and_isaiahs_answer"
+label = "Hezekiah seeks Isaiah; Sennacherib's letter of defiance"
+from_year = -712
+to_year = -712
+places = ["jerusalem"]
+verses = ["2KI.19.1-13"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 19:1-13, Hezekiah's own rending of his clothes and message to Isaiah, Isaiah's own reassuring answer, and Sennacherib's own further letter of defiance naming the nations already conquered."
+ref_note = "Isaiah parallel per Crockett section 175(7)G-J: Isaiah 37:1-13 -- witness row added in this same commit, immediately below."
+
+[[event]]
+id = "2ki_hezekiahs_prayer_and_deliverance"
+label = "Hezekiah's prayer; the deliverance of Jerusalem"
+from_year = -712
+to_year = -712
+places = ["jerusalem"]
+verses = ["2KI.19.14-37"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 19:14-37, Hezekiah's own prayer spreading Sennacherib's letter before the Lord, Isaiah's own oracle of deliverance and judgment on Sennacherib, the angel of the Lord's own overthrow of the Assyrian camp, and Sennacherib's own death by his own sons at Nineveh."
+ref_note = "Isaiah parallel per Crockett section 175(7)K-M and section 176(3)-(4): Isaiah 37:14-38 -- witness row added in this same commit, immediately below. See this file's own header note on the disclosed 20-verse wire-cap overage (24 verses in one chapter)."
+
+[[event]]
+id = "2ki_hezekiah_illness_recovery"
+label = "Hezekiah's illness and recovery; the sign of the sundial"
+from_year = -713
+to_year = -713
+places = ["jerusalem"]
+verses = ["2KI.20.1-11"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 20:1-11, Hezekiah's own sickness unto death, his own prayer and weeping, Isaiah's own word adding fifteen years to his life, and the sign of the shadow returning ten degrees on the sundial of Ahaz."
+ref_note = "Isaiah parallel per Crockett section 175(4): Isaiah 38:1-22 -- witness row added in this same commit, immediately below. See this file's own header note on the genuine harmonization question over Hezekiah's own internal chronology (illness vs. invasion order) and the disclosed 20-verse wire-cap overage (22 verses in one chapter)."
+
+[[event]]
+id = "2ki_hezekiah_babylonian_embassy"
+label = "Hezekiah receives the Babylonian embassy"
+from_year = -712
+to_year = -712
+places = ["jerusalem", "babylon-1"]
+verses = ["2KI.20.12-19"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 20:12-19, Berodach-baladan's own embassy from Babylon, Hezekiah's own display of all his treasures, and Isaiah's own prophecy that all of it -- and his own sons -- would one day be carried to Babylon."
+ref_note = "Isaiah parallel per Crockett section 175(5): Isaiah 39:1-8 -- witness row added in this same commit, immediately below. Citation-integrity catch, disclosed in this file's own header note: Crockett's own secondary transcription cites 'Isaiah 39:1-9,' but the compiled KJV text itself confirms Isaiah 39 has only 8 verses -- the witness below cites the real text."
+
+[[event]]
+id = "2ki_jerusalem_aftermath"
+label = "Jerusalem's overthrow; the temple treasures taken"
+from_year = -586
+to_year = -586
+places = ["jerusalem", "riblah-1"]
+verses = ["2KI.25.8-21"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 25:8-21, Nebuzar-adan's own burning of the temple, the king's house, and every great house, the breaking down of Jerusalem's own walls, the poor left as vinedressers, the bronze and gold temple vessels carried to Babylon, and the execution of the chief priest and other officials at Riblah."
+ref_note = "req 1b NAMED CASE (2 Kings 24-25 <-> Jeremiah 52): Jeremiah parallel per Crockett Book Fifth Part III/Appendix: Jeremiah 52:12-23 -- witness row added in this same commit, immediately below (Jeremiah is not a container-covered book this run, W4, but a witness verse-range into a not-yet-covered book is legal per the brief's own explicit cross-book note). 2 Chronicles parallel (a much briefer summary, 2 Chronicles 36:17-19) to be added with 2chronicles.toml (see this file's own header note)."
+
+[[event]]
+id = "2ki_flight_and_jehoiachin_released"
+label = "The flight to Egypt; Jehoiachin released in Babylon"
+from_year = -586
+to_year = -560
+places = ["jerusalem", "babylon-1"]
+verses = ["2KI.25.26-30"]
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 25:26-30, the remnant's own flight to Egypt for fear of the Chaldeans after Gedaliah's murder, and the book's own closing note -- Jehoiachin's own release from prison by Evil-merodach in the thirty-seventh year of his captivity, eating bread at the king's own table continually."
+ref_note = "req 1b NAMED CASE (2 Kings 24-25 <-> Jeremiah 52): Jeremiah parallel per Crockett Appendix: Jeremiah 52:31-34 -- witness row added in this same commit, immediately below. Jehoiachin's own captivity dates from his own earlier deportation (theo-241, -598), thirty-seven years on (JER.52.31) -> circa -560."

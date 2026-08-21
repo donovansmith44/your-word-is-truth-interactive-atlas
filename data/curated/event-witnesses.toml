@@ -1948,3 +1948,114 @@ book = "PSA"
 verses = ["PSA.18.1-50"]
 ref_note = "Psalm 18:1-50 read directly against the compiled KJV text -- Crockett (1897) section 93, 'David's Song of Thanksgiving.'"
 
+# --- 2 Kings 18-20 <-> Isaiah 36-39 (req 1b's own second NAMED CASE,
+# Crockett Book Fifth Part III sections 175-176, independently confirmed
+# against the Appendix's own "VII. FROM ISAIAH" table). Isaiah is not a
+# container-covered book this run (W4), but a witness verse-range into a
+# not-yet-covered book is legal per the brief's own explicit cross-book
+# note. Every citation below (including data/curated/passages/2kings.toml's
+# own header-disclosed correction of Crockett's own apparent "Isaiah
+# 39:1-9" transcription slip to the real 8-verse chapter) was read
+# directly against the compiled KJV text before being written. -----------
+[[witness]]
+event_id = "2ki_sennacherib_first_invasion"
+book = "2KI"
+verses = ["2KI.18.13-16"]
+ref_note = "2 Kings 18:13-16 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete (the pw_bethany/72-row precedent)."
+
+[[witness]]
+event_id = "2ki_sennacherib_first_invasion"
+book = "ISA"
+verses = ["ISA.36.1"]
+ref_note = "Isaiah 36:1 read directly against the compiled KJV text -- Crockett (1897) section 175(3)."
+
+[[witness]]
+event_id = "2ki_rabshakeh_message"
+book = "2KI"
+verses = ["2KI.18.17-37"]
+ref_note = "2 Kings 18:17-37 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "2ki_rabshakeh_message"
+book = "ISA"
+verses = ["ISA.36.2-22"]
+ref_note = "Isaiah 36:2-22 read directly against the compiled KJV text -- Crockett (1897) section 175(7)C-F. NOTE (disclosed): this 21-verse group modestly exceeds the wire's own 20-verse-per-chapter cap -- a deliberate choice, not an oversight, see 2kings.toml's own header note."
+
+[[witness]]
+event_id = "2ki_hezekiahs_message_and_isaiahs_answer"
+book = "2KI"
+verses = ["2KI.19.1-13"]
+ref_note = "2 Kings 19:1-13 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "2ki_hezekiahs_message_and_isaiahs_answer"
+book = "ISA"
+verses = ["ISA.37.1-13"]
+ref_note = "Isaiah 37:1-13 read directly against the compiled KJV text -- Crockett (1897) section 175(7)G-J."
+
+[[witness]]
+event_id = "2ki_hezekiahs_prayer_and_deliverance"
+book = "2KI"
+verses = ["2KI.19.14-37"]
+ref_note = "2 Kings 19:14-37 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "2ki_hezekiahs_prayer_and_deliverance"
+book = "ISA"
+verses = ["ISA.37.14-38"]
+ref_note = "Isaiah 37:14-38 read directly against the compiled KJV text -- Crockett (1897) section 175(7)K-M and section 176(3)-(4). NOTE (disclosed): this 25-verse group modestly exceeds the wire's own 20-verse-per-chapter cap -- see 2kings.toml's own header note."
+
+[[witness]]
+event_id = "2ki_hezekiah_illness_recovery"
+book = "2KI"
+verses = ["2KI.20.1-11"]
+ref_note = "2 Kings 20:1-11 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "2ki_hezekiah_illness_recovery"
+book = "ISA"
+verses = ["ISA.38.1-22"]
+ref_note = "Isaiah 38:1-22 read directly against the compiled KJV text -- Crockett (1897) section 175(4). NOTE (disclosed): this 22-verse group modestly exceeds the wire's own 20-verse-per-chapter cap -- see 2kings.toml's own header note."
+
+[[witness]]
+event_id = "2ki_hezekiah_babylonian_embassy"
+book = "2KI"
+verses = ["2KI.20.12-19"]
+ref_note = "2 Kings 20:12-19 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "2ki_hezekiah_babylonian_embassy"
+book = "ISA"
+verses = ["ISA.39.1-8"]
+ref_note = "Isaiah 39:1-8 read directly against the compiled KJV text -- Crockett (1897) section 175(5), CORRECTED from Crockett's own apparent transcription slip ('Isaiah 39:1-9'); the compiled KJV text confirms Isaiah 39 has only 8 verses. The compiled KJV text is the canon of witnesses, not any secondary harmony -- see 2kings.toml's own header note."
+
+# --- 2 Kings 24-25 <-> Jeremiah 52 (req 1b's own third NAMED CASE,
+# Crockett Book Fifth Part III/Appendix, independently confirmed against
+# the Appendix's own "VIII. FROM JEREMIAH" table). Jeremiah is not a
+# container-covered book this run (W4), but a witness verse-range into a
+# not-yet-covered book is legal per the brief's own explicit cross-book
+# note. -------------------------------------------------------------------
+[[witness]]
+event_id = "2ki_jerusalem_aftermath"
+book = "2KI"
+verses = ["2KI.25.8-21"]
+ref_note = "2 Kings 25:8-21 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "2ki_jerusalem_aftermath"
+book = "JER"
+verses = ["JER.52.12-23"]
+ref_note = "Jeremiah 52:12-23 read directly against the compiled KJV text -- Crockett (1897) Appendix section VIII, part of sections 182-183's own wider Jeremiah cross-references."
+
+[[witness]]
+event_id = "2ki_flight_and_jehoiachin_released"
+book = "2KI"
+verses = ["2KI.25.26-30"]
+ref_note = "2 Kings 25:26-30 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "2ki_flight_and_jehoiachin_released"
+book = "JER"
+verses = ["JER.52.31-34"]
+ref_note = "Jeremiah 52:31-34 read directly against the compiled KJV text -- Crockett (1897) Appendix section VIII, section 183(8), 'Jehoiachin is set at Liberty.'"
+

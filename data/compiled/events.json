@@ -21832,6 +21832,53 @@
     "order_key": 0
   },
   {
+    "id": "2ki_moab_campaign",
+    "label": "The campaign against Moab",
+    "when": {
+      "from_year": -897,
+      "to_year": -897
+    },
+    "places": [
+      "moab-1"
+    ],
+    "verses": [
+      "2KI.3.1",
+      "2KI.3.2",
+      "2KI.3.3",
+      "2KI.3.4",
+      "2KI.3.5",
+      "2KI.3.6",
+      "2KI.3.7",
+      "2KI.3.8",
+      "2KI.3.9",
+      "2KI.3.10",
+      "2KI.3.11",
+      "2KI.3.12",
+      "2KI.3.13",
+      "2KI.3.14",
+      "2KI.3.15",
+      "2KI.3.16",
+      "2KI.3.17",
+      "2KI.3.18",
+      "2KI.3.19",
+      "2KI.3.20",
+      "2KI.3.21",
+      "2KI.3.22",
+      "2KI.3.23",
+      "2KI.3.24",
+      "2KI.3.25",
+      "2KI.3.26",
+      "2KI.3.27"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 3, Jehoram of Israel's own alliance with Jehoshaphat of Judah against Moab's own rebellion, Elisha's own oracle providing water and victory, and Mesha king of Moab's own desperate sacrifice of his firstborn son.",
+    "ref_note": "Dated to match the pre-existing theo-187 ('Reign of Joram,' -897).",
+    "order_key": 0
+  },
+  {
     "id": "1ki_micaiah_ahabs_death",
     "label": "Micaiah's prophecy; the death of Ahab at Ramoth-gilead",
     "when": {
@@ -22060,6 +22107,79 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2ki_jehu_anointed_and_proclaimed",
+    "label": "Elisha's servant anoints Jehu king",
+    "when": {
+      "from_year": -886,
+      "to_year": -886
+    },
+    "places": [
+      "ramoth-gilead"
+    ],
+    "verses": [
+      "2KI.9.1",
+      "2KI.9.2",
+      "2KI.9.3",
+      "2KI.9.4",
+      "2KI.9.5",
+      "2KI.9.6",
+      "2KI.9.7",
+      "2KI.9.8",
+      "2KI.9.9",
+      "2KI.9.10",
+      "2KI.9.11",
+      "2KI.9.12",
+      "2KI.9.13"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 9:1-13, Elisha's own dispatch of a young prophet to Ramoth-gilead to anoint Jehu, and Jehu's own proclamation as king by his fellow captains.",
+    "ref_note": "Dated to match the pre-existing theo-190 ('Reign of Jehu,' -886).",
+    "order_key": 0
+  },
+  {
+    "id": "2ki_athaliah_joash_coronation",
+    "label": "Athaliah's usurpation; Joash hidden and crowned",
+    "when": {
+      "from_year": -886,
+      "to_year": -880
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "2KI.11.1",
+      "2KI.11.2",
+      "2KI.11.3",
+      "2KI.11.4",
+      "2KI.11.5",
+      "2KI.11.6",
+      "2KI.11.7",
+      "2KI.11.8",
+      "2KI.11.9",
+      "2KI.11.10",
+      "2KI.11.11",
+      "2KI.11.12",
+      "2KI.11.13",
+      "2KI.11.14",
+      "2KI.11.15",
+      "2KI.11.16",
+      "2KI.11.17",
+      "2KI.11.18",
+      "2KI.11.19",
+      "2KI.11.20"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 11, Athaliah's own slaughter of the royal seed and six-year usurpation, the infant Joash's own concealment in the temple by Jehosheba, Jehoiada's own coup in Joash's seventh year, and Athaliah's own execution.",
+    "ref_note": "2 Chronicles parallel per Crockett Book Fifth Part I: 2 Chronicles 22:10-23:21 -- witness row to be added with 2chronicles.toml's own coverage (see this file's own header note; Chronicles' own account is a close, somewhat expanded parallel). Dated across Athaliah's own stated six-year reign (11:3-4).",
     "order_key": 0
   },
   {
@@ -22440,6 +22560,38 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2ki_jehoash_recovers_cities",
+    "label": "The death of Elisha; Jehoash recovers cities from Syria",
+    "when": {
+      "from_year": -840,
+      "to_year": -840
+    },
+    "places": [
+      "samaria-1"
+    ],
+    "verses": [
+      "2KI.13.14",
+      "2KI.13.15",
+      "2KI.13.16",
+      "2KI.13.17",
+      "2KI.13.18",
+      "2KI.13.19",
+      "2KI.13.20",
+      "2KI.13.21",
+      "2KI.13.22",
+      "2KI.13.23",
+      "2KI.13.24",
+      "2KI.13.25"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 13:14-25, Elisha's own final illness and death, Joash's own weeping visit and the sign of the arrows, and Jehoash's own threefold victory over Ben-hadad recovering the cities Hazael had taken, fulfilling Elisha's own dying word.",
+    "ref_note": "No Chronicles parallel (a northern-kingdom narrative). Dated to match the pre-existing theo-197 ('Reign of Jehoash,' -840).",
     "order_key": 0
   },
   {
@@ -23214,6 +23366,36 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2ki_zachariah_shallum",
+    "label": "The brief reigns of Zachariah and Shallum",
+    "when": {
+      "from_year": -772,
+      "to_year": -772
+    },
+    "places": [
+      "samaria-1",
+      "tiphsah-2"
+    ],
+    "verses": [
+      "2KI.15.8",
+      "2KI.15.9",
+      "2KI.15.10",
+      "2KI.15.11",
+      "2KI.15.12",
+      "2KI.15.13",
+      "2KI.15.14",
+      "2KI.15.15",
+      "2KI.15.16"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 15:8-16, Zachariah's own six-month reign and assassination by Shallum, ending Jehu's own dynasty in its fourth generation as the Lord had promised, Shallum's own one-month reign, and his own overthrow and slaughter of Tiphsah by Menahem.",
+    "ref_note": "No Chronicles parallel. Dated to match the pre-existing theo-208 through theo-211 cluster ('Reign of Zachariah'/'Reign of Shallum'/deaths, all -772).",
     "order_key": 0
   },
   {
@@ -24917,6 +25099,67 @@
     "order_key": 0
   },
   {
+    "id": "2ki_fall_of_samaria",
+    "label": "The fall of Samaria; the resettlement of the land",
+    "when": {
+      "from_year": -730,
+      "to_year": -721
+    },
+    "places": [
+      "samaria-1"
+    ],
+    "verses": [
+      "2KI.17.1",
+      "2KI.17.2",
+      "2KI.17.3",
+      "2KI.17.4",
+      "2KI.17.5",
+      "2KI.17.6",
+      "2KI.17.7",
+      "2KI.17.8",
+      "2KI.17.9",
+      "2KI.17.10",
+      "2KI.17.11",
+      "2KI.17.12",
+      "2KI.17.13",
+      "2KI.17.14",
+      "2KI.17.15",
+      "2KI.17.16",
+      "2KI.17.17",
+      "2KI.17.18",
+      "2KI.17.19",
+      "2KI.17.20",
+      "2KI.17.21",
+      "2KI.17.22",
+      "2KI.17.23",
+      "2KI.17.24",
+      "2KI.17.25",
+      "2KI.17.26",
+      "2KI.17.27",
+      "2KI.17.28",
+      "2KI.17.29",
+      "2KI.17.30",
+      "2KI.17.31",
+      "2KI.17.32",
+      "2KI.17.33",
+      "2KI.17.34",
+      "2KI.17.35",
+      "2KI.17.36",
+      "2KI.17.37",
+      "2KI.17.38",
+      "2KI.17.39",
+      "2KI.17.40",
+      "2KI.17.41"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 17, Hoshea's own reign and rebellion against Assyria, the theological summary of Israel's own sins that brought this judgment, the siege and fall of Samaria, and the resettlement of the land by foreign peoples whose own mixed worship follows.",
+    "ref_note": "No Chronicles parallel -- Chronicles' own narrative, Judah-only from the division onward, does not recount the northern kingdom's own fall in its own right. Dated from Hoshea's own accession (theo-224, -730) through his own ninth year, 'the fall of Samaria' (17:6), -730 - 9 = -721.",
+    "order_key": 0
+  },
+  {
     "id": "theo-225",
     "label": "Death of Ahaz",
     "when": {
@@ -25050,6 +25293,526 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2ki_hezekiah_reign_begins",
+    "label": "Hezekiah's reign begins; his own trust in the Lord",
+    "when": {
+      "from_year": -726,
+      "to_year": -726
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "2KI.18.1",
+      "2KI.18.2",
+      "2KI.18.3",
+      "2KI.18.4",
+      "2KI.18.5",
+      "2KI.18.6",
+      "2KI.18.7",
+      "2KI.18.8",
+      "2KI.18.9",
+      "2KI.18.10",
+      "2KI.18.11",
+      "2KI.18.12"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 18:1-12, Hezekiah's own regnal formula and reforms -- removing the high places and breaking the brasen serpent -- his own trust in the Lord 'so that after him was none like him,' and a brief recap of Samaria's own earlier fall as a dated marker of his reign.",
+    "ref_note": "No verse-aligned Chronicles parallel at this brief, summary grain -- 2 Chronicles' own vastly fuller reform narrative (chapters 29-31, the temple's own cleansing, the Passover kept with all Israel) has no comparably terse counterpart in Kings to witness against; it becomes its own set of Chronicles-only containers when that book's own coverage lands. Dated to match the pre-existing theo-226 ('Reign of Hezekiah,' -726).",
+    "order_key": 0
+  },
+  {
+    "id": "2ki_hezekiah_illness_recovery",
+    "label": "Hezekiah's illness and recovery; the sign of the sundial",
+    "when": {
+      "from_year": -713,
+      "to_year": -713
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "2KI.20.1",
+      "2KI.20.2",
+      "2KI.20.3",
+      "2KI.20.4",
+      "2KI.20.5",
+      "2KI.20.6",
+      "2KI.20.7",
+      "2KI.20.8",
+      "2KI.20.9",
+      "2KI.20.10",
+      "2KI.20.11"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.20.1",
+            "2KI.20.2",
+            "2KI.20.3",
+            "2KI.20.4",
+            "2KI.20.5",
+            "2KI.20.6",
+            "2KI.20.7",
+            "2KI.20.8",
+            "2KI.20.9",
+            "2KI.20.10",
+            "2KI.20.11"
+          ]
+        },
+        "ref_note": "2 Kings 20:1-11 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "ISA",
+        "translations": {
+          "kjv": [
+            "ISA.38.1",
+            "ISA.38.2",
+            "ISA.38.3",
+            "ISA.38.4",
+            "ISA.38.5",
+            "ISA.38.6",
+            "ISA.38.7",
+            "ISA.38.8",
+            "ISA.38.9",
+            "ISA.38.10",
+            "ISA.38.11",
+            "ISA.38.12",
+            "ISA.38.13",
+            "ISA.38.14",
+            "ISA.38.15",
+            "ISA.38.16",
+            "ISA.38.17",
+            "ISA.38.18",
+            "ISA.38.19",
+            "ISA.38.20",
+            "ISA.38.21",
+            "ISA.38.22"
+          ]
+        },
+        "ref_note": "Isaiah 38:1-22 read directly against the compiled KJV text -- Crockett (1897) section 175(4). NOTE (disclosed): this 22-verse group modestly exceeds the wire's own 20-verse-per-chapter cap -- see 2kings.toml's own header note.",
+        "robertson_section": null
+      }
+    ],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 20:1-11, Hezekiah's own sickness unto death, his own prayer and weeping, Isaiah's own word adding fifteen years to his life, and the sign of the shadow returning ten degrees on the sundial of Ahaz.",
+    "ref_note": "Isaiah parallel per Crockett section 175(4): Isaiah 38:1-22 -- witness row added in this same commit, immediately below. See this file's own header note on the genuine harmonization question over Hezekiah's own internal chronology (illness vs. invasion order) and the disclosed 20-verse wire-cap overage (22 verses in one chapter).",
+    "order_key": 0
+  },
+  {
+    "id": "2ki_sennacherib_first_invasion",
+    "label": "Sennacherib's first invasion; Hezekiah's tribute",
+    "when": {
+      "from_year": -712,
+      "to_year": -712
+    },
+    "places": [
+      "jerusalem",
+      "lachish"
+    ],
+    "verses": [
+      "2KI.18.13",
+      "2KI.18.14",
+      "2KI.18.15",
+      "2KI.18.16"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.18.13",
+            "2KI.18.14",
+            "2KI.18.15",
+            "2KI.18.16"
+          ]
+        },
+        "ref_note": "2 Kings 18:13-16 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete (the pw_bethany/72-row precedent).",
+        "robertson_section": null
+      },
+      {
+        "book": "ISA",
+        "translations": {
+          "kjv": [
+            "ISA.36.1"
+          ]
+        },
+        "ref_note": "Isaiah 36:1 read directly against the compiled KJV text -- Crockett (1897) section 175(3).",
+        "robertson_section": null
+      }
+    ],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 18:13-16, Sennacherib's own invasion of Judah's fenced cities in Hezekiah's fourteenth year, and Hezekiah's own tribute stripped from the temple and his own house.",
+    "ref_note": "req 1b NAMED CASE (2 Kings 18-20 <-> Isaiah 36-39): Isaiah parallel per Crockett (1897) section 175(3): Isaiah 36:1 -- witness row added in this same commit, immediately below.",
+    "order_key": 0
+  },
+  {
+    "id": "2ki_rabshakeh_message",
+    "label": "Rabshakeh's message before the walls of Jerusalem",
+    "when": {
+      "from_year": -712,
+      "to_year": -712
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "2KI.18.17",
+      "2KI.18.18",
+      "2KI.18.19",
+      "2KI.18.20",
+      "2KI.18.21",
+      "2KI.18.22",
+      "2KI.18.23",
+      "2KI.18.24",
+      "2KI.18.25",
+      "2KI.18.26",
+      "2KI.18.27",
+      "2KI.18.28",
+      "2KI.18.29",
+      "2KI.18.30",
+      "2KI.18.31",
+      "2KI.18.32",
+      "2KI.18.33",
+      "2KI.18.34",
+      "2KI.18.35",
+      "2KI.18.36",
+      "2KI.18.37"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.18.17",
+            "2KI.18.18",
+            "2KI.18.19",
+            "2KI.18.20",
+            "2KI.18.21",
+            "2KI.18.22",
+            "2KI.18.23",
+            "2KI.18.24",
+            "2KI.18.25",
+            "2KI.18.26",
+            "2KI.18.27",
+            "2KI.18.28",
+            "2KI.18.29",
+            "2KI.18.30",
+            "2KI.18.31",
+            "2KI.18.32",
+            "2KI.18.33",
+            "2KI.18.34",
+            "2KI.18.35",
+            "2KI.18.36",
+            "2KI.18.37"
+          ]
+        },
+        "ref_note": "2 Kings 18:17-37 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "ISA",
+        "translations": {
+          "kjv": [
+            "ISA.36.2",
+            "ISA.36.3",
+            "ISA.36.4",
+            "ISA.36.5",
+            "ISA.36.6",
+            "ISA.36.7",
+            "ISA.36.8",
+            "ISA.36.9",
+            "ISA.36.10",
+            "ISA.36.11",
+            "ISA.36.12",
+            "ISA.36.13",
+            "ISA.36.14",
+            "ISA.36.15",
+            "ISA.36.16",
+            "ISA.36.17",
+            "ISA.36.18",
+            "ISA.36.19",
+            "ISA.36.20",
+            "ISA.36.21",
+            "ISA.36.22"
+          ]
+        },
+        "ref_note": "Isaiah 36:2-22 read directly against the compiled KJV text -- Crockett (1897) section 175(7)C-F. NOTE (disclosed): this 21-verse group modestly exceeds the wire's own 20-verse-per-chapter cap -- a deliberate choice, not an oversight, see 2kings.toml's own header note.",
+        "robertson_section": null
+      }
+    ],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 18:17-37, the Assyrian officers' own advance to Jerusalem, Rabshakeh's own taunting speech in Hebrew before the people on the wall, and Hezekiah's own ministers' silence at the king's own command.",
+    "ref_note": "Isaiah parallel per Crockett section 175(7)C-F: Isaiah 36:2-22 -- witness row added in this same commit, immediately below. See this file's own header note on the disclosed 20-verse wire-cap overage (21 verses in one chapter).",
+    "order_key": 0
+  },
+  {
+    "id": "2ki_hezekiahs_message_and_isaiahs_answer",
+    "label": "Hezekiah seeks Isaiah; Sennacherib's letter of defiance",
+    "when": {
+      "from_year": -712,
+      "to_year": -712
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "2KI.19.1",
+      "2KI.19.2",
+      "2KI.19.3",
+      "2KI.19.4",
+      "2KI.19.5",
+      "2KI.19.6",
+      "2KI.19.7",
+      "2KI.19.8",
+      "2KI.19.9",
+      "2KI.19.10",
+      "2KI.19.11",
+      "2KI.19.12",
+      "2KI.19.13"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.19.1",
+            "2KI.19.2",
+            "2KI.19.3",
+            "2KI.19.4",
+            "2KI.19.5",
+            "2KI.19.6",
+            "2KI.19.7",
+            "2KI.19.8",
+            "2KI.19.9",
+            "2KI.19.10",
+            "2KI.19.11",
+            "2KI.19.12",
+            "2KI.19.13"
+          ]
+        },
+        "ref_note": "2 Kings 19:1-13 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "ISA",
+        "translations": {
+          "kjv": [
+            "ISA.37.1",
+            "ISA.37.2",
+            "ISA.37.3",
+            "ISA.37.4",
+            "ISA.37.5",
+            "ISA.37.6",
+            "ISA.37.7",
+            "ISA.37.8",
+            "ISA.37.9",
+            "ISA.37.10",
+            "ISA.37.11",
+            "ISA.37.12",
+            "ISA.37.13"
+          ]
+        },
+        "ref_note": "Isaiah 37:1-13 read directly against the compiled KJV text -- Crockett (1897) section 175(7)G-J.",
+        "robertson_section": null
+      }
+    ],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 19:1-13, Hezekiah's own rending of his clothes and message to Isaiah, Isaiah's own reassuring answer, and Sennacherib's own further letter of defiance naming the nations already conquered.",
+    "ref_note": "Isaiah parallel per Crockett section 175(7)G-J: Isaiah 37:1-13 -- witness row added in this same commit, immediately below.",
+    "order_key": 0
+  },
+  {
+    "id": "2ki_hezekiahs_prayer_and_deliverance",
+    "label": "Hezekiah's prayer; the deliverance of Jerusalem",
+    "when": {
+      "from_year": -712,
+      "to_year": -712
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "2KI.19.14",
+      "2KI.19.15",
+      "2KI.19.16",
+      "2KI.19.17",
+      "2KI.19.18",
+      "2KI.19.19",
+      "2KI.19.20",
+      "2KI.19.21",
+      "2KI.19.22",
+      "2KI.19.23",
+      "2KI.19.24",
+      "2KI.19.25",
+      "2KI.19.26",
+      "2KI.19.27",
+      "2KI.19.28",
+      "2KI.19.29",
+      "2KI.19.30",
+      "2KI.19.31",
+      "2KI.19.32",
+      "2KI.19.33",
+      "2KI.19.34",
+      "2KI.19.35",
+      "2KI.19.36",
+      "2KI.19.37"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.19.14",
+            "2KI.19.15",
+            "2KI.19.16",
+            "2KI.19.17",
+            "2KI.19.18",
+            "2KI.19.19",
+            "2KI.19.20",
+            "2KI.19.21",
+            "2KI.19.22",
+            "2KI.19.23",
+            "2KI.19.24",
+            "2KI.19.25",
+            "2KI.19.26",
+            "2KI.19.27",
+            "2KI.19.28",
+            "2KI.19.29",
+            "2KI.19.30",
+            "2KI.19.31",
+            "2KI.19.32",
+            "2KI.19.33",
+            "2KI.19.34",
+            "2KI.19.35",
+            "2KI.19.36",
+            "2KI.19.37"
+          ]
+        },
+        "ref_note": "2 Kings 19:14-37 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "ISA",
+        "translations": {
+          "kjv": [
+            "ISA.37.14",
+            "ISA.37.15",
+            "ISA.37.16",
+            "ISA.37.17",
+            "ISA.37.18",
+            "ISA.37.19",
+            "ISA.37.20",
+            "ISA.37.21",
+            "ISA.37.22",
+            "ISA.37.23",
+            "ISA.37.24",
+            "ISA.37.25",
+            "ISA.37.26",
+            "ISA.37.27",
+            "ISA.37.28",
+            "ISA.37.29",
+            "ISA.37.30",
+            "ISA.37.31",
+            "ISA.37.32",
+            "ISA.37.33",
+            "ISA.37.34",
+            "ISA.37.35",
+            "ISA.37.36",
+            "ISA.37.37",
+            "ISA.37.38"
+          ]
+        },
+        "ref_note": "Isaiah 37:14-38 read directly against the compiled KJV text -- Crockett (1897) section 175(7)K-M and section 176(3)-(4). NOTE (disclosed): this 25-verse group modestly exceeds the wire's own 20-verse-per-chapter cap -- see 2kings.toml's own header note.",
+        "robertson_section": null
+      }
+    ],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 19:14-37, Hezekiah's own prayer spreading Sennacherib's letter before the Lord, Isaiah's own oracle of deliverance and judgment on Sennacherib, the angel of the Lord's own overthrow of the Assyrian camp, and Sennacherib's own death by his own sons at Nineveh.",
+    "ref_note": "Isaiah parallel per Crockett section 175(7)K-M and section 176(3)-(4): Isaiah 37:14-38 -- witness row added in this same commit, immediately below. See this file's own header note on the disclosed 20-verse wire-cap overage (24 verses in one chapter).",
+    "order_key": 0
+  },
+  {
+    "id": "2ki_hezekiah_babylonian_embassy",
+    "label": "Hezekiah receives the Babylonian embassy",
+    "when": {
+      "from_year": -712,
+      "to_year": -712
+    },
+    "places": [
+      "jerusalem",
+      "babylon-1"
+    ],
+    "verses": [
+      "2KI.20.12",
+      "2KI.20.13",
+      "2KI.20.14",
+      "2KI.20.15",
+      "2KI.20.16",
+      "2KI.20.17",
+      "2KI.20.18",
+      "2KI.20.19"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.20.12",
+            "2KI.20.13",
+            "2KI.20.14",
+            "2KI.20.15",
+            "2KI.20.16",
+            "2KI.20.17",
+            "2KI.20.18",
+            "2KI.20.19"
+          ]
+        },
+        "ref_note": "2 Kings 20:12-19 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "ISA",
+        "translations": {
+          "kjv": [
+            "ISA.39.1",
+            "ISA.39.2",
+            "ISA.39.3",
+            "ISA.39.4",
+            "ISA.39.5",
+            "ISA.39.6",
+            "ISA.39.7",
+            "ISA.39.8"
+          ]
+        },
+        "ref_note": "Isaiah 39:1-8 read directly against the compiled KJV text -- Crockett (1897) section 175(5), CORRECTED from Crockett's own apparent transcription slip ('Isaiah 39:1-9'); the compiled KJV text confirms Isaiah 39 has only 8 verses. The compiled KJV text is the canon of witnesses, not any secondary harmony -- see 2kings.toml's own header note.",
+        "robertson_section": null
+      }
+    ],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 20:12-19, Berodach-baladan's own embassy from Babylon, Hezekiah's own display of all his treasures, and Isaiah's own prophecy that all of it -- and his own sons -- would one day be carried to Babylon.",
+    "ref_note": "Isaiah parallel per Crockett section 175(5): Isaiah 39:1-8 -- witness row added in this same commit, immediately below. Citation-integrity catch, disclosed in this file's own header note: Crockett's own secondary transcription cites 'Isaiah 39:1-9,' but the compiled KJV text itself confirms Isaiah 39 has only 8 verses -- the witness below cites the real text.",
     "order_key": 0
   },
   {
@@ -28740,6 +29503,140 @@
     "acts_section": null,
     "atlas_section": null,
     "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2ki_jerusalem_aftermath",
+    "label": "Jerusalem's overthrow; the temple treasures taken",
+    "when": {
+      "from_year": -586,
+      "to_year": -586
+    },
+    "places": [
+      "jerusalem",
+      "riblah-1"
+    ],
+    "verses": [
+      "2KI.25.8",
+      "2KI.25.9",
+      "2KI.25.10",
+      "2KI.25.11",
+      "2KI.25.12",
+      "2KI.25.13",
+      "2KI.25.14",
+      "2KI.25.15",
+      "2KI.25.16",
+      "2KI.25.17",
+      "2KI.25.18",
+      "2KI.25.19",
+      "2KI.25.20",
+      "2KI.25.21"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.25.8",
+            "2KI.25.9",
+            "2KI.25.10",
+            "2KI.25.11",
+            "2KI.25.12",
+            "2KI.25.13",
+            "2KI.25.14",
+            "2KI.25.15",
+            "2KI.25.16",
+            "2KI.25.17",
+            "2KI.25.18",
+            "2KI.25.19",
+            "2KI.25.20",
+            "2KI.25.21"
+          ]
+        },
+        "ref_note": "2 Kings 25:8-21 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "JER",
+        "translations": {
+          "kjv": [
+            "JER.52.12",
+            "JER.52.13",
+            "JER.52.14",
+            "JER.52.15",
+            "JER.52.16",
+            "JER.52.17",
+            "JER.52.18",
+            "JER.52.19",
+            "JER.52.20",
+            "JER.52.21",
+            "JER.52.22",
+            "JER.52.23"
+          ]
+        },
+        "ref_note": "Jeremiah 52:12-23 read directly against the compiled KJV text -- Crockett (1897) Appendix section VIII, part of sections 182-183's own wider Jeremiah cross-references.",
+        "robertson_section": null
+      }
+    ],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 25:8-21, Nebuzar-adan's own burning of the temple, the king's house, and every great house, the breaking down of Jerusalem's own walls, the poor left as vinedressers, the bronze and gold temple vessels carried to Babylon, and the execution of the chief priest and other officials at Riblah.",
+    "ref_note": "req 1b NAMED CASE (2 Kings 24-25 <-> Jeremiah 52): Jeremiah parallel per Crockett Book Fifth Part III/Appendix: Jeremiah 52:12-23 -- witness row added in this same commit, immediately below (Jeremiah is not a container-covered book this run, W4, but a witness verse-range into a not-yet-covered book is legal per the brief's own explicit cross-book note). 2 Chronicles parallel (a much briefer summary, 2 Chronicles 36:17-19) to be added with 2chronicles.toml (see this file's own header note).",
+    "order_key": 0
+  },
+  {
+    "id": "2ki_flight_and_jehoiachin_released",
+    "label": "The flight to Egypt; Jehoiachin released in Babylon",
+    "when": {
+      "from_year": -586,
+      "to_year": -560
+    },
+    "places": [
+      "jerusalem",
+      "babylon-1"
+    ],
+    "verses": [
+      "2KI.25.26",
+      "2KI.25.27",
+      "2KI.25.28",
+      "2KI.25.29",
+      "2KI.25.30"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.25.26",
+            "2KI.25.27",
+            "2KI.25.28",
+            "2KI.25.29",
+            "2KI.25.30"
+          ]
+        },
+        "ref_note": "2 Kings 25:26-30 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "JER",
+        "translations": {
+          "kjv": [
+            "JER.52.31",
+            "JER.52.32",
+            "JER.52.33",
+            "JER.52.34"
+          ]
+        },
+        "ref_note": "Jeremiah 52:31-34 read directly against the compiled KJV text -- Crockett (1897) Appendix section VIII, section 183(8), 'Jehoiachin is set at Liberty.'",
+        "robertson_section": null
+      }
+    ],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 25:26-30, the remnant's own flight to Egypt for fear of the Chaldeans after Gedaliah's murder, and the book's own closing note -- Jehoiachin's own release from prison by Evil-merodach in the thirty-seventh year of his captivity, eating bread at the king's own table continually.",
+    "ref_note": "req 1b NAMED CASE (2 Kings 24-25 <-> Jeremiah 52): Jeremiah parallel per Crockett Appendix: Jeremiah 52:31-34 -- witness row added in this same commit, immediately below. Jehoiachin's own captivity dates from his own earlier deportation (theo-241, -598), thirty-seven years on (JER.52.31) -> circa -560.",
     "order_key": 0
   },
   {
