@@ -30061,6 +30061,1347 @@
     "order_key": 1280
   },
   {
+    "id": "rob_arrives_at_bethany",
+    "label": "Jesus arrives at Bethany near Jerusalem",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "bethany-1"
+    ],
+    "verses": [
+      "JHN.11.55",
+      "JHN.11.56",
+      "JHN.12.1",
+      "JHN.12.9",
+      "JHN.12.10",
+      "JHN.12.11"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §128a, \"Jesus Arrives at Bethany near Jerusalem\"",
+    "ref_note": "John 11:55-56, 12:1, 12:9-11 read directly against the compiled KJV text; single witness (John alone); the batch's own new-container-before-pw_bethany insertion -- placed first in the passion-week leg order (order_key 500, before pw_bethany's own 1000), the arrival naturally preceding the anointing supper it sets up",
+    "order_key": 500
+  },
+  {
+    "id": "rob_greeks_seek_jesus",
+    "label": "Greeks at the feast ask to see Jesus",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.12.20",
+      "JHN.12.21",
+      "JHN.12.22",
+      "JHN.12.23",
+      "JHN.12.24",
+      "JHN.12.25",
+      "JHN.12.26",
+      "JHN.12.27",
+      "JHN.12.28",
+      "JHN.12.29",
+      "JHN.12.30",
+      "JHN.12.31",
+      "JHN.12.32",
+      "JHN.12.33",
+      "JHN.12.34",
+      "JHN.12.35",
+      "JHN.12.36",
+      "JHN.12.37",
+      "JHN.12.38",
+      "JHN.12.39",
+      "JHN.12.40",
+      "JHN.12.41",
+      "JHN.12.42",
+      "JHN.12.43",
+      "JHN.12.44",
+      "JHN.12.45",
+      "JHN.12.46",
+      "JHN.12.47",
+      "JHN.12.48",
+      "JHN.12.49",
+      "JHN.12.50"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §130, \"The Desire of Some Greeks to See Jesus Puzzles the Disciples and Leads Jesus in Agitation of Soul to Interpret Life and Death as Sacrifice and to Show How by Being 'Lifted Up' He Will Draw All Men to Him\"",
+    "ref_note": "John 12:20-50 read directly against the compiled KJV text; single witness (John alone); NOT a passion-week leg -- see this event's own comment above for why",
+    "order_key": 0
+  },
+  {
+    "id": "rob_fig_tree_withered",
+    "label": "The barren fig tree found withered",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.21.19",
+      "MAT.21.20",
+      "MAT.21.21",
+      "MAT.21.22"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §131, \"The Barren Fig Tree Found to Have Withered (Comp. § 31)\"",
+    "ref_note": "Matthew 21:19-22 and Mark 11:19-25 both read directly against the compiled KJV text; Robertson's own table also lists Luke 21:37-38, but those two verses are a general daily-pattern statement ('in the day time he was teaching in the temple; and at night he went out...') that does not itself recount the fig tree -- omitted per the citation-integrity rule's own 'honest subset' guidance",
+    "order_key": 3100
+  },
+  {
+    "id": "rob_authority_challenged",
+    "label": "The Sanhedrin formally challenges Jesus's authority",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.21.23",
+      "MAT.21.24",
+      "MAT.21.25",
+      "MAT.21.26",
+      "MAT.21.27",
+      "MAT.21.28",
+      "MAT.21.29",
+      "MAT.21.30",
+      "MAT.21.31",
+      "MAT.21.32",
+      "MAT.21.33",
+      "MAT.21.34",
+      "MAT.21.35",
+      "MAT.21.36",
+      "MAT.21.37",
+      "MAT.21.38",
+      "MAT.21.39",
+      "MAT.21.40",
+      "MAT.21.41",
+      "MAT.21.42",
+      "MAT.21.43",
+      "MAT.21.44",
+      "MAT.21.45",
+      "MAT.21.46",
+      "MAT.22.1",
+      "MAT.22.2",
+      "MAT.22.3",
+      "MAT.22.4",
+      "MAT.22.5",
+      "MAT.22.6",
+      "MAT.22.7",
+      "MAT.22.8",
+      "MAT.22.9",
+      "MAT.22.10",
+      "MAT.22.11",
+      "MAT.22.12",
+      "MAT.22.13",
+      "MAT.22.14"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.11.27",
+            "MRK.11.28",
+            "MRK.11.29",
+            "MRK.11.30",
+            "MRK.11.31",
+            "MRK.11.32",
+            "MRK.11.33",
+            "MRK.12.1",
+            "MRK.12.2",
+            "MRK.12.3",
+            "MRK.12.4",
+            "MRK.12.5",
+            "MRK.12.6",
+            "MRK.12.7",
+            "MRK.12.8",
+            "MRK.12.9",
+            "MRK.12.10",
+            "MRK.12.11",
+            "MRK.12.12"
+          ]
+        },
+        "ref_note": "Mark 11:27-12:12 read directly against the compiled KJV text; written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string",
+        "robertson_section": "Robertson (1922) §132"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.20.1",
+            "LUK.20.2",
+            "LUK.20.3",
+            "LUK.20.4",
+            "LUK.20.5",
+            "LUK.20.6",
+            "LUK.20.7",
+            "LUK.20.8",
+            "LUK.20.9",
+            "LUK.20.10",
+            "LUK.20.11",
+            "LUK.20.12",
+            "LUK.20.13",
+            "LUK.20.14",
+            "LUK.20.15",
+            "LUK.20.16",
+            "LUK.20.17",
+            "LUK.20.18",
+            "LUK.20.19"
+          ]
+        },
+        "ref_note": "Luke 20:1-19 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §132"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §132, \"The Rulers (Sanhedrin) Formally Challenge the Authority of Jesus as an Accredited Teacher (Rabbi)\"",
+    "ref_note": "Matthew 21:23-22:14, Mark 11:27-12:12, and Luke 20:1-19 all read directly against the compiled KJV text; Matthew's own range crosses a chapter boundary -- written as two ranges, see event-witnesses.toml",
+    "order_key": 3200
+  },
+  {
+    "id": "rob_tribute_to_caesar",
+    "label": "The Pharisees and Herodians try to trap Jesus over tribute to Caesar",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.22.15",
+      "MAT.22.16",
+      "MAT.22.17",
+      "MAT.22.18",
+      "MAT.22.19",
+      "MAT.22.20",
+      "MAT.22.21",
+      "MAT.22.22"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.12.13",
+            "MRK.12.14",
+            "MRK.12.15",
+            "MRK.12.16",
+            "MRK.12.17"
+          ]
+        },
+        "ref_note": "Mark 12:13-17 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §133"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.20.20",
+            "LUK.20.21",
+            "LUK.20.22",
+            "LUK.20.23",
+            "LUK.20.24",
+            "LUK.20.25",
+            "LUK.20.26"
+          ]
+        },
+        "ref_note": "Luke 20:20-26 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §133"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §133, \"The Pharisees and the Herodians Try to Ensnare Jesus about Paying Tribute to Caesar\"",
+    "ref_note": "Matthew 22:15-22, Mark 12:13-17, and Luke 20:20-26 all read directly against the compiled KJV text",
+    "order_key": 3300
+  },
+  {
+    "id": "rob_sadducees_resurrection",
+    "label": "The Sadducees ask Jesus a puzzling question about the resurrection",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.22.23",
+      "MAT.22.24",
+      "MAT.22.25",
+      "MAT.22.26",
+      "MAT.22.27",
+      "MAT.22.28",
+      "MAT.22.29",
+      "MAT.22.30",
+      "MAT.22.31",
+      "MAT.22.32",
+      "MAT.22.33"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.12.18",
+            "MRK.12.19",
+            "MRK.12.20",
+            "MRK.12.21",
+            "MRK.12.22",
+            "MRK.12.23",
+            "MRK.12.24",
+            "MRK.12.25",
+            "MRK.12.26",
+            "MRK.12.27"
+          ]
+        },
+        "ref_note": "Mark 12:18-27 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §134"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.20.27",
+            "LUK.20.28",
+            "LUK.20.29",
+            "LUK.20.30",
+            "LUK.20.31",
+            "LUK.20.32",
+            "LUK.20.33",
+            "LUK.20.34",
+            "LUK.20.35",
+            "LUK.20.36",
+            "LUK.20.37",
+            "LUK.20.38",
+            "LUK.20.39",
+            "LUK.20.40"
+          ]
+        },
+        "ref_note": "Luke 20:27-40 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §134"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §134, \"The Sadducees Ask Him a Puzzling Question about the Resurrection\"",
+    "ref_note": "Matthew 22:23-33, Mark 12:18-27, and Luke 20:27-40 all read directly against the compiled KJV text",
+    "order_key": 3400
+  },
+  {
+    "id": "rob_great_commandment",
+    "label": "Jesus names the great commandment",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.22.34",
+      "MAT.22.35",
+      "MAT.22.36",
+      "MAT.22.37",
+      "MAT.22.38",
+      "MAT.22.39",
+      "MAT.22.40"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.12.28",
+            "MRK.12.29",
+            "MRK.12.30",
+            "MRK.12.31",
+            "MRK.12.32",
+            "MRK.12.33",
+            "MRK.12.34"
+          ]
+        },
+        "ref_note": "Mark 12:28-34 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §135"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §135, \"The Pharisees Rejoice over the Rout of the Sadducees and a Pharisaic Lawyer Asks Jesus a Legal Question\"",
+    "ref_note": "Matthew 22:34-40 and Mark 12:28-34 both read directly against the compiled KJV text; no Luke parallel is listed for this particular occasion",
+    "order_key": 3500
+  },
+  {
+    "id": "rob_davids_son",
+    "label": "Jesus asks how the Messiah can be both David's son and David's Lord",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.22.41",
+      "MAT.22.42",
+      "MAT.22.43",
+      "MAT.22.44",
+      "MAT.22.45",
+      "MAT.22.46"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.12.35",
+            "MRK.12.36",
+            "MRK.12.37"
+          ]
+        },
+        "ref_note": "Mark 12:35-37 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §136"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.20.41",
+            "LUK.20.42",
+            "LUK.20.43",
+            "LUK.20.44"
+          ]
+        },
+        "ref_note": "Luke 20:41-44 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §136"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §136, \"Jesus, to the Joy of the Multitude, Silences His Enemies by the Pertinent Question of the Messiah's Descent from David and Lordship over David\"",
+    "ref_note": "Matthew 22:41-46, Mark 12:35-37, and Luke 20:41-44 all read directly against the compiled KJV text",
+    "order_key": 3600
+  },
+  {
+    "id": "rob_woes_on_scribes",
+    "label": "Jesus denounces the scribes and Pharisees in his last public discourse",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.23.1",
+      "MAT.23.2",
+      "MAT.23.3",
+      "MAT.23.4",
+      "MAT.23.5",
+      "MAT.23.6",
+      "MAT.23.7",
+      "MAT.23.8",
+      "MAT.23.9",
+      "MAT.23.10",
+      "MAT.23.11",
+      "MAT.23.12",
+      "MAT.23.13",
+      "MAT.23.14",
+      "MAT.23.15",
+      "MAT.23.16",
+      "MAT.23.17",
+      "MAT.23.18",
+      "MAT.23.19",
+      "MAT.23.20",
+      "MAT.23.21",
+      "MAT.23.22",
+      "MAT.23.23",
+      "MAT.23.24",
+      "MAT.23.25",
+      "MAT.23.26",
+      "MAT.23.27",
+      "MAT.23.28",
+      "MAT.23.29",
+      "MAT.23.30",
+      "MAT.23.31",
+      "MAT.23.32",
+      "MAT.23.33",
+      "MAT.23.34",
+      "MAT.23.35",
+      "MAT.23.36",
+      "MAT.23.37",
+      "MAT.23.38",
+      "MAT.23.39"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.12.38",
+            "MRK.12.39",
+            "MRK.12.40"
+          ]
+        },
+        "ref_note": "Mark 12:38-40 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §137"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.20.45",
+            "LUK.20.46",
+            "LUK.20.47"
+          ]
+        },
+        "ref_note": "Luke 20:45-47 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §137"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §137, \"In His Last Public Discourse, Jesus Solemnly Denounces the Scribes and Pharisees (Comp. § 107)\"",
+    "ref_note": "Matthew 23 (the whole chapter), Mark 12:38-40, and Luke 20:45-47 all read directly against the compiled KJV text",
+    "order_key": 3700
+  },
+  {
+    "id": "rob_widows_mite",
+    "label": "Jesus commends the poor widow's gift",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MRK.12.41",
+      "MRK.12.42",
+      "MRK.12.43",
+      "MRK.12.44"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.21.1",
+            "LUK.21.2",
+            "LUK.21.3",
+            "LUK.21.4"
+          ]
+        },
+        "ref_note": "Luke 21:1-4 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §138"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §138, \"Jesus Closely Observes the Contributions in the Temple, and Commends the Poor Widow's Gift\"",
+    "ref_note": "Mark 12:41-44 and Luke 21:1-4 both read directly against the compiled KJV text; no Matthew parallel is listed for this scene",
+    "order_key": 3800
+  },
+  {
+    "id": "rob_olivet_discourse",
+    "label": "The great eschatological discourse on the Mount of Olives",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "mount-of-olives"
+    ],
+    "verses": [
+      "MRK.13.1",
+      "MRK.13.2",
+      "MRK.13.3",
+      "MRK.13.4",
+      "MRK.13.5",
+      "MRK.13.6",
+      "MRK.13.7",
+      "MRK.13.8",
+      "MRK.13.9",
+      "MRK.13.10",
+      "MRK.13.11",
+      "MRK.13.12",
+      "MRK.13.13",
+      "MRK.13.14",
+      "MRK.13.15",
+      "MRK.13.16",
+      "MRK.13.17",
+      "MRK.13.18",
+      "MRK.13.19",
+      "MRK.13.20",
+      "MRK.13.21",
+      "MRK.13.22",
+      "MRK.13.23",
+      "MRK.13.24",
+      "MRK.13.25",
+      "MRK.13.26",
+      "MRK.13.27",
+      "MRK.13.28",
+      "MRK.13.29",
+      "MRK.13.30",
+      "MRK.13.31",
+      "MRK.13.32",
+      "MRK.13.33",
+      "MRK.13.34",
+      "MRK.13.35",
+      "MRK.13.36",
+      "MRK.13.37"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.24.1",
+            "MAT.24.2",
+            "MAT.24.3",
+            "MAT.24.4",
+            "MAT.24.5",
+            "MAT.24.6",
+            "MAT.24.7",
+            "MAT.24.8",
+            "MAT.24.9",
+            "MAT.24.10",
+            "MAT.24.11",
+            "MAT.24.12",
+            "MAT.24.13",
+            "MAT.24.14",
+            "MAT.24.15",
+            "MAT.24.16",
+            "MAT.24.17",
+            "MAT.24.18",
+            "MAT.24.19",
+            "MAT.24.20",
+            "MAT.24.21",
+            "MAT.24.22",
+            "MAT.24.23",
+            "MAT.24.24",
+            "MAT.24.25",
+            "MAT.24.26",
+            "MAT.24.27",
+            "MAT.24.28",
+            "MAT.24.29",
+            "MAT.24.30",
+            "MAT.24.31",
+            "MAT.24.32",
+            "MAT.24.33",
+            "MAT.24.34",
+            "MAT.24.35",
+            "MAT.24.36",
+            "MAT.24.37",
+            "MAT.24.38",
+            "MAT.24.39",
+            "MAT.24.40",
+            "MAT.24.41",
+            "MAT.24.42",
+            "MAT.24.43",
+            "MAT.24.44",
+            "MAT.24.45",
+            "MAT.24.46",
+            "MAT.24.47",
+            "MAT.24.48",
+            "MAT.24.49",
+            "MAT.24.50",
+            "MAT.24.51",
+            "MAT.25.1",
+            "MAT.25.2",
+            "MAT.25.3",
+            "MAT.25.4",
+            "MAT.25.5",
+            "MAT.25.6",
+            "MAT.25.7",
+            "MAT.25.8",
+            "MAT.25.9",
+            "MAT.25.10",
+            "MAT.25.11",
+            "MAT.25.12",
+            "MAT.25.13",
+            "MAT.25.14",
+            "MAT.25.15",
+            "MAT.25.16",
+            "MAT.25.17",
+            "MAT.25.18",
+            "MAT.25.19",
+            "MAT.25.20",
+            "MAT.25.21",
+            "MAT.25.22",
+            "MAT.25.23",
+            "MAT.25.24",
+            "MAT.25.25",
+            "MAT.25.26",
+            "MAT.25.27",
+            "MAT.25.28",
+            "MAT.25.29",
+            "MAT.25.30",
+            "MAT.25.31",
+            "MAT.25.32",
+            "MAT.25.33",
+            "MAT.25.34",
+            "MAT.25.35",
+            "MAT.25.36",
+            "MAT.25.37",
+            "MAT.25.38",
+            "MAT.25.39",
+            "MAT.25.40",
+            "MAT.25.41",
+            "MAT.25.42",
+            "MAT.25.43",
+            "MAT.25.44",
+            "MAT.25.45",
+            "MAT.25.46"
+          ]
+        },
+        "ref_note": "Matthew 24-25 read directly against the compiled KJV text; written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string",
+        "robertson_section": "Robertson (1922) §139"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.21.5",
+            "LUK.21.6",
+            "LUK.21.7",
+            "LUK.21.8",
+            "LUK.21.9",
+            "LUK.21.10",
+            "LUK.21.11",
+            "LUK.21.12",
+            "LUK.21.13",
+            "LUK.21.14",
+            "LUK.21.15",
+            "LUK.21.16",
+            "LUK.21.17",
+            "LUK.21.18",
+            "LUK.21.19",
+            "LUK.21.20",
+            "LUK.21.21",
+            "LUK.21.22",
+            "LUK.21.23",
+            "LUK.21.24",
+            "LUK.21.25",
+            "LUK.21.26",
+            "LUK.21.27",
+            "LUK.21.28",
+            "LUK.21.29",
+            "LUK.21.30",
+            "LUK.21.31",
+            "LUK.21.32",
+            "LUK.21.33",
+            "LUK.21.34",
+            "LUK.21.35",
+            "LUK.21.36"
+          ]
+        },
+        "ref_note": "Luke 21:5-36 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §139"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §139, \"Sitting on the Mount of Olives, Jesus Speaks to His Disciples about the Destruction of Jerusalem, and His Own Second Coming in Apocalyptic Language. The Great Eschatological Discourse\"",
+    "ref_note": "Matthew 24-25, Mark 13, and Luke 21:5-36 all read directly against the compiled KJV text; Mark's own single-chapter account used as this event's top-level verses (Matthew's own 2-chapter span is written as two same-chapter ranges under its own witness row, see event-witnesses.toml)",
+    "order_key": 3900
+  },
+  {
+    "id": "rob_predicts_crucifixion_timing",
+    "label": "Jesus predicts his crucifixion two days hence",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.26.1",
+      "MAT.26.2",
+      "MAT.26.3",
+      "MAT.26.4",
+      "MAT.26.5"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.14.1",
+            "MRK.14.2"
+          ]
+        },
+        "ref_note": "Mark 14:1-2 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §140"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.22.1",
+            "LUK.22.2"
+          ]
+        },
+        "ref_note": "Luke 22:1-2 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §140"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §140, \"Jesus Predicts His Crucifixion Two Days Hence (Jewish Friday)\"",
+    "ref_note": "Matthew 26:1-5, Mark 14:1-2, and Luke 22:1-2 all read directly against the compiled KJV text",
+    "order_key": 4000
+  },
+  {
+    "id": "rob_judas_bargains",
+    "label": "Judas bargains with the rulers to betray Jesus",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.26.14",
+      "MAT.26.15",
+      "MAT.26.16"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.14.10",
+            "MRK.14.11"
+          ]
+        },
+        "ref_note": "Mark 14:10-11 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §142"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.22.3",
+            "LUK.22.4",
+            "LUK.22.5",
+            "LUK.22.6"
+          ]
+        },
+        "ref_note": "Luke 22:3-6 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §142"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §142, \"Judas, Stung by the Rebuke of Jesus at the Feast, Bargains with the Rulers to Betray Jesus\"",
+    "ref_note": "Matthew 26:14-16, Mark 14:10-11, and Luke 22:3-6 all read directly against the compiled KJV text",
+    "order_key": 4100
+  },
+  {
+    "id": "rob_passover_preparation",
+    "label": "The preparation for the Passover meal",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.26.17",
+      "MAT.26.18",
+      "MAT.26.19"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.14.12",
+            "MRK.14.13",
+            "MRK.14.14",
+            "MRK.14.15",
+            "MRK.14.16"
+          ]
+        },
+        "ref_note": "Mark 14:12-16 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §143"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.22.7",
+            "LUK.22.8",
+            "LUK.22.9",
+            "LUK.22.10",
+            "LUK.22.11",
+            "LUK.22.12",
+            "LUK.22.13"
+          ]
+        },
+        "ref_note": "Luke 22:7-13 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §143"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §143, \"The Preparation for the Paschal Meal at the Home of a Friend (Possibly That of John Mark's Father and Mother)\"",
+    "ref_note": "Matthew 26:17-19, Mark 14:12-16, and Luke 22:7-13 all read directly against the compiled KJV text",
+    "order_key": 4200
+  },
+  {
+    "id": "rob_paschal_meal_begins",
+    "label": "Jesus partakes of the Passover meal with the Twelve",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.26.20"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.14.17"
+          ]
+        },
+        "ref_note": "Mark 14:17 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §144"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.22.14",
+            "LUK.22.15",
+            "LUK.22.16",
+            "LUK.22.24",
+            "LUK.22.25",
+            "LUK.22.26",
+            "LUK.22.27",
+            "LUK.22.28",
+            "LUK.22.29",
+            "LUK.22.30"
+          ]
+        },
+        "ref_note": "Luke 22:14-16, 24-30 read directly against the compiled KJV text; Luke's own reference is itself non-contiguous (22:17-23, the cup and the betrayer prediction, are Robertson's own separate sections, curated as rob_lords_supper/rob_judas_pointed_out below) -- written as two ranges, matching Robertson's own citation",
+        "robertson_section": "Robertson (1922) §144"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §144, \"Jesus Partakes of the Paschal Meal with the Twelve Apostles and Rebukes Their Jealousy\"",
+    "ref_note": "Matthew 26:20, Mark 14:17, and Luke 22:14-16/22:24-30 all read directly against the compiled KJV text; Luke's own reference is itself non-contiguous -- written as two ranges under its own witness row, matching Robertson's own citation, see event-witnesses.toml",
+    "order_key": 4300
+  },
+  {
+    "id": "rob_foot_washing",
+    "label": "Jesus washes the disciples' feet",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.13.1",
+      "JHN.13.2",
+      "JHN.13.3",
+      "JHN.13.4",
+      "JHN.13.5",
+      "JHN.13.6",
+      "JHN.13.7",
+      "JHN.13.8",
+      "JHN.13.9",
+      "JHN.13.10",
+      "JHN.13.11",
+      "JHN.13.12",
+      "JHN.13.13",
+      "JHN.13.14",
+      "JHN.13.15",
+      "JHN.13.16",
+      "JHN.13.17",
+      "JHN.13.18",
+      "JHN.13.19",
+      "JHN.13.20"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §145, \"During the Paschal Meal, Jesus Washes the Feet of His Disciples\"",
+    "ref_note": "John 13:1-20 read directly against the compiled KJV text; single witness (John alone)",
+    "order_key": 4400
+  },
+  {
+    "id": "rob_judas_pointed_out",
+    "label": "Jesus points out Judas as the betrayer",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.26.21",
+      "MAT.26.22",
+      "MAT.26.23",
+      "MAT.26.24",
+      "MAT.26.25"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.14.18",
+            "MRK.14.19",
+            "MRK.14.20",
+            "MRK.14.21"
+          ]
+        },
+        "ref_note": "Mark 14:18-21 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §146"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.22.21",
+            "LUK.22.22",
+            "LUK.22.23"
+          ]
+        },
+        "ref_note": "Luke 22:21-23 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §146"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.13.21",
+            "JHN.13.22",
+            "JHN.13.23",
+            "JHN.13.24",
+            "JHN.13.25",
+            "JHN.13.26",
+            "JHN.13.27",
+            "JHN.13.28",
+            "JHN.13.29",
+            "JHN.13.30"
+          ]
+        },
+        "ref_note": "John 13:21-30 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §146"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §146, \"At the Paschal Meal Jesus Points out Judas as the Betrayer\"",
+    "ref_note": "Matthew 26:21-25, Mark 14:18-21, Luke 22:21-23, and John 13:21-30 all read directly against the compiled KJV text",
+    "order_key": 4500
+  },
+  {
+    "id": "rob_warns_against_desertion",
+    "label": "Jesus warns the disciples against desertion; all protest their loyalty",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.26.31",
+      "MAT.26.32",
+      "MAT.26.33",
+      "MAT.26.34",
+      "MAT.26.35"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.14.27",
+            "MRK.14.28",
+            "MRK.14.29",
+            "MRK.14.30",
+            "MRK.14.31"
+          ]
+        },
+        "ref_note": "Mark 14:27-31 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §147"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.22.31",
+            "LUK.22.32",
+            "LUK.22.33",
+            "LUK.22.34",
+            "LUK.22.35",
+            "LUK.22.36",
+            "LUK.22.37",
+            "LUK.22.38"
+          ]
+        },
+        "ref_note": "Luke 22:31-38 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §147"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.13.31",
+            "JHN.13.32",
+            "JHN.13.33",
+            "JHN.13.34",
+            "JHN.13.35",
+            "JHN.13.36",
+            "JHN.13.37",
+            "JHN.13.38"
+          ]
+        },
+        "ref_note": "John 13:31-38 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §147"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §147, \"After the Departure of Judas Jesus Warns the Disciples (Peter in Particular) against Desertion, While All Protest Their Loyalty\"",
+    "ref_note": "Matthew 26:31-35, Mark 14:27-31, Luke 22:31-38, and John 13:31-38 all read directly against the compiled KJV text",
+    "order_key": 4600
+  },
+  {
+    "id": "rob_lords_supper",
+    "label": "Jesus institutes the Lord's Supper",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "MAT.26.26",
+      "MAT.26.27",
+      "MAT.26.28",
+      "MAT.26.29"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.14.22",
+            "MRK.14.23",
+            "MRK.14.24",
+            "MRK.14.25"
+          ]
+        },
+        "ref_note": "Mark 14:22-25 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §148"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.22.17",
+            "LUK.22.18",
+            "LUK.22.19",
+            "LUK.22.20"
+          ]
+        },
+        "ref_note": "Luke 22:17-20 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §148"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §148, \"Jesus Institutes the Memorial of Eating Bread and Drinking Wine\"",
+    "ref_note": "Matthew 26:26-29, Mark 14:22-25, and Luke 22:17-20 all read directly against the compiled KJV text",
+    "order_key": 4700
+  },
+  {
+    "id": "rob_farewell_discourse",
+    "label": "The farewell discourse to the disciples in the upper room",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.14.1",
+      "JHN.14.2",
+      "JHN.14.3",
+      "JHN.14.4",
+      "JHN.14.5",
+      "JHN.14.6",
+      "JHN.14.7",
+      "JHN.14.8",
+      "JHN.14.9",
+      "JHN.14.10",
+      "JHN.14.11",
+      "JHN.14.12",
+      "JHN.14.13",
+      "JHN.14.14",
+      "JHN.14.15",
+      "JHN.14.16",
+      "JHN.14.17",
+      "JHN.14.18",
+      "JHN.14.19",
+      "JHN.14.20",
+      "JHN.14.21",
+      "JHN.14.22",
+      "JHN.14.23",
+      "JHN.14.24",
+      "JHN.14.25",
+      "JHN.14.26",
+      "JHN.14.27",
+      "JHN.14.28",
+      "JHN.14.29",
+      "JHN.14.30",
+      "JHN.14.31"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §149, \"The Farewell Discourse to His Disciples in the Upper Room\"",
+    "ref_note": "John 14 (the whole chapter) read directly against the compiled KJV text; single witness (John alone)",
+    "order_key": 4800
+  },
+  {
+    "id": "rob_discourse_to_gethsemane",
+    "label": "The discourse on the way to Gethsemane: the true vine",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.15.1",
+      "JHN.15.2",
+      "JHN.15.3",
+      "JHN.15.4",
+      "JHN.15.5",
+      "JHN.15.6",
+      "JHN.15.7",
+      "JHN.15.8",
+      "JHN.15.9",
+      "JHN.15.10",
+      "JHN.15.11",
+      "JHN.15.12",
+      "JHN.15.13",
+      "JHN.15.14",
+      "JHN.15.15",
+      "JHN.15.16",
+      "JHN.15.17",
+      "JHN.15.18",
+      "JHN.15.19",
+      "JHN.15.20",
+      "JHN.15.21",
+      "JHN.15.22",
+      "JHN.15.23",
+      "JHN.15.24",
+      "JHN.15.25",
+      "JHN.15.26",
+      "JHN.15.27",
+      "JHN.16.1",
+      "JHN.16.2",
+      "JHN.16.3",
+      "JHN.16.4",
+      "JHN.16.5",
+      "JHN.16.6",
+      "JHN.16.7",
+      "JHN.16.8",
+      "JHN.16.9",
+      "JHN.16.10",
+      "JHN.16.11",
+      "JHN.16.12",
+      "JHN.16.13",
+      "JHN.16.14",
+      "JHN.16.15",
+      "JHN.16.16",
+      "JHN.16.17",
+      "JHN.16.18",
+      "JHN.16.19",
+      "JHN.16.20",
+      "JHN.16.21",
+      "JHN.16.22",
+      "JHN.16.23",
+      "JHN.16.24",
+      "JHN.16.25",
+      "JHN.16.26",
+      "JHN.16.27",
+      "JHN.16.28",
+      "JHN.16.29",
+      "JHN.16.30",
+      "JHN.16.31",
+      "JHN.16.32",
+      "JHN.16.33"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §150, \"The Discourse on the Way to Gethsemane\"",
+    "ref_note": "John 15-16 read directly against the compiled KJV text; single witness (John alone); written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string",
+    "order_key": 4900
+  },
+  {
+    "id": "rob_intercessory_prayer",
+    "label": "Christ's intercessory prayer",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.17.1",
+      "JHN.17.2",
+      "JHN.17.3",
+      "JHN.17.4",
+      "JHN.17.5",
+      "JHN.17.6",
+      "JHN.17.7",
+      "JHN.17.8",
+      "JHN.17.9",
+      "JHN.17.10",
+      "JHN.17.11",
+      "JHN.17.12",
+      "JHN.17.13",
+      "JHN.17.14",
+      "JHN.17.15",
+      "JHN.17.16",
+      "JHN.17.17",
+      "JHN.17.18",
+      "JHN.17.19",
+      "JHN.17.20",
+      "JHN.17.21",
+      "JHN.17.22",
+      "JHN.17.23",
+      "JHN.17.24",
+      "JHN.17.25",
+      "JHN.17.26"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §151, \"Christ's Intercessory Prayer\"",
+    "ref_note": "John 17 (the whole chapter) read directly against the compiled KJV text; single witness (John alone)",
+    "order_key": 5000
+  },
+  {
     "id": "pw_bethany",
     "label": "Mary anoints Jesus at Bethany",
     "when": {
@@ -30141,7 +31482,7 @@
     ],
     "robertson_section": "Robertson (1922) §141, \"At the Feast in the House of Simon the Leper Mary of Bethany Anoints Jesus for His Burial\"",
     "ref_note": "John 12:1-11, Matthew 26:6-13, Mark 14:3-9 all read directly (see event-witnesses.toml); dated per John 12:1's own explicit 'six days before the passover', kept ahead of the triumphal entry rather than Robertson's own Wednesday placement (a real, disclosed harmonization choice -- see batch-t-report.md)",
-    "order_key": 10
+    "order_key": 1000
   },
   {
     "id": "pw_jerusalem_entry",
@@ -30253,7 +31594,7 @@
     ],
     "robertson_section": "Robertson (1922) §128b, \"His Triumphal Entry into Jerusalem as the Messiah\"",
     "ref_note": "Matthew 21:1-11, Mark 11:1-11, Luke 19:29-44, John 12:12-19 all read directly (see event-witnesses.toml)",
-    "order_key": 20
+    "order_key": 2000
   },
   {
     "id": "pw_temple_cleansing",
@@ -30311,7 +31652,7 @@
     ],
     "robertson_section": "Robertson (1922) §129, \"The Barren Fig Tree Cursed, and the Second Cleansing of the Temple\"",
     "ref_note": "Matthew 21:12-13, Mark 11:15-18, Luke 19:45-48 all read directly (see event-witnesses.toml); witnesses scoped to the cleansing itself, not Mark/Matthew's own fig-tree-cursing motif (a related but textually distinct pericope this batch does not separately model)",
-    "order_key": 30
+    "order_key": 3000
   },
   {
     "id": "pw_gethsemane",
@@ -30456,7 +31797,7 @@
     ],
     "robertson_section": "Robertson (1922) §152, \"Going Forth to Gethsemane, Jesus Suffers Long in Agony\"",
     "ref_note": "Matthew 26:36-56, Mark 14:32-52, Luke 22:39-53, John 18:1-12 all read directly (see event-witnesses.toml)",
-    "order_key": 40
+    "order_key": 6000
   },
   {
     "id": "pw_golgotha",
@@ -30588,7 +31929,7 @@
     ],
     "robertson_section": "Robertson (1922) §164, \"The First Three Hours on the Cross\"",
     "ref_note": "Matthew 27:33-50, Mark 15:22-37, Luke 23:33-46, John 19:17-30 all read directly (see event-witnesses.toml); Robertson's own §164 covers only the first three hours of a longer sequence of Harmony sections -- this app's own coarser 'event' groups the whole crucifixion scene per Gospel, a disclosed widening of Robertson's own narrower section boundary, not a mis-citation",
-    "order_key": 50
+    "order_key": 7000
   },
   {
     "id": "pw_jerusalem_resurrection",
@@ -30693,7 +32034,7 @@
     ],
     "robertson_section": "Robertson (1922) §171, \"The Visit of the Women to the Tomb of Jesus about Sunrise Sunday Morning and the Message of the Angels about the Empty Tomb\"",
     "ref_note": "Matthew 28:1-10 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml)",
-    "order_key": 60
+    "order_key": 8000
   },
   {
     "id": "pw_emmaus",
@@ -30734,7 +32075,7 @@
     "witnesses": [],
     "robertson_section": "Robertson (1922) §176, \"The Appearance to Two Disciples (Cleopas and Another) on the Way to Emmaus\"",
     "ref_note": "Luke 24:13-35 read directly; Robertson also lists Mark 16:12-13 (a two-verse mention in Mark's disputed longer ending) but this event is curated single-witness (Luke alone) -- requirement 4's own 'no parallel framing when n=1' case",
-    "order_key": 70
+    "order_key": 9000
   },
   {
     "id": "pw_galilee",
@@ -30785,7 +32126,7 @@
     ],
     "robertson_section": "Robertson (1922) §181, \"The Appearance to about Five Hundred on an Appointed Mountain in Galilee, and a Commission Given\"",
     "ref_note": "Matthew 28:16-20, Mark 16:15-18 read directly (see event-witnesses.toml); Robertson also lists 1 Corinthians 15:6, outside this app's Gospels+Acts witness scope",
-    "order_key": 80
+    "order_key": 10000
   },
   {
     "id": "pw_mount_of_olives",
@@ -30834,7 +32175,7 @@
     ],
     "robertson_section": "Robertson (1922) §184, \"The Last Appearance and the Ascension\"",
     "ref_note": "Acts 1:9-12, Luke 24:50-53 read directly (see event-witnesses.toml); Robertson also lists Mark 16:19-20 (Mark's own disputed longer ending), omitted here -- Luke/Acts (same author) already give two solid, undisputed witnesses",
-    "order_key": 90
+    "order_key": 11000
   },
   {
     "id": "rob_lazarus_raised",

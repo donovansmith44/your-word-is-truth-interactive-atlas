@@ -937,13 +937,278 @@ order_key = 1280
 # places: same bethany-1 as jm_bethany above (the Jerusalem-area Bethany,
 # not "Bethany beyond Jordan").
 [[event]]
+id = "rob_arrives_at_bethany"
+label = "Jesus arrives at Bethany near Jerusalem"
+from_year = 33
+to_year = 33
+places = ["bethany-1"]
+verses = ["JHN.11.55-56", "JHN.12.1", "JHN.12.9-11"]
+order_key = 500
+robertson_section = "Robertson (1922) §128a, \"Jesus Arrives at Bethany near Jerusalem\""
+ref_note = "John 11:55-56, 12:1, 12:9-11 read directly against the compiled KJV text; single witness (John alone); the batch's own new-container-before-pw_bethany insertion -- placed first in the passion-week leg order (order_key 500, before pw_bethany's own 1000), the arrival naturally preceding the anointing supper it sets up"
+
+# Batch T2: the Greeks-seeking-Jesus scene (Robertson §130, John 12:20-50)
+# chronologically falls between pw_jerusalem_entry and pw_temple_cleansing
+# -- but that EXACT adjacency is a protected acceptance case
+# (popover-sections.spec.ts's own "EVENT-1/PASSAGE-1: ... chronological
+# vs reading order" test hardcodes `pw_jerusalem_entry`'s own FOLLOWING
+# as `pw_temple_cleansing`, and CONTRACT.md's own CHRONOLOGICAL-VS-
+# READING-ORDER note documents it as the brief's own required "JHN
+# chronology-vs-reading-order" case). Inserting a new leg between them
+# would silently change what FOLLOWING resolves to and break that
+# specific, deliberately-constructed test. This section is therefore
+# authored as a REAL, heading-worthy, fully explorable EVENT-kind
+# container (title, date, place, reader heading, verse membership) but
+# is DELIBERATELY NOT added to passion-week's own `legs` array -- no
+# PRIOR/FOLLOWING traversal position, by disclosed design, not omission.
+# A future batch could resolve this more fully (e.g. a documented
+# leg-insertion policy for this exact "chronologically between two
+# acceptance-tested legs" shape) -- flagged in batch-t2-report.md.
+[[event]]
+id = "rob_greeks_seek_jesus"
+label = "Greeks at the feast ask to see Jesus"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["JHN.12.20-50"]
+robertson_section = "Robertson (1922) §130, \"The Desire of Some Greeks to See Jesus Puzzles the Disciples and Leads Jesus in Agitation of Soul to Interpret Life and Death as Sacrifice and to Show How by Being 'Lifted Up' He Will Draw All Men to Him\""
+ref_note = "John 12:20-50 read directly against the compiled KJV text; single witness (John alone); NOT a passion-week leg -- see this event's own comment above for why"
+
+[[event]]
+id = "rob_fig_tree_withered"
+label = "The barren fig tree found withered"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.21.19-22"]
+order_key = 3100
+robertson_section = "Robertson (1922) §131, \"The Barren Fig Tree Found to Have Withered (Comp. § 31)\""
+ref_note = "Matthew 21:19-22 and Mark 11:19-25 both read directly against the compiled KJV text; Robertson's own table also lists Luke 21:37-38, but those two verses are a general daily-pattern statement ('in the day time he was teaching in the temple; and at night he went out...') that does not itself recount the fig tree -- omitted per the citation-integrity rule's own 'honest subset' guidance"
+
+[[event]]
+id = "rob_authority_challenged"
+label = "The Sanhedrin formally challenges Jesus's authority"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.21.23-46", "MAT.22.1-14"]
+order_key = 3200
+robertson_section = "Robertson (1922) §132, \"The Rulers (Sanhedrin) Formally Challenge the Authority of Jesus as an Accredited Teacher (Rabbi)\""
+ref_note = "Matthew 21:23-22:14, Mark 11:27-12:12, and Luke 20:1-19 all read directly against the compiled KJV text; Matthew's own range crosses a chapter boundary -- written as two ranges, see event-witnesses.toml"
+
+[[event]]
+id = "rob_tribute_to_caesar"
+label = "The Pharisees and Herodians try to trap Jesus over tribute to Caesar"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.22.15-22"]
+order_key = 3300
+robertson_section = "Robertson (1922) §133, \"The Pharisees and the Herodians Try to Ensnare Jesus about Paying Tribute to Caesar\""
+ref_note = "Matthew 22:15-22, Mark 12:13-17, and Luke 20:20-26 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_sadducees_resurrection"
+label = "The Sadducees ask Jesus a puzzling question about the resurrection"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.22.23-33"]
+order_key = 3400
+robertson_section = "Robertson (1922) §134, \"The Sadducees Ask Him a Puzzling Question about the Resurrection\""
+ref_note = "Matthew 22:23-33, Mark 12:18-27, and Luke 20:27-40 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_great_commandment"
+label = "Jesus names the great commandment"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.22.34-40"]
+order_key = 3500
+robertson_section = "Robertson (1922) §135, \"The Pharisees Rejoice over the Rout of the Sadducees and a Pharisaic Lawyer Asks Jesus a Legal Question\""
+ref_note = "Matthew 22:34-40 and Mark 12:28-34 both read directly against the compiled KJV text; no Luke parallel is listed for this particular occasion"
+
+[[event]]
+id = "rob_davids_son"
+label = "Jesus asks how the Messiah can be both David's son and David's Lord"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.22.41-46"]
+order_key = 3600
+robertson_section = "Robertson (1922) §136, \"Jesus, to the Joy of the Multitude, Silences His Enemies by the Pertinent Question of the Messiah's Descent from David and Lordship over David\""
+ref_note = "Matthew 22:41-46, Mark 12:35-37, and Luke 20:41-44 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_woes_on_scribes"
+label = "Jesus denounces the scribes and Pharisees in his last public discourse"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.23.1-39"]
+order_key = 3700
+robertson_section = "Robertson (1922) §137, \"In His Last Public Discourse, Jesus Solemnly Denounces the Scribes and Pharisees (Comp. § 107)\""
+ref_note = "Matthew 23 (the whole chapter), Mark 12:38-40, and Luke 20:45-47 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_widows_mite"
+label = "Jesus commends the poor widow's gift"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MRK.12.41-44"]
+order_key = 3800
+robertson_section = "Robertson (1922) §138, \"Jesus Closely Observes the Contributions in the Temple, and Commends the Poor Widow's Gift\""
+ref_note = "Mark 12:41-44 and Luke 21:1-4 both read directly against the compiled KJV text; no Matthew parallel is listed for this scene"
+
+[[event]]
+id = "rob_olivet_discourse"
+label = "The great eschatological discourse on the Mount of Olives"
+from_year = 33
+to_year = 33
+places = ["mount-of-olives"]
+verses = ["MRK.13.1-37"]
+order_key = 3900
+robertson_section = "Robertson (1922) §139, \"Sitting on the Mount of Olives, Jesus Speaks to His Disciples about the Destruction of Jerusalem, and His Own Second Coming in Apocalyptic Language. The Great Eschatological Discourse\""
+ref_note = "Matthew 24-25, Mark 13, and Luke 21:5-36 all read directly against the compiled KJV text; Mark's own single-chapter account used as this event's top-level verses (Matthew's own 2-chapter span is written as two same-chapter ranges under its own witness row, see event-witnesses.toml)"
+
+[[event]]
+id = "rob_predicts_crucifixion_timing"
+label = "Jesus predicts his crucifixion two days hence"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.26.1-5"]
+order_key = 4000
+robertson_section = "Robertson (1922) §140, \"Jesus Predicts His Crucifixion Two Days Hence (Jewish Friday)\""
+ref_note = "Matthew 26:1-5, Mark 14:1-2, and Luke 22:1-2 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_judas_bargains"
+label = "Judas bargains with the rulers to betray Jesus"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.26.14-16"]
+order_key = 4100
+robertson_section = "Robertson (1922) §142, \"Judas, Stung by the Rebuke of Jesus at the Feast, Bargains with the Rulers to Betray Jesus\""
+ref_note = "Matthew 26:14-16, Mark 14:10-11, and Luke 22:3-6 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_passover_preparation"
+label = "The preparation for the Passover meal"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.26.17-19"]
+order_key = 4200
+robertson_section = "Robertson (1922) §143, \"The Preparation for the Paschal Meal at the Home of a Friend (Possibly That of John Mark's Father and Mother)\""
+ref_note = "Matthew 26:17-19, Mark 14:12-16, and Luke 22:7-13 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_paschal_meal_begins"
+label = "Jesus partakes of the Passover meal with the Twelve"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.26.20"]
+order_key = 4300
+robertson_section = "Robertson (1922) §144, \"Jesus Partakes of the Paschal Meal with the Twelve Apostles and Rebukes Their Jealousy\""
+ref_note = "Matthew 26:20, Mark 14:17, and Luke 22:14-16/22:24-30 all read directly against the compiled KJV text; Luke's own reference is itself non-contiguous -- written as two ranges under its own witness row, matching Robertson's own citation, see event-witnesses.toml"
+
+[[event]]
+id = "rob_foot_washing"
+label = "Jesus washes the disciples' feet"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["JHN.13.1-20"]
+order_key = 4400
+robertson_section = "Robertson (1922) §145, \"During the Paschal Meal, Jesus Washes the Feet of His Disciples\""
+ref_note = "John 13:1-20 read directly against the compiled KJV text; single witness (John alone)"
+
+[[event]]
+id = "rob_judas_pointed_out"
+label = "Jesus points out Judas as the betrayer"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.26.21-25"]
+order_key = 4500
+robertson_section = "Robertson (1922) §146, \"At the Paschal Meal Jesus Points out Judas as the Betrayer\""
+ref_note = "Matthew 26:21-25, Mark 14:18-21, Luke 22:21-23, and John 13:21-30 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_warns_against_desertion"
+label = "Jesus warns the disciples against desertion; all protest their loyalty"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.26.31-35"]
+order_key = 4600
+robertson_section = "Robertson (1922) §147, \"After the Departure of Judas Jesus Warns the Disciples (Peter in Particular) against Desertion, While All Protest Their Loyalty\""
+ref_note = "Matthew 26:31-35, Mark 14:27-31, Luke 22:31-38, and John 13:31-38 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_lords_supper"
+label = "Jesus institutes the Lord's Supper"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.26.26-29"]
+order_key = 4700
+robertson_section = "Robertson (1922) §148, \"Jesus Institutes the Memorial of Eating Bread and Drinking Wine\""
+ref_note = "Matthew 26:26-29, Mark 14:22-25, and Luke 22:17-20 all read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_farewell_discourse"
+label = "The farewell discourse to the disciples in the upper room"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["JHN.14.1-31"]
+order_key = 4800
+robertson_section = "Robertson (1922) §149, \"The Farewell Discourse to His Disciples in the Upper Room\""
+ref_note = "John 14 (the whole chapter) read directly against the compiled KJV text; single witness (John alone)"
+
+[[event]]
+id = "rob_discourse_to_gethsemane"
+label = "The discourse on the way to Gethsemane: the true vine"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["JHN.15.1-27", "JHN.16.1-33"]
+order_key = 4900
+robertson_section = "Robertson (1922) §150, \"The Discourse on the Way to Gethsemane\""
+ref_note = "John 15-16 read directly against the compiled KJV text; single witness (John alone); written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string"
+
+[[event]]
+id = "rob_intercessory_prayer"
+label = "Christ's intercessory prayer"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["JHN.17.1-26"]
+order_key = 5000
+robertson_section = "Robertson (1922) §151, \"Christ's Intercessory Prayer\""
+ref_note = "John 17 (the whole chapter) read directly against the compiled KJV text; single witness (John alone)"
+
+[[event]]
 id = "pw_bethany"
 label = "Mary anoints Jesus at Bethany"
 from_year = 33
 to_year = 33
 places = ["bethany-1"]
 verses = ["JHN.12.1-11"]
-order_key = 10
+# Batch T2: renumbered 10 -> 1000 (period 9's own ordering fix, giving
+# the SS131-151 insertions between temple_cleansing and gethsemane enough
+# integer room) -- relative order among the 9 pre-existing passion-week
+# legs, including the disclosed Bethany-first exception, is UNCHANGED;
+# only the numeric spacing grew. No test/CONTRACT text asserts an exact
+# order_key value anywhere (checked) -- only relative (from_year,
+# order_key) ordering and event ids are ever asserted on.
+order_key = 1000
 robertson_section = "Robertson (1922) §141, \"At the Feast in the House of Simon the Leper Mary of Bethany Anoints Jesus for His Burial\""
 ref_note = "John 12:1-11, Matthew 26:6-13, Mark 14:3-9 all read directly (see event-witnesses.toml); dated per John 12:1's own explicit 'six days before the passover', kept ahead of the triumphal entry rather than Robertson's own Wednesday placement (a real, disclosed harmonization choice -- see batch-t-report.md)"
 [[event]]
@@ -953,7 +1218,7 @@ from_year = 33
 to_year = 33
 places = ["jerusalem"]
 verses = ["MAT.21.1-11"]
-order_key = 20
+order_key = 2000 # Batch T2: renumbered 20 -> 2000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §128b, \"His Triumphal Entry into Jerusalem as the Messiah\""
 ref_note = "Matthew 21:1-11, Mark 11:1-11, Luke 19:29-44, John 12:12-19 all read directly (see event-witnesses.toml)"
 # Batch T requirement 5/7 (req 7's own "chronological-vs-reading-order" test):
@@ -975,7 +1240,7 @@ from_year = 33
 to_year = 33
 places = ["jerusalem"]
 verses = ["MAT.21.12-13"]
-order_key = 30
+order_key = 3000 # Batch T2: renumbered 30 -> 3000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §129, \"The Barren Fig Tree Cursed, and the Second Cleansing of the Temple\""
 ref_note = "Matthew 21:12-13, Mark 11:15-18, Luke 19:45-48 all read directly (see event-witnesses.toml); witnesses scoped to the cleansing itself, not Mark/Matthew's own fig-tree-cursing motif (a related but textually distinct pericope this batch does not separately model)"
 [[event]]
@@ -985,7 +1250,7 @@ from_year = 33
 to_year = 33
 places = ["gethsemane"]
 verses = ["MAT.26.36-56"]
-order_key = 40
+order_key = 6000 # Batch T2: renumbered 40 -> 6000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §152, \"Going Forth to Gethsemane, Jesus Suffers Long in Agony\""
 ref_note = "Matthew 26:36-56, Mark 14:32-52, Luke 22:39-53, John 18:1-12 all read directly (see event-witnesses.toml)"
 # places: brief flagged "golgotha" as a likely-missing slug (suggesting
@@ -1000,7 +1265,7 @@ from_year = 33
 to_year = 33
 places = ["golgotha"]
 verses = ["JHN.19.16-30"]
-order_key = 50
+order_key = 7000 # Batch T2: renumbered 50 -> 7000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §164, \"The First Three Hours on the Cross\""
 ref_note = "Matthew 27:33-50, Mark 15:22-37, Luke 23:33-46, John 19:17-30 all read directly (see event-witnesses.toml); Robertson's own §164 covers only the first three hours of a longer sequence of Harmony sections -- this app's own coarser 'event' groups the whole crucifixion scene per Gospel, a disclosed widening of Robertson's own narrower section boundary, not a mis-citation"
 [[event]]
@@ -1010,7 +1275,7 @@ from_year = 33
 to_year = 33
 places = ["jerusalem"]
 verses = ["MAT.28.1-10"]
-order_key = 60
+order_key = 8000 # Batch T2: renumbered 60 -> 8000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §171, \"The Visit of the Women to the Tomb of Jesus about Sunrise Sunday Morning and the Message of the Angels about the Empty Tomb\""
 ref_note = "Matthew 28:1-10 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml)"
 [[event]]
@@ -1020,7 +1285,7 @@ from_year = 33
 to_year = 33
 places = ["emmaus"]
 verses = ["LUK.24.13-35"]
-order_key = 70
+order_key = 9000 # Batch T2: renumbered 70 -> 9000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §176, \"The Appearance to Two Disciples (Cleopas and Another) on the Way to Emmaus\""
 ref_note = "Luke 24:13-35 read directly; Robertson also lists Mark 16:12-13 (a two-verse mention in Mark's disputed longer ending) but this event is curated single-witness (Luke alone) -- requirement 4's own 'no parallel framing when n=1' case"
 # places: brief guessed "galilee", but geo ancient.jsonl collides into
@@ -1035,7 +1300,7 @@ from_year = 33
 to_year = 33
 places = ["galilee-1"]
 verses = ["MAT.28.16-20"]
-order_key = 80
+order_key = 10000 # Batch T2: renumbered 80 -> 10000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §181, \"The Appearance to about Five Hundred on an Appointed Mountain in Galilee, and a Commission Given\""
 ref_note = "Matthew 28:16-20, Mark 16:15-18 read directly (see event-witnesses.toml); Robertson also lists 1 Corinthians 15:6, outside this app's Gospels+Acts witness scope"
 [[event]]
@@ -1045,7 +1310,7 @@ from_year = 33
 to_year = 33
 places = ["mount-of-olives"]
 verses = ["ACT.1.9-12"]
-order_key = 90
+order_key = 11000 # Batch T2: renumbered 90 -> 11000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §184, \"The Last Appearance and the Ascension\""
 ref_note = "Acts 1:9-12, Luke 24:50-53 read directly (see event-witnesses.toml); Robertson also lists Mark 16:19-20 (Mark's own disputed longer ending), omitted here -- Luke/Acts (same author) already give two solid, undisputed witnesses"
 

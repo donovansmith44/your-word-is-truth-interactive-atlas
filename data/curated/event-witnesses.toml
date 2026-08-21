@@ -868,6 +868,217 @@ verses = ["LUK.9.57-62"]
 ref_note = "Luke 9:57-62 read directly against the compiled KJV text"
 robertson_section = "Robertson (1922) §93"
 
+# --- Period 9: SS128a, 130-151 (minus S129/S141/S152 already curated) ------
+[[witness]]
+event_id = "rob_authority_challenged"
+book = "MRK"
+verses = ["MRK.11.27-33", "MRK.12.1-12"]
+ref_note = "Mark 11:27-12:12 read directly against the compiled KJV text; written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string"
+robertson_section = "Robertson (1922) §132"
+
+[[witness]]
+event_id = "rob_authority_challenged"
+book = "LUK"
+verses = ["LUK.20.1-19"]
+ref_note = "Luke 20:1-19 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §132"
+
+[[witness]]
+event_id = "rob_tribute_to_caesar"
+book = "MRK"
+verses = ["MRK.12.13-17"]
+ref_note = "Mark 12:13-17 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §133"
+
+[[witness]]
+event_id = "rob_tribute_to_caesar"
+book = "LUK"
+verses = ["LUK.20.20-26"]
+ref_note = "Luke 20:20-26 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §133"
+
+[[witness]]
+event_id = "rob_sadducees_resurrection"
+book = "MRK"
+verses = ["MRK.12.18-27"]
+ref_note = "Mark 12:18-27 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §134"
+
+[[witness]]
+event_id = "rob_sadducees_resurrection"
+book = "LUK"
+verses = ["LUK.20.27-40"]
+ref_note = "Luke 20:27-40 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §134"
+
+[[witness]]
+event_id = "rob_great_commandment"
+book = "MRK"
+verses = ["MRK.12.28-34"]
+ref_note = "Mark 12:28-34 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §135"
+
+[[witness]]
+event_id = "rob_davids_son"
+book = "MRK"
+verses = ["MRK.12.35-37"]
+ref_note = "Mark 12:35-37 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §136"
+
+[[witness]]
+event_id = "rob_davids_son"
+book = "LUK"
+verses = ["LUK.20.41-44"]
+ref_note = "Luke 20:41-44 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §136"
+
+[[witness]]
+event_id = "rob_woes_on_scribes"
+book = "MRK"
+verses = ["MRK.12.38-40"]
+ref_note = "Mark 12:38-40 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §137"
+
+[[witness]]
+event_id = "rob_woes_on_scribes"
+book = "LUK"
+verses = ["LUK.20.45-47"]
+ref_note = "Luke 20:45-47 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §137"
+
+[[witness]]
+event_id = "rob_widows_mite"
+book = "LUK"
+verses = ["LUK.21.1-4"]
+ref_note = "Luke 21:1-4 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §138"
+
+[[witness]]
+event_id = "rob_olivet_discourse"
+book = "MAT"
+verses = ["MAT.24.1-51", "MAT.25.1-46"]
+ref_note = "Matthew 24-25 read directly against the compiled KJV text; written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string"
+robertson_section = "Robertson (1922) §139"
+
+[[witness]]
+event_id = "rob_olivet_discourse"
+book = "LUK"
+verses = ["LUK.21.5-36"]
+ref_note = "Luke 21:5-36 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §139"
+
+[[witness]]
+event_id = "rob_predicts_crucifixion_timing"
+book = "MRK"
+verses = ["MRK.14.1-2"]
+ref_note = "Mark 14:1-2 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §140"
+
+[[witness]]
+event_id = "rob_predicts_crucifixion_timing"
+book = "LUK"
+verses = ["LUK.22.1-2"]
+ref_note = "Luke 22:1-2 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §140"
+
+[[witness]]
+event_id = "rob_judas_bargains"
+book = "MRK"
+verses = ["MRK.14.10-11"]
+ref_note = "Mark 14:10-11 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §142"
+
+[[witness]]
+event_id = "rob_judas_bargains"
+book = "LUK"
+verses = ["LUK.22.3-6"]
+ref_note = "Luke 22:3-6 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §142"
+
+[[witness]]
+event_id = "rob_passover_preparation"
+book = "MRK"
+verses = ["MRK.14.12-16"]
+ref_note = "Mark 14:12-16 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §143"
+
+[[witness]]
+event_id = "rob_passover_preparation"
+book = "LUK"
+verses = ["LUK.22.7-13"]
+ref_note = "Luke 22:7-13 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §143"
+
+[[witness]]
+event_id = "rob_paschal_meal_begins"
+book = "MRK"
+verses = ["MRK.14.17"]
+ref_note = "Mark 14:17 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §144"
+
+[[witness]]
+event_id = "rob_paschal_meal_begins"
+book = "LUK"
+verses = ["LUK.22.14-16", "LUK.22.24-30"]
+ref_note = "Luke 22:14-16, 24-30 read directly against the compiled KJV text; Luke's own reference is itself non-contiguous (22:17-23, the cup and the betrayer prediction, are Robertson's own separate sections, curated as rob_lords_supper/rob_judas_pointed_out below) -- written as two ranges, matching Robertson's own citation"
+robertson_section = "Robertson (1922) §144"
+
+[[witness]]
+event_id = "rob_judas_pointed_out"
+book = "MRK"
+verses = ["MRK.14.18-21"]
+ref_note = "Mark 14:18-21 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §146"
+
+[[witness]]
+event_id = "rob_judas_pointed_out"
+book = "LUK"
+verses = ["LUK.22.21-23"]
+ref_note = "Luke 22:21-23 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §146"
+
+[[witness]]
+event_id = "rob_judas_pointed_out"
+book = "JHN"
+verses = ["JHN.13.21-30"]
+ref_note = "John 13:21-30 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §146"
+
+[[witness]]
+event_id = "rob_warns_against_desertion"
+book = "MRK"
+verses = ["MRK.14.27-31"]
+ref_note = "Mark 14:27-31 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §147"
+
+[[witness]]
+event_id = "rob_warns_against_desertion"
+book = "LUK"
+verses = ["LUK.22.31-38"]
+ref_note = "Luke 22:31-38 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §147"
+
+[[witness]]
+event_id = "rob_warns_against_desertion"
+book = "JHN"
+verses = ["JHN.13.31-38"]
+ref_note = "John 13:31-38 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §147"
+
+[[witness]]
+event_id = "rob_lords_supper"
+book = "MRK"
+verses = ["MRK.14.22-25"]
+ref_note = "Mark 14:22-25 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §148"
+
+[[witness]]
+event_id = "rob_lords_supper"
+book = "LUK"
+verses = ["LUK.22.17-20"]
+ref_note = "Luke 22:17-20 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §148"
+
 # --- Period 8: SS112-127 -----------------------------------------------------
 [[witness]]
 event_id = "rob_teaching_on_divorce"
