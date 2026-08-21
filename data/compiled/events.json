@@ -29781,6 +29781,239 @@
     "order_key": 1110
   },
   {
+    "id": "rob_withdrawal_beyond_jordan",
+    "label": "Jesus withdraws to Bethany beyond Jordan",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "bethany-2"
+    ],
+    "verses": [
+      "JHN.10.40",
+      "JHN.10.41",
+      "JHN.10.42"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §112, \"The Withdrawal from Jerusalem to Bethany beyond Jordan\"",
+    "ref_note": "John 10:40-42 read directly against the compiled KJV text; single witness (John alone); the same site as rob_sanhedrin_testimony (S26), John's own baptizing site",
+    "order_key": 1120
+  },
+  {
+    "id": "rob_teaching_in_perea",
+    "label": "Jesus teaches on the journey through Perea",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.13.22",
+      "LUK.13.23",
+      "LUK.13.24",
+      "LUK.13.25",
+      "LUK.13.26",
+      "LUK.13.27",
+      "LUK.13.28",
+      "LUK.13.29",
+      "LUK.13.30",
+      "LUK.13.31",
+      "LUK.13.32",
+      "LUK.13.33",
+      "LUK.13.34",
+      "LUK.13.35"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §113, \"Teaching in Perea, on a Journey toward Jerusalem, Warned against Herod Antipas\"",
+    "ref_note": "Luke 13:22-35 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 1130
+  },
+  {
+    "id": "rob_pharisee_dinner_parables",
+    "label": "Dining with a chief Pharisee, Jesus tells three parables",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.14.1",
+      "LUK.14.2",
+      "LUK.14.3",
+      "LUK.14.4",
+      "LUK.14.5",
+      "LUK.14.6",
+      "LUK.14.7",
+      "LUK.14.8",
+      "LUK.14.9",
+      "LUK.14.10",
+      "LUK.14.11",
+      "LUK.14.12",
+      "LUK.14.13",
+      "LUK.14.14",
+      "LUK.14.15",
+      "LUK.14.16",
+      "LUK.14.17",
+      "LUK.14.18",
+      "LUK.14.19",
+      "LUK.14.20",
+      "LUK.14.21",
+      "LUK.14.22",
+      "LUK.14.23",
+      "LUK.14.24"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §114, \"While Dining (Breakfasting) with a Chief Pharisee, He Again Heals on the Sabbath and Defends Himself (Comp. §§ 49 to 51 and 110) Three Parables Suggested by the Occasion\"",
+    "ref_note": "Luke 14:1-24 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 1140
+  },
+  {
+    "id": "rob_cost_of_discipleship_2",
+    "label": "Jesus warns great crowds to count the cost of discipleship",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.14.25",
+      "LUK.14.26",
+      "LUK.14.27",
+      "LUK.14.28",
+      "LUK.14.29",
+      "LUK.14.30",
+      "LUK.14.31",
+      "LUK.14.32",
+      "LUK.14.33",
+      "LUK.14.34",
+      "LUK.14.35"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §115, \"Great Crowds Follow Him, and He Warns Them to Count the Cost of Discipleship to Him (Comp. §§ 70 and 83)\"",
+    "ref_note": "Luke 14:25-35 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 1150
+  },
+  {
+    "id": "rob_lost_sheep_coin_son",
+    "label": "The parables of the lost sheep, the lost coin, and the lost son",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.15.1",
+      "LUK.15.2",
+      "LUK.15.3",
+      "LUK.15.4",
+      "LUK.15.5",
+      "LUK.15.6",
+      "LUK.15.7",
+      "LUK.15.8",
+      "LUK.15.9",
+      "LUK.15.10",
+      "LUK.15.11",
+      "LUK.15.12",
+      "LUK.15.13",
+      "LUK.15.14",
+      "LUK.15.15",
+      "LUK.15.16",
+      "LUK.15.17",
+      "LUK.15.18",
+      "LUK.15.19",
+      "LUK.15.20",
+      "LUK.15.21",
+      "LUK.15.22",
+      "LUK.15.23",
+      "LUK.15.24",
+      "LUK.15.25",
+      "LUK.15.26",
+      "LUK.15.27",
+      "LUK.15.28",
+      "LUK.15.29",
+      "LUK.15.30",
+      "LUK.15.31",
+      "LUK.15.32"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §116, \"The Pharisees and the Scribes Murmur against Jesus for Receiving Sinners. He Defends Himself by Three Great Parables (the Lost Sheep, the Lost Coin, the Lost Son)\"",
+    "ref_note": "Luke 15 (the whole chapter) read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 1160
+  },
+  {
+    "id": "rob_stewardship_parables",
+    "label": "Three parables on stewardship",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.16.1",
+      "LUK.16.2",
+      "LUK.16.3",
+      "LUK.16.4",
+      "LUK.16.5",
+      "LUK.16.6",
+      "LUK.16.7",
+      "LUK.16.8",
+      "LUK.16.9",
+      "LUK.16.10",
+      "LUK.16.11",
+      "LUK.16.12",
+      "LUK.16.13",
+      "LUK.16.14",
+      "LUK.16.15",
+      "LUK.16.16",
+      "LUK.16.17",
+      "LUK.16.18",
+      "LUK.16.19",
+      "LUK.16.20",
+      "LUK.16.21",
+      "LUK.16.22",
+      "LUK.16.23",
+      "LUK.16.24",
+      "LUK.16.25",
+      "LUK.16.26",
+      "LUK.16.27",
+      "LUK.16.28",
+      "LUK.16.29",
+      "LUK.16.30",
+      "LUK.16.31",
+      "LUK.17.1",
+      "LUK.17.2",
+      "LUK.17.3",
+      "LUK.17.4",
+      "LUK.17.5",
+      "LUK.17.6",
+      "LUK.17.7",
+      "LUK.17.8",
+      "LUK.17.9",
+      "LUK.17.10"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §117, \"Three Parables on Stewardship (to the Disciples, the Parable of the Unjust Steward; to the Pharisees, the Parable of the Rich Man and Lazarus; to the Disciples, the Parable of the Unprofitable Servants)\"",
+    "ref_note": "Luke 16:1-17:10 read directly against the compiled KJV text; single witness (Luke alone); written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string",
+    "order_key": 1170
+  },
+  {
     "id": "jm_jericho",
     "label": "Jesus calls Zacchaeus at Jericho",
     "when": {
@@ -29804,9 +30037,9 @@
     ],
     "kind": "event",
     "witnesses": [],
-    "robertson_section": null,
-    "ref_note": null,
-    "order_key": 0
+    "robertson_section": "Robertson (1922) §127, \"Jesus Visits Zacchæus, and Speaks the Parable of the Pounds, and Sets out for Jerusalem\"",
+    "ref_note": "Luke 19:1-10 read directly against the compiled KJV text; see rob_parable_of_pounds for the companion teaching Robertson's own §127 also covers",
+    "order_key": 1270
   },
   {
     "id": "jm_bethany",
@@ -29825,7 +30058,7 @@
     "witnesses": [],
     "robertson_section": null,
     "ref_note": null,
-    "order_key": 0
+    "order_key": 1280
   },
   {
     "id": "pw_bethany",
@@ -30602,6 +30835,530 @@
     "robertson_section": "Robertson (1922) §184, \"The Last Appearance and the Ascension\"",
     "ref_note": "Acts 1:9-12, Luke 24:50-53 read directly (see event-witnesses.toml); Robertson also lists Mark 16:19-20 (Mark's own disputed longer ending), omitted here -- Luke/Acts (same author) already give two solid, undisputed witnesses",
     "order_key": 90
+  },
+  {
+    "id": "rob_lazarus_raised",
+    "label": "Jesus raises Lazarus from the dead",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "bethany-1"
+    ],
+    "verses": [
+      "JHN.11.1",
+      "JHN.11.2",
+      "JHN.11.3",
+      "JHN.11.4",
+      "JHN.11.5",
+      "JHN.11.6",
+      "JHN.11.7",
+      "JHN.11.8",
+      "JHN.11.9",
+      "JHN.11.10",
+      "JHN.11.11",
+      "JHN.11.12",
+      "JHN.11.13",
+      "JHN.11.14",
+      "JHN.11.15",
+      "JHN.11.16",
+      "JHN.11.17",
+      "JHN.11.18",
+      "JHN.11.19",
+      "JHN.11.20",
+      "JHN.11.21",
+      "JHN.11.22",
+      "JHN.11.23",
+      "JHN.11.24",
+      "JHN.11.25",
+      "JHN.11.26",
+      "JHN.11.27",
+      "JHN.11.28",
+      "JHN.11.29",
+      "JHN.11.30",
+      "JHN.11.31",
+      "JHN.11.32",
+      "JHN.11.33",
+      "JHN.11.34",
+      "JHN.11.35",
+      "JHN.11.36",
+      "JHN.11.37",
+      "JHN.11.38",
+      "JHN.11.39",
+      "JHN.11.40",
+      "JHN.11.41",
+      "JHN.11.42",
+      "JHN.11.43",
+      "JHN.11.44"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §118, \"Jesus Raises Lazarus from the Dead\"",
+    "ref_note": "John 11:1-44 read directly against the compiled KJV text; single witness (John alone); the batch's own AD 32->33 boundary is placed here -- see this period's own header comment",
+    "order_key": 1180
+  },
+  {
+    "id": "rob_lazarus_effect",
+    "label": "The Sanhedrin resolves to kill Jesus after Lazarus's raising",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.11.45",
+      "JHN.11.46",
+      "JHN.11.47",
+      "JHN.11.48",
+      "JHN.11.49",
+      "JHN.11.50",
+      "JHN.11.51",
+      "JHN.11.52",
+      "JHN.11.53",
+      "JHN.11.54"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §119, \"The Effect of the Raising of Lazarus (on the People, on the Sanhedrin, on the Movements of Jesus)\"",
+    "ref_note": "John 11:45-54 read directly against the compiled KJV text; single witness (John alone); the section's own title spans three effects in three places -- scoped here to the Sanhedrin's own formal decision (11:47-53), the dominant scene; the verses field's own closing verse (11:54) also covers Jesus's own withdrawal to Ephraim (a real compiled place, ephraim-1/2/3, not used as the anchor here since the council decision is this section's own narrative weight)",
+    "order_key": 1190
+  },
+  {
+    "id": "rob_last_journey_begins",
+    "label": "Jesus starts the last journey to Jerusalem, through Samaria and Galilee",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "samaria-2"
+    ],
+    "verses": [
+      "LUK.17.11",
+      "LUK.17.12",
+      "LUK.17.13",
+      "LUK.17.14",
+      "LUK.17.15",
+      "LUK.17.16",
+      "LUK.17.17",
+      "LUK.17.18",
+      "LUK.17.19",
+      "LUK.17.20",
+      "LUK.17.21",
+      "LUK.17.22",
+      "LUK.17.23",
+      "LUK.17.24",
+      "LUK.17.25",
+      "LUK.17.26",
+      "LUK.17.27",
+      "LUK.17.28",
+      "LUK.17.29",
+      "LUK.17.30",
+      "LUK.17.31",
+      "LUK.17.32",
+      "LUK.17.33",
+      "LUK.17.34",
+      "LUK.17.35",
+      "LUK.17.36",
+      "LUK.17.37"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §120, \"Jesus Starts on the Last Journey to Jerusalem by Way of Samaria and Galilee\"",
+    "ref_note": "Luke 17:11-37 read directly against the compiled KJV text; single witness (Luke alone); the text names Samaria first (17:11)",
+    "order_key": 1200
+  },
+  {
+    "id": "rob_prayer_parables",
+    "label": "Two parables on prayer: the persistent widow and the publican",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.18.1",
+      "LUK.18.2",
+      "LUK.18.3",
+      "LUK.18.4",
+      "LUK.18.5",
+      "LUK.18.6",
+      "LUK.18.7",
+      "LUK.18.8",
+      "LUK.18.9",
+      "LUK.18.10",
+      "LUK.18.11",
+      "LUK.18.12",
+      "LUK.18.13",
+      "LUK.18.14"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §121, \"Two Parables on Prayer (the Importunate Widow, the Pharisee and the Publican)\"",
+    "ref_note": "Luke 18:1-14 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 1210
+  },
+  {
+    "id": "rob_teaching_on_divorce",
+    "label": "Jesus teaches on divorce, going through Perea",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "MAT.19.1",
+      "MAT.19.2",
+      "MAT.19.3",
+      "MAT.19.4",
+      "MAT.19.5",
+      "MAT.19.6",
+      "MAT.19.7",
+      "MAT.19.8",
+      "MAT.19.9",
+      "MAT.19.10",
+      "MAT.19.11",
+      "MAT.19.12"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.10.1",
+            "MRK.10.2",
+            "MRK.10.3",
+            "MRK.10.4",
+            "MRK.10.5",
+            "MRK.10.6",
+            "MRK.10.7",
+            "MRK.10.8",
+            "MRK.10.9",
+            "MRK.10.10",
+            "MRK.10.11",
+            "MRK.10.12"
+          ]
+        },
+        "ref_note": "Mark 10:1-12 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §122"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §122, \"Going from Galilee through Perea, He Teaches concerning Divorce\"",
+    "ref_note": "Matthew 19:1-12 and Mark 10:1-12 both read directly against the compiled KJV text; both name 'the coasts of Judea' beyond Jordan",
+    "order_key": 1220
+  },
+  {
+    "id": "rob_christ_and_children",
+    "label": "Christ blesses the children brought to him",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "MAT.19.13",
+      "MAT.19.14",
+      "MAT.19.15"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.10.13",
+            "MRK.10.14",
+            "MRK.10.15",
+            "MRK.10.16"
+          ]
+        },
+        "ref_note": "Mark 10:13-16 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §123"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.18.15",
+            "LUK.18.16",
+            "LUK.18.17"
+          ]
+        },
+        "ref_note": "Luke 18:15-17 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §123"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §123, \"Christ and Children and the Failure of the Disciples to Understand the Attitude of Jesus\"",
+    "ref_note": "Matthew 19:13-15, Mark 10:13-16, and Luke 18:15-17 all read directly against the compiled KJV text",
+    "order_key": 1230
+  },
+  {
+    "id": "rob_rich_young_ruler",
+    "label": "The rich young ruler and the perils of riches",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "MAT.19.16",
+      "MAT.19.17",
+      "MAT.19.18",
+      "MAT.19.19",
+      "MAT.19.20",
+      "MAT.19.21",
+      "MAT.19.22",
+      "MAT.19.23",
+      "MAT.19.24",
+      "MAT.19.25",
+      "MAT.19.26",
+      "MAT.19.27",
+      "MAT.19.28",
+      "MAT.19.29",
+      "MAT.19.30",
+      "MAT.20.1",
+      "MAT.20.2",
+      "MAT.20.3",
+      "MAT.20.4",
+      "MAT.20.5",
+      "MAT.20.6",
+      "MAT.20.7",
+      "MAT.20.8",
+      "MAT.20.9",
+      "MAT.20.10",
+      "MAT.20.11",
+      "MAT.20.12",
+      "MAT.20.13",
+      "MAT.20.14",
+      "MAT.20.15",
+      "MAT.20.16"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.10.17",
+            "MRK.10.18",
+            "MRK.10.19",
+            "MRK.10.20",
+            "MRK.10.21",
+            "MRK.10.22",
+            "MRK.10.23",
+            "MRK.10.24",
+            "MRK.10.25",
+            "MRK.10.26",
+            "MRK.10.27",
+            "MRK.10.28",
+            "MRK.10.29",
+            "MRK.10.30",
+            "MRK.10.31"
+          ]
+        },
+        "ref_note": "Mark 10:17-31 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §124"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.18.18",
+            "LUK.18.19",
+            "LUK.18.20",
+            "LUK.18.21",
+            "LUK.18.22",
+            "LUK.18.23",
+            "LUK.18.24",
+            "LUK.18.25",
+            "LUK.18.26",
+            "LUK.18.27",
+            "LUK.18.28",
+            "LUK.18.29",
+            "LUK.18.30"
+          ]
+        },
+        "ref_note": "Luke 18:18-30 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §124"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §124, \"The Rich Young Ruler, the Perils of Riches, and Amazement of the Disciples. The Rewards of Forsaking All to Follow the Messiah Will Be Great, but Will Be Sovereign (Parable of the Laborers in the Vineyard)\"",
+    "ref_note": "Matthew 19:16-20:16, Mark 10:17-31, and Luke 18:18-30 all read directly against the compiled KJV text; Matthew's own range crosses a chapter boundary -- written as two ranges, see event-witnesses.toml",
+    "order_key": 1240
+  },
+  {
+    "id": "rob_foretells_death_3",
+    "label": "Jesus foretells his death a third time; James and John rebuked",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "MAT.20.17",
+      "MAT.20.18",
+      "MAT.20.19",
+      "MAT.20.20",
+      "MAT.20.21",
+      "MAT.20.22",
+      "MAT.20.23",
+      "MAT.20.24",
+      "MAT.20.25",
+      "MAT.20.26",
+      "MAT.20.27",
+      "MAT.20.28"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.10.32",
+            "MRK.10.33",
+            "MRK.10.34",
+            "MRK.10.35",
+            "MRK.10.36",
+            "MRK.10.37",
+            "MRK.10.38",
+            "MRK.10.39",
+            "MRK.10.40",
+            "MRK.10.41",
+            "MRK.10.42",
+            "MRK.10.43",
+            "MRK.10.44",
+            "MRK.10.45"
+          ]
+        },
+        "ref_note": "Mark 10:32-45 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §125"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.18.31",
+            "LUK.18.32",
+            "LUK.18.33",
+            "LUK.18.34"
+          ]
+        },
+        "ref_note": "Luke 18:31-34 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §125"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §125, \"Jesus Again Foretells to the Disciples His Death and Resurrection (Comp. §§ 83, 85, 86, 88), and Rebukes the Selfish Ambition of James and John\"",
+    "ref_note": "Matthew 20:17-28, Mark 10:32-45, and Luke 18:31-34 all read directly against the compiled KJV text",
+    "order_key": 1250
+  },
+  {
+    "id": "rob_blind_bartimaeus",
+    "label": "Blind Bartimaeus healed at Jericho",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jericho-2"
+    ],
+    "verses": [
+      "MAT.20.29",
+      "MAT.20.30",
+      "MAT.20.31",
+      "MAT.20.32",
+      "MAT.20.33",
+      "MAT.20.34"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.10.46",
+            "MRK.10.47",
+            "MRK.10.48",
+            "MRK.10.49",
+            "MRK.10.50",
+            "MRK.10.51",
+            "MRK.10.52"
+          ]
+        },
+        "ref_note": "Mark 10:46-52 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §126"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.18.35",
+            "LUK.18.36",
+            "LUK.18.37",
+            "LUK.18.38",
+            "LUK.18.39",
+            "LUK.18.40",
+            "LUK.18.41",
+            "LUK.18.42",
+            "LUK.18.43"
+          ]
+        },
+        "ref_note": "Luke 18:35-43 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §126"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §126, \"Blind Bartimæus and His Companion Healed\"",
+    "ref_note": "Matthew 20:29-34, Mark 10:46-52, and Luke 18:35-43 all read directly against the compiled KJV text; all three name Jericho, the same jericho-2 already established for jm_jericho",
+    "order_key": 1260
+  },
+  {
+    "id": "rob_parable_of_pounds",
+    "label": "The parable of the pounds, on the way out of Jericho",
+    "when": {
+      "from_year": 33,
+      "to_year": 33
+    },
+    "places": [
+      "jericho-2"
+    ],
+    "verses": [
+      "LUK.19.11",
+      "LUK.19.12",
+      "LUK.19.13",
+      "LUK.19.14",
+      "LUK.19.15",
+      "LUK.19.16",
+      "LUK.19.17",
+      "LUK.19.18",
+      "LUK.19.19",
+      "LUK.19.20",
+      "LUK.19.21",
+      "LUK.19.22",
+      "LUK.19.23",
+      "LUK.19.24",
+      "LUK.19.25",
+      "LUK.19.26",
+      "LUK.19.27",
+      "LUK.19.28"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §127, \"Jesus Visits Zacchæus, and Speaks the Parable of the Pounds, and Sets out for Jerusalem\"",
+    "ref_note": "Luke 19:11-28 read directly against the compiled KJV text; single witness (Luke alone); split out from jm_jericho (enriched with this SAME robertson_section further up this file, LUK.19.1-10, the Zacchaeus encounter itself, pre-existing Task 3) -- Robertson's own §127 covers both the Zacchaeus encounter and the parable that follows it, a real, deliberate split into two titled containers (a parable is a distinct teaching unit from the narrative encounter that occasions it), not a duplication",
+    "order_key": 1275
   },
   {
     "id": "theo-327",

@@ -867,3 +867,67 @@ book = "LUK"
 verses = ["LUK.9.57-62"]
 ref_note = "Luke 9:57-62 read directly against the compiled KJV text"
 robertson_section = "Robertson (1922) §93"
+
+# --- Period 8: SS112-127 -----------------------------------------------------
+[[witness]]
+event_id = "rob_teaching_on_divorce"
+book = "MRK"
+verses = ["MRK.10.1-12"]
+ref_note = "Mark 10:1-12 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §122"
+
+[[witness]]
+event_id = "rob_christ_and_children"
+book = "MRK"
+verses = ["MRK.10.13-16"]
+ref_note = "Mark 10:13-16 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §123"
+
+[[witness]]
+event_id = "rob_christ_and_children"
+book = "LUK"
+verses = ["LUK.18.15-17"]
+ref_note = "Luke 18:15-17 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §123"
+
+[[witness]]
+event_id = "rob_rich_young_ruler"
+book = "MRK"
+verses = ["MRK.10.17-31"]
+ref_note = "Mark 10:17-31 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §124"
+
+[[witness]]
+event_id = "rob_rich_young_ruler"
+book = "LUK"
+verses = ["LUK.18.18-30"]
+ref_note = "Luke 18:18-30 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §124"
+
+[[witness]]
+event_id = "rob_foretells_death_3"
+book = "MRK"
+verses = ["MRK.10.32-45"]
+ref_note = "Mark 10:32-45 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §125"
+
+[[witness]]
+event_id = "rob_foretells_death_3"
+book = "LUK"
+verses = ["LUK.18.31-34"]
+ref_note = "Luke 18:31-34 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §125"
+
+[[witness]]
+event_id = "rob_blind_bartimaeus"
+book = "MRK"
+verses = ["MRK.10.46-52"]
+ref_note = "Mark 10:46-52 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §126"
+
+[[witness]]
+event_id = "rob_blind_bartimaeus"
+book = "LUK"
+verses = ["LUK.18.35-43"]
+ref_note = "Luke 18:35-43 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §126"
