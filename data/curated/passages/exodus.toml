@@ -12,8 +12,8 @@
 # EXO.25.1-33.23) is deliberately left UN-enriched: its own span mixes the
 # tabernacle instructions (25-31) with the wholly separate golden-calf
 # apostasy (32-33), a coarse, mis-scoped grouping for a single reader
-# heading -- this batch's own finer containers below (gen_tabernacle_
-# instructions, gen_golden_calf, gen_moses_intercedes) cover that same
+# heading -- this batch's own finer containers below (exo_tabernacle_
+# instructions, exo_golden_calf, exo_moses_intercedes) cover that same
 # range with real natural-scene granularity instead; theo-128 stays legal
 # background coverage (still reachable via the verse's own EVENT
 # membership), never duplicated content, just not the heading winner.

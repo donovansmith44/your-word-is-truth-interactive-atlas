@@ -63,12 +63,40 @@ async function markerCenters(page: Page, ids: string[]): Promise<Map<string, { x
   return centers;
 }
 
+// Batch W1 self-review finding: a candidate's MARKER (dot) having no close
+// neighbor (the check below) does NOT mean its own LABEL is safe to force a
+// hover/click onto -- labels go through a SEPARATE, coarser collision-
+// damping pass (map.js's own COLLISION_CELL_PX 72px grid, keyed off each
+// label's own on-screen anchor, competing against every OTHER lit place's
+// label AND every landmark/quiet-place label in the scene, not just this
+// caller's own candidate pool) and can be hidden even when the dot itself
+// is well clear of every other dot -- a real, live case, not a hypothetical:
+// in the exodus window (-1446..-1406, WORLD-1's own reference scene),
+// Hebron's own marker sits with no other DOT within 26px, yet 9 of the
+// scene's 20 place labels (including Hebron's) are hidden by collision
+// damping at that scene's natural zoom -- confirmed via a throwaway
+// diagnostic script reading `.atlas-label`'s own `visibility`, not assumed.
+// Checked here too (in addition to the marker-proximity check below) so a
+// caller forcing a hover/click onto a LABEL specifically (world-labels.spec.ts)
+// never lands on a place whose label collision-damping already dropped --
+// harmless for a caller that only ever targets the DOT (a hidden label
+// simply narrows the safe pool a little further, never widens it past what
+// was already correct).
+async function labelIsVisible(page: Page, id: string): Promise<boolean> {
+  const label = page.getByTestId(`marker-${id}`).locator('.atlas-label, .quiet-label');
+  if ((await label.count()) === 0) {
+    return true; // no label at all for this marker kind -- nothing to hide, not this check's concern
+  }
+  return label.first().isVisible();
+}
+
 // Every id in `ids` whose real rendered marker center is at least
 // SAFE_NEIGHBOR_PX away from every OTHER id's own center, on the page as
-// currently rendered. `ids` is deliberately the caller's own candidate
-// pool (not necessarily every place in the scene) so a caller already
-// filtering by some other criterion (e.g. "has a place-card-more button")
-// only pays for measuring the markers it actually cares about.
+// currently rendered, AND whose own label (if any) survived collision
+// damping. `ids` is deliberately the caller's own candidate pool (not
+// necessarily every place in the scene) so a caller already filtering by
+// some other criterion (e.g. "has a place-card-more button") only pays for
+// measuring the markers it actually cares about.
 export async function independentlyHoverableIds(page: Page, ids: string[]): Promise<Set<string>> {
   const centers = await markerCenters(page, ids);
   const safe = new Set<string>();
@@ -84,7 +112,7 @@ export async function independentlyHoverableIds(page: Page, ids: string[]): Prom
       const b = centers.get(otherId);
       return !b || Math.hypot(a.x - b.x, a.y - b.y) >= SAFE_NEIGHBOR_PX;
     });
-    if (clear) {
+    if (clear && (await labelIsVisible(page, id))) {
       safe.add(id);
     }
   }
