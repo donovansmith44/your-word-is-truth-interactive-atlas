@@ -12,8 +12,12 @@
    colliding testids: "" (VerseTextSection's own usage) reproduces the
    EXACT original bare testids (popover-verse-expand/-reader/-reader-verse-{n})
    byte for byte, so nothing that already asserts against those breaks;
-   a non-empty suffix (PassageList.razor passes each block's own span,
-   "-GEN.1.1-3") scopes a NEW instance's own controls uniquely. *@
+   a non-empty suffix (PassageList.razor passes "-{entry.TestId}", that
+   entry's own FULL already-prefixed testid, e.g. "-xref-item-GEN.1.1-3" --
+   NOT a bare span; fix-round-1 correction, this comment previously said
+   "each block's own span" -- see CONTRACT.md's own popover-verse-expand
+   note) scopes a NEW instance's own controls uniquely, and carries that
+   entry's own repeated-span disambiguation (--2/--3) along with it. *@
 @using BibleAtlas.Client.Explore
 @inject AtlasClient Atlas
 @inject IJSRuntime JS

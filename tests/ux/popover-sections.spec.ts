@@ -579,3 +579,67 @@ test('XREF-1: a verse with at-or-under-cap cross-references shows no reveal arro
   await expect(page.getByTestId('xrefs-more')).toHaveCount(0);
   await expect(page.getByTestId('xrefs-collapse')).toHaveCount(0);
 });
+
+// fix-round-1, Important-2 (batch-f2-review.md): the ExploreAsVerse fix
+// itself (PassageList.razor/CrossRefsSection, batch-f2-report.md's own
+// "third real bug") was previously guarded ONLY by reader.spec.ts's own
+// READ-3 property test -- a fast-check run sampling real data, which
+// happened to catch the regression once but is not GUARANTEED to sample a
+// multi-verse xref target on any given run (it could pass clean on a
+// future reintroduction of this exact bug, purely by chance of sampling).
+// This is a deterministic, targeted regression test for that exact class:
+// DISCOVERS (not hardcodes) a real verse whose own FIRST cross-reference
+// target spans more than one verse in the same chapter (e.g. "REV.8.3-5")
+// -- ~25% of real cross-reference targets do (report §7), so this is
+// common, not a contrived case -- and asserts clicking that xref entry
+// opens a VerseNode at the target's own FIRST verse, never a PassageNode
+// titled with the full range.
+//
+// `cross_refs[0]` is always exactly `items.first()` in the DOM regardless
+// of the xrefs-only/xrefs+catechism cap (2 vs 3): CrossRefsSection builds
+// exactly one PassageSourceUnit per xref entry, in the API's own order,
+// via a single non-conditional `units.Add(...)` per entry (never zero,
+// never merged with a neighbor -- see that function's own comment), and
+// PassageBlockBuilder never drops or reorders units -- so the FIRST xref
+// entry is always the FIRST rendered block, capped or not, at index 0.
+async function findVerseWithFirstXrefMultiVerse(toc: any): Promise<{ vref: string; detail: any; targetHead: string } | null> {
+  const isMultiVerseTarget = (target: string) => /^[A-Z0-9]{3}\.\d+\.\d+-\d+$/.test(target); // same-chapter span only (a cross-chapter target like "MAT.5.3-MAT.6.2" does not match: \d+$ can't match a second BOOK.CH prefix)
+  const found = await findVerseWithCounts(toc, d => d.cross_refs.length > 0 && isMultiVerseTarget(d.cross_refs[0].target));
+  if (!found) {
+    return null;
+  }
+  const targetHead = found.detail.cross_refs[0].target.match(/^[A-Z0-9]{3}\.\d+\.\d+/)![0]; // same extraction READ-3 already uses
+  return { ...found, targetHead };
+}
+
+test('XREF-1/regression: a cross-reference to a same-chapter multi-verse target opens a VerseNode at its own first verse, never a PassageNode for the whole range', async ({ page }) => {
+  const toc = await loadToc();
+  const found = await findVerseWithFirstXrefMultiVerse(toc);
+  test.skip(!found, 'no sampled verse had a same-chapter multi-verse target as its own first cross-reference');
+  if (!found) return;
+  const v = parseVerse(found.vref);
+
+  await page.goto(`/read/${v.book}/${v.chapter}`);
+  await page.getByTestId(`verse-line-${v.verse}`).click();
+  const items = page.getByTestId(/^xref-item-/);
+  await expect(items).not.toHaveCount(0);
+  const first = items.first();
+
+  // Important-1's own correction, exercised for real (previously untested
+  // by anything): the nested mini-reader controls are scoped by this
+  // entry's own FULL testid (CONTRACT.md's `ENTRY-ID`), not a bare span --
+  // read the entry's real testid rather than predicting the span string
+  // ourselves, so this stays robust even if PassageGrouping's own
+  // span-format ever changes.
+  const entryTestId = await first.getAttribute('data-testid');
+  await expect(first.getByTestId(`popover-verse-expand-${entryTestId}`)).toBeVisible();
+
+  // The regression itself: PassageList's generic Explore() pushes a
+  // PassageNode (title = the full multi-verse range) for any block with
+  // >=2 verses by default; CrossRefsSection's own ExploreAsVerse=true
+  // restores its pre-existing contract -- a VerseNode at the target's own
+  // first verse. A PassageNode's own title would be the full range (e.g.
+  // "REV.8.3-5"), which this exact-text assertion would reject.
+  await first.click();
+  await expect(page.getByTestId('popover-title')).toHaveText(found.targetHead);
+});
