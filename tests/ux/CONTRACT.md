@@ -121,7 +121,16 @@ World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief
   "c. {year}" tag -- e.g. "c. 1500 BC" -- next to one ring; present ONLY when
   that ring's own polity has MORE than one currently-visible era, i.e. never
   on a single-era window; same `id`/`from`/`ringIndex` addressing as
-  `polity-ring-*` above, one tag per ring, not per era)
+  `polity-ring-*` above, one tag per ring, not per era),
+  `polity-delta-{id}-{from}-{ringIndex}` (batch-m-brief.md requirement 4; a
+  wide, transparent hit-stroke `<path>` sharing that same ring's own `d`
+  geometry -- real, keyboard-reachable (`tabindex="0"`, `role="button"`);
+  present ONLY when that ring's own era boundary (its start for a
+  transition, its end for a fall, see DELTA-1 below for the exact rule)
+  falls INSIDE the currently applied window, REGARDLESS of whether a
+  `[era.transition]`/`[era.fall]` block was actually curated for it --
+  "an uneventful boundary stays visible but gets the minimal popover," not
+  "stays uninteractive"; opens a `PolityDelta` node -- see DELTA-1)
 Picker (ScripturePicker, shared by world and reader):
   `picker-book` (select of 66 books), `picker-chapter` (select sized from TOC),
   `picker-verse-from`, `picker-verse-to` (numeric inputs bounded by TOC),
@@ -173,9 +182,10 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `xrefs`, `catechism`, `place-dates`, `place-blurb`, `place-events`,
   `catechism-text`, `catechism-explanation`, `catechism-where-written`,
   `catechism-scriptures`, `narrative-event-text`, `narrative-prior`,
-  `narrative-following` today -- see REGISTRY-1/CATECH-1/NARRATIVE-1;
-  conditional presence, absent whenever that section's own provider
-  resolved no content this open),
+  `narrative-following`, `polity-delta-event`, `polity-delta-scriptures`,
+  `polity-delta-grounding` today -- see REGISTRY-1/CATECH-1/NARRATIVE-1/
+  DELTA-1; conditional presence, absent whenever that section's own
+  provider resolved no content this open),
   `catechism-section-heading` (batch-f-brief.md; small-caps eyebrow rendered
   INSIDE a section's own body by that section's provider -- not a separate
   testid-bearing wrapper of its own; present on `popover-section-catechism`
@@ -312,6 +322,12 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   one per passage entry among a `NarrativeEventNode`'s own verses, same
   shared-component treatment as above; absent entirely for an event with
   zero curated verses -- see NARRATIVE-1),
+  `polity-delta-verse-{SPAN}` (batch-m-brief.md requirement 4; one per
+  passage entry among a `PolityDelta` node's own curated verses, same
+  shared-component (PASSAGE-1) treatment as every list above -- nested
+  `popover-verse-expand{-ENTRY-ID}`/etc. testids apply identically; absent
+  entirely for a delta with zero curated verses, or for the minimal-
+  popover case -- see DELTA-1),
   `mini-map`, `mini-map-open-world`
 Notes:
 - REGISTRY-1 (batch-r-brief.md requirement 3, "the popover becomes a
@@ -362,7 +378,15 @@ Notes:
   written?" (`popover-section-catechism-where-written`, conditional), "THE
   SCRIPTURES" (`popover-section-catechism-scriptures`, conditional -- one
   `catechism-verse-{SPAN}` passage entry per run of curated proof verses,
-  grouped/captioned per PASSAGE-1 -- see CATECH-1). A node `Kind` no
+  grouped/captioned per PASSAGE-1 -- see CATECH-1). POLITYDELTA node
+  sections (batch-m-brief.md; a `PolityDelta` node, reached by clicking a
+  delta-eligible border ring -- see DELTA-1), in order: the delta's own
+  event prose (`popover-section-polity-delta-event`, conditional -- absent
+  for the minimal-popover case), "THE SCRIPTURES"
+  (`popover-section-polity-delta-scriptures`, conditional -- one
+  `polity-delta-verse-{SPAN}` passage entry per curated verse, per
+  PASSAGE-1), the grounding note (`popover-section-polity-delta-grounding`,
+  conditional, quiet). A node `Kind` no
   provider claims at all (Chapter/Book/Author/TimeAndPlace/Year) keeps its
   own PRE-BATCH-R rendering, byte for byte -- unaffected by this note. The
   chips row (`popover-chip-map`/`-book`/`-context`/`-verse-{VREF}`) is
@@ -699,7 +723,13 @@ Notes:
   `narrative-prior-verse-{narrativeId}-{SPAN}`/`narrative-following-verse-{narrativeId}-{SPAN}`/
   `narrative-event-verse-{SPAN}` (their own passage-list entries,
   PASSAGE-1's existing "every passage-list entry is explorable" rule
-  already covers these generically) -- see NARRATIVE-1. Two kinds of
+  already covers these generically) -- see NARRATIVE-1. batch-m-brief.md
+  adds `polity-delta-{id}-{from}-{ringIndex}` (a border ring's own delta
+  hit-stroke, ONE-RULE's language adapted for an SVG shape -- see DELTA-1's
+  own comment on why plain `.explorable` itself doesn't reach an SVG path)
+  and `polity-delta-verse-{SPAN}` (THE SCRIPTURES section's own passage-list
+  entries, PASSAGE-1's existing rule covering these generically too) -- see
+  DELTA-1. Two kinds of
   element are deliberately
   EXCLUDED, never explorable, and keep whatever hover treatment (if any) they already
   had: SELECTION controls (`verse-num-{n}` -- drives the anchor+extend passage-range
@@ -979,6 +1009,106 @@ Notes:
   only however many real eras intersect the window, each labeled on its
   own ring via `polity-year-tag-*` (present only when its own polity has
   more than one visible era).
+- DELTA-1 (batch-m-brief.md requirement 4, "the DAG grows a node type" --
+  user direction 2026-08-20, verbatim: "...if we're looking at timeranges
+  we clearly see the overlapping polities (i.e. each delta throughout the
+  timeframe is visible and is explorable in that a delta corresponds to
+  some kind of event which we can map to Scripture)"): `GET /api/polities`'s
+  own per-era rows now carry `transition`/`fall` (each, when curated, an
+  `{event, verses, ref_note}` object -- `atlas_core::data::PolityDelta`,
+  curated as a nested `[era.transition]`/`[era.fall]` TOML table under the
+  era it belongs to), OMITTED (never null) when a curator honestly found
+  nothing to say about that boundary. `transition` describes the change
+  FROM the previous era of the SAME polity (or, on a polity's very first
+  era, its own rise); `fall` describes a polity's own end, curatable ONLY
+  on its chronologically FINAL era (server-validated -- `[era.fall]`
+  authored anywhere else fails ETL loudly).
+
+  EXPLORABILITY. Every era boundary whose own year falls INSIDE the
+  currently applied window is a real, keyboard-reachable hit target on its
+  own ring (`polity-delta-{id}-{from}-{ringIndex}`, see the testid
+  inventory above) -- REGARDLESS of whether a `transition`/`fall` block was
+  actually curated for it: "an uneventful boundary stays visible but gets
+  the minimal popover," not "stays uninteractive." A ring's own START
+  boundary (`era.from`) is TRANSITION-explorable whenever it falls
+  in-window; its own END boundary (`era.to`) is FALL-explorable whenever it
+  falls in-window AND that era is the polity's own chronologically FINAL
+  era across its WHOLE curated history (not merely the currently-visible
+  window's own narrower subset -- a window showing only one internal era of
+  a longer-lived polity must not treat that era's own end as a "fall" when
+  a later era genuinely follows it, just outside the window). Both can be
+  true for the same ring at once (a narrow window containing an entire
+  short-lived era); FALL wins that tie -- the more climactic moment for a
+  polity that's ending, a disclosed rule, not an oversight. ONE-RULE's own
+  interaction language: hover darkens the ring's own wash+line (~120ms,
+  `data-delta-hover`, the SVG-shape reading of ONE-RULE -- see app.css's
+  own comment for why plain `.explorable`, background-color-based, has no
+  effect on an SVG path), click or Enter (while keyboard-focused) opens the
+  ExplorerPopover.
+
+  THE NODE. A NEW `PolityDelta` node kind (`Explore/PolityDeltaNode.cs`),
+  built directly from data map.js's own in-memory roster (fetched once,
+  the FULL atlas span -- also the morph engine's own roster, requirement
+  3a) already resolved -- no second fetch, no server round trip on click.
+  `popover-title` is "{polity name}, {fromYear} -> {toYear}" (a CONTRACT
+  amendment: a right arrow, not the general Range format's own spaced en
+  dash -- a delta describes a directional CHANGE, not a static span; for a
+  transition, `fromYear` is the PREVIOUS era's own `to` year when one
+  exists, else this era's own `from`; for a fall, `fromYear`/`toYear` are
+  this era's own `from`/`to`), ALWAYS present, minimal or full alike.
+
+  SECTIONS (PopoverSectionRegistry, Kind == "PolityDelta" -- no
+  `ExplorerPopover.razor` surgery, the SAME seam REGISTRY-1/NARRATIVE-1
+  already prove), in order: `popover-section-polity-delta-event` (the
+  delta's own curated `event` prose, conditional -- absent for the minimal
+  case), `popover-section-polity-delta-scriptures` ("THE SCRIPTURES",
+  conditional -- the delta's own curated verses via the SAME shared
+  passage-list component (PASSAGE-1) every other verse list in this app
+  renders through, truncation-free, entries `polity-delta-verse-{SPAN}`),
+  `popover-section-polity-delta-grounding` (the delta's own curated
+  `ref_note`, quiet, conditional -- absent for the minimal case). The ONE
+  chip `popover-chip-map` ("Show on the map," `ExplorationTarget.NavigateWorld`
+  to this delta's own bracketing window -- PANE-ANCHOR-1/NO-NESTED-POPUP
+  already make this split-aware for free) is offered UNCONDITIONALLY,
+  minimal or full alike -- the window itself is still worth jumping to even
+  when the boundary is honestly uneventful.
+- MORPH-1 (batch-m-brief.md requirement 3a, "while dragging the time
+  slider, borders should MORPH" -- the persisted border-morph-vector design
+  idea, user-mandated 2026-08-20): dragging a `TimeSlider` handle fires
+  `OnWindowDrag` on EVERY native pointermove (not itself rAF-throttled --
+  `BorderLayer.requestMorphFrame`, map.js, is what coalesces however many
+  land within one animation frame into a single evaluate+paint), driving a
+  transient, purely-visual scrub that never touches the URL or the
+  committed `from`/`to` (those stay "the last COMMITTED window" until
+  release). Two parallel sub-group pairs hold the border plate: settled
+  (`.atlas-wash-settled-group` / `.atlas-border-settled-group`, the static
+  layered-era presentation BORDERS-5 etc. already cover) and morph
+  (`.atlas-wash-morph-group` / `.atlas-border-morph-group`, this
+  requirement's own), both pairs children of the SAME parent groups the
+  land-mask clip-path already applies to -- so the morph wash inherits the
+  IDENTICAL land/coastline clip the settled wash uses, with no separate
+  wiring, and stays clipped for the full duration of a drag, not just at
+  rest. `beginMorph` (first drag tick since the last settle) hides the
+  settled pair and shows the morph pair (also hiding labels/year-tags for
+  the duration -- "no per-frame DOM churn beyond path `d` updates"); every
+  path the morph pair creates or reuses across frames carries
+  `data-morph-state="morphing"` (settled paths never carry this attribute
+  at all). Each evaluated frame calls the SAME `lookup` `setPolities` itself
+  calls (border-morph.js), just fed the drag's own transient
+  [anchor-year, probe-year] sweep, then `animate`s each affected polity's
+  own era sequence to its current ring geometry at the probe year -- "the
+  two modes share everything except the final combinator" (requirement 3),
+  true by construction. `prefers-reduced-motion: reduce` SNAPS instead of
+  interpolating: the probe year is first rounded to whichever bracketing
+  era's own midpoint it is numerically nearer (never a value strictly
+  between two eras' own knots), fed into the IDENTICAL `animate` --  no
+  separate reduced-motion code path, just a different year. On release,
+  `settleMorph` tears the morph pair down and restores the settled one
+  INSTANTLY, repainted locally from the already-fetched full roster (zero
+  network wait) via the SAME `_paintSettled` the network-driven repaint
+  that also lands slightly later (the ordinary `from`/`to` URL change) also
+  calls -- the two are guaranteed byte-identical, never a visible flash
+  between them.
 - LAND-1 (batch-r-brief.md requirement 1, "borders become part of the
   plate", user 2026-08-19: "the borders still suck and are overlays on the
   actual map, when they need to be PART of the actual map"): every polity
