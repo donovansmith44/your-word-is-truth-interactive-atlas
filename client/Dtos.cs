@@ -280,7 +280,15 @@ public sealed record PlaceDetail(
     List<SceneEvent> Events,
     // Batch E: present only when this place has a curated history record
     // (`GET /api/place/{id}?from=&to=`'s optional `history`).
-    PlaceHistoryOut? History);
+    PlaceHistoryOut? History,
+    // Batch E3 (requirement 2's quiet provenance note): the bare canonical
+    // (un-aliased, un-period-resolved) name, present ONLY when it differs
+    // from whatever name is actually showing this popover (a curated period
+    // name OR a curated KJV alias) -- unlike History, this does NOT depend
+    // on a curated PlaceHistory record existing at all (e.g. cush-2 has
+    // none). Trailing + optional so this stays source-compatible with any
+    // existing positional-record construction site.
+    string? CanonicalName = null);
 
 /// Batch E: `PlaceDetail.History`'s shape. <see cref="Blurb"/> is null
 /// whenever the request carried no window, or the window matched none of

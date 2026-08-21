@@ -279,6 +279,11 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `popover-place-blurb` (batch-r-brief.md requirement 3; the popover-native
   rendering of the SAME BLURB-1-resolved text `place-card-blurb` already
   shows; conditional presence, same BLURB-1 rule),
+  `popover-place-canonical-name` (batch-e3-brief.md requirement 2; a plain,
+  non-interactive quiet line reading "Known in modern atlases as {name}." --
+  present only when this place's displayed name differs from its own bare
+  canonical name (a curated KJV alias resolved to something else); see
+  ALIAS-1 below for the full precedence and conditional-presence rule),
   `place-event-{id}` (button; one per this place's own recorded event,
   pushes a `TimeAndPlaceNode`; PRE-EXISTING since Task 15, undocumented
   before this batch -- see REGISTRY-1),
@@ -1012,26 +1017,77 @@ Notes:
 - `marker-{placeId}` elements carry the visible place label -- batch-e-brief.md:
   this is the scene's own `display_name` (the period name resolved for the
   scene's current window when the place has curated history and one of its
-  name ranges intersects that window, else its plain default name), not
-  always the place's plain default name. `place-card-title` and the
-  `arrow-tip` text (`{narrative}: {fromName} -> {toName}`) use the SAME
-  `display_name`, so a place's name is never shown two different ways at
-  once within one scene.
+  name ranges intersects that window, else the place's own DECISIVE fallback
+  name -- see ALIAS-1 below), not always the place's plain default name.
+  `place-card-title` and the `arrow-tip` text (`{narrative}: {fromName} ->
+  {toName}`) use the SAME `display_name`, so a place's name is never shown
+  two different ways at once within one scene.
 - NAME-1 (batch-e-brief.md): for a time-mode window fully inside one curated
   name range, `marker-{placeId}`'s label and `place-card-title` both equal
   that name; a window crossing the boundary between two curated ranges
   shows whichever one covers the window's own midpoint (or, failing that,
   the later-starting one it still intersects); a window matching no curated
-  range falls back to the place's plain default name. Scripture mode always
-  shows the plain default name (no curated period name is ever resolved
-  there -- there is no time window to resolve one against). A place's plain
-  default name is ALWAYS stripped of a trailing ETL slug-disambiguation
-  numeral first (batch-e2-brief.md fold-in: "Beersheba 2" displays as
-  "Beersheba", never the raw suffixed source name) -- this only ever affects
-  the DEFAULT-name fallback; a curated name (already hand-written, never
-  suffixed) is untouched. Two places sharing a stripped default name may
-  therefore show identical labels at once (their ids stay distinct) --
-  correct cartography, not a collision bug.
+  range falls back to the place's own decisive fallback name (ALIAS-1 below
+  -- batch-e3-brief.md AMENDS this rule's prior wording: scripture mode is
+  NOT always the plain default name any more -- no curated PERIOD name is
+  ever resolved there (there is still no time window to resolve one
+  against), but a curated KJV ALIAS, a translation fact rather than a time
+  fact, resolves in scripture mode exactly as it does in time mode). A
+  place's plain default name is ALWAYS stripped of a trailing ETL
+  slug-disambiguation numeral first (batch-e2-brief.md fold-in: "Beersheba 2"
+  displays as "Beersheba", never the raw suffixed source name) -- this only
+  ever affects the DEFAULT-name fallback; a curated name (already
+  hand-written, never suffixed) is untouched. Two places sharing a stripped
+  default name may therefore show identical labels at once (their ids stay
+  distinct) -- correct cartography, not a collision bug.
+- ALIAS-1 (batch-e3-brief.md -- owner bug report 2026-08-20, verbatim: "there
+  are two locations, cush and gihon, that are both lit up on genesis 2 even
+  though cush isn't mentioned in gen 2:13 why is that happening"; root
+  cause: the place WAS right, the label was Theographic's own canonical
+  name, never the word the KJV text itself uses there). Server:
+  `atlas_core::history::resolve_display_name`/`resolve_display_name_and_canonical`,
+  a curated `data/curated/place-names-kjv.toml` (compiled
+  `place-names-kjv.json`, `AtlasData::place_name_alias_for`). DECISIVE
+  fallback precedence, same "one decisive name per surface" philosophy the
+  owner's own passage-container-algebra directive establishes for reader
+  headings (progress.md "OWNER DIRECTIVE -- passage container algebra"):
+  1. An ACTIVE curated period-history name (NAME-1 above) wins outright when
+     one resolves -- it is ALREADY the KJV-accurate name for its own era
+     (Luz/Bethel are both real KJV wording, just for different centuries);
+     an alias never overrides one that resolved.
+  2. Otherwise, a curated KJV alias (a TRANSLATION fact, not a time fact --
+     resolves identically in scripture mode, time mode, a reader chapter's
+     own place-mention scan, and an EVENT's own `event-places` row,
+     regardless of whether a time window even exists) wins.
+  3. Otherwise, the place's own plain default name (Theographic canonical),
+     stripped of its ETL disambiguation numeral per NAME-1.
+  Every KJV-context surface reads this SAME decisive resolution -- no
+  parallel/client-side rename map anywhere (owner decree F2 6-ARCH): map
+  labels (`marker-{placeId}`, lit AND quiet -- `quiet-marker-{placeId}`),
+  `place-card-title`, a place popover's own title (`PlaceNode.Title`, set
+  from whichever of the above the caller already resolved), reader place
+  mentions (`GET /api/chapter/{cref}`'s own per-verse `places` list --
+  `PlaceMentions.cs`'s plain-text substring scan against THIS resolved name
+  is what makes an aliased place's mention actually findable in its own
+  verse's rendered text at all, e.g. "Ethiopia" in GEN.2.13), and an EVENT
+  node's own `event-places`/`event-place-{placeId}` rows (resolved against
+  that event's own `when`, alongside PARALLEL ACCOUNTS in the same popover).
+  QUIET PROVENANCE (requirement 2's own "canonical name at most once,
+  quietly"): the place POPOVER (never the map label, never the hover card)
+  gains one non-interactive line, `popover-place-canonical-name` (class
+  `popover-meta`, same quiet instrument-face treatment `event-date`'s own
+  line already uses), reading "Known in modern atlases as {name}." --
+  present ONLY when this place's displayed name differs from its own bare
+  canonical name (`PlaceDetail.CanonicalName`, server-decided --
+  `Some` only when a KJV ALIAS is the reason the two differ, never for a
+  period-history rename, which has nothing to disclose: its own displayed
+  name is already the era-accurate KJV wording, not a stand-in for
+  something else). Fail-loud ETL validation (`atlas_etl::validate::
+  run_place_names_kjv`): every alias id must resolve to a real compiled
+  place; no duplicate alias ids; an alias equal to its own place's canonical
+  name (after the SAME disambiguation-numeral strip) is rejected as noise;
+  every cited verse must parse as a canonical single-verse ref and exist in
+  the compiled KJV text.
 - Every curated place-history range (a `[[place.name]]`, a `[[place.blurb]]`,
   or `established`/`destroyed`'s own `when`) is INCLUSIVE on both ends --
   its own `from`/`to` year is itself covered, matching `TimeRange`'s general
