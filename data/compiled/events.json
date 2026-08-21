@@ -29047,6 +29047,740 @@
     "order_key": 920
   },
   {
+    "id": "rob_cost_of_discipleship_1",
+    "label": "Would-be followers must give up everything",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "MAT.8.19",
+      "MAT.8.20",
+      "MAT.8.21",
+      "MAT.8.22"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.9.57",
+            "LUK.9.58",
+            "LUK.9.59",
+            "LUK.9.60",
+            "LUK.9.61",
+            "LUK.9.62"
+          ]
+        },
+        "ref_note": "Luke 9:57-62 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §93"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §93, \"The Messiah's Followers Must Give Up Everything for His Service\"",
+    "ref_note": "Matthew 8:19-22 and Luke 9:57-62 both read directly against the compiled KJV text; Luke's own opening ('as they went in the way') anchors this at the start of the journey toward Jerusalem",
+    "order_key": 930
+  },
+  {
+    "id": "rob_brothers_counsel_him",
+    "label": "Jesus's own brothers urge him to go to the feast",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "JHN.7.2",
+      "JHN.7.3",
+      "JHN.7.4",
+      "JHN.7.5",
+      "JHN.7.6",
+      "JHN.7.7",
+      "JHN.7.8",
+      "JHN.7.9"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §94, \"The Unbelieving Brothers of Jesus Counsel Him to Exhibit Himself in Judea, and He Rejects the Advice\"",
+    "ref_note": "John 7:2-9 read directly against the compiled KJV text; single witness (John alone); the text's own setting (7:9, 'abode still in Galilee') is still Galilee",
+    "order_key": 940
+  },
+  {
+    "id": "rob_through_samaria",
+    "label": "Jesus sets his face toward Jerusalem, through Samaria",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "samaria-2"
+    ],
+    "verses": [
+      "LUK.9.51",
+      "LUK.9.52",
+      "LUK.9.53",
+      "LUK.9.54",
+      "LUK.9.55",
+      "LUK.9.56"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §95, \"He Goes Privately to Jerusalem through Samaria\"",
+    "ref_note": "Luke 9:51-56 read directly against the compiled KJV text (a Samaritan village rejects him, 9:52-53); John 7:10 also read directly (a bare one-verse transition, disclosed rather than force-fit as a separate witness)",
+    "order_key": 950
+  },
+  {
+    "id": "rob_tabernacles_feast",
+    "label": "Jesus at the Feast of Tabernacles stirs intense debate",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.7.11",
+      "JHN.7.12",
+      "JHN.7.13",
+      "JHN.7.14",
+      "JHN.7.15",
+      "JHN.7.16",
+      "JHN.7.17",
+      "JHN.7.18",
+      "JHN.7.19",
+      "JHN.7.20",
+      "JHN.7.21",
+      "JHN.7.22",
+      "JHN.7.23",
+      "JHN.7.24",
+      "JHN.7.25",
+      "JHN.7.26",
+      "JHN.7.27",
+      "JHN.7.28",
+      "JHN.7.29",
+      "JHN.7.30",
+      "JHN.7.31",
+      "JHN.7.32",
+      "JHN.7.33",
+      "JHN.7.34",
+      "JHN.7.35",
+      "JHN.7.36",
+      "JHN.7.37",
+      "JHN.7.38",
+      "JHN.7.39",
+      "JHN.7.40",
+      "JHN.7.41",
+      "JHN.7.42",
+      "JHN.7.43",
+      "JHN.7.44",
+      "JHN.7.45",
+      "JHN.7.46",
+      "JHN.7.47",
+      "JHN.7.48",
+      "JHN.7.49",
+      "JHN.7.50",
+      "JHN.7.51",
+      "JHN.7.52"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §96, \"The Coming of Jesus to the Feast of Tabernacles Creates Intense Excitement Concerning the Messiahship\"",
+    "ref_note": "John 7:11-52 read directly against the compiled KJV text; single witness (John alone)",
+    "order_key": 960
+  },
+  {
+    "id": "rob_adulterous_woman",
+    "label": "A woman taken in adultery is brought to Jesus for judgment",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.7.53",
+      "JHN.8.1",
+      "JHN.8.2",
+      "JHN.8.3",
+      "JHN.8.4",
+      "JHN.8.5",
+      "JHN.8.6",
+      "JHN.8.7",
+      "JHN.8.8",
+      "JHN.8.9",
+      "JHN.8.10",
+      "JHN.8.11"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §97, \"Story of an Adulterous Woman Brought to Jesus for Judgment\"",
+    "ref_note": "John 7:53-8:11 read directly against the compiled KJV text; single witness (John alone); written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string",
+    "order_key": 970
+  },
+  {
+    "id": "rob_light_of_the_world",
+    "label": "Jesus claims to be the Light of the World",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.8.12",
+      "JHN.8.13",
+      "JHN.8.14",
+      "JHN.8.15",
+      "JHN.8.16",
+      "JHN.8.17",
+      "JHN.8.18",
+      "JHN.8.19",
+      "JHN.8.20"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §98, \"After the Feast of Tabernacles in the Temple Jesus Angers the Pharisees by Claiming to Be the Light of the World\"",
+    "ref_note": "John 8:12-20 read directly against the compiled KJV text; single witness (John alone)",
+    "order_key": 980
+  },
+  {
+    "id": "rob_pharisees_stone_attempt",
+    "label": "The Pharisees attempt to stone Jesus",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.8.21",
+      "JHN.8.22",
+      "JHN.8.23",
+      "JHN.8.24",
+      "JHN.8.25",
+      "JHN.8.26",
+      "JHN.8.27",
+      "JHN.8.28",
+      "JHN.8.29",
+      "JHN.8.30",
+      "JHN.8.31",
+      "JHN.8.32",
+      "JHN.8.33",
+      "JHN.8.34",
+      "JHN.8.35",
+      "JHN.8.36",
+      "JHN.8.37",
+      "JHN.8.38",
+      "JHN.8.39",
+      "JHN.8.40",
+      "JHN.8.41",
+      "JHN.8.42",
+      "JHN.8.43",
+      "JHN.8.44",
+      "JHN.8.45",
+      "JHN.8.46",
+      "JHN.8.47",
+      "JHN.8.48",
+      "JHN.8.49",
+      "JHN.8.50",
+      "JHN.8.51",
+      "JHN.8.52",
+      "JHN.8.53",
+      "JHN.8.54",
+      "JHN.8.55",
+      "JHN.8.56",
+      "JHN.8.57",
+      "JHN.8.58",
+      "JHN.8.59"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §99, \"The Pharisees Attempt to Stone Jesus When He Exposes Their Sinfulness\"",
+    "ref_note": "John 8:21-59 read directly against the compiled KJV text; single witness (John alone)",
+    "order_key": 990
+  },
+  {
+    "id": "rob_man_born_blind",
+    "label": "Jesus heals a man born blind",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.9.1",
+      "JHN.9.2",
+      "JHN.9.3",
+      "JHN.9.4",
+      "JHN.9.5",
+      "JHN.9.6",
+      "JHN.9.7",
+      "JHN.9.8",
+      "JHN.9.9",
+      "JHN.9.10",
+      "JHN.9.11",
+      "JHN.9.12",
+      "JHN.9.13",
+      "JHN.9.14",
+      "JHN.9.15",
+      "JHN.9.16",
+      "JHN.9.17",
+      "JHN.9.18",
+      "JHN.9.19",
+      "JHN.9.20",
+      "JHN.9.21",
+      "JHN.9.22",
+      "JHN.9.23",
+      "JHN.9.24",
+      "JHN.9.25",
+      "JHN.9.26",
+      "JHN.9.27",
+      "JHN.9.28",
+      "JHN.9.29",
+      "JHN.9.30",
+      "JHN.9.31",
+      "JHN.9.32",
+      "JHN.9.33",
+      "JHN.9.34",
+      "JHN.9.35",
+      "JHN.9.36",
+      "JHN.9.37",
+      "JHN.9.38",
+      "JHN.9.39",
+      "JHN.9.40",
+      "JHN.9.41"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §100, \"Jesus Heals a Man Born Blind Who Outwits the Pharisees. The Rulers Forbid the Recognition of Jesus as the Messiah. The Conversion of the Healed Man\"",
+    "ref_note": "John 9:1-41 read directly against the compiled KJV text; single witness (John alone)",
+    "order_key": 1000
+  },
+  {
+    "id": "rob_good_shepherd",
+    "label": "The parable of the Good Shepherd",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.10.1",
+      "JHN.10.2",
+      "JHN.10.3",
+      "JHN.10.4",
+      "JHN.10.5",
+      "JHN.10.6",
+      "JHN.10.7",
+      "JHN.10.8",
+      "JHN.10.9",
+      "JHN.10.10",
+      "JHN.10.11",
+      "JHN.10.12",
+      "JHN.10.13",
+      "JHN.10.14",
+      "JHN.10.15",
+      "JHN.10.16",
+      "JHN.10.17",
+      "JHN.10.18",
+      "JHN.10.19",
+      "JHN.10.20",
+      "JHN.10.21"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §101, \"In the Parable (Allegory) of the Good Shepherd Jesus Draws the Picture of the Hostile Pharisees and Intimates That He Is Going to Die for His Flock and Come to Life Again\"",
+    "ref_note": "John 10:1-21 read directly against the compiled KJV text; single witness (John alone)",
+    "order_key": 1010
+  },
+  {
+    "id": "rob_mission_of_seventy",
+    "label": "The mission of the Seventy",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.10.1",
+      "LUK.10.2",
+      "LUK.10.3",
+      "LUK.10.4",
+      "LUK.10.5",
+      "LUK.10.6",
+      "LUK.10.7",
+      "LUK.10.8",
+      "LUK.10.9",
+      "LUK.10.10",
+      "LUK.10.11",
+      "LUK.10.12",
+      "LUK.10.13",
+      "LUK.10.14",
+      "LUK.10.15",
+      "LUK.10.16",
+      "LUK.10.17",
+      "LUK.10.18",
+      "LUK.10.19",
+      "LUK.10.20",
+      "LUK.10.21",
+      "LUK.10.22",
+      "LUK.10.23",
+      "LUK.10.24"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §102, \"The Mission of the Seventy. Christ's Joy in Their Work on Their Return\"",
+    "ref_note": "Luke 10:1-24 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 1020
+  },
+  {
+    "id": "rob_good_samaritan",
+    "label": "The parable of the Good Samaritan",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.10.25",
+      "LUK.10.26",
+      "LUK.10.27",
+      "LUK.10.28",
+      "LUK.10.29",
+      "LUK.10.30",
+      "LUK.10.31",
+      "LUK.10.32",
+      "LUK.10.33",
+      "LUK.10.34",
+      "LUK.10.35",
+      "LUK.10.36",
+      "LUK.10.37"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §103, \"Jesus Answers a Lawyer's Question as to Eternal Life, Giving the Parable of the Good Samaritan\"",
+    "ref_note": "Luke 10:25-37 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 1030
+  },
+  {
+    "id": "rob_martha_and_mary",
+    "label": "Jesus the guest of Martha and Mary",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "bethany-1"
+    ],
+    "verses": [
+      "LUK.10.38",
+      "LUK.10.39",
+      "LUK.10.40",
+      "LUK.10.41",
+      "LUK.10.42"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §104, \"Jesus the Guest of Martha and Mary\"",
+    "ref_note": "Luke 10:38-42 read directly against the compiled KJV text; single witness (Luke alone); Luke's own text names only 'a certain village,' not Bethany directly -- bethany-1 used on the strength of John 11's own well-established identification of Martha and Mary's home, disclosed here since Luke's own cited text does not itself name it",
+    "order_key": 1040
+  },
+  {
+    "id": "rob_prayer_model_again",
+    "label": "Jesus again gives a model of prayer",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.11.1",
+      "LUK.11.2",
+      "LUK.11.3",
+      "LUK.11.4",
+      "LUK.11.5",
+      "LUK.11.6",
+      "LUK.11.7",
+      "LUK.11.8",
+      "LUK.11.9",
+      "LUK.11.10",
+      "LUK.11.11",
+      "LUK.11.12",
+      "LUK.11.13"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §105, \"Jesus Again Gives a Model of Prayer (Comp. § 54) and Encourages His Disciples to Pray. Parable of the Importunate Friend\"",
+    "ref_note": "Luke 11:1-13 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 1050
+  },
+  {
+    "id": "rob_beelzebub_again",
+    "label": "A second blasphemous accusation of league with Beelzebub",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.11.14",
+      "LUK.11.15",
+      "LUK.11.16",
+      "LUK.11.17",
+      "LUK.11.18",
+      "LUK.11.19",
+      "LUK.11.20",
+      "LUK.11.21",
+      "LUK.11.22",
+      "LUK.11.23",
+      "LUK.11.24",
+      "LUK.11.25",
+      "LUK.11.26",
+      "LUK.11.27",
+      "LUK.11.28",
+      "LUK.11.29",
+      "LUK.11.30",
+      "LUK.11.31",
+      "LUK.11.32",
+      "LUK.11.33",
+      "LUK.11.34",
+      "LUK.11.35",
+      "LUK.11.36"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §106, \"Blasphemous Accusation of League with Beelzebub\"",
+    "ref_note": "Luke 11:14-36 read directly against the compiled KJV text; single witness (Luke alone); a distinct occasion from rob_beelzebub_accusation (S61, Galilee, earlier)",
+    "order_key": 1060
+  },
+  {
+    "id": "rob_pharisees_denounced_breakfast",
+    "label": "Jesus denounces the Pharisees and lawyers at breakfast",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.11.37",
+      "LUK.11.38",
+      "LUK.11.39",
+      "LUK.11.40",
+      "LUK.11.41",
+      "LUK.11.42",
+      "LUK.11.43",
+      "LUK.11.44",
+      "LUK.11.45",
+      "LUK.11.46",
+      "LUK.11.47",
+      "LUK.11.48",
+      "LUK.11.49",
+      "LUK.11.50",
+      "LUK.11.51",
+      "LUK.11.52",
+      "LUK.11.53",
+      "LUK.11.54"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §107, \"While Breakfasting with a Pharisee, Jesus Severely Denounces the Pharisees and Lawyers and Excites Their Enmity\"",
+    "ref_note": "Luke 11:37-54 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 1070
+  },
+  {
+    "id": "rob_hypocrisy_covetousness",
+    "label": "Jesus warns against hypocrisy, covetousness, and worldly anxiety",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.12.1",
+      "LUK.12.2",
+      "LUK.12.3",
+      "LUK.12.4",
+      "LUK.12.5",
+      "LUK.12.6",
+      "LUK.12.7",
+      "LUK.12.8",
+      "LUK.12.9",
+      "LUK.12.10",
+      "LUK.12.11",
+      "LUK.12.12",
+      "LUK.12.13",
+      "LUK.12.14",
+      "LUK.12.15",
+      "LUK.12.16",
+      "LUK.12.17",
+      "LUK.12.18",
+      "LUK.12.19",
+      "LUK.12.20",
+      "LUK.12.21",
+      "LUK.12.22",
+      "LUK.12.23",
+      "LUK.12.24",
+      "LUK.12.25",
+      "LUK.12.26",
+      "LUK.12.27",
+      "LUK.12.28",
+      "LUK.12.29",
+      "LUK.12.30",
+      "LUK.12.31",
+      "LUK.12.32",
+      "LUK.12.33",
+      "LUK.12.34",
+      "LUK.12.35",
+      "LUK.12.36",
+      "LUK.12.37",
+      "LUK.12.38",
+      "LUK.12.39",
+      "LUK.12.40",
+      "LUK.12.41",
+      "LUK.12.42",
+      "LUK.12.43",
+      "LUK.12.44",
+      "LUK.12.45",
+      "LUK.12.46",
+      "LUK.12.47",
+      "LUK.12.48",
+      "LUK.12.49",
+      "LUK.12.50",
+      "LUK.12.51",
+      "LUK.12.52",
+      "LUK.12.53",
+      "LUK.12.54",
+      "LUK.12.55",
+      "LUK.12.56",
+      "LUK.12.57",
+      "LUK.12.58",
+      "LUK.12.59"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §108, \"He Speaks to His Disciples and a Vast Throng about Hypocrisy, Covetousness (Parable of the Rich Fool), Worldly Anxieties, Watchfulness (Parable of the Waiting Servants and of the Wise Steward), and His Own Approaching Passion\"",
+    "ref_note": "Luke 12 (the whole chapter) read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 1080
+  },
+  {
+    "id": "rob_repent_or_perish",
+    "label": "Repent or perish; the parable of the barren fig tree",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.13.1",
+      "LUK.13.2",
+      "LUK.13.3",
+      "LUK.13.4",
+      "LUK.13.5",
+      "LUK.13.6",
+      "LUK.13.7",
+      "LUK.13.8",
+      "LUK.13.9"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §109, \"All Must Repent or Perish. (Two Current Tragedies); Parable of the Barren Fig Tree\"",
+    "ref_note": "Luke 13:1-9 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 1090
+  },
+  {
+    "id": "rob_crippled_woman_sabbath",
+    "label": "Jesus heals a crippled woman on the sabbath",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "LUK.13.10",
+      "LUK.13.11",
+      "LUK.13.12",
+      "LUK.13.13",
+      "LUK.13.14",
+      "LUK.13.15",
+      "LUK.13.16",
+      "LUK.13.17",
+      "LUK.13.18",
+      "LUK.13.19",
+      "LUK.13.20",
+      "LUK.13.21"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §110, \"Jesus Heals a Crippled Woman on the Sabbath and Defends Himself against the Ruler of the Synagogue. (Cf. §§ 49-51 and 114.) Repetition of the Parables of the Mustard Seed and of the Leaven\"",
+    "ref_note": "Luke 13:10-21 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 1100
+  },
+  {
+    "id": "rob_dedication_feast",
+    "label": "At the Feast of Dedication, Jesus will not yet openly claim to be the Messiah",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.10.22",
+      "JHN.10.23",
+      "JHN.10.24",
+      "JHN.10.25",
+      "JHN.10.26",
+      "JHN.10.27",
+      "JHN.10.28",
+      "JHN.10.29",
+      "JHN.10.30",
+      "JHN.10.31",
+      "JHN.10.32",
+      "JHN.10.33",
+      "JHN.10.34",
+      "JHN.10.35",
+      "JHN.10.36",
+      "JHN.10.37",
+      "JHN.10.38",
+      "JHN.10.39"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §111, \"At the Feast of Dedication Jesus Will Not Yet Openly Say That He Is the Messiah. The Jews Try to Stone Him\"",
+    "ref_note": "John 10:22-39 read directly against the compiled KJV text; single witness (John alone); the text's own date marker (10:22, 'it was winter') matches the Feast of Dedication (Hanukkah), roughly three months before the AD 33 Passion",
+    "order_key": 1110
+  },
+  {
     "id": "jm_jericho",
     "label": "Jesus calls Zacchaeus at Jericho",
     "when": {

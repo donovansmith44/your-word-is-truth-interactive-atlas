@@ -859,3 +859,11 @@ book = "LUK"
 verses = ["LUK.9.49-50"]
 ref_note = "Luke 9:49-50 read directly against the compiled KJV text"
 robertson_section = "Robertson (1922) §91"
+
+# --- Period 7: SS93-111 -----------------------------------------------------
+[[witness]]
+event_id = "rob_cost_of_discipleship_1"
+book = "LUK"
+verses = ["LUK.9.57-62"]
+ref_note = "Luke 9:57-62 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §93"
