@@ -177,7 +177,7 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `catechism-item-{ID}` (batch-f-brief.md; button; one per catechism item
   citing the current VERSE/PASSAGE, `ID` = the item's own curated id, text =
   the item's own display name (e.g. "The First Commandment", "Baptism —
-  Part the Fourth"); opens a `CatechismNode` for that item -- see CATECH-1),
+  Part Four"); opens a `CatechismNode` for that item -- see CATECH-1),
   `catechism-verse-{VREF}` (batch-f-brief.md; button; one per a catechism
   item's own curated proof verse, inside `popover-section-catechism-scriptures`;
   text contains that verse's own FULL KJV text (never truncated); opens a
@@ -310,8 +310,7 @@ Notes:
   "votes", no self-target concept) populate `popover-section-catechism`
   ("THE SMALL CATECHISM", conditional -- absent for a verse/passage citing
   nothing), listing `catechism-item-{ID}` rows named by the item's own
-  curated display name (e.g. "The First Commandment", "Baptism — Part the
-  Fourth"). ITEM -> its own content: clicking one pushes a `CatechismNode`
+  curated display name (e.g. "The First Commandment", "Baptism — Part Four"). ITEM -> its own content: clicking one pushes a `CatechismNode`
   (`GET /api/catechism/item/{id}`), whose OWN popover renders, in order:
   `popover-section-catechism-text` (the item's own primary-source wording --
   conditional, absent for Baptism/Confession/Sacrament-of-the-Altar items,
