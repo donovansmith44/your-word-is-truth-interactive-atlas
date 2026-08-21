@@ -246,6 +246,34 @@ public sealed class MapInterop : IAsyncDisposable
     }
 
     /// <summary>
+    /// Batch N requirement 3 (map focus sync -- "the same graph, seen
+    /// twice"): a STATIC helper, same shape as <see cref="BlinkPlace"/>
+    /// directly above for the SAME reason -- the caller
+    /// (<see cref="Components.ExplorerPopover"/>) owns no live map instance
+    /// of its own; it just needs to reach WHICHEVER live, non-mini map
+    /// instance(s) currently exist (map.js's own module-level
+    /// <c>instances</c> registry), so this works identically whether the
+    /// live map is the full <c>/world</c> page's own or a split view's
+    /// embedded atlas pane's own, with no page-specific wiring -- "works in
+    /// full reader, split view, and map-side popovers (one component,
+    /// every context)," per the brief verbatim. <paramref name="activeNarrativeIds"/>
+    /// empty clears every arrow back to normal (popover closed, or Current
+    /// touches no narrative); non-empty amplifies every arrow of those
+    /// narratives and recedes (never vanishes) every other narrative's own,
+    /// with <paramref name="currentEventIds"/> picking out the specific
+    /// leg(s) touching the CURRENTLY open event for the strongest emphasis
+    /// (map.js's own <c>setNarrativeFocus</c>/<c>ArrowLayer.setFocus</c>).
+    /// A no-op, harmlessly, when no live non-mini map currently exists
+    /// (e.g. a plain, unsplit Reader.razor) -- same precedent as
+    /// <see cref="BlinkPlace"/>.
+    /// </summary>
+    public static async Task SetNarrativeFocus(IJSRuntime js, IReadOnlyList<string> activeNarrativeIds, IReadOnlyList<string> currentEventIds)
+    {
+        var module = await js.InvokeAsync<IJSObjectReference>("import", "./js/map.js");
+        await module.InvokeVoidAsync("setNarrativeFocus", activeNarrativeIds, currentEventIds);
+    }
+
+    /// <summary>
     /// HOTFIX batch (batch-hotfix-brief.md requirement 1): measures a
     /// PlaceCard's own just-rendered box plus its DOM parent's clientWidth
     /// (the map container this card is currently inside -- see map.js's own

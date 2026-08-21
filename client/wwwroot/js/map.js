@@ -1443,6 +1443,25 @@ export function blinkPlace(placeId, active) {
     }
 }
 
+// Batch N requirement 3 ("map focus sync -- the same graph, seen twice"):
+// SAME static-helper shape as blinkPlace directly above, for the identical
+// reason (MapInterop.SetNarrativeFocus's own comment) -- loops EVERY
+// currently-live, non-mini map instance's own ArrowLayer (mini instances
+// never render arrows at all, per ArrowLayer's own pre-existing "mini
+// instances never render arrows" precedent this file already documents
+// elsewhere) and delegates to ArrowLayer.setFocus below. `activeNarrativeIds`/
+// `currentEventIds` are plain arrays (never a Set -- this crosses a JS
+// interop boundary from Blazor's own IReadOnlyList<string>, which
+// serializes as a JSON array).
+export function setNarrativeFocus(activeNarrativeIds, currentEventIds) {
+    for (const inst of instances.values()) {
+        if (inst.mini || !inst.arrows) {
+            continue;
+        }
+        inst.arrows.setFocus(activeNarrativeIds || [], currentEventIds || []);
+    }
+}
+
 // HOTFIX batch (batch-hotfix-brief.md requirement 1, "the hover menu can be
 // cut off by the top of the screen"): measures a PlaceCard's own just-
 // rendered box, ONE-SHOT -- ID-less, not bound to any one map instance,
@@ -1689,6 +1708,22 @@ const ArrowLayer = L.Layer.extend({
             entry.casing.setAttribute('data-faded', 'false');
         }
 
+        // Batch N: same reset, same reasoning, for setFocus's own
+        // data-narrative-focus -- a scene change (the time slider dragged
+        // while a narrative popover happens to be open) is not itself a
+        // popover navigation, so nothing else would otherwise re-sync this
+        // attribute for an arrow whose key survives the window change.
+        // Cleared to baseline here rather than re-derived (World.razor's
+        // own scene reload has no reason to know about the popover's
+        // current narrative context, mirroring isolate's own "starts fresh
+        // every scene" precedent immediately above) -- the popover's own
+        // NEXT navigation (a traversal step, or simply re-opening it) calls
+        // MapInterop.SetNarrativeFocus again and restores it.
+        for (const entry of this._paths.values()) {
+            entry.path.removeAttribute('data-narrative-focus');
+            entry.casing.removeAttribute('data-narrative-focus');
+        }
+
         this._placesById = placesById;
         const list = arrows || [];
 
@@ -1791,6 +1826,47 @@ const ArrowLayer = L.Layer.extend({
             const faded = narrativeId != null && entry.arrow.narrative !== narrativeId;
             entry.path.setAttribute('data-faded', faded ? 'true' : 'false');
             entry.casing.setAttribute('data-faded', faded ? 'true' : 'false');
+        }
+    },
+
+    // Batch N requirement 3 ("map focus sync -- the same graph, seen
+    // twice"): a SEPARATE mechanism from setIsolate above, not a second
+    // caller of it -- WORLD-4's own legend isolate is a deliberate, sticky
+    // USER toggle (persists until clicked again); this is a transient,
+    // POPOVER-driven emphasis that follows whatever narrative context is
+    // currently open, and the two must be able to coexist without either
+    // silently overwriting the other's own attribute. `data-narrative-focus`
+    // is therefore its OWN attribute, never reusing data-faded -- see
+    // app.css's own comment on why "recede" (this requirement's own word)
+    // is deliberately a gentler dim than isolate's near-invisible .12,
+    // and on the deliberate CSS ordering that lets an explicit legend
+    // isolate keep winning over this if both ever apply to the same arrow
+    // at once.
+    //
+    // `activeNarrativeIds` empty -> every arrow's own attribute is CLEARED
+    // (removed, not set to some "none" string) -- "arrows return to
+    // normal" reads correctly off the plain absence of the attribute, the
+    // exact same baseline a fresh arrow (never isolated, never focused)
+    // already has. Otherwise: an arrow whose own narrative isn't in the
+    // active set recedes; one that IS gets "current" (strongest emphasis)
+    // when either of its own endpoints (from_event/to_event) is in
+    // `currentEventIds`, else "active" (amplified, but less than current).
+    setFocus(activeNarrativeIds, currentEventIds) {
+        const active = new Set(activeNarrativeIds);
+        const current = new Set(currentEventIds);
+        for (const entry of this._paths.values()) {
+            const a = entry.arrow;
+            let state = null;
+            if (active.size > 0) {
+                state = !active.has(a.narrative) ? 'receded' : (current.has(a.from_event) || current.has(a.to_event)) ? 'current' : 'active';
+            }
+            if (state) {
+                entry.path.setAttribute('data-narrative-focus', state);
+                entry.casing.setAttribute('data-narrative-focus', state);
+            } else {
+                entry.path.removeAttribute('data-narrative-focus');
+                entry.casing.removeAttribute('data-narrative-focus');
+            }
         }
     },
 

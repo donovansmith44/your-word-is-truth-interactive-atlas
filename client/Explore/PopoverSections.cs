@@ -107,6 +107,19 @@ public interface IPopoverSectionProvider
 /// TimeAndPlace/Year) falls back to that node's own <c>BodyAsync</c> --
 /// ExplorerPopover's pre-Batch-R rendering path, untouched -- so none of
 /// those five kinds' popovers change shape from this batch.
+///
+/// Batch N ("narratives as first-class graph structure") adds two more
+/// providers to VERSE's own list (appended at the end, per this batch's
+/// own "later batches append below" convention) -- "PRIOR EVENT"
+/// (<see cref="NarrativePriorEventSection"/>) and "FOLLOWING EVENT"
+/// (<see cref="NarrativeFollowingEventSection"/>), each conditional on the
+/// verse actually having a narrative position in that direction -- plus a
+/// brand-new NarrativeEvent node kind (<see cref="NarrativeEventNode"/>,
+/// the PRIOR/FOLLOWING traversal target), which gets its own subject text
+/// (<see cref="NarrativeEventTextSection"/>) followed by the SAME two
+/// PRIOR/FOLLOWING providers again -- recursion falls out of Verse and
+/// NarrativeEvent sharing one <c>AppliesTo</c> clause, not a second
+/// traversal mechanism.
 /// </summary>
 public static class PopoverSectionRegistry
 {
@@ -123,5 +136,17 @@ public static class PopoverSectionRegistry
         new CatechismExplanationSection(),
         new CatechismWhereWrittenSection(),
         new CatechismScripturesSection(),
+        // Batch N ("narratives as first-class graph structure"): appended
+        // at the end, same "later batches append below, never disturb"
+        // layering PlaceCard.razor's own G1 narrative-traversal section
+        // already established -- for a VERSE node this lands strictly
+        // after cross-references/catechism (none of the PLACE/CATECHISM-
+        // only providers above apply to Verse, so this trio is the next
+        // thing that DOES); for a NarrativeEventNode (traversal target)
+        // it's the ONLY trio that applies at all, in this exact order
+        // (event text, then prior, then following).
+        new NarrativeEventTextSection(),
+        new NarrativePriorEventSection(),
+        new NarrativeFollowingEventSection(),
     };
 }
