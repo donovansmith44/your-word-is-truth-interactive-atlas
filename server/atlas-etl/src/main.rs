@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Context, Result};
 use atlas_core::data::{AtlasData, Polity};
 use atlas_etl::report::{Counts, PolityStats, Report};
-use atlas_etl::{curated, geo, kjv, polities, report, theographic, validate, xrefs};
+use atlas_etl::{catechism_map, curated, geo, kjv, polities, report, theographic, validate, xrefs};
 
 fn main() -> Result<()> {
     // Built from components (not a literal "../data/raw" string) so joined
@@ -210,10 +210,70 @@ fn main() -> Result<()> {
         .context("data/compiled/place-history.json was NOT written; fix data/curated/place-history.toml and re-run")?;
 
     // --- data/curated/catechism.toml (Batch F: "the small catechism") ----
-    let catechism = curated::parse_catechism(&read(&curated_dir.join("catechism.toml"))?)?;
+    let mut catechism = curated::parse_catechism(&read(&curated_dir.join("catechism.toml"))?)?;
+
+    // --- Batch F2: brain-fuel/catechism mapping (requirement 3) + the
+    // Deuteronomy 5 parallel supplement (requirement 5b) -- both merged
+    // into `catechism` BEFORE validate::run_catechism below, so that
+    // function's own per-verse checks cover every question's own verses
+    // too, not just Batch F's item-level `verses`. See
+    // data/curated/catechism-mapping.toml's own header for exactly which
+    // ~37 of the repo's ~45 files are ingested here (vs. deliberately
+    // deferred) and catechism_map.rs's own module doc comment for the full,
+    // verified ref-grammar this ingestion canonicalizes.
+    let catechism_mapping = curated::parse_catechism_mapping(&read(&curated_dir.join("catechism-mapping.toml"))?)?;
+    let catechism_mapping_sha = "0be24fee92e6333f817c4c2a08f99cf7c5274295";
+    let catechism_mapping_root = raw_dir.join("catechism-mapping").join(format!("catechism-{catechism_mapping_sha}"));
+    let mut catechism_questions_by_item =
+        catechism_map::build_questions_from_mapping(&catechism_mapping, &catechism_mapping_root, &data.verses)
+            .context("data/compiled/catechism.json was NOT written; fix data/curated/catechism-mapping.toml, the ingested resources/*.yaml, or re-fetch (see data/fetch-raw.ps1)")?;
+
+    let catechism_deut5 = curated::parse_catechism_deut5(&read(&curated_dir.join("catechism-deut5.toml"))?)?;
+    for entry in &catechism_deut5 {
+        let mut verse_list = Vec::new();
+        for v in &entry.verses {
+            curated::expand_verse_ref(v, &entry.item, &mut verse_list)?;
+        }
+        catechism_questions_by_item.entry(entry.item.clone()).or_default().push(atlas_core::data::CatechismQuestion {
+            title: catechism_map::DEUT5_QUESTION_TITLE.to_string(),
+            verses: verse_list,
+            source: "deut5-parallel".to_string(),
+        });
+    }
+
+    catechism_map::merge_questions_into_parts(&mut catechism, catechism_questions_by_item)
+        .context("data/compiled/catechism.json was NOT written; fix data/curated/catechism-mapping.toml or data/curated/catechism-deut5.toml (an item id doesn't match catechism.toml)")?;
+
     validate::run_catechism(&catechism, &data.verses)
         .context("data/compiled/catechism.json was NOT written; fix data/curated/catechism.toml and re-run")?;
     let catechism_items_count: usize = catechism.iter().map(|p| p.items.len()).sum();
+
+    // Batch F2 requirement 5 (coverage report): computed directly from the
+    // final, merged `catechism` -- an item is "reachable" if EITHER its
+    // item-level `verses` (Batch F) OR any of its `questions[].verses`
+    // (Batch F2) is non-empty. Plain iteration, not AtlasData's own derived
+    // indexes -- the ETL's in-memory `data` never carries `catechism` at
+    // all (it's `#[serde(skip)]`, loaded fresh by the SERVER from
+    // catechism.json at startup instead -- see AtlasData::load), so this
+    // report figure is computed straight from the local `catechism` value
+    // this function already has in hand.
+    let mut catechism_distinct_verse_set: HashSet<&str> = HashSet::new();
+    let mut catechism_items_reachable = 0usize;
+    let mut catechism_per_part: Vec<(String, usize, usize)> = Vec::with_capacity(catechism.len());
+    for part in &catechism {
+        let mut part_reachable = 0usize;
+        for item in &part.items {
+            let reachable = !item.verses.is_empty() || item.questions.iter().any(|q| !q.verses.is_empty());
+            if reachable {
+                catechism_items_reachable += 1;
+                part_reachable += 1;
+            }
+            catechism_distinct_verse_set.extend(item.verses.iter().map(String::as_str));
+            catechism_distinct_verse_set.extend(item.questions.iter().flat_map(|q| q.verses.iter().map(String::as_str)));
+        }
+        catechism_per_part.push((part.title.clone(), part_reachable, part.items.len()));
+    }
+    let catechism_distinct_verses = catechism_distinct_verse_set.len();
 
     // --- write compiled output ------------------------------------------
     fs::create_dir_all(&compiled_dir).with_context(|| format!("creating {}", compiled_dir.display()))?;
@@ -249,6 +309,9 @@ fn main() -> Result<()> {
         land_mask_points,
         catechism_parts: catechism.len(),
         catechism_items: catechism_items_count,
+        catechism_items_reachable,
+        catechism_distinct_verses,
+        catechism_per_part,
     };
     let text = report::write(&rpt);
     fs::write(compiled_dir.join("report.txt"), &text).context("writing data/compiled/report.txt")?;
@@ -385,6 +448,14 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     let catechism_path = curated_dir.join("catechism.toml");
     if !catechism_path.is_file() {
         missing.push(format!("{}", catechism_path.display()));
+    }
+    let catechism_mapping_path = curated_dir.join("catechism-mapping.toml");
+    if !catechism_mapping_path.is_file() {
+        missing.push(format!("{}", catechism_mapping_path.display()));
+    }
+    let catechism_deut5_path = curated_dir.join("catechism-deut5.toml");
+    if !catechism_deut5_path.is_file() {
+        missing.push(format!("{}", catechism_deut5_path.display()));
     }
     let polities_dir = curated_dir.join("polities");
     let has_polity_files = polities_dir.is_dir()

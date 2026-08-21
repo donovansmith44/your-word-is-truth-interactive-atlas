@@ -335,6 +335,21 @@ file, for the current borders format and license). `server/atlas-etl/src/
 borders.rs` still runs the same clip/simplify pipeline described in its own
 module doc comment; only the input source and filename convention changed.
 
+## `catechism-mapping/catechism-{sha}/` (Batch F2 -- the user's own catechism verse mapping)
+
+Extracted GitHub commit-archive zip of `brain-fuel/catechism`, pinned at
+commit `0be24fee92e6333f817c4c2a08f99cf7c5274295` (see `fetch-raw.ps1` and
+`LICENSES.md`). `resources/*.yaml` (44 files): one file per catechism topic,
+each a top-level YAML mapping of question-number -> `{ title: string, refs:
+!!set of "Book Chapter:Verse" }` strings -- see
+`server/atlas-etl/src/catechism_map.rs`'s own module doc comment for the
+full, verified catalog of human ref-string shapes found across every file
+(single verse, same-chapter range, bare chapter, bare chapter range,
+cross-chapter range, comma-compound) and `data/curated/catechism-mapping.toml`
+for exactly which files are ingested vs. deliberately deferred (7 files +
+the `svebilius/` directory, a Finnish/English Svebilius Catechism
+explanation text, fetched but out of scope this batch).
+
 ## Vendored Leaflet (`client/wwwroot/vendor/leaflet/`)
 
 `leaflet.js` (147,552 bytes) and `leaflet.css` (14,806 bytes), fetched from

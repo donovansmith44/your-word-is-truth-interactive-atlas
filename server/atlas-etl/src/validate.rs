@@ -417,24 +417,38 @@ pub fn run_place_history(history: &[PlaceHistory], place_ids: &HashSet<&str>, ve
     bail!("place-history validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Batch F ("the small catechism"): validates the curated catechism
-/// (`data/curated/catechism.toml`, parsed separately by
-/// `curated::parse_catechism` -- same distinct-entry-point pattern as
-/// `run_place_history`/`run_landmarks`: this needs the compiled KJV text,
-/// which the pure parse step doesn't own). `verses` is the compiled KJV text
-/// map, same stricter-than-`run`'s-own-check bar `run_place_history` already
-/// applies to hand-typed verse refs (must both parse canonically AND exist).
-/// Checks, all aggregated (never fail-fast) same as every other check in
-/// this file: duplicate part ids, duplicate item ids (GLOBAL across every
-/// part, since item lookup by id -- `AtlasData::catechism_item_by_id` --  is
-/// itself global, not scoped to a part), every part has >=1 item, and every
-/// item's `verses` both parse canonically and exist in the compiled KJV
-/// text.
+/// Batch F ("the small catechism"), extended Batch F2 (question-level
+/// citations): validates the curated catechism (`data/curated/
+/// catechism.toml`, MERGED with the brain-fuel/catechism mapping and the
+/// Deut5 supplement by the time this runs -- see `main.rs`'s own Batch F2
+/// section; parsed separately by `curated::parse_catechism` -- same
+/// distinct-entry-point pattern as `run_place_history`/`run_landmarks`:
+/// this needs the compiled KJV text, which the pure parse step doesn't
+/// own). `verses` is the compiled KJV text map, same stricter-than-`run`'s-
+/// own-check bar `run_place_history` already applies to hand-typed verse
+/// refs (must both parse canonically AND exist). Checks, all aggregated
+/// (never fail-fast) same as every other check in this file: duplicate
+/// part ids, duplicate item ids (GLOBAL across every part, since item
+/// lookup by id -- `AtlasData::catechism_item_by_id` --  is itself global,
+/// not scoped to a part), every part has >=1 item, every item's `verses`
+/// both parse canonically and exist in the compiled KJV text, and (Batch
+/// F2) every one of every item's own `questions[].verses` too -- the exact
+/// same per-verse bar, so a bad ref from either citation source (Luther's
+/// own embedded citations OR the repo mapping/Deut5 supplement) fails the
+/// SAME way, loudly, never silently dropped.
 pub fn run_catechism(parts: &[CatechismPart], verses: &HashMap<String, String>) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
     check_duplicate_ids(parts.iter().map(|p| p.id.as_str()), "catechism part", &mut errors);
     check_duplicate_ids(parts.iter().flat_map(|p| p.items.iter()).map(|i| i.id.as_str()), "catechism item", &mut errors);
+
+    let check_verse = |v: &str, ctx: &str, errors: &mut Vec<String>| match VerseId::parse_canonical(v) {
+        Err(err) => errors.push(format!("{ctx}: verse '{v}' is not a canonical single-verse ref: {err}")),
+        Ok(_) if !verses.contains_key(v) => {
+            errors.push(format!("{ctx}: verse '{v}' parses but does not exist in the compiled KJV text"))
+        }
+        Ok(_) => {}
+    };
 
     for part in parts {
         if part.items.is_empty() {
@@ -443,12 +457,15 @@ pub fn run_catechism(parts: &[CatechismPart], verses: &HashMap<String, String>) 
         for item in &part.items {
             let ctx = format!("catechism item '{}' ({})", item.id, item.name);
             for v in &item.verses {
-                match VerseId::parse_canonical(v) {
-                    Err(err) => errors.push(format!("{ctx}: verse '{v}' is not a canonical single-verse ref: {err}")),
-                    Ok(_) if !verses.contains_key(v) => {
-                        errors.push(format!("{ctx}: verse '{v}' parses but does not exist in the compiled KJV text"))
-                    }
-                    Ok(_) => {}
+                check_verse(v, &ctx, &mut errors);
+            }
+            for q in &item.questions {
+                let qctx = format!("{ctx} question '{}' (source: {})", q.title, q.source);
+                if q.verses.is_empty() {
+                    errors.push(format!("{qctx}: has zero verses -- every question must cite at least one"));
+                }
+                for v in &q.verses {
+                    check_verse(v, &qctx, &mut errors);
                 }
             }
         }

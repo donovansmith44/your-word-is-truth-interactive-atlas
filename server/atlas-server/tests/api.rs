@@ -213,15 +213,30 @@ async fn verse_chapter_place_and_404() {
     // citation ("demo-item-1") -- proving cross_refs and catechism coexist
     // on the same verse detail response without either disturbing the other
     // (see demo_fixture()'s own comment for why this exact verse was
-    // deliberately reused rather than an unrelated one).
+    // deliberately reused rather than an unrelated one). This is an
+    // ITEM-level citation (demo-item-1's own `verses`) -- no `question` key
+    // at all (omitted, not null, per CatechismRefOut's own
+    // skip_serializing_if convention).
     let catechism = body["catechism"].as_array().unwrap();
     assert_eq!(catechism.len(), 1, "{body}");
     assert_eq!(catechism[0]["id"], "demo-item-1");
     assert_eq!(catechism[0]["name"], "Demo Catechism Item");
+    assert!(catechism[0].get("question").is_none(), "{body}");
 
-    // A verse with zero catechism citations still carries the key, empty
-    // (always-an-array wire convention, same as `places` on ChapterOut/VerseOut).
+    // Batch F2: JOS.6.21 carries a QUESTION-level citation instead (demo-item-1's
+    // own `questions[0]`, see demo_fixture()'s own comment) -- same item id,
+    // but `question` is now present, naming the question title.
     let (st, body) = call(&app, "/api/verse/JOS.6.21").await;
+    assert_eq!(st, 200);
+    let catechism = body["catechism"].as_array().unwrap();
+    assert_eq!(catechism.len(), 1, "{body}");
+    assert_eq!(catechism[0]["id"], "demo-item-1");
+    assert_eq!(catechism[0]["question"], "Demo Question");
+
+    // A verse with zero catechism citations of EITHER kind still carries the
+    // key, empty (always-an-array wire convention, same as `places` on
+    // ChapterOut/VerseOut).
+    let (st, body) = call(&app, "/api/verse/JOS.6.24").await;
     assert_eq!(st, 200);
     assert_eq!(body["catechism"], serde_json::json!([]));
 
@@ -435,14 +450,20 @@ async fn catechism_span_and_item_endpoints() {
     assert_eq!(items[0]["name"], "Demo Catechism Item");
 
     // Passage span aggregation: JOS.6.20-21 unions member verses 20 (cites
-    // demo-item-1) and 21 (cites nothing) -- the union still surfaces the
-    // one item, exactly the "span/passage selections aggregate citing items
-    // the way xrefs already aggregate" requirement.
+    // demo-item-1 at the ITEM level, no question) and 21 (cites demo-item-1
+    // AGAIN, but via a Batch F2 QUESTION-level citation, "Demo Question") --
+    // the union surfaces BOTH rows (dedup is by (id, question), never id
+    // alone -- see items_for_span's own doc comment), exactly the
+    // "span/passage selections aggregate citing items the way xrefs already
+    // aggregate" requirement, now extended to question granularity.
     let (st, body) = call(&app, "/api/catechism/JOS.6.20-21").await;
     assert_eq!(st, 200);
     let items = body.as_array().unwrap();
-    assert_eq!(items.len(), 1, "{body}");
+    assert_eq!(items.len(), 2, "{body}");
     assert_eq!(items[0]["id"], "demo-item-1");
+    assert!(items[0].get("question").is_none(), "{body}");
+    assert_eq!(items[1]["id"], "demo-item-1");
+    assert_eq!(items[1]["question"], "Demo Question");
 
     // A structurally valid span with zero citing items -- 200, gracefully
     // empty, never a 404 (ruling-3 policy, same as /api/xrefs/{sref}).
@@ -472,10 +493,18 @@ async fn catechism_span_and_item_endpoints() {
     assert_eq!(body["explanation_heading"], "What does this mean?");
     assert_eq!(body["explanation"], "Demo item explanation.");
     assert_eq!(body["where_written"], "Demo where-written text.");
+    // Batch F2: THE SCRIPTURES now lists BOTH the item-level verse (JOS.6.20,
+    // no `question`) and the question-level one (JOS.6.21, `question` =
+    // "Demo Question") -- item-level first, per CatechismItemOut's own doc
+    // comment ("items keep their F-batch embedded-citation links too,"
+    // listed as the primary source).
     let verses = body["verses"].as_array().unwrap();
-    assert_eq!(verses.len(), 1, "{body}");
+    assert_eq!(verses.len(), 2, "{body}");
     assert_eq!(verses[0]["vref"], "JOS.6.20");
     assert!(verses[0]["text"].as_str().unwrap().contains("wall fell down flat"));
+    assert!(verses[0].get("question").is_none(), "{body}");
+    assert_eq!(verses[1]["vref"], "JOS.6.21");
+    assert_eq!(verses[1]["question"], "Demo Question");
 
     // Unknown item id -> 404 not_found, same exact-identifier precedent
     // `/api/place/{id}` already set.

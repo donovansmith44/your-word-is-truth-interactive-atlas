@@ -28,6 +28,20 @@ if (-not (Test-Path (Join-Path $raw 'theographic'))) { Expand-Archive (Join-Path
 # Cross references (TSV with votes)
 Fetch 'https://a.openbible.info/data/cross-references.zip' 'cross-references.zip'
 if (-not (Test-Path (Join-Path $raw 'xrefs'))) { Expand-Archive (Join-Path $raw 'cross-references.zip') (Join-Path $raw 'xrefs') }
+
+# Batch F2: the user's own catechism verse-mapping repo (brain-fuel/catechism)
+# -- "I gave you the mapping very explicitly in the catechism repo" (user
+# direction 2026-08-20). Fetched as a GitHub commit-archive zip, PINNED at a
+# specific SHA (not a branch) for reproducibility -- same "whole repo" zip
+# pattern the Theographic fetch above already uses, just keyed to a commit
+# rather than a branch name. See LICENSES.md for the full provenance/license
+# disposition (controller ruling) and data/curated/catechism-mapping.toml's
+# own header for exactly which files this ingests vs. deliberately defers.
+$catechismSha = '0be24fee92e6333f817c4c2a08f99cf7c5274295'
+Fetch "https://github.com/brain-fuel/catechism/archive/$catechismSha.zip" 'catechism-mapping.zip'
+if (-not (Test-Path (Join-Path $raw "catechism-mapping\catechism-$catechismSha"))) {
+  Expand-Archive (Join-Path $raw 'catechism-mapping.zip') (Join-Path $raw 'catechism-mapping')
+}
 # Historical border snapshots are NOT fetched -- Batch L (license
 # remediation) removed the aourednik/historical-basemaps (GPL-3.0) source
 # that used to be fetched here. Historical borders are now this project's
