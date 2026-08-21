@@ -23,7 +23,7 @@ public sealed record Scene(
     // serialization where this field is omitted from the wire JSON.
     List<QuietPlace>? QuietPlaces = null,
     List<SceneArrow>? Arrows = null,
-    List<SceneNarrative>? Narratives = null)
+    List<SceneNarrative>? Narratives = null);
 
 public sealed record TimeRangeDto(int FromYear, int ToYear);
 
