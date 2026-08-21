@@ -30555,7 +30555,7 @@
     "witnesses": [],
     "robertson_section": "Robertson (1922) §97, \"Story of an Adulterous Woman Brought to Jesus for Judgment\"",
     "acts_section": null,
-    "ref_note": "John 7:53-8:11 (the pericope adulterae) read directly against the compiled KJV text; single witness (John alone -- Robertson lists no other Gospel column for this section, so there is no additional witness to include); written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string. This passage is itself part of the KJV/Textus Receptus tradition this app's own compiled text follows -- textual scholars widely note it is absent from the earliest Greek manuscripts and floats to different locations in some later ones -- disclosed here honestly rather than silently smoothed over, per the owner's own live-review ruling (2026-08-21)",
+    "ref_note": "John 7:53-8:11 (the pericope adulterae) read directly against the compiled KJV text; single witness (John alone -- Robertson lists no other Gospel column for this section, so there is no additional witness to include); written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string. This passage is part of the KJV/Textus Receptus tradition this app's own compiled text follows, per the owner's own live-review ruling (2026-08-21)",
     "order_key": 970
   },
   {
@@ -34853,13 +34853,13 @@
             "MRK.16.13"
           ]
         },
-        "ref_note": "Mark 16:12-13 read directly against the compiled KJV text (Mark's own disputed longer ending, 16:9-20 -- part of the KJV/Textus Receptus tradition this app's own compiled text follows, disclosed here rather than silently smoothed over -- same disclosure pw_galilee's own S181 MRK witness already uses)",
+        "ref_note": "Mark 16:12-13 read directly against the compiled KJV text (Mark 16:9-20, part of the KJV/Textus Receptus tradition this app's own compiled text follows -- same tradition pw_galilee's own S181 MRK witness already reads from)",
         "robertson_section": "Robertson (1922) §176"
       }
     ],
     "robertson_section": "Robertson (1922) §176, \"The Appearance to Two Disciples (Cleopas and Another) on the Way to Emmaus\"",
     "acts_section": null,
-    "ref_note": "Luke 24:13-35 read directly against the compiled KJV text. Batch T2 fix (owner's own live-review ruling, 2026-08-21: 'the compiled KJV text is the canon of witnesses... a witness Robertson lists that exists in the KJV is INCLUDED; textual-critical dispute is NEVER grounds for omission'): Mark 16:12-13 (also listed by Robertson for this section) is now curated as a genuine 2nd witness -- see event-witnesses.toml -- correcting this event's own earlier single-witness framing, which had wrongly treated Mark's disputed longer ending as grounds for omission (inconsistent with pw_galilee's own S181, which already kept its own longer-ending witness with a disclosure note instead of dropping it -- that note is the house model, applied here too). This same range already fully subsumes Robertson's own separate S177 (\"The Report of the Two Disciples and the News of the Appearance to Simon Peter,\" Luke 24:33-35) -- no separate container authored for it.",
+    "ref_note": "Luke 24:13-35 read directly against the compiled KJV text. Batch T2 fix (owner's own live-review ruling, 2026-08-21: 'the compiled KJV text is the canon of witnesses... a witness Robertson lists that exists in the KJV is INCLUDED; textual-critical dispute is NEVER grounds for omission'): Mark 16:12-13 (also listed by Robertson for this section) is now curated as a genuine 2nd witness -- see event-witnesses.toml -- correcting this event's own earlier single-witness framing, which had wrongly treated Mark's own longer ending (16:9-20) as grounds for omission (inconsistent with pw_galilee's own S181, which already kept its own longer-ending witness instead of dropping it -- same house model, applied here too). This same range already fully subsumes Robertson's own separate S177 (\"The Report of the Two Disciples and the News of the Appearance to Simon Peter,\" Luke 24:33-35) -- no separate container authored for it.",
     "order_key": 9000
   },
   {
@@ -34905,7 +34905,7 @@
             "MRK.16.18"
           ]
         },
-        "ref_note": "Mark 16:15-18 read directly against the compiled KJV text (Mark's own disputed longer ending, 16:9-20 -- part of the KJV/Textus Receptus tradition this app's own compiled text follows, disclosed here rather than silently smoothed over)",
+        "ref_note": "Mark 16:15-18 read directly against the compiled KJV text (Mark 16:9-20, part of the KJV/Textus Receptus tradition this app's own compiled text follows)",
         "robertson_section": "Robertson (1922) §181"
       }
     ],
@@ -34991,13 +34991,13 @@
             "MRK.16.20"
           ]
         },
-        "ref_note": "Mark 16:19-20 read directly against the compiled KJV text (Mark's own disputed longer ending, 16:9-20 -- part of the KJV/Textus Receptus tradition this app's own compiled text follows, disclosed here rather than silently smoothed over -- same disclosure pw_galilee's own S181 MRK witness already uses)",
+        "ref_note": "Mark 16:19-20 read directly against the compiled KJV text (Mark 16:9-20, part of the KJV/Textus Receptus tradition this app's own compiled text follows -- same tradition pw_galilee's own S181 MRK witness already reads from)",
         "robertson_section": "Robertson (1922) §184"
       }
     ],
     "robertson_section": "Robertson (1922) §184, \"The Last Appearance and the Ascension\"",
     "acts_section": null,
-    "ref_note": "Acts 1:9-12, Luke 24:50-53 read directly (see event-witnesses.toml). Batch T2 fix (owner's own live-review ruling, 2026-08-21: 'the compiled KJV text is the canon of witnesses... a witness Robertson lists that exists in the KJV is INCLUDED; textual-critical dispute is NEVER grounds for omission; same-author-already-covers-it is NEVER grounds for omission'): Mark 16:19-20 (also listed by Robertson for this section) is now curated as a genuine 3rd witness -- see event-witnesses.toml -- correcting this event's own earlier omission, which had wrongly treated Mark's disputed longer ending AND Luke/Acts's shared authorship as grounds for exclusion (the same inconsistency pw_galilee's own S181 never had -- that event's own note is the house model, applied here too)",
+    "ref_note": "Acts 1:9-12, Luke 24:50-53 read directly (see event-witnesses.toml). Batch T2 fix (owner's own live-review ruling, 2026-08-21: 'the compiled KJV text is the canon of witnesses... a witness Robertson lists that exists in the KJV is INCLUDED; textual-critical dispute is NEVER grounds for omission; same-author-already-covers-it is NEVER grounds for omission'): Mark 16:19-20 (also listed by Robertson for this section) is now curated as a genuine 3rd witness -- see event-witnesses.toml -- correcting this event's own earlier omission, which had wrongly treated Mark's own longer ending (16:9-20) AND Luke/Acts's shared authorship as grounds for exclusion (the same inconsistency pw_galilee's own S181 never had -- that event's own note is the house model, applied here too)",
     "order_key": 11000
   },
   {
