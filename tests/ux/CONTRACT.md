@@ -825,26 +825,31 @@ Notes:
   Opening a popover from INSIDE a pinned card (the title, a date, a verse/passage) closes
   the pin the same way it already closed an unpinned hover card -- promoting into a real
   popover always supersedes the card, pinned or not.
-- TRAVERSAL-1 (batch-g1-brief.md requirement 3): while pinned, `place-card-narratives`
-  shows one row per narrative with >=1 arrow (in the CURRENT scene) touching this place --
-  a colored swatch (that narrative's own data color) + its name, small caps. Adjacency is
-  derived CLIENT-SIDE from the scene's own `arrows` (no API change): for narrative N and
-  place P, an arrow with `to_place==P` yields `card-prev-event-N`'s target (`from_place`);
-  an arrow with `from_place==P` yields `card-next-event-N`'s target (`to_place`) -- each
-  button present only when that direction has a candidate. A place appearing in more than
-  one leg of the same narrative breaks the tie by preferring the arrow whose own event
-  (`to_event` for prev, `from_event` for next) is among the CURRENTLY SHOWN place's events,
-  else the lowest `order`. Clicking `card-prev-event-N`/`card-next-event-N` pans the map to
-  the adjacent place's own marker (no zoom change) and pins ITS card -- a traversal chain:
-  repeated clicks walk the narrative leg by leg, `card-prev-event-N` always reversing the
-  most recent `card-next-event-N` (and vice versa) back to the previous place. An adjacent
-  place that does not resolve in the current scene (lit or quiet) no-ops gracefully rather
-  than erroring -- arrows only ever connect lit places (ARROW-1), so this is not expected
-  to occur in practice, but is handled rather than assumed away. batch-n-brief.md's own
-  reader-popover traversal (NARRATIVE-1) is a DIFFERENT code path -- reuses
-  the SAME `Narrative.legs` chain and the SAME `scene::to_scene_event` this
-  note's own adjacency is built from, so the two can never disagree; see
-  NARRATIVE-1's own "consistency with G1" paragraph.
+- TRAVERSAL-1 (batch-g1-brief.md requirement 3; adjacency source REPLACED by
+  Batch N fix-round-1 -- see TRAVERSAL-3): while pinned, `place-card-narratives`
+  shows one row per narrative in which one of this place's own currently-shown
+  events is a leg -- a colored swatch (that narrative's own data color) + its
+  name, small caps. Adjacency comes from the ONE full-chain narrative resolver
+  (`GET /api/narrative/event/{id}`, one call per shown event, `Task.WhenAll`,
+  server-side `positions_for_events` over the FULL unwindowed `Narrative.legs`
+  chain) -- the exact same endpoint and resolver the reader popover's
+  PRIOR/FOLLOWING sections (NARRATIVE-1) consume, so both surfaces answer from
+  one computation BY CONSTRUCTION (the previous client-side windowed-arrows
+  derivation, and this note's former claim that the two paths "can never
+  disagree," were WRONG -- they split on real data under a window ending
+  inside a leg-date gap, e.g. Exodus's ex_kadesh -1444 -> ex_moab -1407;
+  TRAVERSAL-3 pins the agreement under exactly that window). `card-prev-event-N`/
+  `card-next-event-N` present only when the chain has an event in that
+  direction (narrative ends: no button -- conditional presence). Clicking pans
+  the map to the adjacent place's own marker (no zoom change) and pins ITS
+  card -- repeated clicks walk the narrative leg by leg, prev always reversing
+  the most recent next back to the previous place. An adjacent place outside
+  the current window resolves via the quiet-places fallback (map pans, the
+  quiet card renders -- a real navigation); only a place absent from the wire
+  entirely no-ops gracefully rather than erroring. A row can therefore exist
+  even when the scene draws NO arrow for that narrative (an isolated
+  in-window leg whose chain neighbors are both out-of-window) -- the row
+  reflects the graph, arrows reflect the window.
 - Hover place card content (batch-d-brief.md): the card is place name + verse
   content + controls, nothing else -- no per-(book,chapter) count rows, bare
   canonical-ref rows, or chapter-identifier lines anywhere on it. From the
