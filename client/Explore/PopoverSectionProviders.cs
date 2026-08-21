@@ -75,16 +75,29 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
 }
 
 /// <summary>
-/// Batch R requirement 3(b): the existing <c>GET /api/xrefs/{sref}</c> list,
-/// now rendered INLINE (no <c>popover-chip-xrefs</c> toggle press -- see
-/// VerseNode/PassageNode's own <c>ExploreAsync</c> comments for the retired
-/// chip) for BOTH Verse (unconditional fetch, same as before) and Passage
-/// (conditional -- absent whenever the span has zero cross-references, same
-/// "conditional presence" this whole batch is built around). Each entry is
-/// explorable (<c>.explorable</c>, per the batch brief's own "each entry
-/// explorable" wording) -- clicking one pushes a fresh VerseNode for its
-/// target, same FollowXref behavior this app has always had for a
-/// cross-reference.
+/// Batch R requirement 3(b), rebuilt Batch F2 (6-ARCH + requirement 6): the
+/// existing <c>GET /api/xrefs/{sref}</c> list, rendered INLINE (no
+/// <c>popover-chip-xrefs</c> toggle press -- see VerseNode/PassageNode's
+/// own <c>ExploreAsync</c> comments for the retired chip) for BOTH Verse
+/// (unconditional fetch, same as before) and Passage (conditional -- absent
+/// whenever the span has zero cross-references). Each entry is explorable
+/// via the SHARED <c>PassageList</c> component (6-ARCH: "same underlying
+/// data structure as the hover menu... reuse the bits that we have") --
+/// sequential verses within one target's own span render as ONE passage
+/// entry with its own FULL text (fetched via the existing chapter/LRU-cache
+/// mechanism, <see cref="CanonRef.TargetSpan"/>/<see cref="Explore.PassageListVerse"/>,
+/// rather than <see cref="CrossRefOut.Preview"/>'s own first-verse-only
+/// text), never N separate verse rows.
+///
+/// Requirement 6 (truncation): capped at 3 entries when xrefs is the ONLY
+/// context section present, 2 when any OTHER context section (Batch F's
+/// own catechism seam today; any future provider automatically) also
+/// resolved -- <see cref="IPopoverSectionContext.OtherContextSectionCount"/>
+/// is read INSIDE the render fragment (at render time, after every sibling
+/// provider has already resolved), never captured during this method's own
+/// concurrent <c>ResolveAsync</c> call. A down-arrow (<c>xrefs-more</c>)
+/// reveals the rest; fewer entries than the cap means no arrow at all
+/// (conditional presence, per <c>PassageList.razor</c>'s own rule).
 /// </summary>
 public sealed class CrossRefsSection : IPopoverSectionProvider
 {
@@ -112,40 +125,70 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             return null;
         }
 
+        // Resolve each target's own FULL member-verse text. Same-chapter
+        // targets (the overwhelming majority) fetch their whole chapter via
+        // the existing LRU-cached AtlasClient.Chapter (several targets
+        // sharing a chapter cost exactly one fetch); a cross-chapter/book
+        // target (CanonRef.TargetSpan returns null -- rare, see its own doc
+        // comment) falls back to its own first-verse preview text, the
+        // pre-existing behavior for that edge case.
+        var spans = xrefs.Select(x => (Xref: x, Span: CanonRef.TargetSpan(x.Target))).ToList();
+        var chapterKeys = spans.Where(s => s.Span is not null).Select(s => (s.Span!.Value.Book, s.Span.Value.Chapter)).Distinct().ToList();
+        var chapters = new Dictionary<(string, int), ChapterOut>();
+        try
+        {
+            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.Chapter(k.Item1, k.Item2)));
+            foreach (var (key, chapter) in chapterKeys.Zip(fetched))
+            {
+                chapters[key] = chapter;
+            }
+        }
+        catch (Exception)
+        {
+            // graceful degrade -- every target below falls back to its own preview text
+        }
+
+        var units = new List<PassageSourceUnit>();
+        foreach (var (x, span) in spans)
+        {
+            if (span is { } s && chapters.TryGetValue((s.Book, s.Chapter), out var chapter))
+            {
+                var verses = new List<PassageListVerse>();
+                for (var v = s.FromVerse; v <= s.ToVerse; v++)
+                {
+                    var text = chapter.Verses.FirstOrDefault(cv => cv.Verse == v)?.Text;
+                    if (text is not null)
+                    {
+                        verses.Add(new PassageListVerse($"{s.Book}.{s.Chapter}.{v}", text));
+                    }
+                }
+                if (verses.Count > 0)
+                {
+                    units.Add(new PassageSourceUnit(verses));
+                    continue;
+                }
+            }
+            units.Add(new PassageSourceUnit(new[] { new PassageListVerse(CanonRef.FirstVerseOf(x.Target), x.Preview) }));
+        }
+
         RenderFragment body = builder =>
         {
-            var seq = 0;
-            // Reuses the pre-existing .popover-xref-list wrapper (app.css) --
-            // its own flex-column + gap is what gives multiple xref items
-            // their vertical rhythm; without SOME wrapper here, each
-            // .popover-xref-item button (a block-level flex container itself,
-            // for its OWN target/preview layout) would still stack correctly
-            // but with no gap between rows at all.
-            builder.OpenElement(seq++, "div");
-            builder.AddAttribute(seq++, "class", "popover-xref-list");
-            foreach (var x in xrefs)
-            {
-                var target = x.Target; // local copy captured per-row by the onclick closure below
-                var preview = x.Preview;
-                builder.OpenElement(seq++, "button");
-                builder.AddAttribute(seq++, "type", "button");
-                builder.AddAttribute(seq++, "class", "popover-xref-item explorable");
-                builder.AddAttribute(seq++, "data-testid", $"xref-item-{target}");
-                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new VerseNode(CanonRef.FirstVerseOf(target)))));
-
-                builder.OpenElement(seq++, "span");
-                builder.AddAttribute(seq++, "class", "popover-xref-target");
-                builder.AddContent(seq++, target);
-                builder.CloseElement();
-
-                builder.OpenElement(seq++, "span");
-                builder.AddAttribute(seq++, "class", "popover-xref-preview");
-                builder.AddContent(seq++, preview);
-                builder.CloseElement();
-
-                builder.CloseElement();
-            }
-            builder.CloseElement();
+            builder.OpenComponent<Components.PassageList>(0);
+            builder.AddAttribute(1, "Units", (IReadOnlyList<PassageSourceUnit>)units);
+            builder.AddAttribute(2, "RefTestIdPrefix", "xref-item");
+            builder.AddAttribute(3, "Cap", ctx.OtherContextSectionCount > 0 ? 2 : 3);
+            builder.AddAttribute(4, "MoreTestId", "xrefs-more");
+            builder.AddAttribute(5, "CollapseTestId", "xrefs-collapse");
+            builder.AddAttribute(6, "RevealNoun", "cross-references");
+            // A real, live-caught regression (reader.spec.ts READ-3, found by
+            // the full pre-existing suite): restores the pre-Batch-F2 click
+            // contract -- every xref-item pushes a VerseNode at the target's
+            // own FIRST verse, regardless of whether its preview text spans
+            // more than one verse (~25% of real targets do). See
+            // PassageList.razor's own ExploreAsVerse doc comment.
+            builder.AddAttribute(7, "ExploreAsVerse", true);
+            builder.AddAttribute(8, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.CloseComponent();
         };
         return new PopoverSection("xrefs", body);
     }
@@ -171,6 +214,20 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
 /// other section-native explorable row already uses). Conditional presence:
 /// a verse/passage citing nothing shows no section at all (no placeholder
 /// text), same rule <see cref="CrossRefsSection"/> already follows.
+///
+/// Batch F2 requirement 4 ("verse -&gt; catechism lookup now returns
+/// question-level hits"): a row whose own <see cref="CatechismRefDto.Question"/>
+/// is present reads "&lt;Item&gt; — &lt;Question title&gt;" (e.g. "The First
+/// Commandment — God the Holy Trinity"); a bare item-level hit (no
+/// question, Luther's own embedded citation) keeps the plain item name,
+/// unchanged since Batch F. The SAME item can legitimately appear more than
+/// once (via two different questions, or a question plus the bare
+/// citation) -- <c>catechism-item-{ID}</c> stays the testid for the FIRST
+/// occurrence of a given id (so every existing single-occurrence assertion,
+/// e.g. Baptism's own items, is untouched); a SECOND+ occurrence of the
+/// SAME id gets a numbered suffix (<c>catechism-item-{ID}--q2</c>,
+/// <c>--q3</c>, ...) so every row still has its own unique, addressable
+/// testid rather than colliding.
 /// </summary>
 public sealed class CatechismSeamSection : IPopoverSectionProvider
 {
@@ -209,16 +266,21 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
 
             builder.OpenElement(seq++, "div");
             builder.AddAttribute(seq++, "class", "popover-catechism-list");
+            var occurrences = new Dictionary<string, int>();
             foreach (var it in items)
             {
                 var id = it.Id; // local copies -- captured per-row by the onclick closure below
                 var name = it.Name;
+                var count = occurrences[id] = occurrences.GetValueOrDefault(id) + 1;
+                var testid = count == 1 ? $"catechism-item-{id}" : $"catechism-item-{id}--q{count}";
+                var label = it.Question is { } q ? $"{name} — {q}" : name;
+
                 builder.OpenElement(seq++, "button");
                 builder.AddAttribute(seq++, "type", "button");
                 builder.AddAttribute(seq++, "class", "popover-catechism-item explorable");
-                builder.AddAttribute(seq++, "data-testid", $"catechism-item-{id}");
+                builder.AddAttribute(seq++, "data-testid", testid);
                 builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new CatechismNode(id, name))));
-                builder.AddContent(seq++, name);
+                builder.AddContent(seq++, label);
                 builder.CloseElement();
             }
             builder.CloseElement();
@@ -396,16 +458,25 @@ public sealed class CatechismWhereWrittenSection : IPopoverSectionProvider
 /// <summary>
 /// Batch F: "THE SCRIPTURES" -- a <see cref="CatechismNode"/>'s own proof
 /// verses, each rendered with its OWN FULL KJV text (house rendering, not a
-/// truncated preview -- <c>CatechismItemDetail.Verses</c>'s own doc
-/// comment) and explorable: clicking one pushes a fresh <see cref="VerseNode"/>,
-/// so onward navigation keeps working exactly as it does everywhere else in
-/// this app (verse -&gt; catechism -&gt; proof verse -&gt; its OWN cross-references
-/// -&gt; ..., requirement 4 verbatim) with no bespoke code here -- a plain
-/// VerseNode already carries every section (text/xrefs/its own catechism
-/// citations, if any) uniformly regardless of how it was reached.
-/// Conditional presence: absent for an item with zero curated proof verses
-/// (most items -- Luther's Small Catechism embeds few explicit citations;
-/// see this batch's own report for the full disclosure).
+/// truncated preview) and explorable: clicking one pushes a fresh
+/// <see cref="VerseNode"/> (or <see cref="PassageNode"/> for a grouped
+/// passage entry), so onward navigation keeps working exactly as it does
+/// everywhere else in this app (verse -&gt; catechism -&gt; proof verse -&gt; its
+/// OWN cross-references -&gt; ..., requirement 4 verbatim). Conditional
+/// presence: absent for an item with zero curated proof verses.
+///
+/// Batch F2, 6-ARCH: rebuilt on the shared <see cref="Components.PassageList"/>
+/// -- sequential proof verses now display as ONE passage entry, never N
+/// separate rows (a real, common case since a range citation like "EXO.20.5-6"
+/// expands to individual verses on the wire). <c>CatechismItemDetail.Verses</c>
+/// is split into contiguous same-<see cref="CatechismProofVerseDto.Question"/>
+/// runs FIRST (item-level verses -- question null, Luther's own embedded
+/// citation, always listed first -- then each question's own verses, in
+/// curated order) -- each run becomes its own <see cref="PassageSourceUnit"/>,
+/// so passage-grouping never silently spans two different questions' worth
+/// of proof text, and each block's own question title renders as a caption
+/// (requirement 4's own "if cheap, highlight/deep-link the question
+/// context"). No cap -- items rarely have enough proof verses to need one.
 /// </summary>
 public sealed class CatechismScripturesSection : IPopoverSectionProvider
 {
@@ -433,7 +504,27 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
             return null;
         }
 
-        var verses = detail.Verses;
+        var units = new List<PassageSourceUnit>();
+        List<PassageListVerse>? currentGroup = null;
+        string? currentQuestion = null;
+        foreach (var v in detail.Verses)
+        {
+            if (currentGroup is null || v.Question != currentQuestion)
+            {
+                if (currentGroup is not null)
+                {
+                    units.Add(new PassageSourceUnit(currentGroup, currentQuestion));
+                }
+                currentGroup = new List<PassageListVerse>();
+                currentQuestion = v.Question;
+            }
+            currentGroup.Add(new PassageListVerse(v.Vref, v.Text));
+        }
+        if (currentGroup is not null)
+        {
+            units.Add(new PassageSourceUnit(currentGroup, currentQuestion));
+        }
+
         RenderFragment body = builder =>
         {
             var seq = 0;
@@ -443,31 +534,11 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
             builder.AddContent(seq++, "THE SCRIPTURES");
             builder.CloseElement();
 
-            builder.OpenElement(seq++, "div");
-            builder.AddAttribute(seq++, "class", "popover-catechism-verse-list");
-            foreach (var v in verses)
-            {
-                var vref = v.Vref; // local copies -- captured per-row by the onclick closure below
-                var text = v.Text;
-                builder.OpenElement(seq++, "button");
-                builder.AddAttribute(seq++, "type", "button");
-                builder.AddAttribute(seq++, "class", "popover-catechism-verse explorable");
-                builder.AddAttribute(seq++, "data-testid", $"catechism-verse-{vref}");
-                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new VerseNode(vref))));
-
-                builder.OpenElement(seq++, "span");
-                builder.AddAttribute(seq++, "class", "popover-catechism-verse-ref");
-                builder.AddContent(seq++, vref);
-                builder.CloseElement();
-
-                builder.OpenElement(seq++, "span");
-                builder.AddAttribute(seq++, "class", "popover-catechism-verse-text");
-                builder.AddContent(seq++, text);
-                builder.CloseElement();
-
-                builder.CloseElement();
-            }
-            builder.CloseElement();
+            builder.OpenComponent<Components.PassageList>(seq++);
+            builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
+            builder.AddAttribute(seq++, "RefTestIdPrefix", "catechism-verse");
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.CloseComponent();
         };
         return new PopoverSection("catechism-scriptures", body);
     }
@@ -488,17 +559,30 @@ public sealed class PlaceDescriptionSection : IPopoverSectionProvider
 }
 
 /// <summary>
-/// Batch R requirement 3: established/destroyed, "with their supporting
-/// verse refs explorable" -- existing Batch E data (<c>PlaceHistoryOut</c>'s
-/// own <c>established</c>/<c>destroyed</c>), now surfaced in the POPOVER
-/// itself (PlaceCard's own <c>place-card-date-established</c>/
-/// <c>-destroyed</c> affordances already reached this same content one hop
-/// further out -- this is the content those buttons drill INTO, unchanged;
-/// see CONTRACT.md's own new testids for this popover-native rendering).
-/// Conditional presence: absent when this place has neither claim curated.
+/// Batch R requirement 3, rebuilt Batch F2 requirement 6b (user direction
+/// 2026-08-20: "on the established/destroyed buttons just display
+/// verses/passages how we do on every other hover menu... rather than the
+/// stupid buttons i have to click to see"): established/destroyed, with
+/// their supporting verses/passages rendered INLINE, immediately -- no
+/// click-to-reveal step. The date LABEL itself is no longer a button that
+/// gates the verses behind a YearNode push (that "reveal button" role is
+/// retired, per the requirement's own wording) -- it is now a plain,
+/// non-interactive instrument-face line, same house treatment
+/// PlaceCard.razor's own established/destroyed line already uses one hop
+/// further OUT. The verses/passages themselves are what stay explorable
+/// ("the refs themselves stay explorable entries (click a ref -&gt; its
+/// verse node, as everywhere)"), rendered via the SHARED
+/// <see cref="Components.PassageList"/> component (6-ARCH), capped at 2
+/// passage entries per date (est and dest each -- "the place popover always
+/// has sibling sections," so this cap is unconditional, not context-
+/// dependent the way requirement 6's xref cap is) with the same down-arrow
+/// reveal/up-arrow snap-back language. Conditional presence: absent when
+/// this place has neither claim curated.
 /// </summary>
 public sealed class PlaceDatesSection : IPopoverSectionProvider
 {
+    private const int SupportingVersesCap = 2;
+
     public bool AppliesTo(IExplorable node) => node.Kind == "Place";
 
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
@@ -525,6 +609,12 @@ public sealed class PlaceDatesSection : IPopoverSectionProvider
             return null;
         }
 
+        // Both dates' own supporting verses resolve concurrently (independent
+        // fetches, same "never serialize" rule this app follows throughout).
+        var establishedVersesTask = established is { } est ? VerseTextResolver.ResolveAsync(api, est.Verses) : Task.FromResult(new List<PassageListVerse>());
+        var destroyedVersesTask = destroyed is { } dest ? VerseTextResolver.ResolveAsync(api, dest.Verses) : Task.FromResult(new List<PassageListVerse>());
+        await Task.WhenAll(establishedVersesTask, destroyedVersesTask);
+
         RenderFragment body = builder =>
         {
             var seq = 0;
@@ -532,34 +622,25 @@ public sealed class PlaceDatesSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "class", "popover-place-dates");
             if (established is { } est)
             {
-                RenderDateRow(builder, ref seq, "established", "Established", est, ctx);
+                RenderDateRow(builder, ref seq, "established", "Established", est, establishedVersesTask.Result, ctx);
             }
             if (destroyed is { } dest)
             {
-                RenderDateRow(builder, ref seq, "destroyed", "Destroyed", dest, ctx);
+                RenderDateRow(builder, ref seq, "destroyed", "Destroyed", dest, destroyedVersesTask.Result, ctx);
             }
             builder.CloseElement();
         };
         return new PopoverSection("place-dates", body);
     }
 
-    // Named wrapper, not an inline lambda -- Razor/RenderTreeBuilder's own
-    // @onclick attribute-value machinery can't reliably close over a `ref`
-    // parameter, and this keeps the established/destroyed rows byte-for-byte
-    // identical rather than two near-duplicated inline blocks.
-    private static void RenderDateRow(RenderTreeBuilder builder, ref int seq, string testidSuffix, string label, DateClaimOut claim, IPopoverSectionContext ctx)
+    private static void RenderDateRow(
+        RenderTreeBuilder builder, ref int seq, string testidSuffix, string label, DateClaimOut claim, List<PassageListVerse> verses, IPopoverSectionContext ctx)
     {
         var dateText = YearText.FormatClaim(claim.When.FromYear, claim.When.ToYear, claim.Note);
-        var when = claim.When;
-        var verses = claim.Verses;
-        var note = claim.Note;
 
-        builder.OpenElement(seq++, "button");
-        builder.AddAttribute(seq++, "type", "button");
-        builder.AddAttribute(seq++, "class", "popover-place-date explorable");
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "popover-place-date");
         builder.AddAttribute(seq++, "data-testid", $"popover-place-date-{testidSuffix}");
-        builder.AddAttribute(seq++, "aria-label", $"Explore {label.ToLowerInvariant()} date: {dateText}");
-        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new YearNode(label, when, verses, note))));
 
         builder.OpenElement(seq++, "span");
         builder.AddAttribute(seq++, "class", "popover-place-date-label");
@@ -570,8 +651,21 @@ public sealed class PlaceDatesSection : IPopoverSectionProvider
         builder.AddAttribute(seq++, "class", "popover-place-date-value");
         builder.AddContent(seq++, dateText);
         builder.CloseElement();
-
         builder.CloseElement();
+
+        if (verses.Count > 0)
+        {
+            var units = new PassageSourceUnit[] { new(verses) };
+            builder.OpenComponent<Components.PassageList>(seq++);
+            builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
+            builder.AddAttribute(seq++, "RefTestIdPrefix", $"popover-place-date-{testidSuffix}-verse");
+            builder.AddAttribute(seq++, "Cap", SupportingVersesCap);
+            builder.AddAttribute(seq++, "MoreTestId", $"popover-place-date-{testidSuffix}-more");
+            builder.AddAttribute(seq++, "CollapseTestId", $"popover-place-date-{testidSuffix}-collapse");
+            builder.AddAttribute(seq++, "RevealNoun", "verses");
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.CloseComponent();
+        }
     }
 }
 

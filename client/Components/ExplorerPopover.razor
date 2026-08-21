@@ -39,14 +39,34 @@
    Backdrop is a sibling element, not a wrapper, so clicking the popover
    itself never needs stopPropagation to avoid closing through a parent
    listener -- a click on the popover simply never reaches the backdrop's
-   own @onclick at all. *@
+   own @onclick at all.
+
+   Batch F2 requirement 6d ("the hover windows ought not be smack dab in
+   the center of the screen, but on the side of the screen where the hover
+   exploration originated"): PaneAnchor (set by Reader.razor/World.razor
+   from their own split state -- "reader"/"atlas"/null) anchors the popover
+   to the ORIGINATING PANE's currently-visible region instead of the full
+   viewport, while a split is open. Measured ONCE, on this instance's first
+   render (mirrors PlaceCard/CardPlacement's own proven "snapshot at open,
+   never re-measure on scroll/resize" discipline -- see that file's own
+   comment for why a continuous tracker isn't needed here either) via
+   reader.js's getPaneRect (viewport-clamped, so it's correct even when the
+   reader pane's own content is taller than one screen -- see that
+   function's own comment). Full-page (non-split) behavior is byte-for-byte
+   unchanged: PaneAnchor is null there, so .popover-pane-anchored is never
+   applied and every rule falls back to its pre-existing, viewport-centered
+   base. *@
+@using System.Globalization
 @inject AtlasClient Atlas
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 @implements IPopoverSectionContext
 
-<div class="popover-backdrop" data-testid="popover-backdrop" @onclick="RequestClose"></div>
+<div class="popover-backdrop @(_paneRect is not null ? "popover-pane-anchored" : null)"
+     style="@PaneRectStyle" data-testid="popover-backdrop" @onclick="RequestClose"></div>
 
-<div class="popover" data-testid="popover" tabindex="-1" @ref="_panelRef" @onkeydown="OnKeyDown">
+<div class="popover @(_paneRect is not null ? "popover-pane-anchored" : null)"
+     style="@PaneRectStyle" data-testid="popover" tabindex="-1" @ref="_panelRef" @onkeydown="OnKeyDown">
     <div class="popover-head">
         @if (_stack.Count > 1)
         {
@@ -122,6 +142,12 @@
     [Parameter] public bool InSplit { get; set; }
     [Parameter] public EventCallback<string> OnNavigateWorldInSplit { get; set; }
 
+    // Batch F2 requirement 6d: "reader" | "atlas" | null (the host page's
+    // own split state -- see this file's own header). Which CSS selector
+    // PaneRectMeasured below measures is derived from this, never hardcoded
+    // -- see PaneSelector.
+    [Parameter] public string? PaneAnchor { get; set; }
+
     private readonly Stack<IExplorable> _stack = new();
     private IExplorable Current => _stack.Peek();
 
@@ -139,6 +165,46 @@
     private ElementReference _panelRef;
     private bool _focused;
 
+    // Batch F2 requirement 6d: the originating pane's own currently-visible
+    // rect, in px, measured ONCE (PaneMeasured guards this, same one-shot
+    // shape _focused already uses just below) -- null whenever PaneAnchor
+    // is null (full-page, unchanged behavior) OR the measurement hasn't
+    // landed yet (the popover renders at its ordinary viewport-centered
+    // default for that one instant, same graceful-degrade-to-default
+    // discipline PlaceCard/CardPlacement already established).
+    private PaneRectDto? _paneRect;
+    private bool _paneMeasured;
+
+    // Real, live-caught bug (fixed before this ever shipped, not guessed):
+    // Reader.razor's own split-pane root always carries data-testid
+    // "reader-root" (its OWN CSS class toggles between "reader-page" and
+    // "reader-page split-pane-reader", but the TESTID attribute never
+    // changes) -- a selector targeting `[data-testid="split-pane-reader"]`
+    // matches NOTHING, ever. World.razor's own root is the opposite: BOTH
+    // its class AND its testid switch to "split-pane-atlas" together while
+    // SplitMode. reader-root only ever needs measuring while PaneAnchor is
+    // "reader" (i.e. while _splitOpen is true on the host), so it's always
+    // carrying the split-pane-reader CLASS at exactly the moment this
+    // selector is used -- no need to select on that class specifically.
+    private string PaneSelector => PaneAnchor switch
+    {
+        "reader" => "[data-testid=\"reader-root\"]",
+        "atlas" => "[data-testid=\"split-pane-atlas\"]",
+        _ => "",
+    };
+
+    // Centers the popover ON the pane's own rect (transform: translate(-50%,-50%)
+    // already applies, same as the base rule) by treating the rect's own
+    // midpoint as the anchor point, and bounds its max-width/max-height to
+    // the pane's own size (minus the SAME margins the base, full-viewport
+    // rule already subtracts) so it can never overflow into the other pane.
+    private string? PaneRectStyle => _paneRect is { } r
+        ? $"--pane-center-x:{(r.Left + r.Width / 2).ToString(CultureInfo.InvariantCulture)}px;" +
+          $"--pane-center-y:{(r.Top + r.Height / 2).ToString(CultureInfo.InvariantCulture)}px;" +
+          $"--pane-width:{r.Width.ToString(CultureInfo.InvariantCulture)}px;" +
+          $"--pane-height:{r.Height.ToString(CultureInfo.InvariantCulture)}px;"
+        : null;
+
     protected override async Task OnInitializedAsync()
     {
         _stack.Push(Root);
@@ -152,6 +218,27 @@
     // already-open one).
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!_paneMeasured && PaneAnchor is not null)
+        {
+            _paneMeasured = true;
+            try
+            {
+                var readerJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
+                _paneRect = await readerJs.InvokeAsync<PaneRectDto?>("getPaneRect", PaneSelector);
+                if (_paneRect is not null)
+                {
+                    StateHasChanged();
+                }
+            }
+            catch (Exception)
+            {
+                // Positioning is a nicety, not load-bearing -- same graceful-
+                // degradation stance CardPlacement's own measurement takes: a
+                // failed measurement just leaves the popover at its default,
+                // full-viewport-centered placement.
+            }
+        }
+
         if (_focused)
         {
             return;
@@ -267,6 +354,14 @@
         StateHasChanged();
     }
 
+    // Batch F2 requirement 6: see IPopoverSectionContext.OtherContextSectionCount's
+    // own doc comment for why this reads `_sections` live (render time),
+    // never a value snapshotted during the concurrent ResolveAsync phase.
+    // "verse-text" (the subject) and "xrefs" (asking about its OWN
+    // siblings, not itself) are excluded; every other resolved section
+    // counts, generically -- no hardcoded catechism check.
+    public int OtherContextSectionCount => _sections.Count(s => s.Testid is not ("verse-text" or "xrefs"));
+
     private async Task Activate(Exploration ex)
     {
         switch (ex.Target)
@@ -302,7 +397,17 @@
 
             case ExplorationTarget.NavigateReader reader:
                 await RequestClose();
-                var url = $"/read/{reader.Book}/{reader.Chapter}" + (reader.Verse is int v ? $"#v{v}" : "");
+                // Batch F2 requirement 6c: preserves an open split across
+                // this navigation too (SPLIT-1's own "reader navigation
+                // keeps the split open" promise, extended to this chip --
+                // InSplit is true for EITHER pane's own popover while a
+                // split is showing, so this is correct for a chip clicked
+                // from the atlas pane's own popover as well). Query BEFORE
+                // fragment, same reasoning as Reader.razor's own ChapterHref/
+                // ApplyScriptureRef.
+                var query = InSplit ? "?split=1" : "";
+                var fragment = reader.Verse is int v ? $"#v{v}" : "";
+                var url = $"/read/{reader.Book}/{reader.Chapter}{query}{fragment}";
                 Nav.NavigateTo(url);
                 break;
         }
@@ -336,4 +441,10 @@
     // Author/TimeAndPlace titles are proper names/composed labels, styled
     // as ordinary prose headings instead.
     private static bool IsRefKind(string kind) => kind is "Verse" or "Passage" or "Chapter" or "Book";
+
+    // Batch F2 requirement 6d: reader.js's own getPaneRect return shape --
+    // deserialized via Blazor's DEFAULT (camelCase) JS-interop JSON options,
+    // not Wire.Options (this never crosses the real HTTP API either, same
+    // reasoning as MapInterop.cs's own CardMeasurementDto).
+    private sealed record PaneRectDto(double Left, double Top, double Width, double Height);
 }

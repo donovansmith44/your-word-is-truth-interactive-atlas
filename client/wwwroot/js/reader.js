@@ -209,3 +209,40 @@ export function unwatchChapterNavCenter() {
         _navCenterCleanup();
     }
 }
+
+// Batch F2 requirement 6d ("if i am exploring anything on either side of
+// the split screen, the hover windows ought not be smack dab in the center
+// of the screen, but on the side of the screen where the hover exploration
+// originated"): the CURRENTLY VISIBLE portion of `selector`'s own element,
+// clamped to the viewport on every side -- called ONCE, at popover-open
+// time (ExplorerPopover.razor's own OnAfterRenderAsync, mirroring
+// CardPlacement's proven "measure once, on open" snapshot discipline, not a
+// continuous tracker), so the popover can center itself within whichever
+// PANE it opened from rather than the full viewport.
+//
+// Viewport-clamped, not the element's own raw getBoundingClientRect(): the
+// reader pane (.split-pane-reader) is an ordinary in-flow box that can be
+// far taller than one screen (a long chapter), so its own raw rect's height
+// is the WHOLE scrollable content's height, not what's actually on screen
+// right now -- using that directly would center the popover somewhere in
+// the middle of off-screen content. Clamping to [0, innerWidth]/
+// [0, innerHeight] on every edge gives "the visible slice of this pane,
+// right now" instead, which is always a SUBSET of the pane's own real box
+// -- so anything positioned within it is automatically still "within the
+// pane" too, just additionally guaranteed on-screen. The atlas pane
+// (.split-pane-atlas) is `position: sticky` and always exactly one viewport
+// tall, so clamping is a no-op for it in practice -- the same function
+// works correctly for both without a pane-specific branch.
+export function getPaneRect(selector) {
+    const el = document.querySelector(selector);
+    if (!el) {
+        return null;
+    }
+
+    const r = el.getBoundingClientRect();
+    const left = Math.max(r.left, 0);
+    const top = Math.max(r.top, 0);
+    const right = Math.min(r.right, window.innerWidth);
+    const bottom = Math.min(r.bottom, window.innerHeight);
+    return { left, top, width: Math.max(right - left, 0), height: Math.max(bottom - top, 0) };
+}

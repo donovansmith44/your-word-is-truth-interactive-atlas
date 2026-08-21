@@ -1,5 +1,14 @@
 @using System.Globalization
 @using BibleAtlas.Client.Explore
+@* Batch F2, 6-ARCH ("reuse the bits that we have! if you can't reuse them,
+   then the bits need refactored for composability"): this card's own
+   passage-grouping algorithm (Batch D) now lives in Explore/PassageGrouping.cs
+   -- Groups()/SpanRef() below delegate to it so the popover platform's own
+   shared passage-list component (PassageList.razor) reuses the EXACT same
+   "what counts as a passage" rule rather than a second, parallel
+   implementation. This alias keeps every VerseRun call site in this file
+   (the @foreach markup below included) unchanged. *@
+@using VerseRun = BibleAtlas.Client.Explore.PassageGrouping.VerseRun
 @inject AtlasClient Atlas
 @inject IJSRuntime JS
 @* A parchment hover card floating over the atlas plate (design-direction.md's
@@ -468,16 +477,6 @@
         return IsFlippedNow ? $"{gap}px" : $"calc(-100% - {gap}px)";
     }
 
-    // A maximal run of consecutive same-book/chapter verses within a
-    // MergedVerses() list, identified by its start index into that list.
-    // Length >= 2 is Requirement 2's "passage" (renders as one flowing
-    // block); Length == 1 is a lone verse (renders as its own ref+text
-    // line, same shape as every verse row rendered before this batch).
-    private sealed record VerseRun(int Start, int Length)
-    {
-        public bool IsPassage => Length >= 2;
-    }
-
     // The flat, deduped verse-id list the card renders from -- unchanged
     // since before this batch: event order, then each event's own already
     // (book,chapter)-then-verse-number sorted VerseGroups (see atlas-core's
@@ -516,32 +515,7 @@
     // -- see the file header's note on why that's the deliberate reading
     // of "the scene's activating verse list... canonical order", not a
     // fresh sort.
-    private static List<VerseRun> Groups(List<string> verses)
-    {
-        var groups = new List<VerseRun>();
-        var i = 0;
-        while (i < verses.Count)
-        {
-            var start = i;
-            var (book, chapter, num) = CanonRef.ParseVerse(verses[i]);
-            i++;
-            while (i < verses.Count)
-            {
-                var next = CanonRef.ParseVerse(verses[i]);
-                if (next.Book != book || next.Chapter != chapter || next.Verse != num + 1)
-                {
-                    break;
-                }
-
-                num = next.Verse;
-                i++;
-            }
-
-            groups.Add(new VerseRun(start, i - start));
-        }
-
-        return groups;
-    }
+    private static List<VerseRun> Groups(List<string> verses) => PassageGrouping.Groups(verses);
 
     // Requirement 2's 4/2-initial rule: up to the first 4 verses of the
     // FIRST group if it's a passage; otherwise (the first group is a lone
@@ -592,12 +566,7 @@
     // within one book+chapter) -- reflects only whatever portion of the
     // underlying group is currently visible, so a partially-revealed 8-verse
     // passage shown 4-deep correctly spans "...1-4", not "...1-8".
-    private static string SpanRef(string firstVref, string lastVref)
-    {
-        var first = CanonRef.ParseVerse(firstVref);
-        var last = CanonRef.ParseVerse(lastVref);
-        return $"{first.Book}.{first.Chapter}.{first.Verse}-{last.Verse}";
-    }
+    private static string SpanRef(string firstVref, string lastVref) => PassageGrouping.SpanRef(firstVref, lastVref);
 
     private static int VerseNumOf(string vref) => CanonRef.ParseVerse(vref).Verse;
 

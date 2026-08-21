@@ -58,7 +58,7 @@
         @if (!_splitOpen)
         {
             <button type="button" class="split-open split-open-parchment" data-testid="split-open-reader"
-                    @onclick="() => _splitOpen = true">
+                    @onclick="OpenSplit">
                 Open the map beside the text
             </button>
         }
@@ -131,11 +131,11 @@
         <nav aria-label="Chapter navigation">
             @if (PrevTarget is { } prev)
             {
-                <a class="reader-prev" data-testid="reader-prev" href="@($"/read/{prev.Book}/{prev.Chapter}")" aria-label="@($"Previous chapter: {prev.Name} {prev.Chapter}")">&lsaquo;<span class="reader-nav-label"> @prev.Name @prev.Chapter</span></a>
+                <a class="reader-prev" data-testid="reader-prev" href="@ChapterHref(prev.Book, prev.Chapter)" aria-label="@($"Previous chapter: {prev.Name} {prev.Chapter}")">&lsaquo;<span class="reader-nav-label"> @prev.Name @prev.Chapter</span></a>
             }
             @if (NextTarget is { } next)
             {
-                <a class="reader-next" data-testid="reader-next" href="@($"/read/{next.Book}/{next.Chapter}")" aria-label="@($"Next chapter: {next.Name} {next.Chapter}")"><span class="reader-nav-label">@next.Name @next.Chapter </span>&rsaquo;</a>
+                <a class="reader-next" data-testid="reader-next" href="@ChapterHref(next.Book, next.Chapter)" aria-label="@($"Next chapter: {next.Name} {next.Chapter}")"><span class="reader-nav-label">@next.Name @next.Chapter </span>&rsaquo;</a>
             }
         </nav>
 
@@ -165,13 +165,13 @@
     @if (_splitOpen)
     {
         <div class="split-divider" aria-hidden="true"></div>
-        <World @ref="_worldPane" SplitMode="true" FollowRef="@CurrentRef" OnRequestClose="@(() => _splitOpen = false)" />
+        <World @ref="_worldPane" SplitMode="true" FollowRef="@CurrentRef" OnRequestClose="CloseSplitAtlas" />
     }
 
     @if (_activeNode is not null)
     {
         <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover"
-                          InSplit="_splitOpen" OnNavigateWorldInSplit="NavigateWorldInSplit" />
+                          InSplit="_splitOpen" OnNavigateWorldInSplit="NavigateWorldInSplit" PaneAnchor="@(_splitOpen ? "reader" : null)" />
     }
 </div>
 
@@ -281,6 +281,57 @@
     // machinery already does the work; this method doesn't need to know
     // the atlas's own current state at all.
     private void CloseReaderPane() => Nav.NavigateTo("/world");
+
+    // Batch F2 requirement 6c ("if i am in split screen mode and refresh,
+    // the split screen mode shalt not be ceased on account of refresh"):
+    // both split entry points now keep the URL's own ?split=1 continuously
+    // in sync with _splitOpen -- the HOUSE PATTERN this app already uses
+    // everywhere state must survive a dispose+mount navigation (sync
+    // continuously AT THE POINT OF MUTATION, never captured lazily/at
+    // dispose time -- ViewStateService.SyncViewState/World.razor's
+    // OnCameraChanged/reader.js's watchScroll are the existing models).
+    // OpenSplit is the reader's OWN "Open the map beside the text" entry
+    // point (World.razor's OWN "Read beside the map" already builds
+    // ?split=1 into its target URL directly -- see OpenReadBesideMap there
+    // -- so it needs no equivalent change). CloseSplitAtlas is the embedded
+    // atlas pane's own close button (World.razor's split-close-atlas,
+    // wired via OnRequestClose) -- "closing the split cleans the param."
+    private void OpenSplit()
+    {
+        _splitOpen = true;
+        SyncSplitUrl();
+    }
+
+    private void CloseSplitAtlas()
+    {
+        _splitOpen = false;
+        SyncSplitUrl();
+    }
+
+    // A query-string-only navigation (book/chapter route params unchanged)
+    // -- OnParametersSetAsync's own book/chapterNum-unchanged early-return
+    // means this never re-fetches the chapter or disturbs scroll/popover
+    // state; SplitQuery's own one-shot consumption (_splitQueryConsumed) is
+    // already spent for this instance by the time either caller above ever
+    // runs, so this is the ONLY thing that keeps the URL truthful about
+    // _splitOpen from here on. replace:true -- a pure state reflection, not
+    // a new history entry to back-button through.
+    private void SyncSplitUrl()
+    {
+        var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?> { ["split"] = _splitOpen ? "1" : null });
+        Nav.NavigateTo(uri, replace: true);
+    }
+
+    // reader-prev/reader-next (Batch R requirement 6/HOTFIX NAV-4) -- their
+    // own hrefs are plain <a> tags (Blazor's router intercepts same-origin
+    // clicks on them client-side, see this component's own file header:
+    // "Reader.razor is REUSED, not recreated, across an ordinary chapter-
+    // to-chapter navigation"), so keeping split open across chapter nav
+    // (SPLIT-1's own promise) requires THIS href to already carry ?split=1
+    // when a split is open -- otherwise the URL silently drops it on the
+    // very next chapter turn, and a refresh right after would lose split
+    // state even though _splitOpen itself is still (correctly) true.
+    private string ChapterHref(string book, int chapter) => _splitOpen ? $"/read/{book}/{chapter}?split=1" : $"/read/{book}/{chapter}";
 
     // Fix round 1 finding: _book/_chapterNum are updated to the NEW route's
     // values SYNCHRONOUSLY in OnParametersSetAsync, before LoadChapter's
@@ -666,7 +717,13 @@
             verse = int.Parse(dash >= 0 ? versePart[..dash] : versePart);
         }
 
-        Nav.NavigateTo($"/read/{book}/{chapterNum}" + (verse is int v ? $"#v{v}" : ""));
+        // Batch F2 requirement 6c: query (?split=1, when open) BEFORE the
+        // fragment -- standard URL syntax, path?query#fragment -- so a
+        // picker jump made while split is open doesn't silently drop it
+        // (same reasoning as ChapterHref above).
+        var query = _splitOpen ? "?split=1" : "";
+        var fragment = verse is int v ? $"#v{v}" : "";
+        Nav.NavigateTo($"/read/{book}/{chapterNum}{query}{fragment}");
         return Task.CompletedTask;
     }
 

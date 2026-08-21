@@ -1,0 +1,177 @@
+@* Batch F2, 6-ARCH (user directive 2026-08-20, near-verbatim): "it should
+   use the same underlying data structure as the hover menu everywhere else
+   - showing sequential verses as passages (which can be expanded to read
+   the whole chapter at will) rather than just verses. reuse the bits that
+   we have! if you can't reuse them, then the bits need refactored for
+   composability."
+
+   THE shared, composable passage-list component: every verse LIST in the
+   popover platform renders through this one component --
+   CrossRefsSection (req 6), PlaceDatesSection's own est/dest supporting
+   verses (req 6b), and CatechismScripturesSection ("THE SCRIPTURES").
+   Sequential verses display as ONE passage entry (ref-range + contiguous
+   text), never N separate verse rows (Explore/PassageBlock.cs's own
+   PassageBlockBuilder, reusing Batch D's PlaceCard grouping algorithm --
+   see Explore/PassageGrouping.cs). Every entry is independently
+   expandable in place to read the whole chapter (MiniReaderExpand.razor,
+   the SAME mechanism Batch R's verse-text section already uses -- see that
+   component's own header). Truncation (Cap) counts PASSAGE ENTRIES, not
+   raw verses, per requirement 6/6b verbatim; a null Cap never truncates
+   (THE SCRIPTURES: no cap asked for). The down-arrow reveal/up-arrow
+   snap-back interaction mirrors Batch D's own place-card-more/-collapse
+   language (a plain ▾/▲ glyph, no incremental step -- "reveals the rest"
+   is req 6/6b's own wording, a binary show-all rather than PlaceCard's own
+   5/2-verse-at-a-time reveal, which is a DIFFERENT truncation model this
+   batch doesn't touch -- see PlaceCard.razor's own comment on why it stays
+   on its own mechanism). *@
+@using BibleAtlas.Client.Explore
+
+@if (_blocks.Count > 0)
+{
+    <div class="popover-passage-list">
+        @foreach (var entry in Visible)
+        {
+            @* The WHOLE entry -- ref label + caption + compact text -- is
+               ONE explorable target, matching PlaceCard.razor's own
+               .place-card-passage/.place-card-verse precedent exactly (ref
+               + text together inside one clickable container), not a
+               separate ref-only button beside a plain paragraph. A real,
+               live-caught fix: an earlier draft put the testid on a
+               ref-only <button>, which left `.toContainText(...)`
+               assertions against that testid seeing only the ref, never
+               the verse text sitting beside it -- see this batch's own
+               report for the full story. `@onclick:stopPropagation` on the
+               expand button/reader region below (MiniReaderExpand.razor)
+               is what keeps "expand to read the whole chapter" and
+               "explore this passage" as two independent gestures on the
+               SAME entry, mirroring ONE-RULE's own "the more specific
+               target always wins" rule for a passage's nested per-verse
+               spans. *@
+            <div class="popover-passage-entry explorable" data-testid="@entry.TestId"
+                 tabindex="0" role="button" aria-label="@($"Explore {entry.Block.Span}")"
+                 @onclick="() => Explore(entry.Block)" @onkeydown="@(e => OnKeyDown(e, entry.Block))">
+                <span class="popover-passage-ref-label">@entry.Block.Span</span>
+                @if (entry.Block.Caption is { } caption)
+                {
+                    <span class="popover-passage-caption">@caption</span>
+                }
+                <MiniReaderExpand Book="@BookOf(entry.Block)" Chapter="@ChapterOf(entry.Block)" FocalFromVerse="@FocalFromOf(entry.Block)" FocalToVerse="@FocalToOf(entry.Block)"
+                                   TestIdSuffix="@($"-{entry.TestId}")">
+                    <CompactContent>
+                        <p class="popover-passage-text">
+                            @if (entry.Block.IsPassage)
+                            {
+                                @foreach (var v in entry.Block.Verses)
+                                {
+                                    <sup class="popover-passage-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup>@v.Text<text> </text>
+                                }
+                            }
+                            else
+                            {
+                                @entry.Block.Verses[0].Text
+                            }
+                        </p>
+                    </CompactContent>
+                </MiniReaderExpand>
+            </div>
+        }
+    </div>
+
+    @if (Cap is int cap && _blocks.Count > cap)
+    {
+        @if (!_showAll)
+        {
+            <button type="button" class="popover-passage-reveal" data-testid="@MoreTestId" aria-label="@($"Show {_blocks.Count - cap} more {RevealNoun}")"
+                    @onclick="() => _showAll = true">&#9662;</button>
+        }
+        else
+        {
+            <button type="button" class="popover-passage-reveal" data-testid="@CollapseTestId" aria-label="@($"Show fewer {RevealNoun}")"
+                    @onclick="() => _showAll = false">&#9652;</button>
+        }
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<PassageSourceUnit> Units { get; set; } = Array.Empty<PassageSourceUnit>();
+    [Parameter, EditorRequired] public string RefTestIdPrefix { get; set; } = default!;
+    [Parameter] public int? Cap { get; set; }
+    [Parameter] public string MoreTestId { get; set; } = "passage-list-more";
+    [Parameter] public string CollapseTestId { get; set; } = "passage-list-collapse";
+    [Parameter] public string RevealNoun { get; set; } = "entries";
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    // A real, live-caught regression (found by the full pre-existing suite,
+    // not guessed): CrossRefsSection's OWN pre-Batch-F2 click contract --
+    // every xref-item, REGARDLESS of whether its target spans more than one
+    // verse (~25% of real cross-ref targets do, e.g. "REV.8.3-5" -- common,
+    // not an edge case), always pushed a VerseNode at the target's own
+    // FIRST verse (CanonRef.FirstVerseOf), never a PassageNode -- reader.spec.ts's
+    // own READ-3 property test pins exactly this ("popover-title" ==
+    // the target's bare head ref after a click, for ANY sampled xref). The
+    // default below (PassageNode for a multi-verse block) is right for THE
+    // SCRIPTURES/place est-dest, where a question's or a claim's own cited
+    // passage genuinely IS the explorable unit -- but wrong for a single
+    // cross-reference, whose own identity is "where it points", not "the
+    // span its preview text happens to cover". CrossRefsSection sets this
+    // true to restore its own pre-existing, still-tested contract; every
+    // other consumer leaves it at the default.
+    [Parameter] public bool ExploreAsVerse { get; set; }
+
+    // A block's own Span is not always unique WITHIN one list -- the same
+    // verse can legitimately be cited more than once from different
+    // SOURCES (e.g. a catechism item's own item-level embedded citation
+    // AND one or more of its own questions all naming the same verse --
+    // MAT.28.19 under baptism-1 is a real example, cited bare AND by four
+    // separate repo-derived questions). Real, caught live (not guessed):
+    // every block gets a testid built from `{RefTestIdPrefix}-{Span}`, and
+    // the SECOND and later block sharing the same Span gets a numbered
+    // suffix (`--2`, `--3`, ...) so it never collides with an earlier one
+    // -- same disambiguation shape CatechismSeamSection already applies to
+    // repeated `catechism-item-{ID}` rows, applied here generically so
+    // EVERY passage-list consumer (xrefs, THE SCRIPTURES, place est/dest)
+    // is protected, not just the one case that happened to be found first.
+    private sealed record VisibleEntry(PassageBlockData Block, string TestId);
+
+    private List<PassageBlockData> _blocks = new();
+    private bool _showAll;
+
+    protected override void OnParametersSet()
+    {
+        _blocks = PassageBlockBuilder.Build(Units);
+    }
+
+    private IEnumerable<VisibleEntry> Visible
+    {
+        get
+        {
+            var shown = Cap is int cap && !_showAll ? _blocks.Take(cap) : _blocks;
+            var seen = new Dictionary<string, int>();
+            foreach (var block in shown)
+            {
+                var occurrence = seen[block.Span] = seen.GetValueOrDefault(block.Span) + 1;
+                var testId = occurrence == 1 ? $"{RefTestIdPrefix}-{block.Span}" : $"{RefTestIdPrefix}-{block.Span}--{occurrence}";
+                yield return new VisibleEntry(block, testId);
+            }
+        }
+    }
+
+    private static string BookOf(PassageBlockData b) => CanonRef.ParseVerse(b.FirstVref).Book;
+    private static int ChapterOf(PassageBlockData b) => CanonRef.ParseVerse(b.FirstVref).Chapter;
+    private static int FocalFromOf(PassageBlockData b) => CanonRef.ParseVerse(b.FirstVref).Verse;
+    private static int FocalToOf(PassageBlockData b) => CanonRef.ParseVerse(b.LastVref).Verse;
+
+    private Task Explore(PassageBlockData block)
+    {
+        IExplorable node = block.IsPassage && !ExploreAsVerse
+            ? new PassageNode(block.Span, string.Join(" ", block.Verses.Select(v => v.Text)))
+            : new VerseNode(block.FirstVref);
+        return OnExplore.InvokeAsync(node);
+    }
+
+    // Keyboard equivalent (design-direction.md: "Enter opens") -- same
+    // Enter-only scope every other explorable element in this app uses
+    // (Reader.razor's OnVerseLineKeyDown, PlaceCard's own OnVerseKeyDown/
+    // OnPassageKeyDown).
+    private Task OnKeyDown(KeyboardEventArgs e, PassageBlockData block) => e.Key == "Enter" ? Explore(block) : Task.CompletedTask;
+}

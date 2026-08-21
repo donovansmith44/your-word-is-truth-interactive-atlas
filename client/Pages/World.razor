@@ -119,7 +119,7 @@
 @if (_activeNode is not null)
 {
     <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover"
-                      InSplit="SplitMode" OnNavigateWorldInSplit="ApplyExternalQuery" />
+                      InSplit="SplitMode" OnNavigateWorldInSplit="ApplyExternalQuery" PaneAnchor="@(SplitMode ? "atlas" : null)" />
 }
 
 @code {

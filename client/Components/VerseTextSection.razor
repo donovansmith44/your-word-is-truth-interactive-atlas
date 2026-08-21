@@ -2,72 +2,30 @@
    compact by default (the SAME single-verse-or-passage text the popover
    already showed pre-Batch-R), with an expand affordance that grows the
    popover and turns this section into a SCROLLABLE mini-reader of the
-   WHOLE chapter (lazily fetched on expand, never before -- requirement 4),
-   auto-scrolled to the focal verse/passage with a calm highlight, and
-   place-name hover -> map marker blink (requirement 5) wired on every
-   verse's own curated place mentions.
+   WHOLE chapter, auto-scrolled to the focal verse/passage with a calm
+   highlight, and place-name hover -> map marker blink.
 
-   A real component (not a hand-built RenderFragment, unlike every other
-   section provider in Explore/PopoverSectionProviders.cs) because this is
-   the one section with genuine interactive STATE across renders --
-   expanded/collapsed, a lazily-fetched chapter, a one-time scroll -- that a
-   closure-based fragment has no clean way to hold. VerseTextSectionProvider
-   is the ONLY thing that constructs this component; ExplorerPopover.razor
-   never references it directly (see that provider's own comment). *@
+   Batch F2, 6-ARCH ("reuse the bits that we have... if you can't, refactor
+   for composability"): the expand/mini-reader MECHANISM itself now lives in
+   MiniReaderExpand.razor (client/Components/), shared with every OTHER
+   passage entry in the popover platform (PassageList.razor: cross-
+   references, THE SCRIPTURES, place est/dest). This file is now a thin
+   wrapper supplying the ONE thing genuinely specific to the focal-verse
+   section -- its own compact rendering (bare text, no ref label; the
+   popover's own title already IS the ref, "the subject, not context" per
+   requirement 6) -- and the empty TestIdSuffix, which reproduces this
+   section's own pre-existing testids (popover-verse-expand/-reader/
+   -reader-verse-{n}) byte for byte. VerseTextSectionProvider (Explore/
+   PopoverSectionProviders.cs) is still the ONLY thing that constructs this
+   component. *@
 @using BibleAtlas.Client.Explore
-@inject AtlasClient Atlas
-@inject IJSRuntime JS
 
 <div class="popover-verse-section">
-    @if (!_expanded)
-    {
-        <p class="popover-verse-text">@CompactText</p>
-    }
-    else
-    {
-        <div class="popover-reader" data-testid="popover-verse-reader">
-            @if (_error is not null)
-            {
-                <p class="popover-meta">@_error</p>
-            }
-            else if (_chapter is null)
-            {
-                <p class="popover-meta">Loading&hellip;</p>
-            }
-            else
-            {
-                @foreach (var v in _chapter.Verses)
-                {
-                    var isFocal = v.Verse >= FocalFromVerse && v.Verse <= FocalToVerse;
-                    <div class="popover-reader-verse" data-testid="popover-reader-verse-@v.Verse" data-focal="@(isFocal ? "true" : "false")"
-                         id="@(v.Verse == FocalFromVerse ? _focalDomId : null)">
-                        <span class="popover-reader-verse-num">@v.Verse</span>
-                        <span class="popover-reader-verse-text">
-                            @foreach (var seg in PlaceMentions.Scan(v.Text, v.Places))
-                            {
-                                @if (seg.PlaceId is { } placeId)
-                                {
-                                    <span class="popover-reader-mention" data-testid="popover-reader-mention-@v.Verse-@placeId"
-                                          tabindex="0" role="button" aria-label="@($"{seg.PlaceName} on the map")"
-                                          @onpointerenter="() => Blink(placeId, true)" @onpointerleave="() => Blink(placeId, false)"
-                                          @onfocus="() => Blink(placeId, true)" @onblur="() => Blink(placeId, false)">@seg.Text</span>
-                                }
-                                else
-                                {
-                                    @seg.Text
-                                }
-                            }
-                        </span>
-                    </div>
-                }
-            }
-        </div>
-    }
-
-    <button type="button" class="popover-verse-expand" data-testid="popover-verse-expand"
-            aria-expanded="@(_expanded ? "true" : "false")" @onclick="ToggleExpand">
-        @(_expanded ? "Show just this verse" : "Read the whole chapter")
-    </button>
+    <MiniReaderExpand Book="@Book" Chapter="@Chapter" FocalFromVerse="@FocalFromVerse" FocalToVerse="@FocalToVerse">
+        <CompactContent>
+            <p class="popover-verse-text">@CompactText</p>
+        </CompactContent>
+    </MiniReaderExpand>
 </div>
 
 @code {
@@ -76,71 +34,4 @@
     [Parameter] public int FocalFromVerse { get; set; }
     [Parameter] public int FocalToVerse { get; set; }
     [Parameter, EditorRequired] public string CompactText { get; set; } = default!;
-
-    private bool _expanded;
-    private ChapterOut? _chapter;
-    private string? _error;
-    private bool _scrolledThisExpand;
-    private IJSObjectReference? _readerJs;
-
-    // A random, per-component-instance DOM id for the focal row -- NOT the
-    // reader page's own bare "v{n}" convention (client/Pages/Reader.razor),
-    // which this popover could easily collide with: the SAME chapter/verse
-    // numbers can legitimately be on screen twice at once (a verse-line
-    // click on Reader.razor opens a popover for a verse the underlying page
-    // is ALSO currently rendering its own id="v{n}" for). Generated once per
-    // component instance, not per render.
-    private readonly string _focalDomId = $"popover-reader-focal-{Guid.NewGuid():N}";
-
-    // Requirement 4: "fetch on expand, not before" -- the whole chapter is
-    // only ever requested once the user actually asks to read it, via
-    // AtlasClient's own Chapter LRU cache (so re-expanding after a collapse,
-    // or a later hover of a DIFFERENT verse in the same chapter, is free).
-    private async Task ToggleExpand()
-    {
-        _expanded = !_expanded;
-        if (_expanded && _chapter is null)
-        {
-            _error = null;
-            try
-            {
-                _chapter = await Atlas.Chapter(Book, Chapter);
-            }
-            catch (Exception)
-            {
-                _error = "Couldn't load the chapter — check your connection and try again.";
-            }
-        }
-
-        if (_expanded)
-        {
-            _scrolledThisExpand = false; // OnAfterRenderAsync below performs the actual scroll once the focal row exists in the DOM
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!_expanded || _scrolledThisExpand || _chapter is null || _error is not null)
-        {
-            return;
-        }
-
-        _scrolledThisExpand = true;
-        try
-        {
-            _readerJs ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
-            await _readerJs.InvokeVoidAsync("scrollFocalRowIntoView", _focalDomId);
-        }
-        catch (Exception)
-        {
-            // The auto-scroll is a nicety, not load-bearing -- the mini-reader
-            // still renders and is manually scrollable either way.
-        }
-    }
-
-    // Requirement 5: toggles the SAME map.js blinkPlace every currently-live
-    // map instance (full /world, or a split view's own embedded pane)
-    // responds to -- see MapInterop.BlinkPlace's own doc comment for why
-    // this needs no reference to any specific map/component at all.
-    private Task Blink(string placeId, bool active) => MapInterop.BlinkPlace(JS, placeId, active);
 }
