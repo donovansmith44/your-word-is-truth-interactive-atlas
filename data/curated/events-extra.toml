@@ -1423,7 +1423,7 @@ places = ["jerusalem"]
 verses = ["MAT.28.1-10"]
 order_key = 8000 # Batch T2: renumbered 60 -> 8000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §171, \"The Visit of the Women to the Tomb of Jesus about Sunrise Sunday Morning and the Message of the Angels about the Empty Tomb\""
-ref_note = "Matthew 28:1-10 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml). Batch T2 (period 11): these same witness ranges already fully subsume Robertson's own separate SS169 (\"The Visit of the Women to the Tomb,\" Matt 28:1/Mark 16:1 -- the women SETTING OUT, a finer-grained moment Robertson distinguishes from this event's own arrival), 170 (\"The Earthquake...,\" Matt 28:2-4), and 174 (\"The Appearance to the Other Women,\" Matt 28:9-10) -- no separate containers authored for any of the three."
+ref_note = "Matthew 28:1-10 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml). Batch T2 (period 11): these same witness ranges already fully subsume Robertson's own separate SS169 (\"The Visit of the Women to the Tomb,\" Matt 28:1/Mark 16:1 -- the women SETTING OUT, a finer-grained moment Robertson distinguishes from this event's own arrival), 170 (\"The Earthquake...,\" Matt 28:2-4), 172 (\"The Visit of the Women... and Peter and John Visit the Empty Tomb,\" Luke 24:9-12/John 20:2-10, both already within this event's own LUK.24.1-12/JHN.20.1-10 witness ranges), and 174 (\"The Appearance to the Other Women,\" Matt 28:9-10) -- no separate containers authored for any of the four."
 # --- Period 11: the resurrection appearances (SS173, 175, 178-180, 183 --
 # SS169/170/174/177 already subsumed above; S182, "The Appearance to
 # James," is HONESTLY OMITTED -- Robertson's own table lists NO Gospel
@@ -1495,7 +1495,7 @@ places = ["emmaus"]
 verses = ["LUK.24.13-35"]
 order_key = 9000 # Batch T2: renumbered 70 -> 9000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §176, \"The Appearance to Two Disciples (Cleopas and Another) on the Way to Emmaus\""
-ref_note = "Luke 24:13-35 read directly; Robertson also lists Mark 16:12-13 (a two-verse mention in Mark's disputed longer ending) but this event is curated single-witness (Luke alone) -- requirement 4's own 'no parallel framing when n=1' case. Batch T2 (period 11): this same range already fully subsumes Robertson's own separate S177 (\"The Report of the Two Disciples and the News of the Appearance to Simon Peter,\" Luke 24:33-35) -- no separate container authored for it."
+ref_note = "Luke 24:13-35 read directly against the compiled KJV text. Batch T2 fix (owner's own live-review ruling, 2026-08-21: 'the compiled KJV text is the canon of witnesses... a witness Robertson lists that exists in the KJV is INCLUDED; textual-critical dispute is NEVER grounds for omission'): Mark 16:12-13 (also listed by Robertson for this section) is now curated as a genuine 2nd witness -- see event-witnesses.toml -- correcting this event's own earlier single-witness framing, which had wrongly treated Mark's disputed longer ending as grounds for omission (inconsistent with pw_galilee's own S181, which already kept its own longer-ending witness with a disclosure note instead of dropping it -- that note is the house model, applied here too). This same range already fully subsumes Robertson's own separate S177 (\"The Report of the Two Disciples and the News of the Appearance to Simon Peter,\" Luke 24:33-35) -- no separate container authored for it."
 # places: brief guessed "galilee", but geo ancient.jsonl collides into
 # "Galilee 1"/"Galilee 2" (identical coords, 32.7600, 35.5270).
 # galilee-1's verse_links include MAT.28.16, this event's verse (68
@@ -1531,7 +1531,7 @@ places = ["mount-of-olives"]
 verses = ["ACT.1.9-12"]
 order_key = 11000 # Batch T2: renumbered 90 -> 11000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §184, \"The Last Appearance and the Ascension\""
-ref_note = "Acts 1:9-12, Luke 24:50-53 read directly (see event-witnesses.toml); Robertson also lists Mark 16:19-20 (Mark's own disputed longer ending), omitted here -- Luke/Acts (same author) already give two solid, undisputed witnesses"
+ref_note = "Acts 1:9-12, Luke 24:50-53 read directly (see event-witnesses.toml). Batch T2 fix (owner's own live-review ruling, 2026-08-21: 'the compiled KJV text is the canon of witnesses... a witness Robertson lists that exists in the KJV is INCLUDED; textual-critical dispute is NEVER grounds for omission; same-author-already-covers-it is NEVER grounds for omission'): Mark 16:19-20 (also listed by Robertson for this section) is now curated as a genuine 3rd witness -- see event-witnesses.toml -- correcting this event's own earlier omission, which had wrongly treated Mark's disputed longer ending AND Luke/Acts's shared authorship as grounds for exclusion (the same inconsistency pw_galilee's own S181 never had -- that event's own note is the house model, applied here too)"
 
 # --- Paul's Voyage to Rome ---
 [[event]]
@@ -1813,7 +1813,7 @@ places = ["bethlehem-1"]
 verses = ["MAT.2.16-18"]
 order_key = 150
 robertson_section = "Robertson (1922) §15, \"The Child Jesus Carried to Egypt, and the Children at Bethlehem Slain\""
-ref_note = "Matthew 2:16-18 read directly against the compiled KJV text; Robertson's own §15 groups this with the flight to Egypt (jm_egypt, enriched further up this file with the same robertson_section) as one section -- split here into two titled containers since they are textually distinct scenes (a widening of Robertson's own section boundary in the other direction from pw_golgotha's precedent, disclosed the same way)"
+ref_note = "Matthew 2:16-18 read directly against the compiled KJV text; Robertson's own §15 groups this with the flight to Egypt (jm_egypt, enriched further up this file with the same robertson_section) as ONE undivided section -- unlike §128, Robertson's own table never splits §15 into lettered sub-sections, so neither does this app (both containers cite the plain '§15', not an invented '§15a'/'§15b'); the two-container split here is this app's own DISPLAY choice (a widening of Robertson's own section boundary in the other direction from pw_golgotha's precedent, disclosed the same way), not a claim about Robertson's own numbering. Owner's own live-review sweep (2026-08-21) confirmed this disposition -- see jm_egypt's own comment for the cross-reference."
 
 # Robertson's own §17/§19 (Luke 2:40, 2:51-52) are brief, non-specific
 # growth SUMMARIES, not discrete happenings -- no traditional single-year
@@ -2662,8 +2662,17 @@ to_year = 32
 places = ["jerusalem"]
 verses = ["JHN.7.53", "JHN.8.1-11"]
 order_key = 970
+# Batch T2 (owner's own live-review sweep, 2026-08-21): Robertson lists
+# no witness for this section beyond John himself, so there is no
+# ADDITIONAL witness to include here (unlike pw_emmaus/pw_mount_of_olives
+# -- see their own comments -- this is not a case of a dropped witness).
+# What the sweep DID call for: honestly disclosing this PASSAGE's own
+# well-known textual-critical status in ref_note, the SAME "part of the
+# KJV/Textus Receptus tradition this app's own compiled text follows"
+# disclosure Mark's longer ending already carries elsewhere, rather than
+# silently smoothed over.
 robertson_section = "Robertson (1922) §97, \"Story of an Adulterous Woman Brought to Jesus for Judgment\""
-ref_note = "John 7:53-8:11 read directly against the compiled KJV text; single witness (John alone); written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string"
+ref_note = "John 7:53-8:11 (the pericope adulterae) read directly against the compiled KJV text; single witness (John alone -- Robertson lists no other Gospel column for this section, so there is no additional witness to include); written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string. This passage is itself part of the KJV/Textus Receptus tradition this app's own compiled text follows -- textual scholars widely note it is absent from the earliest Greek manuscripts and floats to different locations in some later ones -- disclosed here honestly rather than silently smoothed over, per the owner's own live-review ruling (2026-08-21)"
 
 [[event]]
 id = "rob_light_of_the_world"
@@ -3004,4 +3013,4 @@ places = ["jericho-2"]
 verses = ["LUK.19.11-28"]
 order_key = 1275
 robertson_section = "Robertson (1922) §127, \"Jesus Visits Zacchæus, and Speaks the Parable of the Pounds, and Sets out for Jerusalem\""
-ref_note = "Luke 19:11-28 read directly against the compiled KJV text; single witness (Luke alone); split out from jm_jericho (enriched with this SAME robertson_section further up this file, LUK.19.1-10, the Zacchaeus encounter itself, pre-existing Task 3) -- Robertson's own §127 covers both the Zacchaeus encounter and the parable that follows it, a real, deliberate split into two titled containers (a parable is a distinct teaching unit from the narrative encounter that occasions it), not a duplication"
+ref_note = "Luke 19:11-28 read directly against the compiled KJV text; single witness (Luke alone); split out from jm_jericho (enriched with this SAME robertson_section further up this file, LUK.19.1-10, the Zacchaeus encounter itself, pre-existing Task 3) -- Robertson's own §127 covers both the Zacchaeus encounter and the parable that follows it as ONE undivided section (unlike §128, which Robertson himself splits into 128a/128b, §127 carries no such split in his own table, so neither container here invents one -- both cite the plain '§127'); the two-container split is this app's own DISPLAY choice (a parable is a distinct teaching unit from the narrative encounter that occasions it), not a claim about Robertson's own numbering. Owner's own live-review sweep (2026-08-21) confirmed this disposition."
