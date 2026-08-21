@@ -1,0 +1,210 @@
+# Batch W1 (whole-Bible titled verse containers). Leviticus, in the SAME
+# `[[event]]` schema `events-extra.toml` uses -- see
+# `data/curated/passages/genesis.toml`'s own header comment for the full
+# reconciliation/provenance framing.
+#
+# RECONCILIATION: zero pre-existing events touch Leviticus (this batch's
+# own gap analysis confirmed 0/859 verses covered before this file) -- the
+# whole book is fresh authoring. GRANULARITY, per the brief's own explicit
+# guidance ("law = code/narrative units"): Leviticus is almost entirely
+# case law/ritual instruction, not narrative -- containers here are
+# CODE-UNIT sized (often a whole chapter or several), not verse-by-verse,
+# matching how a reader would actually navigate a legal code, not an
+# artificially fragmented pericope list. The three genuinely narrative
+# moments (the consecration of Aaron, Nadab and Abihu's death, the
+# blasphemer stoned) are EVENT-kind, dated to the same year as the
+# tabernacle's own completion (Exodus 40:17, -1490) -- Leviticus's own
+# narrative frame opens immediately after it (Lev 1:1, "the Lord called
+# unto Moses... out of the tabernacle").
+
+[[event]]
+id = "lev_burnt_offering"
+label = "The law of the burnt offering"
+kind = "general"
+verses = ["LEV.1.1-17"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 1, the burnt offering."
+ref_note = "General-kind: ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_grain_offering"
+label = "The law of the grain offering"
+kind = "general"
+verses = ["LEV.2.1-16"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 2, the meat (grain) offering."
+ref_note = "General-kind: ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_peace_offering"
+label = "The law of the peace offering"
+kind = "general"
+verses = ["LEV.3.1-17"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 3, the peace offering."
+ref_note = "General-kind: ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_sin_trespass_offering"
+label = "The law of the sin offering and the trespass offering"
+kind = "general"
+verses = ["LEV.4.1-35", "LEV.5.1-19"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 4-5, offerings for unwitting sin (by the priest, the congregation, a ruler, or a common person) and for trespass."
+ref_note = "General-kind: ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_priests_portion"
+label = "The priests' own portion of the offerings"
+kind = "general"
+verses = ["LEV.6.1-30", "LEV.7.1-38"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 6-7, further instruction on the offerings, closing with the priests' own due portion of each."
+ref_note = "General-kind: ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_consecration_aaron"
+label = "The consecration of Aaron and his sons"
+from_year = -1490
+to_year = -1490
+places = ["mount-sinai"]
+verses = ["LEV.8.1-36"]
+atlas_section = "Leviticus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 8, Moses's own consecration of Aaron and his sons as priests, exactly as the LORD commanded (Exodus 29)."
+ref_note = "Immediately follows the tabernacle's own completion (Exodus 40:17, -1490 BC) -- Leviticus's own narrative frame opens at the tabernacle (1:1). Place: continues at Sinai."
+
+[[event]]
+id = "lev_aarons_first_offerings"
+label = "Aaron's first offerings as priest"
+from_year = -1490
+to_year = -1490
+places = ["mount-sinai"]
+verses = ["LEV.9.1-24"]
+atlas_section = "Leviticus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 9, the eighth day, Aaron's own first offerings, and fire from the LORD consuming the burnt offering."
+ref_note = "Same traditional year, immediately following the seven days of consecration. Place: Sinai."
+
+[[event]]
+id = "lev_nadab_abihu"
+label = "The death of Nadab and Abihu"
+from_year = -1490
+to_year = -1490
+places = ["mount-sinai"]
+verses = ["LEV.10.1-20"]
+atlas_section = "Leviticus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 10, Nadab and Abihu's own strange fire, their deaths, and the LORD's own instructions to Aaron on priestly conduct."
+ref_note = "Same traditional year, immediately following. Place: Sinai."
+
+[[event]]
+id = "lev_clean_unclean_food"
+label = "The laws of clean and unclean food"
+kind = "general"
+verses = ["LEV.11.1-47"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 11, clean and unclean animals, fish, birds, and creeping things."
+ref_note = "General-kind: dietary law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_purification_childbirth"
+label = "The law of purification after childbirth"
+kind = "general"
+verses = ["LEV.12.1-8"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 12, a woman's own purification after bearing a child."
+ref_note = "General-kind: ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_leprosy_laws"
+label = "The laws of leprosy"
+kind = "general"
+verses = ["LEV.13.1-59", "LEV.14.1-57"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 13-14, the diagnosis and quarantine of leprosy in a person, a garment, or a house, and the cleansing rites for a healed leper."
+ref_note = "General-kind: diagnostic and ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_bodily_discharges"
+label = "The laws of bodily discharges"
+kind = "general"
+verses = ["LEV.15.1-33"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 15, uncleanness from bodily discharges, and its own cleansing."
+ref_note = "General-kind: ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_day_of_atonement"
+label = "The Day of Atonement"
+kind = "general"
+verses = ["LEV.16.1-34"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 16, the LORD's own instruction for the annual Day of Atonement -- Aaron's own entry into the most holy place, and the scapegoat."
+ref_note = "General-kind: though introduced narratively ('after the death of the two sons of Aaron,' 16:1), the chapter's own content is instruction for an ANNUAL observance, not a single dateable event of its own."
+
+[[event]]
+id = "lev_blood_and_sacrifice"
+label = "The law of blood, and sacrifices offered only at the tabernacle"
+kind = "general"
+verses = ["LEV.17.1-16"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 17, sacrifices restricted to the tabernacle's own door, and the prohibition on eating blood."
+ref_note = "General-kind: ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_sexual_morality_laws"
+label = "Laws of sexual morality"
+kind = "general"
+verses = ["LEV.18.1-30"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 18, forbidden degrees and unlawful unions."
+ref_note = "General-kind: moral law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_holiness_justice_laws"
+label = "Laws of holiness and justice; penalties for transgression"
+kind = "general"
+verses = ["LEV.19.1-37", "LEV.20.1-27"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 19-20, 'Ye shall be holy, for I the LORD your God am holy,' the holiness code's own broad ethical/ritual statutes, and the penalties for their transgression."
+ref_note = "General-kind: ethical and ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_priests_holiness_laws"
+label = "Laws for the priests' own holiness"
+kind = "general"
+verses = ["LEV.21.1-24", "LEV.22.1-33"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 21-22, restrictions on the priests' own conduct, marriage, and physical fitness for service, and on which offerings are acceptable."
+ref_note = "General-kind: ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_appointed_feasts"
+label = "The appointed feasts of the LORD"
+kind = "general"
+verses = ["LEV.23.1-44"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 23, the sabbath, Passover, Unleavened Bread, Firstfruits, Pentecost, Trumpets, Atonement, and Tabernacles."
+ref_note = "General-kind: calendar law for recurring annual observances, no single dateable moment of its own."
+
+[[event]]
+id = "lev_lamp_and_shewbread"
+label = "The lamp and the shewbread"
+kind = "general"
+verses = ["LEV.24.1-9"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 24:1-9, the oil for the lamp, and the shewbread set in order continually."
+ref_note = "General-kind: ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_blasphemer_stoned"
+label = "The blasphemer stoned"
+from_year = -1490
+to_year = -1490
+places = ["mount-sinai"]
+verses = ["LEV.24.10-23"]
+atlas_section = "Leviticus pericope (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 24:10-23, an Israelitish woman's own son blasphemes the Name in a quarrel, and is stoned per the LORD's own judgment -- occasioning the law of an eye for an eye restated."
+ref_note = "Same traditional year as the rest of Leviticus -- the whole book is set at Sinai, before the wilderness journey resumes in Numbers 10 (Lev 1:1, 'the Lord called unto Moses... out of the tabernacle'). Place: 'in the camp' (24:10), Sinai."
+
+[[event]]
+id = "lev_sabbath_jubilee_years"
+label = "The sabbatical year and the year of jubilee"
+kind = "general"
+verses = ["LEV.25.1-55"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 25, the seventh-year sabbath rest for the land, and the fiftieth-year jubilee of release and restoration."
+ref_note = "General-kind: calendar/economic law, no single dateable moment of its own."
+
+[[event]]
+id = "lev_blessings_and_curses"
+label = "The blessings and curses of the covenant"
+kind = "general"
+verses = ["LEV.26.1-46"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 26, the LORD's own blessing for obedience and curse for disobedience, closing with the promise of restoration."
+ref_note = "General-kind: covenant law, no single dateable moment or place of its own."
+
+[[event]]
+id = "lev_vows_and_tithes"
+label = "The law of vows and tithes"
+kind = "general"
+verses = ["LEV.27.1-34"]
+atlas_section = "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 27, the valuation of vowed persons, animals, houses, and fields, and the tithe -- closing the book."
+ref_note = "General-kind: ritual/economic law, no single dateable moment or place of its own."
