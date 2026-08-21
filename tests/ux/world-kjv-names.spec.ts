@@ -117,3 +117,68 @@ test('API: GET /api/chapter/GEN.2 resolves place mentions to the KJV alias, so "
   expect(cushPlace.name).toBe('Ethiopia');
   expect(v13.text).toContain('Ethiopia');
 });
+
+// Fix round 1 (batch-e3-review.md I-2/I-3/I-4): 4 aliases added on a second
+// citation pass -- pin each one's resolved name via /api/place/{id}, the
+// same "canonical_name only when it differs" contract the tests above
+// already exercise.
+// NOTE on surface choice: /api/place/{id}'s own top-level `name` is always
+// the RAW, unresolved default (`place.name`, e.g. "Jokmeam 1", un-stripped)
+// -- NOT alias-aware; only `canonical_name` (the bare canonical name,
+// present when it differs) exposes anything alias-related on THIS endpoint.
+// The resolved, alias-aware name lives on the scene API's `display_name`
+// field instead (same surface the requirement-4/5 tests above already use
+// for cush-2/tigris/pishon) -- so these tests check display_name via
+// scripture-mode scenes scoped to each place's own citing chapter, and
+// canonical_name via /api/place/{id}, matching each field's real contract.
+test('fix round 1 (I-4): gerasa/jokmeam-1 resolve their KJV citation, gadara stays unaliased', async () => {
+  const mrk5 = await api.sceneScripture('MRK.5');
+  const gerasa = mrk5.places.find((p: any) => p.id === 'gerasa');
+  expect(gerasa.display_name).toBe('Gadarenes'); // MRK.5.1/LUK.8.26/LUK.8.37, 3-for-3 unanimous
+  expect(gerasa.name).toBe('Gerasa'); // wire default, untouched
+  expect((await api.place('gerasa')).canonical_name).toBe('Gerasa');
+
+  const ki4 = await api.sceneScripture('1KI.4');
+  const jokmeam = ki4.places.find((p: any) => p.id === 'jokmeam-1');
+  expect(jokmeam.display_name).toBe('Jokneam'); // 1KI.4.12
+  expect((await api.place('jokmeam-1')).canonical_name).toBe('Jokmeam'); // disambiguation numeral stripped
+
+  // gadara's own single citation (MAT.8.28) says a THIRD word, "Gergesenes"
+  // -- neither "Gadara" nor "Gadarenes" -- so it stays dismissed, unaliased.
+  const mat8 = await api.sceneScripture('MAT.8');
+  const gadara = mat8.places.find((p: any) => p.id === 'gadara');
+  expect(gadara.display_name).toBe('Gadara');
+  expect((await api.place('gadara')).canonical_name).toBeUndefined();
+});
+
+test('fix round 1 (I-2/I-3): heliopolis/thebes resolve their KJV citation once collision-checked safe', async () => {
+  const gen41 = await api.sceneScripture('GEN.41');
+  const heliopolis = gen41.places.find((p: any) => p.id === 'heliopolis');
+  expect(heliopolis.display_name).toBe('On'); // GEN.41.45
+  expect((await api.place('heliopolis')).canonical_name).toBe('Heliopolis');
+
+  const nam3 = await api.sceneScripture('NAM.3');
+  const thebes = nam3.places.find((p: any) => p.id === 'thebes');
+  expect(thebes.display_name).toBe('No'); // NAM.3.8 (this app's own book code for Nahum -- NOT NAH)
+  expect((await api.place('thebes')).canonical_name).toBe('Thebes');
+});
+
+test('fix round 1 (I-2/I-3): pelusium stays unaliased -- "Sin" collides with the real, unrelated, already-live wilderness-of-Sin place', async () => {
+  // Held per the review's own safety check: pelusium (Nile delta) and `sin`
+  // (Sinai peninsula, ~231km away, already event-bearing) are NOT the same
+  // real-world referent -- unlike the accepted-collision pairs elsewhere in
+  // this file (cush-1/cush-2, babylonia/babylon-1, nile/shihor-2), aliasing
+  // pelusium to the bare word "Sin" would give two unrelated real places an
+  // identical, undifferentiated label. Both must keep rendering their OWN
+  // distinct plain name -- proving no accidental collision was introduced.
+  const pelusium = await api.place('pelusium');
+  expect(pelusium.name).toBe('Pelusium');
+  expect(pelusium.canonical_name).toBeUndefined();
+
+  const sin = await api.place('sin');
+  expect(sin.name).toBe('Sin');
+  expect(sin.canonical_name).toBeUndefined();
+
+  expect(pelusium.id).not.toBe(sin.id);
+  expect(pelusium.lat).not.toBeCloseTo(sin.lat, 0); // distinct real locations, not a same-place pair
+});

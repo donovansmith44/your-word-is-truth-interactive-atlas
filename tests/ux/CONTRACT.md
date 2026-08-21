@@ -1071,7 +1071,14 @@ Notes:
   is what makes an aliased place's mention actually findable in its own
   verse's rendered text at all, e.g. "Ethiopia" in GEN.2.13), and an EVENT
   node's own `event-places`/`event-place-{placeId}` rows (resolved against
-  that event's own `when`, alongside PARALLEL ACCOUNTS in the same popover).
+  that event's own `when` ONLY when `kind == "event"`, alongside PARALLEL
+  ACCOUNTS in the same popover; fix round 1, I-1: a general-kind passage's
+  own `when` is the `undated()` sentinel, the WHOLE atlas span -- passing it
+  through as a real window would let a period-history name spuriously win
+  this tier, the same fabrication guard T2's own wire `when` omission
+  already applies extending to this row too -- so a general-kind passage's
+  `event-places` resolves with NO window, landing on tier 2 or 3 exactly
+  like scripture mode).
   QUIET PROVENANCE (requirement 2's own "canonical name at most once,
   quietly"): the place POPOVER (never the map label, never the hover card)
   gains one non-interactive line, `popover-place-canonical-name` (class

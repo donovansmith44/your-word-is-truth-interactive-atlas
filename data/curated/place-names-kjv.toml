@@ -63,34 +63,110 @@
 # per-place fact); demonym-suffix non-matches (Gamad/"Gammadims", Gath/
 # "Gittite", Naamah/"Naamathite", Tishbe/"Tishbite", Ramah/"Ramathite" --
 # the ROOT word is embedded in the demonym, just broken by the suffix, not
-# a different name); genuine textual-critical/identification cruxes with no
-# confident single answer (ayyah/1CH.7.28's own "Gaza", not a recognizable
-# "Ayyah" variant at all; kadesh-2/2SA.24.6's corrupt "Tahtim-hodshi";
-# galilee-2/JOS.12.23's own "Gilgal" crux; rhodes-2/EZK.27.15's Dedan/
-# Rodanim crux; tamar-1/1KI.9.18's Tamar/Tadmor crux; hammath-2/1CH.2.55's
-# "Hemath" reads as a PERSON's name, not clearly this place at all;
-# gadara+gerasa/the Gadarenes-Gergesenes-Gerasenes synoptic tangle, where
-# neither Gospel ever names the city itself, only its inhabitants); and 3
-# places whose genuinely correct KJV term is itself a common English word or
-# particle (heliopolis's dominant citation is "On"; pelusium is "Sin";
-# thebes is "No") -- a bare "On"/"Sin"/"No" map label would read as the
-# English word (or, for "No", as a blank/error state) rather than a place
-# name and mislead worse than the status quo; disclosed as findings, not
-# authored. cush-1 below is the one exception authored OUTSIDE the
+# a different name); genuine identification cruxes with no safe single
+# answer -- category renamed from "textual-critical/identification crux"
+# in Fix round 1 (see its own paragraph below): every remaining item here
+# fails on ONE of two purely functional, KJV-text-only grounds, regardless
+# of WHY the underlying ambiguity exists -- (a) no word recognizable as a
+# variant of the candidate name appears anywhere in its own linked verse at
+# all (kadesh-2/2SA.24.6's own corrupt-reading "Tahtim-hodshi"; no
+# authorable candidate word exists), or (b) the KJV's own word names an
+# ALREADY-SEPARATE, already-compiled, geographically distant real place,
+# so authoring the alias would assert two distinct real places are the
+# same one (ayyah/1CH.7.28's own "Gaza" -- 88km from the real, separately-
+# compiled `gaza`; galilee-2/JOS.12.23's own "Gilgal" -- a different,
+# separately-compiled place, one of four; rhodes-2/EZK.27.15's own "Dedan"
+# -- 1423km from the real, separately-compiled `dedan`, which this exact
+# verse is ALSO already linked to; tamar-1/1KI.9.18's own "Tadmor" -- 503km
+# from the real, separately-compiled `tadmor`, not the "accepted-collision,
+# same real place" pattern cush-1/cush-2 or babylonia/babylon-1 set, an
+# ordinary distinct-place case); hammath-2/1CH.2.55's own "Hemath" reads
+# grammatically as a PERSON's name ("the father of the house of Rechab"),
+# not clearly this place at all -- a referential question, not a spelling
+# one; gadara/the Gadarenes-Gergesenes-Gerasenes synoptic tangle, where its
+# own single verse, MAT.8.28, names only the inhabitants -- "Gergesenes", a
+# THIRD word, neither "Gadara" nor "Gadarenes"; maareh-geba/JDG.20.33's own
+# "the meadows of Gibeah" names a DIFFERENT, separately-attested Benjaminite
+# town (Gibeah, not Geba) -- the same distinct-real-place problem as (b);
+# suph/DEU.1.1 and suphah/NUM.21.14 both plausibly correspond to the KJV's
+# own "the Red sea" reading rather than a standalone proper name -- no
+# confident candidate word survives either verse). And 1 place whose
+# genuinely correct KJV term is a common English word that ALSO collides
+# with an unrelated, already-live compiled place (pelusium's dominant
+# citation is "Sin" -- EZK.30.15 -- but the compiled place `sin`, the
+# wilderness of Sin from Exodus/Numbers, ~231km away and already
+# event-bearing on the live map, would receive the IDENTICAL bare label
+# with no disambiguation -- see pelusium's own entry below for the full
+# reasoning). cush-1 below is the one exception authored OUTSIDE the
 # mechanical sweep's own trigger (see its own comment).
 #
+# Fix round 1 (batch-e3-review.md I-2/I-3/I-4): re-examined the "common-
+# English-word risk" and "textual-critical/identification crux" buckets on
+# their own citation merits. heliopolis -> "On" (GEN.41.45) and thebes ->
+# "No" (NAM.3.8 -- NOT NAH.3.8, which does not exist in this app's compiled
+# text; this app's own book code for Nahum is NAM, confirmed by cush-1's own
+# NAM.3.9 citation above) were both withheld originally on "reads as an
+# ordinary English word" grounds alone -- re-checked, neither word collides
+# with any OTHER compiled place's display name, so the risk was aesthetic,
+# not a genuine ambiguity; both now authored below. pelusium -> "Sin" stays
+# dismissed: unlike "On"/"No", "Sin" DOES collide with a real, distinct,
+# unrelated, already-live place (see above) -- held pending either an owner
+# ruling that accepts the collision with eyes open, or a schema able to
+# disambiguate two aliased places that share one word (the current flat
+# `id -> name` shape has no such mechanism, and inventing a qualifier not
+# in the KJV text itself, e.g. "Sin (in Ezekiel)", would break this
+# project's own citation-fidelity rule -- the display name must BE the
+# KJV's own word, nothing added). gerasa -> "Gadarenes" (MRK.5.1, LUK.8.26,
+# LUK.8.37 -- 3-for-3 unanimous on its OWN citations; the Gadara/Gerasa/
+# Gergesa SITE-identification tangle is real, but the KJV WORD on gerasa's
+# own linked verses is not in question) and jokmeam-1 -> "Jokneam"
+# (1KI.4.12, an N/M swap the same phonetic weight as the authored K/Ch
+# family below) are both now authored on the same "what does the KJV text
+# on THIS place's own citations actually say" standard the rest of this
+# file already applies -- gadara stays dismissed (its own single verse,
+# MAT.8.28, says a third word, "Gergesenes", not "Gadara" or "Gadarenes").
+#
+# Fix round 1, owner doctrine (2026-08-21, verbatim: "absolutely no textual
+# criticism. the Bible is inerrant. 2 tim 3:16-17."): re-adjudicated every
+# remaining item in this category a second time, strictly on KJV-text-only
+# grounds -- manuscript-tradition reasoning treated as void, exactly as
+# this file's OWN authoring bar already treats it for the aliases it DOES
+# author (magadan/Magdala, cauda/Clauda, bethany-2/Bethabara, and
+# malta/Melita are all textbook KJV/Textus-Receptus-vs-modern-critical-text
+# variants, authored anyway, because this app's standing rule has always
+# been "what does THIS app's own compiled KJV text say," never a modern
+# critical-text preference). Outcome: no further item qualifies for
+# authoring, but not because of manuscript-doubt hand-wringing -- each one
+# independently fails the SAME purely functional test every other dismissal
+# in this file already passes or fails: no candidate word survives in the
+# KJV text at all, or the KJV's own word already, unambiguously names a
+# DIFFERENT, already-separately-compiled real place (verified directly
+# against data/compiled/verses-kjv.json and data/compiled/places.json,
+# including real coordinate distances -- see the category description
+# above for the per-item citations and distances). Authoring any of them
+# would not be a citation choice at all; it would be asserting two
+# genuinely different real places are the same one, which the KJV text
+# itself does not say. Category renamed accordingly (see above) -- it no
+# longer describes a manuscript-doubt judgment call, because none of what
+# remains here rests on one.
+#
 # FULL DISMISSED-CANDIDATE ACCOUNTING (batch-e3-report.md's own summary
-# table draws its counts from exactly this list -- 90 of the sweep's 122
-# candidates, categorized):
+# table draws its counts from exactly this list -- originally 90 of the
+# sweep's 122 candidates; Fix round 1 moved 4 items to authored -- 86
+# remain, categorized):
 #   script/heuristic artifacts, name IS literally present (6): ai-1, ai-2,
 #     ai-3, ar, ur-1, uz (all filtered only by the >=3-char word-length
 #     floor -- "Ai"/"Ar"/"Ur"/"Uz" are real, correct, 2-letter KJV names)
 #   demonym-suffix structural (6): gamad, gath-3, naamah-2, ramah-9,
 #     tishbe, gederah-2
-#   textual-critical/identification crux (12): ayyah, kadesh-2, galilee-2,
-#     rhodes-2, tamar-1, hammath-2, gadara, gerasa, jokmeam-1, maareh-geba,
-#     suph, suphah
-#   common-English-word risk (3): heliopolis, pelusium, thebes
+#   identification crux, no safe single answer (10) [renamed from
+#     "textual-critical/identification crux", Fix round 1 -- re-adjudicated
+#     KJV-text-only, see above]: ayyah, kadesh-2, galilee-2, rhodes-2,
+#     tamar-1, hammath-2, gadara, maareh-geba, suph, suphah (gerasa and
+#     jokmeam-1 moved to authored -- Fix round 1, I-4)
+#   common-English-word risk, collision-checked (1): pelusium (heliopolis
+#     and thebes moved to authored -- Fix round 1, I-2/I-3 -- neither "On"
+#     nor "No" collides with any other compiled place's name; "Sin" does)
 #   below the Charran/Sichem-class substantiality bar (63): abronah, acco,
 #     addar, aenon, allammelech, arubboth, ashkenaz, avva, avvim, caesarea,
 #     cenchreae, colossae, cos, dabbesheth, ebez, eder-1, ephrathah, eshan,
@@ -107,9 +183,9 @@
 #     alias was authored; shaphir/Saphir and shikkeron/Shicron are the two
 #     closest calls in this bucket -- a future curator revisiting the
 #     substantiality line might reasonably decide either way on those two)
-#   Total dismissed: 90. Authored: 33 (32 from the sweep's own 122
-#   candidates + cush-1, found outside the mechanical trigger). 122 = 32 +
-#   90 reconciles exactly.
+#   Total dismissed: 86. Authored: 37 (36 from the sweep's own 122
+#   candidates + cush-1, found outside the mechanical trigger). 122 = 36 +
+#   86 reconciles exactly.
 
 [[alias]]
 id = "cush-2"
@@ -167,11 +243,15 @@ verses = ["EZR.1.11", "EZR.2.1", "EZR.5.12", "EZR.7.6"]
 
 [[alias]]
 id = "diviners-oak"
-name = "The Plain of Meonenim"
+name = "the plain of Meonenim"
 # JDG.9.37: "...by the plain of Meonenim." Theographic's own name is an
 # ENGLISH GLOSS of the Hebrew (Elon Meonenim, "diviners' oak/plain") -- the
 # KJV text never says "diviners' oak" at all, it keeps the transliterated
-# proper name "Meonenim".
+# proper name "Meonenim". Fix round 1 (M-2): lowercased to match the KJV's
+# own exact case (mid-sentence, not a sentence-initial capital) and
+# gibeath-elohim's own "the hill of God" convention below -- same
+# gloss-phrase pattern, same rule: whatever the KJV text itself prints,
+# verbatim, is the name shown.
 verses = ["JDG.9.37"]
 
 [[alias]]
@@ -411,3 +491,58 @@ name = "Sochoh"
 # chitlish/Kithlish, cozeba/Chozeba, cun/Chun, and ge-harashim/"the valley
 # of Charashim" above -- added on the same consistency re-check as susa.
 verses = ["1KI.4.10"]
+
+# --- Fix round 1 (batch-e3-review.md I-2/I-3/I-4) -------------------------
+
+[[alias]]
+id = "heliopolis"
+name = "On"
+# GEN.41.45: "...he gave him to wife Asenath the daughter of Poti-pherah
+# priest of On." Originally withheld as "common-English-word risk" alone;
+# re-checked on a collision safety pass -- "On" does not collide with any
+# other compiled place's display name, so the withholding reason doesn't
+# actually apply here. See this file's own header comment for the full
+# reasoning.
+verses = ["GEN.41.45"]
+
+[[alias]]
+id = "thebes"
+name = "No"
+# NAM.3.8: "Art thou better than populous No, that was situate among the
+# rivers..." (this app's own book code for Nahum is NAM, not NAH -- cush-1's
+# own NAM.3.9 citation above already establishes this; NAH.3.8 does not
+# exist in data/compiled/verses-kjv.json). Originally withheld as
+# "common-English-word risk" alone (a bare "No" reads as a blank/error
+# state); re-checked on a collision safety pass -- "No" does not collide
+# with any other compiled place's display name. See this file's own header
+# comment for the full reasoning.
+verses = ["NAM.3.8"]
+
+[[alias]]
+id = "gerasa"
+name = "Gadarenes"
+# MRK.5.1: "...into the country of the Gadarenes." LUK.8.26: "...at the
+# country of the Gadarenes..." LUK.8.37: "...the country of the Gadarenes
+# round about besought him..." 3-for-3 unanimous on gerasa's OWN linked
+# verses. Originally dismissed alongside gadara as a single "Gadarenes/
+# Gergesenes/Gerasenes synoptic tangle" crux -- re-examined: the tangle is
+# a real SITE-identification question (which ancient city either Gospel
+# event actually happened near), but that is a different question from
+# "what word does the KJV text use on THIS place's own citations," which
+# has a 100%-unanimous answer. gadara stays dismissed -- its own single
+# verse, MAT.8.28, names a THIRD word, "Gergesenes", not "Gadara" or
+# "Gadarenes", so no confident single alias applies there.
+verses = ["MRK.5.1", "LUK.8.26", "LUK.8.37"]
+
+[[alias]]
+id = "jokmeam-1"
+name = "Jokneam"
+# 1KI.4.12: "...even unto the place that is beyond Jokneam." An N/M swap --
+# the same phonetic weight as the K/Ch family (kittim/Chittim, cozeba/
+# Chozeba, etc.) already authored above. Originally dismissed as an
+# "identification crux" (whether Jokmeam and Jokneam are the same site);
+# re-examined on the same "what does the KJV text on THIS place's own
+# citation actually say" standard the rest of this file applies -- the
+# identification question is a genuine, separate geography question, but
+# the WORD on this place's own linked verse is unambiguous.
+verses = ["1KI.4.12"]
