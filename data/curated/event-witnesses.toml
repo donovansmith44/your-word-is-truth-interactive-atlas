@@ -1234,6 +1234,28 @@ verses = ["JHN.19.31-42"]
 ref_note = "John 19:31-42 read directly against the compiled KJV text"
 robertson_section = "Robertson (1922) §167"
 
+# --- Period 11: SS173, 175, 178-180, 183 ------------------------------------
+[[witness]]
+event_id = "rob_appears_to_mary_magdalene"
+book = "JHN"
+verses = ["JHN.20.11-18"]
+ref_note = "John 20:11-18 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §173"
+
+[[witness]]
+event_id = "rob_appears_thomas_absent"
+book = "MRK"
+verses = ["MRK.16.14"]
+ref_note = "Mark 16:14 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §178"
+
+[[witness]]
+event_id = "rob_appears_thomas_absent"
+book = "JHN"
+verses = ["JHN.20.19-25"]
+ref_note = "John 20:19-25 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §178"
+
 # --- Period 8: SS112-127 -----------------------------------------------------
 [[witness]]
 event_id = "rob_teaching_on_divorce"

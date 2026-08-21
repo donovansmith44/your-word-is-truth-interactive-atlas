@@ -1423,7 +1423,69 @@ places = ["jerusalem"]
 verses = ["MAT.28.1-10"]
 order_key = 8000 # Batch T2: renumbered 60 -> 8000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §171, \"The Visit of the Women to the Tomb of Jesus about Sunrise Sunday Morning and the Message of the Angels about the Empty Tomb\""
-ref_note = "Matthew 28:1-10 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml)"
+ref_note = "Matthew 28:1-10 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml). Batch T2 (period 11): these same witness ranges already fully subsume Robertson's own separate SS169 (\"The Visit of the Women to the Tomb,\" Matt 28:1/Mark 16:1 -- the women SETTING OUT, a finer-grained moment Robertson distinguishes from this event's own arrival), 170 (\"The Earthquake...,\" Matt 28:2-4), and 174 (\"The Appearance to the Other Women,\" Matt 28:9-10) -- no separate containers authored for any of the three."
+# --- Period 11: the resurrection appearances (SS173, 175, 178-180, 183 --
+# SS169/170/174/177 already subsumed above; S182, "The Appearance to
+# James," is HONESTLY OMITTED -- Robertson's own table lists NO Gospel
+# reference at all for it (it rests solely on 1 Corinthians 15:7, "after
+# that, he was seen of James," outside this batch's own Gospels+Acts
+# scope) -- there is no verse to cite, so none is fabricated; "honest
+# omission beats invention," the standing citation-integrity rule.) -----
+[[event]]
+id = "rob_appears_to_mary_magdalene"
+label = "The risen Jesus appears to Mary Magdalene"
+from_year = 33
+to_year = 33
+places = ["golgotha"]
+verses = ["MRK.16.9-11"]
+order_key = 8100
+robertson_section = "Robertson (1922) §173, \"The Appearance of Jesus to Mary Magdalene and the Message to the Disciples\""
+ref_note = "Mark 16:9-11 and John 20:11-18 both read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_guard_reports"
+label = "The guards report to the chief priests, who bribe them to lie"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["MAT.28.11-15"]
+order_key = 8200
+robertson_section = "Robertson (1922) §175, \"Some of the Guard Report to the Jewish Rulers\""
+ref_note = "Matthew 28:11-15 read directly against the compiled KJV text; single witness (Matthew alone)"
+
+[[event]]
+id = "rob_appears_thomas_absent"
+label = "Jesus appears to the disciples; Thomas, absent, will not believe"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["LUK.24.36-43"]
+order_key = 9100
+robertson_section = "Robertson (1922) §178, \"The Appearance to the Astonished Disciples (Thomas Absent) with a Commission and Their Failure to Convince Thomas\""
+ref_note = "Mark 16:14, Luke 24:36-43, and John 20:19-25 all read directly against the compiled KJV text; Luke's own fuller account used as this event's top-level verses"
+
+[[event]]
+id = "rob_appears_thomas_convinced"
+label = "Jesus appears again the next Sunday; Thomas is convinced"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["JHN.20.26-31"]
+order_key = 9200
+robertson_section = "Robertson (1922) §179, \"The Appearance to the Disciples the Next Sunday Night and the Convincing of Thomas\""
+ref_note = "John 20:26-31 read directly against the compiled KJV text; single witness (John alone)"
+
+[[event]]
+id = "rob_appears_seven_galilee"
+label = "Jesus appears to seven disciples by the Sea of Galilee"
+from_year = 33
+to_year = 33
+places = ["sea-of-galilee"]
+verses = ["JHN.21.1-25"]
+order_key = 9900
+robertson_section = "Robertson (1922) §180, \"The Appearance to Seven Disciples beside the Sea of Galilee. The Miraculous Draught of Fishes\""
+ref_note = "John 21 (the whole chapter) read directly against the compiled KJV text; single witness (John alone)"
+
 [[event]]
 id = "pw_emmaus"
 label = "The road to Emmaus"
@@ -1433,7 +1495,7 @@ places = ["emmaus"]
 verses = ["LUK.24.13-35"]
 order_key = 9000 # Batch T2: renumbered 70 -> 9000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §176, \"The Appearance to Two Disciples (Cleopas and Another) on the Way to Emmaus\""
-ref_note = "Luke 24:13-35 read directly; Robertson also lists Mark 16:12-13 (a two-verse mention in Mark's disputed longer ending) but this event is curated single-witness (Luke alone) -- requirement 4's own 'no parallel framing when n=1' case"
+ref_note = "Luke 24:13-35 read directly; Robertson also lists Mark 16:12-13 (a two-verse mention in Mark's disputed longer ending) but this event is curated single-witness (Luke alone) -- requirement 4's own 'no parallel framing when n=1' case. Batch T2 (period 11): this same range already fully subsumes Robertson's own separate S177 (\"The Report of the Two Disciples and the News of the Appearance to Simon Peter,\" Luke 24:33-35) -- no separate container authored for it."
 # places: brief guessed "galilee", but geo ancient.jsonl collides into
 # "Galilee 1"/"Galilee 2" (identical coords, 32.7600, 35.5270).
 # galilee-1's verse_links include MAT.28.16, this event's verse (68
@@ -1449,6 +1511,17 @@ verses = ["MAT.28.16-20"]
 order_key = 10000 # Batch T2: renumbered 80 -> 10000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §181, \"The Appearance to about Five Hundred on an Appointed Mountain in Galilee, and a Commission Given\""
 ref_note = "Matthew 28:16-20, Mark 16:15-18 read directly (see event-witnesses.toml); Robertson also lists 1 Corinthians 15:6, outside this app's Gospels+Acts witness scope"
+[[event]]
+id = "rob_final_commission"
+label = "Jesus gives a final commission and promises the Spirit"
+from_year = 33
+to_year = 33
+places = ["jerusalem"]
+verses = ["LUK.24.44-49"]
+order_key = 10500
+robertson_section = "Robertson (1922) §183, \"The Appearance to the Disciples with Another Commission\""
+ref_note = "Luke 24:44-49 read directly against the compiled KJV text; single witness (Luke alone)"
+
 [[event]]
 id = "pw_mount_of_olives"
 label = "The ascension from the Mount of Olives"
