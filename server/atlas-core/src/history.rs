@@ -7,7 +7,7 @@
 //! atlas-server's `/api/place/{id}` handler (one place's full history
 //! payload) share exactly the same resolution logic.
 
-use crate::data::{year_index, PlaceBlurbEntry, PlaceHistory, PlaceNameEntry};
+use crate::data::{year_index, PlaceBlurbEntry, PlaceHistory, PlaceNameAlias, PlaceNameEntry};
 use crate::time::{TimeRange, Year};
 
 /// Batch H (existence gating, deferred from E2): the `[from, to]` bounds
@@ -122,24 +122,58 @@ fn pick_by_window<T>(candidates: &[&T], window: TimeRange, when: impl Fn(&T) -> 
 }
 
 /// NAME-1: resolves the period-true display name for `history` (if any)
-/// over `window` (if any). `window` is `None` for scripture-mode scenes and
-/// for a plain `/api/place/{id}` call with no `from`/`to` -- both cases
-/// always return `default_name` unresolved, deliberately: scripture mode
-/// lights a place via its (already name-appropriate, per the KJV text
-/// itself) geocoded verse links, not a calendar window, so there is no
-/// window to resolve a period name against, and resolving one anyway risks
-/// showing a curated period name that contradicts the very verse text
-/// displayed alongside it (see place-history.toml's own file-header comment
-/// on proleptic naming).
-pub fn resolve_display_name(default_name: &str, history: Option<&PlaceHistory>, window: Option<TimeRange>) -> String {
-    let default_name = strip_disambiguation_suffix(default_name);
-    let (Some(h), Some(w)) = (history, window) else {
-        return default_name.to_string();
-    };
-    let intersecting: Vec<&PlaceNameEntry> = h.names.iter().filter(|n| n.when.intersects(&w)).collect();
-    match pick_by_window(&intersecting, w, |n| n.when) {
-        Some(i) => intersecting[i].name.clone(),
-        None => default_name.to_string(),
+/// over `window` (if any), THEN (Batch E3) falls back to `alias`'s own
+/// curated KJV name (if any) before ever falling all the way back to the
+/// bare, stripped `default_name`. `window` is `None` for scripture-mode
+/// scenes and for a plain `/api/place/{id}` call with no `from`/`to` -- both
+/// cases skip period-name resolution entirely (there is no window to
+/// resolve one against) but still reach the alias tier below: scripture
+/// mode lights a place via its geocoded verse links, and the owner's own
+/// bug report (batch-e3-brief.md) is exactly this case -- GEN.2.13 lights
+/// `cush-2` with no window at all, and its plain Theographic default name
+/// ("Cush") is NOT the name the KJV text actually uses there ("Ethiopia").
+/// A curated PERIOD name (when one resolves) is ALREADY the KJV-accurate
+/// name for its own era (Luz/Bethel are both real KJV wording, just for
+/// different centuries) -- `alias` is a DIFFERENT axis (translation, not
+/// time) and only ever fills the gap a period name leaves open, never
+/// overrides one that actually resolved. See `resolve_display_name_and_canonical`
+/// below for the sibling that also reports the canonical name, for the one
+/// caller (the place popover's quiet provenance note, Requirement 2) that
+/// needs to know whether an alias is the thing actually shown.
+pub fn resolve_display_name(default_name: &str, history: Option<&PlaceHistory>, window: Option<TimeRange>, alias: Option<&PlaceNameAlias>) -> String {
+    resolve_display_name_and_canonical(default_name, history, window, alias).0
+}
+
+/// Same resolution `resolve_display_name` performs, but also returns the
+/// CANONICAL (bare, stripped, un-aliased, un-period-resolved) name as a
+/// second value -- `Some` only when an alias is the reason the returned
+/// name differs from it (never when a curated period name won, and never
+/// when there's no alias at all: in both cases there is nothing for a
+/// "known elsewhere as" provenance note to disclose). Kept as a separate
+/// function (rather than making `resolve_display_name` itself return a
+/// tuple) so the three call sites that only ever want the plain string
+/// (`scene::lit_places`/`quiet_places`/`compose_scripture_scene`'s mention
+/// loop) stay exactly as simple as before; only `/api/place/{id}` needs the
+/// canonical half, for the popover's provenance note.
+pub fn resolve_display_name_and_canonical(
+    default_name: &str,
+    history: Option<&PlaceHistory>,
+    window: Option<TimeRange>,
+    alias: Option<&PlaceNameAlias>,
+) -> (String, Option<String>) {
+    let stripped_default = strip_disambiguation_suffix(default_name);
+    if let (Some(h), Some(w)) = (history, window) {
+        let intersecting: Vec<&PlaceNameEntry> = h.names.iter().filter(|n| n.when.intersects(&w)).collect();
+        if let Some(i) = pick_by_window(&intersecting, w, |n| n.when) {
+            return (intersecting[i].name.clone(), None);
+        }
+    }
+    match alias.and_then(|a| crate::translation::resolve_name(&a.translations, crate::translation::DEFAULT_TRANSLATION).ok()) {
+        // A curated alias record that (defensively -- should never happen
+        // once ETL validation is in place) lacks a "kjv" entry degrades to
+        // the plain fallback rather than panicking, same as no alias at all.
+        Some(kjv_name) => (kjv_name.to_string(), Some(stripped_default.to_string())),
+        None => (stripped_default.to_string(), None),
     }
 }
 
@@ -158,8 +192,12 @@ pub fn resolve_display_name(default_name: &str, history: Option<&PlaceHistory>, 
 /// touched. Two same-named places may now show identical labels on the
 /// plate after this strip -- that's correct cartography (their ids, e.g.
 /// `beersheba-1`/`beersheba-2`, stay distinct; only the DISPLAYED text
-/// converges).
-fn strip_disambiguation_suffix(name: &str) -> &str {
+/// converges). `pub` (Batch E3): `atlas_etl::validate::run_place_names_kjv`
+/// reuses this SAME stripping rule to detect a curated alias that's pure
+/// noise -- equal to what the place would already show with no alias at
+/// all (req 1's own named error case) -- rather than re-deriving a second,
+/// possibly-drifting copy of this exact suffix rule in a different crate.
+pub fn strip_disambiguation_suffix(name: &str) -> &str {
     match name.rsplit_once(' ') {
         Some((base, suffix)) if !suffix.is_empty() && suffix.bytes().all(|b| b.is_ascii_digit()) => base,
         _ => name,
@@ -221,6 +259,7 @@ pub fn resolve_blurb(blurbs: &[PlaceBlurbEntry], window: TimeRange) -> Option<&P
 mod tests {
     use super::*;
     use proptest::prelude::*;
+    use std::collections::HashMap;
 
     fn range(from: Year, to: Year) -> TimeRange {
         TimeRange::new(from, to).unwrap()
@@ -238,6 +277,10 @@ mod tests {
         PlaceHistory { id: "x".into(), names, blurbs: vec![], established: None, destroyed: None }
     }
 
+    fn alias(kjv_name: &str) -> PlaceNameAlias {
+        PlaceNameAlias { id: "x".into(), translations: HashMap::from([("kjv".to_string(), kjv_name.to_string())]), verses: vec![] }
+    }
+
     // --- resolve_display_name ---------------------------------------------
 
     #[test]
@@ -247,7 +290,63 @@ mod tests {
         // ALWAYS strips the disambiguation suffix first, so the observable
         // fallback is "Bethel", not the raw default. See this file's own
         // `trailing_numeral_stripped_*` tests below for the fix in isolation.
-        assert_eq!(resolve_display_name("Bethel 1", None, Some(range(-2000, -1900))), "Bethel");
+        assert_eq!(resolve_display_name("Bethel 1", None, Some(range(-2000, -1900)), None), "Bethel");
+    }
+
+    // --- Batch E3: KJV display-name alias layer -----------------------------
+
+    #[test]
+    fn scripture_mode_no_history_uses_alias_when_curated() {
+        // The exact owner bug report shape: cush-2 (no PlaceHistory record at
+        // all) in scripture mode (window: None) must show the curated KJV
+        // alias, not its plain Theographic default name.
+        let a = alias("Ethiopia");
+        assert_eq!(resolve_display_name("Cush 2", None, None, Some(&a)), "Ethiopia");
+    }
+
+    #[test]
+    fn time_mode_no_history_uses_alias_too() {
+        // The alias is not time-windowed -- it applies in time mode exactly
+        // the same as scripture mode, whenever no curated period name wins.
+        let a = alias("Ethiopia");
+        assert_eq!(resolve_display_name("Cush 2", None, Some(range(-4004, -3000)), Some(&a)), "Ethiopia");
+    }
+
+    #[test]
+    fn no_alias_curated_still_falls_back_to_stripped_default() {
+        assert_eq!(resolve_display_name("Cush 2", None, None, None), "Cush");
+    }
+
+    #[test]
+    fn active_curated_period_name_wins_over_alias() {
+        // A place with BOTH a curated period-history name active for this
+        // window AND a curated alias: the period name is MORE specific (a
+        // real curated fact about THIS window) and wins -- the alias is only
+        // ever the fallback used when no period name is active.
+        let h = history(vec![name("Luz", -4004, -2092)]);
+        let a = alias("Some Alias");
+        assert_eq!(resolve_display_name("Bethel", Some(&h), Some(range(-3000, -2500)), Some(&a)), "Luz");
+    }
+
+    #[test]
+    fn alias_wins_when_history_exists_but_no_range_is_active() {
+        // History IS curated for this place, but the window falls outside
+        // every one of its curated name ranges -- same "no period name
+        // resolved" fallback tier as no-history-at-all, so the alias still
+        // applies here too.
+        let h = history(vec![name("Jebus", -4004, -1004)]);
+        let a = alias("Some Alias");
+        assert_eq!(resolve_display_name("Jerusalem", Some(&h), Some(range(-1000, -900)), Some(&a)), "Some Alias");
+    }
+
+    #[test]
+    fn alias_record_without_a_kjv_entry_falls_back_to_default_not_panic() {
+        // Defensive: an alias record that somehow lacks a "kjv" key (should
+        // never happen once ETL validation is in place, but this function
+        // must never panic regardless) falls back to the plain stripped
+        // default, exactly like no alias at all.
+        let a = PlaceNameAlias { id: "x".into(), translations: HashMap::new(), verses: vec![] };
+        assert_eq!(resolve_display_name("Cush 2", None, None, Some(&a)), "Cush");
     }
 
     // --- Batch E2 folded-in fix 1: strip_disambiguation_suffix -------------
@@ -257,8 +356,8 @@ mod tests {
         // Real shapes from the compiled data (data/compiled/places.json):
         // "Beersheba 2"/"Succoth 2" leaked onto the plate verbatim before
         // this fix -- both must now resolve to the clean, unsuffixed name.
-        assert_eq!(resolve_display_name("Beersheba 2", None, Some(range(-2000, -1900))), "Beersheba");
-        assert_eq!(resolve_display_name("Succoth 2", None, None), "Succoth");
+        assert_eq!(resolve_display_name("Beersheba 2", None, Some(range(-2000, -1900)), None), "Beersheba");
+        assert_eq!(resolve_display_name("Succoth 2", None, None, None), "Succoth");
     }
 
     #[test]
@@ -268,41 +367,41 @@ mod tests {
         // the stripped default -- the strip only ever touches the fallback
         // branch, never a curated `PlaceNameEntry::name`.
         let h = history(vec![name("Luz", -4004, -2092)]);
-        assert_eq!(resolve_display_name("Bethel 2", Some(&h), Some(range(-3000, -2500))), "Luz");
-        assert_eq!(resolve_display_name("Bethel 2", Some(&h), Some(range(-1000, -900))), "Bethel");
+        assert_eq!(resolve_display_name("Bethel 2", Some(&h), Some(range(-3000, -2500)), None), "Luz");
+        assert_eq!(resolve_display_name("Bethel 2", Some(&h), Some(range(-1000, -900)), None), "Bethel");
     }
 
     #[test]
     fn multi_digit_and_no_suffix_cases() {
-        assert_eq!(resolve_display_name("Aphek 12", None, None), "Aphek"); // multi-digit suffix
-        assert_eq!(resolve_display_name("Jerusalem", None, None), "Jerusalem"); // no suffix: untouched
-        assert_eq!(resolve_display_name("Antioch of Pisidia", None, None), "Antioch of Pisidia"); // trailing word, not digits: untouched
+        assert_eq!(resolve_display_name("Aphek 12", None, None, None), "Aphek"); // multi-digit suffix
+        assert_eq!(resolve_display_name("Jerusalem", None, None, None), "Jerusalem"); // no suffix: untouched
+        assert_eq!(resolve_display_name("Antioch of Pisidia", None, None, None), "Antioch of Pisidia"); // trailing word, not digits: untouched
     }
 
     #[test]
     fn no_window_always_falls_back_to_default_even_with_history() {
         let h = history(vec![name("Luz", -4004, -2092)]);
-        assert_eq!(resolve_display_name("Bethel", Some(&h), None), "Bethel");
+        assert_eq!(resolve_display_name("Bethel", Some(&h), None, None), "Bethel");
     }
 
     #[test]
     fn window_fully_inside_one_name_range_uses_that_name() {
         let h = history(vec![name("Luz", -4004, -2092), name("Bethel", -2091, 100)]);
-        assert_eq!(resolve_display_name("Bethel 1", Some(&h), Some(range(-3000, -2500))), "Luz");
-        assert_eq!(resolve_display_name("Bethel 1", Some(&h), Some(range(-1930, -1930))), "Bethel");
+        assert_eq!(resolve_display_name("Bethel 1", Some(&h), Some(range(-3000, -2500)), None), "Luz");
+        assert_eq!(resolve_display_name("Bethel 1", Some(&h), Some(range(-1930, -1930)), None), "Bethel");
     }
 
     #[test]
     fn window_outside_every_curated_range_falls_back_to_default() {
         let h = history(vec![name("Jebus", -4004, -1004)]);
-        assert_eq!(resolve_display_name("Jerusalem", Some(&h), Some(range(-1000, -900))), "Jerusalem");
+        assert_eq!(resolve_display_name("Jerusalem", Some(&h), Some(range(-1000, -900)), None), "Jerusalem");
     }
 
     #[test]
     fn luz_bethel_boundary_years_pin_exactly() {
         let h = history(vec![name("Luz", -4004, -2092), name("Bethel", -2091, 100)]);
-        assert_eq!(resolve_display_name("Bethel 1", Some(&h), Some(range(-2092, -2092))), "Luz");
-        assert_eq!(resolve_display_name("Bethel 1", Some(&h), Some(range(-2091, -2091))), "Bethel");
+        assert_eq!(resolve_display_name("Bethel 1", Some(&h), Some(range(-2092, -2092)), None), "Luz");
+        assert_eq!(resolve_display_name("Bethel 1", Some(&h), Some(range(-2091, -2091)), None), "Bethel");
     }
 
     #[test]
@@ -312,11 +411,11 @@ mod tests {
         // depending on rounding) -- either way exactly one of the two
         // curated ranges covers it, so the result must be deterministic and
         // equal to whichever one does.
-        let got = resolve_display_name("Bethel 1", Some(&h), Some(range(-2093, -2090)));
+        let got = resolve_display_name("Bethel 1", Some(&h), Some(range(-2093, -2090)), None);
         assert!(got == "Luz" || got == "Bethel");
         // Re-resolving the SAME window must always produce the SAME name
         // (API property: window -> name is a pure function).
-        assert_eq!(got, resolve_display_name("Bethel 1", Some(&h), Some(range(-2093, -2090))));
+        assert_eq!(got, resolve_display_name("Bethel 1", Some(&h), Some(range(-2093, -2090)), None));
     }
 
     #[test]
@@ -331,7 +430,7 @@ mod tests {
         // (index range covers -300..49 inclusive -> mid index near -125)
         // falls inside that gap, so this must fall through to "latest
         // intersecting" = B.
-        assert_eq!(resolve_display_name("Default", Some(&h), Some(range(-300, 50))), "B");
+        assert_eq!(resolve_display_name("Default", Some(&h), Some(range(-300, 50)), None), "B");
     }
 
     // --- resolve_blurb ------------------------------------------------------
@@ -649,8 +748,8 @@ mod tests {
                 name("Bethel", -2091, -1004),
                 name("Jerusalem-ish", -1003, 100),
             ]);
-            let a = resolve_display_name("Default", Some(&h), Some(w));
-            let b = resolve_display_name("Default", Some(&h), Some(w));
+            let a = resolve_display_name("Default", Some(&h), Some(w), None);
+            let b = resolve_display_name("Default", Some(&h), Some(w), None);
             prop_assert_eq!(&a, &b);
             if a != "Default" {
                 let entry = h.names.iter().find(|n| n.name == a).unwrap();

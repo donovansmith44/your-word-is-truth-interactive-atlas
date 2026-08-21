@@ -19,7 +19,7 @@
 //! trust class scene composition relies on).
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookMeta, CatechismItem, CatechismPart, Era, Event, Landmark, LandMaskRegion, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityDelta, PolityEra};
+use atlas_core::data::{BookMeta, CatechismItem, CatechismPart, Era, Event, Landmark, LandMaskRegion, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -472,6 +472,57 @@ pub fn parse_place_history(input: &str) -> Result<Vec<PlaceHistory>> {
         out.push(PlaceHistory { id: p.id, names, blurbs, established, destroyed });
     }
     Ok(out)
+}
+
+// --- Batch E3: place-names-kjv.toml (KJV display-name alias layer) --------
+
+#[derive(Deserialize)]
+struct PlaceNamesKjvFile {
+    alias: Vec<AliasToml>,
+}
+
+#[derive(Deserialize)]
+struct AliasToml {
+    id: String,
+    name: String,
+    #[serde(default)]
+    verses: Vec<String>,
+}
+
+/// Parses `place-names-kjv.toml` (Batch E3: a FLAT `[[alias]]` array, each
+/// row naming its own `id`) -- the SAME flat, no-mis-attachment-risk shape
+/// `event-witnesses.toml`/`parse_event_witnesses` and `acts-sections.toml`/
+/// `parse_acts_sections` already establish (see `parse_event_witnesses`'s
+/// own doc comment for the TOML array-of-tables mis-attachment class this
+/// avoids entirely), reused here for the identical reason: one curated fact
+/// per named place id. Each row's plain `name` is wrapped into a
+/// `{"kjv": name}` translation map here (same indirection
+/// `parse_event_witnesses` wraps its own single-translation curator field
+/// into) -- "kjv is the only key today; identity survives future
+/// translations" per batch-e3-brief.md requirement 1. `verses` are passed
+/// through AS-IS (plain single-verse citation ids, e.g. `place-history.toml`'s
+/// own `[[place.name]]` `verses` field -- not a curator-friendly RANGE like
+/// `events-extra.toml`'s own `verses`, so no `expand_verse_ref` here).
+///
+/// Pure and STRUCTURAL only, same split every other curated schema in this
+/// module follows: a malformed file bails immediately; cross-checking `id`
+/// against the real compiled place set, rejecting duplicate ids, rejecting
+/// an alias equal to its own place's canonical name, and checking each
+/// cited verse parses and exists in the compiled KJV text are all
+/// `validate::run_place_names_kjv`'s job instead (needs the compiled places
+/// list and KJV text, which this pure parse step doesn't own).
+pub fn parse_place_names_kjv(input: &str) -> Result<Vec<PlaceNameAlias>> {
+    let f: PlaceNamesKjvFile =
+        toml::from_str(input).context("place-names-kjv.toml: invalid TOML or does not match the [[alias]] schema")?;
+
+    Ok(f.alias
+        .into_iter()
+        .map(|a| PlaceNameAlias {
+            id: a.id,
+            translations: std::collections::HashMap::from([(atlas_core::translation::DEFAULT_TRANSLATION.to_string(), a.name)]),
+            verses: a.verses,
+        })
+        .collect())
 }
 
 // --- Batch B2: polities/{id}.toml ("borders v2, the cartographer's edition") ---
@@ -1072,5 +1123,40 @@ verses = ["not-a-ref"]
 "#;
         let err = parse_event_witnesses(toml).unwrap_err();
         assert!(err.to_string().contains("e1"), "{err}");
+    }
+
+    // --- Batch E3: parse_place_names_kjv -------------------------------------
+
+    #[test]
+    fn parse_place_names_kjv_reads_a_flat_alias_list_with_translation_indirection() {
+        let toml = r#"
+[[alias]]
+id = "cush-2"
+name = "Ethiopia"
+verses = ["GEN.2.13"]
+
+[[alias]]
+id = "tigris"
+name = "Hiddekel"
+verses = ["GEN.2.14", "DAN.10.4"]
+"#;
+        let rows = parse_place_names_kjv(toml).unwrap();
+        assert_eq!(rows.len(), 2);
+
+        assert_eq!(rows[0].id, "cush-2");
+        // "kjv" translation-mapped, same indirection parse_event_witnesses
+        // wraps its own single-translation curator field into.
+        assert_eq!(rows[0].translations.get("kjv").map(String::as_str), Some("Ethiopia"));
+        assert_eq!(rows[0].verses, vec!["GEN.2.13".to_string()]);
+
+        assert_eq!(rows[1].id, "tigris");
+        assert_eq!(rows[1].translations.get("kjv").map(String::as_str), Some("Hiddekel"));
+        assert_eq!(rows[1].verses, vec!["GEN.2.14".to_string(), "DAN.10.4".to_string()]);
+    }
+
+    #[test]
+    fn parse_place_names_kjv_rejects_malformed_toml() {
+        assert!(parse_place_names_kjv("not = [valid").is_err());
+        assert!(parse_place_names_kjv("foo = 1").is_err(), "missing [[alias]] array entirely");
     }
 }

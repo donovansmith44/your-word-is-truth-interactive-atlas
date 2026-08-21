@@ -255,6 +255,17 @@ fn main() -> Result<()> {
     validate::run_place_history(&place_history, &compiled_place_ids, &data.verses)
         .context("data/compiled/place-history.json was NOT written; fix data/curated/place-history.toml and re-run")?;
 
+    // --- data/curated/place-names-kjv.toml (Batch E3: KJV display-name
+    // alias layer) -- owner bug report 2026-08-20 ("cush isn't mentioned in
+    // gen 2:13"): the map labeled a place by its Theographic canonical name,
+    // never the word the KJV text itself uses there. `run_place_names_kjv`
+    // needs the FULL compiled place list (not just ids, unlike
+    // run_place_history above), for its own "alias equal to canonical name
+    // is noise" check.
+    let place_names_kjv = curated::parse_place_names_kjv(&read(&curated_dir.join("place-names-kjv.toml"))?)?;
+    validate::run_place_names_kjv(&place_names_kjv, &data.places, &data.verses)
+        .context("data/compiled/place-names-kjv.json was NOT written; fix data/curated/place-names-kjv.toml and re-run")?;
+
     // --- data/curated/catechism.toml (Batch F: "the small catechism") ----
     let mut catechism = curated::parse_catechism(&read(&curated_dir.join("catechism.toml"))?)?;
 
@@ -335,6 +346,7 @@ fn main() -> Result<()> {
     write_json(&compiled_dir.join("polities.json"), &compiled_polities)?;
     write_json(&compiled_dir.join("landmarks.json"), &landmarks)?;
     write_json(&compiled_dir.join("place-history.json"), &place_history)?;
+    write_json(&compiled_dir.join("place-names-kjv.json"), &place_names_kjv)?;
     write_json(&compiled_dir.join("land-mask.json"), &land_mask)?;
     write_json(&compiled_dir.join("catechism.json"), &catechism)?;
 
@@ -498,6 +510,10 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     let place_history_path = curated_dir.join("place-history.toml");
     if !place_history_path.is_file() {
         missing.push(format!("{}", place_history_path.display()));
+    }
+    let place_names_kjv_path = curated_dir.join("place-names-kjv.toml");
+    if !place_names_kjv_path.is_file() {
+        missing.push(format!("{}", place_names_kjv_path.display()));
     }
     let catechism_path = curated_dir.join("catechism.toml");
     if !catechism_path.is_file() {

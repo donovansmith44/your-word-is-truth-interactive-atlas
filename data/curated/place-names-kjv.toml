@@ -1,0 +1,413 @@
+# Batch E3 ("KJV display-name alias layer"): place id -> the name the KJV
+# text ACTUALLY uses, when it differs from the place's canonical/Theographic
+# `name` (e.g. "Cush" -> "Ethiopia", GEN.2.13). Origin (owner bug report,
+# verbatim): "there are two locations, cush and gihon, that are both lit up
+# on genesis 2 even though cush isn't mentioned in gen 2:13 why is that
+# happening" -- root cause: the PLACE was right, the LABEL was wrong
+# (Theographic's canonical/transliterated name, never the word the KJV text
+# itself uses there). "The app's text IS the KJV; names shown beside
+# Scripture must be the names the KJV uses."
+#
+# SCHEMA, deliberately FLAT (`[[alias]]`, each row naming its own `id`) --
+# the SAME no-mis-attachment-risk shape `event-witnesses.toml`/
+# `acts-sections.toml` already establish (see atlas_etl::curated::
+# parse_event_witnesses's own doc comment for the TOML array-of-tables
+# mis-attachment class this avoids entirely). `name` is a single
+# curator-friendly field, wrapped into a `{"kjv": name}` translation map at
+# PARSE time (the SAME translation-indirection `event-witnesses.toml`'s own
+# `verses` field already gets, per crate::translation's doc comment) --
+# "kjv is the only key today; identity survives future translations" per
+# this batch's own requirement 1. `verses` are supporting citations
+# (etl-validated to canonically parse and exist in the compiled KJV text,
+# same trust class place-history.toml's own `[[place.name]]` verses
+# already have) -- every one below was read directly against
+# data/compiled/verses-kjv.json before being written here (citation
+# integrity is a standing project rule with a real incident history).
+#
+# Independent of data/curated/place-history.toml by design: a period-true
+# name there (e.g. Luz/Bethel) is ALREADY KJV-text-accurate for its own
+# era, so the two mechanisms target different gaps -- an alias here is
+# purely the fallback for whenever NO period-history range is active
+# (including scripture mode, which has no window to resolve one against at
+# all) -- see atlas_core::history::resolve_display_name. A period-history
+# range, when active, always wins over an alias.
+#
+# SWEEP METHODOLOGY (requirement 3, full stats in batch-e3-report.md):
+# scanned every compiled place with >=1 verse_link (1188 of 1373; 185 have
+# none and are outside this heuristic's domain) for whether its own
+# stripped default name's significant words appear (case-insensitive,
+# word-boundary, with en-dash/em-dash treated as a hyphen -- the compiled
+# KJV text's own typography, e.g. "Abi-ezer", otherwise produces false
+# candidates against a compiled name with no internal punctuation at all)
+# anywhere in the text of ANY of its own linked verses; a secondary
+# letters-only substring pass catches pure hyphenation-format artifacts
+# (e.g. "Bethel" inside "Beth-el") without flagging them. 122 candidates
+# survived both passes; every one hand-read against the actual verse text.
+#
+# AUTHORING BAR: a genuine mismatch is a DIFFERENT WORD -- a different root,
+# a syllable/prefix dropped or translated away entirely, a consonant swap
+# substantial enough to change the actual SOUND (a plain K/C, always a hard
+# "k" sound before "a"/"o"/"u", is NOT this -- but a K/C <-> "Ch" swap IS: a
+# genuinely different, aspirated phoneme, e.g. Kittim/Chittim), or an
+# English-gloss-vs-transliteration swap in either direction (the brief's own
+# named "Charran/Sichem-class" category covers all of the above). NOT
+# authored, deliberately: single-letter doubled-consonant or inserted/
+# dropped-vowel variants that read as the same word at a glance (e.g.
+# Avvim/Avim, Ivvah/Ivah, Mithkah/Mithcah, Terah/Tarah, Caesarea/Cesarea,
+# Colossae/Colosse, Kain/Cain, Kamon/Camon -- the last two are the
+# hard-K/C-before-a case the paragraph above excludes, unlike Kittim/
+# Chittim) -- these are real sweep hits, hand-verified, but judged below the
+# substantiality bar, not a translation mismatch a reader would notice the
+# way Cush/Ethiopia is; the "Kirjath-"/"Kiriath-" and "Ithlah/Jethlah"-class
+# I/J family (i/j is a 1611-orthography convention across MANY names, not a
+# per-place fact); demonym-suffix non-matches (Gamad/"Gammadims", Gath/
+# "Gittite", Naamah/"Naamathite", Tishbe/"Tishbite", Ramah/"Ramathite" --
+# the ROOT word is embedded in the demonym, just broken by the suffix, not
+# a different name); genuine textual-critical/identification cruxes with no
+# confident single answer (ayyah/1CH.7.28's own "Gaza", not a recognizable
+# "Ayyah" variant at all; kadesh-2/2SA.24.6's corrupt "Tahtim-hodshi";
+# galilee-2/JOS.12.23's own "Gilgal" crux; rhodes-2/EZK.27.15's Dedan/
+# Rodanim crux; tamar-1/1KI.9.18's Tamar/Tadmor crux; hammath-2/1CH.2.55's
+# "Hemath" reads as a PERSON's name, not clearly this place at all;
+# gadara+gerasa/the Gadarenes-Gergesenes-Gerasenes synoptic tangle, where
+# neither Gospel ever names the city itself, only its inhabitants); and 3
+# places whose genuinely correct KJV term is itself a common English word or
+# particle (heliopolis's dominant citation is "On"; pelusium is "Sin";
+# thebes is "No") -- a bare "On"/"Sin"/"No" map label would read as the
+# English word (or, for "No", as a blank/error state) rather than a place
+# name and mislead worse than the status quo; disclosed as findings, not
+# authored. cush-1 below is the one exception authored OUTSIDE the
+# mechanical sweep's own trigger (see its own comment).
+#
+# FULL DISMISSED-CANDIDATE ACCOUNTING (batch-e3-report.md's own summary
+# table draws its counts from exactly this list -- 90 of the sweep's 122
+# candidates, categorized):
+#   script/heuristic artifacts, name IS literally present (6): ai-1, ai-2,
+#     ai-3, ar, ur-1, uz (all filtered only by the >=3-char word-length
+#     floor -- "Ai"/"Ar"/"Ur"/"Uz" are real, correct, 2-letter KJV names)
+#   demonym-suffix structural (6): gamad, gath-3, naamah-2, ramah-9,
+#     tishbe, gederah-2
+#   textual-critical/identification crux (12): ayyah, kadesh-2, galilee-2,
+#     rhodes-2, tamar-1, hammath-2, gadara, gerasa, jokmeam-1, maareh-geba,
+#     suph, suphah
+#   common-English-word risk (3): heliopolis, pelusium, thebes
+#   below the Charran/Sichem-class substantiality bar (63): abronah, acco,
+#     addar, aenon, allammelech, arubboth, ashkenaz, avva, avvim, caesarea,
+#     cenchreae, colossae, cos, dabbesheth, ebez, eder-1, ephrathah, eshan,
+#     geba-4, gibeah-4, goah, hereth, ithlah, ituraea, ivvah, janim,
+#     janoah-1, jorkeam, kain, kamon, kiriathaim-2, lakkum, meconah,
+#     michmethath, mithkah, mizpah-2, naarah, pergamum, phoenicia, phoenix,
+#     racal, ramah-6, recah, rimmon-3, rimmono, salecah, secu, seirah,
+#     sela-2, shaalim, shahazumah, shalishah, shaphir, shikkeron, terah,
+#     timnah-3, yiron, zalmon, zarethan, zela, zeredah-1, zeredah-2,
+#     zererah (zarethan is a special case within this bucket: the KJV
+#     itself is 3-way inconsistent across its own citations -- Zaretan
+#     JOS.3.16, Zartanah 1KI.4.12, Zarthan 1KI.7.46 -- with no single
+#     dominant reading the way cush-1's 18-of-19 has, so no confident single
+#     alias was authored; shaphir/Saphir and shikkeron/Shicron are the two
+#     closest calls in this bucket -- a future curator revisiting the
+#     substantiality line might reasonably decide either way on those two)
+#   Total dismissed: 90. Authored: 33 (32 from the sweep's own 122
+#   candidates + cush-1, found outside the mechanical trigger). 122 = 32 +
+#   90 reconciles exactly.
+
+[[alias]]
+id = "cush-2"
+name = "Ethiopia"
+# GEN.2.13 (KJV): "And the name of the second river is Gihon: the same is
+# it that compasseth the whole land of Ethiopia." The owner's own named bug.
+verses = ["GEN.2.13"]
+
+[[alias]]
+id = "cush-1"
+name = "Ethiopia"
+# The brief's own heuristic ("name never appears in any of its own linked
+# verses") does NOT flag this place -- ISA.11.11 ("...and from Pathros, and
+# from Cush, and from Elam...") genuinely uses "Cush" literally, so the
+# mechanical trigger correctly finds one match. Found instead by hand while
+# verifying cush-2 (same underlying place/nation, a separate Theographic
+# record): of this place's 19 linked verses, 18 render it "Ethiopia"/
+# "Ethiopians" (2KI.19.9, PSA.68.31, PSA.87.4, ISA.11.11 excepted, ISA.18.1,
+# ISA.20.3-5, ISA.37.9, ISA.43.3, ISA.45.14, JER.46.9, EZK.29.10, EZK.30.4-5,
+# EZK.30.9, EZK.38.5, NAM.3.9, ZEP.3.10) and only ISA.11.11 says "Cush" --
+# a genuine, disclosed KJV inconsistency (both readings attested for the
+# same word), not a sweep-script error. Authored on the KJV's own dominant,
+# characteristic term (18 of 19 citations) rather than the one outlier --
+# the same standard the brief's own proven cush-2 case sets.
+verses = ["2KI.19.9", "PSA.68.31", "ISA.18.1", "ISA.20.3", "EZK.30.9"]
+
+[[alias]]
+id = "tigris"
+name = "Hiddekel"
+# GEN.2.14: "And the name of the third river is Hiddekel: that is it which
+# goeth toward the east of Assyria." DAN.10.4: "...as I was by the side of
+# the great river, which is Hiddekel." One of the brief's three named cases.
+verses = ["GEN.2.14", "DAN.10.4"]
+
+[[alias]]
+id = "pishon"
+name = "Pison"
+# GEN.2.11: "The name of the first is Pison: that is it which compasseth
+# the whole land of Havilah, where there is gold." One of the brief's three
+# named cases.
+verses = ["GEN.2.11"]
+
+[[alias]]
+id = "babylonia"
+name = "Babylon"
+# Unanimous across all 8 linked verses (EZR.1.11, EZR.2.1, EZR.5.12,
+# EZR.6.1, EZR.7.6, EZR.7.9, EZR.7.16, EZR.8.1) -- the KJV text always says
+# "Babylon" (the city name doing double duty for the realm), never
+# "Babylonia". Same accepted-collision cartography as cush-1/cush-2 both
+# showing "Ethiopia" -- a separate compiled place (babylon-1, the specific
+# city) may already display "Babylon" too; ids stay distinct, only the
+# label converges (see history.rs's own strip_disambiguation_suffix doc
+# comment for this precedent).
+verses = ["EZR.1.11", "EZR.2.1", "EZR.5.12", "EZR.7.6"]
+
+[[alias]]
+id = "diviners-oak"
+name = "The Plain of Meonenim"
+# JDG.9.37: "...by the plain of Meonenim." Theographic's own name is an
+# ENGLISH GLOSS of the Hebrew (Elon Meonenim, "diviners' oak/plain") -- the
+# KJV text never says "diviners' oak" at all, it keeps the transliterated
+# proper name "Meonenim".
+verses = ["JDG.9.37"]
+
+[[alias]]
+id = "rock-of-escape"
+name = "Sela-hammahlekoth"
+# 1SA.23.28: "...therefore they called that place Sela-hammahlekoth." Same
+# gloss-vs-transliteration pattern as diviners-oak: Theographic's own name
+# is an English translation of the Hebrew, which the KJV never prints as
+# English prose.
+verses = ["1SA.23.28"]
+
+[[alias]]
+id = "mortar"
+name = "Maktesh"
+# ZEP.1.11: "Howl, ye inhabitants of Maktesh..." Same gloss-vs-
+# transliteration pattern again: "Maktesh" literally means "mortar" (the
+# grinding bowl), but the KJV transliterates the Hebrew name rather than
+# translating it.
+verses = ["ZEP.1.11"]
+
+[[alias]]
+id = "gibeath-elohim"
+name = "the hill of God"
+# 1SA.10.5: "...thou shalt come to the hill of God..." The INVERSE of the
+# diviners-oak/rock-of-escape/mortar pattern: Theographic's own name here
+# IS the transliterated Hebrew ("Gibeath-elohim"), but the KJV translates
+# it into English prose rather than transliterating it. Same underlying
+# rule either direction: whatever the KJV text itself says is the name
+# shown.
+verses = ["1SA.10.5"]
+
+[[alias]]
+id = "akeldama"
+name = "Aceldama"
+# ACT.1.19: "...that field is called in their proper tongue, Aceldama..."
+# (this place's other verse_link, MAT.27.8, never names it at all -- just
+# "the field of blood"). K->C is a substantial enough transliteration
+# divergence to read as a different spelling at a glance, matching the
+# brief's own named Charran/Sichem-class category.
+verses = ["ACT.1.19"]
+
+[[alias]]
+id = "ecbatana"
+name = "Achmetha"
+# EZR.6.2: "...at Achmetha, in the palace that is in the province of the
+# Medes..." A completely different word (Aramaic/Persian rendering vs the
+# modern Greek-derived name) -- not a spelling variant at all.
+verses = ["EZR.6.2"]
+
+[[alias]]
+id = "malta"
+name = "Melita"
+# ACT.28.1: "...then they knew that the island was called Melita." A
+# substantially different word, the classic KJV-vs-modern-name case.
+verses = ["ACT.28.1"]
+
+[[alias]]
+id = "magadan"
+name = "Magdala"
+# MAT.15.39: "...and came into the coasts of Magdala." A well-known KJV
+# (Textus Receptus) vs modern-critical-text variant -- substantially
+# different spelling.
+verses = ["MAT.15.39"]
+
+[[alias]]
+id = "cauda"
+name = "Clauda"
+# ACT.27.16: "And running under a certain island which is called Clauda..."
+# A well-known KJV manuscript-tradition variant, substantially different
+# from the modern "Cauda".
+verses = ["ACT.27.16"]
+
+[[alias]]
+id = "nile"
+name = "Sihor"
+# JER.2.18: "...to drink the waters of Sihor?" A completely different word
+# -- the KJV's own poetic/prophetic name for the Nile, never "Nile" itself
+# (a modern name the KJV text does not use anywhere in this place's own
+# citations).
+verses = ["JER.2.18"]
+
+[[alias]]
+id = "shihor-2"
+name = "Sihor"
+# ISA.23.3: "...the seed of Sihor, the harvest of the river, is her
+# revenue..." Same KJV word as `nile` above (a separate compiled place,
+# geocoded slightly differently) -- accepted-collision cartography, same
+# precedent as cush-1/cush-2.
+verses = ["ISA.23.3"]
+
+[[alias]]
+id = "bealoth-2"
+name = "Aloth"
+# 1KI.4.16: "Baanah the son of Hushai was in Asher and in Aloth." The KJV
+# drops the "Be-" prefix entirely -- a substantial enough difference to
+# read as a shorter, different word, not a minor spelling variant.
+verses = ["1KI.4.16"]
+
+[[alias]]
+id = "kittim"
+name = "Chittim"
+# Unanimous across both linked verses -- NUM.24.24: "And ships shall come
+# from the coast of Chittim..."; DAN.11.30: "For the ships of Chittim shall
+# come against him..." K->Ch changes the initial sound enough to read as a
+# different word at a glance, matching the Charran/Sichem-class bar.
+verses = ["NUM.24.24", "DAN.11.30"]
+
+[[alias]]
+id = "chitlish"
+name = "Kithlish"
+# JOS.15.40: "And Cabbon, and Lahmam, and Kithlish," Ch->K, the same
+# aspirated-consonant divergence as kittim/Chittim above, just the reverse
+# direction.
+verses = ["JOS.15.40"]
+
+[[alias]]
+id = "cozeba"
+name = "Chozeba"
+# 1CH.4.22: "And Jokim, and the men of Chozeba, and Joash, and Saraph..."
+# C->Ch, same phoneme-changing family as kittim/Chittim.
+verses = ["1CH.4.22"]
+
+[[alias]]
+id = "cun"
+name = "Chun"
+# 1CH.18.8: "Likewise from Tibhath, and from Chun, cities of Hadarezer..."
+# C->Ch, same phoneme-changing family as kittim/Chittim.
+verses = ["1CH.18.8"]
+
+[[alias]]
+id = "bethany-2"
+name = "Bethabara"
+# JHN.1.28: "These things were done in Bethabara beyond Jordan, where John
+# was baptizing." A separate compiled place from the well-known Bethany near
+# Jerusalem (bethany-1) -- this one, beyond Jordan, is a textbook KJV
+# (Textus Receptus) vs modern-critical-text variant, substantially
+# different from "Bethany".
+verses = ["JHN.1.28"]
+
+[[alias]]
+id = "adriatic-sea"
+name = "Adria"
+# ACT.27.27: "But when the fourteenth night was come, as we were driven up
+# and down in Adria..." The KJV never uses the modern descriptive phrase
+# "Adriatic Sea" at all -- a single proper noun vs a two-word modern
+# geographic label, not a mere spelling variant.
+verses = ["ACT.27.27"]
+
+[[alias]]
+id = "ephron-2"
+name = "Ephrain"
+# 2CH.13.19: "...Beth-el with the towns thereof, and Jeshanah with the
+# towns thereof, and Ephrain with the towns thereof." Shared "Ephr-" prefix,
+# but the ending substantially diverges ("-on" vs "-ain") -- a real
+# textual-tradition question upstream (Ephron/Ephrain), but the KJV's own
+# word here is unambiguous.
+verses = ["2CH.13.19"]
+
+[[alias]]
+id = "ge-harashim"
+name = "the valley of Charashim"
+# 1CH.4.14: "...Seraiah begat Joab, the father of the valley of Charashim;
+# for they were craftsmen." "Ge" (Hebrew "valley") is translated away
+# entirely, and "harashim" becomes "Charashim" -- the same h->ch divergence
+# as the kittim/Chittim family, stacked with a translated prefix.
+verses = ["1CH.4.14"]
+
+[[alias]]
+id = "haeleph"
+name = "Eleph"
+# JOS.18.28: "And Zelah, Eleph, and Jebusi, which is Jerusalem, Gibeath, and
+# Kirjath..." The Hebrew definite article prefix ("Ha-") is dropped
+# entirely -- same "drops a whole leading syllable" pattern as bealoth-2/
+# Aloth above.
+verses = ["JOS.18.28"]
+
+[[alias]]
+id = "laishah"
+name = "Laish"
+# ISA.10.30: "...cause it to be heard unto Laish, O poor Anathoth." Drops a
+# whole trailing syllable (Lai-SHAH -> Laish), not a single-letter tweak.
+verses = ["ISA.10.30"]
+
+[[alias]]
+id = "lud-2"
+name = "Lydia"
+# EZK.30.5: "Ethiopia, and Libya, and Lydia, and all the mingled people..."
+# (JER.46.9, this place's other verse_link, uses the demonym "Lydians" --
+# supporting, not primary). "Lud" vs "Lydia" is a substantially different
+# word shape, not a spelling variant.
+verses = ["EZK.30.5", "JER.46.9"]
+
+[[alias]]
+id = "mareal"
+name = "Maralah"
+# JOS.19.11: "...and Maralah, and reached to Dabbasheth..." Reorders and
+# extends the internal vowels (Mar-E-al -> Mar-AL-ah), not a simple
+# suffix-only change.
+verses = ["JOS.19.11"]
+
+[[alias]]
+id = "dibon-3"
+name = "Dimon"
+# ISA.15.9: "For the waters of Dimon shall be full of blood: for I will
+# bring more upon Dimon..." A well-attested deliberate prophetic wordplay
+# (Isaiah puns "Dibon" toward "dam", Hebrew for blood) -- the KJV's own word
+# here is unambiguously "Dimon", a b->m consonant change that reads as a
+# different word.
+verses = ["ISA.15.9"]
+
+[[alias]]
+id = "susa"
+name = "Shushan"
+# Unanimous (excepting one demonym form) across this place's ~19 linked
+# verses -- NEH.1.1: "...I was in Shushan the palace..."; EST.1.2, 1.5,
+# 2.3, 2.5, 2.8, 3.15, 4.8, 4.16, 8.14, 8.15, 9.6, 9.11-9.15, 9.18 (all
+# "Shushan"); DAN.8.2: "...I was at Shushan in the palace..." A completely
+# different word from "Susa" -- as substantial a mismatch as any of the
+# brief's own three proven cases, missed by an earlier compression pass of
+# this file and restored on a consistency re-check.
+verses = ["NEH.1.1", "EST.1.2", "DAN.8.2"]
+
+[[alias]]
+id = "samothrace"
+name = "Samothracia"
+# ACT.16.11: "...we came with a straight course to Samothracia, and the
+# next day to Neapolis." Same "-ia suffix added/dropped entirely" pattern
+# as babylonia/Babylon above (a genuinely different word shape, not a
+# spelling variant) -- added on the same consistency re-check as susa.
+verses = ["ACT.16.11"]
+
+[[alias]]
+id = "socoh-3"
+name = "Sochoh"
+# 1KI.4.10: "...to him pertained Sochoh, and all the land of Hepher..."
+# C->Ch, the same aspirated-consonant-change family as kittim/Chittim,
+# chitlish/Kithlish, cozeba/Chozeba, cun/Chun, and ge-harashim/"the valley
+# of Charashim" above -- added on the same consistency re-check as susa.
+verses = ["1KI.4.10"]

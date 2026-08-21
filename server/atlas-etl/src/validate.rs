@@ -54,10 +54,12 @@
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{bail, Result};
-use atlas_core::data::{AtlasData, CatechismPart, Era, Event, Landmark, LandMaskRegion, Place, PlaceHistory, Polity};
+use atlas_core::data::{AtlasData, CatechismPart, Era, Event, Landmark, LandMaskRegion, Place, PlaceHistory, PlaceNameAlias, Polity};
+use atlas_core::history::strip_disambiguation_suffix;
 use atlas_core::merge::{great_circle_km, PlaceMerge, SAME_PLACE_THRESHOLD_KM};
 use atlas_core::refs::VerseId;
 use atlas_core::time::{next_year, TimeRange};
+use atlas_core::translation::DEFAULT_TRANSLATION;
 
 use crate::polities::{ring_is_simple, Bbox};
 
@@ -657,6 +659,69 @@ pub fn run_place_history(history: &[PlaceHistory], place_ids: &HashSet<&str>, ve
     }
     let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
     bail!("place-history validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// Batch E3 (KJV display-name alias layer): validates the curated
+/// `place-names-kjv.toml` (`atlas_core::data::PlaceNameAlias`, parsed by
+/// `curated::parse_place_names_kjv`) against the compiled place set and KJV
+/// text -- same aggregate-every-error-then-bail shape `run_place_history`
+/// above uses. `places` (the FULL compiled place list, not just a
+/// `HashSet<&str>` of ids like `run_place_history` takes) is needed here
+/// specifically because the noise check below needs each alias's OWN
+/// place's canonical name, not just its existence.
+///
+/// Checks (requirement 1's own named validation list): every alias id
+/// resolves to a real compiled place; no duplicate alias ids; an alias
+/// equal to its own place's canonical name is rejected as noise (compared
+/// against the SAME stripped form `resolve_display_name`'s own fallback
+/// produces -- `strip_disambiguation_suffix`, reused directly rather than
+/// re-derived, so "Cush" is correctly caught as noise for `cush-2` even
+/// though its raw compiled name is "Cush 2"); every cited verse parses as a
+/// canonical single-verse ref AND exists in the compiled KJV text (same
+/// two-part check `run_place_history`'s own `check_verse` closure applies);
+/// a curated row missing its own "kjv" translation entry (defensive --
+/// `parse_place_names_kjv` always populates it today, but this function
+/// stays honest for a future translation-keyed row shape that might not).
+pub fn run_place_names_kjv(aliases: &[PlaceNameAlias], places: &[Place], verses: &HashMap<String, String>) -> Result<()> {
+    let mut errors: Vec<String> = Vec::new();
+
+    check_duplicate_ids(aliases.iter().map(|a| a.id.as_str()), "place-names-kjv alias", &mut errors);
+
+    let places_by_id: HashMap<&str, &Place> = places.iter().map(|p| (p.id.as_str(), p)).collect();
+
+    for a in aliases {
+        let ctx = format!("place-names-kjv alias '{}'", a.id);
+        let Some(place) = places_by_id.get(a.id.as_str()) else {
+            errors.push(format!("{ctx}: unknown place id (not in compiled places.json)"));
+            continue;
+        };
+
+        match a.translations.get(DEFAULT_TRANSLATION) {
+            None => errors.push(format!("{ctx}: missing a '{DEFAULT_TRANSLATION}' translation entry")),
+            Some(kjv_name) => {
+                let canonical = strip_disambiguation_suffix(&place.name);
+                if kjv_name == canonical {
+                    errors.push(format!("{ctx}: kjv name '{kjv_name}' is equal to '{}' own canonical name -- noise, not a genuine mismatch", a.id));
+                }
+            }
+        }
+
+        for v in &a.verses {
+            match VerseId::parse_canonical(v) {
+                Err(err) => errors.push(format!("{ctx}: verse '{v}' is not a canonical single-verse ref: {err}")),
+                Ok(_) if !verses.contains_key(v) => {
+                    errors.push(format!("{ctx}: verse '{v}' parses but does not exist in the compiled KJV text"))
+                }
+                Ok(_) => {}
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        return Ok(());
+    }
+    let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("place-names-kjv validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
 /// Batch F ("the small catechism"), extended Batch F2 (question-level

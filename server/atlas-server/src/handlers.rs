@@ -11,7 +11,7 @@ use axum::Json;
 use serde::Serialize;
 
 use atlas_core::data::{AtlasData, BookMeta, CanonBook, Era, Event, Landmark, Narrative};
-use atlas_core::history::{resolve_blurb, resolve_display_name};
+use atlas_core::history::{resolve_blurb, resolve_display_name, resolve_display_name_and_canonical};
 use atlas_core::refs::{ScriptureRef, VerseId};
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene, to_scene_event};
 use atlas_core::time::TimeRange;
@@ -306,7 +306,22 @@ pub async fn chapter(State(data): State<Arc<AtlasData>>, Path(cref): Path<String
                 .places_for_verse(&key)
                 .iter()
                 .filter_map(|pid| data.place_by_id(pid))
-                .map(|p| PlaceRefOut { id: p.id.clone(), name: p.name.clone() })
+                .map(|p| PlaceRefOut {
+                    id: p.id.clone(),
+                    // Batch E3: resolved (period-history/KJV-alias-aware)
+                    // name, not the bare Theographic default -- this is the
+                    // "reader place mentions" surface (PlaceMentions.cs's own
+                    // plain-text substring scan against THIS field is the
+                    // app's only mention-detection mechanism, so an unaliased
+                    // name here means a place whose KJV wording differs from
+                    // its default name is silently never detected as
+                    // mentioned in its own verse's text at all -- exactly
+                    // the owner's bug report, one layer deeper). No window
+                    // (`None`) -- same "scripture mode never resolves a
+                    // period name" reasoning `compose_scripture_scene` uses;
+                    // a chapter reading has no time window either.
+                    name: resolve_display_name(&p.name, data.place_history_for(&p.id), None, data.place_name_alias_for(&p.id)),
+                })
                 .collect();
             let heading = data.heading_for_verse(&key).map(HeadingOut::from);
             verses.push(VerseOut { verse: v, text: text.clone(), places, heading });
@@ -673,7 +688,27 @@ pub struct EventDetailOut {
 pub async fn event(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -> Result<Json<EventDetailOut>, ApiError> {
     let e: &Event = data.event_by_id(&id).ok_or_else(|| ApiError::not_found("event"))?;
 
-    let places = e.places.iter().filter_map(|pid| data.place_by_id(pid)).map(|p| EventPlaceOut { id: p.id.clone(), name: p.name.clone() }).collect();
+    // Batch E3: resolved name (period-history- and KJV-alias-aware), not the
+    // bare Theographic default -- this is the "PARALLEL ACCOUNTS place
+    // lines" surface (an EVENT node's own `event-places`/`event-place-{id}`
+    // rows render right alongside its PARALLEL ACCOUNTS witness section).
+    // Window = this event's own `e.when`: unlike the other three call sites
+    // (which each already had a well-defined "no window" reason -- scripture
+    // mode, a plain reader chapter with no time concept), this row previously
+    // resolved NEITHER a period name NOR an alias at all (always the bare,
+    // even un-stripped, default `p.name`) -- so using the event's own date
+    // here is a strict improvement on every axis, not a behavior change with
+    // a downside, and keeps this row consistent with what the SAME place
+    // would show on the map for the SAME event's own window.
+    let places = e
+        .places
+        .iter()
+        .filter_map(|pid| data.place_by_id(pid))
+        .map(|p| EventPlaceOut {
+            id: p.id.clone(),
+            name: resolve_display_name(&p.name, data.place_history_for(&p.id), Some(e.when), data.place_name_alias_for(&p.id)),
+        })
+        .collect();
     let witnesses = atlas_core::scene::witnesses_for(e).into_iter().map(EventWitnessOut::from).collect();
     // Batch T2: never surface the undated() sentinel to the wire for a
     // general-kind passage -- see EventDetailOut's own doc comment.
@@ -891,6 +926,19 @@ pub struct PlaceDetailOut {
     pub events: Vec<SceneEvent>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub history: Option<HistoryOut>,
+    /// Batch E3 (requirement 2's quiet provenance note): the bare, stripped,
+    /// un-aliased, un-period-resolved canonical name. ALWAYS COMPUTED --
+    /// unlike `history`, which stays absent for a place with no curated
+    /// `PlaceHistory` record at all (e.g. `cush-2`), this field's own
+    /// resolution never depends on `history` existing -- but only ever
+    /// SERIALIZED (`Some`) when it differs from whatever name is actually
+    /// showing this request (a curated period name OR a curated KJV alias
+    /// resolved to something else). Omitted (`None`, not a repeat of the
+    /// title) whenever this place's displayed name already IS its canonical
+    /// name, so the client's own popover renders NO provenance note rather
+    /// than a vacuous "known elsewhere as X" that just repeats the title.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub canonical_name: Option<String>,
 }
 
 /// `GET /api/place/{id}?from=&to=`. Unknown id -> 404 `not_found` (a place
@@ -919,12 +967,19 @@ pub async fn place(
         _ => None,
     };
 
+    // Batch E3: resolved ONCE here (not re-derived inside the `history`
+    // closure below, and not gated on `history` existing at all -- a place
+    // like `cush-2` has no curated `PlaceHistory` record whatsoever, so
+    // `history` stays `None`, but its KJV alias must still resolve).
+    let alias = data.place_name_alias_for(&id);
+    let (display_name, canonical_name) = resolve_display_name_and_canonical(&place.name, data.place_history_for(&id), window, alias);
+
     let history = data.place_history_for(&id).map(|h| HistoryOut {
-        display_name: resolve_display_name(&place.name, Some(h), window),
+        display_name: display_name.clone(),
         blurb: window.and_then(|w| resolve_blurb(&h.blurbs, w)).map(|b| b.text.clone()),
         established: h.established.as_ref().map(|c| DateClaimOut { when: c.when, verses: c.verses.clone(), note: c.note.clone() }),
         destroyed: h.destroyed.as_ref().map(|c| DateClaimOut { when: c.when, verses: c.verses.clone(), note: c.note.clone() }),
     });
 
-    Ok(Json(PlaceDetailOut { id: place.id.clone(), name: place.name.clone(), lat: place.lat, lon: place.lon, events, history }))
+    Ok(Json(PlaceDetailOut { id: place.id.clone(), name: place.name.clone(), lat: place.lat, lon: place.lon, events, history, canonical_name }))
 }

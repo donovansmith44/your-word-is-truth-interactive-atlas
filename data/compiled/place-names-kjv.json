@@ -1,0 +1,311 @@
+[
+  {
+    "id": "cush-2",
+    "translations": {
+      "kjv": "Ethiopia"
+    },
+    "verses": [
+      "GEN.2.13"
+    ]
+  },
+  {
+    "id": "cush-1",
+    "translations": {
+      "kjv": "Ethiopia"
+    },
+    "verses": [
+      "2KI.19.9",
+      "PSA.68.31",
+      "ISA.18.1",
+      "ISA.20.3",
+      "EZK.30.9"
+    ]
+  },
+  {
+    "id": "tigris",
+    "translations": {
+      "kjv": "Hiddekel"
+    },
+    "verses": [
+      "GEN.2.14",
+      "DAN.10.4"
+    ]
+  },
+  {
+    "id": "pishon",
+    "translations": {
+      "kjv": "Pison"
+    },
+    "verses": [
+      "GEN.2.11"
+    ]
+  },
+  {
+    "id": "babylonia",
+    "translations": {
+      "kjv": "Babylon"
+    },
+    "verses": [
+      "EZR.1.11",
+      "EZR.2.1",
+      "EZR.5.12",
+      "EZR.7.6"
+    ]
+  },
+  {
+    "id": "diviners-oak",
+    "translations": {
+      "kjv": "The Plain of Meonenim"
+    },
+    "verses": [
+      "JDG.9.37"
+    ]
+  },
+  {
+    "id": "rock-of-escape",
+    "translations": {
+      "kjv": "Sela-hammahlekoth"
+    },
+    "verses": [
+      "1SA.23.28"
+    ]
+  },
+  {
+    "id": "mortar",
+    "translations": {
+      "kjv": "Maktesh"
+    },
+    "verses": [
+      "ZEP.1.11"
+    ]
+  },
+  {
+    "id": "gibeath-elohim",
+    "translations": {
+      "kjv": "the hill of God"
+    },
+    "verses": [
+      "1SA.10.5"
+    ]
+  },
+  {
+    "id": "akeldama",
+    "translations": {
+      "kjv": "Aceldama"
+    },
+    "verses": [
+      "ACT.1.19"
+    ]
+  },
+  {
+    "id": "ecbatana",
+    "translations": {
+      "kjv": "Achmetha"
+    },
+    "verses": [
+      "EZR.6.2"
+    ]
+  },
+  {
+    "id": "malta",
+    "translations": {
+      "kjv": "Melita"
+    },
+    "verses": [
+      "ACT.28.1"
+    ]
+  },
+  {
+    "id": "magadan",
+    "translations": {
+      "kjv": "Magdala"
+    },
+    "verses": [
+      "MAT.15.39"
+    ]
+  },
+  {
+    "id": "cauda",
+    "translations": {
+      "kjv": "Clauda"
+    },
+    "verses": [
+      "ACT.27.16"
+    ]
+  },
+  {
+    "id": "nile",
+    "translations": {
+      "kjv": "Sihor"
+    },
+    "verses": [
+      "JER.2.18"
+    ]
+  },
+  {
+    "id": "shihor-2",
+    "translations": {
+      "kjv": "Sihor"
+    },
+    "verses": [
+      "ISA.23.3"
+    ]
+  },
+  {
+    "id": "bealoth-2",
+    "translations": {
+      "kjv": "Aloth"
+    },
+    "verses": [
+      "1KI.4.16"
+    ]
+  },
+  {
+    "id": "kittim",
+    "translations": {
+      "kjv": "Chittim"
+    },
+    "verses": [
+      "NUM.24.24",
+      "DAN.11.30"
+    ]
+  },
+  {
+    "id": "chitlish",
+    "translations": {
+      "kjv": "Kithlish"
+    },
+    "verses": [
+      "JOS.15.40"
+    ]
+  },
+  {
+    "id": "cozeba",
+    "translations": {
+      "kjv": "Chozeba"
+    },
+    "verses": [
+      "1CH.4.22"
+    ]
+  },
+  {
+    "id": "cun",
+    "translations": {
+      "kjv": "Chun"
+    },
+    "verses": [
+      "1CH.18.8"
+    ]
+  },
+  {
+    "id": "bethany-2",
+    "translations": {
+      "kjv": "Bethabara"
+    },
+    "verses": [
+      "JHN.1.28"
+    ]
+  },
+  {
+    "id": "adriatic-sea",
+    "translations": {
+      "kjv": "Adria"
+    },
+    "verses": [
+      "ACT.27.27"
+    ]
+  },
+  {
+    "id": "ephron-2",
+    "translations": {
+      "kjv": "Ephrain"
+    },
+    "verses": [
+      "2CH.13.19"
+    ]
+  },
+  {
+    "id": "ge-harashim",
+    "translations": {
+      "kjv": "the valley of Charashim"
+    },
+    "verses": [
+      "1CH.4.14"
+    ]
+  },
+  {
+    "id": "haeleph",
+    "translations": {
+      "kjv": "Eleph"
+    },
+    "verses": [
+      "JOS.18.28"
+    ]
+  },
+  {
+    "id": "laishah",
+    "translations": {
+      "kjv": "Laish"
+    },
+    "verses": [
+      "ISA.10.30"
+    ]
+  },
+  {
+    "id": "lud-2",
+    "translations": {
+      "kjv": "Lydia"
+    },
+    "verses": [
+      "EZK.30.5",
+      "JER.46.9"
+    ]
+  },
+  {
+    "id": "mareal",
+    "translations": {
+      "kjv": "Maralah"
+    },
+    "verses": [
+      "JOS.19.11"
+    ]
+  },
+  {
+    "id": "dibon-3",
+    "translations": {
+      "kjv": "Dimon"
+    },
+    "verses": [
+      "ISA.15.9"
+    ]
+  },
+  {
+    "id": "susa",
+    "translations": {
+      "kjv": "Shushan"
+    },
+    "verses": [
+      "NEH.1.1",
+      "EST.1.2",
+      "DAN.8.2"
+    ]
+  },
+  {
+    "id": "samothrace",
+    "translations": {
+      "kjv": "Samothracia"
+    },
+    "verses": [
+      "ACT.16.11"
+    ]
+  },
+  {
+    "id": "socoh-3",
+    "translations": {
+      "kjv": "Sochoh"
+    },
+    "verses": [
+      "1KI.4.10"
+    ]
+  }
+]
