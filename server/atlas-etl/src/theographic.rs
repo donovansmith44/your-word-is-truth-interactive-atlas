@@ -218,7 +218,7 @@ pub fn parse_events(
         };
 
         let when = TimeRange::new(year, year).context("theographic event landed on an impossible (zero) year")?;
-        out_events.push(Event { id, label: f.title.clone(), when, places: event_places, verses: event_verses });
+        out_events.push(Event { id, label: f.title.clone(), when, places: event_places, verses: event_verses, ..Default::default() });
     }
 
     Ok((out_events, new_places, stats))

@@ -87,6 +87,16 @@ struct EventToml {
     places: Vec<String>,
     #[serde(default)]
     verses: Vec<String>,
+    /// Batch T requirement 1/2: optional curator-authored provenance/
+    /// ordering (see `atlas_core::data::Event`'s own doc comments for each).
+    /// `#[serde(default)]` so every pre-Batch-T event in this file (the
+    /// overwhelming majority) keeps parsing with no migration.
+    #[serde(default)]
+    robertson_section: Option<String>,
+    #[serde(default)]
+    ref_note: Option<String>,
+    #[serde(default)]
+    order_key: i32,
 }
 
 #[derive(Deserialize)]
@@ -143,7 +153,79 @@ pub fn parse_events_extra(input: &str) -> Result<Vec<Event>> {
         for v in &e.verses {
             expand_verse_ref(v, &e.id, &mut verses)?;
         }
-        out.push(Event { id: e.id, label: e.label, when, places: e.places, verses });
+        out.push(Event {
+            id: e.id,
+            label: e.label,
+            when,
+            places: e.places,
+            verses,
+            robertson_section: e.robertson_section,
+            ref_note: e.ref_note,
+            order_key: e.order_key,
+            ..Default::default()
+        });
+    }
+    Ok(out)
+}
+
+// --- Batch T requirement 1: event-witnesses.toml ("parallel witnesses") ---
+
+#[derive(Deserialize)]
+struct EventWitnessesFile {
+    witness: Vec<WitnessToml>,
+}
+
+#[derive(Deserialize)]
+struct WitnessToml {
+    event_id: String,
+    book: String,
+    /// Curator-friendly single-verse-or-range strings (this project's own
+    /// canonical codes, e.g. `"MAT.27.33-50"`) -- expanded the SAME way
+    /// `parse_events_extra`'s own `verses` field already is (`expand_verse_ref`,
+    /// reused verbatim, not re-implemented).
+    verses: Vec<String>,
+    #[serde(default)]
+    ref_note: Option<String>,
+    #[serde(default)]
+    robertson_section: Option<String>,
+}
+
+/// Parses `event-witnesses.toml` (Batch T requirement 1: "PARALLEL
+/// WITNESSES -- the set of per-book passages that recount the same event").
+/// Schema: a FLAT `[[witness]]` array, each row explicitly naming its own
+/// `event_id` -- deliberately NOT nested under a per-event `[[event]]`
+/// group the way `polities/*.toml`'s `[era.transition]`/`[era.fall]` are
+/// (see `atlas_core::data::PolityDelta::for_era_from`'s own doc comment for
+/// the exact TOML array-of-tables mis-attachment bug that shipped once,
+/// live, from that nested shape -- 7 of Batch M's own 22 deltas). A FLAT
+/// list with an explicit id per row has NO equivalent risk to guard against
+/// in the first place -- there is no "most recently opened parent" for a
+/// row to silently attach to instead of the one a curator's own comment
+/// describes, so no echo-field discipline is needed here; the batch report
+/// discloses this as the reason, not an oversight.
+///
+/// Pure and STRUCTURAL only, same split every other curated schema in this
+/// module follows: a malformed file bails immediately; cross-checking each
+/// `event_id` against the real compiled event set, each `book` against the
+/// real canon, and each verse against the compiled KJV text all need the
+/// fuller picture and are `main.rs`'s / `validate::run`'s own job (matching
+/// `parse_place_history`'s own pure-parse-then-cross-validate precedent).
+pub fn parse_event_witnesses(input: &str) -> Result<Vec<(String, atlas_core::data::EventWitness)>> {
+    let f: EventWitnessesFile =
+        toml::from_str(input).context("event-witnesses.toml: invalid TOML or does not match the [[witness]] schema")?;
+
+    let mut out = Vec::with_capacity(f.witness.len());
+    for w in f.witness {
+        let mut verses = Vec::new();
+        for v in &w.verses {
+            expand_verse_ref(v, &format!("witness for event '{}' ({})", w.event_id, w.book), &mut verses)?;
+        }
+        let translations =
+            std::collections::HashMap::from([(atlas_core::translation::DEFAULT_TRANSLATION.to_string(), verses)]);
+        out.push((
+            w.event_id,
+            atlas_core::data::EventWitness { book: w.book, translations, ref_note: w.ref_note, robertson_section: w.robertson_section },
+        ));
     }
     Ok(out)
 }

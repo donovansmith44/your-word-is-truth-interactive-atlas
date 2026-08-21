@@ -69,6 +69,13 @@ const ATLAS_END_YEAR: i32 = 100;
 /// names styled letterspaced small caps).
 const ALLOWED_LANDMARK_KINDS: [&str; 3] = ["water", "mountain", "region"];
 
+/// Batch T requirement 1: the curated `Event::kind` values -- "event" for
+/// every real record today (see that field's own doc comment for why
+/// "general" is modeled but unused this batch: an `Event` structurally
+/// always carries `when`/`places`, so it cannot represent a dateless/
+/// placeless passage).
+const ALLOWED_EVENT_KINDS: [&str; 2] = ["event", "general"];
+
 /// Batch C2: the curated `size` hint `landmarks.toml` may optionally set
 /// (`None` is always valid too — only a PRESENT value is checked against
 /// this enum). Mirrors BorderLayer's own polity-label size tiers
@@ -85,6 +92,22 @@ pub fn run(data: &AtlasData) -> Result<()> {
     let place_ids: HashSet<&str> = data.places.iter().map(|p| p.id.as_str()).collect();
     let event_by_id: HashMap<&str, &Event> = data.events.iter().map(|e| (e.id.as_str(), e)).collect();
 
+    // Batch T requirement 1: pure verse-format check for hand-typed witness
+    // refs -- both parses canonically AND actually exists in the compiled
+    // KJV text (the STRICTER bar `run_place_history`/`run_polities` already
+    // apply to every other hand-typed curated citation in this app, since a
+    // typo there must fail loudly rather than silently pass a format-only
+    // check -- unlike `e.verses` below, whose OWN Theographic-imported
+    // majority is ETL-derived, not hand-typed, so that check stays
+    // format-only, its own long-standing behavior, unchanged by this batch).
+    let check_witness_verse = |v: &str, ctx: &str, errors: &mut Vec<String>| match VerseId::parse_canonical(v) {
+        Err(err) => errors.push(format!("{ctx}: verse '{v}' is not a canonical single-verse ref: {err}")),
+        Ok(_) if !data.verses.contains_key(v) => {
+            errors.push(format!("{ctx}: verse '{v}' parses but does not exist in the compiled KJV text"))
+        }
+        Ok(_) => {}
+    };
+
     for e in &data.events {
         for pid in &e.places {
             if !place_ids.contains(pid.as_str()) {
@@ -94,6 +117,83 @@ pub fn run(data: &AtlasData) -> Result<()> {
         for v in &e.verses {
             if let Err(err) = VerseId::parse_canonical(v) {
                 errors.push(format!("event '{}' has a non-canonical verse id '{}': {}", e.id, v, err));
+            }
+        }
+
+        // Batch T requirement 1 ("date outside span"): every event's own
+        // `when` must fall inside the atlas's own curated span -- previously
+        // unchecked for events specifically (unlike eras/polities/place-
+        // history, which each already enforce this bound; `TimeRange::new`
+        // itself only ever rejects zero/inverted, never an out-of-span year).
+        if e.when.from_year < ATLAS_START_YEAR || e.when.from_year > ATLAS_END_YEAR {
+            errors.push(format!(
+                "event '{}': from_year {} is outside [{ATLAS_START_YEAR},{ATLAS_END_YEAR}]",
+                e.id, e.when.from_year
+            ));
+        }
+        if e.when.to_year < ATLAS_START_YEAR || e.when.to_year > ATLAS_END_YEAR {
+            errors.push(format!("event '{}': to_year {} is outside [{ATLAS_START_YEAR},{ATLAS_END_YEAR}]", e.id, e.when.to_year));
+        }
+
+        // Batch T requirement 1: `kind` enum (see `ALLOWED_EVENT_KINDS`'s
+        // own doc comment for why every real record is "event" today).
+        if !ALLOWED_EVENT_KINDS.contains(&e.kind.as_str()) {
+            errors.push(format!("event '{}' has invalid kind '{}' (expected one of {:?})", e.id, e.kind, ALLOWED_EVENT_KINDS));
+        }
+
+        // Batch T requirement 1: PARALLEL WITNESSES -- every witness's own
+        // book must be a real canon code, every witness must cite >=1 verse
+        // (an authored-but-empty witness is a curator mistake, not a valid
+        // "no evidence" state -- an event that genuinely has no parallel
+        // account simply carries no `[[witness]]` row at all, relying on
+        // the single-implicit-witness fallback, `scene::witnesses_for`'s
+        // own doc comment), and every cited verse both parses AND exists.
+        // Overlapping witness ranges: within ONE event, two witnesses of
+        // the SAME book whose own verse sets intersect are a curator
+        // mistake (a real account is split across two witness rows, or a
+        // copy-paste duplicate) -- checked pairwise per (event, book) group.
+        let mut by_book: HashMap<&str, Vec<&atlas_core::data::EventWitness>> = HashMap::new();
+        for w in &e.witnesses {
+            let ctx = format!("event '{}' witness ({})", e.id, w.book);
+            if atlas_core::canon::resolve_alias(&w.book).is_none() {
+                errors.push(format!("{ctx}: '{}' is not a real canonical book code", w.book));
+            }
+            match atlas_core::translation::resolve(&w.translations, atlas_core::translation::DEFAULT_TRANSLATION) {
+                Ok(verses) if verses.is_empty() => {
+                    errors.push(format!("{ctx}: has zero verses -- every witness must cite at least one"))
+                }
+                Ok(verses) => {
+                    for v in verses {
+                        check_witness_verse(v, &ctx, &mut errors);
+                    }
+                }
+                Err(_) => errors.push(format!(
+                    "{ctx}: carries no '{}' translation entry -- every curated witness must",
+                    atlas_core::translation::DEFAULT_TRANSLATION
+                )),
+            }
+            by_book.entry(w.book.as_str()).or_default().push(w);
+        }
+        for (book, group) in &by_book {
+            for a in 0..group.len() {
+                for b in (a + 1)..group.len() {
+                    let va: HashSet<&str> = group[a]
+                        .translations
+                        .get(atlas_core::translation::DEFAULT_TRANSLATION)
+                        .map(|v| v.iter().map(String::as_str).collect())
+                        .unwrap_or_default();
+                    let vb: HashSet<&str> = group[b]
+                        .translations
+                        .get(atlas_core::translation::DEFAULT_TRANSLATION)
+                        .map(|v| v.iter().map(String::as_str).collect())
+                        .unwrap_or_default();
+                    if !va.is_disjoint(&vb) {
+                        errors.push(format!(
+                            "event '{}': two witnesses for book '{}' have overlapping verse ranges",
+                            e.id, book
+                        ));
+                    }
+                }
             }
         }
     }
@@ -118,11 +218,25 @@ pub fn run(data: &AtlasData) -> Result<()> {
                 Some(ev) => resolved.push(ev),
             }
         }
+        // Batch T requirement 2: same check, extended with `order_key` as an
+        // explicit SUB-YEAR tiebreak (never a fake year offset, per the
+        // brief's own instruction) -- `(from_year, order_key)` must be
+        // non-decreasing along the leg chain, not just `from_year` alone.
+        // Every pre-Batch-T event defaults `order_key` to 0, so this is a
+        // strict extension: any narrative that already passed the
+        // year-only check keeps passing (0 >= 0, always) UNLESS this batch
+        // (or a future curator) explicitly assigns order_keys that
+        // contradict the curated leg order -- exactly the class of mistake
+        // this check exists to catch (Passion Week's own 8-9 legs, all
+        // dated to the identical traditional year, had NO ordering
+        // enforcement at all before this field existed).
         for pair in resolved.windows(2) {
-            if pair[1].when.from_year < pair[0].when.from_year {
+            let a_key = (pair[0].when.from_year, pair[0].order_key);
+            let b_key = (pair[1].when.from_year, pair[1].order_key);
+            if b_key < a_key {
                 errors.push(format!(
-                    "narrative '{}' has non-chronological legs: '{}' (from_year={}) precedes '{}' (from_year={})",
-                    n.id, pair[0].id, pair[0].when.from_year, pair[1].id, pair[1].when.from_year
+                    "narrative '{}' has non-chronological legs: '{}' (from_year={}, order_key={}) precedes '{}' (from_year={}, order_key={})",
+                    n.id, pair[0].id, pair[0].when.from_year, pair[0].order_key, pair[1].id, pair[1].when.from_year, pair[1].order_key
                 ));
             }
         }

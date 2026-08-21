@@ -34,6 +34,22 @@ pub struct Place {
 /// A datable happening. `places[0]` is the anchor place used for arrow
 /// endpoints; `places` may list more than one place (e.g. a campaign
 /// touching several locations), all of which light up in time mode.
+///
+/// Batch T ("events as the narrative nodes"): every `Event` IS the
+/// EVENT-kind half of the owner's own `PASSAGE` abstraction (batch-t-brief.md
+/// requirement 1, verbatim: "the Bible has a set of books and a set of
+/// passages... passages may be events, they may be general passages").
+/// `label` already serves as this passage's own TITLE (kept under its
+/// pre-existing field name, not renamed, to avoid a mechanical ~15-file
+/// rename with zero behavior change across code this batch does not
+/// otherwise touch -- see the batch report's own disclosed decision).
+/// `kind` is new (`"event"` for every real `Event` today -- structurally,
+/// an `Event` always carries `when`/`places`, so it cannot represent a
+/// dateless/placeless GENERAL-kind passage; that half of the owner's model
+/// is a future batch's own sibling table, not built here, per this batch's
+/// own scoped coverage decision) and ETL-validated against the two-value
+/// enum, same "plain String, checked at ETL time, friendlier error" pattern
+/// [`Landmark::kind`] already establishes.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Event {
     pub id: String,
@@ -41,6 +57,124 @@ pub struct Event {
     pub when: TimeRange,
     pub places: Vec<String>,
     pub verses: Vec<String>,
+    /// Batch T: `"event"` | `"general"` (validated by
+    /// `atlas_etl::validate::run`) -- see this struct's own doc comment for
+    /// why every REAL `Event` record is `"event"` today. Defaults to
+    /// `"event"` so every `events.json` written before this batch (and
+    /// every existing test fixture) keeps deserializing with no migration.
+    #[serde(default = "default_event_kind")]
+    pub kind: String,
+    /// Batch T requirement 1: PARALLEL WITNESSES -- "the set of per-book
+    /// passages that recount the same event... one witness passage per
+    /// Gospel." Empty for the overwhelming majority of events (every one
+    /// this batch does not explicitly curate parallel accounts for) --
+    /// NOT an error, and not "zero witnesses" in the ETL-validated sense
+    /// (see `atlas_etl::validate::run`'s own witness-group check): an empty
+    /// list means "this event has exactly one IMPLICIT witness," resolved
+    /// server-side from `verses` grouped by book (`scene`/`handlers::event`'s
+    /// own synthesis) -- never a fabricated placeholder, and never a reason
+    /// to withhold this event's own reader heading or EVENT popover.
+    #[serde(default)]
+    pub witnesses: Vec<EventWitness>,
+    /// Batch T requirement 1: provenance -- which Robertson's *Harmony of
+    /// the Gospels* (1922, public domain) section grounds this event's own
+    /// title/date/grouping, when Robertson-sourced (OT/Acts events this
+    /// batch re-grounds without consulting Robertson leave this `None`,
+    /// honestly, rather than inventing a section number). Curator-facing
+    /// only -- carried onto the wire (`EventDetailOut::robertson_section`)
+    /// so the mapping stays auditable, per the ambiguity ruling: "keep a
+    /// robertson_section provenance field so the mapping stays auditable"
+    /// even where this app's own DISPLAYED title is our own clearer
+    /// phrasing (CC0), not Robertson's own archaic wording.
+    #[serde(default)]
+    pub robertson_section: Option<String>,
+    /// Batch T requirement 1: citation-integrity note for THIS event's own
+    /// date/grouping (distinct from each witness's own, narrower
+    /// `EventWitness::ref_note`) -- names only sources actually consulted,
+    /// same discipline `PolityDelta::ref_note`/`CatechismItem::ref_note`
+    /// already establish. `None` is honest, not a gap, for an event whose
+    /// date/grouping needed no further note beyond `robertson_section`
+    /// itself (or needed neither).
+    #[serde(default)]
+    pub ref_note: Option<String>,
+    /// Batch T requirement 2: sub-year chronological ordering. This atlas's
+    /// `Year` model is year-granular (`TimeRange`, signed i32) -- two
+    /// events genuinely a few days apart within the SAME traditional year
+    /// (Palm Sunday through Resurrection, all AD 33) would otherwise be
+    /// indistinguishable to `atlas_etl::validate::run`'s own chronological-
+    /// leg check, which trusts a narrative's own curated leg ORDER as the
+    /// chronology. `order_key` is that check's own explicit sub-year
+    /// tiebreak (never a fake year offset, per the brief's own explicit
+    /// instruction) -- within one calendar year, a narrative's legs must be
+    /// non-decreasing by `order_key` too, not just by `when.from_year`.
+    /// Defaults to 0 (meaningless, and never checked, for the vast majority
+    /// of events, which are the ONLY event of their own narrative dated to
+    /// their own year).
+    #[serde(default)]
+    pub order_key: i32,
+}
+
+fn default_event_kind() -> String {
+    "event".to_string()
+}
+
+/// Manual (not derived) `Default`, purely so the many pre-existing
+/// hand-built `Event { id: ..., label: ..., when: ..., places: ...,
+/// verses: ... }` literals across this workspace's own tests/ETL (none of
+/// which need to say anything about this batch's own new fields) can add a
+/// single `..Default::default()` rather than each spelling out
+/// `kind`/`witnesses`/`robertson_section`/`ref_note`/`order_key` by hand --
+/// `#[derive(Default)]` isn't available here since `TimeRange` itself has
+/// no `Default` (it validates through the fallible `TimeRange::new`); the
+/// placeholder `when` below is never actually read by any site using this
+/// (every one of them still states its own `when` explicitly).
+impl Default for Event {
+    fn default() -> Self {
+        Event {
+            id: String::new(),
+            label: String::new(),
+            when: TimeRange { from_year: 1, to_year: 1 },
+            places: Vec::new(),
+            verses: Vec::new(),
+            kind: default_event_kind(),
+            witnesses: Vec::new(),
+            robertson_section: None,
+            ref_note: None,
+            order_key: 0,
+        }
+    }
+}
+
+/// Batch T requirement 1: one witness account of an EVENT-kind `PASSAGE` --
+/// "each witness a (book, verse-range, translation-mapped) record," the
+/// owner's own words verbatim. `translations` is a REAL mapping (not a
+/// single flat `Vec` with an implicit "it's KJV" comment) -- see
+/// `crate::translation`'s own module doc comment for the fail-loud lookup
+/// this indirection exists to support. `book` is a canonical 3-letter code
+/// (e.g. `"MAT"`) -- deliberately NOT re-derivable from the verse ids alone
+/// (a witness's own verses are always single-book by construction, but
+/// carrying `book` explicitly means a witness with a currently-empty/
+/// unresolvable translation entry still identifies WHICH Gospel it is,
+/// e.g. for the client's own "Matthew" caption).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EventWitness {
+    pub book: String,
+    /// translation code (lowercase, `crate::translation::DEFAULT_TRANSLATION`
+    /// == `"kjv"` today) -> flat, individually-canonical verse ids, same
+    /// convention `Event::verses`/`CatechismItem::verses` already use.
+    pub translations: HashMap<String, Vec<String>>,
+    /// This WITNESS's own citation-integrity note (e.g. "Robertson §164;
+    /// Eusebian canon table I") -- distinct from the parent `Event::ref_note`,
+    /// which grounds the EVENT's own date/grouping as a whole, not this one
+    /// book's own account.
+    #[serde(default)]
+    pub ref_note: Option<String>,
+    /// This WITNESS's own Robertson Harmony section, when it differs from
+    /// (or the parent event carries none of) `Event::robertson_section` --
+    /// most witnesses share their parent event's own section and leave this
+    /// `None` rather than repeating it.
+    #[serde(default)]
+    pub robertson_section: Option<String>,
 }
 
 /// An ordered chain of event ids (`legs`) that `scene::build_arrows` turns
@@ -536,6 +670,26 @@ pub struct AtlasData {
     /// is the one lookup that needs this (item fetch by id, requirement 3).
     #[serde(skip)]
     catechism_item_index: HashMap<String, (usize, usize)>,
+
+    /// Batch T requirement 5: derived, canonical verse id -> the pericope
+    /// heading (if any) that should render immediately above THAT verse in
+    /// the reading flow. Built by `finish()` in one pass over `events` --
+    /// see `heading_for_verse`'s own doc comment for exactly which events
+    /// qualify ("heading-worthy") and how each one's own anchor verse is
+    /// chosen (one entry per WITNESS, via `scene::witnesses_for`, so a
+    /// multi-witness event gets one heading per Gospel book, each at that
+    /// witness's own first verse -- never just one heading in one book).
+    #[serde(skip)]
+    verse_heading: HashMap<String, HeadingEntry>,
+}
+
+/// Batch T requirement 5: one resolved pericope heading -- an EVENT-kind
+/// PASSAGE's own id and title, anchored at one specific verse (the first
+/// verse of one of its own witnesses). See `AtlasData::heading_for_verse`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HeadingEntry {
+    pub event_id: String,
+    pub title: String,
 }
 
 impl AtlasData {
@@ -668,6 +822,33 @@ impl AtlasData {
         self.catechism_item_names = catechism_item_names;
         self.catechism_item_index = catechism_item_index;
 
+        // Batch T requirement 5 ("pericope headings render in the reading
+        // flow"): one pass over every event builds the anchor-verse index --
+        // see `heading_for_verse`'s own doc comment for the heading-worthy
+        // rule. Runs AFTER `self.events.sort_by_key` above so a same-verse
+        // collision (two heading-worthy events both anchoring their own
+        // first witness verse to the identical vref -- not expected in the
+        // real curated data, but not assumed impossible) deterministically
+        // keeps the chronologically EARLIER event's own heading, via
+        // `entry().or_insert_with()` never overwriting a first hit.
+        let narrative_leg_ids: HashSet<&str> =
+            self.narratives.iter().flat_map(|n| n.legs.iter().map(|s| s.as_str())).collect();
+        let mut verse_heading: HashMap<String, HeadingEntry> = HashMap::new();
+        for e in &self.events {
+            let heading_worthy =
+                narrative_leg_ids.contains(e.id.as_str()) || !e.witnesses.is_empty() || e.robertson_section.is_some();
+            if !heading_worthy {
+                continue;
+            }
+            for w in crate::scene::witnesses_for(e) {
+                let Some(anchor) = w.verse_groups.first().and_then(|g| g.verses.first()) else { continue };
+                verse_heading
+                    .entry(anchor.clone())
+                    .or_insert_with(|| HeadingEntry { event_id: e.id.clone(), title: e.label.clone() });
+            }
+        }
+        self.verse_heading = verse_heading;
+
         self
     }
 
@@ -713,6 +894,26 @@ impl AtlasData {
     /// `verse_to_places`'s own doc comment.
     pub fn places_for_verse(&self, verse: &str) -> &[String] {
         self.verse_to_places.get(verse).map(|v| v.as_slice()).unwrap_or(&[])
+    }
+
+    /// Batch T requirement 5: the pericope heading (event id + title) that
+    /// should render immediately above this verse in the reading flow, if
+    /// any. A verse is a heading ANCHOR exactly when it is the FIRST verse
+    /// of some "heading-worthy" event's own witness (`scene::witnesses_for`)
+    /// -- "heading-worthy" means: a leg of one of the curated narratives
+    /// (OT included -- every existing narrative event already carries a
+    /// real title via `Event::label`, no new authoring needed for those),
+    /// OR explicitly curated with parallel witnesses (`Event::witnesses`
+    /// non-empty), OR explicitly Robertson-grounded (`Event::robertson_section`
+    /// is `Some`) -- i.e. "Gospels + Acts (full coverage) + narrative-event
+    /// passages elsewhere," per the owner's own coverage decision (verbatim:
+    /// "General-passage titles outside these come later" -- a Theographic
+    /// event this batch never touches, and that is a leg of no narrative,
+    /// correctly produces NO heading here). A multi-witness event anchors
+    /// ONE heading PER witness (one per Gospel book it's rendered in), never
+    /// just once overall.
+    pub fn heading_for_verse(&self, verse: &str) -> Option<&HeadingEntry> {
+        self.verse_heading.get(verse)
     }
 
     /// Batch F: every catechism item cited by any member verse of `span`
@@ -842,6 +1043,7 @@ pub fn demo_fixture() -> AtlasData {
             when: TimeRange::new(-1406, -1406).unwrap(),
             places: vec!["gilgal".into()],
             verses: vec!["JOS.4.19".into(), "JOS.4.20".into()],
+            ..Default::default()
         },
         Event {
             id: "e2".into(),
@@ -849,6 +1051,7 @@ pub fn demo_fixture() -> AtlasData {
             when: TimeRange::new(-1406, -1406).unwrap(),
             places: vec!["jericho".into()],
             verses: vec!["JOS.6.1".into(), "JOS.6.2".into()],
+            ..Default::default()
         },
         Event {
             id: "e3".into(),
@@ -856,6 +1059,7 @@ pub fn demo_fixture() -> AtlasData {
             when: TimeRange::new(-1405, -1405).unwrap(),
             places: vec!["jericho".into()],
             verses: vec!["JOS.6.20".into(), "JOS.6.21".into(), "JOS.6.24".into()],
+            ..Default::default()
         },
         Event {
             id: "e4".into(),
@@ -863,6 +1067,7 @@ pub fn demo_fixture() -> AtlasData {
             when: TimeRange::new(-1405, -1405).unwrap(),
             places: vec!["ai".into()],
             verses: vec!["JOS.8.1".into(), "JOS.8.28".into()],
+            ..Default::default()
         },
         Event {
             id: "e5".into(),
@@ -870,6 +1075,7 @@ pub fn demo_fixture() -> AtlasData {
             when: TimeRange::new(-2000, -2000).unwrap(),
             places: vec!["hebron".into()],
             verses: vec!["GEN.23.1".into(), "GEN.23.19".into()],
+            ..Default::default()
         },
     ];
     let narratives = vec![

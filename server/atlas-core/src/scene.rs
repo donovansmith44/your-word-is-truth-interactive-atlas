@@ -243,6 +243,75 @@ pub fn to_scene_event(e: &Event) -> SceneEvent {
     SceneEvent { id: e.id.clone(), label: e.label.clone(), when: e.when, verse_groups: verse_groups_for(&e.verses, None) }
 }
 
+/// Batch T requirement 1: one EVENT-kind PASSAGE's own resolved witness --
+/// the "book, verse-range, translation-mapped" shape the owner's own words
+/// describe, with the translation indirection already resolved to
+/// [`crate::translation::DEFAULT_TRANSLATION`] (this app's only compiled
+/// translation) and grouped into `VerseGroup`s via the SAME `verse_groups_for`
+/// every other "an event's own verses on the wire" case in this module
+/// already calls -- a witness's own verse list is provably rendered the
+/// identical way `to_scene_event`/`lit_places` already render any other
+/// verse list, not a parallel formatting path.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ResolvedWitness {
+    pub book: String,
+    pub verse_groups: Vec<VerseGroup>,
+    pub ref_note: Option<String>,
+    pub robertson_section: Option<String>,
+}
+
+/// Batch T requirement 4 ("Single-witness events show the one passage -- no
+/// 'parallel' framing when n=1"): resolves an event's own witness list,
+/// synthesizing exactly ONE implicit witness -- grouped from `e.verses` by
+/// book, in first-seen order -- when `e.witnesses` was never explicitly
+/// curated (the overwhelming majority of events). This is the ONE function
+/// both the reader-heading index (`AtlasData::finish`) and the EVENT
+/// popover's own wire (`handlers::event`) call, so a heading's own anchor
+/// verse and the popover's own PARALLEL ACCOUNTS section can never disagree
+/// about how many witnesses an event has or which books they're in.
+pub fn witnesses_for(e: &Event) -> Vec<ResolvedWitness> {
+    if !e.witnesses.is_empty() {
+        return e
+            .witnesses
+            .iter()
+            .map(|w| {
+                let verses = crate::translation::resolve(&w.translations, crate::translation::DEFAULT_TRANSLATION).unwrap_or(&[]);
+                ResolvedWitness {
+                    book: w.book.clone(),
+                    verse_groups: verse_groups_for(verses, None),
+                    ref_note: w.ref_note.clone(),
+                    robertson_section: w.robertson_section.clone(),
+                }
+            })
+            .collect();
+    }
+
+    // No explicit witnesses -- synthesize one per book actually touched by
+    // this event's own `verses` (almost always exactly one book; a
+    // hypothetical multi-book uncurated event still degrades gracefully,
+    // rather than either panicking or silently dropping the OTHER book's
+    // verses). First-seen-book order, not alphabetical -- matches
+    // `e.verses`'s own curated/imported order.
+    let mut by_book: Vec<(String, Vec<String>)> = Vec::new();
+    for v in &e.verses {
+        let Ok(vid) = VerseId::parse_canonical(v) else { continue }; // etl-validated not to happen; skip rather than panic
+        let book = vid.book.code().to_string();
+        match by_book.iter_mut().find(|(b, _)| *b == book) {
+            Some((_, list)) => list.push(v.clone()),
+            None => by_book.push((book, vec![v.clone()])),
+        }
+    }
+    by_book
+        .into_iter()
+        .map(|(book, verses)| ResolvedWitness {
+            book,
+            verse_groups: verse_groups_for(&verses, None),
+            ref_note: None,
+            robertson_section: None,
+        })
+        .collect()
+}
+
 /// Groups canonical verse ids by (book, chapter); within a group sorts by
 /// verse number ascending; caps each group at 20 ids with `count` set to the
 /// true total before capping.
@@ -616,6 +685,7 @@ mod tests {
             when: TimeRange::new(-1400, -1400).unwrap(),
             places: vec!["many-verses".into()],
             verses,
+            ..Default::default()
         }];
         let d = AtlasData::new(Canon { books: vec![] }, places, events, vec![], vec![], vec![], HashMap::new(), HashMap::new())
             .finish();
@@ -654,6 +724,7 @@ mod tests {
             when: TimeRange::new(-1400, -1400).unwrap(),
             places: vec!["place-a".into()],
             verses: verses_a,
+            ..Default::default()
         };
 
         // (b) truncate path: a passage ref (JOS.11.5-30) matches 26 of a 30-verse
@@ -668,6 +739,7 @@ mod tests {
             when: TimeRange::new(-1300, -1300).unwrap(),
             places: vec!["place-b".into()],
             verses: verses_b,
+            ..Default::default()
         };
 
         let places = vec![
@@ -755,6 +827,7 @@ mod tests {
                 when: TimeRange::new(year, year).unwrap(),
                 places: vec![place.into()],
                 verses: vec![],
+                ..Default::default()
             }
         }
 

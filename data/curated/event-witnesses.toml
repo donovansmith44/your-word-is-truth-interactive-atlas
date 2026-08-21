@@ -1,0 +1,237 @@
+# Batch T requirement 1 ("PARALLEL WITNESSES -- the set of per-book passages
+# that recount the same event... one witness passage per Gospel", the
+# owner's own words verbatim): one row per (event, book) witness account.
+#
+# SCHEMA, deliberately FLAT (`[[witness]]`, each row naming its own
+# `event_id`) -- NOT nested under a per-event `[[event]]` group the way
+# `polities/*.toml`'s `[era.transition]`/`[era.fall]` are. Batch M's own
+# self-review found 7 of its 22 deltas silently mis-attached to the WRONG
+# era, purely because TOML's array-of-tables rule attaches a nested table to
+# whichever `[[era]]` was MOST RECENTLY OPENED, not whichever one a
+# curator's own surrounding comment describes (see
+# `atlas_core::data::PolityDelta::for_era_from`'s own doc comment for the
+# fix that shipped there: a curator-authored echo field, cross-validated by
+# the ETL). This file avoids that whole RISK CLASS from the start, per
+# batch-t-brief.md's own instruction ("if your... TOML has any nested
+# array-of-tables with a similar mis-attachment risk, adopt the same
+# echo-field discipline from the start"): a FLAT list has no "most recently
+# opened parent" for a row to silently attach to instead of the one it
+# names -- every row's own `event_id` IS the only attachment point there is,
+# checked directly against it, so no echo field is needed here at all.
+#
+# `verses` accepts this project's own curator-friendly single-verse-or-range
+# strings (e.g. `"MAT.27.33-50"`), expanded via `curated::expand_verse_ref`
+# (the SAME helper `events-extra.toml`/`catechism.toml` already use) into
+# individually-canonical verse ids, wrapped into a `{"kjv": [...]}`
+# translation map (`atlas_core::translation`) at parse time -- KJV is the
+# only translation this app compiles today; the indirection exists so a
+# future translation can be added under this SAME witness identity without
+# restructuring anything.
+#
+# EVERY citation below was read directly against the compiled KJV text
+# (`data/compiled/verses-kjv.json`) before being written -- citation-
+# integrity rule, 6+ prior incidents in this project's own history.
+# Robertson section numbers/titles were independently verified against TWO
+# separate mirrors of Project Gutenberg #36264 (the 1922 first edition,
+# public domain -- see LICENSES.md's own "Robertson's Harmony of the
+# Gospels" section for the full provenance record) before this file was
+# written: the HTML edition (36264-h.htm) and the plain-text edition
+# (pg36264.txt), which agree byte-for-byte on every section number/title
+# quoted here and in `events-extra.toml`'s own `robertson_section` fields.
+
+# --- pw_bethany: Mary anoints Jesus at Bethany (Robertson §141) -----------
+# John's own account (JHN.12.1-11) is this event's own top-level `verses`
+# already (events-extra.toml) -- included here too, explicitly, so THIS
+# event's own PARALLEL ACCOUNTS section is complete (3 witnesses) rather
+# than silently relying on the top-level field to stand in for one of them.
+[[witness]]
+event_id = "pw_bethany"
+book = "MAT"
+verses = ["MAT.26.6-13"]
+ref_note = "Matthew 26:6-13 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §141"
+
+[[witness]]
+event_id = "pw_bethany"
+book = "MRK"
+verses = ["MRK.14.3-9"]
+ref_note = "Mark 14:3-9 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §141"
+
+[[witness]]
+event_id = "pw_bethany"
+book = "JHN"
+verses = ["JHN.12.1-11"]
+ref_note = "John 12:1-11 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §141"
+
+# --- pw_jerusalem_entry: The triumphal entry (Robertson §128b) -- 4 witnesses
+[[witness]]
+event_id = "pw_jerusalem_entry"
+book = "MAT"
+verses = ["MAT.21.1-11"]
+ref_note = "Matthew 21:1-11 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §128b"
+
+[[witness]]
+event_id = "pw_jerusalem_entry"
+book = "MRK"
+verses = ["MRK.11.1-11"]
+ref_note = "Mark 11:1-11 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §128b"
+
+[[witness]]
+event_id = "pw_jerusalem_entry"
+book = "LUK"
+verses = ["LUK.19.29-44"]
+ref_note = "Luke 19:29-44 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §128b"
+
+[[witness]]
+event_id = "pw_jerusalem_entry"
+book = "JHN"
+verses = ["JHN.12.12-19"]
+ref_note = "John 12:12-19 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §128b"
+
+# --- pw_temple_cleansing: the SECOND cleansing (Robertson §129) -- no John,
+# by design (see events-extra.toml's own comment on this event).
+[[witness]]
+event_id = "pw_temple_cleansing"
+book = "MAT"
+verses = ["MAT.21.12-13"]
+ref_note = "Matthew 21:12-13 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §129"
+
+[[witness]]
+event_id = "pw_temple_cleansing"
+book = "MRK"
+verses = ["MRK.11.15-18"]
+ref_note = "Mark 11:15-18 read directly against the compiled KJV text (Mark's own fig-tree-cursing verses, 11:12-14, are a related but textually distinct pericope, not included here)"
+robertson_section = "Robertson (1922) §129"
+
+[[witness]]
+event_id = "pw_temple_cleansing"
+book = "LUK"
+verses = ["LUK.19.45-48"]
+ref_note = "Luke 19:45-48 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §129"
+
+# --- pw_gethsemane: the agony and arrest (Robertson §152) -- 4 witnesses --
+[[witness]]
+event_id = "pw_gethsemane"
+book = "MAT"
+verses = ["MAT.26.36-56"]
+ref_note = "Matthew 26:36-56 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §152"
+
+[[witness]]
+event_id = "pw_gethsemane"
+book = "MRK"
+verses = ["MRK.14.32-52"]
+ref_note = "Mark 14:32-52 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §152"
+
+[[witness]]
+event_id = "pw_gethsemane"
+book = "LUK"
+verses = ["LUK.22.39-53"]
+ref_note = "Luke 22:39-53 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §152"
+
+[[witness]]
+event_id = "pw_gethsemane"
+book = "JHN"
+verses = ["JHN.18.1-12"]
+ref_note = "John 18:1-12 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §152"
+
+# --- pw_golgotha: THE CRUCIFIXION (Robertson §164) -- 4 witnesses ---------
+# The batch's own required acceptance case: "Crucifixion event shows 4
+# witness passages, each clamped to 2 verses, expandable."
+[[witness]]
+event_id = "pw_golgotha"
+book = "MAT"
+verses = ["MAT.27.33-50"]
+ref_note = "Matthew 27:33-50 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §164"
+
+[[witness]]
+event_id = "pw_golgotha"
+book = "MRK"
+verses = ["MRK.15.22-37"]
+ref_note = "Mark 15:22-37 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §164"
+
+[[witness]]
+event_id = "pw_golgotha"
+book = "LUK"
+verses = ["LUK.23.33-46"]
+ref_note = "Luke 23:33-46 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §164"
+
+[[witness]]
+event_id = "pw_golgotha"
+book = "JHN"
+verses = ["JHN.19.17-30"]
+ref_note = "John 19:17-30 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §164"
+
+# --- pw_jerusalem_resurrection: the empty tomb (Robertson §171) -- 4 witnesses
+[[witness]]
+event_id = "pw_jerusalem_resurrection"
+book = "MAT"
+verses = ["MAT.28.1-10"]
+ref_note = "Matthew 28:1-10 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §171"
+
+[[witness]]
+event_id = "pw_jerusalem_resurrection"
+book = "MRK"
+verses = ["MRK.16.1-8"]
+ref_note = "Mark 16:1-8 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §171"
+
+[[witness]]
+event_id = "pw_jerusalem_resurrection"
+book = "LUK"
+verses = ["LUK.24.1-12"]
+ref_note = "Luke 24:1-12 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §171"
+
+[[witness]]
+event_id = "pw_jerusalem_resurrection"
+book = "JHN"
+verses = ["JHN.20.1-10"]
+ref_note = "John 20:1-10 read directly against the compiled KJV text (scoped to the empty-tomb discovery; Mary Magdalene's own encounter with the risen Christ, 20:11-18, is a related but distinct scene this event does not extend into)"
+robertson_section = "Robertson (1922) §171"
+
+# --- pw_galilee: the Great Commission (Robertson §181) -- 2 witnesses -----
+[[witness]]
+event_id = "pw_galilee"
+book = "MAT"
+verses = ["MAT.28.16-20"]
+ref_note = "Matthew 28:16-20 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §181"
+
+[[witness]]
+event_id = "pw_galilee"
+book = "MRK"
+verses = ["MRK.16.15-18"]
+ref_note = "Mark 16:15-18 read directly against the compiled KJV text (Mark's own disputed longer ending, 16:9-20 -- part of the KJV/Textus Receptus tradition this app's own compiled text follows, disclosed here rather than silently smoothed over)"
+robertson_section = "Robertson (1922) §181"
+
+# --- pw_mount_of_olives: the Ascension (Robertson §184) -- 2 witnesses ----
+[[witness]]
+event_id = "pw_mount_of_olives"
+book = "LUK"
+verses = ["LUK.24.50-53"]
+ref_note = "Luke 24:50-53 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §184"
+
+[[witness]]
+event_id = "pw_mount_of_olives"
+book = "ACT"
+verses = ["ACT.1.9-12"]
+ref_note = "Acts 1:9-12 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §184"
