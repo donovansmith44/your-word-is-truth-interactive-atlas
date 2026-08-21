@@ -365,7 +365,7 @@ even though the file itself is generated, not hand-authored.
 | `canon.json` | Public domain (KJV) | Book/chapter structure derived from parsing the KJV text |
 | `verses-kjv.json` | Public domain (KJV) | |
 | `places.json` | CC-BY 4.0 (OpenBible geocoding) + CC BY-SA 4.0 (Theographic, for places synthesized only from Theographic's `places.json`) | Merged; the Theographic-derived subset carries share-alike |
-| `events.json` | CC BY-SA 4.0 (Theographic `events.json`) + CC0 (`data/curated/events-extra.toml` + `data/curated/event-witnesses.toml`, ours) | Merged; Batch T's own `witnesses`/`robertson_section`/`order_key` fields are CC0 curated additions, GROUNDED IN (not copied from) the public-domain Robertson Harmony structure — see "Robertson's Harmony of the Gospels" above |
+| `events.json` | CC BY-SA 4.0 (Theographic `events.json`) + CC0 (`data/curated/events-extra.toml` + `data/curated/event-witnesses.toml` + `data/curated/acts-sections.toml`, ours) | Merged; Batch T's own `witnesses`/`robertson_section`/`order_key` fields are CC0 curated additions, GROUNDED IN (not copied from) the public-domain Robertson Harmony structure — see "Robertson's Harmony of the Gospels" above. Batch T2's own `acts_section` field (`data/curated/acts-sections.toml`) is a separate CC0 curated addition for Acts 1-12 sectioning, honestly NOT grounded in any external public-domain source (see that file's own header comment) — its natural-narrative-unit boundaries come from Theographic's own pre-existing event data, already covered by the CC BY-SA 4.0 credit in this same row |
 | `narratives.json` | CC0 (ours) | `data/curated/narratives/*.toml` |
 | `eras.json` | CC0 (ours) | `data/curated/eras.toml` |
 | `books-meta.json` | CC0 (ours) | `data/curated/books.toml` |
