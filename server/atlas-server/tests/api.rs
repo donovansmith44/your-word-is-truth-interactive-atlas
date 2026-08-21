@@ -761,11 +761,13 @@ async fn polities_transition_and_fall_conditional_presence_on_the_wire() {
                     event: "Test event: the change happens".into(),
                     verses: vec!["GEN.1.1".into()],
                     ref_note: "fixture ref_note".into(),
+                    for_era_from: -699,
                 }),
                 fall: Some(atlas_core::data::PolityDelta {
                     event: "Test event: the fall happens".into(),
                     verses: vec![],
                     ref_note: "fixture fall ref_note".into(),
+                    for_era_from: -699,
                 }),
             },
         ],

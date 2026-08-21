@@ -328,6 +328,12 @@ struct PolityDeltaToml {
     #[serde(default)]
     verses: Vec<String>,
     ref_note: String,
+    /// Fix round 1 (I1): required, no `#[serde(default)]` -- a curator MUST
+    /// name which era's own `from` year this block belongs to. See
+    /// `atlas_core::data::PolityDelta::for_era_from`'s own doc comment for
+    /// why (the actual mis-attachment bug this batch's own self-review
+    /// found, and the structural check this field exists to make possible).
+    for_era_from: i32,
 }
 
 /// Parses one `data/curated/polities/{id}.toml` file (schema: top-level
@@ -368,8 +374,8 @@ pub fn parse_polity(input: &str) -> Result<Polity> {
             to: e.to,
             ref_note: e.ref_note,
             rings: e.rings,
-            transition: e.transition.map(|d| PolityDelta { event: d.event, verses: d.verses, ref_note: d.ref_note }),
-            fall: e.fall.map(|d| PolityDelta { event: d.event, verses: d.verses, ref_note: d.ref_note }),
+            transition: e.transition.map(|d| PolityDelta { event: d.event, verses: d.verses, ref_note: d.ref_note, for_era_from: d.for_era_from }),
+            fall: e.fall.map(|d| PolityDelta { event: d.event, verses: d.verses, ref_note: d.ref_note, for_era_from: d.for_era_from }),
         })
         .collect();
     Ok(Polity { id: f.id, color_key: 0, eras })
@@ -610,10 +616,12 @@ mod tests {
         assert_eq!(transition.event, "Testland expands");
         assert_eq!(transition.verses, vec!["GEN.1.1".to_string()]);
         assert_eq!(transition.ref_note, "synthetic fixture, not a real citation");
+        assert_eq!(transition.for_era_from, -1499, "fix round 1 (I1): echoes the SAME era's own from it's actually attached to");
 
         let fall = polity.eras[1].fall.as_ref().expect("second era carries a fall in the fixture");
         assert_eq!(fall.event, "Greater Testland falls");
         assert_eq!(fall.verses, vec!["GEN.1.2".to_string(), "GEN.1.3".to_string()]);
+        assert_eq!(fall.for_era_from, -1499);
 
         // Fix round 1 (M1): color_key is now LEFT PROVISIONAL (0) by
         // parse_polity -- a single file has no visibility into the rest of

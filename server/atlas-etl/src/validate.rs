@@ -212,7 +212,18 @@ pub fn run_polities(polities: &[Polity], bbox: &Bbox, verses: &HashMap<String, S
         }
         Ok(_) => {}
     };
-    let check_delta = |delta: &atlas_core::data::PolityDelta, ctx: &str, errors: &mut Vec<String>| {
+    // Fix round 1 (I1): `era_from` is the era ACTUALLY hosting this delta,
+    // per TOML's own attachment (whatever `[[era]]` block it's nested
+    // under) -- cross-checked against the delta's own curator-authored
+    // `for_era_from` echo. This is the structural safety net the original
+    // mis-attachment bug had none of: TOML's array-of-tables rule attaches
+    // a nested `[era.transition]`/`[era.fall]` table to whichever `[[era]]`
+    // was MOST RECENTLY OPENED, not whichever era a curator's own
+    // surrounding comment describes -- a mismatch here means the block
+    // landed on the wrong era, exactly the failure mode that shipped once
+    // (7 of 22 deltas, this batch's own self-review) and had nothing
+    // catching it before this field/check existed.
+    let check_delta = |delta: &atlas_core::data::PolityDelta, era_from: i32, ctx: &str, errors: &mut Vec<String>| {
         if delta.event.trim().is_empty() {
             errors.push(format!("{ctx}: event is empty"));
         }
@@ -221,6 +232,12 @@ pub fn run_polities(polities: &[Polity], bbox: &Bbox, verses: &HashMap<String, S
         }
         for v in &delta.verses {
             check_verse(v, ctx, errors);
+        }
+        if delta.for_era_from != era_from {
+            errors.push(format!(
+                "{ctx}: for_era_from={} does not match this era's own from={era_from} -- TOML's array-of-tables rule likely attached this block to the WRONG era (it attaches to whichever [[era]] was MOST RECENTLY OPENED, not whichever era a surrounding comment describes); move the block to sit immediately after the [[era]] whose own from is {}",
+                delta.for_era_from, delta.for_era_from
+            ));
         }
     };
 
@@ -254,10 +271,10 @@ pub fn run_polities(polities: &[Polity], bbox: &Bbox, verses: &HashMap<String, S
         for era in &p.eras {
             let delta_ctx = format!("polity '{}' era '{}' ({}..{})", p.id, era.name, era.from, era.to);
             if let Some(t) = &era.transition {
-                check_delta(t, &format!("{delta_ctx} [era.transition]"), &mut errors);
+                check_delta(t, era.from, &format!("{delta_ctx} [era.transition]"), &mut errors);
             }
             if let Some(f) = &era.fall {
-                check_delta(f, &format!("{delta_ctx} [era.fall]"), &mut errors);
+                check_delta(f, era.from, &format!("{delta_ctx} [era.fall]"), &mut errors);
             }
         }
 

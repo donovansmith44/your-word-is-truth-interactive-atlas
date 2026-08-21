@@ -538,7 +538,7 @@ fn polities_transition_with_real_verses_passes_validation() {
         "T",
         -1000,
         -500,
-        PolityDelta { event: "T rises".into(), verses: vec!["GEN.1.1".into()], ref_note: "fixture".into() },
+        PolityDelta { event: "T rises".into(), verses: vec!["GEN.1.1".into()], ref_note: "fixture".into(), for_era_from: -1000 },
     );
     assert!(atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).is_ok());
 }
@@ -550,7 +550,7 @@ fn polities_transition_empty_event_fails_validation() {
         "T",
         -1000,
         -500,
-        PolityDelta { event: "".into(), verses: vec![], ref_note: "fixture".into() },
+        PolityDelta { event: "".into(), verses: vec![], ref_note: "fixture".into(), for_era_from: -1000 },
     );
     let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("event is empty"), "{err}");
@@ -563,7 +563,7 @@ fn polities_transition_empty_ref_note_fails_validation() {
         "T",
         -1000,
         -500,
-        PolityDelta { event: "T rises".into(), verses: vec![], ref_note: "".into() },
+        PolityDelta { event: "T rises".into(), verses: vec![], ref_note: "".into(), for_era_from: -1000 },
     );
     let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("ref_note is empty"), "{err}");
@@ -576,7 +576,7 @@ fn polities_transition_verse_not_in_compiled_kjv_fails_validation() {
         "T",
         -1000,
         -500,
-        PolityDelta { event: "T rises".into(), verses: vec!["GEN.99.99".into()], ref_note: "fixture".into() },
+        PolityDelta { event: "T rises".into(), verses: vec!["GEN.99.99".into()], ref_note: "fixture".into(), for_era_from: -1000 },
     );
     let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("does not exist in the compiled KJV text"), "{err}");
@@ -589,7 +589,7 @@ fn polities_transition_malformed_verse_fails_validation() {
         "T",
         -1000,
         -500,
-        PolityDelta { event: "T rises".into(), verses: vec!["not a ref".into()], ref_note: "fixture".into() },
+        PolityDelta { event: "T rises".into(), verses: vec!["not a ref".into()], ref_note: "fixture".into(), for_era_from: -1000 },
     );
     let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("not a canonical single-verse ref"), "{err}");
@@ -605,7 +605,7 @@ fn polities_fall_on_the_final_era_passes_validation() {
             PolityEra { name: "B".into(), from: -499, to: -100, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)], transition: None, fall: None },
         ],
     };
-    polity.eras[1].fall = Some(PolityDelta { event: "B falls".into(), verses: vec![], ref_note: "fixture".into() });
+    polity.eras[1].fall = Some(PolityDelta { event: "B falls".into(), verses: vec![], ref_note: "fixture".into(), for_era_from: -499 });
     assert!(atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).is_ok());
 }
 
@@ -622,9 +622,46 @@ fn polities_fall_on_a_non_final_era_fails_validation() {
     // "A" is NOT this polity's chronologically final era ("B" ends later) --
     // a [era.fall] there describes an end that isn't actually this polity's
     // own end, so it must fail loud rather than silently compile.
-    polity.eras[0].fall = Some(PolityDelta { event: "A falls (wrong)".into(), verses: vec![], ref_note: "fixture".into() });
+    // for_era_from correctly names A (-1000) here -- this fixture is
+    // deliberately isolating the "wrong final era" check from the
+    // "wrong for_era_from" check below, not conflating the two failure
+    // reasons in one assertion.
+    polity.eras[0].fall = Some(PolityDelta { event: "A falls (wrong)".into(), verses: vec![], ref_note: "fixture".into(), for_era_from: -1000 });
     let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("is not this polity's chronologically final era"), "{err}");
+}
+
+// Fix round 1 (I1): the ACTUAL historical mis-attachment bug, reproduced as
+// a fixture. TOML's array-of-tables rule attaches a nested
+// `[era.transition]` table to whichever `[[era]]` was MOST RECENTLY OPENED
+// -- a block textually authored to describe era B's own rise (placed
+// before B's own `[[era]]` header, with a comment saying so) actually lands
+// on era A's own struct field instead. `for_era_from` is the curator's own
+// declared intent (B's own `from`); the era it's ACTUALLY attached to (A)
+// has a different `from` -- this is precisely what shipped silently once
+// (7 of 22 deltas, this batch's own self-review) with nothing structural
+// catching it before this check existed. Confirmed red-then-green: this
+// test fails to compile/panics with a missing-field error before
+// `for_era_from` existed on `PolityDelta`, and fails validation (not a
+// panic) once the field exists but before this check was added; green only
+// once both the field and the check are in place together.
+#[test]
+fn polities_transition_for_era_from_mismatch_fails_validation() {
+    let mut polity = Polity {
+        id: "misattached".into(),
+        color_key: 0,
+        eras: vec![
+            PolityEra { name: "A".into(), from: -1000, to: -500, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)], transition: None, fall: None },
+            PolityEra { name: "B".into(), from: -499, to: -100, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)], transition: None, fall: None },
+        ],
+    };
+    // Authored FOR era B's own rise (for_era_from = B's own from, -499) but
+    // sitting on era A's own struct field -- exactly the shape a misplaced
+    // [era.transition] block parses into.
+    polity.eras[0].transition = Some(PolityDelta { event: "B rises (misattached)".into(), verses: vec![], ref_note: "fixture".into(), for_era_from: -499 });
+    let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
+    assert!(err.to_string().contains("does not match this era's own from"), "{err}");
+    assert!(err.to_string().contains("for_era_from=-499"), "{err}");
 }
 
 // ---------------------------------------------------------------------
