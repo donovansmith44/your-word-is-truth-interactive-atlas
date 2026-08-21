@@ -50,6 +50,15 @@ pub struct Place {
 /// own scoped coverage decision) and ETL-validated against the two-value
 /// enum, same "plain String, checked at ETL time, friendlier error" pattern
 /// [`Landmark::kind`] already establishes.
+///
+/// Owner's own end-state (2026-08-21 ruling, fix-round-1): every verse in
+/// the Bible ultimately belongs to at least one titled container like this
+/// one -- today's Gospels+Acts+13-narratives coverage is a scoped subset,
+/// not the destination; the full migration is real future work, not this
+/// fix. `verses` is a CONTAINER's own verse SET, never mutated onto a verse
+/// record -- the empty set is a lawful identity, and two containers
+/// legitimately overlapping the same verse (see `heading_precedence`) is an
+/// expected, not exceptional, shape as the graph grows.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Event {
     pub id: String,
@@ -728,6 +737,47 @@ fn heading_anchors_for(e: &Event) -> Vec<String> {
     anchors
 }
 
+/// Batch T fix-round-1 (Important-1, batch-t-review.md), amended by the
+/// owner's own 2026-08-21 "decisive container" ruling: the collision
+/// precedence `AtlasData::finish()`'s own `verse_heading` build uses when
+/// two heading-worthy events anchor the identical verse -- see that call
+/// site's own comment for the full rule and rationale. A 4-tuple, compared
+/// lexicographically (Rust's own derived tuple `Ord`); a STRICTLY GREATER
+/// tuple wins a collision, an EQUAL tuple keeps first-wins (unchanged from
+/// before this fix -- not expected to ever actually occur for two distinct
+/// real events, only reachable if every tier below ties exactly):
+///
+/// 1. LAYER (owner's own words: "T's existing-title freebie rule vs a real
+///    container") -- `1` when `e` is a genuine curated container for THIS
+///    grouping (`witnesses` non-empty and/or `robertson_section` present),
+///    `0` when `e` is heading-worthy ONLY because it happens to be a
+///    narrative leg riding its own pre-existing `Event::label` "freebie."
+///    This is the PRIMARY axis and, in every real case in today's curated
+///    data, decides the collision outright (e.g. `pw_bethany` real
+///    container vs. `jm_bethany` freebie, both anchoring JHN.12.1).
+/// 2. KIND -- `1` for `"event"`, `0` for `"general"`, a tiebreak that only
+///    matters "if both colliders are genuinely same-layer containers"
+///    (the owner's own words) -- currently VACUOUS (no real `"general"`
+///    passage exists yet, per the owner's own scoped coverage decision),
+///    kept anyway as principled future-proofing, matching this project's
+///    established "structurally ready, content deferred" pattern (e.g.
+///    translation indirection).
+/// 3. CHRONOLOGY -- the EARLIER `(from_year, order_key)` wins, via
+///    `std::cmp::Reverse` (NOT `i32::MAX - year` -- this atlas's own years
+///    run deep negative, e.g. -4004 at the Ussher-consistent span floor,
+///    and `i32::MAX - (a very negative year)` overflows i32 outright;
+///    caught live by a debug-build panic across every fixture-based test
+///    the moment this landed, fixed before it could ship) -- the SAME
+///    `(from_year, order_key)` tuple `Narrative.legs`' own ETL-validated
+///    ordering already uses elsewhere ("narrative-leg order," the owner's
+///    own words). Only reached when two REAL containers of the same kind
+///    collide, which does not occur anywhere in today's curated data.
+fn heading_precedence(e: &Event) -> (u8, u8, std::cmp::Reverse<i32>, std::cmp::Reverse<i32>) {
+    let layer: u8 = if !e.witnesses.is_empty() || e.robertson_section.is_some() { 1 } else { 0 };
+    let kind: u8 = if e.kind == "event" { 1 } else { 0 };
+    (layer, kind, std::cmp::Reverse(e.when.from_year), std::cmp::Reverse(e.order_key))
+}
+
 impl AtlasData {
     /// Builds an `AtlasData` from its eight schema fields, leaving the derived
     /// indexes empty (call `.finish()` to populate them). This is the
@@ -880,14 +930,65 @@ impl AtlasData {
         self.catechism_item_index = catechism_item_index;
 
         // Batch T requirement 5 ("pericope headings render in the reading
-        // flow"): one pass over every event builds the anchor-verse index --
-        // see `heading_for_verse`'s own doc comment for the heading-worthy
-        // rule. Runs AFTER `self.events.sort_by_key` above so a same-verse
-        // collision (two heading-worthy events both anchoring their own
-        // first witness verse to the identical vref -- not expected in the
-        // real curated data, but not assumed impossible) deterministically
-        // keeps the chronologically EARLIER event's own heading, via
-        // `entry().or_insert_with()` never overwriting a first hit.
+        // flow"): one pass over every EVENT-kind CONTAINER builds the
+        // anchor-verse index -- see `heading_for_verse`'s own doc comment
+        // for the heading-worthy rule AND the collision-precedence rule
+        // below. Runs AFTER `self.events.sort_by_key` above.
+        //
+        // DECISIVE-CONTAINER MODEL (owner's own 2026-08-21 ruling, verbatim:
+        // "we don't modify the verses because we lose composability... the
+        // Bible data structure fundamentally changes where these titled
+        // passages are containers for verses... identity is empty set. the
+        // set may have n verses. there may be sets that have overlapping
+        // verses as we grow the dag, which is fine, but we're decisive
+        // about the titles of verse groupings that we display on the
+        // reader"). `Event` IS a titled CONTAINER over a verse set, never
+        // the other way around -- this index is built by ITERATING
+        // containers and emitting anchors from their own content
+        // (`heading_anchors_for`), never by writing heading data onto a
+        // verse record (there is no such record to write onto -- verses
+        // stay plain, immutable atoms; `verses-kjv.json` is untouched by
+        // this or anything else in Batch T). Two containers legitimately
+        // overlapping on the same verse is EXPECTED, not an error, as the
+        // graph of containers grows (a real, live case already exists:
+        // `jm_bethany`/`pw_bethany` both anchor JHN.12.1) -- overlap lives
+        // in the DATA. The READER is what must be decisive: exactly one
+        // title heads any displayed verse grouping, chosen by the
+        // deterministic, principled precedence rule below
+        // (`heading_precedence`), never by incidental iteration/file
+        // order. The non-chosen container is NEVER unreachable -- a
+        // verse's own EVENT membership section (`events_for_verse`, above)
+        // lists every container touching that verse regardless of which
+        // one won the single heading slot, so it stays one click away at
+        // the identical verse.
+        //
+        // Fix-round-1 (Important-1, batch-t-review.md, then amended by the
+        // ruling above): the OLD code here used plain first-wins
+        // `entry().or_insert_with()`, with a comment claiming it
+        // "deterministically keeps the chronologically EARLIER event's own
+        // heading" -- never actually true for a same-year tie, since
+        // `self.events.sort_by_key` sorts by `from_year` ALONE, so two
+        // same-year events keep their pre-sort/file order under Rust's
+        // stable sort. Live-reproduced by the review: `jm_bethany` (a bare
+        // `jesus-ministry` leg, no witnesses/robertson_section -- heading-
+        // worthy ONLY via the "existing-title freebie" narrative-leg rule)
+        // sat earlier in `events-extra.toml` than `pw_bethany` (this
+        // batch's own flagship 3-witness, Robertson-grounded passion-week
+        // leg -- a REAL curated container for this exact grouping), so
+        // `jm_bethany` silently won JHN.12.1's heading by bare file
+        // position, dropping `pw_bethany`'s own John-witness heading
+        // entirely -- no warning, no ETL error, no test catching it (every
+        // existing heading test happened to exercise a collision-free
+        // event). See `heading_collision_tests` below for the pinned
+        // regression, and CONTRACT.md's own HEADING-WORTHY RULE paragraph
+        // (kept in lockstep -- if `heading_precedence` ever changes, that
+        // paragraph must change in the SAME commit).
+        //
+        // Every verse in the Bible ultimately belonging to at least one
+        // titled container is the owner's own stated end-state; today only
+        // Gospels+Acts+the-13-curated-narratives are covered (this batch's
+        // own scoped coverage decision) -- the total migration is real
+        // future work, not this fix.
         //
         // Deliberately does NOT call `scene::witnesses_for` here (a real,
         // live-caught bug, self-caught via TDD before this shipped): that
@@ -908,16 +1009,23 @@ impl AtlasData {
         let narrative_leg_ids: HashSet<&str> =
             self.narratives.iter().flat_map(|n| n.legs.iter().map(|s| s.as_str())).collect();
         let mut verse_heading: HashMap<String, HeadingEntry> = HashMap::new();
+        let mut verse_heading_precedence: HashMap<String, (u8, u8, std::cmp::Reverse<i32>, std::cmp::Reverse<i32>)> = HashMap::new();
         for e in &self.events {
             let heading_worthy =
                 narrative_leg_ids.contains(e.id.as_str()) || !e.witnesses.is_empty() || e.robertson_section.is_some();
             if !heading_worthy {
                 continue;
             }
+            let precedence = heading_precedence(e);
             for anchor in heading_anchors_for(e) {
-                verse_heading
-                    .entry(anchor)
-                    .or_insert_with(|| HeadingEntry { event_id: e.id.clone(), title: e.label.clone() });
+                let should_replace = match verse_heading_precedence.get(&anchor) {
+                    None => true,
+                    Some(&incumbent) => precedence > incumbent,
+                };
+                if should_replace {
+                    verse_heading_precedence.insert(anchor.clone(), precedence);
+                    verse_heading.insert(anchor, HeadingEntry { event_id: e.id.clone(), title: e.label.clone() });
+                }
             }
         }
         self.verse_heading = verse_heading;
@@ -984,7 +1092,15 @@ impl AtlasData {
     /// event this batch never touches, and that is a leg of no narrative,
     /// correctly produces NO heading here). A multi-witness event anchors
     /// ONE heading PER witness (one per Gospel book it's rendered in), never
-    /// just once overall.
+    /// just once overall. Two CONTAINERS legitimately overlapping on one
+    /// verse is expected, not an error (a real, live case -- `jm_bethany`/
+    /// `pw_bethany` both anchor JHN.12.1) -- the READER is decisive:
+    /// exactly one title heads that verse, chosen by `heading_precedence`'s
+    /// own 3-tier rule (own doc comment has the full chain) -- fixed in
+    /// fix-round-1, amended by the owner's own "decisive container" ruling,
+    /// batch-t-review.md's Important-1. The non-chosen container is never
+    /// unreachable -- see `events_for_verse`, which lists every container
+    /// touching a verse regardless of which one won the heading.
     pub fn heading_for_verse(&self, verse: &str) -> Option<&HeadingEntry> {
         self.verse_heading.get(verse)
     }
@@ -1425,6 +1541,168 @@ mod events_for_verse_witness_tests {
         }];
         let data = AtlasData::new(Canon { books: vec![] }, places, events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
         assert_eq!(data.events_for_verse("MAT.1.1"), &["e1".to_string()]);
+    }
+}
+
+#[cfg(test)]
+mod heading_collision_tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    // Batch T fix-round-1 (Important-1, batch-t-review.md), amended by the
+    // owner's own "decisive container" ruling: a real, live-reproduced
+    // defect -- two heading-worthy CONTAINERS anchoring the IDENTICAL verse
+    // (the real case: `jm_bethany`, a bare `jesus-ministry` leg with no
+    // witnesses/robertson_section -- heading-worthy only via the
+    // "existing-title freebie" narrative-leg rule -- and `pw_bethany`, a
+    // REAL curated container for this exact grouping, this batch's own
+    // flagship 3-witness passion-week leg, both anchor JHN.12.1) used to
+    // resolve via plain first-wins `or_insert_with`, which -- since both
+    // share one traditional year and the sort is merely stable -- meant
+    // bare FILE ORDER silently decided which container's heading rendered,
+    // dropping the other's entirely. Fixed: `heading_precedence`'s own
+    // 3-tier rule (layer, then kind, then chronology -- see its own doc
+    // comment for the full chain) now deterministically decides a
+    // collision, regardless of vec/file order. `bare_leg`/`rich_leg` below
+    // mirror `jm_bethany`/`pw_bethany`'s own real shape exactly (bare =
+    // narrative-leg-only "freebie" layer; rich = a real container, via
+    // witnesses) rather than using the real curated ids, so this test pins
+    // the MECHANISM, independent of any future edit to the real Bethany
+    // data.
+    fn bare_leg() -> Event {
+        Event {
+            id: "bare_leg".into(),
+            label: "A bare narrative-leg-only event".into(),
+            when: crate::time::TimeRange::new(33, 33).unwrap(),
+            verses: vec!["JHN.12.1".into()],
+            ..Default::default()
+        }
+    }
+
+    fn rich_leg() -> Event {
+        Event {
+            id: "rich_leg".into(),
+            label: "A richer, witness-bearing event".into(),
+            when: crate::time::TimeRange::new(33, 33).unwrap(),
+            verses: vec!["JHN.12.1".into()], // ALSO cites the identical anchor verse
+            witnesses: vec![EventWitness {
+                book: "JHN".into(),
+                translations: HashMap::from([("kjv".to_string(), vec!["JHN.12.1".to_string(), "JHN.12.2".to_string()])]),
+                ref_note: None,
+                robertson_section: Some("Robertson (1922) fixture section".into()),
+            }],
+            ..Default::default()
+        }
+    }
+
+    // `bare_leg` needs a narrative leg to be heading-worthy at all (it has
+    // no witnesses/robertson_section of its own) -- mirrors jm_bethany's
+    // own real "leg of jesus-ministry" status exactly.
+    fn narrative_for(leg_id: &str) -> Narrative {
+        Narrative { id: "narr".into(), name: "N".into(), color: "#000".into(), legs: vec![leg_id.to_string()] }
+    }
+
+    #[test]
+    fn heading_collision_prefers_the_richer_event_when_bare_is_first_in_order() {
+        // Mirrors the EXACT real bug: bare event first in the events vec
+        // (jm_bethany's own file position), rich event second.
+        let events = vec![bare_leg(), rich_leg()];
+        let narratives = vec![narrative_for("bare_leg")];
+        let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        let heading = data.heading_for_verse("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
+        assert_eq!(heading.event_id, "rich_leg", "the richer (witness-bearing) event must win the collision, not whichever happened to sort first");
+    }
+
+    #[test]
+    fn heading_collision_prefers_the_richer_event_regardless_of_vec_order() {
+        // Reverse of the above: rich event first this time -- proves the
+        // rule is content-driven (richness), never incidentally order-driven.
+        let events = vec![rich_leg(), bare_leg()];
+        let narratives = vec![narrative_for("bare_leg")];
+        let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        let heading = data.heading_for_verse("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
+        assert_eq!(heading.event_id, "rich_leg");
+    }
+
+    #[test]
+    fn heading_collision_shadowed_event_stays_reachable_via_event_membership() {
+        // Important-1's own reason this is Important, not Critical: the
+        // LOSING event of a heading collision must remain fully reachable
+        // through the verse's own EVENT membership section (events_for_verse),
+        // completely independent of which one won the single heading slot.
+        let events = vec![bare_leg(), rich_leg()];
+        let narratives = vec![narrative_for("bare_leg")];
+        let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        let mut ids = data.events_for_verse("JHN.12.1").to_vec();
+        ids.sort();
+        assert_eq!(ids, vec!["bare_leg".to_string(), "rich_leg".to_string()], "BOTH events must stay listed in the verse's own EVENT membership, win or lose the heading");
+    }
+
+    #[test]
+    fn heading_collision_first_wins_when_richness_is_equal() {
+        // Two EQUALLY bare (both narrative-leg-only, no witnesses/
+        // robertson_section) events colliding is a narrower, lower-stakes
+        // case this fix deliberately leaves alone -- confirms the OLD
+        // stable-first-wins behavior is unchanged for ties, so this fix's
+        // blast radius is exactly the rich-vs-bare case it targets, nothing
+        // wider.
+        let mut other_bare = bare_leg();
+        other_bare.id = "other_bare_leg".into();
+        other_bare.label = "Another bare event, same verse".into();
+        let events = vec![bare_leg(), other_bare];
+        let narratives = vec![Narrative { id: "narr".into(), name: "N".into(), color: "#000".into(), legs: vec!["bare_leg".into(), "other_bare_leg".into()] }];
+        let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        let heading = data.heading_for_verse("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
+        assert_eq!(heading.event_id, "bare_leg", "equal richness must keep first-wins (stable sort order), unchanged from before this fix");
+    }
+
+    #[test]
+    fn heading_collision_tier3_earlier_chronology_wins_between_two_real_containers() {
+        // Owner's own ruling: "if both colliders are genuinely same-layer
+        // containers, tiebreak: event-kind over general, then narrative-leg
+        // order." Two REAL containers (both with witnesses -- same layer,
+        // same kind) colliding on the identical verse: the chronologically
+        // EARLIER one (by (from_year, order_key)) must win, not whichever
+        // sorts first in the vec. Currently vacuous in the real curated
+        // data (no two real containers collide today), but the rule must
+        // hold regardless.
+        let mut earlier = rich_leg();
+        earlier.id = "earlier_rich".into();
+        earlier.when = crate::time::TimeRange::new(30, 30).unwrap(); // earlier year
+        let mut later = rich_leg();
+        later.id = "later_rich".into();
+        later.when = crate::time::TimeRange::new(33, 33).unwrap(); // later year
+        // `later` placed FIRST in the vec -- proves the win is chronology-
+        // driven, not incidentally order-driven (mirrors the two order-
+        // independence tests above for tier 1).
+        let events = vec![later, earlier];
+        let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        let heading = data.heading_for_verse("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
+        assert_eq!(heading.event_id, "earlier_rich", "between two real containers of equal layer/kind, the chronologically earlier one must win");
+    }
+
+    #[test]
+    fn heading_collision_tier1_event_kind_beats_general_kind() {
+        // Owner's own ruling's first tiebreak tier: "event-kind over
+        // general." Currently vacuous in real curated data (no
+        // kind="general" passage exists yet -- Batch T's own disclosed,
+        // scoped limitation), but the rule must hold: two otherwise-
+        // identical bare containers (same layer, same year/order_key),
+        // one `kind="event"`, one `kind="general"`, colliding on the same
+        // verse -- "event" must win.
+        let mut event_kind = bare_leg();
+        event_kind.id = "as_event".into();
+        event_kind.kind = "event".into();
+        let mut general_kind = bare_leg();
+        general_kind.id = "as_general".into();
+        general_kind.kind = "general".into();
+        // `general_kind` placed FIRST -- proves the win is kind-driven, not
+        // incidentally order-driven.
+        let events = vec![general_kind, event_kind];
+        let narratives = vec![Narrative { id: "narr".into(), name: "N".into(), color: "#000".into(), legs: vec!["as_event".into(), "as_general".into()] }];
+        let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        let heading = data.heading_for_verse("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
+        assert_eq!(heading.event_id, "as_event", "kind=\"event\" must beat kind=\"general\" between two same-layer containers");
     }
 }
 

@@ -939,7 +939,7 @@ places = ["jerusalem"]
 verses = ["MAT.28.1-10"]
 order_key = 60
 robertson_section = "Robertson (1922) §171, \"The Visit of the Women to the Tomb of Jesus about Sunrise Sunday Morning and the Message of the Angels about the Empty Tomb\""
-ref_note = "Matthew 28:5-8 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml)"
+ref_note = "Matthew 28:1-10 (event verses), Mark 16:1-8, Luke 24:1-12, John 20:1-10 all read directly (see event-witnesses.toml)"
 [[event]]
 id = "pw_emmaus"
 label = "The road to Emmaus"
