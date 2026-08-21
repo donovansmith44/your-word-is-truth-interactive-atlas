@@ -426,14 +426,44 @@ Notes:
   the lit place set (`marker-{placeId}`) and the quiet place set (`quiet-marker-{placeId}`)
   are DISJOINT and their union is the full, fixed-cardinality set of event-bearing
   places ("cities in our graph" -- every place with >=1 event anywhere in the compiled
-  data, 206 places as of this batch, derived from the data rather than hardcoded by
-  either side) -- a place is always exactly one of lit or quiet, never both, never
+  data, 205 places as of batch-hotfix2-brief.md (was 206 -- SAMEPLACE-1's own hazor-1/
+  hazor_545 merge below removed one event-bearing duplicate), derived from the data
+  rather than hardcoded by either side) -- a place is always exactly one of lit or quiet, never both, never
   neither. A quiet place's own displayed name resolves against the SAME window using
   the SAME rules `marker-{placeId}`'s own label does (NAME-1), so a place's name never
   contradicts itself as it crosses from quiet to lit (or back) while a window is
   dragged. Scripture mode has no quiet places at all (`quiet-marker-{placeId}` is
   entirely absent there, same as on a mini-map) -- period relevance without a time
   window has nothing for GLOW to mean.
+- SAMEPLACE-1 (batch-hotfix2-brief.md, same-place dedupe -- user report 2026-08-20:
+  "in judges 4, zaananim, kedesh-naphtali, hazor are all in the ocean"): two compiled
+  place records that are really ONE real-world place (a duplicate OpenBible/Theographic
+  lineage, or two independent OpenBible identifications of the same site under
+  different text-forms -- e.g. JDG.4.6's fully-qualified "Kedeshnaphtali" vs JDG.4.9-11's
+  bare "Kedesh") are merged into ONE `marker-{placeId}`/`quiet-marker-{placeId}` before
+  any scene is ever built (`atlas_core::merge`, applied once at data-load time, upstream
+  of every consumer -- `/api/place/{id}`, arrow endpoints, and QUIET-1's own event-bearing
+  set all already agree they are one node, not just the map). The merged place's `events`/
+  `verse_groups` are the UNION of both records' own; its display name is the surviving
+  (curated/OpenBible) record's. Wire traceability: `ScenePlace`/`QuietPlace` both carry
+  `merged_ids` -- ids of every OTHER record folded into this one, e.g. `["hazor_545"]` on
+  the place carrying id `hazor-1` -- omitted (not an empty array) when nothing was merged
+  into that place, the overwhelming majority. CURATED, NOT AUTOMATIC: merging is NOT a
+  blanket "any two places within 1.0km" rule -- a dataset-wide sweep at that same
+  threshold found thousands of coincidentally-close place PAIRS that are genuinely
+  DISTINCT real (or traditionally/scholarly disputed) locations sharing an imprecise
+  upstream geocode (this file's own "Marker hover-target resolution" note, below, and
+  map.js's own `setScene` comment already document a load-bearing example: Shittim and
+  the "plains of Moab" camp, 0km apart, "both real, distinct places" that must NOT
+  merge) -- so only a small, individually-verified, curated table of confirmed pairs
+  (`atlas_core::merge::MERGE_PAIRS`) ever merges; see batch-hotfix2-report.md for the
+  full sweep and reasoning. For a remaining pair that is close but NOT the same place
+  (Zaanannim/Mount Tabor, ~4.2km apart in JDG.4 -- genuinely distinct), the anti-overlap
+  nudge (nudgeCloseLatLng's replacement, `map.js`'s `applyMarkerNudges`) is computed in
+  SCREEN PIXELS at the CURRENT zoom (never a fixed geographic delta -- the pre-fix bug's
+  own root cause: a 0.6-degree/~65km shove, tuned for a wide-zoomed-out scene, crossing
+  the coastline at a much closer-zoomed one), recomputed fresh on every zoom change, and
+  never moves a marker more than ~20px from its true position.
 - Quiet-place hover card (batch-e2-brief.md): hovering a `quiet-marker-{id}` opens the
   exact SAME `place-card` a lit marker does -- same title (`place-card-title` = the
   place's own `display_name`, per NAME-1), same Batch E history content

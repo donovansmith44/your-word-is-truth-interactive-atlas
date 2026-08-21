@@ -463,6 +463,18 @@ impl AtlasData {
     /// derived lookup indexes. Idempotent — safe to call more than once
     /// (e.g. once in ETL before writing, once in the server after reading).
     pub fn finish(mut self) -> Self {
+        // Batch HOTFIX-2 (same-place dedupe): applied FIRST, before every
+        // derived index below is built from `self.places`/`self.events` --
+        // so `place_index`, `event_bearing_place_ids`, `verse_to_places`,
+        // etc. all come out correct for free, already reflecting the merged
+        // graph, with no separate index-fixup pass needed. See
+        // `crate::merge`'s own doc comment for the full reasoning (why this
+        // layer, why curated rather than automatic). Idempotent itself (a
+        // pair already merged by an earlier `finish()` call is silently
+        // skipped), so calling `finish()` twice -- ETL then the server, or
+        // the server's own `AtlasData::load().finish()` -- never double-merges.
+        crate::merge::apply_place_merges(&mut self.places, &mut self.events);
+
         self.events.sort_by_key(|e| e.when.from_year);
 
         self.place_index = self

@@ -24,7 +24,33 @@ import type { Page } from '@playwright/test';
 // each candidate's REAL rendered position on the CURRENTLY loaded page (not
 // a hardcoded id list or a offline km estimate, so it tracks the live app
 // exactly and never goes stale as curated data or nudge tuning changes).
-export const SAFE_NEIGHBOR_PX = 20;
+//
+// RAISED 20 -> 26, Batch HOTFIX-2: 20px was narrower than the ember marker's
+// own actual hit-box DIAMETER (10px core + `::after` inset:-8px padding,
+// Batch C2's own derivation -- 13px RADIUS, i.e. 26px across, documented in
+// map.js's own NUDGE_TRIGGER_PX comment) -- two markers 20-26px apart clear
+// this file's own OLD bound while their real hit circles still overlap, a
+// latent gap this constant's own reasoning above already implies (">=14px
+// hit target... centers closer together than that can no longer be
+// trusted") but its chosen NUMBER didn't actually close. Exposed live by
+// this batch's own nudge redesign: map.js's close-marker nudge used to move
+// a colliding marker by a fixed, large geographic delta (tens of km),
+// which -- as an unintended side effect -- kept almost every real pair
+// either far apart or freshly scattered far apart, rarely landing in this
+// 20-26px gap; now that the nudge is a small, bounded SCREEN-PIXEL amount
+// (map.js's own NUDGE_STEP_PX, ~16px) markers that are genuinely close in
+// real life legitimately render close together on screen too (correctly --
+// see map.js's own applyMarkerNudges comment), which surfaced two real
+// pairs sitting exactly in this gap in the exodus window (mount-sinai/
+// rephidim and elim/marah, ~21px apart each) and, transitively, broke a
+// LATER, otherwise-independent hover on an unrelated marker in the same
+// property run (a stuck/mis-set card from one of those two ambiguous pairs
+// carrying over). Matches NUDGE_TRIGGER_PX exactly, deliberately -- both
+// constants now name the SAME real geometric fact (the marker hit-box's own
+// diameter), just consumed by two different files for two different
+// purposes (map.js: when to nudge a marker; this file: when a forced test
+// hover can no longer be trusted) -- see NUDGE_TRIGGER_PX's own comment.
+export const SAFE_NEIGHBOR_PX = 26;
 
 async function markerCenters(page: Page, ids: string[]): Promise<Map<string, { x: number; y: number }>> {
   const centers = new Map<string, { x: number; y: number }>();
