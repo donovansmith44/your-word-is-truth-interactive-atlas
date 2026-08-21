@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityEra};
+use atlas_core::merge::PlaceMerge;
 use atlas_core::time::TimeRange;
 
 // ---------------------------------------------------------------------
@@ -919,5 +920,71 @@ fn place_history_valid_data_passes_validation() {
     }];
     let place_ids: HashSet<&str> = ["bethel-1"].into_iter().collect();
     let result = atlas_etl::validate::run_place_history(&history, &place_ids, &some_verses());
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+// ---------------------------------------------------------------------
+// atlas_core::merge::MERGE_PAIRS + validate::run_place_merges
+// (Batch HOTFIX-2 fix-round-1: review findings I-1 -- a bad table entry
+// must fail the ETL build loudly, naming the entry, instead of the silent
+// no-op `apply_place_merges` itself has to tolerate for idempotence -- and
+// I-3 -- the distance re-check must run in every build profile, against
+// REAL per-call coordinates, not a hand-copied snapshot baked into a test)
+// ---------------------------------------------------------------------
+
+fn merge_place(id: &str, lat: f64, lon: f64) -> Place {
+    Place { id: id.into(), name: id.into(), lat, lon, verse_links: vec![] }
+}
+
+#[test]
+fn run_place_merges_unknown_survivor_id_fails_naming_the_entry() {
+    let pairs = [PlaceMerge { survivor: "not-a-real-place", absorbed: "hazor_545", reason: "test" }];
+    let places = vec![merge_place("hazor_545", 33.0174, 35.5681)];
+    let err = atlas_etl::validate::run_place_merges(&pairs, &places).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("not-a-real-place"), "{msg}");
+    assert!(msg.contains("survivor id"), "{msg}");
+    assert!(msg.contains("does not exist"), "{msg}");
+}
+
+#[test]
+fn run_place_merges_unknown_absorbed_id_fails_naming_the_entry() {
+    let pairs = [PlaceMerge { survivor: "hazor-1", absorbed: "also-not-real", reason: "test" }];
+    let places = vec![merge_place("hazor-1", 33.0183, 35.5692)];
+    let err = atlas_etl::validate::run_place_merges(&pairs, &places).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("also-not-real"), "{msg}");
+    assert!(msg.contains("absorbed id"), "{msg}");
+    assert!(msg.contains("does not exist"), "{msg}");
+}
+
+#[test]
+fn run_place_merges_over_threshold_pair_fails_validation() {
+    // ~2km apart (0.018 deg latitude) -- both ids present and real, so only
+    // the DISTANCE check can catch this; closes I-3 (a real per-call
+    // coordinate check, not a hand-copied snapshot).
+    let pairs = [PlaceMerge { survivor: "a", absorbed: "b", reason: "test" }];
+    let places = vec![merge_place("a", 32.735, 35.55555), merge_place("b", 32.753, 35.55555)];
+    let err = atlas_etl::validate::run_place_merges(&pairs, &places).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("'a'") && msg.contains("'b'"), "{msg}");
+    assert!(msg.to_lowercase().contains("apart"), "{msg}");
+    assert!(msg.contains("threshold"), "{msg}");
+}
+
+#[test]
+fn run_place_merges_valid_pairs_pass_validation() {
+    // Today's real two curated pairs' own real coordinates (data/compiled/places.json).
+    let pairs = [
+        PlaceMerge { survivor: "hazor-1", absorbed: "hazor_545", reason: "test" },
+        PlaceMerge { survivor: "kedesh-4", absorbed: "kedesh-naphtali", reason: "test" },
+    ];
+    let places = vec![
+        merge_place("hazor-1", 33.018333, 35.569167),
+        merge_place("hazor_545", 33.01746212803129, 35.56813718),
+        merge_place("kedesh-4", 32.735, 35.55555),
+        merge_place("kedesh-naphtali", 32.735, 35.55555),
+    ];
+    let result = atlas_etl::validate::run_place_merges(&pairs, &places);
     assert!(result.is_ok(), "{:?}", result.err());
 }

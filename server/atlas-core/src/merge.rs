@@ -45,12 +45,14 @@
 //! markers. Distance alone cannot tell these two situations apart -- there
 //! is no threshold that both merges `kedesh-4`/`kedesh-naphtali` (0km
 //! apart) and spares Shittim/Moab (also 0km apart). So `MERGE_PAIRS` below
-//! is a small, explicitly curated, individually-verified table -- the same
-//! "hand-curated, easily reversible" pattern every other judgment call in
-//! this app's data already uses (`data/curated/*.toml`), just expressed as
-//! a Rust table rather than a new curated-file pipeline stage, since two
-//! rows don't earn a new ETL parser/validator/compiled-file stage under
-//! this batch's own "small, surgical... do not widen scope" instruction.
+//! is a small, explicitly curated, individually-verified table -- hand-
+//! curated and trivially git-revertible in the same SPIRIT as every other
+//! judgment call in this app's data (`data/curated/*.toml`), though NOT the
+//! same edit ceremony (a `.toml` change needs no Rust knowledge/recompile;
+//! this does -- fix-round-1, review finding M-1) -- expressed as a Rust
+//! table rather than a new curated-file pipeline stage, since two rows
+//! don't earn a new ETL parser/validator/compiled-file stage under this
+//! batch's own "small, surgical... do not widen scope" instruction.
 //! `great_circle_km` still enforces the brief's own <=1.0km ceiling on every
 //! curated entry (`debug_assert!` in `apply_place_merges`, and this
 //! module's own unit tests) as a safety net against a future curation

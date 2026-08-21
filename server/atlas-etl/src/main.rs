@@ -106,7 +106,15 @@ fn main() -> Result<()> {
     }
 
     // --- counts + coverage stats (computed before AtlasData::new moves things) ---
-    let counts = Counts {
+    // `places` starts as the PRE-merge count (`all_places.len()`, same as
+    // every other field here) since `AtlasData::new` hasn't moved `all_places`
+    // yet -- corrected below, after `finish()` applies
+    // `atlas_core::merge::apply_place_merges`, to the real post-merge count
+    // (fix-round-1, review finding M-2: previously left at the pre-merge
+    // value, which silently drifted from the actual written `places.json`
+    // length by exactly `MERGE_PAIRS.len()` on any ETL run that reaches the
+    // merge for real -- see the I-2 note below).
+    let mut counts = Counts {
         canon_books: canon.books.len(),
         places: all_places.len(),
         events: all_events.len(),
@@ -132,9 +140,39 @@ fn main() -> Result<()> {
     let pct_events_dated =
         if theo_stats.total == 0 { 0.0 } else { 100.0 * theo_stats.dated as f64 / theo_stats.total as f64 };
 
+    // --- atlas_core::merge::MERGE_PAIRS (Batch HOTFIX-2 fix-round-1, review
+    // finding I-1) ---------------------------------------------------------
+    // Checked against `all_places`, the REAL pre-merge compiled place set,
+    // BEFORE `AtlasData::new(...).finish()` below ever applies the merge --
+    // see `validate::run_place_merges`'s own doc comment for why this is the
+    // one point where a bad table entry is unambiguous, and why this also
+    // closes I-3 (a real, always-on distance re-check against live data,
+    // where `apply_place_merges`'s own `debug_assert!` is release-inert and
+    // untested against anything but a hand-copied snapshot).
+    validate::run_place_merges(atlas_core::merge::MERGE_PAIRS, &all_places)
+        .context("data/compiled/* was NOT written; fix atlas_core::merge::MERGE_PAIRS (bad id or over-threshold pair)")?;
+
     // --- assemble, validate --------------------------------------------
+    // NOTE (review finding I-2, fix-round-1): `finish()` applies
+    // `atlas_core::merge::apply_place_merges` as its own first step (see
+    // that function's doc comment) -- so THIS run, and every future run of
+    // this binary, bakes today's curated `MERGE_PAIRS` into the
+    // `places.json`/`events.json` written below. That is INTENDED, not
+    // something to work around: compiled data should reflect the same
+    // merged graph the server and every other consumer already agree on
+    // (`atlas_core::merge`'s own doc comment) -- there is no "ETL's version" vs
+    // "the server's version" of the same-place fact to keep separately in
+    // sync. batch-hotfix2-report.md originally described this design as
+    // needing "zero ETL involvement"; that framing was inaccurate as a
+    // forward-looking property and is corrected in that report's own
+    // fix-round-1 CORRECTION block. The merge is idempotent (safe to apply
+    // again to an already-merged `places.json`) and is now validated,
+    // pre-merge, by `validate::run_place_merges` immediately above, so a
+    // future ETL run baking these merges into compiled output is harmless
+    // and expected, not a regression.
     let data = AtlasData::new(canon, all_places, all_events, narratives, eras, books_meta, verses, xrefs_map).finish();
     validate::run(&data).context("data/compiled/* was NOT written; fix data/curated/ and re-run")?;
+    counts.places = data.places.len(); // post-merge, matches the `places.json` length written below (fix-round-1, M-2)
 
     // --- data/curated/polities/ (Batch B2: hand-authored per-polity
     // timerange borders, "borders v2, the cartographer's edition") --------
