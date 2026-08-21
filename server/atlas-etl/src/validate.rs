@@ -41,11 +41,21 @@
 //! only same-breadth overlaps are an error). Duplicate place ids within
 //! place-history.toml itself are an extra check beyond the brief's literal
 //! list, same spirit as `run`'s own duplicate-place/duplicate-event checks.
+//!
+//! Batch HOTFIX-2 fix-round-1 (`run_place_merges`, review findings I-1/I-3):
+//! same separate-entry-point pattern as `run_place_history`/`run_landmarks`
+//! above — `atlas_core::merge::MERGE_PAIRS` is curated Rust data, not a
+//! `data/curated/*.toml` file, but it deserves the exact same fail-loud
+//! treatment: every `survivor`/`absorbed` id must exist in the real,
+//! pre-merge compiled place set, and every pair's REAL distance must be
+//! within `atlas_core::merge::SAME_PLACE_THRESHOLD_KM`. See this function's
+//! own doc comment below for why both checks matter and what they replace.
 
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{bail, Result};
-use atlas_core::data::{AtlasData, CatechismPart, Era, Event, Landmark, LandMaskRegion, PlaceHistory, Polity};
+use atlas_core::data::{AtlasData, CatechismPart, Era, Event, Landmark, LandMaskRegion, Place, PlaceHistory, Polity};
+use atlas_core::merge::{great_circle_km, PlaceMerge, SAME_PLACE_THRESHOLD_KM};
 use atlas_core::refs::VerseId;
 use atlas_core::time::{next_year, TimeRange};
 
@@ -449,6 +459,76 @@ pub fn run_catechism(parts: &[CatechismPart], verses: &HashMap<String, String>) 
     }
     let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
     bail!("catechism validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// Batch HOTFIX-2 fix-round-1 (review findings I-1, I-3): validates
+/// `atlas_core::merge::MERGE_PAIRS` — the small, hand-curated table of
+/// same-place merges `AtlasData::finish()` applies via
+/// `atlas_core::merge::apply_place_merges` — against `places`, the REAL
+/// pre-merge compiled place set (`main.rs` calls this with `all_places`,
+/// BEFORE `AtlasData::new(...).finish()` ever runs the merge). Two checks,
+/// both aggregated, never fail-fast, same policy as every other `run_*` in
+/// this file:
+///
+/// - **I-1 (fail loud on a bad table entry)**: every `survivor`/`absorbed`
+///   id must actually exist in `places`. `apply_place_merges` itself treats
+///   a missing id as a silent no-op — it has to, since that same function
+///   also has to tolerate its own idempotent second call (after the first
+///   already dropped `absorbed`), and cannot tell "already merged" apart
+///   from "never existed" from inside that function. Called here, BEFORE any
+///   merge has ever applied, there is no such ambiguity: a missing id at
+///   this point is unambiguously a curation mistake (a typo, or an id that
+///   existed when the pair was added but was later renamed/removed
+///   upstream), so it hard-fails the ETL build — mirroring
+///   `run_place_history`'s own "unknown place id" treatment of curated ids.
+/// - **I-3 (a safety net that actually fires)**: every pair's REAL distance
+///   (`great_circle_km`, using the ACTUAL coordinates from `places` — not a
+///   hand-copied snapshot, unlike `merge.rs`'s own
+///   `every_curated_pair_is_within_the_same_place_threshold` unit test) must
+///   be within `SAME_PLACE_THRESHOLD_KM`. This is the same bound
+///   `apply_place_merges`'s own `debug_assert!` checks, but that check
+///   compiles to nothing in a release build, and nothing in the test suite
+///   ever calls it against live data (every test builds an in-memory
+///   fixture, never `AtlasData::load()`). This check runs in EVERY build
+///   profile (`bail!`, not `debug_assert!`) against the real
+///   `data/compiled/places.json` contents on every single ETL run, so
+///   upstream data drift that pushes a curated pair's real coordinates past
+///   the threshold is caught at build time, not silently shipped.
+pub fn run_place_merges(pairs: &[PlaceMerge], places: &[Place]) -> Result<()> {
+    let mut errors: Vec<String> = Vec::new();
+    let by_id: HashMap<&str, &Place> = places.iter().map(|p| (p.id.as_str(), p)).collect();
+
+    for pair in pairs {
+        let survivor = by_id.get(pair.survivor);
+        let absorbed = by_id.get(pair.absorbed);
+        if survivor.is_none() {
+            errors.push(format!(
+                "merge pair (survivor '{}', absorbed '{}'): survivor id '{}' does not exist in the compiled place set",
+                pair.survivor, pair.absorbed, pair.survivor
+            ));
+        }
+        if absorbed.is_none() {
+            errors.push(format!(
+                "merge pair (survivor '{}', absorbed '{}'): absorbed id '{}' does not exist in the compiled place set",
+                pair.survivor, pair.absorbed, pair.absorbed
+            ));
+        }
+        if let (Some(s), Some(a)) = (survivor, absorbed) {
+            let d = great_circle_km(s.lat, s.lon, a.lat, a.lon);
+            if d > SAME_PLACE_THRESHOLD_KM {
+                errors.push(format!(
+                    "merge pair (survivor '{}', absorbed '{}') is {d:.3}km apart, over the {SAME_PLACE_THRESHOLD_KM}km same-place threshold",
+                    pair.survivor, pair.absorbed
+                ));
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        return Ok(());
+    }
+    let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("place-merge validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
 fn check_duplicate_ids<'a>(ids: impl Iterator<Item = &'a str>, kind: &str, errors: &mut Vec<String>) {
