@@ -172,9 +172,10 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   the registry rendered for the current node, `id` one of `verse-text`,
   `xrefs`, `catechism`, `place-dates`, `place-blurb`, `place-events`,
   `catechism-text`, `catechism-explanation`, `catechism-where-written`,
-  `catechism-scriptures` today -- see REGISTRY-1/CATECH-1; conditional
-  presence, absent whenever that section's own provider resolved no content
-  this open),
+  `catechism-scriptures`, `narrative-event-text`, `narrative-prior`,
+  `narrative-following` today -- see REGISTRY-1/CATECH-1/NARRATIVE-1;
+  conditional presence, absent whenever that section's own provider
+  resolved no content this open),
   `catechism-section-heading` (batch-f-brief.md; small-caps eyebrow rendered
   INSIDE a section's own body by that section's provider -- not a separate
   testid-bearing wrapper of its own; present on `popover-section-catechism`
@@ -278,7 +279,36 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   below), `xrefs-more` / `xrefs-collapse` (batch-f2-brief.md requirement 6;
   the down-arrow reveal / up-arrow snap-back for the cross-references list
   -- present only when there are more entries than the current cap; see
-  XREF-1), `mini-map`, `mini-map-open-world`
+  XREF-1),
+  `narrative-section-heading` (batch-n-brief.md; small-caps eyebrow rendered
+  INSIDE `popover-section-narrative-prior`/`-following`'s own body, same
+  "shared testid, many different texts" convention as
+  `catechism-section-heading` -- text is "PRIOR EVENT"/"FOLLOWING EVENT"
+  bare when the current node touches exactly one qualifying narrative in
+  that direction, else one heading per qualifying narrative, each reading
+  "PRIOR EVENT — {narrative name}" (`FOLLOWING EVENT` symmetrically) --
+  see NARRATIVE-1),
+  `narrative-prior-event-{narrativeId}` / `narrative-following-event-{narrativeId}`
+  (batch-n-brief.md; button; the adjacent event's own label; present once
+  per qualifying narrative position in that direction -- a SECOND position
+  sharing the same `narrativeId` (a real case in the compiled data, see
+  NARRATIVE-1) gets a numbered `--2`/`--3` suffix, same disambiguation
+  shape as `catechism-item-{ID}--q2`; clicking (or Enter) traverses --
+  pushes a fresh `NarrativeEventNode` re-anchoring the popover onto that
+  event, recursively -- see NARRATIVE-1),
+  `narrative-prior-verse-{narrativeId}-{SPAN}` / `narrative-following-verse-{narrativeId}-{SPAN}`
+  (batch-n-brief.md; one per passage entry among the adjacent event's own
+  verses, via the shared passage-list component -- PASSAGE-1's own
+  `popover-verse-expand{-ENTRY-ID}`/etc. nested testids apply here
+  identically; opens a `VerseNode`/`PassageNode` for `SPAN`, same as any
+  other passage-list entry -- see NARRATIVE-1),
+  `narrative-event-narrative-name` (batch-n-brief.md; present on a
+  `NarrativeEventNode`'s own popover only -- names which narrative this
+  traversed event belongs to), `narrative-event-verse-{SPAN}` (batch-n-brief.md;
+  one per passage entry among a `NarrativeEventNode`'s own verses, same
+  shared-component treatment as above; absent entirely for an event with
+  zero curated verses -- see NARRATIVE-1),
+  `mini-map`, `mini-map-open-world`
 Notes:
 - REGISTRY-1 (batch-r-brief.md requirement 3, "the popover becomes a
   content-first section platform"): the popover body is a composable,
@@ -293,9 +323,22 @@ Notes:
   inline (`popover-section-xrefs`, conditional -- absent for a verse with
   zero recorded cross-references, truncated per XREF-1), "THE SMALL
   CATECHISM" (`popover-section-catechism`, batch-f-brief.md, conditional --
-  absent for a verse citing zero catechism items -- see CATECH-1). PASSAGE
-  nodes get the same verse-text/cross-references/catechism sections
-  (aggregating as before this batch). PLACE node sections, in this order:
+  absent for a verse citing zero catechism items -- see CATECH-1),
+  "PRIOR EVENT" (`popover-section-narrative-prior`, batch-n-brief.md,
+  conditional -- absent for a verse touching no narrative, or touching one
+  only at its own FIRST leg -- see NARRATIVE-1) and "FOLLOWING EVENT"
+  (`popover-section-narrative-following`, symmetric, absent at a
+  narrative's own LAST leg). PASSAGE nodes get the same verse-text/
+  cross-references/catechism sections (aggregating as before this batch) --
+  NOT the narrative sections (batch-n-brief.md scopes PRIOR/FOLLOWING to
+  VERSE only, a disclosed choice -- see NARRATIVE-1). NARRATIVE-EVENT node
+  sections (batch-n-brief.md; a `NarrativeEventNode`, reached by traversing
+  a PRIOR/FOLLOWING row above), in this order: the event's own subject text
+  (`popover-section-narrative-event-text`, always present -- a small meta
+  line naming the narrative, then the event's own verses via the shared
+  passage-list component, absent entirely when the event has zero curated
+  verses), then the SAME "PRIOR EVENT"/"FOLLOWING EVENT" sections again
+  (recursion -- see NARRATIVE-1). PLACE node sections, in this order:
   an empty seam reserved for a future place-description provider (renders
   nothing today), established/destroyed dates (`popover-section-place-dates`,
   conditional -- batch-f2-brief.md requirement 6b: each date's own
@@ -494,6 +537,130 @@ Notes:
   reachability path: batch-f2-brief.md's own coverage report
   (batch-f2-report.md) shows all 33 items reachable from >=1 verse once the
   repo mapping and Deut5 supplement are both counted.
+- NARRATIVE-1 (batch-n-brief.md, "narratives as first-class graph
+  structure" -- user direction 2026-08-20, verbatim: "narratives need to be
+  represented as internal structures - not merely dots on a graph that you
+  draw a line between... i expect to see, if i'm exploring a verse that is
+  part of a narrative, the ability to traverse the narrative graph on the
+  side of the reader... so, we have one graph representing narratives, and
+  i can traverse arbitrarily far... and the appropriate narrative lines on
+  the map side ought to be brought into particular focus"):
+
+  ONE GRAPH, TWO SURFACES. `Narrative.legs` (an ORDERED chain of event ids
+  -- unchanged since Task 3) is the single source both surfaces read:
+  `scene::build_arrows` walks it to build a time/scripture-mode scene's own
+  `arrows` (`SceneArrow`, the map's own threads); `atlas_core::narrative::positions_for_events`
+  (new) walks the SAME `legs`, for a given event id, to find its own
+  immediate PRIOR (`legs[idx-1]`) and FOLLOWING (`legs[idx+1]`) neighbors --
+  each neighbor's own `verse_groups` built by the exact same
+  `scene::to_scene_event` call `SceneEvent`/`VerseEventOut` already use
+  everywhere else on the wire, so a PRIOR/FOLLOWING event's own verses are
+  PROVABLY the same data an arrow endpoint's own place-card would show for
+  that identical event id (not merely styled the same -- see
+  `atlas_core::narrative`'s own
+  `adjacent_event_verse_groups_equal_the_map_arrows_own_scene_event` test,
+  which `assert_eq!`s the two independently-derived values).
+
+  WIRE. `GET /api/verse/{vref}`'s own `narrative_positions` array (folded
+  into the already-shared verse-detail fetch, same "one fetch, not N"
+  precedent `catechism` already set) answers "which narrative position(s)
+  does this VERSE occupy" -- one entry per (narrative, event) pair the
+  verse's own event(s) touch (a verse cited by >1 event, or an event that
+  is itself a leg of >1 narrative -- BOTH real in the compiled data, not
+  hypothetical: `EXO.12.37` is cited by both the exodus narrative's
+  `ex_rameses` AND `ex_succoth` legs -- each yields its OWN entry, never
+  silently collapsed). `GET /api/narrative/event/{id}` (new) answers the
+  SAME question keyed by EVENT id instead -- requirement 1's own "traversal
+  steps resolve by event, not by re-searching verses": some events carry
+  zero curated verses at all, so a verse-based re-lookup would have nothing
+  to click, but the event-id lookup always works. Each entry: `narrative_id`/
+  `narrative_name`/`event_id`/`event_label` (the CURRENT position) plus
+  `prior`/`following` (each, when present, an adjacent event's own
+  `id`/`label`/`places`/`verse_groups`) -- `prior`/`following` OMITTED (not
+  null) exactly at a narrative's own first/last leg.
+
+  PROVIDER (no popover surgery -- registered exactly like every other
+  section, Explore/PopoverSections.cs). VERSE nodes gain two MORE sections,
+  appended after catechism (`NarrativePriorEventSection`/
+  `NarrativeFollowingEventSection`, "PRIOR EVENT"/"FOLLOWING EVENT"),
+  each conditional (absent when the verse has no qualifying narrative
+  position in that direction). A verse touching >1 narrative renders one
+  block per qualifying narrative inside the SAME section, each named "PRIOR
+  EVENT — {narrative name}" (bare "PRIOR EVENT" when there is only one);
+  the rare case where TWO qualifying positions share one narrative name
+  (the `EXO.12.37` case above) additionally names the current event, "PRIOR
+  EVENT — {narrative name} ({event label})", so the two stay
+  distinguishable. Each block's own adjacent event renders via the SAME
+  shared passage-list component (PASSAGE-1) every other verse list in this
+  app uses -- grouped passages, truncation-free (no cap asked for),
+  expand-to-chapter all inherited, zero parallel implementation.
+
+  TRAVERSAL. Each adjacent event is EXPLORABLE (ONE-RULE): its own row
+  (`narrative-prior-event-{narrativeId}`/`narrative-following-event-{narrativeId}`,
+  the event's own label) is the traversal target -- clicking pushes a
+  `NarrativeEventNode`, re-anchoring the popover onto that event ("its
+  verses become the subject" -- a new NARRATIVE-EVENT node kind, see the
+  testid-inventory's own REGISTRY-1 addendum above), locked to the ONE
+  narrative it was reached through (a disclosed scope choice: an event that
+  also happens to be a leg of a DIFFERENT narrative does not silently
+  surface that OTHER narrative's own chain here -- opening one of the
+  event's own VERSES instead, an ordinary passage-list click, resolves
+  EVERY narrative it belongs to, same as any other verse). The traversed
+  node's OWN PRIOR/FOLLOWING sections resolve by ITS event id (never a
+  re-derived verse), recursing exactly as far as the underlying
+  `Narrative.legs` chain goes -- first leg has no PRIOR section, last has
+  no FOLLOWING, both by plain conditional presence, never a disabled stub.
+  Also explorable, independently: each adjacent event's own passage-list
+  entries (`narrative-prior-verse-*`/`narrative-following-verse-*`/
+  `narrative-event-verse-*`) -- clicking one of THOSE opens an ordinary
+  `VerseNode`/`PassageNode` for that specific verse/span instead of
+  traversing the event as a whole (PASSAGE-1's own default click contract,
+  unmodified) -- a second, independent way into the same graph, not a
+  competing mechanism.
+
+  CONSISTENCY WITH G1 (requirement 3's own "reuse, don't fork"):
+  `PlaceCard.razor`'s own `NarrativeRows`/`PickAdjacent` (TRAVERSAL-1) is
+  UNCHANGED by this batch and remains client-side, place-centric adjacency
+  derived from a scene's own `arrows` -- a DIFFERENT code path from this
+  note's own event/verse-centric one, but never a DIFFERENT ANSWER: both
+  ultimately walk the SAME `Narrative.legs` chain (G1's own arrows are
+  built from it via `scene::build_arrows`; this batch's own positions read
+  it directly) and both resolve an event's own verses via the SAME
+  `scene::to_scene_event`, so a place card's "next event" and a popover's
+  "FOLLOWING EVENT" can never disagree about which event, or which verses,
+  come next.
+
+  MAP FOCUS SYNC. While the popover's own CURRENT node has >=1 narrative
+  position (open on a narrative verse, or mid-traversal on a
+  NarrativeEventNode): every currently-live, non-mini map instance (the
+  split-view atlas pane AND/OR the full `/world` page -- map.js's own
+  `instances` registry, same mechanism BLINK-1 already established for
+  "reach whichever map is actually showing, with no page-specific wiring")
+  has its narrative arrows (`arrow-{narrativeId}-{order}`) marked with a
+  new `data-narrative-focus` attribute: `"receded"` for every OTHER
+  narrative's own arrows (dimmed, NEVER removed/hidden -- "recede," the
+  brief's own word, deliberately gentler than the PRE-EXISTING legend
+  isolate's own near-invisible `data-faded="true"` .12 opacity, a SEPARATE,
+  coexisting mechanism, not reused for this), `"active"` for the CURRENT
+  node's own narrative(s)' other arrows (amplified stroke-width/opacity),
+  `"current"` for the specific leg(s) touching the CURRENTLY open event
+  (strongest emphasis -- "prior→current or current→following as
+  traversed"). Absent (no attribute at all) is the baseline, both for an
+  arrow that was never in any focus state and for every arrow once the
+  popover closes or Current stops being narrative-aware ("Popover closes /
+  context ends -> arrows return to normal") -- `ExplorerPopover`'s own
+  `RequestClose` clears focus SYNCHRONOUSLY at the close action itself
+  (HOUSE PATTERN: no dispose-time capture; this component has no
+  `DisposeAsync` and gains none for this). No CSS transition on this
+  attribute at all (app.css's own "an instant snap needs no
+  prefers-reduced-motion carve-out" precedent, already established for the
+  zoom/pan-driven arrow-path recompute) -- satisfies "state change without
+  animated transition" under reduced motion trivially, by never animating
+  either way. A scene change (the time slider dragged while a narrative
+  popover happens to be open) resets every arrow's own
+  `data-narrative-focus` to baseline, the SAME "starts fresh every scene"
+  treatment `setArrows` already gives the legend-isolate `data-faded`
+  attribute -- the popover's own next navigation restores it.
 - ONE-RULE (batch-g1-brief.md, user direction 2026-08-19: "the little trinity button
   isn't clear... explorable elements display slightly darker on hover; click opens the
   pop-up menu" -- REPLACES the retired `verse-explore-{n}` ∴ button, which offered no
@@ -522,7 +689,13 @@ Notes:
   Batch F adds
   `catechism-item-{ID}` (the "THE SMALL CATECHISM" section's own citing-item
   rows) and `catechism-verse-{SPAN}` ("THE SCRIPTURES" section's own
-  proof-verse rows) -- see CATECH-1. Two kinds of
+  proof-verse rows) -- see CATECH-1. batch-n-brief.md adds
+  `narrative-prior-event-{narrativeId}`/`narrative-following-event-{narrativeId}`
+  (the PRIOR/FOLLOWING sections' own event-traversal rows) and
+  `narrative-prior-verse-{narrativeId}-{SPAN}`/`narrative-following-verse-{narrativeId}-{SPAN}`/
+  `narrative-event-verse-{SPAN}` (their own passage-list entries,
+  PASSAGE-1's existing "every passage-list entry is explorable" rule
+  already covers these generically) -- see NARRATIVE-1. Two kinds of
   element are deliberately
   EXCLUDED, never explorable, and keep whatever hover treatment (if any) they already
   had: SELECTION controls (`verse-num-{n}` -- drives the anchor+extend passage-range
@@ -663,7 +836,11 @@ Notes:
   most recent `card-next-event-N` (and vice versa) back to the previous place. An adjacent
   place that does not resolve in the current scene (lit or quiet) no-ops gracefully rather
   than erroring -- arrows only ever connect lit places (ARROW-1), so this is not expected
-  to occur in practice, but is handled rather than assumed away.
+  to occur in practice, but is handled rather than assumed away. batch-n-brief.md's own
+  reader-popover traversal (NARRATIVE-1) is a DIFFERENT code path -- reuses
+  the SAME `Narrative.legs` chain and the SAME `scene::to_scene_event` this
+  note's own adjacency is built from, so the two can never disagree; see
+  NARRATIVE-1's own "consistency with G1" paragraph.
 - Hover place card content (batch-d-brief.md): the card is place name + verse
   content + controls, nothing else -- no per-(book,chapter) count rows, bare
   canonical-ref rows, or chapter-identifier lines anywhere on it. From the
