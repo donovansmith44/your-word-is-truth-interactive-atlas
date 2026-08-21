@@ -20,3 +20,15 @@ rings = [
     [34.1, 35.75], [34.22, 35.8], [34.35, 35.85], [34.47, 35.95], [34.6, 36.05], [34.72, 35.98], [34.85, 35.9]
   ]
 ]
+
+# Batch M requirement 1: this era's own FALL -- Nebuchadnezzar's own
+# thirteen-year siege of Tyre (also named in this file's own from=/to=
+# neighbor, babylon.toml's Neo-Babylonian era), after which Neo-Babylonian
+# then Persian control absorbs the whole coast (this file's own header
+# comment). Ezekiel's own oracle against Tyre names Nebuchadnezzar
+# directly. Verses read directly against the compiled KJV text before
+# citing.
+[era.fall]
+event = "Nebuchadnezzar besieges Tyre; Neo-Babylonian then Persian rule absorbs the coast"
+verses = ["EZK.26.3", "EZK.26.4", "EZK.26.7"]
+ref_note = "Ezekiel 26:3-4,7 (KJV, verified against the compiled text) -- the Lord's own oracle against Tyre, naming 'Nebuchadrezzar king of Babylon' directly (v.7); the historical thirteen-year siege and the coast's later absorption into Persian control are general history beyond what these verses themselves narrate"

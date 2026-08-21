@@ -183,7 +183,7 @@ fn main() -> Result<()> {
     // bad polity file or a bad landmarks.toml must not leave a
     // half-written data/compiled/ behind.
     let (compiled_polities, polity_stats) = process_polities(&curated_dir.join("polities"))?;
-    validate::run_polities(&compiled_polities, &polities::BIBLICAL_WORLD_BBOX)
+    validate::run_polities(&compiled_polities, &polities::BIBLICAL_WORLD_BBOX, &data.verses)
         .context("data/compiled/polities.json was NOT written; fix data/curated/polities/*.toml and re-run")?;
 
     let landmarks = curated::parse_landmarks(&read(&curated_dir.join("landmarks.toml"))?)?;

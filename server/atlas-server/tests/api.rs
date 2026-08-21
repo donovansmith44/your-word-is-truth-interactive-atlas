@@ -635,19 +635,19 @@ fn app_with_test_polities() -> axum::Router {
             id: "egypt".into(),
             color_key: 3,
             eras: vec![
-                PolityEra { name: "Egypt".into(), from: -2100, to: -1200, ref_note: "fixture".into(), rings: vec![square_ring()] },
-                PolityEra { name: "Ptolemaic Egypt".into(), from: -331, to: -30, ref_note: "fixture".into(), rings: vec![square_ring()] },
+                PolityEra { name: "Egypt".into(), from: -2100, to: -1200, ref_note: "fixture".into(), rings: vec![square_ring()], transition: None, fall: None },
+                PolityEra { name: "Ptolemaic Egypt".into(), from: -331, to: -30, ref_note: "fixture".into(), rings: vec![square_ring()], transition: None, fall: None },
             ],
         },
         Polity {
             id: "judah".into(),
             color_key: 9,
-            eras: vec![PolityEra { name: "Kingdom of Judah".into(), from: -900, to: -600, ref_note: "fixture".into(), rings: vec![square_ring()] }],
+            eras: vec![PolityEra { name: "Kingdom of Judah".into(), from: -900, to: -600, ref_note: "fixture".into(), rings: vec![square_ring()], transition: None, fall: None }],
         },
         Polity {
             id: "rome".into(),
             color_key: 5,
-            eras: vec![PolityEra { name: "Roman Empire".into(), from: -30, to: 100, ref_note: "fixture".into(), rings: vec![square_ring()] }],
+            eras: vec![PolityEra { name: "Roman Empire".into(), from: -30, to: 100, ref_note: "fixture".into(), rings: vec![square_ring()], transition: None, fall: None }],
         },
     ];
     let data: AtlasData = data.finish();
@@ -722,6 +722,75 @@ async fn polities_intersection_ordering_and_color_key_stability() {
     // pairs, never transposed.
     let (_, body) = call(&app, "/api/polities?from=-2000&to=-1900").await;
     assert_eq!(body["polities"][0]["rings"][0][0], serde_json::json!([10.0, 10.0]));
+}
+
+/// Batch M requirement 1: `transition`/`fall` are OMITTED (not null) when a
+/// curator honestly left an era boundary uneventful, and present with their
+/// full shape (`event`/`verses`/`ref_note`) when authored -- the wire-level
+/// half of "an uneventful boundary stays visible but gets the minimal
+/// popover" (the CLIENT side of conditional presence lives in
+/// `client.Tests`/Playwright; this only proves the server's own JSON never
+/// emits a `null` placeholder either way).
+#[tokio::test]
+async fn polities_transition_and_fall_conditional_presence_on_the_wire() {
+    let mut data = demo_fixture();
+    data.polities = vec![Polity {
+        id: "delta-test".into(),
+        color_key: 0,
+        eras: vec![
+            // First era: no transition curated (an honest omission) --
+            // must be ABSENT from the JSON, not `"transition": null`.
+            PolityEra {
+                name: "Rises Quietly".into(),
+                from: -1000,
+                to: -700,
+                ref_note: "fixture".into(),
+                rings: vec![square_ring()],
+                transition: None,
+                fall: None,
+            },
+            // Second (final) era: BOTH a transition (from the first era)
+            // AND a fall (its own end) are curated.
+            PolityEra {
+                name: "Falls Dramatically".into(),
+                from: -699,
+                to: -600,
+                ref_note: "fixture".into(),
+                rings: vec![square_ring()],
+                transition: Some(atlas_core::data::PolityDelta {
+                    event: "Test event: the change happens".into(),
+                    verses: vec!["GEN.1.1".into()],
+                    ref_note: "fixture ref_note".into(),
+                }),
+                fall: Some(atlas_core::data::PolityDelta {
+                    event: "Test event: the fall happens".into(),
+                    verses: vec![],
+                    ref_note: "fixture fall ref_note".into(),
+                }),
+            },
+        ],
+    }];
+    let data: AtlasData = data.finish();
+    let app = atlas_server::app::build(Arc::new(data), None);
+
+    let (st, body) = call(&app, "/api/polities?from=-1000&to=-600").await;
+    assert_eq!(st, 200);
+    let polities = body["polities"].as_array().unwrap();
+    assert_eq!(polities.len(), 2, "{polities:?}");
+
+    let quiet = &polities[0];
+    assert_eq!(quiet["name"], "Rises Quietly");
+    assert!(!quiet.as_object().unwrap().contains_key("transition"), "expected NO transition key at all (omitted, not null): {quiet:?}");
+    assert!(!quiet.as_object().unwrap().contains_key("fall"), "expected NO fall key at all (omitted, not null): {quiet:?}");
+
+    let dramatic = &polities[1];
+    assert_eq!(dramatic["name"], "Falls Dramatically");
+    assert_eq!(dramatic["transition"]["event"], "Test event: the change happens");
+    assert_eq!(dramatic["transition"]["verses"], serde_json::json!(["GEN.1.1"]));
+    assert_eq!(dramatic["transition"]["ref_note"], "fixture ref_note");
+    assert_eq!(dramatic["fall"]["event"], "Test event: the fall happens");
+    assert_eq!(dramatic["fall"]["verses"], serde_json::json!([]));
+    assert_eq!(dramatic["fall"]["ref_note"], "fixture fall ref_note");
 }
 
 #[tokio::test]

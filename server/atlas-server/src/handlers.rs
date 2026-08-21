@@ -112,6 +112,23 @@ pub async fn land_mask(State(data): State<Arc<AtlasData>>) -> Json<LandMaskOut> 
 /// `rings` are this specific ERA's own fields, and `color_key` is the
 /// polity's own precomputed hash (`Polity::color_key` -- copied here
 /// unchanged, never rehashed per-request).
+/// Batch M requirement 1: the wire shape of one `atlas_core::data::PolityDelta`
+/// -- a plain field-for-field copy (`event`/`verses`/`ref_note`), same "no
+/// rename, no reshaping" convention `PolityOut` itself already follows for
+/// `PolityEra`.
+#[derive(Debug, Serialize)]
+pub struct PolityDeltaOut {
+    pub event: String,
+    pub verses: Vec<String>,
+    pub ref_note: String,
+}
+
+impl From<&atlas_core::data::PolityDelta> for PolityDeltaOut {
+    fn from(d: &atlas_core::data::PolityDelta) -> Self {
+        PolityDeltaOut { event: d.event.clone(), verses: d.verses.clone(), ref_note: d.ref_note.clone() }
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct PolityOut {
     pub id: String,
@@ -120,6 +137,18 @@ pub struct PolityOut {
     pub to: i32,
     pub rings: Vec<Vec<(f64, f64)>>,
     pub color_key: u8,
+    /// Batch M requirement 1: this era's own delta metadata, OMITTED (not
+    /// null) when absent -- "an uneventful boundary stays visible but gets
+    /// the minimal popover," so the client must be able to tell "no
+    /// transition curated" apart from "transition curated with zero
+    /// verses" (the latter still shows the event/grounding-note sections,
+    /// just no THE SCRIPTURES section — see `PolityDelta::verses`' own doc
+    /// comment). Mirrors `NarrativePositionOut.prior`/`.following`'s own
+    /// `skip_serializing_if` precedent exactly.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transition: Option<PolityDeltaOut>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fall: Option<PolityDeltaOut>,
 }
 
 #[derive(Debug, Serialize)]
@@ -163,6 +192,8 @@ pub async fn polities(
                     to: era.to,
                     rings: era.rings.clone(),
                     color_key: p.color_key,
+                    transition: era.transition.as_ref().map(PolityDeltaOut::from),
+                    fall: era.fall.as_ref().map(PolityDeltaOut::from),
                 });
             }
         }

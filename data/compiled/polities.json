@@ -285,7 +285,16 @@
               21.0
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "Alexander the Great conquers the Achaemenid Persian Empire",
+          "verses": [
+            "DAN.8.5",
+            "DAN.8.20",
+            "DAN.8.21"
+          ],
+          "ref_note": "Daniel 8:5,20-21 (KJV, verified against the compiled text) -- the he-goat 'from the west' (v.5), self-interpreted in the text as Grecia overthrowing Media-Persia (vv.20-21); traditionally dated 334-330 BC -- see egypt.toml's own mirrored transition for the same conquest's reach into Egypt"
+        }
       }
     ]
   },
@@ -433,7 +442,12 @@
               42.3
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "The Neo-Assyrian resurgence begins under Adad-nirari II",
+          "verses": [],
+          "ref_note": "general Assyriological knowledge (the 10th-9th century BC resurgence that becomes the Neo-Assyrian Empire); no specific source consulted this session; not scripture-narrated at this specific boundary -- the KJV text's own Assyria narrative picks up later, once the empire already presses on Israel (e.g. 2 Kings 15:19)"
+        }
       },
       {
         "name": "Neo-Assyrian Empire",
@@ -679,7 +693,15 @@
               35.8
             ]
           ]
-        ]
+        ],
+        "fall": {
+          "event": "The Medes and Neo-Babylonians destroy Nineveh",
+          "verses": [
+            "NAM.3.18",
+            "NAM.3.19"
+          ],
+          "ref_note": "Nahum 3:18-19 (KJV, verified against the compiled text) -- the whole book of Nahum is a prophecy of Nineveh's own destruction, traditionally dated 612 BC; these closing verses address the king of Assyria's own ruin directly"
+        }
       }
     ]
   },
@@ -831,7 +853,12 @@
               40.9
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "Nabopolassar revolts against Assyria, founding the Neo-Babylonian dynasty",
+          "verses": [],
+          "ref_note": "general historical knowledge (Nabopolassar's own 626 BC revolt, allied with the Medes, that leads to Nineveh's fall -- see assyria.toml's own fall); no specific source consulted this session; Nabopolassar himself is not named in the KJV text"
+        }
       },
       {
         "name": "Neo-Babylonian Empire",
@@ -1017,7 +1044,15 @@
               43.3
             ]
           ]
-        ]
+        ],
+        "fall": {
+          "event": "Babylon falls; Belshazzar is slain in the night",
+          "verses": [
+            "DAN.5.30",
+            "DAN.5.31"
+          ],
+          "ref_note": "Daniel 5:30-31 (KJV, verified against the compiled text) -- 'In that night was Belshazzar the king of the Chaldeans slain... And Darius the Median took the kingdom,' traditionally dated 539 BC -- see persia.toml's own mirrored rise-transition"
+        }
       }
     ]
   },
@@ -1205,7 +1240,12 @@
               29.9
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "The Hyksos are expelled; the New Kingdom and the Egyptian Empire begin",
+          "verses": [],
+          "ref_note": "general Egyptological knowledge (Ahmose I's expulsion of the Hyksos, founding the 18th Dynasty); no specific source consulted this session; not otherwise scripture-narrated at this specific boundary"
+        }
       },
       {
         "name": "Egypt",
@@ -1427,7 +1467,12 @@
               35.8
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "The New Kingdom collapses; Egypt contracts back to the Nile valley",
+          "verses": [],
+          "ref_note": "general Egyptological knowledge (the Late Bronze Age Collapse; Ramesses XI's own weak final reign ending the Empire); no specific source consulted this session; not otherwise scripture-narrated"
+        }
       },
       {
         "name": "Egypt",
@@ -1609,7 +1654,15 @@
               29.9
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "Alexander the Great conquers Egypt, ending Persian rule",
+          "verses": [
+            "DAN.8.20",
+            "DAN.8.21"
+          ],
+          "ref_note": "Daniel 8:20-21 (KJV, verified against the compiled text) -- Daniel's own vision, self-interpreted in the text as Media-Persia (the ram) overthrown by Grecia (the goat); Egypt was a Persian satrapy at the time (persia.toml), so this same prophecy applies here as it does to Persia's own fall/alexander-empire.toml's own rise"
+        }
       },
       {
         "name": "Ptolemaic Egypt",
@@ -1893,7 +1946,12 @@
               24.9
             ]
           ]
-        ]
+        ],
+        "fall": {
+          "event": "Rome annexes Egypt after Actium; Cleopatra dies",
+          "verses": [],
+          "ref_note": "general Roman/Ptolemaic history (Battle of Actium and its aftermath, 31-30 BC); no specific source consulted this session; not scripture-narrated -- this era predates the Gospel narrative entirely"
+        }
       }
     ]
   },
@@ -2377,7 +2435,15 @@
               34.95
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "David is anointed king over all Israel",
+          "verses": [
+            "2SA.5.1",
+            "2SA.5.3"
+          ],
+          "ref_note": "2 Samuel 5:1,3 (KJV, verified against the compiled text) -- all the tribes come to David at Hebron and anoint him king over Israel, the moment this era's own name (\"United Monarchy\") describes"
+        }
       },
       {
         "name": "Kingdom of Israel",
@@ -2559,7 +2625,23 @@
               34.95
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "The kingdom divides; Jeroboam is made king over Israel",
+          "verses": [
+            "1KI.12.16",
+            "1KI.12.20"
+          ],
+          "ref_note": "1 Kings 12:16,20 (KJV, verified against the compiled text) -- Israel rejects Rehoboam ('to your tents, O Israel') and makes Jeroboam king; Judah alone follows the house of David (see judah.toml's own mirrored transition)"
+        },
+        "fall": {
+          "event": "Assyria carries Israel captive",
+          "verses": [
+            "2KI.17.6",
+            "2KI.17.23"
+          ],
+          "ref_note": "2 Kings 17:6,23 (KJV, verified against the compiled text) -- fall of Samaria and the deportation to Assyria, traditionally dated 722 BC"
+        }
       }
     ]
   },
@@ -2715,7 +2797,15 @@
               35.22
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "The kingdom divides; Judah alone follows the house of David",
+          "verses": [
+            "1KI.12.16",
+            "1KI.12.19"
+          ],
+          "ref_note": "1 Kings 12:16,19 (KJV, verified against the compiled text) -- Israel rejects Rehoboam and rebels 'against the house of David unto this day'; Judah (this polity) is what remains loyal to it -- see israel.toml's own mirrored transition"
+        }
       },
       {
         "name": "Yehud",
@@ -2833,7 +2923,16 @@
               35.15
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "Cyrus decrees the return from exile and the rebuilding of the temple",
+          "verses": [
+            "EZR.1.1",
+            "EZR.1.2",
+            "EZR.1.3"
+          ],
+          "ref_note": "Ezra 1:1-3 (KJV, verified against the compiled text) -- Cyrus's own proclamation, traditionally dated 538 BC; the destruction that precedes this gap is Judah's OWN previous era's own end (2 Kings 25, not separately cited here since it falls chronologically inside the gap between these two eras, not at either one's own boundary)"
+        }
       },
       {
         "name": "Hasmonean Judea",
@@ -3023,7 +3122,14 @@
               35.55
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "The Maccabean Revolt overthrows Seleucid rule in Judea",
+          "verses": [
+            "DAN.11.31"
+          ],
+          "ref_note": "the revolt itself (167-160 BC) is narrated in 1 Maccabees, outside the KJV's 66-book canon -- not otherwise cited here; Daniel 11:31 (KJV, verified against the compiled text) is the prophecy traditionally read as depicting Antiochus IV's own desecration of the temple, the revolt's proximate trigger -- a prophetic application, not a narrative citation, disclosed as such"
+        }
       },
       {
         "name": "Herodian Kingdom of Judea",
@@ -3249,7 +3355,19 @@
               35.85
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "Rome installs Herod the Great as king of Judea",
+          "verses": [],
+          "ref_note": "Josephus (Antiquities 14/Jewish War 1), general history -- not narrated in the KJV text, which first names Herod near his own death (Matthew 2); no verse cited rather than an invented one"
+        },
+        "fall": {
+          "event": "Herod the Great dies; his kingdom is partitioned among his sons",
+          "verses": [
+            "MAT.2.19"
+          ],
+          "ref_note": "Matthew 2:19 (KJV, verified against the compiled text) -- 'when Herod was dead'; the partition itself (Matthew 2:22's own Archelaus reigning 'in the room of his father Herod') is general history/Josephus for the specific three-way split, traditionally dated 4 BC"
+        }
       }
     ]
   },
@@ -3617,7 +3735,15 @@
               26.5
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "Cyrus conquers Babylon, founding the Achaemenid Persian Empire",
+          "verses": [
+            "ISA.44.28",
+            "ISA.45.1"
+          ],
+          "ref_note": "Isaiah 44:28, 45:1 (KJV, verified against the compiled text) -- Isaiah names Cyrus by name as the Lord's own 'anointed,' generations before his reign; the conquest itself is narrated in Daniel 5 (see babylon.toml's own mirrored fall-transition), traditionally dated 539 BC"
+        }
       }
     ]
   },
@@ -3773,7 +3899,16 @@
               35.9
             ]
           ]
-        ]
+        ],
+        "fall": {
+          "event": "Nebuchadnezzar besieges Tyre; Neo-Babylonian then Persian rule absorbs the coast",
+          "verses": [
+            "EZK.26.3",
+            "EZK.26.4",
+            "EZK.26.7"
+          ],
+          "ref_note": "Ezekiel 26:3-4,7 (KJV, verified against the compiled text) -- the Lord's own oracle against Tyre, naming 'Nebuchadrezzar king of Babylon' directly (v.7); the historical thirteen-year siege and the coast's later absorption into Persian control are general history beyond what these verses themselves narrate"
+        }
       }
     ]
   },
@@ -4021,7 +4156,14 @@
               0.5
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "Octavian defeats Antony and Cleopatra at Actium; the Senate names him Augustus",
+          "verses": [
+            "LUK.2.1"
+          ],
+          "ref_note": "Actium (31 BC) and the Augustus title (27 BC) are general Roman history, not scripture-narrated; Luke 2:1 (KJV, verified against the compiled text) attests Caesar Augustus's own later reign, at Jesus's birth -- a related but not contemporaneous scriptural touchpoint, disclosed as such"
+        }
       },
       {
         "name": "Roman Empire",
@@ -4495,7 +4637,12 @@
               27.0
             ]
           ]
-        ]
+        ],
+        "transition": {
+          "event": "Parthian and Armenian conquests reduce the Seleucid realm to a rump state",
+          "verses": [],
+          "ref_note": "general Hellenistic-era historical knowledge (Parthia's own mid-2nd-century BC eastward conquests under Mithridates I; Tigranes of Armenia's own later inroads); no specific source consulted this session; not scripture-narrated"
+        }
       },
       {
         "name": "Seleucid Empire (rump)",
@@ -4685,7 +4832,12 @@
               35.9
             ]
           ]
-        ]
+        ],
+        "fall": {
+          "event": "Pompey annexes Syria as a Roman province, ending Seleucid rule",
+          "verses": [],
+          "ref_note": "general Roman/Hellenistic historical knowledge (Pompey's own 64/63 BC settlement of the East); no specific source consulted this session; 1 Maccabees, the fullest narrative source for the Seleucid decline, is outside the KJV's 66-book canon"
+        }
       }
     ]
   },

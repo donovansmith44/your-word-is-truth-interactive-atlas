@@ -21,6 +21,17 @@ rings = [
   ]
 ]
 
+# Batch M requirement 1: this era's own RISE into the Neo-Assyrian Empire
+# below -- Adad-nirari II/Ashurdan II's own resurgence beginning the
+# empire's rapid 9th-8th-century expansion. Assyriology, not Scripture (the
+# KJV text's own Assyria narrative doesn't begin until the empire is
+# already a going concern, e.g. 2 Kings 15:19's "Pul the king of Assyria").
+# Honestly disclosed as general history rather than an invented citation.
+[era.transition]
+event = "The Neo-Assyrian resurgence begins under Adad-nirari II"
+verses = []
+ref_note = "general Assyriological knowledge (the 10th-9th century BC resurgence that becomes the Neo-Assyrian Empire); no specific source consulted this session; not scripture-narrated at this specific boundary -- the KJV text's own Assyria narrative picks up later, once the empire already presses on Israel (e.g. 2 Kings 15:19)"
+
 # The Neo-Assyrian Empire: 2 Kings' own great antagonist -- Tiglath-Pileser
 # III, Shalmaneser V's fall of Samaria (722 BC), Sennacherib's siege of
 # Jerusalem (701 BC) -- at its height under Esarhaddon/Ashurbanipal,
@@ -46,3 +57,16 @@ rings = [
     [37.0, 36.3], [37.1, 36.05], [37.2, 35.8]
   ]
 ]
+
+# Batch M requirement 1: this era's own FALL -- the fall of Nineveh (612
+# BC) to the combined Medes/Neo-Babylonians. Not narrated as a discrete
+# scene in the OT historical books, but the SUBJECT of the entire book of
+# Nahum, whose closing verses address "the king of Assyria" directly in
+# the past-collapse tense. Verses read directly against the compiled KJV
+# text before citing -- note this app's own canonical code is NAM (not the
+# more common OSIS "NAH"), confirmed against data/compiled/canon.json
+# before citing.
+[era.fall]
+event = "The Medes and Neo-Babylonians destroy Nineveh"
+verses = ["NAM.3.18", "NAM.3.19"]
+ref_note = "Nahum 3:18-19 (KJV, verified against the compiled text) -- the whole book of Nahum is a prophecy of Nineveh's own destruction, traditionally dated 612 BC; these closing verses address the king of Assyria's own ruin directly"

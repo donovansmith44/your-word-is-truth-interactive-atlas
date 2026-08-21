@@ -19,7 +19,7 @@
 //! trust class scene composition relies on).
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookMeta, CatechismItem, CatechismPart, Era, Event, Landmark, LandMaskRegion, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityEra};
+use atlas_core::data::{BookMeta, CatechismItem, CatechismPart, Era, Event, Landmark, LandMaskRegion, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameEntry, Polity, PolityDelta, PolityEra};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -308,6 +308,26 @@ struct PolityEraToml {
     to: i32,
     ref_note: String,
     rings: Vec<Vec<(f64, f64)>>,
+    /// Batch M requirement 1: nested `[era.transition]`/`[era.fall]` tables
+    /// -- TOML's own standard "subtable of the most recently opened
+    /// array-of-tables element" shape, so these attach to exactly the
+    /// `[[era]]` entry they're written under with no id/index matching. See
+    /// `atlas_core::data::PolityEra::transition`/`::fall`'s own doc comments
+    /// for what each means; both are `#[serde(default)]` so every existing
+    /// era (the overwhelming majority, honestly omitted per the citation-
+    /// integrity rule) keeps parsing with neither present.
+    #[serde(default)]
+    transition: Option<PolityDeltaToml>,
+    #[serde(default)]
+    fall: Option<PolityDeltaToml>,
+}
+
+#[derive(Deserialize)]
+struct PolityDeltaToml {
+    event: String,
+    #[serde(default)]
+    verses: Vec<String>,
+    ref_note: String,
 }
 
 /// Parses one `data/curated/polities/{id}.toml` file (schema: top-level
@@ -342,7 +362,15 @@ pub fn parse_polity(input: &str) -> Result<Polity> {
     let eras = f
         .eras
         .into_iter()
-        .map(|e| PolityEra { name: e.name, from: e.from, to: e.to, ref_note: e.ref_note, rings: e.rings })
+        .map(|e| PolityEra {
+            name: e.name,
+            from: e.from,
+            to: e.to,
+            ref_note: e.ref_note,
+            rings: e.rings,
+            transition: e.transition.map(|d| PolityDelta { event: d.event, verses: d.verses, ref_note: d.ref_note }),
+            fall: e.fall.map(|d| PolityDelta { event: d.event, verses: d.verses, ref_note: d.ref_note }),
+        })
         .collect();
     Ok(Polity { id: f.id, color_key: 0, eras })
 }
@@ -571,6 +599,21 @@ mod tests {
         assert_eq!(polity.eras[0].rings[0].len(), 5);
         assert_eq!(polity.eras[0].rings[0][0], (10.0, 10.0), "rings are [lat, lon], first pair verbatim");
         assert_eq!(polity.eras[1].name, "Greater Testland");
+        assert!(polity.eras[0].transition.is_none(), "first era's own [era.transition] is honestly absent in the fixture");
+        assert!(polity.eras[0].fall.is_none());
+
+        // Batch M requirement 1: [era.transition]/[era.fall] under the
+        // fixture's SECOND [[era]] -- proves both nested tables attach to
+        // the era they're written under (TOML's own array-of-tables
+        // subtable rule), not the first/wrong one.
+        let transition = polity.eras[1].transition.as_ref().expect("second era carries a transition in the fixture");
+        assert_eq!(transition.event, "Testland expands");
+        assert_eq!(transition.verses, vec!["GEN.1.1".to_string()]);
+        assert_eq!(transition.ref_note, "synthetic fixture, not a real citation");
+
+        let fall = polity.eras[1].fall.as_ref().expect("second era carries a fall in the fixture");
+        assert_eq!(fall.event, "Greater Testland falls");
+        assert_eq!(fall.verses, vec!["GEN.1.2".to_string(), "GEN.1.3".to_string()]);
 
         // Fix round 1 (M1): color_key is now LEFT PROVISIONAL (0) by
         // parse_polity -- a single file has no visibility into the rest of

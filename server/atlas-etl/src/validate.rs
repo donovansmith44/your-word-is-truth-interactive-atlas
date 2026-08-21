@@ -196,15 +196,69 @@ pub fn run_landmarks(landmarks: &[Landmark], bbox: &Bbox) -> Result<()> {
 /// - every ring point falls inside `bbox` (same "a curator's typo shouldn't
 ///   silently draw off in the ocean somewhere this app never renders" reason
 ///   `run_landmarks` already checks `lat`/`lon` against it)
-pub fn run_polities(polities: &[Polity], bbox: &Bbox) -> Result<()> {
+pub fn run_polities(polities: &[Polity], bbox: &Bbox, verses: &HashMap<String, String>) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
     check_duplicate_ids(polities.iter().map(|p| p.id.as_str()), "polity", &mut errors);
+
+    // Batch M requirement 1: same verse-check shape `run_place_history`
+    // already established (parses canonically AND actually exists in the
+    // compiled KJV text -- every delta verse is hand-typed, so a typo must
+    // fail loud, not silently pass a format-only check).
+    let check_verse = |v: &str, ctx: &str, errors: &mut Vec<String>| match VerseId::parse_canonical(v) {
+        Err(err) => errors.push(format!("{ctx}: verse '{v}' is not a canonical single-verse ref: {err}")),
+        Ok(_) if !verses.contains_key(v) => {
+            errors.push(format!("{ctx}: verse '{v}' parses but does not exist in the compiled KJV text"))
+        }
+        Ok(_) => {}
+    };
+    let check_delta = |delta: &atlas_core::data::PolityDelta, ctx: &str, errors: &mut Vec<String>| {
+        if delta.event.trim().is_empty() {
+            errors.push(format!("{ctx}: event is empty"));
+        }
+        if delta.ref_note.trim().is_empty() {
+            errors.push(format!("{ctx}: ref_note is empty (citation-integrity rule -- name the source actually consulted)"));
+        }
+        for v in &delta.verses {
+            check_verse(v, ctx, errors);
+        }
+    };
 
     for p in polities {
         if p.eras.is_empty() {
             errors.push(format!("polity '{}' has no eras", p.id));
             continue;
+        }
+
+        // Batch M requirement 1: `fall` is only meaningful on the polity's
+        // own chronologically FINAL era -- determined by the era with the
+        // greatest `to` year, never assumed from file/array order (a
+        // curator could, in principle, list eras out of order; the overlap
+        // check just below doesn't depend on file order either). A `fall`
+        // authored on any OTHER era is a curator mistake (it describes an
+        // end that isn't actually this polity's end), caught here rather
+        // than silently accepted.
+        if let Some(final_era) = p.eras.iter().max_by_key(|e| e.to) {
+            let final_key = (final_era.from, final_era.to);
+            let final_name = final_era.name.clone();
+            for era in &p.eras {
+                if era.fall.is_some() && (era.from, era.to) != final_key {
+                    errors.push(format!(
+                        "polity '{}' era '{}' ({}..{}) carries [era.fall] but is not this polity's chronologically final era ('{final_name}', ending {})",
+                        p.id, era.name, era.from, era.to, final_key.1
+                    ));
+                }
+            }
+        }
+
+        for era in &p.eras {
+            let delta_ctx = format!("polity '{}' era '{}' ({}..{})", p.id, era.name, era.from, era.to);
+            if let Some(t) = &era.transition {
+                check_delta(t, &format!("{delta_ctx} [era.transition]"), &mut errors);
+            }
+            if let Some(f) = &era.fall {
+                check_delta(f, &format!("{delta_ctx} [era.fall]"), &mut errors);
+            }
         }
 
         // Only eras with a structurally sound (non-zero, non-inverted) range

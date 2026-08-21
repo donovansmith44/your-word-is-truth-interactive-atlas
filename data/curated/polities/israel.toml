@@ -30,6 +30,15 @@ rings = [
   ]
 ]
 
+# Batch M requirement 1: this era's own RISE -- all Israel comes to David
+# at Hebron and anoints him king, uniting the tribes under one throne (the
+# united monarchy this era's own name describes). 2 Samuel 5:1,3, read
+# directly against data/compiled/verses-kjv.json before citing.
+[era.transition]
+event = "David is anointed king over all Israel"
+verses = ["2SA.5.1", "2SA.5.3"]
+ref_note = "2 Samuel 5:1,3 (KJV, verified against the compiled text) -- all the tribes come to David at Hebron and anoint him king over Israel, the moment this era's own name (\"United Monarchy\") describes"
+
 # The (northern) Kingdom of Israel after the division under Rehoboam/
 # Jeroboam: Samaria and Galilee west of the Jordan, plus Gilead across it --
 # Judah splits off to the south (see judah.toml). Ends with Shalmaneser
@@ -55,3 +64,23 @@ rings = [
     [32.83, 34.95]
   ]
 ]
+
+# Batch M requirement 1: this era's own RISE -- the kingdom divides under
+# Rehoboam/Jeroboam (1 Kings 12); Israel rejects the house of David and
+# crowns Jeroboam. Verses read directly against the compiled KJV text
+# before citing. See judah.toml's own "Kingdom of Judah" era for the SAME
+# moment from the southern kingdom's own side.
+[era.transition]
+event = "The kingdom divides; Jeroboam is made king over Israel"
+verses = ["1KI.12.16", "1KI.12.20"]
+ref_note = "1 Kings 12:16,20 (KJV, verified against the compiled text) -- Israel rejects Rehoboam ('to your tents, O Israel') and makes Jeroboam king; Judah alone follows the house of David (see judah.toml's own mirrored transition)"
+
+# Batch M requirement 1: this era's own FALL -- the brief's own worked
+# example. Shalmaneser V begins the siege; Sargon II completes the fall of
+# Samaria and the deportation, per 2 Kings 17 (which names both the fact
+# and the ongoing consequence "unto this day"). Verses read directly
+# against the compiled KJV text before citing.
+[era.fall]
+event = "Assyria carries Israel captive"
+verses = ["2KI.17.6", "2KI.17.23"]
+ref_note = "2 Kings 17:6,23 (KJV, verified against the compiled text) -- fall of Samaria and the deportation to Assyria, traditionally dated 722 BC"
