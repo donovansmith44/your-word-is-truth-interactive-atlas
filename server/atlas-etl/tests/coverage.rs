@@ -151,7 +151,25 @@ fn check_subsumption_content(claims: &[SubsumptionClaim], events: &[Event], witn
                 }
             }
         }
+        // Re-review finding M-3: a claim (or fragment) that contributes zero
+        // membership checks would pass vacuously -- the exact self-declared
+        // failure mode this checker exists to close, one layer deeper. An
+        // empty refs list or an inverted range (`a..=b` with a>b is silently
+        // empty in Rust) is therefore itself an error, not a free pass.
+        if claim.refs.is_empty() {
+            errors.push(format!(
+                "subsumption claim for §{}: empty refs list -- a claim that checks no verses is vacuous",
+                claim.section
+            ));
+        }
         for (book, chapter, from_verse, to_verse) in claim.refs {
+            if from_verse > to_verse {
+                errors.push(format!(
+                    "subsumption claim for §{}: inverted range {book}.{chapter}.{from_verse}-{to_verse} checks no verses (vacuous)",
+                    claim.section
+                ));
+                continue;
+            }
             for v in *from_verse..=*to_verse {
                 let vref = format!("{book}.{chapter}.{v}");
                 if !covered.contains(vref.as_str()) {
