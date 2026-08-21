@@ -621,19 +621,33 @@ impl From<atlas_core::scene::ResolvedWitness> for EventWitnessOut {
 }
 
 /// `GET /api/event/{id}`'s own wire shape (Batch T requirement 4, "EVENT
-/// node popover"): `title` (this event's own `Event::label`), `when`, every
-/// resolved place, every resolved witness (ALWAYS >=1 -- see
-/// `scene::witnesses_for`'s own doc comment for the single-implicit-witness
-/// synthesis; requirement 4's "single-witness events show the one passage,
-/// no parallel framing when n=1" is a CLIENT-side rendering decision keyed
-/// off `witnesses.len()`, not a server-side omission), and provenance
-/// (`robertson_section`/`ref_note`, each omitted, not null, when this
-/// event's own date/grouping needed no note beyond the other).
+/// node popover"): `title` (this event's own `Event::label`), `kind`
+/// (Batch T2: `"event"` | `"general"`, ALWAYS present -- the client's own
+/// signal for which sections apply), `when`, every resolved place, every
+/// resolved witness (ALWAYS >=1 -- see `scene::witnesses_for`'s own doc
+/// comment for the single-implicit-witness synthesis; requirement 4's
+/// "single-witness events show the one passage, no parallel framing when
+/// n=1" is a CLIENT-side rendering decision keyed off `witnesses.len()`,
+/// not a server-side omission), and provenance (`robertson_section`/
+/// `ref_note`, each omitted, not null, when this event's own date/grouping
+/// needed no note beyond the other).
+///
+/// Batch T2: `when` is OMITTED (not null) for a `kind == "general"`
+/// passage -- the internal `Event::when` still holds
+/// `TimeRange::undated()` (a structurally-required field, see that
+/// function's own doc comment), but a general-kind passage has no
+/// defensible date, so nothing here may ever present that sentinel to a
+/// reader as a real claim. `places` stays an always-present, possibly-
+/// empty array (unchanged pattern -- a general-kind passage's own
+/// `Event::places` is always empty by construction, so this needs no
+/// separate gating).
 #[derive(Debug, Serialize)]
 pub struct EventDetailOut {
     pub id: String,
     pub title: String,
-    pub when: TimeRange,
+    pub kind: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub when: Option<TimeRange>,
     pub places: Vec<EventPlaceOut>,
     pub witnesses: Vec<EventWitnessOut>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -655,11 +669,15 @@ pub async fn event(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -
 
     let places = e.places.iter().filter_map(|pid| data.place_by_id(pid)).map(|p| EventPlaceOut { id: p.id.clone(), name: p.name.clone() }).collect();
     let witnesses = atlas_core::scene::witnesses_for(e).into_iter().map(EventWitnessOut::from).collect();
+    // Batch T2: never surface the undated() sentinel to the wire for a
+    // general-kind passage -- see EventDetailOut's own doc comment.
+    let when = if e.kind == "event" { Some(e.when) } else { None };
 
     Ok(Json(EventDetailOut {
         id: e.id.clone(),
         title: e.label.clone(),
-        when: e.when,
+        kind: e.kind.clone(),
+        when,
         places,
         witnesses,
         robertson_section: e.robertson_section.clone(),

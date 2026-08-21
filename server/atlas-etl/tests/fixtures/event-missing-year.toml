@@ -1,0 +1,5 @@
+[[event]]
+id = "ev_missing_year"
+label = "Should fail: event-kind (default) with no from_year/to_year"
+places = ["jerusalem"]
+verses = ["MAT.27.1"]

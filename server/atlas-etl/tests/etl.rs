@@ -219,6 +219,58 @@ fn events_extra_zero_year_hard_errors() {
 }
 
 // ---------------------------------------------------------------------
+// Batch T2 (general-kind PASSAGEs -- requirement 2's own promotion rule):
+// `kind = "general"` is now REAL curated data, not just a modeled-but-
+// unused enum value. A general-kind event has no defensible date/place,
+// so `from_year`/`to_year`/`places` become OPTIONAL in the curated TOML
+// (never hand-typed by a curator for a general-kind row -- the parser
+// itself supplies `TimeRange::undated()`, never a curator-authored
+// number, so "do not fabricate a date" is enforced structurally, not by
+// convention). `kind = "event"` (the default when the field is absent,
+// unchanged back-compat) still requires both, exactly as before.
+// ---------------------------------------------------------------------
+
+#[test]
+fn events_extra_general_kind_parses_without_places_or_dates() {
+    let events = atlas_etl::curated::parse_events_extra(include_str!("fixtures/events-extra-general.toml")).unwrap();
+    assert_eq!(events.len(), 1);
+    let g = &events[0];
+    assert_eq!(g.kind, "general");
+    assert!(g.places.is_empty(), "{:?}", g.places);
+    assert_eq!(g.when, TimeRange::undated(), "a general-kind event's `when` must be the undated sentinel, never a curator-typed number");
+    assert_eq!(g.verses, vec!["MAT.27.1".to_string()]);
+}
+
+#[test]
+fn events_extra_general_kind_with_from_year_hard_errors() {
+    // Fabrication guard: a curator writing `kind = "general"` AND a
+    // from_year/to_year together is almost certainly a mistake (either the
+    // kind or the date is wrong) -- fail loud rather than silently pick one.
+    let err = atlas_etl::curated::parse_events_extra(include_str!("fixtures/event-general-with-year.toml")).unwrap_err();
+    let msg = err.to_string().to_lowercase();
+    assert!(msg.contains("general"), "{err}");
+    assert!(msg.contains("from_year") || msg.contains("date"), "{err}");
+}
+
+#[test]
+fn events_extra_general_kind_with_places_hard_errors() {
+    let err = atlas_etl::curated::parse_events_extra(include_str!("fixtures/event-general-with-places.toml")).unwrap_err();
+    let msg = err.to_string().to_lowercase();
+    assert!(msg.contains("general"), "{err}");
+    assert!(msg.contains("place"), "{err}");
+}
+
+#[test]
+fn events_extra_event_kind_missing_from_year_hard_errors() {
+    // `kind` absent (defaults to "event", unchanged back-compat) still
+    // requires from_year/to_year -- the new Option<i32> plumbing must not
+    // silently relax the pre-existing event-kind requirement.
+    let err = atlas_etl::curated::parse_events_extra(include_str!("fixtures/event-missing-year.toml")).unwrap_err();
+    let msg = err.to_string().to_lowercase();
+    assert!(msg.contains("from_year") || msg.contains("to_year") || msg.contains("date"), "{err}");
+}
+
+// ---------------------------------------------------------------------
 // validate.rs
 // ---------------------------------------------------------------------
 
@@ -558,6 +610,114 @@ fn validate_event_witnesses_valid_multi_book_data_passes() {
     }];
     let mut data = empty_atlas();
     data.places = places;
+    data.events = events;
+    data.verses = mat_verses();
+    data.eras = full_eras();
+    let data = data.finish();
+    assert!(atlas_etl::validate::run(&data).is_ok(), "{:?}", atlas_etl::validate::run(&data).err());
+}
+
+// ---------------------------------------------------------------------
+// Batch T2: within-layer anchor collisions (owner's own ruling: "Robertson
+// sections within one Gospel should partition, not collide with each
+// other -- a within-layer anchor collision is a curation error your
+// validation must catch"). Distinct from `heading_precedence`'s own
+// collision RESOLUTION (data.rs's `heading_collision_tests` module,
+// tier-1/2/3) -- that mechanism decisively picks a winner for DISPLAY and
+// is fine with a real-container-vs-narrative-leg-freebie collision (e.g.
+// `pw_bethany`/`jm_bethany`, both real curated data). This check instead
+// fails LOUD, at ETL time, whenever two DIFFERENT real (curated
+// `witnesses` non-empty and/or `robertson_section` present) containers
+// anchor the identical verse -- that specific shape should never happen
+// for correctly-partitioned curated sections, so silently resolving it
+// would hide a real curation mistake.
+// ---------------------------------------------------------------------
+
+#[test]
+fn validate_two_real_containers_sharing_an_anchor_verse_fails() {
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![
+        Event {
+            id: "sect_a".into(),
+            label: "Section A".into(),
+            when: TimeRange::new(33, 33).unwrap(),
+            places: vec!["p".into()],
+            verses: vec!["MAT.27.1".into(), "MAT.27.2".into()],
+            robertson_section: Some("Robertson (1922) §1".into()),
+            ..Default::default()
+        },
+        Event {
+            id: "sect_b".into(),
+            label: "Section B (mis-drawn boundary)".into(),
+            when: TimeRange::new(33, 33).unwrap(),
+            places: vec!["p".into()],
+            verses: vec!["MAT.27.1".into()], // same first verse as sect_a -- a partition error
+            robertson_section: Some("Robertson (1922) §2".into()),
+            ..Default::default()
+        },
+    ];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    data.verses = mat_verses();
+    let data = data.finish();
+    let err = atlas_etl::validate::run(&data).unwrap_err();
+    let msg = err.to_string().to_lowercase();
+    assert!(msg.contains("anchor"), "{err}");
+    assert!(err.to_string().contains("sect_a") && err.to_string().contains("sect_b"), "{err}");
+}
+
+#[test]
+fn validate_freebie_and_real_container_sharing_anchor_is_allowed() {
+    // The EXISTING, legal shape (pw_bethany/jm_bethany, fix-round-1): a
+    // bare narrative-leg-only event (no witnesses/robertson_section --
+    // heading-worthy only via the freebie rule) sharing an anchor with a
+    // REAL curated container is NOT a within-layer collision (only one
+    // side is layer-1) -- must keep passing after this batch's new check.
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![
+        Event {
+            id: "bare".into(),
+            label: "Bare freebie".into(),
+            when: TimeRange::new(33, 33).unwrap(),
+            places: vec!["p".into()],
+            verses: vec!["MAT.27.1".into()],
+            ..Default::default()
+        },
+        Event {
+            id: "rich".into(),
+            label: "Real curated container".into(),
+            when: TimeRange::new(33, 33).unwrap(),
+            places: vec!["p".into()],
+            verses: vec!["MAT.27.1".into()],
+            robertson_section: Some("Robertson (1922) §1".into()),
+            ..Default::default()
+        },
+    ];
+    let narratives = vec![Narrative { id: "n".into(), name: "N".into(), color: "#fff".into(), legs: vec!["bare".into()] }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    data.narratives = narratives;
+    data.verses = mat_verses();
+    data.eras = full_eras();
+    let data = data.finish();
+    assert!(atlas_etl::validate::run(&data).is_ok(), "{:?}", atlas_etl::validate::run(&data).err());
+}
+
+#[test]
+fn validate_general_kind_event_with_undated_sentinel_passes() {
+    let events = vec![Event {
+        id: "gen1".into(),
+        label: "A general passage".into(),
+        when: TimeRange::undated(),
+        places: vec![],
+        verses: vec!["MAT.27.1".into()],
+        kind: "general".into(),
+        robertson_section: Some("Robertson (1922) §1".into()),
+        ..Default::default()
+    }];
+    let mut data = empty_atlas();
     data.events = events;
     data.verses = mat_verses();
     data.eras = full_eras();

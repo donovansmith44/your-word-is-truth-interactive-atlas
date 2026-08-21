@@ -1,0 +1,5 @@
+[[event]]
+id = "gen_1"
+label = "A general passage"
+kind = "general"
+verses = ["MAT.27.1"]

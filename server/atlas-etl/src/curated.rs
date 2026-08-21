@@ -82,11 +82,29 @@ pub fn parse_narrative(input: &str) -> Result<Narrative> {
 struct EventToml {
     id: String,
     label: String,
-    from_year: i32,
-    to_year: i32,
+    /// Batch T2: OPTIONAL -- a `kind = "general"` row must OMIT both (see
+    /// `parse_events_extra`'s own conditional-required logic below); a
+    /// `kind = "event"` row (or `kind` absent, the default) still REQUIRES
+    /// both, unchanged since Task 3.
+    #[serde(default)]
+    from_year: Option<i32>,
+    #[serde(default)]
+    to_year: Option<i32>,
+    /// Batch T2: `#[serde(default)]` added so a `kind = "general"` row can
+    /// omit this key entirely, same reasoning as `from_year`/`to_year`.
+    #[serde(default)]
     places: Vec<String>,
     #[serde(default)]
     verses: Vec<String>,
+    /// Batch T2: `"event"` (default, back-compat) | `"general"` -- see
+    /// `atlas_core::data::Event::kind`'s own doc comment for the shape
+    /// each implies. Re-validated against the full enum by
+    /// `atlas_etl::validate::run` too (this parser only ever produces
+    /// "event"/"general" itself, but `validate::run` is the single source
+    /// of truth for the allowed set, same split every other curated enum
+    /// in this app follows).
+    #[serde(default)]
+    kind: Option<String>,
     /// Batch T requirement 1/2: optional curator-authored provenance/
     /// ordering (see `atlas_core::data::Event`'s own doc comments for each).
     /// `#[serde(default)]` so every pre-Batch-T event in this file (the
@@ -97,6 +115,10 @@ struct EventToml {
     ref_note: Option<String>,
     #[serde(default)]
     order_key: i32,
+}
+
+fn default_event_kind() -> String {
+    "event".to_string()
 }
 
 #[derive(Deserialize)]
@@ -137,18 +159,58 @@ pub fn expand_verse_ref(raw: &str, context: &str, out: &mut Vec<String>) -> Resu
 /// invalid time range or a curated event with zero places, since this is
 /// our own authored data and should be held to a higher bar than
 /// third-party raw data with soft-dropped rows.
+///
+/// Batch T2 (general-kind PASSAGEs): `kind` gates which of `from_year`/
+/// `to_year`/`places` are REQUIRED vs FORBIDDEN, in both directions --
+/// "do not fabricate a date/place" is enforced structurally, not by
+/// convention:
+/// - `kind` absent or `"event"` (unchanged since Task 3): `places`
+///   non-empty and `from_year`/`to_year` both present are REQUIRED; a
+///   missing one of any of these is a hard error.
+/// - `kind = "general"`: `places`/`from_year`/`to_year` must all be
+///   ABSENT from the curated row -- a curator writing a date/place
+///   TOGETHER WITH `kind = "general"` is a hard error too (one of the two
+///   is a mistake; failing loud beats silently picking one). `when`
+///   becomes `TimeRange::undated()` -- never a curator-typed number --
+///   and `places` stays the empty `Vec` `#[serde(default)]` already gives
+///   it when omitted.
 pub fn parse_events_extra(input: &str) -> Result<Vec<Event>> {
     let f: EventsFile =
         toml::from_str(input).context("events-extra.toml: invalid TOML or does not match the [[event]] schema")?;
 
     let mut out = Vec::with_capacity(f.event.len());
     for e in f.event {
-        if e.places.is_empty() {
-            bail!("curated event '{}' has no places (places[0] is required as the narrative-arrow anchor)", e.id);
-        }
-        let when = TimeRange::new(e.from_year, e.to_year).map_err(|src| {
-            anyhow::anyhow!("curated event '{}' (from_year={}, to_year={}): {}", e.id, e.from_year, e.to_year, src)
-        })?;
+        let kind = e.kind.clone().unwrap_or_else(default_event_kind);
+        let (when, places) = if kind == "general" {
+            if e.from_year.is_some() || e.to_year.is_some() {
+                bail!(
+                    "curated event '{}' is kind=\"general\" but specifies from_year/to_year -- a general-kind passage must not claim a date (omit both fields; do not fabricate)",
+                    e.id
+                );
+            }
+            if !e.places.is_empty() {
+                bail!(
+                    "curated event '{}' is kind=\"general\" but specifies places -- a general-kind passage must not claim a place mapping (omit the field; do not fabricate)",
+                    e.id
+                );
+            }
+            (TimeRange::undated(), e.places)
+        } else {
+            if e.places.is_empty() {
+                bail!("curated event '{}' has no places (places[0] is required as the narrative-arrow anchor)", e.id);
+            }
+            let (from_year, to_year) = match (e.from_year, e.to_year) {
+                (Some(fy), Some(ty)) => (fy, ty),
+                _ => bail!(
+                    "curated event '{}' is missing from_year/to_year -- required unless kind=\"general\"",
+                    e.id
+                ),
+            };
+            let when = TimeRange::new(from_year, to_year).map_err(|src| {
+                anyhow::anyhow!("curated event '{}' (from_year={}, to_year={}): {}", e.id, from_year, to_year, src)
+            })?;
+            (when, e.places)
+        };
         let mut verses = Vec::new();
         for v in &e.verses {
             expand_verse_ref(v, &e.id, &mut verses)?;
@@ -157,8 +219,9 @@ pub fn parse_events_extra(input: &str) -> Result<Vec<Event>> {
             id: e.id,
             label: e.label,
             when,
-            places: e.places,
+            places,
             verses,
+            kind,
             robertson_section: e.robertson_section,
             ref_note: e.ref_note,
             order_key: e.order_key,

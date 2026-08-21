@@ -1,0 +1,6 @@
+[[event]]
+id = "gen_bad_place"
+label = "Should fail: general-kind with a claimed place"
+kind = "general"
+places = ["jerusalem"]
+verses = ["MAT.27.1"]

@@ -863,6 +863,17 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
 /// quiet note)," the brief verbatim. ONE section (not two) since both are
 /// small, header-adjacent facts about the SAME subject, rendered together
 /// immediately below the popover's own title.
+///
+/// Batch T2 (general-kind PASSAGEs): a `Kind == "general"` passage has no
+/// defensible date (<see cref="EventDetail.When"/> is `null`, never the
+/// server's own internal placeholder -- see that DTO's doc comment) and,
+/// by construction, no places either -- "do not fabricate a date/place"
+/// extends to this section: the date line renders ONLY when
+/// <c>detail.When</c> is present, and the whole section is ABSENT
+/// (returns `null`, same conditional-presence idiom every other
+/// zero-content section in this file already follows -- e.g.
+/// <see cref="VerseEventMembershipSection"/> above) when there is neither
+/// a date NOR any places to show.
 /// </summary>
 public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
 {
@@ -885,20 +896,27 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
             return null;
         }
 
-        var dateText = YearText.FormatRange(detail.When.FromYear, detail.When.ToYear);
+        if (detail.When is null && detail.Places.Count == 0)
+        {
+            return null; // general-kind passage with nothing this section can honestly show
+        }
 
         RenderFragment body = builder =>
         {
             var seq = 0;
-            builder.OpenElement(seq++, "p");
-            builder.AddAttribute(seq++, "class", "popover-meta event-date-line");
-            builder.AddAttribute(seq++, "data-testid", "event-date");
-            if (detail.RefNote is { } refNote)
+            if (detail.When is { } when)
             {
-                builder.AddAttribute(seq++, "title", refNote); // quiet, hover-revealed provenance -- a native tooltip, no extra affordance/click needed
+                var dateText = YearText.FormatRange(when.FromYear, when.ToYear);
+                builder.OpenElement(seq++, "p");
+                builder.AddAttribute(seq++, "class", "popover-meta event-date-line");
+                builder.AddAttribute(seq++, "data-testid", "event-date");
+                if (detail.RefNote is { } refNote)
+                {
+                    builder.AddAttribute(seq++, "title", refNote); // quiet, hover-revealed provenance -- a native tooltip, no extra affordance/click needed
+                }
+                builder.AddContent(seq++, dateText);
+                builder.CloseElement();
             }
-            builder.AddContent(seq++, dateText);
-            builder.CloseElement();
 
             if (detail.Places.Count > 0)
             {

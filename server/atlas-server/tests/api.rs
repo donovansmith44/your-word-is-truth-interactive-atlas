@@ -1,9 +1,11 @@
 //! Endpoint tests against `atlas_core::data::demo_fixture()` via
 //! `tower::ServiceExt::oneshot` — no real server binds a socket here.
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
-use atlas_core::data::{demo_fixture, AtlasData, Polity, PolityEra};
+use atlas_core::data::{demo_fixture, AtlasData, Canon, Event, Polity, PolityEra};
+use atlas_core::time::TimeRange;
 use axum::body::Body;
 use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
 use axum::http::{Request, StatusCode};
@@ -300,6 +302,54 @@ async fn verse_chapter_place_and_404() {
     let (st, body) = call(&app, "/api/place/does-not-exist").await;
     assert_eq!(st, 404);
     assert_eq!(body["error"]["code"], "not_found");
+}
+
+/// Batch T2 (general-kind PASSAGEs -- requirement 2's own "otherwise it
+/// ships general-kind... title + witnesses, still explorable, still
+/// headed in the reader"): `GET /api/event/{id}` must never claim a
+/// fabricated date/place for a `kind == "general"` passage -- `when` is
+/// OMITTED entirely (not null; matches this app's own "absent key, not a
+/// null value" conditional-presence convention, e.g. `robertson_section`/
+/// `ref_note` already documented this way in CONTRACT.md) and `places` is
+/// an empty array, while an ordinary `kind == "event"` passage keeps
+/// carrying `when` exactly as before.
+#[tokio::test]
+async fn event_endpoint_omits_when_for_general_kind_passages() {
+    let mut verses = HashMap::new();
+    verses.insert("LUK.1.1".to_string(), "Forasmuch as many have taken in hand...".to_string());
+    let events = vec![
+        Event {
+            id: "g1".into(),
+            label: "Luke's preface".into(),
+            when: TimeRange::undated(),
+            places: vec![],
+            verses: vec!["LUK.1.1".into()],
+            kind: "general".into(),
+            robertson_section: Some("Robertson (1922) §1".into()),
+            ..Default::default()
+        },
+        Event {
+            id: "e1".into(),
+            label: "An ordinary event-kind passage".into(),
+            when: TimeRange::new(-1406, -1406).unwrap(),
+            places: vec![],
+            verses: vec![],
+            ..Default::default()
+        },
+    ];
+    let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish();
+    let app = atlas_server::app::build(Arc::new(data), None);
+
+    let (st, body) = call(&app, "/api/event/g1").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["kind"], "general");
+    assert!(body.get("when").is_none(), "general-kind passage must not carry a `when` key at all: {body}");
+    assert_eq!(body["places"], serde_json::json!([]));
+
+    let (st, body) = call(&app, "/api/event/e1").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["kind"], "event");
+    assert_eq!(body["when"]["from_year"], -1406);
 }
 
 /// Batch N ("narratives as first-class graph structure"), retired
