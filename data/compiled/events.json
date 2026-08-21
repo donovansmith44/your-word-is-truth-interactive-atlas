@@ -321,6 +321,84 @@
     "order_key": 0
   },
   {
+    "id": "rob_ministry_begins",
+    "label": "The historical setting for the beginning of the ministry",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "LUK.3.1",
+      "LUK.3.2"
+    ],
+    "kind": "general",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.1.1"
+          ]
+        },
+        "ref_note": "Mark 1:1 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §20"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.3.1",
+            "LUK.3.2"
+          ]
+        },
+        "ref_note": "Luke 3:1-2 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §20"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §20, \"The Time of the Beginning\"",
+    "ref_note": "Mark 1:1 and Luke 3:1-2 both read directly against the compiled KJV text; general-kind -- a historical-dating superscription, not a discrete happening with its own place",
+    "order_key": 0
+  },
+  {
+    "id": "rob_leaving_judea",
+    "label": "Why Jesus left Judea for Galilee",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JHN.4.1",
+      "JHN.4.2",
+      "JHN.4.3",
+      "JHN.4.4"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §34, \"Christ's Reasons for Leaving Judea\"",
+    "ref_note": "Matthew 4:12, Mark 1:14, Luke 3:19-20/4:14, and John 4:1-4 all read directly against the compiled KJV text; general-kind -- a brief, fragmented transitional bundle (Luke's own 3:19-20 aside, John put in prison, is the fuller telling Robertson gives its own section much later, §71) rather than one coherent explorable scene; John's own fuller account (4:1-4) is this event's top-level verses, the other three fragments disclosed here rather than separately witnessed",
+    "order_key": 0
+  },
+  {
+    "id": "rob_galilee_teaching_summary",
+    "label": "A general summary of Jesus's teaching in Galilee",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MRK.1.14",
+      "MRK.1.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §37, \"General Account of His Teaching in Galilee\"",
+    "ref_note": "Matthew 4:17, Mark 1:14-15, and Luke 4:14-15 all read directly against the compiled KJV text; general-kind -- a summary statement of ongoing teaching, not a discrete happening (Mark's own fuller two verses used as this event's top-level verses)",
+    "order_key": 0
+  },
+  {
     "id": "theo-5",
     "label": "Cain kills Abel",
     "when": {
@@ -21462,9 +21540,355 @@
     ],
     "kind": "event",
     "witnesses": [],
-    "robertson_section": null,
-    "ref_note": null,
-    "order_key": 0
+    "robertson_section": "Robertson (1922) §24, \"Jesus Baptized by John in the Jordan\"",
+    "ref_note": "Matthew 3:13-17 read directly against the compiled KJV text",
+    "order_key": 240
+  },
+  {
+    "id": "rob_john_preaching",
+    "label": "John the Baptist begins preaching at the Jordan",
+    "when": {
+      "from_year": 29,
+      "to_year": 29
+    },
+    "places": [
+      "jordan"
+    ],
+    "verses": [
+      "MAT.3.1",
+      "MAT.3.2",
+      "MAT.3.3",
+      "MAT.3.4",
+      "MAT.3.5",
+      "MAT.3.6"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.3.1",
+            "MAT.3.2",
+            "MAT.3.3",
+            "MAT.3.4",
+            "MAT.3.5",
+            "MAT.3.6"
+          ]
+        },
+        "ref_note": "Matthew 3:1-6 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §21"
+      },
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.1.2",
+            "MRK.1.3",
+            "MRK.1.4",
+            "MRK.1.5",
+            "MRK.1.6"
+          ]
+        },
+        "ref_note": "Mark 1:2-6 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §21"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.3.3",
+            "LUK.3.4",
+            "LUK.3.5",
+            "LUK.3.6"
+          ]
+        },
+        "ref_note": "Luke 3:3-6 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §21"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §21, \"The Message and the Messenger\"",
+    "ref_note": "Matthew 3:1-6 read directly against the compiled KJV text",
+    "order_key": 210
+  },
+  {
+    "id": "rob_john_specimen",
+    "label": "A specimen of John's preaching",
+    "when": {
+      "from_year": 29,
+      "to_year": 29
+    },
+    "places": [
+      "jordan"
+    ],
+    "verses": [
+      "MAT.3.7",
+      "MAT.3.8",
+      "MAT.3.9",
+      "MAT.3.10"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.3.7",
+            "MAT.3.8",
+            "MAT.3.9",
+            "MAT.3.10"
+          ]
+        },
+        "ref_note": "Matthew 3:7-10 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §22"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.3.7",
+            "LUK.3.8",
+            "LUK.3.9",
+            "LUK.3.10",
+            "LUK.3.11",
+            "LUK.3.12",
+            "LUK.3.13",
+            "LUK.3.14"
+          ]
+        },
+        "ref_note": "Luke 3:7-14 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §22"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §22, \"A Specimen of John's Preaching\"",
+    "ref_note": "Matthew 3:7-10 read directly against the compiled KJV text",
+    "order_key": 220
+  },
+  {
+    "id": "rob_john_messiah_picture",
+    "label": "John's own picture of the Messiah he had not yet seen",
+    "when": {
+      "from_year": 29,
+      "to_year": 29
+    },
+    "places": [
+      "jordan"
+    ],
+    "verses": [
+      "MAT.3.11",
+      "MAT.3.12"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.3.11",
+            "MAT.3.12"
+          ]
+        },
+        "ref_note": "Matthew 3:11-12 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §23"
+      },
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.1.7",
+            "MRK.1.8"
+          ]
+        },
+        "ref_note": "Mark 1:7-8 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §23"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.3.15",
+            "LUK.3.16",
+            "LUK.3.17",
+            "LUK.3.18"
+          ]
+        },
+        "ref_note": "Luke 3:15-18 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §23"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §23, \"The Forerunner's Picture of the Messiah before Seeing Him\"",
+    "ref_note": "Matthew 3:11-12 read directly against the compiled KJV text",
+    "order_key": 230
+  },
+  {
+    "id": "rob_temptation",
+    "label": "The temptation of Jesus in the wilderness",
+    "when": {
+      "from_year": 29,
+      "to_year": 29
+    },
+    "places": [
+      "jordan"
+    ],
+    "verses": [
+      "MAT.4.1",
+      "MAT.4.2",
+      "MAT.4.3",
+      "MAT.4.4",
+      "MAT.4.5",
+      "MAT.4.6",
+      "MAT.4.7",
+      "MAT.4.8",
+      "MAT.4.9",
+      "MAT.4.10",
+      "MAT.4.11"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.4.1",
+            "MAT.4.2",
+            "MAT.4.3",
+            "MAT.4.4",
+            "MAT.4.5",
+            "MAT.4.6",
+            "MAT.4.7",
+            "MAT.4.8",
+            "MAT.4.9",
+            "MAT.4.10",
+            "MAT.4.11"
+          ]
+        },
+        "ref_note": "Matthew 4:1-11 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §25"
+      },
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.1.12",
+            "MRK.1.13"
+          ]
+        },
+        "ref_note": "Mark 1:12-13 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §25"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.4.1",
+            "LUK.4.2",
+            "LUK.4.3",
+            "LUK.4.4",
+            "LUK.4.5",
+            "LUK.4.6",
+            "LUK.4.7",
+            "LUK.4.8",
+            "LUK.4.9",
+            "LUK.4.10",
+            "LUK.4.11",
+            "LUK.4.12",
+            "LUK.4.13"
+          ]
+        },
+        "ref_note": "Luke 4:1-13 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §25"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §25, \"The Three Temptations of Jesus\"",
+    "ref_note": "Matthew 4:1-11, Mark 1:12-13, Luke 4:1-13 all read directly against the compiled KJV text; Luke 4:1's own 'returned from Jordan... into the wilderness' anchors this at the Jordan rather than a more specific unnamed wilderness site",
+    "order_key": 250
+  },
+  {
+    "id": "rob_sanhedrin_testimony",
+    "label": "John's testimony before the priests and Levites",
+    "when": {
+      "from_year": 29,
+      "to_year": 29
+    },
+    "places": [
+      "bethany-2"
+    ],
+    "verses": [
+      "JHN.1.19",
+      "JHN.1.20",
+      "JHN.1.21",
+      "JHN.1.22",
+      "JHN.1.23",
+      "JHN.1.24",
+      "JHN.1.25",
+      "JHN.1.26",
+      "JHN.1.27",
+      "JHN.1.28"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §26, \"The Testimony of the Baptist to the Committee of the Sanhedrin\"",
+    "ref_note": "John 1:19-28 read directly against the compiled KJV text; John's own text (1:28) names the place explicitly, 'Bethabara beyond Jordan' -- the same site jm_bethany's own original comment already identifies as bethany-2, distinct from the Bethany near Jerusalem",
+    "order_key": 260
+  },
+  {
+    "id": "rob_john_identifies_jesus",
+    "label": "John identifies Jesus as the Lamb of God",
+    "when": {
+      "from_year": 29,
+      "to_year": 29
+    },
+    "places": [
+      "bethany-2"
+    ],
+    "verses": [
+      "JHN.1.29",
+      "JHN.1.30",
+      "JHN.1.31",
+      "JHN.1.32",
+      "JHN.1.33",
+      "JHN.1.34"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §27, \"John's Identification of Jesus as the Messiah\"",
+    "ref_note": "John 1:29-34 read directly against the compiled KJV text",
+    "order_key": 270
+  },
+  {
+    "id": "rob_first_disciples",
+    "label": "Jesus makes his first disciples",
+    "when": {
+      "from_year": 29,
+      "to_year": 29
+    },
+    "places": [
+      "bethany-2"
+    ],
+    "verses": [
+      "JHN.1.35",
+      "JHN.1.36",
+      "JHN.1.37",
+      "JHN.1.38",
+      "JHN.1.39",
+      "JHN.1.40",
+      "JHN.1.41",
+      "JHN.1.42",
+      "JHN.1.43",
+      "JHN.1.44",
+      "JHN.1.45",
+      "JHN.1.46",
+      "JHN.1.47",
+      "JHN.1.48",
+      "JHN.1.49",
+      "JHN.1.50",
+      "JHN.1.51"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §28, \"Jesus Makes His First Disciples\"",
+    "ref_note": "John 1:35-51 read directly against the compiled KJV text",
+    "order_key": 280
   },
   {
     "id": "theo-304",
@@ -25341,9 +25765,9 @@
     ],
     "kind": "event",
     "witnesses": [],
-    "robertson_section": null,
-    "ref_note": null,
-    "order_key": 0
+    "robertson_section": "Robertson (1922) §29, \"Jesus Works His First Miracle\"",
+    "ref_note": "John 2:1-11 read directly against the compiled KJV text",
+    "order_key": 290
   },
   {
     "id": "jm_capernaum",
@@ -25360,9 +25784,9 @@
     ],
     "kind": "event",
     "witnesses": [],
-    "robertson_section": null,
-    "ref_note": null,
-    "order_key": 0
+    "robertson_section": "Robertson (1922) §40, \"The New Home in Capernaum\"",
+    "ref_note": "Matthew 4:13-16 read directly against the compiled KJV text (verses field kept at 4:13, this event's own pre-existing scope; 4:14-16 are Matthew's own fulfillment-citation commentary, not narrative)",
+    "order_key": 400
   },
   {
     "id": "jm_temple_cleansing",
@@ -25390,7 +25814,7 @@
     "witnesses": [],
     "robertson_section": "Robertson (1922) §31, \"The First Cleansing of the Temple at the Passover\"",
     "ref_note": "John 2:13-22 read directly; Robertson section number/title verified against Project Gutenberg #36264 (both the HTML and plain-text mirrors of the 1922 first edition)",
-    "order_key": 0
+    "order_key": 310
   },
   {
     "id": "jm_sychar",
@@ -25429,9 +25853,185 @@
     ],
     "kind": "event",
     "witnesses": [],
-    "robertson_section": null,
-    "ref_note": null,
-    "order_key": 0
+    "robertson_section": "Robertson (1922) §35, \"Jesus in Samaria at Jacob's Well and in Sychar\"",
+    "ref_note": "John 4:4-26 read directly against the compiled KJV text; scoped narrower than Robertson's own §35 (John 4:5-42, which also covers the disciples' return and the Samaritans' own belief over the following two days) -- this event's own pre-existing scope is the well conversation itself",
+    "order_key": 350
+  },
+  {
+    "id": "rob_capernaum_sojourn",
+    "label": "A brief sojourn at Capernaum",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "JHN.2.12"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §30, \"Jesus Makes a First Sojourn at Capernaum, Accompanied by His Kindred and His Early Disciples\"",
+    "ref_note": "John 2:12 read directly against the compiled KJV text; distinct from jm_capernaum (Robertson's own later §40, 'The New Home in Capernaum') -- this is an explicitly brief, passing stay ('not many days'), not yet Jesus's own settled base",
+    "order_key": 300
+  },
+  {
+    "id": "rob_nicodemus",
+    "label": "Nicodemus comes to Jesus by night",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.2.23",
+      "JHN.2.24",
+      "JHN.2.25",
+      "JHN.3.1",
+      "JHN.3.2",
+      "JHN.3.3",
+      "JHN.3.4",
+      "JHN.3.5",
+      "JHN.3.6",
+      "JHN.3.7",
+      "JHN.3.8",
+      "JHN.3.9",
+      "JHN.3.10",
+      "JHN.3.11",
+      "JHN.3.12",
+      "JHN.3.13",
+      "JHN.3.14",
+      "JHN.3.15",
+      "JHN.3.16",
+      "JHN.3.17",
+      "JHN.3.18",
+      "JHN.3.19",
+      "JHN.3.20",
+      "JHN.3.21"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §32, \"The Interview of Nicodemus with Jesus\"",
+    "ref_note": "John 2:23-3:21 read directly against the compiled KJV text; written as two same-chapter ranges (2:23-25, 3:1-21) -- this project's own curator-friendly range syntax (expand_verse_ref) does not span a chapter boundary in one string, a mechanical split only, not a scope change",
+    "order_key": 320
+  },
+  {
+    "id": "rob_parallel_ministry",
+    "label": "Jesus and John baptize side by side in Judea",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "judea-1"
+    ],
+    "verses": [
+      "JHN.3.22",
+      "JHN.3.23",
+      "JHN.3.24",
+      "JHN.3.25",
+      "JHN.3.26",
+      "JHN.3.27",
+      "JHN.3.28",
+      "JHN.3.29",
+      "JHN.3.30",
+      "JHN.3.31",
+      "JHN.3.32",
+      "JHN.3.33",
+      "JHN.3.34",
+      "JHN.3.35",
+      "JHN.3.36"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §33, \"The Parallel Ministry of Jesus and John with John's Loyalty to Jesus\"",
+    "ref_note": "John 3:22-36 read directly against the compiled KJV text",
+    "order_key": 330
+  },
+  {
+    "id": "rob_galilee_arrival",
+    "label": "Jesus arrives in Galilee",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "JHN.4.43",
+      "JHN.4.44",
+      "JHN.4.45"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §36, \"The Arrival of Jesus in Galilee\"",
+    "ref_note": "John 4:43-45 read directly against the compiled KJV text",
+    "order_key": 360
+  },
+  {
+    "id": "rob_cana_nobleman",
+    "label": "Jesus heals a nobleman's son at Cana",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "cana"
+    ],
+    "verses": [
+      "JHN.4.46",
+      "JHN.4.47",
+      "JHN.4.48",
+      "JHN.4.49",
+      "JHN.4.50",
+      "JHN.4.51",
+      "JHN.4.52",
+      "JHN.4.53",
+      "JHN.4.54"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §38, \"The Healing at Cana of the Son of a Courtier of Capernaum\"",
+    "ref_note": "John 4:46-54 read directly against the compiled KJV text",
+    "order_key": 380
+  },
+  {
+    "id": "rob_nazareth_rejection",
+    "label": "Jesus is first rejected at Nazareth",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "nazareth"
+    ],
+    "verses": [
+      "LUK.4.16",
+      "LUK.4.17",
+      "LUK.4.18",
+      "LUK.4.19",
+      "LUK.4.20",
+      "LUK.4.21",
+      "LUK.4.22",
+      "LUK.4.23",
+      "LUK.4.24",
+      "LUK.4.25",
+      "LUK.4.26",
+      "LUK.4.27",
+      "LUK.4.28",
+      "LUK.4.29",
+      "LUK.4.30",
+      "LUK.4.31"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §39, \"The First Rejection at Nazareth\"",
+    "ref_note": "Luke 4:16-31 read directly against the compiled KJV text",
+    "order_key": 390
   },
   {
     "id": "theo-322",
