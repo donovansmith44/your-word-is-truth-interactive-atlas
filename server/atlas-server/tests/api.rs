@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use atlas_core::data::{demo_fixture, AtlasData, Canon, Event, Polity, PolityEra};
+use atlas_core::data::{demo_fixture, AtlasData, Canon, Event, EventWitness, Polity, PolityEra};
 use atlas_core::time::TimeRange;
 use axum::body::Body;
 use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
@@ -448,6 +448,58 @@ async fn event_endpoint_carries_acts_section_when_present() {
     let (st, body) = call(&app, "/api/event/a2").await;
     assert_eq!(st, 200);
     assert!(body.get("acts_section").is_none(), "acts_section must be omitted, not null, when absent: {body}");
+}
+
+/// Batch W1 requirement 1b's own MODEL GENERALIZATION ("W1 implements
+/// before authoring at scale... a general-kind container may carry witness
+/// rows and its popover shows PARALLEL ACCOUNTS identically"). Proves the
+/// wire mechanism end-to-end for a `kind == "general"` passage with TWO
+/// witnesses -- the exact shape a reader's own EVENT popover renders as
+/// "PARALLEL ACCOUNTS" (`EventWitnessesSection`, client-side, keyed only
+/// off `witnesses.len() >= 2`, never off `kind`). Nothing in this
+/// codebase's own witness-resolution path (`scene::witnesses_for`,
+/// `handlers::event`) branches on `kind` at all -- this test is the
+/// live, wire-level proof of that, not merely an inspection of the source.
+#[tokio::test]
+async fn event_endpoint_general_kind_with_multiple_witnesses_shows_parallel_accounts() {
+    let mut verses = HashMap::new();
+    verses.insert("EXO.20.1".to_string(), "And God spake all these words, saying,".to_string());
+    verses.insert("DEU.5.6".to_string(), "I am the LORD thy God...".to_string());
+    let events = vec![Event {
+        id: "g_general_witnessed".into(),
+        label: "A general-kind passage with parallel accounts".into(),
+        when: TimeRange::undated(),
+        places: vec![],
+        verses: vec!["EXO.20.1".into()],
+        kind: "general".into(),
+        atlas_section: Some("test fixture".into()),
+        witnesses: vec![
+            EventWitness {
+                book: "EXO".into(),
+                translations: HashMap::from([("kjv".to_string(), vec!["EXO.20.1".to_string()])]),
+                ref_note: None,
+                robertson_section: None,
+            },
+            EventWitness {
+                book: "DEU".into(),
+                translations: HashMap::from([("kjv".to_string(), vec!["DEU.5.6".to_string()])]),
+                ref_note: None,
+                robertson_section: None,
+            },
+        ],
+        ..Default::default()
+    }];
+    let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish();
+    let app = atlas_server::app::build(Arc::new(data), None);
+
+    let (st, body) = call(&app, "/api/event/g_general_witnessed").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["kind"], "general");
+    assert!(body.get("when").is_none(), "general-kind passage must not carry a `when` key, even with witnesses: {body}");
+    let witnesses = body["witnesses"].as_array().expect("witnesses array");
+    assert_eq!(witnesses.len(), 2, "a general-kind passage's own witnesses must resolve identically to an event-kind one's: {body}");
+    let books: Vec<&str> = witnesses.iter().map(|w| w["book"].as_str().unwrap()).collect();
+    assert!(books.contains(&"EXO") && books.contains(&"DEU"), "both witness books must resolve: {body}");
 }
 
 /// Batch N ("narratives as first-class graph structure"), retired

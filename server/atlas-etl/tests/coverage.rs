@@ -24,7 +24,7 @@
 
 use std::collections::HashSet;
 
-use atlas_core::data::{Event, EventWitness};
+use atlas_core::data::{Canon, Event, EventWitness};
 
 /// Robertson's own full section list, 1-184, with 128 split into 128a/128b
 /// exactly as his own table does (no other section carries a letter
@@ -408,5 +408,126 @@ fn every_authored_acts_section_is_present_and_distinct() {
     for expected in 304..=336 {
         let id = format!("theo-{expected}");
         assert!(event_ids.contains(&id.as_str()), "expected theo-{expected} among the authored Acts sections, not found");
+    }
+}
+
+// ---------------------------------------------------------------------
+// Batch W1 ("whole-Bible titled verse containers" -- the coverage-manifest
+// infrastructure the whole W series builds on, per batch-w-brief.md's own
+// "Scale protocol"). Requirement 1's own coverage test: "(a) every verse
+// of every declared book is in >=1 container -- derived from the compiled
+// KJV verse inventory itself (genuinely independent ground truth, per the
+// T2 circularity standard); (b) the declared list only ever grows; (c)
+// Gospels+Acts stay declared from day one."
+//
+// Deliberately reads the REAL COMPILED output (`data/compiled/canon.json`/
+// `events.json`), not curated TOML re-parsed by hand, for BOTH halves:
+// the verse universe (ground truth -- never a hand-typed per-book verse
+// count) AND the coverage claim itself (the REAL merged event set --
+// Theographic + every curated source combined -- exactly what a reader's
+// own verse popover would show; a curated-TOML-only re-derivation would
+// incorrectly call a Theographic-only-covered verse "uncovered", since a
+// great many of this project's own covering events, in EVERY book, are
+// bare Theographic records with no curated-TOML footprint at all).
+// ---------------------------------------------------------------------
+
+/// Reads and parses `data/compiled/{name}` as JSON, relative to this
+/// crate's own manifest dir (same CWD-independent trick `read_curated`
+/// above already uses for `data/curated/`).
+fn read_compiled_json<T: serde::de::DeserializeOwned>(name: &str) -> T {
+    let path = format!("{}/../../data/compiled/{name}", env!("CARGO_MANIFEST_DIR"));
+    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read {path}: {e}"));
+    serde_json::from_str(&text).unwrap_or_else(|e| panic!("failed to parse {path} as JSON: {e}"))
+}
+
+/// The full set of canonical verse ids for one book, derived from the REAL
+/// compiled `canon.json` (chapter/verse counts) -- never a hardcoded
+/// per-book total, per the T2 circularity standard this requirement's own
+/// text explicitly invokes.
+fn all_verses_for_book(canon: &Canon, code: &str) -> Vec<String> {
+    let book = canon.books.iter().find(|b| b.code == code).unwrap_or_else(|| panic!("'{code}' is not a real canon book code"));
+    let mut out = Vec::new();
+    for (idx, &count) in book.chapters.iter().enumerate() {
+        let chapter = idx + 1;
+        for verse in 1..=count {
+            out.push(format!("{code}.{chapter}.{verse}"));
+        }
+    }
+    out
+}
+
+/// Every verse id this event covers, ANY layer/kind: its own top-level
+/// `verses` UNION every witness's own `translations["kjv"]` verses -- the
+/// exact same union `AtlasData::finish`'s own `verse_to_events` reverse
+/// index builds (server/atlas-core/src/data.rs), so "covered" here means
+/// exactly what a real verse's own EVENT-membership popover would show,
+/// not a narrower or looser re-derivation.
+fn covered_verses(events: &[Event]) -> HashSet<String> {
+    let mut out = HashSet::new();
+    for e in events {
+        out.extend(e.verses.iter().cloned());
+        for w in &e.witnesses {
+            if let Some(vs) = w.translations.get(atlas_core::translation::DEFAULT_TRANSLATION) {
+                out.extend(vs.iter().cloned());
+            }
+        }
+    }
+    out
+}
+
+#[test]
+fn every_declared_book_is_fully_covered_by_the_real_compiled_data() {
+    let manifest_toml = read_curated("coverage-manifest.toml");
+    let declared = atlas_etl::curated::parse_coverage_manifest(&manifest_toml).expect("coverage-manifest.toml must parse");
+    assert!(!declared.is_empty(), "coverage-manifest.toml's own declared list must not be empty");
+
+    let canon: Canon = read_compiled_json("canon.json");
+    let events: Vec<Event> = read_compiled_json("events.json");
+    let covered = covered_verses(&events);
+
+    let mut failures: Vec<String> = Vec::new();
+    for code in &declared {
+        let universe = all_verses_for_book(&canon, code);
+        let missing: Vec<&String> = universe.iter().filter(|v| !covered.contains(v.as_str())).collect();
+        if !missing.is_empty() {
+            failures.push(format!(
+                "{code}: {} of {} verses are in NO container (first gap: {})",
+                missing.len(),
+                universe.len(),
+                missing[0]
+            ));
+        }
+    }
+    assert!(failures.is_empty(), "declared-but-not-fully-covered book(s):\n{}", failures.join("\n"));
+
+    // No duplicate/typo'd declaration, and every declared code is a real
+    // canon book -- guards this test's own input against a stale or
+    // malformed manifest entry silently doing nothing.
+    let distinct: HashSet<&String> = declared.iter().collect();
+    assert_eq!(distinct.len(), declared.len(), "coverage-manifest.toml's own declared list has a duplicate entry");
+    let real_codes: HashSet<&str> = canon.books.iter().map(|b| b.code.as_str()).collect();
+    for code in &declared {
+        assert!(real_codes.contains(code.as_str()), "'{code}' in coverage-manifest.toml is not a real canon book code (typo?)");
+    }
+}
+
+/// Requirement 1(b), "the declared list only ever grows": this is the
+/// project's own PERMANENT floor -- every book any past batch has ever
+/// declared fully covered. A future batch's own coverage-manifest.toml
+/// may only ADD to this set, never remove from it; this test's own
+/// hardcoded floor is the audit trail (grep this file's own git blame for
+/// when each book was added) and fails loud the moment a future edit
+/// accidentally drops one. Gospels+Acts (Batch T/T2) plus Genesis (Batch
+/// W1, this run) are the floor as of this commit.
+#[test]
+fn declared_books_never_shrink_below_the_established_floor() {
+    const FLOOR: &[&str] = &["MAT", "MRK", "LUK", "JHN", "ACT", "GEN"];
+
+    let manifest_toml = read_curated("coverage-manifest.toml");
+    let declared: HashSet<String> =
+        atlas_etl::curated::parse_coverage_manifest(&manifest_toml).expect("coverage-manifest.toml must parse").into_iter().collect();
+
+    for code in FLOOR {
+        assert!(declared.contains(*code), "'{code}' must stay declared in coverage-manifest.toml -- the declared list may only ever grow, never shrink");
     }
 }

@@ -121,6 +121,32 @@ pub struct Event {
     /// `robertson_section` does -- see that function's own doc comment.
     #[serde(default)]
     pub acts_section: Option<String>,
+    /// Batch W1 (whole-Bible titled verse containers, req 1's own provenance
+    /// vocabulary: "kjv_superscription | theographic | atlas_section (our
+    /// own sectioning, the sanctioned Acts-precedent fallback)"): the
+    /// general, whole-Bible sibling of `acts_section` above -- same shape (a
+    /// short auditable citation/disclosure string), same "counts as a real
+    /// layer-1 container in `heading_precedence`" treatment, used for every
+    /// book OUTSIDE the Gospels (`robertson_section`) and Acts
+    /// (`acts_section`) once this batch's own OT sectioning starts (and,
+    /// same mechanism, future non-Robertson/non-Acts books after it). Set
+    /// two ways, mirroring how `robertson_section`/`acts_section` are each
+    /// set: (a) inline, on a brand-new `[[event]]` row authored directly in
+    /// `data/curated/passages/*.toml` (this batch's own new one-file-per-book
+    /// directory, parsed by the SAME `EventToml`/`parse_events_extra`
+    /// `robertson_section` already uses), for a container with no
+    /// pre-existing compiled id to attach to; (b) via
+    /// `data/curated/atlas-sections.toml`, a flat `event_id`-keyed merge
+    /// file applied AFTER every event id is known (Theographic +
+    /// events-extra.toml + passages/*.toml combined) -- the SAME merge
+    /// timing/mechanism `acts-sections.toml` already established -- for
+    /// PROMOTING a pre-existing bare Theographic event (already real
+    /// title/date/place, CC BY-SA 4.0, already credited in LICENSES.md) to
+    /// heading-worthy without a duplicate `[[event]]` row. `None` for every
+    /// Gospel/Acts event and for any other book this project has not yet
+    /// sectioned.
+    #[serde(default)]
+    pub atlas_section: Option<String>,
     /// Batch T requirement 1: citation-integrity note for THIS event's own
     /// date/grouping (distinct from each witness's own, narrower
     /// `EventWitness::ref_note`) -- names only sources actually consulted,
@@ -173,6 +199,7 @@ impl Default for Event {
             witnesses: Vec::new(),
             robertson_section: None,
             acts_section: None,
+            atlas_section: None,
             ref_note: None,
             order_key: 0,
         }
@@ -859,7 +886,17 @@ fn heading_precedence(e: &Event) -> (u8, u8, std::cmp::Reverse<i32>, std::cmp::R
     // Batch T2: `acts_section` counts the SAME as `robertson_section` here
     // -- Acts's own sibling provenance field (see `Event::acts_section`'s
     // own doc comment for why it's a separate field, not a reused one).
-    let layer: u8 = if !e.witnesses.is_empty() || e.robertson_section.is_some() || e.acts_section.is_some() { 1 } else { 0 };
+    // Batch W1: `atlas_section` (the whole-Bible sibling of both) counts
+    // identically -- see `Event::atlas_section`'s own doc comment.
+    let layer: u8 = if !e.witnesses.is_empty()
+        || e.robertson_section.is_some()
+        || e.acts_section.is_some()
+        || e.atlas_section.is_some()
+    {
+        1
+    } else {
+        0
+    };
     let kind: u8 = if e.kind == "event" { 1 } else { 0 };
     (layer, kind, std::cmp::Reverse(e.when.from_year), std::cmp::Reverse(e.order_key))
 }
@@ -1109,7 +1146,8 @@ impl AtlasData {
             let heading_worthy = narrative_leg_ids.contains(e.id.as_str())
                 || !e.witnesses.is_empty()
                 || e.robertson_section.is_some()
-                || e.acts_section.is_some(); // Batch T2: Acts's own sibling provenance field
+                || e.acts_section.is_some() // Batch T2: Acts's own sibling provenance field
+                || e.atlas_section.is_some(); // Batch W1: the whole-Bible sibling of both
             if !heading_worthy {
                 continue;
             }
@@ -1859,6 +1897,29 @@ mod heading_collision_tests {
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
         let heading = data.heading_for_verse("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
         assert_eq!(heading.event_id, "as_acts", "acts_section alone must make a container real (layer 1), same as robertson_section");
+    }
+
+    #[test]
+    fn heading_collision_atlas_section_counts_as_a_real_layer1_container() {
+        // Batch W1 (whole-Bible titled verse containers): `atlas_section` is
+        // the general, whole-Bible sibling of `robertson_section`/
+        // `acts_section` (see `Event::atlas_section`'s own doc comment) --
+        // same LAYER-1 treatment, proven the same way the two siblings
+        // above already are: a bare freebie (none of the three provenance
+        // fields, no witnesses) must lose to a real container carrying
+        // atlas_section alone.
+        let mut with_atlas_section = bare_leg();
+        with_atlas_section.id = "as_atlas".into();
+        with_atlas_section.atlas_section = Some("Atlas pericope (this project's own sectioning): GEN.1.1-2.3".into());
+        let mut plain_bare = bare_leg();
+        plain_bare.id = "as_bare2".into();
+        // `plain_bare` placed FIRST -- proves the win is layer-driven, not
+        // incidentally order-driven.
+        let events = vec![plain_bare, with_atlas_section];
+        let narratives = vec![Narrative { id: "narr".into(), name: "N".into(), color: "#000".into(), legs: vec!["as_bare2".into(), "as_atlas".into()] }];
+        let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        let heading = data.heading_for_verse("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
+        assert_eq!(heading.event_id, "as_atlas", "atlas_section alone must make a container real (layer 1), same as robertson_section/acts_section");
     }
 }
 

@@ -673,6 +673,12 @@ pub struct EventDetailOut {
     /// Omitted (not null) when absent, same convention.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub acts_section: Option<String>,
+    /// Batch W1 (whole-Bible titled verse containers): the general,
+    /// whole-Bible sibling of `acts_section` above -- see
+    /// `atlas_core::data::Event::atlas_section`'s own doc comment. Omitted
+    /// (not null) when absent, same convention.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub atlas_section: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ref_note: Option<String>,
 }
@@ -728,6 +734,7 @@ pub async fn event(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -
         witnesses,
         robertson_section: e.robertson_section.clone(),
         acts_section: e.acts_section.clone(),
+        atlas_section: e.atlas_section.clone(),
         ref_note: e.ref_note.clone(),
     }))
 }

@@ -3016,3 +3016,28 @@ verses = ["LUK.19.11-28"]
 order_key = 1275
 robertson_section = "Robertson (1922) §127, \"Jesus Visits Zacchæus, and Speaks the Parable of the Pounds, and Sets out for Jerusalem\""
 ref_note = "Luke 19:11-28 read directly against the compiled KJV text; single witness (Luke alone); split out from jm_jericho (enriched with this SAME robertson_section further up this file, LUK.19.1-10, the Zacchaeus encounter itself, pre-existing Task 3) -- Robertson's own §127 covers both the Zacchaeus encounter and the parable that follows it as ONE undivided section (unlike §128, which Robertson himself splits into 128a/128b, §127 carries no such split in his own table, so neither container here invents one -- both cite the plain '§127'); the two-container split is this app's own DISPLAY choice (a parable is a distinct teaching unit from the narrative encounter that occasions it), not a claim about Robertson's own numbering. Owner's own live-review sweep (2026-08-21) confirmed this disposition."
+
+# --- Batch W1 (whole-Bible titled verse containers): two small, genuine
+# GAPS in the pre-existing Gospels+Acts coverage, found by this batch's
+# own coverage-manifest verse-ground-truth sweep (req 1's own "if any
+# Gospel/Acts verse is NOT in a container today, close those gaps in W1
+# first and disclose them") -- neither is an OT book, but both must close
+# before Gospels+Acts can honestly be declared in coverage-manifest.toml.
+
+[[event]]
+id = "w1_luke_daily_pattern"
+label = "Jesus's own daily pattern during his last week in Jerusalem"
+from_year = 33
+to_year = 33
+places = ["mount-of-olives"]
+verses = ["LUK.21.37-38"]
+atlas_section = "Gospel pericope (this project's own sectioning, CC0 -- no external PD source claimed): Luke 21:37-38, a general summary of Jesus's own daily pattern (teaching in the temple by day, lodging on the Mount of Olives by night) during Passion Week. NOT part of Robertson's own §131 (the fig tree/olivet discourse) -- batch-t2-report.md's own disclosed 'honest subset' omission left these two verses uncited by any event, a genuine coverage gap this batch's own verse-ground-truth coverage-manifest sweep found and closes."
+ref_note = "Luke 21:37-38 read directly against the compiled KJV text. Dated to Passion Week (the surrounding narrative's own year); place: 'the mount that is called the mount of Olives' (21:37), explicit."
+
+[[event]]
+id = "w1_acts_preface"
+label = "Luke's own preface to Theophilus"
+kind = "general"
+verses = ["ACT.1.1-3"]
+acts_section = "Acts pericope (this project's own sectioning, CC0 -- no external PD source claimed): Acts 1:1-3, Luke's own dedication to Theophilus, recapping 'the former treatise' (his Gospel) and Jesus's forty days of post-resurrection appearances -- before acts-sections.toml's own enriched narrative begins at 1:4. A genuine coverage gap this batch's own verse-ground-truth coverage-manifest sweep found and closes; unlike every other Acts container in this app, this one is a BRAND NEW row (no pre-existing Theographic event spans exactly these 3 verses to enrich instead)."
+ref_note = "Acts 1:1-3 read directly against the compiled KJV text. General-kind, same as rob_luke_preface's own precedent (LUK.1.1-4): a literary dedication, no single dateable moment or place of its own."
