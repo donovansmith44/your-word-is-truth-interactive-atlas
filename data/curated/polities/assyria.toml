@@ -21,17 +21,6 @@ rings = [
   ]
 ]
 
-# Batch M requirement 1: this era's own RISE into the Neo-Assyrian Empire
-# below -- Adad-nirari II/Ashurdan II's own resurgence beginning the
-# empire's rapid 9th-8th-century expansion. Assyriology, not Scripture (the
-# KJV text's own Assyria narrative doesn't begin until the empire is
-# already a going concern, e.g. 2 Kings 15:19's "Pul the king of Assyria").
-# Honestly disclosed as general history rather than an invented citation.
-[era.transition]
-event = "The Neo-Assyrian resurgence begins under Adad-nirari II"
-verses = []
-ref_note = "general Assyriological knowledge (the 10th-9th century BC resurgence that becomes the Neo-Assyrian Empire); no specific source consulted this session; not scripture-narrated at this specific boundary -- the KJV text's own Assyria narrative picks up later, once the empire already presses on Israel (e.g. 2 Kings 15:19)"
-
 # The Neo-Assyrian Empire: 2 Kings' own great antagonist -- Tiglath-Pileser
 # III, Shalmaneser V's fall of Samaria (722 BC), Sennacherib's siege of
 # Jerusalem (701 BC) -- at its height under Esarhaddon/Ashurbanipal,
@@ -57,6 +46,24 @@ rings = [
     [37.0, 36.3], [37.1, 36.05], [37.2, 35.8]
   ]
 ]
+
+# Batch M requirement 1: this era's own RISE -- Adad-nirari II/Ashurdan II's
+# own resurgence beginning the empire's rapid 9th-8th-century expansion.
+# Assyriology, not Scripture (the KJV text's own Assyria narrative doesn't
+# begin until the empire is already a going concern, e.g. 2 Kings 15:19's
+# "Pul the king of Assyria"). Honestly disclosed as general history rather
+# than an invented citation. FIX ROUND (self-caught live, running the app):
+# this delta was originally mis-attached to the PRECEDING era ("Assyria")
+# by TOML's own array-of-tables attachment rule -- the comment said "this
+# era's own rise into the Neo-Assyrian Empire BELOW" but the block itself
+# sat BEFORE this era's own [[era]] header, so it silently became the
+# OTHER era's own transition instead. Caught by a live diagnostic click
+# showing "Assyria, ... -> ..." attribution that didn't match the event
+# text; moved here, to the era it actually describes the start of.
+[era.transition]
+event = "The Neo-Assyrian resurgence begins under Adad-nirari II"
+verses = []
+ref_note = "general Assyriological knowledge (the 10th-9th century BC resurgence that becomes the Neo-Assyrian Empire); no specific source consulted this session; not scripture-narrated at this specific boundary -- the KJV text's own Assyria narrative picks up later, once the empire already presses on Israel (e.g. 2 Kings 15:19)"
 
 # Batch M requirement 1: this era's own FALL -- the fall of Nineveh (612
 # BC) to the combined Medes/Neo-Babylonians. Not narrated as a discrete

@@ -50,3 +50,18 @@ rings = [
 event = "Alexander the Great conquers the Achaemenid Persian Empire"
 verses = ["DAN.8.5", "DAN.8.20", "DAN.8.21"]
 ref_note = "Daniel 8:5,20-21 (KJV, verified against the compiled text) -- the he-goat 'from the west' (v.5), self-interpreted in the text as Grecia overthrowing Media-Persia (vv.20-21); traditionally dated 334-330 BC -- see egypt.toml's own mirrored transition for the same conquest's reach into Egypt"
+
+# Batch M requirement 1: this era's own FALL -- Alexander's own death (323
+# BC, this era's own to= year) and the empire's own division among four
+# successors (the Diadochi -- Ptolemaic Egypt and the Seleucid Empire chief
+# among them, see egypt.toml/seleucid-empire.toml), already anticipated in
+# this file's own top-of-file ring comment. The SAME Daniel 8 vision this
+# era's own rise-transition cites, continued and self-interpreted a few
+# verses later in the identical passage: the he-goat's great horn (v.8,
+# Alexander) breaking into "four notable ones," explicitly glossed in the
+# text itself (v.22) as "four kingdoms." Verses read directly against the
+# compiled KJV text before citing.
+[era.fall]
+event = "Alexander dies; his empire divides among four successor kingdoms"
+verses = ["DAN.8.8", "DAN.8.22"]
+ref_note = "Daniel 8:8,22 (KJV, verified against the compiled text) -- the he-goat's great horn 'broken,' replaced by 'four notable ones toward the four winds of heaven' (v.8), self-interpreted a few verses later as 'four kingdoms shall stand up out of the nation' (v.22); traditionally dated to Alexander's 323 BC death -- see this era's own rise-transition for the same vision's earlier verses"
