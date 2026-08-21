@@ -256,7 +256,7 @@
     "items": [
       {
         "id": "baptism-1",
-        "name": "Baptism — Part the First",
+        "name": "Baptism — Part One",
         "text": null,
         "explanation_heading": "What is Baptism?",
         "explanation": "Baptism is not simple water only, but it is the water comprehended in God's command and connected with God's Word.",
@@ -268,7 +268,7 @@
       },
       {
         "id": "baptism-2",
-        "name": "Baptism — Part the Second",
+        "name": "Baptism — Part Two",
         "text": null,
         "explanation_heading": "What does Baptism give or profit?",
         "explanation": "It works forgiveness of sins, delivers from death and the devil, and gives eternal salvation to all who believe this, as the words and promises of God declare.",
@@ -280,7 +280,7 @@
       },
       {
         "id": "baptism-3",
-        "name": "Baptism — Part the Third",
+        "name": "Baptism — Part Three",
         "text": null,
         "explanation_heading": "How can water do such great things?",
         "explanation": "It is not the water indeed that does them, but the word of God which is in and with the water, and faith, which trusts such word of God in the water. For without the word of God the water is simple water and no baptism. But with the word of God it is a baptism, that is, a gracious water of life and a washing of regeneration in the Holy Ghost, as St. Paul says, Titus, chapter three: By the washing of regeneration and renewing of the Holy Ghost, which He shed on us abundantly through Jesus Christ, our Savior, that, being justified by His grace, we should be made heirs according to the hope of eternal life. This is a faithful saying.",
@@ -291,11 +291,11 @@
           "TIT.3.7",
           "TIT.3.8"
         ],
-        "ref_note": "The Titus quotation is embedded inline in Luther's own explanation, not posed as a separate 'Where is this written?' question (unlike Part the Fourth below) -- verses cited cover the full quoted wording through 'This is a faithful saying' (Titus 3:5-8)."
+        "ref_note": "The Titus quotation is embedded inline in Luther's own explanation, not posed as a separate 'Where is this written?' question (unlike Part Four below) -- verses cited cover the full quoted wording through 'This is a faithful saying' (Titus 3:5-8)."
       },
       {
         "id": "baptism-4",
-        "name": "Baptism — Part the Fourth",
+        "name": "Baptism — Part Four",
         "text": null,
         "explanation_heading": "What does such baptizing with water signify?",
         "explanation": "It signifies that the old Adam in us should, by daily contrition and repentance, be drowned and die with all sins and evil lusts, and, again, a new man daily come forth and arise, who shall live before God in righteousness and purity forever.",
