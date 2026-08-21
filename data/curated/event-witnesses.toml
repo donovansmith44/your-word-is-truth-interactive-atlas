@@ -683,3 +683,179 @@ book = "LUK"
 verses = ["LUK.9.10-17"]
 ref_note = "Luke 9:10-17 read directly against the compiled KJV text -- this event's own pre-existing top-level `verses` already (Task 3); included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete (4 witnesses), same pw_bethany precedent"
 robertson_section = "Robertson (1922) §72"
+
+# --- Period 6: SS73-92 (minus S82) -----------------------------------------
+[[witness]]
+event_id = "rob_prevents_kingship"
+book = "MRK"
+verses = ["MRK.6.45-46"]
+ref_note = "Mark 6:45-46 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §73"
+
+[[witness]]
+event_id = "rob_prevents_kingship"
+book = "JHN"
+verses = ["JHN.6.14-15"]
+ref_note = "John 6:14-15 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §73"
+
+[[witness]]
+event_id = "rob_walks_on_water"
+book = "MRK"
+verses = ["MRK.6.47-52"]
+ref_note = "Mark 6:47-52 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §74"
+
+[[witness]]
+event_id = "rob_walks_on_water"
+book = "JHN"
+verses = ["JHN.6.16-21"]
+ref_note = "John 6:16-21 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §74"
+
+[[witness]]
+event_id = "rob_gennesaret_reception"
+book = "MRK"
+verses = ["MRK.6.53-56"]
+ref_note = "Mark 6:53-56 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §75"
+
+[[witness]]
+event_id = "rob_defilement_controversy"
+book = "MRK"
+verses = ["MRK.7.1-23"]
+ref_note = "Mark 7:1-23 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §77"
+
+[[witness]]
+event_id = "rob_syrophoenician_woman"
+book = "MRK"
+verses = ["MRK.7.24-30"]
+ref_note = "Mark 7:24-30 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §78"
+
+[[witness]]
+event_id = "rob_deaf_mute_feeding_4000"
+book = "MRK"
+verses = ["MRK.7.31-37", "MRK.8.1-9"]
+ref_note = "Mark 7:31-8:9 read directly against the compiled KJV text; written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string"
+robertson_section = "Robertson (1922) §79"
+
+[[witness]]
+event_id = "rob_dalmanutha_sign"
+book = "MRK"
+verses = ["MRK.8.10-12"]
+ref_note = "Mark 8:10-12 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §80"
+
+[[witness]]
+event_id = "rob_bethsaida_blind_man"
+book = "MAT"
+verses = ["MAT.16.5-12"]
+ref_note = "Matthew 16:5-12 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §81"
+
+[[witness]]
+event_id = "rob_foretells_death_1"
+book = "MRK"
+verses = ["MRK.8.31-37"]
+ref_note = "Mark 8:31-37 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §83"
+
+[[witness]]
+event_id = "rob_foretells_death_1"
+book = "LUK"
+verses = ["LUK.9.22-25"]
+ref_note = "Luke 9:22-25 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §83"
+
+[[witness]]
+event_id = "rob_coming_of_son_of_man"
+book = "MRK"
+verses = ["MRK.8.38", "MRK.9.1"]
+ref_note = "Mark 8:38-9:1 read directly against the compiled KJV text; written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string"
+robertson_section = "Robertson (1922) §84"
+
+[[witness]]
+event_id = "rob_coming_of_son_of_man"
+book = "LUK"
+verses = ["LUK.9.26-27"]
+ref_note = "Luke 9:26-27 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §84"
+
+[[witness]]
+event_id = "rob_transfiguration"
+book = "MRK"
+verses = ["MRK.9.2-8"]
+ref_note = "Mark 9:2-8 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §85"
+
+[[witness]]
+event_id = "rob_transfiguration"
+book = "LUK"
+verses = ["LUK.9.28-36"]
+ref_note = "Luke 9:28-36 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §85"
+
+[[witness]]
+event_id = "rob_elijah_puzzle"
+book = "MRK"
+verses = ["MRK.9.9-13"]
+ref_note = "Mark 9:9-13 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §86"
+
+[[witness]]
+event_id = "rob_demoniac_boy"
+book = "MRK"
+verses = ["MRK.9.14-29"]
+ref_note = "Mark 9:14-29 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §87"
+
+[[witness]]
+event_id = "rob_demoniac_boy"
+book = "LUK"
+verses = ["LUK.9.37-43"]
+ref_note = "Luke 9:37-43 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §87"
+
+[[witness]]
+event_id = "rob_foretells_death_2"
+book = "MRK"
+verses = ["MRK.9.30-32"]
+ref_note = "Mark 9:30-32 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §88"
+
+[[witness]]
+event_id = "rob_foretells_death_2"
+book = "LUK"
+verses = ["LUK.9.43-45"]
+ref_note = "Luke 9:43-45 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §88"
+
+[[witness]]
+event_id = "rob_who_is_greatest"
+book = "MRK"
+verses = ["MRK.9.33-37"]
+ref_note = "Mark 9:33-37 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §90"
+
+[[witness]]
+event_id = "rob_who_is_greatest"
+book = "LUK"
+verses = ["LUK.9.46-48"]
+ref_note = "Luke 9:46-48 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §90"
+
+[[witness]]
+event_id = "rob_johns_zeal_rebuked"
+book = "MRK"
+verses = ["MRK.9.38-50"]
+ref_note = "Mark 9:38-50 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §91"
+
+[[witness]]
+event_id = "rob_johns_zeal_rebuked"
+book = "LUK"
+verses = ["LUK.9.49-50"]
+ref_note = "Luke 9:49-50 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §91"

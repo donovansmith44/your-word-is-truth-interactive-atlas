@@ -28117,6 +28117,936 @@
     "order_key": 820
   },
   {
+    "id": "rob_prevents_kingship",
+    "label": "Jesus withdraws alone to a mountain to pray",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "bethsaida-2"
+    ],
+    "verses": [
+      "MAT.14.22",
+      "MAT.14.23"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.6.45",
+            "MRK.6.46"
+          ]
+        },
+        "ref_note": "Mark 6:45-46 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §73"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.6.14",
+            "JHN.6.15"
+          ]
+        },
+        "ref_note": "John 6:14-15 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §73"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §73, \"The Prevention of the Revolutionary Purpose to Proclaim Jesus King (a Political Messiah)\"",
+    "ref_note": "Matthew 14:22-23, Mark 6:45-46, and John 6:14-15 all read directly against the compiled KJV text; Mark's own text (6:45) names Bethsaida as the disciples' own destination",
+    "order_key": 730
+  },
+  {
+    "id": "rob_walks_on_water",
+    "label": "Jesus walks on the water to the disciples in the storm",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "sea-of-galilee"
+    ],
+    "verses": [
+      "MAT.14.24",
+      "MAT.14.25",
+      "MAT.14.26",
+      "MAT.14.27",
+      "MAT.14.28",
+      "MAT.14.29",
+      "MAT.14.30",
+      "MAT.14.31",
+      "MAT.14.32",
+      "MAT.14.33"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.6.47",
+            "MRK.6.48",
+            "MRK.6.49",
+            "MRK.6.50",
+            "MRK.6.51",
+            "MRK.6.52"
+          ]
+        },
+        "ref_note": "Mark 6:47-52 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §74"
+      },
+      {
+        "book": "JHN",
+        "translations": {
+          "kjv": [
+            "JHN.6.16",
+            "JHN.6.17",
+            "JHN.6.18",
+            "JHN.6.19",
+            "JHN.6.20",
+            "JHN.6.21"
+          ]
+        },
+        "ref_note": "John 6:16-21 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §74"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §74, \"The Peril to the Twelve in the Storm at Sea and Christ's Coming to Them on the Water in the Darkness\"",
+    "ref_note": "Matthew 14:24-33, Mark 6:47-52, and John 6:16-21 all read directly against the compiled KJV text",
+    "order_key": 740
+  },
+  {
+    "id": "rob_gennesaret_reception",
+    "label": "The reception at Gennesaret",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "gennesaret"
+    ],
+    "verses": [
+      "MAT.14.34",
+      "MAT.14.35",
+      "MAT.14.36"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.6.53",
+            "MRK.6.54",
+            "MRK.6.55",
+            "MRK.6.56"
+          ]
+        },
+        "ref_note": "Mark 6:53-56 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §75"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §75, \"The Reception at Gennesaret\"",
+    "ref_note": "Matthew 14:34-36 and Mark 6:53-56 both read directly against the compiled KJV text",
+    "order_key": 750
+  },
+  {
+    "id": "rob_bread_of_life",
+    "label": "The Bread of Life discourse in the Capernaum synagogue",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "JHN.6.22",
+      "JHN.6.23",
+      "JHN.6.24",
+      "JHN.6.25",
+      "JHN.6.26",
+      "JHN.6.27",
+      "JHN.6.28",
+      "JHN.6.29",
+      "JHN.6.30",
+      "JHN.6.31",
+      "JHN.6.32",
+      "JHN.6.33",
+      "JHN.6.34",
+      "JHN.6.35",
+      "JHN.6.36",
+      "JHN.6.37",
+      "JHN.6.38",
+      "JHN.6.39",
+      "JHN.6.40",
+      "JHN.6.41",
+      "JHN.6.42",
+      "JHN.6.43",
+      "JHN.6.44",
+      "JHN.6.45",
+      "JHN.6.46",
+      "JHN.6.47",
+      "JHN.6.48",
+      "JHN.6.49",
+      "JHN.6.50",
+      "JHN.6.51",
+      "JHN.6.52",
+      "JHN.6.53",
+      "JHN.6.54",
+      "JHN.6.55",
+      "JHN.6.56",
+      "JHN.6.57",
+      "JHN.6.58",
+      "JHN.6.59",
+      "JHN.6.60",
+      "JHN.6.61",
+      "JHN.6.62",
+      "JHN.6.63",
+      "JHN.6.64",
+      "JHN.6.65",
+      "JHN.6.66",
+      "JHN.6.67",
+      "JHN.6.68",
+      "JHN.6.69",
+      "JHN.6.70",
+      "JHN.6.71"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §76, \"The Collapse of the Galilean Campaign because Jesus Will Not Conform to Popular Messianic Expectations\"",
+    "ref_note": "John 6:22-71 read directly against the compiled KJV text; single witness (John alone); John's own text (6:59) names the Capernaum synagogue explicitly",
+    "order_key": 760
+  },
+  {
+    "id": "rob_defilement_controversy",
+    "label": "Jesus and the Pharisees dispute over ceremonial hand-washing",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "MAT.15.1",
+      "MAT.15.2",
+      "MAT.15.3",
+      "MAT.15.4",
+      "MAT.15.5",
+      "MAT.15.6",
+      "MAT.15.7",
+      "MAT.15.8",
+      "MAT.15.9",
+      "MAT.15.10",
+      "MAT.15.11",
+      "MAT.15.12",
+      "MAT.15.13",
+      "MAT.15.14",
+      "MAT.15.15",
+      "MAT.15.16",
+      "MAT.15.17",
+      "MAT.15.18",
+      "MAT.15.19",
+      "MAT.15.20"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.7.1",
+            "MRK.7.2",
+            "MRK.7.3",
+            "MRK.7.4",
+            "MRK.7.5",
+            "MRK.7.6",
+            "MRK.7.7",
+            "MRK.7.8",
+            "MRK.7.9",
+            "MRK.7.10",
+            "MRK.7.11",
+            "MRK.7.12",
+            "MRK.7.13",
+            "MRK.7.14",
+            "MRK.7.15",
+            "MRK.7.16",
+            "MRK.7.17",
+            "MRK.7.18",
+            "MRK.7.19",
+            "MRK.7.20",
+            "MRK.7.21",
+            "MRK.7.22",
+            "MRK.7.23"
+          ]
+        },
+        "ref_note": "Mark 7:1-23 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §77"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §77, \"Pharisees from Jerusalem Reproach Jesus for Allowing His Disciples to Disregard Their Traditions about Ceremonial Defilement of the Hands. A Puzzling Parable in Reply\"",
+    "ref_note": "Matthew 15:1-20 and Mark 7:1-23 both read directly against the compiled KJV text; Robertson's own table also lists John 7:1, but that single verse ('Jesus walked in Galilee: for he would not walk in Jewry') is a bare transitional aside that does not itself recount this controversy -- omitted per the citation-integrity rule's own 'honest subset' guidance rather than force-fit as a witness",
+    "order_key": 770
+  },
+  {
+    "id": "rob_syrophoenician_woman",
+    "label": "Jesus heals the Syrophoenician woman's daughter",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "tyre"
+    ],
+    "verses": [
+      "MAT.15.21",
+      "MAT.15.22",
+      "MAT.15.23",
+      "MAT.15.24",
+      "MAT.15.25",
+      "MAT.15.26",
+      "MAT.15.27",
+      "MAT.15.28"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.7.24",
+            "MRK.7.25",
+            "MRK.7.26",
+            "MRK.7.27",
+            "MRK.7.28",
+            "MRK.7.29",
+            "MRK.7.30"
+          ]
+        },
+        "ref_note": "Mark 7:24-30 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §78"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §78, \"The Second Withdrawal to the Region of Tyre and Sidon and the Healing of the Daughter of a Syro-Phoenician Woman\"",
+    "ref_note": "Matthew 15:21-28 and Mark 7:24-30 both read directly against the compiled KJV text; both name Tyre and Sidon together -- Tyre used as the anchor (listed first in both accounts)",
+    "order_key": 780
+  },
+  {
+    "id": "rob_deaf_mute_feeding_4000",
+    "label": "Jesus heals a deaf-mute in Decapolis and feeds four thousand",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "decapolis"
+    ],
+    "verses": [
+      "MAT.15.29",
+      "MAT.15.30",
+      "MAT.15.31",
+      "MAT.15.32",
+      "MAT.15.33",
+      "MAT.15.34",
+      "MAT.15.35",
+      "MAT.15.36",
+      "MAT.15.37",
+      "MAT.15.38"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.7.31",
+            "MRK.7.32",
+            "MRK.7.33",
+            "MRK.7.34",
+            "MRK.7.35",
+            "MRK.7.36",
+            "MRK.7.37",
+            "MRK.8.1",
+            "MRK.8.2",
+            "MRK.8.3",
+            "MRK.8.4",
+            "MRK.8.5",
+            "MRK.8.6",
+            "MRK.8.7",
+            "MRK.8.8",
+            "MRK.8.9"
+          ]
+        },
+        "ref_note": "Mark 7:31-8:9 read directly against the compiled KJV text; written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string",
+        "robertson_section": "Robertson (1922) §79"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §79, \"The Third Withdrawal North through Phoenicia and East towards Hermon and South into Decapolis (Keeping out of the Territory of Herod Antipas) with the Healing of the Deaf and Dumb Man and the Feeding of the Four Thousand\"",
+    "ref_note": "Matthew 15:29-38 and Mark 7:31-8:9 both read directly against the compiled KJV text; Mark's own witness range crosses a chapter boundary -- written as two ranges, see event-witnesses.toml",
+    "order_key": 790
+  },
+  {
+    "id": "rob_dalmanutha_sign",
+    "label": "The Pharisees and Sadducees demand a sign at Dalmanutha",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "dalmanutha"
+    ],
+    "verses": [
+      "MAT.15.39",
+      "MAT.16.1",
+      "MAT.16.2",
+      "MAT.16.3",
+      "MAT.16.4"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.8.10",
+            "MRK.8.11",
+            "MRK.8.12"
+          ]
+        },
+        "ref_note": "Mark 8:10-12 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §80"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §80, \"The Brief Visit to Magadan (Dalmanutha) in Galilee and the Sharp Attack by the Pharisees and Sadducees. (Note Their Appearance Now against Jesus)\"",
+    "ref_note": "Matthew 15:39-16:4 and Mark 8:10-12 both read directly against the compiled KJV text; Matthew's own crosses a chapter boundary -- written as two ranges; Matthew's own text names 'Magadala,' Mark's own names 'Dalmanutha' -- dalmanutha used as the compiled place set's own available match (coincident coordinates with magdala)",
+    "order_key": 800
+  },
+  {
+    "id": "rob_bethsaida_blind_man",
+    "label": "Jesus heals a blind man at Bethsaida",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "bethsaida-2"
+    ],
+    "verses": [
+      "MRK.8.22",
+      "MRK.8.23",
+      "MRK.8.24",
+      "MRK.8.25",
+      "MRK.8.26"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.16.5",
+            "MAT.16.6",
+            "MAT.16.7",
+            "MAT.16.8",
+            "MAT.16.9",
+            "MAT.16.10",
+            "MAT.16.11",
+            "MAT.16.12"
+          ]
+        },
+        "ref_note": "Matthew 16:5-12 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §81"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §81, \"The Fourth Retirement to Bethsaida Julias in the Tetrarchy of Herod Philip with Sharp Rebuke of the Dulness of the Disciples on the Way across and the Healing of a Blind Man in Bethsaida\"",
+    "ref_note": "Matthew 16:5-12 and Mark 8:13-26 both read directly against the compiled KJV text; Mark's own fuller account (8:13-26, including the blind man healed, 8:22-26) used as this event's top-level verses",
+    "order_key": 810
+  },
+  {
+    "id": "rob_foretells_death_1",
+    "label": "Jesus foretells his death and resurrection at Caesarea Philippi",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "caesarea-philippi"
+    ],
+    "verses": [
+      "MAT.16.21",
+      "MAT.16.22",
+      "MAT.16.23",
+      "MAT.16.24",
+      "MAT.16.25",
+      "MAT.16.26"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.8.31",
+            "MRK.8.32",
+            "MRK.8.33",
+            "MRK.8.34",
+            "MRK.8.35",
+            "MRK.8.36",
+            "MRK.8.37"
+          ]
+        },
+        "ref_note": "Mark 8:31-37 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §83"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.9.22",
+            "LUK.9.23",
+            "LUK.9.24",
+            "LUK.9.25"
+          ]
+        },
+        "ref_note": "Luke 9:22-25 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §83"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §83, \"Jesus Distinctly Foretells That He, the Messiah, Will Be Rejected and Killed and Will Rise the Third Day\"",
+    "ref_note": "Matthew 16:21-26, Mark 8:31-37, and Luke 9:22-25 all read directly against the compiled KJV text",
+    "order_key": 830
+  },
+  {
+    "id": "rob_coming_of_son_of_man",
+    "label": "The coming of the Son of Man in that generation",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "caesarea-philippi"
+    ],
+    "verses": [
+      "MAT.16.27",
+      "MAT.16.28"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.8.38",
+            "MRK.9.1"
+          ]
+        },
+        "ref_note": "Mark 8:38-9:1 read directly against the compiled KJV text; written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string",
+        "robertson_section": "Robertson (1922) §84"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.9.26",
+            "LUK.9.27"
+          ]
+        },
+        "ref_note": "Luke 9:26-27 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §84"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §84, \"The Coming of the Son of Man in That Generation\"",
+    "ref_note": "Matthew 16:27-28, Mark 8:38-9:1, and Luke 9:26-27 all read directly against the compiled KJV text; Mark's own witness range crosses a chapter boundary -- written as two ranges, see event-witnesses.toml",
+    "order_key": 840
+  },
+  {
+    "id": "rob_transfiguration",
+    "label": "The Transfiguration",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "caesarea-philippi"
+    ],
+    "verses": [
+      "MAT.17.1",
+      "MAT.17.2",
+      "MAT.17.3",
+      "MAT.17.4",
+      "MAT.17.5",
+      "MAT.17.6",
+      "MAT.17.7",
+      "MAT.17.8"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.9.2",
+            "MRK.9.3",
+            "MRK.9.4",
+            "MRK.9.5",
+            "MRK.9.6",
+            "MRK.9.7",
+            "MRK.9.8"
+          ]
+        },
+        "ref_note": "Mark 9:2-8 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §85"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.9.28",
+            "LUK.9.29",
+            "LUK.9.30",
+            "LUK.9.31",
+            "LUK.9.32",
+            "LUK.9.33",
+            "LUK.9.34",
+            "LUK.9.35",
+            "LUK.9.36"
+          ]
+        },
+        "ref_note": "Luke 9:28-36 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §85"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §85, \"The Transfiguration of Jesus on a Mountain (Probably Hermon) near Caesarea Philippi\"",
+    "ref_note": "Matthew 17:1-8, Mark 9:2-8, and Luke 9:28-36 all read directly against the compiled KJV text; the traditional mountain (probably Hermon, Robertson's own title) is not itself in the compiled place set, so caesarea-philippi (the nearest named town in the text) is kept as the anchor",
+    "order_key": 850
+  },
+  {
+    "id": "rob_elijah_puzzle",
+    "label": "The disciples puzzle over the resurrection and Elijah",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "caesarea-philippi"
+    ],
+    "verses": [
+      "MAT.17.9",
+      "MAT.17.10",
+      "MAT.17.11",
+      "MAT.17.12",
+      "MAT.17.13"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.9.9",
+            "MRK.9.10",
+            "MRK.9.11",
+            "MRK.9.12",
+            "MRK.9.13"
+          ]
+        },
+        "ref_note": "Mark 9:9-13 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §86"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §86, \"The Puzzle of the Three Disciples about the Resurrection and about Elijah on Their Way down the Mountain\"",
+    "ref_note": "Matthew 17:9-13 and Mark 9:9-13 both read directly against the compiled KJV text; Robertson's own table also lists Luke 9:36, but that single verse is already this event's OWN preceding section's (rob_transfiguration) own closing verse and does not itself recount this puzzle -- omitted per the citation-integrity rule's own 'honest subset' guidance",
+    "order_key": 860
+  },
+  {
+    "id": "rob_demoniac_boy",
+    "label": "Jesus heals a demoniac boy the disciples could not heal",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "caesarea-philippi"
+    ],
+    "verses": [
+      "MAT.17.14",
+      "MAT.17.15",
+      "MAT.17.16",
+      "MAT.17.17",
+      "MAT.17.18",
+      "MAT.17.19",
+      "MAT.17.20"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.9.14",
+            "MRK.9.15",
+            "MRK.9.16",
+            "MRK.9.17",
+            "MRK.9.18",
+            "MRK.9.19",
+            "MRK.9.20",
+            "MRK.9.21",
+            "MRK.9.22",
+            "MRK.9.23",
+            "MRK.9.24",
+            "MRK.9.25",
+            "MRK.9.26",
+            "MRK.9.27",
+            "MRK.9.28",
+            "MRK.9.29"
+          ]
+        },
+        "ref_note": "Mark 9:14-29 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §87"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.9.37",
+            "LUK.9.38",
+            "LUK.9.39",
+            "LUK.9.40",
+            "LUK.9.41",
+            "LUK.9.42",
+            "LUK.9.43"
+          ]
+        },
+        "ref_note": "Luke 9:37-43 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §87"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §87, \"The Demoniac Boy, Whom the Disciples Could Not Heal\"",
+    "ref_note": "Matthew 17:14-20, Mark 9:14-29, and Luke 9:37-43 all read directly against the compiled KJV text",
+    "order_key": 870
+  },
+  {
+    "id": "rob_foretells_death_2",
+    "label": "Jesus again foretells his death, returning through Galilee",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "MAT.17.22",
+      "MAT.17.23"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.9.30",
+            "MRK.9.31",
+            "MRK.9.32"
+          ]
+        },
+        "ref_note": "Mark 9:30-32 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §88"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.9.43",
+            "LUK.9.44",
+            "LUK.9.45"
+          ]
+        },
+        "ref_note": "Luke 9:43-45 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §88"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §88, \"Returning Privately through Galilee, He Again Foretells His Death and Resurrection\"",
+    "ref_note": "Matthew 17:22-23, Mark 9:30-32, and Luke 9:43-45 both read directly against the compiled KJV text (Luke's own 9:43 opening clause is shared with the immediately preceding section's own closing verse -- Robertson's own citation, not an error)",
+    "order_key": 880
+  },
+  {
+    "id": "rob_temple_tax",
+    "label": "Jesus pays the temple tax with a coin from a fish",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.17.24",
+      "MAT.17.25",
+      "MAT.17.26",
+      "MAT.17.27"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §89, \"Jesus, the Messiah, Pays the Half-Shekel for the Temple\"",
+    "ref_note": "Matthew 17:24-27 read directly against the compiled KJV text; single witness (Matthew alone)",
+    "order_key": 890
+  },
+  {
+    "id": "rob_who_is_greatest",
+    "label": "The Twelve dispute who is greatest; Jesus sets a child before them",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.18.1",
+      "MAT.18.2",
+      "MAT.18.3",
+      "MAT.18.4",
+      "MAT.18.5"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.9.33",
+            "MRK.9.34",
+            "MRK.9.35",
+            "MRK.9.36",
+            "MRK.9.37"
+          ]
+        },
+        "ref_note": "Mark 9:33-37 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §90"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.9.46",
+            "LUK.9.47",
+            "LUK.9.48"
+          ]
+        },
+        "ref_note": "Luke 9:46-48 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §90"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §90, \"The Twelve Contend as to Who Shall Be the Greatest under the Messiah's Reign. His Subjects Must Be Childlike\"",
+    "ref_note": "Matthew 18:1-5, Mark 9:33-37, and Luke 9:46-48 all read directly against the compiled KJV text",
+    "order_key": 900
+  },
+  {
+    "id": "rob_johns_zeal_rebuked",
+    "label": "John's zeal against an independent exorcist is rebuked",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.18.6",
+      "MAT.18.7",
+      "MAT.18.8",
+      "MAT.18.9",
+      "MAT.18.10",
+      "MAT.18.11",
+      "MAT.18.12",
+      "MAT.18.13",
+      "MAT.18.14"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.9.38",
+            "MRK.9.39",
+            "MRK.9.40",
+            "MRK.9.41",
+            "MRK.9.42",
+            "MRK.9.43",
+            "MRK.9.44",
+            "MRK.9.45",
+            "MRK.9.46",
+            "MRK.9.47",
+            "MRK.9.48",
+            "MRK.9.49",
+            "MRK.9.50"
+          ]
+        },
+        "ref_note": "Mark 9:38-50 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §91"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.9.49",
+            "LUK.9.50"
+          ]
+        },
+        "ref_note": "Luke 9:49-50 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §91"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §91, \"The Mistaken Zeal of the Apostle John Rebuked by Jesus in Pertinent Parables\"",
+    "ref_note": "Matthew 18:6-14, Mark 9:38-50, and Luke 9:49-50 all read directly against the compiled KJV text",
+    "order_key": 910
+  },
+  {
+    "id": "rob_forgiving_a_brother",
+    "label": "Right treatment of a sinning brother; the parable of the unmerciful servant",
+    "when": {
+      "from_year": 32,
+      "to_year": 32
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.18.15",
+      "MAT.18.16",
+      "MAT.18.17",
+      "MAT.18.18",
+      "MAT.18.19",
+      "MAT.18.20",
+      "MAT.18.21",
+      "MAT.18.22",
+      "MAT.18.23",
+      "MAT.18.24",
+      "MAT.18.25",
+      "MAT.18.26",
+      "MAT.18.27",
+      "MAT.18.28",
+      "MAT.18.29",
+      "MAT.18.30",
+      "MAT.18.31",
+      "MAT.18.32",
+      "MAT.18.33",
+      "MAT.18.34",
+      "MAT.18.35"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §92, \"Right Treatment of a Brother Who Has Sinned against One, and Duty of Patiently Forgiving a Brother (Parable of the Unmerciful Servant)\"",
+    "ref_note": "Matthew 18:15-35 read directly against the compiled KJV text; single witness (Matthew alone)",
+    "order_key": 920
+  },
+  {
     "id": "jm_jericho",
     "label": "Jesus calls Zacchaeus at Jericho",
     "when": {
