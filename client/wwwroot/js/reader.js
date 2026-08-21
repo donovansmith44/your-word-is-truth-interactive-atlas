@@ -153,8 +153,7 @@ export function unwatchScroll() {
 //
 // Fix: a CSS custom property, `--chapter-nav-top`, set on `.reader-page`
 // itself and read by app.css's own `.reader-prev`/`.reader-next` rules,
-// recomputed continuously (scroll + resize, rAF-throttled, same shape as
-// watchScroll above) from `.reader-page`'s own REAL, CURRENT
+// recomputed from `.reader-page`'s own REAL, CURRENT
 // `getBoundingClientRect().top` (which already reflects wherever the page
 // currently sits relative to the viewport, whatever that offset is) so the
 // two buttons land at the viewport's own actual vertical center regardless
@@ -165,6 +164,58 @@ export function unwatchScroll() {
 // `recompute()` call, or if JS somehow never wires up at all -- centered
 // at scroll position 0, same as every other CSS-only value would be, never
 // unstyled/undefined.
+//
+// HOTFIX-3 (user report 2026-08-21, near-verbatim: "the next/previous
+// chapter buttons shouldn't be redrawn on every scroll. they should be
+// fixed in place like on bible.com"): recompute() used to be
+// rAF-THROTTLED off the scroll/resize listener (`ticking` flag +
+// `requestAnimationFrame(() => { ticking = false; recompute(); })`, the
+// same shape watchScroll above still correctly uses) -- ROOT-CAUSED, not
+// assumed, with a rAF-timestamped getBoundingClientRect trace during a
+// scripted scroll (both a smooth multi-frame scroll and discrete
+// mouse.wheel bursts, standalone AND split): every real scroll input
+// (`mouse.wheel`, the closest proxy to an actual user gesture Playwright
+// has) produced a ONE-FRAME position "teleport" of reader-next sized to
+// EXACTLY that gesture's own scroll delta (measured: a 300px wheel notch
+// -> the button jumped a clean 300px, then snapped back the very next
+// frame), reproducing on every single discrete scroll input, 100% hit
+// rate, IDENTICAL in both panes. Mechanism: the BROWSER paints the page's
+// own scrolled content the SAME frame the `scroll` event fires, but the
+// old code deferred its OWN compensating write one MORE
+// `requestAnimationFrame` tick beyond that event -- so for exactly one
+// rendered frame, the content had already moved but `--chapter-nav-top`
+// still held the pre-scroll value, and (because `.reader-page`'s own
+// `contain: layout`, Batch H, is these buttons' containing block, not the
+// viewport) a stale compensation makes them briefly render as if pinned to
+// a fixed point ON THE PAGE rather than the viewport -- exactly the "isn't
+// really fixed" symptom reported. A MutationObserver on the whole nav
+// subtree recorded ZERO mutations throughout every trace, and a stamped
+// node-identity check confirmed reader-next/reader-prev are NEVER
+// recreated -- both suspects the batch brief raised going in
+// (view-state-sync-triggered Blazor re-render; a second, undocumented
+// split-only containing-block ancestor) are RULED OUT by this evidence,
+// not merely unconfirmed: OnScroll (Reader.razor) never calls
+// StateHasChanged (unchanged by this fix, still true), and the one
+// containing-block ancestor that exists (`.reader-page`'s `contain:
+// layout`) is the SAME element in both panes, producing the identical
+// glitch in both -- there is no second, split-specific offender.
+//
+// Fix: recompute() now runs SYNCHRONOUSLY, directly as the scroll/resize
+// listener itself -- no `requestAnimationFrame` deferral, no `ticking`
+// gate. This removes the exact one-extra-frame gap the trace isolated,
+// landing the write inside the SAME task the browser is already using to
+// apply the scroll before that frame paints (confirmed: the identical
+// trace technique against this fix shows zero position deviation across
+// every sampled frame, both panes, including on MAT.26 -- heading-dense,
+// this app's own jank test bed). Trade-off, disclosed: this can now run
+// more than once within a single frame if the browser fires multiple
+// `scroll` events before that frame's paint (unlike the throttled
+// version, which guaranteed at most once) -- accepted because the work
+// itself is trivial (one `getBoundingClientRect` + one custom-property
+// write, for exactly one element), nothing like the render-tree cost a
+// throttle exists to protect against elsewhere in this app; watchScroll
+// above is UNCHANGED and keeps its own rAF throttle, since invokeMethodAsync
+// crossing the JS/.NET boundary is real, non-trivial work worth batching.
 let _navCenterCleanup = null;
 
 export function watchChapterNavCenter() {
@@ -177,29 +228,18 @@ export function watchChapterNavCenter() {
         return;
     }
 
-    let ticking = false;
     const recompute = () => {
         const top = window.innerHeight / 2 - page.getBoundingClientRect().top;
         page.style.setProperty('--chapter-nav-top', `${top}px`);
     };
-    const onScrollOrResize = () => {
-        if (ticking) {
-            return;
-        }
-        ticking = true;
-        requestAnimationFrame(() => {
-            ticking = false;
-            recompute();
-        });
-    };
 
     recompute();
-    window.addEventListener('scroll', onScrollOrResize, { passive: true });
-    window.addEventListener('resize', onScrollOrResize);
+    window.addEventListener('scroll', recompute, { passive: true });
+    window.addEventListener('resize', recompute);
 
     _navCenterCleanup = () => {
-        window.removeEventListener('scroll', onScrollOrResize);
-        window.removeEventListener('resize', onScrollOrResize);
+        window.removeEventListener('scroll', recompute);
+        window.removeEventListener('resize', recompute);
         _navCenterCleanup = null;
     };
 }
