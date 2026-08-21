@@ -242,3 +242,74 @@ test('TRAVERSAL-2: an unpinned hover shows no narrative section; pinning the sam
   await expect(page.getByTestId('place-card-title')).toHaveText(nameOf(afterNext));
   await expect(card.getByTestId('card-prev-event-exodus')).toBeVisible();
 });
+
+// TRAVERSAL-3 (fix-round-1, batch-n-review.md Critical-1): the place card's
+// own next/prev traversal must agree with the verse popover's own PRIOR/
+// FOLLOWING traversal EVEN WHEN THE ACTIVE TIME WINDOW SPLITS THE NARRATIVE
+// CHAIN -- the review's own repro: the curated exodus narrative has a real
+// 37-year gap between ex_kadesh (-1445..-1444) and ex_moab (-1407..-1406)
+// (data/curated/events-extra.toml). An entirely ordinary window ending
+// inside that gap makes scene.rs's build_arrows drop the ex_kadesh ->
+// ex_moab leg from its own windowed `kept` list (both legs still individually
+// intersect nothing past -1444, so the PAIR never survives `kept.windows(2)`)
+// -- pre-fix-round-1, PlaceCard's NarrativeRows/PickAdjacent read ONLY that
+// windowed Arrows array, so pinning kadesh-barnea in this window showed NO
+// "next event" button, while the SAME window's verse popover (server-side
+// positions_for_events, batch-n-brief.md, deliberately unwindowed -- see its
+// own doc comment) showed a live, clickable "FOLLOWING EVENT -- Camp on the
+// plains of Moab" for the identical event. Both surfaces must agree, per the
+// brief's own "if the place card and popover both show traversal, they agree
+// on order and verses."
+const KADESH_WINDOW = { from: -1446, to: -1444 }; // ends exactly at ex_kadesh's own to_year -- before ex_moab's own -1407 from_year
+
+test('TRAVERSAL-3: the place card\'s next-event traversal agrees with the popover\'s FOLLOWING EVENT under a window that splits the narrative chain', async ({ page }) => {
+  // Confirm the fixture premise directly against the live data, so this
+  // test fails loudly (not silently vacuous) if the curated chain ever
+  // changes: ex_kadesh must have a real "following" leg to walk to.
+  const kadeshPositions = await api.narrativeEventPositions('ex_kadesh');
+  const exodusPosition = kadeshPositions.find((p: any) => p.narrative_id === 'exodus');
+  test.skip(!exodusPosition?.following, 'ex_kadesh has no following leg in the curated data');
+  const followingLabel = exodusPosition.following.label;
+  const followingPlaceId = exodusPosition.following.places[0];
+
+  // Confirm the window genuinely SPLITS the chain server-side: the windowed
+  // scene must carry no outgoing ex_kadesh arrow (otherwise this window no
+  // longer exercises the gap and the test would prove nothing).
+  const scene = await api.sceneTime(KADESH_WINDOW.from, KADESH_WINDOW.to);
+  const windowedArrow = scene.arrows.find((a: any) => a.narrative === 'exodus' && a.from_event === 'ex_kadesh');
+  expect(windowedArrow, 'KADESH_WINDOW must not keep an outgoing ex_kadesh arrow, or this window no longer splits the chain').toBeFalsy();
+  const kadeshPlace = scene.places.find((p: any) => p.events.some((e: any) => e.id === 'ex_kadesh'));
+  expect(kadeshPlace, 'ex_kadesh\'s own place must still be lit in this window').toBeTruthy();
+
+  // --- Surface 1: the map-side place card, pinned in the splitting window ---
+  await page.goto(`/world?from=${KADESH_WINDOW.from}&to=${KADESH_WINDOW.to}`);
+  await page.getByTestId(`marker-${kadeshPlace.id}`).dispatchEvent('click');
+  const card = page.getByTestId('place-card');
+  await expect(card).toHaveAttribute('data-pinned', 'true');
+
+  const nextBtn = page.getByTestId('card-next-event-exodus');
+  await expect(nextBtn, 'the card must find the full-chain next leg even though its own arrow was filtered out of this window').toBeVisible();
+  await nextBtn.click();
+  await expect(card).toHaveAttribute('data-pinned', 'true');
+
+  // The traversal landed on the SAME place the popover's own FOLLOWING EVENT
+  // points to (below) -- off-window (ex_moab's own dates sit well outside
+  // KADESH_WINDOW), so the graceful quiet-place fallback this codebase
+  // already documents (World.razor's GoToAdjacent comment: "off-window...
+  // no-op gracefully") renders instead of verse content -- itself proof the
+  // traversal actually crossed the window boundary, not a same-window
+  // coincidence.
+  const quietTarget = scene.quiet_places.find((p: any) => p.id === followingPlaceId);
+  expect(quietTarget, 'ex_moab\'s own place must be a QUIET (off-window) place in this scene').toBeTruthy();
+  await expect(page.getByTestId('place-card-title')).toHaveText(quietTarget.display_name);
+  await expect(page.getByTestId('place-card-quiet')).toBeVisible();
+
+  // --- Surface 2: the verse popover, independently, on an ex_kadesh verse ---
+  await page.goto('/read/NUM/13');
+  await page.getByTestId('verse-line-26').click(); // NUM.13.26, one of ex_kadesh's own curated verses
+  await expect(page.getByTestId('popover-title')).toHaveText('NUM.13.26');
+  const followingSection = page.getByTestId('popover-section-narrative-following');
+  await expect(followingSection).toBeVisible();
+  const followingBtn = followingSection.getByTestId('narrative-following-event-exodus');
+  await expect(followingBtn).toHaveText(followingLabel);
+});

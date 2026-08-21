@@ -372,14 +372,23 @@
     // World.razor's own source of truth (its _pinnedPlaceId field) for
     // whether THIS currently-shown card is pinned -- drives the close
     // button's conditional presence and the place-card data-pinned
-    // attribute. Arrows/Narratives: the current scene's own lists (null in
-    // scripture mode / before the first scene loads), read-only inputs to
-    // NarrativeRows() below -- never mutated here, World.razor owns the
-    // scene. OnGoToPlace fires with the ADJACENT place's own id when a
-    // ‹ previous event / next event › control is clicked; OnClosePin fires
-    // when the card's own "X" is clicked.
+    // attribute. Narratives: the current scene's own legend list (null in
+    // scripture mode / before the first scene loads) -- read-only, used
+    // solely for each narrative's own swatch Color now (see NarrativeRows()
+    // below); never mutated here, World.razor owns the scene. OnGoToPlace
+    // fires with the ADJACENT place's own id when a ‹ previous event / next
+    // event › control is clicked; OnClosePin fires when the card's own "X"
+    // is clicked.
+    //
+    // Fix round 1 (batch-n-review.md Critical-1): the Arrows parameter
+    // (the current scene's own WINDOWED arrow list) that NarrativeRows()
+    // used to derive prev/next adjacency from is GONE -- the review proved
+    // that windowed derivation can disagree with the verse popover's own
+    // unwindowed positions_for_events resolver (batch-n-brief.md) for an
+    // entirely ordinary time-slider window (see LoadNarrativePositions'
+    // own comment below for the full mechanism and the real curated-data
+    // repro). World.razor's own <PlaceCard> call site no longer passes it.
     [Parameter] public bool Pinned { get; set; }
-    [Parameter] public List<SceneArrow>? Arrows { get; set; }
     [Parameter] public List<SceneNarrative>? Narratives { get; set; }
     [Parameter] public EventCallback<string> OnGoToPlace { get; set; }
     [Parameter] public EventCallback OnClosePin { get; set; }
@@ -404,6 +413,16 @@
     // history -- all three render the same "no blurb/dates section" way,
     // per CONTRACT's conditional-presence rule).
     private PlaceHistoryOut? _history;
+
+    // Fix round 1 (batch-n-review.md Critical-1): every narrative position
+    // (atlas_core::narrative::NarrativePosition, wire NarrativePositionDto)
+    // touching any event CURRENTLY shown at this place -- populated by
+    // LoadNarrativePositions below, consumed synchronously by
+    // NarrativeRows(). Empty (not null) both before the first fetch settles
+    // and for a place with no narrative-leg events, same "always a list,
+    // conditional presence via emptiness" convention _verseText/_history
+    // already follow.
+    private List<NarrativePositionDto> _narrativePositions = new();
 
     // HOTFIX batch (requirement 1, flip-below-when-cut-off): the card's own
     // root element, measured post-render by OnAfterRenderAsync below via
@@ -611,11 +630,12 @@
         var verses = MergedVerses();
         _initialShownCount = InitialShownCount(verses);
         _shownCount = _initialShownCount;
-        // Independent fetches (verse text vs. Batch E history) run
-        // concurrently -- neither depends on the other, and a slow/failed
-        // one must not delay or break the other (each has its own try/catch,
-        // see LoadChaptersFor's and LoadHistory's own comments).
-        await Task.WhenAll(LoadChaptersFor(verses.Take(_shownCount)), LoadHistory());
+        // Independent fetches (verse text vs. Batch E history vs. fix-round-1's
+        // own narrative positions) run concurrently -- none depends on
+        // another, and a slow/failed one must not delay or break the others
+        // (each has its own try/catch, see LoadChaptersFor's/LoadHistory's/
+        // LoadNarrativePositions' own comments).
+        await Task.WhenAll(LoadChaptersFor(verses.Take(_shownCount)), LoadHistory(), LoadNarrativePositions());
 
         // HOTFIX batch: only NOW does this place's own rendered content
         // (verse text filled in, blurb/dates sections present-or-absent per
@@ -707,6 +727,66 @@
         }
     }
 
+    // Fix round 1 (batch-n-review.md Critical-1): fetches this place's own
+    // narrative position(s) via the SAME full-chain resolver
+    // (atlas_core::narrative::positions_for_events, reached here through
+    // AtlasClient.NarrativeEventPositions -- GET /api/narrative/event/{id})
+    // the verse popover's own PRIOR/FOLLOWING sections already consume --
+    // keyed by EVERY event id currently shown at this place (Place.Events),
+    // since the endpoint is event-id-keyed, not place-keyed (one call per
+    // event; typically 1-3 per place, the same order of magnitude as the
+    // per-hover Chapter/PlaceHistory fetches this card already makes).
+    //
+    // This REPLACES the pre-fix-round-1 windowed-Arrows/PickAdjacent
+    // adjacency derivation entirely (see NarrativeRows() below). The review
+    // proved the old approach could disagree with the popover: a real,
+    // ordinary time-slider window can end inside the exodus narrative's own
+    // documented 37-year gap between ex_kadesh (-1445..-1444) and ex_moab
+    // (-1407..-1406) (data/curated/events-extra.toml) -- scene.rs's
+    // build_arrows filters each narrative's legs down to the window BEFORE
+    // pairing adjacent ones (`kept.windows(2)`), so an out-of-window leg is
+    // silently dropped from the card's own "next event" even though the
+    // SAME window's verse popover (server-side positions_for_events,
+    // deliberately unwindowed -- narrative.rs's own doc comment) still finds
+    // it. Reading the identical full-chain resolver here means the two
+    // surfaces can no longer disagree on order -- "one adjacency
+    // computation, both surfaces consume it," per the owner's own "traverse
+    // arbitrarily far... recursively" framing of the graph.
+    //
+    // Skips any synthetic "mention-{place}" pseudo-event id (scripture-mode
+    // only -- see scene::compose_scripture_scene's own doc comment): never a
+    // real event, so /api/narrative/event/{id} would 404 for it. Harmless
+    // even without this filter (a place lit via a mention-* event is, by
+    // that same function's own construction, never ALSO lit by a real one,
+    // so Place.Events there is that single synthetic id alone, and the
+    // catch below would just leave _narrativePositions empty -- correct
+    // either way, since a mention-* pseudo-event is never a narrative leg)
+    // -- filtered explicitly anyway so the common scripture-mode case never
+    // relies on an exception for its own control flow.
+    private async Task LoadNarrativePositions()
+    {
+        var eventIds = Place.Events.Select(e => e.Id).Where(id => !id.StartsWith("mention-", StringComparison.Ordinal)).ToList();
+        if (eventIds.Count == 0)
+        {
+            _narrativePositions = new List<NarrativePositionDto>();
+            return;
+        }
+
+        try
+        {
+            var lists = await Task.WhenAll(eventIds.Select(Atlas.NarrativeEventPositions));
+            _narrativePositions = lists.SelectMany(l => l).ToList();
+        }
+        catch (Exception)
+        {
+            // A nicety, not load-bearing -- same graceful degradation as
+            // LoadHistory/LoadChaptersFor: a failed fetch just leaves no
+            // narrative rows for this open, never an unhandled exception
+            // taking down the card.
+            _narrativePositions = new List<NarrativePositionDto>();
+        }
+    }
+
     // Shared with Explore.YearNode's own title text (via YearText.FormatClaim)
     // so the card's instrument-face line and the popover it opens always
     // agree on exactly the same date text.
@@ -785,63 +865,79 @@
     }
 
     // Batch G1 requirement 3: one row per narrative (colored swatch + name)
-    // that has >=1 arrow touching THIS place in the CURRENT scene, each with
-    // its own prev/next adjacency. Pure/synchronous -- Arrows/Narratives are
-    // already-loaded scene data, no fetch involved (client-side derivation,
-    // no API change, per the brief).
+    // with its own prev/next adjacency.
+    //
+    // Fix round 1 (batch-n-review.md Critical-1): now reads _narrativePositions
+    // (LoadNarrativePositions above) -- the SAME full-chain resolver the
+    // verse popover's own PRIOR/FOLLOWING sections consume -- instead of the
+    // current scene's WINDOWED Arrows list. Row EXISTENCE is therefore also
+    // "this place has >=1 currently-shown event that's a narrative leg,"
+    // rather than "this place has >=1 arrow endpoint in the current window"
+    // -- a strict improvement: a genuinely isolated in-window leg whose
+    // immediate chain-neighbors are BOTH out of window produced zero arrows
+    // at all under the old scheme (build_arrows needs two CONSECUTIVE kept
+    // legs to ever emit one), which silently hid the row entirely even
+    // though the event itself was plainly on screen.
+    //
+    // Tie-break for a place revisited more than once by the SAME narrative
+    // (a real, documented case -- see the pre-fix-round-1 version of this
+    // comment/PickAdjacent for the old rule): FIRST-ENCOUNTERED wins, in
+    // Place.Events' own display order. Simpler than the old "prefer the
+    // shown event, else lowest arrow order" rule, and sufficient now that
+    // EVERY candidate position already corresponds to a currently-shown
+    // event by construction (each was fetched BY one of Place.Events' own
+    // ids) -- the old rule's first clause no longer discriminates anything.
     private sealed record NarrativeAdjacency(string NarrativeId, string Name, string Color, string? PrevPlaceId, string? NextPlaceId);
+
+    // Legend/SceneNarrative color is scoped to narratives with >=1 arrow
+    // SOMEWHERE in the current scene (scene.rs's own legend()) -- true for
+    // every narrative reachable through this method's own repro window, but
+    // not guaranteed for a genuinely isolated single in-window leg whose
+    // neighbors are both out of window (see the header comment above). This
+    // neutral fallback keeps the row rendering -- name and traversal both
+    // still work, neither depends on Narratives -- rather than losing real
+    // PRIOR/FOLLOWING data over a missing swatch color.
+    private const string DefaultNarrativeColor = "#8A8A8A";
 
     private List<NarrativeAdjacency> NarrativeRows()
     {
-        if (Arrows is not { Count: > 0 } arrows || Narratives is not { Count: > 0 } narratives)
-        {
-            return new List<NarrativeAdjacency>();
-        }
-
-        // "Use the arrow whose event verses the card is showing" (brief,
-        // verbatim) -- the card shows ALL of Place.Events for this window
-        // (no single-event selection state), so this is every event id
-        // currently on display, used only to break ties below.
-        var shownEventIds = new HashSet<string>(Place.Events.Select(e => e.Id));
-
         var rows = new List<NarrativeAdjacency>();
-        foreach (var n in narratives)
-        {
-            var legs = arrows.Where(a => a.Narrative == n.Id).ToList();
-            var incoming = legs.Where(a => a.ToPlace == Place.Id).ToList();   // arrows arriving AT this place -> prev
-            var outgoing = legs.Where(a => a.FromPlace == Place.Id).ToList(); // arrows leaving FROM this place -> next
-            if (incoming.Count == 0 && outgoing.Count == 0)
-            {
-                continue; // this place has no leg of this narrative in the current scene
-            }
+        var seenNarratives = new HashSet<string>();
 
-            var prev = PickAdjacent(incoming, a => a.ToEvent, a => a.FromPlace, shownEventIds);
-            var next = PickAdjacent(outgoing, a => a.FromEvent, a => a.ToPlace, shownEventIds);
-            rows.Add(new NarrativeAdjacency(n.Id, n.Name, n.Color, prev, next));
+        foreach (var e in Place.Events)
+        {
+            foreach (var position in _narrativePositions.Where(p => p.EventId == e.Id))
+            {
+                if (!seenNarratives.Add(position.NarrativeId))
+                {
+                    continue; // first-encountered wins -- see header comment
+                }
+
+                var color = Narratives?.FirstOrDefault(n => n.Id == position.NarrativeId)?.Color ?? DefaultNarrativeColor;
+                rows.Add(new NarrativeAdjacency(
+                    position.NarrativeId,
+                    position.NarrativeName,
+                    color,
+                    AdjacentPlaceId(position.Prior),
+                    AdjacentPlaceId(position.Following)));
+            }
         }
 
         return rows;
     }
 
-    // A place can appear in more than one leg of the SAME narrative (brief's
-    // own example: revisited twice) -- tie-break rule, verbatim: "use the
-    // arrow whose event verses the card is showing, else the lowest order;
-    // keep it simple and comment the rule." `ownEventId` reads whichever end
-    // of the candidate arrow belongs to THIS place (to_event for an incoming/
-    // prev candidate, from_event for an outgoing/next one); `adjacentPlaceId`
-    // reads the OTHER end, the place to jump to.
-    private static string? PickAdjacent(
-        List<SceneArrow> candidates, Func<SceneArrow, string> ownEventId, Func<SceneArrow, string> adjacentPlaceId, HashSet<string> shownEventIds)
-    {
-        if (candidates.Count == 0)
-        {
-            return null;
-        }
-
-        var chosen = candidates.FirstOrDefault(a => shownEventIds.Contains(ownEventId(a)))
-            ?? candidates.OrderBy(a => a.Order).First();
-        return adjacentPlaceId(chosen);
-    }
+    // NarrativeAdjacentEventDto.Places mirrors scene.rs's build_arrows' own
+    // "a.places[0] is the anchor place" convention (see the Rust
+    // NarrativeAdjacentEvent's own doc comment) -- the FIRST place is where
+    // the card's own ‹ previous event / next event › control jumps to, same
+    // as an arrow's own from_place/to_place always resolves today. Null (no
+    // button, conditional presence) only if the adjacent event genuinely
+    // carries no place at all -- unreachable in the real compiled data
+    // (every curated event has >=1 place) but guarded rather than assumed,
+    // the same "trust but verify" stance this codebase already takes for an
+    // identical shape server-side (narrative.rs's own adjacent_event).
+    private static string? AdjacentPlaceId(NarrativeAdjacentEventDto? adjacent) =>
+        adjacent?.Places is { Count: > 0 } places ? places[0] : null;
 
     // Resolves every (book, chapter) pair the given verses span via
     // AtlasClient's own Chapter LRU cache -- a hover that revisits a place,
