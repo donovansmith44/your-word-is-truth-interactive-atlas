@@ -1,0 +1,72 @@
+# Batch W1 (whole-Bible titled verse containers). Ruth, in the SAME
+# `[[event]]` schema `events-extra.toml` uses -- see
+# `data/curated/passages/genesis.toml`'s own header comment for the full
+# reconciliation/provenance framing.
+#
+# RECONCILIATION: zero pre-existing events touch Ruth (fresh authoring).
+# CHRONOLOGY, disclosed: Ruth's own text sets itself only broadly, "in the
+# days when the judges ruled" (1:1) -- no specific judge is named, unlike
+# the theo-134..theo-154 judge-by-judge chain this atlas already carries
+# (Cushan-rishathaim through Samson, -1418 to -1102). The genealogy at
+# 4:18-22 (Pharez, already dated theo-106, -1721 BC, through David) places
+# Boaz roughly seven generations before David; this app's own -1721
+# anchor for Pharez and a widely-used traditional estimate for David's own
+# birth (~1085 BC) bracket Boaz's own generation broadly in the twelfth
+# century BC -- consistent with (not independently re-deriving) the
+# judges-period range this atlas already spans. A single BROAD range
+# (-1200 to -1190), not a false-precision single year, is used for the
+# whole book (a continuous, tightly-timed short story spanning at most a
+# few years), disclosed as a traditional-period estimate, not a
+# specifically-attested year -- the SAME "genuinely disputed, no single
+# consensus year -- Ussher-consistent fallback" pattern already
+# established for jm_temple_cleansing (batch-t-report.md).
+
+[[event]]
+id = "rut_elimelech_moab"
+label = "Elimelech's family in Moab; Naomi is widowed"
+from_year = -1200
+to_year = -1190
+places = ["moab-1"]
+verses = ["RUT.1.1-5"]
+atlas_section = "Ruth pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ruth 1:1-5, the famine, Elimelech's own family sojourning in Moab, and the deaths of Elimelech, Mahlon, and Chilion."
+ref_note = "See this file's own header note on Ruth's own broad traditional dating. Place: 'the country of Moab' (1:1-2), explicit."
+
+[[event]]
+id = "rut_naomi_returns"
+label = "Naomi returns to Bethlehem; Ruth's own loyalty"
+from_year = -1200
+to_year = -1190
+places = ["bethlehem-1"]
+verses = ["RUT.1.6-22"]
+atlas_section = "Ruth pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ruth 1:6-22, Naomi's own decision to return, Orpah's own farewell, Ruth's own 'whither thou goest, I will go,' and their arrival at Bethlehem."
+ref_note = "Same traditional period as rut_elimelech_moab, immediately following. Place: 'Beth-lehem-judah' (1:19), explicit."
+
+[[event]]
+id = "rut_gleans_boaz_field"
+label = "Ruth gleans in the field of Boaz"
+from_year = -1200
+to_year = -1190
+places = ["bethlehem-1"]
+verses = ["RUT.2.1-23"]
+atlas_section = "Ruth pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ruth 2, Ruth's own gleaning, Boaz's own kindness to her, and Naomi's own recognition of a near kinsman."
+ref_note = "Same traditional period, 'in the beginning of barley harvest' (1:22). Place: Boaz's own field near Bethlehem."
+
+[[event]]
+id = "rut_threshing_floor"
+label = "Ruth at the threshing floor"
+from_year = -1200
+to_year = -1190
+places = ["bethlehem-1"]
+verses = ["RUT.3.1-18"]
+atlas_section = "Ruth pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ruth 3, Naomi's own plan, Ruth's own request at the threshing floor, and Boaz's own promise."
+ref_note = "Same traditional period, at the end of barley and wheat harvest (2:23). Place: the threshing floor near Bethlehem."
+
+[[event]]
+id = "rut_boaz_redeems"
+label = "Boaz redeems Ruth; the genealogy to David"
+from_year = -1200
+to_year = -1190
+places = ["bethlehem-1"]
+verses = ["RUT.4.1-22"]
+atlas_section = "Ruth pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ruth 4, Boaz's own redemption of the land and of Ruth at the city gate, the birth of Obed, and the genealogy from Pharez to David, closing the book."
+ref_note = "Same traditional period. Place: 'the gate' of Bethlehem (4:1), explicit. The closing genealogy (4:18-22) names Pharez (theo-106, -1721 BC, unmodified) as its own first-named ancestor -- consistent with, not contradicting, this file's own dating note above."
