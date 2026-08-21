@@ -726,6 +726,55 @@ Notes:
   a separate curated flag: a Theographic event this batch never touches,
   and that is a leg of no narrative, correctly anchors NO heading anywhere.
 
+  DECISIVE-CONTAINER MODEL, COLLISION PRECEDENCE (fix-round-1,
+  batch-t-review.md Important-1, amended by the owner's own 2026-08-21
+  ruling -- verbatim: "we don't modify the verses because we lose
+  composability... these titled passages are containers for verses...
+  identity is empty set. the set may have n verses. there may be sets
+  that have overlapping verses as we grow the dag, which is fine, but
+  we're decisive about the titles of verse groupings that we display on
+  the reader"). `Event` IS a titled CONTAINER over a verse SET, never the
+  reverse -- headings are built by iterating containers and emitting
+  anchors from their own content, never by writing heading data onto a
+  verse record (there is no such record to write onto; verses stay plain,
+  immutable atoms). The empty set is a lawful container identity. TWO
+  containers legitimately overlapping the same verse is an EXPECTED data
+  shape as the graph grows, not an error -- a real, live case:
+  `jm_bethany`, a bare `jesus-ministry` leg (heading-worthy only via the
+  "existing-title freebie" narrative-leg rule, no witnesses/
+  robertson_section of its own), and `pw_bethany`, a REAL curated
+  container for this exact grouping (this batch's own flagship 3-witness
+  passion-week leg), both anchor JHN.12.1. Overlap lives in the DATA; the
+  READER is decisive -- exactly ONE title heads any displayed verse
+  grouping, chosen by `AtlasData::heading_precedence`'s own 3-tier rule,
+  never by incidental file/vec order:
+  1. LAYER -- a REAL container (curated `witnesses` non-empty and/or
+     `robertson_section` present) beats a bare "freebie" container
+     (heading-worthy only because it happens to be a narrative leg riding
+     its own pre-existing `Event::label`). Decides every real collision in
+     today's curated data outright (`pw_bethany` real container beats
+     `jm_bethany` freebie).
+  2. KIND -- `"event"` beats `"general"`, a tiebreak reached only when both
+     colliders are genuinely same-layer containers -- currently VACUOUS (no
+     real `"general"` passage exists yet), kept as principled
+     future-proofing.
+  3. CHRONOLOGY -- the earlier `(from_year, order_key)` wins, the SAME
+     tuple `Narrative.legs`' own ordering already uses -- reached only
+     between two real containers of the same kind, not observed anywhere
+     in today's curated data.
+  Two containers equal on all three tiers keep plain first-wins (stable
+  sort order), unchanged from before this fix -- not expected to ever
+  actually occur for two distinct real events. The NON-CHOSEN container is
+  never unreachable: the verse's own EVENT membership section
+  (`events_for_verse`, below) always lists every container touching that
+  verse regardless of which one won the heading, so it stays one click
+  away at the same verse -- only the one-per-verse reader-HEADING slot is
+  contested, never the underlying graph. Every verse in the Bible
+  ultimately belonging to at least one titled container is the owner's own
+  stated end-state; today's Gospels+Acts+13-narratives coverage is a
+  scoped subset, not the destination -- the full migration is real future
+  work, not this fix.
+
   PROVIDER (no popover surgery -- registered exactly like every other
   section, Explore/PopoverSections.cs). VERSE nodes gain ONE new section,
   appended after catechism: "EVENT" (`VerseEventMembershipSection`,

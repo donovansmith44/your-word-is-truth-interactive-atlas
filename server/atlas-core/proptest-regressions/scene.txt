@@ -1,0 +1,9 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 1283658d55f7afecf461428944412f94094117e8e0e08bf2c8eb6c5d1a520da0 # shrinks to w = TimeRange { from_year: -1, to_year: -1 }
+cc 98ccb5af35960e4cd2f78343b17fc01f28387b063cd6ca8e5420c28459597163 # shrinks to w = TimeRange { from_year: -1, to_year: -1 }
+cc 7ac6a9aa9a4526612200f176f9042f3eeee89e100afa7b3132c86ee2af875dc0 # shrinks to w = TimeRange { from_year: -1, to_year: -1 }

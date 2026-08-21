@@ -112,3 +112,55 @@ test('every curated event\'s reader heading text equals its own title exactly (a
     await expect(heading).toHaveText(detail.title);
   }
 });
+
+// Fix-round-1 (batch-t-review.md Important-1), amended by the owner's own
+// "decisive container" ruling (2026-08-21): a real, live-reproduced defect
+// -- JHN.12.1 is anchored by TWO titled containers (`jm_bethany`, a bare
+// jesus-ministry leg, heading-worthy only via the "existing-title freebie"
+// narrative-leg rule, no witnesses/robertson_section of its own,
+// pre-existing; `pw_bethany`, a REAL curated container for this exact
+// grouping, this batch's own flagship 3-witness passion-week leg) and the
+// pre-fix code silently rendered `jm_bethany`'s own heading there, dropping
+// `pw_bethany`'s John-witness heading entirely -- not caught by the sweep
+// above (or anywhere else in this file), since every other test here
+// happens to exercise a collision-free event. Overlap lives in the DATA
+// (both containers legitimately cite this verse -- neither is wrong); the
+// READER is decisive -- exactly one title renders here, chosen by
+// `AtlasData::heading_precedence`'s own layer-then-kind-then-chronology
+// rule (data.rs's own doc comment has the full chain). This test MUST fail
+// on the pre-fix build (confirmed: red against the pre-fix first-wins
+// `or_insert_with`, green after the precedence fix -- see data.rs's own
+// `heading_collision_tests` for the Rust-level pin of the same mechanism).
+test('fix-round-1/Important-1: a verse anchored by TWO titled containers renders the DECISIVE one\'s heading, and the other stays reachable via the verse\'s own EVENT section', async ({ page }) => {
+  const COLLISION_VREF = 'JHN.12.1';
+  const RICHER_EVENT_ID = 'pw_bethany'; // the REAL curated container -- wins layer tier 1
+  const SHADOWED_EVENT_ID = 'jm_bethany'; // the bare "existing-title freebie" -- stays reachable, never chosen
+
+  // Ground truth, at the wire level, before touching the UI at all.
+  const chapterOut = await api.chapter('JHN.12');
+  const anchorVerse = chapterOut.verses.find((v: any) => `JHN.12.${v.verse}` === COLLISION_VREF);
+  expect(anchorVerse?.heading, 'JHN.12.1 must anchor SOME heading').toBeTruthy();
+  expect(anchorVerse.heading.event_id, 'the REAL curated container (has witnesses) must win the collision over the bare freebie').toBe(RICHER_EVENT_ID);
+
+  const verseDetail = await api.verse(COLLISION_VREF);
+  const citingIds = verseDetail.events.map((e: any) => e.id).sort();
+  expect(citingIds, 'both colliding events must still cite this verse in the EVENT membership list, win or lose the heading').toContain(SHADOWED_EVENT_ID);
+  expect(citingIds).toContain(RICHER_EVENT_ID);
+
+  // The reader itself: the winning event's own heading renders, the
+  // shadowed one's own heading (same testid convention, different id) does
+  // NOT render a SECOND heading at this verse.
+  await page.goto('/read/JHN/12');
+  await expect(page.getByTestId(`pericope-heading-${RICHER_EVENT_ID}`)).toBeVisible();
+  await expect(page.getByTestId(`pericope-heading-${RICHER_EVENT_ID}`)).toHaveText('Mary anoints Jesus at Bethany');
+  await expect(page.getByTestId(`pericope-heading-${SHADOWED_EVENT_ID}`)).toHaveCount(0);
+
+  // The shadowed event stays reachable at the SAME verse, one click away,
+  // via the verse popover's own EVENT membership section (Important-1's
+  // own reason this is Important rather than Critical).
+  await page.getByTestId('verse-line-1').click();
+  await expect(page.getByTestId(`verse-event-${SHADOWED_EVENT_ID}`)).toBeVisible();
+  await page.getByTestId(`verse-event-${SHADOWED_EVENT_ID}`).click();
+  const shadowedDetail = await api.event(SHADOWED_EVENT_ID);
+  await expect(page.getByTestId('popover-title')).toHaveText(shadowedDetail.title);
+});

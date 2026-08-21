@@ -348,12 +348,16 @@
     // every chip Activate that re-resolves Current in place) -- HOUSE
     // PATTERN: synced continuously at the point Current actually changes,
     // never captured lazily at dispose time. `INarrativeAware` (a small,
-    // focused interface -- Explore/NarrativeEventNode.cs) is how this stays
-    // decoupled from concrete node types: VerseNode and NarrativeEventNode
-    // opt in; every other node kind (Place/Chapter/Book/Author/
-    // TimeAndPlace/Year/Passage/Catechism) falls into the `else` branch and
-    // clears focus, so navigating from a narrative verse to anything else
-    // never leaves stale emphasis on the map. Reads the SAME memoized
+    // focused interface -- Explore/EventNode.cs, retargeted Batch T; lived
+    // in the now-deleted Explore/NarrativeEventNode.cs before) is how this
+    // stays decoupled from concrete node types: EventNode is the ONLY
+    // opt-in today (Batch T retired VerseNode's own implementation --
+    // verse-level narrative-awareness moved entirely to EVENT membership,
+    // see VerseNode's own doc comment); every other node kind (Place/
+    // Chapter/Book/Author/TimeAndPlace/Year/Passage/Catechism/Verse) falls
+    // into the `else` branch and clears focus, so navigating away from an
+    // open EventNode to anything else never leaves stale emphasis on the
+    // map. Reads the SAME memoized
     // NarrativePositionsAsync the Prior/Following section providers
     // already call for THIS SAME Current node -- when both run (the common
     // case), this is a cache hit, not a second network round trip.
