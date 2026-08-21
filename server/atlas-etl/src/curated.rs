@@ -293,6 +293,43 @@ pub fn parse_event_witnesses(input: &str) -> Result<Vec<(String, atlas_core::dat
     Ok(out)
 }
 
+// --- Batch T2: acts-sections.toml (Acts provenance) ---
+
+#[derive(Deserialize)]
+struct ActsSectionsFile {
+    #[serde(default)]
+    section: Vec<ActsSectionToml>,
+}
+
+#[derive(Deserialize)]
+struct ActsSectionToml {
+    event_id: String,
+    acts_section: String,
+}
+
+/// Parses `acts-sections.toml` (Batch T2, Acts provenance -- owner's own
+/// ambiguity ruling: "acts sections get their own provenance key, NOT
+/// robertson_section"). Schema: a FLAT `[[section]]` array, each row
+/// explicitly naming its own `event_id` -- the SAME flat, no-mis-attachment-
+/// risk shape `event-witnesses.toml`/`parse_event_witnesses` already
+/// establishes (see that function's own doc comment for the full
+/// reasoning), reused here rather than re-invented, since this file has
+/// the identical "one curated fact per named event id" structure. This
+/// file exists specifically so a bare Theographic-sourced event (which
+/// has no `[[event]]` row of its own in `events-extra.toml` to add a field
+/// to directly) can still gain Acts provenance -- `main.rs` merges it onto
+/// the FULL combined event set (Theographic + events-extra.toml) by id,
+/// the same merge timing/mechanism `event-witnesses.toml` already uses.
+///
+/// Pure and STRUCTURAL only, same split every other curated schema in this
+/// module follows: a malformed file bails immediately; cross-checking each
+/// `event_id` against the real compiled event set is `main.rs`'s own job.
+pub fn parse_acts_sections(input: &str) -> Result<Vec<(String, String)>> {
+    let f: ActsSectionsFile =
+        toml::from_str(input).context("acts-sections.toml: invalid TOML or does not match the [[section]] schema")?;
+    Ok(f.section.into_iter().map(|s| (s.event_id, s.acts_section)).collect())
+}
+
 #[derive(Deserialize)]
 struct LandmarkToml {
     name: String,

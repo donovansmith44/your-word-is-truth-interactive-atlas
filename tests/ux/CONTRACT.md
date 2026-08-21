@@ -669,7 +669,17 @@ Notes:
   atlas's own `[-4004,100]` span bounds, never a curator-typed number,
   see that function's own doc comment -- but is OMITTED from the wire
   entirely, never presented to a reader as a real date; `places` stays
-  empty by construction), and PARALLEL WITNESSES
+  empty by construction), `acts_section` (Batch T2: Acts's own sibling
+  provenance field to `robertson_section` below -- owner's own ambiguity
+  ruling, verbatim: "acts sections get their own provenance key, NOT
+  robertson_section," since Robertson's own 1922 Harmony is Gospels-only;
+  counts as a real layer-1 container in `heading_precedence`, identically
+  to `robertson_section`; merged onto the FULL combined event set --
+  Theographic + events-extra.toml -- by `data/curated/acts-sections.toml`,
+  the SAME flat event_id-keyed merge mechanism `event-witnesses.toml`
+  already uses, so it can target a bare Theographic-sourced event
+  directly with no duplicate `[[event]]` row needed), and PARALLEL
+  WITNESSES
   (`witnesses: Vec<EventWitness>` -- "the set of per-book passages that
   recount the same event... one witness passage per Gospel," the owner
   verbatim). Each witness is `{book, translations, ref_note,
@@ -717,8 +727,9 @@ Notes:
   entirely to the EVENT node). `GET /api/event/{id}` (new) is an EVENT
   node's own rich fetch: `id`/`title`/`kind` (Batch T2, ALWAYS present) /
   `when`/`places` (id+name pairs) / `witnesses` (ALWAYS >=1, see the
-  data-model paragraph above) / `robertson_section`/`ref_note` (each
-  omitted, not null, when uncurated). Batch T2: `when` is OMITTED (not
+  data-model paragraph above) / `robertson_section`/`acts_section`
+  (Batch T2, Acts's own sibling field -- see the data-model paragraph
+  above)/`ref_note` (each omitted, not null, when uncurated). Batch T2: `when` is OMITTED (not
   null) when `kind == "general"` -- the fabrication guard extends to the
   wire itself, not just the curated source (see the data-model paragraph
   above); `places` is always present, possibly empty (a general-kind

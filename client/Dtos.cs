@@ -206,6 +206,11 @@ public sealed record EventDetail(
     List<EventPlaceDto> Places,
     List<EventWitnessDto> Witnesses,
     string? RobertsonSection = null,
+    // Batch T2 (Acts provenance): Acts's own sibling field to
+    // RobertsonSection -- see Event::acts_section's own doc comment
+    // (server, atlas-core/src/data.rs) for why it's separate. Wire-only,
+    // like RobertsonSection itself -- no UI element renders either today.
+    string? ActsSection = null,
     string? RefNote = null);
 
 public sealed record BookMetaDto(string Author, string? WritePlace, int? WriteFrom, int? WriteTo);

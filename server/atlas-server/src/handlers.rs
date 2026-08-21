@@ -652,6 +652,12 @@ pub struct EventDetailOut {
     pub witnesses: Vec<EventWitnessOut>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub robertson_section: Option<String>,
+    /// Batch T2 (Acts provenance): Acts's own sibling provenance field to
+    /// `robertson_section` above -- see `atlas_core::data::Event::
+    /// acts_section`'s own doc comment for why it's separate, not reused.
+    /// Omitted (not null) when absent, same convention.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub acts_section: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ref_note: Option<String>,
 }
@@ -681,6 +687,7 @@ pub async fn event(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -
         places,
         witnesses,
         robertson_section: e.robertson_section.clone(),
+        acts_section: e.acts_section.clone(),
         ref_note: e.ref_note.clone(),
     }))
 }

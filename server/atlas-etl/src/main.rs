@@ -112,6 +112,25 @@ fn main() -> Result<()> {
         }
     }
 
+    // --- data/curated/acts-sections.toml (Batch T2: Acts provenance) -------
+    // Same merge timing/mechanism as event-witnesses.toml just above --
+    // attached AFTER every event id is known, so a row naming an unknown
+    // event id fails loud here rather than silently vanishing. Re-derives
+    // `event_by_id` fresh (the `witnesses_by_event` loop above already
+    // mutated `all_events[idx].witnesses`, but never moves/reorders
+    // `all_events` itself, so the index map stays valid to reuse -- kept
+    // as a fresh binding anyway, for clarity, not because the old one is
+    // actually stale).
+    let acts_sections = curated::parse_acts_sections(&read(&curated_dir.join("acts-sections.toml"))?)?;
+    for (event_id, acts_section) in acts_sections {
+        match event_by_id.get(&event_id) {
+            Some(&idx) => all_events[idx].acts_section = Some(acts_section),
+            None => bail!(
+                "data/curated/acts-sections.toml: section row names event_id '{event_id}', which does not match any compiled event id (Theographic or events-extra.toml)"
+            ),
+        }
+    }
+
     let mut all_places = geo_places;
     let mut seen_place_ids: HashSet<String> = all_places.iter().map(|p| p.id.clone()).collect();
     for p in theo_new_places {
@@ -455,6 +474,10 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     let event_witnesses_path = curated_dir.join("event-witnesses.toml");
     if !event_witnesses_path.is_file() {
         missing.push(format!("{}", event_witnesses_path.display()));
+    }
+    let acts_sections_path = curated_dir.join("acts-sections.toml");
+    if !acts_sections_path.is_file() {
+        missing.push(format!("{}", acts_sections_path.display()));
     }
     let narratives_dir = curated_dir.join("narratives");
     let has_narrative_files = narratives_dir.is_dir()

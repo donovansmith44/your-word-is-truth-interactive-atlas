@@ -106,6 +106,21 @@ pub struct Event {
     /// phrasing (CC0), not Robertson's own archaic wording.
     #[serde(default)]
     pub robertson_section: Option<String>,
+    /// Batch T2 (Acts provenance, owner's own ambiguity ruling, verbatim:
+    /// "acts sections get their own provenance key, NOT robertson_section"):
+    /// Acts's own sibling provenance field to `robertson_section` above --
+    /// which Acts pericope-sectioning source grounds this event's own
+    /// title/grouping, when Acts-sourced. Robertson's own 1922 Harmony is
+    /// Gospels-only, so an Acts event's provenance is never claimed under
+    /// that field even though the SHAPE (a short auditable citation
+    /// string) is identical -- keeping the two fields separate means a
+    /// reader/curator can never mistake an Acts section for a
+    /// Robertson-verified one. `None` for every Gospel event (and for any
+    /// Acts event this project has not yet sectioned). Counts as a real
+    /// (layer-1) container in `heading_precedence`, exactly like
+    /// `robertson_section` does -- see that function's own doc comment.
+    #[serde(default)]
+    pub acts_section: Option<String>,
     /// Batch T requirement 1: citation-integrity note for THIS event's own
     /// date/grouping (distinct from each witness's own, narrower
     /// `EventWitness::ref_note`) -- names only sources actually consulted,
@@ -157,6 +172,7 @@ impl Default for Event {
             kind: default_event_kind(),
             witnesses: Vec::new(),
             robertson_section: None,
+            acts_section: None,
             ref_note: None,
             order_key: 0,
         }
@@ -803,7 +819,10 @@ fn heading_anchors_for(e: &Event) -> Vec<String> {
 ///    own words). Only reached when two REAL containers of the same kind
 ///    collide, which does not occur anywhere in today's curated data.
 fn heading_precedence(e: &Event) -> (u8, u8, std::cmp::Reverse<i32>, std::cmp::Reverse<i32>) {
-    let layer: u8 = if !e.witnesses.is_empty() || e.robertson_section.is_some() { 1 } else { 0 };
+    // Batch T2: `acts_section` counts the SAME as `robertson_section` here
+    // -- Acts's own sibling provenance field (see `Event::acts_section`'s
+    // own doc comment for why it's a separate field, not a reused one).
+    let layer: u8 = if !e.witnesses.is_empty() || e.robertson_section.is_some() || e.acts_section.is_some() { 1 } else { 0 };
     let kind: u8 = if e.kind == "event" { 1 } else { 0 };
     (layer, kind, std::cmp::Reverse(e.when.from_year), std::cmp::Reverse(e.order_key))
 }
@@ -1050,8 +1069,10 @@ impl AtlasData {
         let mut real_anchor_owner: HashMap<String, String> = HashMap::new();
         let mut heading_anchor_collisions: Vec<(String, String, String)> = Vec::new();
         for e in &self.events {
-            let heading_worthy =
-                narrative_leg_ids.contains(e.id.as_str()) || !e.witnesses.is_empty() || e.robertson_section.is_some();
+            let heading_worthy = narrative_leg_ids.contains(e.id.as_str())
+                || !e.witnesses.is_empty()
+                || e.robertson_section.is_some()
+                || e.acts_section.is_some(); // Batch T2: Acts's own sibling provenance field
             if !heading_worthy {
                 continue;
             }
@@ -1766,6 +1787,30 @@ mod heading_collision_tests {
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
         let heading = data.heading_for_verse("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
         assert_eq!(heading.event_id, "as_event", "kind=\"event\" must beat kind=\"general\" between two same-layer containers");
+    }
+
+    #[test]
+    fn heading_collision_acts_section_counts_as_a_real_layer1_container() {
+        // Batch T2 (Acts provenance): `acts_section` is Acts's own sibling
+        // to `robertson_section` -- a DIFFERENT field (per the owner's own
+        // ambiguity ruling, "acts sections get their own provenance key,
+        // NOT robertson_section"), but it must count the SAME way in
+        // `heading_precedence`'s own LAYER tier: a bare freebie (neither
+        // witnesses, robertson_section, NOR acts_section) must lose to a
+        // real container carrying acts_section alone, same as the existing
+        // robertson_section-only case already proven above.
+        let mut with_acts_section = bare_leg();
+        with_acts_section.id = "as_acts".into();
+        with_acts_section.acts_section = Some("Acts pericope (this project's own sectioning)".into());
+        let mut plain_bare = bare_leg();
+        plain_bare.id = "as_bare".into();
+        // `plain_bare` placed FIRST -- proves the win is layer-driven, not
+        // incidentally order-driven.
+        let events = vec![plain_bare, with_acts_section];
+        let narratives = vec![Narrative { id: "narr".into(), name: "N".into(), color: "#000".into(), legs: vec!["as_bare".into(), "as_acts".into()] }];
+        let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        let heading = data.heading_for_verse("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
+        assert_eq!(heading.event_id, "as_acts", "acts_section alone must make a container real (layer 1), same as robertson_section");
     }
 }
 
