@@ -780,6 +780,9 @@ from_year = 29
 to_year = 29
 places = ["jordan"]
 verses = ["MAT.3.13-17"]
+order_key = 240
+robertson_section = "Robertson (1922) §24, \"Jesus Baptized by John in the Jordan\""
+ref_note = "Matthew 3:13-17 read directly against the compiled KJV text"
 [[event]]
 id = "jm_cana"
 label = "Jesus turns water to wine at Cana"
@@ -787,6 +790,9 @@ from_year = 30
 to_year = 30
 places = ["cana"]
 verses = ["JHN.2.1-11"]
+order_key = 290
+robertson_section = "Robertson (1922) §29, \"Jesus Works His First Miracle\""
+ref_note = "John 2:1-11 read directly against the compiled KJV text"
 [[event]]
 id = "jm_capernaum"
 label = "Jesus makes Capernaum his base"
@@ -794,6 +800,9 @@ from_year = 30
 to_year = 30
 places = ["capernaum"]
 verses = ["MAT.4.13"]
+order_key = 400
+robertson_section = "Robertson (1922) §40, \"The New Home in Capernaum\""
+ref_note = "Matthew 4:13-16 read directly against the compiled KJV text (verses field kept at 4:13, this event's own pre-existing scope; 4:14-16 are Matthew's own fulfillment-citation commentary, not narrative)"
 # Batch T requirement 5 (reader headings; req 6/7's own "a JHN event whose
 # FOLLOWING is not the next pericope in JHN"): the FIRST of two temple
 # cleansings the Gospels narrate -- John places this one early (John 2,
@@ -812,6 +821,7 @@ from_year = 30
 to_year = 30
 places = ["jerusalem"]
 verses = ["JHN.2.13-22"]
+order_key = 310
 robertson_section = "Robertson (1922) §31, \"The First Cleansing of the Temple at the Passover\""
 ref_note = "John 2:13-22 read directly; Robertson section number/title verified against Project Gutenberg #36264 (both the HTML and plain-text mirrors of the 1922 first edition)"
 [[event]]
@@ -821,6 +831,9 @@ from_year = 30
 to_year = 30
 places = ["sychar"]
 verses = ["JHN.4.4-26"]
+order_key = 350
+robertson_section = "Robertson (1922) §35, \"Jesus in Samaria at Jacob's Well and in Sychar\""
+ref_note = "John 4:4-26 read directly against the compiled KJV text; scoped narrower than Robertson's own §35 (John 4:5-42, which also covers the disciples' return and the Samaritans' own belief over the following two days) -- this event's own pre-existing scope is the well conversation itself"
 # places: brief guessed "bethsaida", but geo ancient.jsonl collides into
 # "Bethsaida 1"/"Bethsaida 2" (identical coords, 32.9104, 35.6310 --
 # same town, split only by which verses were tagged to which record).
@@ -1317,3 +1330,181 @@ kind = "general"
 verses = ["LUK.2.51-52"]
 robertson_section = "Robertson (1922) §19, \"The Eighteen Years at Nazareth\""
 ref_note = "Luke 2:51-52 read directly against the compiled KJV text; general-kind, same reasoning as rob_childhood_nazareth above"
+
+# --- Period 3: Baptist's ministry & the beginning of Jesus's ministry
+# (Robertson Part V-VI, SS20-40, minus S31 already curated in Batch T) ----
+# jm_jordan/jm_cana/jm_sychar/jm_capernaum already exist (Task 3/Batch T) --
+# enriched IN PLACE, further up this file, rather than duplicated here.
+# Dating: John's own public ministry begins shortly before Jesus's own
+# baptism (AD 29, the pre-existing jm_jordan anchor); SS21-27 share that
+# year. SS28 onward (first disciples through S40) fall within AD 29-30,
+# the first year of Jesus's own ministry, ending at S40 (jm_capernaum,
+# already dated 30). Bethabara/"Bethany beyond Jordan" (JHN.1.28,
+# distinct from the Bethany near Jerusalem, jm_bethany's own home) is the
+# ALREADY-DISAMBIGUATED bethany-2 (see jm_bethany's own original comment).
+[[event]]
+id = "rob_ministry_begins"
+label = "The historical setting for the beginning of the ministry"
+kind = "general"
+verses = ["LUK.3.1-2"]
+robertson_section = "Robertson (1922) §20, \"The Time of the Beginning\""
+ref_note = "Mark 1:1 and Luke 3:1-2 both read directly against the compiled KJV text; general-kind -- a historical-dating superscription, not a discrete happening with its own place"
+
+[[event]]
+id = "rob_john_preaching"
+label = "John the Baptist begins preaching at the Jordan"
+from_year = 29
+to_year = 29
+places = ["jordan"]
+verses = ["MAT.3.1-6"]
+order_key = 210
+robertson_section = "Robertson (1922) §21, \"The Message and the Messenger\""
+ref_note = "Matthew 3:1-6 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_john_specimen"
+label = "A specimen of John's preaching"
+from_year = 29
+to_year = 29
+places = ["jordan"]
+verses = ["MAT.3.7-10"]
+order_key = 220
+robertson_section = "Robertson (1922) §22, \"A Specimen of John's Preaching\""
+ref_note = "Matthew 3:7-10 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_john_messiah_picture"
+label = "John's own picture of the Messiah he had not yet seen"
+from_year = 29
+to_year = 29
+places = ["jordan"]
+verses = ["MAT.3.11-12"]
+order_key = 230
+robertson_section = "Robertson (1922) §23, \"The Forerunner's Picture of the Messiah before Seeing Him\""
+ref_note = "Matthew 3:11-12 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_temptation"
+label = "The temptation of Jesus in the wilderness"
+from_year = 29
+to_year = 29
+places = ["jordan"]
+verses = ["MAT.4.1-11"]
+order_key = 250
+robertson_section = "Robertson (1922) §25, \"The Three Temptations of Jesus\""
+ref_note = "Matthew 4:1-11, Mark 1:12-13, Luke 4:1-13 all read directly against the compiled KJV text; Luke 4:1's own 'returned from Jordan... into the wilderness' anchors this at the Jordan rather than a more specific unnamed wilderness site"
+
+[[event]]
+id = "rob_sanhedrin_testimony"
+label = "John's testimony before the priests and Levites"
+from_year = 29
+to_year = 29
+places = ["bethany-2"]
+verses = ["JHN.1.19-28"]
+order_key = 260
+robertson_section = "Robertson (1922) §26, \"The Testimony of the Baptist to the Committee of the Sanhedrin\""
+ref_note = "John 1:19-28 read directly against the compiled KJV text; John's own text (1:28) names the place explicitly, 'Bethabara beyond Jordan' -- the same site jm_bethany's own original comment already identifies as bethany-2, distinct from the Bethany near Jerusalem"
+
+[[event]]
+id = "rob_john_identifies_jesus"
+label = "John identifies Jesus as the Lamb of God"
+from_year = 29
+to_year = 29
+places = ["bethany-2"]
+verses = ["JHN.1.29-34"]
+order_key = 270
+robertson_section = "Robertson (1922) §27, \"John's Identification of Jesus as the Messiah\""
+ref_note = "John 1:29-34 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_first_disciples"
+label = "Jesus makes his first disciples"
+from_year = 29
+to_year = 29
+places = ["bethany-2"]
+verses = ["JHN.1.35-51"]
+order_key = 280
+robertson_section = "Robertson (1922) §28, \"Jesus Makes His First Disciples\""
+ref_note = "John 1:35-51 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_capernaum_sojourn"
+label = "A brief sojourn at Capernaum"
+from_year = 30
+to_year = 30
+places = ["capernaum"]
+verses = ["JHN.2.12"]
+order_key = 300
+robertson_section = "Robertson (1922) §30, \"Jesus Makes a First Sojourn at Capernaum, Accompanied by His Kindred and His Early Disciples\""
+ref_note = "John 2:12 read directly against the compiled KJV text; distinct from jm_capernaum (Robertson's own later §40, 'The New Home in Capernaum') -- this is an explicitly brief, passing stay ('not many days'), not yet Jesus's own settled base"
+
+[[event]]
+id = "rob_nicodemus"
+label = "Nicodemus comes to Jesus by night"
+from_year = 30
+to_year = 30
+places = ["jerusalem"]
+verses = ["JHN.2.23-25", "JHN.3.1-21"]
+order_key = 320
+robertson_section = "Robertson (1922) §32, \"The Interview of Nicodemus with Jesus\""
+ref_note = "John 2:23-3:21 read directly against the compiled KJV text; written as two same-chapter ranges (2:23-25, 3:1-21) -- this project's own curator-friendly range syntax (expand_verse_ref) does not span a chapter boundary in one string, a mechanical split only, not a scope change"
+
+[[event]]
+id = "rob_parallel_ministry"
+label = "Jesus and John baptize side by side in Judea"
+from_year = 30
+to_year = 30
+places = ["judea-1"]
+verses = ["JHN.3.22-36"]
+order_key = 330
+robertson_section = "Robertson (1922) §33, \"The Parallel Ministry of Jesus and John with John's Loyalty to Jesus\""
+ref_note = "John 3:22-36 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_leaving_judea"
+label = "Why Jesus left Judea for Galilee"
+kind = "general"
+verses = ["JHN.4.1-4"]
+robertson_section = "Robertson (1922) §34, \"Christ's Reasons for Leaving Judea\""
+ref_note = "Matthew 4:12, Mark 1:14, Luke 3:19-20/4:14, and John 4:1-4 all read directly against the compiled KJV text; general-kind -- a brief, fragmented transitional bundle (Luke's own 3:19-20 aside, John put in prison, is the fuller telling Robertson gives its own section much later, §71) rather than one coherent explorable scene; John's own fuller account (4:1-4) is this event's top-level verses, the other three fragments disclosed here rather than separately witnessed"
+
+[[event]]
+id = "rob_galilee_arrival"
+label = "Jesus arrives in Galilee"
+from_year = 30
+to_year = 30
+places = ["galilee-1"]
+verses = ["JHN.4.43-45"]
+order_key = 360
+robertson_section = "Robertson (1922) §36, \"The Arrival of Jesus in Galilee\""
+ref_note = "John 4:43-45 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_galilee_teaching_summary"
+label = "A general summary of Jesus's teaching in Galilee"
+kind = "general"
+verses = ["MRK.1.14-15"]
+robertson_section = "Robertson (1922) §37, \"General Account of His Teaching in Galilee\""
+ref_note = "Matthew 4:17, Mark 1:14-15, and Luke 4:14-15 all read directly against the compiled KJV text; general-kind -- a summary statement of ongoing teaching, not a discrete happening (Mark's own fuller two verses used as this event's top-level verses)"
+
+[[event]]
+id = "rob_cana_nobleman"
+label = "Jesus heals a nobleman's son at Cana"
+from_year = 30
+to_year = 30
+places = ["cana"]
+verses = ["JHN.4.46-54"]
+order_key = 380
+robertson_section = "Robertson (1922) §38, \"The Healing at Cana of the Son of a Courtier of Capernaum\""
+ref_note = "John 4:46-54 read directly against the compiled KJV text"
+
+[[event]]
+id = "rob_nazareth_rejection"
+label = "Jesus is first rejected at Nazareth"
+from_year = 30
+to_year = 30
+places = ["nazareth"]
+verses = ["LUK.4.16-31"]
+order_key = 390
+robertson_section = "Robertson (1922) §39, \"The First Rejection at Nazareth\""
+ref_note = "Luke 4:16-31 read directly against the compiled KJV text"

@@ -281,3 +281,95 @@ book = "LUK"
 verses = ["LUK.2.39"]
 ref_note = "Luke 2:39 read directly against the compiled KJV text"
 robertson_section = "Robertson (1922) §16"
+
+# --- Period 3: SS20-40 (minus S31, curated in Batch T) --------------------
+[[witness]]
+event_id = "rob_ministry_begins"
+book = "MRK"
+verses = ["MRK.1.1"]
+ref_note = "Mark 1:1 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §20"
+
+[[witness]]
+event_id = "rob_ministry_begins"
+book = "LUK"
+verses = ["LUK.3.1-2"]
+ref_note = "Luke 3:1-2 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §20"
+
+[[witness]]
+event_id = "rob_john_preaching"
+book = "MAT"
+verses = ["MAT.3.1-6"]
+ref_note = "Matthew 3:1-6 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §21"
+
+[[witness]]
+event_id = "rob_john_preaching"
+book = "MRK"
+verses = ["MRK.1.2-6"]
+ref_note = "Mark 1:2-6 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §21"
+
+[[witness]]
+event_id = "rob_john_preaching"
+book = "LUK"
+verses = ["LUK.3.3-6"]
+ref_note = "Luke 3:3-6 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §21"
+
+[[witness]]
+event_id = "rob_john_specimen"
+book = "MAT"
+verses = ["MAT.3.7-10"]
+ref_note = "Matthew 3:7-10 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §22"
+
+[[witness]]
+event_id = "rob_john_specimen"
+book = "LUK"
+verses = ["LUK.3.7-14"]
+ref_note = "Luke 3:7-14 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §22"
+
+[[witness]]
+event_id = "rob_john_messiah_picture"
+book = "MAT"
+verses = ["MAT.3.11-12"]
+ref_note = "Matthew 3:11-12 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §23"
+
+[[witness]]
+event_id = "rob_john_messiah_picture"
+book = "MRK"
+verses = ["MRK.1.7-8"]
+ref_note = "Mark 1:7-8 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §23"
+
+[[witness]]
+event_id = "rob_john_messiah_picture"
+book = "LUK"
+verses = ["LUK.3.15-18"]
+ref_note = "Luke 3:15-18 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §23"
+
+[[witness]]
+event_id = "rob_temptation"
+book = "MAT"
+verses = ["MAT.4.1-11"]
+ref_note = "Matthew 4:1-11 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §25"
+
+[[witness]]
+event_id = "rob_temptation"
+book = "MRK"
+verses = ["MRK.1.12-13"]
+ref_note = "Mark 1:12-13 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §25"
+
+[[witness]]
+event_id = "rob_temptation"
+book = "LUK"
+verses = ["LUK.4.1-13"]
+ref_note = "Luke 4:1-13 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §25"
