@@ -352,6 +352,37 @@ async fn event_endpoint_omits_when_for_general_kind_passages() {
     assert_eq!(body["when"]["from_year"], -1406);
 }
 
+/// Batch T2 (Acts provenance): `acts_section` is Acts's own sibling
+/// provenance field to `robertson_section` (owner's own ambiguity ruling --
+/// "acts sections get their own provenance key, NOT robertson_section").
+/// `GET /api/event/{id}` must carry it, omitted (not null) when absent,
+/// exactly like `robertson_section` already is.
+#[tokio::test]
+async fn event_endpoint_carries_acts_section_when_present() {
+    let events = vec![
+        Event {
+            id: "a1".into(),
+            label: "Peter preaches at Pentecost".into(),
+            when: TimeRange::new(30, 30).unwrap(),
+            places: vec![],
+            verses: vec![],
+            acts_section: Some("Acts pericope (this project's own sectioning): Acts 2:14-41".into()),
+            ..Default::default()
+        },
+        Event { id: "a2".into(), label: "No Acts provenance".into(), when: TimeRange::new(30, 30).unwrap(), places: vec![], verses: vec![], ..Default::default() },
+    ];
+    let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+    let app = atlas_server::app::build(Arc::new(data), None);
+
+    let (st, body) = call(&app, "/api/event/a1").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["acts_section"], "Acts pericope (this project's own sectioning): Acts 2:14-41");
+
+    let (st, body) = call(&app, "/api/event/a2").await;
+    assert_eq!(st, 200);
+    assert!(body.get("acts_section").is_none(), "acts_section must be omitted, not null, when absent: {body}");
+}
+
 /// Batch N ("narratives as first-class graph structure"), retired
 /// verse-keyed half per Batch T requirement 3 ("verse popover: event
 /// membership replaces prev/next" -- `VerseDetailOut.narrative_positions`

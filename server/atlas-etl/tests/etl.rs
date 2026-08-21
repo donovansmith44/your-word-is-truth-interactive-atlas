@@ -260,6 +260,29 @@ fn events_extra_general_kind_with_places_hard_errors() {
     assert!(msg.contains("place"), "{err}");
 }
 
+// ---------------------------------------------------------------------
+// Batch T2 (Acts provenance -- owner's own ambiguity ruling: "acts
+// sections get their own provenance key, NOT robertson_section"): a new,
+// flat, event_id-keyed curated file (data/curated/acts-sections.toml),
+// parsed the SAME way event-witnesses.toml already is -- see
+// `curated::parse_event_witnesses`'s own doc comment for why this flat
+// shape carries no nested-table mis-attachment risk. Merged onto the
+// FULL combined event set (Theographic + events-extra.toml) by
+// `main.rs`, the identical mechanism event-witnesses.toml already uses
+// (so it can target a bare Theographic event directly, with no
+// events-extra.toml duplication).
+// ---------------------------------------------------------------------
+
+#[test]
+fn acts_sections_parses_a_flat_event_id_keyed_list() {
+    let sections = atlas_etl::curated::parse_acts_sections(include_str!("fixtures/acts-sections-sample.toml")).unwrap();
+    assert_eq!(sections.len(), 2);
+    assert_eq!(sections[0].0, "theo-999");
+    assert!(sections[0].1.contains("Acts 1:4-5"));
+    assert_eq!(sections[1].0, "theo-998");
+    assert!(sections[1].1.contains("Acts 2:1-13"));
+}
+
 #[test]
 fn events_extra_event_kind_missing_from_year_hard_errors() {
     // `kind` absent (defaults to "event", unchanged back-compat) still

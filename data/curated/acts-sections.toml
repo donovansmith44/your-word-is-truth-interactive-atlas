@@ -1,0 +1,47 @@
+# Batch T2 (Acts provenance -- owner's own ambiguity ruling, verbatim:
+# "Acts coverage: Robertson's Harmony is Gospels-only. For Acts, the
+# owner's binding decision says Gospels + Acts. Use the same model with a
+# disclosed non-Robertson source for Acts sectioning... provenance field
+# names the actual source (acts sections get their own provenance key,
+# NOT robertson_section). If you cannot verify a PD Acts sectioning
+# source, author Acts sections from the text's own natural narrative
+# units with our CC0 titles and say so honestly in ref_notes -- do NOT
+# claim any source you didn't consult.").
+#
+# HONEST SOURCING (this batch did not verify an external PD Acts-
+# sectioning tradition -- no source consulted is claimed): the ~30 events
+# enriched here are NOT newly authored. They are PRE-EXISTING Theographic-
+# sourced `Event` records (ids `theo-304` through `theo-336`, Acts 1:4
+# through 12:23, already shipped with real titles/dates/places from
+# Theographic's own CC BY-SA 4.0 events.json, already disclosed in
+# LICENSES.md) that already divide Acts 1-12 into sensible, coherent
+# narrative units (Pentecost, the lame man healed, Peter and John's
+# trial, Ananias and Sapphira, the Seven chosen, Stephen seized/his own
+# defense/his stoning, Philip in Samaria, the Ethiopian eunuch, Saul's
+# conversion, Peter and Cornelius, Herod's persecution...). This file's
+# own job is narrower than "sectioning": it PROMOTES these pre-existing
+# natural units to headed, explorable PASSAGES by attaching a provenance
+# marker (`acts_section`) that makes each one heading-worthy (per
+# `AtlasData::finish`'s own HEADING-WORTHY rule) -- the SAME real-vs-
+# freebie distinction `robertson_section` already draws for the Gospels.
+# `acts_section`'s own string value discloses this plainly on every row
+# rather than implying an external authority; every citation below was
+# read directly against the compiled KJV text before being enriched here,
+# same citation-integrity discipline as every other curated file.
+#
+# SCOPE, disclosed: Acts 13 onward (Paul's first missionary journey
+# through the voyage to Rome) is intentionally NOT touched here -- that
+# material already has real, specific, narratively-integrated reader
+# headings via the pre-existing paul-first-journey/paul-rome-voyage
+# narratives' own legs (heading-worthy via the existing "narrative leg"
+# freebie rule, zero new authoring needed, same as the 13 narratives
+# batch-t-report.md already documented). Attaching acts_section to the
+# broader, OVERLAPPING Theographic summary events in that same range
+# (e.g. theo-338 "First Missionary Journey," ACT.12.24-14.28) would only
+# risk shadowing those already-shipped, more specific headings or
+# tripping this batch's own new within-layer anchor-collision guard --
+# not a coverage gain, so left alone. See batch-t2-report.md for the
+# full disclosure and the pre-existing Theographic year/AD-33-anchor
+# dating tension this batch noticed but did not attempt to fix (out of
+# this batch's own scope: authoring pericope coverage, not auditing
+# pre-existing Theographic date assignments).
