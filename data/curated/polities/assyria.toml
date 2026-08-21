@@ -64,6 +64,7 @@ rings = [
 event = "The Neo-Assyrian resurgence begins under Adad-nirari II"
 verses = []
 ref_note = "general Assyriological knowledge (the 10th-9th century BC resurgence that becomes the Neo-Assyrian Empire); no specific source consulted this session; not scripture-narrated at this specific boundary -- the KJV text's own Assyria narrative picks up later, once the empire already presses on Israel (e.g. 2 Kings 15:19)"
+for_era_from = -911 # fix round 1 (I1): echoes THIS era's own from -- the exact field that would have caught this file's own original mis-attachment bug (see the FIX ROUND comment above)
 
 # Batch M requirement 1: this era's own FALL -- the fall of Nineveh (612
 # BC) to the combined Medes/Neo-Babylonians. Not narrated as a discrete
@@ -77,3 +78,4 @@ ref_note = "general Assyriological knowledge (the 10th-9th century BC resurgence
 event = "The Medes and Neo-Babylonians destroy Nineveh"
 verses = ["NAM.3.18", "NAM.3.19"]
 ref_note = "Nahum 3:18-19 (KJV, verified against the compiled text) -- the whole book of Nahum is a prophecy of Nineveh's own destruction, traditionally dated 612 BC; these closing verses address the king of Assyria's own ruin directly"
+for_era_from = -911 # fix round 1 (I1): echoes THIS era's own from

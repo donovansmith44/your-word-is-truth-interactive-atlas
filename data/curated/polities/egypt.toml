@@ -96,6 +96,7 @@ rings = [
 event = "The Hyksos are expelled; the New Kingdom and the Egyptian Empire begin"
 verses = []
 ref_note = "general Egyptological knowledge (Ahmose I's expulsion of the Hyksos, founding the 18th Dynasty); no specific source consulted this session; not otherwise scripture-narrated at this specific boundary"
+for_era_from = -1549 # fix round 1 (I1): echoes THIS era's own from -- the exact field that would have caught this file's own original mis-attachment bug (see the FIX ROUND comment above)
 
 # Third Intermediate + Late Period: after the Empire contracts, back to the
 # Nile-only footprint (same recognizable core as the Old/Middle Kingdom era
@@ -136,6 +137,7 @@ rings = [
 event = "The New Kingdom collapses; Egypt contracts back to the Nile valley"
 verses = []
 ref_note = "general Egyptological knowledge (the Late Bronze Age Collapse; Ramesses XI's own weak final reign ending the Empire); no specific source consulted this session; not otherwise scripture-narrated"
+for_era_from = -1068 # fix round 1 (I1): echoes THIS era's own from
 
 # Ptolemaic Egypt: same Nile core plus the Ptolemies' own signature
 # holdings beyond it -- Cyrenaica to the west (a SEPARATE, disjoint ring --
@@ -183,6 +185,7 @@ rings = [
 event = "Alexander the Great conquers Egypt, ending Persian rule"
 verses = ["DAN.8.20", "DAN.8.21"]
 ref_note = "Daniel 8:20-21 (KJV, verified against the compiled text) -- Daniel's own vision, self-interpreted in the text as Media-Persia (the ram) overthrown by Grecia (the goat); Egypt was a Persian satrapy at the time (persia.toml), so this same prophecy applies here as it does to Persia's own fall/alexander-empire.toml's own rise"
+for_era_from = -331 # fix round 1 (I1): echoes THIS era's own from
 
 # Batch M requirement 1: this era's own FALL -- Octavian's victory at
 # Actium and Cleopatra's death (30 BC), after which Egypt is annexed as a
@@ -194,3 +197,4 @@ ref_note = "Daniel 8:20-21 (KJV, verified against the compiled text) -- Daniel's
 event = "Rome annexes Egypt after Actium; Cleopatra dies"
 verses = []
 ref_note = "general Roman/Ptolemaic history (Battle of Actium and its aftermath, 31-30 BC); no specific source consulted this session; not scripture-narrated -- this era predates the Gospel narrative entirely"
+for_era_from = -331 # fix round 1 (I1): echoes THIS era's own from

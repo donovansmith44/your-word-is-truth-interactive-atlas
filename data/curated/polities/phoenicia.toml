@@ -32,3 +32,4 @@ rings = [
 event = "Nebuchadnezzar besieges Tyre; Neo-Babylonian then Persian rule absorbs the coast"
 verses = ["EZK.26.3", "EZK.26.4", "EZK.26.7"]
 ref_note = "Ezekiel 26:3-4,7 (KJV, verified against the compiled text) -- the Lord's own oracle against Tyre, naming 'Nebuchadrezzar king of Babylon' directly (v.7); the historical thirteen-year siege and the coast's later absorption into Persian control are general history beyond what these verses themselves narrate"
+for_era_from = -1200 # fix round 1 (I1): echoes THIS era's own from -- structural cross-check against TOML's own array-of-tables attachment

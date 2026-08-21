@@ -22,3 +22,16 @@ rings = [
     [31.9, 44.15], [32.05, 44.17], [32.2, 44.2], [32.35, 44.25], [32.5, 44.3]
   ]
 ]
+
+# Fix round 1 (I3): no [era.transition]/[era.fall] on this polity's only
+# era, and deliberately so -- an honest omission, not a gap never reached.
+# This era's own end (to=-2004) is, per this file's own header comment,
+# "Babylon rises to dominate the whole region" -- a gradual eclipse across
+# competing city-states, not a single dateable conquest/destruction the
+# way e.g. Nineveh's fall or Jerusalem's captivity are. Sumer is drawn for
+# background/context (Genesis 10-11's own "land of Shinar," the Tower of
+# Babel's setting) rather than as an actively-narrated biblical political
+# actor with a discrete rise or fall. Deltas deferred, not forgotten --
+# this era's own boundaries stay fully explorable regardless (see
+# world-border-morph.spec.ts's own "no curated delta block at all"
+# coverage, which uses this exact polity).

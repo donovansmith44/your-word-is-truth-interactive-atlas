@@ -22,3 +22,15 @@ rings = [
     [36.2, 41.5], [37.0, 38.3]
   ]
 ]
+
+# Fix round 1 (I3): no [era.transition]/[era.fall] on this polity's only
+# era, and deliberately so -- an honest omission, not a gap never reached.
+# This era's own end (to=100) is this app's own curated span's own end
+# (data/curated/eras.toml, [-4004,100]) -- Parthia simply OUTLIVES the
+# span this app tracks, the same "legitimately has no fall" reasoning
+# roman-empire.toml's own Roman Empire era already carries; this era's
+# own start (-140) is likewise a soft, gradual consolidation, not a single
+# dateable moment the way e.g. Cyrus's conquest of Babylon is. Parthia is
+# drawn for background/context (Rome's own eastern rival, Acts 2:9's own
+# Pentecost-crowd namecheck) rather than as an actively-narrated biblical
+# political actor. Deltas deferred, not forgotten.

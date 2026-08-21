@@ -61,16 +61,31 @@ rings = [
 # Batch M requirement 1: this era's own RISE -- Octavian's victory at
 # Actium (31 BC) and the Senate's own grant of the title "Augustus" (27
 # BC, close to this era's own from=-30) that ends the Republic. Actium
-# itself is not scripture-narrated; Luke 2:1 attests Caesar Augustus's own
-# LATER reign at Jesus's birth (a real, if chronologically later,
-# scriptural touchpoint confirming this era's own central political fact,
-# honestly disclosed as such rather than claimed to narrate Actium
-# itself). Verse read directly against the compiled KJV text before
-# citing. FIX ROUND (self-caught live): originally mis-attached to the
-# PRECEDING era ("Roman Republic") by TOML's own array-of-tables rule --
-# moved here, to the era it actually describes the start of -- see
-# assyria.toml's own identical fix for the full story.
+# itself is not scripture-narrated. FIX ROUND (self-caught live):
+# originally mis-attached to the PRECEDING era ("Roman Republic") by
+# TOML's own array-of-tables rule -- moved here, to the era it actually
+# describes the start of -- see assyria.toml's own identical fix for the
+# full story.
+#
+# Fix round 1 (I2, reviewer finding): a previous draft cited Luke 2:1
+# here ("there went out a decree from Cesar Augustus, that all the world
+# should be taxed"). Read again against the compiled text: that verse
+# neither narrates nor prophesies Actium or the Senate's own title
+# grant -- it is a LATER, unrelated census reference that merely ALSO
+# names Augustus, at Jesus's birth. Citing it directly under "THE
+# SCRIPTURES," immediately beneath this event's own title, risked a
+# reader taking the verse as narrating the event it plainly does not.
+# Judged, on reflection, that reframing the event text itself to fit
+# what Luke 2:1 actually shows (Augustus's own established world-wide
+# taxing authority, a LATER fact, not this era's own rise) would trade
+# one mismatch for a different one -- a transition delta is specifically
+# supposed to describe the BOUNDARY moment, and the census is not that
+# moment. Dropped instead: an honest omission, the same "general history,
+# not scripture-narrated, no verse cited rather than an invented or
+# stretched one" pattern already used for judah.toml's own "Rome installs
+# Herod" transition and several sibling deltas in this same batch.
 [era.transition]
 event = "Octavian defeats Antony and Cleopatra at Actium; the Senate names him Augustus"
-verses = ["LUK.2.1"]
-ref_note = "Actium (31 BC) and the Augustus title (27 BC) are general Roman history, not scripture-narrated; Luke 2:1 (KJV, verified against the compiled text) attests Caesar Augustus's own later reign, at Jesus's birth -- a related but not contemporaneous scriptural touchpoint, disclosed as such"
+verses = []
+ref_note = "Actium (31 BC) and the Senate's own grant of the Augustus title (27 BC) are general Roman history -- not narrated or prophesied anywhere in the KJV text at this specific boundary; no verse cited rather than one (Luke 2:1's own later, unrelated census reference) that would risk reading as though it narrated this event under a THE SCRIPTURES heading"
+for_era_from = -30 # fix round 1 (I1): echoes THIS era's own from -- the exact field that would have caught this file's own original mis-attachment bug (see the FIX ROUND comment above)

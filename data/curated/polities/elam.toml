@@ -22,3 +22,16 @@ rings = [
     [32.25, 46.55], [32.5, 46.6], [32.75, 46.65], [33.0, 46.7], [33.25, 46.85], [33.5, 47.0]
   ]
 ]
+
+# Fix round 1 (I3): no [era.transition]/[era.fall] on this polity's only
+# era, and deliberately so -- an honest omission, not a gap never reached.
+# Elam is drawn as a single long-lived background footprint (Genesis 14
+# through its absorption into Achaemenid Persia); unlike israel/judah/
+# assyria/babylon/egypt etc., no single Scripture- or tradition-grounded
+# moment marks either a discrete RISE (it simply appears at this app's own
+# curated span's own start, -4004, a modeling convention, not an attested
+# beginning) or a discrete FALL (its absorption into Persia is a gradual
+# administrative shift, not a narrated event the way Babylon's fall or
+# Israel's captivity are). This polity is tracked for background/context
+# only, not as an actively-narrated biblical political actor -- deltas
+# deferred, not forgotten.

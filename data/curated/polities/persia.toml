@@ -37,3 +37,4 @@ rings = [
 event = "Cyrus conquers Babylon, founding the Achaemenid Persian Empire"
 verses = ["ISA.44.28", "ISA.45.1"]
 ref_note = "Isaiah 44:28, 45:1 (KJV, verified against the compiled text) -- Isaiah names Cyrus by name as the Lord's own 'anointed,' generations before his reign; the conquest itself is narrated in Daniel 5 (see babylon.toml's own mirrored fall-transition), traditionally dated 539 BC"
+for_era_from = -539 # fix round 1 (I1): echoes THIS era's own from -- structural cross-check against TOML's own array-of-tables attachment

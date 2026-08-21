@@ -50,6 +50,7 @@ rings = [
 event = "Alexander the Great conquers the Achaemenid Persian Empire"
 verses = ["DAN.8.5", "DAN.8.20", "DAN.8.21"]
 ref_note = "Daniel 8:5,20-21 (KJV, verified against the compiled text) -- the he-goat 'from the west' (v.5), self-interpreted in the text as Grecia overthrowing Media-Persia (vv.20-21); traditionally dated 334-330 BC -- see egypt.toml's own mirrored transition for the same conquest's reach into Egypt"
+for_era_from = -335 # fix round 1 (I1): echoes THIS era's own from -- structural cross-check against TOML's own array-of-tables attachment
 
 # Batch M requirement 1: this era's own FALL -- Alexander's own death (323
 # BC, this era's own to= year) and the empire's own division among four
@@ -65,3 +66,4 @@ ref_note = "Daniel 8:5,20-21 (KJV, verified against the compiled text) -- the he
 event = "Alexander dies; his empire divides among four successor kingdoms"
 verses = ["DAN.8.8", "DAN.8.22"]
 ref_note = "Daniel 8:8,22 (KJV, verified against the compiled text) -- the he-goat's great horn 'broken,' replaced by 'four notable ones toward the four winds of heaven' (v.8), self-interpreted a few verses later as 'four kingdoms shall stand up out of the nation' (v.22); traditionally dated to Alexander's 323 BC death -- see this era's own rise-transition for the same vision's earlier verses"
+for_era_from = -335 # fix round 1 (I1): echoes THIS era's own from
