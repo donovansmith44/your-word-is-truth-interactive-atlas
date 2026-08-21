@@ -545,17 +545,69 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
 }
 
 /// <summary>
-/// Batch R requirement 3: THE SEAM for Batch P's own Theographic place
-/// description -- same treatment as <see cref="CatechismSeamSection"/>, one
-/// registry slot earlier (PLACE's own ordering: description, dates, blurb,
-/// events).
+/// Batch R requirement 3 named this registry slot THE SEAM for a future
+/// Theographic place description (same treatment as
+/// <see cref="CatechismSeamSection"/>, one registry slot earlier -- PLACE's
+/// own ordering: description, dates, blurb, events) and left it a no-op
+/// stub pending that content. Batch E3 fills it -- with requirement 2's
+/// quiet provenance note, not the originally-envisioned description (owner
+/// bug report 2026-08-20, root cause: a map label showing the Theographic
+/// canonical name where the KJV text uses a different word entirely). "The
+/// canonical/Theographic name appears at most ONCE, quietly, inside the
+/// place popover as provenance" -- decisive display (map/hover-card/
+/// popover title all show the SAME resolved KJV name, per NAME-1/the
+/// scene's own `display_name`) never loses the ORIGINAL name entirely; it
+/// just moves it here, one quiet line, non-interactive, immediately under
+/// the title. Conditional presence, same idiom every other section here
+/// follows: <see cref="PlaceDetail.CanonicalName"/> is `null` whenever this
+/// place's displayed name already IS its canonical name (server-decided --
+/// <c>resolve_display_name_and_canonical</c> only ever returns `Some` when
+/// a curated KJV alias is the reason the two differ, never for a curated
+/// period-history rename, e.g. Luz/Bethel, which is itself already
+/// KJV-accurate for its own era and has nothing to disclose) -- this
+/// provider trusts that server-side decision rather than re-deriving it
+/// from a string comparison against <see cref="IExplorable.Title"/>
+/// client-side (the "no client-side rename map" rule applies to this
+/// comparison too, not just the alias resolution itself). A future Batch P
+/// place description, if authored, would need its own registry slot.
 /// </summary>
 public sealed class PlaceDescriptionSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Place";
 
-    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
-        Task.FromResult<PopoverSection?>(null);
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not PlaceNode place)
+        {
+            return null;
+        }
+
+        PlaceDetail detail;
+        try
+        {
+            detail = await place.DetailAsync(api); // memoized -- shared with PlaceDatesSection/PlaceBlurbSection/PlaceEventsSection
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (detail.CanonicalName is not { } canonical)
+        {
+            return null;
+        }
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "popover-meta");
+            builder.AddAttribute(seq++, "data-testid", "popover-place-canonical-name");
+            builder.AddContent(seq++, $"Known in modern atlases as {canonical}.");
+            builder.CloseElement();
+        };
+        return new PopoverSection("place-description", body);
+    }
 }
 
 /// <summary>
