@@ -1,0 +1,333 @@
+# Batch W1 (whole-Bible titled verse containers). Numbers, in the SAME
+# `[[event]]` schema `events-extra.toml` uses -- see
+# `data/curated/passages/genesis.toml`'s own header comment for the full
+# reconciliation/provenance framing.
+#
+# RECONCILIATION: only 3 pre-existing events touch Numbers (theo-123
+# "Birth of Caleb," ex_kadesh, ex_moab -- 7/1288 verses, 0.5%) -- almost
+# entirely fresh authoring. GRANULARITY: the census/law/list chapters
+# (1-6, 8, 15, 18-19, 26, 28-30, 33-36) are general-kind, same "law/list =
+# code units" reasoning as this file's own Leviticus sibling; the
+# narrative chapters (7, 9-14, 16-17, 20-25, 27, 31-32) are event-kind.
+#
+# CHRONOLOGY, a SECOND disclosed pre-existing two-layer tension (distinct
+# from Genesis's own patriarchal-era one): Theographic's own theo-125
+# ("Exodus from Egypt") dates the Exodus to -1491 BC, Ussher's own
+# published year -- the SAME scale this batch's own Exodus/Leviticus
+# containers already used (exo_covenant_ratified, lev_consecration_aaron,
+# etc.). The PRE-EXISTING "exodus" narrative's own legs (ex_rameses
+# through ex_jordan, ALL unmodified by this batch) instead follow the
+# "early date" Exodus tradition (-1446 BC, ex_rameses's own year) --
+# reaching Kadesh-barnea (ex_kadesh, -1445) and the Jordan crossing
+# (ex_jordan, -1406, JOS) on a scale offset ~45 years from theo-125's own.
+# Numbers structurally bridges both halves of this book (its own opening
+# chapters continue directly from Exodus/Leviticus; its own closing
+# chapters hand off directly to Joshua's conquest). This file stays on
+# the THEO-*/Ussher -1491 scale throughout, for internal consistency with
+# THIS batch's own already-committed Exodus/Leviticus work (both directly,
+# textually continuous with Numbers 1-10, no narrative time gap at all
+# between them) -- the SAME choice, and the SAME disclosed reasoning,
+# genesis.toml's own header already applies to its own analogous tension.
+# Dated against the text's own EXPLICIT year markers: "the second year
+# after they were come out of the land of Egypt" (1:1, 9:1, 10:11) =
+# -1490; Numbers 33:38's own explicit "the fortieth year" (Aaron's death)
+# = -1451, carried forward for the remaining chapters (Deuteronomy 1:3
+# confirms the immediately-following material is the SAME fortieth year).
+# Neither pre-existing scale is this batch's own to reconcile (real,
+# substantial future work, out of this batch's own authoring scope).
+
+[[event]]
+id = "num_first_census"
+label = "The first census in the wilderness of Sinai"
+kind = "general"
+verses = ["NUM.1.1-54"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 1, the census of the twelve tribes, by their armies."
+ref_note = "General-kind: a census list, no single narrative moment of its own."
+
+[[event]]
+id = "num_order_of_camp"
+label = "The order of the camp"
+kind = "general"
+verses = ["NUM.2.1-34"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 2, the standard and order of each tribe's own camp around the tabernacle."
+ref_note = "General-kind: an arrangement/list, no single narrative moment of its own."
+
+[[event]]
+id = "num_levites_numbered"
+label = "The Levites numbered and their duties"
+kind = "general"
+verses = ["NUM.3.1-51", "NUM.4.1-49"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 3-4, the sons of Aaron, the Levites given to the priests, their own numbering by family, and their duties in bearing the tabernacle."
+ref_note = "General-kind: a census/duty list, no single narrative moment of its own."
+
+[[event]]
+id = "num_purity_laws"
+label = "Laws of purity: restitution, and the trial of jealousy"
+kind = "general"
+verses = ["NUM.5.1-31"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 5, the unclean put outside the camp, restitution for wrong, and the law of jealousy."
+ref_note = "General-kind: ritual/civil law, no single dateable moment or place of its own."
+
+[[event]]
+id = "num_nazarite_blessing"
+label = "The law of the Nazarite vow; the priestly blessing"
+kind = "general"
+verses = ["NUM.6.1-27"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 6, the Nazarite's own separation vow, and the LORD's own blessing for Aaron to pronounce."
+ref_note = "General-kind: ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "num_princes_dedication"
+label = "The princes' own offerings at the tabernacle's dedication"
+from_year = -1490
+to_year = -1490
+places = ["mount-sinai"]
+verses = ["NUM.7.1-89"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 7, the twelve princes' own identical offerings, one tribe per day, at the tabernacle's own dedication."
+ref_note = "'On the day that Moses had fully set up the tabernacle' (7:1) -- the same day/year as Exodus 40:17, -1490 BC. Place: Sinai."
+
+[[event]]
+id = "num_levites_consecrated"
+label = "The Levites consecrated for service"
+kind = "general"
+verses = ["NUM.8.1-26"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 8, the lamps, the Levites' own cleansing and consecration, and their years of service."
+ref_note = "General-kind: ritual/procedural law, no single narrative moment of its own."
+
+[[event]]
+id = "num_passover_sinai"
+label = "The Passover kept at Sinai"
+from_year = -1490
+to_year = -1490
+places = ["mount-sinai"]
+verses = ["NUM.9.1-14"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 9:1-14, Israel's own Passover in the wilderness of Sinai, and the provision for the ceremonially unclean."
+ref_note = "'The first month of the second year' (9:1), -1490 BC, explicit. Place: Sinai."
+
+[[event]]
+id = "num_cloud_trumpets"
+label = "The cloud and fire; the silver trumpets"
+kind = "general"
+verses = ["NUM.9.15-23", "NUM.10.1-10"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 9:15-10:10, the cloud's own guidance over the tabernacle, and the two silver trumpets for summoning and for the march."
+ref_note = "General-kind: a description of a recurring pattern/law, no single narrative moment of its own."
+
+[[event]]
+id = "num_departs_sinai"
+label = "Israel departs Sinai"
+from_year = -1490
+to_year = -1490
+places = ["mount-sinai"]
+verses = ["NUM.10.11-36"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 10:11-36, the cloud taken up, the order of march by standard, and Moses's own words over the ark."
+ref_note = "'The twentieth day of the second month, in the second year' (10:11), -1490 BC, explicit. Place: departing Sinai."
+
+[[event]]
+id = "num_taberah_quail"
+label = "The complaint at Taberah; the seventy elders; the quail"
+from_year = -1490
+to_year = -1490
+places = ["kibroth-hattaavah"]
+verses = ["NUM.11.1-35"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 11, the fire at Taberah, the seventy elders given the Spirit, and the quail at Kibroth-hattaavah."
+ref_note = "Same traditional year as num_departs_sinai, shortly after. Place: the chapter's own two named sites, Taberah (11:3) and Kibroth-hattaavah (11:34) -- kibroth-hattaavah used as the anchor since most of the chapter's own content (the elders, the quail) occurs there."
+
+[[event]]
+id = "num_miriam_aaron_rebel"
+label = "Miriam and Aaron's rebellion against Moses"
+from_year = -1490
+to_year = -1490
+places = ["hazeroth"]
+verses = ["NUM.12.1-16"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 12, Miriam and Aaron's own complaint against Moses, and Miriam's own leprosy and restoration."
+ref_note = "Same traditional year. Place: Hazeroth (11:35, the camp's own most recent named stop; 12:16 confirms the departure FROM Hazeroth follows this chapter)."
+
+[[event]]
+id = "num_spies_sent"
+label = "The twelve spies sent into Canaan"
+from_year = -1490
+to_year = -1490
+places = ["kadesh-barnea"]
+verses = ["NUM.13.1-5", "NUM.13.7-25", "NUM.13.27-33"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 13, the twelve spies sent from Kadesh, their own forty days searching the land, and their own report -- fills the gaps around theo-123 (Caleb's own name, 13:6) within this same chapter."
+ref_note = "Same traditional year, continuing the journey from Sinai. Place: 'the wilderness of Paran, to Kadesh' (13:26), explicit."
+
+[[event]]
+id = "num_israel_rebels_kadesh"
+label = "Israel rebels; the forty years' sentence"
+from_year = -1490
+to_year = -1490
+places = ["kadesh-barnea"]
+verses = ["NUM.14.5-45"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 14:5-45, the congregation's own rebellion, Moses's own intercession, the LORD's own pardon and sentence of forty years, and the failed presumptuous attack -- fills the gap around the existing ex_kadesh narrative leg (14:1-4, this SAME event's own opening verses)."
+ref_note = "Same traditional year, immediately following the spies' own report. Place: Kadesh-barnea. NOTE (disclosed): ex_kadesh, the pre-existing narrative leg for this SAME episode, is dated -1445 under the exodus narrative's own 'early date' scale -- see this file's own header note on the two disclosed pre-existing OT chronology layers."
+
+[[event]]
+id = "num_offerings_sabbath_fringes"
+label = "Laws of offerings, the sabbath-breaker, and fringes"
+kind = "general"
+verses = ["NUM.15.1-41"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 15, further offering laws for the land not yet possessed, the man who gathered sticks on the sabbath, and the law of fringes."
+ref_note = "General-kind: ritual/civil law, no single dateable moment or place of its own."
+
+[[event]]
+id = "num_korah_rebellion"
+label = "Korah's rebellion"
+from_year = -1490
+to_year = -1490
+places = ["kadesh-barnea"]
+verses = ["NUM.16.1-50"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 16, Korah, Dathan, and Abiram's own rebellion, the earth swallowing them, and the plague stayed by Aaron's own censer."
+ref_note = "General wilderness-period placement (no independent year stated in the chapter itself); Kadesh-barnea used as the nearest explicit regional anchor from the immediately surrounding narrative."
+
+[[event]]
+id = "num_aarons_rod"
+label = "Aaron's rod that budded"
+from_year = -1490
+to_year = -1490
+places = ["kadesh-barnea"]
+verses = ["NUM.17.1-13"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 17, the twelve rods laid up before the LORD, and Aaron's own rod that budded, blossomed, and yielded almonds."
+ref_note = "Same general wilderness-period placement as num_korah_rebellion, immediately following."
+
+[[event]]
+id = "num_priests_levites_portions"
+label = "The duties and portions of the priests and Levites"
+kind = "general"
+verses = ["NUM.18.1-32"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 18, the charge of the sanctuary, and the priests' and Levites' own portions."
+ref_note = "General-kind: ritual/economic law, no single dateable moment or place of its own."
+
+[[event]]
+id = "num_red_heifer"
+label = "The law of the red heifer"
+kind = "general"
+verses = ["NUM.19.1-22"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 19, the ashes of the red heifer, for purification from contact with the dead."
+ref_note = "General-kind: ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "num_miriam_water_aaron_die"
+label = "The death of Miriam; water from the rock; the death of Aaron"
+from_year = -1451
+to_year = -1451
+places = ["kadesh-barnea"]
+verses = ["NUM.20.1-29"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 20, Miriam's own death at Kadesh, Moses's own sin at the rock, Edom's own refusal of passage, and Aaron's own death on mount Hor."
+ref_note = "Numbers 33:38's own explicit statement dates Aaron's death to 'the fortieth year' after the Exodus, -1451 BC (against theo-125's own -1491 anchor) -- see this file's own header note. Place: Kadesh-barnea (most of the chapter); Aaron's own death itself is at 'mount Hor' (20:22-29, mount-hor-1 in this atlas's own compiled data), disclosed as a secondary site within this same container."
+
+[[event]]
+id = "num_bronze_serpent_sihon_og"
+label = "The bronze serpent; victories over Sihon and Og"
+from_year = -1451
+to_year = -1451
+places = ["kadesh-barnea"]
+verses = ["NUM.21.1-35"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 21, king Arad's own attack repelled, the fiery serpents and the bronze serpent, and the defeats of Sihon king of the Amorites and Og king of Bashan."
+ref_note = "Same traditional year (the fortieth year) as num_miriam_water_aaron_die, immediately following. Place: the chapter's own journey begins near Kadesh-barnea; the specific battle sites (Amorite/Bashan territory east of Jordan) are not independently mapped in this atlas's own compiled place set."
+
+[[event]]
+id = "num_balaam_balak"
+label = "Balaam and Balak"
+from_year = -1451
+to_year = -1451
+places = ["moab-1"]
+verses = ["NUM.22.2-41", "NUM.23.1-30", "NUM.24.1-25"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 22-24, Balak's own summons to Balaam, the speaking ass, and Balaam's own four oracles blessing Israel -- fills the gap around the existing ex_moab narrative leg (22:1, this same encampment's own opening verse)."
+ref_note = "Same traditional year (the fortieth year). Place: 'the plains of Moab' (22:1), same as ex_moab's own place. NOTE (disclosed): ex_moab is dated -1407 under the exodus/conquest narrative's own 'early date' scale -- see this file's own header note."
+
+[[event]]
+id = "num_baal_peor"
+label = "The apostasy at Baal-peor; Phinehas's zeal"
+from_year = -1451
+to_year = -1451
+places = ["shittim"]
+verses = ["NUM.25.1-18"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 25, Israel's own whoredom with the daughters of Moab, the plague, and Phinehas's own zeal in slaying Zimri and Cozbi."
+ref_note = "Same traditional year, immediately following. Place: 'Shittim' (25:1), explicit."
+
+[[event]]
+id = "num_second_census"
+label = "The second census"
+kind = "general"
+verses = ["NUM.26.1-65"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 26, the census of the new generation, taken after the plague, by which the land would be divided."
+ref_note = "General-kind: a census list; though dated narratively (26:1, 'after the plague'), treated as general per this atlas's own list-container convention."
+
+[[event]]
+id = "num_zelophehad_joshua"
+label = "Zelophehad's daughters; Joshua appointed successor"
+from_year = -1451
+to_year = -1451
+places = ["moab-1"]
+verses = ["NUM.27.1-23"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 27, the daughters of Zelophehad's own inheritance case, Moses's own view of the land from mount Abarim, and Joshua's own commissioning as successor."
+ref_note = "Same traditional year (the fortieth year). Place: the plains of Moab (continuing from num_balaam_balak/num_baal_peor)."
+
+[[event]]
+id = "num_offerings_feasts_calendar"
+label = "The law of daily, weekly, monthly, and feast offerings"
+kind = "general"
+verses = ["NUM.28.1-31", "NUM.29.1-40"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 28-29, the calendar of continual, sabbath, new-moon, and feast-day offerings."
+ref_note = "General-kind: calendar law, no single dateable moment of its own."
+
+[[event]]
+id = "num_vows_law"
+label = "The law of vows"
+kind = "general"
+verses = ["NUM.30.1-16"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 30, the binding force of a vow, and a father's or husband's own power to disallow one."
+ref_note = "General-kind: civil/ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "num_war_midian"
+label = "War against Midian"
+from_year = -1451
+to_year = -1451
+places = ["moab-1"]
+verses = ["NUM.31.1-54"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 31, the LORD's own vengeance on Midian, Balaam's own death, and the division of the spoil."
+ref_note = "Same traditional year (the fortieth year), the last military campaign before entering Canaan."
+
+[[event]]
+id = "num_reuben_gad_settle"
+label = "Reuben, Gad, and half-Manasseh settle east of Jordan"
+from_year = -1451
+to_year = -1451
+places = ["moab-1"]
+verses = ["NUM.32.1-42"]
+atlas_section = "Numbers pericope (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 32, Reuben and Gad's own request for the conquered land east of Jordan, Moses's own condition, and the settlement granted."
+ref_note = "Same traditional year, closing the wilderness narrative proper."
+
+[[event]]
+id = "num_wilderness_itinerary"
+label = "The itinerary of Israel's wilderness journey"
+kind = "general"
+verses = ["NUM.33.1-56"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 33, the full list of the forty-two stations of Israel's own wilderness journey, from Rameses to the plains of Moab, closing with the command to drive out the Canaanites."
+ref_note = "General-kind: a summary itinerary list spanning the whole forty years, no single dateable moment of its own."
+
+[[event]]
+id = "num_land_boundaries"
+label = "The boundaries of the land of Canaan"
+kind = "general"
+verses = ["NUM.34.1-29"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 34, the borders of the promised land, and the men appointed to divide it."
+ref_note = "General-kind: a geographic/legal description, no single dateable moment of its own."
+
+[[event]]
+id = "num_levite_cities_refuge"
+label = "Cities for the Levites; the cities of refuge"
+kind = "general"
+verses = ["NUM.35.1-34"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 35, the forty-eight Levitical cities, and the law of the six cities of refuge for the manslayer."
+ref_note = "General-kind: civil/ritual law, no single dateable moment or place of its own."
+
+[[event]]
+id = "num_heiresses_marriage_law"
+label = "The law of heiresses' marriage"
+kind = "general"
+verses = ["NUM.36.1-13"]
+atlas_section = "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 36, the tribal elders' own concern for Zelophehad's daughters' inheritance, and the law requiring an heiress to marry within her own tribe -- closing the book."
+ref_note = "General-kind: civil law, closing a narrative case (Zelophehad's daughters, num_zelophehad_joshua) with a legal ruling, no independent date of its own."
