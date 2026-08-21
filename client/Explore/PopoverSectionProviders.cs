@@ -1136,8 +1136,16 @@ file static class NarrativeDirectionSection
                         : $"{sectionLabel} — {position.NarrativeName}";
 
                 builder.OpenElement(seq++, "p");
-                builder.AddAttribute(seq++, "class", "narrative-section-heading");
-                builder.AddAttribute(seq++, "data-testid", "narrative-section-heading");
+                // Batch T: shares the SAME testid/class every other section
+                // eyebrow in this popover platform does (catechism-section-
+                // heading -- "THE SMALL CATECHISM"/"THE SCRIPTURES"/"EVENT"/
+                // "PARALLEL ACCOUNTS" all already reuse this one identical
+                // rule, distinguished only by their own rendered TEXT, never
+                // a fresh testid per heading) -- retired the Batch-N-era
+                // narrative-section-heading name, which was pixel-identical
+                // CSS under a fourth name.
+                builder.AddAttribute(seq++, "class", "catechism-section-heading");
+                builder.AddAttribute(seq++, "data-testid", "event-section-heading");
                 builder.AddContent(seq++, heading);
                 builder.CloseElement();
 

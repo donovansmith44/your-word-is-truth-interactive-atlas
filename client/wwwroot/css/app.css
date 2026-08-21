@@ -571,6 +571,33 @@ input:focus-visible,
     scroll-margin-top: 5.5rem;
 }
 
+/* Batch T requirement 5 ("event titles throughout the reader"): a quiet
+   pericope heading rendered directly in the reading flow, above its own
+   first verse -- small-caps serif, the SAME letterspaced-eyebrow register
+   .chapter-head-book already establishes one level up (a pericope is a
+   sub-chapter unit). Color is --ink, not --bronze-ink -- same NAV-4
+   precedent (this file's own reader-prev/-next fix): --bronze-ink's own
+   7.85:1 figure is proven only against the LIGHTER --parchment-raised the
+   popover sits on, not this app's own darker --parchment the reader itself
+   sits on, and falls short of this requirement's own explicit >=10:1 floor
+   there -- --ink clears it with real margin (13.98:1, computed, already
+   proven elsewhere in this file). The small-caps/letterspacing is what
+   keeps this reading as quiet section chrome despite the full-strength ink
+   color, not a competing visual weight against the verse text beneath it.
+   No layout-affecting properties beyond ordinary margin (a static <h2>,
+   never measured/repositioned after mount) -- "no layout jank" is
+   satisfied by construction, not a special case. */
+.pericope-heading {
+    margin: 1.75rem 0 .6rem;
+    padding: .35rem .4rem;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .07em;
+    font-size: .92rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+
 .verse-num {
     flex: none;
     width: 2.25rem;
@@ -3327,6 +3354,36 @@ input:focus-visible,
     color: var(--lapis);
 }
 
+/* Batch N2 requirement 2 (folded into Batch T): the per-entry passage
+   clamp toggle -- deliberately a DIFFERENT visual language from
+   .popover-verse-expand just below (small-caps, lapis-resting) so the two
+   independent "expand THIS passage" / "read the whole CHAPTER" affordances
+   on the same entry never read as the same control: italic serif (echoing
+   .popover-passage-caption's own italic treatment, since this is also a
+   quiet annotation ABOUT the passage, not the passage itself), bronze-ink
+   resting / lapis hover -- the same pairing PlaceCard's own place-card-more/
+   -collapse (Batch D) and .popover-passage-reveal above already use for an
+   analogous reveal gesture, just inverted in direction (bronze rests here
+   specifically so it doesn't visually collide with .popover-verse-expand's
+   own lapis-resting state when both sit on one entry at once). */
+.popover-passage-clamp-toggle {
+    display: block;
+    margin: .35rem 0 0;
+    padding: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: .82rem;
+    text-align: start;
+    color: var(--bronze-ink);
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.popover-passage-clamp-toggle:hover {
+    color: var(--lapis);
+}
+
 /* Batch F ("the small catechism"): the shared small-caps eyebrow every
    catechism section title uses -- "THE SMALL CATECHISM" (the VERSE/PASSAGE
    seam), Luther's own verbatim explanation heading ("What does this
@@ -3353,21 +3410,11 @@ input:focus-visible,
     color: var(--bronze-ink);
 }
 
-/* Batch N ("narratives as first-class graph structure"): the SAME quiet
-   eyebrow treatment as .catechism-section-heading directly above (own
-   name, not a reuse of that literally-catechism-named class -- see
-   PopoverSectionProviders.cs's own NarrativeDirectionSection comment) for
-   "PRIOR EVENT"/"FOLLOWING EVENT" (bare, or "-- {narrative name}" once a
-   verse touches more than one narrative). Not itself .explorable -- a
-   title is not a click target, same as every other section eyebrow. */
-.narrative-section-heading {
-    margin: 0 0 .3rem;
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: .06em;
-    font-size: .85rem;
-    color: var(--bronze-ink);
-}
+/* Batch T: .narrative-section-heading (Batch N) is RETIRED -- it was
+   pixel-identical CSS to .catechism-section-heading directly above under a
+   fourth name; "PRIOR EVENT"/"FOLLOWING EVENT" now reuse that ONE shared
+   rule directly (PopoverSectionProviders.cs's own NarrativeDirectionSection),
+   same as "EVENT"/"PARALLEL ACCOUNTS" below it. */
 
 /* "THE SMALL CATECHISM" -- the VERSE/PASSAGE popover's own list of citing
    items (CatechismSeamSection), same list/item shape as .popover-passage-list/
@@ -3529,6 +3576,33 @@ input:focus-visible,
 
 .popover-event-label {
     color: var(--ink);
+}
+
+/* Batch T requirement 4: an EVENT node's own place(s), each independently
+   explorable (opens a PlaceNode) -- small pill buttons, echoing
+   .popover-chip's own resting/hover pairing one register quieter (a bronze
+   outline, not a filled wash, since this isn't the chips ROW itself, just
+   an inline detail beside the date). */
+.popover-event-places {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin: .35rem 0 0;
+}
+
+.popover-event-place {
+    font-family: var(--font-serif);
+    font-size: .85rem;
+    color: var(--lapis);
+    background: none;
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    padding: .1rem .55rem;
+    cursor: pointer;
+}
+
+.popover-event-place:hover {
+    background: rgba(44, 74, 112, .08);
 }
 
 .popover-event-years {
