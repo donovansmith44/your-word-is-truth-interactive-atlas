@@ -1422,6 +1422,27 @@ export function debugSettledRingPathData(id, polityId, eraFrom) {
     return entry.rings.map(ring => inst.polities._ringPathData(ring));
 }
 
+// Batch M fix round 1 (C1 regression coverage), test-support-only (same
+// treatment as the debug exports above -- never called from production
+// Blazor code, MapInterop.cs has no wrapper for it): the FULL set of
+// polity ids currently holding a morph group -- i.e. every polity a
+// mid-drag frame is actually painting right now, regardless of whether
+// its own shape is animating or sitting at n=1 identity. Lets a test
+// assert real polity PRESENCE mid-gesture (not just "some path is
+// visible somewhere") -- exactly what C1's own regression needed: a
+// polity whose own era never crosses the dragged edge must still show up
+// here, because the per-frame `lookup` range is supposed to be the FULL
+// live window (both handles' current values), not just the swept sliver
+// between the dragged handle's pre-drag value and its live probe. `null`
+// for an unknown instance.
+export function debugMorphingPolityIds(id) {
+    const inst = instances.get(id);
+    if (!inst || !inst.polities || !inst.polities._morphGroups) {
+        return null;
+    }
+    return [...inst.polities._morphGroups.keys()];
+}
+
 // Sets/clears the legend's isolate filter (Task 12, WORLD-4): `narrativeId`
 // null clears every arrow back to data-faded="false"; any other value fades
 // every arrow whose narrative doesn't match it.
@@ -1474,30 +1495,36 @@ export function setPolitiesRoster(id, politiesJson) {
 
 // Batch M requirement 3a: TimeSlider.razor's own OnWindowDrag fires this on every
 // pointermove while a handle is down (World.razor's HandleWindowDrag) -- begins a morph
-// gesture the first time it's called since the last settle (idempotent otherwise).
-// `anchorYear` is the drag's own pre-drag value (the handle's own committed year before
-// this gesture started) -- the OTHER end of the swept range every morphFrame call sweeps.
-export function beginMorph(id, anchorYear) {
+// gesture the first time it's called since the last settle (idempotent otherwise). Fix
+// round 1 (C1): no `anchorYear` parameter -- morphFrame below now carries the FULL live
+// window on every single call, so there's nothing left for beginMorph itself to remember.
+export function beginMorph(id) {
     const inst = instances.get(id);
     if (!inst || !inst.polities) {
         return;
     }
 
-    inst.polities.beginMorph(anchorYear);
+    inst.polities.beginMorph();
 }
 
 // Batch M requirement 3a: the scrub itself -- called on EVERY drag-move update (never
 // itself throttled; BorderLayer.requestMorphFrame is what coalesces however many of these
 // land within one animation frame into a single actual evaluate+paint -- see its own doc
 // comment for the full CPU evaluator interface / GPU swap seam). A no-op, harmlessly, once
-// a morph has already settled (e.g. a straggler call firing after release).
-export function morphFrame(id, atYear) {
+// a morph has already settled (e.g. a straggler call firing after release). Fix round 1
+// (C1): `from`/`to` are the FULL, CURRENT live window (both handles' current values,
+// exactly what World.razor's own HandleWindowDrag already has as its own `window`
+// parameter) -- NOT just the dragged handle's own pre-drag value paired with the probe,
+// which silently dropped any polity/era beyond the OTHER, still-committed edge for the
+// whole gesture (see the batch report's own "Fix round 1" section). `atYear` is still the
+// dragged handle's own live value, the one `animate` sweeps against.
+export function morphFrame(id, from, to, atYear) {
     const inst = instances.get(id);
     if (!inst || !inst.polities) {
         return;
     }
 
-    inst.polities.requestMorphFrame(atYear);
+    inst.polities.requestMorphFrame(from, to, atYear);
 }
 
 // Batch M requirement 3a: "on release, settle into the static layered-era presentation."
@@ -2506,13 +2533,18 @@ const BorderLayer = L.Layer.extend({
         // drag gesture is in progress -- see beginMorph/morphFrame/settleMorph.
         this._roster = [];
         this._morphing = false;
-        this._morphAnchorYear = undefined;
         this._morphGroups = new Map(); // polityId -> { washes: [], bands: [], lines: [] }
         // The evaluator interface's own rAF-throttling state (requestMorphFrame/
         // _evaluateMorphFrame below): coalesces however many drag-move
         // updates arrive between two animation frames into a single actual
         // evaluate+paint, the standard rAF-throttled-input-handler pattern.
+        // `_pendingFrom`/`_pendingTo` (fix round 1, C1): the FULL live window
+        // as of the latest drag-move update -- both handles' current values,
+        // not just the dragged one's -- also re-read by `_redraw` so an
+        // animated zoom/pan mid-drag reprojects the same true window.
         this._rafHandle = null;
+        this._pendingFrom = null;
+        this._pendingTo = null;
         this._pendingProbeYear = null;
         this._reducedMotion = typeof window !== 'undefined' && window.matchMedia
             ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -2890,22 +2922,20 @@ const BorderLayer = L.Layer.extend({
 
     // --- Batch M requirement 3a: the morph (animate-combinator) path -----
 
-    // `anchorYear` is the drag's own STARTING value (TimeSlider.razor's own
-    // pre-drag From/To -- see World.razor's HandleWindowDrag) -- the OTHER
-    // end of the swept range morphFrame below reads every frame. Idempotent
+    // Batch M fix round 1 (C1): no `anchorYear` parameter any more -- every
+    // `requestMorphFrame` call below now carries the FULL live window
+    // (both handles' current values) on its own, every frame, so there is
+    // no separate "gesture start" value to remember here at all. Idempotent
     // -- calling again mid-drag (TimeSlider's own OnWindowDrag fires
-    // continuously) is a harmless no-op that never resets an
-    // already-in-progress gesture's own anchor. Swaps which sub-groups are
-    // visible (O(1), two `display` toggles) rather than touching any
-    // individual ring element -- the settled display's own paths stay
-    // fully intact underneath, ready to reappear the instant settleMorph
-    // runs on release.
-    beginMorph(anchorYear) {
+    // continuously) is a harmless no-op. Swaps which sub-groups are visible
+    // (O(1), two `display` toggles) rather than touching any individual
+    // ring element -- the settled display's own paths stay fully intact
+    // underneath, ready to reappear the instant settleMorph runs on release.
+    beginMorph() {
         if (this._morphing) {
             return;
         }
         this._morphing = true;
-        this._morphAnchorYear = anchorYear;
         this._washSettledGroup.style.display = 'none';
         this._strokeSettledGroup.style.display = 'none';
         this._washMorphGroup.style.display = '';
@@ -2940,24 +2970,42 @@ const BorderLayer = L.Layer.extend({
     // 128) the CPU path costs microseconds per frame (see the batch
     // report's own measurement), so this seam is documented as a FUTURE
     // swap point, not a present need.
-    requestMorphFrame(atYear) {
+    // Batch M fix round 1 (C1): `from`/`to` are the FULL, CURRENT live
+    // window every frame -- exactly the same pair `SettleMorph(from, to)`
+    // already correctly receives on release (World.razor's own
+    // HandleWindowDrag passes its own `window.From`/`window.To` straight
+    // through, unchanged since TimeSlider.razor's OnHandlePointerDown seeds
+    // both from the last COMMITTED From/To and only the actively-dragged
+    // one ever moves) -- NOT `[the dragged handle's own pre-drag value, the
+    // live probe]`, which is what the pre-fix-round code derived `lo`/`hi`
+    // from and which silently dropped any polity/era beyond the OTHER,
+    // still-committed edge for the whole gesture (see the batch report's
+    // own "Fix round 1" section for the live-verified before/after polity
+    // counts). `atYear` is still specifically the DRAGGED handle's own live
+    // value -- the one `animate` below sweeps against; the other,
+    // stationary edge only widens the `lookup` range, it never gets its own
+    // `animate` call.
+    requestMorphFrame(from, to, atYear) {
+        this._pendingFrom = from;
+        this._pendingTo = to;
         this._pendingProbeYear = atYear;
         if (this._rafHandle != null) {
-            return; // already scheduled -- the eventual frame uses whatever _pendingProbeYear is LATEST when it actually runs
+            return; // already scheduled -- the eventual frame uses whatever _pending* is LATEST when it actually runs
         }
         this._rafHandle = requestAnimationFrame(() => {
             this._rafHandle = null;
             if (this._morphing) {
-                this._evaluateMorphFrame(this._pendingProbeYear);
+                this._evaluateMorphFrame(this._pendingFrom, this._pendingTo, this._pendingProbeYear);
             }
         });
     },
 
-    // One scrub frame's own actual work. For EACH polity in the full
-    // roster, `lookup`s the swept range from wherever the drag itself began
-    // (`_morphAnchorYear`) through the current probe, then `animate`s that
-    // polity's own sequence to get its CURRENT ring(s) -- "the two modes
-    // share everything except the final combinator" is true by
+    // One scrub frame's own actual work. `lookup`s the FULL live window
+    // (`from`/`to`, both handles' current values -- see requestMorphFrame's
+    // own comment for why this must be the full pair, not just the swept
+    // sliver), then `animate`s each polity's own sequence to `atYear` (the
+    // dragged handle's own live value) to get its CURRENT ring(s) -- "the
+    // two modes share everything except the final combinator" is true by
     // construction: this is the EXACT SAME `lookup` `setPolities` above
     // calls, just fed a different (transient, drag-time) window every
     // frame. `prefers-reduced-motion`: SNAPS instead of interpolating
@@ -2965,16 +3013,15 @@ const BorderLayer = L.Layer.extend({
     // `animate` itself returns an UN-interpolated line's own rings -- no
     // separate code path, just a different year fed to the identical
     // function).
-    _evaluateMorphFrame(atYear) {
-        if (!this._morphing || !this._map || atYear == null) {
+    _evaluateMorphFrame(from, to, atYear) {
+        if (!this._morphing || !this._map || atYear == null || from == null || to == null) {
             return;
         }
         resetZoomAnimTransform(this._washSvg);
         resetZoomAnimTransform(this._svg);
 
-        const anchor = this._morphAnchorYear ?? atYear;
-        const lo = Math.min(anchor, atYear);
-        const hi = Math.max(anchor, atYear);
+        const lo = Math.min(from, to);
+        const hi = Math.max(from, to);
         const grouped = lookup(this._roster, lo, hi);
 
         const seen = new Set();
@@ -3005,7 +3052,9 @@ const BorderLayer = L.Layer.extend({
     // SAME `_paintSettled` the network-fed `setPolities` above calls.
     settleMorph(from, to) {
         this._morphing = false;
-        this._morphAnchorYear = undefined;
+        this._pendingFrom = null;
+        this._pendingTo = null;
+        this._pendingProbeYear = null;
         if (this._rafHandle != null) {
             cancelAnimationFrame(this._rafHandle);
             this._rafHandle = null;
@@ -3156,11 +3205,11 @@ const BorderLayer = L.Layer.extend({
         // Batch M requirement 3a: an animated zoom/pan mid-drag (unusual,
         // but not impossible) must keep the MORPH paths in sync too, same
         // "recompute every ring's real d at the now-current zoom" reasoning
-        // -- re-evaluates at whatever probe year the morph last held
-        // (_pendingProbeYear), no new geometry decision, just a
-        // reprojection of the same shapes.
-        if (this._morphing && this._pendingProbeYear != null) {
-            this._evaluateMorphFrame(this._pendingProbeYear);
+        // -- re-evaluates at whatever live window/probe the morph last held
+        // (_pendingFrom/_pendingTo/_pendingProbeYear), no new geometry
+        // decision, just a reprojection of the same shapes.
+        if (this._morphing && this._pendingFrom != null && this._pendingTo != null && this._pendingProbeYear != null) {
+            this._evaluateMorphFrame(this._pendingFrom, this._pendingTo, this._pendingProbeYear);
         }
         // Batch R requirement 1: the land-mask clip geometry lives in the
         // SAME `_washSvg` as the wash paths (see onAdd's own comment), so it

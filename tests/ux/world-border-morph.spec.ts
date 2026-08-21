@@ -178,6 +178,54 @@ test.describe('MORPH-1: scrub state machine (drag -> morphing, release -> settle
     }).toPass();
   });
 
+  test('C1 regression: dragging one handle keeps the OTHER, still-committed edge fully in the per-frame lookup window -- non-crossing polities never vanish mid-drag', async ({ page }) => {
+    // Batch M review, fix round 1, Critical finding C1: the per-frame morph
+    // lookup used to derive lo/hi from [the dragged handle's OWN pre-drag
+    // value, the live probe] -- never the OTHER, still-committed handle's
+    // current value -- so any polity/era outside that narrow sweep vanished
+    // for the whole gesture. Replays the reviewer's own live-verified
+    // scenario: /world?from=-750&to=100, drag FROM left. The TRUE live
+    // window during the drag is [probe, 100] (TO never moves) -- under the
+    // bug, alexander-empire/babylon/parthian-empire/persia/roman-empire/
+    // seleucid-empire (none of whose own eras cross the dragged FROM edge)
+    // silently disappeared because TO's own live value (100) was never fed
+    // into the per-frame `lookup` at all.
+    await page.goto('/world?from=-750&to=100');
+    await expect(page.getByTestId('polity-ring-israel--930-0')).toBeAttached();
+
+    const handle = page.getByRole('slider', { name: 'Window start year' });
+    const box = (await handle.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    // A generous sweep -- well past -1000 regardless of the slider's exact
+    // px-per-year scale (the six previously-vanishing polities above are
+    // each expected present for ANY probe year <= -539, per their own
+    // curated era spans, so overshooting costs nothing here).
+    await page.mouse.move(box.x - 300, box.y + box.height / 2, { steps: 15 });
+
+    await expect(async () => {
+      const morphing = page.locator('[data-morph-state="morphing"]').first();
+      await expect(morphing).toBeVisible();
+    }).toPass();
+
+    const morphingIds: string[] = await page.evaluate(async () => {
+      const m: any = await import('/js/map.js');
+      const ids: number[] = m.debugLiveInstanceIds();
+      const instId = ids[ids.length - 1];
+      return m.debugMorphingPolityIds(instId);
+    });
+
+    // The count itself, not just individual membership -- the settled
+    // repaint of the equivalent full window shows all 12 polities (per the
+    // reviewer's own live count); the bug's own narrow sweep showed only 6.
+    expect(morphingIds.length).toBeGreaterThanOrEqual(12);
+    for (const id of ['alexander-empire', 'babylon', 'parthian-empire', 'persia', 'roman-empire', 'seleucid-empire']) {
+      expect(morphingIds).toContain(id);
+    }
+
+    await page.mouse.up();
+  });
+
   test('prefers-reduced-motion: dragging snaps directly between discrete era shapes, never showing an interpolated in-between ring', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/world?from=-750&to=100');
