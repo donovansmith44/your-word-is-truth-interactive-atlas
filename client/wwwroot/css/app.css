@@ -2911,7 +2911,16 @@ input:focus-visible,
    back to the base, full-viewport rule above until the measurement lands
    (a graceful, brief default, same discipline PlaceCard/CardPlacement
    already established) or on any full-page (non-split) popover, where
-   this class is never applied at all. */
+   this class is never applied at all.
+
+   Fix-round-1 (batch-f2-review.md Minor-1): this rule, and
+   .popover.popover-pane-anchored below, both chain two classes -- a
+   disclosed deviation from this file's own single-class discipline (line
+   5). Both need a DIFFERENT base class already (.popover-backdrop vs
+   .popover) to pick which element's own property set applies, so one
+   shared .popover-pane-anchored modifier can't stand alone on either;
+   not worth splitting into two entirely separate modifier classes for
+   what already reads as one obvious pane-anchoring pair. */
 .popover-backdrop.popover-pane-anchored {
     left: calc(var(--pane-center-x) - var(--pane-width) / 2);
     top: calc(var(--pane-center-y) - var(--pane-height) / 2);
@@ -2963,7 +2972,10 @@ input:focus-visible,
    region (same 3rem/4rem margins the base rule already subtracts from the
    viewport, now subtracted from the pane instead), so an expanded
    mini-reader inside it is bounded the same way automatically, with no
-   separate rule needed. */
+   separate rule needed.
+
+   Chains two classes -- see .popover-backdrop.popover-pane-anchored's own
+   comment above for why this is a disclosed deviation (Minor-1). */
 .popover.popover-pane-anchored {
     top: var(--pane-center-y);
     left: var(--pane-center-x);
@@ -3236,8 +3248,10 @@ input:focus-visible,
 }
 
 /* "THE SMALL CATECHISM" -- the VERSE/PASSAGE popover's own list of citing
-   items (CatechismSeamSection), same list/item shape as .popover-xref-list/
-   .popover-xref-item above (a bronze rule that goes lapis on hover), just a
+   items (CatechismSeamSection), same list/item shape as .popover-passage-list/
+   .popover-passage-entry above (fix-round-1, batch-f2-review.md Minor-2:
+   corrected from the retired .popover-xref-list/.popover-xref-item names --
+   a bronze rule that goes lapis on hover), just a
    single flowing name per row rather than a ref+preview pair -- each row IS
    the item's own display name, already fully composed by the curated data
    (see catechism.toml's own header comment for why). */

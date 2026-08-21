@@ -206,24 +206,31 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   one; opens a `VerseNode` (lone verse) or `PassageNode` (passage) for
   `SPAN` -- onward navigation from there is ordinary Verse/PassageNode
   behavior, unchanged -- see CATECH-1),
-  `popover-verse-expand{-SPAN}` (batch-r-brief.md requirement 4, generalized
-  batch-f2-brief.md 6-ARCH; button; present on EVERY passage entry rendered
-  by the shared passage-list component (see PASSAGE-1 below) -- the
-  verse-text section's own SINGLE entry keeps the bare `popover-verse-expand`
-  testid, byte for byte (no suffix, unchanged since Batch R); every entry in
-  a MULTI-entry list (cross-references, THE SCRIPTURES, place est/dest) gets
-  its own uniquely-scoped `popover-verse-expand-{SPAN}` (`SPAN` = that
-  entry's own ref-range or bare vref), so several entries can each be
+  `popover-verse-expand{-ENTRY-ID}` (batch-r-brief.md requirement 4,
+  generalized batch-f2-brief.md 6-ARCH; button; present on EVERY passage
+  entry rendered by the shared passage-list component (see PASSAGE-1 below)
+  -- the verse-text section's own SINGLE entry keeps the bare
+  `popover-verse-expand` testid, byte for byte (no suffix, unchanged since
+  Batch R); every entry in a MULTI-entry list (cross-references, THE
+  SCRIPTURES, place est/dest) gets its own uniquely-scoped
+  `popover-verse-expand-{ENTRY-ID}` -- fix-round-1 correction: `ENTRY-ID` is
+  that entry's own FULL, already-prefixed testid (`{RefTestIdPrefix}-{Span}`,
+  e.g. `xref-item-GEN.1.1-3`), the exact same string as that entry's own
+  `data-testid` (PassageList.razor's `TestIdSuffix="@($"-{entry.TestId}")"`)
+  -- NOT a bare span. This also means a repeated-span entry's own numbered
+  `--2`/`--3` disambiguation (see PASSAGE-1) carries straight through into
+  these nested testids too, so they stay collision-free for exactly the
+  same reason the entries themselves do; so several entries can each be
   expanded independently in the same popover; text "Read the whole chapter"
   collapsed / "Show just this verse" expanded, attr `aria-expanded`; toggles
   the compact passage text vs. that entry's own scrollable mini-reader),
-  `popover-verse-reader{-SPAN}` (same generalization; the mini-reader's own
-  scrollable container; present only while that entry is expanded),
-  `popover-reader-verse-{n}{-SPAN}` (same generalization; one per verse of
-  the lazily-fetched chapter, `n` = verse number within it; attr
+  `popover-verse-reader{-ENTRY-ID}` (same generalization; the mini-reader's
+  own scrollable container; present only while that entry is expanded),
+  `popover-reader-verse-{n}{-ENTRY-ID}` (same generalization; one per verse
+  of the lazily-fetched chapter, `n` = verse number within it; attr
   `data-focal` = `"true"` for every verse in that entry's own focal
   verse/passage range, `"false"` otherwise -- see READER-1),
-  `popover-reader-mention-{n}-{placeId}{-SPAN}` (batch-r-brief.md
+  `popover-reader-mention-{n}-{placeId}{-ENTRY-ID}` (batch-r-brief.md
   requirement 5, same generalization; one per detected place-name mention
   inside verse `n`'s own text -- see BLINK-1 below; hovering or
   keyboard-focusing it blinks `placeId`'s own map marker),
@@ -337,7 +344,7 @@ Notes:
   mechanism (`client/Components/MiniReaderExpand.razor`, extracted from
   `VerseTextSection.razor`, which now wraps it too -- one mechanism, every
   caller, per-entry-scoped testids, see this file's own
-  `popover-verse-expand{-SPAN}` note above). Truncation caps (XREF-1 and
+  `popover-verse-expand{-ENTRY-ID}` note above). Truncation caps (XREF-1 and
   this file's own est/dest note) count PASSAGE ENTRIES, not raw verses.
   Clicking a multi-verse entry (not its own mini-reader expand button --
   that stays in place) pushes a PassageNode by default (the group's own
