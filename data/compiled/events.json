@@ -26034,6 +26034,647 @@
     "order_key": 390
   },
   {
+    "id": "rob_four_fishers",
+    "label": "Jesus calls four fishermen to follow him",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "sea-of-galilee"
+    ],
+    "verses": [
+      "MAT.4.18",
+      "MAT.4.19",
+      "MAT.4.20",
+      "MAT.4.21",
+      "MAT.4.22"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.1.16",
+            "MRK.1.17",
+            "MRK.1.18",
+            "MRK.1.19",
+            "MRK.1.20"
+          ]
+        },
+        "ref_note": "Mark 1:16-20 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §41"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.5.1",
+            "LUK.5.2",
+            "LUK.5.3",
+            "LUK.5.4",
+            "LUK.5.5",
+            "LUK.5.6",
+            "LUK.5.7",
+            "LUK.5.8",
+            "LUK.5.9",
+            "LUK.5.10",
+            "LUK.5.11"
+          ]
+        },
+        "ref_note": "Luke 5:1-11 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §41"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §41, \"Jesus Finds Four Fishers of Men in Four Fishermen\"",
+    "ref_note": "Matthew 4:18-22 read directly against the compiled KJV text",
+    "order_key": 410
+  },
+  {
+    "id": "rob_capernaum_demoniac",
+    "label": "Jesus heals a demoniac in the Capernaum synagogue",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MRK.1.21",
+      "MRK.1.22",
+      "MRK.1.23",
+      "MRK.1.24",
+      "MRK.1.25",
+      "MRK.1.26",
+      "MRK.1.27",
+      "MRK.1.28"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.4.31",
+            "LUK.4.32",
+            "LUK.4.33",
+            "LUK.4.34",
+            "LUK.4.35",
+            "LUK.4.36",
+            "LUK.4.37"
+          ]
+        },
+        "ref_note": "Luke 4:31-37 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §42"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §42, \"The Excitement in the Synagogue because of the Teaching of Jesus and the Healing of a Demoniac on the Sabbath\"",
+    "ref_note": "Mark 1:21-28 read directly against the compiled KJV text",
+    "order_key": 420
+  },
+  {
+    "id": "rob_peters_mother_in_law",
+    "label": "Jesus heals Peter's mother-in-law and many others",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.8.14",
+      "MAT.8.15",
+      "MAT.8.16",
+      "MAT.8.17"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.1.29",
+            "MRK.1.30",
+            "MRK.1.31",
+            "MRK.1.32",
+            "MRK.1.33",
+            "MRK.1.34"
+          ]
+        },
+        "ref_note": "Mark 1:29-34 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §43"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.4.38",
+            "LUK.4.39",
+            "LUK.4.40",
+            "LUK.4.41"
+          ]
+        },
+        "ref_note": "Luke 4:38-41 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §43"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §43, \"He Heals Peter's Mother-in-law and Many Others\"",
+    "ref_note": "Matthew 8:14-17 read directly against the compiled KJV text",
+    "order_key": 430
+  },
+  {
+    "id": "rob_first_galilee_tour",
+    "label": "The first tour of Galilee",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "MAT.4.23",
+      "MAT.4.24",
+      "MAT.4.25"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.1.35",
+            "MRK.1.36",
+            "MRK.1.37",
+            "MRK.1.38",
+            "MRK.1.39"
+          ]
+        },
+        "ref_note": "Mark 1:35-39 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §44"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.4.42",
+            "LUK.4.43",
+            "LUK.4.44"
+          ]
+        },
+        "ref_note": "Luke 4:42-44 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §44"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §44, \"The First Tour of Galilee with the Four Fishermen\"",
+    "ref_note": "Matthew 4:23-25 read directly against the compiled KJV text",
+    "order_key": 440
+  },
+  {
+    "id": "rob_leper_healed",
+    "label": "A leper healed; great popular excitement",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "MAT.8.2",
+      "MAT.8.3",
+      "MAT.8.4"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.1.40",
+            "MRK.1.41",
+            "MRK.1.42",
+            "MRK.1.43",
+            "MRK.1.44",
+            "MRK.1.45"
+          ]
+        },
+        "ref_note": "Mark 1:40-45 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §45"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.5.12",
+            "LUK.5.13",
+            "LUK.5.14",
+            "LUK.5.15",
+            "LUK.5.16"
+          ]
+        },
+        "ref_note": "Luke 5:12-16 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §45"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §45, \"A Leper Healed and Much Popular Excitement\"",
+    "ref_note": "Matthew 8:2-4 read directly against the compiled KJV text; Luke's own witness (5:12) names only 'a certain city,' unspecified -- galilee-1 kept as the broad, defensible region",
+    "order_key": 450
+  },
+  {
+    "id": "rob_paralytic_roof",
+    "label": "A paralytic lowered through the roof at Capernaum",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.9.1",
+      "MAT.9.2",
+      "MAT.9.3",
+      "MAT.9.4",
+      "MAT.9.5",
+      "MAT.9.6",
+      "MAT.9.7",
+      "MAT.9.8"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.2.1",
+            "MRK.2.2",
+            "MRK.2.3",
+            "MRK.2.4",
+            "MRK.2.5",
+            "MRK.2.6",
+            "MRK.2.7",
+            "MRK.2.8",
+            "MRK.2.9",
+            "MRK.2.10",
+            "MRK.2.11",
+            "MRK.2.12"
+          ]
+        },
+        "ref_note": "Mark 2:1-12 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §46"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.5.17",
+            "LUK.5.18",
+            "LUK.5.19",
+            "LUK.5.20",
+            "LUK.5.21",
+            "LUK.5.22",
+            "LUK.5.23",
+            "LUK.5.24",
+            "LUK.5.25",
+            "LUK.5.26"
+          ]
+        },
+        "ref_note": "Luke 5:17-26 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §46"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §46, \"Thronged in Capernaum, He Heals a Paralytic Lowered through the Roof of Peter's House\"",
+    "ref_note": "Matthew 9:1-8 read directly against the compiled KJV text; Matthew's own text alone does not name Capernaum, but Mark's own parallel (2:1) does explicitly",
+    "order_key": 460
+  },
+  {
+    "id": "rob_call_of_matthew",
+    "label": "The call of Matthew (Levi) the tax collector",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.9.9",
+      "MAT.9.10",
+      "MAT.9.11",
+      "MAT.9.12",
+      "MAT.9.13"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.2.13",
+            "MRK.2.14",
+            "MRK.2.15",
+            "MRK.2.16",
+            "MRK.2.17"
+          ]
+        },
+        "ref_note": "Mark 2:13-17 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §47"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.5.27",
+            "LUK.5.28",
+            "LUK.5.29",
+            "LUK.5.30",
+            "LUK.5.31",
+            "LUK.5.32"
+          ]
+        },
+        "ref_note": "Luke 5:27-32 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §47"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §47, \"The Call of Matthew (Levi) and His Reception in Honor of Jesus\"",
+    "ref_note": "Matthew 9:9-13 read directly against the compiled KJV text",
+    "order_key": 470
+  },
+  {
+    "id": "rob_fasting_parables",
+    "label": "Jesus defends his disciples for feasting instead of fasting",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.9.14",
+      "MAT.9.15",
+      "MAT.9.16",
+      "MAT.9.17"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.2.18",
+            "MRK.2.19",
+            "MRK.2.20",
+            "MRK.2.21",
+            "MRK.2.22"
+          ]
+        },
+        "ref_note": "Mark 2:18-22 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §48"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.5.33",
+            "LUK.5.34",
+            "LUK.5.35",
+            "LUK.5.36",
+            "LUK.5.37",
+            "LUK.5.38",
+            "LUK.5.39"
+          ]
+        },
+        "ref_note": "Luke 5:33-39 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §48"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §48, \"Jesus in Three Parables Defends His Disciples for Feasting instead of Fasting\"",
+    "ref_note": "Matthew 9:14-17 read directly against the compiled KJV text",
+    "order_key": 480
+  },
+  {
+    "id": "rob_jerusalem_feast_healing",
+    "label": "Jesus heals a lame man at a Jerusalem feast on the sabbath",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "JHN.5.1",
+      "JHN.5.2",
+      "JHN.5.3",
+      "JHN.5.4",
+      "JHN.5.5",
+      "JHN.5.6",
+      "JHN.5.7",
+      "JHN.5.8",
+      "JHN.5.9",
+      "JHN.5.10",
+      "JHN.5.11",
+      "JHN.5.12",
+      "JHN.5.13",
+      "JHN.5.14",
+      "JHN.5.15",
+      "JHN.5.16",
+      "JHN.5.17",
+      "JHN.5.18",
+      "JHN.5.19",
+      "JHN.5.20",
+      "JHN.5.21",
+      "JHN.5.22",
+      "JHN.5.23",
+      "JHN.5.24",
+      "JHN.5.25",
+      "JHN.5.26",
+      "JHN.5.27",
+      "JHN.5.28",
+      "JHN.5.29",
+      "JHN.5.30",
+      "JHN.5.31",
+      "JHN.5.32",
+      "JHN.5.33",
+      "JHN.5.34",
+      "JHN.5.35",
+      "JHN.5.36",
+      "JHN.5.37",
+      "JHN.5.38",
+      "JHN.5.39",
+      "JHN.5.40",
+      "JHN.5.41",
+      "JHN.5.42",
+      "JHN.5.43",
+      "JHN.5.44",
+      "JHN.5.45",
+      "JHN.5.46",
+      "JHN.5.47"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §49, \"At a Feast in Jerusalem (Possibly the Passover) Jesus Heals a Lame Man on the Sabbath and Defends This Action to the Pharisees in a Great Discourse\"",
+    "ref_note": "John 5:1-47 read directly against the compiled KJV text; single witness (John alone)",
+    "order_key": 490
+  },
+  {
+    "id": "rob_grain_sabbath",
+    "label": "The disciples pluck grain on the sabbath",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "MAT.12.1",
+      "MAT.12.2",
+      "MAT.12.3",
+      "MAT.12.4",
+      "MAT.12.5",
+      "MAT.12.6",
+      "MAT.12.7",
+      "MAT.12.8"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.2.23",
+            "MRK.2.24",
+            "MRK.2.25",
+            "MRK.2.26",
+            "MRK.2.27",
+            "MRK.2.28"
+          ]
+        },
+        "ref_note": "Mark 2:23-28 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §50"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.6.1",
+            "LUK.6.2",
+            "LUK.6.3",
+            "LUK.6.4",
+            "LUK.6.5"
+          ]
+        },
+        "ref_note": "Luke 6:1-5 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §50"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §50, \"Another Sabbath Controversy with the Pharisees When the Disciples Pluck Ears of Grain in the Fields\"",
+    "ref_note": "Matthew 12:1-8 read directly against the compiled KJV text",
+    "order_key": 500
+  },
+  {
+    "id": "rob_withered_hand",
+    "label": "Jesus heals a man's withered hand on the sabbath",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "MAT.12.9",
+      "MAT.12.10",
+      "MAT.12.11",
+      "MAT.12.12",
+      "MAT.12.13",
+      "MAT.12.14"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.3.1",
+            "MRK.3.2",
+            "MRK.3.3",
+            "MRK.3.4",
+            "MRK.3.5",
+            "MRK.3.6"
+          ]
+        },
+        "ref_note": "Mark 3:1-6 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §51"
+      },
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.6.6",
+            "LUK.6.7",
+            "LUK.6.8",
+            "LUK.6.9",
+            "LUK.6.10",
+            "LUK.6.11"
+          ]
+        },
+        "ref_note": "Luke 6:6-11 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §51"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §51, \"A Third Sabbath Controversy with the Pharisees over the Healing of a Man with a Withered Hand in a Synagogue\"",
+    "ref_note": "Matthew 12:9-14 read directly against the compiled KJV text",
+    "order_key": 510
+  },
+  {
+    "id": "rob_multitudes_by_sea",
+    "label": "Jesus teaches and heals great multitudes by the Sea of Galilee",
+    "when": {
+      "from_year": 30,
+      "to_year": 30
+    },
+    "places": [
+      "sea-of-galilee"
+    ],
+    "verses": [
+      "MAT.12.15",
+      "MAT.12.16",
+      "MAT.12.17",
+      "MAT.12.18",
+      "MAT.12.19",
+      "MAT.12.20",
+      "MAT.12.21"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MRK",
+        "translations": {
+          "kjv": [
+            "MRK.3.7",
+            "MRK.3.8",
+            "MRK.3.9",
+            "MRK.3.10",
+            "MRK.3.11",
+            "MRK.3.12"
+          ]
+        },
+        "ref_note": "Mark 3:7-12 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §52"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §52, \"Jesus Teaches and Heals Great Multitudes by the Sea of Galilee\"",
+    "ref_note": "Matthew 12:15-21 read directly against the compiled KJV text",
+    "order_key": 520
+  },
+  {
     "id": "theo-322",
     "label": "Stephen is stoned",
     "when": {
@@ -26118,6 +26759,383 @@
     "robertson_section": null,
     "ref_note": null,
     "order_key": 0
+  },
+  {
+    "id": "rob_twelve_apostles",
+    "label": "Jesus selects the twelve apostles after a night of prayer",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "MRK.3.13",
+      "MRK.3.14",
+      "MRK.3.15",
+      "MRK.3.16",
+      "MRK.3.17",
+      "MRK.3.18",
+      "MRK.3.19"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.6.12",
+            "LUK.6.13",
+            "LUK.6.14",
+            "LUK.6.15",
+            "LUK.6.16"
+          ]
+        },
+        "ref_note": "Luke 6:12-16 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §53"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §53, \"After a Night of Prayer Jesus Selects Twelve Apostles\"",
+    "ref_note": "Mark 3:13-19 read directly against the compiled KJV text; the batch's own AD 30/31 boundary is placed here -- see this period's own header comment",
+    "order_key": 530
+  },
+  {
+    "id": "rob_sermon_on_the_mount",
+    "label": "The Sermon on the Mount",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "LUK.6.17",
+      "LUK.6.18",
+      "LUK.6.19",
+      "LUK.6.20",
+      "LUK.6.21",
+      "LUK.6.22",
+      "LUK.6.23",
+      "LUK.6.24",
+      "LUK.6.25",
+      "LUK.6.26",
+      "LUK.6.27",
+      "LUK.6.28",
+      "LUK.6.29",
+      "LUK.6.30",
+      "LUK.6.31",
+      "LUK.6.32",
+      "LUK.6.33",
+      "LUK.6.34",
+      "LUK.6.35",
+      "LUK.6.36",
+      "LUK.6.37",
+      "LUK.6.38",
+      "LUK.6.39",
+      "LUK.6.40",
+      "LUK.6.41",
+      "LUK.6.42",
+      "LUK.6.43",
+      "LUK.6.44",
+      "LUK.6.45",
+      "LUK.6.46",
+      "LUK.6.47",
+      "LUK.6.48",
+      "LUK.6.49"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "MAT",
+        "translations": {
+          "kjv": [
+            "MAT.5.1",
+            "MAT.5.2",
+            "MAT.5.3",
+            "MAT.5.4",
+            "MAT.5.5",
+            "MAT.5.6",
+            "MAT.5.7",
+            "MAT.5.8",
+            "MAT.5.9",
+            "MAT.5.10",
+            "MAT.5.11",
+            "MAT.5.12",
+            "MAT.5.13",
+            "MAT.5.14",
+            "MAT.5.15",
+            "MAT.5.16",
+            "MAT.5.17",
+            "MAT.5.18",
+            "MAT.5.19",
+            "MAT.5.20",
+            "MAT.5.21",
+            "MAT.5.22",
+            "MAT.5.23",
+            "MAT.5.24",
+            "MAT.5.25",
+            "MAT.5.26",
+            "MAT.5.27",
+            "MAT.5.28",
+            "MAT.5.29",
+            "MAT.5.30",
+            "MAT.5.31",
+            "MAT.5.32",
+            "MAT.5.33",
+            "MAT.5.34",
+            "MAT.5.35",
+            "MAT.5.36",
+            "MAT.5.37",
+            "MAT.5.38",
+            "MAT.5.39",
+            "MAT.5.40",
+            "MAT.5.41",
+            "MAT.5.42",
+            "MAT.5.43",
+            "MAT.5.44",
+            "MAT.5.45",
+            "MAT.5.46",
+            "MAT.5.47",
+            "MAT.5.48",
+            "MAT.6.1",
+            "MAT.6.2",
+            "MAT.6.3",
+            "MAT.6.4",
+            "MAT.6.5",
+            "MAT.6.6",
+            "MAT.6.7",
+            "MAT.6.8",
+            "MAT.6.9",
+            "MAT.6.10",
+            "MAT.6.11",
+            "MAT.6.12",
+            "MAT.6.13",
+            "MAT.6.14",
+            "MAT.6.15",
+            "MAT.6.16",
+            "MAT.6.17",
+            "MAT.6.18",
+            "MAT.6.19",
+            "MAT.6.20",
+            "MAT.6.21",
+            "MAT.6.22",
+            "MAT.6.23",
+            "MAT.6.24",
+            "MAT.6.25",
+            "MAT.6.26",
+            "MAT.6.27",
+            "MAT.6.28",
+            "MAT.6.29",
+            "MAT.6.30",
+            "MAT.6.31",
+            "MAT.6.32",
+            "MAT.6.33",
+            "MAT.6.34",
+            "MAT.7.1",
+            "MAT.7.2",
+            "MAT.7.3",
+            "MAT.7.4",
+            "MAT.7.5",
+            "MAT.7.6",
+            "MAT.7.7",
+            "MAT.7.8",
+            "MAT.7.9",
+            "MAT.7.10",
+            "MAT.7.11",
+            "MAT.7.12",
+            "MAT.7.13",
+            "MAT.7.14",
+            "MAT.7.15",
+            "MAT.7.16",
+            "MAT.7.17",
+            "MAT.7.18",
+            "MAT.7.19",
+            "MAT.7.20",
+            "MAT.7.21",
+            "MAT.7.22",
+            "MAT.7.23",
+            "MAT.7.24",
+            "MAT.7.25",
+            "MAT.7.26",
+            "MAT.7.27",
+            "MAT.7.28",
+            "MAT.7.29"
+          ]
+        },
+        "ref_note": "Matthew 5:1-7:29 (the whole Sermon) read directly against the compiled KJV text; written as 3 same-chapter ranges, this project's own curator-friendly range syntax (expand_verse_ref) not spanning a chapter boundary in one string",
+        "robertson_section": "Robertson (1922) §54"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §54, \"The Sermon on the Mount. Privileges and Requirements of the Messianic Reign, Christ's Standard of Righteousness\"",
+    "ref_note": "Matthew 5-7 and Luke 6:17-49 both read directly against the compiled KJV text; Luke's own single-range account used as this event's top-level verses (Matthew's own 3-chapter span is written as 3 same-chapter ranges under its own witness row, see event-witnesses.toml)",
+    "order_key": 540
+  },
+  {
+    "id": "rob_centurion_servant",
+    "label": "Jesus heals a centurion's servant at Capernaum",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "capernaum"
+    ],
+    "verses": [
+      "MAT.8.5",
+      "MAT.8.6",
+      "MAT.8.7",
+      "MAT.8.8",
+      "MAT.8.9",
+      "MAT.8.10",
+      "MAT.8.11",
+      "MAT.8.12",
+      "MAT.8.13"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.7.1",
+            "LUK.7.2",
+            "LUK.7.3",
+            "LUK.7.4",
+            "LUK.7.5",
+            "LUK.7.6",
+            "LUK.7.7",
+            "LUK.7.8",
+            "LUK.7.9",
+            "LUK.7.10"
+          ]
+        },
+        "ref_note": "Luke 7:1-10 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §55"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §55, \"Jesus Heals a Centurion's Servant at Capernaum\"",
+    "ref_note": "Matthew 8:5-13 and Luke 7:1-10 both read directly against the compiled KJV text; both name Capernaum explicitly",
+    "order_key": 550
+  },
+  {
+    "id": "rob_widow_of_nain",
+    "label": "Jesus raises a widow's son at Nain",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "nain"
+    ],
+    "verses": [
+      "LUK.7.11",
+      "LUK.7.12",
+      "LUK.7.13",
+      "LUK.7.14",
+      "LUK.7.15",
+      "LUK.7.16",
+      "LUK.7.17"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §56, \"He Raises a Widow's Son at Nain\"",
+    "ref_note": "Luke 7:11-17 read directly against the compiled KJV text; single witness (Luke alone)",
+    "order_key": 560
+  },
+  {
+    "id": "rob_message_from_baptist",
+    "label": "John's disciples ask Jesus 'Art thou he that should come?'",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "MAT.11.2",
+      "MAT.11.3",
+      "MAT.11.4",
+      "MAT.11.5",
+      "MAT.11.6",
+      "MAT.11.7",
+      "MAT.11.8",
+      "MAT.11.9",
+      "MAT.11.10",
+      "MAT.11.11",
+      "MAT.11.12",
+      "MAT.11.13",
+      "MAT.11.14",
+      "MAT.11.15",
+      "MAT.11.16",
+      "MAT.11.17",
+      "MAT.11.18",
+      "MAT.11.19"
+    ],
+    "kind": "event",
+    "witnesses": [
+      {
+        "book": "LUK",
+        "translations": {
+          "kjv": [
+            "LUK.7.18",
+            "LUK.7.19",
+            "LUK.7.20",
+            "LUK.7.21",
+            "LUK.7.22",
+            "LUK.7.23",
+            "LUK.7.24",
+            "LUK.7.25",
+            "LUK.7.26",
+            "LUK.7.27",
+            "LUK.7.28",
+            "LUK.7.29",
+            "LUK.7.30",
+            "LUK.7.31",
+            "LUK.7.32",
+            "LUK.7.33",
+            "LUK.7.34",
+            "LUK.7.35"
+          ]
+        },
+        "ref_note": "Luke 7:18-35 read directly against the compiled KJV text",
+        "robertson_section": "Robertson (1922) §57"
+      }
+    ],
+    "robertson_section": "Robertson (1922) §57, \"The Message from the Baptist and the Eulogy of Jesus\"",
+    "ref_note": "Matthew 11:2-19 and Luke 7:18-35 both read directly against the compiled KJV text; John himself is imprisoned at this point (Matthew 11:2) -- this event's own place is scoped to where Jesus (the narrative's own subject here) receives and answers the message, a broad Galilee setting, not John's own prison",
+    "order_key": 570
+  },
+  {
+    "id": "rob_woes_on_cities",
+    "label": "Jesus denounces the unrepentant cities of Galilee",
+    "when": {
+      "from_year": 31,
+      "to_year": 31
+    },
+    "places": [
+      "galilee-1"
+    ],
+    "verses": [
+      "MAT.11.20",
+      "MAT.11.21",
+      "MAT.11.22",
+      "MAT.11.23",
+      "MAT.11.24",
+      "MAT.11.25",
+      "MAT.11.26",
+      "MAT.11.27",
+      "MAT.11.28",
+      "MAT.11.29",
+      "MAT.11.30"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": "Robertson (1922) §58, \"Woes upon the Cities of Opportunity. The Claims of Christ as the Teacher about the Father\"",
+    "ref_note": "Matthew 11:20-30 read directly against the compiled KJV text; single witness (Matthew alone); Chorazin, Bethsaida, and Capernaum are each named within the text itself, so the broad Galilee region is kept rather than any one of the three",
+    "order_key": 580
   },
   {
     "id": "theo-325",

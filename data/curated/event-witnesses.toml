@@ -373,3 +373,172 @@ book = "LUK"
 verses = ["LUK.4.1-13"]
 ref_note = "Luke 4:1-13 read directly against the compiled KJV text"
 robertson_section = "Robertson (1922) §25"
+
+# --- Period 4: SS41-58 -----------------------------------------------------
+[[witness]]
+event_id = "rob_four_fishers"
+book = "MRK"
+verses = ["MRK.1.16-20"]
+ref_note = "Mark 1:16-20 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §41"
+
+[[witness]]
+event_id = "rob_four_fishers"
+book = "LUK"
+verses = ["LUK.5.1-11"]
+ref_note = "Luke 5:1-11 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §41"
+
+[[witness]]
+event_id = "rob_capernaum_demoniac"
+book = "LUK"
+verses = ["LUK.4.31-37"]
+ref_note = "Luke 4:31-37 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §42"
+
+[[witness]]
+event_id = "rob_peters_mother_in_law"
+book = "MRK"
+verses = ["MRK.1.29-34"]
+ref_note = "Mark 1:29-34 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §43"
+
+[[witness]]
+event_id = "rob_peters_mother_in_law"
+book = "LUK"
+verses = ["LUK.4.38-41"]
+ref_note = "Luke 4:38-41 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §43"
+
+[[witness]]
+event_id = "rob_first_galilee_tour"
+book = "MRK"
+verses = ["MRK.1.35-39"]
+ref_note = "Mark 1:35-39 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §44"
+
+[[witness]]
+event_id = "rob_first_galilee_tour"
+book = "LUK"
+verses = ["LUK.4.42-44"]
+ref_note = "Luke 4:42-44 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §44"
+
+[[witness]]
+event_id = "rob_leper_healed"
+book = "MRK"
+verses = ["MRK.1.40-45"]
+ref_note = "Mark 1:40-45 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §45"
+
+[[witness]]
+event_id = "rob_leper_healed"
+book = "LUK"
+verses = ["LUK.5.12-16"]
+ref_note = "Luke 5:12-16 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §45"
+
+[[witness]]
+event_id = "rob_paralytic_roof"
+book = "MRK"
+verses = ["MRK.2.1-12"]
+ref_note = "Mark 2:1-12 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §46"
+
+[[witness]]
+event_id = "rob_paralytic_roof"
+book = "LUK"
+verses = ["LUK.5.17-26"]
+ref_note = "Luke 5:17-26 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §46"
+
+[[witness]]
+event_id = "rob_call_of_matthew"
+book = "MRK"
+verses = ["MRK.2.13-17"]
+ref_note = "Mark 2:13-17 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §47"
+
+[[witness]]
+event_id = "rob_call_of_matthew"
+book = "LUK"
+verses = ["LUK.5.27-32"]
+ref_note = "Luke 5:27-32 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §47"
+
+[[witness]]
+event_id = "rob_fasting_parables"
+book = "MRK"
+verses = ["MRK.2.18-22"]
+ref_note = "Mark 2:18-22 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §48"
+
+[[witness]]
+event_id = "rob_fasting_parables"
+book = "LUK"
+verses = ["LUK.5.33-39"]
+ref_note = "Luke 5:33-39 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §48"
+
+[[witness]]
+event_id = "rob_grain_sabbath"
+book = "MRK"
+verses = ["MRK.2.23-28"]
+ref_note = "Mark 2:23-28 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §50"
+
+[[witness]]
+event_id = "rob_grain_sabbath"
+book = "LUK"
+verses = ["LUK.6.1-5"]
+ref_note = "Luke 6:1-5 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §50"
+
+[[witness]]
+event_id = "rob_withered_hand"
+book = "MRK"
+verses = ["MRK.3.1-6"]
+ref_note = "Mark 3:1-6 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §51"
+
+[[witness]]
+event_id = "rob_withered_hand"
+book = "LUK"
+verses = ["LUK.6.6-11"]
+ref_note = "Luke 6:6-11 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §51"
+
+[[witness]]
+event_id = "rob_multitudes_by_sea"
+book = "MRK"
+verses = ["MRK.3.7-12"]
+ref_note = "Mark 3:7-12 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §52"
+
+[[witness]]
+event_id = "rob_twelve_apostles"
+book = "LUK"
+verses = ["LUK.6.12-16"]
+ref_note = "Luke 6:12-16 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §53"
+
+[[witness]]
+event_id = "rob_sermon_on_the_mount"
+book = "MAT"
+verses = ["MAT.5.1-48", "MAT.6.1-34", "MAT.7.1-29"]
+ref_note = "Matthew 5:1-7:29 (the whole Sermon) read directly against the compiled KJV text; written as 3 same-chapter ranges, this project's own curator-friendly range syntax (expand_verse_ref) not spanning a chapter boundary in one string"
+robertson_section = "Robertson (1922) §54"
+
+[[witness]]
+event_id = "rob_centurion_servant"
+book = "LUK"
+verses = ["LUK.7.1-10"]
+ref_note = "Luke 7:1-10 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §55"
+
+[[witness]]
+event_id = "rob_message_from_baptist"
+book = "LUK"
+verses = ["LUK.7.18-35"]
+ref_note = "Luke 7:18-35 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §57"
