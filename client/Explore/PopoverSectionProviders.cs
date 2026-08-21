@@ -789,69 +789,240 @@ public sealed class PlaceEventsSection : IPopoverSectionProvider
 }
 
 /// <summary>
-/// Batch N ("narratives as first-class graph structure"): a
-/// <see cref="NarrativeEventNode"/>'s own main content -- "its verses become
-/// the subject" (the brief, verbatim) once traversal re-anchors the
-/// popover onto an adjacent event. A small meta line names which narrative
-/// this event belongs to (the SAME <c>.popover-meta</c> treatment
-/// <see cref="TimeAndPlaceNode"/> already uses for its own event-label
-/// line), then the event's own verses render via the shared
-/// <see cref="Components.PassageList"/> -- grouped, truncation-free (no cap
-/// asked for, same as THE SCRIPTURES), each entry independently
-/// expandable, exactly like every other verse list in this app. Absent
-/// entirely for an event with zero curated verses (a real, disclosed case
-/// -- this app's own server-side test fixtures include one) -- the meta
-/// line alone still identifies the moment, and PRIOR/FOLLOWING traversal
-/// (below) works regardless, since it resolves by event id, never by
-/// re-searching this section's own verses.
+/// Batch T requirement 3 ("verse popover: event membership replaces
+/// prev/next"): the VERSE popover's own "EVENT" section -- one row per
+/// EVENT-kind PASSAGE citing this verse (the pre-existing
+/// <see cref="VerseDetail.Events"/> list, already fetched by
+/// <see cref="VerseTextSectionProvider"/>/<see cref="CrossRefsSection"/>,
+/// zero new network cost), each a small-caps, explorable title that pushes
+/// a fresh <see cref="EventNode"/>. REPLACES Batch N's own verse-level
+/// PRIOR/FOLLOWING sections (the owner, verbatim: "rather than putting the
+/// next/previous event on every verse, add titles of events that
+/// correspond to passages") -- traversal (PRIOR/FOLLOWING) now lives
+/// entirely on the EVENT node itself, reached by clicking one of these
+/// rows. Conditional presence: absent for a verse touching zero titled
+/// events (the overwhelming majority of verses outside Gospels/Acts/the
+/// curated narratives).
 /// </summary>
-public sealed class NarrativeEventTextSection : IPopoverSectionProvider
+public sealed class VerseEventMembershipSection : IPopoverSectionProvider
 {
-    public bool AppliesTo(IExplorable node) => node.Kind == "NarrativeEvent";
+    public bool AppliesTo(IExplorable node) => node.Kind == "Verse";
 
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
     {
-        if (node is not NarrativeEventNode ev)
+        if (node is not VerseNode v)
         {
             return null;
         }
 
-        List<PassageListVerse> verses;
+        List<SceneEvent> events;
         try
         {
-            verses = await VerseTextResolver.ResolveAsync(api, ev.Vrefs);
+            events = (await v.DetailAsync(api)).Events; // memoized -- shares VerseTextSectionProvider's own fetch
         }
         catch (Exception)
         {
-            verses = new List<PassageListVerse>();
+            return null;
+        }
+
+        if (events.Count == 0)
+        {
+            return null;
         }
 
         RenderFragment body = builder =>
         {
             var seq = 0;
             builder.OpenElement(seq++, "p");
-            builder.AddAttribute(seq++, "class", "popover-meta");
-            builder.AddAttribute(seq++, "data-testid", "narrative-event-narrative-name");
-            builder.AddContent(seq++, ev.NarrativeName);
+            builder.AddAttribute(seq++, "class", "catechism-section-heading"); // the SAME house small-caps eyebrow every section-registry heading shares (CATECH-1/NARRATIVE-1/DELTA-1) -- not a fifth copy
+            builder.AddAttribute(seq++, "data-testid", "event-section-heading");
+            builder.AddContent(seq++, "EVENT");
             builder.CloseElement();
 
-            if (verses.Count > 0)
+            foreach (var e in events)
             {
-                var units = new PassageSourceUnit[] { new(verses) };
-                builder.OpenComponent<Components.PassageList>(seq++);
-                builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
-                builder.AddAttribute(seq++, "RefTestIdPrefix", "narrative-event-verse");
-                builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
-                builder.CloseComponent();
+                var id = e.Id; // local copies -- captured per-row by the onclick closure below
+                var label = e.Label;
+                builder.OpenElement(seq++, "button");
+                builder.AddAttribute(seq++, "type", "button");
+                builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
+                builder.AddAttribute(seq++, "data-testid", $"verse-event-{id}");
+                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label))));
+                builder.AddContent(seq++, label);
+                builder.CloseElement();
             }
         };
-        return new PopoverSection("narrative-event-text", body);
+        return new PopoverSection("event-membership", body);
+    }
+}
+
+/// <summary>
+/// Batch T requirement 4: an <see cref="EventNode"/>'s own date + place(s) --
+/// "title + traditional date + place(s) (each explorable -- place opens the
+/// place node; the date line quiet, with ref_note provenance on hover or a
+/// quiet note)," the brief verbatim. ONE section (not two) since both are
+/// small, header-adjacent facts about the SAME subject, rendered together
+/// immediately below the popover's own title.
+/// </summary>
+public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Event";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not EventNode ev)
+        {
+            return null;
+        }
+
+        EventDetail detail;
+        try
+        {
+            detail = await ev.DetailAsync(api); // memoized -- shared with EventWitnessesSection and the PRIOR/FOLLOWING providers' own map-focus-sync read
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        var dateText = YearText.FormatRange(detail.When.FromYear, detail.When.ToYear);
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "popover-meta event-date-line");
+            builder.AddAttribute(seq++, "data-testid", "event-date");
+            if (detail.RefNote is { } refNote)
+            {
+                builder.AddAttribute(seq++, "title", refNote); // quiet, hover-revealed provenance -- a native tooltip, no extra affordance/click needed
+            }
+            builder.AddContent(seq++, dateText);
+            builder.CloseElement();
+
+            if (detail.Places.Count > 0)
+            {
+                builder.OpenElement(seq++, "div");
+                builder.AddAttribute(seq++, "class", "popover-event-places");
+                builder.AddAttribute(seq++, "data-testid", "event-places");
+                foreach (var p in detail.Places)
+                {
+                    var placeId = p.Id; // local copies -- captured per-row by the onclick closure below
+                    var placeName = p.Name;
+                    builder.OpenElement(seq++, "button");
+                    builder.AddAttribute(seq++, "type", "button");
+                    builder.AddAttribute(seq++, "class", "popover-event-place explorable");
+                    builder.AddAttribute(seq++, "data-testid", $"event-place-{placeId}");
+                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PlaceNode(placeId, placeName))));
+                    builder.AddContent(seq++, placeName);
+                    builder.CloseElement();
+                }
+                builder.CloseElement();
+            }
+        };
+        return new PopoverSection("event-date-places", body);
+    }
+}
+
+/// <summary>
+/// Batch T requirement 4: "PARALLEL ACCOUNTS -- one short passage per
+/// witness (Gospel name + passage ref), each clamped to 2 verses with
+/// per-passage expand/collapse... Single-witness events show the one
+/// passage (no 'parallel' framing when n=1 -- conditional presence)." One
+/// <see cref="Components.PassageList"/> unit per witness (never merged --
+/// PASSAGE-1's own "a source unit never blurs into its neighbor's," applied
+/// here across Gospels), each captioned with its own book's display name
+/// (resolved via the already-cached <see cref="AtlasClient.Books"/> roster,
+/// no extra fetch beyond the first page load) -- "Gospel name + passage
+/// ref" falls out of PassageList's own existing Caption + auto-rendered
+/// Span, no new rendering needed. <see cref="Components.PassageList.ClampVerses"/>
+/// (batch-n2 req 2, generalized here to every consumer of the shared
+/// component) is what realizes "clamped to 2 verses... per-passage
+/// expand/collapse."
+/// </summary>
+public sealed class EventWitnessesSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Event";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not EventNode ev)
+        {
+            return null;
+        }
+
+        EventDetail detail;
+        List<BookTocEntry> books;
+        try
+        {
+            detail = await ev.DetailAsync(api);
+            books = await api.Books(); // fetched once, cached forever -- see AtlasClient's own doc comment
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (detail.Witnesses.Count == 0)
+        {
+            return null; // defensive -- scene::witnesses_for always synthesizes >=1 server-side, but never assume a network response is well-formed
+        }
+
+        var units = detail.Witnesses.Select(w =>
+        {
+            var bookName = books.FirstOrDefault(b => b.Code == w.Book)?.Name ?? w.Book;
+            var verses = w.VerseGroups.SelectMany(g => g.Verses.Select(v => new PassageListVerse(v, ""))).ToList();
+            return new PassageSourceUnit(verses, bookName);
+        }).ToList();
+
+        // The witnesses' own verse TEXT isn't on VerseGroup (ids only, same
+        // as every other VerseGroup on this wire) -- resolve it the SAME way
+        // every other section in this file resolves a curated verse list
+        // (VerseTextResolver, the existing chapter fetch + LRU cache), then
+        // re-pair it back onto each unit's own PassageListVerse list.
+        List<PassageListVerse> resolvedFlat;
+        try
+        {
+            var allVrefs = detail.Witnesses.SelectMany(w => w.VerseGroups.SelectMany(g => g.Verses)).ToList();
+            resolvedFlat = await VerseTextResolver.ResolveAsync(api, allVrefs);
+        }
+        catch (Exception)
+        {
+            resolvedFlat = new List<PassageListVerse>();
+        }
+        var textByVref = resolvedFlat.ToDictionary(v => v.Vref, v => v.Text);
+        units = units.Select(u => new PassageSourceUnit(
+            u.Verses.Select(v => new PassageListVerse(v.Vref, textByVref.GetValueOrDefault(v.Vref, ""))).ToList(),
+            u.Caption)).ToList();
+
+        var multi = units.Count > 1;
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            if (multi)
+            {
+                builder.OpenElement(seq++, "p");
+                builder.AddAttribute(seq++, "class", "catechism-section-heading");
+                builder.AddAttribute(seq++, "data-testid", "event-section-heading");
+                builder.AddContent(seq++, "PARALLEL ACCOUNTS");
+                builder.CloseElement();
+            }
+
+            builder.OpenComponent<Components.PassageList>(seq++);
+            builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
+            builder.AddAttribute(seq++, "RefTestIdPrefix", "event-witness");
+            builder.AddAttribute(seq++, "ClampVerses", 2);
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.CloseComponent();
+        };
+        return new PopoverSection(multi ? "event-witnesses" : "event-witness", body);
     }
 }
 
 /// <summary>
 /// Batch N: shared rendering for the PRIOR EVENT / FOLLOWING EVENT sections
-/// (<see cref="NarrativePriorEventSection"/>/<see cref="NarrativeFollowingEventSection"/>
+/// (<see cref="EventPriorSection"/>/<see cref="EventFollowingSection"/>
 /// below) -- both are the exact same shape (one block per qualifying
 /// narrative position: a house small-caps heading, an explorable
 /// event-traversal row, that adjacent event's own verses via the shared
@@ -859,7 +1030,12 @@ public sealed class NarrativeEventTextSection : IPopoverSectionProvider
 /// <see cref="NarrativePositionDto"/> they read and their own house
 /// label/testid vocabulary ("prior"/"PRIOR EVENT" vs
 /// "following"/"FOLLOWING EVENT") -- ONE resolver, two thin callers, never
-/// two copies of the same render loop.
+/// two copies of the same render loop. Batch T requirement 2/4: retargeted
+/// from Verse/NarrativeEvent onto the new EVENT node (see
+/// <see cref="EventPriorSection.AppliesTo"/>) -- the resolver itself
+/// (`positions_for_events`, server-side) needed no change; recursion falls
+/// out of an EventNode's own traversal row pushing ANOTHER EventNode, the
+/// exact same registry re-run every other push/pop already triggers.
 /// </summary>
 file static class NarrativeDirectionSection
 {
@@ -938,7 +1114,9 @@ file static class NarrativeDirectionSection
             // captured BY REFERENCE from the enclosing method would keep
             // accumulating counts across those re-renders -- observed live
             // as a SINGLE entry's own testid drifting from bare
-            // `narrative-following-event-exodus` to `--2`, `--3`, ... on
+            // `event-following-event-exodus` (Batch N's own original bug
+            // report predates Batch T's testid rename, `narrative-` ->
+            // `event-`, but the exact same class of bug/fix) to `--2`, `--3`, ... on
             // successive renders, with no second entry ever existing.
             // CatechismSeamSection's own `occurrences` (a few sections up)
             // and PassageList.razor's own `Visible` getter both already get
@@ -964,10 +1142,8 @@ file static class NarrativeDirectionSection
                 builder.CloseElement();
 
                 var narrativeId = position.NarrativeId; // local copies -- captured per-row by the onclick closure below
-                var narrativeName = position.NarrativeName;
                 var eventId = adjacent.Id;
                 var eventLabel = adjacent.Label;
-                var vrefs = adjacent.VerseGroups.SelectMany(g => g.Verses).ToList();
 
                 var count = occurrences[narrativeId] = occurrences.GetValueOrDefault(narrativeId) + 1;
                 var idSuffix = count == 1 ? narrativeId : $"{narrativeId}--{count}";
@@ -977,8 +1153,17 @@ file static class NarrativeDirectionSection
                 builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
                 builder.AddAttribute(seq++, "data-testid", $"{eventTestIdPrefix}-{idSuffix}");
                 builder.AddAttribute(seq++, "aria-label", $"{sectionLabel}: {eventLabel}");
+                // Batch T: pushes the new EventNode (Kind == "Event") -- not
+                // narrative-locked the way the retired NarrativeEventNode was
+                // (that lock existed only to keep a Verse-reached traversal
+                // from silently branching into an unrelated narrative the
+                // SAME event also happened to touch; an EventNode reached
+                // from ANY of its own several entry points -- a heading, a
+                // verse's own EVENT row, or this very traversal -- always
+                // shows the FULL, unfiltered position list, recursing
+                // through every qualifying narrative it belongs to).
                 builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () =>
-                    ctx.PushAsync(new NarrativeEventNode(narrativeId, narrativeName, eventId, eventLabel, vrefs))));
+                    ctx.PushAsync(new EventNode(eventId, eventLabel))));
                 builder.OpenElement(seq++, "span");
                 builder.AddAttribute(seq++, "class", "popover-event-label");
                 builder.AddContent(seq++, eventLabel);
@@ -1001,39 +1186,42 @@ file static class NarrativeDirectionSection
 }
 
 /// <summary>
-/// Batch N requirement 2: "PRIOR EVENT" -- present only when the current
-/// node's own narrative position(s) (<see cref="INarrativeAware"/>) include
-/// at least one with a <see cref="NarrativePositionDto.Prior"/>. Applies to
-/// Verse (the entry point -- opening a narrative verse) AND NarrativeEvent
-/// (recursion -- a traversed event's own further prior, per the brief's
-/// "recursively, arbitrarily far"). Deliberately NOT Passage (see the
-/// batch report's own scope note: a shift-click passage span's own
-/// per-verse narrative membership is genuinely ambiguous in a way a single
-/// verse's or a single curated event's never is, and the brief's own
-/// wording is "VERSE popover gains narrative sections" specifically).
+/// Batch N requirement 2, retargeted Batch T requirement 4: "PRIOR EVENT" --
+/// present only when the current node's own narrative position(s)
+/// (<see cref="INarrativeAware"/>) include at least one with a
+/// <see cref="NarrativePositionDto.Prior"/>. Applies to Event ONLY now
+/// (Batch T requirement 3 retires this from Verse -- "rather than putting
+/// the next/previous event on every verse... traversal lives on event
+/// nodes," the owner verbatim) -- recursion (an EventNode's own further
+/// prior, "recursively, arbitrarily far") falls out of THIS SAME
+/// `AppliesTo` clause matching the traversed EventNode too, not a second
+/// mechanism. Deliberately still NOT Passage (unchanged scope note from
+/// Batch N: a shift-click passage span's own per-verse narrative
+/// membership is genuinely ambiguous in a way a single curated event never
+/// is).
 /// </summary>
-public sealed class NarrativePriorEventSection : IPopoverSectionProvider
+public sealed class EventPriorSection : IPopoverSectionProvider
 {
-    public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "NarrativeEvent";
+    public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
     public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
-        NarrativeDirectionSection.ResolveAsync(node, api, ctx, p => p.Prior, "narrative-prior", "PRIOR EVENT", "narrative-prior-event", "narrative-prior-verse");
+        NarrativeDirectionSection.ResolveAsync(node, api, ctx, p => p.Prior, "event-prior", "PRIOR EVENT", "event-prior-event", "event-prior-verse");
 }
 
 /// <summary>
-/// Batch N requirement 2: "FOLLOWING EVENT" -- the mirror image of
-/// <see cref="NarrativePriorEventSection"/> (same applicability, same
-/// shared resolver, reading <see cref="NarrativePositionDto.Following"/>
-/// instead). Registered immediately after it (PopoverSections.cs) so
-/// PRIOR always renders above FOLLOWING, matching the narrative's own
-/// forward reading order.
+/// Batch N requirement 2, retargeted Batch T requirement 4: "FOLLOWING
+/// EVENT" -- the mirror image of <see cref="EventPriorSection"/> (same
+/// applicability, same shared resolver, reading
+/// <see cref="NarrativePositionDto.Following"/> instead). Registered
+/// immediately after it (PopoverSections.cs) so PRIOR always renders above
+/// FOLLOWING, matching the narrative's own forward reading order.
 /// </summary>
-public sealed class NarrativeFollowingEventSection : IPopoverSectionProvider
+public sealed class EventFollowingSection : IPopoverSectionProvider
 {
-    public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "NarrativeEvent";
+    public bool AppliesTo(IExplorable node) => node.Kind == "Event";
 
     public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
-        NarrativeDirectionSection.ResolveAsync(node, api, ctx, p => p.Following, "narrative-following", "FOLLOWING EVENT", "narrative-following-event", "narrative-following-verse");
+        NarrativeDirectionSection.ResolveAsync(node, api, ctx, p => p.Following, "event-following", "FOLLOWING EVENT", "event-following-event", "event-following-verse");
 }
 
 /// <summary>

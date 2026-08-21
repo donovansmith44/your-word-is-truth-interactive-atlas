@@ -232,6 +232,20 @@ public sealed class AtlasClient
     public Task<List<NarrativePositionDto>> NarrativeEventPositions(string eventId) =>
         GetRequired<List<NarrativePositionDto>>($"api/narrative/event/{Uri.EscapeDataString(eventId)}");
 
+    /// <summary>
+    /// Batch T requirement 4: <c>GET /api/event/{id}</c> -- an EVENT-kind
+    /// PASSAGE's own rich content (title/date/places/witnesses/provenance).
+    /// Uncached at this layer, same as <see cref="Verse"/>/
+    /// <see cref="CatechismItem"/> -- <see cref="Explore.EventNode"/>
+    /// memoizes its own single fetch per node instance instead (mirrors
+    /// <c>VerseNode.DetailAsync</c>'s own reasoning exactly). Never called
+    /// with a user-typed id -- always one a prior response (a reader
+    /// heading, a verse's own EVENT membership row, a PRIOR/FOLLOWING
+    /// traversal) already handed back.
+    /// </summary>
+    public Task<EventDetail> Event(string id) =>
+        GetRequired<EventDetail>($"api/event/{Uri.EscapeDataString(id)}");
+
     public async Task<PolitiesOut> Polities(int from, int to)
     {
         var key = $"polities:{from}:{to}";

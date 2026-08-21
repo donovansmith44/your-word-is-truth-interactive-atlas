@@ -95,6 +95,27 @@
 
                 @foreach (var v in _chapter!.Verses)
                 {
+                    @* Batch T requirement 5 ("event titles throughout the
+                       reader"): a quiet, small-caps pericope heading renders
+                       immediately above this verse's own line whenever the
+                       chapter fetch marked it a heading ANCHOR (server:
+                       AtlasData::heading_for_verse) -- present ONLY for
+                       covered books/narrative-event passages (conditional
+                       presence: absent entirely for an uncovered book,
+                       since no verse there is ever an anchor). Explorable,
+                       same ONE-RULE treatment as chapter-head/verse-line --
+                       opens a fresh EventNode. Shares this SAME code path
+                       for the split-view reader pane (Reader.razor is
+                       reused, not copied, for both -- SPLIT-1). *@
+                    @if (v.Heading is { } heading)
+                    {
+                        <h2 class="pericope-heading explorable" data-testid="@($"pericope-heading-{heading.EventId}")"
+                            tabindex="0" role="button" aria-label="@($"Explore {heading.Title}")"
+                            @onclick="() => OpenEvent(heading.EventId, heading.Title)"
+                            @onkeydown="@(e => OnHeadingKeyDown(e, heading.EventId, heading.Title))">
+                            @heading.Title
+                        </h2>
+                    }
                     @* Batch G1 requirement 1 (design-direction.md's REVISED
                        interaction rule): the ∴ button DIES. THE VERSE LINE
                        is the explorable element -- hover/focus darkens it
@@ -529,6 +550,20 @@
     }
 
     private void OpenVerse(int verseNum) => _activeNode = new VerseNode($"{_book}.{_chapterNum}.{verseNum}");
+
+    // Batch T requirement 5: a pericope heading's own explore target --
+    // mirrors OpenVerse/OpenChapter's own "construct the node directly,
+    // no fetch needed just to open the popover" shape exactly (EventNode's
+    // own DetailAsync fetches the rest lazily, once the popover is open).
+    private void OpenEvent(string eventId, string title) => _activeNode = new EventNode(eventId, title);
+
+    private void OnHeadingKeyDown(KeyboardEventArgs e, string eventId, string title)
+    {
+        if (e.Key == "Enter")
+        {
+            OpenEvent(eventId, title);
+        }
+    }
 
     // Batch G1 requirement 1: the chapter header's own explore target
     // (chapter-head-button's @onclick) -- the ChapterNode type already

@@ -108,18 +108,25 @@ public interface IPopoverSectionProvider
 /// ExplorerPopover's pre-Batch-R rendering path, untouched -- so none of
 /// those five kinds' popovers change shape from this batch.
 ///
-/// Batch N ("narratives as first-class graph structure") adds two more
-/// providers to VERSE's own list (appended at the end, per this batch's
-/// own "later batches append below" convention) -- "PRIOR EVENT"
-/// (<see cref="NarrativePriorEventSection"/>) and "FOLLOWING EVENT"
-/// (<see cref="NarrativeFollowingEventSection"/>), each conditional on the
-/// verse actually having a narrative position in that direction -- plus a
-/// brand-new NarrativeEvent node kind (<see cref="NarrativeEventNode"/>,
-/// the PRIOR/FOLLOWING traversal target), which gets its own subject text
-/// (<see cref="NarrativeEventTextSection"/>) followed by the SAME two
-/// PRIOR/FOLLOWING providers again -- recursion falls out of Verse and
-/// NarrativeEvent sharing one <c>AppliesTo</c> clause, not a second
-/// traversal mechanism.
+/// Batch N ("narratives as first-class graph structure") originally added
+/// two providers to VERSE's own list plus a NarrativeEvent traversal target
+/// -- Batch T ("events as the narrative nodes") RETIRES both from Verse
+/// (the owner, verbatim: "rather than putting the next/previous event on
+/// every verse, add titles of events... traversal lives on event nodes")
+/// and replaces NarrativeEventNode with a richer EVENT node kind. VERSE
+/// gains ONE new provider instead -- "EVENT" membership
+/// (<see cref="VerseEventMembershipSection"/>, appended at the end, same
+/// "later batches append below" convention, conditional on the verse
+/// touching >=1 titled EVENT-kind passage), each row explorable, opening a
+/// fresh <see cref="EventNode"/>. EVENT node sections, in order: date +
+/// place(s) (<see cref="EventDateAndPlacesSection"/>), PARALLEL ACCOUNTS
+/// (<see cref="EventWitnessesSection"/>, conditional presence: no "PARALLEL
+/// ACCOUNTS" framing at all when the event has exactly one witness),
+/// PRIOR EVENT (<see cref="EventPriorSection"/>) / FOLLOWING EVENT
+/// (<see cref="EventFollowingSection"/>, both retargeted from Batch N's own
+/// Verse/NarrativeEvent onto Event only -- recursion falls out of an
+/// EventNode's own traversal row pushing ANOTHER EventNode, the SAME
+/// `AppliesTo` clause matching it too, not a second mechanism).
 /// </summary>
 public static class PopoverSectionRegistry
 {
@@ -136,18 +143,20 @@ public static class PopoverSectionRegistry
         new CatechismExplanationSection(),
         new CatechismWhereWrittenSection(),
         new CatechismScripturesSection(),
-        // Batch N ("narratives as first-class graph structure"): appended
-        // at the end, same "later batches append below, never disturb"
-        // layering PlaceCard.razor's own G1 narrative-traversal section
-        // already established -- for a VERSE node this lands strictly
-        // after cross-references/catechism (none of the PLACE/CATECHISM-
-        // only providers above apply to Verse, so this trio is the next
-        // thing that DOES); for a NarrativeEventNode (traversal target)
-        // it's the ONLY trio that applies at all, in this exact order
-        // (event text, then prior, then following).
-        new NarrativeEventTextSection(),
-        new NarrativePriorEventSection(),
-        new NarrativeFollowingEventSection(),
+        // Batch T ("events as the narrative nodes"): VERSE's own new "EVENT"
+        // membership section (appended at the end, same "later batches
+        // append below, never disturb" layering PlaceCard.razor's own G1
+        // narrative-traversal section already established) -- lands
+        // strictly after cross-references/catechism (none of the
+        // PLACE/CATECHISM-only providers above apply to Verse).
+        new VerseEventMembershipSection(),
+        // Batch T: EVENT node sections, in order -- date+places, PARALLEL
+        // ACCOUNTS, then PRIOR/FOLLOWING (unchanged registration slot from
+        // Batch N, just retargeted onto Event instead of Verse/NarrativeEvent).
+        new EventDateAndPlacesSection(),
+        new EventWitnessesSection(),
+        new EventPriorSection(),
+        new EventFollowingSection(),
         // Batch M ("the DAG grows a node type"): PolityDelta's own three
         // sections, in order -- event text, THE SCRIPTURES, grounding note
         // -- appended at the end, same "later batches append below, never

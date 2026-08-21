@@ -7,8 +7,16 @@ namespace BibleAtlas.Client.Explore;
 /// asserts this literally), which doubles as the AtlasClient.Verse key
 /// used both here and by ExplorerPopover's own cross-ref-expansion special
 /// case (Current.Title IS the vref for any node on the stack of this type).
+///
+/// Batch T requirement 3 ("verse popover: event membership replaces
+/// prev/next"): no longer implements `INarrativeAware` -- Batch N's own
+/// verse-level chronological PRIOR/FOLLOWING is retired (it lives entirely
+/// on the EVENT node now, reached via this node's own new "EVENT" section,
+/// `VerseEventMembershipSection` in PopoverSectionProviders.cs, which reads
+/// the pre-existing `DetailAsync().Events` this class already fetched --
+/// no new field, no new fetch).
 /// </summary>
-public sealed class VerseNode : IExplorable, INarrativeAware
+public sealed class VerseNode : IExplorable
 {
     private readonly string _vref;
     private VerseDetail? _cached;
@@ -60,11 +68,4 @@ public sealed class VerseNode : IExplorable, INarrativeAware
     // call only ever happens once per node instance regardless of how many
     // times BodyAsync/this are each called.
     public async Task<VerseDetail> DetailAsync(AtlasClient api) => _cached ??= await api.Verse(_vref);
-
-    // Batch N (INarrativeAware): shares DetailAsync's own memoized fetch --
-    // NO second network call, same reasoning CrossRefsSection/
-    // CatechismSeamSection already document for reading THEIR OWN slice of
-    // this exact response.
-    public async Task<IReadOnlyList<NarrativePositionDto>> NarrativePositionsAsync(AtlasClient api) =>
-        (await DetailAsync(api)).NarrativePositions;
 }
