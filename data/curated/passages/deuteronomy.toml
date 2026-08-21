@@ -7,9 +7,15 @@
 # (theo-127's own DEU witness, the Ten Commandments, req 1b's own named
 # case, landed in this batch's own first commit; theo-129 "Death of
 # Moses," ex_moab, theo-121 -- all covering only chapter 34/the plains of
-# Moab camp). theo-129 is enriched via atlas-sections.toml (already
-# well-scoped, 12 verses, exactly Deuteronomy 34's own "Death of Moses"
-# content) rather than duplicated with a new container.
+# Moab camp). theo-129 is deliberately NOT enriched (unlike this batch's
+# own usual "enrich a well-scoped pre-existing single-scene event" lane) --
+# a real ETL run attempting exactly that failed loud with a within-layer
+# anchor collision against Genesis's own correct gen_dinah_shechem
+# container (theo-129's own compiled `verses` field carries a genuine
+# pre-existing data anomaly, a stray GEN.34.1 entry, alongside its correct
+# DEU.34.1-12 span -- see this file's own deu_death_of_moses entry, below,
+# and atlas-sections.toml's own header for the full account). Authored
+# fresh instead, cleanly, with no stray verse.
 #
 # GRANULARITY: the whole book is ONE continuous discourse, dated "the
 # fortieth year" (1:3, explicit) -- Moses's own three farewell addresses

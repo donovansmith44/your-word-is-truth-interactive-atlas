@@ -52,13 +52,20 @@ test('a pericope heading is keyboard-explorable (Enter opens the popover, same a
 });
 
 test('an uncovered book/chapter shows no pericope heading at all (conditional presence)', async ({ page }) => {
-  // Leviticus 5 -- no leg of any of the 13 curated narratives, no
-  // witnesses/robertson_section authored this batch (Gospels+Acts coverage
-  // + the existing narratives only, per the owner's own coverage decision).
-  const chapterOut = await api.chapter('LEV.5');
-  expect(chapterOut.verses.some((v: any) => v.heading), 'LEV.5 must carry zero heading-anchored verses on the wire').toBeFalsy();
+  // Obadiah 1 -- Batch W1 retarget (was Leviticus 5, which Batch W1 itself
+  // now fully covers with real, heading-worthy containers -- see
+  // batch-w1-report.md). Obadiah's own sole touching event, theo-244
+  // ("Prophecies of Obadiah"), is a bare, un-enriched Theographic import
+  // (no witnesses/robertson_section/acts_section/atlas_section, no leg of
+  // any of the 13 curated narratives) -- layer-0, correctly anchors no
+  // heading anywhere, the SAME "uncovered" precondition LEV.5 used to
+  // satisfy before this batch's own Leviticus coverage. Genesis-Ruth (this
+  // batch's own W1 scope) is otherwise fully declared; the prophets remain
+  // real future work for a later W-series run.
+  const chapterOut = await api.chapter('OBA.1');
+  expect(chapterOut.verses.some((v: any) => v.heading), 'OBA.1 must carry zero heading-anchored verses on the wire').toBeFalsy();
 
-  await page.goto('/read/LEV/5');
+  await page.goto('/read/OBA/1');
   await expect(page.getByTestId(/^pericope-heading-/)).toHaveCount(0);
 });
 

@@ -395,7 +395,7 @@ order_key = 10
 places = ["haran"]
 verses = ["GEN.31.1-21"]
 atlas_section = "Genesis pericope (this project's own sectioning, CC0 -- no external PD source claimed): Genesis 31:1-21, Laban's own changed countenance, the LORD's own charge to return, and Jacob's own flight with Rachel's theft of Laban's household gods."
-ref_note = "This event and the six following it (through Deborah's death, gen_deborah_bethel) all fall within one traditional year, Rachel's own own death year (theo-104, 1739 BC, unmodified) -- order_key records their own textual sequence within that shared year, the same sub-year tiebreak mechanism Passion Week's own chain already established, rather than fabricating fake distinct years. Place: Haran, Jacob's own departure point."
+ref_note = "This event and the six following it (through Deborah's death, gen_deborah_bethel) all fall within one traditional year, Rachel's own death year (theo-104, 1739 BC, unmodified) -- order_key records their own textual sequence within that shared year, the same sub-year tiebreak mechanism Passion Week's own chain already established, rather than fabricating fake distinct years. Place: Haran, Jacob's own departure point."
 
 [[event]]
 id = "gen_laban_covenant_galeed"
