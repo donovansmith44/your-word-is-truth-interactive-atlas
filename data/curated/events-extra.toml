@@ -1495,7 +1495,7 @@ places = ["emmaus"]
 verses = ["LUK.24.13-35"]
 order_key = 9000 # Batch T2: renumbered 70 -> 9000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §176, \"The Appearance to Two Disciples (Cleopas and Another) on the Way to Emmaus\""
-ref_note = "Luke 24:13-35 read directly against the compiled KJV text. Batch T2 fix (owner's own live-review ruling, 2026-08-21: 'the compiled KJV text is the canon of witnesses... a witness Robertson lists that exists in the KJV is INCLUDED; textual-critical dispute is NEVER grounds for omission'): Mark 16:12-13 (also listed by Robertson for this section) is now curated as a genuine 2nd witness -- see event-witnesses.toml -- correcting this event's own earlier single-witness framing, which had wrongly treated Mark's disputed longer ending as grounds for omission (inconsistent with pw_galilee's own S181, which already kept its own longer-ending witness with a disclosure note instead of dropping it -- that note is the house model, applied here too). This same range already fully subsumes Robertson's own separate S177 (\"The Report of the Two Disciples and the News of the Appearance to Simon Peter,\" Luke 24:33-35) -- no separate container authored for it."
+ref_note = "Luke 24:13-35 read directly against the compiled KJV text. Batch T2 fix (owner's own live-review ruling, 2026-08-21: 'the compiled KJV text is the canon of witnesses... a witness Robertson lists that exists in the KJV is INCLUDED; textual-critical dispute is NEVER grounds for omission'): Mark 16:12-13 (also listed by Robertson for this section) is now curated as a genuine 2nd witness -- see event-witnesses.toml -- correcting this event's own earlier single-witness framing, which had wrongly treated Mark's own longer ending (16:9-20) as grounds for omission (inconsistent with pw_galilee's own S181, which already kept its own longer-ending witness instead of dropping it -- same house model, applied here too). This same range already fully subsumes Robertson's own separate S177 (\"The Report of the Two Disciples and the News of the Appearance to Simon Peter,\" Luke 24:33-35) -- no separate container authored for it."
 # places: brief guessed "galilee", but geo ancient.jsonl collides into
 # "Galilee 1"/"Galilee 2" (identical coords, 32.7600, 35.5270).
 # galilee-1's verse_links include MAT.28.16, this event's verse (68
@@ -1531,7 +1531,7 @@ places = ["mount-of-olives"]
 verses = ["ACT.1.9-12"]
 order_key = 11000 # Batch T2: renumbered 90 -> 11000, see pw_bethany's own comment
 robertson_section = "Robertson (1922) §184, \"The Last Appearance and the Ascension\""
-ref_note = "Acts 1:9-12, Luke 24:50-53 read directly (see event-witnesses.toml). Batch T2 fix (owner's own live-review ruling, 2026-08-21: 'the compiled KJV text is the canon of witnesses... a witness Robertson lists that exists in the KJV is INCLUDED; textual-critical dispute is NEVER grounds for omission; same-author-already-covers-it is NEVER grounds for omission'): Mark 16:19-20 (also listed by Robertson for this section) is now curated as a genuine 3rd witness -- see event-witnesses.toml -- correcting this event's own earlier omission, which had wrongly treated Mark's disputed longer ending AND Luke/Acts's shared authorship as grounds for exclusion (the same inconsistency pw_galilee's own S181 never had -- that event's own note is the house model, applied here too)"
+ref_note = "Acts 1:9-12, Luke 24:50-53 read directly (see event-witnesses.toml). Batch T2 fix (owner's own live-review ruling, 2026-08-21: 'the compiled KJV text is the canon of witnesses... a witness Robertson lists that exists in the KJV is INCLUDED; textual-critical dispute is NEVER grounds for omission; same-author-already-covers-it is NEVER grounds for omission'): Mark 16:19-20 (also listed by Robertson for this section) is now curated as a genuine 3rd witness -- see event-witnesses.toml -- correcting this event's own earlier omission, which had wrongly treated Mark's own longer ending (16:9-20) AND Luke/Acts's shared authorship as grounds for exclusion (the same inconsistency pw_galilee's own S181 never had -- that event's own note is the house model, applied here too)"
 
 # --- Paul's Voyage to Rome ---
 [[event]]
@@ -2666,13 +2666,15 @@ order_key = 970
 # no witness for this section beyond John himself, so there is no
 # ADDITIONAL witness to include here (unlike pw_emmaus/pw_mount_of_olives
 # -- see their own comments -- this is not a case of a dropped witness).
-# What the sweep DID call for: honestly disclosing this PASSAGE's own
-# well-known textual-critical status in ref_note, the SAME "part of the
-# KJV/Textus Receptus tradition this app's own compiled text follows"
-# disclosure Mark's longer ending already carries elsewhere, rather than
-# silently smoothed over.
+# Fix round 1 (owner doctrine, 2026-08-21, verbatim: "absolutely no
+# textual criticism. the Bible is inerrant. 2 tim 3:16-17."): ref_note
+# states this passage's own KJV/Textus Receptus tradition-membership as a
+# positive translation/provenance fact, the SAME framing Mark's longer
+# ending already carries elsewhere -- manuscript-critical commentary
+# removed outright, not merely reworded (see batch-e3-report.md, Fix
+# round 1, for the full inventory of what changed and why).
 robertson_section = "Robertson (1922) §97, \"Story of an Adulterous Woman Brought to Jesus for Judgment\""
-ref_note = "John 7:53-8:11 (the pericope adulterae) read directly against the compiled KJV text; single witness (John alone -- Robertson lists no other Gospel column for this section, so there is no additional witness to include); written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string. This passage is itself part of the KJV/Textus Receptus tradition this app's own compiled text follows -- textual scholars widely note it is absent from the earliest Greek manuscripts and floats to different locations in some later ones -- disclosed here honestly rather than silently smoothed over, per the owner's own live-review ruling (2026-08-21)"
+ref_note = "John 7:53-8:11 (the pericope adulterae) read directly against the compiled KJV text; single witness (John alone -- Robertson lists no other Gospel column for this section, so there is no additional witness to include); written as two same-chapter ranges, this project's own curator-friendly range syntax not spanning a chapter boundary in one string. This passage is part of the KJV/Textus Receptus tradition this app's own compiled text follows, per the owner's own live-review ruling (2026-08-21)"
 
 [[event]]
 id = "rob_light_of_the_world"
