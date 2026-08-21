@@ -323,6 +323,9 @@ public sealed record ContainerPointDto(double X, double Y);
 /// options, not <see cref="Wire.Options"/> (this never crosses the real
 /// HTTP API either, same reasoning as <see cref="ContainerPointDto"/> above
 /// -- see map.js's own <c>measureCardPlacement</c>, which returns a plain
-/// <c>{width, height, containerWidth}</c> object).
+/// <c>{width, height, containerWidth, containerHeight}</c> object).
+/// <c>ContainerHeight</c> added fix round 1 (review finding, Important) --
+/// see <see cref="CardPlacement.Compute"/>'s own header for why it's now
+/// required, not optional.
 /// </summary>
-public sealed record CardMeasurementDto(double Width, double Height, double ContainerWidth);
+public sealed record CardMeasurementDto(double Width, double Height, double ContainerWidth, double ContainerHeight);

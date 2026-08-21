@@ -260,10 +260,18 @@ input:focus-visible,
    >=40x40px chapter-nav hit target this batch adds needs real clearance
    before verse text starts, and the standalone-sized 1.5rem gutter measured
    only ~41px total at the documented 1024px floor -- not enough). The
-   --nav-* set shrinks the chapter-nav affordance itself to fit inside that
-   widened gutter with real margin -- see .reader-prev/.reader-next's own
-   comment for the full picture (both panes share ONE set of rules; only
-   these numbers differ). */
+   --nav-prefixed properties below shrink the chapter-nav affordance itself
+   to fit inside that widened gutter with real margin -- see
+   .reader-prev/.reader-next's own comment for the full picture (both
+   panes share ONE set of rules; only these numbers differ). Written out in
+   full rather than as a bare trailing-asterisk shorthand for the shared
+   prefix -- the fix-round-1 review flagged that exact prose habit as one
+   lightly-motivated future edit away from reintroducing the self-caught
+   premature-comment-close class of bug this file already hit once (an
+   asterisk immediately preceding what could become a forward slash in a
+   later edit); harmless as originally written here (a space followed the
+   asterisk, not a slash), but not worth keeping around as a standing
+   temptation. */
 .split-pane-reader {
     flex: 1 1 55%;
     min-width: 0;
@@ -1682,7 +1690,12 @@ input:focus-visible,
    cutoff (a still-tall-enough card could clear even the capped height and
    cross the container's own top edge -- the user's own live report, "the
    hover menu can be cut off by the top of the screen") -- see --card-dy
-   below for the actual general fix.
+   below for the actual general fix. Fix round 1: max-height bounding the
+   card's own SIZE was also, independently, not enough to keep a FLIPPED
+   card off the container's own bottom edge either (bounding how tall
+   something is says nothing about how far past a boundary an unclamped
+   placement can still push it) -- --card-dy-adjust below is what actually
+   closes that, not this property.
 
    The scroll itself lives on .place-card-scroll (below), NOT this element:
    a flex column with place-card-controls (the down/up arrows) as a second,
@@ -1696,13 +1709,13 @@ input:focus-visible,
    have hit the same problem).
 
    HOTFIX batch (requirement 1, flip-below-when-cut-off): --card-dx/
-   --card-dy are two plain CSS custom properties PlaceCard.razor now always
+   --card-dy are plain CSS custom properties PlaceCard.razor now always
    sets inline (never left to a var() fallback here -- see that file's own
    CardDxCss/CardDyCss). --card-dy alone still does "-50%"/"-100%"-style
    percentage math NATIVELY, resolved against this element's OWN rendered
    size -- CardPlacement.Compute (client/CardPlacement.cs) never computes
-   an absolute pixel position itself, only the two things CSS can't derive
-   on its own: --card-dy swaps between the ORIGINAL `calc(-100% - 18px)`
+   an absolute pixel position itself, only the things CSS can't derive on
+   its own: --card-dy swaps between the ORIGINAL `calc(-100% - 18px)`
    (above the marker, unchanged default) and a plain `18px` (below it, once
    PlaceCard.razor's own post-render measurement finds no room above) --
    both keep the SAME 18px gap, just on opposite sides; --card-dx layers a
@@ -1711,11 +1724,29 @@ input:focus-visible,
    see CardPlacement's own header for exactly when it's nonzero). Applies
    identically wherever this card renders (full /world, split pane) since
    the transform is the only thing positioning it -- no separate rule
-   needed per context. */
+   needed per context.
+
+   Fix round 1 (review finding, Important): --card-dy-adjust is a further
+   plain pixel nudge layered on top of --card-dy (own `calc()`, same shape
+   --card-dx already uses on top of the native -50%) -- 0 for the
+   overwhelming common case (whichever orientation --card-dy picked
+   already fits the container cleanly), nonzero only when NEITHER
+   orientation fully fits and CardPlacement.Compute has to clamp the
+   chosen one against the container's own far edge. Before this, a flipped
+   card was only ever checked against "does it fit above" -- never against
+   the container's own BOTTOM edge -- so a tall-enough card near the
+   vertical middle of a short viewport could flip below and overflow past
+   the bottom (live-reproduced by review: 122px past the bottom at
+   1280x720, a real marker ("Ai", exodus scene) -- the exact user-reported
+   bug class on the opposite edge). Applied to BOTH the settled `to` state
+   below and the entrance animation's own `from` state (--card-dy-from,
+   @keyframes place-card-in below) so the whole entrance motion, not just
+   its end point, lands inside the clamped position -- no post-animation
+   snap. */
 .place-card {
     position: absolute;
     z-index: 30;
-    transform: translate(calc(-50% + var(--card-dx)), var(--card-dy));
+    transform: translate(calc(-50% + var(--card-dx)), calc(var(--card-dy) + var(--card-dy-adjust)));
     display: flex;
     flex-direction: column;
     min-width: 12rem;
@@ -1952,10 +1983,20 @@ input:focus-visible,
    -- so the animation's own `to` state and the base rule's resting state
    are ALWAYS identical, in both orientations, and the original "settles
    down 8px" pop-in feel (Batch D) survives unchanged in the non-flipped
-   case while gaining the same nuance, mirrored, in the flipped one. */
+   case while gaining the same nuance, mirrored, in the flipped one.
+
+   Fix round 1: both stops also add --card-dy-adjust now, same reasoning
+   -- the base rule's own resting transform gained it (see .place-card's
+   own comment), so leaving it out here would reopen the identical class
+   of bug this file's own header comment just described: the entrance
+   animation's `to` state would disagree with the base rule's resting
+   state again, this time for a clamped-near-the-bottom card specifically,
+   silently undoing the round-1 clamp for the ~120ms the animation runs
+   (and, worse, forever after it if fill-mode:both's own `to` value were
+   the unadjusted one). */
 @keyframes place-card-in {
-    from { opacity: 0; transform: translate(calc(-50% + var(--card-dx)), var(--card-dy-from)); }
-    to { opacity: 1; transform: translate(calc(-50% + var(--card-dx)), var(--card-dy)); }
+    from { opacity: 0; transform: translate(calc(-50% + var(--card-dx)), calc(var(--card-dy-from) + var(--card-dy-adjust))); }
+    to { opacity: 1; transform: translate(calc(-50% + var(--card-dx)), calc(var(--card-dy) + var(--card-dy-adjust))); }
 }
 
 @media (prefers-reduced-motion: reduce) {

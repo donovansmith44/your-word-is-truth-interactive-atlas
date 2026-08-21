@@ -620,3 +620,75 @@ test('CARD-FLIP-1 (paired): a marker with room above keeps rendering its place-c
   await page.mouse.move(0, 0, { steps: 10 });
   await expect(card).toBeHidden({ timeout: 1200 });
 });
+
+// Fix round 1 (review finding, Important, live-reproduced by the reviewer:
+// "hover the marker at screen point (648, 390)" in the exodus scene at
+// 1280x720 resolved to the place titled "Ai" -- an ordinary card, 4 initial
+// verses of a real 20-verse Joshua 8 passage, no blurb, no dates -- and
+// measured `data-flip="true"`, `cardBox: {y: 426, height: 416}`, i.e. a
+// bottom edge of 842 against a 720px-tall viewport: 122px past the bottom,
+// the user's own reported bug class moved to the opposite edge, because the
+// original cut of CardPlacement.Compute only ever asked "does it fit
+// ABOVE" and never checked a flipped card against the container's own
+// bottom edge at all).
+//
+// This reproduces the SAME real place ("Ai", id ai-1 -- the exact Joshua 8
+// capture-and-burn passage, still 20 merged verses, still no blurb/dates)
+// via `/world?ref=JOS.8` (scripture mode) rather than the reviewer's own
+// raw-pixel hover: JOS.8's own scene has only 5 places (Ai/Bethel/Jericho/
+// Mount Ebal/Mount Gerizim), sparse enough that marker-ai-1's own locator
+// hovers reliably without the exodus window's dense-cluster overlap risk
+// (CONTRACT.md's own "best-effort... once markers overlap" caveat) --
+// confirmed live: this card's own measured height (416px) exactly matches
+// the review's own reported figure, so this is the SAME geometry, just
+// reached a more deterministic way.
+test('CARD-FLIP-1 (bottom clamp): a card that fits NEITHER orientation at a short viewport clamps fully on-screen, both edges, instead of overflowing the bottom', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/world?ref=JOS.8');
+
+  const marker = page.getByTestId('marker-ai-1');
+  await expect(marker).toBeVisible();
+  const markerBox = await marker.boundingBox();
+  await marker.hover({ force: true });
+
+  const card = page.getByTestId('place-card');
+  await expect(card).toBeVisible();
+  await expect(card.getByTestId('place-card-title')).toHaveText('Ai');
+
+  const cardBox = await card.boundingBox();
+  expect(cardBox).toBeTruthy();
+  const viewport = page.viewportSize()!;
+  const GAP = 18;
+
+  // Precondition, proven live rather than assumed: this card genuinely
+  // fits NEITHER orientation unclamped -- both a naive "render above" and
+  // a naive "render below" placement would themselves have crossed an
+  // edge. If curated content ever shrinks this specific passage enough
+  // that one orientation starts fitting cleanly, this test should skip
+  // rather than silently start asserting something it no longer exercises.
+  const wouldFitAbove = cardBox!.height <= markerBox!.y - GAP;
+  const wouldFitBelow = cardBox!.height <= viewport.height - markerBox!.y - GAP;
+  if (wouldFitAbove || wouldFitBelow) {
+    test.skip(true, 'Ai/JOS.8 card no longer needs vertical clamping at 1280x720 -- precondition for this regression no longer holds');
+    return;
+  }
+
+  // The actual fix: fully on-screen, BOTH edges -- never cut off at the
+  // top (requirement 1's original bug) and never overflowing the bottom
+  // (this fix round's own finding).
+  expect(cardBox!.y, 'place-card boundingBox.y must stay >= 0 -- never cut off by the top').toBeGreaterThanOrEqual(0);
+  expect(cardBox!.y + cardBox!.height, 'place-card bottom edge must stay <= viewport height -- never overflow the bottom').toBeLessThanOrEqual(viewport.height);
+
+  // The corridor survives this orientation too -- same non-closing target
+  // (place-card-more) the other CARD-FLIP-1 tests use, since this card is
+  // ALSO a passage-first place with more than its own initial 4 verses.
+  const moreBtn = card.getByTestId('place-card-more');
+  await expect(moreBtn).toBeVisible();
+  const shownBefore = await card.getByTestId(/^hover-verse-/).count();
+  await moveAndClick(page, moreBtn);
+  await expect(card).toBeVisible();
+  await expect(card.getByTestId(/^hover-verse-/)).not.toHaveCount(shownBefore);
+
+  await page.mouse.move(0, 0, { steps: 10 });
+  await expect(card).toBeHidden({ timeout: 1200 });
+});

@@ -776,30 +776,37 @@ Notes:
   rendered inside (`.world-page` standalone, `.split-pane-atlas` embedded --
   the SAME box that box's own `overflow:hidden` clips to, in either
   context), in which case it renders BELOW instead (`data-flip="true"`,
-  mirrored across the marker -- same 18px gap on the opposite side).
-  Independently, horizontally: the card is clamped so it never crosses
-  either side of that same container, nudged inward from its normal
+  mirrored across the marker -- same 18px gap on the opposite side); if
+  NEITHER orientation fully fits (fix round 1, review finding: a card near
+  the vertical middle of a short viewport could previously flip below and
+  still overflow the container's own bottom edge, since the original cut
+  only ever checked "does it fit above" -- live-reproduced, 122px past the
+  bottom at 1280x720, a real marker), whichever orientation shows MORE of
+  the card is chosen and the result is clamped fully inside the container
+  (top and bottom both) rather than left to overflow either edge.
+  Independently, horizontally: the card is clamped the same way so it never
+  crosses either side of that same container, nudged inward from its normal
   centered-on-the-marker position only exactly as far as needed (most cards
-  need no nudge at all). Both decisions are made ONCE, the first time this
-  place's own card has fully loaded (verse text AND, if curated,
-  blurb/dates -- measuring any earlier would size against not-yet-loaded
-  content) after opening -- never reconsidered afterward for that same open
-  (not on ShowMore/Collapse growing the card, not on the map panning
-  underneath an already-open card) -- a fresh decision is only ever made on
-  a genuine re-open (hovering/clicking/traversing to a DIFFERENT place, or
-  re-hovering the same one after it fully closed). The pre-existing
-  hover-persistence/grace mechanism ("Place-card hover persistence" above)
-  is completely unaffected by either orientation -- it tracks pointer
-  entry/exit of the marker and the card as plain DOM elements, never their
-  relative screen position, so the pointer can travel from a marker down
-  into a flipped card exactly as reliably as it travels up into a
-  non-flipped one. Applies identically everywhere this card renders (full
-  `/world`, split view's embedded atlas pane) -- one shared positioning
-  rule, no per-page fork. The reader's own mini-map (`mini-map`,
-  `MiniWorld.razor`) never renders this card at all (its own marker hover
-  callbacks are deliberate no-ops, per that component's own comment,
-  unaffected by and unrelated to this note) -- there is nothing there for
-  CARD-FLIP-1 to apply to.
+  need no nudge, on either axis, at all). All of these decisions are made
+  ONCE, the first time this place's own card has fully loaded (verse text
+  AND, if curated, blurb/dates -- measuring any earlier would size against
+  not-yet-loaded content) after opening -- never reconsidered afterward for
+  that same open (not on ShowMore/Collapse growing the card, not on the map
+  panning underneath an already-open card) -- a fresh decision is only ever
+  made on a genuine re-open (hovering/clicking/traversing to a DIFFERENT
+  place, or re-hovering the same one after it fully closed). The
+  pre-existing hover-persistence/grace mechanism ("Place-card hover
+  persistence" above) is completely unaffected by orientation or clamping
+  -- it tracks pointer entry/exit of the marker and the card as plain DOM
+  elements, never their relative screen position, so the pointer can travel
+  from a marker down into a flipped (or clamped) card exactly as reliably
+  as it travels up into a non-flipped one. Applies identically everywhere
+  this card renders (full `/world`, split view's embedded atlas pane) --
+  one shared positioning rule, no per-page fork. The reader's own mini-map
+  (`mini-map`, `MiniWorld.razor`) never renders this card at all (its own
+  marker hover callbacks are deliberate no-ops, per that component's own
+  comment, unaffected by and unrelated to this note) -- there is nothing
+  there for CARD-FLIP-1 to apply to.
 - NAV-4 (batch-hotfix-brief.md requirement 2, user report 2026-08-20: "the
   buttons to go chapter to chapter on the Bible in split screen are too
   tiny to see" -- measured live before this fix, split view: 14.8x22.8px at

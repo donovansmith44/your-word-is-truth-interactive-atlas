@@ -76,8 +76,8 @@
    pre-existing `calc(-100% - 18px)` transform, with nothing to catch a
    marker too close to the container's own top edge). X/Y stay the raw
    marker anchor point, unchanged; app.css's `.place-card` transform now
-   reads two additional CSS custom properties this file sets inline,
-   --card-dx/--card-dy, computed by CardPlacement.Compute (client/
+   reads CSS custom properties this file sets inline -- --card-dx/--card-dy/
+   --card-dy-adjust -- computed by CardPlacement.Compute (client/
    CardPlacement.cs, a standalone pure function -- see its own header for
    why it isn't a method here) from a JS-measured render box
    (MapInterop.MeasureCardPlacement). Deliberately a SNAPSHOT decision, not
@@ -90,11 +90,11 @@
    not-yet-loaded content (LoadHistory's blurb/dates sections specifically,
    entirely absent from the DOM until it resolves) and risk exactly the
    under-measurement this fix exists to prevent. Until that first
-   measurement lands, CardDxCss/CardDyCss below (Blazor-side, not a CSS
-   var() fallback -- see app.css's own comment on .place-card for why)
-   return the exact pre-batch values, so the card renders at its ORIGINAL
-   default position (a plain center-above placement byte-identical to
-   today) -- so the common,
+   measurement lands, CardDxCss/CardDyCss/CardDyAdjustCss below (Blazor-
+   side, not a CSS var() fallback -- see app.css's own comment on
+   .place-card for why) return the exact pre-batch values, so the card
+   renders at its ORIGINAL default position (a plain center-above placement
+   byte-identical to today) -- so the common,
    fast-cache case (LoadChaptersFor/LoadHistory both resolve well inside a
    single frame) never shows anything BUT the final, correct placement, and
    even a slow-network open only ever shows a BRIEF default-placed frame
@@ -103,14 +103,30 @@
    World.razor) is completely unaware of any of this -- OnPointerEnter/
    OnPointerLeave fire off this component's OWN root element regardless of
    which side of the marker it currently renders on, so the corridor works
-   identically in both orientations with no changes needed here or there. *@
+   identically in both orientations with no changes needed here or there.
+
+   Fix round 1 (review finding, Important): the initial cut of this fix
+   only ever asked "does the card fit ABOVE the marker" -- a flipped card
+   was never checked against the container's own BOTTOM edge, so a tall
+   enough card near the vertical middle of a short viewport (e.g. 1280x720,
+   Playwright's own default) could flip below and overflow past the
+   bottom -- live-reproduced by review at 122px, a real marker ("Ai",
+   exodus scene), the exact user-reported bug class on the opposite edge.
+   CardPlacement.Compute now takes containerHeight too and, when NEITHER
+   orientation fully fits, picks whichever shows more of the card and
+   clamps it inside the container (--card-dy-adjust, a plain pixel nudge
+   layered on top of --card-dy the same way --card-dx layers on top of the
+   native -50% horizontal centering) -- see that class's own header for the
+   full decision table. Still a snapshot, decided at the same single
+   measurement point as the flip/horizontal-clamp decisions above -- no new
+   timing/re-measurement concerns introduced. *@
 
 <div class="place-card"
      data-testid="place-card"
      data-pinned="@(Pinned ? "true" : "false")"
      data-flip="@(_flipped ? "true" : "false")"
      @ref="_cardEl"
-     style="left: @X.ToString(CultureInfo.InvariantCulture)px; top: @Y.ToString(CultureInfo.InvariantCulture)px; --card-dx: @(CardDxCss)px; --card-dy: @(CardDyCss); --card-dy-from: @(CardDyFromCss);"
+     style="left: @X.ToString(CultureInfo.InvariantCulture)px; top: @Y.ToString(CultureInfo.InvariantCulture)px; --card-dx: @(CardDxCss)px; --card-dy: @(CardDyCss); --card-dy-from: @(CardDyFromCss); --card-dy-adjust: @(CardDyAdjustCss)px;"
      @onpointerenter="OnPointerEnter"
      @onpointerleave="OnPointerLeave">
     <div class="place-card-scroll">
@@ -396,26 +412,37 @@
     // new place.
     private bool _contentReady;
 
-    // Which place _dxPx/_flipped's own numbers were measured FOR -- distinct
-    // from _lastPlaceId (that one gates the verse-text/history fetch reset;
-    // this one gates the separate, async-JS-interop-driven measurement
-    // below, which can legitimately still be in flight after _lastPlaceId
-    // has already moved on to a newer place -- see OnAfterRenderAsync's own
-    // stale-result guard). Null (never measured yet) renders at the default
-    // CSS placement -- see CardDxCss/CardDyCss below.
+    // Which place _dxPx/_dyAdjustPx/_flipped's own numbers were measured
+    // FOR -- distinct from _lastPlaceId (that one gates the verse-text/
+    // history fetch reset; this one gates the separate, async-JS-interop-
+    // driven measurement below, which can legitimately still be in flight
+    // after _lastPlaceId has already moved on to a newer place -- see
+    // OnAfterRenderAsync's own stale-result guard). Null (never measured
+    // yet) renders at the default CSS placement -- see CardDxCss/CardDyCss
+    // below.
     private string? _placedForId;
     private double _dxPx;
     private bool _flipped;
+
+    // Fix round 1 (review finding, Important): the vertical counterpart of
+    // _dxPx -- a plain pixel nudge CardPlacement.Compute returns whenever
+    // the CHOSEN orientation (above or below, per _flipped) still doesn't
+    // fully fit the container's own edge on that side (e.g. a flipped card
+    // near the vertical middle of a short viewport, which the pre-fix-
+    // round-1 code never checked at all -- see CardPlacement.cs's own
+    // header for the live-reproduced 122px overflow this closes). Zero for
+    // the overwhelming common case (the chosen side already fits cleanly).
+    private double _dyAdjustPx;
 
     // app.css's `.place-card` transform (its resting state) AND its
     // `@keyframes place-card-in` (its entrance animation, both stops --
     // see that rule's own comment for why it needs the SAME custom
     // properties, not the flat hardcoded expression it used to) read
-    // --card-dx/--card-dy/--card-dy-from unconditionally, no CSS-side
-    // var() fallback -- these three always supply a concrete value, "0" /
-    // the pre-batch default vertical calc() before the first real
-    // measurement lands, so a not-yet-measured card renders EXACTLY where
-    // every card always rendered before this batch.
+    // --card-dx/--card-dy/--card-dy-from/--card-dy-adjust unconditionally,
+    // no CSS-side var() fallback -- these four always supply a concrete
+    // value, "0" / the pre-batch default vertical calc() before the first
+    // real measurement lands, so a not-yet-measured card renders EXACTLY
+    // where every card always rendered before this batch.
     private bool IsFlippedNow => _placedForId == Place.Id && _flipped;
     private string CardDxCss => (_placedForId == Place.Id ? _dxPx : 0).ToString(CultureInfo.InvariantCulture);
     private string CardDyCss => VerticalCss(CardPlacement.GapPx);
@@ -426,6 +453,14 @@
     // BELOW the marker instead), keyed off the SAME flip decision as
     // CardDyCss, just a smaller gap.
     private string CardDyFromCss => VerticalCss(CardPlacement.GapPx - 8);
+
+    // Fix round 1: layered on top of BOTH --card-dy and --card-dy-from
+    // (see app.css's own `calc(var(--card-dy) + var(--card-dy-adjust))`) --
+    // applying the SAME adjustment to both keeps the animation's own
+    // "settle down 8px" motion intact while sliding the whole thing (start
+    // and end alike) into the clamped, fully-on-screen final position, so
+    // there's no visible overshoot/snap once the entrance animation ends.
+    private string CardDyAdjustCss => (_placedForId == Place.Id ? _dyAdjustPx : 0).ToString(CultureInfo.InvariantCulture);
 
     private string VerticalCss(double gapPx)
     {
@@ -678,8 +713,9 @@
             return;
         }
 
-        var (dx, flipped) = CardPlacement.Compute(X, Y, measurement.Width, measurement.Height, measurement.ContainerWidth);
+        var (dx, dyAdjust, flipped) = CardPlacement.Compute(X, Y, measurement.Width, measurement.Height, measurement.ContainerWidth, measurement.ContainerHeight);
         _dxPx = dx;
+        _dyAdjustPx = dyAdjust;
         _flipped = flipped;
         _placedForId = placeId;
         StateHasChanged();

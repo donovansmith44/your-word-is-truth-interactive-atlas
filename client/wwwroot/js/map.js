@@ -1331,21 +1331,29 @@ export function blinkPlace(placeId, active) {
 // container this card is currently rendered inside (`.world-page`
 // standalone, `.split-pane-atlas` embedded -- World.razor renders
 // `<PlaceCard>` as a direct child, never through an intermediate wrapper --
-// see PlaceCard.razor's own file header), so `clientWidth` there is exactly
-// the box CardPlacement.Compute (client/CardPlacement.cs) needs to clamp
-// against: the SAME box `.world-page`'s own `overflow:hidden` actually
-// clips to, in EITHER context, with no separate selector/plumbing per page.
-// offsetWidth/offsetHeight (not getBoundingClientRect) -- cheaper, and
-// transform (app.css's own `.place-card` translate) never affects either:
-// transform is purely a paint-time visual offset, not a layout-box size.
-// A detached/gone element (the card closed while an in-flight measurement
-// call was still pending -- see PlaceCard.razor's own OnAfterRenderAsync
-// comment for the exact race this guards) simply measures 0 everywhere,
-// same graceful-degradation shape as panToPlace's own `if (!inst)` above --
-// never throws.
+// see PlaceCard.razor's own file header), so `clientWidth`/`clientHeight`
+// there are exactly the box CardPlacement.Compute (client/CardPlacement.cs)
+// needs to clamp against: the SAME box `.world-page`'s own `overflow:hidden`
+// actually clips to, in EITHER context, with no separate selector/plumbing
+// per page. offsetWidth/offsetHeight (not getBoundingClientRect) -- cheaper,
+// and transform (app.css's own `.place-card` translate) never affects
+// either: transform is purely a paint-time visual offset, not a layout-box
+// size. A detached/gone element (the card closed while an in-flight
+// measurement call was still pending -- see PlaceCard.razor's own
+// OnAfterRenderAsync comment for the exact race this guards) simply
+// measures 0 everywhere, same graceful-degradation shape as panToPlace's
+// own `if (!inst)` above -- never throws.
+//
+// Fix round 1 (review finding, Important): containerHeight added --
+// clientWidth alone let CardPlacement.Compute decide the HORIZONTAL clamp
+// and the flip-vs-not decision, but never let it check whether a FLIPPED
+// card actually fits inside the container's own bottom edge, so a tall
+// enough card near the vertical middle of a short viewport could flip
+// below and overflow the bottom -- live-reproduced at 1280x720 (122px past
+// the bottom, marker "Ai", exodus scene) before this fix.
 export function measureCardPlacement(cardEl) {
     if (!cardEl || !cardEl.isConnected) {
-        return { width: 0, height: 0, containerWidth: 0 };
+        return { width: 0, height: 0, containerWidth: 0, containerHeight: 0 };
     }
 
     const container = cardEl.parentElement;
@@ -1353,6 +1361,7 @@ export function measureCardPlacement(cardEl) {
         width: cardEl.offsetWidth,
         height: cardEl.offsetHeight,
         containerWidth: container ? container.clientWidth : 0,
+        containerHeight: container ? container.clientHeight : 0,
     };
 }
 
