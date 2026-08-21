@@ -437,6 +437,92 @@ fn validate_valid_data_passes() {
 }
 
 // ---------------------------------------------------------------------
+// Batch T2 fix-round-1 (review finding I-1): the exact invariant whose
+// violation caused the real 72-event silent-heading-drop bug (fixed in
+// data only by commit 9679583) -- `heading_anchors_for`
+// (atlas-core/src/data.rs) uses ONLY `e.witnesses` once any witness row
+// exists, never falling back to `e.verses`, so a top-level book with no
+// matching witness row silently loses its own reader heading and
+// PARALLEL ACCOUNTS entry. This reproduces the historical 72-row shape
+// directly: an event witnessed only for MRK, but whose own top-level
+// `verses` also touch MAT -- exactly the "primary citation in book X,
+// explicit witness rows for OTHER books, no witness row for X itself"
+// pattern every one of the 72 affected events shared.
+// ---------------------------------------------------------------------
+
+#[test]
+fn validate_event_witness_missing_for_own_top_level_book_fails() {
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![Event {
+        id: "e1".into(),
+        label: "E1".into(),
+        when: TimeRange::new(33, 33).unwrap(),
+        places: vec!["p".into()],
+        verses: vec!["MAT.27.1".into()], // top-level book MAT ...
+        witnesses: vec![witness("MRK", &["MRK.15.1"])], // ... but only MRK has a witness row
+        ..Default::default()
+    }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    data.verses = mat_verses();
+    data.eras = full_eras();
+    let data = data.finish();
+    let err = atlas_etl::validate::run(&data).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("no witness row covers"), "{msg}");
+    assert!(msg.contains("'MAT'"), "{msg}");
+    assert!(msg.contains("e1"), "{msg}");
+}
+
+#[test]
+fn validate_event_witness_covers_own_top_level_book_passes() {
+    // Same shape as the failing case above, EXCEPT MAT now also has its
+    // own explicit witness row (the actual fix commit 9679583 applied) --
+    // must pass.
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![Event {
+        id: "e1".into(),
+        label: "E1".into(),
+        when: TimeRange::new(33, 33).unwrap(),
+        places: vec!["p".into()],
+        verses: vec!["MAT.27.1".into()],
+        witnesses: vec![witness("MAT", &["MAT.27.1"]), witness("MRK", &["MRK.15.1"])],
+        ..Default::default()
+    }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    data.verses = mat_verses();
+    data.eras = full_eras();
+    let data = data.finish();
+    assert!(atlas_etl::validate::run(&data).is_ok(), "{:?}", atlas_etl::validate::run(&data).err());
+}
+
+#[test]
+fn validate_event_with_no_witnesses_and_top_level_verses_only_passes() {
+    // The common, pre-existing single-implicit-witness shape (no
+    // `[[witness]]` rows at all) -- this check must never fire when
+    // `e.witnesses` is empty; unchanged, still legal.
+    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
+    let events = vec![Event {
+        id: "e1".into(),
+        label: "E1".into(),
+        when: TimeRange::new(33, 33).unwrap(),
+        places: vec!["p".into()],
+        verses: vec!["MAT.27.1".into()],
+        ..Default::default()
+    }];
+    let mut data = empty_atlas();
+    data.places = places;
+    data.events = events;
+    data.verses = mat_verses();
+    data.eras = full_eras();
+    let data = data.finish();
+    assert!(atlas_etl::validate::run(&data).is_ok(), "{:?}", atlas_etl::validate::run(&data).err());
+}
+
+// ---------------------------------------------------------------------
 // Batch T requirement 1: PASSAGE/EVENT data model validation --
 // date-outside-span, kind enum, witness book/verse/overlap checks, and
 // requirement 2's order_key chronological-leg tiebreak.

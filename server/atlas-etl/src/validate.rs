@@ -198,6 +198,46 @@ pub fn run(data: &AtlasData) -> Result<()> {
                 }
             }
         }
+
+        // Batch T2 fix-round-1 (review finding I-1): the exact invariant
+        // whose violation caused the real 72-event silent-heading-drop bug
+        // (data-only patched by commit 9679583). `heading_anchors_for`
+        // (atlas-core/src/data.rs) uses ONLY `e.witnesses` once ANY witness
+        // row exists, never falling back to `e.verses` -- so a top-level
+        // book with no matching witness row silently loses its own reader
+        // heading and PARALLEL ACCOUNTS entry, even though its verse
+        // content still shows up everywhere else. Deliberately NOT fixed by
+        // adding a fallback there (the owner's own ruling: a silent
+        // fallback would mask the curation gap instead of surfacing it,
+        // against this file's own house fail-loud pattern) -- this is the
+        // permanent guard instead. Only applies once `e.witnesses` is
+        // non-empty (an event relying purely on the single-implicit-witness
+        // fallback has nothing to check against here, and stays legal,
+        // unchanged); an event with no top-level `verses` at all likewise
+        // has nothing to check. Resolves both sides through the SAME
+        // `canon::resolve_alias` the unknown-book-code check above already
+        // uses, so an aliased witness book (e.g. an OSIS code) still counts
+        // -- an already-invalid book code gets its own separate error above
+        // and simply contributes nothing here.
+        if !e.witnesses.is_empty() {
+            let witness_books: HashSet<&str> =
+                e.witnesses.iter().filter_map(|w| atlas_core::canon::resolve_alias(&w.book)).map(|b| b.code()).collect();
+            let mut missing_books: Vec<&str> = Vec::new();
+            for v in &e.verses {
+                if let Ok(vid) = VerseId::parse_canonical(v) {
+                    let code = vid.book.code();
+                    if !witness_books.contains(code) && !missing_books.contains(&code) {
+                        missing_books.push(code);
+                    }
+                }
+            }
+            for book in missing_books {
+                errors.push(format!(
+                    "event '{}': top-level verses touch book '{book}', but no witness row covers '{book}' -- once ANY witness exists, only witness rows anchor a reader heading (heading_anchors_for), so '{book}' would silently lose its own heading and PARALLEL ACCOUNTS entry; add an explicit witness row for '{book}' (the exact bug class fixed in commit 9679583)",
+                    e.id
+                ));
+            }
+        }
     }
 
     for p in &data.places {
