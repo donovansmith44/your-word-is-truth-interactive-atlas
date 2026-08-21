@@ -62,6 +62,7 @@ rings = [
 event = "Parthian and Armenian conquests reduce the Seleucid realm to a rump state"
 verses = []
 ref_note = "general Hellenistic-era historical knowledge (Parthia's own mid-2nd-century BC eastward conquests under Mithridates I; Tigranes of Armenia's own later inroads); no specific source consulted this session; not scripture-narrated"
+for_era_from = -149 # fix round 1 (I1): echoes THIS era's own from -- the exact field that would have caught this file's own original mis-attachment bug (see the FIX ROUND comment above)
 
 # Batch M requirement 1: this era's own FALL -- Pompey's annexation of
 # Syria as a Roman province (64/63 BC, this era's own to=-64 year), ending
@@ -73,3 +74,4 @@ ref_note = "general Hellenistic-era historical knowledge (Parthia's own mid-2nd-
 event = "Pompey annexes Syria as a Roman province, ending Seleucid rule"
 verses = []
 ref_note = "general Roman/Hellenistic historical knowledge (Pompey's own 64/63 BC settlement of the East); no specific source consulted this session; 1 Maccabees, the fullest narrative source for the Seleucid decline, is outside the KJV's 66-book canon"
+for_era_from = -149 # fix round 1 (I1): echoes THIS era's own from

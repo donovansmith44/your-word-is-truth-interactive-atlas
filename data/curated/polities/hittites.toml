@@ -21,3 +21,13 @@ rings = [
     [38.1, 28.3], [38.9, 27.7], [39.7, 27.6], [40.4, 27.9], [41.0, 28.4], [41.3, 29.0]
   ]
 ]
+
+# Fix round 1 (I3): no [era.transition]/[era.fall] on this polity's only
+# era, and deliberately so -- an honest omission, not a gap never reached.
+# Unlike elam/sumer/parthian-empire, the Hittite Empire's own END (this
+# era's own to=-1180) IS a real, nameable historical moment -- the wider
+# Late Bronze Age Collapse -- but it is neither narrated nor prophesied in
+# Scripture, and this polity is drawn for BACKGROUND/context (the great
+# power Egypt's New Kingdom treatied with, see egypt.toml) rather than as
+# an actively-narrated biblical political actor the way Israel/Judah/
+# Assyria/Babylon/Egypt/Persia are. Deltas deferred, not forgotten.

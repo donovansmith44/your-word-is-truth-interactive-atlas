@@ -44,6 +44,7 @@ rings = [
 event = "The kingdom divides; Judah alone follows the house of David"
 verses = ["1KI.12.16", "1KI.12.19"]
 ref_note = "1 Kings 12:16,19 (KJV, verified against the compiled text) -- Israel rejects Rehoboam and rebels 'against the house of David unto this day'; Judah (this polity) is what remains loyal to it -- see israel.toml's own mirrored transition"
+for_era_from = -930 # fix round 1 (I1): echoes THIS era's own from
 
 # Yehud: the small Persian-period province of returned exiles (Ezra/
 # Nehemiah) -- a tiny rump around Jerusalem, well short of the old
@@ -84,6 +85,7 @@ rings = [
 event = "Cyrus decrees the return from exile and the rebuilding of the temple"
 verses = ["EZR.1.1", "EZR.1.2", "EZR.1.3"]
 ref_note = "Ezra 1:1-3 (KJV, verified against the compiled text) -- Cyrus's own proclamation, traditionally dated 538 BC; the destruction that precedes this gap is Judah's OWN previous era's own end (2 Kings 25, not separately cited here since it falls chronologically inside the gap between these two eras, not at either one's own boundary)"
+for_era_from = -538 # fix round 1 (I1): echoes THIS era's own from
 
 # Hasmonean Judea: the Maccabean revolt's own kingdom, grown far beyond
 # Yehud -- Galilee, Samaria, Idumea, and Perea (across the Jordan) all
@@ -135,6 +137,7 @@ rings = [
 event = "The Maccabean Revolt overthrows Seleucid rule in Judea"
 verses = ["DAN.11.31"]
 ref_note = "the revolt itself (167-160 BC) is narrated in 1 Maccabees, outside the KJV's 66-book canon -- not otherwise cited here; Daniel 11:31 (KJV, verified against the compiled text) is the prophecy traditionally read as depicting Antiochus IV's own desecration of the temple, the revolt's proximate trigger -- a prophetic application, not a narrative citation, disclosed as such"
+for_era_from = -164 # fix round 1 (I1): echoes THIS era's own from
 
 # Herodian Kingdom of Judea: Herod the Great's own client kingdom (the
 # Christmas narrative's Herod, Matthew 2) -- similar footprint to the
@@ -183,6 +186,7 @@ rings = [
 event = "Rome installs Herod the Great as king of Judea"
 verses = []
 ref_note = "Josephus (Antiquities 14/Jewish War 1), general history -- not narrated in the KJV text, which first names Herod near his own death (Matthew 2); no verse cited rather than an invented one"
+for_era_from = -39 # fix round 1 (I1): echoes THIS era's own from
 
 # Batch M requirement 1: this era's own FALL -- Herod's death, after which
 # his kingdom is partitioned among his sons (Matthew 2:22's own Archelaus)
@@ -194,3 +198,4 @@ ref_note = "Josephus (Antiquities 14/Jewish War 1), general history -- not narra
 event = "Herod the Great dies; his kingdom is partitioned among his sons"
 verses = ["MAT.2.19"]
 ref_note = "Matthew 2:19 (KJV, verified against the compiled text) -- 'when Herod was dead'; the partition itself (Matthew 2:22's own Archelaus reigning 'in the room of his father Herod') is general history/Josephus for the specific three-way split, traditionally dated 4 BC"
+for_era_from = -39 # fix round 1 (I1): echoes THIS era's own from

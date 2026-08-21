@@ -70,6 +70,7 @@ rings = [
 event = "Nabopolassar revolts against Assyria, founding the Neo-Babylonian dynasty"
 verses = []
 ref_note = "general historical knowledge (Nabopolassar's own 626 BC revolt, allied with the Medes, that leads to Nineveh's fall -- see assyria.toml's own fall); no specific source consulted this session; Nabopolassar himself is not named in the KJV text"
+for_era_from = -626 # fix round 1 (I1): echoes THIS era's own from -- the exact field that would have caught this file's own original mis-attachment bug (see the FIX ROUND comment above)
 
 # Batch M requirement 1: this era's own FALL -- the fall of Babylon (539
 # BC), narrated directly in Daniel 5: Belshazzar's own feast, the
@@ -82,3 +83,4 @@ ref_note = "general historical knowledge (Nabopolassar's own 626 BC revolt, alli
 event = "Babylon falls; Belshazzar is slain in the night"
 verses = ["DAN.5.30", "DAN.5.31"]
 ref_note = "Daniel 5:30-31 (KJV, verified against the compiled text) -- 'In that night was Belshazzar the king of the Chaldeans slain... And Darius the Median took the kingdom,' traditionally dated 539 BC -- see persia.toml's own mirrored rise-transition"
+for_era_from = -626 # fix round 1 (I1): echoes THIS era's own from
