@@ -370,8 +370,9 @@ Edinburgh, 1897), with an introduction by Willis Judson Beecher.
 own title page reads "Copyright, 1897, William Day Crockett," confirmed
 directly, see verification below). Obtained via a real HTML transcription
 hosted at swartzentrover.com/cotor (the Analytical Outline,
-`.../christ/Crockett/HSKC_AO.htm`, and the Appendix of cross-references to
-other books, `.../christ/Crockett/HSKC_App.htm`) — fetched live (curl, via
+`.../cotor/E-Books/christ/Crockett/HSKC_AO.htm`, and the Appendix of
+cross-references to other books,
+`.../cotor/E-Books/christ/Crockett/HSKC_App.htm`) — fetched live (curl, via
 the Bash tool) rather than redistributed here, since only the section
 STRUCTURE (numbers, titles, which Samuel/Kings/Chronicles — and other —
 passages Crockett groups together) was needed, never the book's own prose;
