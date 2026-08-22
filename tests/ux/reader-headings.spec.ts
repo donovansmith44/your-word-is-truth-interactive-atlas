@@ -52,20 +52,26 @@ test('a pericope heading is keyboard-explorable (Enter opens the popover, same a
 });
 
 test('an uncovered book/chapter shows no pericope heading at all (conditional presence)', async ({ page }) => {
-  // Obadiah 1 -- Batch W1 retarget (was Leviticus 5, which Batch W1 itself
-  // now fully covers with real, heading-worthy containers -- see
-  // batch-w1-report.md). Obadiah's own sole touching event, theo-244
-  // ("Prophecies of Obadiah"), is a bare, un-enriched Theographic import
-  // (no witnesses/robertson_section/acts_section/atlas_section, no leg of
-  // any of the 13 curated narratives) -- layer-0, correctly anchors no
-  // heading anywhere, the SAME "uncovered" precondition LEV.5 used to
-  // satisfy before this batch's own Leviticus coverage. Genesis-Ruth (this
-  // batch's own W1 scope) is otherwise fully declared; the prophets remain
-  // real future work for a later W-series run.
-  const chapterOut = await api.chapter('OBA.1');
-  expect(chapterOut.verses.some((v: any) => v.heading), 'OBA.1 must carry zero heading-anchored verses on the wire').toBeFalsy();
+  // Romans 1 -- Batch W4 retarget (was Obadiah 1, which Batch W4 itself
+  // now fully covers with a real, heading-worthy container, oba_vision --
+  // see batch-w4-report.md). This is the SAME test, retargeted for the
+  // SAME reason, a second time: W1 retargeted it away from Leviticus 5
+  // once its own batch covered Leviticus (see the prior version of this
+  // comment, batch-w1-report.md); W4 completes the entire Old Testament's
+  // own coverage (Genesis-Malachi, all four W-series runs) plus the
+  // Gospels+Acts (Batch T/T2) already declared, so EVERY remaining
+  // uncovered book is now an NT epistle or Revelation -- real future work
+  // for Batch W5. Romans has ZERO touching events at all (verified against
+  // the real compiled events.json before this retarget, the same
+  // "genuinely fresh, independently confirmed" discipline every W-series
+  // batch's own reconciliation pass already uses) -- no bare freebie, no
+  // curated container, nothing: the cleanest possible "uncovered"
+  // precondition, not merely a layer-0 freebie like Obadiah's own former
+  // theo-244 was.
+  const chapterOut = await api.chapter('ROM.1');
+  expect(chapterOut.verses.some((v: any) => v.heading), 'ROM.1 must carry zero heading-anchored verses on the wire').toBeFalsy();
 
-  await page.goto('/read/OBA/1');
+  await page.goto('/read/ROM/1');
   await expect(page.getByTestId(/^pericope-heading-/)).toHaveCount(0);
 });
 

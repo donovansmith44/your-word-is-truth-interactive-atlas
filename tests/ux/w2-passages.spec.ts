@@ -62,7 +62,7 @@ test('req 1b NAMED CASE: 2 Kings 18-20 / Isaiah 36-39 / 2 Chronicles 32 (Hezekia
 
   const isaWitness = detail.witnesses.find((w: any) => w.book === 'ISA');
   const [book, chapter, verse] = isaWitness.verse_groups[0].verses[0].split('.');
-  expect(book).toBe('ISA'); // Isaiah is not a container-covered book this run (W4) -- still a legal witness target.
+  expect(book).toBe('ISA'); // Isaiah was not yet a container-covered book at W2 authoring time -- still a legal witness target then; fully covered as of Batch W4 (stale comment corrected, no assertion here ever depended on Isaiah's own coverage state).
 
   await page.goto(`/read/${book}/${chapter}`);
   await page.getByTestId(`verse-line-${verse}`).click();
