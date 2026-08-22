@@ -42,6 +42,10 @@ pub struct Graph {
     // -------- spines & indexes (built, never authored) --------
     pub reading: BTreeMap<&'static str, ReadingSpine>,
     pub indexes: BTreeMap<RelationId, BiIndex>,
+    /// pid -> node id, built alongside the other indexes: derive() is a
+    /// lookup, not a scan (same derived-state class as `indexes`;
+    /// content addressing makes it deterministic).
+    pub pid_index: BTreeMap<crate::id::Pid, AnyNodeId>,
 }
 
 fn text_node(kind_hint: &TextLocus) -> AnyNodeId {
@@ -56,7 +60,15 @@ fn text_node(kind_hint: &TextLocus) -> AnyNodeId {
 impl Graph {
     /// Build every bidirectional index from the row tables — one pass
     /// per relation; both directions are projections of the same rows.
+    /// Also builds the pid index (derive() as lookup).
     pub fn build_indexes(&mut self) {
+        use crate::id::ContentAddressed;
+        self.pid_index = self
+            .nodes
+            .values()
+            .map(|n| (n.pid(), n.id.clone()))
+            .collect();
+
         use RelationId as R;
 
         let mut pairs: BTreeMap<RelationId, Vec<(Position, Position)>> = BTreeMap::new();

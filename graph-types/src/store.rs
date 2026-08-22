@@ -52,9 +52,9 @@ impl GraphQuery for Graph {
         self.nodes.get(id).cloned()
     }
     fn derive(&self, pid: &Pid) -> Option<Vec<u8>> {
-        self.nodes
-            .values()
-            .find(|n| &n.pid() == pid)
+        self.pid_index
+            .get(pid)
+            .and_then(|id| self.nodes.get(id))
             .map(|n| n.canonical_bytes())
     }
     fn edge_summary(&self, p: &Position) -> EdgeSummary {
