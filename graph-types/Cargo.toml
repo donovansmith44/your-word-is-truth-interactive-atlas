@@ -1,0 +1,11 @@
+[package]
+name = "atlas-graph-types"
+version = "0.1.0"
+edition = "2021"
+description = "The Explorable Graph type system — compiling base point for the 2026-08-22 design specs. No dependencies; the compiler is the reviewer."
+
+# Deliberately standalone: not a member of the server/ workspace, so this
+# crate builds and tests without touching the parked HOTFIX-7 tree.
+[workspace]
+
+[dependencies]
