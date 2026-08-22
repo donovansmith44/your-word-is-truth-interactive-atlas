@@ -123,3 +123,19 @@ atlas_section = "Exodus pericope (this project's own sectioning, CC0 -- no exter
 # background coverage for Genesis 34:1 (harmlessly redundant with
 # gen_dinah_shechem, which correctly owns that verse's own heading).
 # Disclosed in full in batch-w1-report.md.
+
+# --- Batch W2 (whole-Bible titled verse containers, second run):
+# theo-158/theo-160 both gain their own Crockett-sourced parallel witness
+# this run (see data/curated/event-witnesses.toml's own "1 Chronicles <->
+# Samuel/Kings" section) -- enriched here with atlas_section too, the
+# same disclosure W1 already paired with every event it added witnesses
+# to, so the provenance trail stays auditable even though `witnesses`
+# alone is technically sufficient for heading-worthiness.
+
+[[section]]
+event_id = "theo-158"
+atlas_section = "1 Samuel pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Samuel 31, the death of Saul and his three sons on Gilboa. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 1 Chronicles 10 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-160"
+atlas_section = "1 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Kings 2:10-11, the death of David. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 1 Chronicles 29:26-30 witness (Crockett, 1897, section 121)."

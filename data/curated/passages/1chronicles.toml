@@ -1,0 +1,221 @@
+# Batch W2 (whole-Bible titled verse containers, second run -- historical
+# books). 1 Chronicles, in the SAME `[[event]]` schema `events-extra.toml`/
+# W1's `passages/*.toml` files use.
+#
+# RECONCILIATION AND STRATEGY: the real compiled data shows 1 Chronicles
+# only 2/942 covered before this file -- essentially a fresh book. Most of
+# 1 Chronicles 10-29 genuinely PARALLELS 2 Samuel/1 Kings content this run
+# already authored (see 2samuel.toml/1kings.toml, each container's own
+# `ref_note` naming which Crockett section grounds its own Chronicles
+# parallel) -- per the decisive-container model, that parallel content is
+# covered here as `[[witness]]` rows onto the ALREADY-EXISTING Samuel/Kings
+# containers (this file's own companion edit to
+# data/curated/event-witnesses.toml, immediately following this file in
+# the same commit), NOT as duplicate top-level containers here -- a
+# duplicate top-level container claiming the identical verse range as an
+# established witness would collide anchors with itself (both would claim
+# the SAME first-verse anchor), the exact within-layer partition rule
+# `atlas_etl::validate::run` enforces. This file's own NEW `[[event]]` rows
+# below are therefore exactly the two genuinely book-scoped needs: (a) the
+# genealogies (chapters 1-9, GENERAL-kind, no Samuel/Kings equivalent
+# exists to witness against), and (b) the substantial Chronicles-UNIQUE
+# narrative material within chapters 10-29 that has NO Samuel/Kings
+# parallel at all (the warriors who joined David, David's own hymn of
+# praise, the temple's own preparations, the National Convention's own
+# organization of Levites/priests/singers/army, and David's own closing
+# charge and prayer) -- each disclosed as unique in its own `ref_note`,
+# the same "Chronicles omits X"/"Chronicles alone records Y" honest
+# disclosure discipline 2samuel.toml/1kings.toml already established in
+# the other direction.
+#
+# GENEALOGIES (req 1's own genre guidance, "GENERAL-kind is the honest
+# default for law codes, genealogies"): chapters 1-8 are pure genealogical
+# tables with no single dateable event of their own -- GENERAL-kind
+# throughout, one container per chapter (the book's own natural unit),
+# titled from each chapter's own actual named-tribe content, not a
+# generic "genealogy" label repeated nine times. Chapter 9 is different in
+# kind -- 9:1-34 explicitly narrates the RETURNED community's own
+# resettlement of Jerusalem after the exile (9:1-2 names the deportation
+# and return directly), a real, dateable, placeable event (EVENT-kind,
+# consistent with the pre-existing `return` narrative's own -538/-537
+# window); 9:35-44 repeats Saul's own genealogy nearly verbatim from 8:29-38
+# as a literary bridge into chapter 10's narrative -- GENERAL-kind, no
+# date of its own beyond the patriarchal-era genealogy it restates.
+#
+# CROCKETT PROTOCOL (req 1b): see LICENSES.md and batch-w2-report.md. The
+# req 1b NAMED CASE living entirely inside THIS book -- 1 Chronicles 16
+# <-> Psalms 96/105/106 -- is authored below (1ch_davids_hymn_of_praise),
+# independently confirmed against Crockett's own Appendix "VI. FROM THE
+# PSALMS" table and boundary-verified nearly verbatim against the real
+# compiled KJV text (1CH.16.8 = PSA.105.1; 1CH.16.22 = PSA.105.15;
+# 1CH.16.34 opens = PSA.106.1 opens; 1CH.16.35-36 = PSA.106.47-48).
+#
+# CHRONOLOGY, disclosed: EVENT-kind containers below stay on the theo-*/
+# Ussher scale, each interpolated from its own nearest already-shipped
+# neighbor in 2samuel.toml/1kings.toml or the pre-existing theo-159/160
+# chain -- never independently re-derived.
+
+# --- Genealogies (chapters 1-8), GENERAL-kind -----------------------------
+
+[[event]]
+id = "1ch_genealogy_patriarchs_to_edom"
+label = "Genealogy from Adam to the sons of Esau"
+kind = "general"
+verses = ["1CH.1.1-54"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 1, the genealogical line from Adam through Noah's sons, Shem to Abraham, Abraham's own descendants through Ishmael and Keturah, and Esau's own line and the kings and dukes of Edom."
+ref_note = "GENERAL-kind: a genealogical table with no single date of its own, per this file's own header note. Several of its own named figures (e.g. Seth, Enos, Cainan) already carry individual birth-year dates via pre-existing bare Theographic events (theo-7/9/11, untouched by this file) -- this container is the wider chapter's own titled grouping, legally overlapping those narrower bare entries."
+
+[[event]]
+id = "1ch_genealogy_israel_judah"
+label = "The sons of Israel; the genealogy of Judah"
+kind = "general"
+verses = ["1CH.2.1-55"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 2, the twelve sons of Israel named, and the tribe of Judah's own line through Pharez to Jesse's own sons, including the families of Caleb, Jerahmeel, and the Kenites."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "1ch_genealogy_davidic_line"
+label = "The royal line of David"
+kind = "general"
+verses = ["1CH.3.1-24"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 3, David's own sons born in Hebron and Jerusalem, the royal line through Solomon to Zedekiah and the captivity, and the line's own continuation after the exile."
+ref_note = "GENERAL-kind, per this file's own header note. 3:4b (David's own reign length at Hebron/Jerusalem) is a Crockett-noted fragment of section 121's own parallel to 2 Samuel 5:4-5/1 Kings 2:10-11 -- too thin a fragment to witness formally on its own (the same 'honest subset, not a fabricated one' disposition already declined for 1 Kings 1:38-53's own comparably thin echo, see 1kings.toml)."
+
+[[event]]
+id = "1ch_genealogy_judah_simeon"
+label = "Further genealogies of Judah and Simeon"
+kind = "general"
+verses = ["1CH.4.1-43"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 4, further families of Judah including Jabez's own prayer, and the genealogy and settlements of Simeon, closing with Simeon's own conquest of Mount Seir and the Amalekites in Hezekiah's own day."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "1ch_genealogy_reuben_gad_manasseh_east"
+label = "Reuben, Gad, and the half-tribe of Manasseh east of Jordan"
+kind = "general"
+verses = ["1CH.5.1-26"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 5, the genealogies of Reuben, Gad, and the half-tribe of Manasseh settled east of the Jordan, their own war against the Hagarites, and their own captivity by Assyria for unfaithfulness."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "1ch_genealogy_levi"
+label = "The genealogy of Levi; priests and Levitical cities"
+kind = "general"
+verses = ["1CH.6.1-81"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 6, the line of Levi through Aaron to the priesthood, the singers appointed by David, and the cities given to the Levites throughout the tribes."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "1ch_genealogy_remaining_tribes"
+label = "The genealogies of Issachar, Benjamin, Naphtali, Manasseh, Ephraim, and Asher"
+kind = "general"
+verses = ["1CH.7.1-40"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 7, the genealogies of Issachar, Benjamin (a brief listing, expanded in chapter 8), Naphtali, the half-tribe of Manasseh west of Jordan, Ephraim (including Ephraim's own mourning for his sons slain by the men of Gath), and Asher."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "1ch_genealogy_benjamin_sauls_line"
+label = "The genealogy of Benjamin; the line of Saul"
+kind = "general"
+verses = ["1CH.8.1-40"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 8, an expanded genealogy of Benjamin settled at Jerusalem, Gibeon, and elsewhere, closing with the line of Saul's own family through Jonathan to his own descendants -- the same line 9:35-44 repeats immediately before the narrative of Saul's death begins."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+# --- Chapter 9: the returned community resettles Jerusalem, then the
+# bridge into the narrative of Saul's death --------------------------------
+
+[[event]]
+id = "1ch_jerusalem_resettled"
+label = "The returned exiles resettle Jerusalem"
+from_year = -537
+to_year = -537
+places = ["jerusalem"]
+verses = ["1CH.9.1-34"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 9:1-34, a roster of the first inhabitants who resettled Jerusalem after the Babylonian captivity -- the men of Judah, Benjamin, Ephraim, and Manasseh, the priests, and the Levites with their own gatekeepers' duties."
+ref_note = "EVENT-kind (not genealogy-general): the text itself explicitly narrates the return from exile as this passage's own occasion (9:1-2, 'Judah was carried away to Babylon for their transgression... the first inhabitants that dwelt in their possessions'), a real, dateable, placeable event -- dated to match the pre-existing return narrative's own opening window (ret_jerusalem_altar, -537)."
+
+[[event]]
+id = "1ch_sauls_genealogy_repeated"
+label = "Saul's genealogy repeated"
+kind = "general"
+verses = ["1CH.9.35-44"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 9:35-44, Saul's own genealogy through Jonathan and his own descendants, repeated nearly verbatim from 8:29-38 as the Chronicler's own literary bridge into the narrative of Saul's death, immediately following."
+ref_note = "GENERAL-kind: a genealogical restatement serving as a narrative bridge, not itself a dated scene."
+
+# --- Chronicles-unique narrative (chapters 12, 16, 22-29) -----------------
+
+[[event]]
+id = "1ch_ziklag_warriors"
+label = "The warriors who joined David at Ziklag"
+from_year = -1013
+to_year = -1010
+places = ["ziklag"]
+verses = ["1CH.12.1-22"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 12:1-22, a roster of the mighty men who came to David while he still kept himself close from Saul at Ziklag, including Benjamite kinsmen of Saul himself and a company of Gadites, closing with the captains of Manasseh who defected from Saul's own army."
+ref_note = "No 2 Samuel parallel -- Chronicles-unique material, a literary/content fact: 2 Samuel's own narrative of David's outlaw years (1 Samuel 27, in this atlas's own scope) never catalogues these particular warriors by name. Dated across David's own time at Ziklag (the pre-existing df_ziklag leg, -1010, and the years immediately before)."
+
+[[event]]
+id = "1ch_hebron_warriors"
+label = "The armies that came to make David king at Hebron"
+from_year = -1048
+to_year = -1048
+places = ["hebron"]
+verses = ["1CH.12.23-40"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 12:23-40, the numbers of armed men from every tribe who came to Hebron to turn the kingdom of Saul to David, closing with the three days' feast of eating and drinking, 'for there was joy in Israel.'"
+ref_note = "No 2 Samuel parallel -- Chronicles-unique material. Dated to match sam2_king_over_israel (2samuel.toml, -1048), the same occasion."
+
+[[event]]
+id = "1ch_davids_hymn_of_praise"
+label = "David's hymn of praise at the ark's arrival"
+from_year = -1044
+to_year = -1044
+places = ["jerusalem"]
+verses = ["1CH.16.4-36"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 16:4-36, David's own appointment of Asaph and his brethren to minister before the ark with thanksgiving, and the psalm of thanksgiving itself David delivered into their hand that day."
+ref_note = "req 1b NAMED CASE: witness row (Psalms 96/105/106) added in this same commit, immediately following this file's own companion edit to event-witnesses.toml. No 2 Samuel parallel -- Chronicles-unique material; 2 Samuel's own account of this same day (2 Samuel 6:12-23) never quotes this psalm. Dated to match sam2_ark_to_jerusalem (2samuel.toml, -1044), the same occasion."
+
+[[event]]
+id = "1ch_temple_preparations"
+label = "David prepares materials for the temple; his charge to Solomon"
+from_year = -1017
+to_year = -1017
+places = ["jerusalem"]
+verses = ["1CH.22.1-19"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 22, David's own choosing of the threshing floor as the temple's site, his own vast preparation of iron, bronze, and cedar, his own charge to Solomon to build the house (explaining that David's own wars had barred him from building it himself), and his own charge to the princes of Israel to help Solomon."
+ref_note = "No Samuel or Kings parallel -- Chronicles-unique material: neither 2 Samuel nor 1 Kings recounts David's own preparatory work for the temple at all (1 Kings' own temple narrative begins only with Solomon, 1 Kings 5). Dated shortly after sam2_census_plague (2samuel.toml, -1017), whose own threshing-floor purchase this chapter's own opening verse (22:1) directly identifies as the temple's future site."
+
+[[event]]
+id = "1ch_national_convention_priests_levites"
+label = "David organizes the priests, Levites, and singers"
+kind = "general"
+verses = ["1CH.23.1-32", "1CH.24.1-31", "1CH.25.1-31"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 23-25, David's own national convention organizing the Levites' own numbers and duties, the twenty-four courses of Aaron's own priestly line, and the twenty-four classes of singers under Asaph, Heman, and Jeduthun."
+ref_note = "No Samuel or Kings parallel -- Chronicles-unique organizational material. GENERAL-kind: an administrative roster, not a single dated scene, the same genre-guidance disposition as this file's own genealogical chapters."
+
+[[event]]
+id = "1ch_national_convention_officers"
+label = "The doorkeepers, treasurers, army captains, and officers of state"
+kind = "general"
+verses = ["1CH.26.1-32", "1CH.27.1-34"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 26-27, the courses of the doorkeepers and their own charge over the treasuries, the officers and judges for the outward business of Israel, the twelve captains of the army by monthly course, the chiefs of the twelve tribes, the overseers of the king's own possessions, and the closing officers of state, including 'Ahithophel was the king's counsellor.'"
+ref_note = "No Samuel or Kings parallel -- Chronicles-unique organizational material. GENERAL-kind, same disposition as the immediately preceding container."
+
+[[event]]
+id = "1ch_davids_charge_to_assembly"
+label = "David's charge to the assembled leaders of Israel"
+from_year = -1016
+to_year = -1016
+places = ["jerusalem"]
+verses = ["1CH.28.1-21", "1CH.29.1-9"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 28:1-29:9, David's own assembly of all the princes of Israel, his own address recounting how he was barred from building the temple, his own charge to Solomon and delivery of the temple's own pattern by the Spirit, and the willing offerings of David and the chief fathers for the building."
+ref_note = "No Samuel or Kings parallel -- Chronicles-unique material. Dated the year before David's own death (-1015, the pre-existing theo-160)."
+
+[[event]]
+id = "1ch_davids_thanksgiving_prayer"
+label = "David's thanksgiving prayer; Solomon's kingdom established"
+from_year = -1016
+to_year = -1015
+places = ["jerusalem"]
+verses = ["1CH.29.10-25"]
+atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 29:10-25, David's own prayer of thanksgiving and blessing before the whole congregation, the sacrifices and feast that follow, Solomon's own second anointing 'the second time,' and the chapter's own summary that the Lord magnified Solomon 'in the sight of all Israel.'"
+ref_note = "No Samuel or Kings parallel of comparable breadth -- 1 Kings 1:38-40's own brief account of Solomon's second anointing is a thin, already-declined echo (see this file's own 1ch_genealogy_davidic_line and 1kings.toml's own 1ki_solomon_anointed, both disclosing the same 'too thin to witness formally' judgment). Dated across David's own final year."
