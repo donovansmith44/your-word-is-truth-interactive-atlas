@@ -8586,7 +8586,7 @@
   },
   {
     "id": "psa_014",
-    "label": "To the chief Musician, A Psalm of David.",
+    "label": "The fool hath said in his heart, There is no God.",
     "when": {
       "from_year": -4004,
       "to_year": 100
@@ -8638,8 +8638,8 @@
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": null,
-    "kjv_superscription": "PSA.14.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row).",
-    "ref_note": "GENERAL-kind: poetry, no date of its own, per this file's own header note.",
+    "kjv_superscription": "PSA.14.1's own opening clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- NOT Psalm 14's own superscription tag ('To the chief Musician, A Psalm of David.', which genuinely differs from Psalm 53's own 'To the chief Musician upon Mahalath, Maschil, A Psalm of David.'), deliberately: this container is the shared host for BOTH Psalm 14 and Psalm 53 (see the PSA.53 witness below), and a shared container's own displayed title must be true at every anchor it heads (fix round 1, Important-1, batch-w3-review.md) -- 'The fool hath said in his heart, There is no God.' is the one clause both psalms share byte-for-byte identically (confirmed directly against PSA.14.1 and PSA.53.1's own compiled text), unlike either one's own distinct superscription tag.",
+    "ref_note": "GENERAL-kind: poetry, no date of its own, per this file's own header note. Fix round 1 (Important-1): retitled from Psalm 14's own superscription tag alone, which -- reused as Psalm 53's own reader heading via the witness below -- silently misattributed a citation Psalm 53 does not itself carry (Psalm 53's own real superscription, rendered correctly as its own verse-1 text, names 'Mahalath' and 'Maschil,' neither of which appear in Psalm 14's). The shared opening clause is accurate at both anchors; see the header note above and this file's own top-of-file PARALLELS note.",
     "order_key": 0
   },
   {
@@ -13814,7 +13814,7 @@
   },
   {
     "id": "sng_song_of_songs",
-    "label": "The song of songs, which is Solomon's.",
+    "label": "The song of songs, which is Solomon’s.",
     "when": {
       "from_year": -4004,
       "to_year": 100

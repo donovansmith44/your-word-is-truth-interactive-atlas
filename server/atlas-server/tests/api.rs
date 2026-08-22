@@ -474,6 +474,44 @@ async fn event_endpoint_carries_acts_section_when_present() {
     assert!(body.get("acts_section").is_none(), "acts_section must be omitted, not null, when absent: {body}");
 }
 
+/// Batch W3 (fix round 1, Minor-2, batch-w3-review.md): `kjv_superscription`
+/// is the KJV's own literal-citation sibling to `robertson_section`/
+/// `acts_section`/`atlas_section` (see `atlas_core::data::Event::
+/// kjv_superscription`'s own doc comment). `GET /api/event/{id}` must carry
+/// it, omitted (not null) when absent, exactly like its three siblings --
+/// mirrors `event_endpoint_carries_acts_section_when_present` immediately
+/// above, the same dedicated wire-level regression its three siblings
+/// already have (or, for `robertson_section`/`atlas_section`, are only ever
+/// incidentally exercised without their own dedicated positive-value
+/// assertion -- this test closes that same gap for `kjv_superscription`
+/// specifically, per the review's own finding).
+#[tokio::test]
+async fn event_endpoint_carries_kjv_superscription_when_present() {
+    let events = vec![
+        Event {
+            id: "k1".into(),
+            label: "A Psalm of David, when he fled from Absalom his son.".into(),
+            when: TimeRange::undated(),
+            places: vec![],
+            verses: vec![],
+            kind: "general".into(),
+            kjv_superscription: Some("PSA.3.1, the psalm's own KJV superscription, quoted verbatim".into()),
+            ..Default::default()
+        },
+        Event { id: "k2".into(), label: "No KJV-superscription provenance".into(), when: TimeRange::undated(), places: vec![], verses: vec![], kind: "general".into(), ..Default::default() },
+    ];
+    let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+    let app = atlas_server::app::build(Arc::new(data), None);
+
+    let (st, body) = call(&app, "/api/event/k1").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["kjv_superscription"], "PSA.3.1, the psalm's own KJV superscription, quoted verbatim");
+
+    let (st, body) = call(&app, "/api/event/k2").await;
+    assert_eq!(st, 200);
+    assert!(body.get("kjv_superscription").is_none(), "kjv_superscription must be omitted, not null, when absent: {body}");
+}
+
 /// Batch W1 requirement 1b's own MODEL GENERALIZATION ("W1 implements
 /// before authoring at scale... a general-kind container may carry witness
 /// rows and its popover shows PARALLEL ACCOUNTS identically"). Proves the

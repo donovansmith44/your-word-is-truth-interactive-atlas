@@ -19,13 +19,13 @@
 # the bride's own beauty). A literary-structure decomposition (the refrain
 # itself is the evidence, not this project's own invention), not textual
 # criticism. The opening unit alone carries `kjv_superscription` provenance
-# (1:1, "The song of songs, which is Solomon's," a genuine title verse);
+# (1:1, "The song of songs, which is Solomon’s," a genuine title verse);
 # the remaining five carry this project's own `atlas_section` CC0 title.
 # ALL six are GENERAL-kind (poetry -- the brief's own honest default).
 
 [[event]]
 id = "sng_song_of_songs"
-label = "The song of songs, which is Solomon's."
+label = "The song of songs, which is Solomon’s."
 kind = "general"
 verses = ["SNG.1.1-17", "SNG.2.1-7"]
 kjv_superscription = "SNG.1.1, the book's own opening superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."

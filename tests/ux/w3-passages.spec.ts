@@ -9,6 +9,13 @@ import { api } from './lib/api';
 // Psalm-superscription heading rendering, one parallel-witness popover
 // case, and the master brief's own explicit "jank check... PSA
 // superscriptions" density check.
+//
+// Fix round 1 (batch-w3-review.md, Important-1): psa_014's own title was
+// retitled from Psalm 14's own superscription tag (which, reused as Psalm
+// 53's own reader heading, silently misattributed a citation Psalm 53
+// does not carry) to the psalm pair's own shared opening clause -- true,
+// byte-for-byte, at BOTH anchors. The second test below pins this
+// directly against live compiled text, not a hardcoded echo.
 
 test('a Psalm superscription renders verbatim as the reader heading, and its own popover title', async ({ page }) => {
   // Psalm 3's own KJV superscription (PSA.3.1) -- the brief's own named
@@ -63,7 +70,45 @@ test('req 1b NAMED CASE, this run\'s own new authoring: Psalm 14 and Psalm 53 (t
   await page.goto(`/read/${book}/${chapter}`);
   const psa53Heading = page.getByTestId('pericope-heading-psa_014');
   await expect(psa53Heading).toBeVisible();
-  await expect(psa53Heading).toHaveText('To the chief Musician, A Psalm of David.');
+  await expect(psa53Heading).toHaveText("The fool hath said in his heart, There is no God.");
+});
+
+test('fix round 1 (Important-1): psa_014\'s shared title is TRUE AT EVERY ANCHOR, in both Psalm 14 and Psalm 53 -- pins the controller\'s binding ruling', async ({ page }) => {
+  // Live regression pin, not a hardcoded-string echo: fetches BOTH psalms'
+  // own real verse-1 text from the API and proves the container's own
+  // title is a genuine, verbatim substring of EACH -- if either the title
+  // or the underlying compiled text ever drifts apart again, this fails.
+  const detail = await api.event('psa_014');
+  const title: string = detail.title;
+
+  const psa14 = await api.chapter('PSA.14');
+  const psa53 = await api.chapter('PSA.53');
+  const psa14Verse1: string = psa14.verses[0].text;
+  const psa53Verse1: string = psa53.verses[0].text;
+
+  expect(psa14Verse1).toContain(title);
+  expect(psa53Verse1).toContain(title);
+
+  // The regression this pins directly: Psalm 14's own DISTINCT
+  // superscription tag (never shared with Psalm 53, which reads "...upon
+  // Mahalath, Maschil..." instead) must NEVER be the container's own
+  // title -- that was the bug (batch-w3-review.md, Important-1). Confirms
+  // the two psalms' own superscription tags really do differ (the reason
+  // the bug was visible at all), then confirms the CURRENT title is
+  // neither of them.
+  const psa14Superscription = 'To the chief Musician, A Psalm of David.';
+  const psa53Superscription = 'To the chief Musician upon Mahalath, Maschil, A Psalm of David.';
+  expect(psa14Verse1.startsWith(psa14Superscription)).toBe(true);
+  expect(psa53Verse1.startsWith(psa53Superscription)).toBe(true);
+  expect(psa14Superscription).not.toBe(psa53Superscription);
+  expect(title).not.toBe(psa14Superscription);
+  expect(title).not.toBe(psa53Superscription);
+
+  // Reader-visible: the SAME heading text renders above both chapters.
+  await page.goto('/read/PSA/14');
+  await expect(page.getByTestId('pericope-heading-psa_014')).toHaveText(title);
+  await page.goto('/read/PSA/53');
+  await expect(page.getByTestId('pericope-heading-psa_014')).toHaveText(title);
 });
 
 test('jank check (the master brief\'s own named case, "PSA superscriptions"): Psalm 119 renders 22 distinct acrostic-stanza headings cleanly, each explorable', async ({ page }) => {
