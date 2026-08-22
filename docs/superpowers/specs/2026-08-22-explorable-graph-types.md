@@ -239,7 +239,7 @@ pub struct CorpusMeta {
 /// is part of that corpus's structural layer); Scripture appearing in
 /// extrabiblical material is reachable ONLY through Scripture-typed
 /// edges (quotes/cites, whose objects are BibleLocusRange) — never as
-/// content. The general locus is parameterized by corpus, and KjvLocus
+/// content. The general locus is parameterized by corpus, and BibleLocus
 /// becomes an INSTANCE of it rather than a special case:
 pub struct Locus<C: CorpusTag> { pub unit: C::Ref, pub span: Option<TokenSpan> }
 //   pub type BibleLocus   = Locus<BibleTag>;    // the witness-canon refinement, unified
