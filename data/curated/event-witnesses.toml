@@ -2708,3 +2708,22 @@ book = "2CH"
 verses = ["2CH.36.22-23"]
 ref_note = "2 Chronicles 36:22-23 read directly against the compiled KJV text -- Crockett (1897) Appendix section IV; 2 Chronicles 36:22-23 and Ezra 1:1-3 are nearly verbatim identical, the closing/opening bridge between the two books."
 
+# --- Ezra 2 <-> Nehemiah 7 (req 1b's own NAMED CASE entirely internal to
+# this book pair -- no Crockett coverage exists for either book, see
+# ezra.toml/nehemiah.toml's own header notes; hand-verified directly
+# against the compiled KJV text instead). Nehemiah 7:6 opens nearly
+# word-for-word identical to Ezra 2:1; the two rosters' own totals match
+# almost exactly throughout, and Nehemiah's own text explicitly names
+# this as the SAME register (7:5), not a coincidentally similar one.
+[[witness]]
+event_id = "ezr_list_of_returnees"
+book = "EZR"
+verses = ["EZR.2.1-70"]
+ref_note = "Ezra 2:1-70 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete (the pw_bethany/72-row precedent)."
+
+[[witness]]
+event_id = "ezr_list_of_returnees"
+book = "NEH"
+verses = ["NEH.7.6-73"]
+ref_note = "Nehemiah 7:6-73 read directly against the compiled KJV text -- the same register, per Nehemiah's own explicit statement (7:5, 'I found a register of the genealogy of them which came up at the first'). Deliberately excludes Nehemiah 7:1-5 (Nehemiah's own introductory frame -- appointing gatekeepers and explaining why he searched out the register -- covered by this run's own neh_gatekeepers_appointed, data/curated/passages/nehemiah.toml), an honest subset matching only the register itself, not the surrounding narrative frame."
+
