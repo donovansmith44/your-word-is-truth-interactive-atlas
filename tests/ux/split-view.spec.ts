@@ -277,7 +277,11 @@ test('VIEWSTATE-1: reader scroll and atlas window/camera round-trip across page-
   // camera away from wherever FitScene auto-centered it.
   await page.getByTestId('nav-world').click();
   await page.waitForURL(u => u.pathname === '/world');
-  const scene = await api.sceneTime(-5, 29); // the bare-/world Gospels-era default this lands on
+  // FIX ROUND 1 CORRECTION: was `api.sceneTime(-5, 29)` -- the bare-/world
+  // default's own end moved to 33 (nt_calibration, CONTRACT's own GLOBAL
+  // TIMELINE note); this line must keep matching whatever World.razor's
+  // own DefaultFrom/DefaultTo actually are, not a frozen snapshot of them.
+  const scene = await api.sceneTime(-5, 33); // the bare-/world Gospels-era default this lands on
   await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length); // settled: render matches the API
   // Leg 1 left the document scrolled -- the mouse actions below use plain
   // VIEWPORT coordinates (640,360) that assume that's landing on the map,

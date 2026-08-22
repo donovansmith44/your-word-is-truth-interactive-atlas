@@ -454,12 +454,32 @@ mod tests {
         let d = load_real_compiled_data();
         // Verified against the real compiled data before this test was
         // written (batch-hotfix4-report.md has the full derivation) --
-        // neither extreme is in this batch's own event-merge set, so the
-        // merge does not move either boundary.
+        // the first extreme is nowhere near this batch's own event-merge
+        // OR fix-round-1 nt_calibration sets (theo-1 is dated -4004, deep
+        // BC, untouched by either), so it does not move.
         let creation = global_timeline_position(&d, "theo-1").expect("theo-1 'Creation of all things' is the atlas's true first dated event");
         assert!(creation.prior.is_none(), "the true first dated event of the whole atlas has no prior");
-        let rome = global_timeline_position(&d, "pr_rome").expect("pr_rome 'Paul arrives at Rome' is the atlas's true last dated event");
-        assert!(rome.following.is_none(), "the true last dated event of the whole atlas has no following");
+
+        // FIX ROUND 1 CORRECTION: the true LAST dated event changed. Before
+        // `nt_calibration`, `pr_rome` ("Paul arrives at Rome," a real
+        // curated event with order_key 0) WAS the true last event. Once the
+        // ~187 surviving Theographic-scale NT events are reconciled onto
+        // the AD-33 clock, several late-Acts/Pauline theo- events (also
+        // dated year 60, via the Acts order_key formula) now sort strictly
+        // after it -- correctly: `theo-385` ("Paul's First Roman
+        // imprisonment") is an imprisonment that BEGINS at/after Paul's own
+        // arrival and (Acts 28:30, "two whole years") continues well past
+        // the mere arrival moment `pr_rome` itself captures. A real,
+        // honest, disclosed consequence of fixing the dating-scale bug, not
+        // a new defect -- see batch-hotfix4-report.md's own "Fix round 1"
+        // section (which also discloses `theo-384` "Paul arrives at Rome,"
+        // immediately before it, as a likely UN-caught near-duplicate of
+        // `pr_rome` itself -- out of this fix round's own re-dating scope,
+        // flagged honestly for a future merge-sweep follow-up).
+        let rome = global_timeline_position(&d, "pr_rome").expect("pr_rome 'Paul arrives at Rome' is a real dated event");
+        assert!(rome.following.is_some(), "pr_rome is no longer the atlas's own last event -- real, later-calibrated Acts content now follows it");
+        let imprisonment = global_timeline_position(&d, "theo-385").expect("theo-385 'Paul's First Roman imprisonment' is a dated event");
+        assert!(imprisonment.following.is_none(), "theo-385 is now the atlas's true last dated event");
     }
 
     /// AMENDMENT C (owner's own named acceptance, red-then-green): after
@@ -740,6 +760,115 @@ mod tests {
             unexplained.len(),
             unexplained.join("\n")
         );
+    }
+
+    /// FIX ROUND 1, Fix 1 acceptance (b) / Fix 2 (review findings C-1, the
+    /// Pentecost-before-Crucifixion scenario, and its own root cause: the
+    /// Amendment D audit above is SAME-BOOK-SCOPED BY DESIGN (`by_book`
+    /// grouping) -- Acts (book `ACT`) never shares a book with the Gospels
+    /// (`MAT`/`MRK`/`LUK`/`JHN`), so that audit structurally cannot see a
+    /// cross-book inversion between them, no matter how severe. RULING
+    /// (fix-round-1 brief, Fix 2): full cross-book monotonicity is NOT the
+    /// bar (OT books legitimately interleave -- Kings/Chronicles/prophets --
+    /// and demanding cross-book order there would be wrong); the bar is a
+    /// NARROW, EXPLICIT, book-boundary gate for the one place this app
+    /// makes a real cross-book claim: the whole Gospel Passion narrative
+    /// happens strictly BEFORE Acts. This test is that gate, over the real
+    /// compiled data, post-calibration (`nt_calibration::apply_nt_calibration`,
+    /// ETL-side) -- not a substitute for the same-book audit above, a
+    /// DIFFERENT, narrower, cross-book check the same-book audit cannot do.
+    ///
+    /// "The Passion cluster" = every `pw_`-prefixed event (this app's own
+    /// existing narrative-prefix convention for Passion Week, `pw_bethany`
+    /// through `pw_mount_of_olives` the Ascension -- exactly the range the
+    /// fix-round-1 brief itself names, "pw_jerusalem_entry .. ascension").
+    /// "ACT-witnessed" = `nt_calibration::first_verse_in_book(e, "ACT")` is
+    /// `Some` (the SAME predicate the calibration's own Acts order_key
+    /// formula uses) -- EXCLUDING the Passion cluster's own ids: Robertson's
+    /// own harmony treats Acts 1:9-12 (the ascension account) as part of
+    /// `pw_mount_of_olives`'s own witness set alongside Luke 24 (see
+    /// `data/curated/acts-sections.toml`'s own header comment, "Overlaps
+    /// pw_mount_of_olives's own narrower Passion-Week leg... at 1:9-11" --
+    /// legal, disclosed, not a bug) -- so `pw_mount_of_olives` itself
+    /// legitimately touches an ACT verse without being "subsequent Acts
+    /// content" in the sense this gate cares about.
+    #[test]
+    fn fix_round_1_era_boundary_gate_passion_cluster_sorts_before_every_act_witnessed_event() {
+        let d = load_real_compiled_data();
+
+        let passion_cluster: Vec<&str> = d.events.iter().map(|e| e.id.as_str()).filter(|id| id.starts_with("pw_")).collect();
+        assert!(!passion_cluster.is_empty(), "the real compiled data must have pw_* Passion-Week events to check against");
+        let max_passion_idx = passion_cluster
+            .iter()
+            .map(|id| d.timeline_position(id).unwrap_or_else(|| panic!("{id} must be a dated event")))
+            .max()
+            .unwrap();
+
+        let act_witnessed: Vec<&crate::data::Event> = d
+            .events
+            .iter()
+            .filter(|e| e.kind == "event" && !e.id.starts_with("pw_") && crate::nt_calibration::first_verse_in_book(e, "ACT").is_some())
+            .collect();
+        assert!(act_witnessed.len() >= 50, "expected the real compiled data to carry well over 50 non-pw_ ACT-witnessed events (Acts 1 onward, post-calibration), got {}", act_witnessed.len());
+
+        let mut violations: Vec<String> = Vec::new();
+        for e in &act_witnessed {
+            let idx = d.timeline_position(&e.id).unwrap();
+            if idx <= max_passion_idx {
+                violations.push(format!("'{}' ({}) sorts at timeline index {idx}, at or before the Passion cluster's own max index {max_passion_idx}", e.id, e.label));
+            }
+        }
+        assert!(
+            violations.is_empty(),
+            "FIX ROUND 1 ERA-BOUNDARY GATE: {} ACT-witnessed event(s) sort at or before the end of the real Passion cluster (pw_jerusalem_entry..ascension) -- Pentecost/subsequent Acts must never precede the Crucifixion/Resurrection/Ascension:\n{}",
+            violations.len(),
+            violations.join("\n")
+        );
+    }
+
+    /// FIX ROUND 1, Fix 2b: "within-Acts follows Acts chapter order for
+    /// acts_section events" -- the narrower, EXPLICIT second half of the
+    /// same-book gate this batch adds (the first half is the era-boundary
+    /// gate immediately above). Checks every pair of REAL, curated
+    /// `acts_section` events (`data/curated/acts-sections.toml`,
+    /// `theo-304`..`theo-336`) against each other specifically -- narrower
+    /// than the general same-book audit above (which already covers this
+    /// pair-set too, under its own "both sides real" justification rule 0
+    /// -- this test asserts it as a hard, unconditional gate instead of a
+    /// pattern-matched justification, because acts_section rows are
+    /// curator-authored in Acts's own natural reading order by construction
+    /// (`data/curated/acts-sections.toml`'s own header), so there is no
+    /// legitimate reason for one to ever sort out of chapter:verse order).
+    #[test]
+    fn fix_round_1_within_acts_section_events_follow_acts_chapter_order() {
+        let d = load_real_compiled_data();
+
+        let mut acts_section_events: Vec<(&str, (u16, u16))> = d
+            .events
+            .iter()
+            // `kind == "event"` (dated) only -- `w1_acts_preface` (Acts
+            // 1:1-3, Luke's own preface to Theophilus) also carries
+            // `acts_section` but is deliberately general-kind/undated
+            // (requirement 2's own rule: no fabricated date), so it has no
+            // timeline position to compare -- excluded here the same way
+            // requirement 2 excludes it everywhere else, not a special case.
+            .filter(|e| e.kind == "event" && e.acts_section.is_some())
+            .filter_map(|e| crate::nt_calibration::first_verse_in_book(e, "ACT").map(|cv| (e.id.as_str(), cv)))
+            .collect();
+        assert!(acts_section_events.len() >= 30, "expected ~33 acts_section events, got {}", acts_section_events.len());
+        acts_section_events.sort_by_key(|(_, cv)| *cv); // Acts's own chapter:verse reading order
+
+        let mut violations: Vec<String> = Vec::new();
+        for pair in acts_section_events.windows(2) {
+            let (a_id, a_cv) = pair[0];
+            let (b_id, b_cv) = pair[1];
+            let a_idx = d.timeline_position(a_id).unwrap();
+            let b_idx = d.timeline_position(b_id).unwrap();
+            if a_idx > b_idx {
+                violations.push(format!("'{a_id}' (ACT {a_cv:?}) reads before '{b_id}' (ACT {b_cv:?}) but sorts AFTER it on the global timeline"));
+            }
+        }
+        assert!(violations.is_empty(), "FIX ROUND 1: {} acts_section event(s) out of Acts chapter order on the global timeline:\n{}", violations.len(), violations.join("\n"));
     }
 
     /// THE ONE-GRAPH EQUALITY PROOF (not merely an argument): the SAME

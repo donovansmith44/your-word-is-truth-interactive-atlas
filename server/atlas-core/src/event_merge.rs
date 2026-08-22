@@ -216,7 +216,14 @@ pub const EVENT_DISTINCT_PAIRS: &[EventDistinct] = &[
 /// `AtlasData::finish()`'s own `verse_to_events` index already uses (see
 /// that function's own Batch T requirement-3 comment), so "does this event
 /// touch this verse" never disagrees between the two computations.
-fn effective_verses(e: &Event) -> HashSet<&str> {
+///
+/// `pub(crate)` (HOTFIX-4 fix round 1, C-1): `nt_calibration` reuses this
+/// EXACT union rather than re-deriving its own "which verses does this
+/// event touch" logic -- "who is a Theographic NT-clock event" (that
+/// module's own predicate) and "who is a duplicate" (this module's own
+/// sweep) must never disagree about what counts as this event's own
+/// effective verses.
+pub(crate) fn effective_verses(e: &Event) -> HashSet<&str> {
     let mut set: HashSet<&str> = e.verses.iter().map(String::as_str).collect();
     for w in &e.witnesses {
         if let Some(vs) = w.translations.get(crate::translation::DEFAULT_TRANSLATION) {

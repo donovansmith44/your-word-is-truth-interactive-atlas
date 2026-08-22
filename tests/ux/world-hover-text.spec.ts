@@ -111,32 +111,43 @@ async function bestHoverablePlace(
 }
 
 test('hover place card: a passage-first place renders one capped hover-passage block, verbatim text, no bookkeeping rows', async ({ page }) => {
-  // Search every candidate window for whichever place has the LONGEST
-  // consecutive-run first group, so the "up to 4" cap is proven against a
-  // real run that's actually longer than 4 -- not a coincidental 2-4 verse
-  // run where "capped at 4" and "just happens to be everything" look the
-  // same on screen.
-  let best: { w: typeof WINDOWS[number]; place: any; verses: string[]; first: Group } | undefined;
-  for (const w of WINDOWS) {
-    const scene = await api.sceneTime(w.from, w.to);
-    for (const place of scene.places) {
-      const verses = mergedVerses(place);
-      if (verses.length === 0) continue;
-      const first = groups(verses)[0];
-      if (isPassage(first) && (!best || first.length > best.first.length)) {
-        best = { w, place, verses, first };
-      }
-    }
-  }
+  // Search every candidate window for whichever INDEPENDENTLY HOVERABLE
+  // place has the LONGEST consecutive-run first group, so the "up to 4"
+  // cap is proven against a real run that's actually longer than 4 -- not
+  // a coincidental 2-4 verse run where "capped at 4" and "just happens to
+  // be everything" look the same on screen.
+  //
+  // FIX ROUND 1 CORRECTION: this test used to run its own inline search
+  // (pure scene DATA, no hover-safety check) -- exactly the older,
+  // pre-bestHoverablePlace pattern this file's own header comment already
+  // documents as fragile ("Philippi... its marker renders within
+  // single-digit px of Neapolis"). It never actually tripped before this
+  // fix round widened the bare-/world default window (World.razor's own
+  // DefaultTo, 29->33): the wider default shifts this page's OWN initial
+  // marker population/settling timing before SyncFromQuery lands on
+  // whatever window a test explicitly requested, enough to flip Ai/Bochim
+  // (both real, ~9km apart, this window's own data unchanged) from
+  // independently-hoverable to marker-adjacent on this suite's fixed
+  // viewport. Upgraded to the same safety check the rest of this file
+  // already uses for this exact failure class, rather than reverting the
+  // default-window fix or chasing render-timing instead.
+  const best = await bestHoverablePlace(
+    page,
+    verses => isPassage(groups(verses)[0]),
+    verses => groups(verses)[0].length,
+  );
   if (!best) {
-    test.skip(true, 'no place with a consecutive-run first group found in any candidate window');
+    test.skip(true, 'no independently-hoverable place with a consecutive-run first group found in any candidate window');
     return;
   }
-  const { w, place, verses, first } = best;
+  const { place, verses } = best;
+  const first = groups(verses)[0];
   const expectedShown = Math.min(4, first.length);
   const expectedSpan = spanRef(verses, { start: 0, length: expectedShown });
 
-  await page.goto(`/world?from=${w.from}&to=${w.to}`);
+  // bestHoverablePlace already navigated to (and rendered) `w` while
+  // measuring hover safety -- re-navigating here would just re-fetch the
+  // same page for nothing.
   await page.getByTestId(`marker-${place.id}`).hover({ force: true });
   const card = page.getByTestId('place-card');
   await expect(card).toBeVisible();

@@ -22,10 +22,16 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
   immediately after the original arrival
 - `/world?from={year}&to={year}` — time mode (signed years, no zero)
 - `/world?ref={REF}` — scripture mode (canonical ref)
-- `/world` (no `from`/`to`/`ref` at all) — defaults to the `gospels` era's
-  exact window (`[-5, 29]`, see `data/curated/eras.toml`) UNLESS this
-  session already has a saved atlas position (batch-h-brief.md, VIEWSTATE-1
-  below), in which case that position wins instead
+- `/world` (no `from`/`to`/`ref` at all) — defaults to a Gospel-era window,
+  `[-5, 33]` (`World.razor`'s own `DefaultFrom`/`DefaultTo` — HOTFIX-4 fix
+  round 1 CORRECTION: was `[-5, 29]`, matching `data/curated/eras.toml`'s
+  own `gospels` era exactly; extended to 33, the real calibrated Gospel-era
+  end — see EVENT-MERGE note below — once nt_calibration made 29 exclude
+  Passion Week/Resurrection/Ascension from the default view; the `eras.toml`
+  preset itself is intentionally left at `[-5, 29]`, unconsumed by any
+  client UI today) UNLESS this session already has a saved atlas position
+  (batch-h-brief.md, VIEWSTATE-1 below), in which case that position wins
+  instead
 - Split view has NO route of its own -- `/read/{BOOK}/{chapter}` (with
   split open, local component state) IS the split; there is no `/split/...`
   path. Closing the atlas pane returns to plain `/read/{BOOK}/{chapter}`;
@@ -965,6 +971,60 @@ Notes:
   so the Baptism keeps the same 3-Gospel PARALLEL ACCOUNTS richness its
   own absorbed freebie evidenced, rather than regressing to Matthew-only.
 
+  ALIASING (HOTFIX-4 fix round 1, review finding M-1, doc-only ruling): an
+  `absorbed` id does NOT stay resolvable as its own node -- `GET
+  /api/event/{absorbed_id}` 404s, exactly matching `atlas_core::merge`'s
+  own same-place precedent (an absorbed PLACE id doesn't resolve either).
+  Only `Narrative.legs` entries naming an absorbed id are repointed to
+  `survivor`, at load (`apply_event_merges`) -- nothing else in the data
+  model holds a stale event id (verified; normal client navigation never
+  persists one). Amendment A's own "id aliasing so old ids stay resolvable"
+  wording is superseded by this ruling.
+
+  NT CALIBRATION (HOTFIX-4 fix round 1, review finding C-1, Critical --
+  owner's own "straight up lie" bug, still live for content this rectification
+  pass above never touches: the Gospel MEGA-SPANS `EVENT_DISTINCT_PAIRS`
+  correctly leaves un-merged, plus the ~33 real, curated `acts_section`
+  Acts events (`data/curated/acts-sections.toml`), plus any other surviving
+  `theo-*` event with NT-book verses -- ALL still on Theographic's own
+  internal NT clock, ~3 years ahead of this atlas's AD-33 Passion anchor,
+  e.g. Pentecost sorting before the Crucifixion). RULING: re-date, never
+  exclude (excluding would manufacture new dead ends, forbidden by the
+  owner's own traversal law). `atlas_core::nt_calibration::apply_nt_calibration`
+  -- ETL-ONLY (`atlas_etl::main`, on the RAW pre-`finish()` event set,
+  NEVER from `AtlasData::finish()` itself, which runs twice across the real
+  pipeline and would double-shift a raw date delta -- see that module's own
+  doc comment) -- shifts every `theo-*` event with `from_year > 0` and
+  >=1 NT-book verse (`canon::BOOKS`, Matthew..Revelation) by a flat +3
+  years (Theographic's own internally-consistent NT clock, verified
+  correspondences Baptism 26->29 / Crucifixion 30->33), PLUS, for the
+  events landing at year 33 alongside the real, densely-curated
+  `pw_*`/`rob_*` Passion-Week `order_key` scheme (`0..11_000`,
+  `pw_jerusalem_entry`..`pw_mount_of_olives`), an `order_key` placement:
+  every Acts-witnessed (`ACT`) event gets `12_000 + chapter*100 + verse`
+  (mechanically above `pw_mount_of_olives`'s own `11_000`, and correctly
+  chapter:verse ordered within Acts); every Gospel-witnessed mega-span/
+  late-ministry freebie still colliding at year 33 gets a hand-placed entry
+  in `GOSPEL_ORDER_KEY_OVERRIDES`, keyed to the REAL curated event marking
+  its own first contained/nearest pericope, never placed before it. Two
+  new fail-loud tests over the real compiled data prove both properties
+  hold (`server/atlas-core/src/narrative.rs`):
+  `fix_round_1_era_boundary_gate_passion_cluster_sorts_before_every_act_witnessed_event`
+  (every `ACT`-witnessed event, EXCLUDING the Passion cluster's own `pw_*`
+  ids -- `pw_mount_of_olives` legitimately cites Acts 1:9-12 itself,
+  Robertson's own harmonization, `data/curated/acts-sections.toml`'s own
+  header -- sorts strictly after `pw_mount_of_olives`) and
+  `fix_round_1_within_acts_section_events_follow_acts_chapter_order` (every
+  real, curated `acts_section` event stays in Acts's own chapter:verse
+  reading order). Provenance is stated POSITIVELY, as a calibration TO the
+  AD-33 anchor -- no scale-debate register anywhere (Amendment B,
+  inerrancy doctrine). The AMENDMENT D monotonicity audit below remains
+  explicitly SAME-BOOK-SCOPED by design (Acts never shares a book with the
+  Gospels, so it structurally cannot see a Pentecost-vs-Crucifixion-class
+  inversion) -- the two gates above are the deliberate, narrower, cross-book
+  check that scope gap needs, not a modification to that audit's own
+  same-book methodology.
+
   PROVIDER (no popover surgery -- registered exactly like every other
   section, Explore/PopoverSections.cs). VERSE nodes gain ONE new section,
   appended after catechism: "EVENT" (`VerseEventMembershipSection`,
@@ -1132,6 +1192,33 @@ Notes:
   empty-list path -- no new map code, no new interop call, exactly the
   same outcome a navigation to any other non-narrative-aware node already
   produces today.
+
+  AMENDMENT D MONOTONICITY AUDIT (batch-hotfix4-brief.md's own coordinator
+  amendment; `narrative.rs`'s own `amendment_d_monotonicity_audit_reading_order_vs_global_timeline`
+  test): for every pair of dated events sharing a witness BOOK, is GLOBAL
+  TIMELINE order consistent with READING order (first-verse-in-book
+  ascending)? SCOPE, explicitly documented (HOTFIX-4 fix round 1, review
+  finding C-1/Fix 2 -- the original report characterized this scope only
+  in code comments, not here): SAME-BOOK ONLY, by design, not merely by
+  omission -- full CROSS-book monotonicity is deliberately NOT the bar (OT
+  books legitimately interleave, e.g. Kings/Chronicles/prophets narrating
+  overlapping reigns; demanding cross-book reading order there would be
+  WRONG, not a gap). The direct, structural consequence: Acts (book `ACT`)
+  never shares a witness book with the Gospels (`MAT`/`MRK`/`LUK`/`JHN`),
+  so this audit cannot see a Pentecost-vs-Crucifixion-CLASS inversion
+  between them, however severe -- NOT a defect in the audit (it is doing
+  exactly the narrower job it was built for), but a real blind spot this
+  file now documents rather than leaving implicit. The NT CALIBRATION note
+  above's own two fail-loud tests (era-boundary gate; within-Acts chapter
+  order) are the deliberate, narrower, CROSS-book check this exact blind
+  spot needs -- a different, additional gate, never a rewrite of this
+  audit's own same-book methodology. Re-run post-calibration: inversions
+  found dropped from 6,524 to 2,704 (same-book pairs checked: 56,837,
+  unchanged -- the SET of pairs an audit this scoped can even see never
+  changes; only how many now sort consistently within it does) -- ZERO
+  unexplained either time; see batch-hotfix4-report.md's own "Fix round 1"
+  section for the full before/after and the CORRECTION block explaining
+  why the original run's own count was accurate but incomplete.
 
   MAP FOCUS SYNC (mechanism UNCHANGED from Batch N -- only which node kind
   triggers it changed: `EventNode` implements `INarrativeAware` where the

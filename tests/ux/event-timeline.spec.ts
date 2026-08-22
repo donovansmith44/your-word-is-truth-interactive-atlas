@@ -111,14 +111,23 @@ test('HOTFIX-4 req 1/req 5: a narrative-member event shows BOTH its narrative ro
 
 test('HOTFIX-4 req 1/5: chain-end conditional presence at the atlas\'s TRUE first/last dated event only', async ({ page }) => {
   // theo-1 "Creation of all things" (-4004) is the atlas's own true first
-  // dated event; pr_rome "Paul arrives at Rome" (AD 60) the true last --
-  // verified against the real compiled data (batch-hotfix4-report.md).
+  // dated event -- verified against the real compiled data
+  // (batch-hotfix4-report.md).
+  //
+  // FIX ROUND 1 CORRECTION: the true LAST dated event changed. Before
+  // nt_calibration reconciled the surviving Theographic-scale NT events
+  // onto the AD-33 anchor, `pr_rome` ("Paul arrives at Rome") WAS the true
+  // last event. `theo-385` ("Paul's First Roman imprisonment," year 60)
+  // now sorts strictly after it -- an imprisonment that begins at/after
+  // Paul's own arrival and (Acts 28:30, "two whole years") continues past
+  // the mere arrival moment `pr_rome` itself captures. See
+  // batch-hotfix4-report.md's own "Fix round 1" section.
   const first = await api.narrativeEventPositions('theo-1');
   expect(first.timeline).toBeTruthy();
   expect(first.timeline.prior, 'the true first dated event of the whole atlas has no prior').toBeFalsy();
   expect(first.timeline.following, 'but DOES have a following -- one direction present IS honest').toBeTruthy();
 
-  const last = await api.narrativeEventPositions('pr_rome');
+  const last = await api.narrativeEventPositions('theo-385');
   expect(last.timeline).toBeTruthy();
   expect(last.timeline.following, 'the true last dated event of the whole atlas has no following').toBeFalsy();
   expect(last.timeline.prior, 'but DOES have a prior').toBeTruthy();
@@ -127,7 +136,7 @@ test('HOTFIX-4 req 1/5: chain-end conditional presence at the atlas\'s TRUE firs
   await expect(page.getByTestId('popover-section-event-prior-timeline')).toHaveCount(0);
   await expect(page.getByTestId('popover-section-event-following-timeline')).toBeVisible();
 
-  await openEventPopover(page, 'pr_rome');
+  await openEventPopover(page, 'theo-385');
   await expect(page.getByTestId('popover-section-event-following-timeline')).toHaveCount(0);
   await expect(page.getByTestId('popover-section-event-prior-timeline')).toBeVisible();
 });

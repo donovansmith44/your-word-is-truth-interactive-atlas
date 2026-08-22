@@ -336,7 +336,13 @@ test('WORLD-11: polity labels render from the active polity eras and swap when t
 // leaving "the landmark is hidden" attributable to dedupe alone, not a
 // confound with collision damping.
 test('WORLD-12: a landmark yields to a same-named, same-location lit place (no duplicate label)', async ({ page }) => {
-  const w = { from: -5, to: 29 }; // Gospels default window (CONTRACT)
+  // FIX ROUND 1 CORRECTION: was `{from: -5, to: 29}` -- the bare-/world
+  // default's own end moved to 33 (nt_calibration, CONTRACT's own GLOBAL
+  // TIMELINE note) once the Gospel narrative's real end (the Ascension)
+  // needed to fit inside it; `sea-of-galilee`'s own lighting event
+  // (`theo-394`/`rob_walks_on_water`, both post-calibration) now falls at
+  // year 32, inside 33 but outside the old 29.
+  const w = { from: -5, to: 33 }; // Gospels default window (CONTRACT)
   const scene = await api.sceneTime(w.from, w.to);
   const sog = scene.places.find((p: any) => p.id === 'sea-of-galilee');
   expect(sog, 'expected "sea-of-galilee" to be a real lit place in the Gospels window').toBeTruthy();

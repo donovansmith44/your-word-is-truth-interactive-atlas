@@ -2452,11 +2452,11 @@ id = "rob_syrophoenician_woman"
 label = "Jesus heals the Syrophoenician woman's daughter"
 from_year = 32
 to_year = 32
-places = ["tyre"]
+places = ["tyre", "sidon"]
 verses = ["MAT.15.21-28"]
 order_key = 780
 robertson_section = "Robertson (1922) §78, \"The Second Withdrawal to the Region of Tyre and Sidon and the Healing of the Daughter of a Syro-Phoenician Woman\""
-ref_note = "Matthew 15:21-28 and Mark 7:24-30 both read directly against the compiled KJV text; both name Tyre and Sidon together -- Tyre used as the anchor (listed first in both accounts)"
+ref_note = "Matthew 15:21-28 and Mark 7:24-30 both read directly against the compiled KJV text; all three of MAT.15.21, MRK.7.24, and MRK.7.31 name Tyre AND Sidon together as this pericope's own setting (HOTFIX-4 fix round 1, review finding I-1: an earlier revision of this row anchored on Tyre alone, orphaning Sidon's own place-marker anchor when the absorbed theo-399 -- which had claimed both -- was merged into this survivor; restored, citation-backed, both places claimed as the text itself does)"
 
 [[event]]
 id = "rob_deaf_mute_feeding_4000"

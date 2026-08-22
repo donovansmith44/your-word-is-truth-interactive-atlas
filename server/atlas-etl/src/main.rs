@@ -245,6 +245,31 @@ fn main() -> Result<()> {
     validate::run_event_merges(atlas_core::event_merge::EVENT_MERGE_PAIRS, atlas_core::event_merge::EVENT_DISTINCT_PAIRS, &all_events)
         .context("data/compiled/* was NOT written; fix atlas_core::event_merge::EVENT_MERGE_PAIRS/EVENT_DISTINCT_PAIRS (an unlisted near-duplicate event pair, or a bad id)")?;
 
+    // --- atlas_core::nt_calibration (HOTFIX-4 fix round 1, review finding
+    // C-1, Critical) -------------------------------------------------------
+    // Runs on `all_events`, the RAW pre-`finish()` event set -- MUST run
+    // exactly once, here, never from `AtlasData::finish()` (that runs
+    // TWICE across the real pipeline -- ETL write time and server load
+    // time -- which is safe for the identity merge above, IDENTITY-ONLY and
+    // idempotent-by-removal, but would double-shift a raw date delta; see
+    // `nt_calibration`'s own module doc comment for the full reasoning).
+    // Order relative to `apply_event_merges` (inside `finish()`, below)
+    // does not matter for correctness -- see that module's doc comment --
+    // placed here purely to sit next to `run_event_merges` above, the
+    // closest-related pre-`finish()` step.
+    let nt_calibration_log = atlas_core::nt_calibration::apply_nt_calibration(&mut all_events);
+    eprintln!(
+        "NT CALIBRATION: {} surviving Theographic-scale NT event(s) shifted +{} year(s) to the AD-33 Passion anchor (full before/after table in batch-hotfix4-report.md's own \"Fix round 1\" section):",
+        nt_calibration_log.len(),
+        atlas_core::nt_calibration::NT_CALIBRATION_SHIFT
+    );
+    for row in &nt_calibration_log {
+        eprintln!(
+            "  {:<10} {:<45} {} -> {}  order_key {} -> {}",
+            row.id, row.label, row.old_from_year, row.new_from_year, row.old_order_key, row.new_order_key
+        );
+    }
+
     // --- assemble, validate --------------------------------------------
     // NOTE (review finding I-2, fix-round-1): `finish()` applies
     // `atlas_core::merge::apply_place_merges` as its own first step (see
