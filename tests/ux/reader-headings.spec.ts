@@ -51,28 +51,41 @@ test('a pericope heading is keyboard-explorable (Enter opens the popover, same a
   await expect(page.getByTestId('popover-title')).toHaveText('The empty tomb in Jerusalem');
 });
 
-test('an uncovered book/chapter shows no pericope heading at all (conditional presence)', async ({ page }) => {
-  // Romans 1 -- Batch W4 retarget (was Obadiah 1, which Batch W4 itself
-  // now fully covers with a real, heading-worthy container, oba_vision --
-  // see batch-w4-report.md). This is the SAME test, retargeted for the
-  // SAME reason, a second time: W1 retargeted it away from Leviticus 5
-  // once its own batch covered Leviticus (see the prior version of this
-  // comment, batch-w1-report.md); W4 completes the entire Old Testament's
-  // own coverage (Genesis-Malachi, all four W-series runs) plus the
-  // Gospels+Acts (Batch T/T2) already declared, so EVERY remaining
-  // uncovered book is now an NT epistle or Revelation -- real future work
-  // for Batch W5. Romans has ZERO touching events at all (verified against
-  // the real compiled events.json before this retarget, the same
-  // "genuinely fresh, independently confirmed" discipline every W-series
-  // batch's own reconciliation pass already uses) -- no bare freebie, no
-  // curated container, nothing: the cleanest possible "uncovered"
-  // precondition, not merely a layer-0 freebie like Obadiah's own former
-  // theo-244 was.
+test('THE COMPLETION MILESTONE: Romans 1 (the former "uncovered book" exemplar) now renders real pericope headings -- no uncovered book is left anywhere in the Bible', async ({ page }) => {
+  // Batch W5 RULING (converts, rather than merely retargets, the test that
+  // used to live here -- "an uncovered book/chapter shows no pericope
+  // heading at all"). Lineage: W1 retargeted the original exemplar away
+  // from Leviticus 5 once that batch covered Leviticus; W4 retargeted it a
+  // second time, to Romans 1, once the entire Old Testament's own coverage
+  // completed (Romans had ZERO touching events at all then -- verified
+  // against the real compiled events.json before that retarget, per
+  // batch-w4-report.md). Batch W5 completes the whole Bible's own
+  // container coverage -- all 66 canonical books, all 31,102 KJV verses
+  // (server/atlas-etl/tests/coverage.rs's own new
+  // every_canonical_book_is_declared_and_the_whole_kjv_is_fully_covered
+  // pins this fact against the real compiled data) -- so NO book anywhere
+  // in the canon can ever again serve as a genuinely "uncovered" exemplar,
+  // and the old fixture's own precondition is retired for good, not merely
+  // moved to a new temporarily-uncovered book. This test asserts the
+  // INVERSE, permanently: the SAME exemplar this whole test lineage has
+  // always used, Romans 1, now carries real, heading-worthy containers,
+  // reaching all the way to the rendered page -- the direct UI-facing
+  // proof that this run's own coverage is real, not just a manifest entry.
   const chapterOut = await api.chapter('ROM.1');
-  expect(chapterOut.verses.some((v: any) => v.heading), 'ROM.1 must carry zero heading-anchored verses on the wire').toBeFalsy();
+  const headedVerses = chapterOut.verses.filter((v: any) => v.heading);
+  expect(headedVerses.length, 'ROM.1 must now carry real heading-anchored verses on the wire (Batch W5 authors 4 containers inside Romans 1 alone)').toBeGreaterThanOrEqual(4);
+  expect(headedVerses[0].heading.event_id).toBe('rom_salutation');
+  expect(headedVerses[0].heading.title).toBe('Salutation: Paul, a servant of Jesus Christ, called to be an apostle');
 
   await page.goto('/read/ROM/1');
-  await expect(page.getByTestId(/^pericope-heading-/)).toHaveCount(0);
+  const heading = page.getByTestId('pericope-heading-rom_salutation');
+  await expect(heading).toBeVisible();
+  await expect(heading).toHaveText('Salutation: Paul, a servant of Jesus Christ, called to be an apostle');
+  // Explorable (ONE-RULE), same as every other pericope heading in this
+  // whole file -- the completion milestone is a real container, not a
+  // decorative label.
+  await heading.click();
+  await expect(page.getByTestId('popover-title')).toHaveText('Salutation: Paul, a servant of Jesus Christ, called to be an apostle');
 });
 
 test('a multi-witness event anchors a SEPARATE heading in each of its own witness books, all sharing the same title', async ({ page }) => {

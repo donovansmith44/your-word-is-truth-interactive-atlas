@@ -527,13 +527,21 @@ fn every_declared_book_is_fully_covered_by_the_real_compiled_data() {
 /// containers, fourth run): all 17 Prophets -- Isaiah, Jeremiah,
 /// Lamentations, Ezekiel, Daniel, and the twelve Minor Prophets (Hosea
 /// through Malachi) -- the full W4 window the master brief named
-/// ("W4 = Isaiah-Malachi"), added below.
+/// ("W4 = Isaiah-Malachi"), added. Batch W5 (whole-Bible titled verse
+/// containers, fifth and FINAL run): Romans through Revelation -- all 21
+/// epistles plus Revelation -- the full W5 window the master brief named
+/// ("W5 = Romans-Revelation"), added below. THE FLOOR NOW NAMES ALL 66
+/// CANONICAL BOOKS -- see `every_canonical_book_is_declared_and_the_whole_
+/// kjv_is_fully_covered` below for the completion-milestone assertion this
+/// makes possible.
 #[test]
 fn declared_books_never_shrink_below_the_established_floor() {
     const FLOOR: &[&str] = &[
         "MAT", "MRK", "LUK", "JHN", "ACT", "GEN", "EXO", "LEV", "RUT", "NUM", "DEU", "JOS", "JDG", "1SA", "2SA",
         "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST", "JOB", "PSA", "PRO", "ECC", "SNG", "ISA", "JER", "LAM",
-        "EZK", "DAN", "HOS", "JOL", "AMO", "OBA", "JON", "MIC", "NAM", "HAB", "ZEP", "HAG", "ZEC", "MAL",
+        "EZK", "DAN", "HOS", "JOL", "AMO", "OBA", "JON", "MIC", "NAM", "HAB", "ZEP", "HAG", "ZEC", "MAL", "ROM",
+        "1CO", "2CO", "GAL", "EPH", "PHP", "COL", "1TH", "2TH", "1TI", "2TI", "TIT", "PHM", "HEB", "JAS", "1PE",
+        "2PE", "1JN", "2JN", "3JN", "JUD", "REV",
     ];
 
     let manifest_toml = read_curated("coverage-manifest.toml");
@@ -634,4 +642,113 @@ fn no_duplicate_fall_of_jerusalem_or_gedaliah_mizpah_nodes_in_the_real_compiled_
     }
     unlisted.sort();
     assert!(unlisted.is_empty(), "duplicate-occurrence node(s) found in the real compiled global timeline:\n{}", unlisted.join("\n"));
+}
+
+// ---------------------------------------------------------------------
+// Batch W5 (whole-Bible titled verse containers, fifth and FINAL run --
+// req 4, THE COMPLETION MILESTONE). `tests/ux/reader-headings.spec.ts`'s
+// own "an uncovered book/chapter shows no pericope heading at all" test
+// used Romans 1 as its own exemplar (Batch W4's own retarget, after that
+// run completed the whole Old Testament -- see that spec file's own
+// updated comment, this batch's own commit). Once this run declares Romans
+// (and every other remaining NT epistle plus Revelation), that fixture's
+// own precondition -- "Romans has ZERO touching events at all" -- becomes
+// permanently false, the LAST time any book in this app could ever have
+// served as a genuinely uncovered exemplar. RULING (per this batch's own
+// dispatch): convert that retired precondition into the owner's own
+// binding END-STATE assertion, rather than merely retargeting to a
+// different (temporarily-uncovered) book -- there is no such book left,
+// and no future W-series run to uncover one, since W5 is the last window
+// the master brief names. This test is the permanent, real proof of the
+// owner's own container-algebra end state (progress.md "OWNER DIRECTIVE --
+// passage container algebra": "every verse in the Bible will ultimately be
+// migrated to belong to one of these structures"; CONTRACT.md's own
+// DECISIVE-CONTAINER MODEL section states the identical end state), read
+// live against the real compiled data on every future run, not merely
+// asserted once in a report:
+//   (a) every one of the 66 real canonical book codes (from the compiled
+//       `canon.json` itself, never a hand-typed "66") is declared in
+//       `coverage-manifest.toml`, and nothing extra/misspelled is declared
+//       either -- an exact set match, both directions.
+//   (b) every one of the compiled KJV's own 31,102 verses (summed
+//       directly from `canon.json`'s own chapter/verse counts, the SAME
+//       ground truth `all_verses_for_book` above already uses -- never a
+//       hand-typed total) belongs to >=1 container in the real compiled
+//       `events.json`, checked directly against the WHOLE canon, not
+//       filtered through the declared list at all -- so this half of the
+//       test would still catch a real gap even if the manifest mechanism
+//       itself were somehow broken or bypassed.
+//
+// RED-THEN-GREEN (demonstrated live against this exact test and this
+// exact final committed state -- full transcript in batch-w5-report.md):
+// with "ROM" temporarily removed from coverage-manifest.toml's own
+// `declared` array (recreating the OLD retired fixture's own exact
+// precondition -- Romans absent from the declared list, the "Romans
+// uncovered" shape that Playwright test itself was named for), this test
+// FAILS, naming ROM as undeclared; restored, it passes GREEN again. This
+// is the inverse of the OLD fixture's own polarity: that test asserted
+// Romans stayed uncovered (which was GENUINELY TRUE, and therefore
+// green, at Batch W4's own base commit); THIS test asserts the opposite --
+// full 66-book completion -- which is therefore symmetrically RED at that
+// same base (only 44 of 66 books declared then) and turns GREEN only once
+// this run's own coverage actually lands.
+// ---------------------------------------------------------------------
+
+#[test]
+fn every_canonical_book_is_declared_and_the_whole_kjv_is_fully_covered() {
+    let canon: Canon = read_compiled_json("canon.json");
+    let events: Vec<Event> = read_compiled_json("events.json");
+    let covered = covered_verses(&events);
+
+    // (a) the declared list is EXACTLY the 66 real canonical book codes --
+    // no gap, and (defensively) nothing stray either.
+    let manifest_toml = read_curated("coverage-manifest.toml");
+    let declared: HashSet<String> =
+        atlas_etl::curated::parse_coverage_manifest(&manifest_toml).expect("coverage-manifest.toml must parse").into_iter().collect();
+    let all_canon_codes: HashSet<String> = canon.books.iter().map(|b| b.code.clone()).collect();
+
+    let mut undeclared: Vec<&String> = all_canon_codes.difference(&declared).collect();
+    undeclared.sort();
+    assert!(
+        undeclared.is_empty(),
+        "THE COMPLETION MILESTONE is not yet reached: {} canonical book(s) are not declared in coverage-manifest.toml: {:?}",
+        undeclared.len(),
+        undeclared
+    );
+    let mut stray: Vec<&String> = declared.difference(&all_canon_codes).collect();
+    stray.sort();
+    assert!(stray.is_empty(), "coverage-manifest.toml declares {} code(s) that are not real canon book codes (typo?): {:?}", stray.len(), stray);
+    assert_eq!(all_canon_codes.len(), 66, "expected exactly 66 real canon book codes, found {} -- canon.json itself changed shape", all_canon_codes.len());
+    assert_eq!(declared.len(), 66, "expected exactly 66 declared books at the completion milestone, found {}", declared.len());
+
+    // (b) EVERY verse of the WHOLE compiled KJV (all 66 books, read
+    // directly from canon.json -- not filtered through `declared` at all)
+    // is in >=1 container. Aggregates every book's own gaps (never fails
+    // fast), same house pattern every other check in this crate follows.
+    let mut failures: Vec<String> = Vec::new();
+    let mut total_verses = 0usize;
+    for book in &canon.books {
+        let universe = all_verses_for_book(&canon, &book.code);
+        total_verses += universe.len();
+        let missing: Vec<&String> = universe.iter().filter(|v| !covered.contains(v.as_str())).collect();
+        if !missing.is_empty() {
+            failures.push(format!(
+                "{}: {} of {} verses are in NO container (first gap: {})",
+                book.code,
+                missing.len(),
+                universe.len(),
+                missing[0]
+            ));
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "THE COMPLETION MILESTONE is not yet reached -- {} book(s) have a real coverage gap in the whole compiled KJV inventory:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    // The owner's own "~31,102 KJV verses" figure (batch-w-brief.md's own
+    // "Scale protocol" section), confirmed exactly against the real
+    // compiled data, never hand-typed here either.
+    assert_eq!(total_verses, 31102, "expected the compiled KJV's own real total (31,102 verses per batch-w-brief.md's own Scale protocol), found {total_verses}");
 }

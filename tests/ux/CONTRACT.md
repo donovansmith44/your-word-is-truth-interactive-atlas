@@ -915,9 +915,29 @@ Notes:
   away at the same verse -- only the one-per-verse reader-HEADING slot is
   contested, never the underlying graph. Every verse in the Bible
   ultimately belonging to at least one titled container is the owner's own
-  stated end-state; today's Gospels+Acts+13-narratives coverage is a
-  scoped subset, not the destination -- the full migration is real future
-  work, not this fix.
+  stated end-state; at the time this paragraph was first written (Batch T
+  fix-round-1), Gospels+Acts+13-narratives coverage was a scoped subset,
+  not the destination, and the full migration was real future work, not
+  that fix.
+  ACHIEVED (Batch W5, the whole-Bible titled-verse-container series' own
+  fifth and FINAL run): the full migration this paragraph once deferred is
+  now real, shipped data, not future work. `data/curated/coverage-
+  manifest.toml` declares all 66 canonical books; every one of the compiled
+  KJV's own 31,102 verses belongs to >=1 titled container, independently
+  verified against the real compiled `canon.json`/`events.json` (never a
+  hand-typed count) by `server/atlas-etl/tests/coverage.rs`'s own
+  `every_canonical_book_is_declared_and_the_whole_kjv_is_fully_covered`
+  test, which reads the real compiled data fresh on every run rather than
+  trusting this sentence. The five W-series runs that reached this state:
+  W1 (Genesis-Deuteronomy plus Joshua-Ruth), W2 (1 Samuel-Esther), W3
+  (Job-Song of Solomon), W4 (Isaiah-Malachi, completing the whole Old
+  Testament), W5 (Romans-Revelation, completing the whole Bible) -- see
+  each batch's own report (`batch-w1-report.md` through
+  `batch-w5-report.md`) for its own coverage table, kind/provenance split,
+  and reconciliation notes. This does not change the DECISIVE-CONTAINER
+  MODEL or the 3-tier precedence rule stated above -- both already applied
+  correctly to the partial coverage that existed when they were written,
+  and apply identically now that coverage is total.
 
   WITHIN-LAYER ANCHOR COLLISIONS (Batch T2, owner's own ruling: "Robertson
   sections within one Gospel should partition, not collide with each

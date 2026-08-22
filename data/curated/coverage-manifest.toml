@@ -55,6 +55,9 @@ declared = [
   "JOB", "PSA", "PRO", "ECC", "SNG",
   "OBA", "JON", "NAM", "HAB", "ZEP", "HAG", "JOL",
   "MAL", "AMO", "HOS", "ZEC", "LAM", "DAN", "MIC", "ISA", "JER", "EZK",
+  "ROM", "1CO", "2CO", "GAL", "EPH", "PHP", "COL", "1TH", "2TH",
+  "1TI", "2TI", "TIT", "PHM", "HEB", "JAS", "1PE", "2PE",
+  "1JN", "2JN", "3JN", "JUD", "REV",
 ]
 # Batch W4 window complete: all 17 Prophets (Isaiah-Malachi) declared above
 # -- the full W4 slice the master brief named ("W4 = Isaiah-Malachi").
@@ -64,3 +67,20 @@ declared = [
 # data/curated/event-witnesses.toml) -- both declared together, once
 # independently confirmed covered against the real compiled data (see
 # batch-w4-report.md's own coverage table).
+#
+# Batch W5 (whole-Bible titled verse containers, fifth and FINAL run):
+# Romans through Revelation -- all 21 epistles plus Revelation, 3,171
+# verses across 22 books, 299 curated containers -- added above once
+# independently confirmed covered against the real compiled data (see
+# batch-w5-report.md's own coverage table). THE COMPLETION MILESTONE (per
+# the master brief's own "Scale protocol" and this batch's own req 4): this
+# declared list now names all 66 canonical books -- the owner's own
+# container-algebra end state ("every verse in the Bible will ultimately be
+# migrated to belong to one of these structures") is achieved. Every one of
+# the compiled KJV's own 31,102 verses now belongs to >=1 titled container,
+# independently verified against the real compiled `canon.json`/
+# `events.json` (never a hand-typed count), the same "genuinely independent
+# ground truth" check this file's own header note (above) has described
+# from the start. `coverage.rs`'s own
+# `every_canonical_book_is_declared_and_the_whole_kjv_is_fully_covered` test
+# pins this end-state permanently -- see that test's own doc comment.
