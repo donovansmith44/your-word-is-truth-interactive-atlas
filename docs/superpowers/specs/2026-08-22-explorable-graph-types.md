@@ -442,6 +442,45 @@ frontier within a time window; the mini-reader's text flow displays a
 Contains frontier as prose; timeline rows display FollowsIn/
 TemporalAdjacency. One graph fact, several renderers.
 
+### Presentable — how a given THING is presented (owner, 2026-08-22)
+
+`display` arranges collections; PRESENTABLE gives each thing its form,
+indexed by the context it appears in. The same Verse presents as flowing
+text (reader), a snippet-with-ref (popover entry), a superscript anchor,
+or a heading link — one implementation per (kind, context), single-
+sourced, so a thing cannot accidentally wear two different faces in the
+same context.
+
+```haskell
+class Presentable a where
+  present :: Context -> a -> Presentation
+```
+
+```rust
+pub enum PresentationContext { Card, Entry, Inline, Heading, Pin, CitationRow, Marker }
+
+pub trait Presentable {
+    fn present(&self, ctx: PresentationContext, g: &Graph) -> Presentation;
+}
+/// Presentation is a small CLOSED vocabulary of renderable forms the
+/// client knows how to draw — the client stays generic; per-kind visual
+/// decisions live in Presentable impls, not scattered in surface code.
+```
+
+BOUNDARY: law-bearing selection is SERVER data, visual form is CLIENT
+presentation. The decisive title (container-algebra law), the citation
+string (CorpusScheme::cite), and clamped witness text are computed
+server-side and travel as data; Presentable implementations (client,
+per kind × context) decide how that data looks. A law can never be
+re-decided by a stylesheet.
+
+LAYERING (the full stack, each layer only consuming the one below):
+  1. Graph            — truth (nodes + bidirectional typed edges)
+  2. frontier/edges   — derived truth (reach, per kind)
+  3. focusable/display— selection policy (what shows, how arranged)
+  4. Presentable      — form policy (how each shown thing looks, per context)
+  5. Surface assembly — card(focus) presented + sections rendered
+
 The honesty laws are DERIVED at the policy gap, no longer decreed:
 - shown ⊆ frontier(focus) — the renderer can only draw entries returned
   by `edges`; fabricated affordances have no data path (affordance
@@ -460,8 +499,14 @@ interface IExplorableClient {
     Task<EdgePage>  Edges(AnyNodeId id, EdgeKind kind, Cursor? cursor, int limit);
     Task<TextWindow> Reading(TextLocus from, int n, Direction dir);
 }
-// Section registry: EdgeKind → renderer + SectionSpec. Registering a kind
-// is the ONLY act needed to surface a new relation anywhere popovers open.
+// Presentable, client-side: one presenter per (NodeKind, Context) —
+// the single place a kind's visual form is decided:
+interface IPresentable { RenderFragment Present(PresentationContext ctx, NodeData d); }
+IReadOnlyDictionary<(NodeKind, PresentationContext), IPresentable> Presenters { get; }
+// Section registry: EdgeKind → renderer + SectionSpec; each entry inside
+// a section is drawn via the presenter for (entry.kind, section renderer's
+// context). Registering a kind is the ONLY act needed to surface a new
+// relation anywhere popovers open.
 IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
 ```
 
@@ -488,6 +533,9 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
 - An inverse view that disagrees with its forward view (both are
   projections of one row; the shared EdgeId is the bijection witness;
   dual is a tested total involution).
+- One kind wearing two faces in the same context (Presentable is the
+  single per-(kind, context) source of visual form; laws travel as
+  server data and cannot be re-decided by styling).
 
 ## 10. Open type questions (flagged, not hidden)
 
