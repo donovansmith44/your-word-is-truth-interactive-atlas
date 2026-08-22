@@ -57,8 +57,9 @@ P6. STANDING PRODUCT LAWS CARRY FORWARD, re-homed as graph laws:
     container algebra (verses immutable; containers over spans; ∅
     identity; overlaps lawful; reader display decisive), inerrancy
     doctrine (no textual-criticism register anywhere), KJV citation
-    integrity, witness canon (parallel accounts are witnesses on one
-    event), shared-title truth at every anchor, affordance honesty,
+    integrity, attestation law, nee witness canon (parallel accounts are
+    attestations on one event; only Scripture attests; the Concord
+    CONFESSES — accord, never original testimony), shared-title truth at every anchor, affordance honesty,
     single-feed chronology (dates resolve from the canonical anchor
     table), typed exemptions with reasons (never silent).
 
@@ -76,7 +77,7 @@ by the UI machinery.
   fidelity law strengthens, P3).
 - Container — titled passage over a set of text loci (pericopes, event
   containers, sections; the W-series product).
-- Event — an occurrence; witnessed, possibly dated, possibly located.
+- Event — an occurrence; attested, possibly dated, possibly located.
 - Narrative — a named doubly-linked list of Events.
 - Place — with naming/alias data (KJV names).
 - Person — planned (Batch P); enters as Theographic adapter output with
@@ -94,7 +95,8 @@ by the UI machinery.
 | Kind | From → To | Class | Notes |
 |---|---|---|---|
 | contains | Container → TextSpan loci | authored | container algebra; decisive-display law governs rendering |
-| witnesses | Event → Container / locus range | authored | parallel accounts = multiple witnesses on ONE event |
+| attests | Event → Scripture locus range | authored | original narrative testimony; Scripture-only; parallel accounts = multiple attestations on ONE event |
+| confesses | Concord locus → Scripture range | authored | doctrinal accord (normed norm confessing the norming norm); catechism-link migrates into this family |
 | succession(n) | Event ↔ Event, tagged by Narrative n | authored | the doubly-linked lists; the ONLY fine-grained sequence truth |
 | reading-order | TextSpan ↔ TextSpan | derived (canon) | canon sequence at every granularity; the reader's spine |
 | temporal-adjacency | Event ↔ Event | derived (anchors) | ONLY where resolved dates actually differ; never a tiebreak |
@@ -103,12 +105,12 @@ by the UI machinery.
 | mentions | TextSpan locus → Place / Person | imported | Theographic verse refs today; refinable to word spans later |
 | cross-ref | locus → locus | imported | votes-ranked; verse-level today, loci by design |
 | catechism-link | locus ↔ CatechismItem | authored | |
-| member-of | TextSpan → Event / Container | derived | inverse of contains/witnesses |
-| parallel | Container ↔ Container | derived | via co-witnessing one Event |
+| member-of | TextSpan → Event / Container | derived | inverse of contains/attests |
+| parallel | Container ↔ Container | derived | via co-attestation of one Event |
 | named | Place → alias set | authored | E3 KJV naming |
 
 Per-kind invariants are compiler laws (fail-loud): succession chains are
-well-formed doubly-linked lists; witnesses resolve to real loci; no
+well-formed doubly-linked lists; attestations resolve to real loci; no
 temporal-adjacency between same-year events; contains respects span
 addressing; exemptions are typed with reasons. The David's-death class of
 lie becomes unrepresentable: nothing asserts an order, so no edge exists
@@ -173,7 +175,7 @@ invariants; typed exemptions). Everything fail-loud at compile time.
 - M-A: graph core + KJV adapter + reading-order + the two generic
   endpoints; reader on windowed queries; fidelity law red-then-green;
   old endpoints become views.
-- M-B: events / witnesses / narratives / anchors into the graph —
+- M-B: events / attestations / narratives / anchors into the graph —
   salvaging the parked HOTFIX-7 date_resolve work as dated-by
   resolution; timeline + popovers on generic queries; bespoke resolvers
   retire; chronology properties re-homed.

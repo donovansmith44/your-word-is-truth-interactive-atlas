@@ -190,8 +190,8 @@ pub struct TextLocus { pub at: TextRef, pub span: Option<TokenSpan> }
 /// translations are TRUSTWORTHY to render law-bearing text is registry
 /// data on Translation nodes, with the KJV as the canonical layer
 /// (inerrancy directive; citation integrity checks against it). So: an
-/// extrabiblical witness is a compile error (corpus bound), and a
-/// witness pinned to one translation is unrepresentable (the locus
+/// extrabiblical ATTESTATION is a compile error (corpus bound), and an
+/// attestation pinned to one translation is unrepresentable (the locus
 /// carries no layer; renderings are per-trusted-layer) — while
 /// `mentions`/citation edges accept the general TextLocus and may cross
 /// corpora freely.
@@ -217,10 +217,10 @@ pub struct BibleLocus { pub verse: VerseRef, pub span: Option<TokenSpan> }
 /// - THE NORMA DISTINCTION AS A TYPE: corpus roles are asymmetric —
 ///   Scripture is the norming norm, the confessions the normed norm —
 ///   and edge legality + confidence derive from the ROLE, so
-///   "CanonicalText Concord" or "Scripture witnessed by Concord" are
+///   "CanonicalText Concord" or "Scripture attested by Concord" are
 ///   unrepresentable, not merely forbidden.
 pub enum CorpusRole {
-    NormaNormans,          // Scripture (kjv) — the norming norm; witness canon lives here
+    NormaNormans,          // Scripture (kjv) — the norming norm; the attestation law lives here
     NormaNormata,          // the confessions (Book of Concord) — normed BY Scripture
     Reference,             // Ussher, Robertson, Crockett, Theographic, ...
 }
@@ -242,7 +242,7 @@ pub struct CorpusMeta {
 /// content. The general locus is parameterized by corpus, and BibleLocus
 /// becomes an INSTANCE of it rather than a special case:
 pub struct Locus<C: CorpusTag> { pub unit: C::Ref, pub span: Option<TokenSpan> }
-//   pub type BibleLocus   = Locus<BibleTag>;    // the witness-canon refinement, unified
+//   pub type BibleLocus   = Locus<BibleTag>;    // the attestation-law refinement, unified
 //   pub type ConcordLocus = Locus<ConcordTag>;
 // (TextLocus remains the corpus-erased wire/UI form; narrowing is a
 // checked parse, as with AnyNodeId.)
@@ -348,7 +348,8 @@ pub fn dual(k: EdgeKind) -> EdgeKind {
 /// The familiar names become derived LABELS, one per (relation,
 /// direction) — display vocabulary, not identity:
 ///   (ContainsRel, Forward) -> "contains"     (ContainsRel, Inverse) -> "member-of"
-///   (WitnessRel,  Forward) -> "witnesses"    (WitnessRel,  Inverse) -> "witnessed-by"
+///   (AttestsRel,  Forward) -> "attested-in"  (AttestsRel,  Inverse) -> "attests"
+///   (ConfessRel,  Forward) -> "confesses"    (ConfessRel,  Inverse) -> "confessed-in"
 ///   (QuotesRel,   Forward) -> "quotes"       (QuotesRel,   Inverse) -> "quoted-by"
 ///   (CitesRel,    Forward) -> "cites"        (CitesRel,    Inverse) -> "cited-by"
 ///   (MentionsRel, Forward) -> "mentions"     (MentionsRel, Inverse) -> "mentioned-in"
@@ -387,8 +388,10 @@ relations! {
     // ---- authored, directed ----
     directed  Contains<C>   { row: Contains<C>,   subject: ContainerId<C>, object: Locus<C>,
                               labels: "contains" / "member-of" }
-    directed  Witnesses     { row: Witnesses,     subject: EventId,        object: BibleLocusRange,
-                              labels: "witnesses" / "witnessed-by" }
+    directed  Attests       { row: Attests,       subject: EventId,        object: BibleLocusRange,
+                              labels: "attested-in" / "attests" }
+    directed  Confesses     { row: Confesses,     subject: ConcordLocus,   object: BibleLocusRange,
+                              labels: "confesses" / "confessed-in" }
     directed  Succession    { row: Succession,    subject: EventId,        object: EventId,
                               labels: "follows-in" / "precedes-in",  tagged_by: NarrativeId }
     directed  DatedBy       { row: DatedBy,       subject: EventId,        object: AnchorId,
@@ -430,7 +433,8 @@ pub struct Graph {
     pub nodes:       NodeTable,
     // -------- authored relations (each row carries provenance) --------
     pub contains:    Table<Contains>,     // Container → LocusSet entries
-    pub witnesses:   Table<Witnesses>,    // Event → witness locus-range per translation
+    pub attests:     Table<Attests>,      // Event → attesting Scripture range
+    pub confesses:   Table<Confesses>,    // normed-norm accord toward Scripture
     pub succession:  Table<Succession>,   // doubly-linked, per narrative
     pub dated_by:    Table<DatedBy>,      // Event → chronology placement
     pub located_at:  Table<LocatedAt>,    // Event → Place
@@ -444,8 +448,8 @@ pub struct Graph {
     pub reading:     PerCorpusReadingOrder, // one total order PER corpus; no cross-corpus spine
     pub temporal:    TemporalAdjacency,   // ONLY where resolved dates differ
     // member_of needs no separate index — MemberOf IS the inverse
-    // projection of contains/witnesses via their BiIndexes
-    pub parallels:   ParallelIndex,       // via co-witnessing one Event
+    // projection of contains/attests via their BiIndexes
+    pub parallels:   ParallelIndex,       // via co-attestation of one Event
 }
 
 /// LAW (owner, 2026-08-22): "Edges also hold information that may be
@@ -493,16 +497,44 @@ pub struct Contains<C: CorpusTag> {
     pub grounds:   Grounds,
 }
 
-/// LAW (witness canon): parallel accounts are witnesses on ONE event —
-/// so `parallel` is DERIVED from co-witnessing and cannot disagree with it.
-pub struct Witnesses {
+/// LAW (attestation law, nee witness canon): parallel accounts are
+/// attestations on ONE event — so `parallel` is DERIVED from
+/// co-attestation and cannot disagree with it.
+/// TWO SENSES OF "WITNESS", DISAMBIGUATED (owner, 2026-08-22): the
+/// Gospels witness the Gospels as ORIGINAL NARRATIVE TESTIMONY -- "there
+/// are no narratives of Biblical events that are originally witnessed
+/// in the book of concord" -- while the Concord witnesses the Gospel by
+/// ACCORD -- "it does witness the Gospel in the sense that it accords
+/// with them." Two relations, two names; the overloaded word "witness"
+/// is RETIRED from the type vocabulary (legacy [[witness]] data maps
+/// onto Attests at ingestion):
+///   ATTESTS   -- original testimony to an event. Scripture-only by
+///               type; layer-neutral; KJV canonical.
+///   CONFESSES -- doctrinal accord: a normed-norm locus confesses what
+///               Scripture teaches. Never the reverse (asymmetry by
+///               construction). Distinct from the MECHANICAL relations
+///               quotes (verbatim) and cites (explicit reference).
+///               Today's catechism-link is this relation in embryo and
+///               migrates into it when Concord becomes a corpus.
+/// The Concord relates to EVENTS only derivably -- it confesses the
+/// verses that attest the Crucifixion; it never attests the Crucifixion
+/// itself. The two-hop path (confesses -> attests) is the honest shape
+/// of "the confessions witness the Gospel," and it is ordinary
+/// exploration.
+pub struct Attests {
     pub event: EventId,
-    pub witness: BibleLocusRange,         // SCRIPTURE-typed (corpus bound; Concord can
-                                          // never witness), layer-neutral: renderings
+    pub attestation: BibleLocusRange,     // SCRIPTURE-typed (corpus bound; Concord can
+                                          // never attest), layer-neutral: renderings
                                           // come from trusted translation layers, KJV
-                                          // canonical (the existing witness data's
+                                          // canonical (the legacy witness data's
                                           // translations->verse-set indirection was
                                           // this shape all along)
+    pub provenance: ProvenanceId,
+}
+
+pub struct Confesses {
+    pub confessing: ConcordLocus,         // normed-norm corpus loci only
+    pub confessed:  BibleLocusRange,      // Scripture, by refinement
     pub provenance: ProvenanceId,
 }
 
@@ -585,7 +617,7 @@ pub enum Assertion {
     TextUnit(TextUnitAssertion),           // corpus text — KJV adapter today; Concord later
     Container(ContainerAssertion),
     Event(EventAssertion),
-    Witness(WitnessAssertion),
+    Attestation(AttestationAssertion),
     SuccessionChain(SuccessionAssertion),
     Anchor(AnchorAssertion),
     Placement(DatedByAssertion),
@@ -793,7 +825,7 @@ pub trait Presentable {
 
 BOUNDARY: law-bearing selection is SERVER data, visual form is CLIENT
 presentation. The decisive title (container-algebra law), the citation
-string (CorpusScheme::cite), and clamped witness text are computed
+string (CorpusScheme::cite), and clamped attestation text are computed
 server-side and travel as data; Presentable implementations (client,
 per kind × context) decide how that data looks. A law can never be
 re-decided by a stylesheet.
@@ -846,7 +878,7 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
 - A silent exemption (typed kind + reason + subject, enumerable).
 - A verse-atom assumption (every text endpoint is a TextLocus).
 - A Bible-shaped assumption about text (corpora are first-class; the KJV
-  is one corpus; extrabiblical witnesses are a type error, extrabiblical
+  is one corpus; extrabiblical attestations are a type error, extrabiblical
   mentions/citations are not).
 - The Book of Concord mistaken for Scripture (roles are asymmetric at the
   registry: canonical confidence derives from NormaNormans; quotes has no
@@ -856,7 +888,7 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
   content is corpus-homogeneous by type; Scripture in a Concord context
   is reachable only via Scripture-typed quotes/cites edges).
 - A non-canonical translation displacing the KJV in a law-bearing
-  position (witness canon, citation integrity, decisive canon-text
+  position (attestation law, citation integrity, decisive canon-text
   titles evaluate against the canonical layer by type; other layers are
   explorable references).
 - A sub-verse span outliving its translation (TokenSpan carries its
