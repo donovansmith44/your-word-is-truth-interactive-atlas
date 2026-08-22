@@ -353,6 +353,15 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   own `{narrativeId}` segment inherits that EXACT suffix verbatim too (e.g.
   `event-prior-verse-exodus--2-EXO.12.37`), never the bare `{narrativeId}`
   form -- see EVENT-1),
+  `event-prior-event-timeline` / `event-following-event-timeline`
+  (batch-hotfix4-brief.md requirement 1; button; the GLOBAL-timeline
+  adjacent event's own label -- present once per direction, independent of
+  narrative membership; conditional presence only at the atlas's own true
+  first/last dated event -- see the GLOBAL TIMELINE note under EVENT-1),
+  `event-prior-verse-timeline-{SPAN}` / `event-following-verse-timeline-{SPAN}`
+  (same requirement; one per passage entry among the timeline-adjacent
+  event's own verses, via the shared passage-list component, identically
+  to the narrative-scoped verse rows immediately above),
   `polity-delta-verse-{SPAN}` (batch-m-brief.md requirement 4; one per
   passage entry among a `PolityDelta` node's own curated verses, same
   shared-component (PASSAGE-1) treatment as every list above -- nested
@@ -771,10 +780,11 @@ Notes:
   passage's own `places` is empty by construction, same "array present,
   conditional presence is a client concern" convention every other list
   on this DTO already follows).
-  `GET /api/narrative/event/{id}` (Batch N, UNCHANGED route AND resolver)
-  is still the chronological PRIOR/FOLLOWING source -- only its CALLER
-  changed (`EventNode` replaces the retired `NarrativeEventNode`). `GET
-  /api/chapter/{cref}`'s own per-verse `heading` field (new,
+  `GET /api/narrative/event/{id}` (Batch N, route UNCHANGED; WIRE SHAPE
+  EXTENDED Batch HOTFIX-4 requirement 1 -- see the GLOBAL TIMELINE note
+  below) is still the chronological PRIOR/FOLLOWING source -- only its
+  CALLER changed (`EventNode` replaces the retired `NarrativeEventNode`).
+  `GET /api/chapter/{cref}`'s own per-verse `heading` field (new,
   `{event_id, title}`, omitted when this verse is not a heading ANCHOR) is
   what Reader.razor reads to place a `pericope-heading-{eventId}` directly
   in the reading flow.
@@ -1011,6 +1021,82 @@ Notes:
   popover's "FOLLOWING EVENT" can never disagree about which event, or
   which verses, come next.
 
+  GLOBAL TIMELINE (batch-hotfix4-brief.md requirement 1, owner's own live
+  report 2026-08-21: "previous/next event traversal doesn't work. adjacent
+  nodes in the dag are dead ends from where we start" -- generalizes the
+  ONE resolver from "chronologically adjacent within one narrative's own
+  leg chain" to "chronologically adjacent among ALL dated events in the
+  whole atlas," per the owner's own recursive-traversal law, "traversed by
+  time... arbitrarily far, until the end of the graph"). Every EVENT-kind
+  (`kind == "event"`) container gets this; requirement 2's own explicit
+  boundary: a GENERAL-kind container never does -- it has no real date to
+  traverse by, and fabricating one is forbidden (the SAME "no defensible
+  date -> no fabricated line" discipline `EventDateAndPlacesSection`
+  already applies to a general-kind passage's own `event-date` row).
+  Realized by simple ABSENCE from the server's own timeline index
+  (`AtlasData::timeline_order`, built from `kind == "event"` entries only)
+  -- never a special-cased branch -- so a general-kind passage's own
+  popover carries NO PRIOR IN TIME/FOLLOWING IN TIME section at all
+  (conditional presence, as today, requirement 2 verbatim), the identical
+  shape its own narrative PRIOR/FOLLOWING absence already has.
+  ORDERING: ascending `(when.from_year, order_key)` -- "the T ordering,"
+  the SAME tuple `Narrative.legs`' own ETL-validated chronological check
+  and `heading_precedence`'s own chronology tier already use, never a
+  fresh rule. SAME-DATE RUNS (requirement 1's own explicit case; common --
+  order_key defaults to 0 outside deliberately-curated sub-sequencing):
+  resolved by a STABLE sort, so ties keep the original compiled-array
+  order -- the IDENTICAL "equal on all explicit tiers keeps first-wins"
+  precedent `heading_precedence` already establishes and this file already
+  documents (DECISIVE-CONTAINER MODEL, above), not a new invented
+  tiebreak. `std::cmp::Reverse`, never arithmetic year inversion, anywhere
+  a descending comparison is needed elsewhere in this same tuple's own
+  family (fix-round-1's own overflow-bug precedent, years run to -4004).
+  WIRE: `GET /api/narrative/event/{id}`'s own response is now an OBJECT,
+  `{narrative: [...], timeline: {...}}` -- `narrative` is EXACTLY today's
+  pre-HOTFIX-4 array, unchanged shape/rows/order (every consumer of the
+  OLD bare-array shape migrated to read `.narrative` in the SAME commit:
+  `AtlasClient.NarrativeEventPositions`, `EventNode`/`INarrativeAware`,
+  `PlaceCard.LoadNarrativePositions` -- TRAVERSAL-1 logic itself
+  unchanged, `ExplorerPopover.SyncNarrativeFocusAsync` -- MAP FOCUS SYNC
+  logic itself unchanged, and the Playwright helper call sites in
+  `world-pin.spec.ts`/`popover-sections.spec.ts`); `timeline` is `{prior,
+  following}` (each independently OMITTED, not null, at the atlas's own
+  TRUE first/last dated event only -- conditional presence, no stubs
+  anywhere else), and the WHOLE `timeline` key is OMITTED (not an
+  empty/null object) for a general-kind or unknown event id. PRESENTATION:
+  narrative rows render exactly as before ("PRIOR EVENT"/"FOLLOWING
+  EVENT," `EventPriorSection`/`EventFollowingSection`, unchanged);
+  alongside them (narrative primacy preserved -- BOTH render for a
+  narrative member, registered directly after the narrative pair so
+  narrative rows always sit above), a quiet, clearly distinct pair --
+  "PRIOR IN TIME"/"FOLLOWING IN TIME" (`EventTimelinePriorSection`/
+  `EventTimelineFollowingSection`, `event-prior-timeline`/
+  `event-following-timeline` sections; `event-prior-event-timeline`/
+  `event-following-event-timeline` traversal rows; `event-prior-verse-timeline-{SPAN}`/
+  `event-following-verse-timeline-{SPAN}` passage-list entries, via the
+  SAME shared `PassageList`/`MiniReaderExpand` mechanism every other
+  verse list in this popover platform already uses) -- "quiet" via a size
+  step on the shared `catechism-section-heading` eyebrow class
+  (`.event-timeline-heading`, app.css: NEVER a dimmer color -- the
+  existing eyebrow color is already this popover's own established
+  7.85:1-on-parchment floor; a size step is this codebase's own
+  established de-emphasis technique instead, see `.quiet-label`'s own
+  comment), "clearly distinct" via wording ("IN TIME," never "EVENT," so
+  the two families are never visually or textually mistakable). For an
+  event with NO narrative membership at all, the timeline pair is the
+  ONLY traversal shown -- exactly the owner's own report's own case
+  (`gen_binding_isaac`, a real W1 container event, previously a dead end).
+  MAP COHERENCE (requirement 3, "the same code path, no special case"):
+  traversing via a timeline row pushes a fresh `EventNode` exactly like a
+  narrative row does (ONE-RULE, unmodified) -- `EventNode` is
+  unconditionally `INarrativeAware`, so `SyncNarrativeFocusAsync` (MAP
+  FOCUS SYNC, below) runs identically regardless of HOW the popover
+  arrived at its current node; a narrative-less destination correctly
+  clears arrow focus to baseline via that mechanism's own pre-existing
+  empty-list path -- no new map code, no new interop call, exactly the
+  same outcome a navigation to any other non-narrative-aware node already
+  produces today.
+
   MAP FOCUS SYNC (mechanism UNCHANGED from Batch N -- only which node kind
   triggers it changed: `EventNode` implements `INarrativeAware` where the
   retired `NarrativeEventNode`/`VerseNode` used to; `VerseNode` no longer
@@ -1085,7 +1171,11 @@ Notes:
   `event-prior-verse-{narrativeId}-{SPAN}`/`event-following-verse-{narrativeId}-{SPAN}`/
   `event-witness-{SPAN}` (their own passage-list entries, PASSAGE-1's
   existing "every passage-list entry is explorable" rule already covers
-  these generically) -- see EVENT-1. `pericope-heading-{eventId}`
+  these generically) -- see EVENT-1. batch-hotfix4-brief.md requirement 1
+  adds the GLOBAL-timeline counterparts, same rule: `event-prior-event-timeline`/
+  `event-following-event-timeline` and `event-prior-verse-timeline-{SPAN}`/
+  `event-following-verse-timeline-{SPAN}` -- see the GLOBAL TIMELINE note
+  under EVENT-1. `pericope-heading-{eventId}`
   (Reader.razor's own reader-flow heading, batch-t-brief.md requirement 5)
   is ALSO explorable under this same rule -- see EVENT-1. batch-m-brief.md
   adds `polity-delta-{id}-{from}-{ringIndex}` (a border ring's own delta

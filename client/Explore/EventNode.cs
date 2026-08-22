@@ -18,7 +18,7 @@ namespace BibleAtlas.Client.Explore;
 /// </summary>
 public interface INarrativeAware
 {
-    Task<IReadOnlyList<NarrativePositionDto>> NarrativePositionsAsync(AtlasClient api);
+    Task<NarrativeEventPositionsResult> NarrativePositionsAsync(AtlasClient api);
 }
 
 /// <summary>
@@ -44,7 +44,7 @@ public interface INarrativeAware
 public sealed class EventNode : IExplorable, INarrativeAware
 {
     private EventDetail? _cached;
-    private IReadOnlyList<NarrativePositionDto>? _cachedPositions;
+    private NarrativeEventPositionsResult? _cachedPositions;
 
     public EventNode(string eventId, string title)
     {
@@ -118,7 +118,13 @@ public sealed class EventNode : IExplorable, INarrativeAware
     /// (`GET /api/narrative/event/{id}`, `atlas_core::narrative::positions_for_events`
     /// itself unchanged -- only this node replaces that one as its caller),
     /// so map-focus-sync (ExplorerPopover's own `SyncNarrativeFocusAsync`)
-    /// keeps working unmodified, no ExplorerPopover change needed.
-    public async Task<IReadOnlyList<NarrativePositionDto>> NarrativePositionsAsync(AtlasClient api) =>
+    /// keeps working unmodified, no ExplorerPopover change needed. Batch
+    /// HOTFIX-4 requirement 1: the SAME single memoized fetch now also
+    /// carries the global-timeline half (`.Timeline`) -- one network call,
+    /// three consumers (map-focus-sync reads `.Narrative`;
+    /// EventPriorSection/EventFollowingSection read `.Narrative`;
+    /// EventTimelinePriorSection/EventTimelineFollowingSection read
+    /// `.Timeline`).
+    public async Task<NarrativeEventPositionsResult> NarrativePositionsAsync(AtlasClient api) =>
         _cachedPositions ??= await api.NarrativeEventPositions(EventId);
 }

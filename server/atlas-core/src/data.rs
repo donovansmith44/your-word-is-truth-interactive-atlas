@@ -797,6 +797,35 @@ pub struct AtlasData {
     /// hard, fail-loud ETL error via `heading_anchor_collisions()` below.
     #[serde(skip)]
     heading_anchor_collisions: Vec<(String, String, String)>,
+
+    /// Batch HOTFIX-4 requirement 1 ("whole-DAG chronological traversal --
+    /// every dated event, not just narrative members"): every `kind ==
+    /// "event"` (dated) event's own id, in GLOBAL CHRONOLOGICAL ORDER --
+    /// the owner's own law verbatim, "the previous/next event is the one
+    /// that is chronologically NEXT." Built by `finish()` via a STABLE sort
+    /// by `(when.from_year, order_key)` ascending -- the SAME tuple
+    /// `heading_precedence`'s own chronology tier and the narrative-leg
+    /// validator both already use ("the T ordering"), `std::cmp::Reverse`
+    /// nowhere near this (ascending needs no reversal at all -- the
+    /// overflow bug fix-round-1 found was specific to a DESCENDING
+    /// max-tuple comparison, not relevant here). Same-`(from_year,
+    /// order_key)` runs are genuinely common (137 real groups in the
+    /// compiled data -- `order_key` defaults to 0 outside Passion Week's
+    /// own deliberate sub-sequencing) -- a STABLE sort resolves them by
+    /// original array order, the IDENTICAL "equal on all explicit tiers
+    /// keeps first-wins" precedent `heading_precedence` already establishes
+    /// and CONTRACT.md already documents, not a new invented rule.
+    /// General-kind events are excluded entirely (requirement 2: "NOT part
+    /// of time traversal... fabricating one is forbidden" -- they have no
+    /// real date to sort by). Built AFTER `event_merge::apply_event_merges`
+    /// (this function's own first step) has already removed every
+    /// duplicate identity, so the timeline never interleaves two scales for
+    /// the same real-world event.
+    #[serde(skip)]
+    timeline_order: Vec<String>,
+    /// Derived: event id -> index into `timeline_order`. Built alongside it.
+    #[serde(skip)]
+    timeline_index: HashMap<String, usize>,
 }
 
 /// Batch T requirement 5: one resolved pericope heading -- an EVENT-kind
@@ -1188,6 +1217,22 @@ impl AtlasData {
         self.verse_heading = verse_heading;
         self.heading_anchor_collisions = heading_anchor_collisions;
 
+        // Batch HOTFIX-4 requirement 1: the global chronological timeline --
+        // see `timeline_order`'s own field doc comment for the full ordering
+        // rule. `self.events` is already `sort_by_key(|e| e.when.from_year)`-
+        // sorted (above), so this stable secondary sort's own tie-breaking
+        // (equal `(from_year, order_key)`) falls out to the ORIGINAL
+        // pre-any-sort compiled-array order, matching `heading_precedence`'s
+        // own documented "equal on all tiers keeps first-wins" precedent.
+        let mut timeline_order: Vec<String> =
+            self.events.iter().filter(|e| e.kind == "event").map(|e| e.id.clone()).collect();
+        timeline_order.sort_by_key(|id| {
+            let e = self.event_by_id(id).expect("id just collected from self.events");
+            (e.when.from_year, e.order_key)
+        });
+        self.timeline_index = timeline_order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect();
+        self.timeline_order = timeline_order;
+
         self
     }
 
@@ -1279,6 +1324,26 @@ impl AtlasData {
     /// touching a verse regardless of which one won the heading.
     pub fn heading_for_verse(&self, verse: &str) -> Option<&HeadingEntry> {
         self.verse_heading.get(verse)
+    }
+
+    /// Batch HOTFIX-4 requirement 1: this event's own 0-based position in
+    /// the GLOBAL chronological timeline (`timeline_order`'s own doc
+    /// comment has the full ordering rule), if it's a dated (`kind ==
+    /// "event"`) event at all. `None` for a general-kind or unknown id --
+    /// requirement 2's own "NOT part of time traversal... fabricating a
+    /// date is forbidden," resolved here by simple absence from the index
+    /// this method reads, never a special-cased branch.
+    pub fn timeline_position(&self, id: &str) -> Option<usize> {
+        self.timeline_index.get(id).copied()
+    }
+
+    /// Batch HOTFIX-4 requirement 1: the dated event sitting at this
+    /// 0-based position in the global timeline, if any. Every real caller
+    /// derives `index` from `timeline_position` above (always in-bounds by
+    /// construction); `None` here only guards a hypothetical out-of-range
+    /// index rather than panicking.
+    pub fn timeline_event_at(&self, index: usize) -> Option<&Event> {
+        self.timeline_order.get(index).and_then(|id| self.event_by_id(id))
     }
 
     /// Batch F: every catechism item cited by any member verse of `span`

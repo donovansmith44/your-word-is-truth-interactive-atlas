@@ -478,6 +478,48 @@ impl From<atlas_core::narrative::NarrativePosition> for NarrativePositionOut {
     }
 }
 
+/// Batch HOTFIX-4 requirement 1: the GLOBAL chronological PRIOR/FOLLOWING
+/// for one event id, independent of narrative membership -- see
+/// `atlas_core::narrative::TimelinePosition`'s own doc comment for the full
+/// ordering rule. Reuses `NarrativeAdjacentEventOut` (same shape, same
+/// "id/label/places/verse_groups" the narrative rows already send) -- one
+/// computation, one wire type, two consumers.
+#[derive(Debug, Serialize)]
+pub struct TimelinePositionOut {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prior: Option<NarrativeAdjacentEventOut>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub following: Option<NarrativeAdjacentEventOut>,
+}
+
+impl From<atlas_core::narrative::TimelinePosition> for TimelinePositionOut {
+    fn from(p: atlas_core::narrative::TimelinePosition) -> Self {
+        TimelinePositionOut { prior: p.prior.map(Into::into), following: p.following.map(Into::into) }
+    }
+}
+
+/// Batch HOTFIX-4 requirement 1: `GET /api/narrative/event/{id}`'s own
+/// extended wire shape -- WAS a bare `Vec<NarrativePositionOut>` (Batch N);
+/// NOW an object, `narrative` carrying EXACTLY that same array (unchanged
+/// shape, unchanged rows, every existing narrative-scoped consumer keeps
+/// reading it unmodified) alongside the NEW `timeline` field. `timeline` is
+/// OMITTED (not `null`) entirely for a general-kind or unknown event id
+/// (requirement 2: "general-kind containers... NOT part of time traversal"),
+/// present otherwise with `prior`/`following` each independently omitted
+/// only at the atlas's own true first/last dated event (conditional
+/// presence, matching every other optional field on this wire). Every
+/// consumer of the OLD bare-array shape is migrated in this same commit:
+/// `AtlasClient.NarrativeEventPositions` (client), `EventNode`/
+/// `INarrativeAware` (client), `PlaceCard.LoadNarrativePositions` (client,
+/// reads `.Narrative` — TRAVERSAL-1 logic unchanged), and the Playwright
+/// helper call sites in `world-pin.spec.ts`/`popover-sections.spec.ts`.
+#[derive(Debug, Serialize)]
+pub struct NarrativeEventPositionsOut {
+    pub narrative: Vec<NarrativePositionOut>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timeline: Option<TimelinePositionOut>,
+}
+
 /// Mirrors atlas-etl's private `xrefs::first_verse_of_target` (duplicated,
 /// not shared, because atlas-server does not and should not depend on
 /// atlas-etl — that crate is a build-time-only ETL binary, not a runtime
@@ -595,12 +637,18 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
 pub async fn narrative_event_positions(
     State(data): State<Arc<AtlasData>>,
     Path(id): Path<String>,
-) -> Result<Json<Vec<NarrativePositionOut>>, ApiError> {
+) -> Result<Json<NarrativeEventPositionsOut>, ApiError> {
     if data.event_by_id(&id).is_none() {
         return Err(ApiError::not_found("event"));
     }
-    let out = atlas_core::narrative::positions_for_events(&data, std::slice::from_ref(&id)).into_iter().map(Into::into).collect();
-    Ok(Json(out))
+    let narrative = atlas_core::narrative::positions_for_events(&data, std::slice::from_ref(&id)).into_iter().map(Into::into).collect();
+    // Batch HOTFIX-4 requirement 1: the SAME id-keyed lookup, additionally
+    // resolving the global-timeline half -- `None` (field omitted) for a
+    // general-kind passage, by construction (`global_timeline_position`'s
+    // own doc comment: absence from the timeline index IS the "not part of
+    // time traversal" signal, no special-cased branch needed here).
+    let timeline = atlas_core::narrative::global_timeline_position(&data, &id).map(Into::into);
+    Ok(Json(NarrativeEventPositionsOut { narrative, timeline }))
 }
 
 /// Batch T requirement 4: one EVENT-kind PASSAGE's own resolved place --

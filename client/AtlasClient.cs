@@ -216,21 +216,20 @@ public sealed class AtlasClient
         GetRequired<List<NarrativeOut>>("api/narratives");
 
     /// <summary>
-    /// Batch N requirement 1's own event-id-keyed lookup half:
-    /// <c>GET /api/narrative/event/{id}</c> -- every narrative position the
-    /// given event id occupies (mirrors <see cref="CatechismItem"/>'s own
+    /// Batch N requirement 1's own event-id-keyed lookup half, extended
+    /// Batch HOTFIX-4 requirement 1: <c>GET /api/narrative/event/{id}</c> --
+    /// every narrative position the given event id occupies, PLUS its own
+    /// global-timeline position (mirrors <see cref="CatechismItem"/>'s own
     /// id-keyed precedent). Uncached at this layer, same as
     /// <see cref="Verse"/>/<see cref="CatechismItem"/> --
-    /// <see cref="Explore.NarrativeEventNode"/> memoizes its own single
-    /// fetch per node instance instead (mirrors <c>VerseNode.DetailAsync</c>'s
-    /// own reasoning exactly). Never called with a user-typed id -- always
-    /// an id a PRIOR response (this same endpoint's own, or
-    /// <see cref="VerseDetail.NarrativePositions"/>'s own <c>prior</c>/
-    /// <c>following</c>) already handed back, per requirement 1's own
-    /// "traversal steps resolve by event, not by re-searching verses."
+    /// <see cref="Explore.EventNode"/> memoizes its own single fetch per
+    /// node instance instead (mirrors <c>VerseNode.DetailAsync</c>'s own
+    /// reasoning exactly). Never called with a user-typed id -- always an
+    /// id a PRIOR response (this same endpoint's own, a reader heading, or
+    /// a verse's own EVENT membership row) already handed back.
     /// </summary>
-    public Task<List<NarrativePositionDto>> NarrativeEventPositions(string eventId) =>
-        GetRequired<List<NarrativePositionDto>>($"api/narrative/event/{Uri.EscapeDataString(eventId)}");
+    public Task<NarrativeEventPositionsResult> NarrativeEventPositions(string eventId) =>
+        GetRequired<NarrativeEventPositionsResult>($"api/narrative/event/{Uri.EscapeDataString(eventId)}");
 
     /// <summary>
     /// Batch T requirement 4: <c>GET /api/event/{id}</c> -- an EVENT-kind

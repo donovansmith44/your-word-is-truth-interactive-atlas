@@ -367,9 +367,15 @@
         {
             if (Current is INarrativeAware aware)
             {
-                var positions = await aware.NarrativePositionsAsync(Atlas);
-                var narrativeIds = positions.Select(p => p.NarrativeId).Distinct().ToList();
-                var eventIds = positions.Select(p => p.EventId).Distinct().ToList();
+                // Batch HOTFIX-4: reads `.Narrative` only -- map focus sync
+                // stays scoped to NARRATIVE arrows (there is no "timeline
+                // arrow" to dim/amplify; a global-timeline-only Current
+                // correctly clears focus via the `narrativeIds`/`eventIds`
+                // empty-list path below, req 3's own "shared code path, no
+                // special case," unmodified from Batch N).
+                var result = await aware.NarrativePositionsAsync(Atlas);
+                var narrativeIds = result.Narrative.Select(p => p.NarrativeId).Distinct().ToList();
+                var eventIds = result.Narrative.Select(p => p.EventId).Distinct().ToList();
                 await MapInterop.SetNarrativeFocus(JS, narrativeIds, eventIds);
             }
             else

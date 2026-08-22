@@ -165,6 +165,29 @@ public sealed record NarrativePositionDto(
 /// one-graph property).
 public sealed record NarrativeAdjacentEventDto(string Id, string Label, List<string> Places, List<VerseGroup> VerseGroups);
 
+/// Batch HOTFIX-4 requirement 1: the GLOBAL chronological PRIOR/FOLLOWING
+/// for one event id, independent of narrative membership -- "traversal by
+/// time for every dated event, not just narrative members," the owner's
+/// own law. Reuses <see cref="NarrativeAdjacentEventDto"/> (same shape the
+/// narrative rows already send -- one wire type, two consumers).
+/// <see cref="Prior"/>/<see cref="Following"/> are null exactly at the
+/// atlas's own true first/last dated event -- conditional presence, never
+/// a disabled stub.
+public sealed record TimelinePositionDto(NarrativeAdjacentEventDto? Prior, NarrativeAdjacentEventDto? Following);
+
+/// Batch HOTFIX-4 requirement 1: <c>GET /api/narrative/event/{id}</c>'s own
+/// extended wire shape -- WAS a bare <c>List&lt;NarrativePositionDto&gt;</c>
+/// (Batch N); NOW an object. <see cref="Narrative"/> carries EXACTLY that
+/// same array, unchanged shape/rows -- every pre-existing narrative-scoped
+/// consumer (map-focus-sync, the narrative PRIOR/FOLLOWING sections,
+/// PlaceCard's own TRAVERSAL-1 row) keeps reading it, just via <c>.Narrative</c>
+/// now instead of the bare top-level list. <see cref="Timeline"/> is
+/// <c>null</c> (the key OMITTED on the wire, not sent as JSON <c>null</c>)
+/// exactly for a general-kind or unknown event id -- requirement 2's own
+/// "general-kind containers: NOT part of time traversal," resolved by
+/// simple absence, never a fabricated stub.
+public sealed record NarrativeEventPositionsResult(List<NarrativePositionDto> Narrative, TimelinePositionDto? Timeline = null);
+
 /// Batch T requirement 4: one EVENT-kind PASSAGE's own resolved place --
 /// id (to open a `PlaceNode`) + display name.
 public sealed record EventPlaceDto(string Id, string Name);

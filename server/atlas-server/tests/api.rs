@@ -350,6 +350,30 @@ async fn event_endpoint_omits_when_for_general_kind_passages() {
     assert_eq!(st, 200);
     assert_eq!(body["kind"], "event");
     assert_eq!(body["when"]["from_year"], -1406);
+
+    // Batch HOTFIX-4 requirement 2 ("general-kind containers: NOT part of
+    // time traversal... fabricating one is forbidden"): g1's own
+    // `/api/narrative/event/{id}` response carries NO `timeline` key at
+    // all (omitted, not null/empty) -- it is a leg of no narrative either,
+    // so `narrative` is an empty array, same "no results" shape as any
+    // other narrative-less event.
+    let (st, body) = call(&app, "/api/narrative/event/g1").await;
+    assert_eq!(st, 200);
+    assert_eq!(body["narrative"], serde_json::json!([]));
+    assert!(body.get("timeline").is_none(), "a general-kind passage must carry no `timeline` key at all: {body}");
+
+    // e1 (real, dated, but ALSO a leg of no narrative here) still gets a
+    // real timeline position -- the true first AND last dated event in
+    // this tiny two-event fixture, so BOTH prior and following are absent
+    // (conditional presence, not a disabled stub), but the `timeline` KEY
+    // itself is present (unlike g1 above) -- proving the two "absent"
+    // shapes (whole-field-omitted vs. both-sides-omitted) are genuinely
+    // different and both correctly realized.
+    let (st, body) = call(&app, "/api/narrative/event/e1").await;
+    assert_eq!(st, 200);
+    assert!(body.get("timeline").is_some(), "e1 is dated -- `timeline` must be present: {body}");
+    assert!(body["timeline"].get("prior").is_none());
+    assert!(body["timeline"].get("following").is_none());
 }
 
 /// Fix round 1 (I-1): a `kind == "general"` passage's own `event-places` row
@@ -522,7 +546,7 @@ async fn narrative_event_positions_endpoint() {
     // "an event in multiple narratives returns all positions."
     let (st, body) = call(&app, "/api/narrative/event/e2").await;
     assert_eq!(st, 200);
-    let positions = body.as_array().unwrap().clone();
+    let positions = body["narrative"].as_array().unwrap().clone();
     assert_eq!(positions.len(), 2, "{body}");
 
     let conquest = positions.iter().find(|p| p["narrative_id"] == "conquest").expect("e2 is a conquest leg");
@@ -539,11 +563,25 @@ async fn narrative_event_positions_endpoint() {
     assert!(patriarchs.get("prior").is_none(), "{patriarchs}");
     assert!(patriarchs.get("following").is_none(), "{patriarchs}");
 
-    // A real event that is a leg of no narrative -- 200, empty array (the
-    // "no results" case), not a 404 (the identifier itself is real).
+    // Batch HOTFIX-4 requirement 1: e2's own GLOBAL TIMELINE position
+    // (independent of, alongside, the narrative rows above) -- demo_fixture's
+    // own chronological order is e5, e1, e2, e3, e4, so e2's own timeline
+    // neighbors happen to coincide with its conquest-narrative ones here,
+    // but come from the SEPARATE `timeline` field, not `narrative`.
+    assert_eq!(body["timeline"]["prior"]["id"], "e1");
+    assert_eq!(body["timeline"]["following"]["id"], "e3");
+
+    // A real event that is a leg of NO narrative -- `narrative` is an empty
+    // array (the "no results" case), not a 404 (the identifier itself is
+    // real) -- but Batch HOTFIX-4 requirement 1's own point: it STILL gets a
+    // real `timeline` position (e5 is demo_fixture's own chronologically
+    // EARLIEST event -- no prior, following = e1), proving traversal no
+    // longer depends on narrative membership at all.
     let (st, body) = call(&app, "/api/narrative/event/e5").await;
     assert_eq!(st, 200);
-    assert_eq!(body, serde_json::json!([]));
+    assert_eq!(body["narrative"], serde_json::json!([]));
+    assert!(body["timeline"].get("prior").is_none(), "e5 is the fixture's true first dated event -- no prior: {body}");
+    assert_eq!(body["timeline"]["following"]["id"], "e1");
 
     // An id naming no real event at all -- 404 not_found (the "bad
     // identifier" case), same precedent as /api/place/{id} and

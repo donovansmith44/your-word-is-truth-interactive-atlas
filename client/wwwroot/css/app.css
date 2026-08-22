@@ -3416,6 +3416,24 @@ input:focus-visible,
    rule directly (PopoverSectionProviders.cs's own NarrativeDirectionSection),
    same as "EVENT"/"PARALLEL ACCOUNTS" below it. */
 
+/* Batch HOTFIX-4 requirement 1: "PRIOR IN TIME"/"FOLLOWING IN TIME" -- the
+   global-timeline sections' own eyebrow (EventTimelineDirectionSection)
+   carries the SAME .catechism-section-heading class (color, letterspacing,
+   caps, margin all inherited, unchanged) PLUS this self-contained modifier
+   -- a size step down only (never a color change: --bronze-ink's own
+   7.85:1 contrast on --parchment-raised is this popover's own established
+   floor for eyebrow text; a de-emphasized color here would risk falling
+   under it, the same reason .quiet-label uses a SIZE step, not merely a
+   dimmer color, as its own primary "subordinate" signal). "Quiet" via
+   scale, "clearly distinct" via wording ("IN TIME," never "EVENT") --
+   requirement 1 verbatim, never conflated with req 6's own SEPARATE
+   non-traversable-node distinction (.explorable-quiet below), which is
+   about a different node's own traversability, not this section's own
+   relative emphasis. */
+.event-timeline-heading {
+    font-size: .72rem;
+}
+
 /* "THE SMALL CATECHISM" -- the VERSE/PASSAGE popover's own list of citing
    items (CatechismSeamSection), same list/item shape as .popover-passage-list/
    .popover-passage-entry above (fix-round-1, batch-f2-review.md Minor-2:

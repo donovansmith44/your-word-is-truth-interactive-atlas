@@ -774,8 +774,14 @@
 
         try
         {
-            var lists = await Task.WhenAll(eventIds.Select(Atlas.NarrativeEventPositions));
-            _narrativePositions = lists.SelectMany(l => l).ToList();
+            // Batch HOTFIX-4: each result now also carries a `.Timeline`
+            // half (unused here -- TRAVERSAL-1's own `place-card-narratives`
+            // row is narrative-scoped only, req 3's own map-side traversal
+            // lives on the EVENT POPOVER, a separate surface; see
+            // EventTimelinePriorSection/EventTimelineFollowingSection) --
+            // `.Narrative` is the exact same list this method already read.
+            var results = await Task.WhenAll(eventIds.Select(Atlas.NarrativeEventPositions));
+            _narrativePositions = results.SelectMany(r => r.Narrative).ToList();
         }
         catch (Exception)
         {

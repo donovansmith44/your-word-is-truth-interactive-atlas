@@ -157,6 +157,15 @@ public static class PopoverSectionRegistry
         new EventWitnessesSection(),
         new EventPriorSection(),
         new EventFollowingSection(),
+        // Batch HOTFIX-4 requirement 1 ("whole-DAG chronological traversal"):
+        // the GLOBAL-timeline counterparts to the two rows immediately
+        // above -- registered directly after them (narrative primacy: the
+        // narrative-scoped rows always render first, requirement 1
+        // verbatim), independent of narrative membership, so a
+        // narrative-less dated event gets these two instead, and a
+        // narrative member gets BOTH pairs.
+        new EventTimelinePriorSection(),
+        new EventTimelineFollowingSection(),
         // Batch M ("the DAG grows a node type"): PolityDelta's own three
         // sections, in order -- event text, THE SCRIPTURES, grounding note
         // -- appended at the end, same "later batches append below, never

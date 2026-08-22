@@ -1132,7 +1132,14 @@ file static class NarrativeDirectionSection
         IReadOnlyList<NarrativePositionDto> positions;
         try
         {
-            positions = await aware.NarrativePositionsAsync(api);
+            // Batch HOTFIX-4: `.Narrative` only -- this resolver renders the
+            // per-narrative PRIOR/FOLLOWING sections; the global-timeline
+            // half (`.Timeline`) has its OWN, separate shared resolver
+            // (EventTimelineDirectionSection, below) with its own quiet
+            // "IN TIME" wording, per requirement 1's own "narrative rows
+            // render as today (unchanged)... the global-timeline adjacency
+            // renders as a quiet, clearly distinct" instruction.
+            positions = (await aware.NarrativePositionsAsync(api)).Narrative;
         }
         catch (Exception)
         {
@@ -1305,6 +1312,155 @@ public sealed class EventFollowingSection : IPopoverSectionProvider
 
     public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
         NarrativeDirectionSection.ResolveAsync(node, api, ctx, p => p.Following, "event-following", "FOLLOWING EVENT", "event-following-event", "event-following-verse");
+}
+
+/// <summary>
+/// Batch HOTFIX-4 requirement 1 ("generalize the ONE resolver -- traversal
+/// by time for every dated event"): shared rendering for the new "PRIOR IN
+/// TIME" / "FOLLOWING IN TIME" sections (<see cref="EventTimelinePriorSection"/>/
+/// <see cref="EventTimelineFollowingSection"/> below) -- the GLOBAL
+/// chronological adjacency, independent of narrative membership, alongside
+/// (never instead of) the narrative-scoped rows <see cref="NarrativeDirectionSection"/>
+/// already renders. Structurally simpler than that sibling resolver: the
+/// global timeline has exactly ONE row in each direction (never "one block
+/// per qualifying narrative"), so there is no name-collision/disambiguation
+/// logic to duplicate -- reuses the SAME underlying mechanism
+/// (<see cref="Components.PassageList"/>, the event-traversal row shape,
+/// PASSAGE-1's own click contract) without forcing an ill-fitting
+/// multi-entry abstraction onto a single-entry case. "Quiet, clearly
+/// distinct" (requirement 1 verbatim) from the narrative rows: the SAME
+/// shared `catechism-section-heading`/`event-section-heading` eyebrow
+/// class/testid every section heading in this popover platform already
+/// uses, PLUS a second, self-contained modifier class
+/// (`event-timeline-heading`, app.css) that softens the text to `--ink-soft`
+/// -- and "IN TIME" wording, never "EVENT", so the two are never
+/// mistakable for each other even at a glance.
+/// </summary>
+file static class EventTimelineDirectionSection
+{
+    public static async Task<PopoverSection?> ResolveAsync(
+        IExplorable node,
+        AtlasClient api,
+        IPopoverSectionContext ctx,
+        Func<TimelinePositionDto, NarrativeAdjacentEventDto?> pick,
+        string testid,
+        string sectionLabel,
+        string rowTestId,
+        string verseTestIdPrefix)
+    {
+        if (node is not INarrativeAware aware)
+        {
+            return null;
+        }
+
+        TimelinePositionDto? timeline;
+        try
+        {
+            timeline = (await aware.NarrativePositionsAsync(api)).Timeline;
+        }
+        catch (Exception)
+        {
+            return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+        }
+
+        // Requirement 2: `Timeline` is null (the wire key OMITTED) for a
+        // general-kind or unknown event -- "NOT part of time traversal,"
+        // resolved here by simple absence, never a disabled stub.
+        if (timeline is null)
+        {
+            return null;
+        }
+
+        var adjacent = pick(timeline);
+        if (adjacent is null)
+        {
+            // Conditional presence at the atlas's own TRUE first/last dated
+            // event only (requirement 1 verbatim) -- everywhere else, a
+            // dated event always has both directions, so a user can always
+            // keep walking.
+            return null;
+        }
+
+        List<PassageListVerse> verses;
+        try
+        {
+            verses = await VerseTextResolver.ResolveAsync(api, adjacent.VerseGroups.SelectMany(g => g.Verses).ToList());
+        }
+        catch (Exception)
+        {
+            verses = new List<PassageListVerse>();
+        }
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "catechism-section-heading event-timeline-heading");
+            builder.AddAttribute(seq++, "data-testid", "event-section-heading");
+            builder.AddContent(seq++, sectionLabel);
+            builder.CloseElement();
+
+            var eventId = adjacent.Id; // local copies -- captured by the onclick closure below
+            var eventLabel = adjacent.Label;
+
+            builder.OpenElement(seq++, "button");
+            builder.AddAttribute(seq++, "type", "button");
+            builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
+            builder.AddAttribute(seq++, "data-testid", rowTestId);
+            builder.AddAttribute(seq++, "aria-label", $"{sectionLabel}: {eventLabel}");
+            // Same ONE-RULE traversal as the narrative rows: pushes a fresh
+            // EventNode, re-anchoring the popover -- recursion falls out of
+            // THIS SAME AppliesTo clause matching the traversed node too.
+            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(eventId, eventLabel))));
+            builder.OpenElement(seq++, "span");
+            builder.AddAttribute(seq++, "class", "popover-event-label");
+            builder.AddContent(seq++, eventLabel);
+            builder.CloseElement();
+            builder.CloseElement();
+
+            if (verses.Count > 0)
+            {
+                var units = new PassageSourceUnit[] { new(verses) };
+                builder.OpenComponent<Components.PassageList>(seq++);
+                builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
+                builder.AddAttribute(seq++, "RefTestIdPrefix", verseTestIdPrefix);
+                builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+                builder.CloseComponent();
+            }
+        };
+        return new PopoverSection(testid, body);
+    }
+}
+
+/// <summary>
+/// Batch HOTFIX-4 requirement 1: "PRIOR IN TIME" -- the global-timeline
+/// counterpart to <see cref="EventPriorSection"/>, present whenever THIS
+/// event has a chronologically-prior dated event ANYWHERE in the atlas
+/// (independent of narrative membership -- the whole point of this
+/// requirement: "every DATED event traverses," not just narrative
+/// members). Absent only at the atlas's own true first dated event.
+/// </summary>
+public sealed class EventTimelinePriorSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Event";
+
+    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
+        EventTimelineDirectionSection.ResolveAsync(node, api, ctx, t => t.Prior, "event-prior-timeline", "PRIOR IN TIME", "event-prior-event-timeline", "event-prior-verse-timeline");
+}
+
+/// <summary>
+/// Batch HOTFIX-4 requirement 1: "FOLLOWING IN TIME" -- the mirror image of
+/// <see cref="EventTimelinePriorSection"/>. Registered immediately after it
+/// (PopoverSections.cs), and both after EventFollowingSection, so the
+/// narrative rows always render above the timeline rows -- narrative
+/// primacy preserved, requirement 1 verbatim.
+/// </summary>
+public sealed class EventTimelineFollowingSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Event";
+
+    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
+        EventTimelineDirectionSection.ResolveAsync(node, api, ctx, t => t.Following, "event-following-timeline", "FOLLOWING IN TIME", "event-following-event-timeline", "event-following-verse-timeline");
 }
 
 /// <summary>

@@ -266,7 +266,7 @@ test('TRAVERSAL-3: the place card\'s next-event traversal agrees with the popove
   // Confirm the fixture premise directly against the live data, so this
   // test fails loudly (not silently vacuous) if the curated chain ever
   // changes: ex_kadesh must have a real "following" leg to walk to.
-  const kadeshPositions = await api.narrativeEventPositions('ex_kadesh');
+  const kadeshPositions = (await api.narrativeEventPositions('ex_kadesh')).narrative;
   const exodusPosition = kadeshPositions.find((p: any) => p.narrative_id === 'exodus');
   test.skip(!exodusPosition?.following, 'ex_kadesh has no following leg in the curated data');
   const followingLabel = exodusPosition.following.label;

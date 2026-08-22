@@ -718,7 +718,7 @@ test('EVENT-1: clicking a verse\'s EVENT row opens the EventNode, whose PRIOR/FO
   // (UNCHANGED endpoint/resolver from Batch N) must report the SAME
   // following-event verse_groups as the live map's own scene (via the SAME
   // event id an arrow's own to_event names) -- byte-for-byte.
-  const positions = await api.narrativeEventPositions('ex_succoth');
+  const positions = (await api.narrativeEventPositions('ex_succoth')).narrative;
   const position = positions.find((p: any) => p.narrative_id === 'exodus');
   expect(position.prior.id).toBe('ex_rameses');
   expect(position.prior.label).toBe('Israel departs Rameses');
@@ -775,8 +775,8 @@ test('EVENT-1: recursive traversal reaches both narrative ends -- no PRIOR at th
   test.skip(!exodus || exodus.legs.length < 2, 'exodus narrative not present or too short to walk');
   const firstLegId = exodus.legs[0];
   const lastLegId = exodus.legs[exodus.legs.length - 1];
-  const firstLegLabel = (await api.narrativeEventPositions(firstLegId)).find((p: any) => p.narrative_id === 'exodus').event_label;
-  const lastLegLabel = (await api.narrativeEventPositions(lastLegId)).find((p: any) => p.narrative_id === 'exodus').event_label;
+  const firstLegLabel = (await api.narrativeEventPositions(firstLegId)).narrative.find((p: any) => p.narrative_id === 'exodus').event_label;
+  const lastLegLabel = (await api.narrativeEventPositions(lastLegId)).narrative.find((p: any) => p.narrative_id === 'exodus').event_label;
 
   await page.goto('/read/EXO/13');
   await page.getByTestId('verse-line-20').click(); // ex_succoth (index 1)
@@ -838,7 +838,7 @@ test('EVENT-1: the three-narrative full walk -- FOLLOWING hop by hop to the last
 
     const firstId = narrative.legs[0];
     const lastId = narrative.legs[narrative.legs.length - 1];
-    const firstLabel = (await api.narrativeEventPositions(firstId)).find((p: any) => p.narrative_id === narrativeId).event_label;
+    const firstLabel = (await api.narrativeEventPositions(firstId)).narrative.find((p: any) => p.narrative_id === narrativeId).event_label;
 
     // Open the FIRST event's own popover via its OWN first witness verse
     // (Reader.razor's own reader-heading click path is exercised separately
@@ -862,7 +862,7 @@ test('EVENT-1: the three-narrative full walk -- FOLLOWING hop by hop to the last
       expect(hops, `${narrativeId} FOLLOWING walk exceeded its own leg count`).toBeLessThanOrEqual(narrative.legs.length - 1);
     }
     expect(hops, `${narrativeId} FOLLOWING walk must visit every leg exactly once`).toBe(narrative.legs.length - 1);
-    const lastLabel = (await api.narrativeEventPositions(lastId)).find((p: any) => p.narrative_id === narrativeId).event_label;
+    const lastLabel = (await api.narrativeEventPositions(lastId)).narrative.find((p: any) => p.narrative_id === narrativeId).event_label;
     await expect(page.getByTestId('popover-title')).toHaveText(lastLabel);
     await expect(page.getByTestId('popover-section-event-following')).toHaveCount(0); // last event: no FOLLOWING (conditional presence)
 
@@ -983,7 +983,7 @@ test('EVENT-1: chronological-vs-reading-order -- a JHN-witnessed event\'s FOLLOW
   const johnWitness = entryDetail.witnesses.find((w: any) => w.book === 'JHN');
   expect(johnWitness, 'pw_jerusalem_entry must have a real John witness').toBeTruthy();
 
-  const positions = await api.narrativeEventPositions('pw_jerusalem_entry');
+  const positions = (await api.narrativeEventPositions('pw_jerusalem_entry')).narrative;
   const passionWeek = positions.find((p: any) => p.narrative_id === 'passion-week');
   expect(passionWeek.following.id).toBe('pw_temple_cleansing');
 
