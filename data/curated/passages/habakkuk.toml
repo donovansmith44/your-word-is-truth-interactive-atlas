@@ -1,0 +1,43 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Habakkuk, in the SAME `[[event]]` schema every other `passages/*.toml`
+# file uses. KIND POLICY: see obadiah.toml's own header note -- pure
+# oracle/prayer, no text-explicit date-stamp, GENERAL-kind throughout.
+#
+# RECONCILIATION: one pre-existing bare Theographic event touches this book
+# -- `theo-239` ("Prophecies of Habakkuk," all 56 verses, -607). LAYER-0,
+# not heading-worthy today; every container below stays well under the 0.8
+# jaccard sweep floor against it (largest, 26/56 = 0.464).
+#
+# GRANULARITY: the book's own real literary structure is TWO complaint/
+# answer rounds followed by a distinct closing prayer -- not a plain
+# chapter chunk (the second complaint, 1:12, continues past the chapter
+# boundary into 2:1 before the Lord's own answer begins at 2:2), per the
+# master brief's own "oracle units, not arbitrary chapter chunks" guidance.
+# PLACE: none -- the book names no earthly place of its own action (the
+# theophany of 3:3-15 is cosmic/poetic imagery, not a narrated visit to
+# Teman or Paran), consistent with GENERAL-kind's own "no fabricated place"
+# discipline.
+
+[[event]]
+id = "hab_first_complaint_and_answer"
+label = "The burden which Habakkuk the prophet did see."
+kind = "general"
+verses = ["HAB.1.1-11"]
+kjv_superscription = "HAB.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: oracle, no date of its own claimed, per this file's own header note. Content: Habakkuk's own first complaint -- violence and iniquity unanswered -- and the Lord's own answer, raising up the Chaldeans as his instrument of judgment."
+
+[[event]]
+id = "hab_second_complaint_and_the_five_woes"
+label = "Habakkuk's second complaint, and the Lord's answer: the just shall live by his faith"
+kind = "general"
+verses = ["HAB.1.12-17", "HAB.2.1-20"]
+atlas_section = "Habakkuk pericope (this project's own sectioning, CC0 -- no external PD source claimed): Habakkuk 1:12-2:20, the prophet's own second complaint (how can a just God use so wicked an instrument?), his own watching upon the tower for an answer, the Lord's own reply -- 'write the vision... the just shall live by his faith' (2:4) -- and the five 'woe' oracles against the proud oppressor, closing on 'the Lord is in his holy temple: let all the earth keep silence before him.'"
+ref_note = "GENERAL-kind, per this file's own header note. Cross-chapter span (1:12-2:20) mechanically split into same-chapter range strings, canon-verified against data/compiled/canon.json before authoring."
+
+[[event]]
+id = "hab_prayer_of_habakkuk"
+label = "A prayer of Habakkuk the prophet upon Shigionoth."
+kind = "general"
+verses = ["HAB.3.1-19"]
+kjv_superscription = "HAB.3.1, this closing prayer's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- a second, distinct superscription within the same book, opening its own final unit exactly as Psalm 3's own does (Batch W3 precedent)."
+ref_note = "GENERAL-kind, per this file's own header note. A psalm-like closing prayer, ending on its own musical notation ('To the chief singer on my stringed instruments,' 3:19) -- the same genre marker several Psalms carry."

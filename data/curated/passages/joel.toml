@@ -1,0 +1,71 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Joel, in the SAME `[[event]]` schema every other `passages/*.toml` file
+# uses. KIND POLICY: see obadiah.toml's own header note -- pure oracle, no
+# text-explicit date-stamp, GENERAL-kind throughout.
+#
+# RECONCILIATION: one pre-existing bare Theographic event touches this book
+# -- `theo-202` ("Prophecies of Joel," all 73 verses, -820). LAYER-0, not
+# heading-worthy today; every container below stays well under the 0.8
+# jaccard sweep floor against it (largest, 21/73 = 0.288).
+#
+# GRANULARITY: six real oracle units, not a plain three-chapter chunk (per
+# the master brief's own "oracle units, not arbitrary chapter chunks"
+# guidance) -- the historical locust plague and its own lament (1:1-20);
+# the coming army/day of the Lord, a distinct escalation into apocalyptic
+# imagery (2:1-11); the call to repent (2:12-17); the Lord's own answer and
+# restoration of the land (2:18-27); the outpouring of the Spirit (2:28-32,
+# the passage Peter cites at Pentecost, Acts 2:16-21 -- a translation/
+# literary fact, not claimed here as a formal req-1b parallel); and the
+# judgment of the nations in the valley of decision, closing on Judah's own
+# everlasting future (3:1-21). PLACE: none -- the book names no single
+# earthly place its own oracle is anchored to (Zion/Jerusalem are invoked
+# repeatedly but the locust plague itself, the book's own opening subject,
+# is nowhere localized) -- lawful for GENERAL-kind.
+
+[[event]]
+id = "jol_the_locust_plague_and_the_lament"
+label = "The word of the Lord that came to Joel the son of Pethuel."
+kind = "general"
+verses = ["JOL.1.1-20"]
+kjv_superscription = "JOL.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: oracle, no date of its own claimed, per this file's own header note. Content: the unprecedented locust plague stripping the land bare, and the call to the priests and elders to lament and fast."
+
+[[event]]
+id = "jol_the_army_and_the_day_of_the_lord"
+label = "The coming army: a great and terrible day of the Lord"
+kind = "general"
+verses = ["JOL.2.1-11"]
+atlas_section = "Joel pericope (this project's own sectioning, CC0 -- no external PD source claimed): Joel 2:1-11, the trumpet blown in Zion as the locust imagery escalates into an unstoppable invading army, 'the day of the Lord... great and very terrible.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "jol_call_to_repentance"
+label = "Rend your heart, and not your garments: a call to repentance"
+kind = "general"
+verses = ["JOL.2.12-17"]
+atlas_section = "Joel pericope (this project's own sectioning, CC0): Joel 2:12-17, the Lord's own call to return with all the heart, fasting and weeping, and the priests' own intercession between the porch and the altar."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "jol_the_lords_answer_and_restoration"
+label = "The Lord's own answer: the land restored, the years of the locust repaid"
+kind = "general"
+verses = ["JOL.2.18-27"]
+atlas_section = "Joel pericope (this project's own sectioning, CC0): Joel 2:18-27, the Lord's own jealousy for his land and pity for his people, the promise of corn, wine, and oil, and the restoration of 'the years that the locust hath eaten.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "jol_the_outpouring_of_the_spirit"
+label = "I will pour out my spirit upon all flesh"
+kind = "general"
+verses = ["JOL.2.28-32"]
+atlas_section = "Joel pericope (this project's own sectioning, CC0): Joel 2:28-32, the promise of the Spirit poured out on sons and daughters, old men and young men, and deliverance for 'whosoever shall call on the name of the Lord.' Translation/literary fact, not textual criticism: this is the passage Peter cites at Pentecost (Acts 2:16-21)."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "jol_judgment_of_the_nations"
+label = "The nations judged in the valley of decision; Judah's own everlasting future"
+kind = "general"
+verses = ["JOL.3.1-21"]
+atlas_section = "Joel pericope (this project's own sectioning, CC0): Joel 3, the Lord gathering all nations to the valley of Jehoshaphat for judgment -- Tyre, Zidon, and Philistia named for selling Judah's own captives -- 'multitudes, multitudes in the valley of decision,' closing on Judah's own dwelling for ever."
+ref_note = "GENERAL-kind, per this file's own header note."

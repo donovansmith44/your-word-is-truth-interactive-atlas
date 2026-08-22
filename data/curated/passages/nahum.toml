@@ -1,0 +1,42 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Nahum, in the SAME `[[event]]` schema every other `passages/*.toml` file
+# uses. KIND POLICY: see obadiah.toml's own header note -- pure oracle, no
+# text-explicit date-stamp (only an internal content clue, populous No/
+# Thebes already fallen, 3:8-10 -- an outside historical inference, not a
+# citable date this project derives fresh), so GENERAL-kind throughout,
+# undated, lawful and by design.
+#
+# RECONCILIATION: one pre-existing bare Theographic event touches this book
+# -- `theo-229` ("Prophecies of Nahum," all 47 verses, -663). LAYER-0, not
+# heading-worthy today; every container below stays well under the 0.8
+# jaccard sweep floor against it (largest, 19/47 = 0.404).
+#
+# GRANULARITY: three real oracle movements, each occupying its own chapter
+# -- the Lord's own character and coming judgment (1), the siege and fall of
+# Nineveh itself vividly narrated (2), and a second "woe" oracle against
+# "the bloody city" closing on the king of Assyria's own ruin (3). PLACE:
+# Nineveh throughout (the whole book is "the burden of Nineveh," 1:1).
+
+[[event]]
+id = "nam_burden_against_nineveh"
+label = "The burden of Nineveh. The book of the vision of Nahum the Elkoshite."
+kind = "general"
+verses = ["NAM.1.1-15"]
+kjv_superscription = "NAM.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: oracle, no date of its own claimed, per this file's own header note. Content: the Lord's own jealousy and vengeance, slow to anger yet an utter end for his adversaries, closing on good tidings of peace for Judah (1:15)."
+
+[[event]]
+id = "nam_siege_and_fall_of_nineveh"
+label = "The siege and fall of Nineveh, vividly foretold"
+kind = "general"
+verses = ["NAM.2.1-13"]
+atlas_section = "Nahum pericope (this project's own sectioning, CC0 -- no external PD source claimed): Nahum 2, the scattering shield, the flaming chariots, the opened river-gates, and the plundered, empty city -- 'she is empty, and void, and waste' -- closing on the Lord's own word against the city's lions' den."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "nam_woe_to_the_bloody_city"
+label = "Woe to the bloody city: Nineveh's own total ruin"
+kind = "general"
+verses = ["NAM.3.1-19"]
+atlas_section = "Nahum pericope (this project's own sectioning, CC0): Nahum 3, the 'woe' oracle against the bloody, deceitful city, its own fate compared to populous No (Thebes, already fallen), and the book's own closing taunt against the king of Assyria -- 'there is no healing of thy bruise.'"
+ref_note = "GENERAL-kind, per this file's own header note. Literary/geographic fact, not textual criticism: 'populous No' (3:8) is Thebes in Upper Egypt, sacked by Assyria itself within living memory of this oracle -- the compiled place id 'thebes' names the same site."

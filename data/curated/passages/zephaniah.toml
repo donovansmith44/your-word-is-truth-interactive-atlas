@@ -1,0 +1,57 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Zephaniah, in the SAME `[[event]]` schema every other `passages/*.toml`
+# file uses. KIND POLICY: see obadiah.toml's own header note. The
+# superscription (1:1) names a specific king, Josiah -- a real reign, but a
+# broad ~31-year window, not the text's own explicit day/month/year
+# date-stamp this slice reserves for EVENT-kind (contrast Haggai/Zechariah,
+# below) -- GENERAL-kind throughout, per this file's own header policy.
+#
+# RECONCILIATION: one pre-existing bare Theographic event touches this book
+# -- `theo-235` ("Prophecies of Zephaniah," all 53 verses, -610, consistent
+# with Josiah's own reign). LAYER-0, not heading-worthy today; every
+# container below stays well under the 0.8 jaccard sweep floor against it
+# (largest, 20/53 = 0.377).
+#
+# GRANULARITY: four real oracle movements -- the great Day of the Lord
+# against Judah and Jerusalem (1), a call to seek the Lord followed by
+# oracles against the surrounding nations (2), and chapter 3's own two
+# distinct halves (woe to the oppressing city's own guilt and coming
+# judgment, 3:1-8; the promised purified remnant and Zion's own joy, 3:9-20
+# -- a real content pivot at 'therefore wait ye upon me... UNTIL... for
+# THEN,' not an arbitrary chapter chunk). PLACE: Jerusalem (1, 3 -- the
+# book's own primary subject); no single place anchors chapter 2's own
+# multi-nation oracle (Philistia/Moab/Ammon/Ethiopia/Assyria each named in
+# turn), so it is left place-less rather than picking one nation to
+# misrepresent the whole -- lawful for GENERAL-kind, which claims no place.
+
+[[event]]
+id = "zep_day_of_the_lord_against_judah"
+label = "The great day of the Lord against Judah and Jerusalem"
+kind = "general"
+verses = ["ZEP.1.1-18"]
+kjv_superscription = "ZEP.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- naming Zephaniah's own four-generation lineage back to Hizkiah, and dating the book to 'the days of Josiah the son of Amon, king of Judah.'"
+ref_note = "GENERAL-kind: oracle, no date of its own claimed beyond the superscription's own broad reign-window, per this file's own header note. Content: the Lord's own utter judgment on idolatry, the princes, and 'the day of the Lord's sacrifice.'"
+
+[[event]]
+id = "zep_call_to_seek_the_lord_and_nations_judged"
+label = "A call to seek the Lord; oracles against the surrounding nations"
+kind = "general"
+verses = ["ZEP.2.1-15"]
+atlas_section = "Zephaniah pericope (this project's own sectioning, CC0 -- no external PD source claimed): Zephaniah 2, a call to the meek to seek the Lord before the fierce day of his anger, followed by oracles against Philistia, Moab and Ammon, Ethiopia, and Assyria -- 'he will make Nineveh a desolation, and dry like a wilderness.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "zep_woe_to_the_oppressing_city"
+label = "Woe to the oppressing city: Jerusalem's own guilt and the nations' coming judgment"
+kind = "general"
+verses = ["ZEP.3.1-8"]
+atlas_section = "Zephaniah pericope (this project's own sectioning, CC0): Zephaniah 3:1-8, 'woe to her that is filthy and polluted' -- Jerusalem's own faithless princes, judges, prophets, and priests indicted, and the Lord's own determination to gather the nations and pour out his indignation."
+ref_note = "GENERAL-kind, per this file's own header note. A real content seam at 3:8/3:9 ('therefore wait ye upon me... UNTIL... for THEN will I turn') divides this book's own final chapter into judgment and restoration halves -- see zep_purified_remnant_and_zions_joy, immediately following."
+
+[[event]]
+id = "zep_purified_remnant_and_zions_joy"
+label = "The promised purified remnant, and Zion's own joy"
+kind = "general"
+verses = ["ZEP.3.9-20"]
+atlas_section = "Zephaniah pericope (this project's own sectioning, CC0): Zephaniah 3:9-20, the Lord's own promise of a pure language and a humble, truthful remnant, and the book's own closing song of Zion's joy -- 'the Lord thy God in the midst of thee is mighty; he will save, he will rejoice over thee with joy.'"
+ref_note = "GENERAL-kind, per this file's own header note. See zep_woe_to_the_oppressing_city's own ref_note for the content seam dividing this chapter."

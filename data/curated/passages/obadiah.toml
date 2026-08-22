@@ -1,0 +1,61 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Obadiah, in the SAME `[[event]]` schema `events-extra.toml`/every other
+# `passages/*.toml` file uses.
+#
+# KIND POLICY (applies across this whole W4 slice, stated here once):
+# EVENT-kind is reserved for genuinely NARRATED happenings (a call vision, a
+# performed sign-act, a historical episode) or an oracle the TEXT ITSELF
+# regnal-date-stamps (e.g. Ezekiel's/Haggai's/Zechariah's own dated
+# openings) -- never for a pure oracle/burden/vision whose only date
+# evidence is an outside historical inference or a bare pre-existing
+# Theographic mega-span's own approximate guess. Per the master brief's own
+# genre guidance ("GENERAL-kind is the honest default for... oracles"),
+# every pure prophetic oracle in this slice defaults to GENERAL-kind,
+# undated -- lawful and by design, not a gap.
+#
+# RECONCILIATION (checked against the real compiled `events.json` before
+# authoring): ONE pre-existing bare Theographic event touches this book --
+# `theo-244` ("Prophecies of Obadiah," ALL 21 verses of the book in one
+# mega-span, -585). LAYER-0 (no witnesses, no robertson/acts/atlas_section/
+# kjv_superscription) -- not heading-worthy today.
+#
+# GRANULARITY: the master brief's own explicit exception -- "Obadiah:
+# single-container book is lawful (one vision, 21 verses)." The whole book
+# is one continuous oracle against Edom with no internal genre break, so a
+# single container covering all 21 verses is the honest natural unit. BUT a
+# fresh container covering literally every verse theo-244 already covers is
+# a certain 1.0-jaccard near-duplicate (verse-set identical) -- so, per the
+# slice brief's own explicit instruction ("ABSORB-NEVER-DUPLICATE... when a
+# container you author near-duplicates an existing theo-* event, extend
+# EVENT_MERGE_PAIRS... never author a twin"), this file's own container is
+# authored as the SURVIVOR and `theo-244` is added to `EVENT_MERGE_PAIRS`
+# (server/atlas-core/src/event_merge.rs) as the absorbed freebie, the same
+# disposition every Gospel-era Theographic freebie in that table already
+# has. A brand-new row (rather than promoting theo-244 in place via
+# atlas-sections.toml) is required here specifically because this
+# container's own title is a literal KJV citation (`kjv_superscription`),
+# and that field is INLINE-ONLY -- no merge-file mechanism exists for it
+# (see `atlas_core::data::Event::kjv_superscription`'s own doc comment,
+# Batch W3) -- so a real `[[event]]` row is the only way to carry it.
+#
+# TITLE: OBA.1.1's own opening clause, "The vision of Obadiah," functions
+# exactly as the other Minor Prophets' own book-opening superscriptions do
+# -- a literal KJV citation, `kjv_superscription` provenance, the sentence
+# boundary read directly from the compiled text (the first ". " within
+# OBA.1.1, verified against the real compiled `verses-kjv.json` before
+# writing, the same mechanical-then-spot-checked discipline Batch W3
+# established for the Psalms). GENERAL-kind per this file's own header
+# note above -- Theographic's own -585 (reflecting Obadiah 1:11-14's own
+# retrospective on Jerusalem's fall, already anchored at -586 by
+# `exl_jerusalem`) is a real, defensible placement, but it is Theographic's
+# own inference layered onto the oracle's content, not the text's own
+# explicit date-stamp -- left undated per this file's own KIND POLICY,
+# consistent with every other book in this slice.
+
+[[event]]
+id = "oba_vision"
+label = "The vision of Obadiah."
+kind = "general"
+verses = ["OBA.1.1-21"]
+kjv_superscription = "OBA.1.1's own opening clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- the book's own superscription, distinct from the oracle's own content beginning immediately after ('Thus saith the Lord GOD concerning Edom...')."
+ref_note = "GENERAL-kind: oracle, no date of its own claimed, per this file's own header note. The oracle's own content (1:11-14) looks back on the fall of Jerusalem (already anchored at -586 by exl_jerusalem/2ki_jerusalem_aftermath) as a recent past event Edom gloated over -- absorbs the pre-existing theo-244 ('Prophecies of Obadiah'), see this file's own header note and EVENT_MERGE_PAIRS."

@@ -2864,6 +2864,119 @@
     "order_key": 0
   },
   {
+    "id": "hab_first_complaint_and_answer",
+    "label": "The burden which Habakkuk the prophet did see.",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HAB.1.1",
+      "HAB.1.2",
+      "HAB.1.3",
+      "HAB.1.4",
+      "HAB.1.5",
+      "HAB.1.6",
+      "HAB.1.7",
+      "HAB.1.8",
+      "HAB.1.9",
+      "HAB.1.10",
+      "HAB.1.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": "HAB.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row).",
+    "ref_note": "GENERAL-kind: oracle, no date of its own claimed, per this file's own header note. Content: Habakkuk's own first complaint -- violence and iniquity unanswered -- and the Lord's own answer, raising up the Chaldeans as his instrument of judgment.",
+    "order_key": 0
+  },
+  {
+    "id": "hab_second_complaint_and_the_five_woes",
+    "label": "Habakkuk's second complaint, and the Lord's answer: the just shall live by his faith",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HAB.1.12",
+      "HAB.1.13",
+      "HAB.1.14",
+      "HAB.1.15",
+      "HAB.1.16",
+      "HAB.1.17",
+      "HAB.2.1",
+      "HAB.2.2",
+      "HAB.2.3",
+      "HAB.2.4",
+      "HAB.2.5",
+      "HAB.2.6",
+      "HAB.2.7",
+      "HAB.2.8",
+      "HAB.2.9",
+      "HAB.2.10",
+      "HAB.2.11",
+      "HAB.2.12",
+      "HAB.2.13",
+      "HAB.2.14",
+      "HAB.2.15",
+      "HAB.2.16",
+      "HAB.2.17",
+      "HAB.2.18",
+      "HAB.2.19",
+      "HAB.2.20"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Habakkuk pericope (this project's own sectioning, CC0 -- no external PD source claimed): Habakkuk 1:12-2:20, the prophet's own second complaint (how can a just God use so wicked an instrument?), his own watching upon the tower for an answer, the Lord's own reply -- 'write the vision... the just shall live by his faith' (2:4) -- and the five 'woe' oracles against the proud oppressor, closing on 'the Lord is in his holy temple: let all the earth keep silence before him.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. Cross-chapter span (1:12-2:20) mechanically split into same-chapter range strings, canon-verified against data/compiled/canon.json before authoring.",
+    "order_key": 0
+  },
+  {
+    "id": "hab_prayer_of_habakkuk",
+    "label": "A prayer of Habakkuk the prophet upon Shigionoth.",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HAB.3.1",
+      "HAB.3.2",
+      "HAB.3.3",
+      "HAB.3.4",
+      "HAB.3.5",
+      "HAB.3.6",
+      "HAB.3.7",
+      "HAB.3.8",
+      "HAB.3.9",
+      "HAB.3.10",
+      "HAB.3.11",
+      "HAB.3.12",
+      "HAB.3.13",
+      "HAB.3.14",
+      "HAB.3.15",
+      "HAB.3.16",
+      "HAB.3.17",
+      "HAB.3.18",
+      "HAB.3.19"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": "HAB.3.1, this closing prayer's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- a second, distinct superscription within the same book, opening its own final unit exactly as Psalm 3's own does (Batch W3 precedent).",
+    "ref_note": "GENERAL-kind, per this file's own header note. A psalm-like closing prayer, ending on its own musical notation ('To the chief singer on my stringed instruments,' 3:19) -- the same genre marker several Psalms carry.",
+    "order_key": 0
+  },
+  {
     "id": "job_first_lament",
     "label": "Job curses the day of his birth",
     "when": {
@@ -4396,6 +4509,193 @@
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "Job pericope (this project's own sectioning, CC0): Job 42:1-6, Job's own final reply to the Lord, confessing that he had spoken of things too wonderful for him, and repenting in dust and ashes.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "jol_the_locust_plague_and_the_lament",
+    "label": "The word of the Lord that came to Joel the son of Pethuel.",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JOL.1.1",
+      "JOL.1.2",
+      "JOL.1.3",
+      "JOL.1.4",
+      "JOL.1.5",
+      "JOL.1.6",
+      "JOL.1.7",
+      "JOL.1.8",
+      "JOL.1.9",
+      "JOL.1.10",
+      "JOL.1.11",
+      "JOL.1.12",
+      "JOL.1.13",
+      "JOL.1.14",
+      "JOL.1.15",
+      "JOL.1.16",
+      "JOL.1.17",
+      "JOL.1.18",
+      "JOL.1.19",
+      "JOL.1.20"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": "JOL.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row).",
+    "ref_note": "GENERAL-kind: oracle, no date of its own claimed, per this file's own header note. Content: the unprecedented locust plague stripping the land bare, and the call to the priests and elders to lament and fast.",
+    "order_key": 0
+  },
+  {
+    "id": "jol_the_army_and_the_day_of_the_lord",
+    "label": "The coming army: a great and terrible day of the Lord",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JOL.2.1",
+      "JOL.2.2",
+      "JOL.2.3",
+      "JOL.2.4",
+      "JOL.2.5",
+      "JOL.2.6",
+      "JOL.2.7",
+      "JOL.2.8",
+      "JOL.2.9",
+      "JOL.2.10",
+      "JOL.2.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Joel pericope (this project's own sectioning, CC0 -- no external PD source claimed): Joel 2:1-11, the trumpet blown in Zion as the locust imagery escalates into an unstoppable invading army, 'the day of the Lord... great and very terrible.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "jol_call_to_repentance",
+    "label": "Rend your heart, and not your garments: a call to repentance",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JOL.2.12",
+      "JOL.2.13",
+      "JOL.2.14",
+      "JOL.2.15",
+      "JOL.2.16",
+      "JOL.2.17"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Joel pericope (this project's own sectioning, CC0): Joel 2:12-17, the Lord's own call to return with all the heart, fasting and weeping, and the priests' own intercession between the porch and the altar.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "jol_the_lords_answer_and_restoration",
+    "label": "The Lord's own answer: the land restored, the years of the locust repaid",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JOL.2.18",
+      "JOL.2.19",
+      "JOL.2.20",
+      "JOL.2.21",
+      "JOL.2.22",
+      "JOL.2.23",
+      "JOL.2.24",
+      "JOL.2.25",
+      "JOL.2.26",
+      "JOL.2.27"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Joel pericope (this project's own sectioning, CC0): Joel 2:18-27, the Lord's own jealousy for his land and pity for his people, the promise of corn, wine, and oil, and the restoration of 'the years that the locust hath eaten.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "jol_the_outpouring_of_the_spirit",
+    "label": "I will pour out my spirit upon all flesh",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JOL.2.28",
+      "JOL.2.29",
+      "JOL.2.30",
+      "JOL.2.31",
+      "JOL.2.32"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Joel pericope (this project's own sectioning, CC0): Joel 2:28-32, the promise of the Spirit poured out on sons and daughters, old men and young men, and deliverance for 'whosoever shall call on the name of the Lord.' Translation/literary fact, not textual criticism: this is the passage Peter cites at Pentecost (Acts 2:16-21).",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "jol_judgment_of_the_nations",
+    "label": "The nations judged in the valley of decision; Judah's own everlasting future",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JOL.3.1",
+      "JOL.3.2",
+      "JOL.3.3",
+      "JOL.3.4",
+      "JOL.3.5",
+      "JOL.3.6",
+      "JOL.3.7",
+      "JOL.3.8",
+      "JOL.3.9",
+      "JOL.3.10",
+      "JOL.3.11",
+      "JOL.3.12",
+      "JOL.3.13",
+      "JOL.3.14",
+      "JOL.3.15",
+      "JOL.3.16",
+      "JOL.3.17",
+      "JOL.3.18",
+      "JOL.3.19",
+      "JOL.3.20",
+      "JOL.3.21"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Joel pericope (this project's own sectioning, CC0): Joel 3, the Lord gathering all nations to the valley of Jehoshaphat for judgment -- Tyre, Zidon, and Philistia named for selling Judah's own captives -- 'multitudes, multitudes in the valley of decision,' closing on Judah's own dwelling for ever.",
     "kjv_superscription": null,
     "ref_note": "GENERAL-kind, per this file's own header note.",
     "order_key": 0
@@ -6118,6 +6418,110 @@
     "order_key": 0
   },
   {
+    "id": "nam_burden_against_nineveh",
+    "label": "The burden of Nineveh. The book of the vision of Nahum the Elkoshite.",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "NAM.1.1",
+      "NAM.1.2",
+      "NAM.1.3",
+      "NAM.1.4",
+      "NAM.1.5",
+      "NAM.1.6",
+      "NAM.1.7",
+      "NAM.1.8",
+      "NAM.1.9",
+      "NAM.1.10",
+      "NAM.1.11",
+      "NAM.1.12",
+      "NAM.1.13",
+      "NAM.1.14",
+      "NAM.1.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": "NAM.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row).",
+    "ref_note": "GENERAL-kind: oracle, no date of its own claimed, per this file's own header note. Content: the Lord's own jealousy and vengeance, slow to anger yet an utter end for his adversaries, closing on good tidings of peace for Judah (1:15).",
+    "order_key": 0
+  },
+  {
+    "id": "nam_siege_and_fall_of_nineveh",
+    "label": "The siege and fall of Nineveh, vividly foretold",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "NAM.2.1",
+      "NAM.2.2",
+      "NAM.2.3",
+      "NAM.2.4",
+      "NAM.2.5",
+      "NAM.2.6",
+      "NAM.2.7",
+      "NAM.2.8",
+      "NAM.2.9",
+      "NAM.2.10",
+      "NAM.2.11",
+      "NAM.2.12",
+      "NAM.2.13"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Nahum pericope (this project's own sectioning, CC0 -- no external PD source claimed): Nahum 2, the scattering shield, the flaming chariots, the opened river-gates, and the plundered, empty city -- 'she is empty, and void, and waste' -- closing on the Lord's own word against the city's lions' den.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "nam_woe_to_the_bloody_city",
+    "label": "Woe to the bloody city: Nineveh's own total ruin",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "NAM.3.1",
+      "NAM.3.2",
+      "NAM.3.3",
+      "NAM.3.4",
+      "NAM.3.5",
+      "NAM.3.6",
+      "NAM.3.7",
+      "NAM.3.8",
+      "NAM.3.9",
+      "NAM.3.10",
+      "NAM.3.11",
+      "NAM.3.12",
+      "NAM.3.13",
+      "NAM.3.14",
+      "NAM.3.15",
+      "NAM.3.16",
+      "NAM.3.17",
+      "NAM.3.18",
+      "NAM.3.19"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Nahum pericope (this project's own sectioning, CC0): Nahum 3, the 'woe' oracle against the bloody, deceitful city, its own fate compared to populous No (Thebes, already fallen), and the book's own closing taunt against the king of Assyria -- 'there is no healing of thy bruise.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. Literary/geographic fact, not textual criticism: 'populous No' (3:8) is Thebes in Upper Egypt, sacked by Assyria itself within living memory of this oracle -- the compiled place id 'thebes' names the same site.",
+    "order_key": 0
+  },
+  {
     "id": "num_first_census",
     "label": "The first census in the wilderness of Sinai",
     "when": {
@@ -7108,6 +7512,46 @@
     "atlas_section": "Numbers code unit (this project's own sectioning, CC0 -- no external PD source claimed): Numbers 36, the tribal elders' own concern for Zelophehad's daughters' inheritance, and the law requiring an heiress to marry within her own tribe -- closing the book.",
     "kjv_superscription": null,
     "ref_note": "General-kind: civil law, closing a narrative case (Zelophehad's daughters, num_zelophehad_joshua) with a legal ruling, no independent date of its own.",
+    "order_key": 0
+  },
+  {
+    "id": "oba_vision",
+    "label": "The vision of Obadiah.",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "OBA.1.1",
+      "OBA.1.2",
+      "OBA.1.3",
+      "OBA.1.4",
+      "OBA.1.5",
+      "OBA.1.6",
+      "OBA.1.7",
+      "OBA.1.8",
+      "OBA.1.9",
+      "OBA.1.10",
+      "OBA.1.11",
+      "OBA.1.12",
+      "OBA.1.13",
+      "OBA.1.14",
+      "OBA.1.15",
+      "OBA.1.16",
+      "OBA.1.17",
+      "OBA.1.18",
+      "OBA.1.19",
+      "OBA.1.20",
+      "OBA.1.21"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": "OBA.1.1's own opening clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- the book's own superscription, distinct from the oracle's own content beginning immediately after ('Thus saith the Lord GOD concerning Edom...').",
+    "ref_note": "GENERAL-kind: oracle, no date of its own claimed, per this file's own header note. The oracle's own content (1:11-14) looks back on the fall of Jerusalem (already anchored at -586 by exl_jerusalem/2ki_jerusalem_aftermath) as a recent past event Edom gloated over -- absorbs the pre-existing theo-244 ('Prophecies of Obadiah'), see this file's own header note and EVENT_MERGE_PAIRS.",
     "order_key": 0
   },
   {
@@ -14041,6 +14485,135 @@
     "atlas_section": "Song of Solomon pericope (this project's own sectioning, CC0): Song of Solomon 8:5-14, the book's own closing scenes -- 'who is this that cometh up from the wilderness, leaning upon her beloved?' -- the well-known 'set me as a seal upon thine heart... for love is strong as death' (8:6-7), and the book's own final exchange, closing 'make haste, my beloved, and be thou like to a roe or to a young hart upon the mountains of spices.'",
     "kjv_superscription": null,
     "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "zep_day_of_the_lord_against_judah",
+    "label": "The great day of the Lord against Judah and Jerusalem",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "ZEP.1.1",
+      "ZEP.1.2",
+      "ZEP.1.3",
+      "ZEP.1.4",
+      "ZEP.1.5",
+      "ZEP.1.6",
+      "ZEP.1.7",
+      "ZEP.1.8",
+      "ZEP.1.9",
+      "ZEP.1.10",
+      "ZEP.1.11",
+      "ZEP.1.12",
+      "ZEP.1.13",
+      "ZEP.1.14",
+      "ZEP.1.15",
+      "ZEP.1.16",
+      "ZEP.1.17",
+      "ZEP.1.18"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": "ZEP.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- naming Zephaniah's own four-generation lineage back to Hizkiah, and dating the book to 'the days of Josiah the son of Amon, king of Judah.'",
+    "ref_note": "GENERAL-kind: oracle, no date of its own claimed beyond the superscription's own broad reign-window, per this file's own header note. Content: the Lord's own utter judgment on idolatry, the princes, and 'the day of the Lord's sacrifice.'",
+    "order_key": 0
+  },
+  {
+    "id": "zep_call_to_seek_the_lord_and_nations_judged",
+    "label": "A call to seek the Lord; oracles against the surrounding nations",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "ZEP.2.1",
+      "ZEP.2.2",
+      "ZEP.2.3",
+      "ZEP.2.4",
+      "ZEP.2.5",
+      "ZEP.2.6",
+      "ZEP.2.7",
+      "ZEP.2.8",
+      "ZEP.2.9",
+      "ZEP.2.10",
+      "ZEP.2.11",
+      "ZEP.2.12",
+      "ZEP.2.13",
+      "ZEP.2.14",
+      "ZEP.2.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zephaniah pericope (this project's own sectioning, CC0 -- no external PD source claimed): Zephaniah 2, a call to the meek to seek the Lord before the fierce day of his anger, followed by oracles against Philistia, Moab and Ammon, Ethiopia, and Assyria -- 'he will make Nineveh a desolation, and dry like a wilderness.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "zep_woe_to_the_oppressing_city",
+    "label": "Woe to the oppressing city: Jerusalem's own guilt and the nations' coming judgment",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "ZEP.3.1",
+      "ZEP.3.2",
+      "ZEP.3.3",
+      "ZEP.3.4",
+      "ZEP.3.5",
+      "ZEP.3.6",
+      "ZEP.3.7",
+      "ZEP.3.8"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zephaniah pericope (this project's own sectioning, CC0): Zephaniah 3:1-8, 'woe to her that is filthy and polluted' -- Jerusalem's own faithless princes, judges, prophets, and priests indicted, and the Lord's own determination to gather the nations and pour out his indignation.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. A real content seam at 3:8/3:9 ('therefore wait ye upon me... UNTIL... for THEN will I turn') divides this book's own final chapter into judgment and restoration halves -- see zep_purified_remnant_and_zions_joy, immediately following.",
+    "order_key": 0
+  },
+  {
+    "id": "zep_purified_remnant_and_zions_joy",
+    "label": "The promised purified remnant, and Zion's own joy",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "ZEP.3.9",
+      "ZEP.3.10",
+      "ZEP.3.11",
+      "ZEP.3.12",
+      "ZEP.3.13",
+      "ZEP.3.14",
+      "ZEP.3.15",
+      "ZEP.3.16",
+      "ZEP.3.17",
+      "ZEP.3.18",
+      "ZEP.3.19",
+      "ZEP.3.20"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zephaniah pericope (this project's own sectioning, CC0): Zephaniah 3:9-20, the Lord's own promise of a pure language and a humble, truthful remnant, and the book's own closing song of Zion's joy -- 'the Lord thy God in the midst of thee is mighty; he will save, he will rejoice over thee with joy.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. See zep_woe_to_the_oppressing_city's own ref_note for the content seam dividing this chapter.",
     "order_key": 0
   },
   {
@@ -35459,6 +36032,138 @@
     "order_key": 0
   },
   {
+    "id": "jon_flight_and_storm",
+    "label": "Jonah flees to Tarshish; the great storm and the great fish",
+    "when": {
+      "from_year": -825,
+      "to_year": -825
+    },
+    "places": [
+      "joppa"
+    ],
+    "verses": [
+      "JON.1.1",
+      "JON.1.2",
+      "JON.1.3",
+      "JON.1.4",
+      "JON.1.5",
+      "JON.1.6",
+      "JON.1.7",
+      "JON.1.8",
+      "JON.1.9",
+      "JON.1.10",
+      "JON.1.11",
+      "JON.1.12",
+      "JON.1.13",
+      "JON.1.14",
+      "JON.1.15",
+      "JON.1.16",
+      "JON.1.17"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Jonah pericope (this project's own sectioning, CC0 -- no external PD source claimed): Jonah 1, the word of the Lord commanding Jonah to Nineveh, his own flight to Tarshish from Joppa instead, the storm the sailors could not outrun, Jonah's own request to be cast into the sea, and the great fish the Lord prepared to swallow him.",
+    "kjv_superscription": null,
+    "ref_note": "Date interpolated from the pre-existing theo-200 ('Prophecies of Jonah,' -825). Place: Joppa, explicit (1:3), the port of departure -- the sea itself carries no separate curated place id.",
+    "order_key": 0
+  },
+  {
+    "id": "jon_prayer_in_the_fish",
+    "label": "Jonah's prayer from the belly of the fish",
+    "when": {
+      "from_year": -825,
+      "to_year": -825
+    },
+    "places": [
+      "joppa"
+    ],
+    "verses": [
+      "JON.2.1",
+      "JON.2.2",
+      "JON.2.3",
+      "JON.2.4",
+      "JON.2.5",
+      "JON.2.6",
+      "JON.2.7",
+      "JON.2.8",
+      "JON.2.9",
+      "JON.2.10"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Jonah pericope (this project's own sectioning, CC0): Jonah 2, Jonah's own prayer of thanksgiving out of the fish's belly -- 'Salvation is of the Lord' -- and the fish vomiting him out upon dry land.",
+    "kjv_superscription": null,
+    "ref_note": "Same traditional year as jon_flight_and_storm, immediately following. Place: no separate place id exists for 'the sea' itself; joppa is kept as the nearest curated anchor (the voyage's own point of departure, 1:3) since the fish's own location is never itself named.",
+    "order_key": 0
+  },
+  {
+    "id": "jon_nineveh_repents",
+    "label": "Jonah preaches at Nineveh; the city repents",
+    "when": {
+      "from_year": -825,
+      "to_year": -825
+    },
+    "places": [
+      "nineveh"
+    ],
+    "verses": [
+      "JON.3.1",
+      "JON.3.2",
+      "JON.3.3",
+      "JON.3.4",
+      "JON.3.5",
+      "JON.3.6",
+      "JON.3.7",
+      "JON.3.8",
+      "JON.3.9",
+      "JON.3.10"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Jonah pericope (this project's own sectioning, CC0): Jonah 3, the word of the Lord a second time, Jonah's own preaching through Nineveh ('yet forty days, and Nineveh shall be overthrown'), and the king and people's own repentance in sackcloth and ashes, so that God repented of the evil he had said he would do unto them.",
+    "kjv_superscription": null,
+    "ref_note": "Same traditional year as jon_flight_and_storm. Place: Nineveh, explicit (3:3-4).",
+    "order_key": 0
+  },
+  {
+    "id": "jon_anger_and_the_gourd",
+    "label": "Jonah's own anger at the Lord's mercy; the gourd, the worm, and the east wind",
+    "when": {
+      "from_year": -825,
+      "to_year": -825
+    },
+    "places": [
+      "nineveh"
+    ],
+    "verses": [
+      "JON.4.1",
+      "JON.4.2",
+      "JON.4.3",
+      "JON.4.4",
+      "JON.4.5",
+      "JON.4.6",
+      "JON.4.7",
+      "JON.4.8",
+      "JON.4.9",
+      "JON.4.10",
+      "JON.4.11"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Jonah pericope (this project's own sectioning, CC0): Jonah 4, Jonah's own displeasure that Nineveh was spared, his own booth east of the city, the gourd the Lord prepared and the worm that withered it, and the Lord's own closing question -- 'should not I spare Nineveh, that great city?'",
+    "kjv_superscription": null,
+    "ref_note": "Same traditional year as jon_flight_and_storm, immediately following. Place: Nineveh, unchanged (4:5, 'out of the city').",
+    "order_key": 0
+  },
+  {
     "id": "theo-201",
     "label": "Death of Jehoahash",
     "when": {
@@ -43182,46 +43887,6 @@
     "order_key": 0
   },
   {
-    "id": "theo-244",
-    "label": "Prophecies of Obadiah",
-    "when": {
-      "from_year": -585,
-      "to_year": -585
-    },
-    "places": [],
-    "verses": [
-      "OBA.1.1",
-      "OBA.1.2",
-      "OBA.1.3",
-      "OBA.1.4",
-      "OBA.1.5",
-      "OBA.1.6",
-      "OBA.1.7",
-      "OBA.1.8",
-      "OBA.1.9",
-      "OBA.1.10",
-      "OBA.1.11",
-      "OBA.1.12",
-      "OBA.1.13",
-      "OBA.1.14",
-      "OBA.1.15",
-      "OBA.1.16",
-      "OBA.1.17",
-      "OBA.1.18",
-      "OBA.1.19",
-      "OBA.1.20",
-      "OBA.1.21"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": null,
-    "kjv_superscription": null,
-    "ref_note": null,
-    "order_key": 0
-  },
-  {
     "id": "exl_tahpanhes",
     "label": "The remnant flees to Tahpanhes in Egypt",
     "when": {
@@ -44143,6 +44808,128 @@
     "kjv_superscription": null,
     "ref_note": "Dated from the prophets' own restarting of the work in Darius's second year (5:1, -520, per the pre-existing return narrative's own adjacent dating) through the temple's own completion, matching the pre-existing ret_jerusalem_temple (-516) exactly.",
     "order_key": 0
+  },
+  {
+    "id": "hag_first_oracle_rebuild_the_house",
+    "label": "Consider your ways: the call to rebuild the Lord's house",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "HAG.1.1",
+      "HAG.1.2",
+      "HAG.1.3",
+      "HAG.1.4",
+      "HAG.1.5",
+      "HAG.1.6",
+      "HAG.1.7",
+      "HAG.1.8",
+      "HAG.1.9",
+      "HAG.1.10",
+      "HAG.1.11",
+      "HAG.1.12",
+      "HAG.1.13",
+      "HAG.1.14",
+      "HAG.1.15"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Haggai pericope (this project's own sectioning, CC0 -- no external PD source claimed): Haggai 1, dated 'the second year of Darius the king,' the sixth month, the first day -- the Lord's own word by Haggai to Zerubbabel the governor and Joshua the high priest, rebuking the people's own cieled houses while the Lord's house lay waste, and their own obedience: 'they came and did work in the house of the Lord,' dated again to the twenty-fourth day of the same month (1:15).",
+    "kjv_superscription": null,
+    "ref_note": "Date: 'the second year of Darius the king... the sixth month, the first day' (1:1), interpolated from the pre-existing theo-245. Place: Jerusalem, the temple site, implicit throughout via Zerubbabel/Joshua's own presence there.",
+    "order_key": 1
+  },
+  {
+    "id": "hag_second_oracle_latter_glory",
+    "label": "The latter glory of this house shall be greater than the former",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "HAG.2.1",
+      "HAG.2.2",
+      "HAG.2.3",
+      "HAG.2.4",
+      "HAG.2.5",
+      "HAG.2.6",
+      "HAG.2.7",
+      "HAG.2.8",
+      "HAG.2.9"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Haggai pericope (this project's own sectioning, CC0): Haggai 2:1-9, dated the seventh month, the twenty-first day -- the Lord's own encouragement to Zerubbabel, Joshua, and the people to be strong and work, promising to shake the nations and fill the house with glory: 'the glory of this latter house shall be greater than of the former... and in this place will I give peace.'",
+    "kjv_superscription": null,
+    "ref_note": "Date: 'the seventh month, in the one and twentieth day of the month' (2:1), same regnal year as hag_first_oracle_rebuild_the_house (2:18 confirms 'the second year of Darius' spans this whole book). Place: Jerusalem, unchanged.",
+    "order_key": 2
+  },
+  {
+    "id": "hag_third_oracle_priests_ruling_on_holiness",
+    "label": "The priests' own ruling on holiness and defilement; the Lord's blessing from this day forward",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "HAG.2.10",
+      "HAG.2.11",
+      "HAG.2.12",
+      "HAG.2.13",
+      "HAG.2.14",
+      "HAG.2.15",
+      "HAG.2.16",
+      "HAG.2.17",
+      "HAG.2.18",
+      "HAG.2.19"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Haggai pericope (this project's own sectioning, CC0): Haggai 2:10-19, dated the twenty-fourth day of the ninth month -- Haggai's own question put to the priests concerning holy flesh and defilement by a dead body, applied to the nation's own former unclean offerings, and the Lord's own promise: 'from this day will I bless you.'",
+    "kjv_superscription": null,
+    "ref_note": "Date: 'the four and twentieth day of the ninth month... in the second year of Darius' (2:10), explicit. Place: Jerusalem, unchanged.",
+    "order_key": 3
+  },
+  {
+    "id": "hag_fourth_oracle_zerubbabels_signet",
+    "label": "Zerubbabel made as a signet",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "HAG.2.20",
+      "HAG.2.21",
+      "HAG.2.22",
+      "HAG.2.23"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Haggai pericope (this project's own sectioning, CC0): Haggai 2:20-23, a second, distinct word 'the same day' addressed specifically to Zerubbabel -- the Lord's own promise to overthrow the kingdoms of the heathen and make Zerubbabel 'as a signet: for I have chosen thee.'",
+    "kjv_superscription": null,
+    "ref_note": "Date: 'the same day' as hag_third_oracle_priests_ruling_on_holiness (2:20, 'and again the word of the Lord came... in the four and twentieth day of the month'), marked as a formally separate word by the text's own 'and again,' addressed to a different recipient (Zerubbabel alone, not the people generally) -- order_key=4 keeps it after its own same-day sibling in the global chronological timeline. Place: Jerusalem, unchanged.",
+    "order_key": 4
   },
   {
     "id": "ret_jerusalem_temple",

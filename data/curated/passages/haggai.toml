@@ -1,0 +1,74 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Haggai, in the SAME `[[event]]` schema every other `passages/*.toml` file
+# uses. KIND POLICY: see obadiah.toml's own header note -- Haggai is this
+# slice's clearest EVENT-kind case: every one of its four oracles carries
+# the text's OWN explicit day/month/regnal-year date-stamp (1:1, 2:1, 2:10,
+# 2:20), not an outside inference.
+#
+# RECONCILIATION: one pre-existing bare Theographic event touches this book
+# -- `theo-245` ("Prophecies of Haggai," all 38 verses, -520). LAYER-0, not
+# heading-worthy today; every container below stays well under the 0.8
+# jaccard sweep floor against it (largest, 15/38 = 0.395).
+#
+# DATE: all four oracles fall within "the second year of Darius the king"
+# (1:1, repeated 2:10) -- theo-245's own -520 is REUSED (interpolated, never
+# independently re-derived) uniformly for all four, consistent with the
+# text's own internal cross-check: `ret_jerusalem_temple` (data/curated/
+# events-extra.toml) is independently dated -516, matching Ezra 6:15's own
+# "sixth year of Darius" for the temple's completion -- four years after
+# this book's own "second year," exactly the gap theo-245's own -520 vs.
+# ret_jerusalem_temple's own -516 already shows, an internal consistency
+# check confirming the reused date rather than a fresh derivation.
+# `order_key` marks the four oracles' own chronological order within the
+# shared year (month 6 day 1; month 7 day 21; month 9 day 24; month 9 day
+# 24 again, addressed second per the text's own "AND AGAIN the word of the
+# Lord came," 2:20). PLACE: Jerusalem throughout (the temple site, explicit
+# via Zerubbabel/Joshua the high priest's own presence there).
+
+[[event]]
+id = "hag_first_oracle_rebuild_the_house"
+label = "Consider your ways: the call to rebuild the Lord's house"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 1
+places = ["jerusalem"]
+verses = ["HAG.1.1-15"]
+atlas_section = "Haggai pericope (this project's own sectioning, CC0 -- no external PD source claimed): Haggai 1, dated 'the second year of Darius the king,' the sixth month, the first day -- the Lord's own word by Haggai to Zerubbabel the governor and Joshua the high priest, rebuking the people's own cieled houses while the Lord's house lay waste, and their own obedience: 'they came and did work in the house of the Lord,' dated again to the twenty-fourth day of the same month (1:15)."
+ref_note = "Date: 'the second year of Darius the king... the sixth month, the first day' (1:1), interpolated from the pre-existing theo-245. Place: Jerusalem, the temple site, implicit throughout via Zerubbabel/Joshua's own presence there."
+
+[[event]]
+id = "hag_second_oracle_latter_glory"
+label = "The latter glory of this house shall be greater than the former"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 2
+places = ["jerusalem"]
+verses = ["HAG.2.1-9"]
+atlas_section = "Haggai pericope (this project's own sectioning, CC0): Haggai 2:1-9, dated the seventh month, the twenty-first day -- the Lord's own encouragement to Zerubbabel, Joshua, and the people to be strong and work, promising to shake the nations and fill the house with glory: 'the glory of this latter house shall be greater than of the former... and in this place will I give peace.'"
+ref_note = "Date: 'the seventh month, in the one and twentieth day of the month' (2:1), same regnal year as hag_first_oracle_rebuild_the_house (2:18 confirms 'the second year of Darius' spans this whole book). Place: Jerusalem, unchanged."
+
+[[event]]
+id = "hag_third_oracle_priests_ruling_on_holiness"
+label = "The priests' own ruling on holiness and defilement; the Lord's blessing from this day forward"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 3
+places = ["jerusalem"]
+verses = ["HAG.2.10-19"]
+atlas_section = "Haggai pericope (this project's own sectioning, CC0): Haggai 2:10-19, dated the twenty-fourth day of the ninth month -- Haggai's own question put to the priests concerning holy flesh and defilement by a dead body, applied to the nation's own former unclean offerings, and the Lord's own promise: 'from this day will I bless you.'"
+ref_note = "Date: 'the four and twentieth day of the ninth month... in the second year of Darius' (2:10), explicit. Place: Jerusalem, unchanged."
+
+[[event]]
+id = "hag_fourth_oracle_zerubbabels_signet"
+label = "Zerubbabel made as a signet"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 4
+places = ["jerusalem"]
+verses = ["HAG.2.20-23"]
+atlas_section = "Haggai pericope (this project's own sectioning, CC0): Haggai 2:20-23, a second, distinct word 'the same day' addressed specifically to Zerubbabel -- the Lord's own promise to overthrow the kingdoms of the heathen and make Zerubbabel 'as a signet: for I have chosen thee.'"
+ref_note = "Date: 'the same day' as hag_third_oracle_priests_ruling_on_holiness (2:20, 'and again the word of the Lord came... in the four and twentieth day of the month'), marked as a formally separate word by the text's own 'and again,' addressed to a different recipient (Zerubbabel alone, not the people generally) -- order_key=4 keeps it after its own same-day sibling in the global chronological timeline. Place: Jerusalem, unchanged."

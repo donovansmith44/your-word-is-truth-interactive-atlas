@@ -41,9 +41,17 @@
 # which already unions witness verses in, exactly as a reader's own EVENT
 # popover would. Proverbs, Ecclesiastes, and Song of Solomon follow as
 # each lands in turn, same one-book-at-a-time growth discipline.
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets):
+# Obadiah, Jonah, Nahum, Habakkuk, Zephaniah, Haggai, and Joel added below
+# once each was independently confirmed covered against the real compiled
+# data (see batch-w4-report.md's own coverage table) -- the remaining
+# prophets (Isaiah, Jeremiah, Lamentations, Ezekiel, Daniel, Hosea, Amos,
+# Micah, Zechariah, Malachi) follow as each lands in turn, same
+# one-book-at-a-time growth discipline.
 declared = [
   "MAT", "MRK", "LUK", "JHN", "ACT",
   "GEN", "EXO", "LEV", "RUT", "NUM", "DEU", "JOS", "JDG",
   "1SA", "2SA", "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST",
   "JOB", "PSA", "PRO", "ECC", "SNG",
+  "OBA", "JON", "NAM", "HAB", "ZEP", "HAG", "JOL",
 ]

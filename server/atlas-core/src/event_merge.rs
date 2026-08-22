@@ -93,19 +93,22 @@ pub struct EventMerge {
     pub reason: &'static str,
 }
 
-/// 63 pairs, every one individually verified against the real compiled
+/// 64 pairs, every one individually verified against the real compiled
 /// `data/compiled/events.json` before being added here: 62 found by the
 /// automated verse-set-Jaccard sweep (>=0.8, book-consistent,
 /// label-consistent) plus 1 added by hand (`jm_jordan`/`theo-267`, jaccard
 /// 0.5 -- below the sweep's own floor, but the owner's own named proof
 /// case, see that entry's own reason) -- the full per-pair table lives in
-/// batch-hotfix4-report.md, not duplicated here. Alphabetical by
-/// `survivor` for easy scanning/diffing.
+/// batch-hotfix4-report.md, not duplicated here -- plus 1 added by Batch W4
+/// (`oba_vision`/`theo-244`, jaccard 1.0, Obadiah's own single-container-book
+/// exception, see that entry's own reason). Alphabetical by `survivor` for
+/// easy scanning/diffing.
 pub const EVENT_MERGE_PAIRS: &[EventMerge] = &[
     EventMerge { survivor: "jm_bethsaida", absorbed: "theo-393", reason: "Theographic freebie duplicate (jaccard 0.978 verse-set overlap, same Gospel pericope): \"Feeding of Five Thousand\" (theo-393, Theographic-scale date) is the identical event as \"Jesus feeds the five thousand near Bethsaida\" (jm_bethsaida, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "jm_cana", absorbed: "theo-271", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"Water to Wine\" (theo-271, Theographic-scale date) is the identical event as \"Jesus turns water to wine at Cana\" (jm_cana, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "jm_egypt", absorbed: "theo-257", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"Joseph and Mary Flee to Egypt\" (theo-257, Theographic-scale date) is the identical event as \"The holy family flees to Egypt\" (jm_egypt, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "jm_jordan", absorbed: "theo-267", reason: "Theographic freebie duplicate (jaccard 0.500 verse-set overlap -- below this module's own 0.8 sweep floor, so NOT found by the automated sweep; added by hand because the owner's own live report named this exact pair as proof the traversal lies: 'the temptation of Jesus in the wilderness... is labeled as being before Jesus' baptism'): \"John Baptizes Jesus\" (theo-267, Theographic-scale AD 26, covering MAT+MRK+LUK) is the identical event as \"Jesus is baptized in the Jordan\" (jm_jordan, the AD-33-anchored, Robertson-grounded curated container, AD 29, MAT-primary). Absorbed; theo-267's own extra Mark/Luke coverage is restored not by touching jm_jordan's own top-level verses but by giving jm_jordan real, individually-verified MAT/MRK/LUK witness rows (data/curated/event-witnesses.toml), the same shape its own very next narrative leg (rob_temptation) already has." },
+    EventMerge { survivor: "oba_vision", absorbed: "theo-244", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap -- Obadiah is a single 21-verse book, the brief's own explicit lawful single-container exception): \"Prophecies of Obadiah\" (theo-244, Theographic-scale date -585) is the identical event as \"The vision of Obadiah.\" (oba_vision, Batch W4, kjv_superscription-titled whole-book container, GENERAL-kind/undated per that file's own kind policy). Absorbed; survivor's own citation stands unmodified." },
     EventMerge { survivor: "pw_gethsemane", absorbed: "theo-454", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"Prayer and Betrayal in Gethsemane\" (theo-454, Theographic-scale date) is the identical event as \"Jesus prays and is arrested at Gethsemane\" (pw_gethsemane, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "pw_jerusalem_entry", absorbed: "theo-444", reason: "Theographic freebie duplicate (jaccard 0.978 verse-set overlap, same Gospel pericope): \"Triumphal Entry\" (theo-444, Theographic-scale date) is the identical event as \"The triumphal entry into Jerusalem\" (pw_jerusalem_entry, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "rob_adulterous_woman", absorbed: "theo-419", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"Woman Caught in Adultery\" (theo-419, Theographic-scale date) is the identical event as \"A woman taken in adultery is brought to Jesus for judgment\" (rob_adulterous_woman, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
@@ -369,11 +372,13 @@ mod tests {
     }
 
     #[test]
-    fn merge_table_has_exactly_63_verified_pairs() {
-        // 62 found by the automated >=0.8 jaccard sweep + 1 added by hand
-        // (jm_jordan/theo-267, jaccard 0.5 -- below the sweep's own floor,
-        // the owner's own named proof case, see that entry's own reason).
-        assert_eq!(EVENT_MERGE_PAIRS.len(), 63);
+    fn merge_table_has_exactly_64_verified_pairs() {
+        // 62 found by the automated >=0.8 jaccard sweep (HOTFIX-4) + 1 added
+        // by hand (jm_jordan/theo-267, jaccard 0.5 -- below the sweep's own
+        // floor, the owner's own named proof case, see that entry's own
+        // reason) + 1 added by Batch W4 (oba_vision/theo-244, jaccard 1.0,
+        // Obadiah's own brief-sanctioned single-container-book exception).
+        assert_eq!(EVENT_MERGE_PAIRS.len(), 64);
     }
 
     // --- apply_event_merges -------------------------------------------------
