@@ -27,10 +27,10 @@
 
 [[event]]
 id = "amo_superscription_and_the_lords_roar"
-label = "The words of Amos, who was among the herdmen of Tekoa, in the days of Uzziah king of Judah and Jeroboam the son of Joash king of Israel."
+label = "The words of Amos, who was among the herdmen of Tekoa, which he saw concerning Israel in the days of Uzziah king of Judah, and in the days of Jeroboam the son of Joash king of Israel, two years before the earthquake."
 kind = "general"
 verses = ["AMO.1.1-2"]
-kjv_superscription = "AMO.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+kjv_superscription = "AMO.1.1, the book's own superscription, quoted verbatim in full (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- self-caught citation-integrity fix before shipping: the label's own first draft silently trimmed 'which he saw concerning Israel' and 'two years before the earthquake,' which is a paraphrase, not a verbatim quote; corrected to the byte-exact compiled text before this batch's own report."
 ref_note = "GENERAL-kind: oracle, no date of its own claimed beyond the superscription's own broad reign-window ('two years before the earthquake' is a specific but not independently datable detail), per this file's own header note."
 
 [[event]]

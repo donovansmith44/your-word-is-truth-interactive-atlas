@@ -26,10 +26,10 @@
 
 [[event]]
 id = "zep_day_of_the_lord_against_judah"
-label = "The great day of the Lord against Judah and Jerusalem"
+label = "The word of the Lord which came unto Zephaniah the son of Cushi, the son of Gedaliah, the son of Amariah, the son of Hizkiah, in the days of Josiah the son of Amon, king of Judah."
 kind = "general"
 verses = ["ZEP.1.1-18"]
-kjv_superscription = "ZEP.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- naming Zephaniah's own four-generation lineage back to Hizkiah, and dating the book to 'the days of Josiah the son of Amon, king of Judah.'"
+kjv_superscription = "ZEP.1.1, the book's own superscription, quoted verbatim in full (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- naming Zephaniah's own four-generation lineage back to Hizkiah, and dating the book to 'the days of Josiah the son of Amon, king of Judah.' Self-caught citation-integrity fix before shipping: the label's own first draft substituted an unrelated CC0 content-summary phrase ('The great day of the Lord against Judah and Jerusalem') while the kjv_superscription field still claimed a verbatim quote -- a real provenance mismatch, not a paraphrase choice; corrected to the byte-exact compiled text before this batch's own report."
 ref_note = "GENERAL-kind: oracle, no date of its own claimed beyond the superscription's own broad reign-window, per this file's own header note. Content: the Lord's own utter judgment on idolatry, the princes, and 'the day of the Lord's sacrifice.'"
 
 [[event]]

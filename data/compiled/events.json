@@ -1200,7 +1200,7 @@
   },
   {
     "id": "amo_superscription_and_the_lords_roar",
-    "label": "The words of Amos, who was among the herdmen of Tekoa, in the days of Uzziah king of Judah and Jeroboam the son of Joash king of Israel.",
+    "label": "The words of Amos, who was among the herdmen of Tekoa, which he saw concerning Israel in the days of Uzziah king of Judah, and in the days of Jeroboam the son of Joash king of Israel, two years before the earthquake.",
     "when": {
       "from_year": -4004,
       "to_year": 100
@@ -1215,7 +1215,7 @@
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": null,
-    "kjv_superscription": "AMO.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row).",
+    "kjv_superscription": "AMO.1.1, the book's own superscription, quoted verbatim in full (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- self-caught citation-integrity fix before shipping: the label's own first draft silently trimmed 'which he saw concerning Israel' and 'two years before the earthquake,' which is a paraphrase, not a verbatim quote; corrected to the byte-exact compiled text before this batch's own report.",
     "ref_note": "GENERAL-kind: oracle, no date of its own claimed beyond the superscription's own broad reign-window ('two years before the earthquake' is a specific but not independently datable detail), per this file's own header note.",
     "order_key": 0
   },
@@ -12709,7 +12709,7 @@
   },
   {
     "id": "mic_superscription_and_coming_judgment",
-    "label": "The word of the Lord that came to Micah the Morasthite in the days of Jotham, Ahaz, and Hezekiah, kings of Judah.",
+    "label": "The word of the Lord that came to Micah the Morasthite in the days of Jotham, Ahaz, and Hezekiah, kings of Judah, which he saw concerning Samaria and Jerusalem.",
     "when": {
       "from_year": -4004,
       "to_year": 100
@@ -12738,7 +12738,7 @@
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": null,
-    "kjv_superscription": "MIC.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row).",
+    "kjv_superscription": "MIC.1.1, the book's own superscription, quoted verbatim in full (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- self-caught citation-integrity fix before shipping: the label's own first draft silently trimmed the closing clause 'which he saw concerning Samaria and Jerusalem,' which is a paraphrase, not a verbatim quote; corrected to the byte-exact compiled text before this batch's own report.",
     "ref_note": "GENERAL-kind: oracle, no date of its own claimed beyond the superscription's own broad three-king reign-window, per this file's own header note. Content: judgment coming down upon Samaria and Jerusalem, and a lament playing on the names of Judah's own towns (Gath, Aphrah, Saphir, Lachish, Moresheth-gath...) -- a literary-structure fact (wordplay), not textual criticism.",
     "order_key": 0
   },
@@ -21256,7 +21256,7 @@
   },
   {
     "id": "zep_day_of_the_lord_against_judah",
-    "label": "The great day of the Lord against Judah and Jerusalem",
+    "label": "The word of the Lord which came unto Zephaniah the son of Cushi, the son of Gedaliah, the son of Amariah, the son of Hizkiah, in the days of Josiah the son of Amon, king of Judah.",
     "when": {
       "from_year": -4004,
       "to_year": 100
@@ -21287,7 +21287,7 @@
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": null,
-    "kjv_superscription": "ZEP.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- naming Zephaniah's own four-generation lineage back to Hizkiah, and dating the book to 'the days of Josiah the son of Amon, king of Judah.'",
+    "kjv_superscription": "ZEP.1.1, the book's own superscription, quoted verbatim in full (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- naming Zephaniah's own four-generation lineage back to Hizkiah, and dating the book to 'the days of Josiah the son of Amon, king of Judah.' Self-caught citation-integrity fix before shipping: the label's own first draft substituted an unrelated CC0 content-summary phrase ('The great day of the Lord against Judah and Jerusalem') while the kjv_superscription field still claimed a verbatim quote -- a real provenance mismatch, not a paraphrase choice; corrected to the byte-exact compiled text before this batch's own report.",
     "ref_note": "GENERAL-kind: oracle, no date of its own claimed beyond the superscription's own broad reign-window, per this file's own header note. Content: the Lord's own utter judgment on idolatry, the princes, and 'the day of the Lord's sacrifice.'",
     "order_key": 0
   },

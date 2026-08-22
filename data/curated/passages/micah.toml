@@ -34,10 +34,10 @@
 
 [[event]]
 id = "mic_superscription_and_coming_judgment"
-label = "The word of the Lord that came to Micah the Morasthite in the days of Jotham, Ahaz, and Hezekiah, kings of Judah."
+label = "The word of the Lord that came to Micah the Morasthite in the days of Jotham, Ahaz, and Hezekiah, kings of Judah, which he saw concerning Samaria and Jerusalem."
 kind = "general"
 verses = ["MIC.1.1-16"]
-kjv_superscription = "MIC.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+kjv_superscription = "MIC.1.1, the book's own superscription, quoted verbatim in full (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- self-caught citation-integrity fix before shipping: the label's own first draft silently trimmed the closing clause 'which he saw concerning Samaria and Jerusalem,' which is a paraphrase, not a verbatim quote; corrected to the byte-exact compiled text before this batch's own report."
 ref_note = "GENERAL-kind: oracle, no date of its own claimed beyond the superscription's own broad three-king reign-window, per this file's own header note. Content: judgment coming down upon Samaria and Jerusalem, and a lament playing on the names of Judah's own towns (Gath, Aphrah, Saphir, Lachish, Moresheth-gath...) -- a literary-structure fact (wordplay), not textual criticism."
 
 [[event]]
