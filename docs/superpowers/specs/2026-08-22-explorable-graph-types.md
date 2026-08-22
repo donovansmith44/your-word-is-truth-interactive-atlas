@@ -433,12 +433,33 @@ per-kind invariants)`.
 /// card/edge_summary belong to the VIEW side (Discovery → View,
 /// rendered via Presentable), not to the composition algebra.
 ///
-/// What every node kind implements; the ONLY thing surfaces consume.
+/// SPLIT (owner review, 2026-08-22: "why is card in the explorable
+/// interface" — it was a popover-convenience smear). Two capabilities,
+/// separately named, because they are separately true:
+///
+/// What a node IS — every node has this trivially:
+pub trait NodeData {
+    fn id(&self) -> AnyNodeId;
+    fn payload(&self) -> &NodePayload;
+    fn provenance(&self) -> ProvenanceId;
+}
+
+/// What EXPLORATION means — yielding frontiers, nothing else. This is
+/// the capability the monad's arrows are generated from; its name now
+/// claims exactly what it provides:
 pub trait Explorable {
-    fn card(&self, g: &Graph) -> Card;                       // identity + decisive label + provenance
-    fn edge_summary(&self, g: &Graph) -> EdgeSummary;        // kind → count (cheap; popover opener)
+    fn edge_summary(&self, g: &Graph) -> EdgeSummary;        // kind → true count (honesty needs it)
     fn edges(&self, g: &Graph, q: EdgeQuery) -> EdgePage;    // one kind, one page
 }
+
+/// Card is NOT a trait method — it is a VIEW: assembled by the view
+/// layer from NodeData plus law-computed selections (decisive label via
+/// the container-algebra law; citation strings via CorpusScheme), then
+/// rendered via Presentable(Card context). Laws stay server data; the
+/// trait stack stays honest; the WIRE IS UNCHANGED (GET /api/node/{id}
+/// still returns the assembled card view + edge summary — endpoint
+/// shape identical, type story corrected).
+pub fn card(n: &dyn NodeData, g: &Graph) -> Card;
 
 ### The Explore monad, realized (the carrier the §0 algebra specifies)
 
