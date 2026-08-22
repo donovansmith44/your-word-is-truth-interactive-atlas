@@ -204,6 +204,27 @@ pairs and remaining polish items carry into the re-scoped queue.
 - Sub-verse exploration requires no schema change when materialized
   (locus addressing already carries it).
 
+## 9a. Storage portability (owner, 2026-08-22: "at some point we might
+need somewhere else to put all our data")
+
+The store is a PORT, not a place. Serving binds only to a GraphStore
+trait whose operations are exactly the query surface: derive(pid), node
+lookup, one adjacency page per relation per direction, reading windows,
+edge-summary counts, current_version()/open(version) with snapshot
+semantics (immutable reads, atomic advance). The compiled artifact is
+defined LOGICALLY — a content-addressed set of canonical things +
+derived indexes + a version root — never as a file format; the fidelity
+and property laws run against the port and therefore certify any
+backend. Content addressing is the portability guarantee: migrating
+stores is dump → load → verify every pid → compare roots. Laws never
+move into a backend (no schema constraints, no triggers — stores are
+dumb verified bytes + indexes). The append-only assertion log is the
+data's real home: any future backend is populated by REPLAYING
+assertions through the compiler, never by format translation. Two
+implementations keep the port honest: M-A's in-memory build and M-C's
+serialized artifact — a database, if ever wanted, is impl #3 into a
+worn socket.
+
 ## 9b. Community addressability (owner, 2026-08-22)
 
 The project is headed for open-source, community-driven development:
