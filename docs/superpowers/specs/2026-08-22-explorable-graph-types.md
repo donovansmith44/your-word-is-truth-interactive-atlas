@@ -36,16 +36,49 @@ pub type SourceId    = NodeId<SourceTag>;
 /// One erased form exists for the wire/UI boundary only:
 pub struct AnyNodeId { kind: NodeKind, raw: Interned }
 
-/// LAW (owner directive): a verse is not an atom. Every reference to text
-/// is a locus that can already address below the verse; sub-verse nodes
-/// materialize later WITHOUT changing this type or anything built on it.
+/// LAW (owner directive, 2026-08-22): the base text abstraction is "a
+/// more basic wrapper around strings" — NOT Bible-shaped. Text lives in
+/// CORPORA; the KJV is one corpus whose addressing scheme is VerseRef.
+/// Extrabiblical corpora (the Book of Concord first — the Bente/Dau
+/// catechism data is already its seed) join as new corpora with their own
+/// structural schemes, and cross-corpus connections become ordinary edges.
+pub struct CorpusId(Interned);            // "kjv", "concord-bente-dau", ...
+
+/// Per-corpus structural addressing: each corpus defines its typed
+/// position scheme, its own total reading order, and its citation format.
+/// A corpus is its own reading spine — there is no cross-corpus
+/// reading-order, only cross-corpus EDGES.
+pub trait CorpusScheme {
+    type Ref: Ord;                        // VerseRef for KJV; Part/Article/Paragraph for Concord
+    fn cite(&self, r: &Self::Ref) -> Citation;
+}
+
+/// Closed enum today; a new corpus is a deliberate variant (same
+/// philosophy as NodeKind — every match site acknowledges it).
+pub enum TextRef {
+    Kjv(VerseRef),
+    Concord(ConcordRef),                  // RESERVED: materializes when ingested
+}
+
 pub struct VerseRef { pub book: BookId, pub chapter: u16, pub verse: u16 }
 
-/// Token indices into the verse's canonical tokenization (rules deferred;
-/// the address space is reserved now). None = the whole verse.
+/// Token indices into the unit's canonical tokenization (rules deferred;
+/// the address space is reserved now). None = the whole unit. A verse —
+/// or a Concord paragraph — is not an atom; sub-unit nodes materialize
+/// later WITHOUT changing this type or anything built on it.
 pub struct TokenSpan { pub start: u16, pub end: u16 } // start <= end, validated
 
-pub struct TextLocus { pub verse: VerseRef, pub span: Option<TokenSpan> }
+/// The general text address: any corpus, any unit, optional sub-span.
+pub struct TextLocus { pub at: TextRef, pub span: Option<TokenSpan> }
+
+/// REFINEMENT where LAW demands Scripture specifically. The witness canon
+/// ("the compiled KJV text is the canon of witnesses") is a type, not a
+/// convention: `witnesses` accepts KjvLocus, so an extrabiblical witness
+/// is a compile error, while `mentions`/future citation edges accept the
+/// general TextLocus and may cross corpora freely.
+pub struct KjvLocus { pub verse: VerseRef, pub span: Option<TokenSpan> }
+// impl From<KjvLocus> for TextLocus — widening is free; narrowing is a
+// checked parse.
 
 /// Container content is a SET of loci (container algebra: ∅ is lawful
 /// identity; overlaps between containers are lawful; verses immutable).
@@ -67,7 +100,8 @@ pub enum NodeKind { Book, Chapter, Verse, Container, Event, Narrative,
 pub struct Node { pub id: AnyNodeId, pub payload: NodePayload }
 
 pub enum NodePayload {
-    Verse    { text: KjvText },                  // the ONLY store of scripture (P1)
+    TextUnit { corpus: CorpusId, text: String }, // the ONLY store of ANY corpus text (P1);
+                                                 // KJV verses are TextUnits of the kjv corpus
     Container{ title: DecisiveTitle, content: LocusSet, provenance: SourceRef },
     Event    { label: Label },                   // dates/places live on EDGES
     Narrative{ label: Label },                   // membership lives on succession edges
@@ -103,7 +137,7 @@ pub struct Graph {
     pub mentions:    Table<Mentions>,     // TextLocus → Place | Person
     pub cross_refs:  Table<CrossRef>,     // TextLocus → TextLocus, votes-ranked
     // -------- derived relations (compiler output; no authored rows) ----
-    pub reading:     ReadingOrder,        // total order on materialized TextSpans
+    pub reading:     PerCorpusReadingOrder, // one total order PER corpus; no cross-corpus spine
     pub temporal:    TemporalAdjacency,   // ONLY where resolved dates differ
     pub member_of:   MemberIndex,         // inverse of contains/witnesses
     pub parallels:   ParallelIndex,       // via co-witnessing one Event
@@ -120,7 +154,7 @@ pub struct Contains {
 /// so `parallel` is DERIVED from co-witnessing and cannot disagree with it.
 pub struct Witnesses {
     pub event: EventId,
-    pub witness: LocusRange,              // clamped, translation-keyed text
+    pub witness: KjvLocusRange,           // Scripture-typed: the witness canon as a type
     pub provenance: ProvenanceId,
 }
 
@@ -189,7 +223,7 @@ pub trait SourceAdapter {
 }
 
 pub enum Assertion {
-    Verse(VerseAssertion),                 // canonical text — KJV adapter only
+    TextUnit(TextUnitAssertion),           // corpus text — KJV adapter today; Concord later
     Container(ContainerAssertion),
     Event(EventAssertion),
     Witness(WitnessAssertion),
@@ -244,7 +278,7 @@ pub struct GraphVersion(Hash);        // one stamp invalidates all caches
 /// per-kind order (deterministic graph ⇒ deterministic pages).
 
 /// The reader is not special — it is this query:
-pub fn reading_window(g: &Graph, from: TextLocus, n: u16, dir: Direction) -> Window;
+pub fn reading_window(g: &Graph, from: TextLocus, n: u16, dir: Direction) -> Window; // corpus from the locus
 /// LAW: for any partition into windows, concatenation is invariant
 /// (lazy loading can never change what the Bible says).
 ```
@@ -253,7 +287,7 @@ Wire (two endpoints total; all existing routes become views then retire):
 ```
 GET /api/node/{id}                      → Card + EdgeSummary   (+ GraphVersion)
 GET /api/node/{id}/edges?kind&cursor&n  → EdgePage
-GET /api/text?from=<locus>&n=&dir=      → Window               (reader spine)
+GET /api/text?from=<locus>&n=&dir=      → Window               (per-corpus reading spine)
 ```
 
 ## 7. Surfaces = selections (presentation discipline as data)
@@ -295,6 +329,9 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
 - A fact without provenance (`Asserted<T>` is the only ingestion currency).
 - A silent exemption (typed kind + reason + subject, enumerable).
 - A verse-atom assumption (every text endpoint is a TextLocus).
+- A Bible-shaped assumption about text (corpora are first-class; the KJV
+  is one corpus; extrabiblical witnesses are a type error, extrabiblical
+  mentions/citations are not).
 
 ## 10. Open type questions (flagged, not hidden)
 
@@ -302,3 +339,5 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
 - TokenSpan semantics await the tokenization rules (deferred by directive).
 - Whether `SameTime` clusters paginate (large same-year antichains in dense eras).
 - EdgeMeta variants per kind (finalized per surface during M-batches).
+- ConcordRef structural scheme (Part/Article/Paragraph vs edition-keyed;
+  decided when the Book of Concord corpus is ingested).
