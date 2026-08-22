@@ -1,0 +1,72 @@
+# Batch W3 (whole-Bible titled verse containers, third run: Job-Song of
+# Solomon). Song of Solomon, in the SAME `[[event]]` schema
+# `events-extra.toml` uses -- see
+# `data/curated/passages/genesis.toml`'s own header comment for the full
+# reconciliation/provenance framing.
+#
+# RECONCILIATION: zero pre-existing events touch Song of Solomon (fresh
+# authoring -- verified against the real compiled `events.json` before
+# authoring).
+#
+# GRANULARITY (the brief's own genre guidance, poetry = general-kind, and
+# "natural units" throughout): six scenes, boundaries drawn at the book's
+# OWN recurring refrain, "I charge you, O ye daughters of Jerusalem...
+# that ye stir not up, nor awake my love, till/until he please" (2:7, 3:5,
+# 8:4 -- confirmed identical, word for word, against the compiled KJV text
+# before being used as a boundary marker), plus two further clear scene
+# shifts (5:1/5:2, the garden scene's own close and a new night-seeking
+# scene's own opening; 6:3/6:4, a closing formula and a new scene praising
+# the bride's own beauty). A literary-structure decomposition (the refrain
+# itself is the evidence, not this project's own invention), not textual
+# criticism. The opening unit alone carries `kjv_superscription` provenance
+# (1:1, "The song of songs, which is Solomon's," a genuine title verse);
+# the remaining five carry this project's own `atlas_section` CC0 title.
+# ALL six are GENERAL-kind (poetry -- the brief's own honest default).
+
+[[event]]
+id = "sng_song_of_songs"
+label = "The song of songs, which is Solomon's."
+kind = "general"
+verses = ["SNG.1.1-17", "SNG.2.1-7"]
+kjv_superscription = "SNG.1.1, the book's own opening superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own. The lovers' own first exchange of mutual praise, closing on the book's own recurring refrain (2:7), 'I charge you, O ye daughters of Jerusalem... that ye stir not up, nor awake my love, till he please' -- confirmed identical against the compiled text to the SAME refrain at 3:5 and 8:4, this file's own boundary marker throughout."
+
+[[event]]
+id = "sng_springtime_invitation"
+label = "The voice of my beloved: a springtime invitation, and a night of seeking"
+kind = "general"
+verses = ["SNG.2.8-17", "SNG.3.1-5"]
+atlas_section = "Song of Solomon pericope (this project's own sectioning, CC0 -- no external PD source claimed): Song of Solomon 2:8-3:5, the beloved's own arrival, 'leaping upon the mountains,' his own invitation, 'rise up, my love... for, lo, the winter is past,' and her own night search for him through the city, closing again on the book's own recurring refrain (3:5)."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "sng_wedding_procession"
+label = "The wedding procession of Solomon, and the garden of delight"
+kind = "general"
+verses = ["SNG.3.6-11", "SNG.4.1-16", "SNG.5.1"]
+atlas_section = "Song of Solomon pericope (this project's own sectioning, CC0): Song of Solomon 3:6-5:1, Solomon's own procession and bed, his own extended praise of the bride's own beauty (chapter 4), and their own consummation in the garden, closing 'eat, O friends; drink, yea, drink abundantly, O beloved.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "sng_seeking_at_night"
+label = "Seeking the beloved by night; praise of his own beauty"
+kind = "general"
+verses = ["SNG.5.2-16", "SNG.6.1-3"]
+atlas_section = "Song of Solomon pericope (this project's own sectioning, CC0): Song of Solomon 5:2-6:3, the bride's own dream or night vision -- her beloved knocking, her own delay, his own departure, and her own search for him through the city -- followed by her own extended praise of his beauty when the daughters of Jerusalem ask what makes him so special, closing 'I am my beloved's, and my beloved is mine: he feedeth among the lilies.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "sng_praise_of_beauty"
+label = "Praise of the bride's own beauty, and mutual delight"
+kind = "general"
+verses = ["SNG.6.4-13", "SNG.7.1-13", "SNG.8.1-4"]
+atlas_section = "Song of Solomon pericope (this project's own sectioning, CC0): Song of Solomon 6:4-8:4, the beloved's own extended praise of the bride's own beauty (continuing into chapter 7), and her own invitation to him into the vineyards, closing again on the book's own recurring refrain (8:4)."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "sng_epilogue_seal_of_love"
+label = "The epilogue: love as a seal upon the heart, strong as death"
+kind = "general"
+verses = ["SNG.8.5-14"]
+atlas_section = "Song of Solomon pericope (this project's own sectioning, CC0): Song of Solomon 8:5-14, the book's own closing scenes -- 'who is this that cometh up from the wilderness, leaning upon her beloved?' -- the well-known 'set me as a seal upon thine heart... for love is strong as death' (8:6-7), and the book's own final exchange, closing 'make haste, my beloved, and be thou like to a roe or to a young hart upon the mountains of spices.'"
+ref_note = "GENERAL-kind, per this file's own header note."
