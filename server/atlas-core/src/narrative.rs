@@ -901,4 +901,184 @@ mod tests {
 
         assert_eq!(e3_via_narrative, e3_via_scene, "the popover's PRIOR/FOLLOWING verse groups must equal the map arrow endpoint's own -- one graph, seen twice");
     }
+
+    // =========================================================================
+    // BATCH HOTFIX-6 (graph-wide chronology audit, owner live reports #8/#9,
+    // 2026-08-22) -- AMENDMENT E: "we need way more than one acceptance test.
+    // the tests need to assert that the application has the property of
+    // adhering to a canonical table of dates." E1-E4 below are PROPERTY tests,
+    // table-driven throughout: every expected value is read from
+    // `d.chronology_anchors`/`d.book_narration_windows` (the SAME compiled
+    // artifact -- `chronology-anchors.json`/`book-narration-windows.json` --
+    // atlas_etl::validate's own ETL-time checks consult), never a hardcoded
+    // year copied into this file. Adding a table row automatically extends
+    // coverage; zero maintenance here when the table grows. E5 (the owner's
+    // own named Solomon-Gibeon/df_ramah case) follows as named smoke ON TOP
+    // of the properties, not instead of them, per the amendment's own text.
+    // =========================================================================
+
+    /// E1 -- ANCHOR-EQUALITY PROPERTY: every anchor-table row bound to an
+    /// event id (`event_id.is_some()`) -> the compiled event's own
+    /// `from_year` EQUALS the table's own `year`. One table-driven test over
+    /// ALL rows (not one test per row) -- failures name the event, the
+    /// table year, and the compiled year, per the amendment's own text.
+    #[test]
+    fn e1_every_bound_anchor_equals_its_compiled_events_own_from_year() {
+        let d = load_real_compiled_data();
+        let bound: Vec<&crate::data::ChronologyAnchor> = d.chronology_anchors.iter().filter(|a| a.event_id.is_some()).collect();
+        assert!(bound.len() >= 15, "expected the real curated anchor table to bind well over 15 rows to real events, got {}", bound.len());
+
+        let mut violations: Vec<String> = Vec::new();
+        for a in &bound {
+            let eid = a.event_id.as_deref().unwrap();
+            match d.event_by_id(eid) {
+                None => violations.push(format!("anchor '{}': bound event_id '{eid}' does not exist in the compiled event set", a.id)),
+                Some(e) if e.when.from_year != a.year => {
+                    violations.push(format!("anchor '{}': table year {} != compiled event '{eid}''s own from_year {}", a.id, a.year, e.when.from_year))
+                }
+                Some(_) => {}
+            }
+        }
+        assert!(violations.is_empty(), "E1 anchor-equality violated for {} row(s):\n{}", violations.len(), violations.join("\n"));
+    }
+
+    /// E2 -- WINDOW-ADHERENCE PROPERTY: every dated event in the COMPILED
+    /// set (loaded fresh off `data/compiled/*.json`, independent of the
+    /// ETL-time validator's own in-process check on `atlas_etl::main`'s own
+    /// `all_events` -- a regression in EITHER layer fails loud, since this
+    /// test never imports atlas_etl at all) lies within the narration
+    /// window of every witness book it claims, recounting mechanism
+    /// honored. Reuses `atlas_core::chronology::window_violations` (the
+    /// SAME predicate `atlas_etl::validate::run_chronology_windows` calls)
+    /// deliberately -- a SECOND, independently-written implementation of
+    /// "is this event's year inside this window" would itself be a defect
+    /// risk (two sources of truth that can silently drift apart); the real
+    /// independence this test buys is LAYER (compiled-JSON-on-disk vs.
+    /// in-process ETL state), not a duplicated algorithm.
+    #[test]
+    fn e2_every_compiled_dated_event_adheres_to_its_witness_books_own_narration_window() {
+        let d = load_real_compiled_data();
+        assert!(!d.book_narration_windows.is_empty(), "the real compiled data must carry real narration windows");
+        let violations = crate::chronology::window_violations(&d.events, &d.book_narration_windows);
+        assert!(
+            violations.is_empty(),
+            "E2 window-adherence violated for {} event(s):\n{}",
+            violations.len(),
+            violations.iter().map(|v| format!("  - '{}' ({:?}): {}..{} outside '{}''s own {}..{}", v.event_id, v.label, v.year.0, v.year.1, v.book, v.window.0, v.window.1)).collect::<Vec<_>>().join("\n")
+        );
+    }
+
+    /// E3 -- CANONICAL-ORDER PROPERTY: the bound anchor rows, sorted by the
+    /// TABLE's own year, embed in the compiled global timeline in strictly
+    /// that order (monotone timeline positions) -- catches any future
+    /// re-sort or calibration drift between anchors. Non-decreasing in
+    /// general, strict specifically between two anchors whose own `year`
+    /// differs (today's real table has no same-year bound anchors at all,
+    /// but the property is stated this way so a future same-year anchor
+    /// pair never breaks this test for the wrong reason).
+    #[test]
+    fn e3_bound_anchors_sorted_by_table_year_are_monotone_on_the_global_timeline() {
+        let d = load_real_compiled_data();
+        let mut bound: Vec<&crate::data::ChronologyAnchor> = d.chronology_anchors.iter().filter(|a| a.event_id.is_some()).collect();
+        assert!(bound.len() >= 15);
+        bound.sort_by_key(|a| a.year);
+
+        let positions: Vec<(&str, i32, usize)> = bound
+            .iter()
+            .map(|a| {
+                let eid = a.event_id.as_deref().unwrap();
+                let pos = d.timeline_position(eid).unwrap_or_else(|| panic!("anchor '{}''s own bound event '{eid}' must be a dated event", a.id));
+                (a.id.as_str(), a.year, pos)
+            })
+            .collect();
+
+        let mut violations: Vec<String> = Vec::new();
+        for pair in positions.windows(2) {
+            let (a_id, a_year, a_pos) = pair[0];
+            let (b_id, b_year, b_pos) = pair[1];
+            let ok = if a_year == b_year { a_pos <= b_pos } else { a_pos < b_pos };
+            if !ok {
+                violations.push(format!("'{a_id}' (table year {a_year}, timeline position {a_pos}) does not sort {} '{b_id}' (table year {b_year}, timeline position {b_pos})", if a_year == b_year { "at-or-before" } else { "strictly before" }));
+            }
+        }
+        assert!(violations.is_empty(), "E3 canonical-order violated for {} adjacent pair(s):\n{}", violations.len(), violations.join("\n"));
+    }
+
+    /// E4 -- ERA-PARTITION PROPERTY: the OT-wide generalization of
+    /// HOTFIX-4's own NT era-boundary gates (`fix_round_1_era_boundary_gate_*`
+    /// above) -- every dated event's witness-book era must agree with its
+    /// own global timeline position relative to EVERY `era_boundary` anchor
+    /// in the table, not just the one Passion/Acts boundary those older
+    /// gates check. `atlas_core::chronology::era_boundary_violations`'s own
+    /// doc comment has the full design (the "all_before"/"all_after"
+    /// straddle-safe partition).
+    #[test]
+    fn e4_dated_events_agree_with_era_boundary_anchors_on_the_global_timeline() {
+        let d = load_real_compiled_data();
+        let boundary_count = d.chronology_anchors.iter().filter(|a| a.era_boundary).count();
+        assert!(boundary_count >= 6, "expected the real curated table to carry well over 6 era_boundary anchors, got {boundary_count}");
+
+        let violations = crate::chronology::era_boundary_violations(&d);
+        assert!(
+            violations.is_empty(),
+            "E4 era-partition violated for {} event(s):\n{}",
+            violations.len(),
+            violations.iter().map(|v| format!("  - '{}' ({:?}) sorts on the wrong side of boundary '{}' (year {}) -- expected {}", v.event_id, v.label, v.boundary_id, v.boundary_year, v.side)).collect::<Vec<_>>().join("\n")
+        );
+    }
+
+    /// E5 -- the owner's own named case, red-then-green, ON TOP of the
+    /// properties above (Amendment E's own explicit instruction: "not
+    /// instead of them"). RED before this batch's own df_* re-date:
+    /// `1ki_solomon_gibeon`'s own PRIOR/FOLLOWING were `df_ramah`/`df_nob`
+    /// (Saul-persecution-era, ~48 years off) -- exactly the owner's own
+    /// report ("this is a lie"). Verified live against the real compiled
+    /// data before this test was written (see batch-hotfix6-report.md).
+    #[test]
+    fn e5_solomon_gibeons_neighbors_are_solomon_era_never_saul_persecution_era() {
+        let d = load_real_compiled_data();
+        let pos = global_timeline_position(&d, "1ki_solomon_gibeon").expect("1ki_solomon_gibeon is a dated event");
+
+        let prior = pos.prior.as_ref().expect("1ki_solomon_gibeon has a PRIOR neighbor");
+        let following = pos.following.as_ref().expect("1ki_solomon_gibeon has a FOLLOWING neighbor");
+
+        assert!(!prior.id.starts_with("df_"), "RED-CASE REGRESSION: PRIOR '{}' is a Saul-persecution df_* event -- the owner's own exact bug ('this is a lie')", prior.id);
+        assert!(!following.id.starts_with("df_"), "RED-CASE REGRESSION: FOLLOWING '{}' is a Saul-persecution df_* event -- the owner's own exact bug", following.id);
+
+        // GREEN, verified live against the real compiled data: both
+        // neighbors are genuinely Solomon-era (David's own final charge to
+        // Solomon, and Solomon's own temple preparations with Hiram).
+        assert_eq!(prior.id, "1ki_davids_charge", "PRIOR must be David's own final charge to Solomon (-1015), Solomon-era");
+        assert_eq!(following.id, "1ki_hiram_temple_prep", "FOLLOWING must be Solomon's own temple preparations with Hiram (-1013), Solomon-era");
+        let prior_year = d.event_by_id(&prior.id).unwrap().when.from_year;
+        let following_year = d.event_by_id(&following.id).unwrap().when.from_year;
+        assert!((-1017..=-1010).contains(&prior_year), "PRIOR '{}' ({prior_year}) must fall within Solomon's own early reign, not the Saul-persecution era", prior.id);
+        assert!((-1017..=-1010).contains(&following_year), "FOLLOWING '{}' ({following_year}) must fall within Solomon's own early reign, not the Saul-persecution era", following.id);
+    }
+
+    /// E5 continued -- the SAME case from `df_ramah`'s own side: its
+    /// neighbors must be Saul-persecution-era, never Solomon-era. Verified
+    /// live against the real compiled data before this test was written.
+    #[test]
+    fn e5_df_ramahs_neighbors_are_saul_persecution_era_never_solomon_era() {
+        let d = load_real_compiled_data();
+        let pos = global_timeline_position(&d, "df_ramah").expect("df_ramah is a dated event");
+
+        let prior = pos.prior.as_ref().expect("df_ramah has a PRIOR neighbor");
+        let following = pos.following.as_ref().expect("df_ramah has a FOLLOWING neighbor");
+
+        assert_ne!(prior.id, "1ki_solomon_gibeon", "df_ramah's own PRIOR must never be the Solomon-era Gibeon dream");
+        assert_ne!(following.id, "1ki_solomon_gibeon", "df_ramah's own FOLLOWING must never be the Solomon-era Gibeon dream");
+
+        // GREEN, verified live: PRIOR is David killing Goliath (-1067, the
+        // last event before Saul's own jealousy/persecution begins);
+        // FOLLOWING is the chain's own very next leg, df_nob (-1061) --
+        // narrative-leg order, already correct, untouched by this batch.
+        assert_eq!(prior.id, "theo-157", "PRIOR must be David killing Goliath (-1067), immediately preceding Saul's own persecution");
+        assert_eq!(following.id, "df_nob", "FOLLOWING must be the chain's own next leg, df_nob (-1061)");
+        let prior_year = d.event_by_id(&prior.id).unwrap().when.from_year;
+        let following_year = d.event_by_id(&following.id).unwrap().when.from_year;
+        assert!(prior_year <= -1055, "PRIOR '{}' ({prior_year}) must be at or before the Saul-persecution/united-monarchy transition", prior.id);
+        assert!(following_year <= -1055, "FOLLOWING '{}' ({following_year}) must be Saul-persecution-era, not Solomon-era", following.id);
+    }
 }
