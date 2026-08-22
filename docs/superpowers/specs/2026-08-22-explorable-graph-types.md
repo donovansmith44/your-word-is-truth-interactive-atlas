@@ -80,6 +80,37 @@ pub struct KjvLocus { pub verse: VerseRef, pub span: Option<TokenSpan> }
 // impl From<KjvLocus> for TextLocus — widening is free; narrowing is a
 // checked parse.
 
+/// LAW (owner, 2026-08-22): refs are RECURSIVE-BY-RELATION, and the Book
+/// of Concord must never be confusable with Scripture. Both are enforced
+/// at the corpus registry, not per assertion:
+/// - RECURSION: addresses stay FLAT (corpus, unit, span); recursive
+///   structure is relational — a Concord span QUOTES a KJV range via an
+///   edge, and spans inside quoted regions bear onward edges of their
+///   own. No nested addressing scheme exists; the graph carries the
+///   recursion, explore's bind walks it.
+/// - QUOTATION IS AN EDGE, NOT TRANSCLUSION: each corpus's text is its
+///   own as published (Bente/Dau's quotation wording is Bente/Dau's
+///   text, subject to Concord's own byte-fidelity boundary law). The KJV
+///   corpus remains the only store OF the KJV; a quotation never
+///   promotes text into Scripture.
+/// - THE NORMA DISTINCTION AS A TYPE: corpus roles are asymmetric —
+///   Scripture is the norming norm, the confessions the normed norm —
+///   and edge legality + confidence derive from the ROLE, so
+///   "CanonicalText Concord" or "Scripture witnessed by Concord" are
+///   unrepresentable, not merely forbidden.
+pub enum CorpusRole {
+    NormaNormans,          // Scripture (kjv) — the norming norm; witness canon lives here
+    NormaNormata,          // the confessions (Book of Concord) — normed BY Scripture
+    Reference,             // Ussher, Robertson, Crockett, Theographic, ...
+}
+pub struct CorpusMeta {
+    pub id: CorpusId,
+    pub role: CorpusRole,
+    // Confidence for a corpus's TEXT derives from its role — it is NOT
+    // per-assertion: CanonicalText iff NormaNormans. Nothing an adapter
+    // emits can claim canonical standing for extrabiblical text.
+}
+
 /// Container content is a SET of loci (container algebra: ∅ is lawful
 /// identity; overlaps between containers are lawful; verses immutable).
 /// Contiguity is NOT assumed — multi-chapter and gapped containers are
@@ -136,6 +167,7 @@ pub struct Graph {
     // -------- imported relations --------
     pub mentions:    Table<Mentions>,     // TextLocus → Place | Person
     pub cross_refs:  Table<CrossRef>,     // TextLocus → TextLocus, votes-ranked
+    pub quotes:      Table<Quotes>,       // span-level quotation toward the norming norm
     // -------- derived relations (compiler output; no authored rows) ----
     pub reading:     PerCorpusReadingOrder, // one total order PER corpus; no cross-corpus spine
     pub temporal:    TemporalAdjacency,   // ONLY where resolved dates differ
@@ -155,6 +187,17 @@ pub struct Contains {
 pub struct Witnesses {
     pub event: EventId,
     pub witness: KjvLocusRange,           // Scripture-typed: the witness canon as a type
+    pub provenance: ProvenanceId,
+}
+
+/// LAW (norma distinction): quotation points TOWARD the norming norm —
+/// the subject is any corpus's span, the object is Scripture. The
+/// reverse direction has no constructor; wording divergence between the
+/// quoting corpus and the KJV is expected and carried as data, never
+/// "corrected" in either corpus (both fidelity laws stand).
+pub struct Quotes {
+    pub quoting: TextLocus,               // e.g. a span within an SD paragraph
+    pub quoted:  KjvLocusRange,           // Scripture, by refinement
     pub provenance: ProvenanceId,
 }
 
@@ -332,6 +375,12 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
 - A Bible-shaped assumption about text (corpora are first-class; the KJV
   is one corpus; extrabiblical witnesses are a type error, extrabiblical
   mentions/citations are not).
+- The Book of Concord mistaken for Scripture (roles are asymmetric at the
+  registry: canonical confidence derives from NormaNormans; quotes has no
+  Scripture-quoting-Concord constructor; a quotation never promotes its
+  text).
+- A nested address (recursion is relational — flat loci, edges carry the
+  structure).
 
 ## 10. Open type questions (flagged, not hidden)
 
