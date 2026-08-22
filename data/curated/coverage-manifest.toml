@@ -30,14 +30,20 @@
 # batch-w2-report.md's own coverage table) -- 2 Samuel, 1/2 Kings, 1/2
 # Chronicles, Ezra, Nehemiah, and Esther follow as each lands in turn,
 # same one-book-at-a-time growth discipline W1 established.
-# Batch W3 (whole-Bible titled verse containers, third run): Job, Psalms,
-# Proverbs, Ecclesiastes, and Song of Solomon added below, each once every
-# one of its own verses was confirmed covered against the real compiled
-# data (see batch-w3-report.md's own coverage table) -- same one-book-at-
-# a-time growth discipline, one book per commit.
+# Batch W3 (whole-Bible titled verse containers, third run): Job (see its
+# own commit), Psalms added below once every one of its own 2,461 verses
+# was confirmed covered against the real compiled data (see
+# batch-w3-report.md's own coverage table) -- Psalms' own 150 chapters are
+# covered by 168 curated containers (146 fresh + 22 Psalm 119 acrostic
+# stanzas) PLUS three pre-existing/this-run's-own witnesses (2SA.22<->PSA.18,
+# 1CH.16<->PSA.96, and this run's own new PSA.14<->PSA.53), never
+# double-counted -- the coverage test below reads the REAL compiled data,
+# which already unions witness verses in, exactly as a reader's own EVENT
+# popover would. Proverbs, Ecclesiastes, and Song of Solomon follow as
+# each lands in turn, same one-book-at-a-time growth discipline.
 declared = [
   "MAT", "MRK", "LUK", "JHN", "ACT",
   "GEN", "EXO", "LEV", "RUT", "NUM", "DEU", "JOS", "JDG",
   "1SA", "2SA", "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST",
-  "JOB",
+  "JOB", "PSA",
 ]

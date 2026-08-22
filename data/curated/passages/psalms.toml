@@ -1,0 +1,1419 @@
+# Batch W3 (whole-Bible titled verse containers, third run: Job-Song of
+# Solomon). Psalms, in the SAME `[[event]]` schema `events-extra.toml` uses --
+# see `data/curated/passages/genesis.toml`'s own header comment for the full
+# reconciliation/provenance framing.
+#
+# GRANULARITY (the brief's own explicit requirement): one container per
+# Psalm, titled from the KJV's OWN superscription where one exists
+# (`kjv_superscription` provenance -- 114 psalms here, plus Psalm 119's own
+# 22 acrostic stanza headers below), else this project's own faithful,
+# quiet CC0 description of the psalm's actual content (`atlas_section`
+# provenance -- 33 psalms, the traditional "orphan" psalms with no heading
+# verse of their own). ALL 150 Psalms are GENERAL-kind (poetry is the
+# brief's own honest default; no traditional narrative date attaches to a
+# psalm AS a psalm, distinct from the historical events some superscriptions
+# name, which already carry their own dates on their own narrative
+# containers elsewhere in this app).
+#
+# RECONCILIATION (checked against the real compiled `events.json` before
+# authoring): exactly three pre-existing events touch Psalms, all from
+# earlier batches' own req-1b parallel work, none a per-Psalm Theographic
+# freebie (Theographic itself models no individual-Psalm "event" at all --
+# verified, so no `psalms-sections.toml` merge-file sibling to
+# `atlas-sections.toml` was needed; every container below is a brand-new
+# `[[event]]` row):
+#   - `sam2_davids_song` (Batch W2) carries a witness anchoring PSA.18.1 (all
+#     50 verses of Psalm 18) -- Psalm 18 is SKIPPED here (no psa_018) to avoid
+#     a real within-layer anchor collision at that exact anchor verse; fully
+#     covered and correctly parallel-witnessed already, per the SAME
+#     "scope away from an existing witness's own anchor" precedent Batch W2's
+#     own report disclosed for the Ezra 2 / Nehemiah 7 case.
+#   - `1ch_davids_hymn_of_praise` (Batch W2) carries a witness whose own
+#     verses list opens at PSA.96.1 (spanning fragments of Psalms 96, 105, and
+#     106 as ONE witness row) -- so ONLY that anchor (96.1) is claimed; Psalm
+#     96 is SKIPPED here for the same collision-avoidance reason (its own 13
+#     verses are ALL within that witness's own quoted range, so fully
+#     covered already). Psalms 105 and 106 are NOT skipped -- that witness
+#     only quotes short fragments of each (105:1-15; 106:1,47-48), so both
+#     still need, and here receive, their own full-coverage containers; their
+#     own first verses (105.1, 106.1) are never claimed by that witness's own
+#     single anchor (96.1), so no collision.
+#
+# PARALLELS (req 1b, this run's own named cases): Psalm 14 <-> Psalm 53 (both
+# WITHIN Psalms) is authored below as ONE host container, `psa_014`, carrying
+# two witness rows in `event-witnesses.toml` (self PSA.14 + parallel PSA.53)
+# -- Psalm 53 is SKIPPED here (no psa_053) for the identical collision-
+# avoidance reason as Psalms 18/96 above: once psa_014 carries ANY witness,
+# `heading_anchors_for` draws its own anchors ONLY from witnesses (the "72-row
+# lesson"), so a separate psa_053 top-level container would claim the exact
+# same PSA.53.1 anchor psa_014's own witness already claims. Both psalms are
+# nearly word-for-word identical (both open "The fool hath said in his heart,
+# There is no God"), a literary-structure fact (two textually distinct
+# pericopes), not textual criticism.
+#
+# PSALM 119 (the acrostic): NOT nested under a single whole-psalm container --
+# `heading_anchors_for` (server/atlas-core/src/data.rs) draws a real
+# container's own anchor(s) from its witnesses if any exist, else from the
+# FIRST verse of its own top-level `verses` in curated order; a single
+# whole-Psalm-119 container's own anchor would necessarily be PSA.119.1,
+# identical to the Aleph stanza's own anchor below -- an unavoidable real
+# within-layer anchor collision under this app's own current single-decisive-
+# heading architecture (confirmed by reading the collision-detection code
+# directly before deciding, not assumed). Authored instead as 22 SIBLING
+# containers, one per 8-verse acrostic stanza (1-8 Aleph, 9-16 Beth, ...
+# 169-176 Tau), a clean partition with zero overlap -- each stanza's own
+# Hebrew-letter heading IS literal KJV text (verified: every one of the 22
+# stanza-opening verses in the compiled text carries its own transliterated
+# letter name as a heading, e.g. PSA.119.1 = "ALEPH. Blessed are the
+# undefiled..."), so `kjv_superscription` provenance applies here too, though
+# these are acrostic structure markers, not authorial/occasion superscriptions
+# like Psalm 3's -- disclosed explicitly, not conflated. This is the judgment
+# call the brief's own "your call, documented" invites for Psalm 119;
+# batch-w3-report.md has the full reasoning.
+
+[[event]]
+id = "psa_001"
+label = "The blessedness of the righteous man, contrasted with the ungodly"
+kind = "general"
+verses = ["PSA.1.1-6"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 1 carries no KJV superscription of its own (PSA.1.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_002"
+label = "The Lord's anointed king, and the call to submit to him"
+kind = "general"
+verses = ["PSA.2.1-12"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 2 carries no KJV superscription of its own (PSA.2.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_003"
+label = "A Psalm of David, when he fled from Absalom his son."
+kind = "general"
+verses = ["PSA.3.1-8"]
+kjv_superscription = "PSA.3.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_004"
+label = "To the chief Musician on Neginoth, A Psalm of David."
+kind = "general"
+verses = ["PSA.4.1-8"]
+kjv_superscription = "PSA.4.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_005"
+label = "To the chief Musician upon Nehiloth, A Psalm of David."
+kind = "general"
+verses = ["PSA.5.1-12"]
+kjv_superscription = "PSA.5.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_006"
+label = "To the chief Musician on Neginoth upon Sheminith, A Psalm of David."
+kind = "general"
+verses = ["PSA.6.1-10"]
+kjv_superscription = "PSA.6.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_007"
+label = "Shiggaion of David, which he sang unto the Lord, concerning the words of Cush the Benjamite."
+kind = "general"
+verses = ["PSA.7.1-17"]
+kjv_superscription = "PSA.7.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_008"
+label = "To the chief Musician upon Gittith, A Psalm of David."
+kind = "general"
+verses = ["PSA.8.1-9"]
+kjv_superscription = "PSA.8.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_009"
+label = "To the chief Musician upon Muth–labben, A Psalm of David."
+kind = "general"
+verses = ["PSA.9.1-20"]
+kjv_superscription = "PSA.9.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_010"
+label = "An appeal against the pride and oppression of the wicked"
+kind = "general"
+verses = ["PSA.10.1-18"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 10 carries no KJV superscription of its own (PSA.10.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_011"
+label = "To the chief Musician, A Psalm of David."
+kind = "general"
+verses = ["PSA.11.1-7"]
+kjv_superscription = "PSA.11.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_012"
+label = "To the chief Musician upon Sheminith, A Psalm of David."
+kind = "general"
+verses = ["PSA.12.1-8"]
+kjv_superscription = "PSA.12.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_013"
+label = "To the chief Musician, A Psalm of David."
+kind = "general"
+verses = ["PSA.13.1-6"]
+kjv_superscription = "PSA.13.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_014"
+label = "To the chief Musician, A Psalm of David."
+kind = "general"
+verses = ["PSA.14.1-7"]
+kjv_superscription = "PSA.14.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_015"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.15.1-5"]
+kjv_superscription = "PSA.15.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_016"
+label = "Michtam of David."
+kind = "general"
+verses = ["PSA.16.1-11"]
+kjv_superscription = "PSA.16.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_017"
+label = "A Prayer of David."
+kind = "general"
+verses = ["PSA.17.1-15"]
+kjv_superscription = "PSA.17.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_019"
+label = "To the chief Musician, A Psalm of David."
+kind = "general"
+verses = ["PSA.19.1-14"]
+kjv_superscription = "PSA.19.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_020"
+label = "To the chief Musician, A Psalm of David."
+kind = "general"
+verses = ["PSA.20.1-9"]
+kjv_superscription = "PSA.20.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_021"
+label = "To the chief Musician, A Psalm of David."
+kind = "general"
+verses = ["PSA.21.1-13"]
+kjv_superscription = "PSA.21.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_022"
+label = "To the chief Musician upon Aijeleth Shahar, A Psalm of David."
+kind = "general"
+verses = ["PSA.22.1-31"]
+kjv_superscription = "PSA.22.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_023"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.23.1-6"]
+kjv_superscription = "PSA.23.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_024"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.24.1-10"]
+kjv_superscription = "PSA.24.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_025"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.25.1-22"]
+kjv_superscription = "PSA.25.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_026"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.26.1-12"]
+kjv_superscription = "PSA.26.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_027"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.27.1-14"]
+kjv_superscription = "PSA.27.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_028"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.28.1-9"]
+kjv_superscription = "PSA.28.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_029"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.29.1-11"]
+kjv_superscription = "PSA.29.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_030"
+label = "A Psalm and Song at the dedication of the house of David."
+kind = "general"
+verses = ["PSA.30.1-12"]
+kjv_superscription = "PSA.30.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_031"
+label = "To the chief Musician, A Psalm of David."
+kind = "general"
+verses = ["PSA.31.1-24"]
+kjv_superscription = "PSA.31.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_032"
+label = "A Psalm of David, Maschil."
+kind = "general"
+verses = ["PSA.32.1-11"]
+kjv_superscription = "PSA.32.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_033"
+label = "Praise of the Lord's word, works, and providence over the nations"
+kind = "general"
+verses = ["PSA.33.1-22"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 33 carries no KJV superscription of its own (PSA.33.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_034"
+label = "A Psalm of David, when he changed his behaviour before Abimelech; who drove him away, and he departed."
+kind = "general"
+verses = ["PSA.34.1-22"]
+kjv_superscription = "PSA.34.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_035"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.35.1-28"]
+kjv_superscription = "PSA.35.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_036"
+label = "To the chief Musician, A Psalm of David the servant of the Lord."
+kind = "general"
+verses = ["PSA.36.1-12"]
+kjv_superscription = "PSA.36.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_037"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.37.1-40"]
+kjv_superscription = "PSA.37.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_038"
+label = "A Psalm of David, to bring to remembrance."
+kind = "general"
+verses = ["PSA.38.1-22"]
+kjv_superscription = "PSA.38.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_039"
+label = "To the chief Musician, even to Jeduthun, A Psalm of David."
+kind = "general"
+verses = ["PSA.39.1-13"]
+kjv_superscription = "PSA.39.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_040"
+label = "To the chief Musician, A Psalm of David."
+kind = "general"
+verses = ["PSA.40.1-17"]
+kjv_superscription = "PSA.40.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_041"
+label = "To the chief Musician, A Psalm of David."
+kind = "general"
+verses = ["PSA.41.1-13"]
+kjv_superscription = "PSA.41.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_042"
+label = "To the chief Musician, Maschil, for the sons of Korah."
+kind = "general"
+verses = ["PSA.42.1-11"]
+kjv_superscription = "PSA.42.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_043"
+label = "A prayer for vindication, and to come again to God's altar"
+kind = "general"
+verses = ["PSA.43.1-5"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 43 carries no KJV superscription of its own (PSA.43.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_044"
+label = "To the chief Musician for the sons of Korah, Maschil."
+kind = "general"
+verses = ["PSA.44.1-26"]
+kjv_superscription = "PSA.44.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_045"
+label = "To the chief Musician upon Shoshannim, for the sons of Korah, Maschil, A Song of loves."
+kind = "general"
+verses = ["PSA.45.1-17"]
+kjv_superscription = "PSA.45.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_046"
+label = "To the chief Musician for the sons of Korah, A Song upon Alamoth."
+kind = "general"
+verses = ["PSA.46.1-11"]
+kjv_superscription = "PSA.46.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_047"
+label = "To the chief Musician, A Psalm for the sons of Korah."
+kind = "general"
+verses = ["PSA.47.1-9"]
+kjv_superscription = "PSA.47.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_048"
+label = "A Song and Psalm for the sons of Korah."
+kind = "general"
+verses = ["PSA.48.1-14"]
+kjv_superscription = "PSA.48.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_049"
+label = "To the chief Musician, A Psalm for the sons of Korah."
+kind = "general"
+verses = ["PSA.49.1-20"]
+kjv_superscription = "PSA.49.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_050"
+label = "A Psalm of Asaph."
+kind = "general"
+verses = ["PSA.50.1-23"]
+kjv_superscription = "PSA.50.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_051"
+label = "To the chief Musician, A Psalm of David, when Nathan the prophet came unto him, after he had gone in to Bath–sheba."
+kind = "general"
+verses = ["PSA.51.1-19"]
+kjv_superscription = "PSA.51.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_052"
+label = "To the chief Musician, Maschil, A Psalm of David, when Doeg the Edomite came and told Saul, and said unto him, David is come to the house of Ahimelech."
+kind = "general"
+verses = ["PSA.52.1-9"]
+kjv_superscription = "PSA.52.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_054"
+label = "To the chief Musician on Neginoth, Maschil, A Psalm of David, when the Ziphims came and said to Saul, Doth not David hide himself with us?"
+kind = "general"
+verses = ["PSA.54.1-7"]
+kjv_superscription = "PSA.54.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_055"
+label = "To the chief Musician on Neginoth, Maschil, A Psalm of David."
+kind = "general"
+verses = ["PSA.55.1-23"]
+kjv_superscription = "PSA.55.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_056"
+label = "To the chief Musician upon Jonath–elem–rechokim, Michtam of David, when the Philistines took him in Gath."
+kind = "general"
+verses = ["PSA.56.1-13"]
+kjv_superscription = "PSA.56.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_057"
+label = "To the chief Musician, Al–taschith, Michtam of David, when he fled from Saul in the cave."
+kind = "general"
+verses = ["PSA.57.1-11"]
+kjv_superscription = "PSA.57.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_058"
+label = "To the chief Musician, Al–taschith, Michtam of David."
+kind = "general"
+verses = ["PSA.58.1-11"]
+kjv_superscription = "PSA.58.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_059"
+label = "To the chief Musician, Al–taschith, Michtam of David; when Saul sent, and they watched the house to kill him."
+kind = "general"
+verses = ["PSA.59.1-17"]
+kjv_superscription = "PSA.59.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_060"
+label = "To the chief Musician upon Shushan–eduth, Michtam of David, to teach; when he strove with Aram–naharaim and with Aram–zobah, when Joab returned, and smote of Edom in the valley of salt twelve thousand."
+kind = "general"
+verses = ["PSA.60.1-12"]
+kjv_superscription = "PSA.60.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_061"
+label = "To the chief Musician upon Neginah, A Psalm of David."
+kind = "general"
+verses = ["PSA.61.1-8"]
+kjv_superscription = "PSA.61.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_062"
+label = "To the chief Musician, to Jeduthun, A Psalm of David."
+kind = "general"
+verses = ["PSA.62.1-12"]
+kjv_superscription = "PSA.62.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_063"
+label = "A Psalm of David, when he was in the wilderness of Judah."
+kind = "general"
+verses = ["PSA.63.1-11"]
+kjv_superscription = "PSA.63.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_064"
+label = "To the chief Musician, A Psalm of David."
+kind = "general"
+verses = ["PSA.64.1-10"]
+kjv_superscription = "PSA.64.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_065"
+label = "To the chief Musician, A Psalm and Song of David."
+kind = "general"
+verses = ["PSA.65.1-13"]
+kjv_superscription = "PSA.65.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_066"
+label = "To the chief Musician, A Song or Psalm."
+kind = "general"
+verses = ["PSA.66.1-20"]
+kjv_superscription = "PSA.66.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_067"
+label = "To the chief Musician on Neginoth, A Psalm or Song."
+kind = "general"
+verses = ["PSA.67.1-7"]
+kjv_superscription = "PSA.67.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_068"
+label = "To the chief Musician, A Psalm or Song of David."
+kind = "general"
+verses = ["PSA.68.1-35"]
+kjv_superscription = "PSA.68.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_069"
+label = "To the chief Musician upon Shoshannim, A Psalm of David."
+kind = "general"
+verses = ["PSA.69.1-36"]
+kjv_superscription = "PSA.69.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_070"
+label = "To the chief Musician, A Psalm of David, to bring to remembrance."
+kind = "general"
+verses = ["PSA.70.1-5"]
+kjv_superscription = "PSA.70.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_071"
+label = "A prayer of trust in God from youth to old age"
+kind = "general"
+verses = ["PSA.71.1-24"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 71 carries no KJV superscription of its own (PSA.71.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_072"
+label = "A Psalm for Solomon."
+kind = "general"
+verses = ["PSA.72.1-20"]
+kjv_superscription = "PSA.72.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_073"
+label = "A Psalm of Asaph."
+kind = "general"
+verses = ["PSA.73.1-28"]
+kjv_superscription = "PSA.73.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_074"
+label = "Maschil of Asaph."
+kind = "general"
+verses = ["PSA.74.1-23"]
+kjv_superscription = "PSA.74.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_075"
+label = "To the chief Musician, Al–taschith, A Psalm or Song of Asaph."
+kind = "general"
+verses = ["PSA.75.1-10"]
+kjv_superscription = "PSA.75.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_076"
+label = "To the chief Musician on Neginoth, A Psalm or Song of Asaph."
+kind = "general"
+verses = ["PSA.76.1-12"]
+kjv_superscription = "PSA.76.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_077"
+label = "To the chief Musician, to Jeduthun, A Psalm of Asaph."
+kind = "general"
+verses = ["PSA.77.1-20"]
+kjv_superscription = "PSA.77.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_078"
+label = "Maschil of Asaph."
+kind = "general"
+verses = ["PSA.78.1-72"]
+kjv_superscription = "PSA.78.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_079"
+label = "A Psalm of Asaph."
+kind = "general"
+verses = ["PSA.79.1-13"]
+kjv_superscription = "PSA.79.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_080"
+label = "To the chief Musician upon Shoshannim–Eduth, A Psalm of Asaph."
+kind = "general"
+verses = ["PSA.80.1-19"]
+kjv_superscription = "PSA.80.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_081"
+label = "To the chief Musician upon Gittith, A Psalm of Asaph."
+kind = "general"
+verses = ["PSA.81.1-16"]
+kjv_superscription = "PSA.81.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_082"
+label = "A Psalm of Asaph."
+kind = "general"
+verses = ["PSA.82.1-8"]
+kjv_superscription = "PSA.82.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_083"
+label = "A Song or Psalm of Asaph."
+kind = "general"
+verses = ["PSA.83.1-18"]
+kjv_superscription = "PSA.83.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_084"
+label = "To the chief Musician upon Gittith, A Psalm for the sons of Korah."
+kind = "general"
+verses = ["PSA.84.1-12"]
+kjv_superscription = "PSA.84.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_085"
+label = "To the chief Musician, A Psalm for the sons of Korah."
+kind = "general"
+verses = ["PSA.85.1-13"]
+kjv_superscription = "PSA.85.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_086"
+label = "A Prayer of David."
+kind = "general"
+verses = ["PSA.86.1-17"]
+kjv_superscription = "PSA.86.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_087"
+label = "A Psalm or Song for the sons of Korah."
+kind = "general"
+verses = ["PSA.87.1-7"]
+kjv_superscription = "PSA.87.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_088"
+label = "A Song or Psalm for the sons of Korah, to the chief Musician upon Mahalath Leannoth, Maschil of Heman the Ezrahite."
+kind = "general"
+verses = ["PSA.88.1-18"]
+kjv_superscription = "PSA.88.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_089"
+label = "Maschil of Ethan the Ezrahite."
+kind = "general"
+verses = ["PSA.89.1-52"]
+kjv_superscription = "PSA.89.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_090"
+label = "A Prayer of Moses the man of God."
+kind = "general"
+verses = ["PSA.90.1-17"]
+kjv_superscription = "PSA.90.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_091"
+label = "The safety of the one who dwells in the secret place of the Most High"
+kind = "general"
+verses = ["PSA.91.1-16"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 91 carries no KJV superscription of its own (PSA.91.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_092"
+label = "A Psalm or Song for the sabbath day."
+kind = "general"
+verses = ["PSA.92.1-15"]
+kjv_superscription = "PSA.92.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_093"
+label = "The Lord's eternal reign, mightier than the floods"
+kind = "general"
+verses = ["PSA.93.1-5"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 93 carries no KJV superscription of its own (PSA.93.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_094"
+label = "An appeal to the God of vengeance against the wicked"
+kind = "general"
+verses = ["PSA.94.1-23"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 94 carries no KJV superscription of its own (PSA.94.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_095"
+label = "A call to worship the Lord, and a warning not to harden the heart"
+kind = "general"
+verses = ["PSA.95.1-11"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 95 carries no KJV superscription of its own (PSA.95.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_097"
+label = "The Lord's reign, and the shame of them that worship idols"
+kind = "general"
+verses = ["PSA.97.1-12"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 97 carries no KJV superscription of its own (PSA.97.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_098"
+label = "A Psalm."
+kind = "general"
+verses = ["PSA.98.1-9"]
+kjv_superscription = "PSA.98.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_099"
+label = "The Lord's holiness, who answered Moses, Aaron, and Samuel"
+kind = "general"
+verses = ["PSA.99.1-9"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 99 carries no KJV superscription of its own (PSA.99.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_100"
+label = "A Psalm of praise."
+kind = "general"
+verses = ["PSA.100.1-5"]
+kjv_superscription = "PSA.100.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_101"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.101.1-8"]
+kjv_superscription = "PSA.101.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_102"
+label = "A Prayer of the afflicted, when he is overwhelmed, and poureth out his complaint before the Lord."
+kind = "general"
+verses = ["PSA.102.1-28"]
+kjv_superscription = "PSA.102.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_103"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.103.1-22"]
+kjv_superscription = "PSA.103.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_104"
+label = "A hymn of the Lord's works in creation and providence"
+kind = "general"
+verses = ["PSA.104.1-35"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 104 carries no KJV superscription of its own (PSA.104.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_105"
+label = "The Lord's faithfulness to his covenant, from Abraham to the Exodus"
+kind = "general"
+verses = ["PSA.105.1-45"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 105 carries no KJV superscription of its own (PSA.105.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_106"
+label = "A confession of Israel's rebellion through their history"
+kind = "general"
+verses = ["PSA.106.1-48"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 106 carries no KJV superscription of its own (PSA.106.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_107"
+label = "Thanksgiving for the Lord's deliverance of those in distress"
+kind = "general"
+verses = ["PSA.107.1-43"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 107 carries no KJV superscription of its own (PSA.107.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_108"
+label = "A Song or Psalm of David."
+kind = "general"
+verses = ["PSA.108.1-13"]
+kjv_superscription = "PSA.108.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_109"
+label = "To the chief Musician, A Psalm of David."
+kind = "general"
+verses = ["PSA.109.1-31"]
+kjv_superscription = "PSA.109.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_110"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.110.1-7"]
+kjv_superscription = "PSA.110.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_111"
+label = "Praise for the Lord's works and covenant"
+kind = "general"
+verses = ["PSA.111.1-10"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 111 carries no KJV superscription of its own (PSA.111.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_112"
+label = "The blessedness of the man that feareth the Lord"
+kind = "general"
+verses = ["PSA.112.1-10"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 112 carries no KJV superscription of its own (PSA.112.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_113"
+label = "Praise of the Lord, who raiseth up the poor out of the dust"
+kind = "general"
+verses = ["PSA.113.1-9"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 113 carries no KJV superscription of its own (PSA.113.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_114"
+label = "The earth's trembling at Israel's exodus from Egypt"
+kind = "general"
+verses = ["PSA.114.1-8"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 114 carries no KJV superscription of its own (PSA.114.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_115"
+label = "The living God, contrasted with the idols of the nations"
+kind = "general"
+verses = ["PSA.115.1-18"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 115 carries no KJV superscription of its own (PSA.115.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_116"
+label = "Thanksgiving for deliverance from the sorrows of death"
+kind = "general"
+verses = ["PSA.116.1-19"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 116 carries no KJV superscription of its own (PSA.116.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_117"
+label = "A short call to all nations to praise the Lord"
+kind = "general"
+verses = ["PSA.117.1-2"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 117 carries no KJV superscription of its own (PSA.117.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_118"
+label = "Thanksgiving, and the stone which the builders refused"
+kind = "general"
+verses = ["PSA.118.1-29"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 118 carries no KJV superscription of its own (PSA.118.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_120"
+label = "A Song of degrees."
+kind = "general"
+verses = ["PSA.120.1-7"]
+kjv_superscription = "PSA.120.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_121"
+label = "A Song of degrees."
+kind = "general"
+verses = ["PSA.121.1-8"]
+kjv_superscription = "PSA.121.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_122"
+label = "A Song of degrees of David."
+kind = "general"
+verses = ["PSA.122.1-9"]
+kjv_superscription = "PSA.122.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_123"
+label = "A Song of degrees."
+kind = "general"
+verses = ["PSA.123.1-4"]
+kjv_superscription = "PSA.123.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_124"
+label = "A Song of degrees of David."
+kind = "general"
+verses = ["PSA.124.1-8"]
+kjv_superscription = "PSA.124.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_125"
+label = "A Song of degrees."
+kind = "general"
+verses = ["PSA.125.1-5"]
+kjv_superscription = "PSA.125.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_126"
+label = "A Song of degrees."
+kind = "general"
+verses = ["PSA.126.1-6"]
+kjv_superscription = "PSA.126.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_127"
+label = "A Song of degrees for Solomon."
+kind = "general"
+verses = ["PSA.127.1-5"]
+kjv_superscription = "PSA.127.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_128"
+label = "A Song of degrees."
+kind = "general"
+verses = ["PSA.128.1-6"]
+kjv_superscription = "PSA.128.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_129"
+label = "A Song of degrees."
+kind = "general"
+verses = ["PSA.129.1-8"]
+kjv_superscription = "PSA.129.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_130"
+label = "A Song of degrees."
+kind = "general"
+verses = ["PSA.130.1-8"]
+kjv_superscription = "PSA.130.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_131"
+label = "A Song of degrees of David."
+kind = "general"
+verses = ["PSA.131.1-3"]
+kjv_superscription = "PSA.131.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_132"
+label = "A Song of degrees."
+kind = "general"
+verses = ["PSA.132.1-18"]
+kjv_superscription = "PSA.132.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_133"
+label = "A Song of degrees of David."
+kind = "general"
+verses = ["PSA.133.1-3"]
+kjv_superscription = "PSA.133.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_134"
+label = "A Song of degrees."
+kind = "general"
+verses = ["PSA.134.1-3"]
+kjv_superscription = "PSA.134.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_135"
+label = "Praise of the Lord above all gods, who smote Egypt's firstborn"
+kind = "general"
+verses = ["PSA.135.1-21"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 135 carries no KJV superscription of its own (PSA.135.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_136"
+label = "The Lord's mercy that endureth for ever, recounted in his works"
+kind = "general"
+verses = ["PSA.136.1-26"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 136 carries no KJV superscription of its own (PSA.136.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_137"
+label = "The exiles' lament by the rivers of Babylon"
+kind = "general"
+verses = ["PSA.137.1-9"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 137 carries no KJV superscription of its own (PSA.137.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_138"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.138.1-8"]
+kjv_superscription = "PSA.138.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_139"
+label = "To the chief Musician, A Psalm of David."
+kind = "general"
+verses = ["PSA.139.1-24"]
+kjv_superscription = "PSA.139.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_140"
+label = "To the chief Musician, A Psalm of David."
+kind = "general"
+verses = ["PSA.140.1-13"]
+kjv_superscription = "PSA.140.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_141"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.141.1-10"]
+kjv_superscription = "PSA.141.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_142"
+label = "Maschil of David; A Prayer when he was in the cave."
+kind = "general"
+verses = ["PSA.142.1-7"]
+kjv_superscription = "PSA.142.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_143"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.143.1-12"]
+kjv_superscription = "PSA.143.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_144"
+label = "A Psalm of David."
+kind = "general"
+verses = ["PSA.144.1-15"]
+kjv_superscription = "PSA.144.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_145"
+label = "David’s Psalm of praise."
+kind = "general"
+verses = ["PSA.145.1-21"]
+kjv_superscription = "PSA.145.1, the psalm's own KJV superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_146"
+label = "Praise, and a warning not to trust in princes"
+kind = "general"
+verses = ["PSA.146.1-10"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 146 carries no KJV superscription of its own (PSA.146.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_147"
+label = "Praise of the Lord, who buildeth up Jerusalem and rules creation"
+kind = "general"
+verses = ["PSA.147.1-20"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 147 carries no KJV superscription of its own (PSA.147.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_148"
+label = "A call to all creation to praise the Lord"
+kind = "general"
+verses = ["PSA.148.1-14"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 148 carries no KJV superscription of its own (PSA.148.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_149"
+label = "Praise with a new song, and the honour of the saints"
+kind = "general"
+verses = ["PSA.149.1-9"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 149 carries no KJV superscription of its own (PSA.149.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+[[event]]
+id = "psa_150"
+label = "The closing doxology: praise the Lord with every instrument"
+kind = "general"
+verses = ["PSA.150.1-6"]
+atlas_section = "Psalms pericope (this project's own sectioning, CC0 -- no external PD source claimed): Psalm 150 carries no KJV superscription of its own (PSA.150.1 opens directly with the psalm's own text); title is this project's own faithful description of its actual content, independently read in full against the compiled KJV text before being written."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+# --- Psalm 119: 22 acrostic stanza containers (see this file's own header
+# note on why this replaces a single whole-psalm container) -----------------
+
+[[event]]
+id = "psa_119_aleph"
+label = "Psalm 119: ALEPH"
+kind = "general"
+verses = ["PSA.119.1-8"]
+kjv_superscription = "PSA.119.1, the acrostic stanza's own KJV heading (\"א ALEPH.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_beth"
+label = "Psalm 119: BETH"
+kind = "general"
+verses = ["PSA.119.9-16"]
+kjv_superscription = "PSA.119.9, the acrostic stanza's own KJV heading (\"ב BETH.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_gimel"
+label = "Psalm 119: GIMEL"
+kind = "general"
+verses = ["PSA.119.17-24"]
+kjv_superscription = "PSA.119.17, the acrostic stanza's own KJV heading (\"ג GIMEL.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_daleth"
+label = "Psalm 119: DALETH"
+kind = "general"
+verses = ["PSA.119.25-32"]
+kjv_superscription = "PSA.119.25, the acrostic stanza's own KJV heading (\"ד DALETH.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_he"
+label = "Psalm 119: HE"
+kind = "general"
+verses = ["PSA.119.33-40"]
+kjv_superscription = "PSA.119.33, the acrostic stanza's own KJV heading (\"ה HE.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_vau"
+label = "Psalm 119: VAU"
+kind = "general"
+verses = ["PSA.119.41-48"]
+kjv_superscription = "PSA.119.41, the acrostic stanza's own KJV heading (\"ו VAU.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_zain"
+label = "Psalm 119: ZAIN"
+kind = "general"
+verses = ["PSA.119.49-56"]
+kjv_superscription = "PSA.119.49, the acrostic stanza's own KJV heading (\"ז ZAIN.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_cheth"
+label = "Psalm 119: CHETH"
+kind = "general"
+verses = ["PSA.119.57-64"]
+kjv_superscription = "PSA.119.57, the acrostic stanza's own KJV heading (\"ח CHETH.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_teth"
+label = "Psalm 119: TETH"
+kind = "general"
+verses = ["PSA.119.65-72"]
+kjv_superscription = "PSA.119.65, the acrostic stanza's own KJV heading (\"ט TETH.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_jod"
+label = "Psalm 119: JOD"
+kind = "general"
+verses = ["PSA.119.73-80"]
+kjv_superscription = "PSA.119.73, the acrostic stanza's own KJV heading (\"י JOD.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_caph"
+label = "Psalm 119: CAPH"
+kind = "general"
+verses = ["PSA.119.81-88"]
+kjv_superscription = "PSA.119.81, the acrostic stanza's own KJV heading (\"כ CAPH.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_lamed"
+label = "Psalm 119: LAMED"
+kind = "general"
+verses = ["PSA.119.89-96"]
+kjv_superscription = "PSA.119.89, the acrostic stanza's own KJV heading (\"ל LAMED.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_mem"
+label = "Psalm 119: MEM"
+kind = "general"
+verses = ["PSA.119.97-104"]
+kjv_superscription = "PSA.119.97, the acrostic stanza's own KJV heading (\"מ MEM.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_nun"
+label = "Psalm 119: NUN"
+kind = "general"
+verses = ["PSA.119.105-112"]
+kjv_superscription = "PSA.119.105, the acrostic stanza's own KJV heading (\"נ NUN.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_samech"
+label = "Psalm 119: SAMECH"
+kind = "general"
+verses = ["PSA.119.113-120"]
+kjv_superscription = "PSA.119.113, the acrostic stanza's own KJV heading (\"ס SAMECH.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_ain"
+label = "Psalm 119: AIN"
+kind = "general"
+verses = ["PSA.119.121-128"]
+kjv_superscription = "PSA.119.121, the acrostic stanza's own KJV heading (\"ע AIN.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_pe"
+label = "Psalm 119: PE"
+kind = "general"
+verses = ["PSA.119.129-136"]
+kjv_superscription = "PSA.119.129, the acrostic stanza's own KJV heading (\"פ PE.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_tzaddi"
+label = "Psalm 119: TZADDI"
+kind = "general"
+verses = ["PSA.119.137-144"]
+kjv_superscription = "PSA.119.137, the acrostic stanza's own KJV heading (\"צ TZADDI.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_koph"
+label = "Psalm 119: KOPH"
+kind = "general"
+verses = ["PSA.119.145-152"]
+kjv_superscription = "PSA.119.145, the acrostic stanza's own KJV heading (\"ק KOPH.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_resh"
+label = "Psalm 119: RESH"
+kind = "general"
+verses = ["PSA.119.153-160"]
+kjv_superscription = "PSA.119.153, the acrostic stanza's own KJV heading (\"ר RESH.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_schin"
+label = "Psalm 119: SCHIN"
+kind = "general"
+verses = ["PSA.119.161-168"]
+kjv_superscription = "PSA.119.161, the acrostic stanza's own KJV heading (\"ש SCHIN.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."
+
+[[event]]
+id = "psa_119_tau"
+label = "Psalm 119: TAU"
+kind = "general"
+verses = ["PSA.119.169-176"]
+kjv_superscription = "PSA.119.169, the acrostic stanza's own KJV heading (\"ת TAU.\" -- the transliterated Hebrew letter name, literal KJV text, public domain)."
+ref_note = "GENERAL-kind: poetry, no date of its own. One of the 22 eight-verse stanzas of Psalm 119's own acrostic structure (each stanza's own opening verse begins with a successive letter of the Hebrew alphabet in the original; the KJV carries the transliterated letter name as a heading at each stanza's own first verse) -- a literary-structure fact, not textual criticism. Not nested under a single whole-Psalm-119 container; see this file's own header note."

@@ -2762,3 +2762,31 @@ book = "NEH"
 verses = ["NEH.7.6-73"]
 ref_note = "Nehemiah 7:6-73 read directly against the compiled KJV text -- the same register, per Nehemiah's own explicit statement (7:5, 'I found a register of the genealogy of them which came up at the first'). Deliberately excludes Nehemiah 7:1-5 (Nehemiah's own introductory frame -- appointing gatekeepers and explaining why he searched out the register -- covered by this run's own neh_gatekeepers_appointed, data/curated/passages/nehemiah.toml), an honest subset matching only the register itself, not the surrounding narrative frame."
 
+# --- Batch W3: Psalm 14 <-> Psalm 53 (req 1b's own NAMED CASE entirely
+# internal to Psalms -- no Crockett coverage exists, Crockett's own scope
+# is Samuel/Kings/Chronicles plus its Appendix's cross-references, neither
+# of which names this pair; hand-verified directly against the compiled
+# KJV text instead). The two psalms open nearly word-for-word identical
+# ("The fool hath said in his heart, There is no God" -- PSA.14.1b/53.1b)
+# and share most of their remaining content nearly verse for verse,
+# closing on the SAME near-verbatim line (14:7/53:6); Psalm 53 substitutes
+# "Elohim" register for "LORD" throughout (a translation fact about which
+# divine name the underlying text uses, not textual criticism), and its
+# own verse 5 diverges furthest, expanding on the fear of the wicked and
+# God's own scattering of them. `psa_014` (data/curated/passages/psalms.toml)
+# is the host container -- see that file's own header note for why Psalm
+# 53 is not ALSO a separate top-level container (an unavoidable anchor
+# collision at PSA.53.1, the identical class of case this file's own Ezra
+# 2 / Nehemiah 7 entry just above already established a precedent for).
+[[witness]]
+event_id = "psa_014"
+book = "PSA"
+verses = ["PSA.14.1-7"]
+ref_note = "Psalm 14:1-7 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete (the pw_bethany/72-row precedent: once any witness exists, the top-level book needs its own explicit row)."
+
+[[witness]]
+event_id = "psa_014"
+book = "PSA"
+verses = ["PSA.53.1-6"]
+ref_note = "Psalm 53:1-6 read directly against the compiled KJV text -- nearly identical to Psalm 14 verse for verse, both opening 'The fool hath said in his heart, There is no God' (14:1b/53:1b) and closing 'Oh that the salvation of Israel were come out of Zion!... Jacob shall rejoice, and Israel shall be glad' almost word for word (14:7/53:6); Psalm 53 substitutes 'God' where Psalm 14 reads 'the Lord' throughout (a translation fact about the underlying divine name, not textual criticism), and verse 5 diverges further, expanding on the fear of the wicked and God's own scattering of them -- a second, distinct psalm recounting the same substance, not a copy of the same container."
+
