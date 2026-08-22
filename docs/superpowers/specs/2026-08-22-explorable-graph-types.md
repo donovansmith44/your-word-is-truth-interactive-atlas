@@ -16,6 +16,9 @@ class Explorable e where
 
 -- The graph is a family of typed edge relations over typed nodes:
 --   edges  :: EdgeKind k => Node -> [Target k]
+-- Every relation R ⊆ S×O is one stored set viewed both ways: R and its
+-- transpose Rᵀ are the SAME rows. dual is a total involution on kinds:
+--   dual :: EdgeKind -> EdgeKind ;  dual . dual = id
 -- Presentation is a selection:  Surface = Set EdgeKind × DisplayRule
 -- Honesty is totality: an affordance exists iff the relation is inhabited.
 ```
@@ -146,12 +149,59 @@ pub enum NodePayload {
 pub struct Year(NonZeroI32);
 ```
 
-## 3. Edges — per-kind typed tables
+## 3. Edges — per-kind typed tables, bidirectional by construction
 
 The single most load-bearing decision: the graph is NOT one `Vec<Edge>`
 with stringly kinds. It is a struct of per-kind tables whose endpoint
 types make illegal edges unrepresentable, unified only at the query
 boundary. The tables ARE the indexes ("the data structure does the work").
+
+LAW (owner, 2026-08-22): "quotations are bijective. if something is
+cited, the thing which is cited is CITED BY the thing which cites...
+that node to node bijective correspondence must be baked into the
+types." Baked in as follows: every relation is stored ONCE; its forward
+and inverse readings are PROJECTIONS of the same rows, sharing one
+EdgeId — the bijection's literal witness. An inverse view that disagrees
+with its forward view is unrepresentable because neither is data.
+
+```rust
+/// Row identity: the SAME id reached from either end. Traversing
+/// forward and then asking the target for the inverse entry returns an
+/// entry carrying this same EdgeId.
+pub struct EdgeId(Interned);
+
+/// EdgeKind enumerates BOTH readings of every relation; dual is a total
+/// involution, exhaustively matched (dual(dual(k)) == k is a property
+/// test over all variants):
+pub enum EdgeKind {
+    Contains,   MemberOf,       // dual pair (derived member_of retired as a
+                                // separate index — it IS the inverse view)
+    Witnesses,  WitnessedBy,    // dual pair
+    Quotes,     QuotedBy,       // dual pair
+    Cites,      CitedBy,        // dual pair (cross-refs)
+    Mentions,   MentionedIn,    // dual pair
+    LocatedAt,  SiteOf,         // dual pair
+    DatedBy,    Dates,          // dual pair (an Anchor explores its events)
+    Named,      NameOf,         // dual pair
+    CatechismLink,              // self-dual (symmetric)
+    Parallel,                   // self-dual (symmetric, derived)
+    TemporalAdjacency,          // self-dual (symmetric, derived)
+    FollowsIn,  PrecedesIn,     // succession's two readings, per narrative
+}
+pub fn dual(k: EdgeKind) -> EdgeKind;   // total; involution
+
+/// A relation declares its stored row, its endpoints, and its dual pair:
+pub trait Relation {
+    type Row;
+    const FORWARD: EdgeKind;
+    const INVERSE: EdgeKind;            // == dual(FORWARD), asserted
+    fn endpoints(r: &Self::Row) -> (AnyNodeId, AnyNodeId);
+}
+
+/// Built, never authored: both adjacency maps from one row table.
+pub struct BiIndex { /* fwd: subject → [(EdgeId, object)], inv: object → [(EdgeId, subject)] */ }
+impl BiIndex { pub fn build<R: Relation>(rows: &Table<R::Row>) -> BiIndex { /* one pass */ } }
+```
 
 ```rust
 pub struct Graph {
@@ -171,7 +221,8 @@ pub struct Graph {
     // -------- derived relations (compiler output; no authored rows) ----
     pub reading:     PerCorpusReadingOrder, // one total order PER corpus; no cross-corpus spine
     pub temporal:    TemporalAdjacency,   // ONLY where resolved dates differ
-    pub member_of:   MemberIndex,         // inverse of contains/witnesses
+    // member_of needs no separate index — MemberOf IS the inverse
+    // projection of contains/witnesses via their BiIndexes
     pub parallels:   ParallelIndex,       // via co-witnessing one Event
 }
 
@@ -311,7 +362,11 @@ pub trait Explorable {
 
 pub struct EdgeQuery { pub kind: EdgeKind, pub cursor: Option<Cursor>, pub limit: u16 }
 pub struct EdgePage  { pub kind: EdgeKind, pub entries: Vec<EdgeEntry>, pub next: Option<Cursor> }
-pub struct EdgeEntry { pub node: CardSummary, pub meta: EdgeMeta }   // meta: e.g. narrative tag, vote rank
+pub struct EdgeEntry { pub edge: EdgeId, pub node: CardSummary, pub meta: EdgeMeta }
+// EdgeId is the bijection witness: the same id appears in the entry
+// whichever end you query from. edge_summary() and edges() accept
+// inverse kinds identically — a Verse pages its QuotedBy/CitedBy/
+// MentionedIn exactly as a Concord span pages its Quotes.
 pub struct Cursor(Opaque);            // stable within one graph version
 pub struct GraphVersion(Hash);        // one stamp invalidates all caches
 
@@ -381,6 +436,9 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
   text).
 - A nested address (recursion is relational — flat loci, edges carry the
   structure).
+- An inverse view that disagrees with its forward view (both are
+  projections of one row; the shared EdgeId is the bijection witness;
+  dual is a tested total involution).
 
 ## 10. Open type questions (flagged, not hidden)
 
