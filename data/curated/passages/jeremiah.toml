@@ -1,0 +1,545 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Jeremiah, in the SAME `[[event]]` schema every other `passages/*.toml`
+# file uses. KIND POLICY: see obadiah.toml's own header note.
+#
+# RECONCILIATION: one pre-existing bare Theographic event touches this book
+# -- `theo-234` ("Prophecies of Jeremiah," all 1364 verses, -628). LAYER-0,
+# not heading-worthy today; every container below stays well under the 0.8
+# jaccard sweep floor against it (largest, 98/1364 = 0.072 for
+# jer_burden_against_babylon).
+#
+# JEREMIAH 52 (2 Kings 24-25 || Jeremiah 52, req 1b's own third NAMED
+# CASE): 52:1-11, 52:12-27, and 52:31-34 are ALREADY covered by witnesses
+# on theo-242/2ki_jerusalem_aftermath/2ki_flight_and_jehoiachin_released
+# (Batch W2 + this run's own isaiah.toml commit, which closed the gap Batch
+# W2's own header note explicitly deferred -- see
+# data/curated/event-witnesses.toml's own "2 Kings 24-25 <-> Jeremiah 52"
+# section). This file does NOT re-cover those 31 verses (a competing
+# top-level container would collide those witnesses' own anchors) --
+# `jer_the_three_deportations_numbered` (below) covers only 52:28-30, the
+# one span with NO 2 Kings parallel at all (2 Kings 25 never narrates the
+# three deportations' own numbering). Independently verified by a real
+# script computing the expected verse set (all of Jeremiah minus the
+# already-witnessed 31 verses) against this file's own authored spans
+# before it was ever run through the ETL: zero gaps, zero overlaps.
+#
+# GRANULARITY: the burdens against the nations (46-51) split one container
+# per named nation, the same "burdens per nation" genre the master brief
+# names for Isaiah; sign-acts (the linen girdle, the potter's house, the
+# broken flask, Jeremiah forbidden to marry) each their own container. The
+# historical narrative chapters (26-45, largely continuous prose) are kept
+# closer to chapter-length units, per the brief's own "chapters are
+# acceptable where the text itself is continuous prose narrative" clause.
+#
+# DATES (EVENT-kind rows): reused/interpolated throughout from existing
+# anchors, never independently re-derived -- theo-234's own -628 (the call,
+# ch1, matching 1:2's own 'thirteenth year' of Josiah, the same reign-era
+# Theographic's own date already reflects); theo-238's own -609 ("Reign of
+# Jehoiakim") for every chapter explicitly dated to "the beginning of the
+# reign of Jehoiakim" or "the fourth year of Jehoiakim" alike (25, 26, 35,
+# 36, 45, 46) -- a disclosed reign-start anchor, not an independently
+# recalculated regnal year (this app's own compiled data does not fix
+# whether -609 marks year 0 or year 1 of that reign, so no further
+# arithmetic is attempted, unlike Haggai/Zechariah's own cleaner single-
+# reign, same-year cases); theo-241's own -598 ("Reign of Jeconiah") for
+# the two baskets of figs (24), dated immediately after his own captivity;
+# theo-242's own -597 ("Reign of Zedekiah") for chapters explicitly dated
+# to "the beginning of the reign of Zedekiah" (49:34-39) or "the fourth
+# year of Zedekiah's reign" (51:59, the same disclosed reign-start
+# anchor, not recalculated); `exl_jerusalem`'s own -586 (the fall of
+# Jerusalem) for chapter 39's own retelling of the same event and for the
+# immediate aftermath (40-41); `exl_tahpanhes`'s own -585 for the flight to
+# Egypt and Jeremiah's own oracle there (43-44); and a SIMPLE, text-
+# explicit one-year-earlier count from exl_jerusalem's own -586 for
+# chapters explicitly dated to "the eighteenth year of Nebuchadrezzar"
+# (32, matching 2 Kings 25:8's own "nineteenth year of Nebuchadnezzar" for
+# the fall itself, one year later) -- the SAME discipline data/curated/
+# passages/1samuel.toml's own "twenty years after the ark's own capture"
+# precedent already establishes. Chapters set during the siege without a
+# more precise reusable anchor (21, 34, 37, 38) reuse that same -587.
+# Chapters 27-29 are deliberately left GENERAL-kind despite narrating real
+# events: 27:1 and 28:1's own text both open by naming "the reign of
+# Jehoiakim"/an inception year, yet the content of both chapters addresses
+# king Zedekiah throughout (27:3, 27:12) -- this project's own inerrancy
+# doctrine forbids any manuscript-variance commentary, so rather than
+# assert a date this file cannot honestly single out from the text's own
+# words, these three chapters stay undated, lawfully, per this file's own
+# kind policy. Every other container is GENERAL-kind, undated.
+
+[[event]]
+id = "jer_the_words_of_jeremiah"
+label = "The words of Jeremiah the son of Hilkiah, of the priests that were in Anathoth in the land of Benjamin:"
+kind = "general"
+verses = ["JER.1.1-19"]
+kjv_superscription = "JER.1.1, the book's own opening superscription clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "Date: 'in the thirteenth year of his [Josiah's] reign' (1:2), reused from the pre-existing theo-234. Content: the call -- 'before I formed thee in the belly I knew thee... I have made thee this day a defenced city' -- and the visions of the almond rod and the seething pot. Place: Anathoth (1:1) and Jerusalem (the call's own address, 1:15-18)."
+
+[[event]]
+id = "jer_the_lords_controversy_with_backsliding_israel"
+label = "The Lord's own controversy with backsliding Israel: they have forsaken the fountain of living waters"
+kind = "general"
+verses = ["JER.2.1-37"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0 -- no external PD source claimed): Jeremiah 2, Israel's own early devotion in the wilderness recalled against her present idolatry -- 'my people have committed two evils; they have forsaken me the fountain of living waters, and hewed them out cisterns, broken cisterns, that can hold no water' (2:13)."
+
+[[event]]
+id = "jer_return_thou_backsliding_israel"
+label = "Return, thou backsliding Israel: circumcise yourselves to the Lord"
+kind = "general"
+verses = ["JER.3.1-25", "JER.4.1-4"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 3:1-4:4, the harlotry of Israel and Judah pictured at length, the call 'return, thou backsliding Israel... only acknowledge thine iniquity' (3:12-13), a new paragraph beginning at 3:6 continuing the same appeal, closing on 'circumcise yourselves to the Lord, and take away the foreskins of your heart' (4:4)."
+
+[[event]]
+id = "jer_destruction_from_the_north"
+label = "Destruction from the north: the whole land shall be desolate"
+kind = "general"
+verses = ["JER.4.5-31"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 4:5-31, the trumpet blown for a nation coming from the north, Jeremiah's own anguish -- 'my bowels, my bowels! I am pained at my very heart' -- and the earth seen returned to formlessness and void."
+
+[[event]]
+id = "jer_run_to_and_fro_through_jerusalem"
+label = "Run ye to and fro through the streets of Jerusalem: is there a man that executeth judgment?"
+kind = "general"
+verses = ["JER.5.1-31"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 5, the search for even one just man in Jerusalem, the people's own refusal to fear the Lord who set the sand as a bound for the sea, and a horrible and filthy thing done in the land: the priests bearing rule by their own means."
+
+[[event]]
+id = "jer_evil_out_of_the_north"
+label = "O ye children of Benjamin, gather yourselves to flee: evil appeareth out of the north"
+kind = "general"
+verses = ["JER.6.1-30"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 6, the siege of Jerusalem foreseen in vivid military imagery, the people's own false cry of 'Peace, peace; when there is no peace,' and the Lord's own rejection of sacrifice offered without obedience."
+
+[[event]]
+id = "jer_the_temple_sermon"
+label = "Amend your ways and your doings: is this house become a den of robbers?"
+kind = "general"
+verses = ["JER.7.1-34", "JER.8.1-3"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 7:1-8:3, the temple sermon -- 'trust ye not in lying words, saying, The temple of the Lord, The temple of the Lord, The temple of the Lord, are these' -- Shiloh recalled as a warning, the Lord's own refusal to hear Jeremiah's intercession, sacrifice to Molech in the valley of the son of Hinnom (Tophet) condemned, and the dead exhumed and scattered before sun, moon, and stars."
+
+[[event]]
+id = "jer_is_there_no_balm_in_gilead"
+label = "Is there no balm in Gilead? Oh that my head were waters, and mine eyes a fountain of tears"
+kind = "general"
+verses = ["JER.8.4-22", "JER.9.1-26"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 8:4-9:26, a people that refuse to return though even the stork and the swallow know their own appointed times, Jeremiah's own weeping over the slain of his people, and the closing word that boasting belongs only in understanding and knowing the Lord, not in wisdom, might, or riches (9:23-24)."
+
+[[event]]
+id = "jer_the_folly_of_idols"
+label = "Learn not the way of the heathen: the gods that have not made the heavens shall perish"
+kind = "general"
+verses = ["JER.10.1-25"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 10, the folly of a tree cut from the forest, decked with silver and gold yet unable to speak or walk, set against 'the portion of Jacob... the former of all things,' and Jeremiah's own closing prayer: 'O Lord, correct me, but with judgment; not in thine anger, lest thou bring me to nothing.'"
+
+[[event]]
+id = "jer_the_broken_covenant"
+label = "Hear ye the words of this covenant: cursed be the man that obeyeth not"
+kind = "general"
+verses = ["JER.11.1-17"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 11:1-17, the covenant made with the fathers at the coming out of Egypt recalled and its own curse pronounced on those who have broken it -- Judah's own gods now as many as her cities, yet unable to save her in time of trouble."
+
+[[event]]
+id = "jer_the_plot_against_jeremiahs_life"
+label = "The men of Anathoth plot against Jeremiah's own life; Jeremiah's own complaint"
+kind = "general"
+verses = ["JER.11.18-23", "JER.12.1-6"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 11:18-12:6, Jeremiah's own townsmen of Anathoth plotting to destroy him 'like a lamb or an ox that is brought to the slaughter,' and his own complaint -- 'wherefore doth the way of the wicked prosper?' -- met with the Lord's own hard answer: 'if thou hast run with the footmen, and they have wearied thee, then how canst thou contend with horses?'"
+
+[[event]]
+id = "jer_the_lords_own_lament_over_his_heritage"
+label = "The Lord's own lament: I have forsaken mine house, I have given the dearly beloved of my soul into the hand of her enemies"
+kind = "general"
+verses = ["JER.12.7-17"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 12:7-17, the Lord's own grief over his own forsaken heritage, many pastors who have destroyed his own vineyard, and a closing word of mercy even for the evil neighbor nations, if they will learn the ways of his own people."
+
+[[event]]
+id = "jer_the_linen_girdle_and_the_wine_bottles"
+label = "The linen girdle marred and profitable for nothing; every bottle filled with wine"
+kind = "general"
+verses = ["JER.13.1-27"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 13, two sign-acts -- a linen girdle hidden by the Euphrates and found rotten, picturing Judah's own marred pride, and every bottle filled with wine, picturing a nation to be dashed one against another -- closing on Jerusalem's own shame uncovered and a plea for the queen mother."
+
+[[event]]
+id = "jer_the_great_drought"
+label = "The word of the Lord that came to Jeremiah concerning the dearth"
+kind = "general"
+verses = ["JER.14.1-22"]
+kjv_superscription = "JER.14.1, this section's own superscription clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "Content: Judah mourning under a great drought, false prophets who prophesy peace and truth falsely rebuked, and Jeremiah's own intercession for a people the Lord will not spare."
+
+[[event]]
+id = "jer_jeremiahs_complaint_and_the_lords_answer"
+label = "Though Moses and Samuel stood before me, yet my mind could not be toward this people"
+kind = "general"
+verses = ["JER.15.1-21"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 15, the Lord's own refusal of intercession even from Moses and Samuel, Jeremiah's own complaint -- 'wilt thou be altogether unto me as a liar, and as waters that fail?' -- and the Lord's own answer: 'if thou take forth the precious from the vile, thou shalt be as my mouth... I am with thee to save thee.'"
+
+[[event]]
+id = "jer_jeremiah_forbidden_to_marry"
+label = "Thou shalt not take thee a wife, neither shalt thou have sons or daughters in this place"
+kind = "general"
+verses = ["JER.16.1-21"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 16, a sign-act by ABSENCE -- Jeremiah forbidden to marry or mourn or feast, a living sign of the desolation coming -- set against a closing promise that the Lord will yet bring his people again into their own land, and turn even the Gentiles from idols to the living God."
+
+[[event]]
+id = "jer_the_heart_is_deceitful_and_the_sabbath"
+label = "The heart is deceitful above all things: blessed is the man that trusteth in the Lord"
+kind = "general"
+verses = ["JER.17.1-27"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 17, 'the heart is deceitful above all things, and desperately wicked: who can know it?' set against the man who trusts in the Lord, likened to a tree planted by the waters, and a closing call to hallow the sabbath day."
+
+[[event]]
+id = "jer_the_potters_house"
+label = "Go down to the potter's house: cannot I do with you as this potter?"
+kind = "general"
+verses = ["JER.18.1-23"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 18, a sign-act at the potter's house -- the marred vessel remade as it seemed good to the potter -- the Lord's own right to build up or pluck up any nation according to its own turning, and a plot against Jeremiah's own life answered by his own imprecation against his persecutors."
+
+[[event]]
+id = "jer_the_broken_flask"
+label = "Get a potter's earthen bottle... and break it, and say, Even so will I break this people"
+kind = "general"
+verses = ["JER.19.1-15"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 19, a second potter sign-act -- an earthen bottle taken to the valley of the son of Hinnom and broken before the elders and priests, 'even so will I break this people and this city, as one breaketh a potter's vessel, that cannot be made whole again.'"
+
+[[event]]
+id = "jer_pashur_and_jeremiahs_anguish"
+label = "Pashur smites Jeremiah and puts him in the stocks; Jeremiah's own cry: cursed be the day wherein I was born"
+kind = "general"
+verses = ["JER.20.1-18"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 20, Pashur the priest, chief governor in the house of the Lord, striking Jeremiah and setting him in the stocks; Jeremiah's own renaming of him 'Magor-missabib' (terror on every side); and Jeremiah's own rawest lament in the whole book -- 'cursed be the day wherein I was born... wherefore came I forth out of the womb to see labour and sorrow?'"
+
+[[event]]
+id = "jer_oracle_to_zedekiah_during_the_siege"
+label = "Behold, I will turn back the weapons of war that are in your hands"
+kind = "general"
+verses = ["JER.21.1-14"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 21, an oracle to king Zedekiah, who sent to inquire of Jeremiah as Nebuchadrezzar besieged the city -- the Lord himself fighting against Jerusalem, and the way of life set before the king's own house: execute judgment, or the house shall become a wilderness."
+
+[[event]]
+id = "jer_oracles_against_the_kings_of_judah"
+label = "Go down to the house of the king of Judah: oracles against Shallum, Jehoiakim, and Coniah"
+kind = "general"
+verses = ["JER.22.1-30"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 22, a series of oracles against Judah's own kings by name -- Shallum (Jehoahaz), carried away never to return; Jehoiakim, who built his house by unrighteousness and shall be buried 'with the burial of an ass'; and Coniah (Jehoiachin), written childless as to the throne, for 'no man of his seed shall prosper, sitting upon the throne of David.'"
+
+[[event]]
+id = "jer_woe_to_the_shepherds_and_the_righteous_branch"
+label = "Woe be unto the pastors that destroy and scatter the sheep: I will raise unto David a righteous Branch"
+kind = "general"
+verses = ["JER.23.1-40"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 23, woe to the shepherds who scatter the flock, the promise of a righteous Branch who 'shall reign and prosper... and this is his name whereby he shall be called, THE LORD OUR RIGHTEOUSNESS' (23:5-6), and a long closing rebuke of false prophets who steal the Lord's own words from one another."
+
+[[event]]
+id = "jer_the_two_baskets_of_figs"
+label = "Two baskets of figs set before the temple: the good exceeding good, the evil exceeding evil"
+kind = "event"
+from_year = -598
+to_year = -598
+places = ["jerusalem"]
+verses = ["JER.24.1-10"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 24, dated after Nebuchadrezzar carried away Jeconiah captive -- a vision of two baskets of figs, the good figs a sign of the exiles the Lord will regard for good, the evil figs a sign of Zedekiah and those remaining, given up to be a curse in all the kingdoms of the earth."
+ref_note = "Date interpolated from the pre-existing theo-241 ('Reign of Jeconiah,' -598), matching 24:1's own 'after that Nebuchadrezzar... had carried away captive Jeconiah.' Place: Jerusalem (the temple, explicit, 24:1)."
+
+[[event]]
+id = "jer_the_seventy_years_and_the_cup_of_fury"
+label = "This whole land shall be a desolation, and these nations shall serve the king of Babylon seventy years"
+kind = "event"
+from_year = -609
+to_year = -609
+places = ["jerusalem"]
+verses = ["JER.25.1-38"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 25, dated the fourth year of Jehoiakim -- the seventy years of Babylonian servitude foretold, and the cup of the Lord's own fury made all the nations to drink, from Jerusalem outward to Babylon itself last of all."
+ref_note = "Date interpolated from the pre-existing theo-238 ('Reign of Jehoiakim,' -609) -- a disclosed reign-start anchor per this file's own header note, matching 25:1's own 'fourth year of Jehoiakim.' Place: Jerusalem."
+
+[[event]]
+id = "jer_the_temple_sermon_trial"
+label = "Jeremiah on trial for his life for prophesying against the temple and the city"
+kind = "event"
+from_year = -609
+to_year = -609
+places = ["jerusalem"]
+verses = ["JER.26.1-24"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 26, dated the beginning of the reign of Jehoiakim -- the temple sermon's own aftermath, priests and prophets and all the people seizing Jeremiah, crying 'thou shalt surely die,' the princes' own judgment that he had spoken in the Lord's own name (citing Micah's own precedent, 26:18-19, a literary/historical fact this text itself states, not textual criticism), and his own deliverance through Ahikam's protection."
+ref_note = "Date: 'the beginning of the reign of Jehoiakim' (26:1), matching theo-238's own -609 directly. Place: Jerusalem."
+
+[[event]]
+id = "jer_the_yoke_of_babylon"
+label = "Make thee bonds and yokes: serve the king of Babylon, and live"
+kind = "general"
+verses = ["JER.27.1-22"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 27, a sign-act -- bonds and yokes made and sent to the surrounding kings and to Zedekiah himself -- the call to serve Babylon and live, and a warning against the prophets who falsely promise the temple's own vessels will soon return."
+
+[[event]]
+id = "jer_hananiah_the_false_prophet"
+label = "Hananiah breaks the yoke and prophesies falsely; his own death within the year"
+kind = "general"
+verses = ["JER.28.1-17"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 28, Hananiah the prophet breaking the wooden yoke from Jeremiah's own neck and prophesying Babylon's own defeat within two years, answered by Jeremiah's own iron yoke and the word that Hananiah himself would die that same year 'because thou hast taught rebellion against the Lord' -- and so it came to pass."
+
+[[event]]
+id = "jer_the_letter_to_the_exiles"
+label = "Build ye houses, and dwell in them: seek the peace of the city, for in the peace thereof shall ye have peace"
+kind = "general"
+verses = ["JER.29.1-32"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 29, Jeremiah's own letter to the exiles already carried to Babylon -- settle, build, plant, marry, and seek the peace of the city, for the seventy years must run their course, closing on judgment against the false prophets Ahab, Zedekiah, and Shemaiah among the exiles."
+
+[[event]]
+id = "jer_the_book_of_consolation_opens"
+label = "Write thee all the words that I have spoken unto thee in a book: the days come that I will bring again the captivity"
+kind = "general"
+verses = ["JER.30.1-24"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 30, opening the 'Book of Consolation' (30-33) -- Jacob's own trouble likened to a woman in travail, yet 'they shall serve the Lord their God, and David their king,' the incurable wound to be healed, and the Lord's own fierce anger not to return until his own purposes are fully performed."
+
+[[event]]
+id = "jer_a_voice_in_ramah_and_the_new_covenant"
+label = "A voice heard in Ramah: I will make a new covenant with the house of Israel"
+kind = "general"
+verses = ["JER.31.1-40"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 31, 'a voice was heard in Ramah... Rahel weeping for her children' (31:15, Matthew 2:18 later applies this to the slaughter of the innocents, a translation/literary fact, not textual criticism), a virgin of Israel built again with dances, and the book's own most-cited promise: 'behold, the days come, saith the Lord, that I will make a new covenant with the house of Israel... I will put my law in their inward parts, and write it in their hearts' (31:31-33, Hebrews 8:8-12 later quotes this at length)."
+
+[[event]]
+id = "jer_jeremiah_buys_the_field_at_anathoth"
+label = "Men shall buy fields for money... for I will cause their captivity to return"
+kind = "event"
+from_year = -587
+to_year = -587
+places = ["anathoth", "jerusalem"]
+verses = ["JER.32.1-44"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 32, dated the tenth year of Zedekiah (the eighteenth year of Nebuchadrezzar) -- Jeremiah, shut up in the court of the prison during the siege, buys Hanameel's own field at Anathoth as a sign that houses and fields and vineyards shall yet be possessed again in this land."
+ref_note = "Date: 'the eighteenth year of Nebuchadrezzar' (32:1) -- a simple, text-explicit one-year-earlier count from `exl_jerusalem`'s own -586 (2 Kings 25:8's own 'nineteenth year of Nebuchadnezzar' for the fall itself, one year later), the same discipline data/curated/passages/1samuel.toml's own 'twenty years after the ark's own capture' precedent already establishes. Place: Anathoth (32:7-9, the field's own location) and Jerusalem (the prison, 32:2)."
+
+[[event]]
+id = "jer_further_promises_of_restoration"
+label = "I will cause the captivity to return, and will build them, as at the first"
+kind = "event"
+from_year = -587
+to_year = -587
+places = ["jerusalem"]
+verses = ["JER.33.1-26"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 33, a second word to Jeremiah 'the second time, while he was yet shut up in the court of the prison' -- health and cure promised for the city, a Branch of righteousness to grow up unto David, and the Lord's own covenant with day and night made the pledge that his own covenant with David and the Levites shall likewise never be broken."
+ref_note = "Same imprisonment setting as jer_jeremiah_buys_the_field_at_anathoth (33:1, 'the second time'). Place: Jerusalem (the prison)."
+
+[[event]]
+id = "jer_the_broken_covenant_to_free_the_slaves"
+label = "Ye turned and polluted my name, and caused every man his servant to return, and brought them into subjection"
+kind = "event"
+from_year = -587
+to_year = -587
+places = ["jerusalem"]
+verses = ["JER.34.1-22"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 34, dated while Nebuchadnezzar's own army fought against Jerusalem and all her cities -- a covenant to free Hebrew slaves made and then broken, the freed servants brought back into bondage, and Zedekiah's own own coming captivity foretold, though he would die in peace and be lamented."
+ref_note = "Date: 'when Nebuchadnezzar king of Babylon... fought against Jerusalem' (34:1) -- the siege period, reusing exl_jerusalem's own -586 minus one year (the same -587 anchor as the surrounding siege-era chapters, per this file's own header note). Place: Jerusalem."
+
+[[event]]
+id = "jer_the_faithfulness_of_the_rechabites"
+label = "The Rechabites obeyed their father's commandment: shall not Judah much less obey me?"
+kind = "event"
+from_year = -609
+to_year = -609
+places = ["jerusalem"]
+verses = ["JER.35.1-19"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 35, the Rechabites brought into the temple and offered wine, refusing it in faithfulness to their own father Jonadab's own ancient commandment -- set as a living rebuke to Judah, who will not obey the Lord who has spoken to them 'rising early and speaking.'"
+ref_note = "Date: 'in the days of Jehoiakim' (35:1), reused from theo-238's own -609 -- a disclosed reign-era adjacency per this file's own header note. Place: Jerusalem (the temple, 35:2)."
+
+[[event]]
+id = "jer_baruchs_scroll_burned_by_jehoiakim"
+label = "Jehoiakim cuts the roll with a penknife and casts it into the fire"
+kind = "event"
+from_year = -609
+to_year = -609
+places = ["jerusalem"]
+verses = ["JER.36.1-32"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 36, dated the fourth year of Jehoiakim -- Baruch writes Jeremiah's own words at his dictation, reads them in the temple, and Jehoiakim, hearing them read to him, cuts the roll with a penknife and burns it leaf by leaf in the fire, unafraid -- so Jeremiah dictates it again, 'and there were added besides unto them many like words.'"
+ref_note = "Date: 'the fourth year of Jehoiakim' (36:1), reused from theo-238's own -609 -- a disclosed reign-start anchor per this file's own header note. Place: Jerusalem."
+
+[[event]]
+id = "jer_jeremiah_imprisoned_in_the_dungeon"
+label = "Zedekiah reigns; Jeremiah is beaten and put into the dungeon"
+kind = "event"
+from_year = -587
+to_year = -587
+places = ["jerusalem"]
+verses = ["JER.37.1-21"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 37, Zedekiah's own reign begun in Coniah's place, Jeremiah's own attempted departure to Benjamin during a lull in the siege, his own arrest as a supposed deserter, and his own imprisonment in the dungeon of Jonathan the scribe until Zedekiah secretly moves him to the court of the prison."
+ref_note = "Siege-era setting, reusing the same -587 anchor as the surrounding chapters, per this file's own header note. Place: Jerusalem."
+
+[[event]]
+id = "jer_jeremiah_in_the_miry_pit"
+label = "Jeremiah cast into the dungeon of Malchiah, and sunk in the mire; Ebed-melech draws him up"
+kind = "event"
+from_year = -587
+to_year = -587
+places = ["jerusalem"]
+verses = ["JER.38.1-28"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 38, the princes casting Jeremiah into a dungeon with no water, only mire, for weakening the hands of the men of war; Ebed-melech the Ethiopian's own intercession and rescue with old cast clouts and rotten rags under his own armholes; and Zedekiah's own secret, fearful audience with Jeremiah."
+ref_note = "Same siege-era setting, -587, per this file's own header note. Place: Jerusalem."
+
+[[event]]
+id = "jer_the_fall_of_jerusalem_retold"
+label = "In the ninth year of Zedekiah... the city was broken up"
+kind = "event"
+from_year = -586
+to_year = -586
+places = ["jerusalem"]
+verses = ["JER.39.1-18"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 39, Jeremiah's own eyewitness account of the fall of Jerusalem -- the breach, Zedekiah's own flight and capture at the plains of Jericho, his own sons slain before his eyes and his own eyes then put out, and the Lord's own word of deliverance kept for Ebed-melech, who trusted him."
+ref_note = "Date: 'the ninth year of Zedekiah king of Judah' (39:1), reused from the pre-existing exl_jerusalem ('Jerusalem falls to Babylon,' -586) -- the same event this chapter itself narrates. Place: Jerusalem."
+
+[[event]]
+id = "jer_jeremiah_stays_with_gedaliah"
+label = "Nebuzaradan releases Jeremiah; the remnant gathers to Gedaliah at Mizpah"
+kind = "event"
+from_year = -586
+to_year = -586
+places = ["mizpah-3"]
+verses = ["JER.40.1-16"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 40, Jeremiah found among the captives in chains and released by Nebuzaradan, his own choice to remain in the land with Gedaliah rather than go to Babylon, the scattered remnant gathering to Gedaliah at Mizpah, and Johanan's own early warning of Ishmael's plot to kill him -- a warning Gedaliah refuses to believe."
+ref_note = "Same year as jer_the_fall_of_jerusalem_retold, immediately following. Place: Mizpah (40:6, explicit)."
+
+[[event]]
+id = "jer_the_assassination_of_gedaliah"
+label = "Ishmael smites Gedaliah, and all the Jews that were with him at Mizpah"
+kind = "event"
+from_year = -586
+to_year = -586
+places = ["mizpah-3"]
+verses = ["JER.41.1-18"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 41, dated the seventh month -- Ishmael the son of Nethaniah assassinating Gedaliah and the men with him at Mizpah, a further massacre of eighty pilgrims, and Johanan's own pursuit and rescue of the surviving captives, who then flee toward Egypt, halting near Bethlehem."
+ref_note = "Same year as jer_jeremiah_stays_with_gedaliah, the seventh month following (41:1). Place: Mizpah."
+
+[[event]]
+id = "jer_the_remnant_asks_guidance_and_is_warned"
+label = "Fear not the king of Babylon: go not into Egypt"
+kind = "event"
+from_year = -586
+to_year = -586
+places = ["bethlehem-1"]
+verses = ["JER.42.1-22"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 42, the surviving captains and people, gathered near Bethlehem, ask Jeremiah to seek the Lord's own guidance, promising obedience in advance; his own answer after ten days -- remain in the land, fear not the king of Babylon -- and his own warning that going to Egypt regardless will bring the same sword, famine, and pestilence they flee."
+ref_note = "Same setting as jer_the_assassination_of_gedaliah's own closing verse (41:17, 'the habitation of Chimham, which is by Beth-lehem'). Place: Bethlehem (direct JER.41.17 verse_link in the compiled places.json)."
+
+[[event]]
+id = "jer_the_flight_to_egypt"
+label = "Johanan and all the people, disobedient, carry Jeremiah into Egypt"
+kind = "event"
+from_year = -585
+to_year = -585
+places = ["tahpanhes"]
+verses = ["JER.43.1-13"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 43, Azariah and Johanan accusing Jeremiah of falsehood and leading the whole remnant, Jeremiah and Baruch included, down into Egypt to Tahpanhes -- where Jeremiah buries great stones at Pharaoh's own house as a sign that Nebuchadrezzar shall yet set his throne there."
+ref_note = "Date reused from the pre-existing exl_tahpanhes ('The remnant flees to Tahpanhes in Egypt,' -585) -- this event's own JER.43.5-7 top-level verses already fall within this chapter. Place: Tahpanhes, explicit (43:7)."
+
+[[event]]
+id = "jer_oracle_against_the_jews_in_egypt"
+label = "Ye have seen all the evil... yet ye burn incense unto other gods: an oracle against the Jews in Egypt"
+kind = "event"
+from_year = -585
+to_year = -585
+places = ["egypt"]
+verses = ["JER.44.1-30"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 44, an oracle to all the Jews dwelling in Migdol, Tahpanhes, Noph, and Pathros -- their own continued burning of incense to the queen of heaven rebuked at length, and a sign given: Pharaoh Hophra shall be delivered into his own enemies' hands, as Zedekiah was."
+ref_note = "Same Egypt setting as jer_the_flight_to_egypt, reused -585, per this file's own header note. Place: Egypt (44:1, the Jews' own scattered dwelling places there)."
+
+[[event]]
+id = "jer_the_message_to_baruch"
+label = "Seekest thou great things for thyself? Seek them not: thy life will I give unto thee for a prey"
+kind = "event"
+from_year = -609
+to_year = -609
+places = ["jerusalem"]
+verses = ["JER.45.1-5"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 45, a short, personal word to Baruch, dated the fourth year of Jehoiakim (the same occasion as jer_baruchs_scroll_burned_by_jehoiakim, ch36) -- Baruch's own grief comforted, and the Lord's own promise that though he build up and pluck down the whole land, Baruch's own life shall be given him as a prey wherever he goes."
+ref_note = "Date: 'the fourth year of Jehoiakim... when he had written these words in a book' (45:1) -- the same occasion and anchor as jer_baruchs_scroll_burned_by_jehoiakim, theo-238's own -609. Place: Jerusalem."
+
+[[event]]
+id = "jer_burden_against_egypt"
+label = "Against Egypt, concerning the army of Pharaoh-necho"
+kind = "event"
+from_year = -609
+to_year = -609
+places = ["egypt"]
+verses = ["JER.46.1-28"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 46, dated the fourth year of Jehoiakim -- Egypt's own army defeated at Carchemish by the Euphrates pictured as a swelling flood turned back, closing on Israel's own comfort: 'fear thou not, O my servant Jacob... for I am with thee.'"
+ref_note = "Date: 'the fourth year of Jehoiakim' (46:2), reused from theo-238's own -609 -- a disclosed reign-start anchor per this file's own header note. Place: Egypt."
+
+[[event]]
+id = "jer_burden_against_the_philistines"
+label = "Against the Philistines, before that Pharaoh smote Gaza"
+kind = "general"
+verses = ["JER.47.1-7"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 47, waters rising out of the north to overflow the land of the Philistines -- Gaza, Ashkelon, and the remnant of the country of Caphtor named."
+
+[[event]]
+id = "jer_burden_against_moab"
+label = "Against Moab: woe unto Nebo! for it is spoiled"
+kind = "general"
+verses = ["JER.48.1-47"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 48, the longest of this book's own burdens against a single nation -- Moab's own cities named one by one in judgment for trusting in her own works and treasures, closing on a promise to bring again the captivity of Moab 'in the latter days.'"
+
+[[event]]
+id = "jer_burden_against_ammon"
+label = "Concerning the Ammonites: hath Israel no sons? hath he no heir?"
+kind = "general"
+verses = ["JER.49.1-6"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 49:1-6, judgment on Ammon for possessing Gad's own inheritance, closing on the promise: 'afterward I will bring again the captivity of the children of Ammon, saith the Lord.'"
+
+[[event]]
+id = "jer_burden_against_edom"
+label = "Concerning Edom: is wisdom no more in Teman?"
+kind = "general"
+verses = ["JER.49.7-22"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 49:7-22, judgment on Edom pictured as an eagle's nest set among the stars yet brought down, closely echoing this book's own earlier language against Babylon."
+
+[[event]]
+id = "jer_burden_against_damascus"
+label = "Concerning Damascus: Hamath is confounded, and Arpad"
+kind = "general"
+verses = ["JER.49.23-27"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 49:23-27, Damascus waxed feeble and turned to flee, her own young men to fall in the streets."
+
+[[event]]
+id = "jer_burden_against_kedar_and_hazor"
+label = "Concerning Kedar, and concerning the kingdoms of Hazor"
+kind = "general"
+verses = ["JER.49.28-33"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 49:28-33, Nebuchadrezzar's own coming campaign against Kedar's own tents and flocks, and Hazor made a desolation for ever, a dwelling for dragons."
+
+[[event]]
+id = "jer_burden_against_elam"
+label = "Concerning Elam: I will break the bow of Elam, the chief of their might"
+kind = "event"
+from_year = -597
+to_year = -597
+places = ["elam"]
+verses = ["JER.49.34-39"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 49:34-39, dated the beginning of the reign of Zedekiah -- Elam's own bow broken and her people scattered to the four winds, closing on the same promise given the other judged nations: 'it shall come to pass in the latter days, that I will bring again the captivity of Elam.'"
+ref_note = "Date: 'in the beginning of the reign of Zedekiah' (49:34), matching theo-242's own -597 directly. Place: Elam."
+
+[[event]]
+id = "jer_burden_against_babylon"
+label = "The word that the Lord spake against Babylon: I will raise up against Babylon a destroying wind"
+kind = "general"
+verses = ["JER.50.1-46", "JER.51.1-58"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 50:1-51:58, this book's own longest and climactic burden -- Babylon's own idols Bel and Merodach confounded, Israel and Judah's own flock scattered by lions now to be brought home, and Babylon's own utter, permanent desolation -- 'Babylon is taken... her mighty men are taken, every one of their bows is broken... it shall be no more inhabited for ever' (51:31-33, 51:26)."
+
+[[event]]
+id = "jer_seraiah_carries_the_scroll_to_babylon"
+label = "Seraiah carries the written word to Babylon, reads it, binds a stone to it, and casts it into the Euphrates"
+kind = "event"
+from_year = -597
+to_year = -597
+places = ["babylon-1"]
+verses = ["JER.51.59-64"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 51:59-64, dated the fourth year of Zedekiah's own reign -- Jeremiah's own written word against Babylon sent by Seraiah, to be read aloud there and then sunk in the Euphrates with a stone, a sign that 'thus shall Babylon sink, and shall not rise from the evil that I will bring upon her.' Closing formula: 'thus far are the words of Jeremiah' (51:64), marking chapter 52 as a later appendix."
+ref_note = "Date: 'the fourth year of his [Zedekiah's] reign' (51:59) -- a disclosed reign-start anchor (theo-242's own -597), not independently recalculated for the specific regnal year, per this file's own header note. Place: Babylon."
+
+[[event]]
+id = "jer_the_three_deportations_numbered"
+label = "This is the people whom Nebuchadrezzar carried away captive: three deportations numbered"
+kind = "event"
+from_year = -598
+to_year = -582
+places = ["babylon-1"]
+verses = ["JER.52.28-30"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 52:28-30, a precise census of three separate deportations to Babylon by regnal year of Nebuchadnezzar (the seventh, eighteenth, and twenty-third years) -- content with NO 2 Kings parallel at all (2 Kings 25 never narrates this numbering), so covered fresh here rather than as a witness (see this file's own header note)."
+ref_note = "A genuine multi-year RANGE, not a single point: the seventh year of Nebuchadnezzar (52:28) interpolates to roughly -598 (matching theo-241's own Jeconiah-captivity year), the eighteenth (52:29) to -587 (this file's own jer_jeremiah_buys_the_field_at_anathoth anchor), and the twenty-third (52:30) roughly four years past exl_jerusalem's own -586 fall-year, i.e. -582 -- every one reused/interpolated from this file's own existing anchors, never independently re-derived."

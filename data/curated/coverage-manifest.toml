@@ -54,7 +54,7 @@ declared = [
   "1SA", "2SA", "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST",
   "JOB", "PSA", "PRO", "ECC", "SNG",
   "OBA", "JON", "NAM", "HAB", "ZEP", "HAG", "JOL",
-  "MAL", "AMO", "HOS", "ZEC", "LAM", "DAN", "MIC", "ISA",
+  "MAL", "AMO", "HOS", "ZEC", "LAM", "DAN", "MIC", "ISA", "JER",
 ]
 # Micah's own real MIC.4.1-3 heading now comes from the req 1b Isaiah 2:2-4
 # || Micah 4:1-3 witness (isa_mountain_of_the_lords_house, ISA-side
