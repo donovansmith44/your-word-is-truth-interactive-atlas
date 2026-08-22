@@ -54,8 +54,10 @@ declared = [
   "1SA", "2SA", "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST",
   "JOB", "PSA", "PRO", "ECC", "SNG",
   "OBA", "JON", "NAM", "HAB", "ZEP", "HAG", "JOL",
-  "MAL", "AMO", "HOS", "ZEC", "LAM", "DAN", "MIC", "ISA", "JER",
+  "MAL", "AMO", "HOS", "ZEC", "LAM", "DAN", "MIC", "ISA", "JER", "EZK",
 ]
+# Batch W4 window complete: all 17 Prophets (Isaiah-Malachi) declared above
+# -- the full W4 slice the master brief named ("W4 = Isaiah-Malachi").
 # Micah's own real MIC.4.1-3 heading now comes from the req 1b Isaiah 2:2-4
 # || Micah 4:1-3 witness (isa_mountain_of_the_lords_house, ISA-side
 # container in isaiah.toml, MIC-side witness row in

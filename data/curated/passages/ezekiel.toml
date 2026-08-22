@@ -1,0 +1,443 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Ezekiel, in the SAME `[[event]]` schema every other `passages/*.toml`
+# file uses. KIND POLICY: see obadiah.toml's own header note.
+#
+# RECONCILIATION: one pre-existing bare Theographic event touches this book
+# -- `theo-243` ("Prophecies of Ezekiel," all 1273 verses, -593). LAYER-0,
+# not heading-worthy today; every container below stays well under the 0.8
+# jaccard sweep floor against it (largest, 52/1273 = 0.041 for
+# ezk_gog_and_magog).
+#
+# GRANULARITY: this book's own sign-acts (lying on his side with a siege
+# model, shaving his own hair, removing his own household goods) are each
+# their own container, the master brief's own explicitly named "Ezekiel's
+# sign-acts" genre. The extensive burden against Tyre (26-28) and against
+# Egypt (29-32) are each split into their own real sub-units (the siege
+# prophecy; the lament; the prince/king of Tyre oracle and the Zidon
+# coda; Pharaoh the dragon; Nebuchadnezzar's own wages; the day of the
+# Lord; the broken arm; Assyria the cedar; the lamentation; the pit among
+# the nations), matching the "burdens per nation" genre the master brief
+# names for Isaiah, applied here to a book that gives each burden far more
+# internal structure. The nine-chapter closing temple vision (40-48) is
+# ONE continuous experience (no new date resets it anywhere across the
+# span) but is still split into six real sub-units by content (the
+# measurements; the glory's own return; priestly ordinances; offerings and
+# feasts; the river of life; the tribal allotments), not left as one
+# unmanageable 260-verse container.
+#
+# DATES: Ezekiel is this slice's own most densely self-dated book -- almost
+# every major section opens with an explicit 'in the Nth year' formula,
+# every one counted from the same fixed epoch (Jehoiachin's own captivity,
+# 1:2). theo-243's own -593 is reused as the YEAR-5 baseline (matching
+# 1:2's own 'fifth year of king Jehoiachin's captivity,' the call vision's
+# own date) -- every other dated container in this file is a SIMPLE,
+# text-explicit linear count from that one baseline (year N -> -593 + (N -
+# 5)), never an independently fresh Ussher derivation, the same discipline
+# data/curated/passages/1samuel.toml's own "twenty years after the ark's
+# own capture" precedent already establishes, applied consistently across
+# this whole book rather than case by case. A chapter with NO new date
+# clause of its own either continues its own immediately preceding dated
+# section (no break in the narrative address) or is left GENERAL-kind,
+# undated, per this file's own header policy -- disclosed per container,
+# never silently assumed either way. PLACE: `chebar` (1:1's own explicit
+# 'river of Chebar,' direct EZK.1.1 verse_link in the compiled
+# places.json) anchors Ezekiel's own physical location among the exiles
+# throughout; the temple vision (8-11, 40-48) is instead anchored at
+# `jerusalem`, since both explicitly narrate Ezekiel being brought there
+# 'in the visions of God' (8:3, 40:2), not merely seeing it from Chebar;
+# the nation-burdens (25-32) are anchored at the named nation itself,
+# matching this slice's own Isaiah/Jeremiah burden-oracle convention.
+
+[[event]]
+id = "ezk_the_call_vision"
+label = "The heavens were opened, and I saw visions of God"
+kind = "event"
+from_year = -593
+to_year = -593
+places = ["chebar"]
+verses = ["EZK.1.1-28", "EZK.2.1-10", "EZK.3.1-27"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ezekiel 1:1-3:27, dated the fifth year of Jehoiachin's own captivity -- the vision of the four living creatures and the wheels within wheels, the glory of the Lord upon a sapphire throne, the scroll eaten 'sweet as honey,' and Ezekiel made a watchman to the house of Israel, forewarned that his own hearers would be impudent and hardhearted."
+ref_note = "Date: 'the fifth year of king Jehoiachin's captivity' (1:2), reused as this file's own YEAR-5 baseline from the pre-existing theo-243 ('Prophecies of Ezekiel,' -593), per this file's own header note. Place: the river of Chebar, explicit (1:1, 1:3, 3:15, 3:23)."
+
+[[event]]
+id = "ezk_sign_act_lying_on_his_side"
+label = "Take thee a tile, and pourtray upon it the city: lying three hundred and ninety days upon thy left side"
+kind = "event"
+from_year = -593
+to_year = -593
+places = ["chebar"]
+verses = ["EZK.4.1-17", "EZK.5.1-17"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 4-5, sign-acts continuing directly from the call's own commissioning, no new date given -- a clay tile portraying Jerusalem besieged, Ezekiel lying on his left side 390 days and his right side 40 days bearing the iniquity of Israel and Judah, bread baked over dung as a sign of defiled exile-food, and Ezekiel's own hair shaved with a sharp knife and divided into thirds -- burned, smitten, and scattered."
+ref_note = "Same dated setting as ezk_the_call_vision (no new date clause; continuous address). Place: Chebar, unchanged."
+
+[[event]]
+id = "ezk_prophecy_against_the_mountains_of_israel"
+label = "Prophesy against the mountains of Israel: I will destroy your high places"
+kind = "event"
+from_year = -593
+to_year = -593
+places = ["chebar"]
+verses = ["EZK.6.1-14"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 6, judgment against the mountains, hills, rivers, and valleys of Israel for their own high places of idolatry, with a remnant promised to remember the Lord among the nations of their captivity."
+ref_note = "Same dated setting as ezk_the_call_vision. Place: Chebar, unchanged."
+
+[[event]]
+id = "ezk_the_end_is_come"
+label = "An end, the end is come upon the four corners of the land"
+kind = "event"
+from_year = -593
+to_year = -593
+places = ["chebar"]
+verses = ["EZK.7.1-27"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 7, closing this book's own opening cycle -- 'an end is come, the end is come: it watcheth for thee; behold, it is come' -- silver and gold cast into the streets, unable to deliver in the day of the Lord's own wrath."
+ref_note = "Same dated setting as ezk_the_call_vision. Place: Chebar, unchanged."
+
+[[event]]
+id = "ezk_the_glory_departs_the_temple"
+label = "Brought in the visions of God to Jerusalem: the glory of the Lord departs the temple"
+kind = "event"
+from_year = -592
+to_year = -592
+places = ["jerusalem"]
+verses = ["EZK.8.1-18", "EZK.9.1-11", "EZK.10.1-22", "EZK.11.1-25"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 8-11, dated the sixth year -- Ezekiel transported in vision to Jerusalem, shown the abominations in the temple (the image of jealousy, elders worshipping creeping things in the dark, women weeping for Tammuz, sun-worshippers at the temple door), six executioners sent through the city while a seventh marks the faithful, and the glory of the Lord departing by stages to stand over the mountain east of the city, closing on the promise of a new heart and a new spirit for the scattered exiles (11:19)."
+ref_note = "Date: 'the sixth year, in the sixth month, in the fifth day of the month' (8:1) -- a simple, text-explicit one-year forward count from this file's own YEAR-5 baseline, per this file's own header note. Place: Jerusalem, explicit ('brought me in the visions of God to Jerusalem,' 8:3)."
+
+[[event]]
+id = "ezk_sign_act_removing_into_captivity"
+label = "Prepare thee stuff for removing, and remove by day in their sight"
+kind = "event"
+from_year = -592
+to_year = -592
+places = ["chebar"]
+verses = ["EZK.12.1-28"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 12, a sign-act continuing directly from the temple vision, no new date given -- Ezekiel packing his own goods and digging through the wall by night as a sign of Zedekiah's own coming exile, and a rebuke of the proverb 'the days are prolonged, and every vision faileth.'"
+ref_note = "Same dated setting as ezk_the_glory_departs_the_temple (no new date clause). Place: Chebar (the sign-act is performed among the exiles there, not in Jerusalem itself)."
+
+[[event]]
+id = "ezk_false_prophets_and_prophetesses_rebuked"
+label = "Woe unto the foolish prophets, that follow their own spirit, and have seen nothing"
+kind = "general"
+verses = ["EZK.13.1-23"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 13, judgment on prophets who prophesy out of their own hearts, 'daubing' a flimsy wall 'with untempered morter,' and on women who sew pillows to all armholes, hunting souls with false comfort."
+
+[[event]]
+id = "ezk_idols_in_the_heart_and_noah_daniel_job"
+label = "These men have set up their idols in their heart: though Noah, Daniel, and Job were in it"
+kind = "general"
+verses = ["EZK.14.1-23"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 14, elders who come to inquire of the Lord while holding idols in their own heart answered directly, and a fourfold judgment (sword, famine, beasts, pestilence) so severe that even Noah, Daniel, and Job -- named together as three righteous men -- would deliver only their own souls, not their sons or daughters."
+
+[[event]]
+id = "ezk_the_useless_vine"
+label = "What is the vine tree more than any tree? It is cast into the fire for fuel"
+kind = "general"
+verses = ["EZK.15.1-8"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 15, a short parable -- the wood of the vine, useless even before the fire has scorched it, useless still after -- so shall Jerusalem's own inhabitants be given to the fire."
+
+[[event]]
+id = "ezk_jerusalem_the_unfaithful_wife"
+label = "Jerusalem pictured as an unfaithful wife, from birth to harlotry to the everlasting covenant restored"
+kind = "general"
+verses = ["EZK.16.1-63"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 16, this book's own longest single chapter -- Jerusalem's own birth unwashed and unswaddled, betrothed and adorned by the Lord, then playing the harlot with every passer-by, more corrupt than Sodom and Samaria (her own 'sisters,' 16:46-49, whose own sin is named as pride, fulness of bread, and idleness, neglecting the poor and needy), closing on the Lord's own remembrance of his covenant and an everlasting covenant yet to come."
+
+[[event]]
+id = "ezk_the_parable_of_the_eagles_and_the_vine"
+label = "Two great eagles and a vine: the parable of the transplanted cedar sprig"
+kind = "general"
+verses = ["EZK.17.1-24"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 17, a riddle of two great eagles and a vine, interpreted as Babylon's own transplanting of Judah's own king and the folly of turning to Egypt instead, closing on the Lord's own promise to plant a tender sprig of the cedar's own highest branch upon a high mountain."
+
+[[event]]
+id = "ezk_the_soul_that_sinneth_it_shall_die"
+label = "The soul that sinneth, it shall die: the son shall not bear the iniquity of the father"
+kind = "general"
+verses = ["EZK.18.1-32"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 18, a sustained argument against the proverb 'the fathers have eaten sour grapes, and the children's teeth are set on edge' -- each soul answers for its own righteousness or wickedness, a wicked man's own repentance genuinely saves him, and a righteous man's own turning to sin genuinely condemns him -- closing on 'I have no pleasure in the death of him that dieth... wherefore turn yourselves, and live ye.'"
+
+[[event]]
+id = "ezk_a_lamentation_for_the_princes_of_israel"
+label = "Take up a lamentation for the princes of Israel: a lioness, her whelps, and a wasted vine"
+kind = "general"
+verses = ["EZK.19.1-14"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 19, a lamentation in the form of two allegories -- a lioness whose whelps are both taken captive, and a fruitful vine plucked up in fury, planted in the wilderness, and set on fire."
+
+[[event]]
+id = "ezk_israels_history_of_rebellion_recounted"
+label = "Wilt thou judge them, son of man? Israel's own history of rebellion recounted, from Egypt onward"
+kind = "event"
+from_year = -591
+to_year = -591
+places = ["chebar"]
+verses = ["EZK.20.1-49"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 20, elders inquiring of the Lord again, answered instead with a long recital of Israel's own rebellion in Egypt, in the wilderness, and in the land itself -- 'I caused them to go forth out of the land of Egypt, and brought them into the wilderness... but the house of Israel rebelled against me' -- closing on a promise to yet bring them into the wilderness of the peoples and purge out the rebels."
+ref_note = "Date: 'the seventh year, in the fifth month, the tenth day of the month' (20:1) -- a simple, text-explicit two-year forward count from this file's own YEAR-5 baseline, per this file's own header note. Place: Chebar (the elders 'sat before me,' 20:1, the same setting as the earlier dated visions)."
+
+[[event]]
+id = "ezk_the_sword_of_the_lord"
+label = "A sword, a sword is sharpened, and also furbished: the king of Babylon stood at the parting of the way"
+kind = "event"
+from_year = -591
+to_year = -591
+places = ["chebar"]
+verses = ["EZK.21.1-32"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 21, the sword of the Lord drawn against Jerusalem and the land of Israel, Nebuchadnezzar pictured standing 'at the head of the two ways' using divination to choose Jerusalem over Rabbah of the Ammonites, and a closing oracle against Ammon herself, whose own sword likewise shall not be sheathed."
+ref_note = "Same dated setting as ezk_israels_history_of_rebellion_recounted (no new date clause). Place: Chebar, unchanged."
+
+[[event]]
+id = "ezk_jerusalems_catalogue_of_sins"
+label = "The bloody city: a catalogue of Jerusalem's own sins, and the dross in the furnace"
+kind = "general"
+verses = ["EZK.22.1-31"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 22, a long catalogue of Jerusalem's own sins -- shedding blood, dishonoring parents, oppressing strangers, defiling the sabbath -- pictured as dross in a furnace, and a search for 'a man... that should make up the hedge, and stand in the gap before me for the land, that I should not destroy it,' but none is found."
+
+[[event]]
+id = "ezk_aholah_and_aholibah"
+label = "Aholah and Aholibah: two sisters, Samaria and Jerusalem, both unfaithful"
+kind = "general"
+verses = ["EZK.23.1-49"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 23, an extended allegory of two sisters -- Aholah (Samaria) and Aholibah (Jerusalem) -- both playing the harlot with Egypt and Assyria and Babylon in turn, judged by the very lovers they once courted."
+
+[[event]]
+id = "ezk_the_boiling_pot_and_ezekiels_wife"
+label = "The boiling pot set on the fire; Ezekiel's own wife dies as a sign, and he is forbidden to mourn"
+kind = "event"
+from_year = -589
+to_year = -589
+places = ["chebar"]
+verses = ["EZK.24.1-27"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 24, dated the very day the siege of Jerusalem began -- the parable of the boiling, scummed pot set on the fire until its own rust is consumed, and Ezekiel's own wife, 'the desire of thine eyes,' taken from him that same day, forbidden to mourn openly as a sign that the exiles likewise would not mourn openly for the coming fall of the temple."
+ref_note = "Date: 'the ninth year, in the tenth month, in the tenth day of the month' (24:1) -- a simple, text-explicit four-year forward count from this file's own YEAR-5 baseline, per this file's own header note; the same siege-start day 2 Kings 25:1/Jeremiah 39:1/52:4 independently date, hand-verified directly against the compiled KJV text (a literary/chronological fact, not textual criticism). Place: Chebar."
+
+[[event]]
+id = "ezk_oracles_against_ammon_moab_edom_philistia"
+label = "Oracles against Ammon, Moab, Edom, and Philistia"
+kind = "general"
+verses = ["EZK.25.1-17"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 25, four short oracles against the nations immediately bordering Judah -- Ammon rebuked for rejoicing over the sanctuary's own profaning, Moab for saying 'the house of Judah is like unto all the heathen,' Edom for taking vengeance, and Philistia for old, perpetual hatred."
+
+[[event]]
+id = "ezk_burden_against_tyre_the_siege"
+label = "Tyre's own coming siege: I will cause many nations to come up against thee"
+kind = "event"
+from_year = -587
+to_year = -587
+places = ["tyre"]
+verses = ["EZK.26.1-21"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 26, dated the eleventh year -- judgment on Tyre for rejoicing over Jerusalem's own fall ('I shall be replenished, now she is laid waste'), her own walls broken down and made 'like the top of a rock,' a place to spread nets upon."
+ref_note = "Date: 'the eleventh year, in the first day of the month' (26:1) -- a simple, text-explicit six-year forward count from this file's own YEAR-5 baseline, per this file's own header note. Place: Tyre."
+
+[[event]]
+id = "ezk_lamentation_for_tyre"
+label = "Take up a lamentation for Tyre: O thou that art situate at the entry of the sea"
+kind = "event"
+from_year = -587
+to_year = -587
+places = ["tyre"]
+verses = ["EZK.27.1-36"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 27, a sustained lamentation picturing Tyre as a magnificent merchant ship, built of fir from Senir and cedar from Lebanon, trading with nations from Tarshish to Sheba, wrecked in the heart of the seas -- 'all the inhabitants of the isles shall be astonished at thee.'"
+ref_note = "Same dated setting as ezk_burden_against_tyre_the_siege (no new date clause). Place: Tyre, unchanged."
+
+[[event]]
+id = "ezk_the_prince_of_tyre_and_burden_against_zidon"
+label = "The prince of Tyre, who said I am a God; a burden against Zidon; Israel to dwell safely"
+kind = "event"
+from_year = -587
+to_year = -587
+places = ["tyre", "sidon"]
+verses = ["EZK.28.1-26"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 28, the prince of Tyre rebuked for saying 'I am a God, I sit in the seat of God,' a further lamentation for 'the king of Tyre' once 'in Eden the garden of God... perfect in thy ways from the day that thou wast created, till iniquity was found in thee,' a short burden against Zidon, and a closing promise that Israel shall no more be a 'pricking brier' to her neighbors but shall dwell safely in her own land."
+ref_note = "Same dated setting as ezk_burden_against_tyre_the_siege. Place: Tyre and Zidon (28:21-22, explicit)."
+
+[[event]]
+id = "ezk_pharaoh_the_dragon_burden_against_egypt"
+label = "Pharaoh king of Egypt, the great dragon that lieth in the midst of his rivers"
+kind = "event"
+from_year = -588
+to_year = -588
+places = ["egypt"]
+verses = ["EZK.29.1-16"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 29:1-16, dated the tenth year -- Pharaoh pictured as a great dragon in the Nile, claiming 'my river is mine own, and I have made it for myself,' Egypt to become 'the basest of the kingdoms' for forty years, then gathered again but never again exalted above the nations."
+ref_note = "Date: 'the tenth year, in the tenth month, in the twelfth day of the month' (29:1) -- a simple, text-explicit five-year forward count from this file's own YEAR-5 baseline, per this file's own header note. Place: Egypt."
+
+[[event]]
+id = "ezk_nebuchadnezzars_wages_from_egypt"
+label = "Nebuchadnezzar's own army had no wages from Tyre: Egypt given him instead"
+kind = "event"
+from_year = -571
+to_year = -571
+places = ["egypt"]
+verses = ["EZK.29.17-21"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 29:17-21, this book's own LATEST-dated oracle -- Nebuchadnezzar's own long, unrewarded siege of Tyre recalled, and Egypt's own spoil given him as wages instead, closing on a promise that Ezekiel's own mouth would be opened before the house of Israel that day."
+ref_note = "Date: 'the seven and twentieth year, in the first month, in the first day of the month' (29:17) -- a simple, text-explicit twenty-two-year forward count from this file's own YEAR-5 baseline, per this file's own header note; the latest date anywhere in this book, even though placed here rather than at the book's own end. Place: Egypt."
+
+[[event]]
+id = "ezk_the_day_of_the_lord_upon_egypt"
+label = "The day of the Lord is near, a cloudy day: it shall be the time of the heathen"
+kind = "general"
+verses = ["EZK.30.1-19"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 30:1-19, no new date given -- a further oracle of the day of the Lord upon Egypt and her own helpers, Ethiopia, Libya, and Lydia, her own cities named one by one for judgment."
+
+[[event]]
+id = "ezk_pharaohs_arm_broken"
+label = "I have broken the arm of Pharaoh king of Egypt: it shall not be bound up to be healed"
+kind = "event"
+from_year = -587
+to_year = -587
+places = ["egypt"]
+verses = ["EZK.30.20-26"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 30:20-26, dated the eleventh year -- the Lord's own word that Pharaoh's arm, already broken, shall not be healed, while the king of Babylon's own arms are strengthened."
+ref_note = "Date: 'the eleventh year, in the first month, in the seventh day of the month' (30:20) -- a simple, text-explicit six-year forward count from this file's own YEAR-5 baseline, per this file's own header note. Place: Egypt."
+
+[[event]]
+id = "ezk_assyria_the_cedar_a_warning_to_egypt"
+label = "Behold, the Assyrian was a cedar in Lebanon: a warning to Pharaoh's own pride"
+kind = "event"
+from_year = -587
+to_year = -587
+places = ["egypt"]
+verses = ["EZK.31.1-18"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 31, dated the eleventh year -- Assyria pictured as a towering cedar in Lebanon, its own height envied by every tree in Eden, cut down for its own pride, set before Pharaoh as a direct warning of his own coming fall to the same judgment."
+ref_note = "Date: 'the eleventh year, in the third month, in the first day of the month' (31:1) -- the same simple six-year forward count as ezk_pharaohs_arm_broken, per this file's own header note. Place: Egypt."
+
+[[event]]
+id = "ezk_lamentation_for_pharaoh"
+label = "Take up a lamentation for Pharaoh king of Egypt: thou art like a young lion, and as a whale in the seas"
+kind = "event"
+from_year = -586
+to_year = -586
+places = ["egypt"]
+verses = ["EZK.32.1-16"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 32:1-16, dated the twelfth year -- a lamentation likening Pharaoh to a whale troubling the waters with his own feet, to be caught in the Lord's own net and cast upon the land for the fowls and beasts."
+ref_note = "Date: 'the twelfth year, in the twelfth month, in the first day of the month' (32:1) -- a simple, text-explicit seven-year forward count from this file's own YEAR-5 baseline, per this file's own header note. Place: Egypt."
+
+[[event]]
+id = "ezk_egypt_in_the_pit_with_the_nations"
+label = "Egypt sent down to the nether parts of the earth, with them that go down into the pit"
+kind = "event"
+from_year = -586
+to_year = -586
+places = ["egypt"]
+verses = ["EZK.32.17-32"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 32:17-32, dated the same twelfth year -- a descent into Sheol pictured, Egypt laid among the uncircumcised slain alongside Asshur, Elam, Meshech, Tubal, Edom, and the princes of the north, closing this book's own burdens-against-the-nations section (25-32)."
+ref_note = "Same year as ezk_lamentation_for_pharaoh (32:17, 'also in the twelfth year'). Place: Egypt."
+
+[[event]]
+id = "ezk_the_watchman_charge_renewed"
+label = "If the watchman see the sword come, and blow not the trumpet: the watchman charge renewed"
+kind = "general"
+verses = ["EZK.33.1-20"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 33:1-20, no new date given -- the watchman's own responsibility restated in general terms (a wicked man turning from his sin shall live; a righteous man turning to sin shall die in it), preparing for the specific, dated news that follows."
+
+[[event]]
+id = "ezk_news_of_jerusalems_fall_arrives"
+label = "One that had escaped out of Jerusalem came unto me, saying, The city is smitten"
+kind = "event"
+from_year = -586
+to_year = -586
+places = ["chebar"]
+verses = ["EZK.33.21-33"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 33:21-33, dated the twelfth year of the captivity -- news of Jerusalem's own fall reaching the exiles at Chebar, Ezekiel's own mouth opened at last (fulfilling 29:21), and a closing rebuke: the people hear his words 'as a very lovely song' yet do not do them."
+ref_note = "Date: 'the twelfth year of our captivity, in the tenth month, in the fifth day of the month' (33:21) -- matching the same year-12 anchor as ezk_lamentation_for_pharaoh/ezk_egypt_in_the_pit_with_the_nations, per this file's own header note. Place: Chebar (explicit return to the exiles' own setting)."
+
+[[event]]
+id = "ezk_shepherds_of_israel_rebuked"
+label = "Woe be to the shepherds of Israel: I myself will search my sheep, and seek them out"
+kind = "general"
+verses = ["EZK.34.1-31"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 34, Israel's own shepherds rebuked for feeding themselves rather than the flock, the Lord's own promise to search for his own sheep himself, and 'my servant David' set up as one shepherd and prince over a covenant of peace."
+
+[[event]]
+id = "ezk_judgment_on_mount_seir"
+label = "Set thy face against mount Seir, and prophesy against it: Edom's own perpetual hatred judged"
+kind = "general"
+verses = ["EZK.35.1-15"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 35, judgment against Mount Seir (Edom) for perpetual hatred and violence against Israel in the day of her calamity."
+
+[[event]]
+id = "ezk_the_mountains_of_israel_and_the_new_heart"
+label = "Ye mountains of Israel, hear the word of the Lord: a new heart also will I give you"
+kind = "general"
+verses = ["EZK.36.1-38"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 36, the mountains of Israel promised fruitfulness and a returning people, the Lord's own act 'not for your sakes... but for mine holy name's sake,' and the promise of a new heart and a new spirit -- 'I will take away the stony heart out of your flesh, and I will give you an heart of flesh' (36:26)."
+
+[[event]]
+id = "ezk_the_valley_of_dry_bones"
+label = "Son of man, can these bones live? The valley of dry bones, and the two sticks joined"
+kind = "general"
+verses = ["EZK.37.1-28"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 37, the vision of a valley full of very dry bones, joined together, covered with flesh, and given breath -- 'these bones are the whole house of Israel' -- and a sign-act of two sticks, for Judah and for Joseph/Ephraim, joined into one in the prophet's own hand as a picture of a reunited kingdom under one shepherd forever."
+
+[[event]]
+id = "ezk_gog_and_magog"
+label = "Set thy face against Gog, the land of Magog: the Lord's own judgment on the final invader"
+kind = "general"
+verses = ["EZK.38.1-23", "EZK.39.1-29"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 38-39, an extensive oracle against Gog of the land of Magog, chief prince of Meshech and Tubal, gathering a great confederacy against a peaceful, regathered Israel -- overthrown by the Lord's own hand, an earthquake, and confusion, buried in 'the valley of Hamon-gog,' closing on the promise that the Lord will no more hide his own face from the house of Israel, having poured out his Spirit upon them."
+
+[[event]]
+id = "ezk_the_temple_measured"
+label = "The hand of the Lord brought me into the land of Israel, and set me upon a very high mountain: the temple measured"
+kind = "event"
+from_year = -573
+to_year = -573
+places = ["jerusalem"]
+verses = ["EZK.40.1-49", "EZK.41.1-26", "EZK.42.1-20"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 40-42, dated the twenty-fifth year of the captivity -- a man 'whose appearance was like the appearance of brass' measures the whole temple complex with a line of flax and a measuring reed, gate by gate, chamber by chamber, court by court, in exhaustive architectural detail."
+ref_note = "Date: 'the five and twentieth year of our captivity... in the fourteenth year after that the city was smitten' (40:1) -- a simple, text-explicit twenty-year forward count from this file's own YEAR-5 baseline, per this file's own header note; one continuous vision spans 40-48, this file's own six sub-containers within it sharing the identical date. Place: Jerusalem, explicit ('brought me into the land of Israel,' 40:2)."
+
+[[event]]
+id = "ezk_the_glory_returns_and_the_altar"
+label = "The glory of the Lord came into the house by the way of the gate whose prospect is toward the east"
+kind = "event"
+from_year = -573
+to_year = -573
+places = ["jerusalem"]
+verses = ["EZK.43.1-27"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 43, the glory of the Lord -- the same glory seen departing in this book's own earlier vision (8-11) -- returning to fill the temple by the east gate, the Lord's own promise to dwell there forever if Israel puts away her own idolatry, and the ordinances of the altar and its own dedication."
+ref_note = "Same continuous vision/date as ezk_the_temple_measured. Place: Jerusalem, unchanged."
+
+[[event]]
+id = "ezk_ordinances_for_the_priests_and_the_closed_gate"
+label = "This gate shall be shut: ordinances for the sons of Zadok who kept the charge of my sanctuary"
+kind = "event"
+from_year = -573
+to_year = -573
+places = ["jerusalem"]
+verses = ["EZK.44.1-31"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 44, the east gate shut because the Lord himself entered by it, ordinances distinguishing the Levites who went astray after idols from the sons of Zadok who kept their own charge faithfully, and regulations for the priests' own garments, marriages, and portion."
+ref_note = "Same continuous vision/date as ezk_the_temple_measured. Place: Jerusalem, unchanged."
+
+[[event]]
+id = "ezk_offerings_the_princes_portion_and_the_feasts"
+label = "A holy portion of the land; the prince's own portion; ordinances for the offerings and appointed feasts"
+kind = "event"
+from_year = -573
+to_year = -573
+places = ["jerusalem"]
+verses = ["EZK.45.1-25", "EZK.46.1-24"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 45-46, a holy portion of land set apart for the sanctuary, the priests, the Levites, and the city, with the residue for the prince, just balances and measures commanded, and detailed ordinances for the appointed feasts, the sabbath, and the new moon offerings."
+ref_note = "Same continuous vision/date as ezk_the_temple_measured. Place: Jerusalem, unchanged."
+
+[[event]]
+id = "ezk_the_river_of_life_and_the_lands_boundaries"
+label = "Waters issued out from under the threshold of the house: the river of life, and the land's own boundaries"
+kind = "event"
+from_year = -573
+to_year = -573
+places = ["jerusalem"]
+verses = ["EZK.47.1-23"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 47, waters flowing from under the temple's own threshold, deepening from ankle to knee to loin to a river none could pass over, healing the Dead Sea itself wherever it flows, trees on either bank bearing fruit every month for food and leaves for medicine, and the land's own boundaries marked out for the returning tribes."
+ref_note = "Same continuous vision/date as ezk_the_temple_measured. Place: Jerusalem, unchanged."
+
+[[event]]
+id = "ezk_the_tribal_allotments_and_the_lord_is_there"
+label = "The names of the tribes: the city's own new name, THE LORD IS THERE"
+kind = "event"
+from_year = -573
+to_year = -573
+places = ["jerusalem"]
+verses = ["EZK.48.1-35"]
+atlas_section = "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 48, the land's own tribal allotments named one by one from Dan to Gad, the holy portion and the city's own dimensions and twelve gates, one for each tribe, closing this whole book on its own final word: 'and the name of the city from that day shall be, The Lord is there.'"
+ref_note = "Same continuous vision/date as ezk_the_temple_measured, closing it. Place: Jerusalem, unchanged."

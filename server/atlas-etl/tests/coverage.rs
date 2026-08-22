@@ -522,12 +522,17 @@ fn every_declared_book_is_fully_covered_by_the_real_compiled_data() {
 /// Ruth), the whole W2 window (1/2 Samuel, 1/2 Kings, 1/2 Chronicles,
 /// Ezra, Nehemiah, and Esther), and the whole W3 window -- Job, Psalms,
 /// Proverbs, Ecclesiastes, and Song of Solomon (Batch W3, this run) --
-/// are the floor as of this commit.
+/// are the floor as of this commit. Batch W4 (whole-Bible titled verse
+/// containers, fourth run): all 17 Prophets -- Isaiah, Jeremiah,
+/// Lamentations, Ezekiel, Daniel, and the twelve Minor Prophets (Hosea
+/// through Malachi) -- the full W4 window the master brief named
+/// ("W4 = Isaiah-Malachi"), added below.
 #[test]
 fn declared_books_never_shrink_below_the_established_floor() {
     const FLOOR: &[&str] = &[
         "MAT", "MRK", "LUK", "JHN", "ACT", "GEN", "EXO", "LEV", "RUT", "NUM", "DEU", "JOS", "JDG", "1SA", "2SA",
-        "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST", "JOB", "PSA", "PRO", "ECC", "SNG",
+        "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST", "JOB", "PSA", "PRO", "ECC", "SNG", "ISA", "JER", "LAM",
+        "EZK", "DAN", "HOS", "JOL", "AMO", "OBA", "JON", "MIC", "NAM", "HAB", "ZEP", "HAG", "ZEC", "MAL",
     ];
 
     let manifest_toml = read_curated("coverage-manifest.toml");
