@@ -1,0 +1,554 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Isaiah, in the SAME `[[event]]` schema every other `passages/*.toml` file
+# uses. KIND POLICY: see obadiah.toml's own header note.
+#
+# RECONCILIATION: one pre-existing bare Theographic event touches this book
+# -- `theo-217` ("Prophecies of Isaiah," all 1292 verses, -759). LAYER-0,
+# not heading-worthy today; every container below stays well under the 0.8
+# jaccard sweep floor against it (largest, 79/1292 = 0.061).
+#
+# ISAIAH 36-39 (2 Kings 18-20 || Isaiah 36-39, req 1b's own second NAMED
+# CASE, Crockett sections 175-176): ALREADY FULLY WITNESSED by Batch W2's
+# own six Kings-side containers (2ki_sennacherib_first_invasion,
+# 2ki_rabshakeh_message, 2ki_hezekiahs_message_and_isaiahs_answer,
+# 2ki_hezekiahs_prayer_and_deliverance, 2ki_hezekiah_illness_recovery,
+# 2ki_hezekiah_babylonian_embassy) -- independently swept against the real
+# compiled data before authoring: all 90 verses of Isaiah 36:1-39:8 are
+# already claimed as ISA witness anchors on those six events, zero gaps.
+# This file therefore does NOT author any new top-level container spanning
+# 36-39 -- doing so would collide every one of those six witnesses' own
+# anchors, the exact "shared container title must be TRUE AT EVERY ANCHOR"
+# discipline batch-w3-report.md's own fix round 1 established. Every
+# container below partitions the REMAINING 1202 verses of Isaiah (1202 =
+# 1292 - 90) -- independently verified by a real script computing the
+# expected verse set (all of Isaiah minus 36:1-39:8) against this file's
+# own authored spans before it was ever run through the ETL: zero gaps,
+# zero overlaps, zero duplication of the witnessed range.
+#
+# req 1b NAMED CASE (master brief: "Isaiah 2:2-4 || Micah 4:1-3"), BOTH
+# SIDES this project's own to author: `isa_mountain_of_the_lords_house`
+# (below, ISA.2.2-4) is the HOST; Micah's own witness row lives in
+# data/curated/event-witnesses.toml (event_id =
+# "isa_mountain_of_the_lords_house", book = "MIC", verses = ["MIC.4.1-3"]).
+# micah.toml's own chapter-4 container deliberately begins at 4:4, not
+# 4:1, to avoid a real anchor collision -- see that file's own header note.
+# Hand-verified directly against the compiled KJV text (both ranges read in
+# full before either side was authored) -- outside Crockett's own scope (a
+# Samuel/Kings/Chronicles harmony, never Isaiah or Micah).
+#
+# GRANULARITY: the master brief's own named example genre -- "Isaiah's
+# burdens per nation" (13-23) -- split one container per named burden
+# (Babylon, Philistia, Moab, Damascus, Ethiopia, Egypt, the desert of the
+# sea, Dumah, Arabia, the valley of vision, Tyre), not a chapter chunk.
+# The Servant Songs (42:1-9 folded into its own wider chapter unit;
+# 49:1-13/50:1-11/52:13-53:12 each their own container) and the six "woe"
+# oracles (28-33) are likewise split by the text's own real formal markers
+# ("woe to...", "the burden of...") rather than chapter boundaries, per the
+# same "oracle units, not arbitrary chapter chunks" instruction.
+#
+# DATES (EVENT-kind rows only, three total): isa_isaiahs_call_vision
+# reuses the pre-existing theo-218 ("Death of Uzziah," -758), matching
+# 6:1's own explicit "in the year that king Uzziah died." isa_ahaz_and_
+# the_sign_of_immanuel reuses theo-221 ("Reign of Ahaz," -743) -- a
+# disclosed early-reign adjacency (the Syro-Ephraimite crisis narrated in
+# ch7 is not independently dated more precisely anywhere in this app's own
+# compiled data). isa_burden_of_philistia reuses theo-225 ("Death of
+# Ahaz," -726), matching 14:28's own explicit "in the year that king Ahaz
+# died was this burden." Every other container in this file is GENERAL-
+# kind, undated, per this file's own header policy -- including
+# isa_isaiah_walks_naked_as_a_sign (20:1-6), which DOES name a real,
+# independently-known historical campaign (Sargon II's Tartan at Ashdod,
+# 20:1) but has no reusable anchor anywhere in this app's own existing
+# compiled data, so no date is fabricated for it.
+
+[[event]]
+id = "isa_superscription_and_the_lords_indictment"
+label = "The vision of Isaiah the son of Amoz, which he saw concerning Judah and Jerusalem in the days of Uzziah, Jotham, Ahaz, and Hezekiah, kings of Judah."
+kind = "general"
+verses = ["ISA.1.1-20"]
+kjv_superscription = "ISA.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "Content: 'hear, O heavens, and give ear, O earth' -- the Lord's own indictment of a rebellious, sin-laden nation, and 'come now, and let us reason together' -- true repentance sought over empty sacrifice."
+
+[[event]]
+id = "isa_zion_purified_through_judgment"
+label = "The faithful city become an harlot; Zion redeemed through judgment"
+kind = "general"
+verses = ["ISA.1.21-31"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0 -- no external PD source claimed): Isaiah 1:21-31, Jerusalem's own decline from a faithful city to a harlot's dwelling, judgment as the Lord's own purifying fire, and the promise: 'Zion shall be redeemed with judgment, and her converts with righteousness.'"
+
+[[event]]
+id = "isa_second_superscription"
+label = "The word that Isaiah the son of Amoz saw concerning Judah and Jerusalem."
+kind = "general"
+verses = ["ISA.2.1"]
+kjv_superscription = "ISA.2.1, a second, distinct superscription opening this book's own next major section, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+
+[[event]]
+id = "isa_mountain_of_the_lords_house"
+label = "The mountain of the Lord's house exalted; nations turn swords into plowshares"
+kind = "general"
+verses = ["ISA.2.2-4"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 2:2-4, the req 1b named parallel with Micah 4:1-3 -- 'in the last days... the mountain of the house of the Lord shall be established in the top of the mountains,' the nations streaming to it, and 'they shall beat their swords into plowshares, and their spears into pruninghooks: nation shall not lift up sword against nation, neither shall they learn war any more.'"
+ref_note = "HOST of the req 1b Isaiah 2:2-4 || Micah 4:1-3 parallel -- see this file's own header note. Title is this project's own CC0 phrasing, not a literal kjv_superscription, since the two accounts' own wording genuinely differs in places ('all nations' ISA.2.2 vs 'people' MIC.4.1; 'Come ye' ISA.2.3 vs 'Come, and' MIC.4.2) -- the shared-title law requires a title TRUE AT EVERY ANCHOR, so a paraphrase honest to both, not a verbatim quote of either, is used."
+
+[[event]]
+id = "isa_day_of_the_lord_against_pride"
+label = "The day of the Lord upon all pride: idols cast to the moles and to the bats"
+kind = "general"
+verses = ["ISA.2.5-22"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 2:5-22, the Lord's own day against everything proud and lifted up, men casting their own idols of silver and gold 'to the moles and to the bats' and hiding in the rocks from his own terror."
+
+[[event]]
+id = "isa_judgment_on_leaders_and_daughters_of_zion"
+label = "Judgment on Jerusalem's own leaders; the haughty daughters of Zion"
+kind = "general"
+verses = ["ISA.3.1-26", "ISA.4.1"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 3:1-4:1, the Lord taking away Jerusalem's own stay and staff -- the mighty man, the judge, the prophet -- children and babes left to rule, and the haughty daughters of Zion, adorned in finery, stripped bare."
+
+[[event]]
+id = "isa_the_branch_of_the_lord"
+label = "The branch of the Lord, beautiful and glorious"
+kind = "general"
+verses = ["ISA.4.2-6"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 4:2-6, a remnant washed and purged, called holy, sheltered by the Lord's own cloud by day and flaming fire by night."
+
+[[event]]
+id = "isa_song_of_the_vineyard_and_six_woes"
+label = "The song of the vineyard; six woes pronounced"
+kind = "general"
+verses = ["ISA.5.1-30"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 5, the parable-song of the vineyard that brought forth wild grapes, and six woes against covetousness, drunkenness, mockery of God, calling evil good, self-conceit, and corrupt judges, closing on a nation raised up from far as the Lord's own instrument."
+
+[[event]]
+id = "isa_isaiahs_call_vision"
+label = "Isaiah's own call: Here am I; send me"
+kind = "event"
+from_year = -758
+to_year = -758
+places = ["jerusalem"]
+verses = ["ISA.6.1-13"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 6, dated 'the year that king Uzziah died' -- the vision of the Lord high and lifted up, the seraphim crying 'Holy, holy, holy,' Isaiah's own unclean lips touched with a live coal, and his own answer to the call: 'here am I; send me,' followed by the Lord's own hard word that the people would hear but not understand, until cities lie waste."
+ref_note = "Date: 'in the year that king Uzziah died' (6:1), reused from the pre-existing theo-218 ('Death of Uzziah,' -758) -- see this file's own header note."
+
+[[event]]
+id = "isa_ahaz_and_the_sign_of_immanuel"
+label = "Ahaz refuses a sign; the sign of Immanuel given anyway"
+kind = "event"
+from_year = -743
+to_year = -743
+places = ["jerusalem"]
+verses = ["ISA.7.1-25"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 7, the Syro-Ephraimite threat against Ahaz's own house, Isaiah meeting the king with his own son Shear-jashub, Ahaz's own refusal to ask a sign, and the sign given regardless: 'behold, a virgin shall conceive, and bear a son, and shall call his name Immanuel' (7:14), closing on Assyria's own coming as a shaved razor over the land."
+ref_note = "Date interpolated from the pre-existing theo-221 ('Reign of Ahaz,' -743) -- a disclosed early-reign adjacency per this file's own header note; the Syro-Ephraimite crisis this chapter narrates is not independently dated more precisely anywhere in this app's own compiled data. Place: Jerusalem, explicit (7:1, Ahaz's own city under threat)."
+
+[[event]]
+id = "isa_maher_shalal_hash_baz_and_the_river"
+label = "Maher-shalal-hash-baz; the overflowing river of Assyria"
+kind = "general"
+verses = ["ISA.8.1-22"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 8, the sign-child Maher-shalal-hash-baz naming Assyria's own swift plunder of Damascus and Samaria, the river of Assyria overflowing into Judah 'even to the neck,' and the call to bind up the testimony and seek the Lord rather than familiar spirits."
+
+[[event]]
+id = "isa_unto_us_a_child_is_born"
+label = "Unto us a child is born: the government upon his shoulder"
+kind = "general"
+verses = ["ISA.9.1-21"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 9, the people that walked in darkness seeing a great light, 'for unto us a child is born, unto us a son is given... and his name shall be called Wonderful, Counsellor, The mighty God, The everlasting Father, The Prince of Peace' (9:6), followed by the Lord's own outstretched hand still against a proud, unrepentant Ephraim and Israel."
+
+[[event]]
+id = "isa_woe_to_assyria_the_rod_of_mine_anger"
+label = "Woe to Assyria, the rod of mine anger"
+kind = "general"
+verses = ["ISA.10.1-34"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 10, woe to those who decree unrighteous decrees, Assyria named as the rod of the Lord's own anger yet itself proud and doomed for judgment, and a remnant of Jacob promised to return."
+
+[[event]]
+id = "isa_the_shoot_from_the_stem_of_jesse"
+label = "A rod out of the stem of Jesse; the wolf shall dwell with the lamb"
+kind = "general"
+verses = ["ISA.11.1-16"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 11, a rod out of the stem of Jesse upon whom the spirit of the Lord shall rest, the peaceable kingdom where 'the wolf also shall dwell with the lamb,' and the Lord's own gathering of the outcasts of Israel from the four corners of the earth."
+
+[[event]]
+id = "isa_song_of_praise"
+label = "The song of praise: therefore with joy shall ye draw water out of the wells of salvation"
+kind = "general"
+verses = ["ISA.12.1-6"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 12, a closing song of thanksgiving -- 'behold, God is my salvation... therefore with joy shall ye draw water out of the wells of salvation' -- closing the book's own first major section (1-12)."
+
+[[event]]
+id = "isa_burden_of_babylon"
+label = "The burden of Babylon, which Isaiah the son of Amoz did see."
+kind = "general"
+verses = ["ISA.13.1-22", "ISA.14.1-23"]
+kjv_superscription = "ISA.13.1, this burden's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "Content: Babylon's own coming fall to the Medes (13:17), the day of the Lord as destruction from the Almighty, and a taunt-song against the king of Babylon crossing into chapter 14 -- 'how art thou fallen from heaven, O Lucifer, son of the morning!' (14:12) -- closing on Israel's own restoration and rest from sorrow."
+
+[[event]]
+id = "isa_purpose_against_assyria"
+label = "The Lord's own purpose against Assyria"
+kind = "general"
+verses = ["ISA.14.24-27"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 14:24-27, a short, separate oracle -- 'the Lord of hosts hath sworn, saying, Surely as I have thought, so shall it come to pass... that I will break the Assyrian in my land.'"
+
+[[event]]
+id = "isa_burden_of_philistia"
+label = "In the year that king Ahaz died was this burden."
+kind = "event"
+from_year = -726
+to_year = -726
+places = ["philistia"]
+verses = ["ISA.14.28-32"]
+kjv_superscription = "ISA.14.28, this burden's own dating clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- the burden of Philistia (14:29 names 'thou, whole Palestina')."
+ref_note = "Date: 'in the year that king Ahaz died' (14:28), reused from the pre-existing theo-225 ('Death of Ahaz,' -726) -- see this file's own header note. Place: Philistia (14:29, 14:31, explicit)."
+
+[[event]]
+id = "isa_burden_of_moab"
+label = "The burden of Moab."
+kind = "general"
+verses = ["ISA.15.1-9", "ISA.16.1-14"]
+kjv_superscription = "ISA.15.1, this burden's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "Content: Moab's own cities laid waste, fleeing with weeping, crossing into chapter 16's own plea for refuge and a closing dated coda -- 'within three years, as the years of an hireling, and the glory of Moab shall be contemned' (16:14)."
+
+[[event]]
+id = "isa_burden_of_damascus"
+label = "The burden of Damascus."
+kind = "general"
+verses = ["ISA.17.1-14"]
+kjv_superscription = "ISA.17.1, this burden's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "Content: Damascus 'taken away from being a city,' Ephraim's own fortress likewise failing, and a closing woe against 'the multitude of many people, which make a noise like the noise of the seas' (17:12)."
+
+[[event]]
+id = "isa_woe_to_the_land_of_ethiopia"
+label = "Woe to the land shadowing with wings, beyond the rivers of Ethiopia"
+kind = "general"
+verses = ["ISA.18.1-7"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 18, a woe (not this section's usual 'burden' formula, a real formal distinction) against the land beyond the rivers of Ethiopia, its own swift ambassadors sent by sea, ending with a present brought to the Lord of hosts in Mount Zion."
+
+[[event]]
+id = "isa_burden_of_egypt"
+label = "The burden of Egypt."
+kind = "general"
+verses = ["ISA.19.1-25"]
+kjv_superscription = "ISA.19.1, this burden's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "Content: Egypt's own idols moved, her waters failing, her wise counsellors become fools, closing on a remarkable reconciliation oracle -- 'in that day shall Israel be the third with Egypt and with Assyria, even a blessing in the midst of the land' (19:24)."
+
+[[event]]
+id = "isa_isaiah_walks_naked_as_a_sign"
+label = "Isaiah walks naked and barefoot three years as a sign against Egypt and Ethiopia"
+kind = "general"
+verses = ["ISA.20.1-6"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 20, dated 'the year that Tartan came unto Ashdod... when Sargon the king of Assyria sent him' -- a real, historically situated sign-act (Sargon II's own Ashdod campaign is independently attested outside Scripture), but GENERAL-kind per this file's own header note: no reusable anchor for that campaign exists anywhere in this app's own compiled data."
+
+[[event]]
+id = "isa_burden_of_the_desert_of_the_sea"
+label = "The burden of the desert of the sea."
+kind = "general"
+verses = ["ISA.21.1-10"]
+kjv_superscription = "ISA.21.1, this burden's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "Content: a grievous vision of Babylon's own fall -- 'Babylon is fallen, is fallen; and all the graven images of her gods he hath broken unto the ground' (21:9), the verse Revelation 14:8/18:2 later echoes (a translation/literary fact, not textual criticism)."
+
+[[event]]
+id = "isa_burden_of_dumah"
+label = "The burden of Dumah."
+kind = "general"
+verses = ["ISA.21.11-12"]
+kjv_superscription = "ISA.21.11, this short burden's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "Content: a two-verse watchman's oracle -- 'watchman, what of the night?... if ye will enquire, enquire ye: return, come.'"
+
+[[event]]
+id = "isa_burden_of_arabia"
+label = "The burden upon Arabia."
+kind = "general"
+verses = ["ISA.21.13-17"]
+kjv_superscription = "ISA.21.13, this burden's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "Content: the travelling companies of Dedanim, bread and water brought to the fleeing inhabitants of Tema, and Kedar's own glory to fail within a year."
+
+[[event]]
+id = "isa_burden_of_the_valley_of_vision"
+label = "The burden of the valley of vision."
+kind = "general"
+verses = ["ISA.22.1-25"]
+kjv_superscription = "ISA.22.1, this burden's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- 'the valley of vision' is Jerusalem itself, this section's own real exception among the burdens against foreign nations."
+ref_note = "Content: Jerusalem's own false confidence in her defenses rebuked, closing on the oracle against Shebna the treasurer and the promotion of Eliakim, given 'the key of the house of David' (22:22) -- a verse Revelation 3:7 later echoes (translation/literary fact, not textual criticism)."
+
+[[event]]
+id = "isa_burden_of_tyre"
+label = "The burden of Tyre."
+kind = "general"
+verses = ["ISA.23.1-18"]
+kjv_superscription = "ISA.23.1, this burden's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "Content: Tyre's own trading empire humbled after seventy years, closing this book's own burdens-against-the-nations section (13-23)."
+
+[[event]]
+id = "isa_the_earth_emptied_and_the_lord_reigns"
+label = "The earth emptied and made waste: the Lord shall reign in Mount Zion"
+kind = "general"
+verses = ["ISA.24.1-23"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 24, opening this book's own so-called 'Isaiah Apocalypse' (24-27) -- the earth utterly emptied and spoiled for defiling itself under its own inhabitants, the city of confusion broken down, closing on the Lord of hosts reigning 'in mount Zion, and in Jerusalem, and before his ancients gloriously.'"
+
+[[event]]
+id = "isa_song_of_praise_for_the_lords_deliverance"
+label = "A song of praise: he will swallow up death in victory"
+kind = "general"
+verses = ["ISA.25.1-12"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 25, a song of praise for a strong city made a ruin, a feast of fat things prepared for all people on this mountain, and the promise -- 'he will swallow up death in victory; and the Lord God will wipe away tears from off all faces' (25:8), a verse 1 Corinthians 15:54 later echoes (translation/literary fact, not textual criticism)."
+
+[[event]]
+id = "isa_song_of_trust_in_the_rock_of_ages"
+label = "A song of trust: thou wilt keep him in perfect peace, whose mind is stayed on thee"
+kind = "general"
+verses = ["ISA.26.1-21"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 26, a song sung in the land of Judah -- 'thou wilt keep him in perfect peace, whose mind is stayed on thee: because he trusteth in thee' (26:3) -- and a promise of resurrection: 'thy dead men shall live, together with my dead body shall they arise... awake and sing, ye that dwell in dust.'"
+
+[[event]]
+id = "isa_leviathan_punished_and_israel_regathered"
+label = "Leviathan punished; Jacob's own root to blossom and bud"
+kind = "general"
+verses = ["ISA.27.1-13"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 27, the Lord's own sore, great, and strong sword punishing leviathan the piercing serpent, the vineyard of red wine kept by the Lord himself, and the closing promise of Israel gathered 'one by one' from Assyria and Egypt to worship in Jerusalem."
+
+[[event]]
+id = "isa_woe_to_the_crown_of_pride_ephraim"
+label = "Woe to the crown of pride, the drunkards of Ephraim; precept upon precept"
+kind = "general"
+verses = ["ISA.28.1-29"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 28, opening this book's own second cycle of woes (28-33) -- woe to Ephraim's own fading-flower glory, the drunken priest and prophet who err in vision, the promise of 'a tried stone, a precious corner stone' laid in Zion (28:16), and the parable of the plowman, who does not plow forever."
+
+[[event]]
+id = "isa_woe_to_ariel"
+label = "Woe to Ariel, the city where David dwelt"
+kind = "general"
+verses = ["ISA.29.1-24"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 29, woe to Ariel (Jerusalem), besieged yet delivered as in a dream, a people who honor the Lord with their lips while their heart is far from him, closing on the deaf hearing the words of a book and the eyes of the blind seeing out of obscurity and darkness."
+
+[[event]]
+id = "isa_rebellious_children_and_the_way_everlasting"
+label = "Woe to the rebellious children that trust in Egypt; the way, walk ye in it"
+kind = "general"
+verses = ["ISA.30.1-33"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 30, woe to children who take counsel not of the Lord and go down to Egypt for help, the promise of a teacher no longer hidden -- 'thine ears shall hear a word behind thee, saying, This is the way, walk ye in it' (30:21) -- and Assyria's own downfall by the voice of the Lord."
+
+[[event]]
+id = "isa_woe_to_them_that_go_down_to_egypt_for_help"
+label = "Woe to them that go down to Egypt for help, and trust in chariots"
+kind = "general"
+verses = ["ISA.31.1-9"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 31, woe to those who trust horses and chariots rather than the Holy One of Israel -- 'the Egyptians are men, and not God; and their horses flesh, and not spirit' (31:3) -- and the promise that the Lord himself will defend Jerusalem."
+
+[[event]]
+id = "isa_a_king_shall_reign_in_righteousness"
+label = "A king shall reign in righteousness; until the spirit be poured upon us from on high"
+kind = "general"
+verses = ["ISA.32.1-20"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 32, a righteous king and princes who rule in judgment, each as a hiding place from the wind, women at ease warned of coming desolation, until 'the spirit be poured upon us from on high, and the wilderness be a fruitful field' (32:15), closing on blessing for those who sow beside all waters."
+
+[[event]]
+id = "isa_woe_to_the_spoiler_the_lord_is_our_judge"
+label = "Woe to the spoiler: the Lord is our judge, the Lord is our lawgiver, the Lord is our king"
+kind = "general"
+verses = ["ISA.33.1-24"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 33, woe to the spoiler who himself shall be spoiled, the Lord exalted, closing this book's own second woe-cycle (28-33) on 'the Lord is our judge, the Lord is our lawgiver, the Lord is our king; he will save us' (33:22)."
+
+[[event]]
+id = "isa_judgment_on_the_nations_edom"
+label = "Judgment on the nations, Edom named; the line of confusion and the stones of emptiness"
+kind = "general"
+verses = ["ISA.34.1-17"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 34, the Lord's own indignation upon all nations, Edom named at length as the day of the Lord's own vengeance for Zion's controversy, its own land turned into burning pitch, possessed by the cormorant and the bittern."
+
+[[event]]
+id = "isa_the_ransomed_of_the_lord_shall_return"
+label = "The desert shall blossom as the rose; the ransomed of the Lord shall return with songs"
+kind = "general"
+verses = ["ISA.35.1-10"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 35, closing this book's own chapters 1-35 -- the wilderness glad and blossoming, the eyes of the blind opened and the ears of the deaf unstopped, a highway called The way of holiness, and 'the ransomed of the Lord shall return, and come to Zion with songs and everlasting joy upon their heads.'"
+
+[[event]]
+id = "isa_comfort_ye_my_people"
+label = "Comfort ye, comfort ye my people, saith your God"
+kind = "general"
+verses = ["ISA.40.1-31"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 40, opening this book's own third major section (40-66, the 'Book of Comfort') -- 'comfort ye, comfort ye my people... speak ye comfortably to Jerusalem,' the voice crying in the wilderness preparing the Lord's own way (40:3, the verse all four Gospels apply to John the Baptist -- translation/literary fact, not textual criticism), and the closing promise that 'they that wait upon the Lord shall renew their strength; they shall mount up with wings as eagles.'"
+
+[[event]]
+id = "isa_the_lord_of_history_challenges_the_idols"
+label = "The Lord of history challenges the idols to declare things to come"
+kind = "general"
+verses = ["ISA.41.1-29"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 41, the Lord raising up one from the east (Cyrus, not yet named until 44:28/45:1), his own challenge to the idols -- 'shew the things that are to come hereafter, that we may know that ye are gods' -- and the repeated word to Israel: 'fear thou not; for I am with thee.'"
+
+[[event]]
+id = "isa_behold_my_servant_a_light_to_the_gentiles"
+label = "Behold my servant: a light to the Gentiles"
+kind = "general"
+verses = ["ISA.42.1-25"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 42, the first Servant Song (42:1-9) -- 'behold my servant, whom I uphold... he shall bring forth judgment to the Gentiles,' given 'for a light of the Gentiles' (42:6, Matthew 12:18-21 later cites this song directly, a translation/literary fact) -- followed by a new song of praise and Israel's own blind, deaf unfaithfulness rebuked."
+
+[[event]]
+id = "isa_fear_not_i_have_redeemed_thee"
+label = "Fear not: I have redeemed thee, I have called thee by thy name"
+kind = "general"
+verses = ["ISA.43.1-28"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 43, 'when thou passest through the waters, I will be with thee... fear not: for I have redeemed thee, I have called thee by thy name; thou art mine,' the Lord's own witnesses called, and Israel's own transgressions blotted out 'for mine own sake.'"
+
+[[event]]
+id = "isa_i_am_the_first_and_the_last_cyrus_named"
+label = "I am the first, and I am the last: Cyrus named as the Lord's shepherd"
+kind = "general"
+verses = ["ISA.44.1-28"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 44, 'I am the first, and I am the last; and beside me there is no God,' a satire on the folly of idol-carving (44:9-20, a craftsman warming himself by half a tree and worshipping the other half), and Cyrus named outright as the one 'that saith of Cyrus, He is my shepherd, and shall perform all my pleasure... to the temple, Thy foundation shall be laid' (44:28)."
+
+[[event]]
+id = "isa_cyrus_the_lords_anointed"
+label = "Thus saith the Lord to his anointed, to Cyrus"
+kind = "general"
+verses = ["ISA.45.1-25"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 45, Cyrus named again and called the Lord's own anointed (45:1), raised up though he 'hast not known me' (45:4-5), closing on 'every knee shall bow, every tongue shall swear' (45:23, Romans 14:11/Philippians 2:10 later echo this, translation/literary fact)."
+
+[[event]]
+id = "isa_bel_boweth_down_nebo_stoopeth"
+label = "Bel boweth down, Nebo stoopeth: their idols carried into captivity"
+kind = "general"
+verses = ["ISA.46.1-13"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 46, Babylon's own idols Bel and Nebo pictured stooping, carried as a burden by weary beasts, set against the Lord who himself carries his people 'from the belly' and 'even to hoar hairs.'"
+
+[[event]]
+id = "isa_the_fall_of_the_virgin_daughter_of_babylon"
+label = "Come down, and sit in the dust, O virgin daughter of Babylon"
+kind = "general"
+verses = ["ISA.47.1-15"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 47, Babylon pictured as a proud virgin daughter brought down to sit in the dust, her own sorceries and enchantments unable to save her from the evil that shall come upon her 'suddenly.'"
+
+[[event]]
+id = "isa_israel_refined_but_not_utterly_cut_off"
+label = "Israel refined in the furnace of affliction, yet not utterly cut off"
+kind = "general"
+verses = ["ISA.48.1-22"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 48, Israel called obstinate from the womb yet refined (not as silver, 'but not with silver') in the furnace of affliction for the Lord's own name's sake, closing this book's own 40-48 section with the call: 'go ye forth of Babylon, flee ye from the Chaldeans.'"
+
+[[event]]
+id = "isa_the_servants_own_mission_to_israel_and_the_gentiles"
+label = "The servant's own mission: to restore Israel, and to be salvation unto the ends of the earth"
+kind = "general"
+verses = ["ISA.49.1-26"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 49, the second Servant Song (49:1-13) -- 'the Lord hath called me from the womb... it is a light thing that thou shouldest be my servant to raise up the tribes of Jacob... I will also give thee for a light to the Gentiles, that thou mayest be my salvation unto the end of the earth' (49:6) -- followed by Zion's own restoration and the promise that her own builders make haste while her destroyers depart."
+
+[[event]]
+id = "isa_the_servants_own_obedience_and_suffering"
+label = "The servant's own obedience: I gave my back to the smiters"
+kind = "general"
+verses = ["ISA.50.1-11"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 50, the third Servant Song -- 'I gave my back to the smiters, and my cheeks to them that plucked off the hair: I hid not my face from shame and spitting' (50:6) -- the servant's own confidence that the Lord God will help him, and he shall not be confounded."
+
+[[event]]
+id = "isa_awake_awake_put_on_strength_o_zion"
+label = "Awake, awake, put on strength, O arm of the Lord; awake, awake, put on thy strength, O Zion"
+kind = "general"
+verses = ["ISA.51.1-23"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 51, a double call to awake -- first to the Lord's own arm, that once dried up the sea for Israel to pass over, then to Zion herself, to put on her own beautiful garments, for the uncircumcised and the unclean shall no more come into her."
+
+[[event]]
+id = "isa_how_beautiful_upon_the_mountains"
+label = "How beautiful upon the mountains are the feet of him that bringeth good tidings"
+kind = "general"
+verses = ["ISA.52.1-12"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 52:1-12, Zion called to shake herself from the dust and put on her own beautiful garments, 'how beautiful upon the mountains are the feet of him that bringeth good tidings, that publisheth peace' (52:7, Romans 10:15 later echoes this, translation/literary fact), and the call to depart from Babylon, touching no unclean thing."
+
+[[event]]
+id = "isa_the_suffering_servant"
+label = "He was wounded for our transgressions, he was bruised for our iniquities"
+kind = "general"
+verses = ["ISA.52.13-15", "ISA.53.1-12"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 52:13-53:12, the fourth and climactic Servant Song -- a servant marred in visage more than any man, despised and rejected, 'he was wounded for our transgressions, he was bruised for our iniquities: the chastisement of our peace was upon him; and with his stripes we are healed' (53:5), 'he was numbered with the transgressors; and he bare the sin of many, and made intercession for the transgressors' (53:12)."
+
+[[event]]
+id = "isa_the_everlasting_covenant_of_peace"
+label = "Sing, O barren: the covenant of my peace shall not be removed"
+kind = "general"
+verses = ["ISA.54.1-17"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 54, a call to the barren to sing, for her own seed shall inherit the nations, the Lord's own everlasting kindness likened to Noah's own flood-oath never to be repeated, and the promise: 'the covenant of my peace shall not be removed... no weapon that is formed against thee shall prosper.'"
+
+[[event]]
+id = "isa_ho_every_one_that_thirsteth"
+label = "Ho, every one that thirsteth, come ye to the waters"
+kind = "general"
+verses = ["ISA.55.1-13"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 55, the free invitation to buy wine and milk 'without money and without price,' the Lord's own thoughts higher than our thoughts as the heavens are higher than the earth, and his own word that shall not return void, closing on the mountains and hills breaking forth into singing."
+
+[[event]]
+id = "isa_the_sabbath_and_the_house_of_prayer_for_all_people"
+label = "My house shall be called an house of prayer for all people"
+kind = "general"
+verses = ["ISA.56.1-12"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 56, blessing on the stranger and the eunuch who keep the sabbath and hold fast the covenant -- 'even them will I bring to my holy mountain... for mine house shall be called an house of prayer for all people' (56:7, Jesus quotes this at the temple cleansing, translation/literary fact) -- closing on a rebuke of Israel's own blind, greedy watchmen."
+
+[[event]]
+id = "isa_the_righteous_perish_and_idolatry_rebuked"
+label = "The righteous perisheth, and no man layeth it to heart; idolatry under every green tree rebuked"
+kind = "general"
+verses = ["ISA.57.1-21"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 57, the righteous taken away from evil to come with no one noticing, idolatry under every green tree rebuked at length, and the closing word: 'there is no peace, saith my God, to the wicked' -- set against 'I dwell in the high and holy place, with him also that is of a contrite and humble spirit.'"
+
+[[event]]
+id = "isa_true_fasting"
+label = "Is not this the fast that I have chosen? To deal thy bread to the hungry"
+kind = "general"
+verses = ["ISA.58.1-14"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 58, a fast of ritual without righteousness rebuked, the fast the Lord has chosen -- 'to loose the bands of wickedness... is it not to deal thy bread to the hungry' -- and the promise of light breaking forth and the Lord's own guidance continually, if the sabbath itself is honored."
+
+[[event]]
+id = "isa_sin_confessed_and_the_redeemer_shall_come"
+label = "Your iniquities have separated between you and your God; the Redeemer shall come to Zion"
+kind = "general"
+verses = ["ISA.59.1-21"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 59, the Lord's own hand not shortened to save, but sin itself the separation between the people and their God, a long confession of violence and deceit, and the promise: 'the Redeemer shall come to Zion, and unto them that turn from transgression in Jacob' (59:20, Romans 11:26 later cites this, translation/literary fact)."
+
+[[event]]
+id = "isa_arise_shine_for_thy_light_is_come"
+label = "Arise, shine; for thy light is come, and the glory of the Lord is risen upon thee"
+kind = "general"
+verses = ["ISA.60.1-22"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 60, Zion's own coming light while darkness covers the earth, Gentiles and kings drawn to her own brightness, gates open continually, and the closing promise: 'the sun shall be no more thy light by day... but the Lord shall be unto thee an everlasting light.'"
+
+[[event]]
+id = "isa_the_spirit_of_the_lord_god_is_upon_me"
+label = "The Spirit of the Lord God is upon me; to preach good tidings unto the meek"
+kind = "general"
+verses = ["ISA.61.1-11"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 61, 'the Spirit of the Lord God is upon me; because the Lord hath anointed me to preach good tidings unto the meek... to proclaim liberty to the captives' (61:1-2, the passage Jesus reads and applies to himself at Nazareth, Luke 4:18-19 -- translation/literary fact, not textual criticism), closing on garments of praise for the spirit of heaviness."
+
+[[event]]
+id = "isa_zions_new_name_and_watchmen_on_the_walls"
+label = "Zion given a new name; watchmen set upon her walls, who shall never hold their peace"
+kind = "general"
+verses = ["ISA.62.1-12"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 62, the Lord's own resolve not to rest until Zion's righteousness shines forth, a new name given her (no more Forsaken, but Hephzibah), and watchmen set on the walls who shall never hold their peace day nor night."
+
+[[event]]
+id = "isa_who_is_this_that_cometh_from_edom"
+label = "Who is this that cometh from Edom, with dyed garments from Bozrah?"
+kind = "general"
+verses = ["ISA.63.1-6"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 63:1-6, a short, vivid oracle -- one mighty to save, his own garments stained as from a winepress, 'I have trodden the winepress alone... for the day of vengeance is in mine heart.'"
+
+[[event]]
+id = "isa_a_prayer_recounting_the_lords_mercies"
+label = "A prayer recounting the Lord's own mercies: we are the clay, and thou our potter"
+kind = "general"
+verses = ["ISA.63.7-19", "ISA.64.1-12"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 63:7-64:12, a prayer recounting the Lord's own lovingkindnesses of old, 'doubtless thou art our father, though Abraham be ignorant of us' (63:16), and the closing plea -- 'we are the clay, and thou our potter; and we all are the work of thy hand' (64:8) -- over Zion's own present desolation."
+
+[[event]]
+id = "isa_new_heavens_and_a_new_earth"
+label = "I create new heavens and a new earth"
+kind = "general"
+verses = ["ISA.65.1-25"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 65, the Lord sought by a nation that did not ask, a remnant preserved 'for my servants' sakes,' and the promise: 'behold, I create new heavens and a new earth: and the former shall not be remembered, nor come into mind' (65:17), a child dying at a hundred years old, the wolf and the lamb feeding together."
+
+[[event]]
+id = "isa_the_lords_closing_word"
+label = "The heaven is my throne, and the earth is my footstool: the Lord's own closing word"
+kind = "general"
+verses = ["ISA.66.1-24"]
+atlas_section = "Isaiah pericope (this project's own sectioning, CC0): Isaiah 66, the book's own closing chapter -- a contrite and humble spirit valued over ritual sacrifice, Zion bringing forth her children before her travail, joy for Jerusalem's own mourners, and a final, stark word of judgment alongside worship 'from one new moon to another' -- the whole book's own closing juxtaposition of comfort and warning held together to the last verse."
