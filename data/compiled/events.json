@@ -34560,6 +34560,393 @@
     "order_key": 0
   },
   {
+    "id": "est_ahasuerus_feast_vashti_deposed",
+    "label": "Ahasuerus's feast; Vashti is deposed",
+    "when": {
+      "from_year": -483,
+      "to_year": -483
+    },
+    "places": [
+      "susa"
+    ],
+    "verses": [
+      "EST.1.1",
+      "EST.1.2",
+      "EST.1.3",
+      "EST.1.4",
+      "EST.1.5",
+      "EST.1.6",
+      "EST.1.7",
+      "EST.1.8",
+      "EST.1.9",
+      "EST.1.10",
+      "EST.1.11",
+      "EST.1.12",
+      "EST.1.13",
+      "EST.1.14",
+      "EST.1.15",
+      "EST.1.16",
+      "EST.1.17",
+      "EST.1.18",
+      "EST.1.19",
+      "EST.1.20",
+      "EST.1.21",
+      "EST.1.22"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Esther pericope (this project's own sectioning, CC0 -- no external PD source claimed): Esther 1, King Ahasuerus's own six-month display of his kingdom's wealth followed by a seven-day feast at Shushan the palace, Queen Vashti's own refusal to appear before the assembled princes, and the king's own decree deposing her on his counsellors' own advice.",
+    "ref_note": "Dated to 'the third year of his reign' (1:3), the traditional identification of Ahasuerus with Xerxes I -- see this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "est_esther_made_queen",
+    "label": "Esther is made queen; Mordecai uncovers a plot",
+    "when": {
+      "from_year": -479,
+      "to_year": -479
+    },
+    "places": [
+      "susa"
+    ],
+    "verses": [
+      "EST.2.1",
+      "EST.2.2",
+      "EST.2.3",
+      "EST.2.4",
+      "EST.2.5",
+      "EST.2.6",
+      "EST.2.7",
+      "EST.2.8",
+      "EST.2.9",
+      "EST.2.10",
+      "EST.2.11",
+      "EST.2.12",
+      "EST.2.13",
+      "EST.2.14",
+      "EST.2.15",
+      "EST.2.16",
+      "EST.2.17",
+      "EST.2.18",
+      "EST.2.19",
+      "EST.2.20",
+      "EST.2.21",
+      "EST.2.22",
+      "EST.2.23"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Esther pericope (this project's own sectioning, CC0): Esther 2, the gathering of virgins to the king's own house, Esther's own selection and coronation as queen in Vashti's own place, Mordecai's own instruction that she not reveal her own people, and Mordecai's own discovery of Bigthan and Teresh's own plot against the king's life, recorded in the chronicles.",
+    "ref_note": "Dated to 'the seventh year of his reign' (2:16), when Esther was made queen.",
+    "order_key": 0
+  },
+  {
+    "id": "est_hamans_plot",
+    "label": "Haman's plot to destroy the Jews",
+    "when": {
+      "from_year": -474,
+      "to_year": -474
+    },
+    "places": [
+      "susa"
+    ],
+    "verses": [
+      "EST.3.1",
+      "EST.3.2",
+      "EST.3.3",
+      "EST.3.4",
+      "EST.3.5",
+      "EST.3.6",
+      "EST.3.7",
+      "EST.3.8",
+      "EST.3.9",
+      "EST.3.10",
+      "EST.3.11",
+      "EST.3.12",
+      "EST.3.13",
+      "EST.3.14",
+      "EST.3.15"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Esther pericope (this project's own sectioning, CC0): Esther 3, Haman's own advancement above all the princes, Mordecai's own refusal to bow to him, Haman's own furious plan to destroy all the Jews throughout the kingdom, the casting of Pur (the lot) to fix the day, and the king's own decree sealed and sent to every province.",
+    "ref_note": "Dated to 'the twelfth year of king Ahasuerus' (3:7) -- see this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "est_mordecais_appeal",
+    "label": "Mordecai's appeal; \"for such a time as this\"",
+    "when": {
+      "from_year": -474,
+      "to_year": -474
+    },
+    "places": [
+      "susa"
+    ],
+    "verses": [
+      "EST.4.1",
+      "EST.4.2",
+      "EST.4.3",
+      "EST.4.4",
+      "EST.4.5",
+      "EST.4.6",
+      "EST.4.7",
+      "EST.4.8",
+      "EST.4.9",
+      "EST.4.10",
+      "EST.4.11",
+      "EST.4.12",
+      "EST.4.13",
+      "EST.4.14",
+      "EST.4.15",
+      "EST.4.16",
+      "EST.4.17"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Esther pericope (this project's own sectioning, CC0): Esther 4, Mordecai's own mourning in sackcloth and ashes at the king's gate, his own message to Esther urging her to intercede, his own warning that deliverance would arise from elsewhere if she stayed silent -- 'who knoweth whether thou art come to the kingdom for such a time as this?' -- and Esther's own call for a three-day fast before she would go in unto the king unbidden.",
+    "ref_note": "Same year as est_hamans_plot, immediately following it.",
+    "order_key": 0
+  },
+  {
+    "id": "est_esthers_banquet_invitation",
+    "label": "Esther's banquet invitation to the king and Haman",
+    "when": {
+      "from_year": -474,
+      "to_year": -474
+    },
+    "places": [
+      "susa"
+    ],
+    "verses": [
+      "EST.5.1",
+      "EST.5.2",
+      "EST.5.3",
+      "EST.5.4",
+      "EST.5.5",
+      "EST.5.6",
+      "EST.5.7",
+      "EST.5.8",
+      "EST.5.9",
+      "EST.5.10",
+      "EST.5.11",
+      "EST.5.12",
+      "EST.5.13",
+      "EST.5.14"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Esther pericope (this project's own sectioning, CC0): Esther 5, Esther's own appearance before the king unbidden and his own extension of the golden sceptre, her own invitation of the king and Haman to a banquet, a second banquet proposed for the following day, and Haman's own gallows built for Mordecai at his wife Zeresh's own suggestion, fifty cubits high.",
+    "ref_note": "Same year, the third day after the fast (5:1).",
+    "order_key": 0
+  },
+  {
+    "id": "est_king_honors_mordecai",
+    "label": "The king honors Mordecai in the night",
+    "when": {
+      "from_year": -474,
+      "to_year": -474
+    },
+    "places": [
+      "susa"
+    ],
+    "verses": [
+      "EST.6.1",
+      "EST.6.2",
+      "EST.6.3",
+      "EST.6.4",
+      "EST.6.5",
+      "EST.6.6",
+      "EST.6.7",
+      "EST.6.8",
+      "EST.6.9",
+      "EST.6.10",
+      "EST.6.11",
+      "EST.6.12",
+      "EST.6.13",
+      "EST.6.14"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Esther pericope (this project's own sectioning, CC0): Esther 6, the king's own sleepless night and the reading of the chronicles that reveals Mordecai was never rewarded for uncovering the earlier plot, Haman's own unwitting counsel on how to honor 'the man whom the king delighteth to honour,' and his own humiliation leading Mordecai through the streets on the king's own horse.",
+    "ref_note": "Same year, the night before the second banquet.",
+    "order_key": 0
+  },
+  {
+    "id": "est_hamans_downfall",
+    "label": "Haman's downfall at the second banquet",
+    "when": {
+      "from_year": -474,
+      "to_year": -474
+    },
+    "places": [
+      "susa"
+    ],
+    "verses": [
+      "EST.7.1",
+      "EST.7.2",
+      "EST.7.3",
+      "EST.7.4",
+      "EST.7.5",
+      "EST.7.6",
+      "EST.7.7",
+      "EST.7.8",
+      "EST.7.9",
+      "EST.7.10"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Esther pericope (this project's own sectioning, CC0): Esther 7, Esther's own accusation of Haman before the king at the second banquet, the king's own wrath, Haman's own fall upon Esther's own couch pleading for his life, and his own hanging on the very gallows he had built for Mordecai.",
+    "ref_note": "Same year, the second banquet.",
+    "order_key": 0
+  },
+  {
+    "id": "est_new_decree",
+    "label": "The king's new decree; the Jews may defend themselves",
+    "when": {
+      "from_year": -474,
+      "to_year": -474
+    },
+    "places": [
+      "susa"
+    ],
+    "verses": [
+      "EST.8.1",
+      "EST.8.2",
+      "EST.8.3",
+      "EST.8.4",
+      "EST.8.5",
+      "EST.8.6",
+      "EST.8.7",
+      "EST.8.8",
+      "EST.8.9",
+      "EST.8.10",
+      "EST.8.11",
+      "EST.8.12",
+      "EST.8.13",
+      "EST.8.14",
+      "EST.8.15",
+      "EST.8.16",
+      "EST.8.17"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Esther pericope (this project's own sectioning, CC0): Esther 8, Haman's own house given to Esther and his own signet ring to Mordecai, Esther's own renewed plea before the king, and the new decree -- since the first could not be revoked -- granting the Jews the right to assemble and defend themselves throughout every province, met with light, gladness, and honour among the Jews.",
+    "ref_note": "Same year, following Haman's own downfall.",
+    "order_key": 0
+  },
+  {
+    "id": "est_jews_victory",
+    "label": "The Jews defeat their enemies",
+    "when": {
+      "from_year": -474,
+      "to_year": -474
+    },
+    "places": [
+      "susa"
+    ],
+    "verses": [
+      "EST.9.1",
+      "EST.9.2",
+      "EST.9.3",
+      "EST.9.4",
+      "EST.9.5",
+      "EST.9.6",
+      "EST.9.7",
+      "EST.9.8",
+      "EST.9.9",
+      "EST.9.10",
+      "EST.9.11",
+      "EST.9.12",
+      "EST.9.13",
+      "EST.9.14",
+      "EST.9.15",
+      "EST.9.16",
+      "EST.9.17",
+      "EST.9.18",
+      "EST.9.19"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Esther pericope (this project's own sectioning, CC0): Esther 9:1-19, the day appointed by Haman's own lot arrives, the Jews' own victory over those who hated them throughout the provinces and at Shushan, the ten sons of Haman slain, and Esther's own request for a second day at Shushan, establishing the days of Purim as feasting and gladness.",
+    "ref_note": "Dated to 'the thirteenth day' of the twelfth month, Adar (9:1), within the same broad regnal year as the preceding crisis -- see this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "est_purim_instituted",
+    "label": "The feast of Purim is instituted",
+    "when": {
+      "from_year": -474,
+      "to_year": -474
+    },
+    "places": [
+      "susa"
+    ],
+    "verses": [
+      "EST.9.20",
+      "EST.9.21",
+      "EST.9.22",
+      "EST.9.23",
+      "EST.9.24",
+      "EST.9.25",
+      "EST.9.26",
+      "EST.9.27",
+      "EST.9.28",
+      "EST.9.29",
+      "EST.9.30",
+      "EST.9.31",
+      "EST.9.32"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Esther pericope (this project's own sectioning, CC0): Esther 9:20-32, Mordecai's own letters establishing the fourteenth and fifteenth days of Adar as an annual feast of gladness and gift-giving, named Purim after the lot Haman cast, and Queen Esther's own further letter confirming the observance in writing.",
+    "ref_note": "Same year, the institution following directly from the victory just narrated.",
+    "order_key": 0
+  },
+  {
+    "id": "est_closing_summary",
+    "label": "The greatness of Mordecai",
+    "when": {
+      "from_year": -474,
+      "to_year": -465
+    },
+    "places": [
+      "susa"
+    ],
+    "verses": [
+      "EST.10.1",
+      "EST.10.2",
+      "EST.10.3"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Esther pericope (this project's own sectioning, CC0): Esther 10, a closing summary of King Ahasuerus's own greatness and tribute upon the land, and Mordecai's own advancement next to the king, 'great among the Jews, and accepted of the multitude of his brethren, seeking the wealth of his people.'",
+    "ref_note": "A broad closing range, disclosed: the book's own final summary verses (recorded 'in the book of the chronicles of the kings of Media and Persia,' 10:2) span from the crisis just narrated to the traditional end of Ahasuerus/Xerxes I's own reign (-465), not a single dated moment.",
+    "order_key": 0
+  },
+  {
     "id": "ezr_ezra_arrives",
     "label": "Ezra's commission and arrival from Babylon",
     "when": {
