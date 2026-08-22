@@ -2320,6 +2320,607 @@
     "order_key": 0
   },
   {
+    "id": "1th_salutation_and_thanksgiving",
+    "label": "Salutation and thanksgiving: the Thessalonians' own faith, an ensample to all Macedonia and Achaia",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TH.1.1",
+      "1TH.1.2",
+      "1TH.1.3",
+      "1TH.1.4",
+      "1TH.1.5",
+      "1TH.1.6",
+      "1TH.1.7",
+      "1TH.1.8",
+      "1TH.1.9",
+      "1TH.1.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 1, Paul's own greeting with Silvanus and Timotheus, and thanksgiving for a faith that has made them 'ensamples to all that believe' as they 'turned to God from idols to serve the living and true God' -- kept whole, the chapter's own single continuous thanksgiving.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1th_pauls_manner_among_them",
+    "label": "Paul's own manner among them: labouring, gentle as a nurse, exhorting as a father",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TH.2.1",
+      "1TH.2.2",
+      "1TH.2.3",
+      "1TH.2.4",
+      "1TH.2.5",
+      "1TH.2.6",
+      "1TH.2.7",
+      "1TH.2.8",
+      "1TH.2.9",
+      "1TH.2.10",
+      "1TH.2.11",
+      "1TH.2.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 2:1-12, Paul's own recollection of his entrance among them 'not in vain,' gentle 'even as a nurse cherisheth her children,' labouring night and day so as not to be chargeable.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1th_their_reception_and_pauls_longing",
+    "label": "Their own reception of the word of God; Paul's own longing to see them again",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TH.2.13",
+      "1TH.2.14",
+      "1TH.2.15",
+      "1TH.2.16",
+      "1TH.2.17",
+      "1TH.2.18",
+      "1TH.2.19",
+      "1TH.2.20"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 2:13-20, thanks that they received Paul's preaching 'not as the word of men, but... the word of God,' and Paul's own desire, hindered by Satan, to see their face again.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1th_timothys_report",
+    "label": "Timothy's own report from Thessalonica; Paul's own prayer for their increase in love",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TH.3.1",
+      "1TH.3.2",
+      "1TH.3.3",
+      "1TH.3.4",
+      "1TH.3.5",
+      "1TH.3.6",
+      "1TH.3.7",
+      "1TH.3.8",
+      "1TH.3.9",
+      "1TH.3.10",
+      "1TH.3.11",
+      "1TH.3.12",
+      "1TH.3.13"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 3, Paul's own sending of Timothy to establish them, his own comfort at the good report of their faith and charity, and his prayer that the Lord 'make you to increase and abound in love' -- kept whole, the chapter's own single continuous report and prayer.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1th_exhortation_to_sanctification",
+    "label": "Exhortation to sanctification, brotherly love, and a quiet life",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TH.4.1",
+      "1TH.4.2",
+      "1TH.4.3",
+      "1TH.4.4",
+      "1TH.4.5",
+      "1TH.4.6",
+      "1TH.4.7",
+      "1TH.4.8",
+      "1TH.4.9",
+      "1TH.4.10",
+      "1TH.4.11",
+      "1TH.4.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 4:1-12, the charge to abound in a walk pleasing to God, to abstain from fornication, to love the brethren, and 'to study to be quiet, and to do your own business.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1th_those_which_are_asleep",
+    "label": "Concerning them which are asleep: the coming of the Lord and the resurrection of the dead",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TH.4.13",
+      "1TH.4.14",
+      "1TH.4.15",
+      "1TH.4.16",
+      "1TH.4.17",
+      "1TH.4.18"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 4:13-18, comfort concerning 'them which are asleep,' the Lord's own descent 'with a shout,' the dead in Christ rising first, and the charge to 'comfort one another with these words.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1th_the_day_of_the_lord_as_a_thief",
+    "label": "The day of the Lord as a thief in the night; children of the day, watching and sober",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TH.5.1",
+      "1TH.5.2",
+      "1TH.5.3",
+      "1TH.5.4",
+      "1TH.5.5",
+      "1TH.5.6",
+      "1TH.5.7",
+      "1TH.5.8",
+      "1TH.5.9",
+      "1TH.5.10",
+      "1TH.5.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 5:1-11, the day of the Lord coming 'as a thief in the night,' and the charge to the 'children of light' to 'watch and be sober,' putting on 'the breastplate of faith and love.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1th_final_exhortations_and_benediction",
+    "label": "Final exhortations, and the closing benediction",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TH.5.12",
+      "1TH.5.13",
+      "1TH.5.14",
+      "1TH.5.15",
+      "1TH.5.16",
+      "1TH.5.17",
+      "1TH.5.18",
+      "1TH.5.19",
+      "1TH.5.20",
+      "1TH.5.21",
+      "1TH.5.22",
+      "1TH.5.23",
+      "1TH.5.24",
+      "1TH.5.25",
+      "1TH.5.26",
+      "1TH.5.27",
+      "1TH.5.28"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 5:12-28, a chain of brief final exhortations -- 'rejoice evermore. Pray without ceasing... quench not the Spirit' -- closing with the prayer that they be preserved blameless, and the benediction.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ti_salutation_and_the_charge_against_false_teachers",
+    "label": "Salutation; the charge against false teachers of the law",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TI.1.1",
+      "1TI.1.2",
+      "1TI.1.3",
+      "1TI.1.4",
+      "1TI.1.5",
+      "1TI.1.6",
+      "1TI.1.7",
+      "1TI.1.8",
+      "1TI.1.9",
+      "1TI.1.10",
+      "1TI.1.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 1:1-11, Paul's own greeting to Timothy, and the charge to remain at Ephesus against those who teach 'fables and endless genealogies' rather than 'the glorious gospel of the blessed God.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ti_pauls_own_testimony_and_the_charge_to_timothy",
+    "label": "Paul's own testimony of mercy; the charge to Timothy to war a good warfare",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TI.1.12",
+      "1TI.1.13",
+      "1TI.1.14",
+      "1TI.1.15",
+      "1TI.1.16",
+      "1TI.1.17",
+      "1TI.1.18",
+      "1TI.1.19",
+      "1TI.1.20"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 1:12-20, Paul's own testimony as one who 'obtained mercy' though 'before a blasphemer,' and the charge committed to Timothy 'that thou by them mightest war a good warfare.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ti_prayer_for_all_men",
+    "label": "Prayer for all men; the one mediator between God and men",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TI.2.1",
+      "1TI.2.2",
+      "1TI.2.3",
+      "1TI.2.4",
+      "1TI.2.5",
+      "1TI.2.6",
+      "1TI.2.7",
+      "1TI.2.8"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 2:1-8, the charge that prayer be made 'for all men,' since God 'will have all men to be saved,' and there is 'one mediator between God and men, the man Christ Jesus.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ti_instructions_for_women_in_worship",
+    "label": "Instructions for women in worship",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TI.2.9",
+      "1TI.2.10",
+      "1TI.2.11",
+      "1TI.2.12",
+      "1TI.2.13",
+      "1TI.2.14",
+      "1TI.2.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 2:9-15, instruction on modest apparel and on women's own learning 'in silence with all subjection.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ti_qualifications_of_a_bishop",
+    "label": "Qualifications of a bishop",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TI.3.1",
+      "1TI.3.2",
+      "1TI.3.3",
+      "1TI.3.4",
+      "1TI.3.5",
+      "1TI.3.6",
+      "1TI.3.7"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 3:1-7, the qualifications for the office of a bishop -- 'blameless, the husband of one wife, vigilant, sober... apt to teach.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ti_qualifications_of_deacons",
+    "label": "Qualifications of deacons",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TI.3.8",
+      "1TI.3.9",
+      "1TI.3.10",
+      "1TI.3.11",
+      "1TI.3.12",
+      "1TI.3.13"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 3:8-13, the qualifications for deacons and their own wives, 'grave, not doubletongued.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ti_the_pillar_and_ground_of_the_truth",
+    "label": "The church, the pillar and ground of the truth; the mystery of godliness",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TI.3.14",
+      "1TI.3.15",
+      "1TI.3.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 3:14-16, the church named 'the pillar and ground of the truth,' and the hymn-like confession of 'the mystery of godliness: God was manifest in the flesh.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ti_a_prophecy_of_the_latter_times",
+    "label": "A prophecy of the latter times: forbidding to marry and meats",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TI.4.1",
+      "1TI.4.2",
+      "1TI.4.3",
+      "1TI.4.4",
+      "1TI.4.5"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 4:1-5, the Spirit's own express warning that 'in the latter times some shall depart from the faith,' forbidding marriage and certain meats which God created 'to be received with thanksgiving.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ti_timothy_a_good_minister",
+    "label": "Timothy, a good minister: an example to the believers",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TI.4.6",
+      "1TI.4.7",
+      "1TI.4.8",
+      "1TI.4.9",
+      "1TI.4.10",
+      "1TI.4.11",
+      "1TI.4.12",
+      "1TI.4.13",
+      "1TI.4.14",
+      "1TI.4.15",
+      "1TI.4.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 4:6-16, the charge for Timothy to be 'a good minister of Jesus Christ,' an example 'in word, in conversation, in charity,' not neglecting his own gift.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ti_concerning_widows",
+    "label": "Instructions concerning widows",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TI.5.1",
+      "1TI.5.2",
+      "1TI.5.3",
+      "1TI.5.4",
+      "1TI.5.5",
+      "1TI.5.6",
+      "1TI.5.7",
+      "1TI.5.8",
+      "1TI.5.9",
+      "1TI.5.10",
+      "1TI.5.11",
+      "1TI.5.12",
+      "1TI.5.13",
+      "1TI.5.14",
+      "1TI.5.15",
+      "1TI.5.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 5:1-16, instruction to honour 'widows that are widows indeed,' the household's own duty to provide for its own, and guidance for the enrollment of widows.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ti_concerning_elders",
+    "label": "Instructions concerning elders",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TI.5.17",
+      "1TI.5.18",
+      "1TI.5.19",
+      "1TI.5.20",
+      "1TI.5.21",
+      "1TI.5.22",
+      "1TI.5.23",
+      "1TI.5.24",
+      "1TI.5.25"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 5:17-25, elders who rule well counted worthy of 'double honour,' the rule of two or three witnesses for an accusation, and the charge to 'lay hands suddenly on no man.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ti_servants_masters_and_the_love_of_money",
+    "label": "Servants and masters; the love of money the root of all evil",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TI.6.1",
+      "1TI.6.2",
+      "1TI.6.3",
+      "1TI.6.4",
+      "1TI.6.5",
+      "1TI.6.6",
+      "1TI.6.7",
+      "1TI.6.8",
+      "1TI.6.9",
+      "1TI.6.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 6:1-10, instruction for servants under the yoke, a warning against those who suppose 'gain is godliness,' and 'the love of money is the root of all evil.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ti_the_good_fight_of_faith",
+    "label": "The good fight of faith; the charge to the rich; the closing benediction",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1TI.6.11",
+      "1TI.6.12",
+      "1TI.6.13",
+      "1TI.6.14",
+      "1TI.6.15",
+      "1TI.6.16",
+      "1TI.6.17",
+      "1TI.6.18",
+      "1TI.6.19",
+      "1TI.6.20",
+      "1TI.6.21"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 6:11-21, the charge to Timothy to 'fight the good fight of faith,' the charge to the rich to be 'rich in good works,' and the closing warning against 'oppositions of science falsely so called.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
     "id": "2co_salutation",
     "label": "Salutation to the church of God at Corinth, with all the saints in Achaia",
     "when": {
@@ -3028,6 +3629,402 @@
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 13:11-14, the closing exhortation to 'be perfect, be of good comfort,' and the letter's own trinitarian benediction -- 'the grace of the Lord Jesus Christ, and the love of God, and the communion of the Holy Ghost.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2th_salutation_and_thanksgiving",
+    "label": "Salutation and thanksgiving; the righteous judgment of God at Christ's own coming",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TH.1.1",
+      "2TH.1.2",
+      "2TH.1.3",
+      "2TH.1.4",
+      "2TH.1.5",
+      "2TH.1.6",
+      "2TH.1.7",
+      "2TH.1.8",
+      "2TH.1.9",
+      "2TH.1.10",
+      "2TH.1.11",
+      "2TH.1.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Thessalonians 1, Paul's own greeting, thanksgiving for their growing faith and patience under persecution, and the prospect of rest for the troubled and 'everlasting destruction' for those who obey not the gospel, at the Lord's own revelation -- kept whole, the chapter's own single continuous thanksgiving and prayer.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2th_the_man_of_sin_revealed",
+    "label": "The man of sin revealed before the day of Christ",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TH.2.1",
+      "2TH.2.2",
+      "2TH.2.3",
+      "2TH.2.4",
+      "2TH.2.5",
+      "2TH.2.6",
+      "2TH.2.7",
+      "2TH.2.8",
+      "2TH.2.9",
+      "2TH.2.10",
+      "2TH.2.11",
+      "2TH.2.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Thessalonians 2:1-12, correction of the claim 'that the day of Christ is at hand' -- that day cannot come 'except there come a falling away first, and that man of sin be revealed.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2th_thanksgiving_for_election_stand_fast",
+    "label": "Thanksgiving for their own election; stand fast in the traditions taught",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TH.2.13",
+      "2TH.2.14",
+      "2TH.2.15",
+      "2TH.2.16",
+      "2TH.2.17"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Thessalonians 2:13-17, renewed thanksgiving that 'God hath from the beginning chosen you to salvation,' and the charge to 'stand fast, and hold the traditions which ye have been taught.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2th_a_request_for_prayer",
+    "label": "A request for prayer; the Lord's own faithfulness",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TH.3.1",
+      "2TH.3.2",
+      "2TH.3.3",
+      "2TH.3.4",
+      "2TH.3.5"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Thessalonians 3:1-5, Paul's own request for prayer 'that the word of the Lord may have free course,' and confidence 'that ye both do and will do the things which we command you.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2th_a_command_against_disorderly_walking",
+    "label": "A command against disorderly walking: if any would not work, neither should he eat",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TH.3.6",
+      "2TH.3.7",
+      "2TH.3.8",
+      "2TH.3.9",
+      "2TH.3.10",
+      "2TH.3.11",
+      "2TH.3.12",
+      "2TH.3.13",
+      "2TH.3.14",
+      "2TH.3.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Thessalonians 3:6-15, the command to withdraw from 'every brother that walketh disorderly,' Paul's own example of working 'night and day' rather than eating any man's bread for nought, and 'if any would not work, neither should he eat.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2th_closing_benediction_and_token",
+    "label": "Closing benediction and Paul's own token signature",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TH.3.16",
+      "2TH.3.17",
+      "2TH.3.18"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Thessalonians 3:16-18, the closing prayer for peace, and Paul's own note that his signature 'is the token in every epistle.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2ti_salutation_and_thanksgiving",
+    "label": "Salutation and thanksgiving; stirring up the gift of God",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TI.1.1",
+      "2TI.1.2",
+      "2TI.1.3",
+      "2TI.1.4",
+      "2TI.1.5",
+      "2TI.1.6",
+      "2TI.1.7"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 1:1-7, Paul's own greeting to his 'dearly beloved son,' remembering Timothy's own unfeigned faith 'which dwelt first in thy grandmother Lois, and thy mother Eunice,' and the charge to 'stir up the gift of God.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2ti_not_ashamed_of_the_gospel",
+    "label": "Not ashamed of the gospel; the pattern of sound words; Onesiphorus's own faithfulness",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TI.1.8",
+      "2TI.1.9",
+      "2TI.1.10",
+      "2TI.1.11",
+      "2TI.1.12",
+      "2TI.1.13",
+      "2TI.1.14",
+      "2TI.1.15",
+      "2TI.1.16",
+      "2TI.1.17",
+      "2TI.1.18"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 1:8-18, the charge to 'be not thou therefore ashamed of the testimony of our Lord,' holding 'the form of sound words,' and thanks for Onesiphorus, who 'oft refreshed me' and 'was not ashamed of my chain.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2ti_a_good_soldier_of_jesus_christ",
+    "label": "A good soldier of Jesus Christ; if we suffer, we shall also reign with him",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TI.2.1",
+      "2TI.2.2",
+      "2TI.2.3",
+      "2TI.2.4",
+      "2TI.2.5",
+      "2TI.2.6",
+      "2TI.2.7",
+      "2TI.2.8",
+      "2TI.2.9",
+      "2TI.2.10",
+      "2TI.2.11",
+      "2TI.2.12",
+      "2TI.2.13"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 2:1-13, the charge to 'endure hardness, as a good soldier,' the images of the soldier, athlete, and husbandman, and the faithful saying, 'if we suffer, we shall also reign with him.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2ti_rightly_dividing_the_word_of_truth",
+    "label": "Rightly dividing the word of truth; a vessel unto honour",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TI.2.14",
+      "2TI.2.15",
+      "2TI.2.16",
+      "2TI.2.17",
+      "2TI.2.18",
+      "2TI.2.19",
+      "2TI.2.20",
+      "2TI.2.21",
+      "2TI.2.22",
+      "2TI.2.23",
+      "2TI.2.24",
+      "2TI.2.25",
+      "2TI.2.26"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 2:14-26, the charge to be 'a workman that needeth not to be ashamed, rightly dividing the word of truth,' shunning profane babblings, and becoming 'a vessel unto honour... meet for the master's use.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2ti_perilous_times_in_the_last_days",
+    "label": "Perilous times in the last days",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TI.3.1",
+      "2TI.3.2",
+      "2TI.3.3",
+      "2TI.3.4",
+      "2TI.3.5",
+      "2TI.3.6",
+      "2TI.3.7",
+      "2TI.3.8",
+      "2TI.3.9"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 3:1-9, the warning that 'in the last days perilous times shall come,' with a catalogue of the vices of 'men... having a form of godliness, but denying the power thereof.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2ti_all_scripture_given_by_inspiration",
+    "label": "Continuing in the things learned; all scripture given by inspiration of God",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TI.3.10",
+      "2TI.3.11",
+      "2TI.3.12",
+      "2TI.3.13",
+      "2TI.3.14",
+      "2TI.3.15",
+      "2TI.3.16",
+      "2TI.3.17"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 3:10-17, the charge to continue in what Timothy has learned from a child, 'the holy scriptures, which are able to make thee wise unto salvation,' and 'all scripture is given by inspiration of God.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2ti_the_charge_to_preach_the_word",
+    "label": "The charge to preach the word; Paul's own finished course",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TI.4.1",
+      "2TI.4.2",
+      "2TI.4.3",
+      "2TI.4.4",
+      "2TI.4.5",
+      "2TI.4.6",
+      "2TI.4.7",
+      "2TI.4.8"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 4:1-8, the solemn charge 'preach the word; be instant in season, out of season,' and Paul's own testimony, 'I have fought a good fight, I have finished my course, I have kept the faith.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2ti_pauls_final_requests_and_greetings",
+    "label": "Paul's own final requests and greetings",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2TI.4.9",
+      "2TI.4.10",
+      "2TI.4.11",
+      "2TI.4.12",
+      "2TI.4.13",
+      "2TI.4.14",
+      "2TI.4.15",
+      "2TI.4.16",
+      "2TI.4.17",
+      "2TI.4.18",
+      "2TI.4.19",
+      "2TI.4.20",
+      "2TI.4.21",
+      "2TI.4.22"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 4:9-22, Paul's own request that Timothy come quickly and bring Mark and 'the cloke... and the books, but especially the parchments,' his account of standing alone at his first answer, and the closing greetings.",
     "kjv_superscription": null,
     "ref_note": null,
     "order_key": 0
@@ -17111,6 +18108,88 @@
     "order_key": 0
   },
   {
+    "id": "phm_salutation_and_thanksgiving",
+    "label": "Salutation and thanksgiving for Philemon's own love and faith",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "PHM.1.1",
+      "PHM.1.2",
+      "PHM.1.3",
+      "PHM.1.4",
+      "PHM.1.5",
+      "PHM.1.6",
+      "PHM.1.7"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philemon 1-7, Paul's own greeting to Philemon, Apphia, Archippus, and the church in Philemon's own house, and thanksgiving that 'the bowels of the saints are refreshed by thee.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "phm_pauls_appeal_for_onesimus",
+    "label": "Paul's own appeal on behalf of Onesimus",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "PHM.1.8",
+      "PHM.1.9",
+      "PHM.1.10",
+      "PHM.1.11",
+      "PHM.1.12",
+      "PHM.1.13",
+      "PHM.1.14",
+      "PHM.1.15",
+      "PHM.1.16",
+      "PHM.1.17",
+      "PHM.1.18",
+      "PHM.1.19",
+      "PHM.1.20",
+      "PHM.1.21",
+      "PHM.1.22"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philemon 8-22, Paul's own appeal 'for my son Onesimus,' once unprofitable but now profitable, asking Philemon to 'receive him as myself' and offering to repay any debt himself.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "phm_closing_greetings_and_benediction",
+    "label": "Closing greetings and benediction",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "PHM.1.23",
+      "PHM.1.24",
+      "PHM.1.25"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philemon 23-25, greetings from Epaphras and Paul's own fellowlabourers, and the closing benediction.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
     "id": "php_salutation_and_thanksgiving",
     "label": "Salutation and thanksgiving; Paul's own prayer for their love to abound",
     "when": {
@@ -25395,6 +26474,166 @@
     "atlas_section": "Song of Solomon pericope (this project's own sectioning, CC0): Song of Solomon 8:5-14, the book's own closing scenes -- 'who is this that cometh up from the wilderness, leaning upon her beloved?' -- the well-known 'set me as a seal upon thine heart... for love is strong as death' (8:6-7), and the book's own final exchange, closing 'make haste, my beloved, and be thou like to a roe or to a young hart upon the mountains of spices.'",
     "kjv_superscription": null,
     "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "tit_salutation",
+    "label": "Salutation",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "TIT.1.1",
+      "TIT.1.2",
+      "TIT.1.3",
+      "TIT.1.4"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Titus 1:1-4, Paul's own greeting to Titus, 'mine own son after the common faith,' grounded in the hope of eternal life 'which God, that cannot lie, promised before the world began.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "tit_qualifications_for_elders_in_crete",
+    "label": "Qualifications for elders/bishops in Crete",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "TIT.1.5",
+      "TIT.1.6",
+      "TIT.1.7",
+      "TIT.1.8",
+      "TIT.1.9"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Titus 1:5-9, the charge to 'ordain elders in every city' in Crete, and their own required qualifications, 'holding fast the faithful word... both to exhort and to convince the gainsayers.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "tit_a_rebuke_of_false_teachers",
+    "label": "A rebuke of false teachers",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "TIT.1.10",
+      "TIT.1.11",
+      "TIT.1.12",
+      "TIT.1.13",
+      "TIT.1.14",
+      "TIT.1.15",
+      "TIT.1.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Titus 1:10-16, a sharp rebuke of 'unruly and vain talkers' among the circumcision, quoting a Cretian's own proverb, and the charge to 'rebuke them sharply, that they may be sound in the faith.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "tit_sound_doctrine_for_every_age",
+    "label": "Sound doctrine for every age and station; the grace of God that bringeth salvation",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "TIT.2.1",
+      "TIT.2.2",
+      "TIT.2.3",
+      "TIT.2.4",
+      "TIT.2.5",
+      "TIT.2.6",
+      "TIT.2.7",
+      "TIT.2.8",
+      "TIT.2.9",
+      "TIT.2.10",
+      "TIT.2.11",
+      "TIT.2.12",
+      "TIT.2.13",
+      "TIT.2.14",
+      "TIT.2.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Titus 2, instruction in sound doctrine for aged men and women, young men and women, and servants, grounded in 'the grace of God that bringeth salvation' and 'that blessed hope' of Christ's own glorious appearing -- kept whole, the chapter's own single continuous household instruction.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "tit_renewed_by_the_holy_ghost",
+    "label": "Renewed by the Holy Ghost, heirs of eternal life; maintaining good works",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "TIT.3.1",
+      "TIT.3.2",
+      "TIT.3.3",
+      "TIT.3.4",
+      "TIT.3.5",
+      "TIT.3.6",
+      "TIT.3.7",
+      "TIT.3.8"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Titus 3:1-8, subjection to civil authority, God's own kindness saving 'not by works of righteousness which we have done,' but 'by the washing of regeneration, and renewing of the Holy Ghost.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "tit_avoiding_foolish_contentions",
+    "label": "Avoiding foolish contentions; closing instructions and benediction",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "TIT.3.9",
+      "TIT.3.10",
+      "TIT.3.11",
+      "TIT.3.12",
+      "TIT.3.13",
+      "TIT.3.14",
+      "TIT.3.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Titus 3:9-15, the charge to avoid 'foolish questions, and genealogies, and contentions,' rejecting a divisive heretic, and the closing travel instructions and benediction.",
+    "kjv_superscription": null,
+    "ref_note": null,
     "order_key": 0
   },
   {

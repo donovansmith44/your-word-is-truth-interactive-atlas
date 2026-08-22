@@ -1,0 +1,38 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). Philemon.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: Philemon is 25 verses -- the master brief's own explicit
+# lawful exception ("Short letters (Philemon, 2 John, 3 John, Jude) may be
+# single containers"). Divided here into its own three real, short
+# literary units (salutation/thanksgiving, the appeal for Onesimus,
+# closing) rather than left as one, since the text itself supplies clean
+# seams -- not a departure from the brief's own single-container permission,
+# which stays available for the even-shorter 2 John/3 John below.
+
+[[event]]
+id = "phm_salutation_and_thanksgiving"
+label = "Salutation and thanksgiving for Philemon's own love and faith"
+kind = "general"
+verses = ["PHM.1.1-7"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philemon 1-7, Paul's own greeting to Philemon, Apphia, Archippus, and the church in Philemon's own house, and thanksgiving that 'the bowels of the saints are refreshed by thee.'"
+
+[[event]]
+id = "phm_pauls_appeal_for_onesimus"
+label = "Paul's own appeal on behalf of Onesimus"
+kind = "general"
+verses = ["PHM.1.8-22"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philemon 8-22, Paul's own appeal 'for my son Onesimus,' once unprofitable but now profitable, asking Philemon to 'receive him as myself' and offering to repay any debt himself."
+
+[[event]]
+id = "phm_closing_greetings_and_benediction"
+label = "Closing greetings and benediction"
+kind = "general"
+verses = ["PHM.1.23-25"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philemon 23-25, greetings from Epaphras and Paul's own fellowlabourers, and the closing benediction."

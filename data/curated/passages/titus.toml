@@ -1,0 +1,56 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). Titus.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: Titus, a short pastoral manual, follows its own chapter
+# seams closely (elders/false teachers in Crete; sound doctrine for every
+# age and station; renewed living and the closing instructions) -- the
+# text's own natural units, not an arbitrary chapter-by-chapter default.
+
+[[event]]
+id = "tit_salutation"
+label = "Salutation"
+kind = "general"
+verses = ["TIT.1.1-4"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Titus 1:1-4, Paul's own greeting to Titus, 'mine own son after the common faith,' grounded in the hope of eternal life 'which God, that cannot lie, promised before the world began.'"
+
+[[event]]
+id = "tit_qualifications_for_elders_in_crete"
+label = "Qualifications for elders/bishops in Crete"
+kind = "general"
+verses = ["TIT.1.5-9"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Titus 1:5-9, the charge to 'ordain elders in every city' in Crete, and their own required qualifications, 'holding fast the faithful word... both to exhort and to convince the gainsayers.'"
+
+[[event]]
+id = "tit_a_rebuke_of_false_teachers"
+label = "A rebuke of false teachers"
+kind = "general"
+verses = ["TIT.1.10-16"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Titus 1:10-16, a sharp rebuke of 'unruly and vain talkers' among the circumcision, quoting a Cretian's own proverb, and the charge to 'rebuke them sharply, that they may be sound in the faith.'"
+
+[[event]]
+id = "tit_sound_doctrine_for_every_age"
+label = "Sound doctrine for every age and station; the grace of God that bringeth salvation"
+kind = "general"
+verses = ["TIT.2.1-15"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Titus 2, instruction in sound doctrine for aged men and women, young men and women, and servants, grounded in 'the grace of God that bringeth salvation' and 'that blessed hope' of Christ's own glorious appearing -- kept whole, the chapter's own single continuous household instruction."
+
+[[event]]
+id = "tit_renewed_by_the_holy_ghost"
+label = "Renewed by the Holy Ghost, heirs of eternal life; maintaining good works"
+kind = "general"
+verses = ["TIT.3.1-8"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Titus 3:1-8, subjection to civil authority, God's own kindness saving 'not by works of righteousness which we have done,' but 'by the washing of regeneration, and renewing of the Holy Ghost.'"
+
+[[event]]
+id = "tit_avoiding_foolish_contentions"
+label = "Avoiding foolish contentions; closing instructions and benediction"
+kind = "general"
+verses = ["TIT.3.9-15"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Titus 3:9-15, the charge to avoid 'foolish questions, and genealogies, and contentions,' rejecting a divisive heretic, and the closing travel instructions and benediction."

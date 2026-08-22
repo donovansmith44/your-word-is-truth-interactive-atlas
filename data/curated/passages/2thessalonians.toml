@@ -1,0 +1,55 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). 2 Thessalonians.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: 2 Thessalonians' own three real movements -- thanksgiving
+# and the coming judgment (1), the man of sin and the charge to stand fast
+# (2), and practical instruction against disorderly walking (3).
+
+[[event]]
+id = "2th_salutation_and_thanksgiving"
+label = "Salutation and thanksgiving; the righteous judgment of God at Christ's own coming"
+kind = "general"
+verses = ["2TH.1.1-12"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Thessalonians 1, Paul's own greeting, thanksgiving for their growing faith and patience under persecution, and the prospect of rest for the troubled and 'everlasting destruction' for those who obey not the gospel, at the Lord's own revelation -- kept whole, the chapter's own single continuous thanksgiving and prayer."
+
+[[event]]
+id = "2th_the_man_of_sin_revealed"
+label = "The man of sin revealed before the day of Christ"
+kind = "general"
+verses = ["2TH.2.1-12"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Thessalonians 2:1-12, correction of the claim 'that the day of Christ is at hand' -- that day cannot come 'except there come a falling away first, and that man of sin be revealed.'"
+
+[[event]]
+id = "2th_thanksgiving_for_election_stand_fast"
+label = "Thanksgiving for their own election; stand fast in the traditions taught"
+kind = "general"
+verses = ["2TH.2.13-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Thessalonians 2:13-17, renewed thanksgiving that 'God hath from the beginning chosen you to salvation,' and the charge to 'stand fast, and hold the traditions which ye have been taught.'"
+
+[[event]]
+id = "2th_a_request_for_prayer"
+label = "A request for prayer; the Lord's own faithfulness"
+kind = "general"
+verses = ["2TH.3.1-5"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Thessalonians 3:1-5, Paul's own request for prayer 'that the word of the Lord may have free course,' and confidence 'that ye both do and will do the things which we command you.'"
+
+[[event]]
+id = "2th_a_command_against_disorderly_walking"
+label = "A command against disorderly walking: if any would not work, neither should he eat"
+kind = "general"
+verses = ["2TH.3.6-15"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Thessalonians 3:6-15, the command to withdraw from 'every brother that walketh disorderly,' Paul's own example of working 'night and day' rather than eating any man's bread for nought, and 'if any would not work, neither should he eat.'"
+
+[[event]]
+id = "2th_closing_benediction_and_token"
+label = "Closing benediction and Paul's own token signature"
+kind = "general"
+verses = ["2TH.3.16-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Thessalonians 3:16-18, the closing prayer for peace, and Paul's own note that his signature 'is the token in every epistle.'"

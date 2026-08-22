@@ -1,0 +1,69 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). 2 Timothy.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: 2 Timothy's own real seams -- Paul's own final charge to
+# Timothy as a soldier/workman/vessel, the warning of perilous times, and
+# Paul's own closing testimony and requests, written as his own last letter.
+
+[[event]]
+id = "2ti_salutation_and_thanksgiving"
+label = "Salutation and thanksgiving; stirring up the gift of God"
+kind = "general"
+verses = ["2TI.1.1-7"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 1:1-7, Paul's own greeting to his 'dearly beloved son,' remembering Timothy's own unfeigned faith 'which dwelt first in thy grandmother Lois, and thy mother Eunice,' and the charge to 'stir up the gift of God.'"
+
+[[event]]
+id = "2ti_not_ashamed_of_the_gospel"
+label = "Not ashamed of the gospel; the pattern of sound words; Onesiphorus's own faithfulness"
+kind = "general"
+verses = ["2TI.1.8-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 1:8-18, the charge to 'be not thou therefore ashamed of the testimony of our Lord,' holding 'the form of sound words,' and thanks for Onesiphorus, who 'oft refreshed me' and 'was not ashamed of my chain.'"
+
+[[event]]
+id = "2ti_a_good_soldier_of_jesus_christ"
+label = "A good soldier of Jesus Christ; if we suffer, we shall also reign with him"
+kind = "general"
+verses = ["2TI.2.1-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 2:1-13, the charge to 'endure hardness, as a good soldier,' the images of the soldier, athlete, and husbandman, and the faithful saying, 'if we suffer, we shall also reign with him.'"
+
+[[event]]
+id = "2ti_rightly_dividing_the_word_of_truth"
+label = "Rightly dividing the word of truth; a vessel unto honour"
+kind = "general"
+verses = ["2TI.2.14-26"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 2:14-26, the charge to be 'a workman that needeth not to be ashamed, rightly dividing the word of truth,' shunning profane babblings, and becoming 'a vessel unto honour... meet for the master's use.'"
+
+[[event]]
+id = "2ti_perilous_times_in_the_last_days"
+label = "Perilous times in the last days"
+kind = "general"
+verses = ["2TI.3.1-9"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 3:1-9, the warning that 'in the last days perilous times shall come,' with a catalogue of the vices of 'men... having a form of godliness, but denying the power thereof.'"
+
+[[event]]
+id = "2ti_all_scripture_given_by_inspiration"
+label = "Continuing in the things learned; all scripture given by inspiration of God"
+kind = "general"
+verses = ["2TI.3.10-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 3:10-17, the charge to continue in what Timothy has learned from a child, 'the holy scriptures, which are able to make thee wise unto salvation,' and 'all scripture is given by inspiration of God.'"
+
+[[event]]
+id = "2ti_the_charge_to_preach_the_word"
+label = "The charge to preach the word; Paul's own finished course"
+kind = "general"
+verses = ["2TI.4.1-8"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 4:1-8, the solemn charge 'preach the word; be instant in season, out of season,' and Paul's own testimony, 'I have fought a good fight, I have finished my course, I have kept the faith.'"
+
+[[event]]
+id = "2ti_pauls_final_requests_and_greetings"
+label = "Paul's own final requests and greetings"
+kind = "general"
+verses = ["2TI.4.9-22"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 4:9-22, Paul's own request that Timothy come quickly and bring Mark and 'the cloke... and the books, but especially the parchments,' his account of standing alone at his first answer, and the closing greetings."

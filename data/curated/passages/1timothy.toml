@@ -1,0 +1,105 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). 1 Timothy.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: 1 Timothy's own real seams -- the charge against false
+# teachers, worship and church order (qualifications for bishops and
+# deacons), warnings for the last times, and instructions for particular
+# groups (widows, elders, servants, the rich).
+
+[[event]]
+id = "1ti_salutation_and_the_charge_against_false_teachers"
+label = "Salutation; the charge against false teachers of the law"
+kind = "general"
+verses = ["1TI.1.1-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 1:1-11, Paul's own greeting to Timothy, and the charge to remain at Ephesus against those who teach 'fables and endless genealogies' rather than 'the glorious gospel of the blessed God.'"
+
+[[event]]
+id = "1ti_pauls_own_testimony_and_the_charge_to_timothy"
+label = "Paul's own testimony of mercy; the charge to Timothy to war a good warfare"
+kind = "general"
+verses = ["1TI.1.12-20"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 1:12-20, Paul's own testimony as one who 'obtained mercy' though 'before a blasphemer,' and the charge committed to Timothy 'that thou by them mightest war a good warfare.'"
+
+[[event]]
+id = "1ti_prayer_for_all_men"
+label = "Prayer for all men; the one mediator between God and men"
+kind = "general"
+verses = ["1TI.2.1-8"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 2:1-8, the charge that prayer be made 'for all men,' since God 'will have all men to be saved,' and there is 'one mediator between God and men, the man Christ Jesus.'"
+
+[[event]]
+id = "1ti_instructions_for_women_in_worship"
+label = "Instructions for women in worship"
+kind = "general"
+verses = ["1TI.2.9-15"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 2:9-15, instruction on modest apparel and on women's own learning 'in silence with all subjection.'"
+
+[[event]]
+id = "1ti_qualifications_of_a_bishop"
+label = "Qualifications of a bishop"
+kind = "general"
+verses = ["1TI.3.1-7"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 3:1-7, the qualifications for the office of a bishop -- 'blameless, the husband of one wife, vigilant, sober... apt to teach.'"
+
+[[event]]
+id = "1ti_qualifications_of_deacons"
+label = "Qualifications of deacons"
+kind = "general"
+verses = ["1TI.3.8-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 3:8-13, the qualifications for deacons and their own wives, 'grave, not doubletongued.'"
+
+[[event]]
+id = "1ti_the_pillar_and_ground_of_the_truth"
+label = "The church, the pillar and ground of the truth; the mystery of godliness"
+kind = "general"
+verses = ["1TI.3.14-16"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 3:14-16, the church named 'the pillar and ground of the truth,' and the hymn-like confession of 'the mystery of godliness: God was manifest in the flesh.'"
+
+[[event]]
+id = "1ti_a_prophecy_of_the_latter_times"
+label = "A prophecy of the latter times: forbidding to marry and meats"
+kind = "general"
+verses = ["1TI.4.1-5"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 4:1-5, the Spirit's own express warning that 'in the latter times some shall depart from the faith,' forbidding marriage and certain meats which God created 'to be received with thanksgiving.'"
+
+[[event]]
+id = "1ti_timothy_a_good_minister"
+label = "Timothy, a good minister: an example to the believers"
+kind = "general"
+verses = ["1TI.4.6-16"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 4:6-16, the charge for Timothy to be 'a good minister of Jesus Christ,' an example 'in word, in conversation, in charity,' not neglecting his own gift."
+
+[[event]]
+id = "1ti_concerning_widows"
+label = "Instructions concerning widows"
+kind = "general"
+verses = ["1TI.5.1-16"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 5:1-16, instruction to honour 'widows that are widows indeed,' the household's own duty to provide for its own, and guidance for the enrollment of widows."
+
+[[event]]
+id = "1ti_concerning_elders"
+label = "Instructions concerning elders"
+kind = "general"
+verses = ["1TI.5.17-25"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 5:17-25, elders who rule well counted worthy of 'double honour,' the rule of two or three witnesses for an accusation, and the charge to 'lay hands suddenly on no man.'"
+
+[[event]]
+id = "1ti_servants_masters_and_the_love_of_money"
+label = "Servants and masters; the love of money the root of all evil"
+kind = "general"
+verses = ["1TI.6.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 6:1-10, instruction for servants under the yoke, a warning against those who suppose 'gain is godliness,' and 'the love of money is the root of all evil.'"
+
+[[event]]
+id = "1ti_the_good_fight_of_faith"
+label = "The good fight of faith; the charge to the rich; the closing benediction"
+kind = "general"
+verses = ["1TI.6.11-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Timothy 6:11-21, the charge to Timothy to 'fight the good fight of faith,' the charge to the rich to be 'rich in good works,' and the closing warning against 'oppositions of science falsely so called.'"

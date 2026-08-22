@@ -1,0 +1,69 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). 1 Thessalonians.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: 1 Thessalonians' own real seams -- salutation/thanksgiving,
+# Paul's own recollection of his time among them, Timothy's own report,
+# and the closing eschatological instruction and exhortations.
+
+[[event]]
+id = "1th_salutation_and_thanksgiving"
+label = "Salutation and thanksgiving: the Thessalonians' own faith, an ensample to all Macedonia and Achaia"
+kind = "general"
+verses = ["1TH.1.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 1, Paul's own greeting with Silvanus and Timotheus, and thanksgiving for a faith that has made them 'ensamples to all that believe' as they 'turned to God from idols to serve the living and true God' -- kept whole, the chapter's own single continuous thanksgiving."
+
+[[event]]
+id = "1th_pauls_manner_among_them"
+label = "Paul's own manner among them: labouring, gentle as a nurse, exhorting as a father"
+kind = "general"
+verses = ["1TH.2.1-12"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 2:1-12, Paul's own recollection of his entrance among them 'not in vain,' gentle 'even as a nurse cherisheth her children,' labouring night and day so as not to be chargeable."
+
+[[event]]
+id = "1th_their_reception_and_pauls_longing"
+label = "Their own reception of the word of God; Paul's own longing to see them again"
+kind = "general"
+verses = ["1TH.2.13-20"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 2:13-20, thanks that they received Paul's preaching 'not as the word of men, but... the word of God,' and Paul's own desire, hindered by Satan, to see their face again."
+
+[[event]]
+id = "1th_timothys_report"
+label = "Timothy's own report from Thessalonica; Paul's own prayer for their increase in love"
+kind = "general"
+verses = ["1TH.3.1-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 3, Paul's own sending of Timothy to establish them, his own comfort at the good report of their faith and charity, and his prayer that the Lord 'make you to increase and abound in love' -- kept whole, the chapter's own single continuous report and prayer."
+
+[[event]]
+id = "1th_exhortation_to_sanctification"
+label = "Exhortation to sanctification, brotherly love, and a quiet life"
+kind = "general"
+verses = ["1TH.4.1-12"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 4:1-12, the charge to abound in a walk pleasing to God, to abstain from fornication, to love the brethren, and 'to study to be quiet, and to do your own business.'"
+
+[[event]]
+id = "1th_those_which_are_asleep"
+label = "Concerning them which are asleep: the coming of the Lord and the resurrection of the dead"
+kind = "general"
+verses = ["1TH.4.13-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 4:13-18, comfort concerning 'them which are asleep,' the Lord's own descent 'with a shout,' the dead in Christ rising first, and the charge to 'comfort one another with these words.'"
+
+[[event]]
+id = "1th_the_day_of_the_lord_as_a_thief"
+label = "The day of the Lord as a thief in the night; children of the day, watching and sober"
+kind = "general"
+verses = ["1TH.5.1-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 5:1-11, the day of the Lord coming 'as a thief in the night,' and the charge to the 'children of light' to 'watch and be sober,' putting on 'the breastplate of faith and love.'"
+
+[[event]]
+id = "1th_final_exhortations_and_benediction"
+label = "Final exhortations, and the closing benediction"
+kind = "general"
+verses = ["1TH.5.12-28"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Thessalonians 5:12-28, a chain of brief final exhortations -- 'rejoice evermore. Pray without ceasing... quench not the Spirit' -- closing with the prayer that they be preserved blameless, and the benediction."
