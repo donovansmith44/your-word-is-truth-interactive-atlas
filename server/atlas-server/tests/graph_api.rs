@@ -18,14 +18,16 @@ use http_body_util::BodyExt;
 use tower::ServiceExt;
 
 use atlas_core::data::AtlasData;
-use atlas_graph::GraphState;
+use atlas_graph::GraphService;
 
 fn real_app() -> axum::Router {
     let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
     let raw = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
     let data = AtlasData::load(&compiled).expect("data/compiled/*.json must exist").finish();
-    let graph = GraphState::build(&raw).expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist");
-    graph.check_fidelity().expect("the real graph must satisfy its own fidelity law");
+    // GraphService::build runs the FIDELITY LAW unconditionally as part of
+    // construction (fix round 1) -- reaching this line already proves it
+    // passed on the real committed KJV source.
+    let graph = GraphService::build(&raw).expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law");
     atlas_server::app::build(Arc::new(data), Arc::new(graph), None)
 }
 
@@ -82,6 +84,32 @@ async fn text_window_scope_chapter_returns_exactly_that_chapters_units() {
     let (st2, body2, _) = get(&app, "/api/text?ref=JHN.3.16&scope=chapter").await;
     assert_eq!(st2, 200);
     assert_eq!(body2["units"], body["units"], "JHN.3 and JHN.3.16 under scope=chapter must resolve to the identical chapter window");
+}
+
+/// Fix round 1, I1: `scope=chapter&dir=backward` used to silently serve
+/// the WRONG chapter's tail (`chapter_span`'s own `start` is always the
+/// requested chapter's own verse 1, and applying backward resolution to
+/// that as if it were a window's END walks into the PRECEDING chapter).
+/// Now rejected outright as a clean 400 -- both paths (accept without
+/// `dir`, reject with `dir=backward`) tested here; the accept path is
+/// ALSO the same one `text_window_scope_chapter_returns_exactly_that_chapters_units`
+/// above already covers, so this test is specifically about the rejection
+/// and about `dir=onward` staying accepted (the honest, meaningful case
+/// when `scope=chapter` -- onward is the only direction a chapter window
+/// could ever mean, so it stays a 200, not also rejected).
+#[tokio::test]
+async fn text_window_scope_chapter_rejects_dir_backward_but_accepts_dir_onward() {
+    let app = real_app();
+
+    let (st, body, _) = get(&app, "/api/text?ref=JHN.3&scope=chapter&dir=backward").await;
+    assert_eq!(st, 400, "{body}");
+    assert_eq!(body["error"]["code"], "bad_dir", "{body}");
+
+    let (st2, body2, _) = get(&app, "/api/text?ref=JHN.3&scope=chapter&dir=onward").await;
+    assert_eq!(st2, 200);
+    let units = body2["units"].as_array().unwrap();
+    assert_eq!(units.len(), 36, "dir=onward must still serve the ordinary, correct chapter window");
+    assert_eq!(units[0]["ref"], "JHN.3.1");
 }
 
 #[tokio::test]

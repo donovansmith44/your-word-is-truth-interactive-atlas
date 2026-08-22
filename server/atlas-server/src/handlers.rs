@@ -17,7 +17,8 @@ use atlas_core::scene::{compose_scripture_scene, compose_time_scene, to_scene_ev
 use atlas_core::time::TimeRange;
 use atlas_core::wire::{Scene, SceneEvent, VerseGroup};
 use atlas_core::xrefs::aggregate_span_xrefs;
-use atlas_graph::{GraphState, WindowDir};
+use atlas_graph::window::{self, WindowDir};
+use atlas_graph::GraphService;
 
 use crate::error::ApiError;
 
@@ -304,7 +305,7 @@ pub struct ChapterOut {
 /// with NO client-side change and no reader-visible behavior change.
 pub async fn chapter(
     State(data): State<Arc<AtlasData>>,
-    State(graph): State<Arc<GraphState>>,
+    State(graph): State<Arc<GraphService>>,
     Path(cref): Path<String>,
 ) -> Result<Json<ChapterOut>, ApiError> {
     let (book, chapter) = match ScriptureRef::parse(&cref) {
@@ -325,14 +326,19 @@ pub async fn chapter(
     // The graph's own view of this chapter's text, keyed by verse number --
     // empty (not an error) when the graph has no such chapter, mirroring
     // `data.verses.get(key)`'s own prior "absent means skip this verse"
-    // tolerance below.
-    let graph_texts: HashMap<u16, &str> = graph
+    // tolerance below. Reached entirely through THE PORT (design doc §9a;
+    // fix round 1, C1) -- `window::window`/`window::render` take only
+    // `&dyn atlas_graph_types::store::GraphQuery`, never a concrete graph
+    // struct; `chapter_span`/the opened snapshot are `GraphService`'s own
+    // adapter-side companions (ref-resolution isn't part of the generic
+    // port -- see that module's own doc comment).
+    let snap = graph.snapshot();
+    let graph_texts: HashMap<u16, String> = graph
         .chapter_span(book.0, chapter)
         .map(|(start, n)| {
-            graph
-                .window(start, n, WindowDir::Onward)
+            window::window(&snap, atlas_graph::kjv_adapter::BIBLE_CORPUS, start, n, WindowDir::Onward)
                 .iter()
-                .filter_map(|id| atlas_graph::kjv_adapter::decode_text_unit(id).map(|(_, _, v)| (v, graph.render(id).unwrap_or_default())))
+                .filter_map(|id| atlas_graph::kjv_adapter::decode_text_unit(id).map(|(_, _, v)| (v, window::render(&snap, id).unwrap_or_default())))
                 .collect()
         })
         .unwrap_or_default();
@@ -340,7 +346,7 @@ pub async fn chapter(
     let mut verses = Vec::new();
     for v in 1..=verse_count {
         let key = format!("{code}.{chapter}.{v}");
-        if let Some(&text) = graph_texts.get(&v) {
+        if let Some(text) = graph_texts.get(&v) {
             let places = data
                 .places_for_verse(&key)
                 .iter()

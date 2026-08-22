@@ -23,6 +23,7 @@
 
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId, SymRelationId};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
+use atlas_graph_types::store::GraphQuery;
 
 /// Encodes any node id this batch's graph can produce. Only `NodeKind::TextUnit`
 /// is ever actually built in M-A; the fallback keeps this function total
@@ -80,7 +81,7 @@ pub fn parse_edge_kind(label: &str) -> Option<EdgeKind> {
 /// stand-in awaiting real `CorpusScheme::cite`-driven citation strings
 /// (types doc §6); this is this DTO layer's own such computation, an
 /// EXTENSION (new conversion), not a change to graph-types' shipped `card()`.
-pub fn describe_node(id: &AnyNodeId, graph: &atlas_graph_types::graph::Graph) -> (String, String) {
+pub fn describe_node(id: &AnyNodeId, query: &dyn GraphQuery) -> (String, String) {
     match id.kind {
         NodeKind::TextUnit => {
             if let Some((book, chapter, verse)) = atlas_graph::kjv_adapter::decode_text_unit(id) {
@@ -92,11 +93,10 @@ pub fn describe_node(id: &AnyNodeId, graph: &atlas_graph_types::graph::Graph) ->
             // Not TextUnit (M-A never materializes another kind): fall back
             // to graph-types' own `card()` view assembly rather than
             // re-deriving its match here -- one label computation, reused.
-            let label = graph
-                .nodes
-                .get(id)
-                .map(|n| atlas_graph_types::node::card(n).label)
-                .unwrap_or_else(|| format!("{:?}", id.kind));
+            // Node lookup goes through THE PORT (design doc §9a; fix round
+            // 1, C1) -- `GraphQuery::node`, never a direct field reach.
+            let label =
+                query.node(id).map(|n| atlas_graph_types::node::card(&n).label).unwrap_or_else(|| format!("{:?}", id.kind));
             (label, format!("{:?}", id.kind))
         }
     }
@@ -107,10 +107,10 @@ pub fn describe_node(id: &AnyNodeId, graph: &atlas_graph_types::graph::Graph) ->
 /// variants, never a panic -- M-A's own `edges()` calls only ever surface
 /// `Position::Node` today (no edge-as-position query exists yet), but the
 /// type is `Position` so this stays honest about the full shape.
-pub fn describe_position(pos: &Position, graph: &atlas_graph_types::graph::Graph) -> (String, String, String) {
+pub fn describe_position(pos: &Position, query: &dyn GraphQuery) -> (String, String, String) {
     match pos {
         Position::Node(id) => {
-            let (label, kind) = describe_node(id, graph);
+            let (label, kind) = describe_node(id, query);
             (encode_node_id(id), kind, label)
         }
         Position::Edge(eid) => (format!("edge:{}", eid.0), "Edge".to_string(), eid.0.clone()),

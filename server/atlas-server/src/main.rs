@@ -11,6 +11,7 @@ use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
 use atlas_core::data::AtlasData;
+use atlas_graph::GraphService;
 
 struct Args {
     data_dir: PathBuf,
@@ -72,19 +73,25 @@ async fn main() -> Result<()> {
     // scope). 31,102 KJV verses plus ~344k raw cross-reference rows is
     // trivial startup work.
     let raw_dir = args.data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| PathBuf::from("../data/raw"));
-    let graph = atlas_graph::GraphState::build(&raw_dir)
+    // FAIL-LOUD FIDELITY GATE (design doc P3): `GraphService::build` runs
+    // the KJV adapter's own bijection + reconstruction boundary law
+    // unconditionally as part of construction (see `atlas_graph::service`'s
+    // own doc comment) -- a violation refuses construction entirely, so
+    // reaching the `println!` below already proves the gate passed. This
+    // graph is published to the owner-approved `atlas_graph_types::store`
+    // port (`GraphPublisher::publish`) before being wrapped here; every
+    // downstream consumer (app::build, every handler, the window/text
+    // path) queries it as `atlas_graph_types::store::GraphQuery`, never a
+    // raw `Graph` field (fix round 1, C1).
+    let graph = GraphService::build(&raw_dir)
         .with_context(|| format!("building the explorable graph from {} (kjv.json + xrefs/cross_references.txt)", raw_dir.display()))?;
-
-    // FAIL-LOUD FIDELITY GATE (design doc P3): the KJV adapter's own
-    // bijection + reconstruction boundary law must hold before this graph
-    // ever serves a byte of text. A violation here refuses to start the
-    // server, on purpose -- "proof at the boundary," not a best-effort
-    // warning.
-    graph.check_fidelity().with_context(|| "KJV adapter fidelity boundary law failed -- refusing to start")?;
 
     println!(
         "atlas-graph: {} KJV text units, {} cites edges ({} negative-vote rows dropped, disclosed), graph version {}",
-        graph.stats.kjv_verses, graph.stats.cites_rows, graph.stats.cites_dropped_negative_votes, graph.version
+        graph.stats.kjv_verses,
+        graph.stats.cites_rows,
+        graph.stats.cites_dropped_negative_votes,
+        atlas_graph::version_hex(graph.version())
     );
     let graph = Arc::new(graph);
 

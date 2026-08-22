@@ -53,6 +53,16 @@ impl ApiError {
     pub fn bad_kind(raw: &str) -> Self {
         Self { status: StatusCode::BAD_REQUEST, code: "bad_kind", message: format!("unknown or missing edge kind: '{raw}'") }
     }
+
+    /// Fix round 1, I1: `GET /api/text?scope=chapter&dir=backward` -- a
+    /// parameter combination with no honest meaning (a chapter-scoped
+    /// window's bounds are already fully determined by the chapter itself;
+    /// there is no direction left to walk) -- rejected explicitly rather
+    /// than silently accepted-and-ignored or (the bug this replaces)
+    /// silently misapplied to serve the wrong chapter's tail.
+    pub fn bad_dir(message: impl Into<String>) -> Self {
+        Self { status: StatusCode::BAD_REQUEST, code: "bad_dir", message: message.into() }
+    }
 }
 
 #[derive(Serialize)]

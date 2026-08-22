@@ -4,6 +4,16 @@
 //! (only TextUnit nodes and `cites` edges exist yet; nothing here is
 //! TextUnit-specific machinery dressed up as generic).
 //!
+//! Fix round 1 (C1): every handler below opens a snapshot
+//! (`GraphService::snapshot`) and performs every actual graph query
+//! through `atlas_graph_types::store::GraphQuery`'s own trait methods on
+//! it (`node`/`edges`/`edge_summary`/`reading_window`, and `window.rs`'s
+//! own generic helpers built on top of those) -- never a raw `Graph`
+//! field. `GraphService` itself is held concretely in `AppState` only
+//! because `GraphStore`'s associated-type shape isn't `dyn`-safe (see
+//! `app.rs`'s own doc comment); the query surface consumed here is
+//! entirely the owner-approved port.
+//!
 //! `GET /api/node/{id}`              -> card + edge summary + graph version
 //! `GET /api/node/{id}/edges`        -> one page of one edge kind, EdgeIds included
 //! `GET /api/text`                   -> a window of {ref, text} units + next cursor + version
@@ -18,9 +28,11 @@ use axum::Json;
 use serde::Serialize;
 
 use atlas_core::refs::ScriptureRef;
-use atlas_graph::{GraphState, WindowDir};
-use atlas_graph_types::explore::{EdgeQuery, Explorable, PositionRef};
+use atlas_graph::window::{self, WindowDir};
+use atlas_graph::GraphService;
+use atlas_graph_types::explore::EdgeQuery;
 use atlas_graph_types::id::Position;
+use atlas_graph_types::store::GraphQuery;
 
 use crate::error::ApiError;
 use crate::graph_wire::{decode_node_id, describe_position, encode_node_id, parse_edge_kind};
@@ -46,22 +58,22 @@ pub struct NodeCardOut {
 }
 
 /// `GET /api/node/{id}` (design doc §5): card (id/kind/label/provenance) +
-/// edge summary (kind -> true count, honesty needs it -- `Explorable::edge_summary`
-/// already lists only inhabited kinds) + the graph version stamp. `{id}` is
-/// the wire form `graph_wire::encode_node_id` produces; a malformed or
-/// unresolvable id is `bad_ref` (matches every other ref-shaped endpoint's
-/// own 400 convention), an id that parses but names no node in the built
-/// graph is `not_found` (M-A materializes only TextUnit nodes: any
-/// structurally valid `text-unit:BOOK.C.V` id naming a real canon verse
-/// resolves; any other kind prefix 400s, since nothing of that kind exists
-/// yet to be "not found" instead).
-pub async fn node_card(State(graph): State<Arc<GraphState>>, Path(id): Path<String>) -> Result<Json<NodeCardOut>, ApiError> {
+/// edge summary (kind -> true count, honesty needs it -- `GraphQuery`'s own
+/// `edge_summary` already lists only inhabited kinds) + the graph version
+/// stamp. `{id}` is the wire form `graph_wire::encode_node_id` produces; a
+/// malformed or unresolvable id is `bad_ref` (matches every other
+/// ref-shaped endpoint's own 400 convention), an id that parses but names
+/// no node in the built graph is `not_found` (M-A materializes only
+/// TextUnit nodes: any structurally valid `text-unit:BOOK.C.V` id naming a
+/// real canon verse resolves; any other kind prefix 400s, since nothing of
+/// that kind exists yet to be "not found" instead).
+pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<NodeCardOut>, ApiError> {
     let node_id = decode_node_id(&id).ok_or_else(|| ApiError::bad_ref(&id))?;
-    let node = graph.graph.nodes.get(&node_id).ok_or_else(|| ApiError::not_found("node"))?;
+    let snap = graph.snapshot();
+    let node = snap.node(&node_id).ok_or_else(|| ApiError::not_found("node"))?;
 
-    let pos = PositionRef(Position::Node(node_id.clone()));
-    let summary = pos.edge_summary(&graph.graph);
-    let (label, _kind) = crate::graph_wire::describe_node(&node_id, &graph.graph);
+    let summary = snap.edge_summary(&Position::Node(node_id.clone()));
+    let (label, _kind) = crate::graph_wire::describe_node(&node_id, &snap);
 
     let edge_summary = summary.into_iter().map(|(kind, count)| EdgeSummaryEntryOut { kind: kind.label().to_string(), count }).collect();
 
@@ -71,7 +83,7 @@ pub async fn node_card(State(graph): State<Arc<GraphState>>, Path(id): Path<Stri
         label,
         provenance: node.provenance.clone(),
         edge_summary,
-        version: graph.version.as_hex(),
+        version: atlas_graph::version_hex(graph.version()),
     }))
 }
 
@@ -113,12 +125,13 @@ const MAX_EDGE_LIMIT: usize = 200;
 /// previous page's own `next` returned; `limit` defaults to 20, capped at
 /// 200.
 pub async fn node_edges(
-    State(graph): State<Arc<GraphState>>,
+    State(graph): State<Arc<GraphService>>,
     Path(id): Path<String>,
     Query(params): Query<HashMap<String, String>>,
 ) -> Result<Json<EdgePageOut>, ApiError> {
     let node_id = decode_node_id(&id).ok_or_else(|| ApiError::bad_ref(&id))?;
-    if !graph.graph.nodes.contains_key(&node_id) {
+    let snap = graph.snapshot();
+    if snap.node(&node_id).is_none() {
         return Err(ApiError::not_found("node"));
     }
 
@@ -128,18 +141,18 @@ pub async fn node_edges(
     let cursor = params.get("cursor").and_then(|s| s.parse::<usize>().ok());
     let limit = params.get("limit").and_then(|s| s.parse::<usize>().ok()).unwrap_or(DEFAULT_EDGE_LIMIT).clamp(1, MAX_EDGE_LIMIT);
 
-    let page = PositionRef(Position::Node(node_id)).edges(&graph.graph, &EdgeQuery { kind, cursor, limit });
+    let page = snap.edges(&Position::Node(node_id), &EdgeQuery { kind, cursor, limit });
 
     let entries = page
         .entries
         .iter()
         .map(|e| {
-            let (id, kind, label) = describe_position(&e.node, &graph.graph);
+            let (id, kind, label) = describe_position(&e.node, &snap);
             EdgeEntryOut { edge: e.edge.0.clone(), node: NodeRefOut { id, kind, label } }
         })
         .collect();
 
-    Ok(Json(EdgePageOut { kind: kind.label().to_string(), entries, next: page.next, version: graph.version.as_hex() }))
+    Ok(Json(EdgePageOut { kind: kind.label().to_string(), entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
 }
 
 // ---------------------------------------------------------------------
@@ -176,25 +189,51 @@ fn parse_ref(raw: &str, scope: &str) -> Result<(u8, u16, Option<u16>), ApiError>
 /// `GET /api/text?ref=<dot-ref>&n=&dir=&scope=` (design doc §6; M-A brief
 /// requirement 4): a window of `{ref, text}` units + next cursor + graph
 /// version. `scope=chapter` returns exactly that chapter's units (`n` is
-/// ignored -- the count is derived server-side, `GraphState::chapter_span`)
-/// -- still the SAME window query (`GraphState::window`) every other path
-/// calls, just with server-derived bounds. `dir=backward` walks the window
-/// ending AT `ref` instead of starting from it; anything else (including
-/// absence) is onward. ETag/If-None-Match on the version stamp: since the
-/// graph is immutable for the process lifetime, the ETag is constant across
-/// every request until the next server restart.
+/// ignored -- the count is derived server-side, `GraphService::chapter_span`)
+/// -- still the SAME window query (`window::window`) every other path
+/// calls, just with server-derived bounds.
+///
+/// Fix round 1, I1: `dir=backward` is REJECTED (`bad_dir`, 400) when
+/// combined with `scope=chapter`, rather than silently misapplied. A
+/// chapter-scoped window's bounds are already fully determined by the
+/// chapter itself (`chapter_span` always returns the span covering EVERY
+/// verse of that chapter) -- there is no honest "walk backward" distinct
+/// from "walk onward" once start/n are both fixed by the chapter's own
+/// edges, so accepting the combination silently would only ever produce
+/// either (a) the identical result as onward (misleadingly implying a real
+/// choice existed) or, as previously shipped, (b) a DIFFERENT chapter's
+/// tail entirely (`chapter_span`'s `start` is always the chapter's own
+/// verse 1 position; applying backward *resolution* to that as if it were
+/// a window's END walks into the PRECEDING chapter). Rejecting the
+/// combination outright is the honest choice: `dir` only has meaning for a
+/// verse-anchored window, where onward/backward genuinely pick different
+/// spans.
+///
+/// For any other `scope`: `dir=backward` walks the window ending AT `ref`
+/// instead of starting from it; anything else (including absence) is
+/// onward. ETag/If-None-Match on the version stamp: since the graph is
+/// immutable for the process lifetime, the ETag is constant across every
+/// request until the next server restart.
 pub async fn text_window(
-    State(graph): State<Arc<GraphState>>,
+    State(graph): State<Arc<GraphService>>,
     headers: HeaderMap,
     Query(params): Query<HashMap<String, String>>,
 ) -> Result<Response, ApiError> {
-    let etag = format!("\"{}\"", graph.version.as_hex());
+    let etag = format!("\"{}\"", atlas_graph::version_hex(graph.version()));
     if headers.get(header::IF_NONE_MATCH).and_then(|v| v.to_str().ok()) == Some(etag.as_str()) {
         return Ok((StatusCode::NOT_MODIFIED, [(header::ETAG, etag)]).into_response());
     }
 
     let raw_ref = params.get("ref").map(String::as_str).unwrap_or("");
     let scope = params.get("scope").map(String::as_str).unwrap_or("verse");
+    let dir_raw = params.get("dir").map(String::as_str);
+
+    if scope == "chapter" && dir_raw == Some("backward") {
+        return Err(ApiError::bad_dir(
+            "dir=backward is not supported with scope=chapter -- a chapter-scoped window's bounds are already fully determined by the chapter itself, so there is no direction left to walk; omit dir, or use dir=onward, or drop scope=chapter and anchor on a specific verse instead",
+        ));
+    }
+
     let (book, chapter, verse_opt) = parse_ref(raw_ref, scope)?;
 
     let (start, n) = if scope == "chapter" {
@@ -206,41 +245,46 @@ pub async fn text_window(
         (start, n)
     };
 
-    let dir = match params.get("dir").map(String::as_str) {
+    let dir = match dir_raw {
         Some("backward") => WindowDir::Backward,
         _ => WindowDir::Onward,
     };
 
-    let ids = graph.window(start, n, dir);
+    let snap = graph.snapshot();
+    let ids = window::window(&snap, atlas_graph::kjv_adapter::BIBLE_CORPUS, start, n, dir);
     let units: Vec<TextUnitOut> = ids
         .iter()
         .filter_map(|id| {
             let (b, c, v) = atlas_graph::kjv_adapter::decode_text_unit(id)?;
-            let text = graph.render(id)?.to_string();
+            let text = window::render(&snap, id)?;
             Some(TextUnitOut { sref: atlas_graph::kjv_adapter::dot_ref(b, c, v), text })
         })
         .collect();
 
     // `next`: the ref that continues the SAME direction of travel one more
-    // step past this window -- None at either edge of the corpus.
+    // step past this window -- None at either edge of the corpus. Reads
+    // the single unit just past the window via THE PORT's own
+    // `reading_window` primitive (a 1-element window), never a direct
+    // spine-slice reach.
+    let unit_at = |pos: usize| {
+        snap.reading_window(atlas_graph::kjv_adapter::BIBLE_CORPUS, pos, 1)
+            .into_iter()
+            .next()
+            .and_then(|id| atlas_graph::kjv_adapter::decode_text_unit(&id))
+            .map(|(b, c, v)| atlas_graph::kjv_adapter::dot_ref(b, c, v))
+    };
     let next = match dir {
-        WindowDir::Onward => {
-            let after = start + units.len();
-            graph.bible_unit_at(after).and_then(atlas_graph::kjv_adapter::decode_text_unit).map(|(b, c, v)| atlas_graph::kjv_adapter::dot_ref(b, c, v))
-        }
+        WindowDir::Onward => unit_at(start + units.len()),
         WindowDir::Backward => {
-            let window_start = GraphState::resolved_start(start, n, dir);
+            let window_start = window::resolved_start(start, n, dir);
             if window_start == 0 {
                 None
             } else {
-                graph
-                    .bible_unit_at(window_start - 1)
-                    .and_then(atlas_graph::kjv_adapter::decode_text_unit)
-                    .map(|(b, c, v)| atlas_graph::kjv_adapter::dot_ref(b, c, v))
+                unit_at(window_start - 1)
             }
         }
     };
 
-    let body = Json(TextWindowOut { units, next, version: graph.version.as_hex() });
+    let body = Json(TextWindowOut { units, next, version: atlas_graph::version_hex(graph.version()) });
     Ok(([(header::ETAG, etag)], body).into_response())
 }

@@ -2,8 +2,22 @@
 //! `BoundaryLaw` trait): BIJECTION (every source verse becomes exactly one
 //! TextUnit rendering) and RECONSTRUCTION (the full reading-order walk
 //! reproduces the source text byte-for-byte). Fail-loud: `check_kjv_fidelity`
-//! is called at server startup (`GraphState::check_fidelity`) and a failure
-//! there must refuse to serve traffic, not degrade quietly.
+//! is called automatically inside `GraphService::from_sources`/`build` (see
+//! that module) and a failure there refuses construction entirely, not
+//! merely logs.
+//!
+//! FIX ROUND 1, I2 (de-circularization): the "expected" side used to come
+//! from `kjv_adapter::read_kjv_ordered`, which itself calls
+//! `atlas_etl::kjv::parse` -- THE SAME function `build_graph_from_sources`
+//! calls to build the graph being checked. Both sides therefore flowed
+//! through identical parsing/book-resolution code on identical bytes, so a
+//! bug INSIDE that shared code (e.g. `atlas_core::canon::resolve_alias`
+//! mis-resolving two distinct raw names to the same index) would corrupt
+//! both sides identically and the law would report `Ok(())` regardless.
+//! `independent_reader` below re-derives "expected" through CODE THAT NEVER
+//! CALLS `atlas_etl::kjv::parse` (or any of its types/helpers) -- see that
+//! module's own doc comment for exactly what is and isn't shared with the
+//! adapter path, and why.
 
 use std::collections::BTreeSet;
 
@@ -24,16 +38,145 @@ impl std::fmt::Display for FidelityViolation {
 }
 impl std::error::Error for FidelityViolation {}
 
-/// Re-parses `source_kjv_json` (the SAME raw bytes the graph was built
-/// from) via the SAME adapter reader (`kjv_adapter::read_kjv_ordered`) to
-/// get the independently-derived "expected" ordered verse list, then checks
-/// `built` against it. Re-deriving from source on every check (rather than
-/// trusting whatever the builder happened to record) is the point: this is
-/// the proof that source and built graph agree, not a self-consistency
-/// check of the builder alone.
+/// A single expected verse, as independently re-derived from raw source
+/// bytes -- deliberately the SAME shape as `kjv_adapter::KjvVerse` in
+/// spirit, but constructed by wholly separate code (see
+/// `independent_reader` below).
+struct ExpectedVerse {
+    book_index: u8,
+    chapter: u16,
+    verse: u16,
+    text: String,
+}
+
+/// FIX ROUND 1, I2: an independent, minimal KJV-JSON reader for the
+/// fidelity law's OWN "expected" side -- never calls
+/// `atlas_etl::kjv::parse`, never imports its `RawKjv`/`RawBook`/
+/// `RawChapter`/`RawVerse` types, never calls its `normalize_book_name`.
+///
+/// What IS still shared with the adapter path, disclosed exactly (per the
+/// fix-round instruction to state this precisely):
+/// - `serde_json` itself (a mature, independently-tested third-party
+///   library doing raw byte-level JSON decoding -- not app logic; using a
+///   different JSON library would not make this check more independent
+///   in any way that matters, only more code to maintain).
+/// - `atlas_core::canon::resolve_alias` (the canonical book-name-or-code
+///   lookup table) -- a foundational, general-purpose data table this
+///   whole codebase shares for "what book is this," not parsing logic
+///   specific to the raw KJV.json shape or to `atlas_etl::kjv`'s own
+///   adapter. A bug INSIDE `resolve_alias` itself (e.g. two distinct
+///   names mapping to the same index) would still not be caught by this
+///   law -- that residual gap is real and disclosed, not hidden -- but
+///   `resolve_alias` is exercised by dozens of other call sites across
+///   this workspace (ETL validation, every ref-parsing endpoint), so a
+///   bug there is a much shallower, much more heavily-tested surface than
+///   the KJV-JSON-specific canon-walk this law exists to check.
+///
+/// What is INDEPENDENT (the actual point of this module): the JSON
+/// EXTRACTION walk (raw `serde_json::Value` field access -- `.get("books")`,
+/// `.as_array()`, `.as_str()`, `.as_u64()` -- never `#[derive(Deserialize)]`
+/// onto a shape mirroring `atlas_etl::kjv`'s own structs) and the
+/// dataset's own book-name-quirk normalization (Roman-numeral prefixes,
+/// the "of John" suffix), which is hand-written here from scratch --
+/// same PROBLEM as `atlas_etl::kjv::normalize_book_name` solves, wholly
+/// separate CODE, so a bug in one is not mechanically replicated in the
+/// other. This module has NO dependency on `atlas_etl::kjv` at all (not
+/// even via `use` -- checked: the fidelity module now has no such
+/// import).
+mod independent_reader {
+    use super::ExpectedVerse;
+
+    /// Resolves this dataset's own book-name spelling to a canonical
+    /// index, written from scratch (NOT calling
+    /// `atlas_etl::kjv::normalize_book_name`): try a direct canon-table
+    /// match first (covers the overwhelming majority of names verbatim,
+    /// e.g. "Genesis", "Song of Solomon"); failing that, strip a trailing
+    /// " of John" and/or a leading Roman-numeral word (I/II/III) rewritten
+    /// to its Arabic digit, and retry.
+    fn resolve_book_index(raw_name: &str) -> Option<u8> {
+        let name = raw_name.trim();
+        if let Some(id) = atlas_core::canon::resolve_alias(name) {
+            return Some(id.0);
+        }
+
+        let without_suffix = name.strip_suffix(" of John").unwrap_or(name);
+        if without_suffix != name {
+            if let Some(id) = atlas_core::canon::resolve_alias(without_suffix) {
+                return Some(id.0);
+            }
+        }
+
+        if let Some((first, rest)) = without_suffix.split_once(' ') {
+            let arabic = match first {
+                "I" => Some('1'),
+                "II" => Some('2'),
+                "III" => Some('3'),
+                _ => None,
+            };
+            if let Some(digit) = arabic {
+                let candidate = format!("{digit} {rest}");
+                if let Some(id) = atlas_core::canon::resolve_alias(&candidate) {
+                    return Some(id.0);
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Walks the raw JSON structure directly via `serde_json::Value` --
+    /// no typed `#[derive(Deserialize)]` shape shared with
+    /// `atlas_etl::kjv`'s own `RawKjv`/`RawBook`/`RawChapter`/`RawVerse`.
+    /// Returns verses in book/chapter/verse (canon reading) order, one
+    /// per source JSON verse entry, with no cross-referencing against any
+    /// other data (a pure, standalone re-read of the raw bytes).
+    pub fn read(source_kjv_json: &str) -> Result<Vec<ExpectedVerse>, String> {
+        let root: serde_json::Value = serde_json::from_str(source_kjv_json).map_err(|e| format!("independent reader: invalid JSON: {e}"))?;
+        let books = root.get("books").and_then(|b| b.as_array()).ok_or("independent reader: no 'books' array at the JSON root")?;
+
+        let mut out: Vec<(u8, ExpectedVerse)> = Vec::new();
+        for book in books {
+            let name = book.get("name").and_then(|n| n.as_str()).ok_or("independent reader: a book entry has no 'name' string")?;
+            let book_index =
+                resolve_book_index(name).ok_or_else(|| format!("independent reader: book name '{name}' does not resolve to any canonical book"))?;
+            let chapters = book.get("chapters").and_then(|c| c.as_array()).ok_or_else(|| format!("independent reader: book '{name}' has no 'chapters' array"))?;
+            for chapter in chapters {
+                let chapter_num = chapter
+                    .get("chapter")
+                    .and_then(|c| c.as_u64())
+                    .ok_or_else(|| format!("independent reader: a chapter of '{name}' has no numeric 'chapter'"))? as u16;
+                let verses = chapter.get("verses").and_then(|v| v.as_array()).ok_or_else(|| format!("independent reader: {name} {chapter_num} has no 'verses' array"))?;
+                for verse in verses {
+                    let verse_num = verse
+                        .get("verse")
+                        .and_then(|v| v.as_u64())
+                        .ok_or_else(|| format!("independent reader: a verse of {name} {chapter_num} has no numeric 'verse'"))? as u16;
+                    let text = verse
+                        .get("text")
+                        .and_then(|t| t.as_str())
+                        .ok_or_else(|| format!("independent reader: {name} {chapter_num}:{verse_num} has no 'text' string"))?;
+                    out.push((book_index, ExpectedVerse { book_index, chapter: chapter_num, verse: verse_num, text: text.to_string() }));
+                }
+            }
+        }
+        // Canon (book/chapter/verse) order -- the JSON's own book order
+        // already happens to match canon order in the real committed
+        // source (kjv_adapter's own doc comment notes this), but this
+        // reader sorts explicitly rather than assuming it, so it stays
+        // correct even against a source file with reordered books.
+        out.sort_by_key(|(book_index, v)| (*book_index, v.chapter, v.verse));
+        Ok(out.into_iter().map(|(_, v)| v).collect())
+    }
+}
+
+/// Re-derives "expected" via `independent_reader::read` (module doc
+/// comment above -- I2: no shared path with the adapter's own
+/// `atlas_etl::kjv::parse`), then checks `built` against it. Re-deriving
+/// from source on every check (rather than trusting whatever the builder
+/// happened to record) is the point: this is the proof that source and
+/// built graph agree, not a self-consistency check of the builder alone.
 pub fn check_kjv_fidelity(source_kjv_json: &str, built: &Graph) -> Result<(), FidelityViolation> {
-    let (_canon, expected) = kjv_adapter::read_kjv_ordered(source_kjv_json)
-        .map_err(|e| FidelityViolation(format!("source failed to parse: {e}")))?;
+    let expected = independent_reader::read(source_kjv_json).map_err(|e| FidelityViolation(format!("source failed to parse: {e}")))?;
 
     // BIJECTION: every source verse <-> exactly one TextUnit node, and its
     // rendering matches the source text verbatim.
@@ -132,6 +275,12 @@ mod tests {
         { "name": "Genesis", "chapters": [ { "chapter": 1, "verses": [
           { "verse": 1, "text": "In the beginning God created the heaven and the earth." },
           { "verse": 2, "text": "And the earth was without form, and void." }
+        ] } ] },
+        { "name": "I Samuel", "chapters": [ { "chapter": 1, "verses": [
+          { "verse": 1, "text": "Now there was a certain man of Ramathaimzophim." }
+        ] } ] },
+        { "name": "Revelation of John", "chapters": [ { "chapter": 1, "verses": [
+          { "verse": 1, "text": "The Revelation of Jesus Christ." }
         ] } ] }
       ]
     }"#;
@@ -141,6 +290,20 @@ mod tests {
     fn green_on_a_clean_fixture() {
         let (graph, _) = build_graph_from_sources(GOOD_KJV, NO_XREFS).unwrap();
         assert_eq!(check_kjv_fidelity(GOOD_KJV, &graph), Ok(()));
+    }
+
+    #[test]
+    fn independent_reader_resolves_the_same_quirky_book_names_the_adapter_does() {
+        // Pins the SAME three quirky-name cases atlas_etl::kjv's own test
+        // covers (kjv.rs::tests::normalizes_roman_numerals_and_of_john_suffix)
+        // -- proving this independent reader solves the identical problem,
+        // via separate code, not that it happens to dodge the hard cases.
+        let expected = independent_reader::read(GOOD_KJV).unwrap();
+        let books: std::collections::BTreeSet<u8> = expected.iter().map(|v| v.book_index).collect();
+        let gen_idx = atlas_core::canon::resolve_alias("GEN").unwrap().0;
+        let sa1_idx = atlas_core::canon::resolve_alias("1SA").unwrap().0;
+        let rev_idx = atlas_core::canon::resolve_alias("REV").unwrap().0;
+        assert_eq!(books, [gen_idx, sa1_idx, rev_idx].into_iter().collect(), "Genesis / I Samuel -> 1SA / Revelation of John -> REV must all resolve");
     }
 
     #[test]

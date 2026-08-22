@@ -16,6 +16,12 @@ atlas-core = { path = "../atlas-core" }
 # artifacts are deleted and the graph becomes the only build path (P1).
 atlas-etl = { path = "../atlas-etl" }
 anyhow = "1"
+# Fix round 1, I2: used directly (not just transitively via atlas-etl) by
+# fidelity.rs's own independent KJV-JSON reader -- raw serde_json::Value
+# field access, deliberately never the typed atlas_etl::kjv::RawKjv shape,
+# so the fidelity law's "expected" side shares no parsing code with the
+# adapter path it's checking. See fidelity.rs's own module doc comment.
+serde_json = "1"
 
 [dev-dependencies]
 proptest = "1"

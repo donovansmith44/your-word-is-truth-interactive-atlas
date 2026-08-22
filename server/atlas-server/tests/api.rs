@@ -14,25 +14,28 @@ use tower::ServiceExt;
 
 // Batch M-A: `/api/chapter` now sources its verse TEXT from the graph (see
 // handlers::chapter's own doc comment) while places/headings stay on
-// `AtlasData` -- so a test fixture's `GraphState` MUST agree with whatever
+// `AtlasData` -- so a test fixture's graph service MUST agree with whatever
 // `AtlasData` the same `app()` call uses about which chapters exist, or the
 // chapter endpoint silently comes back empty (a real drift bug this exact
 // helper hit once, in this batch's own development). `graph_fixture_for`
 // derives the graph from `data`'s OWN `canon`/`verses` fields
-// (`atlas_graph::GraphState::from_canon_and_verses`) so there is exactly
+// (`atlas_graph::GraphService::from_canon_and_verses`) so there is exactly
 // ONE source of truth per test, never two independently hand-authored
 // fixtures that can drift apart. No cross-references in this shared
 // fixture (`""` xrefs source, valid input -- an empty table, not an
 // error) -- tests that need real `cites` edges build their own richer
 // graph (see `tests/graph_api.rs`, `tests/graph_equivalence.rs`).
-fn graph_fixture_for(data: &AtlasData) -> Arc<atlas_graph::GraphState> {
+// `GraphService` wraps the owner-approved `atlas_graph_types::store` port
+// (fix round 1, C1) -- see `app.rs`'s own doc comment for why it's held
+// concretely (not `Arc<dyn ...>`) in `AppState`.
+fn graph_fixture_for(data: &AtlasData) -> Arc<atlas_graph::GraphService> {
     Arc::new(
-        atlas_graph::GraphState::from_canon_and_verses(&data.canon, &data.verses, "From Verse\tTo Verse\tVotes\t#comment\n")
+        atlas_graph::GraphService::from_canon_and_verses(&data.canon, &data.verses, "From Verse\tTo Verse\tVotes\t#comment\n")
             .expect("fixture graph must build from this AtlasData's own canon+verses"),
     )
 }
 
-fn graph_fixture() -> Arc<atlas_graph::GraphState> {
+fn graph_fixture() -> Arc<atlas_graph::GraphService> {
     graph_fixture_for(&demo_fixture())
 }
 

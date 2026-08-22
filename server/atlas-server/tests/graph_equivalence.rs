@@ -5,25 +5,33 @@
 //! brief requirement 5: "re-implement the OLD /api/chapter handler as a
 //! VIEW over the window query"): it independently reproduces BOTH the
 //! pre-migration gathering logic (`data.verses.get(key)`, per verse, in
-//! order) and the post-migration one (`GraphState::chapter_span` +
-//! `GraphState::window`, the SAME primitive `handlers::chapter` and
+//! order) and the post-migration one (`GraphService::chapter_span` +
+//! `window::window`, the SAME primitive `handlers::chapter` and
 //! `GET /api/text?scope=chapter` both call) over the real compiled/raw
 //! data, and asserts they produce the IDENTICAL sequence of verse texts for
-//! every chapter -- proving the swap changed nothing observable.
+//! every chapter -- proving the swap changed nothing observable. The
+//! actual text/window reads go entirely through
+//! `atlas_graph_types::store::GraphQuery` -- THE PORT (design doc §9a; fix
+//! round 1, C1) -- never a raw `Graph` field, so this equivalence proof is
+//! pinned at the same seam any future backend plugs into.
 
 use std::path::Path;
 
 use atlas_core::data::AtlasData;
-use atlas_graph::{GraphState, WindowDir};
+use atlas_graph::window::{self, WindowDir};
+use atlas_graph::GraphService;
 
 fn load_real_atlas_data() -> AtlasData {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
     AtlasData::load(&dir).expect("data/compiled/*.json must exist -- run `cargo run -p atlas-etl` from server/ first").finish()
 }
 
-fn load_real_graph() -> GraphState {
+fn load_real_graph() -> GraphService {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-    GraphState::build(&dir).expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist (committed real data)")
+    // GraphService::build runs the FIDELITY LAW unconditionally as part of
+    // construction (fix round 1) -- reaching this line already proves it
+    // passed on the real committed KJV source.
+    GraphService::build(&dir).expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law")
 }
 
 /// The OLD `/api/chapter` handler's own text-gathering logic, reproduced
@@ -37,12 +45,18 @@ fn old_chapter_texts(data: &AtlasData, code: &str, chapter: u16, verse_count: u1
     (1..=verse_count).filter_map(|v| data.verses.get(&format!("{code}.{chapter}.{v}")).cloned()).collect()
 }
 
-/// The NEW window-query path -- exactly `GraphState::chapter_span` +
-/// `GraphState::window`, the same two calls both `handlers::chapter` (after
-/// its M-A swap) and `GET /api/text?scope=chapter` make.
-fn new_chapter_texts(graph: &GraphState, book_index: u8, chapter: u16) -> Vec<String> {
+/// The NEW window-query path -- exactly `GraphService::chapter_span` +
+/// `window::window`/`window::render`, the same calls both
+/// `handlers::chapter` (after its M-A swap) and `GET /api/text?scope=chapter`
+/// make. Ref-resolution (`chapter_span`) is `GraphService`'s own
+/// adapter-side companion; the actual window/render reads run against the
+/// opened snapshot through `&dyn GraphQuery` only.
+fn new_chapter_texts(graph: &GraphService, book_index: u8, chapter: u16) -> Vec<String> {
     match graph.chapter_span(book_index, chapter) {
-        Some((start, n)) => graph.window(start, n, WindowDir::Onward).iter().filter_map(|id| graph.render(id).map(str::to_string)).collect(),
+        Some((start, n)) => {
+            let snap = graph.snapshot();
+            window::window(&snap, atlas_graph::kjv_adapter::BIBLE_CORPUS, start, n, WindowDir::Onward).iter().filter_map(|id| window::render(&snap, id)).collect()
+        }
         None => Vec::new(),
     }
 }

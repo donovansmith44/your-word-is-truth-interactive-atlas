@@ -13,23 +13,36 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
 
 use atlas_core::data::AtlasData;
-use atlas_graph::GraphState;
+use atlas_graph::GraphService;
 
 use crate::{graph_handlers, handlers};
 
-/// Batch M-A: the two pieces of server state every handler now draws from
-/// -- the pre-existing `AtlasData` (places/events/headings/etc., still the
-/// source for everything the graph doesn't materialize yet) and the new
-/// `GraphState` (the in-memory Explorable Graph, built once at startup).
-/// `FromRef` lets EVERY pre-existing handler keep its own
-/// `State<Arc<AtlasData>>` extractor completely unchanged -- axum resolves
-/// it from this composed state automatically -- while the new graph
-/// handlers extract `State<Arc<GraphState>>` the same way. Neither state
-/// type needs to know about the other.
+/// Batch M-A (fix round 1, C1): the two pieces of server state every
+/// handler now draws from -- the pre-existing `AtlasData` (places/events/
+/// headings/etc., still the source for everything the graph doesn't
+/// materialize yet) and `GraphService` (this batch's own thin wrapper
+/// around the owner-approved `atlas_graph_types::store` port --
+/// `MemStore`/`MemSnapshot`, implementation #1). Every actual graph QUERY
+/// a handler performs goes through `atlas_graph_types::store::GraphQuery`'s
+/// own trait methods on an opened snapshot (`graph.snapshot()` -- see
+/// `graph_handlers.rs`/`handlers::chapter`), never a raw `Graph` field --
+/// `GraphService` itself is held concretely here only because
+/// `GraphStore`'s own associated type (`type Snapshot: GraphSnapshot`,
+/// owner-authored) is not `dyn`-safe, so there is no single erased handle
+/// type to store both the port AND this batch's own reading-spine
+/// position index under; `window.rs`'s own query logic is what's generic
+/// over the port (`&dyn GraphQuery`), which is the half of the seam a
+/// future backend (M-C's serialized artifact, or a database) actually
+/// needs to slot into with zero change here. `FromRef` lets EVERY
+/// pre-existing handler keep its own `State<Arc<AtlasData>>` extractor
+/// completely unchanged -- axum resolves it from this composed state
+/// automatically -- while the new graph handlers extract
+/// `State<Arc<GraphService>>` the same way. Neither state type needs to
+/// know about the other.
 #[derive(Clone)]
 pub struct AppState {
     pub data: Arc<AtlasData>,
-    pub graph: Arc<GraphState>,
+    pub graph: Arc<GraphService>,
 }
 
 impl FromRef<AppState> for Arc<AtlasData> {
@@ -38,7 +51,7 @@ impl FromRef<AppState> for Arc<AtlasData> {
     }
 }
 
-impl FromRef<AppState> for Arc<GraphState> {
+impl FromRef<AppState> for Arc<GraphService> {
     fn from_ref(s: &AppState) -> Self {
         s.graph.clone()
     }
@@ -80,7 +93,7 @@ impl FromRef<AppState> for Arc<GraphState> {
 /// test in `tests/api.rs`, which asserts the CORS header on both an `/api`
 /// response and a fallback-served response so this ordering can't silently
 /// regress.
-pub fn build(data: Arc<AtlasData>, graph: Arc<GraphState>, static_dir: Option<PathBuf>) -> Router {
+pub fn build(data: Arc<AtlasData>, graph: Arc<GraphService>, static_dir: Option<PathBuf>) -> Router {
     let state = AppState { data, graph };
 
     let api = Router::new()

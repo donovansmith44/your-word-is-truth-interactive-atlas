@@ -39,6 +39,7 @@ dependencies = [
  "atlas-etl",
  "atlas-graph-types",
  "proptest",
+ "serde_json",
 ]
 
 [[package]]
