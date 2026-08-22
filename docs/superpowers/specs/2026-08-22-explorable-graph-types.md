@@ -419,6 +419,20 @@ per-kind invariants)`.
 ## 6. The Explorable runtime contract
 
 ```rust
+/// RELATIONSHIP TO §0 (Explore): Explorable is the CAPABILITY ("can be
+/// explored" — per-node interface, paginated); Explore is the ACT (the
+/// composition algebra of exploring). The bridge: for each edge kind k,
+/// `step k n = union of ALL pages of n.edges(k)` — the trait's calls,
+/// totaled, are the monad's generating Kleisli arrows. The trait is the
+/// interface; the monad is its specification: a correct implementation
+/// induces a lawful Explore, and the monad laws ARE the query layer's
+/// property tests (left identity = popover semantics; right identity =
+/// no phantom hops; associativity = incremental clicking agrees with
+/// the one-shot deep query). Pagination exists only on the trait side —
+/// pages are honest windows over the monad's total frontiers.
+/// card/edge_summary belong to the VIEW side (Discovery → View,
+/// rendered via Presentable), not to the composition algebra.
+///
 /// What every node kind implements; the ONLY thing surfaces consume.
 pub trait Explorable {
     fn card(&self, g: &Graph) -> Card;                       // identity + decisive label + provenance
