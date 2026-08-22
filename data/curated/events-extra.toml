@@ -715,17 +715,19 @@ verses = ["EZR.6.14-15"]
 [[event]]
 id = "ret_susa"
 label = "Nehemiah hears of Jerusalem's ruin in Susa"
-from_year = -445
-to_year = -445
+from_year = -455
+to_year = -455
 places = ["susa"]
 verses = ["NEH.1.1"]
+ref_note = "FIX ROUND 2 (review finding C-1): re-dated -445 -> -455 alongside ret_jerusalem_wall's own -444 -> -454 correction (see that event and chronology-anchors.toml's own nehemiah-wall row) -- Ussher's Annals of the World (paragraph 1226, '3550a AM, 4259 JP, 455 BC') dates Nehemiah's own hearing of the news, in Chisleu, one Julian year before his Nisan commission (paragraph 1227, 454 BC) -- the same Chisleu-to-Nisan/regnal-year-spans-two-calendar-years pattern this atlas's own pre-existing -445/-444 pair already reflected, just on the wrong absolute scale."
 [[event]]
 id = "ret_jerusalem_wall"
 label = "Nehemiah completes Jerusalem's wall"
-from_year = -444
-to_year = -444
+from_year = -454
+to_year = -454
 places = ["jerusalem"]
 verses = ["NEH.2.11", "NEH.6.15"]
+ref_note = "FIX ROUND 2 (review finding C-1): re-dated -444 -> -454. This atlas's own prior -444 was a modern (conventional-Artaxerxes-accession) reckoning mistakenly cited as Ussher's own; Ussher's Annals of the World actually dates both Nehemiah's own commission (paragraph 1227, Neh 2:1-6, '3550c AM, 4260 JP, 454 BC') and the wall's own completion (paragraph 1234, Neh 6:15, same 454 BC marker block) to 454 BC -- see chronology-anchors.toml's own nehemiah-wall row for the full citation and the independent internal-arithmetic cross-check (ezra-returns -467, +13 textual years, Neh 2:1 vs Ezra 7:7-8)."
 
 # --- Jesus' Ministry ---
 # places: brief guessed "bethlehem", but geo ancient.jsonl collides into

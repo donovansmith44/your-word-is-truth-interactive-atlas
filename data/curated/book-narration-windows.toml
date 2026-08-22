@@ -121,8 +121,8 @@ note = "Cyrus's decree through Ezra's own reforms."
 [[window]]
 book = "NEH"
 from_year = -537
-to_year = -433
-note = "The roster of the first return (Nehemiah 7, repeating Ezra 2) through Nehemiah's own second term."
+to_year = -443
+note = "The roster of the first return (Nehemiah 7, repeating Ezra 2) through Nehemiah's own second term. Upper bound -433 -> -443, fix round 2 (review finding C-1): Nehemiah's own wall-completion cluster was re-dated -444 -> -454 (see chronology-anchors.toml's own nehemiah-wall row), carrying the second-term figure with it."
 
 [[window]]
 book = "EST"
@@ -258,9 +258,9 @@ note = "Zechariah's own dated visions (chapters 1-8) begin alongside Haggai's; c
 
 [[window]]
 book = "MAL"
-from_year = -445
-to_year = -430
-note = "Roughly contemporary with/shortly after Nehemiah's own governorship."
+from_year = -455
+to_year = -440
+note = "Roughly contemporary with/shortly after Nehemiah's own governorship. Shifted -445/-430 -> -455/-440, fix round 2 (review finding C-1), to stay synchronized with Nehemiah's own corrected -455/-454 dates -- no compiled event cites MAL yet, so this is a forward-compatibility-only correction, not a live regression fix."
 
 [[window]]
 book = "MAT"

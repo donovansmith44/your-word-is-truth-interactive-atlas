@@ -342,6 +342,14 @@ fn main() -> Result<()> {
     data.book_narration_windows = book_narration_windows;
     validate::run_chronology_anchors(&data.chronology_anchors, &data.events)
         .context("data/compiled/* was NOT written; fix data/curated/chronology-anchors.toml (a bad event_id, or an era_boundary row with no bound event_id)")?;
+    // Fix round 2 (review finding I-2): the fail-loud build-time twin of
+    // narrative.rs's own E1 property test -- see run_chronology_anchor_
+    // equality's own doc comment for why this is a separate check from
+    // run_chronology_anchors above (that one is structural validity only;
+    // this one is the actual "table year == event's own from_year" claim).
+    validate::run_chronology_anchor_equality(&data.chronology_anchors, &data.events).context(
+        "data/compiled/* was NOT written; a non-deferred anchor's table year disagrees with its bound event's own from_year, or a typed ANCHOR_DEFERRALS entry has gone stale",
+    )?;
     validate::run_chronology_windows(&data.events, &data.book_narration_windows).context(
         "data/compiled/* was NOT written; fix the flagged event's own date (with anchor-table justification), add a data/curated/book-narration-windows.toml row for a book with none, or add an atlas_core::chronology::WINDOW_EXEMPTIONS row with a stated reason",
     )?;

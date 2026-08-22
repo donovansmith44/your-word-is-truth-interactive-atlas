@@ -62731,7 +62731,7 @@
     "label": "The roster of priests and Levites; the wall is dedicated",
     "when": {
       "from_year": -537,
-      "to_year": -444
+      "to_year": -454
     },
     "places": [
       "jerusalem"
@@ -62791,7 +62791,7 @@
     "acts_section": null,
     "atlas_section": "Nehemiah pericope (this project's own sectioning, CC0): Nehemiah 12, the roster of priests and Levites 'that went up with Zerubbabel' down through the high priesthood to Nehemiah's own day, and the joyful dedication of the wall with two great companies giving thanks, the singers, and sacrifices heard 'even afar off.'",
     "kjv_superscription": null,
-    "ref_note": "A broad range, disclosed: the chapter's own genealogical roster (12:1-26) explicitly spans from Zerubbabel's own generation (matching the pre-existing return narrative's own -537 opening) down to 'the days of Nehemiah,' before the dedication ceremony itself (12:27-47) at the wall's own completion (-444) -- the same 'broad range, not false precision' standard as ruth.toml, here reflecting a genuinely multi-generational roster rather than a dating uncertainty.",
+    "ref_note": "A broad range, disclosed: the chapter's own genealogical roster (12:1-26) explicitly spans from Zerubbabel's own generation (matching the pre-existing return narrative's own -537 opening) down to 'the days of Nehemiah,' before the dedication ceremony itself (12:27-47) at the wall's own completion (-454; fix round 2, C-1) -- the same 'broad range, not false precision' standard as ruth.toml, here reflecting a genuinely multi-generational roster rather than a dating uncertainty.",
     "order_key": 0
   },
   {
@@ -64450,8 +64450,8 @@
     "id": "ret_susa",
     "label": "Nehemiah hears of Jerusalem's ruin in Susa",
     "when": {
-      "from_year": -445,
-      "to_year": -445
+      "from_year": -455,
+      "to_year": -455
     },
     "places": [
       "susa"
@@ -64465,15 +64465,15 @@
     "acts_section": null,
     "atlas_section": null,
     "kjv_superscription": null,
-    "ref_note": null,
+    "ref_note": "FIX ROUND 2 (review finding C-1): re-dated -445 -> -455 alongside ret_jerusalem_wall's own -444 -> -454 correction (see that event and chronology-anchors.toml's own nehemiah-wall row) -- Ussher's Annals of the World (paragraph 1226, '3550a AM, 4259 JP, 455 BC') dates Nehemiah's own hearing of the news, in Chisleu, one Julian year before his Nisan commission (paragraph 1227, 454 BC) -- the same Chisleu-to-Nisan/regnal-year-spans-two-calendar-years pattern this atlas's own pre-existing -445/-444 pair already reflected, just on the wrong absolute scale.",
     "order_key": 0
   },
   {
     "id": "neh_nehemiah_hears_report",
     "label": "Nehemiah hears of Jerusalem's ruin and prays",
     "when": {
-      "from_year": -445,
-      "to_year": -445
+      "from_year": -455,
+      "to_year": -455
     },
     "places": [
       "susa"
@@ -64496,15 +64496,15 @@
     "acts_section": null,
     "atlas_section": "Nehemiah pericope (this project's own sectioning, CC0 -- no external PD source claimed): Nehemiah 1:2-11, Hanani's own report that Jerusalem's own wall lies broken down and its gates burned, Nehemiah's own days of weeping and fasting, and his own prayer of confession and petition before King Artaxerxes.",
     "kjv_superscription": null,
-    "ref_note": "Same year and place as the pre-existing ret_susa (-445, Susa).",
+    "ref_note": "Same year and place as the pre-existing ret_susa (-455, Susa; fix round 2, C-1).",
     "order_key": 0
   },
   {
     "id": "ret_jerusalem_wall",
     "label": "Nehemiah completes Jerusalem's wall",
     "when": {
-      "from_year": -444,
-      "to_year": -444
+      "from_year": -454,
+      "to_year": -454
     },
     "places": [
       "jerusalem"
@@ -64519,15 +64519,15 @@
     "acts_section": null,
     "atlas_section": null,
     "kjv_superscription": null,
-    "ref_note": null,
+    "ref_note": "FIX ROUND 2 (review finding C-1): re-dated -444 -> -454. This atlas's own prior -444 was a modern (conventional-Artaxerxes-accession) reckoning mistakenly cited as Ussher's own; Ussher's Annals of the World actually dates both Nehemiah's own commission (paragraph 1227, Neh 2:1-6, '3550c AM, 4260 JP, 454 BC') and the wall's own completion (paragraph 1234, Neh 6:15, same 454 BC marker block) to 454 BC -- see chronology-anchors.toml's own nehemiah-wall row for the full citation and the independent internal-arithmetic cross-check (ezra-returns -467, +13 textual years, Neh 2:1 vs Ezra 7:7-8).",
     "order_key": 0
   },
   {
     "id": "neh_artaxerxes_sends_nehemiah",
     "label": "Artaxerxes sends Nehemiah to Jerusalem",
     "when": {
-      "from_year": -444,
-      "to_year": -444
+      "from_year": -454,
+      "to_year": -454
     },
     "places": [
       "susa",
@@ -64551,15 +64551,15 @@
     "acts_section": null,
     "atlas_section": "Nehemiah pericope (this project's own sectioning, CC0): Nehemiah 2:1-10, the king's own notice of Nehemiah's sad countenance in the month Nisan, Nehemiah's own request to be sent to rebuild the city of his fathers' sepulchres, the king's own letters granting timber and safe passage, and Sanballat and Tobiah's own displeasure on hearing of it.",
     "kjv_superscription": null,
-    "ref_note": "Dated to Nisan, 'the twentieth year of Artaxerxes' (2:1), leading directly into the pre-existing ret_jerusalem_wall (-444).",
+    "ref_note": "Dated to Nisan, 'the twentieth year of Artaxerxes' (2:1), leading directly into the pre-existing ret_jerusalem_wall (-454; fix round 2, C-1).",
     "order_key": 0
   },
   {
     "id": "neh_nehemiah_inspects_walls",
     "label": "Nehemiah inspects the walls by night; announces the plan",
     "when": {
-      "from_year": -444,
-      "to_year": -444
+      "from_year": -454,
+      "to_year": -454
     },
     "places": [
       "jerusalem"
@@ -64581,15 +64581,15 @@
     "acts_section": null,
     "atlas_section": "Nehemiah pericope (this project's own sectioning, CC0): Nehemiah 2:12-20, Nehemiah's own secret night inspection of the broken walls and burned gates, and his own announcement to the rulers, priests, and nobles to rise up and build, met with Sanballat, Tobiah, and Geshem's own mockery.",
     "kjv_superscription": null,
-    "ref_note": "Dated to match the pre-existing ret_jerusalem_wall's own opening anchor (2:11, -444), the days immediately following Nehemiah's own arrival.",
+    "ref_note": "Dated to match the pre-existing ret_jerusalem_wall's own opening anchor (2:11, -454; fix round 2, C-1), the days immediately following Nehemiah's own arrival.",
     "order_key": 0
   },
   {
     "id": "neh_builders_roster",
     "label": "The roster of the wall's builders",
     "when": {
-      "from_year": -444,
-      "to_year": -444
+      "from_year": -454,
+      "to_year": -454
     },
     "places": [
       "jerusalem"
@@ -64641,8 +64641,8 @@
     "id": "neh_opposition_and_arms",
     "label": "Opposition mounts; the builders arm themselves",
     "when": {
-      "from_year": -444,
-      "to_year": -444
+      "from_year": -454,
+      "to_year": -454
     },
     "places": [
       "jerusalem"
@@ -64685,8 +64685,8 @@
     "id": "neh_economic_reforms",
     "label": "Nehemiah ends the oppression of the poor",
     "when": {
-      "from_year": -444,
-      "to_year": -444
+      "from_year": -454,
+      "to_year": -454
     },
     "places": [
       "jerusalem"
@@ -64725,8 +64725,8 @@
     "id": "neh_further_opposition_wall_finished",
     "label": "Further plots against Nehemiah; the wall is finished",
     "when": {
-      "from_year": -444,
-      "to_year": -444
+      "from_year": -454,
+      "to_year": -454
     },
     "places": [
       "jerusalem"
@@ -64757,15 +64757,15 @@
     "acts_section": null,
     "atlas_section": "Nehemiah pericope (this project's own sectioning, CC0): Nehemiah 6:1-14, 16-19, Sanballat and Geshem's own repeated attempts to lure Nehemiah away, Sanballat's own open letter of false accusation, the hired prophet Shemaiah's own attempt to frighten Nehemiah into sin, and -- after the wall's own completion -- the surrounding nations' own dismay at the work and Tobiah's own continuing intrigue by letter with the nobles of Judah, his own in-laws.",
     "kjv_superscription": null,
-    "ref_note": "Deliberately excludes only 6:15 itself (the wall's own completion date), the pre-existing ret_jerusalem_wall's own closing anchor (-444) -- verses 16-19 continue this same chapter's own narrative on the far side of that anchor and belong with the surrounding opposition narrative, not a separate container.",
+    "ref_note": "Deliberately excludes only 6:15 itself (the wall's own completion date), the pre-existing ret_jerusalem_wall's own closing anchor (-454; fix round 2, C-1) -- verses 16-19 continue this same chapter's own narrative on the far side of that anchor and belong with the surrounding opposition narrative, not a separate container.",
     "order_key": 0
   },
   {
     "id": "neh_gatekeepers_appointed",
     "label": "Gatekeepers, singers, and Levites appointed over the city",
     "when": {
-      "from_year": -444,
-      "to_year": -444
+      "from_year": -454,
+      "to_year": -454
     },
     "places": [
       "jerusalem"
@@ -64790,8 +64790,8 @@
     "id": "neh_ezra_reads_law",
     "label": "Ezra reads the law; the feast of tabernacles kept",
     "when": {
-      "from_year": -444,
-      "to_year": -444
+      "from_year": -454,
+      "to_year": -454
     },
     "places": [
       "jerusalem"
@@ -64829,8 +64829,8 @@
     "id": "neh_fasting_and_confession",
     "label": "A day of fasting; the Levites' prayer of confession",
     "when": {
-      "from_year": -444,
-      "to_year": -444
+      "from_year": -454,
+      "to_year": -454
     },
     "places": [
       "jerusalem"
@@ -64888,8 +64888,8 @@
     "id": "neh_sealed_covenant",
     "label": "The covenant is sealed",
     "when": {
-      "from_year": -444,
-      "to_year": -444
+      "from_year": -454,
+      "to_year": -454
     },
     "places": [
       "jerusalem"
@@ -64948,8 +64948,8 @@
     "id": "neh_jerusalem_and_judah_settlers",
     "label": "Those who settled in Jerusalem and the towns of Judah",
     "when": {
-      "from_year": -444,
-      "to_year": -444
+      "from_year": -454,
+      "to_year": -454
     },
     "places": [
       "jerusalem"
@@ -64999,6 +64999,58 @@
     "atlas_section": "Nehemiah pericope (this project's own sectioning, CC0): Nehemiah 11, the casting of lots to bring one in ten to dwell in the holy city, the roster of the chief inhabitants of Jerusalem by family, and the towns of Judah and Benjamin the rest of the people settled in.",
     "kjv_superscription": null,
     "ref_note": "Dated to the same general resettlement period as the surrounding chapters.",
+    "order_key": 0
+  },
+  {
+    "id": "neh_nehemiah_second_term_reforms",
+    "label": "Nehemiah's second term: further reforms",
+    "when": {
+      "from_year": -443,
+      "to_year": -443
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "NEH.13.1",
+      "NEH.13.2",
+      "NEH.13.3",
+      "NEH.13.4",
+      "NEH.13.5",
+      "NEH.13.6",
+      "NEH.13.7",
+      "NEH.13.8",
+      "NEH.13.9",
+      "NEH.13.10",
+      "NEH.13.11",
+      "NEH.13.12",
+      "NEH.13.13",
+      "NEH.13.14",
+      "NEH.13.15",
+      "NEH.13.16",
+      "NEH.13.17",
+      "NEH.13.18",
+      "NEH.13.19",
+      "NEH.13.20",
+      "NEH.13.21",
+      "NEH.13.22",
+      "NEH.13.23",
+      "NEH.13.24",
+      "NEH.13.25",
+      "NEH.13.26",
+      "NEH.13.27",
+      "NEH.13.28",
+      "NEH.13.29",
+      "NEH.13.30",
+      "NEH.13.31"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Nehemiah pericope (this project's own sectioning, CC0): Nehemiah 13, the reading of the law that excludes Ammonites and Moabites, Nehemiah's own return from a period back at the Persian court to find Eliashib had given Tobiah a chamber in the temple courts, his own casting out of Tobiah's household goods, his own restoration of the Levites' own portions, his own enforcement of the sabbath against merchants trading on it, and his own confrontation of men who had married foreign wives, closing with his own repeated prayer, 'Remember me, O my God, for good.'",
+    "kjv_superscription": null,
+    "ref_note": "Dated to 'the two and thirtieth year of Artaxerxes' (13:6), the text's own explicit regnal year, twelve years after Nehemiah's own first arrival (-455/-454; fix round 2, C-1) -- a straightforward arithmetic reading, not an independently-attested date.",
     "order_key": 0
   },
   {
@@ -65073,58 +65125,6 @@
     "atlas_section": null,
     "kjv_superscription": null,
     "ref_note": null,
-    "order_key": 0
-  },
-  {
-    "id": "neh_nehemiah_second_term_reforms",
-    "label": "Nehemiah's second term: further reforms",
-    "when": {
-      "from_year": -433,
-      "to_year": -433
-    },
-    "places": [
-      "jerusalem"
-    ],
-    "verses": [
-      "NEH.13.1",
-      "NEH.13.2",
-      "NEH.13.3",
-      "NEH.13.4",
-      "NEH.13.5",
-      "NEH.13.6",
-      "NEH.13.7",
-      "NEH.13.8",
-      "NEH.13.9",
-      "NEH.13.10",
-      "NEH.13.11",
-      "NEH.13.12",
-      "NEH.13.13",
-      "NEH.13.14",
-      "NEH.13.15",
-      "NEH.13.16",
-      "NEH.13.17",
-      "NEH.13.18",
-      "NEH.13.19",
-      "NEH.13.20",
-      "NEH.13.21",
-      "NEH.13.22",
-      "NEH.13.23",
-      "NEH.13.24",
-      "NEH.13.25",
-      "NEH.13.26",
-      "NEH.13.27",
-      "NEH.13.28",
-      "NEH.13.29",
-      "NEH.13.30",
-      "NEH.13.31"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": "Nehemiah pericope (this project's own sectioning, CC0): Nehemiah 13, the reading of the law that excludes Ammonites and Moabites, Nehemiah's own return from a period back at the Persian court to find Eliashib had given Tobiah a chamber in the temple courts, his own casting out of Tobiah's household goods, his own restoration of the Levites' own portions, his own enforcement of the sabbath against merchants trading on it, and his own confrontation of men who had married foreign wives, closing with his own repeated prayer, 'Remember me, O my God, for good.'",
-    "kjv_superscription": null,
-    "ref_note": "Dated to 'the two and thirtieth year of Artaxerxes' (13:6), the text's own explicit regnal year, twelve years after Nehemiah's own first arrival (-445/-444) -- a straightforward arithmetic reading, not an independently-attested date.",
     "order_key": 0
   },
   {

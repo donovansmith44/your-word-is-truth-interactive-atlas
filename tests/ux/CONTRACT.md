@@ -1167,7 +1167,13 @@ Notes:
   recorded `shipped_value` instead and surfaced in a separate,
   always-visible `deferred` list (never silently, never counted as a
   violation); a STALE deferral (the event re-dated without updating the
-  deferral entry) fails loud exactly like a real violation.
+  deferral entry) fails loud exactly like a real violation. FIX ROUND 2
+  (review finding I-2): this is no longer test-time-only -- `atlas_core::
+  chronology::anchor_equality_check` is the SAME shared predicate both E1
+  above AND `atlas_etl::validate::run_chronology_anchor_equality` (a new
+  fail-loud `cargo run -p atlas-etl` build gate) call, so "the table and
+  the data agree" is enforced on every build, not only when tests happen
+  to run -- two independent LAYERS, one algorithm.
   E2 WINDOW-ADHERENCE -- every compiled dated event obeys its own witness
   books' windows, asserted against the COMPILED JSON on disk (independent
   of the ETL-time validator's own in-process run -- a regression in either
@@ -1191,7 +1197,13 @@ Notes:
   `1ki_solomon_gibeon`'s own PRIOR/FOLLOWING are verified, against the real
   compiled data, to be `1ki_davids_charge`/`1ki_hiram_temple_prep`
   (Solomon-era); `df_ramah`'s own are `theo-157`/`df_nob` (Saul-
-  persecution-era) -- zero `df_*` ids anywhere near the Gibeon dream.
+  persecution-era) -- zero `df_*` ids anywhere near the Gibeon dream. The
+  ID-equality assertions are the decisive check (table-agnostic by
+  construction); FIX ROUND 2 (review finding I-1) additionally derives E5's
+  own numeric-window bounds from `chronology_anchors` at test time
+  (`solomon-crowned`/`david-hebron`) rather than a hand-typed copy of the
+  table's own current years -- the same "zero hardcoded years" rule E1-E4
+  already followed, now applied to E5's own secondary bounds too.
 
   ZERO scale-debate register anywhere in any of the above (inerrancy
   doctrine, unchanged): every disclosed adjacency is stated as "this

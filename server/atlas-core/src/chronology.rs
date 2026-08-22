@@ -81,8 +81,30 @@
 //! honest (matches the event's real current date) rather than either
 //! failing loud (a real E1 violation) or silently passing as if the
 //! canonical value were already live.
+//!
+//! FIX ROUND 2 (independent review, 2026-08-22): two more findings closed
+//! here. C-1 (Critical): `nehemiah-wall`'s own shipped "-444, Ussher's
+//! Annals of the World" was itself a mis-cited MODERN figure (the
+//! controller's own brief seeded it, since ledgered by the controller
+//! against the brief, not this batch) -- the real Ussher figure is -454
+//! (Annals paragraphs 1227/1234), confirmed against two independently
+//! uploaded primary-text scans AND this atlas's own internal arithmetic
+//! (ezra-returns -467 + Nehemiah's own textual 13-year gap, Neh 2:1 vs
+//! Ezra 7:7-8). Unlike the four `ANCHOR_DEFERRALS` rows above, this was a
+//! citation-accuracy correction to a value that was never genuinely
+//! Ussher's own, not disclosed W2-era drift on an already-correctly-cited
+//! figure -- so `ret_jerusalem_wall` and its own dependents were HAND-
+//! RE-DATED this round, not deferred; `nehemiah-wall` carries no
+//! `ANCHOR_DEFERRALS` entry. I-2 (Important): `anchor_equality_check`
+//! below is the shared predicate BOTH `atlas_etl::validate::
+//! run_chronology_anchor_equality` (the fail-loud ETL build gate, new this
+//! round) and `narrative.rs`'s own E1 property test now call -- one
+//! algorithm, two independent LAYERS, the same design `window_violations`/
+//! `era_boundary_violations` already established, so "the table and the
+//! data agree" is enforced on every build, not only when `cargo test`
+//! happens to run.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::data::{AtlasData, BookNarrationWindow, ChronologyAnchor, Event};
 use crate::refs::VerseId;
@@ -212,12 +234,100 @@ pub const ANCHOR_DEFERRALS: &[AnchorDeferral] = &[
         anchor_id: "ezra-returns",
         event_id: "ezr_ezra_arrives",
         shipped_value: -458,
-        reason: "-458 sits within the modern-scholarly ~457 BC spread, not Ussher's own actual original figure (467 BC -- a since-superseded Persian-regnal assumption most modern treatments replace with 457 instead; this atlas's own prior -458 sat within THAT spread, not Ussher's own). Resolves when HOTFIX-7's single-feed migration re-dates ezr_ezra_arrives (and its own arrival-cluster dependents) directly from this table.",
+        reason: "-458 sits within the modern-scholarly ~457 BC spread, not Ussher's own actual original figure (467 BC -- a since-superseded Persian-regnal assumption most modern treatments replace with 457 instead; this atlas's own prior -458 sat within THAT spread, not Ussher's own). Resolves when HOTFIX-7's single-feed migration re-dates ezr_ezra_arrives (and its own arrival-cluster dependents) directly from this table. CITATION (fix round 2, review finding I-3): Ussher's Annals of the World, paragraph 1202 ('3537b AM, 4247 JP, 467 BC') -- see chronology-anchors.toml's own ezra-returns row for the full quotation and source detail.",
     },
 ];
 
 pub fn anchor_deferral(anchor_id: &str) -> Option<&'static AnchorDeferral> {
     ANCHOR_DEFERRALS.iter().find(|d| d.anchor_id == anchor_id)
+}
+
+// ---------------------------------------------------------------------
+// anchor_equality_check -- the SHARED anchor-equality predicate (fix
+// round 2, review finding I-2)
+// ---------------------------------------------------------------------
+
+/// One anchor-equality failure: either a non-deferred anchor's own `year`
+/// disagrees with its bound event's own compiled `from_year`
+/// (`is_stale_deferral == false`), or a DEFERRED anchor's own registered
+/// `ANCHOR_DEFERRALS::shipped_value` has gone stale -- the event was
+/// re-dated without updating/removing the deferral entry
+/// (`is_stale_deferral == true`). Both are real defects, reported the
+/// same way (never silently passed), just worded differently by the
+/// caller.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AnchorEqualityViolation {
+    pub anchor_id: String,
+    pub event_id: String,
+    pub table_year: Year,
+    pub event_year: Year,
+    pub is_stale_deferral: bool,
+}
+
+/// One entry in the (never-silent) deferral report: an anchor that is NOT
+/// a violation -- its `ANCHOR_DEFERRALS` entry's own `shipped_value` still
+/// honestly matches the event's real current date -- but is also not a
+/// plain equality pass; reported by name rather than folded silently into
+/// either bucket.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AnchorDeferralReport {
+    pub anchor_id: String,
+    pub event_id: String,
+    pub canonical_year: Year,
+    pub shipped_value: Year,
+}
+
+/// THE shared anchor-equality predicate -- consulted by BOTH
+/// `atlas_etl::validate::run_chronology_anchor_equality` (the fail-loud
+/// ETL build gate) and `narrative.rs`'s own E1 property test (the
+/// compiled-JSON-independent layer), so "the table and the data agree" is
+/// enforced on every build, not only when `cargo test` happens to run --
+/// the SAME "one predicate, two independent LAYERS" design
+/// `window_violations`/`era_boundary_violations` already established, not
+/// two hand-written copies that could silently drift apart (this module's
+/// own doc comment, fix round 1 finding, has the original story).
+///
+/// Every anchor with a bound `event_id` is checked (a dangling `event_id`
+/// is `run_chronology_anchors`'s own job to report -- silently skipped
+/// here rather than duplicated). A deferred anchor never contributes a
+/// plain-equality violation; it contributes either a `AnchorDeferralReport`
+/// (honest) or a stale-deferral `AnchorEqualityViolation` (dishonest).
+pub fn anchor_equality_check(anchors: &[ChronologyAnchor], events: &[Event]) -> (Vec<AnchorEqualityViolation>, Vec<AnchorDeferralReport>) {
+    let by_id: HashMap<&str, &Event> = events.iter().map(|e| (e.id.as_str(), e)).collect();
+    let mut violations = Vec::new();
+    let mut deferred = Vec::new();
+
+    for a in anchors {
+        let Some(eid) = a.event_id.as_deref() else { continue };
+        let Some(e) = by_id.get(eid) else { continue };
+
+        if let Some(def) = anchor_deferral(&a.id) {
+            if e.when.from_year != def.shipped_value {
+                violations.push(AnchorEqualityViolation {
+                    anchor_id: a.id.clone(),
+                    event_id: eid.to_string(),
+                    table_year: def.shipped_value,
+                    event_year: e.when.from_year,
+                    is_stale_deferral: true,
+                });
+            } else {
+                deferred.push(AnchorDeferralReport { anchor_id: a.id.clone(), event_id: eid.to_string(), canonical_year: a.year, shipped_value: def.shipped_value });
+            }
+            continue;
+        }
+
+        if e.when.from_year != a.year {
+            violations.push(AnchorEqualityViolation {
+                anchor_id: a.id.clone(),
+                event_id: eid.to_string(),
+                table_year: a.year,
+                event_year: e.when.from_year,
+                is_stale_deferral: false,
+            });
+        }
+    }
+
+    (violations, deferred)
 }
 
 // ---------------------------------------------------------------------
@@ -639,5 +749,72 @@ mod tests {
         // count together, not one without the other.
         let ids: Vec<&str> = ANCHOR_DEFERRALS.iter().map(|d| d.anchor_id).collect();
         assert_eq!(ids, vec!["jerusalem-falls", "cyrus-decree", "temple-finished", "ezra-returns"]);
+    }
+
+    // --- anchor_equality_check (fix round 2, I-2 -- the shared predicate
+    // both the ETL gate and E1 now call) ---------------------------------
+
+    fn anchor(id: &str, year: Year, event_id: Option<&str>, era_boundary: bool) -> ChronologyAnchor {
+        ChronologyAnchor { id: id.into(), label: id.into(), year, event_id: event_id.map(String::from), era_boundary, source: "test".into(), note: None }
+    }
+
+    #[test]
+    fn red_then_green_plain_anchor_equality() {
+        let anchors = vec![anchor("solomon-crowned", -1015, Some("1ki_solomon_anointed"), false)];
+
+        // RED: table and event disagree.
+        let wrong = vec![event("1ki_solomon_anointed", -1016, -1016, &[])];
+        let (violations, deferred) = anchor_equality_check(&anchors, &wrong);
+        assert!(deferred.is_empty());
+        assert_eq!(violations.len(), 1);
+        assert!(!violations[0].is_stale_deferral);
+        assert_eq!(violations[0].anchor_id, "solomon-crowned");
+        assert_eq!(violations[0].table_year, -1015);
+        assert_eq!(violations[0].event_year, -1016);
+
+        // GREEN: table and event agree.
+        let right = vec![event("1ki_solomon_anointed", -1015, -1015, &[])];
+        let (violations, deferred) = anchor_equality_check(&anchors, &right);
+        assert!(violations.is_empty());
+        assert!(deferred.is_empty());
+    }
+
+    #[test]
+    fn a_deferred_anchor_with_an_honest_shipped_value_is_reported_not_violated() {
+        // Mirrors the real jerusalem-falls row: table year -588, deferral's
+        // own recorded shipped_value -586, event still honestly at -586.
+        let anchors = vec![anchor("jerusalem-falls", -588, Some("exl_jerusalem"), false)];
+        let events = vec![event("exl_jerusalem", -586, -586, &[])];
+        let (violations, deferred) = anchor_equality_check(&anchors, &events);
+        assert!(violations.is_empty(), "an honest deferral must never be reported as a violation");
+        assert_eq!(deferred.len(), 1);
+        assert_eq!(deferred[0].anchor_id, "jerusalem-falls");
+        assert_eq!(deferred[0].canonical_year, -588);
+        assert_eq!(deferred[0].shipped_value, -586);
+    }
+
+    #[test]
+    fn a_stale_deferral_fails_loud_like_a_real_violation() {
+        // The event moved (e.g. a future hand-edit) without updating the
+        // ANCHOR_DEFERRALS entry -- the deferral's own shipped_value claim
+        // is now dishonest, which must fail loud, never silently pass.
+        let anchors = vec![anchor("jerusalem-falls", -588, Some("exl_jerusalem"), false)];
+        let events = vec![event("exl_jerusalem", -580, -580, &[])]; // neither -588 nor the deferral's own -586
+        let (violations, deferred) = anchor_equality_check(&anchors, &events);
+        assert!(deferred.is_empty());
+        assert_eq!(violations.len(), 1);
+        assert!(violations[0].is_stale_deferral);
+        assert_eq!(violations[0].table_year, -586, "a stale-deferral violation reports the deferral's own shipped_value, not the anchor's canonical year");
+        assert_eq!(violations[0].event_year, -580);
+    }
+
+    #[test]
+    fn an_unbound_anchor_and_a_dangling_event_id_are_both_silently_skipped() {
+        // Structural validity (dangling event_id) is run_chronology_anchors's
+        // own job -- duplicating that error here would be noise, not signal.
+        let anchors = vec![anchor("exodus", -1491, None, false), anchor("ghost", -100, Some("does-not-exist"), false)];
+        let (violations, deferred) = anchor_equality_check(&anchors, &[]);
+        assert!(violations.is_empty());
+        assert!(deferred.is_empty());
     }
 }

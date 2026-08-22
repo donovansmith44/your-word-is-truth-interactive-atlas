@@ -1059,6 +1059,47 @@ pub fn run_chronology_anchors(anchors: &[ChronologyAnchor], events: &[Event]) ->
     bail!("chronology-anchor validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
+/// Batch HOTFIX-6 fix round 2 (review finding I-2): the fail-loud ETL-time
+/// twin of `narrative.rs`'s own E1 property test. Before this function
+/// existed, "the table and the data agree" was enforced ONLY at `cargo
+/// test` time -- a curator typo, or a merge/rename that silently drifted a
+/// bound event's `from_year` away from its anchor, would still let `cargo
+/// run -p atlas-etl` succeed and write `data/compiled/*` normally. Calls
+/// the SAME `atlas_core::chronology::anchor_equality_check` predicate E1
+/// uses (two independent LAYERS -- in-process build-time state here,
+/// compiled-JSON-on-disk there -- never two hand-written copies that could
+/// silently drift apart, the identical reasoning `run_chronology_windows`/
+/// `run_era_boundaries` already established for their own shared
+/// predicates). A stale deferral (an `ANCHOR_DEFERRALS` entry whose
+/// recorded `shipped_value` no longer matches its event's real current
+/// date) fails loud exactly like a real violation -- a deferral is a
+/// disclosed, TIME-BOUNDED gap, never a license to silently drift further.
+pub fn run_chronology_anchor_equality(anchors: &[ChronologyAnchor], events: &[Event]) -> Result<()> {
+    let (violations, _deferred) = atlas_core::chronology::anchor_equality_check(anchors, events);
+    if violations.is_empty() {
+        return Ok(());
+    }
+    let mut lines: Vec<String> = violations
+        .iter()
+        .map(|v| {
+            if v.is_stale_deferral {
+                format!(
+                    "anchor '{}': STALE DEFERRAL -- ANCHOR_DEFERRALS records shipped_value {}, but bound event '{}''s own from_year is now {} (re-dated without updating/removing the deferral entry?)",
+                    v.anchor_id, v.table_year, v.event_id, v.event_year
+                )
+            } else {
+                format!(
+                    "anchor '{}': table year {} != bound event '{}''s own from_year {} -- fix the date (with anchor-table justification) or register a typed ANCHOR_DEFERRALS entry if this is genuinely time-bounded drift pending HOTFIX-7",
+                    v.anchor_id, v.table_year, v.event_id, v.event_year
+                )
+            }
+        })
+        .collect();
+    lines.sort();
+    let joined = lines.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("chronology anchor-equality validation failed with {} error(s):\n{}", violations.len(), joined);
+}
+
 /// Batch HOTFIX-6: the ERA-WINDOW VALIDATOR itself -- the permanent,
 /// fail-loud guard the owner's own "i'm sure these errors are graph-wide"
 /// assertion earns. `atlas_core::chronology`'s own module doc comment has

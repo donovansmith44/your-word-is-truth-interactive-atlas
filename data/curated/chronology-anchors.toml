@@ -14,6 +14,16 @@
 # own reports already use freely). Stated positively, no scale-debate
 # register (owner's inerrancy doctrine, KJV-inerrancy-directive).
 #
+# FIX ROUND 2 UPDATE (2026-08-22): the "not consulted/quoted directly"
+# claim above stopped being universally true this round. Independent
+# review finding C-1 required actually reading Ussher's own prose (with
+# paragraph numbers) to settle the nehemiah-wall anchor's own citation
+# accuracy -- see that row and ezra-returns below, both now carrying a
+# real paragraph-numbered quotation, and LICENSES.md's own new "Ussher's
+# Annals of the World" section. Every OTHER row in this table is
+# unaffected -- still the bare-numeric-cross-check convention described
+# above.
+#
 # SCHEMA (forward-compatible, per the controller's own "single-feed
 # chronology" end-state note, 2026-08-22 -- a future HOTFIX-7 migrates event
 # date AUTHORING to resolve from this table, never re-shaping it):
@@ -257,15 +267,16 @@ label = "Ezra's commission and return to Jerusalem"
 year = -467
 event_id = "ezr_ezra_arrives"
 source = "Ussher's Annals of the World (1658)"
-note = "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- ezr_ezra_arrives (and its own arrival-cluster dependents, ezr_journey_to_jerusalem/ezr_ezras_prayer/ezr_assembly_repents) still ship -458 today, which sits within the modern-scholarly ~457 BC spread, not Ussher's own actual original figure (467 BC, a since-superseded Persian-regnal assumption most modern treatments replace with 457 instead) -- not re-dated by hand per the owner's own sequencing redirect. Never an era_boundary anchor, so no companion structural row."
+note = "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- ezr_ezra_arrives (and its own arrival-cluster dependents, ezr_journey_to_jerusalem/ezr_ezras_prayer/ezr_assembly_repents) still ship -458 today, which sits within the modern-scholarly ~457 BC spread, not Ussher's own actual original figure (467 BC, a since-superseded Persian-regnal assumption most modern treatments replace with 457 instead) -- not re-dated by hand per the owner's own sequencing redirect. Never an era_boundary anchor, so no companion structural row. CITATION (fix round 2, review finding I-3): James Ussher, The Annals of the World (1658; cited here via the Larry & Marion Pierce paragraph-numbered English text, archive.org/details/james-usher-annals-of-the-world and the independently cross-checked archive.org/details/AnnalsOfTheWorld, both retrieved 2026-08-22), paragraph 1202 (marginal date '3537b AM, 4247 JP, 467 BC'): 'Ezra the priest... obtained permission from Artaxerxes the king... to resettle the Jewish state and to reform the religion at Jerusalem... Ezr 7:11-26.' Both scans agree word for word."
 
 [[anchor]]
 id = "nehemiah-wall"
 label = "Nehemiah completes Jerusalem's wall"
-year = -444
+year = -454
 event_id = "ret_jerusalem_wall"
 era_boundary = true
 source = "Ussher's Annals of the World (1658)"
+note = "FIX ROUND 2, CRITICAL FINDING C-1 (independent review, 2026-08-22): this row previously read -444, citing 'Ussher's Annals of the World' -- but -444 is a MODERN reckoning (Artaxerxes' 20th year from the conventional 465/464 BC accession), not Ussher's own actual figure, and the controller's own brief (whose requirement-1 example list originally seeded '-444') has disclosed that seed as its own error, ledgered against the brief, not this batch. TWO independent, doctrine-clean derivations both land on -454: (a) PRIMARY SOURCE -- Ussher's Annals, paragraph 1227 (marginal date '3550c AM, 4260 JP, 454 BC'): 'In the same 20th year of the king, in the month Nisan, Nehemiah's turn came to serve as cupbearer... and obtained permission from the king to be the governor of Judah and to rebuild Jerusalem. Neh 2:1-6.' Paragraph 1234 (same '454 BC' marker block): 'the wall was finished in 52 days, on the 25th day of the 6th month called Elul' (Neh 6:15, this anchor's own second citation). Confirmed word-for-word identical against TWO independently uploaded archive.org scans (archive.org/details/james-usher-annals-of-the-world and archive.org/details/AnnalsOfTheWorld, both retrieved 2026-08-22), the same two-independent-copies standard LICENSES.md already applies to Robertson/Crockett -- see 'Ussher's Annals of the World' there. (b) INTERNAL ARITHMETIC on this atlas's own declared scale: ezra-returns (above) = -467, Artaxerxes' 7th year (Ezra 7:7-8); Nehemiah's own commission is explicitly the SAME king's 20th year (Neh 2:1), 13 years later (uncontested across chronological schools) -- (-467) - 13 = -454. Both paths agree exactly; shipped with both cited, per the controller's own tie-break rule. The bound event (ret_jerusalem_wall) and its own dependents (ret_susa and the neh_* cluster in data/curated/passages/nehemiah.toml) were HAND-RE-DATED this round (not deferred) -- this is a citation-accuracy correction to a value that was never genuinely Ussher's own in the first place, not W2-era scholarly drift of an already-correctly-cited figure, so the ANCHOR_DEFERRALS/HOTFIX-7-sequencing reasoning above does not apply here."
 
 [[anchor]]
 id = "passion"

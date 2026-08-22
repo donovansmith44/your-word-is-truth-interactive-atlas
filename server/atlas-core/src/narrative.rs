@@ -942,44 +942,44 @@ mod tests {
         let bound: Vec<&crate::data::ChronologyAnchor> = d.chronology_anchors.iter().filter(|a| a.event_id.is_some()).collect();
         assert!(bound.len() >= 15, "expected the real curated anchor table to bind well over 15 rows to real events, got {}", bound.len());
 
-        let mut violations: Vec<String> = Vec::new();
-        let mut deferred: Vec<String> = Vec::new();
-        for a in &bound {
-            let eid = a.event_id.as_deref().unwrap();
-            let Some(e) = d.event_by_id(eid) else {
-                violations.push(format!("anchor '{}': bound event_id '{eid}' does not exist in the compiled event set", a.id));
-                continue;
-            };
-            if let Some(def) = crate::chronology::anchor_deferral(&a.id) {
-                if e.when.from_year != def.shipped_value {
-                    violations.push(format!(
-                        "anchor '{}': STALE DEFERRAL -- ANCHOR_DEFERRALS records shipped_value {}, but compiled event '{eid}''s own from_year is now {} (re-dated without updating/removing the deferral entry?)",
-                        a.id, def.shipped_value, e.when.from_year
-                    ));
-                } else {
-                    deferred.push(format!("'{}' (canonical {}, event '{eid}' currently {}, DEFERRED to HOTFIX-7)", a.id, a.year, def.shipped_value));
-                }
-                continue;
-            }
-            if e.when.from_year != a.year {
-                violations.push(format!("anchor '{}': table year {} != compiled event '{eid}''s own from_year {}", a.id, a.year, e.when.from_year));
-            }
-        }
+        // Fix round 2 (review finding I-2): calls the SAME
+        // `atlas_core::chronology::anchor_equality_check` predicate
+        // `atlas_etl::validate::run_chronology_anchor_equality` now enforces
+        // at ETL build time -- one algorithm, two independent LAYERS
+        // (compiled-JSON-on-disk here, in-process ETL state there), not two
+        // hand-written copies that could silently drift apart.
+        let (violations, deferred) = crate::chronology::anchor_equality_check(&d.chronology_anchors, &d.events);
 
+        let deferred_strings: Vec<String> =
+            deferred.iter().map(|r| format!("'{}' (canonical {}, event '{}' currently {}, DEFERRED to HOTFIX-7)", r.anchor_id, r.canonical_year, r.event_id, r.shipped_value)).collect();
         assert_eq!(
             deferred.len(),
             4,
             "expected exactly 4 typed deferrals (jerusalem-falls/cyrus-decree/temple-finished/ezra-returns) visible here, got {}: {:?} -- this count is deliberate, not a floor; update it together with ANCHOR_DEFERRALS, never silently",
             deferred.len(),
-            deferred
+            deferred_strings
         );
+
+        let violation_strings: Vec<String> = violations
+            .iter()
+            .map(|v| {
+                if v.is_stale_deferral {
+                    format!(
+                        "anchor '{}': STALE DEFERRAL -- ANCHOR_DEFERRALS records shipped_value {}, but compiled event '{}''s own from_year is now {} (re-dated without updating/removing the deferral entry?)",
+                        v.anchor_id, v.table_year, v.event_id, v.event_year
+                    )
+                } else {
+                    format!("anchor '{}': table year {} != compiled event '{}''s own from_year {}", v.anchor_id, v.table_year, v.event_id, v.event_year)
+                }
+            })
+            .collect();
         assert!(
-            violations.is_empty(),
+            violation_strings.is_empty(),
             "E1 anchor-equality violated for {} row(s) (this list never includes the {} typed deferrals reported separately above -- {:?}):\n{}",
-            violations.len(),
+            violation_strings.len(),
             deferred.len(),
-            deferred,
-            violations.join("\n")
+            deferred_strings,
+            violation_strings.join("\n")
         );
     }
 
@@ -1082,6 +1082,15 @@ mod tests {
         );
     }
 
+    /// Fix round 2 (review finding I-1): a small lookup, not a hardcoded
+    /// copy -- E5's own numeric-window assertions below derive their
+    /// bounds from `chronology_anchors` at test time, the same "zero
+    /// hardcoded years" rule E1-E4 already follow, rather than carrying a
+    /// hand-typed copy of what the table currently says.
+    fn anchor_year(d: &AtlasData, id: &str) -> crate::time::Year {
+        d.chronology_anchors.iter().find(|a| a.id == id).unwrap_or_else(|| panic!("no chronology anchor with id '{id}'")).year
+    }
+
     /// E5 -- the owner's own named case, red-then-green, ON TOP of the
     /// properties above (Amendment E's own explicit instruction: "not
     /// instead of them"). RED before this batch's own df_* re-date:
@@ -1107,8 +1116,22 @@ mod tests {
         assert_eq!(following.id, "1ki_hiram_temple_prep", "FOLLOWING must be Solomon's own temple preparations with Hiram (-1013), Solomon-era");
         let prior_year = d.event_by_id(&prior.id).unwrap().when.from_year;
         let following_year = d.event_by_id(&following.id).unwrap().when.from_year;
-        assert!((-1017..=-1010).contains(&prior_year), "PRIOR '{}' ({prior_year}) must fall within Solomon's own early reign, not the Saul-persecution era", prior.id);
-        assert!((-1017..=-1010).contains(&following_year), "FOLLOWING '{}' ({following_year}) must fall within Solomon's own early reign, not the Saul-persecution era", following.id);
+        // Bound derived from the table's own `solomon-crowned` anchor, +/- a
+        // small fixed tolerance (a test-design constant, not a copy of a
+        // table YEAR) -- comfortably holds both real neighbor dates while
+        // staying far short of the Saul-persecution era, ~40-50 years away.
+        let solomon_crowned = anchor_year(&d, "solomon-crowned");
+        let tolerance = 5;
+        assert!(
+            (solomon_crowned - tolerance..=solomon_crowned + tolerance).contains(&prior_year),
+            "PRIOR '{}' ({prior_year}) must fall within {tolerance} years of solomon-crowned ({solomon_crowned}), not the Saul-persecution era",
+            prior.id
+        );
+        assert!(
+            (solomon_crowned - tolerance..=solomon_crowned + tolerance).contains(&following_year),
+            "FOLLOWING '{}' ({following_year}) must fall within {tolerance} years of solomon-crowned ({solomon_crowned}), not the Saul-persecution era",
+            following.id
+        );
     }
 
     /// E5 continued -- the SAME case from `df_ramah`'s own side: its
@@ -1133,7 +1156,11 @@ mod tests {
         assert_eq!(following.id, "df_nob", "FOLLOWING must be the chain's own next leg, df_nob (-1061)");
         let prior_year = d.event_by_id(&prior.id).unwrap().when.from_year;
         let following_year = d.event_by_id(&following.id).unwrap().when.from_year;
-        assert!(prior_year <= -1055, "PRIOR '{}' ({prior_year}) must be at or before the Saul-persecution/united-monarchy transition", prior.id);
-        assert!(following_year <= -1055, "FOLLOWING '{}' ({following_year}) must be Saul-persecution-era, not Solomon-era", following.id);
+        // Bound derived from the table's own `david-hebron` anchor -- the
+        // Saul-persecution/united-monarchy transition point, exactly the
+        // boundary this test's own name asserts against.
+        let david_hebron = anchor_year(&d, "david-hebron");
+        assert!(prior_year <= david_hebron, "PRIOR '{}' ({prior_year}) must be at or before the Saul-persecution/united-monarchy transition (david-hebron, {david_hebron})", prior.id);
+        assert!(following_year <= david_hebron, "FOLLOWING '{}' ({following_year}) must be Saul-persecution-era, not Solomon-era (at or before david-hebron, {david_hebron})", following.id);
     }
 }

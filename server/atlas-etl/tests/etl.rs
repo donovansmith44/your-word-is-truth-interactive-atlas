@@ -2023,6 +2023,34 @@ fn run_chronology_anchors_valid_table_passes() {
     assert!(result.is_ok(), "{:?}", result.err());
 }
 
+// --- run_chronology_anchor_equality (fix round 2, review finding I-2) ---
+
+#[test]
+fn run_chronology_anchor_equality_matching_table_and_event_passes() {
+    let anchors = [anchor("a1", 100, Some("e1"), false)];
+    let events = vec![chronology_event("e1", "e1", 100, "MAT", 1, 1)];
+    let result = atlas_etl::validate::run_chronology_anchor_equality(&anchors, &events);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+#[test]
+fn run_chronology_anchor_equality_disagreeing_table_and_event_fails_naming_both_years() {
+    let anchors = [anchor("nehemiah-wall", -454, Some("ret_jerusalem_wall"), true)];
+    let events = vec![chronology_event("ret_jerusalem_wall", "Nehemiah completes Jerusalem's wall", -444, "NEH", 6, 15)];
+    let err = atlas_etl::validate::run_chronology_anchor_equality(&anchors, &events).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("nehemiah-wall"), "{msg}");
+    assert!(msg.contains("-454"), "{msg}");
+    assert!(msg.contains("-444"), "{msg}");
+}
+
+#[test]
+fn run_chronology_anchor_equality_is_a_noop_for_an_unbound_anchor() {
+    let anchors = [anchor("exodus", -1491, None, false)];
+    let result = atlas_etl::validate::run_chronology_anchor_equality(&anchors, &[]);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
 #[test]
 fn run_chronology_windows_event_outside_its_book_window_fails_naming_it() {
     // The owner's own case, synthetically reproduced: df_ramah's own

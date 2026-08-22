@@ -25,6 +25,7 @@ file is the detailed version of record.
 | Catechism verse mapping ([brain-fuel/catechism](https://github.com/brain-fuel/catechism)) | No license file — used by the project owner's explicit direction (see "Batch F2" below) | Redistributed — canonicalized and compiled into `catechism.json` (`CatechismItem.questions`) |
 | A.T. Robertson, *A Harmony of the Gospels for Students of the Life of Christ* (1922) | Public domain (published 1922, USA; copyright notice reads "COPYRIGHT, 1922, BY HARPER & BROTHERS") | Not redistributed as text — section titles/numbers and parallel-account groupings consulted as PROVENANCE for our own curated `event-witnesses.toml`/`events-extra.toml` fields (`robertson_section`, `ref_note`); every displayed event title/date/verse citation is independently authored (CC0) or Theographic-credited, per the mapping below |
 | William Day Crockett, *A Harmony of the Books of Samuel, Kings and Chronicles* (1897) | Public domain (published 1897, USA; title page reads "Copyright, 1897, William Day Crockett") | Not redistributed as text — section numbers/titles and parallel-account groupings (Samuel/Kings/Chronicles, plus the book's own Appendix of cross-references to Genesis, Joshua, Ruth, Ezra, Nehemiah, Psalms, Isaiah, Jeremiah, Matthew, and Luke) consulted as PROVENANCE for our own curated `event-witnesses.toml` witness rows (Batch W2); every displayed event title/date/verse citation is independently authored (CC0), Theographic-credited, or the compiled KJV text itself, per "Crockett's Harmony of Samuel, Kings, and Chronicles" below |
+| James Ussher, *The Annals of the World* (1658) | Public domain (published 1658; this project's own reading is the Larry & Marion Pierce paragraph-numbered English text) | Not redistributed as text — two specific paragraph-numbered entries (¶1202, ¶1227/¶1234) consulted directly as PROVENANCE for two `chronology-anchors.toml` `year` values (`ezra-returns`, `nehemiah-wall`), HOTFIX-6 fix round 2; every displayed event title/verse citation is independently authored (CC0) or Theographic-credited, per "Ussher's Annals of the World" below |
 
 ## Theographic CC BY-SA 4.0 — controller ruling
 
@@ -452,6 +453,68 @@ Crockett's own section groupings were consulted for STRUCTURE (which
 passages belong together), never trusted as a substitute for reading the
 actual cited verses ourselves.
 
+## Ussher's Annals of the World — public domain (1658; Batch HOTFIX-6 fix round 2)
+
+`data/curated/chronology-anchors.toml`'s own header comment had, until this
+round, explicitly disclaimed any need for a LICENSES.md row: "the Annals'
+own text was NOT consulted/quoted directly... this table cites bare YEAR
+VALUES only." That was true through fix round 1. It stopped being true this
+round: an independent review's Critical finding C-1 (the `nehemiah-wall`
+anchor's own "-444, Ussher's Annals of the World" citation was very likely
+a mis-cited MODERN figure, not Ussher's own) required actually reading
+Ussher's own prose, with paragraph numbers, to settle it — exactly the
+"source's own PROSE read as curatorial provenance" trigger that header
+comment named as needing this row. This section follows the SAME
+Source/Verification/What-was-used shape as "Robertson's Harmony of the
+Gospels" and "Crockett's Harmony of Samuel, Kings, and Chronicles" above.
+
+**Source and provenance.** *The Annals of the World* (Latin: *Annales
+veteris testamenti*, 1650, continued 1654; English translation 1658).
+Public domain (1658 publication; also true of the modern Larry & Marion
+Pierce paragraph-numbered English edition consulted here, itself out of
+print but reproduced in full at the two archive.org items below). Obtained
+via two independently uploaded Internet Archive scans, fetched live
+(Bash/`curl` + `pdftotext`) rather than redistributed here: `https://
+archive.org/details/james-usher-annals-of-the-world` (PDF, uploader
+"Liber-T") and `https://archive.org/details/AnnalsOfTheWorld` (a
+SEPARATE upload, different uploader, own `.txt` OCR export) — both
+retrieved 2026-08-22.
+
+**Verification (two independent copies, the same standard this file
+already applies to Robertson/Crockett).** Both scans were converted to
+plain text and independently checked for the three paragraphs this batch
+relies on; all three matched WORD FOR WORD (modulo trivial OCR
+line-wrap/whitespace and one single-letter OCR slip in the second scan,
+"EM" for "Elul," on a word this batch doesn't cite): paragraph 1202
+("Ezra the priest... obtained permission from Artaxerxes the king...",
+marginal date "3537b AM, 4247 JP, 467 BC"), paragraph 1227 ("In the same
+20th year of the king, in the month Nisan, Nehemiah's turn came to serve
+as cupbearer... and obtained permission from the king to be the governor
+of Judah and to rebuild Jerusalem," marginal date "3550c AM, 4260 JP, 454
+BC"), and paragraph 1234 ("the wall was finished in 52 days, on the 25th
+day of the 6th month called Elul," same 454 BC marker block covering
+paragraphs 1231-1237). No formal publisher/edition colophon is present in
+either archive.org item's own scanned pages (both are bare community
+uploads), but the paragraph-numbering-plus-triple-date (Anno
+Mundi/Julian-Period/BC) marginal-marker apparatus across both scans is the
+Larry & Marion Pierce English edition's own distinctive, widely-recognized
+format — not Ussher's own 1658 original English printing's format, which
+carries no such apparatus.
+
+**What was used, and how.** Two bare facts (paragraph 1202's own dated
+sentence for Ezra's commission; paragraphs 1227/1234's own dated sentences
+for Nehemiah's commission and the wall's completion) were consulted as
+PROVENANCE for two `chronology-anchors.toml` `year` values — `ezra-returns`
+(-467, already correct since fix round 1, now carrying this citation) and
+`nehemiah-wall` (-444 -> -454, the C-1 correction itself). Nothing else
+from the Annals was consulted or is redistributed; no prose beyond the
+three short quoted sentences above appears anywhere in this repo. The
+correction is independently cross-checked against this atlas's own
+internal arithmetic (Ezra 7:7-8's "seventh year of Artaxerxes" + Nehemiah
+2:1's explicit "the same twentieth year," a 13-year textual gap,
+uncontested across chronological schools) — both paths agree exactly,
+disclosed together in `chronology-anchors.toml`'s own `nehemiah-wall` row.
+
 ## Per-artifact label (`data/compiled/*`)
 
 Compiled outputs are derived works: an artifact built from a
@@ -472,6 +535,8 @@ even though the file itself is generated, not hand-authored.
 | `polities.json` | CC0 (ours) | Compiled from `data/curated/polities/*.toml`; see "Historical polity borders" above |
 | `land-mask.json` | CC0 (ours) | Compiled from `data/curated/land-mask.toml`; see "Land mask" above |
 | `catechism.json` | Public domain (1921 Bente–Dau translation) + CC0 (our own organizational choices + Deut5 supplement) + brain-fuel/catechism (owner-directed use, no license file) | Compiled from `data/curated/catechism.toml` + `catechism-mapping.toml` + `catechism-deut5.toml`; see "The Small Catechism" and "Catechism verse mapping" above |
+| `chronology-anchors.json` | CC0 (ours) + Public domain (Ussher's Annals of the World, 1658, for two `note` values only) | Compiled from `data/curated/chronology-anchors.toml`; every `year`/`label`/`note` is CC0 curated authorship, with two `note` values (`ezra-returns`, `nehemiah-wall`) GROUNDED IN (two short quoted sentences from, not copied wholesale from) Ussher's own public-domain text — see "Ussher's Annals of the World" above, added Batch HOTFIX-6 fix round 2 |
+| `book-narration-windows.json` | CC0 (ours) | Compiled from `data/curated/book-narration-windows.toml`, derived arithmetically from `chronology-anchors.toml`'s own values, added Batch HOTFIX-6 |
 | `report.txt` | Not a licensed dataset | Generated ETL build report (counts/warnings), not app content |
 
 ## Everything not listed here
