@@ -611,32 +611,69 @@ pub struct Succession {
 ## 4. Chronology — placement, resolution, and honest derivation
 
 ```rust
-/// LAW (single-feed): no event carries a year literal. Its date is a
+/// LAW (owner, 2026-08-22, superseding the antichain design): "we don't
+/// want to just receive a cluster of uncertainly ordered events when
+/// traversing. this means that ordering must be as granular as
+/// necessary - down to the very day in some cases. if we don't know the
+/// time at which something occurred and it's part of a narrative, then
+/// we have to go with confessional lutheran acceptable traditional
+/// chronology of the event and add an optionally filled justification
+/// field to that node's hash to describe why such and such a time was
+/// chosen." The honesty relocates: from REFUSING to order, to ordering
+/// by DECLARED traditional chronology with the justification inside the
+/// content-addressed identity. TimeNeighbor::SameTime is REMOVED; the
+/// traversal order is TOTAL.
+
+/// Time carries the precision the sources give it — down to the day:
+pub struct TimePoint { pub year: Year, pub month: Option<u8>, pub day: Option<u8> }
+    // invariant: day requires month; validated at construction
+pub struct ResolvedDate { pub from: TimePoint, pub to: TimePoint }   // from <= to
+
+/// LAW (single-feed): no event carries a date literal. Its date is a
 /// PLACEMENT that resolves against the anchor table at compile time.
+/// Placements resolve to TimePoints (anchors may carry day precision —
+/// Passion week is daily); sequence placement supplies the order WITHIN
+/// equal TimePoints, which is where adopted traditional chronology
+/// lives (harmony order, Ussher's sequencing — the confessionally
+/// acceptable tradition), replacing both the rejected text-order
+/// derivation and the rejected antichain.
 pub enum DatePlacement {
-    AnchorBinding { anchor: AnchorId, offset_years: i32 },
+    AnchorBinding { anchor: AnchorId, offset: Duration },
     ReignYear     { reign: AnchorId, year_of_reign: u8 },
-    SequenceAfter { prior: EventId, spacing_years: u8 },   // chain interiors
+    SequenceAfter { prior: EventId, spacing: Duration },   // chain interiors + intra-date order
     EraOnly       { era: EraId },                          // era-precision truth
 }
+pub struct Duration { pub years: i32, pub months: u8, pub days: u8 }
+
+/// BASIS + JUSTIFICATION: every placement records what kind of ground
+/// it stands on; adopted-traditional placements MAY carry a
+/// justification ("optionally filled"), and because rows are
+/// content-addressed, basis and justification are IN THE HASH —
+/// changing the justification mints a new pid (a new version of the
+/// claim, with supersession), exactly as the owner specified.
+pub enum PlacementBasis {
+    Textual,                               // the text itself fixes the time
+    Traditional { justification: Option<Justification> },
+                                           // confessionally acceptable tradition
+}
+pub struct Justification { pub text: String, pub grounds: Grounds }
+
 pub struct DatedBy { pub event: EventId, pub placement: DatePlacement,
-                     pub provenance: ProvenanceId }
+                     pub basis: PlacementBasis, pub provenance: ProvenanceId }
 
-pub struct ResolvedDate { pub from: Year, pub to: Year }   // from <= to
+/// TOTAL ORDER. temporal_order is total over dated events: TimePoint
+/// precision first, then the traditional-sequence placement within
+/// ties. The David's-death lie stays impossible — not by refusing to
+/// order, but because every ordering commitment names its basis, the
+/// basis is hashed into the claim's identity, and the properties (E1-E4
+/// class) verify the whole order against the anchor table and the
+/// declared tradition:
+pub fn temporal_order(a: &ResolvedPlacement, b: &ResolvedPlacement) -> Ordering;
 
-/// THE HONESTY SIGNATURE. Temporal order between two events exists only
-/// when their resolved dates actually distinguish them. Equal or
-/// overlapping-at-year-precision ⇒ None ⇒ NO temporal edge exists.
-/// The David's-death lie is unrepresentable — not caught by audit,
-/// impossible to store.
-pub fn temporal_order(a: ResolvedDate, b: ResolvedDate) -> Option<Ordering>;
-
-/// Same-year events with no succession edge form an honest antichain;
-/// the traversal surface receives them AS a cluster:
 pub enum TimeNeighbor {
-    Succession { narrative: NarrativeId, event: EventId }, // authored truth
-    Temporal   { event: EventId },                         // derived, distinct styling
-    SameTime   { events: Vec<EventId> },                   // no order asserted
+    Succession { narrative: NarrativeId, event: EventId }, // authored truth, primary
+    Temporal   { event: EventId, basis: PlacementBasis },  // derived, distinct styling;
+                                                           // basis visible to presentation
 }
 ```
 
@@ -917,7 +954,13 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
 ## 9. What these types make impossible (the review checklist)
 
 - A traversal affordance with nothing behind it (edges are the only render source).
-- A temporal edge between same-year events (`temporal_order` returns None).
+- An unordered traversal tie (temporal order is TOTAL: TimePoint
+  precision, then traditional-sequence placement — no cluster of
+  uncertainty ever reaches a surface).
+- An ordering commitment without a recorded basis (every placement
+  carries PlacementBasis; adopted tradition may carry justification;
+  both are inside the content-addressed identity — changing the
+  justification mints a new pid).
 - A malformed narrative chain (chains are stored as lists, not stitched pointers).
 - A second copy of scripture (Verse payload is the only text; views query it).
 - An event with a year literal (DatePlacement is the only way to be dated).
@@ -977,7 +1020,9 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
 
 - `Interned` and store format (implementation planning).
 - TokenSpan semantics await the tokenization rules (deferred by directive).
-- Whether `SameTime` clusters paginate (large same-year antichains in dense eras).
+- Duration semantics for sub-year spacing where sources give relative
+  time ("three days later") vs adopted sequence — finalized when day-
+  precision placements are first authored.
 - EdgeMeta variants per kind (finalized per surface during M-batches).
 - ConcordRef structural scheme (Part/Article/Paragraph vs edition-keyed;
   decided when the Book of Concord corpus is ingested).

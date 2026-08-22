@@ -111,7 +111,9 @@ by the UI machinery.
 
 Per-kind invariants are compiler laws (fail-loud): succession chains are
 well-formed doubly-linked lists; attestations resolve to real loci; no
-temporal-adjacency between same-year events; contains respects span
+an unbased ordering commitment (total temporal order stands on
+TimePoint precision plus declared traditional chronology, basis and
+optional justification hashed into the claim); contains respects span
 addressing; exemptions are typed with reasons. The David's-death class of
 lie becomes unrepresentable: nothing asserts an order, so no edge exists
 to render one.
@@ -224,5 +226,7 @@ curation -> assertion change -> recompile -> supersession.
   (implementation-time; the design only reserves the space).
 - Graph store physical format and index structures (implementation
   planning).
-- Whether temporal-adjacency renders as pairwise rows or same-year
-  clusters in the traversal UI (design-direction/UX decision at M-B).
+- DECIDED (owner, 2026-08-22): no same-year clusters — traversal order
+  is TOTAL, as granular as necessary (day-level where sources or
+  tradition give it), with adopted-traditional placements carrying an
+  optionally filled justification inside the content-addressed identity.
