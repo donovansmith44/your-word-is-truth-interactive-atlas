@@ -519,14 +519,15 @@ fn every_declared_book_is_fully_covered_by_the_real_compiled_data() {
 /// when each book was added) and fails loud the moment a future edit
 /// accidentally drops one. Gospels+Acts (Batch T/T2), the whole W1 window
 /// (Genesis, Exodus, Leviticus, Numbers, Deuteronomy, Joshua, Judges,
-/// Ruth), and the whole W2 window -- 1/2 Samuel, 1/2 Kings, 1/2
-/// Chronicles, Ezra, Nehemiah, and Esther (Batch W2, this run) -- are the
-/// floor as of this commit.
+/// Ruth), the whole W2 window (1/2 Samuel, 1/2 Kings, 1/2 Chronicles,
+/// Ezra, Nehemiah, and Esther), and the whole W3 window -- Job, Psalms,
+/// Proverbs, Ecclesiastes, and Song of Solomon (Batch W3, this run) --
+/// are the floor as of this commit.
 #[test]
 fn declared_books_never_shrink_below_the_established_floor() {
     const FLOOR: &[&str] = &[
         "MAT", "MRK", "LUK", "JHN", "ACT", "GEN", "EXO", "LEV", "RUT", "NUM", "DEU", "JOS", "JDG", "1SA", "2SA",
-        "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST",
+        "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST", "JOB", "PSA", "PRO", "ECC", "SNG",
     ];
 
     let manifest_toml = read_curated("coverage-manifest.toml");
