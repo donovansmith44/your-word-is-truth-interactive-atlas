@@ -45,7 +45,9 @@ instance Monad Explore where
 --   edges  :: EdgeKind k => Node -> [Target k]
 -- Every relation R ⊆ S×O is one stored set viewed both ways: R and its
 -- transpose Rᵀ are the SAME rows. dual is a total involution on kinds:
---   dual :: EdgeKind -> EdgeKind ;  dual . dual = id
+--   EdgeKind = (Relation, Direction) | Symmetric SymRelation
+--   dual (r, d) = (r, flip d) ;  dual (Symmetric s) = Symmetric s
+--   involution BY CONSTRUCTION — not a tested property, a shape
 -- Presentation is a selection:  Surface = Set EdgeKind × DisplayRule
 -- Honesty is totality: an affordance exists iff the relation is inhabited.
 ```
@@ -309,33 +311,57 @@ with its forward view is unrepresentable because neither is data.
 /// entry carrying this same EdgeId.
 pub struct EdgeId(Interned);
 
-/// EdgeKind enumerates BOTH readings of every relation; dual is a total
-/// involution, exhaustively matched (dual(dual(k)) == k is a property
-/// test over all variants):
-pub enum EdgeKind {
-    Contains,   MemberOf,       // dual pair (derived member_of retired as a
-                                // separate index — it IS the inverse view)
-    Witnesses,  WitnessedBy,    // dual pair
-    Quotes,     QuotedBy,       // dual pair
-    Cites,      CitedBy,        // dual pair (cross-refs)
-    Mentions,   MentionedIn,    // dual pair
-    LocatedAt,  SiteOf,         // dual pair
-    DatedBy,    Dates,          // dual pair (an Anchor explores its events)
-    Named,      NameOf,         // dual pair
-    CatechismLink,              // self-dual (symmetric)
-    Parallel,                   // self-dual (symmetric, derived)
-    TemporalAdjacency,          // self-dual (symmetric, derived)
-    FollowsIn,  PrecedesIn,     // succession's two readings, per narrative
-}
-pub fn dual(k: EdgeKind) -> EdgeKind;   // total; involution
+/// LAW (owner, 2026-08-22): "enforce edgekind pairs with types." The
+/// dual pairing is not a function with a property test — it is the SHAPE
+/// of EdgeKind. A kind is a relation plus a direction; the dual flips
+/// the direction; flipping a two-variant enum is involutive by
+/// construction. An unpaired kind cannot be written (every directed
+/// relation has both readings automatically), a broken dual cannot be
+/// written (there is nothing to get wrong), and a symmetric relation
+/// lives in a separate id space that HAS no directions (so it can never
+/// be given one, and a directed relation can never masquerade as
+/// symmetric).
+pub enum Direction { Forward, Inverse }
+impl Direction { pub fn flip(self) -> Direction { /* two variants; involutive */ } }
 
-/// A relation declares its stored row, its endpoints, and its dual pair:
+pub enum EdgeKind {
+    Directed(RelationId, Direction),
+    Symmetric(SymRelationId),
+}
+pub fn dual(k: EdgeKind) -> EdgeKind {
+    match k {
+        EdgeKind::Directed(r, d) => EdgeKind::Directed(r, d.flip()),
+        sym => sym,
+    }
+} // involution by construction; the old property test is DELETED as moot
+
+/// The familiar names become derived LABELS, one per (relation,
+/// direction) — display vocabulary, not identity:
+///   (ContainsRel, Forward) -> "contains"     (ContainsRel, Inverse) -> "member-of"
+///   (WitnessRel,  Forward) -> "witnesses"    (WitnessRel,  Inverse) -> "witnessed-by"
+///   (QuotesRel,   Forward) -> "quotes"       (QuotesRel,   Inverse) -> "quoted-by"
+///   (CitesRel,    Forward) -> "cites"        (CitesRel,    Inverse) -> "cited-by"
+///   (MentionsRel, Forward) -> "mentions"     (MentionsRel, Inverse) -> "mentioned-in"
+///   (LocatedRel,  Forward) -> "located-at"   (LocatedRel,  Inverse) -> "site-of"
+///   (DatedByRel,  Forward) -> "dated-by"     (DatedByRel,  Inverse) -> "dates"
+///   (NamedRel,    Forward) -> "named"        (NamedRel,    Inverse) -> "name-of"
+///   (SuccessionRel, Forward) -> "follows-in" (SuccessionRel, Inverse) -> "precedes-in"
+///   Symmetric: "catechism-link", "parallel", "temporal-adjacency"
+
+/// A relation declares its stored row, its endpoint TYPES, and its id —
+/// the direction machinery comes for free from the shape above. Subject
+/// and Object are typed, so a forward page's entries are Object-kinded
+/// and an inverse page's are Subject-kinded, checked at compile time in
+/// the query layer (erased only at the wire):
 pub trait Relation {
     type Row;
-    const FORWARD: EdgeKind;
-    const INVERSE: EdgeKind;            // == dual(FORWARD), asserted
-    fn endpoints(r: &Self::Row) -> (AnyNodeId, AnyNodeId);
+    type Subject;                       // e.g. EventId for DatedByRel
+    type Object;                        // e.g. AnchorId for DatedByRel
+    const ID: RelationId;
+    fn endpoints(r: &Self::Row) -> (Self::Subject, Self::Object);
 }
+pub trait SymRelation { type Row; type End; const ID: SymRelationId;
+    fn ends(r: &Self::Row) -> (Self::End, Self::End); }
 
 /// Built, never authored: both adjacency maps from one row table.
 pub struct BiIndex { /* fwd: subject → [(EdgeId, object)], inv: object → [(EdgeId, subject)] */ }
@@ -776,8 +802,10 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
 - A nested address (recursion is relational — flat loci, edges carry the
   structure).
 - An inverse view that disagrees with its forward view (both are
-  projections of one row; the shared EdgeId is the bijection witness;
-  dual is a tested total involution).
+  projections of one row; the shared EdgeId is the bijection witness).
+- An unpaired edge kind, a broken dual, or a directed/symmetric mix-up
+  (EdgeKind = relation × direction | symmetric; the dual is a direction
+  flip — involutive by shape, nothing to test, nothing to get wrong).
 - One kind wearing two faces in the same context (Presentable is the
   single per-(kind, context) source of visual form; laws travel as
   server data and cannot be re-decided by styling).
