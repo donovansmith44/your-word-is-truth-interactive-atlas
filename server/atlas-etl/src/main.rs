@@ -57,8 +57,50 @@ fn main() -> Result<()> {
     let places_json = read(&theo_dir.join("places.json"))?;
     let verses_json = read(&theo_dir.join("verses.json"))?;
     let events_json = read(&theo_dir.join("events.json"))?;
-    let (theo_events, theo_new_places, theo_stats) =
+    let (mut theo_events, theo_new_places, theo_stats) =
         theographic::parse_events(&places_json, &verses_json, &events_json, &place_slug_by_name)?;
+
+    // --- atlas_core::nt_calibration / chronology::apply_theo_date_overrides
+    // (HOTFIX-4 fix round 1 / HOTFIX-6) -- Batch HOTFIX-7: MOVED EARLIER
+    // (previously ran on the post-merge `all_events`, just before
+    // `AtlasData::new(...).finish()`, far below). Both passes only ever
+    // inspect the event being examined's own id/verses/witnesses/when --
+    // NEVER another event -- so slicing them to run on `theo_events` ALONE,
+    // before any curated event is merged in, is behavior-IDENTICAL to
+    // running them on the merged `all_events` afterward. The move is
+    // required, not cosmetic: `atlas_core::date_resolve::resolve_curated_
+    // dates` (below) lets a curated event's own `after =` sequence
+    // placement reference an already-dated Theographic import id directly
+    // (e.g. a Jeremiah event reusing `theo-238`'s own reign-start year) --
+    // that reference must read the CALIBRATED Theographic scale, never the
+    // pre-calibration one, or a curated event chained off a `theo-*` id
+    // could silently resolve ~3 years off the AD-33 Passion anchor. Both
+    // passes remain ETL-only, called-exactly-once, for the SAME
+    // idempotency reason their own doc comments already give (never from
+    // `AtlasData::finish()`, which runs twice across the real pipeline).
+    let nt_calibration_log = atlas_core::nt_calibration::apply_nt_calibration(&mut theo_events);
+    eprintln!(
+        "NT CALIBRATION: {} surviving Theographic-scale NT event(s) shifted +{} year(s) to the AD-33 Passion anchor (full before/after table in batch-hotfix4-report.md's own \"Fix round 1\" section):",
+        nt_calibration_log.len(),
+        atlas_core::nt_calibration::NT_CALIBRATION_SHIFT
+    );
+    for row in &nt_calibration_log {
+        eprintln!(
+            "  {:<10} {:<45} {} -> {}  order_key {} -> {}",
+            row.id, row.label, row.old_from_year, row.new_from_year, row.old_order_key, row.new_order_key
+        );
+    }
+    let theo_override_log = atlas_core::chronology::apply_theo_date_overrides(&mut theo_events);
+    eprintln!("CHRONOLOGY OVERRIDES: {} isolated raw-import date correction(s) applied (batch-hotfix6-report.md has the full derivation):", theo_override_log.len());
+    for row in &theo_override_log {
+        eprintln!("  {:<10} {:<35} {}..{} -> {}..{}", row.id, row.label, row.old_from_year, row.old_to_year, row.new_from_year, row.new_to_year);
+    }
+    // Batch HOTFIX-7: id -> (from_year, to_year) for every Theographic
+    // import event, ALREADY calibrated -- the fixed base case a curated
+    // `after =` sequence placement resolves against directly (no
+    // recursion; a theo-* event never itself carries a `DateResolution`).
+    let base_dates: HashMap<String, (atlas_core::time::Year, atlas_core::time::Year)> =
+        theo_events.iter().map(|e| (e.id.clone(), (e.when.from_year, e.when.to_year))).collect();
 
     let xrefs_raw = read(&raw_dir.join("xrefs/cross_references.txt"))?;
     let (xrefs_map, xref_stats) = xrefs::parse(&xrefs_raw)?;
@@ -80,19 +122,12 @@ fn main() -> Result<()> {
     let book_narration_windows =
         curated::parse_book_narration_windows(&read(&curated_dir.join("book-narration-windows.toml"))?)?;
     let mut books_meta = curated::parse_books(&read(&curated_dir.join("books.toml"))?)?;
-    let events_extra = curated::parse_events_extra(&read(&curated_dir.join("events-extra.toml"))?)?;
-    let narratives = read_narratives(&curated_dir.join("narratives"))?;
-
-    // --- merge -------------------------------------------------------------
-    let mut all_events = theo_events;
-    let mut seen_event_ids: HashSet<String> = all_events.iter().map(|e| e.id.clone()).collect();
-    for e in events_extra {
-        if !seen_event_ids.insert(e.id.clone()) {
-            bail!("data/curated/events-extra.toml defines event id '{}', which collides with an existing (Theographic) event id", e.id);
-        }
-        all_events.push(e);
-    }
-
+    // Batch HOTFIX-7: `events-extra.toml`/`passages/*.toml` now each return
+    // (Event, Option<DateResolution>) pairs -- `when` is a placeholder for
+    // every "event"-kind row until `date_resolve::resolve_curated_dates`
+    // (below) runs. `read_passages` (below `main`) is unchanged in shape,
+    // just threads the same tuple through.
+    let events_extra_raw = curated::parse_events_extra(&read(&curated_dir.join("events-extra.toml"))?)?;
     // --- data/curated/passages/ (Batch W1: whole-Bible titled verse
     // containers) -- one *.toml file per book (`genesis.toml`, `exodus.toml`,
     // ...), each in the EXACT SAME `[[event]]` schema as events-extra.toml
@@ -100,13 +135,63 @@ fn main() -> Result<()> {
     // own doc comment) -- kept in a SEPARATE per-book directory rather than
     // growing one already-3000-line events-extra.toml further, mirroring the
     // established "one file per unit when there's a natural per-unit split"
-    // precedent `narratives/`/`polities/` already set. Same collision-guard
-    // merge as events-extra.toml just above (a passages/*.toml id colliding
-    // with an existing Theographic OR events-extra.toml id fails loud here).
-    let passages = read_passages(&curated_dir.join("passages"))?;
-    for e in passages {
+    // precedent `narratives/`/`polities/` already set.
+    let passages_raw = read_passages(&curated_dir.join("passages"))?;
+    let narratives = read_narratives(&curated_dir.join("narratives"))?;
+
+    // --- Batch HOTFIX-7: single-feed chronology resolution ----------------
+    // Combines BOTH curated files' own raw output into one pool (an
+    // `after =` sequence placement routinely crosses file boundaries --
+    // e.g. a Daniel event citing `ret_babylon`, from events-extra.toml) and
+    // resolves every one of their own `DateResolution`s against
+    // `chronology_anchors`/`eras`/`base_dates`, all already in hand.
+    // Same collision-guard discipline the old single merge loop had, kept
+    // as two passes (events-extra.toml-vs-itself, then passages/-vs-both)
+    // so each error message still names the right source.
+    let mut curated_events: Vec<atlas_core::data::Event> = Vec::with_capacity(events_extra_raw.len() + passages_raw.len());
+    let mut resolutions: HashMap<String, atlas_core::date_resolve::DateResolution> = HashMap::new();
+    let mut seen_curated_ids: HashSet<String> = HashSet::new();
+    for (e, resolution) in events_extra_raw {
+        if !seen_curated_ids.insert(e.id.clone()) {
+            bail!("data/curated/events-extra.toml defines event id '{}' more than once", e.id);
+        }
+        if let Some(r) = resolution {
+            resolutions.insert(e.id.clone(), r);
+        }
+        curated_events.push(e);
+    }
+    for (e, resolution) in passages_raw {
+        if !seen_curated_ids.insert(e.id.clone()) {
+            bail!("data/curated/passages/ defines event id '{}', which collides with an existing curated event id", e.id);
+        }
+        if let Some(r) = resolution {
+            resolutions.insert(e.id.clone(), r);
+        }
+        curated_events.push(e);
+    }
+
+    let resolution_log = atlas_core::date_resolve::resolve_curated_dates(&chronology_anchors, &eras, &base_dates, &mut curated_events, &resolutions).context(
+        "data/compiled/* was NOT written; fix a curated event's own anchor=/after=/era= resolution (unknown anchor/era id, a dangling after= reference, a resolution cycle, or an inverted from/to range)",
+    )?;
+    let mut resolution_counts: HashMap<&'static str, usize> = HashMap::new();
+    for row in &resolution_log {
+        *resolution_counts.entry(row.form.as_str()).or_insert(0) += 1;
+    }
+    eprintln!(
+        "CHRONOLOGY RESOLUTION (single-feed, Batch HOTFIX-7): {} curated event(s) resolved from data/curated/chronology-anchors.toml/eras.toml -- {} anchor-binding, {} anchor-relative, {} sequence, {} era:",
+        resolution_log.len(),
+        resolution_counts.get("anchor-binding").copied().unwrap_or(0),
+        resolution_counts.get("anchor-relative").copied().unwrap_or(0),
+        resolution_counts.get("sequence").copied().unwrap_or(0),
+        resolution_counts.get("era").copied().unwrap_or(0),
+    );
+
+    // --- merge -------------------------------------------------------------
+    let mut all_events = theo_events;
+    let mut seen_event_ids: HashSet<String> = all_events.iter().map(|e| e.id.clone()).collect();
+    for e in curated_events {
         if !seen_event_ids.insert(e.id.clone()) {
-            bail!("data/curated/passages/ defines event id '{}', which collides with an existing event id", e.id);
+            bail!("data/curated/events-extra.toml or data/curated/passages/ defines event id '{}', which collides with an existing (Theographic) event id", e.id);
         }
         all_events.push(e);
     }
@@ -269,44 +354,15 @@ fn main() -> Result<()> {
     validate::run_cross_book_duplicates(atlas_core::event_merge::EVENT_MERGE_PAIRS, atlas_core::event_merge::EVENT_DISTINCT_PAIRS, &all_events)
         .context("data/compiled/* was NOT written; fix atlas_core::event_merge::EVENT_MERGE_PAIRS/EVENT_DISTINCT_PAIRS (an unlisted cross-book duplicate event pair, found by title/year/place similarity)")?;
 
-    // --- atlas_core::nt_calibration (HOTFIX-4 fix round 1, review finding
-    // C-1, Critical) -------------------------------------------------------
-    // Runs on `all_events`, the RAW pre-`finish()` event set -- MUST run
-    // exactly once, here, never from `AtlasData::finish()` (that runs
-    // TWICE across the real pipeline -- ETL write time and server load
-    // time -- which is safe for the identity merge above, IDENTITY-ONLY and
-    // idempotent-by-removal, but would double-shift a raw date delta; see
-    // `nt_calibration`'s own module doc comment for the full reasoning).
-    // Order relative to `apply_event_merges` (inside `finish()`, below)
-    // does not matter for correctness -- see that module's doc comment --
-    // placed here purely to sit next to `run_event_merges` above, the
-    // closest-related pre-`finish()` step.
-    let nt_calibration_log = atlas_core::nt_calibration::apply_nt_calibration(&mut all_events);
-    eprintln!(
-        "NT CALIBRATION: {} surviving Theographic-scale NT event(s) shifted +{} year(s) to the AD-33 Passion anchor (full before/after table in batch-hotfix4-report.md's own \"Fix round 1\" section):",
-        nt_calibration_log.len(),
-        atlas_core::nt_calibration::NT_CALIBRATION_SHIFT
-    );
-    for row in &nt_calibration_log {
-        eprintln!(
-            "  {:<10} {:<45} {} -> {}  order_key {} -> {}",
-            row.id, row.label, row.old_from_year, row.new_from_year, row.old_order_key, row.new_order_key
-        );
-    }
-
-    // --- atlas_core::chronology::THEO_DATE_OVERRIDES (Batch HOTFIX-6) -----
-    // Same ETL-only, exactly-once, RAW-pre-`finish()`-event-set timing as
-    // apply_nt_calibration immediately above, and for the identical reason
-    // (idempotency across finish()'s own two real call sites -- see that
-    // module's own doc comment). A DIFFERENT mechanism from NT calibration's
-    // own systematic shift: an isolated, individually-derived correction to
-    // a single genuinely-corrupt raw Theographic import row found by this
-    // batch's own full audit (theo-67 "Judgeship of Jair").
-    let theo_override_log = atlas_core::chronology::apply_theo_date_overrides(&mut all_events);
-    eprintln!("CHRONOLOGY OVERRIDES: {} isolated raw-import date correction(s) applied (batch-hotfix6-report.md has the full derivation):", theo_override_log.len());
-    for row in &theo_override_log {
-        eprintln!("  {:<10} {:<35} {}..{} -> {}..{}", row.id, row.label, row.old_from_year, row.old_to_year, row.new_from_year, row.new_to_year);
-    }
+    // NOTE (Batch HOTFIX-7): `atlas_core::nt_calibration::apply_nt_calibration`
+    // and `atlas_core::chronology::apply_theo_date_overrides` used to run
+    // HERE, against the post-merge `all_events` -- MOVED to run against
+    // `theo_events` alone, near the top of this function, right after the
+    // Theographic import is parsed (see that block's own comment for why
+    // the move was required, not cosmetic: single-feed curated `after =`
+    // sequence placements need the CALIBRATED Theographic scale in
+    // `base_dates` before `date_resolve::resolve_curated_dates` runs,
+    // which happens well before this point).
 
     // --- assemble, validate --------------------------------------------
     // NOTE (review finding I-2, fix-round-1): `finish()` applies
@@ -596,8 +652,12 @@ fn write_json<T: serde::Serialize>(path: &Path, value: &T) -> Result<()> {
 /// unmodified), concatenated in sorted filename order for reproducible
 /// output. Mirrors `read_narratives` immediately below exactly -- same
 /// "one hand-authored unit per file, directory-scanned" shape
-/// `narratives/`/`polities/` already establish.
-fn read_passages(passages_dir: &Path) -> Result<Vec<atlas_core::data::Event>> {
+/// `narratives/`/`polities/` already establish. Batch HOTFIX-7: threads
+/// `parse_events_extra`'s own `(Event, Option<DateResolution>)` pairs
+/// through unchanged -- resolution happens once, later, over every curated
+/// file's own combined output (see `main`'s own "single-feed chronology
+/// resolution" block).
+fn read_passages(passages_dir: &Path) -> Result<Vec<(atlas_core::data::Event, Option<atlas_core::date_resolve::DateResolution>)>> {
     let mut paths: Vec<PathBuf> = fs::read_dir(passages_dir)
         .with_context(|| format!("reading directory {}", passages_dir.display()))?
         .filter_map(|e| e.ok())

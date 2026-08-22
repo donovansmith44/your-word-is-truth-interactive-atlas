@@ -1,51 +1,83 @@
 # Batch HOTFIX-6 (graph-wide chronology audit, owner live reports #8/#9,
-# 2026-08-22: "this is a lie... i'm sure these errors are graph-wide"):
-# THE CANONICAL CHRONOLOGY REFERENCE, from now on. Every `[[anchor]]` row is
-# an authoritative date on this project's own DECLARED traditional scale --
-# Ussher's Annals of the World (1658, long public domain) for the OT, this
-# atlas's own already-established AD-33 Passion anchor (HOTFIX-4) for the
-# NT. Every year below is either stated directly in this batch's own brief
-# or cross-checked against this atlas's own already-compiled/reviewed
-# data -- the Annals' own text was NOT consulted/quoted directly (no
-# LICENSES.md row needed; that file's own convention, per its Robertson/
-# Crockett rows, is for when a source's own PROSE is read as curatorial
-# provenance -- this table cites bare YEAR VALUES only, the same
-# already-established "Ussher... 1055 BC"-class convention prior batches'
-# own reports already use freely). Stated positively, no scale-debate
-# register (owner's inerrancy doctrine, KJV-inerrancy-directive).
+# 2026-08-22: "this is a lie... i'm sure these errors are graph-wide"): THE
+# CANONICAL CHRONOLOGY REFERENCE. Every `[[anchor]]` row is an authoritative
+# date on this project's own DECLARED traditional scale -- Ussher's Annals
+# of the World (1658, long public domain) for the OT, this atlas's own
+# already-established AD-33 Passion anchor (HOTFIX-4) for the NT.
 #
-# FIX ROUND 2 UPDATE (2026-08-22): the "not consulted/quoted directly"
-# claim above stopped being universally true this round. Independent
-# review finding C-1 required actually reading Ussher's own prose (with
-# paragraph numbers) to settle the nehemiah-wall anchor's own citation
-# accuracy -- see that row and ezra-returns below, both now carrying a
-# real paragraph-numbered quotation, and LICENSES.md's own new "Ussher's
-# Annals of the World" section. Every OTHER row in this table is
-# unaffected -- still the bare-numeric-cross-check convention described
-# above.
+# BATCH HOTFIX-7 (single-feed chronology migration, owner directive
+# 2026-08-22, near-verbatim: "do all our narratives/dates feed from the
+# same table? if not, they should."): this table stopped being a
+# VALIDATION-only reference and became the RESOLUTION source every curated
+# event's own date is computed FROM, at ETL time
+# (`atlas_core::date_resolve::resolve_curated_dates`) -- see that module's
+# own doc comment for the four resolution forms (anchor binding /
+# anchor-relative / sequence / era placement) a curated `[[event]]` row now
+# authors instead of an inline year literal. Three structural changes this
+# batch made to the table itself, alongside that migration:
+#
+# 1. THE FOUR TYPED DEFERRALS RESOLVED. `jerusalem-falls`/`cyrus-decree`/
+#    `temple-finished`/`ezra-returns` were each bound (`event_id` set) but
+#    flagged `atlas_core::chronology::ANCHOR_DEFERRALS` (HOTFIX-6 fix round
+#    1) because their own bound event still shipped an OLDER,
+#    modern-scholarly value pending this exact migration. That migration is
+#    THIS batch: every dependent event now resolves its own date FROM this
+#    table (directly, or transitively through a `after =` sequence chain
+#    that terminates at one of these four), so each anchor's own `year`
+#    below and its bound event's own compiled `from_year` are the SAME
+#    fact now, not two independently-authored ones that happened to
+#    (mostly) agree. `ANCHOR_DEFERRALS` itself STAYS in
+#    `atlas_core::chronology` (future-legal, HOTFIX-6 fix round 1's own
+#    typed-exemption mechanism design), now with zero live entries --
+#    `chronology::tests::the_deferral_kind_stays_future_legal_with_zero_
+#    live_entries_after_hotfix7` asserts the empty state is deliberate, not
+#    an accident.
+# 2. `exile-begins`/`return-begins` RETIRED. These two rows existed
+#    ONLY to give the E4 era-boundary property test a live, bound timeline
+#    position while `jerusalem-falls`/`cyrus-decree` themselves sat
+#    deferred (unable to serve that role honestly, since their own bound
+#    event's compiled value disagreed with their own `year`). Now that
+#    `jerusalem-falls`/`cyrus-decree` themselves ARE the live, bound,
+#    agreeing values, the two companion rows are pure duplication (the SAME
+#    `event_id`, the SAME year, the SAME `era_boundary` role) -- removed
+#    outright rather than left as inert copies. Every place either id was
+#    ever cited (E4, this table's own dependent-count tallies,
+#    CONTRACT.md) is updated in the same commit.
+# 3. PRIMARY-SOURCE CITATIONS COMPLETED (brief requirement 6, carried from
+#    HOTFIX-6's own "16 rows not yet verified" note): every row below now
+#    cites Ussher's Annals of the World directly (Pierce paragraph-numbered
+#    edition, the same two-independent-archive.org-scan standard fix round
+#    2's own `nehemiah-wall`/`ezra-returns` rows already established), or
+#    discloses its own non-Ussher provenance (the NT Passion anchor; the
+#    two widely-cited traditional dates, `exodus`/`samaria-falls`, neither
+#    of which claims to BE Ussher's own figure). End state, post-retirement:
+#    19/19 rows primary-cited (the brief's own "21/21" framing predates
+#    this batch's own retirement of the two now-redundant structural rows,
+#    neither of which ever needed an independent citation of its own --
+#    each simply restated its own literal companion's already-cited value).
 #
 # SCHEMA (forward-compatible, per the controller's own "single-feed
-# chronology" end-state note, 2026-08-22 -- a future HOTFIX-7 migrates event
-# date AUTHORING to resolve from this table, never re-shaping it):
+# chronology" end-state note, 2026-08-22 -- realized by THIS batch):
 #   id           stable, machine-readable, snake-case-with-dashes row key --
-#                never renumbered/repositioned; a future reign-offset table
-#                (HOTFIX-7) can reference it by id to compute "N years after
-#                anchor X" arithmetically without this file changing shape.
+#                never renumbered/repositioned; every curated `anchor = `/
+#                `after = ` (transitively) resolution field in
+#                `data/curated/events-extra.toml`/`passages/*.toml`
+#                references one of these ids directly.
 #   label        human-readable description.
 #   year         the single authoritative year on this atlas's declared
-#                scale (signed, no year zero) -- the one number "resolve
-#                from the canonical table" (HOTFIX-7) will read.
-#   event_id     OPTIONAL: the real compiled event id this anchor equals (or
-#                is DEFERRED against -- see below), when one binds at all.
-#                Bound + not deferred is what the E1 (anchor-equality) and
-#                E3 (canonical-order) property tests iterate as a live
-#                equality claim. Omitted (not merely blank) where no single
-#                compiled event corresponds, or where binding would
-#                misrepresent a genuinely DISCLOSED ADJACENCY as a bug (see
-#                that section below -- today, Exodus only). A row CAN bind
-#                without living up to E1's own plain-equality claim: see
-#                `atlas_core::chronology::ANCHOR_DEFERRALS` and the "TYPED
-#                DEFERRALS" section below for the other, time-bounded case.
+#                scale (signed, no year zero) -- THE number `anchor = `
+#                resolution reads (plus a curator's own signed `offset`).
+#   event_id     OPTIONAL: the real compiled event id this anchor equals,
+#                when one binds at all. Every bound row's own compiled
+#                event now resolves ITS OWN `when` directly from this row
+#                (`anchor = "<this id>"`, offset 0 -- resolution form (a),
+#                ANCHOR BINDING) -- `event_id` and the resolved compiled
+#                data can no longer silently drift apart the way two
+#                independently-authored facts could before this batch.
+#                Omitted (not merely blank) where no single compiled event
+#                corresponds, or where binding would misrepresent a
+#                genuinely DISCLOSED ADJACENCY as a bug (see the `exodus`
+#                row below -- the one remaining case).
 #   era_boundary OPTIONAL bool (default false): true for the anchors used as
 #                the E4 (era-partition) property test's own structural
 #                boundaries -- always carries event_id when true (E4 needs a
@@ -54,38 +86,22 @@
 #                conquest-judges / united-monarchy / divided-kingdoms /
 #                exile / return / NT), plus `creation` marking the very
 #                start.
-#   source       provenance (Ussher's Annals directly, or "this atlas's own
-#                already-curated <chain>", per row).
-#   note         OPTIONAL: disclosed tensions/derivation, never a
-#                scale-debate register -- a plain statement of which two
-#                already-legitimate traditions/values are in play.
+#   source       provenance (Ussher's Annals directly, or a disclosed
+#                non-Ussher traditional date, per row).
+#   note         OPTIONAL: disclosed tensions/derivation/citation, never a
+#                scale-debate register -- a plain statement of which
+#                already-legitimate tradition/value is in play, or (per
+#                requirement 6) the primary-source paragraph itself.
 #
-# DISCLOSED ADJACENCIES vs. TYPED DEFERRALS -- two DIFFERENT concepts, not
-# to be confused (owner sequencing redirect, 2026-08-22):
-#
-# A DISCLOSED ADJACENCY (pre-existing, W1/W2-policy-governed per
+# DISCLOSED ADJACENCY (pre-existing, W1/W2-policy-governed per
 # batch-hotfix6-brief.md's own "Context you can't get from the brief" --
-# NOT re-litigated, NOT a bug) is a genuine, legitimate, standing tension
-# where this atlas SHIPS its own declared Ussher value and discloses a
-# real alternative in prose. Exactly ONE such pair exists in this table --
+# NOT re-litigated, NOT a bug): a genuine, legitimate, standing tension
+# where this atlas SHIPS its own declared Ussher value and discloses a real
+# alternative in prose. Exactly ONE such pair remains in this table --
 # Exodus, below (search for "STRUCTURAL" to find its own bound companion
-# row, "exodus-departs"). Its own literal row is deliberately left
-# UNBOUND (no `event_id`) -- E1 never even asks it a question.
-#
-# A TYPED DEFERRAL (`atlas_core::chronology::ANCHOR_DEFERRALS`) is
-# different: the shipped value is NOT a legitimate alternative -- it is
-# W2-era authoring DRIFT the controller's own fix-round-1 ruling already
-# named as such, but which the owner then ruled should NOT be hand-
-# corrected now (re-dating events by hand today is wasted work ahead of
-# HOTFIX-7's own single-feed migration, which deletes every inline year
-# literal and resolves dates from this table directly). A deferred row
-# DOES bind (`event_id` set, so the deferral has something concrete to
-# reference) and its own `year` is the canonical value the data will
-# become -- E1 reports every deferral by name, still verifying the
-# deferral's own recorded shipped-value claim stays honest, never
-# silently equating it to a real pass. Four rows carry this typing today
-# (jerusalem-falls, cyrus-decree, temple-finished, ezra-returns) -- search
-# for "DEFERRED" below.
+# row, "exodus-departs"). Its own literal row is deliberately left UNBOUND
+# (no `event_id`, no `anchor = ` resolution field anywhere cites it) -- no
+# curated event's own date is ever asked to agree with it.
 
 [[anchor]]
 id = "creation"
@@ -94,6 +110,7 @@ year = -4004
 event_id = "theo-1"
 era_boundary = true
 source = "Ussher's Annals of the World (1658)"
+note = "Ussher's Annals, paragraph 1 (the work's own opening line, marginal date '1 AM, 710 JP, 4004 BC'): \"In the beginning God created the heaven and the earth, Gen. 1:1. This beginning of time... fell upon the entrance of the night preceding the 23th day of the Julian October... upon a Sunday.\" Confirmed against two independently uploaded Internet Archive scans (archive.org/details/james-usher-annals-of-the-world, uploader \"Liber-T\"; archive.org/details/AnnalsOfTheWorld, a separate upload with its own OCR pass), the same two-independent-copies standard fix round 2's own nehemiah-wall/ezra-returns rows established, both retrieved 2026-08-22."
 
 [[anchor]]
 id = "flood"
@@ -101,6 +118,7 @@ label = "The Great Flood begins"
 year = -2348
 event_id = "theo-38"
 source = "Ussher's Annals of the World (1658)"
+note = "Ussher's Annals, paragraph 74 (marginal date '1656 AM, 2366 JP, 2348 BC'): \"...in the six hundredth year of Noah's life, the second month, the seventeenth day of the month, the same day were all the fountains of the great deep broken up, and the windows of heaven were opened, Gen. 7:11.\" Confirmed against both independent scans, 2026-08-22."
 
 [[anchor]]
 id = "abraham-call"
@@ -108,15 +126,15 @@ label = "Abram's call; he enters Canaan (Genesis 12)"
 year = -1921
 event_id = "theo-71"
 source = "Ussher's Annals of the World (1658)"
-note = "The events-extra.toml ab_* chain (Terah leaves Ur -2100 .. Abram settles Hebron -2085) narrates the SAME migration on a distinct, internally-consistent, ~170-year-earlier patriarchal sub-scale -- the brief's own pre-disclosed 'patriarchal ~90-190yr' adjacency (W1/W2 policy). Both stand; not re-litigated here. GEN's own narration window (below) is wide enough to hold both without conflict."
+note = "Ussher's Annals, paragraph 124 (marginal date '2083 AM, 2793 JP, 1921 BC'): \"...Abram... departed out of Haran... So Abram passed through the land unto the place of Sichem, Gen. 12:4-6.\" Confirmed against both independent scans, 2026-08-22. The events-extra.toml ab_* chain (Terah leaves Ur -2100 .. Abram settles Hebron -2085) narrates the SAME migration on a distinct, internally-consistent, ~170-year-earlier patriarchal sub-scale -- the brief's own pre-disclosed 'patriarchal ~90-190yr' adjacency (W1/W2 policy). Both stand; not re-litigated here. GEN's own narration window (below) is wide enough to hold both without conflict. No curated event resolves an `anchor = ` field against THIS row -- the ab_* chain's own first leg (`ab_ur`) is anchor-relative against this same row's own `year`, so the two scales stay independently authored, exactly as disclosed."
 
-# --- Exodus: DISCLOSED ADJACENCY, STRUCTURAL pair 1 of 3 --------------------
+# --- Exodus: the one remaining DISCLOSED ADJACENCY, a STRUCTURAL pair ------
 [[anchor]]
 id = "exodus"
 label = "The Exodus from Egypt"
 year = -1491
 source = "Ussher's Annals of the World (1658)"
-note = "This atlas's own already-curated exodus/conquest narrative chains (data/curated/narratives/exodus.toml, conquest.toml; ex_rameses onward) run on a distinct, internally-consistent -1446 scale instead -- the brief's own explicitly pre-disclosed 'Exodus -1491 vs -1446' adjacency (W1/W2 policy), also visible in the theo-* Numbers/Joshua cluster (theo-130 'Crossing the Jordan into Canaan' at -1451, the SAME 45-year offset from the -1406 scale, propagated consistently rather than randomly). Left unbound deliberately -- see 'exodus-departs' below for the bound structural anchor E4 actually uses. Not re-litigated here."
+note = "Ussher's Annals, paragraph 143 (marginal date '2513a AM, 3223 JP, 1491 BC'): \"...on the fifteenth day of the first month... the children of Israel went out of Egypt, Exod. 12:2, 6, 51, Num. 33:3.\" Confirmed against both independent scans, 2026-08-22. This atlas's own already-curated exodus/conquest narrative chains (data/curated/narratives/exodus.toml, conquest.toml; ex_rameses onward) run on a distinct, internally-consistent -1446 scale instead -- the brief's own explicitly pre-disclosed 'Exodus -1491 vs -1446' adjacency (W1/W2 policy), also visible in the theo-* Numbers/Joshua cluster (theo-130 'Crossing the Jordan into Canaan' at -1451, the SAME 45-year offset from the -1406 scale, propagated consistently rather than randomly). Left unbound deliberately -- see 'exodus-departs' below for the bound structural anchor E4 actually uses, and the one this atlas's own curated events resolve against. Not re-litigated here."
 
 [[anchor]]
 id = "exodus-departs"
@@ -125,7 +143,7 @@ year = -1446
 event_id = "ex_rameses"
 era_boundary = true
 source = "This atlas's own already-curated exodus narrative chain (data/curated/narratives/exodus.toml)"
-note = "STRUCTURAL: stands in for the 'exodus' anchor row above wherever the E4 property test needs a real, bound timeline position for the patriarchal->exodus-wilderness era boundary. See that row for the Ussher-literal -1491 figure and the disclosed adjacency."
+note = "STRUCTURAL: stands in for the 'exodus' anchor row above wherever a curated event needs a real, bound resolution target for the patriarchal->exodus-wilderness era, on this atlas's own -1446 scale. See that row for the Ussher-literal -1491 figure and the disclosed adjacency."
 
 [[anchor]]
 id = "conquest-begins"
@@ -142,6 +160,7 @@ year = -1095
 event_id = "theo-155"
 era_boundary = true
 source = "Ussher's Annals of the World (1658); matches this atlas's own internally-consistent theo-* Judges-succession chain (theo-133 Death of Joshua -1424 through theo-155)"
+note = "Ussher's Annals, paragraph 391 (marginal date '2909c AM, 3619 JP, 1095 BC'): \"Saul... began to reign over Israel, 1 Sam. 13:1.\" Confirmed against both independent scans, 2026-08-22 (this row was already independently spot-checked against the same primary text during HOTFIX-6 fix round 2's own row-corroboration re-sweep; re-cited here in full, per requirement 6)."
 
 [[anchor]]
 id = "david-hebron"
@@ -149,7 +168,7 @@ label = "David anointed king over Judah at Hebron"
 year = -1055
 event_id = "df_hebron"
 source = "Ussher's Annals of the World (1658)"
-note = "Re-dated onto this scale by this very batch (HOTFIX-6) -- df_hebron previously read -1010, part of the df_* chain's own uniform wrong-anchor error; see batch-hotfix6-report.md."
+note = "Re-dated onto this scale by HOTFIX-6 -- df_hebron previously read -1010, part of the df_* chain's own uniform wrong-anchor error; see batch-hotfix6-report.md. Ussher's Annals, paragraph 397 (marginal date '2949a AM, 3658 JP, 1055 BC'): \"David... reigned... in Hebron over the house of Judah seven years and six months, 2 Sam. 2:11, 5:5, 1 Chron. 3:4.\" Confirmed against both independent scans, 2026-08-22."
 
 [[anchor]]
 id = "david-jerusalem"
@@ -157,6 +176,7 @@ label = "David captures Jerusalem; made king over all Israel"
 year = -1048
 event_id = "sam2_jerusalem_captured"
 source = "Ussher's Annals of the World (1658)"
+note = "Ussher's Annals, paragraph 418 (marginal date '2957a AM, 3666 JP, 1048 BC'): \"David... took... the strong hold of Zion... [and] dwelt in the fort, and called it, The city of David, 2 Sam. 5:6-9, 1 Chron. 11:4-8.\" Confirmed against both independent scans, 2026-08-22 (already spot-checked during HOTFIX-6 fix round 2's own row-corroboration re-sweep; re-cited here in full, per requirement 6)."
 
 [[anchor]]
 id = "solomon-crowned"
@@ -164,6 +184,7 @@ label = "Solomon anointed king"
 year = -1015
 event_id = "1ki_solomon_anointed"
 source = "Ussher's Annals of the World (1658)"
+note = "Ussher's Annals, paragraph 429 (marginal date '2989c AM, 3699 JP, 1015 BC'): \"...Solomon... [was] anointed king a second time... at Gihon, 1 Kings 1:32-40, 1 Chron. 29:22.\" Confirmed against both independent scans, 2026-08-22."
 
 [[anchor]]
 id = "temple-begun"
@@ -171,6 +192,7 @@ label = "Solomon begins building the Temple (1 Kings 6:1)"
 year = -1012
 event_id = "theo-162"
 source = "Ussher's Annals of the World (1658)"
+note = "Ussher's Annals, paragraph 435 (marginal date '2992b AM, 3702 JP, 1012 BC'): \"...in the four hundred and eightieth year after the coming of the children of Israel out of Egypt... Solomon began to build the house of the LORD, 1 Kings 6:1.\" Confirmed against both independent scans, 2026-08-22."
 
 [[anchor]]
 id = "kingdom-divided"
@@ -179,87 +201,40 @@ year = -975
 event_id = "1ki_kingdom_divided"
 era_boundary = true
 source = "Ussher's Annals of the World (1658)"
+note = "Ussher's Annals, paragraph 452 (marginal date '3029a AM, 3739 JP, 975 BC'): \"...all Israel... made him [Jeroboam] king over Israel: there was none that followed the house of David, but the tribe of Judah only, 1 Kings 12:20.\" Confirmed against both independent scans, 2026-08-22."
 
 [[anchor]]
 id = "samaria-falls"
 label = "Samaria falls to Assyria; the northern kingdom ends"
 year = -721
-source = "Ussher's Annals of the World (1658)"
-note = "This atlas's own already-curated 2ki_fall_of_samaria spans -730..-721 (the siege's own backstory through the fall) -- a real multi-year curated SPAN, not a single-year point, so it is left unbound here rather than forcing an exact from_year match against a headline year that is really its own to_year. -721 stands on its own as the documented, undisputed traditional date."
+source = "Widely-cited traditional date (Hoshea's own ninth year, 2 Kings 17:6)"
+note = "This atlas's own already-curated 2ki_fall_of_samaria spans -730..-721 (the siege's own backstory through the fall) -- a real multi-year curated SPAN, not a single-year point, so it is left unbound here rather than forcing an exact from_year match against a headline year that is really its own to_year (`2ki_fall_of_samaria` resolves `anchor = \"kingdom-divided\"`, offset-arithmetic against the OTHER already-primary-cited row above, reproducing -730..-721 exactly -- see that curated event's own `ref_note`). -721 stands on its own as the documented, undisputed traditional date -- Ussher's own Annals places the fall one year earlier, at 722 BC (paragraph 464, the well-known one-year Assyrian-regnal-reckoning spread real Near Eastern chronology carries generally at this transition, the SAME class of variance already disclosed for `jerusalem-falls` above); -721 is the widely-cited convention this atlas's own already-shipped `2ki_fall_of_samaria` uses, disclosed as such rather than silently harmonized to Ussher's own -722."
 
-# --- Jerusalem falls / Cyrus's decree / temple finished / Ezra's return:
-# FIX ROUND 1 (controller ruling, 2026-08-22) then a SEQUENCING REDIRECT
-# (owner, same day, near-verbatim: "why do the redates now if itll be
-# easier after hotfix 7"): these four rows were ORIGINALLY authored as
-# disclosed-adjacency pairs (like Exodus above). The controller first
-# overruled that framing -- unlike Exodus (which SHIPS the declared Ussher
-# value and discloses the alternative), these four shipped MODERN-
-# SCHOLARLY values that CONTRADICTED this atlas's own declared Ussher
-# scale, W2-era authoring drift, not a legitimate tension -- but the owner
-# then correctly pointed out that hand-re-dating the shipped events now is
-# WASTED WORK: HOTFIX-7's own single-feed migration deletes every inline
-# year literal and resolves dates from this table directly, so any hand
-# edit made now is immediately overwritten there. RESOLUTION: the RULING
-# stands (this table's own `year` below IS the canonical Ussher value,
-# already) but the DATA MOVE is a TYPED DEFERRAL, not a fix -- each row
-# below stays bound to its real event (so the deferral has something
-# concrete to reference) but is registered in
-# `atlas_core::chronology::ANCHOR_DEFERRALS`, which the E1 property test
-# consults: a deferred anchor's own equality claim is never silently
-# skipped (E1 still verifies the deferral's own recorded `shipped_value`
-# stays honest, i.e. matches the event's real current date) and never
-# silently passed as if genuinely equal -- it is reported, by name, in
-# E1's own output, distinctly from a real violation. This is a DIFFERENT,
-# TIME-BOUNDED kind of exemption from `RECOUNTING_CHAPTERS`/
-# `WINDOW_EXEMPTIONS` above (permanent, by design, for genealogies/
-# retrospective citations) -- a deferral resolves and is deleted the
-# moment HOTFIX-7 binds the real event to this table; see
-# `atlas_core::chronology`'s own module doc comment for the full
-# distinction. The paired "-begins" structural rows (still bound to the
-# REAL shipped value, still `era_boundary = true`) are UNCHANGED and
-# UN-deferred -- they honestly describe where the compiled graph actually
-# sits today, which is exactly what E4's own era-partition property needs.
 [[anchor]]
 id = "jerusalem-falls"
 label = "Jerusalem falls to Babylon; the Temple destroyed"
 year = -588
 event_id = "exl_jerusalem"
-source = "Ussher's Annals of the World (1658)"
-note = "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- exl_jerusalem (and its own exile-chain/jer_*/2ki_* dependents) still ships -586 today, a modern-scholarly value, not re-dated by hand per the owner's own sequencing redirect. See 'exile-begins' below for the bound structural row E4 uses today (the real, current -586)."
-
-[[anchor]]
-id = "exile-begins"
-label = "Jerusalem falls (this atlas's own currently-shipped scale)"
-year = -586
-event_id = "exl_jerusalem"
 era_boundary = true
-source = "This atlas's own already-curated exile narrative chain (data/curated/narratives/exile.toml) and its surrounding jer_*/ezk_*/2ki_* content"
-note = "STRUCTURAL, live (NOT deferred): the real, currently-shipped value -- stands in for 'jerusalem-falls' above wherever E4 needs a real, bound timeline position for the divided-kingdoms->exile era boundary, honestly describing today's compiled data. See 'jerusalem-falls' above for the canonical Ussher value this row will be retired in favor of once HOTFIX-7 lands."
+source = "Ussher's Annals of the World (1658)"
+note = "RESOLVED (Batch HOTFIX-7, single-feed migration): `exl_jerusalem` (and every event chained off it via `after = `, transitively -- the exile narrative chain, the jer_*/2ki_* siege-and-aftermath cluster) now resolves its own `from_year`/`to_year` directly from THIS row's own `year`, -588 -- no longer a HOTFIX-6-era typed deferral against an older, modern-scholarly -586. Ussher's Annals, paragraph 611 (marginal date '3416b AM, 4126 JP, 588 BC'): \"...the city was broken up... and the city... burnt with fire... on the seventh day of the month, 2 Kings 25:2-9, Jer. 39:2, 52:6, 12-13.\" Confirmed against both independent scans, 2026-08-22. `exile-begins`, the HOTFIX-6-era STRUCTURAL companion row that stood in for this one while it was deferred, is RETIRED (Batch HOTFIX-7) -- this row is now itself the live, bound, era_boundary value E4 uses."
 
 [[anchor]]
 id = "cyrus-decree"
 label = "Cyrus decrees the return from Babylon"
 year = -536
 event_id = "ret_babylon"
-source = "Widely-cited traditional date (Cyrus's first regnal year over the whole empire, distinct from Babylon's own fall in 539 BC)"
-note = "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- ret_babylon (and its own return-chain/ezr_*/1ch_*/dan_* dependents) still ships -538 today, tied to Babylon's own fall rather than the decree specifically, not re-dated by hand per the owner's own sequencing redirect. See 'return-begins' below for the bound structural row E4 uses today (the real, current -538)."
-
-[[anchor]]
-id = "return-begins"
-label = "Cyrus decrees the return (this atlas's own currently-shipped scale)"
-year = -538
-event_id = "ret_babylon"
 era_boundary = true
-source = "This atlas's own already-curated return narrative chain (data/curated/narratives/return.toml)"
-note = "STRUCTURAL, live (NOT deferred): the real, currently-shipped value -- stands in for 'cyrus-decree' above wherever E4 needs a real, bound timeline position for the exile->return era boundary, honestly describing today's compiled data. See 'cyrus-decree' above for the canonical value this row will be retired in favor of once HOTFIX-7 lands."
+source = "Ussher's Annals of the World (1658)"
+note = "RESOLVED (Batch HOTFIX-7, single-feed migration): `ret_babylon` (and every event chained off it via `after = `, transitively -- the whole return narrative chain, plus the ezr_*/1ch_*/dan_* Cyrus-era cluster) now resolves its own `from_year`/`to_year` directly from THIS row's own `year`, -536 -- no longer a HOTFIX-6-era typed deferral against an older, modern-scholarly -538 (a value tied to Babylon's own fall rather than Cyrus's own decree specifically). Ussher's Annals, paragraph 620 (marginal date '3468b AM, 4178 JP, 536 BC'): \"...in the first year of Cyrus king of Persia... the LORD stirred up the spirit of Cyrus... [who] made a proclamation... saying... Who is there among you of all his people?... let him go up to Jerusalem... and build the house of the LORD, Ezra 1:1-3.\" Confirmed against both independent scans, 2026-08-22. `return-begins`, the HOTFIX-6-era STRUCTURAL companion row that stood in for this one while it was deferred, is RETIRED (Batch HOTFIX-7) -- this row is now itself the live, bound, era_boundary value E4 uses."
 
 [[anchor]]
 id = "temple-finished"
 label = "The second Temple is completed"
 year = -515
 event_id = "ret_jerusalem_temple"
-source = "Widely-cited traditional date (\"the sixth year of Darius,\" Ezra 6:15)"
-note = "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- ret_jerusalem_temple/ezr_temple_completed still ship -516 today (a 1-year Adar/Nisan calendar-epoch variance), not re-dated by hand per the owner's own sequencing redirect. Never an era_boundary anchor (no E4 boundary needed here), so no companion structural row."
+source = "Ussher's Annals of the World (1658)"
+note = "RESOLVED (Batch HOTFIX-7, single-feed migration): `ret_jerusalem_temple`/`ezr_temple_completed` (and every event chained off either, transitively) now resolve their own date(s) directly from THIS row's own `year`, -515 -- no longer a HOTFIX-6-era typed deferral against an older -516 (a 1-year Adar/Nisan calendar-epoch variance). Ussher's Annals, paragraph 637 (marginal date '3489b AM, 4199 JP, 515 BC'): \"...this house was finished on the third day of the month Adar, which was in the sixth year of the reign of Darius, Ezra 6:15.\" Confirmed against both independent scans, 2026-08-22. Never an era_boundary anchor (no E4 boundary needed here), so no companion structural row ever existed to retire."
 
 [[anchor]]
 id = "ezra-returns"
@@ -267,7 +242,7 @@ label = "Ezra's commission and return to Jerusalem"
 year = -467
 event_id = "ezr_ezra_arrives"
 source = "Ussher's Annals of the World (1658)"
-note = "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- ezr_ezra_arrives (and its own arrival-cluster dependents, ezr_journey_to_jerusalem/ezr_ezras_prayer/ezr_assembly_repents) still ship -458 today, which sits within the modern-scholarly ~457 BC spread, not Ussher's own actual original figure (467 BC, a since-superseded Persian-regnal assumption most modern treatments replace with 457 instead) -- not re-dated by hand per the owner's own sequencing redirect. Never an era_boundary anchor, so no companion structural row. CITATION (fix round 2, review finding I-3): James Ussher, The Annals of the World (1658; cited here via the Larry & Marion Pierce paragraph-numbered English text, archive.org/details/james-usher-annals-of-the-world and the independently cross-checked archive.org/details/AnnalsOfTheWorld, both retrieved 2026-08-22), paragraph 1202 (marginal date '3537b AM, 4247 JP, 467 BC'): 'Ezra the priest... obtained permission from Artaxerxes the king... to resettle the Jewish state and to reform the religion at Jerusalem... Ezr 7:11-26.' Both scans agree word for word."
+note = "RESOLVED (Batch HOTFIX-7, single-feed migration): `ezr_ezra_arrives` (and every event chained off it via `after = `, transitively -- `ezr_journey_to_jerusalem`/`ezr_ezras_prayer`/`ezr_assembly_repents`) now resolves its own `from_year`/`to_year` directly from THIS row's own `year`, -467 -- no longer a HOTFIX-6-era typed deferral against an older -458 (a value sitting within the modern-scholarly ~457 BC spread, not Ussher's own actual figure). CITATION (fix round 2, review finding I-3, carried forward): James Ussher, The Annals of the World (1658; cited here via the Larry & Marion Pierce paragraph-numbered English text, archive.org/details/james-usher-annals-of-the-world and the independently cross-checked archive.org/details/AnnalsOfTheWorld, both retrieved 2026-08-22), paragraph 1202 (marginal date '3537b AM, 4247 JP, 467 BC'): 'Ezra the priest... obtained permission from Artaxerxes the king... to resettle the Jewish state and to reform the religion at Jerusalem... Ezr 7:11-26.' Both scans agree word for word. Never an era_boundary anchor, so no companion structural row ever existed to retire."
 
 [[anchor]]
 id = "nehemiah-wall"
@@ -276,7 +251,7 @@ year = -454
 event_id = "ret_jerusalem_wall"
 era_boundary = true
 source = "Ussher's Annals of the World (1658)"
-note = "FIX ROUND 2, CRITICAL FINDING C-1 (independent review, 2026-08-22): this row previously read -444, citing 'Ussher's Annals of the World' -- but -444 is a MODERN reckoning (Artaxerxes' 20th year from the conventional 465/464 BC accession), not Ussher's own actual figure, and the controller's own brief (whose requirement-1 example list originally seeded '-444') has disclosed that seed as its own error, ledgered against the brief, not this batch. TWO independent, doctrine-clean derivations both land on -454: (a) PRIMARY SOURCE -- Ussher's Annals, paragraph 1227 (marginal date '3550c AM, 4260 JP, 454 BC'): 'In the same 20th year of the king, in the month Nisan, Nehemiah's turn came to serve as cupbearer... and obtained permission from the king to be the governor of Judah and to rebuild Jerusalem. Neh 2:1-6.' Paragraph 1234 (same '454 BC' marker block): 'the wall was finished in 52 days, on the 25th day of the 6th month called Elul' (Neh 6:15, this anchor's own second citation). Confirmed word-for-word identical against TWO independently uploaded archive.org scans (archive.org/details/james-usher-annals-of-the-world and archive.org/details/AnnalsOfTheWorld, both retrieved 2026-08-22), the same two-independent-copies standard LICENSES.md already applies to Robertson/Crockett -- see 'Ussher's Annals of the World' there. (b) INTERNAL ARITHMETIC on this atlas's own declared scale: ezra-returns (above) = -467, Artaxerxes' 7th year (Ezra 7:7-8); Nehemiah's own commission is explicitly the SAME king's 20th year (Neh 2:1), 13 years later (uncontested across chronological schools) -- 467 BC minus 13 years is 454 BC; in signed years, (-467) + 13 = -454. Both paths agree exactly; shipped with both cited, per the controller's own tie-break rule. The bound event (ret_jerusalem_wall) and its own dependents (ret_susa and the neh_* cluster in data/curated/passages/nehemiah.toml) were HAND-RE-DATED this round (not deferred) -- this is a citation-accuracy correction to a value that was never genuinely Ussher's own in the first place, not W2-era scholarly drift of an already-correctly-cited figure, so the ANCHOR_DEFERRALS/HOTFIX-7-sequencing reasoning above does not apply here."
+note = "FIX ROUND 2, CRITICAL FINDING C-1 (independent review, 2026-08-22, carried forward -- this row was never a typed deferral; it was a citation-accuracy correction, already hand-re-dated and live since HOTFIX-6): this row previously read -444, citing 'Ussher's Annals of the World' -- but -444 is a MODERN reckoning (Artaxerxes' 20th year from the conventional 465/464 BC accession), not Ussher's own actual figure. TWO independent, doctrine-clean derivations both land on -454: (a) PRIMARY SOURCE -- Ussher's Annals, paragraph 1227 (marginal date '3550c AM, 4260 JP, 454 BC'): 'In the same 20th year of the king, in the month Nisan, Nehemiah's turn came to serve as cupbearer... and obtained permission from the king to be the governor of Judah and to rebuild Jerusalem. Neh 2:1-6.' Paragraph 1234 (same '454 BC' marker block): 'the wall was finished in 52 days, on the 25th day of the 6th month called Elul' (Neh 6:15, this anchor's own second citation). Confirmed word-for-word identical against TWO independently uploaded archive.org scans, the same two-independent-copies standard LICENSES.md already applies to Robertson/Crockett. (b) INTERNAL ARITHMETIC on this atlas's own declared scale: ezra-returns (above) = -467, Artaxerxes' 7th year (Ezra 7:7-8); Nehemiah's own commission is explicitly the SAME king's 20th year (Neh 2:1), 13 years later (uncontested across chronological schools) -- (-467) + 13 = -454. Both paths agree exactly. Batch HOTFIX-7: `ret_jerusalem_wall` (and the whole neh_* chain chained off it via `after = `, transitively) now resolves directly from THIS row -- the SAME already-correct value, just re-expressed as a resolution rather than a coincidentally-agreeing independent literal."
 
 [[anchor]]
 id = "passion"
@@ -284,3 +259,4 @@ label = "The Crucifixion at Golgotha (this atlas's own AD-33 Passion anchor)"
 year = 33
 event_id = "pw_golgotha"
 source = "This atlas's own already-established AD-33 Passion anchor (HOTFIX-4's NT calibration); already calibrated, not re-litigated here"
+note = "Not an Ussher-Annals citation -- this atlas's own already-established, already-reviewed AD-33 NT calibration anchor (HOTFIX-4), disclosed as such rather than a fresh Ussher lookup Ussher's own Annals text does not use the identical reckoning for regardless (Ussher's own Passion-year figure sits on a different, also-defensible NT chronology; not re-litigated by this batch, per HOTFIX-4's own binding ruling)."

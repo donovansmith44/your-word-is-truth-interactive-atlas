@@ -20,6 +20,7 @@
 
 use anyhow::{bail, Context, Result};
 use atlas_core::data::{BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, Landmark, LandMaskRegion, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
+use atlas_core::date_resolve::DateResolution;
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -115,14 +116,55 @@ pub fn parse_narrative(input: &str) -> Result<Narrative> {
 struct EventToml {
     id: String,
     label: String,
-    /// Batch T2: OPTIONAL -- a `kind = "general"` row must OMIT both (see
-    /// `parse_events_extra`'s own conditional-required logic below); a
-    /// `kind = "event"` row (or `kind` absent, the default) still REQUIRES
-    /// both, unchanged since Task 3.
+    /// Batch HOTFIX-7 (single-feed chronology migration): kept in the
+    /// schema DELIBERATELY, purely so a curator writing either field is
+    /// caught and rejected with a clear message (`parse_events_extra`'s own
+    /// authoring guard, below) instead of a generic serde "unknown field"
+    /// error -- no curated event may carry an inline literal year anymore;
+    /// see `anchor`/`after`/`era` immediately below for the four resolution
+    /// forms that replace it (`atlas_core::date_resolve`'s own module doc
+    /// comment has the full vocabulary).
     #[serde(default)]
     from_year: Option<i32>,
     #[serde(default)]
     to_year: Option<i32>,
+    /// Batch HOTFIX-7, resolution form (a)/(b): this event resolves from
+    /// `data/curated/chronology-anchors.toml` row `anchor`, at `offset`
+    /// years (default 0 -- form (a), ANCHOR BINDING, when this event is
+    /// also that anchor's own `event_id`; any other offset, or an offset
+    /// of 0 against an anchor bound to a DIFFERENT event, is form (b),
+    /// ANCHOR-RELATIVE -- see `atlas_core::date_resolve::ResolutionForm`'s
+    /// own doc comment for why this is derived, not curator-declared).
+    /// Mutually exclusive with `after`/`era` -- exactly one of the three is
+    /// required for a `kind = "event"` row.
+    #[serde(default)]
+    anchor: Option<String>,
+    /// Batch HOTFIX-7, resolution form (c), SEQUENCE PLACEMENT: this
+    /// event resolves `offset` years after event `after`'s own resolved
+    /// `from_year` (curated or an already-dated Theographic import id).
+    /// Mutually exclusive with `anchor`/`era`.
+    #[serde(default)]
+    after: Option<String>,
+    /// Batch HOTFIX-7, resolution form (d), ERA PLACEMENT: this event
+    /// resolves directly to `data/curated/eras.toml` row `era`'s own
+    /// `(from_year, to_year)` window -- no `offset`/`to_offset` (an era
+    /// window IS the claim). Mutually exclusive with `anchor`/`after`.
+    #[serde(default)]
+    era: Option<String>,
+    /// The signed year offset for `anchor`/`after` (form (b)/(c)) --
+    /// defaults to 0 (form (a), anchor binding, when paired with `anchor`
+    /// and no `to_offset`). Forbidden alongside `era`.
+    #[serde(default)]
+    offset: Option<i32>,
+    /// The signed year offset for `to_year`, against the SAME `anchor`/
+    /// `after` reference `offset` uses -- defaults to `offset` itself (a
+    /// point event, `from_year == to_year`). A curator authoring a RANGE
+    /// whose two ends have different textual bases tunes this
+    /// independently of `offset` (see `atlas_core::date_resolve`'s own
+    /// module doc comment for a real worked example,
+    /// `2ki_flight_and_jehoiachin_released`). Forbidden alongside `era`.
+    #[serde(default)]
+    to_offset: Option<i32>,
     /// Batch T2: `#[serde(default)]` added so a `kind = "general"` row can
     /// omit this key entirely, same reasoning as `from_year`/`to_year`.
     #[serde(default)]
@@ -230,31 +272,60 @@ pub fn expand_verse_ref(raw: &str, context: &str, out: &mut Vec<String>) -> Resu
 /// our own authored data and should be held to a higher bar than
 /// third-party raw data with soft-dropped rows.
 ///
-/// Batch T2 (general-kind PASSAGEs): `kind` gates which of `from_year`/
-/// `to_year`/`places` are REQUIRED vs FORBIDDEN, in both directions --
-/// "do not fabricate a date/place" is enforced structurally, not by
-/// convention:
-/// - `kind` absent or `"event"` (unchanged since Task 3): `places`
-///   non-empty and `from_year`/`to_year` both present are REQUIRED; a
-///   missing one of any of these is a hard error.
-/// - `kind = "general"`: `places`/`from_year`/`to_year` must all be
-///   ABSENT from the curated row -- a curator writing a date/place
-///   TOGETHER WITH `kind = "general"` is a hard error too (one of the two
-///   is a mistake; failing loud beats silently picking one). `when`
-///   becomes `TimeRange::undated()` -- never a curator-typed number --
-///   and `places` stays the empty `Vec` `#[serde(default)]` already gives
-///   it when omitted.
-pub fn parse_events_extra(input: &str) -> Result<Vec<Event>> {
+/// Batch T2 (general-kind PASSAGEs): `kind` gates which of the date
+/// fields/`places` are REQUIRED vs FORBIDDEN, in both directions -- "do not
+/// fabricate a date/place" is enforced structurally, not by convention:
+/// - `kind` absent or `"event"`: `places` non-empty is REQUIRED; the date
+///   itself is required as exactly one resolution form (see below) --
+///   NEVER an inline `from_year`/`to_year` literal (Batch HOTFIX-7's own
+///   authoring guard, requirement 4).
+/// - `kind = "general"`: `places` and EVERY date field (`from_year`/
+///   `to_year`/`anchor`/`after`/`era`/`offset`/`to_offset`) must all be
+///   ABSENT from the curated row -- a curator writing any of them TOGETHER
+///   WITH `kind = "general"` is a hard error too (one of the two is a
+///   mistake; failing loud beats silently picking one). `when` becomes
+///   `TimeRange::undated()` -- never a curator-typed number -- and
+///   `places` stays the empty `Vec` `#[serde(default)]` already gives it
+///   when omitted.
+///
+/// Batch HOTFIX-7 (single-feed chronology migration, requirement 4, THE
+/// AUTHORING GUARD): a `kind = "event"` row carrying `from_year`/`to_year`
+/// is REJECTED outright -- the migration deleted every inline year
+/// literal; this guard keeps them deleted, permanently, with no escape
+/// hatch (era placement, form (d), covers the one legitimate case for
+/// genuinely era-level precision). Exactly ONE of `anchor`/`after`/`era`
+/// is REQUIRED instead; `offset`/`to_offset` are valid only alongside
+/// `anchor`/`after` (an era window IS the claim, never offset).
+///
+/// The actual RESOLUTION (looking up the anchor/era table, walking a
+/// `after=` chain) does NOT happen here -- this function parses ONE file in
+/// isolation and cannot see `chronology-anchors.toml`, `eras.toml`, or any
+/// OTHER curated file's own events, all of which a `after=`/`anchor=`
+/// reference may need (see `atlas_core::date_resolve`'s own module doc
+/// comment for the full reasoning). `when` is therefore a PLACEHOLDER
+/// (`TimeRange::new(1, 1)`, never read) for every "event"-kind row here --
+/// `atlas_etl::main` calls `atlas_core::date_resolve::resolve_curated_dates`
+/// once, over every curated file's own combined output, to fill in the
+/// real value. The returned `Option<DateResolution>` is `None` exactly for
+/// `kind = "general"` rows (which never had one).
+pub fn parse_events_extra(input: &str) -> Result<Vec<(Event, Option<DateResolution>)>> {
     let f: EventsFile =
         toml::from_str(input).context("events-extra.toml: invalid TOML or does not match the [[event]] schema")?;
 
     let mut out = Vec::with_capacity(f.event.len());
     for e in f.event {
         let kind = e.kind.clone().unwrap_or_else(default_event_kind);
-        let (when, places) = if kind == "general" {
-            if e.from_year.is_some() || e.to_year.is_some() {
+        let (when, places, resolution) = if kind == "general" {
+            if e.from_year.is_some()
+                || e.to_year.is_some()
+                || e.anchor.is_some()
+                || e.after.is_some()
+                || e.era.is_some()
+                || e.offset.is_some()
+                || e.to_offset.is_some()
+            {
                 bail!(
-                    "curated event '{}' is kind=\"general\" but specifies from_year/to_year -- a general-kind passage must not claim a date (omit both fields; do not fabricate)",
+                    "curated event '{}' is kind=\"general\" but specifies a date/resolution field (from_year/to_year/anchor/after/era/offset/to_offset) -- a general-kind passage must not claim a date (omit all of them; do not fabricate)",
                     e.id
                 );
             }
@@ -264,42 +335,71 @@ pub fn parse_events_extra(input: &str) -> Result<Vec<Event>> {
                     e.id
                 );
             }
-            (TimeRange::undated(), e.places)
+            (TimeRange::undated(), e.places, None)
         } else {
             if e.places.is_empty() {
                 bail!("curated event '{}' has no places (places[0] is required as the narrative-arrow anchor)", e.id);
             }
-            let (from_year, to_year) = match (e.from_year, e.to_year) {
-                (Some(fy), Some(ty)) => (fy, ty),
-                _ => bail!(
-                    "curated event '{}' is missing from_year/to_year -- required unless kind=\"general\"",
+            if e.from_year.is_some() || e.to_year.is_some() {
+                bail!(
+                    "curated event '{}' carries an inline from_year/to_year literal -- single-feed chronology (Batch HOTFIX-7) forbids this. Express its date as anchor=\"<id>\" (+ optional offset=/to_offset=), after=\"<event id>\" (+ offset=/to_offset=), or era=\"<id>\", resolving from data/curated/chronology-anchors.toml / eras.toml instead",
                     e.id
-                ),
+                );
+            }
+            let forms_present = [e.anchor.is_some(), e.after.is_some(), e.era.is_some()];
+            let forms_count = forms_present.iter().filter(|p| **p).count();
+            if forms_count != 1 {
+                bail!(
+                    "curated event '{}' must specify EXACTLY ONE of anchor=/after=/era= (found {}) -- see data/curated/chronology-anchors.toml's own resolution-forms note",
+                    e.id,
+                    forms_count
+                );
+            }
+            let resolution = if let Some(era_id) = e.era.clone() {
+                if e.offset.is_some() || e.to_offset.is_some() {
+                    bail!(
+                        "curated event '{}' combines era=\"{}\" with offset=/to_offset= -- era placement resolves directly to the era's own window, no offset",
+                        e.id,
+                        era_id
+                    );
+                }
+                DateResolution::Era { era_id }
+            } else {
+                let offset = e.offset.unwrap_or(0);
+                let to_offset = e.to_offset.unwrap_or(offset);
+                if let Some(anchor_id) = e.anchor.clone() {
+                    DateResolution::Anchor { anchor_id, offset, to_offset }
+                } else {
+                    DateResolution::Sequence { after: e.after.clone().expect("forms_count == 1 and anchor/era are None -- after must be Some"), offset, to_offset }
+                }
             };
-            let when = TimeRange::new(from_year, to_year).map_err(|src| {
-                anyhow::anyhow!("curated event '{}' (from_year={}, to_year={}): {}", e.id, from_year, to_year, src)
-            })?;
-            (when, e.places)
+            // Placeholder, never read -- overwritten by
+            // `date_resolve::resolve_curated_dates` once every curated
+            // file's own events are combined with the anchor/era tables.
+            (TimeRange::new(1, 1).unwrap(), e.places, Some(resolution))
         };
         let mut verses = Vec::new();
         for v in &e.verses {
             expand_verse_ref(v, &e.id, &mut verses)?;
         }
-        out.push(Event {
-            id: e.id,
-            label: e.label,
-            when,
-            places,
-            verses,
-            kind,
-            robertson_section: e.robertson_section,
-            acts_section: e.acts_section,
-            atlas_section: e.atlas_section,
-            kjv_superscription: e.kjv_superscription,
-            ref_note: e.ref_note,
-            order_key: e.order_key,
-            ..Default::default()
-        });
+        out.push((
+            Event {
+                id: e.id,
+                label: e.label,
+                when,
+                places,
+                verses,
+                kind,
+                robertson_section: e.robertson_section,
+                acts_section: e.acts_section,
+                atlas_section: e.atlas_section,
+                kjv_superscription: e.kjv_superscription,
+                ref_note: e.ref_note,
+                order_key: e.order_key,
+                ..Default::default()
+            },
+            resolution,
+        ));
     }
     Ok(out)
 }
@@ -1291,5 +1391,181 @@ verses = ["GEN.2.14", "DAN.10.4"]
     fn parse_place_names_kjv_rejects_malformed_toml() {
         assert!(parse_place_names_kjv("not = [valid").is_err());
         assert!(parse_place_names_kjv("foo = 1").is_err(), "missing [[alias]] array entirely");
+    }
+
+    // --- Batch HOTFIX-7: parse_events_extra's own authoring guard + the
+    // four resolution forms (quartet-shaped, per the brief's own
+    // requirement 4) -----------------------------------------------------
+
+    #[test]
+    fn rejects_an_inline_from_year_literal() {
+        let toml = r#"
+[[event]]
+id = "x"
+label = "X"
+from_year = -1000
+to_year = -1000
+places = ["jerusalem"]
+verses = ["GEN.1.1"]
+"#;
+        let err = parse_events_extra(toml).unwrap_err();
+        assert!(err.to_string().contains("inline from_year/to_year literal"), "{err}");
+        assert!(err.to_string().contains('x'), "{err}");
+    }
+
+    #[test]
+    fn rejects_an_inline_to_year_literal_alone() {
+        // Same guard even when only ONE of the pair is present (a curator
+        // half-migrating by hand, or a stray leftover field) -- not a
+        // narrower check that only fires on the pair together.
+        let toml = r#"
+[[event]]
+id = "x"
+label = "X"
+to_year = -1000
+anchor = "creation"
+places = ["jerusalem"]
+verses = ["GEN.1.1"]
+"#;
+        let err = parse_events_extra(toml).unwrap_err();
+        assert!(err.to_string().contains("inline from_year/to_year literal"), "{err}");
+    }
+
+    #[test]
+    fn rejects_zero_resolution_forms() {
+        let toml = r#"
+[[event]]
+id = "x"
+label = "X"
+places = ["jerusalem"]
+verses = ["GEN.1.1"]
+"#;
+        let err = parse_events_extra(toml).unwrap_err();
+        assert!(err.to_string().contains("EXACTLY ONE of anchor=/after=/era="), "{err}");
+        assert!(err.to_string().contains("found 0"), "{err}");
+    }
+
+    #[test]
+    fn rejects_more_than_one_resolution_form() {
+        let toml = r#"
+[[event]]
+id = "x"
+label = "X"
+anchor = "creation"
+after = "some_other_event"
+places = ["jerusalem"]
+verses = ["GEN.1.1"]
+"#;
+        let err = parse_events_extra(toml).unwrap_err();
+        assert!(err.to_string().contains("EXACTLY ONE of anchor=/after=/era="), "{err}");
+        assert!(err.to_string().contains("found 2"), "{err}");
+    }
+
+    #[test]
+    fn general_kind_rejects_any_resolution_field_too() {
+        // The guard extends to kind="general": a date/resolution claim on
+        // an explicitly undated container is a mistake either way, per the
+        // pre-existing "do not fabricate" rule this batch extends rather
+        // than replaces.
+        let toml = r#"
+[[event]]
+id = "x"
+label = "X"
+kind = "general"
+anchor = "creation"
+"#;
+        let err = parse_events_extra(toml).unwrap_err();
+        assert!(err.to_string().contains("general"), "{err}");
+    }
+
+    #[test]
+    fn era_placement_rejects_an_offset() {
+        let toml = r#"
+[[event]]
+id = "x"
+label = "X"
+era = "exile"
+offset = 1
+places = ["jerusalem"]
+verses = ["GEN.1.1"]
+"#;
+        let err = parse_events_extra(toml).unwrap_err();
+        assert!(err.to_string().contains("era=\"exile\" with offset=/to_offset="), "{err}");
+    }
+
+    #[test]
+    fn anchor_binding_form_parses_with_a_placeholder_when_and_offset_zero_default() {
+        let toml = r#"
+[[event]]
+id = "ret_jerusalem_wall"
+label = "Nehemiah completes Jerusalem's wall"
+anchor = "nehemiah-wall"
+places = ["jerusalem"]
+verses = ["NEH.2.11"]
+"#;
+        let rows = parse_events_extra(toml).unwrap();
+        assert_eq!(rows.len(), 1);
+        let (event, resolution) = &rows[0];
+        assert_eq!(event.when, atlas_core::time::TimeRange::new(1, 1).unwrap(), "placeholder, never read directly");
+        assert_eq!(resolution, &Some(DateResolution::Anchor { anchor_id: "nehemiah-wall".into(), offset: 0, to_offset: 0 }));
+    }
+
+    #[test]
+    fn anchor_relative_form_parses_offset_and_to_offset() {
+        let toml = r#"
+[[event]]
+id = "x"
+label = "X"
+anchor = "kingdom-divided"
+offset = -9
+to_offset = 254
+places = ["jerusalem"]
+verses = ["GEN.1.1"]
+"#;
+        let (_, resolution) = &parse_events_extra(toml).unwrap()[0];
+        assert_eq!(resolution, &Some(DateResolution::Anchor { anchor_id: "kingdom-divided".into(), offset: -9, to_offset: 254 }));
+    }
+
+    #[test]
+    fn sequence_form_defaults_to_offset_to_offset_when_omitted() {
+        let toml = r#"
+[[event]]
+id = "x"
+label = "X"
+after = "df_hebron"
+offset = -3
+places = ["jerusalem"]
+verses = ["GEN.1.1"]
+"#;
+        let (_, resolution) = &parse_events_extra(toml).unwrap()[0];
+        assert_eq!(resolution, &Some(DateResolution::Sequence { after: "df_hebron".into(), offset: -3, to_offset: -3 }), "to_offset defaults to offset -- a point event");
+    }
+
+    #[test]
+    fn era_form_parses_with_no_offset_fields() {
+        let toml = r#"
+[[event]]
+id = "x"
+label = "X"
+era = "exile"
+places = ["jerusalem"]
+verses = ["GEN.1.1"]
+"#;
+        let (_, resolution) = &parse_events_extra(toml).unwrap()[0];
+        assert_eq!(resolution, &Some(DateResolution::Era { era_id: "exile".into() }));
+    }
+
+    #[test]
+    fn general_kind_row_still_parses_with_no_resolution_at_all() {
+        let toml = r#"
+[[event]]
+id = "x"
+label = "X"
+kind = "general"
+verses = ["GEN.1.1"]
+"#;
+        let (event, resolution) = &parse_events_extra(toml).unwrap()[0];
+        assert_eq!(event.when, TimeRange::undated());
+        assert_eq!(resolution, &None);
     }
 }

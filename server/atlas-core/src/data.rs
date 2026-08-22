@@ -1043,6 +1043,54 @@ fn heading_precedence(e: &Event) -> (u8, u8, std::cmp::Reverse<i32>, std::cmp::R
     (layer, kind, std::cmp::Reverse(e.when.from_year), std::cmp::Reverse(e.order_key))
 }
 
+/// Batch HOTFIX-7, AMENDMENT F (owner live report #10, 2026-08-22): this
+/// event's own derived intra-year tiebreak -- the EARLIEST canonically-
+/// numbered position, among every one of its own effective verses
+/// (`event_merge::effective_verses`, the SAME top-level-`verses`-UNION-
+/// every-witness's-own-translated-verses union `AtlasData::finish`'s own
+/// `verse_to_events` index and `chronology`'s own window check both
+/// already use), where "canonically-numbered" means `(book's own index in
+/// canon::BOOKS, chapter, verse)` flattened to one `i64`
+/// (`book_index * 1_000_000 + chapter * 1_000 + verse` -- comfortably
+/// within range and never collides between two DIFFERENT (chapter, verse)
+/// pairs since every KJV chapter/verse number is well under 1000). For two
+/// events sharing a witnessed BOOK, comparing this value reduces to plain
+/// chapter/verse comparison -- exactly canonical reading order within that
+/// book, the property `narrative::tests::
+/// f2_within_year_same_book_order_agrees_with_canonical_verse_position`
+/// asserts graph-wide. For two events sharing NO book, this still produces
+/// a real, deterministic value for each (never undefined/random) but
+/// Amendment F makes no FURTHER claim about their relative order (same-
+/// book order is the documented, tested guarantee; full cross-book
+/// monotonicity among order_key-0 events was already unconstrained before
+/// this batch and remains so, same scope Amendment D's own same-book-only
+/// audit already established, see that test's own doc comment). Called
+/// ONLY when `order_key == 0` (`finish`'s own sort key) -- a curated,
+/// nonzero `order_key` (Passion Week's own `pw_*`/`rob_*` scheme, the NT-
+/// calibration `calibrated_order_key`/`GOSPEL_ORDER_KEY_OVERRIDES`
+/// formulas, any other deliberate cross-book harmonization decision) is a
+/// real editorial claim this derivation must never override. An event with
+/// no parseable verse at all (never observed in real compiled data) sorts
+/// last (`i64::MAX`) rather than panicking or silently defaulting to
+/// "first" -- the same "skip, never panic" discipline `heading_anchors_for`
+/// above already follows, for the identical reason (this can run on
+/// not-yet-validated data, mid-`finish()`, before `atlas_etl::validate::run`
+/// ever gets a chance to reject a malformed verse ref loudly).
+pub fn derived_intrayear_order(e: &Event) -> i64 {
+    crate::event_merge::effective_verses(e)
+        .into_iter()
+        .filter_map(|v| crate::refs::VerseId::parse_canonical(v).ok())
+        .filter_map(|vid| {
+            let book_code = vid.book.code();
+            crate::canon::BOOKS
+                .iter()
+                .position(|b| b.code == book_code)
+                .map(|book_index| book_index as i64 * 1_000_000 + vid.chapter as i64 * 1_000 + vid.verse as i64)
+        })
+        .min()
+        .unwrap_or(i64::MAX)
+}
+
 impl AtlasData {
     /// Builds an `AtlasData` from its eight schema fields, leaving the derived
     /// indexes empty (call `.finish()` to populate them). This is the
@@ -1335,14 +1383,47 @@ impl AtlasData {
         // see `timeline_order`'s own field doc comment for the full ordering
         // rule. `self.events` is already `sort_by_key(|e| e.when.from_year)`-
         // sorted (above), so this stable secondary sort's own tie-breaking
-        // (equal `(from_year, order_key)`) falls out to the ORIGINAL
-        // pre-any-sort compiled-array order, matching `heading_precedence`'s
-        // own documented "equal on all tiers keeps first-wins" precedent.
+        // (equal `(from_year, order_key, derived_intrayear_order)`) falls
+        // out to the ORIGINAL pre-any-sort compiled-array order, matching
+        // `heading_precedence`'s own documented "equal on all tiers keeps
+        // first-wins" precedent.
+        //
+        // Batch HOTFIX-7, AMENDMENT F (owner live report #10, 2026-08-22:
+        // "David's death precedes his final charge to Solomon... will this
+        // be addressed in the creation of the new table?"): `order_key`
+        // ALONE left every same-year pair that never got a curated
+        // `order_key` (the overwhelming majority -- default 0) to this
+        // stable sort's own tiebreak, i.e. bare pre-sort ARRAY position --
+        // `theo-160` ("Death of David," 1KI.2.10) sorted before
+        // `1ki_davids_charge` (1KI.2.1) at year -1015 for no reason but
+        // `theo-160` being a Theographic event (prepended to `self.events`
+        // by `atlas_etl::main` before any curated event is appended), never
+        // a chronological claim. `derived_intrayear_order` is the fix: for
+        // an event STILL at `order_key`'s own default (0 -- no curated
+        // cross-book harmonization claim), the third sort key is that
+        // event's own EARLIEST canonically-numbered narrating verse
+        // (`(book-canon-index, chapter, verse)`, flattened to one integer)
+        // -- computed fresh here, every run, never curator-typed. An event
+        // with a REAL, nonzero `order_key` (Passion Week's `pw_*`/`rob_*`
+        // scheme, the NT-calibration `calibrated_order_key`/
+        // `GOSPEL_ORDER_KEY_OVERRIDES` formulas, any other curated
+        // cross-book harmonization decision) is UNCHANGED -- `order_key`
+        // alone already fully decided its own comparisons before this key
+        // is even consulted (Rust tuple comparison short-circuits at the
+        // first differing field), so this third key is neutralized (`0`)
+        // for those rows precisely to avoid re-deciding an already-decided,
+        // deliberate editorial choice by accident. See
+        // `narrative::tests::f2_within_year_same_book_order_agrees_with_
+        // canonical_verse_position` for the graph-wide property this
+        // derivation makes hold, and `narrative::tests::f3_1015_bc_order_
+        // is_coup_then_anointed_then_charge_then_death` for the owner's own
+        // named case, red-then-green.
         let mut timeline_order: Vec<String> =
             self.events.iter().filter(|e| e.kind == "event").map(|e| e.id.clone()).collect();
         timeline_order.sort_by_key(|id| {
             let e = self.event_by_id(id).expect("id just collected from self.events");
-            (e.when.from_year, e.order_key)
+            let intrayear = if e.order_key == 0 { derived_intrayear_order(e) } else { 0 };
+            (e.when.from_year, e.order_key, intrayear)
         });
         self.timeline_index = timeline_order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect();
         self.timeline_order = timeline_order;

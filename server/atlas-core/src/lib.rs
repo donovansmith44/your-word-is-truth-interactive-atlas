@@ -2,6 +2,7 @@ pub mod canon;
 pub mod catechism;
 pub mod chronology;
 pub mod data;
+pub mod date_resolve;
 pub mod event_merge;
 pub mod history;
 pub mod merge;

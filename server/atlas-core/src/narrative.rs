@@ -1110,9 +1110,29 @@ mod tests {
         assert!(!following.id.starts_with("df_"), "RED-CASE REGRESSION: FOLLOWING '{}' is a Saul-persecution df_* event -- the owner's own exact bug", following.id);
 
         // GREEN, verified live against the real compiled data: both
-        // neighbors are genuinely Solomon-era (David's own final charge to
-        // Solomon, and Solomon's own temple preparations with Hiram).
-        assert_eq!(prior.id, "1ki_davids_charge", "PRIOR must be David's own final charge to Solomon (-1015), Solomon-era");
+        // neighbors are genuinely Solomon-era (Solomon's own reign-opening
+        // mega-span, and Solomon's own temple preparations with Hiram).
+        //
+        // Batch HOTFIX-7, AMENDMENT F: PRIOR is now `theo-161` ("Reign of
+        // Solomon," a Theographic mega-span whose own EARLIEST verse is
+        // 1KI.2.12), not `1ki_davids_charge` (1KI.2.1-9) as this assertion
+        // read before this batch -- a REAL, correct change, not a
+        // regression. Before Amendment F's own derived intra-year order,
+        // the five events sharing year -1015 in this cluster
+        // (`1ki_adonijah_coup` 1KI.1.5, `1ki_solomon_anointed` 1KI.1.38,
+        // `1ki_davids_charge` 1KI.2.1, `theo-160` "Death of David" 1KI.2.10,
+        // `theo-161` "Reign of Solomon" 1KI.2.12) fell to `finish()`'s own
+        // bare pre-sort ARRAY position for their mutual order -- `theo-161`
+        // (a Theographic event, prepended to `all_events` before any
+        // curated event) happened to sort BEFORE `1ki_davids_charge`
+        // despite narrating LATER text, which is what let
+        // `1ki_davids_charge` -- not `theo-161` -- land last and win this
+        // assertion. Amendment F derives the correct canonical order
+        // instead (`data::derived_intrayear_order`): 1KI.1.5 < 1KI.1.38 <
+        // 1KI.2.1 < 1KI.2.10 < 1KI.2.12, so `theo-161` now correctly sorts
+        // LAST among the five and is `1ki_solomon_gibeon`'s own true
+        // immediately-preceding neighbor.
+        assert_eq!(prior.id, "theo-161", "PRIOR must be Solomon's own reign-opening mega-span (-1015, 1KI.2.12 onward), Solomon-era");
         assert_eq!(following.id, "1ki_hiram_temple_prep", "FOLLOWING must be Solomon's own temple preparations with Hiram (-1013), Solomon-era");
         let prior_year = d.event_by_id(&prior.id).unwrap().when.from_year;
         let following_year = d.event_by_id(&following.id).unwrap().when.from_year;
@@ -1162,5 +1182,197 @@ mod tests {
         let david_hebron = anchor_year(&d, "david-hebron");
         assert!(prior_year <= david_hebron, "PRIOR '{}' ({prior_year}) must be at or before the Saul-persecution/united-monarchy transition (david-hebron, {david_hebron})", prior.id);
         assert!(following_year <= david_hebron, "FOLLOWING '{}' ({following_year}) must be Saul-persecution-era, not Solomon-era (at or before david-hebron, {david_hebron})", following.id);
+    }
+
+    // --- AMENDMENT F (owner live report #10, 2026-08-22: "David's death
+    // precedes his final charge to Solomon... will this be addressed in
+    // the creation of the new table?") -- "Amendment D's per-book
+    // monotonicity pushed down into years": DERIVED intra-year order
+    // (`data::derived_intrayear_order`, consulted by `AtlasData::finish`'s
+    // own `timeline_order` sort whenever `order_key == 0`) must agree with
+    // canonical verse position for every same-book pair sharing a year,
+    // with exemptions ONLY through a typed, reasoned mechanism -- never an
+    // arbitrary tiebreak deciding two same-book events again.
+
+    /// F2's own typed exemption predicate -- DELIBERATELY NOT a reuse of
+    /// `amendment_d_monotonicity_audit_reading_order_vs_global_timeline`'s
+    /// own `is_justified` above: that audit's own rule 1 ("same year, both
+    /// sides at order_key's own default 0... the DATA itself never
+    /// asserted a specific within-year sequence") is EXACTLY the license
+    /// Amendment F revokes -- `derived_intrayear_order` now DOES assert a
+    /// specific within-year sequence for that exact case, so reusing rule 1
+    /// here would vacuously exempt every pair this property exists to
+    /// check (F2 only ever compares pairs that already share ONE year).
+    /// `a_primary`/`b_primary` name whether EACH side's own membership in
+    /// the book being compared came from that event's own TOP-LEVEL
+    /// `verses` (`true`) or only from a `witness` row (`false`) -- see
+    /// `f2_within_year_same_book_order_agrees_with_canonical_verse_position`'s
+    /// own grouping loop for how that is determined.
+    fn f2_is_exempt(by_id: &std::collections::HashMap<&str, &crate::data::Event>, a: &str, a_primary: bool, b: &str, b_primary: bool) -> bool {
+        let (Some(ae), Some(be)) = (by_id.get(a), by_id.get(b)) else { return false };
+        // (a) at least one side carries a REAL, curated, nonzero
+        //     `order_key` -- a deliberate cross-book harmonization/
+        //     documented text-order-exception decision, F1's own points
+        //     (a)/(b) -- trusted outright, never re-litigated against
+        //     canonical position. (If BOTH sides are 0, no such decision
+        //     exists, and this rule does not fire -- exactly the gap
+        //     Amendment F closes.)
+        if ae.order_key != 0 || be.order_key != 0 {
+            return true;
+        }
+        // (b) at least one side's own membership in THIS book is via a
+        //     WITNESS, not its own top-level `verses` -- a witness row is,
+        //     by construction, a PARALLEL/retrospective account (Crockett-
+        //     grounded or otherwise), never this event's own primary
+        //     chronological narration in that book -- so its own reading
+        //     position there is not a claim the event makes for itself.
+        //     Directly generalizes (and subsumes) Amendment D's own rule 4
+        //     (the Nehemiah-7-recapitulates-Ezra-2 witness) and rule 6
+        //     (the Psalter's own canonical NUMBER is not chronological
+        //     place) to every witness-reached book, not just those two
+        //     named pairs -- found live by this very test (real cases:
+        //     `theo-242`'s own JER witness vs `jer_burden_against_elam`'s
+        //     own primary JER citation; `2ki_jerusalem_aftermath`'s own JER
+        //     witness vs two JER-primary Jeremiah events; `sam2_
+        //     philistine_wars`'s own 1CH witness vs `1ch_hebron_warriors`'s
+        //     own primary 1CH citation).
+        if !a_primary || !b_primary {
+            return true;
+        }
+        // (c) either side is a bare Theographic freebie (LAYER-0, no
+        //     witnesses/curated provenance of its own AT ALL) -- unlike a
+        //     layer-1 event, a layer-0 import's own flat `verses` list has
+        //     NO structural way to distinguish "this book is my own
+        //     primary narration" from "this book is a bare retrospective
+        //     mention" (that distinction is exactly what the witness
+        //     mechanism (b) above exists to make possible, and a layer-0
+        //     event was never curated with one) -- Amendment D's own rule
+        //     2 survives here for the identical reason it existed there.
+        //     Real case this test found: `theo-133` ("Death of Joshua")
+        //     cites BOTH `JOS.24.29` (its own primary account) and
+        //     `JDG.2.8` (Judges's own backward-looking recap) as bare,
+        //     undifferentiated top-level verses -- so `theo-133` genuinely
+        //     IS "primary" in JDG by this function's own (b) test, yet the
+        //     claim is exactly as unreliable as a witness's own would be.
+        if crate::event_merge::is_layer0(ae) || crate::event_merge::is_layer0(be) {
+            return true;
+        }
+        false
+    }
+
+    /// F2: THE graph-wide property (a hard gate, unlike Amendment D's own
+    /// diagnostic-only audit above -- F1's own "no arbitrary tiebreak may
+    /// ever again decide the order of two same-book events" is a real
+    /// requirement, not a finding to review by hand each time). For every
+    /// (year, book) pair, the events dated to that year and PRIMARILY
+    /// narrated in that book (see `f2_is_exempt`'s own rule (b) for why
+    /// witness-only membership does not count as a claim), sorted by
+    /// canonical (chapter, verse) reading order, must already be
+    /// non-decreasing in GLOBAL TIMELINE position -- i.e.
+    /// `derived_intrayear_order` (or a real curated `order_key`) never
+    /// disagrees with the text. RED before this batch's own `finish()`
+    /// change (the owner's own 1KI -1015 cluster could -- and did -- sort
+    /// `1ki_adonijah_coup`/`1ki_solomon_anointed`/`1ki_davids_charge`/
+    /// `theo-160` in whatever order the bare pre-sort array happened to
+    /// hold them); GREEN after.
+    #[test]
+    fn f2_within_year_same_book_order_agrees_with_canonical_verse_position() {
+        let d = load_real_compiled_data();
+
+        // (year, book) -> [(event_id, chapter*1000+verse ordinal,
+        // is_primary)] -- reuses the identical "first-in-book ordinal, from
+        // the SAME effective-verses union" methodology
+        // `amendment_d_monotonicity_audit_reading_order_vs_global_timeline`
+        // already established above ("Amendment D pushed down into years,"
+        // per this amendment's own name for itself), but keeps top-level
+        // and witness contributions SEPARATE (rather than unioned into one
+        // ordinal) specifically so `is_primary` can be derived per (event,
+        // book) -- see `f2_is_exempt`'s own rule (b).
+        let mut by_year_book: std::collections::HashMap<(crate::time::Year, String), Vec<(String, u32, bool)>> = std::collections::HashMap::new();
+        for e in d.events.iter().filter(|e| e.kind == "event") {
+            let note = |dst: &mut std::collections::HashMap<String, u32>, v: &str| {
+                if let Ok(vid) = crate::refs::VerseId::parse_canonical(v) {
+                    let ordinal = vid.chapter as u32 * 1000 + vid.verse as u32;
+                    let entry = dst.entry(vid.book.code().to_string()).or_insert(ordinal);
+                    if ordinal < *entry {
+                        *entry = ordinal;
+                    }
+                }
+            };
+            let mut primary: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
+            for v in &e.verses {
+                note(&mut primary, v);
+            }
+            let mut witness_only: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
+            for w in &e.witnesses {
+                if let Some(vs) = w.translations.get(crate::translation::DEFAULT_TRANSLATION) {
+                    for v in vs {
+                        note(&mut witness_only, v);
+                    }
+                }
+            }
+            for (book, ordinal) in &primary {
+                by_year_book.entry((e.when.from_year, book.clone())).or_default().push((e.id.clone(), *ordinal, true));
+            }
+            for (book, ordinal) in witness_only {
+                if !primary.contains_key(&book) {
+                    by_year_book.entry((e.when.from_year, book)).or_default().push((e.id.clone(), ordinal, false));
+                }
+            }
+        }
+
+        let by_id: std::collections::HashMap<&str, &crate::data::Event> = d.events.iter().map(|e| (e.id.as_str(), e)).collect();
+
+        let mut total_pairs = 0usize;
+        let mut unexplained: Vec<String> = Vec::new();
+        let mut keys: Vec<&(crate::time::Year, String)> = by_year_book.keys().collect();
+        keys.sort();
+        for key @ (year, book) in keys {
+            let mut entries = by_year_book[key].clone();
+            entries.sort_by_key(|(_, ord, _)| *ord); // canonical reading order within this (year, book)
+            for i in 0..entries.len() {
+                for j in (i + 1)..entries.len() {
+                    let (a_id, _, a_primary) = &entries[i]; // a reads before b in this (year, book)
+                    let (b_id, _, b_primary) = &entries[j];
+                    let (Some(a_pos), Some(b_pos)) = (d.timeline_position(a_id), d.timeline_position(b_id)) else { continue };
+                    total_pairs += 1;
+                    if a_pos > b_pos && !f2_is_exempt(&by_id, a_id, *a_primary, b_id, *b_primary) {
+                        unexplained.push(format!(
+                            "[{year} {book}] '{a_id}' reads before '{b_id}' but sorts AFTER it on the global timeline (positions {a_pos} vs {b_pos})"
+                        ));
+                    }
+                }
+            }
+        }
+        eprintln!("F2 SUMMARY: {total_pairs} same-year-same-book pairs checked, {} unexplained", unexplained.len());
+        assert!(
+            unexplained.is_empty(),
+            "F2: {} unexplained same-year-same-book ordering violation(s) -- add a typed exemption (with a reason) to f2_is_exempt or fix the data:\n{}",
+            unexplained.len(),
+            unexplained.join("\n")
+        );
+    }
+
+    /// F3: the owner's own named case, red-then-green -- within year -1015,
+    /// walked straight from `AtlasData::timeline_position` (the SAME index
+    /// `GET /api/narrative/event/{id}`'s own PRIOR/FOLLOWING wire and
+    /// `global_timeline_position` above both read), the order must be
+    /// coup -> anointed -> charge -> death, matching 1KI.1.5 < 1KI.1.38 <
+    /// 1KI.2.1 < 1KI.2.10 exactly.
+    #[test]
+    fn f3_1015_bc_order_is_coup_then_anointed_then_charge_then_death() {
+        let d = load_real_compiled_data();
+        let coup = d.timeline_position("1ki_adonijah_coup").expect("1ki_adonijah_coup is dated");
+        let anointed = d.timeline_position("1ki_solomon_anointed").expect("1ki_solomon_anointed is dated");
+        let charge = d.timeline_position("1ki_davids_charge").expect("1ki_davids_charge is dated");
+        let death = d.timeline_position("theo-160").expect("theo-160 (Death of David) is dated");
+
+        for id in ["1ki_adonijah_coup", "1ki_solomon_anointed", "1ki_davids_charge", "theo-160"] {
+            assert_eq!(d.event_by_id(id).unwrap().when.from_year, -1015, "{id} must be the real -1015 cluster this case names");
+        }
+
+        assert!(coup < anointed, "coup ({coup}) must sort before anointed ({anointed})");
+        assert!(anointed < charge, "anointed ({anointed}) must sort before charge ({charge})");
+        assert!(charge < death, "charge ({charge}) must sort before death ({death}) -- the owner's own exact complaint, reversed pre-fix");
     }
 }
