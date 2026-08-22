@@ -518,6 +518,42 @@ Notes:
   PRIOR/FOLLOWING) leaves it unset (no clamp, unchanged behavior), since the
   mechanism is implemented ONCE, generically, and each caller opts in
   independently.
+- TRUNC-1 (batch-hotfix4-brief.md requirement 7, W2 review Important-1:
+  "the 20-verse wire cap on witness (book,chapter) verse groups silently
+  truncates today -- VerseGroup.Count ships on the wire but the client
+  never reads it"). DISTINCT from `ClampVerses` above (a CLIENT-side,
+  opt-in, 2-verse compact-text clamp on an ALREADY-fully-delivered
+  passage) -- this is the SERVER's own `scene::verse_groups_for` cap
+  (`take(20)` per (book,chapter) group, unconditional, every caller),
+  which the client previously had no way to even know it hit: the verses
+  past 20 were never sent at all. FIX (minimal, per the brief's own
+  instruction -- "the full span/lazy presentation redesign is HOTFIX-5's,
+  do not build it here"): `PassageListVerse.GroupCount` (client,
+  `Explore/PassageBlock.cs`) carries the source `VerseGroup.Count` for
+  every EVENT-witness and PRIOR/FOLLOWING (narrative AND global-timeline)
+  verse -- the only `PassageList` consumers actually `VerseGroup`-sourced;
+  cross-references/THE SCRIPTURES/place est/dest are never capped this way
+  (their own verse lists aren't `VerseGroup`s at all) and always carry
+  `GroupCount = null`, making this whole mechanism a no-op for them, not a
+  per-caller flag. `PassageBlockBuilder` (same file) computes each
+  resulting block's own `TruncatedBy` (the true count minus what's
+  actually delivered, attributed to the block reaching that group's own
+  HIGHEST delivered verse -- the cap always keeps the LOWEST-numbered
+  verses, so the missing tail always follows it). WIRED TO THE EXISTING
+  MINI-READER, NO PARALLEL AFFORDANCE: `MiniReaderExpand`'s OWN
+  `popover-verse-expand{-ENTRY-ID}` button (unchanged testid, unchanged
+  click handler, unchanged full-chapter-fetch behavior) reads
+  `TruncatedBy` and, when collapsed and `>0`, reads "+{N} more — read the
+  chapter" instead of "Read the whole chapter" (`data-truncated="true"` on
+  the SAME button, for a robust hook independent of exact wording) --
+  clicking it opens the identical full chapter the plain wording already
+  did. CONDITIONAL PRESENCE: a group at or under the cap (`GroupCount` ==
+  the delivered count, or `null`) shows the ordinary "Read the whole
+  chapter" wording, no signal at all -- the SAME "no affordance where
+  nothing is missing" discipline every other conditional-presence rule in
+  this file follows. NEVER assumed reachable via a general redesign of the
+  cap itself -- the cap (`scene::verse_groups_for`'s own `take(20)`) is
+  UNCHANGED by this fix; only the client's own honesty about hitting it.
 - XREF-1 (batch-f2-brief.md requirement 6, user direction 2026-08-20,
   near-verbatim: "truncate the cross references to show no more than 3 if
   cross references are the only kind of context that we're pulling into the

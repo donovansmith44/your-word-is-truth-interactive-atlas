@@ -75,7 +75,7 @@
                     <span class="popover-passage-caption">@caption</span>
                 }
                 <MiniReaderExpand Book="@BookOf(entry.Block)" Chapter="@ChapterOf(entry.Block)" FocalFromVerse="@FocalFromOf(entry.Block)" FocalToVerse="@FocalToOf(entry.Block)"
-                                   TestIdSuffix="@($"-{entry.TestId}")">
+                                   TestIdSuffix="@($"-{entry.TestId}")" TruncatedBy="@entry.Block.TruncatedBy">
                     <CompactContent>
                         @{
                             // Batch N2 requirement 2: clamp THIS entry's own

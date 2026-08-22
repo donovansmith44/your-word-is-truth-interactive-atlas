@@ -279,3 +279,64 @@ test('AFFORDANCE-1: a dated event\'s own reader heading and verse EVENT-membersh
   await row.click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
 });
+
+// ---------------------------------------------------------------------
+// TRUNC-1 (requirement 7): the 20-verse wire cap's own honest truncation
+// signal -- the owner's own temple-dedication acceptance case.
+// ---------------------------------------------------------------------
+
+test('TRUNC-1: the temple-dedication popover\'s 1KI.8 witness shows the +46-more affordance and it opens the full chapter (RED before this batch: nothing signaled); an under-cap witness group shows the ordinary wording (conditional presence)', async ({ page }) => {
+  const detail = await api.event('1ki_temple_dedication');
+  const kingsWitness = detail.witnesses.find((w: any) => w.book === '1KI');
+  const chroniclesWitness = detail.witnesses.find((w: any) => w.book === '2CH');
+  expect(kingsWitness, '1 Kings 8 is the owner\'s own named acceptance witness').toBeTruthy();
+  // Ground truth, at the wire level: the true count vs. what's delivered.
+  const kingsGroup = kingsWitness.verse_groups.find((g: any) => g.chapter === 8);
+  expect(kingsGroup.count, '1 Kings 8 has 66 real verses').toBe(66);
+  expect(kingsGroup.verses.length, 'the wire caps the delivered verses at 20').toBe(20);
+  const missing = kingsGroup.count - kingsGroup.verses.length;
+  expect(missing).toBe(46);
+
+  const vref = kingsWitness.verse_groups[0].verses[0];
+  const v = parseVerse(vref);
+  await page.goto(`/read/${v.book}/${v.chapter}`);
+  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await page.getByTestId('verse-event-1ki_temple_dedication').click();
+  await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
+  await expect(page.getByTestId('popover-section-event-witnesses')).toBeVisible();
+
+  // The truncated 1 Kings 8 entry specifically (the cap keeps the LOWEST-
+  // numbered 20 of 66, so its own delivered span is deterministically
+  // 1KI.8.1-20): quiet "+46 more — read the chapter" affordance, a
+  // `data-truncated="true"` marker (robust hook independent of exact
+  // wording), wired to the SAME MiniReaderExpand control (no parallel
+  // affordance) -- clicking it opens the real, full chapter.
+  const kingsExpand = page.getByTestId('popover-verse-expand-event-witness-1KI.8.1-20');
+  await expect(kingsExpand).toHaveAttribute('data-truncated', 'true');
+  await expect(kingsExpand).toHaveText(`+${missing} more — read the chapter`);
+  await kingsExpand.click();
+  const chapter = await api.chapter('1KI.8');
+  await expect(page.getByTestId(/^popover-reader-verse-/).first()).toBeVisible();
+  await expect(page.getByTestId(/^popover-reader-verse-/)).toHaveCount(chapter.verses.length);
+
+  // An UNDER-cap group in the SAME popover (2 Chronicles 5, only 13 of the
+  // witness's own verses in that chapter -- well under 20) shows the
+  // ordinary wording, no affordance at all (conditional presence) -- its
+  // own deterministic span is 2CH.5.2-14 (13 verses from the witness's
+  // own start, none capped).
+  const chroniclesCh5 = chroniclesWitness.verse_groups.find((g: any) => g.chapter === 5);
+  expect(chroniclesCh5.count, '2 Chronicles 5 (within this witness) is under the cap').toBeLessThan(20);
+  expect(chroniclesCh5.count).toBe(chroniclesCh5.verses.length);
+  const chroniclesExpand = page.getByTestId('popover-verse-expand-event-witness-2CH.5.2-14');
+  await expect(chroniclesExpand).toHaveAttribute('data-truncated', 'false');
+  await expect(chroniclesExpand).toHaveText('Read the whole chapter');
+
+  // 2 Chronicles 6 (fully inside this same witness's own 5:2-7:10 span) is
+  // ALSO over the cap (42 true verses) -- the SAME honest signal fires a
+  // second time in this one popover, not just for the owner's own named
+  // 1 Kings case.
+  const chroniclesCh6 = chroniclesWitness.verse_groups.find((g: any) => g.chapter === 6);
+  const chroniclesCh6Missing = chroniclesCh6.count - chroniclesCh6.verses.length;
+  expect(chroniclesCh6Missing).toBeGreaterThan(0);
+  await expect(page.locator('[data-truncated="true"]')).toHaveCount(2);
+});

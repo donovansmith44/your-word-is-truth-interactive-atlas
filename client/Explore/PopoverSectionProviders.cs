@@ -1049,7 +1049,11 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
         var units = detail.Witnesses.Select(w =>
         {
             var bookName = books.FirstOrDefault(b => b.Code == w.Book)?.Name ?? w.Book;
-            var verses = w.VerseGroups.SelectMany(g => g.Verses.Select(v => new PassageListVerse(v, ""))).ToList();
+            // Batch HOTFIX-4 requirement 7: GroupCount carries each
+            // VerseGroup's own TRUE total (server-side `take(20)` cap,
+            // scene::verse_groups_for) so a truncated witness group shows
+            // the "+N more" signal instead of silently ending at 20.
+            var verses = w.VerseGroups.SelectMany(g => g.Verses.Select(v => new PassageListVerse(v, "", g.Count))).ToList();
             return new PassageSourceUnit(verses, bookName);
         }).ToList();
 
@@ -1075,7 +1079,9 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
         // not something to assume well-formed a second time.
         var textByVref = resolvedFlat.GroupBy(v => v.Vref).ToDictionary(g => g.Key, g => g.First().Text);
         units = units.Select(u => new PassageSourceUnit(
-            u.Verses.Select(v => new PassageListVerse(v.Vref, textByVref.GetValueOrDefault(v.Vref, ""))).ToList(),
+            // v.GroupCount carried through from the FIRST construction
+            // above -- resolving text must never silently drop it.
+            u.Verses.Select(v => new PassageListVerse(v.Vref, textByVref.GetValueOrDefault(v.Vref, ""), v.GroupCount)).ToList(),
             u.Caption)).ToList();
 
         var multi = units.Count > 1;
@@ -1168,7 +1174,10 @@ file static class NarrativeDirectionSection
         List<PassageListVerse>[] resolved;
         try
         {
-            resolved = await Task.WhenAll(entries.Select(e => VerseTextResolver.ResolveAsync(api, e.Adjacent.VerseGroups.SelectMany(g => g.Verses).ToList())));
+            // Batch HOTFIX-4 requirement 7: ResolveGroupsAsync (not the bare
+            // ResolveAsync) so a truncated adjacent-event VerseGroup carries
+            // its own GroupCount through to the "+N more" signal.
+            resolved = await Task.WhenAll(entries.Select(e => VerseTextResolver.ResolveGroupsAsync(api, e.Adjacent.VerseGroups)));
         }
         catch (Exception)
         {
@@ -1392,7 +1401,9 @@ file static class EventTimelineDirectionSection
         List<PassageListVerse> verses;
         try
         {
-            verses = await VerseTextResolver.ResolveAsync(api, adjacent.VerseGroups.SelectMany(g => g.Verses).ToList());
+            // Batch HOTFIX-4 requirement 7: same reason as
+            // NarrativeDirectionSection's own identical call, above.
+            verses = await VerseTextResolver.ResolveGroupsAsync(api, adjacent.VerseGroups);
         }
         catch (Exception)
         {

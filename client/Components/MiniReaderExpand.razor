@@ -68,8 +68,9 @@ else
 }
 
 <button type="button" class="popover-verse-expand" data-testid="@($"popover-verse-expand{TestIdSuffix}")"
-        aria-expanded="@(_expanded ? "true" : "false")" @onclick="ToggleExpand" @onclick:stopPropagation="true">
-    @(_expanded ? "Show just this verse" : "Read the whole chapter")
+        aria-expanded="@(_expanded ? "true" : "false")" data-truncated="@(!_expanded && TruncatedBy > 0 ? "true" : "false")"
+        @onclick="ToggleExpand" @onclick:stopPropagation="true">
+    @(_expanded ? "Show just this verse" : TruncatedBy > 0 ? $"+{TruncatedBy} more — read the chapter" : "Read the whole chapter")
 </button>
 
 @code {
@@ -79,6 +80,17 @@ else
     [Parameter] public int FocalToVerse { get; set; }
     [Parameter, EditorRequired] public RenderFragment CompactContent { get; set; } = default!;
     [Parameter] public string TestIdSuffix { get; set; } = "";
+
+    // Batch HOTFIX-4 requirement 7 (honest truncation signal, W2 review
+    // Important-1: "VerseGroup.Count ships on the wire but the client
+    // never reads it"): when >0, the COLLAPSED button's own label becomes
+    // "+{N} more — read the chapter" instead of the plain "Read the whole
+    // chapter" -- SAME control, SAME testid, SAME click handler (opens
+    // the identical full-chapter reader below; "wired to the existing
+    // MiniReaderExpand," no parallel affordance). The EXPANDED-state label
+    // ("Show just this verse") is unaffected -- once the reader is open,
+    // the true content is already visible, nothing left to signal.
+    [Parameter] public int TruncatedBy { get; set; }
 
     private bool _expanded;
     private ChapterOut? _chapter;

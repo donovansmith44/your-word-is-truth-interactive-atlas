@@ -6,7 +6,19 @@ namespace BibleAtlas.Client.Explore;
 /// verse-list surface (cross-references, THE SCRIPTURES, place est/dest)
 /// hands to <see cref="PassageGrouping"/>/<c>PassageList.razor</c>.
 /// </summary>
-public sealed record PassageListVerse(string Vref, string Text);
+/// <param name="GroupCount">
+/// Batch HOTFIX-4 requirement 7 (honest truncation signal): this verse's
+/// own server-side (book,chapter) <c>VerseGroup</c>'s TRUE total verse
+/// count (<c>VerseGroup.Count</c>), when this verse came from one --
+/// <c>null</c> for every OTHER caller (cross-references, THE SCRIPTURES,
+/// place est/dest are never <c>VerseGroup</c>-sourced, so this stays
+/// <c>null</c> and <see cref="PassageBlockBuilder"/>'s own truncation pass
+/// is a no-op for them, by construction, not a per-caller flag). Set by
+/// EVENT witness/PRIOR-FOLLOWING callers, which ARE <c>VerseGroup</c>-shaped
+/// and can silently truncate at the server's own 20-verse-per-chapter cap
+/// (`scene::verse_groups_for`'s own <c>take(20)</c>).
+/// </param>
+public sealed record PassageListVerse(string Vref, string Text, int? GroupCount = null);
 
 /// <summary>
 /// One INDEPENDENT source of verses to group into passage blocks -- e.g.
@@ -29,7 +41,15 @@ public sealed record PassageSourceUnit(IReadOnlyList<PassageListVerse> Verses, s
 /// vref for a lone verse); <see cref="Verses"/> is 1 (lone verse) or more
 /// (passage) already-resolved verses, in order.
 /// </summary>
-public sealed record PassageBlockData(string Span, IReadOnlyList<PassageListVerse> Verses, string? Caption)
+/// <param name="TruncatedBy">
+/// Batch HOTFIX-4 requirement 7: how many MORE verses this block's own
+/// server-side group truly has beyond what's delivered here (0 -- the
+/// overwhelming majority of blocks -- when not truncated, or when this
+/// unit carries no <see cref="PassageListVerse.GroupCount"/> at all).
+/// Computed once, by <see cref="PassageBlockBuilder.Build"/>, never by a
+/// per-caller flag.
+/// </param>
+public sealed record PassageBlockData(string Span, IReadOnlyList<PassageListVerse> Verses, string? Caption, int TruncatedBy = 0)
 {
     public bool IsPassage => Verses.Count >= 2;
     public string FirstVref => Verses[0].Vref;
@@ -93,6 +113,30 @@ public static class VerseTextResolver
         }
         return result;
     }
+
+    /// Batch HOTFIX-4 requirement 7 (honest truncation signal): the SAME
+    /// text resolution as <see cref="ResolveAsync"/> above, PLUS each
+    /// resolved verse's own <see cref="PassageListVerse.GroupCount"/>
+    /// (attached from whichever `VerseGroup` it came from) -- the ONE
+    /// shared helper both PRIOR/FOLLOWING resolvers (narrative-scoped and
+    /// global-timeline-scoped, `PopoverSectionProviders.cs`) use, so the
+    /// "resolve a VerseGroup list's own text, honestly" step is wired
+    /// exactly once, not duplicated between them. `EventWitnessesSection`
+    /// does its own equivalent inline (a per-witness-unit shape this flat
+    /// helper doesn't fit), setting `GroupCount` the identical way.
+    public static async Task<List<PassageListVerse>> ResolveGroupsAsync(AtlasClient api, IReadOnlyList<VerseGroup> groups)
+    {
+        var countByVref = new Dictionary<string, int>();
+        foreach (var g in groups)
+        {
+            foreach (var v in g.Verses)
+            {
+                countByVref[v] = g.Count;
+            }
+        }
+        var resolved = await ResolveAsync(api, groups.SelectMany(g => g.Verses).ToList());
+        return resolved.Select(v => v with { GroupCount = countByVref.TryGetValue(v.Vref, out var c) ? c : null }).ToList();
+    }
 }
 
 public static class PassageBlockBuilder
@@ -108,11 +152,54 @@ public static class PassageBlockBuilder
             }
 
             var vrefs = unit.Verses.Select(v => v.Vref).ToList();
+            var unitBlocks = new List<PassageBlockData>();
             foreach (var run in PassageGrouping.Groups(vrefs))
             {
                 var members = unit.Verses.Skip(run.Start).Take(run.Length).ToList();
                 var span = PassageGrouping.SpanRef(members[0].Vref, members[^1].Vref);
-                blocks.Add(new PassageBlockData(span, members, unit.Caption));
+                unitBlocks.Add(new PassageBlockData(span, members, unit.Caption));
+            }
+
+            // Batch HOTFIX-4 requirement 7 (honest truncation signal): find,
+            // per distinct (book,chapter) GroupCount actually present in
+            // THIS unit, the block reaching that group's own HIGHEST
+            // verse number -- the server's own cap (`take(20)`, ascending)
+            // always keeps the LOWEST-numbered verses, so the missing tail
+            // always follows the highest one actually delivered. Every
+            // verse within one block is already the SAME book+chapter, by
+            // `PassageGrouping.Groups`'s own construction (never crosses a
+            // book/chapter boundary), so that block's own delivered count
+            // for the group is simply its own `Verses.Count` -- no
+            // per-verse re-filtering needed. Units with no GroupCount at
+            // all (cross-references, THE SCRIPTURES, place est/dest) never
+            // populate this map, so this whole pass is a no-op for them.
+            var highestVerseForGroup = new Dictionary<(string Book, int Chapter), (int Verse, int TrueCount)>();
+            foreach (var v in unit.Verses)
+            {
+                if (v.GroupCount is not int trueCount)
+                {
+                    continue;
+                }
+                var vid = CanonRef.ParseVerse(v.Vref);
+                var key = (vid.Book, vid.Chapter);
+                if (!highestVerseForGroup.TryGetValue(key, out var existing) || vid.Verse > existing.Verse)
+                {
+                    highestVerseForGroup[key] = (vid.Verse, trueCount);
+                }
+            }
+
+            foreach (var block in unitBlocks)
+            {
+                var last = CanonRef.ParseVerse(block.LastVref);
+                if (highestVerseForGroup.TryGetValue((last.Book, last.Chapter), out var top) && last.Verse == top.Verse)
+                {
+                    var truncatedBy = top.TrueCount - block.Verses.Count;
+                    blocks.Add(truncatedBy > 0 ? block with { TruncatedBy = truncatedBy } : block);
+                }
+                else
+                {
+                    blocks.Add(block);
+                }
             }
         }
 
