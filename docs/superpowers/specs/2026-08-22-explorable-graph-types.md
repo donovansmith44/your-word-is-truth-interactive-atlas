@@ -76,20 +76,35 @@ pub trait CorpusScheme {
     fn cite(&self, r: &Self::Ref) -> Citation;
 }
 
+/// LAW (owner, 2026-08-22): "translations are explorable. we definitely
+/// need to leave room in our types for N translations." A corpus is a
+/// SKELETON (addressing scheme + reading-order spine, layer-neutral)
+/// plus N TEXT LAYERS. The Bible skeleton is the canon structure; each
+/// translation is a layer over it; the KJV is the CANONICAL layer
+/// (inerrancy directive: it IS the text — law-bearing positions
+/// evaluate against it; other layers are explorable references, and
+/// translation FACTS are an allowed register). The same shape serves
+/// Concord later (German/Latin/English editions as layers) for free.
+pub struct TranslationId(Interned);       // "kjv" = the Bible corpus's canonical layer
+
 /// Closed enum today; a new corpus is a deliberate variant (same
 /// philosophy as NodeKind — every match site acknowledges it).
+/// Addresses are LAYER-NEUTRAL: a TextRef names skeleton position, not
+/// any translation's wording.
 pub enum TextRef {
-    Kjv(VerseRef),
+    Bible(VerseRef),                      // canon-structural; N layers render it
     Concord(ConcordRef),                  // RESERVED: materializes when ingested
 }
 
 pub struct VerseRef { pub book: BookId, pub chapter: u16, pub verse: u16 }
 
-/// Token indices into the unit's canonical tokenization (rules deferred;
-/// the address space is reserved now). None = the whole unit. A verse —
+/// Token indices — NECESSARILY tagged with the layer whose tokenization
+/// they index: verse-level loci are layer-neutral, but a sub-unit span
+/// only means something in one translation's wording. (Rules deferred;
+/// the address space is reserved now.) None = the whole unit. A verse —
 /// or a Concord paragraph — is not an atom; sub-unit nodes materialize
 /// later WITHOUT changing this type or anything built on it.
-pub struct TokenSpan { pub start: u16, pub end: u16 } // start <= end, validated
+pub struct TokenSpan { pub layer: TranslationId, pub start: u16, pub end: u16 }
 
 /// The general text address: any corpus, any unit, optional sub-span.
 pub struct TextLocus { pub at: TextRef, pub span: Option<TokenSpan> }
@@ -149,13 +164,20 @@ pub struct LocusSet(BTreeSet<TextLocus>);
 /// is a record + compiler rule + display rule — the exhaustive match IS
 /// the checklist).
 pub enum NodeKind { Book, Chapter, Verse, Container, Event, Narrative,
-                    Place, Person, Anchor, Era, Polity, CatechismItem, Source }
+                    Place, Person, Anchor, Era, Polity, CatechismItem,
+                    Source, Translation }
 
 pub struct Node { pub id: AnyNodeId, pub payload: NodePayload }
 
 pub enum NodePayload {
-    TextUnit { corpus: CorpusId, text: String }, // the ONLY store of ANY corpus text (P1);
-                                                 // KJV verses are TextUnits of the kjv corpus
+    TextUnit { corpus: CorpusId, layer: TranslationId, text: String },
+        // the ONLY store of ANY corpus text (P1), keyed by layer: a KJV
+        // verse is the Bible corpus's canonical-layer unit at its
+        // VerseRef; another translation's rendering of the same VerseRef
+        // is another unit, same skeleton position, different layer.
+        // Per-layer fidelity laws (each translation's adapter proves
+        // bijection + reconstruction against ITS source).
+    Translation { label: Label },                // explorable: provenance, coverage, license
     Container{ title: DecisiveTitle, content: LocusSet, provenance: SourceRef },
     Event    { label: Label },                   // dates/places live on EDGES
     Narrative{ label: Label },                   // membership lives on succession edges
@@ -528,6 +550,12 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
   registry: canonical confidence derives from NormaNormans; quotes has no
   Scripture-quoting-Concord constructor; a quotation never promotes its
   text).
+- A non-canonical translation displacing the KJV in a law-bearing
+  position (witness canon, citation integrity, decisive canon-text
+  titles evaluate against the canonical layer by type; other layers are
+  explorable references).
+- A sub-verse span outliving its translation (TokenSpan carries its
+  layer; a span cannot be read against another layer's tokenization).
 - A nested address (recursion is relational — flat loci, edges carry the
   structure).
 - An inverse view that disagrees with its forward view (both are
@@ -545,3 +573,6 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
 - EdgeMeta variants per kind (finalized per surface during M-batches).
 - ConcordRef structural scheme (Part/Article/Paragraph vs edition-keyed;
   decided when the Book of Concord corpus is ingested).
+- The cross-layer frontier ("this verse in other translations") is
+  DERIVED (skeleton position × available layers) — whether it warrants a
+  stored edge or stays a computed section is an M-batch decision.
