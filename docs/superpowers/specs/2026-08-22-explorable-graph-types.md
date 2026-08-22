@@ -259,6 +259,30 @@ pub struct LocusSet<C: CorpusTag>(BTreeSet<Locus<C>>);
 /// collection of node references (Pids) — kin to saved explorations —
 /// never a text container. Containers hold text; collections hold
 /// things.
+
+/// ROOM RESERVED (owner, 2026-08-22, design directive — not an
+/// implementation order): WORD-LEVEL ANALYSIS/EXPLORATION and
+/// CROSS-CORPUS COMPUTATION AT ARBITRARY PRECISION. The addressing
+/// already carries it (Locus<C> + layer-tagged TokenSpan reach any
+/// word of any layer of any corpus); what is reserved beyond
+/// addressing:
+/// - A TOKENIZATION CONTRACT per (corpus, layer): when sub-unit
+///   analysis materializes, each layer exposes
+///     tokens : Unit -> [Token]
+///   under pinned, versioned rules (rules themselves deferred), so any
+///   analysis consumes tokens uniformly from any corpus — KJV wording
+///   vs a Concord quotation, layer-vs-layer alignment between
+///   translations, concordance and frequency studies.
+/// - ANALYSES ARE CONTENT-ADDRESSED DERIVED THINGS: an analysis result
+///   is pid'd by (analysis-kind, input pids, params) — so results
+///   inherit the derive/verify law (recomputable from their id, never
+///   authored, cacheable by construction) and are explorable/
+///   commentable like everything else.
+/// - CROSS-CORPUS ALIGNMENT lands as derived relations in the SAME
+///   relations! manifest (span-precision alignment/wording-match
+///   edges — the quotes edge's wording-divergence metadata is the
+///   embryo). No schema change when any of this materializes: the
+///   reserved room IS the contract shape, not new addressing.
 ```
 
 ## 2. Nodes
