@@ -220,11 +220,33 @@ pub struct CorpusMeta {
     // emits can claim canonical standing for extrabiblical text.
 }
 
-/// Container content is a SET of loci (container algebra: ∅ is lawful
-/// identity; overlaps between containers are lawful; verses immutable).
-/// Contiguity is NOT assumed — multi-chapter and gapped containers are
-/// first-class, which retires the same-chapter parse limitation class.
-pub struct LocusSet(BTreeSet<TextLocus>);
+/// LAW (owner, 2026-08-22): container content is CORPUS-HOMOGENEOUS BY
+/// TYPE. "If we're getting a container for the BoC... the scripture
+/// references/verse ids are distinguished as scripture and not mixed up
+/// with the rest of it." A container groups text WITHIN one corpus (it
+/// is part of that corpus's structural layer); Scripture appearing in
+/// extrabiblical material is reachable ONLY through Scripture-typed
+/// edges (quotes/cites, whose objects are KjvLocusRange) — never as
+/// content. The general locus is parameterized by corpus, and KjvLocus
+/// becomes an INSTANCE of it rather than a special case:
+pub struct Locus<C: CorpusTag> { pub unit: C::Ref, pub span: Option<TokenSpan> }
+//   pub type KjvLocus     = Locus<KjvTag>;      // the witness-canon refinement, unified
+//   pub type ConcordLocus = Locus<ConcordTag>;
+// (TextLocus remains the corpus-erased wire/UI form; narrowing is a
+// checked parse, as with AnyNodeId.)
+
+/// Container content: a SET of same-corpus loci (container algebra: ∅
+/// is lawful identity; overlaps between containers are lawful; text
+/// immutable). Contiguity is NOT assumed — multi-chapter and gapped
+/// containers are first-class, which retires the same-chapter parse
+/// limitation class.
+pub struct LocusSet<C: CorpusTag>(BTreeSet<Locus<C>>);
+
+/// If cross-corpus GROUPING is ever wanted (a study set pairing a psalm
+/// with a catechism section), that is a DIFFERENT kind of thing: a
+/// collection of node references (Pids) — kin to saved explorations —
+/// never a text container. Containers hold text; collections hold
+/// things.
 ```
 
 ## 2. Nodes
@@ -249,7 +271,11 @@ pub enum NodePayload {
         // Per-layer fidelity laws (each translation's adapter proves
         // bijection + reconstruction against ITS source).
     Translation { label: Label },                // explorable: provenance, coverage, license
-    Container{ title: DecisiveTitle, content: LocusSet, provenance: SourceRef },
+    Container{ corpus: CorpusId, title: DecisiveTitle, content: ErasedLocusSet, provenance: SourceRef },
+        // typed as Container<C>/LocusSet<C> in the authoring/compiler
+        // layer; the payload records its corpus and its content is
+        // homogeneous by construction — a verse locus inside a Concord
+        // container cannot be built.
     Event    { label: Label },                   // dates/places live on EDGES
     Narrative{ label: Label },                   // membership lives on succession edges
     Place    { canonical: Label },               // names live on `named` edges
@@ -375,10 +401,11 @@ pub trait EdgeData {
 }
 
 /// A typed authored edge; the pattern for all of them (rows now carry
-/// grounds alongside provenance):
-pub struct Contains {
-    pub container: ContainerId,
-    pub content:   LocusSet,
+/// grounds alongside provenance). Contains is corpus-parameterized: the
+/// container and its loci share C at the type level.
+pub struct Contains<C: CorpusTag> {
+    pub container: ContainerId<C>,
+    pub content:   LocusSet<C>,
     pub provenance: ProvenanceId,
     pub grounds:   Grounds,
 }
@@ -737,6 +764,9 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
   registry: canonical confidence derives from NormaNormans; quotes has no
   Scripture-quoting-Concord constructor; a quotation never promotes its
   text).
+- Scripture smeared into an extrabiblical container's content (container
+  content is corpus-homogeneous by type; Scripture in a Concord context
+  is reachable only via Scripture-typed quotes/cites edges).
 - A non-canonical translation displacing the KJV in a law-bearing
   position (witness canon, citation integrity, decisive canon-text
   titles evaluate against the canonical layer by type; other layers are
