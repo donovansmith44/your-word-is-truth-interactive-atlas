@@ -1390,13 +1390,13 @@
         }
 
         var narrativeId = key[..split];
-        var arrow = _scene?.Arrows.FirstOrDefault(a => a.Narrative == narrativeId && a.Order == order);
+        var arrow = _scene?.Arrows?.FirstOrDefault(a => a.Narrative == narrativeId && a.Order == order);
         if (arrow is null)
         {
             return;
         }
 
-        var narrativeName = _scene?.Narratives.FirstOrDefault(n => n.Id == arrow.Narrative)?.Name ?? arrow.Narrative;
+        var narrativeName = _scene?.Narratives?.FirstOrDefault(n => n.Id == arrow.Narrative)?.Name ?? arrow.Narrative;
         // Batch E: DisplayName (the scene's own period-resolved name), not
         // the place's default Name -- same swap as the marker label/card
         // title, so this text never contradicts what's shown elsewhere in
