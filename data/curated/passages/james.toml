@@ -1,0 +1,112 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). James.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: James moves in short, discrete wisdom-paragraphs (its own
+# style closer to Proverbs than to Paul's sustained argument-chains) --
+# each of this file's own containers is one such paragraph-unit, at the
+# text's own real topic shifts.
+
+[[event]]
+id = "jas_salutation_and_trials"
+label = "Salutation; trials produce patience"
+kind = "general"
+verses = ["JAS.1.1-4"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 1:1-4, James's own greeting to 'the twelve tribes which are scattered abroad,' and the charge to 'count it all joy' in trials, since 'the trying of your faith worketh patience.'"
+
+[[event]]
+id = "jas_asking_in_faith"
+label = "Asking God in faith, without wavering"
+kind = "general"
+verses = ["JAS.1.5-8"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 1:5-8, the promise that God 'giveth to all men liberally' to the one who asks for wisdom 'in faith, nothing wavering.'"
+
+[[event]]
+id = "jas_the_rich_and_poor"
+label = "The rich and poor: the fading flower"
+kind = "general"
+verses = ["JAS.1.9-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 1:9-11, the brother of low degree exalted and the rich made low, 'as the flower of the grass he shall pass away.'"
+
+[[event]]
+id = "jas_enduring_temptation"
+label = "Enduring temptation; every good gift from above"
+kind = "general"
+verses = ["JAS.1.12-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 1:12-18, the blessing on the man who endures temptation, and the assurance that God himself tempts no man, since 'every good gift and every perfect gift is from above.'"
+
+[[event]]
+id = "jas_doers_of_the_word"
+label = "Doers of the word, not hearers only; pure religion"
+kind = "general"
+verses = ["JAS.1.19-27"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 1:19-27, the charge to be 'swift to hear, slow to speak,' a doer of the word and not a forgetful hearer, closing on the definition of 'pure religion... to visit the fatherless and widows... and to keep himself unspotted from the world.'"
+
+[[event]]
+id = "jas_a_warning_against_respect_of_persons"
+label = "A warning against respect of persons: favouring the rich"
+kind = "general"
+verses = ["JAS.2.1-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 2:1-13, a rebuke of favoritism toward 'a man with a gold ring' over 'a poor man in vile raiment,' and the 'royal law... Thou shalt love thy neighbour as thyself.'"
+
+[[event]]
+id = "jas_faith_without_works_is_dead"
+label = "Faith without works is dead"
+kind = "general"
+verses = ["JAS.2.14-26"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 2:14-26, the argument that faith without works cannot save, illustrated by Abraham and Rahab, closing 'as the body without the spirit is dead, so faith without works is dead also.'"
+
+[[event]]
+id = "jas_the_tongue_a_world_of_iniquity"
+label = "The tongue: a world of iniquity"
+kind = "general"
+verses = ["JAS.3.1-12"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 3:1-12, the tongue likened to a bit, a helm, and a spark, 'a fire, a world of iniquity,' which 'can no man tame.'"
+
+[[event]]
+id = "jas_two_wisdoms_earthly_and_heavenly"
+label = "Two wisdoms: earthly and heavenly"
+kind = "general"
+verses = ["JAS.3.13-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 3:13-18, wisdom 'from above' contrasted with wisdom that is 'earthly, sensual, devilish,' closing on 'the fruit of righteousness... sown in peace of them that make peace.'"
+
+[[event]]
+id = "jas_wars_and_lusts_drawing_nigh_to_god"
+label = "Wars and lusts; drawing nigh to God"
+kind = "general"
+verses = ["JAS.4.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 4:1-10, wars and fightings traced to lust within, friendship with the world as 'enmity with God,' and the charge to 'draw nigh to God, and he will draw nigh to you.'"
+
+[[event]]
+id = "jas_against_judging_a_brother"
+label = "Against judging a brother; boasting of tomorrow"
+kind = "general"
+verses = ["JAS.4.11-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 4:11-17, a warning against speaking evil of a brother, and against boasting of tomorrow's own gain, 'for what is your life? It is even a vapour.'"
+
+[[event]]
+id = "jas_a_warning_to_rich_oppressors"
+label = "A warning to rich oppressors"
+kind = "general"
+verses = ["JAS.5.1-6"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 5:1-6, a sharp warning to rich oppressors whose 'gold and silver is cankered,' who have 'condemned and killed the just.'"
+
+[[event]]
+id = "jas_patience_unto_the_coming_of_the_lord"
+label = "Patience unto the coming of the Lord"
+kind = "general"
+verses = ["JAS.5.7-12"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 5:7-12, the charge to 'be patient... unto the coming of the Lord' as the husbandman waits for the harvest, taking the prophets and Job as examples, and 'let your yea be yea; and your nay, nay.'"
+
+[[event]]
+id = "jas_prayer_healing_and_restoring_a_sinner"
+label = "Prayer, healing, and restoring a sinner"
+kind = "general"
+verses = ["JAS.5.13-20"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 5:13-20, instruction on prayer for the afflicted and the sick, anointing with oil, confessing faults one to another, and the closing promise that 'he which converteth the sinner... shall save a soul from death.'"

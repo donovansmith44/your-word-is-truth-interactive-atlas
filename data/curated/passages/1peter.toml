@@ -1,0 +1,105 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). 1 Peter.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: 1 Peter's own real seams -- salutation and the living hope,
+# the call to holiness, the church as a holy priesthood, household duties,
+# suffering after Christ's own pattern, and closing instructions to elders
+# and the flock.
+
+[[event]]
+id = "1pe_salutation_and_the_living_hope"
+label = "Salutation; a living hope; the salvation the prophets searched for"
+kind = "general"
+verses = ["1PE.1.1-12"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 1:1-12, Peter's own greeting to the elect 'strangers scattered' through Asia Minor, blessing God for begetting 'a lively hope by the resurrection of Jesus Christ,' a salvation the prophets 'enquired and searched diligently' after."
+
+[[event]]
+id = "1pe_a_call_to_holiness"
+label = "A call to holiness; redeemed by the precious blood of Christ"
+kind = "general"
+verses = ["1PE.1.13-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 1:13-21, the charge 'be ye holy in all manner of conversation,' redeemed not with silver or gold 'but with the precious blood of Christ, as of a lamb without blemish.'"
+
+[[event]]
+id = "1pe_born_again_by_the_word"
+label = "Born again by the word of God, which liveth and abideth for ever"
+kind = "general"
+verses = ["1PE.1.22-25"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 1:22-25, love of the brethren grounded in being 'born again... by the word of God, which liveth and abideth for ever.'"
+
+[[event]]
+id = "1pe_living_stones_a_spiritual_house"
+label = "Living stones, a spiritual house; a chosen generation, a royal priesthood"
+kind = "general"
+verses = ["1PE.2.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 2:1-10, believers as 'lively stones' built into 'a spiritual house,' Christ the 'chief corner stone,' and the church named 'a chosen generation, a royal priesthood, an holy nation.'"
+
+[[event]]
+id = "1pe_honest_conduct_among_the_gentiles"
+label = "Honest conduct among the Gentiles; submission to civil authority"
+kind = "general"
+verses = ["1PE.2.11-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 2:11-17, the charge to abstain from fleshly lusts and keep 'conversation honest among the Gentiles,' and submission 'to every ordinance of man for the Lord's sake.'"
+
+[[event]]
+id = "1pe_servants_and_the_example_of_christ"
+label = "Servants and the example of Christ's own suffering"
+kind = "general"
+verses = ["1PE.2.18-25"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 2:18-25, servants charged to be subject even to froward masters, following Christ's own example, who 'his own self bare our sins in his own body on the tree.'"
+
+[[event]]
+id = "1pe_wives_and_husbands"
+label = "Wives and husbands"
+kind = "general"
+verses = ["1PE.3.1-7"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 3:1-7, wives' own adorning as 'the hidden man of the heart' rather than outward ornament, and husbands charged to give 'honour unto the wife, as unto the weaker vessel.'"
+
+[[event]]
+id = "1pe_blessing_for_evil_suffering_for_righteousness"
+label = "Blessing for evil; suffering for righteousness' sake"
+kind = "general"
+verses = ["1PE.3.8-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 3:8-17, the charge to be 'of one mind,' not rendering evil for evil, and the blessing on suffering 'for righteousness' sake,' ready always to give an answer 'with meekness and fear.'"
+
+[[event]]
+id = "1pe_christs_suffering_and_the_preaching_to_spirits_in_prison"
+label = "Christ's own suffering for sins; the preaching to the spirits in prison; baptism's own true meaning"
+kind = "general"
+verses = ["1PE.3.18-22"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 3:18-22, Christ 'once suffered for sins, the just for the unjust,' his own preaching to 'the spirits in prison' in the days of Noah, and baptism as 'the answer of a good conscience toward God.'"
+
+[[event]]
+id = "1pe_living_to_the_will_of_god"
+label = "Living the rest of the time to the will of God; stewards of the manifold grace of God"
+kind = "general"
+verses = ["1PE.4.1-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 4:1-11, the charge to arm oneself with Christ's own mind toward suffering, living 'to the will of God' rather than the Gentiles' own excess, and using each own gift 'as good stewards of the manifold grace of God.'"
+
+[[event]]
+id = "1pe_the_fiery_trial"
+label = "The fiery trial; suffering as a Christian, no shame"
+kind = "general"
+verses = ["1PE.4.12-19"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 4:12-19, the charge not to think the 'fiery trial' strange, but to rejoice as 'partakers of Christ's sufferings,' and 'if any man suffer as a Christian, let him not be ashamed.'"
+
+[[event]]
+id = "1pe_exhortation_to_elders_and_the_younger"
+label = "Exhortation to elders and to the younger"
+kind = "general"
+verses = ["1PE.5.1-5"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 5:1-5, the charge to elders to 'feed the flock of God... not by constraint, but willingly,' and to the younger to 'submit yourselves unto the elder.'"
+
+[[event]]
+id = "1pe_humility_and_the_closing_greeting"
+label = "Humility under God's own hand; resisting the devil; closing greeting"
+kind = "general"
+verses = ["1PE.5.6-14"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 5:6-14, the charge to 'humble yourselves therefore under the mighty hand of God,' to resist 'your adversary the devil, as a roaring lion,' and the closing greeting from 'the church that is at Babylon.'"

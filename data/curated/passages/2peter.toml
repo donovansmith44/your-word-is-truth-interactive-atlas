@@ -1,0 +1,78 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). 2 Peter.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# DOCTRINE (owner's own inerrancy ruling, verbatim, binding on every word in
+# this file): NO textual-criticism register anywhere -- 2 Peter's own KJV
+# book title, "The Second Epistle General of Peter," stands as titled, and
+# 2 Peter 1:1's own self-identification ("Simon Peter, a servant and an
+# apostle of Jesus Christ") is the text this project cites; no authorship
+# hedge of any kind is used in any label/ref_note below.
+#
+# PARALLELS (req 1b / this batch's own slice-specific req 3): 2 Peter 2 and
+# Jude share extensive close-worded parallel language (both condemn false
+# teachers using the judgment of the sinning angels, Sodom's own example,
+# "speak evil of dignities," "clouds... without water," and Balaam's own
+# error) -- swept and disclosed honestly in batch-w5-report.md, NOT
+# authored as a witness pair here: the two chapters do not co-extend
+# verse-for-verse (2 Peter alone has Noah/Lot and the closing dog-and-sow
+# proverb; Jude alone has the Michael/devil dispute over the body of Moses,
+# the Cain/Balaam/Core triad, and the direct Enoch-prophecy citation), so
+# no single shared title could stand TRUE AT EVERY ANCHOR per the
+# controller's own binding SHARED-TITLE LAW. Crockett (1897) is
+# OT-harmony-scoped and does not cover this pair. Each book's own
+# containers below are titled solely from its own content.
+#
+# GRANULARITY: 2 Peter's own real seams -- salutation and the call to
+# add virtue to faith, Peter's own eyewitness testimony, the warning
+# against false teachers (in two real movements -- the pattern of past
+# judgment, then the teachers' own character and end), and the closing
+# warning of scoffers and the day of the Lord.
+
+[[event]]
+id = "2pe_salutation_and_adding_to_faith"
+label = "Salutation; adding to faith virtue, and making one's own calling and election sure"
+kind = "general"
+verses = ["2PE.1.1-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Peter 1:1-11, Peter's own greeting, and the charge to add to faith 'virtue... knowledge... temperance... patience... godliness... brotherly kindness... charity,' making one's own 'calling and election sure.'"
+
+[[event]]
+id = "2pe_pauls_testimony_eyewitness_of_the_transfiguration"
+label = "Peter's own testimony: an eyewitness of the transfiguration; the sure word of prophecy"
+kind = "general"
+verses = ["2PE.1.12-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Peter 1:12-21, Peter's own reminder before his death, an eyewitness of Christ's own 'majesty' on 'the holy mount,' and 'a more sure word of prophecy... no prophecy of the scripture is of any private interpretation.'"
+
+[[event]]
+id = "2pe_false_teachers_foretold"
+label = "False teachers foretold, on the pattern of judgment on the angels, the old world, and Sodom"
+kind = "general"
+verses = ["2PE.2.1-9"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Peter 2:1-9, false teachers foretold on the pattern of the angels that sinned, the old world spared only in Noah, and Sodom and Gomorrha, closing 'the Lord knoweth how to deliver the godly out of temptations.'"
+
+[[event]]
+id = "2pe_the_character_and_end_of_false_teachers"
+label = "The character and end of the false teachers: the way of Balaam; the dog and the sow"
+kind = "general"
+verses = ["2PE.2.10-22"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Peter 2:10-22, the false teachers' own presumption and greed described at length -- 'the way of Balaam... wells without water' -- closing on the proverb, 'the dog is turned to his own vomit again; and the sow that was washed to her wallowing in the mire.'"
+
+[[event]]
+id = "2pe_scoffers_in_the_last_days"
+label = "Scoffers in the last days; the day of the Lord as a thief in the night"
+kind = "general"
+verses = ["2PE.3.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Peter 3:1-10, the warning that 'scoffers' will come denying Christ's own promised coming, the flood as the pattern of the world's own former judgment by water, and the day of the Lord which 'will come as a thief in the night.'"
+
+[[event]]
+id = "2pe_new_heavens_and_a_new_earth"
+label = "Looking for new heavens and a new earth; Paul's own epistles; the closing doxology"
+kind = "general"
+verses = ["2PE.3.11-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Peter 3:11-18, the charge to be diligent while looking for 'new heavens and a new earth, wherein dwelleth righteousness,' Peter's own reference to 'our beloved brother Paul' and his epistles, and the closing doxology."

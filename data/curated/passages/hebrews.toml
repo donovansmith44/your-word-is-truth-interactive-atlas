@@ -1,0 +1,217 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). Hebrews.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# DOCTRINE (owner's own inerrancy ruling, verbatim, binding on every word in
+# this file): NO textual-criticism register anywhere -- Hebrews' own KJV
+# book title, "The Epistle of Paul the Apostle to the Hebrews," stands as
+# titled; no authorship hedge of any kind is used in any label/ref_note
+# below.
+#
+# GRANULARITY: Hebrews' own real "sermon" shape -- a cycle of doctrinal
+# exposition (Christ superior to angels/Moses/Aaron's priesthood) each
+# followed by a pastoral warning, then the faith chapter and closing
+# exhortations. LITERARY-STRUCTURE FACT (not textual criticism): Hebrews
+# alone among this slice's own 21 epistles carries NO epistolary salutation
+# at all -- it opens directly with theological exposition ('God, who at
+# sundry times...') and only becomes personal/epistolary in its own final
+# chapter (13:22-25) -- a real, text-visible feature, disclosed rather than
+# forced into the salutation/thanksgiving shape every other letter here
+# has. 5:11-6:12 is kept as one container spanning the chapter break (one
+# continuous warning against spiritual dullness and apostasy) -- a
+# literary-structure fact, not textual criticism.
+
+[[event]]
+id = "heb_gods_final_word_in_his_son"
+label = "God's own final word spoken by his Son"
+kind = "general"
+verses = ["HEB.1.1-4"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 1:1-4, the letter's own opening exposition -- God, who spoke by the prophets in time past, 'hath in these last days spoken unto us by his Son,' who 'sat down on the right hand of the Majesty on high.'"
+
+[[event]]
+id = "heb_the_son_superior_to_angels"
+label = "The Son superior to the angels"
+kind = "general"
+verses = ["HEB.1.5-14"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 1:5-14, a catena of Old Testament citations proving the Son 'made so much better than the angels,' closing on the angels as 'ministering spirits, sent forth to minister for them who shall be heirs of salvation.'"
+
+[[event]]
+id = "heb_a_warning_lest_we_neglect_so_great_salvation"
+label = "A warning: how shall we escape if we neglect so great salvation?"
+kind = "general"
+verses = ["HEB.2.1-4"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 2:1-4, the first of the letter's own recurring warnings -- give 'the more earnest heed,' lest we drift, having neglected 'so great salvation.'"
+
+[[event]]
+id = "heb_jesus_made_lower_than_the_angels"
+label = "Jesus made lower than the angels for the suffering of death; the merciful and faithful high priest"
+kind = "general"
+verses = ["HEB.2.5-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 2:5-18, Jesus 'made a little lower than the angels for the suffering of death,' partaking of flesh and blood to destroy him that had the power of death, and so made 'a merciful and faithful high priest.'"
+
+[[event]]
+id = "heb_christ_superior_to_moses"
+label = "Christ superior to Moses: a son over his own house"
+kind = "general"
+verses = ["HEB.3.1-6"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 3:1-6, Christ 'counted worthy of more glory than Moses,' Moses faithful 'as a servant' but Christ 'as a son over his own house; whose house are we.'"
+
+[[event]]
+id = "heb_a_warning_against_unbelief"
+label = "A warning against unbelief: harden not your hearts"
+kind = "general"
+verses = ["HEB.3.7-19"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 3:7-19, the warning drawn from Psalm 95's own wilderness generation -- 'to day if ye will hear his voice, harden not your hearts,' since they 'could not enter in because of unbelief.'"
+
+[[event]]
+id = "heb_the_rest_that_remains"
+label = "The rest that remains for the people of God"
+kind = "general"
+verses = ["HEB.4.1-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 4:1-13, the promise of God's own rest still open, 'there remaineth therefore a rest to the people of God,' and the word of God 'quick, and powerful, and sharper than any twoedged sword.'"
+
+[[event]]
+id = "heb_jesus_our_great_high_priest"
+label = "Jesus our own great high priest; come boldly to the throne of grace"
+kind = "general"
+verses = ["HEB.4.14-16"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 4:14-16, Jesus 'a great high priest, that is passed into the heavens,' able to be touched with the feeling of our infirmities, and the charge to 'come boldly unto the throne of grace.'"
+
+[[event]]
+id = "heb_christs_priesthood_after_melchisedec"
+label = "Christ's own high priesthood after the order of Melchisedec"
+kind = "general"
+verses = ["HEB.5.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 5:1-10, every high priest taken from among men, yet Christ 'glorified not himself to be made an high priest,' but was 'called of God an high priest after the order of Melchisedec.'"
+
+[[event]]
+id = "heb_a_warning_against_falling_away"
+label = "A warning against falling away; the peril of spiritual dullness"
+kind = "general"
+verses = ["HEB.5.11-14", "HEB.6.1-12"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 5:11-6:12, one continuous warning spanning the chapter break -- rebuke for remaining on 'milk' rather than 'strong meat,' and the sober warning that those who fall away after full enlightenment cannot be 'renew[ed]... again unto repentance,' closing with encouragement not to be 'slothful, but followers of them who through faith and patience inherit the promises.'"
+
+[[event]]
+id = "heb_gods_promise_and_oath_to_abraham"
+label = "God's own promise and oath to Abraham; the anchor of the soul"
+kind = "general"
+verses = ["HEB.6.13-20"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 6:13-20, God's own oath to Abraham as the ground of 'a strong consolation,' hope as 'an anchor of the soul,' reaching within the veil where Jesus has entered 'after the order of Melchisedec.'"
+
+[[event]]
+id = "heb_melchisedec_priest_of_the_most_high_god"
+label = "Melchisedec, priest of the most high God"
+kind = "general"
+verses = ["HEB.7.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 7:1-10, Melchisedec, king of Salem, who met Abraham and received tithes from him, greater than Levi, who 'payed tithes in Abraham.'"
+
+[[event]]
+id = "heb_the_perfect_priesthood_of_christ"
+label = "The perfect priesthood of Christ after the order of Melchisedec, not of Aaron"
+kind = "general"
+verses = ["HEB.7.11-28"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 7:11-28, the Levitical priesthood's own imperfection requiring 'another priest' after Melchisedec's order, Jesus 'made a surety of a better testament,' who 'ever liveth to make intercession' and 'needeth not daily... to offer up sacrifice.'"
+
+[[event]]
+id = "heb_the_mediator_of_a_better_covenant"
+label = "The mediator of a better covenant, the new covenant promised by Jeremiah"
+kind = "general"
+verses = ["HEB.8.1-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 8, Christ 'the mediator of a better covenant,' the first covenant's own fault, and Jeremiah's own prophecy of the new covenant quoted at length, 'in that he saith, A new covenant, he hath made the first old' -- kept whole, the chapter's own single continuous argument."
+
+[[event]]
+id = "heb_the_earthly_sanctuary_and_the_blood_of_christ"
+label = "The earthly sanctuary and its own service; the blood of Christ purging the conscience"
+kind = "general"
+verses = ["HEB.9.1-14"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 9:1-14, the tabernacle's own furniture and yearly service described, set against Christ's own entrance 'by his own blood' into the true holy place, purging the conscience 'from dead works to serve the living God.'"
+
+[[event]]
+id = "heb_the_mediator_of_the_new_testament"
+label = "The mediator of the new testament; Christ once offered to bear the sins of many"
+kind = "general"
+verses = ["HEB.9.15-28"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 9:15-28, Christ 'the mediator of the new testament' by his own death, the necessity of a testator's death for a testament to take effect, and Christ 'once offered to bear the sins of many.'"
+
+[[event]]
+id = "heb_one_sacrifice_for_sins_for_ever"
+label = "One sacrifice for sins for ever; the new covenant written in the heart"
+kind = "general"
+verses = ["HEB.10.1-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 10:1-18, the law's own yearly sacrifices unable to take away sins, set against Christ's own single offering 'once for all,' by which 'he hath perfected for ever them that are sanctified.'"
+
+[[event]]
+id = "heb_drawing_near_with_a_true_heart"
+label = "Drawing near with a true heart; not forsaking the assembling of ourselves together"
+kind = "general"
+verses = ["HEB.10.19-25"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 10:19-25, the charge to 'draw near with a true heart in full assurance of faith,' holding fast the profession, and 'not forsaking the assembling of ourselves together.'"
+
+[[event]]
+id = "heb_a_warning_against_wilful_sin"
+label = "A warning against wilful sin; the just shall live by faith"
+kind = "general"
+verses = ["HEB.10.26-39"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 10:26-39, the sober warning that 'if we sin wilfully... there remaineth no more sacrifice for sins,' a call to remember former endurance, and 'the just shall live by faith.'"
+
+[[event]]
+id = "heb_faith_defined_from_abel_to_abrahams_sojourn"
+label = "Faith defined: the elders' own testimony, from Abel to Abraham's own sojourn"
+kind = "general"
+verses = ["HEB.11.1-16"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 11:1-16, faith defined as 'the substance of things hoped for,' and its own witnesses from Abel and Enoch through Noah and Abraham, who 'looked for a city which hath foundations, whose builder and maker is God.'"
+
+[[event]]
+id = "heb_the_faith_of_abraham_isaac_jacob_joseph_and_moses"
+label = "The faith of Abraham, Isaac, Jacob, Joseph, Moses, and Rahab"
+kind = "general"
+verses = ["HEB.11.17-31"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 11:17-31, faith's own witnesses continued -- Abraham's own offering of Isaac, Isaac's and Jacob's own blessings, Joseph, Moses' own choice and the Exodus, and 'the harlot Rahab' who 'perished not with them that believed not.'"
+
+[[event]]
+id = "heb_faiths_further_witnesses"
+label = "Faith's own further witnesses; a better resurrection; God's own better provision"
+kind = "general"
+verses = ["HEB.11.32-40"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 11:32-40, the roll call continued by name -- Gedeon, Barak, Samson, Jephthae, David, Samuel, and the prophets -- and the unnamed who 'were tortured, not accepting deliverance,' closing on 'God having provided some better thing for us.'"
+
+[[event]]
+id = "heb_the_cloud_of_witnesses"
+label = "The cloud of witnesses; Jesus the author and finisher of faith; the chastening of the Lord"
+kind = "general"
+verses = ["HEB.12.1-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 12:1-13, the charge to run 'with patience the race... looking unto Jesus the author and finisher of our faith,' and chastening received 'as with sons,' yielding 'the peaceable fruit of righteousness.'"
+
+[[event]]
+id = "heb_a_warning_against_profanity_mount_sion_not_sinai"
+label = "A warning against profanity, after Esau's own example; mount Sion, not mount Sinai"
+kind = "general"
+verses = ["HEB.12.14-29"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 12:14-29, the warning against a profane person 'as Esau,' the contrast between the terror of Sinai and the welcome of 'mount Sion... the heavenly Jerusalem,' closing 'our God is a consuming fire.'"
+
+[[event]]
+id = "heb_exhortations_brotherly_love_and_contentment"
+label = "Exhortations: brotherly love, hospitality, marriage, contentment"
+kind = "general"
+verses = ["HEB.13.1-6"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 13:1-6, closing practical exhortations -- 'let brotherly love continue,' hospitality to strangers, honourable marriage, and contentment, 'for he hath said, I will never leave thee, nor forsake thee.'"
+
+[[event]]
+id = "heb_following_the_faith_of_your_leaders"
+label = "Following the faith of their own leaders; the altar without the camp; the sacrifice of praise"
+kind = "general"
+verses = ["HEB.13.7-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 13:7-17, remembering those who 'have the rule over you,' Jesus Christ 'the same yesterday, and to day, and for ever,' bearing his own reproach 'without the camp,' and offering 'the sacrifice of praise to God continually.'"
+
+[[event]]
+id = "heb_closing_requests_and_benediction"
+label = "Closing requests, benediction, and greetings"
+kind = "general"
+verses = ["HEB.13.18-25"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 13:18-25, the request for prayer, the benediction invoking 'that great shepherd of the sheep,' and the letter's own closing greetings -- its only epistolary personal note in the whole book, per this file's own header note."

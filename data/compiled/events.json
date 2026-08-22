@@ -2320,6 +2320,672 @@
     "order_key": 0
   },
   {
+    "id": "1jn_prologue_the_word_of_life",
+    "label": "Prologue: the Word of life, declared for fellowship and joy",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1JN.1.1",
+      "1JN.1.2",
+      "1JN.1.3",
+      "1JN.1.4"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 1:1-4, the letter's own prologue -- 'that which was from the beginning, which we have heard, which we have seen with our eyes' -- declared 'that ye also may have fellowship with us... that your joy may be full.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1jn_walking_in_the_light",
+    "label": "Walking in the light; confession of sin; Christ our own advocate",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1JN.1.5",
+      "1JN.1.6",
+      "1JN.1.7",
+      "1JN.1.8",
+      "1JN.1.9",
+      "1JN.1.10",
+      "1JN.2.1",
+      "1JN.2.2"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 1:5-2:2, one unit spanning the chapter break -- 'God is light, and in him is no darkness at all,' confession of sin met by God's own faithfulness to forgive, and Christ 'the propitiation for our sins... also for the sins of the whole world.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1jn_keeping_his_commandments",
+    "label": "Keeping his own commandments: the old and new commandment of love",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1JN.2.3",
+      "1JN.2.4",
+      "1JN.2.5",
+      "1JN.2.6",
+      "1JN.2.7",
+      "1JN.2.8",
+      "1JN.2.9",
+      "1JN.2.10",
+      "1JN.2.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 2:3-11, knowing him by keeping his commandments, the old commandment that is also new -- 'the darkness is past, and the true light now shineth' -- and the one who loves his brother 'abideth in the light.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1jn_written_to_children_fathers_and_young_men",
+    "label": "Written to little children, fathers, and young men; love not the world",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1JN.2.12",
+      "1JN.2.13",
+      "1JN.2.14",
+      "1JN.2.15",
+      "1JN.2.16",
+      "1JN.2.17"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 2:12-17, John's own address in turn to little children, fathers, and young men, and the charge 'love not the world, neither the things that are in the world.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1jn_antichrists_and_the_anointing",
+    "label": "Antichrists; the anointing that abides",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1JN.2.18",
+      "1JN.2.19",
+      "1JN.2.20",
+      "1JN.2.21",
+      "1JN.2.22",
+      "1JN.2.23",
+      "1JN.2.24",
+      "1JN.2.25",
+      "1JN.2.26",
+      "1JN.2.27"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 2:18-27, the warning of 'many antichrists' as a sign of 'the last time,' and the 'anointing which ye have received of him' that teaches without need of any other.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1jn_children_of_god_doing_righteousness",
+    "label": "Children of God; doing righteousness, not sin",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1JN.2.28",
+      "1JN.2.29",
+      "1JN.3.1",
+      "1JN.3.2",
+      "1JN.3.3",
+      "1JN.3.4",
+      "1JN.3.5",
+      "1JN.3.6",
+      "1JN.3.7",
+      "1JN.3.8",
+      "1JN.3.9",
+      "1JN.3.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 2:28-3:10, one unit spanning the chapter break -- 'now are we the sons of God,' purifying oneself in that hope, and the contrast between doing righteousness and committing sin, closing 'in this the children of God are manifest, and the children of the devil.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1jn_loving_one_another_not_as_cain",
+    "label": "Loving one another, not as Cain; assurance before God",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1JN.3.11",
+      "1JN.3.12",
+      "1JN.3.13",
+      "1JN.3.14",
+      "1JN.3.15",
+      "1JN.3.16",
+      "1JN.3.17",
+      "1JN.3.18",
+      "1JN.3.19",
+      "1JN.3.20",
+      "1JN.3.21",
+      "1JN.3.22",
+      "1JN.3.23",
+      "1JN.3.24"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 3:11-24, the message 'from the beginning, that we should love one another,' contrasted with Cain who slew his brother, and assurance of heart 'toward God' through keeping his commandments.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1jn_testing_the_spirits",
+    "label": "Testing the spirits",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1JN.4.1",
+      "1JN.4.2",
+      "1JN.4.3",
+      "1JN.4.4",
+      "1JN.4.5",
+      "1JN.4.6"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 4:1-6, the charge to 'try the spirits whether they are of God,' known by their own confession of Jesus Christ come in the flesh.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1jn_god_is_love",
+    "label": "God is love; perfect love casts out fear",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1JN.4.7",
+      "1JN.4.8",
+      "1JN.4.9",
+      "1JN.4.10",
+      "1JN.4.11",
+      "1JN.4.12",
+      "1JN.4.13",
+      "1JN.4.14",
+      "1JN.4.15",
+      "1JN.4.16",
+      "1JN.4.17",
+      "1JN.4.18",
+      "1JN.4.19",
+      "1JN.4.20",
+      "1JN.4.21"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 4:7-21, the declaration 'God is love,' manifested in sending his Son, and 'perfect love casteth out fear,' closing on the inseparability of loving God and loving one's own brother.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1jn_faith_that_overcomes_the_world",
+    "label": "Faith that overcomes the world; the witness of the Spirit, the water, and the blood",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1JN.5.1",
+      "1JN.5.2",
+      "1JN.5.3",
+      "1JN.5.4",
+      "1JN.5.5",
+      "1JN.5.6",
+      "1JN.5.7",
+      "1JN.5.8",
+      "1JN.5.9",
+      "1JN.5.10",
+      "1JN.5.11",
+      "1JN.5.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 5:1-12, faith in Jesus as the Son of God as 'the victory that overcometh the world,' the threefold witness of 'the spirit, and the water, and the blood,' and 'he that hath the Son hath life.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1jn_confidence_in_prayer_and_the_true_god",
+    "label": "Confidence in prayer; the true God and eternal life",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1JN.5.13",
+      "1JN.5.14",
+      "1JN.5.15",
+      "1JN.5.16",
+      "1JN.5.17",
+      "1JN.5.18",
+      "1JN.5.19",
+      "1JN.5.20",
+      "1JN.5.21"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 5:13-21, confidence that God hears prayer 'according to his will,' instruction on a sin 'unto death,' and the closing affirmation, 'this is the true God, and eternal life.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1pe_salutation_and_the_living_hope",
+    "label": "Salutation; a living hope; the salvation the prophets searched for",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1PE.1.1",
+      "1PE.1.2",
+      "1PE.1.3",
+      "1PE.1.4",
+      "1PE.1.5",
+      "1PE.1.6",
+      "1PE.1.7",
+      "1PE.1.8",
+      "1PE.1.9",
+      "1PE.1.10",
+      "1PE.1.11",
+      "1PE.1.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 1:1-12, Peter's own greeting to the elect 'strangers scattered' through Asia Minor, blessing God for begetting 'a lively hope by the resurrection of Jesus Christ,' a salvation the prophets 'enquired and searched diligently' after.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1pe_a_call_to_holiness",
+    "label": "A call to holiness; redeemed by the precious blood of Christ",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1PE.1.13",
+      "1PE.1.14",
+      "1PE.1.15",
+      "1PE.1.16",
+      "1PE.1.17",
+      "1PE.1.18",
+      "1PE.1.19",
+      "1PE.1.20",
+      "1PE.1.21"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 1:13-21, the charge 'be ye holy in all manner of conversation,' redeemed not with silver or gold 'but with the precious blood of Christ, as of a lamb without blemish.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1pe_born_again_by_the_word",
+    "label": "Born again by the word of God, which liveth and abideth for ever",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1PE.1.22",
+      "1PE.1.23",
+      "1PE.1.24",
+      "1PE.1.25"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 1:22-25, love of the brethren grounded in being 'born again... by the word of God, which liveth and abideth for ever.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1pe_living_stones_a_spiritual_house",
+    "label": "Living stones, a spiritual house; a chosen generation, a royal priesthood",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1PE.2.1",
+      "1PE.2.2",
+      "1PE.2.3",
+      "1PE.2.4",
+      "1PE.2.5",
+      "1PE.2.6",
+      "1PE.2.7",
+      "1PE.2.8",
+      "1PE.2.9",
+      "1PE.2.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 2:1-10, believers as 'lively stones' built into 'a spiritual house,' Christ the 'chief corner stone,' and the church named 'a chosen generation, a royal priesthood, an holy nation.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1pe_honest_conduct_among_the_gentiles",
+    "label": "Honest conduct among the Gentiles; submission to civil authority",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1PE.2.11",
+      "1PE.2.12",
+      "1PE.2.13",
+      "1PE.2.14",
+      "1PE.2.15",
+      "1PE.2.16",
+      "1PE.2.17"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 2:11-17, the charge to abstain from fleshly lusts and keep 'conversation honest among the Gentiles,' and submission 'to every ordinance of man for the Lord's sake.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1pe_servants_and_the_example_of_christ",
+    "label": "Servants and the example of Christ's own suffering",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1PE.2.18",
+      "1PE.2.19",
+      "1PE.2.20",
+      "1PE.2.21",
+      "1PE.2.22",
+      "1PE.2.23",
+      "1PE.2.24",
+      "1PE.2.25"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 2:18-25, servants charged to be subject even to froward masters, following Christ's own example, who 'his own self bare our sins in his own body on the tree.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1pe_wives_and_husbands",
+    "label": "Wives and husbands",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1PE.3.1",
+      "1PE.3.2",
+      "1PE.3.3",
+      "1PE.3.4",
+      "1PE.3.5",
+      "1PE.3.6",
+      "1PE.3.7"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 3:1-7, wives' own adorning as 'the hidden man of the heart' rather than outward ornament, and husbands charged to give 'honour unto the wife, as unto the weaker vessel.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1pe_blessing_for_evil_suffering_for_righteousness",
+    "label": "Blessing for evil; suffering for righteousness' sake",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1PE.3.8",
+      "1PE.3.9",
+      "1PE.3.10",
+      "1PE.3.11",
+      "1PE.3.12",
+      "1PE.3.13",
+      "1PE.3.14",
+      "1PE.3.15",
+      "1PE.3.16",
+      "1PE.3.17"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 3:8-17, the charge to be 'of one mind,' not rendering evil for evil, and the blessing on suffering 'for righteousness' sake,' ready always to give an answer 'with meekness and fear.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1pe_christs_suffering_and_the_preaching_to_spirits_in_prison",
+    "label": "Christ's own suffering for sins; the preaching to the spirits in prison; baptism's own true meaning",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1PE.3.18",
+      "1PE.3.19",
+      "1PE.3.20",
+      "1PE.3.21",
+      "1PE.3.22"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 3:18-22, Christ 'once suffered for sins, the just for the unjust,' his own preaching to 'the spirits in prison' in the days of Noah, and baptism as 'the answer of a good conscience toward God.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1pe_living_to_the_will_of_god",
+    "label": "Living the rest of the time to the will of God; stewards of the manifold grace of God",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1PE.4.1",
+      "1PE.4.2",
+      "1PE.4.3",
+      "1PE.4.4",
+      "1PE.4.5",
+      "1PE.4.6",
+      "1PE.4.7",
+      "1PE.4.8",
+      "1PE.4.9",
+      "1PE.4.10",
+      "1PE.4.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 4:1-11, the charge to arm oneself with Christ's own mind toward suffering, living 'to the will of God' rather than the Gentiles' own excess, and using each own gift 'as good stewards of the manifold grace of God.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1pe_the_fiery_trial",
+    "label": "The fiery trial; suffering as a Christian, no shame",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1PE.4.12",
+      "1PE.4.13",
+      "1PE.4.14",
+      "1PE.4.15",
+      "1PE.4.16",
+      "1PE.4.17",
+      "1PE.4.18",
+      "1PE.4.19"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 4:12-19, the charge not to think the 'fiery trial' strange, but to rejoice as 'partakers of Christ's sufferings,' and 'if any man suffer as a Christian, let him not be ashamed.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1pe_exhortation_to_elders_and_the_younger",
+    "label": "Exhortation to elders and to the younger",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1PE.5.1",
+      "1PE.5.2",
+      "1PE.5.3",
+      "1PE.5.4",
+      "1PE.5.5"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 5:1-5, the charge to elders to 'feed the flock of God... not by constraint, but willingly,' and to the younger to 'submit yourselves unto the elder.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1pe_humility_and_the_closing_greeting",
+    "label": "Humility under God's own hand; resisting the devil; closing greeting",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "1PE.5.6",
+      "1PE.5.7",
+      "1PE.5.8",
+      "1PE.5.9",
+      "1PE.5.10",
+      "1PE.5.11",
+      "1PE.5.12",
+      "1PE.5.13",
+      "1PE.5.14"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Peter 5:6-14, the charge to 'humble yourselves therefore under the mighty hand of God,' to resist 'your adversary the devil, as a roaring lion,' and the closing greeting from 'the church that is at Babylon.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
     "id": "1th_salutation_and_thanksgiving",
     "label": "Salutation and thanksgiving: the Thessalonians' own faith, an ensample to all Macedonia and Achaia",
     "when": {
@@ -3634,6 +4300,213 @@
     "order_key": 0
   },
   {
+    "id": "2jn_letter_to_the_elect_lady",
+    "label": "The elder to the elect lady: walking in truth and love, and a warning against deceivers",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2JN.1.1",
+      "2JN.1.2",
+      "2JN.1.3",
+      "2JN.1.4",
+      "2JN.1.5",
+      "2JN.1.6",
+      "2JN.1.7",
+      "2JN.1.8",
+      "2JN.1.9",
+      "2JN.1.10",
+      "2JN.1.11",
+      "2JN.1.12",
+      "2JN.1.13"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 John, the whole short letter -- the elder's own greeting to 'the elect lady and her children,' the commandment to love one another, the warning against deceivers 'who confess not that Jesus Christ is come in the flesh,' and the closing hope to speak 'face to face.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2pe_salutation_and_adding_to_faith",
+    "label": "Salutation; adding to faith virtue, and making one's own calling and election sure",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2PE.1.1",
+      "2PE.1.2",
+      "2PE.1.3",
+      "2PE.1.4",
+      "2PE.1.5",
+      "2PE.1.6",
+      "2PE.1.7",
+      "2PE.1.8",
+      "2PE.1.9",
+      "2PE.1.10",
+      "2PE.1.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Peter 1:1-11, Peter's own greeting, and the charge to add to faith 'virtue... knowledge... temperance... patience... godliness... brotherly kindness... charity,' making one's own 'calling and election sure.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2pe_pauls_testimony_eyewitness_of_the_transfiguration",
+    "label": "Peter's own testimony: an eyewitness of the transfiguration; the sure word of prophecy",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2PE.1.12",
+      "2PE.1.13",
+      "2PE.1.14",
+      "2PE.1.15",
+      "2PE.1.16",
+      "2PE.1.17",
+      "2PE.1.18",
+      "2PE.1.19",
+      "2PE.1.20",
+      "2PE.1.21"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Peter 1:12-21, Peter's own reminder before his death, an eyewitness of Christ's own 'majesty' on 'the holy mount,' and 'a more sure word of prophecy... no prophecy of the scripture is of any private interpretation.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2pe_false_teachers_foretold",
+    "label": "False teachers foretold, on the pattern of judgment on the angels, the old world, and Sodom",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2PE.2.1",
+      "2PE.2.2",
+      "2PE.2.3",
+      "2PE.2.4",
+      "2PE.2.5",
+      "2PE.2.6",
+      "2PE.2.7",
+      "2PE.2.8",
+      "2PE.2.9"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Peter 2:1-9, false teachers foretold on the pattern of the angels that sinned, the old world spared only in Noah, and Sodom and Gomorrha, closing 'the Lord knoweth how to deliver the godly out of temptations.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2pe_the_character_and_end_of_false_teachers",
+    "label": "The character and end of the false teachers: the way of Balaam; the dog and the sow",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2PE.2.10",
+      "2PE.2.11",
+      "2PE.2.12",
+      "2PE.2.13",
+      "2PE.2.14",
+      "2PE.2.15",
+      "2PE.2.16",
+      "2PE.2.17",
+      "2PE.2.18",
+      "2PE.2.19",
+      "2PE.2.20",
+      "2PE.2.21",
+      "2PE.2.22"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Peter 2:10-22, the false teachers' own presumption and greed described at length -- 'the way of Balaam... wells without water' -- closing on the proverb, 'the dog is turned to his own vomit again; and the sow that was washed to her wallowing in the mire.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2pe_scoffers_in_the_last_days",
+    "label": "Scoffers in the last days; the day of the Lord as a thief in the night",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2PE.3.1",
+      "2PE.3.2",
+      "2PE.3.3",
+      "2PE.3.4",
+      "2PE.3.5",
+      "2PE.3.6",
+      "2PE.3.7",
+      "2PE.3.8",
+      "2PE.3.9",
+      "2PE.3.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Peter 3:1-10, the warning that 'scoffers' will come denying Christ's own promised coming, the flood as the pattern of the world's own former judgment by water, and the day of the Lord which 'will come as a thief in the night.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "2pe_new_heavens_and_a_new_earth",
+    "label": "Looking for new heavens and a new earth; Paul's own epistles; the closing doxology",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "2PE.3.11",
+      "2PE.3.12",
+      "2PE.3.13",
+      "2PE.3.14",
+      "2PE.3.15",
+      "2PE.3.16",
+      "2PE.3.17",
+      "2PE.3.18"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Peter 3:11-18, the charge to be diligent while looking for 'new heavens and a new earth, wherein dwelleth righteousness,' Peter's own reference to 'our beloved brother Paul' and his epistles, and the closing doxology.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
     "id": "2th_salutation_and_thanksgiving",
     "label": "Salutation and thanksgiving; the righteous judgment of God at Christ's own coming",
     "when": {
@@ -4025,6 +4898,39 @@
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Timothy 4:9-22, Paul's own request that Timothy come quickly and bring Mark and 'the cloke... and the books, but especially the parchments,' his account of standing alone at his first answer, and the closing greetings.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "3jn_letter_to_gaius",
+    "label": "The elder to Gaius: commendation of hospitality, a rebuke of Diotrephes, and commendation of Demetrius",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "3JN.1.1",
+      "3JN.1.2",
+      "3JN.1.3",
+      "3JN.1.4",
+      "3JN.1.5",
+      "3JN.1.6",
+      "3JN.1.7",
+      "3JN.1.8",
+      "3JN.1.9",
+      "3JN.1.10",
+      "3JN.1.11",
+      "3JN.1.12",
+      "3JN.1.13",
+      "3JN.1.14"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 3 John, the whole short letter -- the elder's own greeting to 'the wellbeloved Gaius,' commendation of his own faithful hospitality to travelling brethren, a rebuke of Diotrephes, 'who loveth to have the preeminence,' commendation of Demetrius, and the closing hope to speak 'face to face.'",
     "kjv_superscription": null,
     "ref_note": null,
     "order_key": 0
@@ -8426,6 +9332,822 @@
     "order_key": 0
   },
   {
+    "id": "heb_gods_final_word_in_his_son",
+    "label": "God's own final word spoken by his Son",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.1.1",
+      "HEB.1.2",
+      "HEB.1.3",
+      "HEB.1.4"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 1:1-4, the letter's own opening exposition -- God, who spoke by the prophets in time past, 'hath in these last days spoken unto us by his Son,' who 'sat down on the right hand of the Majesty on high.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_the_son_superior_to_angels",
+    "label": "The Son superior to the angels",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.1.5",
+      "HEB.1.6",
+      "HEB.1.7",
+      "HEB.1.8",
+      "HEB.1.9",
+      "HEB.1.10",
+      "HEB.1.11",
+      "HEB.1.12",
+      "HEB.1.13",
+      "HEB.1.14"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 1:5-14, a catena of Old Testament citations proving the Son 'made so much better than the angels,' closing on the angels as 'ministering spirits, sent forth to minister for them who shall be heirs of salvation.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_a_warning_lest_we_neglect_so_great_salvation",
+    "label": "A warning: how shall we escape if we neglect so great salvation?",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.2.1",
+      "HEB.2.2",
+      "HEB.2.3",
+      "HEB.2.4"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 2:1-4, the first of the letter's own recurring warnings -- give 'the more earnest heed,' lest we drift, having neglected 'so great salvation.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_jesus_made_lower_than_the_angels",
+    "label": "Jesus made lower than the angels for the suffering of death; the merciful and faithful high priest",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.2.5",
+      "HEB.2.6",
+      "HEB.2.7",
+      "HEB.2.8",
+      "HEB.2.9",
+      "HEB.2.10",
+      "HEB.2.11",
+      "HEB.2.12",
+      "HEB.2.13",
+      "HEB.2.14",
+      "HEB.2.15",
+      "HEB.2.16",
+      "HEB.2.17",
+      "HEB.2.18"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 2:5-18, Jesus 'made a little lower than the angels for the suffering of death,' partaking of flesh and blood to destroy him that had the power of death, and so made 'a merciful and faithful high priest.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_christ_superior_to_moses",
+    "label": "Christ superior to Moses: a son over his own house",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.3.1",
+      "HEB.3.2",
+      "HEB.3.3",
+      "HEB.3.4",
+      "HEB.3.5",
+      "HEB.3.6"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 3:1-6, Christ 'counted worthy of more glory than Moses,' Moses faithful 'as a servant' but Christ 'as a son over his own house; whose house are we.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_a_warning_against_unbelief",
+    "label": "A warning against unbelief: harden not your hearts",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.3.7",
+      "HEB.3.8",
+      "HEB.3.9",
+      "HEB.3.10",
+      "HEB.3.11",
+      "HEB.3.12",
+      "HEB.3.13",
+      "HEB.3.14",
+      "HEB.3.15",
+      "HEB.3.16",
+      "HEB.3.17",
+      "HEB.3.18",
+      "HEB.3.19"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 3:7-19, the warning drawn from Psalm 95's own wilderness generation -- 'to day if ye will hear his voice, harden not your hearts,' since they 'could not enter in because of unbelief.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_the_rest_that_remains",
+    "label": "The rest that remains for the people of God",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.4.1",
+      "HEB.4.2",
+      "HEB.4.3",
+      "HEB.4.4",
+      "HEB.4.5",
+      "HEB.4.6",
+      "HEB.4.7",
+      "HEB.4.8",
+      "HEB.4.9",
+      "HEB.4.10",
+      "HEB.4.11",
+      "HEB.4.12",
+      "HEB.4.13"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 4:1-13, the promise of God's own rest still open, 'there remaineth therefore a rest to the people of God,' and the word of God 'quick, and powerful, and sharper than any twoedged sword.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_jesus_our_great_high_priest",
+    "label": "Jesus our own great high priest; come boldly to the throne of grace",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.4.14",
+      "HEB.4.15",
+      "HEB.4.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 4:14-16, Jesus 'a great high priest, that is passed into the heavens,' able to be touched with the feeling of our infirmities, and the charge to 'come boldly unto the throne of grace.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_christs_priesthood_after_melchisedec",
+    "label": "Christ's own high priesthood after the order of Melchisedec",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.5.1",
+      "HEB.5.2",
+      "HEB.5.3",
+      "HEB.5.4",
+      "HEB.5.5",
+      "HEB.5.6",
+      "HEB.5.7",
+      "HEB.5.8",
+      "HEB.5.9",
+      "HEB.5.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 5:1-10, every high priest taken from among men, yet Christ 'glorified not himself to be made an high priest,' but was 'called of God an high priest after the order of Melchisedec.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_a_warning_against_falling_away",
+    "label": "A warning against falling away; the peril of spiritual dullness",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.5.11",
+      "HEB.5.12",
+      "HEB.5.13",
+      "HEB.5.14",
+      "HEB.6.1",
+      "HEB.6.2",
+      "HEB.6.3",
+      "HEB.6.4",
+      "HEB.6.5",
+      "HEB.6.6",
+      "HEB.6.7",
+      "HEB.6.8",
+      "HEB.6.9",
+      "HEB.6.10",
+      "HEB.6.11",
+      "HEB.6.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 5:11-6:12, one continuous warning spanning the chapter break -- rebuke for remaining on 'milk' rather than 'strong meat,' and the sober warning that those who fall away after full enlightenment cannot be 'renew[ed]... again unto repentance,' closing with encouragement not to be 'slothful, but followers of them who through faith and patience inherit the promises.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_gods_promise_and_oath_to_abraham",
+    "label": "God's own promise and oath to Abraham; the anchor of the soul",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.6.13",
+      "HEB.6.14",
+      "HEB.6.15",
+      "HEB.6.16",
+      "HEB.6.17",
+      "HEB.6.18",
+      "HEB.6.19",
+      "HEB.6.20"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 6:13-20, God's own oath to Abraham as the ground of 'a strong consolation,' hope as 'an anchor of the soul,' reaching within the veil where Jesus has entered 'after the order of Melchisedec.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_melchisedec_priest_of_the_most_high_god",
+    "label": "Melchisedec, priest of the most high God",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.7.1",
+      "HEB.7.2",
+      "HEB.7.3",
+      "HEB.7.4",
+      "HEB.7.5",
+      "HEB.7.6",
+      "HEB.7.7",
+      "HEB.7.8",
+      "HEB.7.9",
+      "HEB.7.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 7:1-10, Melchisedec, king of Salem, who met Abraham and received tithes from him, greater than Levi, who 'payed tithes in Abraham.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_the_perfect_priesthood_of_christ",
+    "label": "The perfect priesthood of Christ after the order of Melchisedec, not of Aaron",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.7.11",
+      "HEB.7.12",
+      "HEB.7.13",
+      "HEB.7.14",
+      "HEB.7.15",
+      "HEB.7.16",
+      "HEB.7.17",
+      "HEB.7.18",
+      "HEB.7.19",
+      "HEB.7.20",
+      "HEB.7.21",
+      "HEB.7.22",
+      "HEB.7.23",
+      "HEB.7.24",
+      "HEB.7.25",
+      "HEB.7.26",
+      "HEB.7.27",
+      "HEB.7.28"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 7:11-28, the Levitical priesthood's own imperfection requiring 'another priest' after Melchisedec's order, Jesus 'made a surety of a better testament,' who 'ever liveth to make intercession' and 'needeth not daily... to offer up sacrifice.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_the_mediator_of_a_better_covenant",
+    "label": "The mediator of a better covenant, the new covenant promised by Jeremiah",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.8.1",
+      "HEB.8.2",
+      "HEB.8.3",
+      "HEB.8.4",
+      "HEB.8.5",
+      "HEB.8.6",
+      "HEB.8.7",
+      "HEB.8.8",
+      "HEB.8.9",
+      "HEB.8.10",
+      "HEB.8.11",
+      "HEB.8.12",
+      "HEB.8.13"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 8, Christ 'the mediator of a better covenant,' the first covenant's own fault, and Jeremiah's own prophecy of the new covenant quoted at length, 'in that he saith, A new covenant, he hath made the first old' -- kept whole, the chapter's own single continuous argument.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_the_earthly_sanctuary_and_the_blood_of_christ",
+    "label": "The earthly sanctuary and its own service; the blood of Christ purging the conscience",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.9.1",
+      "HEB.9.2",
+      "HEB.9.3",
+      "HEB.9.4",
+      "HEB.9.5",
+      "HEB.9.6",
+      "HEB.9.7",
+      "HEB.9.8",
+      "HEB.9.9",
+      "HEB.9.10",
+      "HEB.9.11",
+      "HEB.9.12",
+      "HEB.9.13",
+      "HEB.9.14"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 9:1-14, the tabernacle's own furniture and yearly service described, set against Christ's own entrance 'by his own blood' into the true holy place, purging the conscience 'from dead works to serve the living God.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_the_mediator_of_the_new_testament",
+    "label": "The mediator of the new testament; Christ once offered to bear the sins of many",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.9.15",
+      "HEB.9.16",
+      "HEB.9.17",
+      "HEB.9.18",
+      "HEB.9.19",
+      "HEB.9.20",
+      "HEB.9.21",
+      "HEB.9.22",
+      "HEB.9.23",
+      "HEB.9.24",
+      "HEB.9.25",
+      "HEB.9.26",
+      "HEB.9.27",
+      "HEB.9.28"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 9:15-28, Christ 'the mediator of the new testament' by his own death, the necessity of a testator's death for a testament to take effect, and Christ 'once offered to bear the sins of many.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_one_sacrifice_for_sins_for_ever",
+    "label": "One sacrifice for sins for ever; the new covenant written in the heart",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.10.1",
+      "HEB.10.2",
+      "HEB.10.3",
+      "HEB.10.4",
+      "HEB.10.5",
+      "HEB.10.6",
+      "HEB.10.7",
+      "HEB.10.8",
+      "HEB.10.9",
+      "HEB.10.10",
+      "HEB.10.11",
+      "HEB.10.12",
+      "HEB.10.13",
+      "HEB.10.14",
+      "HEB.10.15",
+      "HEB.10.16",
+      "HEB.10.17",
+      "HEB.10.18"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 10:1-18, the law's own yearly sacrifices unable to take away sins, set against Christ's own single offering 'once for all,' by which 'he hath perfected for ever them that are sanctified.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_drawing_near_with_a_true_heart",
+    "label": "Drawing near with a true heart; not forsaking the assembling of ourselves together",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.10.19",
+      "HEB.10.20",
+      "HEB.10.21",
+      "HEB.10.22",
+      "HEB.10.23",
+      "HEB.10.24",
+      "HEB.10.25"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 10:19-25, the charge to 'draw near with a true heart in full assurance of faith,' holding fast the profession, and 'not forsaking the assembling of ourselves together.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_a_warning_against_wilful_sin",
+    "label": "A warning against wilful sin; the just shall live by faith",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.10.26",
+      "HEB.10.27",
+      "HEB.10.28",
+      "HEB.10.29",
+      "HEB.10.30",
+      "HEB.10.31",
+      "HEB.10.32",
+      "HEB.10.33",
+      "HEB.10.34",
+      "HEB.10.35",
+      "HEB.10.36",
+      "HEB.10.37",
+      "HEB.10.38",
+      "HEB.10.39"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 10:26-39, the sober warning that 'if we sin wilfully... there remaineth no more sacrifice for sins,' a call to remember former endurance, and 'the just shall live by faith.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_faith_defined_from_abel_to_abrahams_sojourn",
+    "label": "Faith defined: the elders' own testimony, from Abel to Abraham's own sojourn",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.11.1",
+      "HEB.11.2",
+      "HEB.11.3",
+      "HEB.11.4",
+      "HEB.11.5",
+      "HEB.11.6",
+      "HEB.11.7",
+      "HEB.11.8",
+      "HEB.11.9",
+      "HEB.11.10",
+      "HEB.11.11",
+      "HEB.11.12",
+      "HEB.11.13",
+      "HEB.11.14",
+      "HEB.11.15",
+      "HEB.11.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 11:1-16, faith defined as 'the substance of things hoped for,' and its own witnesses from Abel and Enoch through Noah and Abraham, who 'looked for a city which hath foundations, whose builder and maker is God.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_the_faith_of_abraham_isaac_jacob_joseph_and_moses",
+    "label": "The faith of Abraham, Isaac, Jacob, Joseph, Moses, and Rahab",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.11.17",
+      "HEB.11.18",
+      "HEB.11.19",
+      "HEB.11.20",
+      "HEB.11.21",
+      "HEB.11.22",
+      "HEB.11.23",
+      "HEB.11.24",
+      "HEB.11.25",
+      "HEB.11.26",
+      "HEB.11.27",
+      "HEB.11.28",
+      "HEB.11.29",
+      "HEB.11.30",
+      "HEB.11.31"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 11:17-31, faith's own witnesses continued -- Abraham's own offering of Isaac, Isaac's and Jacob's own blessings, Joseph, Moses' own choice and the Exodus, and 'the harlot Rahab' who 'perished not with them that believed not.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_faiths_further_witnesses",
+    "label": "Faith's own further witnesses; a better resurrection; God's own better provision",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.11.32",
+      "HEB.11.33",
+      "HEB.11.34",
+      "HEB.11.35",
+      "HEB.11.36",
+      "HEB.11.37",
+      "HEB.11.38",
+      "HEB.11.39",
+      "HEB.11.40"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 11:32-40, the roll call continued by name -- Gedeon, Barak, Samson, Jephthae, David, Samuel, and the prophets -- and the unnamed who 'were tortured, not accepting deliverance,' closing on 'God having provided some better thing for us.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_the_cloud_of_witnesses",
+    "label": "The cloud of witnesses; Jesus the author and finisher of faith; the chastening of the Lord",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.12.1",
+      "HEB.12.2",
+      "HEB.12.3",
+      "HEB.12.4",
+      "HEB.12.5",
+      "HEB.12.6",
+      "HEB.12.7",
+      "HEB.12.8",
+      "HEB.12.9",
+      "HEB.12.10",
+      "HEB.12.11",
+      "HEB.12.12",
+      "HEB.12.13"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 12:1-13, the charge to run 'with patience the race... looking unto Jesus the author and finisher of our faith,' and chastening received 'as with sons,' yielding 'the peaceable fruit of righteousness.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_a_warning_against_profanity_mount_sion_not_sinai",
+    "label": "A warning against profanity, after Esau's own example; mount Sion, not mount Sinai",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.12.14",
+      "HEB.12.15",
+      "HEB.12.16",
+      "HEB.12.17",
+      "HEB.12.18",
+      "HEB.12.19",
+      "HEB.12.20",
+      "HEB.12.21",
+      "HEB.12.22",
+      "HEB.12.23",
+      "HEB.12.24",
+      "HEB.12.25",
+      "HEB.12.26",
+      "HEB.12.27",
+      "HEB.12.28",
+      "HEB.12.29"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 12:14-29, the warning against a profane person 'as Esau,' the contrast between the terror of Sinai and the welcome of 'mount Sion... the heavenly Jerusalem,' closing 'our God is a consuming fire.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_exhortations_brotherly_love_and_contentment",
+    "label": "Exhortations: brotherly love, hospitality, marriage, contentment",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.13.1",
+      "HEB.13.2",
+      "HEB.13.3",
+      "HEB.13.4",
+      "HEB.13.5",
+      "HEB.13.6"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 13:1-6, closing practical exhortations -- 'let brotherly love continue,' hospitality to strangers, honourable marriage, and contentment, 'for he hath said, I will never leave thee, nor forsake thee.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_following_the_faith_of_your_leaders",
+    "label": "Following the faith of their own leaders; the altar without the camp; the sacrifice of praise",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.13.7",
+      "HEB.13.8",
+      "HEB.13.9",
+      "HEB.13.10",
+      "HEB.13.11",
+      "HEB.13.12",
+      "HEB.13.13",
+      "HEB.13.14",
+      "HEB.13.15",
+      "HEB.13.16",
+      "HEB.13.17"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 13:7-17, remembering those who 'have the rule over you,' Jesus Christ 'the same yesterday, and to day, and for ever,' bearing his own reproach 'without the camp,' and offering 'the sacrifice of praise to God continually.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "heb_closing_requests_and_benediction",
+    "label": "Closing requests, benediction, and greetings",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HEB.13.18",
+      "HEB.13.19",
+      "HEB.13.20",
+      "HEB.13.21",
+      "HEB.13.22",
+      "HEB.13.23",
+      "HEB.13.24",
+      "HEB.13.25"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hebrews 13:18-25, the request for prayer, the benediction invoking 'that great shepherd of the sheep,' and the letter's own closing greetings -- its only epistolary personal note in the whole book, per this file's own header note.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
     "id": "hos_gomer_and_the_three_children",
     "label": "The word of the Lord that came unto Hosea, the son of Beeri, in the days of Uzziah, Jotham, Ahaz, and Hezekiah, kings of Judah, and in the days of Jeroboam the son of Joash, king of Israel.",
     "when": {
@@ -11284,6 +13006,380 @@
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "Isaiah pericope (this project's own sectioning, CC0): Isaiah 66, the book's own closing chapter -- a contrite and humble spirit valued over ritual sacrifice, Zion bringing forth her children before her travail, joy for Jerusalem's own mourners, and a final, stark word of judgment alongside worship 'from one new moon to another' -- the whole book's own closing juxtaposition of comfort and warning held together to the last verse.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_salutation_and_trials",
+    "label": "Salutation; trials produce patience",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.1.1",
+      "JAS.1.2",
+      "JAS.1.3",
+      "JAS.1.4"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 1:1-4, James's own greeting to 'the twelve tribes which are scattered abroad,' and the charge to 'count it all joy' in trials, since 'the trying of your faith worketh patience.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_asking_in_faith",
+    "label": "Asking God in faith, without wavering",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.1.5",
+      "JAS.1.6",
+      "JAS.1.7",
+      "JAS.1.8"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 1:5-8, the promise that God 'giveth to all men liberally' to the one who asks for wisdom 'in faith, nothing wavering.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_the_rich_and_poor",
+    "label": "The rich and poor: the fading flower",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.1.9",
+      "JAS.1.10",
+      "JAS.1.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 1:9-11, the brother of low degree exalted and the rich made low, 'as the flower of the grass he shall pass away.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_enduring_temptation",
+    "label": "Enduring temptation; every good gift from above",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.1.12",
+      "JAS.1.13",
+      "JAS.1.14",
+      "JAS.1.15",
+      "JAS.1.16",
+      "JAS.1.17",
+      "JAS.1.18"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 1:12-18, the blessing on the man who endures temptation, and the assurance that God himself tempts no man, since 'every good gift and every perfect gift is from above.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_doers_of_the_word",
+    "label": "Doers of the word, not hearers only; pure religion",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.1.19",
+      "JAS.1.20",
+      "JAS.1.21",
+      "JAS.1.22",
+      "JAS.1.23",
+      "JAS.1.24",
+      "JAS.1.25",
+      "JAS.1.26",
+      "JAS.1.27"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 1:19-27, the charge to be 'swift to hear, slow to speak,' a doer of the word and not a forgetful hearer, closing on the definition of 'pure religion... to visit the fatherless and widows... and to keep himself unspotted from the world.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_a_warning_against_respect_of_persons",
+    "label": "A warning against respect of persons: favouring the rich",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.2.1",
+      "JAS.2.2",
+      "JAS.2.3",
+      "JAS.2.4",
+      "JAS.2.5",
+      "JAS.2.6",
+      "JAS.2.7",
+      "JAS.2.8",
+      "JAS.2.9",
+      "JAS.2.10",
+      "JAS.2.11",
+      "JAS.2.12",
+      "JAS.2.13"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 2:1-13, a rebuke of favoritism toward 'a man with a gold ring' over 'a poor man in vile raiment,' and the 'royal law... Thou shalt love thy neighbour as thyself.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_faith_without_works_is_dead",
+    "label": "Faith without works is dead",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.2.14",
+      "JAS.2.15",
+      "JAS.2.16",
+      "JAS.2.17",
+      "JAS.2.18",
+      "JAS.2.19",
+      "JAS.2.20",
+      "JAS.2.21",
+      "JAS.2.22",
+      "JAS.2.23",
+      "JAS.2.24",
+      "JAS.2.25",
+      "JAS.2.26"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 2:14-26, the argument that faith without works cannot save, illustrated by Abraham and Rahab, closing 'as the body without the spirit is dead, so faith without works is dead also.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_the_tongue_a_world_of_iniquity",
+    "label": "The tongue: a world of iniquity",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.3.1",
+      "JAS.3.2",
+      "JAS.3.3",
+      "JAS.3.4",
+      "JAS.3.5",
+      "JAS.3.6",
+      "JAS.3.7",
+      "JAS.3.8",
+      "JAS.3.9",
+      "JAS.3.10",
+      "JAS.3.11",
+      "JAS.3.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 3:1-12, the tongue likened to a bit, a helm, and a spark, 'a fire, a world of iniquity,' which 'can no man tame.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_two_wisdoms_earthly_and_heavenly",
+    "label": "Two wisdoms: earthly and heavenly",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.3.13",
+      "JAS.3.14",
+      "JAS.3.15",
+      "JAS.3.16",
+      "JAS.3.17",
+      "JAS.3.18"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 3:13-18, wisdom 'from above' contrasted with wisdom that is 'earthly, sensual, devilish,' closing on 'the fruit of righteousness... sown in peace of them that make peace.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_wars_and_lusts_drawing_nigh_to_god",
+    "label": "Wars and lusts; drawing nigh to God",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.4.1",
+      "JAS.4.2",
+      "JAS.4.3",
+      "JAS.4.4",
+      "JAS.4.5",
+      "JAS.4.6",
+      "JAS.4.7",
+      "JAS.4.8",
+      "JAS.4.9",
+      "JAS.4.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 4:1-10, wars and fightings traced to lust within, friendship with the world as 'enmity with God,' and the charge to 'draw nigh to God, and he will draw nigh to you.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_against_judging_a_brother",
+    "label": "Against judging a brother; boasting of tomorrow",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.4.11",
+      "JAS.4.12",
+      "JAS.4.13",
+      "JAS.4.14",
+      "JAS.4.15",
+      "JAS.4.16",
+      "JAS.4.17"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 4:11-17, a warning against speaking evil of a brother, and against boasting of tomorrow's own gain, 'for what is your life? It is even a vapour.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_a_warning_to_rich_oppressors",
+    "label": "A warning to rich oppressors",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.5.1",
+      "JAS.5.2",
+      "JAS.5.3",
+      "JAS.5.4",
+      "JAS.5.5",
+      "JAS.5.6"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 5:1-6, a sharp warning to rich oppressors whose 'gold and silver is cankered,' who have 'condemned and killed the just.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_patience_unto_the_coming_of_the_lord",
+    "label": "Patience unto the coming of the Lord",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.5.7",
+      "JAS.5.8",
+      "JAS.5.9",
+      "JAS.5.10",
+      "JAS.5.11",
+      "JAS.5.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 5:7-12, the charge to 'be patient... unto the coming of the Lord' as the husbandman waits for the harvest, taking the prophets and Job as examples, and 'let your yea be yea; and your nay, nay.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jas_prayer_healing_and_restoring_a_sinner",
+    "label": "Prayer, healing, and restoring a sinner",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JAS.5.13",
+      "JAS.5.14",
+      "JAS.5.15",
+      "JAS.5.16",
+      "JAS.5.17",
+      "JAS.5.18",
+      "JAS.5.19",
+      "JAS.5.20"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): James 5:13-20, instruction on prayer for the afflicted and the sick, anointing with oil, confessing faults one to another, and the closing promise that 'he which converteth the sinner... shall save a soul from death.'",
     "kjv_superscription": null,
     "ref_note": null,
     "order_key": 0
@@ -14878,6 +16974,88 @@
     "atlas_section": "Joshua code unit (this project's own sectioning, CC0 -- no external PD source claimed): Joshua 20-21, the six cities of refuge appointed (per Numbers 35), and the forty-eight Levitical cities assigned, closing with 'there failed not ought of any good thing which the Lord had spoken.'",
     "kjv_superscription": null,
     "ref_note": "General-kind: a list, mirroring Numbers 35's own content, no single narrative moment of its own.",
+    "order_key": 0
+  },
+  {
+    "id": "jud_salutation_and_occasion",
+    "label": "Salutation and occasion: contend for the faith once delivered",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JUD.1.1",
+      "JUD.1.2",
+      "JUD.1.3",
+      "JUD.1.4"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Jude 1-4, Jude's own greeting to 'them that are sanctified by God the Father,' and his own stated occasion for writing -- to 'exhort you that ye should earnestly contend for the faith which was once delivered unto the saints,' against 'certain men crept in unawares.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jud_the_judgment_and_character_of_the_ungodly",
+    "label": "The judgment and character of the ungodly, from Israel's own unbelief to Enoch's own prophecy",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JUD.1.5",
+      "JUD.1.6",
+      "JUD.1.7",
+      "JUD.1.8",
+      "JUD.1.9",
+      "JUD.1.10",
+      "JUD.1.11",
+      "JUD.1.12",
+      "JUD.1.13",
+      "JUD.1.14",
+      "JUD.1.15",
+      "JUD.1.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Jude 5-16, a chain of examples of past judgment -- Israel's own unbelief in the wilderness, the angels who kept not their first estate, and Sodom and Gomorrha -- applied to 'filthy dreamers' who follow 'the way of Cain... the error of Balaam... the gainsaying of Core,' with Enoch's own prophecy of the Lord's coming in judgment quoted directly.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "jud_a_charge_to_remember_and_the_closing_doxology",
+    "label": "A charge to remember the apostles' own words, build up the faith, and the closing doxology",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "JUD.1.17",
+      "JUD.1.18",
+      "JUD.1.19",
+      "JUD.1.20",
+      "JUD.1.21",
+      "JUD.1.22",
+      "JUD.1.23",
+      "JUD.1.24",
+      "JUD.1.25"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Jude 17-25, the charge to 'remember ye the words which were spoken before of the apostles,' building up 'on your most holy faith,' showing compassion and rescuing others 'with fear,' and the letter's own closing doxology, 'to the only wise God our Saviour, be glory and majesty.'",
+    "kjv_superscription": null,
+    "ref_note": null,
     "order_key": 0
   },
   {

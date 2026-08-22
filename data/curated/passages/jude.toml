@@ -1,0 +1,42 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run, and the FINAL
+# book this whole W-series completes short of Revelation). Jude.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# PARALLELS: see 2peter.toml's own header note for the full disclosure of
+# the real, swept 2 Peter 2 / Jude parallel -- NOT authored as a witness
+# pair here, for the same SHARED-TITLE LAW reason stated there. This file's
+# own container below is titled solely from Jude's own content.
+#
+# GRANULARITY: Jude is 25 verses -- the master brief's own explicit lawful
+# single-container exception (see phm_salutation_and_thanksgiving's own
+# header note) -- divided here into its own three real literary units
+# (salutation/occasion, the body's own extended warning, and the closing
+# doxology) rather than left as one, the same disposition Philemon received.
+
+[[event]]
+id = "jud_salutation_and_occasion"
+label = "Salutation and occasion: contend for the faith once delivered"
+kind = "general"
+verses = ["JUD.1.1-4"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Jude 1-4, Jude's own greeting to 'them that are sanctified by God the Father,' and his own stated occasion for writing -- to 'exhort you that ye should earnestly contend for the faith which was once delivered unto the saints,' against 'certain men crept in unawares.'"
+
+[[event]]
+id = "jud_the_judgment_and_character_of_the_ungodly"
+label = "The judgment and character of the ungodly, from Israel's own unbelief to Enoch's own prophecy"
+kind = "general"
+verses = ["JUD.1.5-16"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Jude 5-16, a chain of examples of past judgment -- Israel's own unbelief in the wilderness, the angels who kept not their first estate, and Sodom and Gomorrha -- applied to 'filthy dreamers' who follow 'the way of Cain... the error of Balaam... the gainsaying of Core,' with Enoch's own prophecy of the Lord's coming in judgment quoted directly."
+
+[[event]]
+id = "jud_a_charge_to_remember_and_the_closing_doxology"
+label = "A charge to remember the apostles' own words, build up the faith, and the closing doxology"
+kind = "general"
+verses = ["JUD.1.17-25"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Jude 17-25, the charge to 'remember ye the words which were spoken before of the apostles,' building up 'on your most holy faith,' showing compassion and rescuing others 'with fear,' and the letter's own closing doxology, 'to the only wise God our Saviour, be glory and majesty.'"

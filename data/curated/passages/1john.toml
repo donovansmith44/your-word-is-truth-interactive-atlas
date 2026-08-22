@@ -1,0 +1,97 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). 1 John.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: 1 John moves in a real, recurring spiral (light/darkness,
+# love/hate, truth/antichrist) rather than a single linear argument -- each
+# container below is one turn of that spiral at the text's own real seams.
+# LITERARY-STRUCTURE FACT (not textual criticism): 1 John, like Hebrews,
+# carries NO epistolary salutation at all -- it opens 'That which was from
+# the beginning' in the same prologue-register as John's own Gospel, naming
+# neither sender nor recipient anywhere in the letter. 1:5-2:2 and 2:28-3:10
+# are each kept as one container spanning their own chapter break (real
+# sustained units, not arbitrary chapter chunks) -- literary-structure
+# facts, not textual criticism.
+
+[[event]]
+id = "1jn_prologue_the_word_of_life"
+label = "Prologue: the Word of life, declared for fellowship and joy"
+kind = "general"
+verses = ["1JN.1.1-4"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 1:1-4, the letter's own prologue -- 'that which was from the beginning, which we have heard, which we have seen with our eyes' -- declared 'that ye also may have fellowship with us... that your joy may be full.'"
+
+[[event]]
+id = "1jn_walking_in_the_light"
+label = "Walking in the light; confession of sin; Christ our own advocate"
+kind = "general"
+verses = ["1JN.1.5-10", "1JN.2.1-2"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 1:5-2:2, one unit spanning the chapter break -- 'God is light, and in him is no darkness at all,' confession of sin met by God's own faithfulness to forgive, and Christ 'the propitiation for our sins... also for the sins of the whole world.'"
+
+[[event]]
+id = "1jn_keeping_his_commandments"
+label = "Keeping his own commandments: the old and new commandment of love"
+kind = "general"
+verses = ["1JN.2.3-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 2:3-11, knowing him by keeping his commandments, the old commandment that is also new -- 'the darkness is past, and the true light now shineth' -- and the one who loves his brother 'abideth in the light.'"
+
+[[event]]
+id = "1jn_written_to_children_fathers_and_young_men"
+label = "Written to little children, fathers, and young men; love not the world"
+kind = "general"
+verses = ["1JN.2.12-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 2:12-17, John's own address in turn to little children, fathers, and young men, and the charge 'love not the world, neither the things that are in the world.'"
+
+[[event]]
+id = "1jn_antichrists_and_the_anointing"
+label = "Antichrists; the anointing that abides"
+kind = "general"
+verses = ["1JN.2.18-27"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 2:18-27, the warning of 'many antichrists' as a sign of 'the last time,' and the 'anointing which ye have received of him' that teaches without need of any other."
+
+[[event]]
+id = "1jn_children_of_god_doing_righteousness"
+label = "Children of God; doing righteousness, not sin"
+kind = "general"
+verses = ["1JN.2.28-29", "1JN.3.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 2:28-3:10, one unit spanning the chapter break -- 'now are we the sons of God,' purifying oneself in that hope, and the contrast between doing righteousness and committing sin, closing 'in this the children of God are manifest, and the children of the devil.'"
+
+[[event]]
+id = "1jn_loving_one_another_not_as_cain"
+label = "Loving one another, not as Cain; assurance before God"
+kind = "general"
+verses = ["1JN.3.11-24"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 3:11-24, the message 'from the beginning, that we should love one another,' contrasted with Cain who slew his brother, and assurance of heart 'toward God' through keeping his commandments."
+
+[[event]]
+id = "1jn_testing_the_spirits"
+label = "Testing the spirits"
+kind = "general"
+verses = ["1JN.4.1-6"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 4:1-6, the charge to 'try the spirits whether they are of God,' known by their own confession of Jesus Christ come in the flesh."
+
+[[event]]
+id = "1jn_god_is_love"
+label = "God is love; perfect love casts out fear"
+kind = "general"
+verses = ["1JN.4.7-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 4:7-21, the declaration 'God is love,' manifested in sending his Son, and 'perfect love casteth out fear,' closing on the inseparability of loving God and loving one's own brother."
+
+[[event]]
+id = "1jn_faith_that_overcomes_the_world"
+label = "Faith that overcomes the world; the witness of the Spirit, the water, and the blood"
+kind = "general"
+verses = ["1JN.5.1-12"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 5:1-12, faith in Jesus as the Son of God as 'the victory that overcometh the world,' the threefold witness of 'the spirit, and the water, and the blood,' and 'he that hath the Son hath life.'"
+
+[[event]]
+id = "1jn_confidence_in_prayer_and_the_true_god"
+label = "Confidence in prayer; the true God and eternal life"
+kind = "general"
+verses = ["1JN.5.13-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 John 5:13-21, confidence that God hears prayer 'according to his will,' instruction on a sin 'unto death,' and the closing affirmation, 'this is the true God, and eternal life.'"

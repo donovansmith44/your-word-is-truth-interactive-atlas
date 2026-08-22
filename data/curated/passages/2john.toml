@@ -1,0 +1,24 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). 2 John.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: 2 John is 13 verses, the master brief's own explicit lawful
+# single-container exception ("Short letters (Philemon, 2 John, 3 John,
+# Jude) may be single containers") -- genuinely ONE short, continuous
+# personal note (greeting, exhortation to love and truth, the warning
+# against deceivers, and the closing) with no clean internal break, so a
+# single container is the honest natural unit here (unlike Philemon/Jude,
+# where a real three-part seam exists -- see those files' own header notes).
+
+[[event]]
+id = "2jn_letter_to_the_elect_lady"
+label = "The elder to the elect lady: walking in truth and love, and a warning against deceivers"
+kind = "general"
+verses = ["2JN.1.1-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 John, the whole short letter -- the elder's own greeting to 'the elect lady and her children,' the commandment to love one another, the warning against deceivers 'who confess not that Jesus Christ is come in the flesh,' and the closing hope to speak 'face to face.'"
