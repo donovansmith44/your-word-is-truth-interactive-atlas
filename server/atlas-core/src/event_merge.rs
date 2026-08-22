@@ -240,7 +240,11 @@ pub(crate) fn effective_verses(e: &Event) -> HashSet<&str> {
 /// needs the identical predicate to run the same sweep against the
 /// PRE-merge event set (before `AtlasData::finish()` ever runs).
 pub fn is_layer0(e: &Event) -> bool {
-    e.witnesses.is_empty() && e.robertson_section.is_none() && e.acts_section.is_none() && e.atlas_section.is_none()
+    e.witnesses.is_empty()
+        && e.robertson_section.is_none()
+        && e.acts_section.is_none()
+        && e.atlas_section.is_none()
+        && e.kjv_superscription.is_none() // Batch W3: the KJV's own literal-citation sibling of the other three
 }
 
 /// Verse-set Jaccard overlap (intersection / union) between two events'

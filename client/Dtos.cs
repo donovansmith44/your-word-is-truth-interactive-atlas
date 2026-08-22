@@ -258,6 +258,12 @@ public sealed record EventDetail(
     // doc comment (server, atlas-core/src/data.rs). Wire-only, like its two
     // siblings -- no UI element renders any of the three today.
     string? AtlasSection = null,
+    // Batch W3 (Job-Song of Solomon, Psalms granularity): the KJV's own
+    // literal-citation sibling of the three provenance fields above -- see
+    // Event::kjv_superscription's own doc comment (server,
+    // atlas-core/src/data.rs). Wire-only, like its three siblings -- no UI
+    // element renders any of the four today.
+    string? KjvSuperscription = null,
     string? RefNote = null);
 
 public sealed record BookMetaDto(string Author, string? WritePlace, int? WriteFrom, int? WriteTo);

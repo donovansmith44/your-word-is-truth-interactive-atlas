@@ -746,6 +746,17 @@ Notes:
   `data/curated/atlas-sections.toml` (the SAME flat event_id-keyed merge
   mechanism as `acts-sections.toml`, for promoting a bare pre-existing
   Theographic event with no `[[event]]` row of its own to attach to)),
+  `kjv_superscription` (Batch W3, "Job-Song of Solomon, Psalms
+  granularity": the KJV's OWN literal-citation sibling of the three fields
+  above -- req 1's own provenance vocabulary, "kjv_superscription |
+  theographic | atlas_section" -- distinct from `atlas_section` because
+  this field's own citation IS literal KJV text (e.g. Psalm 3's own "A
+  Psalm of David, when he fled from Absalom his son," quoted verbatim from
+  PSA.3.1, or Psalm 119's own acrostic Hebrew-letter stanza headers), never
+  our own phrasing; same layer-1 treatment; set ONLY inline on a brand-new
+  `[[event]]` row in `data/curated/passages/*.toml` -- no merge-file
+  sibling to `atlas-sections.toml` exists for it, since Theographic models
+  no per-Psalm "event" to promote),
   and PARALLEL
   WITNESSES
   (`witnesses: Vec<EventWitness>` -- "the set of per-book passages that
@@ -814,8 +825,9 @@ Notes:
   node's own rich fetch: `id`/`title`/`kind` (Batch T2, ALWAYS present) /
   `when`/`places` (id+name pairs) / `witnesses` (ALWAYS >=1, see the
   data-model paragraph above) / `robertson_section`/`acts_section`/
-  `atlas_section` (Batch T2/W1, Acts's and the whole-Bible's own sibling
-  fields -- see the data-model paragraph above)/`ref_note` (each omitted, not null, when uncurated). Batch T2: `when` is OMITTED (not
+  `atlas_section`/`kjv_superscription` (Batch T2/W1/W3, Acts's, the
+  whole-Bible's, and the KJV's own literal-citation sibling fields -- see
+  the data-model paragraph above)/`ref_note` (each omitted, not null, when uncurated). Batch T2: `when` is OMITTED (not
   null) when `kind == "general"` -- the fabrication guard extends to the
   wire itself, not just the curated source (see the data-model paragraph
   above); `places` is always present, possibly empty (a general-kind
@@ -842,7 +854,10 @@ Notes:
   sibling of the two -- see the data-model paragraph above; fixed in this
   same commit alongside the code, correcting THIS paragraph's own
   pre-existing omission of `acts_section`, which `AtlasData::finish`'s own
-  code already checked since Batch T2 but this prose never named).
+  code already checked since Batch T2 but this prose never named), OR
+  carries a `kjv_superscription` (Batch W3 -- the KJV's own
+  literal-citation sibling of the three -- see the data-model paragraph
+  above).
   Originally realized the owner's own coverage decision ("Gospels-first...
   PLUS every event in the existing 13 narratives... General-passage titles
   outside these come later"); Batch W1 begins that "outside these" work.
@@ -873,9 +888,10 @@ Notes:
   grouping, chosen by `AtlasData::heading_precedence`'s own 3-tier rule,
   never by incidental file/vec order:
   1. LAYER -- a REAL container (curated `witnesses` non-empty and/or
-     `robertson_section`/`acts_section`/`atlas_section` present -- Batch
-     W1 added the third; all three count identically, see the data-model
-     paragraph above) beats a bare "freebie" container (heading-worthy
+     `robertson_section`/`acts_section`/`atlas_section`/`kjv_superscription`
+     present -- Batch W1 added the third, Batch W3 the fourth; all four
+     count identically, see the data-model paragraph above) beats a bare
+     "freebie" container (heading-worthy
      only because it happens to be a narrative leg riding its own
      pre-existing `Event::label`). Decides every real collision in
      today's curated data outright (`pw_bethany` real container beats

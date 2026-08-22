@@ -136,6 +136,18 @@ struct EventToml {
     /// the first place).
     #[serde(default)]
     atlas_section: Option<String>,
+    /// Batch W3: inline `kjv_superscription` provenance -- the KJV's own
+    /// literal-citation sibling of `robertson_section`/`acts_section`/
+    /// `atlas_section` above (see `atlas_core::data::Event::
+    /// kjv_superscription`'s own doc comment). Inline-only, same as
+    /// `acts_section`/`atlas_section` can also be set via their own merge
+    /// files (`acts-sections.toml`/`atlas-sections.toml`) for promoting a
+    /// bare pre-existing Theographic event -- this field has no such
+    /// merge-file sibling, since every Batch W3 superscription-titled
+    /// container is a brand-new `[[event]]` row, never a promotion (no
+    /// pre-existing Theographic event models an individual Psalm).
+    #[serde(default)]
+    kjv_superscription: Option<String>,
     #[serde(default)]
     ref_note: Option<String>,
     #[serde(default)]
@@ -250,6 +262,7 @@ pub fn parse_events_extra(input: &str) -> Result<Vec<Event>> {
             robertson_section: e.robertson_section,
             acts_section: e.acts_section,
             atlas_section: e.atlas_section,
+            kjv_superscription: e.kjv_superscription,
             ref_note: e.ref_note,
             order_key: e.order_key,
             ..Default::default()

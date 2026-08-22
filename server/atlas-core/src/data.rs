@@ -147,6 +147,31 @@ pub struct Event {
     /// sectioned.
     #[serde(default)]
     pub atlas_section: Option<String>,
+    /// Batch W3 (Job-Song of Solomon, Psalms granularity): the KJV's OWN
+    /// provenance key, req 1's own vocabulary verbatim: "kjv_superscription
+    /// | theographic | atlas_section" -- distinct from `atlas_section`
+    /// (our own sectioning) because this field's own citation IS literal
+    /// KJV text (public domain, redistributed per LICENSES.md's own "KJV
+    /// text" row), never our own phrasing -- e.g. Psalm 3's own "A Psalm of
+    /// David, when he fled from Absalom his son," quoted verbatim from
+    /// PSA.3.1 itself, or Psalm 119's own acrostic Hebrew-letter stanza
+    /// headers ("ALEPH.", "BETH.", ...), also literal verse-1-of-stanza
+    /// text. Same shape, same "counts as a real layer-1 container in
+    /// `heading_precedence`" treatment as `robertson_section`/
+    /// `acts_section`/`atlas_section` above -- set ONLY inline, on a
+    /// brand-new `[[event]]` row in `data/curated/passages/*.toml` (the
+    /// SAME `EventToml`/`parse_events_extra` schema those three already
+    /// use): every Batch W3 superscription-titled container is a brand-new
+    /// container (Theographic models no per-Psalm "event" to promote via a
+    /// merge file the way `atlas-sections.toml` promotes a bare Theographic
+    /// event -- verified against the real compiled data before this field
+    /// was added), so no `kjv-superscriptions.toml` merge-file sibling to
+    /// `atlas-sections.toml` exists (would be dead code -- nothing to
+    /// merge). `None` for every container whose own title is NOT itself a
+    /// literal KJV citation (our own CC0 phrasing instead uses
+    /// `atlas_section`, unchanged).
+    #[serde(default)]
+    pub kjv_superscription: Option<String>,
     /// Batch T requirement 1: citation-integrity note for THIS event's own
     /// date/grouping (distinct from each witness's own, narrower
     /// `EventWitness::ref_note`) -- names only sources actually consulted,
@@ -200,6 +225,7 @@ impl Default for Event {
             robertson_section: None,
             acts_section: None,
             atlas_section: None,
+            kjv_superscription: None,
             ref_note: None,
             order_key: 0,
         }
@@ -925,10 +951,14 @@ fn heading_precedence(e: &Event) -> (u8, u8, std::cmp::Reverse<i32>, std::cmp::R
     // own doc comment for why it's a separate field, not a reused one).
     // Batch W1: `atlas_section` (the whole-Bible sibling of both) counts
     // identically -- see `Event::atlas_section`'s own doc comment.
+    // Batch W3: `kjv_superscription` (the KJV's own literal-citation
+    // sibling of all three) counts identically -- see
+    // `Event::kjv_superscription`'s own doc comment.
     let layer: u8 = if !e.witnesses.is_empty()
         || e.robertson_section.is_some()
         || e.acts_section.is_some()
         || e.atlas_section.is_some()
+        || e.kjv_superscription.is_some()
     {
         1
     } else {
@@ -1194,7 +1224,8 @@ impl AtlasData {
                 || !e.witnesses.is_empty()
                 || e.robertson_section.is_some()
                 || e.acts_section.is_some() // Batch T2: Acts's own sibling provenance field
-                || e.atlas_section.is_some(); // Batch W1: the whole-Bible sibling of both
+                || e.atlas_section.is_some() // Batch W1: the whole-Bible sibling of both
+                || e.kjv_superscription.is_some(); // Batch W3: the KJV's own literal-citation sibling
             if !heading_worthy {
                 continue;
             }
@@ -2003,6 +2034,30 @@ mod heading_collision_tests {
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
         let heading = data.heading_for_verse("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
         assert_eq!(heading.event_id, "as_atlas", "atlas_section alone must make a container real (layer 1), same as robertson_section/acts_section");
+    }
+
+    #[test]
+    fn heading_collision_kjv_superscription_counts_as_a_real_layer1_container() {
+        // Batch W3 (Psalms granularity): `kjv_superscription` is the KJV's
+        // own literal-citation sibling of `robertson_section`/
+        // `acts_section`/`atlas_section` (see `Event::kjv_superscription`'s
+        // own doc comment) -- same LAYER-1 treatment, proven the same way
+        // the three siblings above already are: a bare freebie (none of the
+        // four provenance fields, no witnesses) must lose to a real
+        // container carrying kjv_superscription alone.
+        let mut with_kjv_superscription = bare_leg();
+        with_kjv_superscription.id = "as_kjv".into();
+        with_kjv_superscription.kjv_superscription =
+            Some("A Psalm of David, when he fled from Absalom his son (PSA.3.1).".into());
+        let mut plain_bare = bare_leg();
+        plain_bare.id = "as_bare3".into();
+        // `plain_bare` placed FIRST -- proves the win is layer-driven, not
+        // incidentally order-driven.
+        let events = vec![plain_bare, with_kjv_superscription];
+        let narratives = vec![Narrative { id: "narr".into(), name: "N".into(), color: "#000".into(), legs: vec!["as_bare3".into(), "as_kjv".into()] }];
+        let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        let heading = data.heading_for_verse("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
+        assert_eq!(heading.event_id, "as_kjv", "kjv_superscription alone must make a container real (layer 1), same as robertson_section/acts_section/atlas_section");
     }
 }
 

@@ -750,6 +750,12 @@ pub struct EventDetailOut {
     /// (not null) when absent, same convention.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub atlas_section: Option<String>,
+    /// Batch W3: the KJV's own literal-citation sibling of `robertson_section`/
+    /// `acts_section`/`atlas_section` above -- see `atlas_core::data::Event::
+    /// kjv_superscription`'s own doc comment. Omitted (not null) when absent,
+    /// same convention.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kjv_superscription: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ref_note: Option<String>,
 }
@@ -806,6 +812,7 @@ pub async fn event(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -
         robertson_section: e.robertson_section.clone(),
         acts_section: e.acts_section.clone(),
         atlas_section: e.atlas_section.clone(),
+        kjv_superscription: e.kjv_superscription.clone(),
         ref_note: e.ref_note.clone(),
     }))
 }
