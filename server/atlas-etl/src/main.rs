@@ -71,6 +71,14 @@ fn main() -> Result<()> {
     check_curated_inputs_exist(&curated_dir)?;
 
     let eras = curated::parse_eras(&read(&curated_dir.join("eras.toml"))?)?;
+    // Batch HOTFIX-6 (graph-wide chronology audit): the canonical chronology
+    // anchor table + per-book narration windows -- read early, alongside
+    // eras.toml (a similarly-shaped, atlas-wide reference table), so the
+    // fail-loud checks below (after `finish()`) and the compiled JSON writes
+    // at the bottom of this function both have them in hand.
+    let chronology_anchors = curated::parse_chronology_anchors(&read(&curated_dir.join("chronology-anchors.toml"))?)?;
+    let book_narration_windows =
+        curated::parse_book_narration_windows(&read(&curated_dir.join("book-narration-windows.toml"))?)?;
     let mut books_meta = curated::parse_books(&read(&curated_dir.join("books.toml"))?)?;
     let events_extra = curated::parse_events_extra(&read(&curated_dir.join("events-extra.toml"))?)?;
     let narratives = read_narratives(&curated_dir.join("narratives"))?;
@@ -286,6 +294,20 @@ fn main() -> Result<()> {
         );
     }
 
+    // --- atlas_core::chronology::THEO_DATE_OVERRIDES (Batch HOTFIX-6) -----
+    // Same ETL-only, exactly-once, RAW-pre-`finish()`-event-set timing as
+    // apply_nt_calibration immediately above, and for the identical reason
+    // (idempotency across finish()'s own two real call sites -- see that
+    // module's own doc comment). A DIFFERENT mechanism from NT calibration's
+    // own systematic shift: an isolated, individually-derived correction to
+    // a single genuinely-corrupt raw Theographic import row found by this
+    // batch's own full audit (theo-67 "Judgeship of Jair").
+    let theo_override_log = atlas_core::chronology::apply_theo_date_overrides(&mut all_events);
+    eprintln!("CHRONOLOGY OVERRIDES: {} isolated raw-import date correction(s) applied (batch-hotfix6-report.md has the full derivation):", theo_override_log.len());
+    for row in &theo_override_log {
+        eprintln!("  {:<10} {:<35} {}..{} -> {}..{}", row.id, row.label, row.old_from_year, row.old_to_year, row.new_from_year, row.new_to_year);
+    }
+
     // --- assemble, validate --------------------------------------------
     // NOTE (review finding I-2, fix-round-1): `finish()` applies
     // `atlas_core::merge::apply_place_merges` as its own first step (see
@@ -304,9 +326,27 @@ fn main() -> Result<()> {
     // pre-merge, by `validate::run_place_merges` immediately above, so a
     // future ETL run baking these merges into compiled output is harmless
     // and expected, not a regression.
-    let data = AtlasData::new(canon, all_places, all_events, narratives, eras, books_meta, verses, xrefs_map).finish();
+    let mut data = AtlasData::new(canon, all_places, all_events, narratives, eras, books_meta, verses, xrefs_map).finish();
     validate::run(&data).context("data/compiled/* was NOT written; fix data/curated/ and re-run")?;
     counts.places = data.places.len(); // post-merge, matches the `places.json` length written below (fix-round-1, M-2)
+
+    // --- Batch HOTFIX-6: chronology anchor table + era-window validator ---
+    // Set on `data` (not just kept as local `chronology_anchors`/
+    // `book_narration_windows` bindings) BEFORE `run_era_boundaries`, which
+    // needs the full `AtlasData` (it reasons about GLOBAL TIMELINE POSITION,
+    // `data.timeline_position`, not raw years -- the other two checks below
+    // only need the plain arrays). Checked against `data.events`, the FINAL
+    // post-merge/post-calibration/post-override compiled set, matching this
+    // whole block's own post-`finish()` placement, right after `validate::run`.
+    data.chronology_anchors = chronology_anchors;
+    data.book_narration_windows = book_narration_windows;
+    validate::run_chronology_anchors(&data.chronology_anchors, &data.events)
+        .context("data/compiled/* was NOT written; fix data/curated/chronology-anchors.toml (a bad event_id, or an era_boundary row with no bound event_id)")?;
+    validate::run_chronology_windows(&data.events, &data.book_narration_windows).context(
+        "data/compiled/* was NOT written; fix the flagged event's own date (with anchor-table justification), add a data/curated/book-narration-windows.toml row for a book with none, or add an atlas_core::chronology::WINDOW_EXEMPTIONS row with a stated reason",
+    )?;
+    validate::run_era_boundaries(&data)
+        .context("data/compiled/* was NOT written; fix the flagged event's own date, or its book's own data/curated/book-narration-windows.toml window")?;
     // Batch HOTFIX-4: the identical fix, for the identical reason, now that
     // `atlas_core::event_merge::apply_event_merges` (finish()'s own second
     // merge pass, right after the place merge) can ALSO shrink `events`
@@ -439,6 +479,8 @@ fn main() -> Result<()> {
     write_json(&compiled_dir.join("books-meta.json"), &data.books_meta)?;
     write_json(&compiled_dir.join("verses-kjv.json"), &data.verses)?;
     write_json(&compiled_dir.join("cross-refs.json"), &data.cross_refs)?;
+    write_json(&compiled_dir.join("chronology-anchors.json"), &data.chronology_anchors)?;
+    write_json(&compiled_dir.join("book-narration-windows.json"), &data.book_narration_windows)?;
 
     write_json(&compiled_dir.join("polities.json"), &compiled_polities)?;
     write_json(&compiled_dir.join("landmarks.json"), &landmarks)?;
@@ -597,6 +639,14 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     let eras_path = curated_dir.join("eras.toml");
     if !eras_path.is_file() {
         missing.push(format!("{}", eras_path.display()));
+    }
+    let chronology_anchors_path = curated_dir.join("chronology-anchors.toml");
+    if !chronology_anchors_path.is_file() {
+        missing.push(format!("{} (Batch HOTFIX-6)", chronology_anchors_path.display()));
+    }
+    let book_narration_windows_path = curated_dir.join("book-narration-windows.toml");
+    if !book_narration_windows_path.is_file() {
+        missing.push(format!("{} (Batch HOTFIX-6)", book_narration_windows_path.display()));
     }
     let books_path = curated_dir.join("books.toml");
     if !books_path.is_file() {

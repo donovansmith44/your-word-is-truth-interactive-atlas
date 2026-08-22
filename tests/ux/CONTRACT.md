@@ -1061,6 +1061,116 @@ Notes:
   check that scope gap needs, not a modification to that audit's own
   same-book methodology.
 
+  CHRONOLOGY ANCHOR TABLE + ERA-WINDOW VALIDATOR (Batch HOTFIX-6, graph-wide
+  chronology audit, owner live reports #8/#9, 2026-08-22: Solomon's dream at
+  Gibeon rendered PRIOR/FOLLOWING neighbors from the Saul-persecution era --
+  "this is a lie... i'm sure these errors are graph-wide"). ROOT CAUSE
+  (controller-verified): the `df_*` ("David's Flight from Saul") narrative
+  chain, 9 events (`data/curated/events-extra.toml`), was authored ~48
+  years LATE relative to this atlas's own declared Ussher/traditional
+  scale -- a wrong-anchor calibration error at original authoring time, the
+  SAME defect class the NT CALIBRATION note above already fixed for the
+  Theographic import, now found in curated OT data instead. `1ki_solomon_
+  gibeon` itself was always correctly dated; the global-timeline WIRING
+  (GLOBAL TIMELINE note above) was never at fault, only the data it was
+  handed.
+
+  THE CANONICAL CHRONOLOGY ANCHOR TABLE (new curated file, `data/curated/
+  chronology-anchors.toml` -- that file's own header has the full schema):
+  ~21 authoritative dates on this project's own declared scales (Ussher's
+  Annals of the World for the OT, this atlas's own AD-33 Passion anchor for
+  the NT), each with real source provenance. Each row MAY bind to a real
+  compiled `event_id` (`atlas_core::data::ChronologyAnchor`) -- bound only
+  where no DISCLOSED scale tension would be misrepresented as a bug (the
+  W1/W2-policy-governed early/late-Exodus adjacency and two well-known
+  1-2-year Persian-period regnal-reckoning variances each get BOTH a
+  Ussher-literal reference row, left honestly unbound, AND a separate
+  "-departs"/"-begins" STRUCTURAL row bound to the real event this atlas's
+  own graph actually uses for that transition -- search chronology-
+  anchors.toml for "STRUCTURAL" for all three pairs). A subset of rows
+  (`era_boundary = true`, always bound) mark the boundaries between the
+  brief's own 8 named eras (patriarchal / exodus-wilderness / conquest-
+  judges / united-monarchy / divided-kingdoms / exile / return / NT), for
+  the era-boundary property test below. FORWARD-COMPATIBLE by design (the
+  controller's own 2026-08-22 "single-feed chronology" end-state note, for
+  a future HOTFIX-7 that migrates event-date AUTHORING to resolve from this
+  table): every row carries a stable, never-renumbered id, so an
+  anchor-relative offset table can reference it arithmetically without this
+  file's own shape changing.
+
+  ERA-WINDOW VALIDATOR (fail-loud, permanent, `atlas_core::chronology`,
+  `atlas_etl::validate::run_chronology_windows`): curated per-book
+  NARRATION windows (new curated file, `data/curated/book-narration-
+  windows.toml`, ALL 66 canonical books, including the ones with zero
+  dated events today -- forward-compatible, same reasoning as the anchor
+  table) -- the widest span each book's own narrative NARRATES, derived
+  from the anchor table (GEN -4004..-1635, wide and honest; 1SA
+  -1171..-1055, tight -- exactly what catches df_ramah's own pre-fix
+  -1014). Every dated event's own year must fall inside the window of
+  EVERY witness book it claims. RECOUNTING mechanism (the false-positive
+  lesson: a plain median-based sweep flagged ~187 events, mostly FALSE
+  positives -- genealogy chapters legitimately RECOUNT events thousands of
+  years before their own era): `RECOUNTING_CHAPTERS`, a curated (book,
+  chapter-range) list checked per-VERSE (so it applies uniformly whether a
+  citation arrived via a curated `[[witness]]` row or a bare top-level
+  `Event.verses` entry) -- 1 Chronicles 1-9's and Luke 3's/Matthew 1's
+  genealogies, Hebrews 11's "by faith" roll call, Acts 7's Stephen speech.
+  `WINDOW_EXEMPTIONS` is the EVENT_DISTINCT_PAIRS-style pressure valve for
+  a single non-general citation the chapter mechanism doesn't fit (e.g.
+  `theo-74`'s own Exodus-12:40/Galatians-3:17 sojourn-count citations),
+  each with its own stated reason -- never a silent weakening. Proven BOTH
+  directions (`atlas_core::chronology`'s own test module):
+  `red_df_ramah_pre_fix_date_fails_the_1sa_window`/`green_df_ramah_post_
+  fix_date_passes_the_1sa_window`, and `green_theo7_passes_with_zero_
+  exemption_spam` (asserting `theo-7` never appears in `WINDOW_EXEMPTIONS`
+  at all -- it passes via the recounting mechanism alone, exactly the
+  brief's own named acceptance).
+
+  `THEO_DATE_OVERRIDES` is a DIFFERENT, narrower mechanism from NT
+  CALIBRATION's own systematic +3-year shift: a single, isolated,
+  genuinely-corrupt raw Theographic import row (`theo-67` "Judgeship of
+  Jair," dated -1992 in the source data -- squarely mid-patriarchal-
+  genealogy, its own numeric id-neighbors' own era, not Judges) found by
+  this batch's own full audit and re-derived from Judges 10:1-3's own
+  stated reign lengths, independently corroborated by an untouched
+  neighboring entry's own already-correct date. Applied ETL-side, once, on
+  the raw pre-`finish()` event set -- the SAME timing/idempotency reasoning
+  as `apply_nt_calibration` (see that function's own doc comment).
+
+  AMENDMENT E PROPERTY TESTS (owner directive, 2026-08-22: "we need way
+  more than one acceptance test... assert that the application has the
+  property of adhering to a canonical table of dates" -- `server/atlas-
+  core/src/narrative.rs`'s own test module, loaded via the SAME `load_real_
+  compiled_data()` helper the HOTFIX-4 tests above already use): E1
+  ANCHOR-EQUALITY -- every bound anchor row's own `year` equals its
+  compiled event's own `from_year`, one table-driven test over every row.
+  E2 WINDOW-ADHERENCE -- every compiled dated event obeys its own witness
+  books' windows, asserted against the COMPILED JSON on disk (independent
+  of the ETL-time validator's own in-process run -- a regression in either
+  layer fails loud; both call the SAME `atlas_core::chronology::
+  window_violations` predicate deliberately, since a second, independently
+  -written implementation would itself be a defect risk -- the real
+  independence this buys is LAYER, not a duplicated algorithm). E3
+  CANONICAL-ORDER -- bound anchors, sorted by the TABLE's own year, are
+  monotone on the global timeline. E4 ERA-PARTITION -- the OT-wide
+  generalization of the NT CALIBRATION note's own two era-boundary gates
+  above, to EVERY `era_boundary` anchor: an event whose witness-book
+  windows sit entirely at-or-before a boundary's year must sort at-or-
+  before it; entirely after, strictly after; a straddling event
+  contributes no assertion for that boundary (the same honest carve-out
+  the NT gates already established for `pw_mount_of_olives`'s own Acts
+  1:9-12 citation). E5 -- the owner's own named Solomon-Gibeon/df_ramah
+  case, red-then-green, ON TOP of the properties (not instead of them):
+  `1ki_solomon_gibeon`'s own PRIOR/FOLLOWING are verified, against the real
+  compiled data, to be `1ki_davids_charge`/`1ki_hiram_temple_prep`
+  (Solomon-era); `df_ramah`'s own are `theo-157`/`df_nob` (Saul-
+  persecution-era) -- zero `df_*` ids anywhere near the Gibeon dream.
+
+  ZERO scale-debate register anywhere in any of the above (inerrancy
+  doctrine, unchanged): every disclosed adjacency is stated as "this
+  atlas's own already-curated value is X; [Ussher's Annals / a commonly-
+  cited alternative] gives Y instead," never adjudicated.
+
   PROVIDER (no popover surgery -- registered exactly like every other
   section, Explore/PopoverSections.cs). VERSE nodes gain ONE new section,
   appended after catechism: "EVENT" (`VerseEventMembershipSection`,

@@ -1,0 +1,191 @@
+[
+  {
+    "id": "creation",
+    "label": "Creation of the world",
+    "year": -4004,
+    "event_id": "theo-1",
+    "era_boundary": true,
+    "source": "Ussher's Annals of the World (1658)",
+    "note": null
+  },
+  {
+    "id": "flood",
+    "label": "The Great Flood begins",
+    "year": -2348,
+    "event_id": "theo-38",
+    "era_boundary": false,
+    "source": "Ussher's Annals of the World (1658)",
+    "note": null
+  },
+  {
+    "id": "abraham-call",
+    "label": "Abram's call; he enters Canaan (Genesis 12)",
+    "year": -1921,
+    "event_id": "theo-71",
+    "era_boundary": false,
+    "source": "Ussher's Annals of the World (1658)",
+    "note": "The events-extra.toml ab_* chain (Terah leaves Ur -2100 .. Abram settles Hebron -2085) narrates the SAME migration on a distinct, internally-consistent, ~170-year-earlier patriarchal sub-scale -- the brief's own pre-disclosed 'patriarchal ~90-190yr' adjacency (W1/W2 policy). Both stand; not re-litigated here. GEN's own narration window (below) is wide enough to hold both without conflict."
+  },
+  {
+    "id": "exodus",
+    "label": "The Exodus from Egypt",
+    "year": -1491,
+    "event_id": null,
+    "era_boundary": false,
+    "source": "Ussher's Annals of the World (1658)",
+    "note": "This atlas's own already-curated exodus/conquest narrative chains (data/curated/narratives/exodus.toml, conquest.toml; ex_rameses onward) run on a distinct, internally-consistent -1446 scale instead -- the brief's own explicitly pre-disclosed 'Exodus -1491 vs -1446' adjacency (W1/W2 policy), also visible in the theo-* Numbers/Joshua cluster (theo-130 'Crossing the Jordan into Canaan' at -1451, the SAME 45-year offset from the -1406 scale, propagated consistently rather than randomly). Left unbound deliberately -- see 'exodus-departs' below for the bound structural anchor E4 actually uses. Not re-litigated here."
+  },
+  {
+    "id": "exodus-departs",
+    "label": "Israel departs Rameses (this atlas's own curated Exodus-chain anchor)",
+    "year": -1446,
+    "event_id": "ex_rameses",
+    "era_boundary": true,
+    "source": "This atlas's own already-curated exodus narrative chain (data/curated/narratives/exodus.toml)",
+    "note": "STRUCTURAL: stands in for the 'exodus' anchor row above wherever the E4 property test needs a real, bound timeline position for the patriarchal->exodus-wilderness era boundary. See that row for the Ussher-literal -1491 figure and the disclosed adjacency."
+  },
+  {
+    "id": "conquest-begins",
+    "label": "Israel crosses the Jordan into Canaan",
+    "year": -1406,
+    "event_id": "ex_jordan",
+    "era_boundary": true,
+    "source": "This atlas's own already-curated exodus/conquest narrative chains (both end/begin here, same year)",
+    "note": null
+  },
+  {
+    "id": "saul-anointed",
+    "label": "Saul's reign begins",
+    "year": -1095,
+    "event_id": "theo-155",
+    "era_boundary": true,
+    "source": "Ussher's Annals of the World (1658); matches this atlas's own internally-consistent theo-* Judges-succession chain (theo-133 Death of Joshua -1424 through theo-155)",
+    "note": null
+  },
+  {
+    "id": "david-hebron",
+    "label": "David anointed king over Judah at Hebron",
+    "year": -1055,
+    "event_id": "df_hebron",
+    "era_boundary": false,
+    "source": "Ussher's Annals of the World (1658)",
+    "note": "Re-dated onto this scale by this very batch (HOTFIX-6) -- df_hebron previously read -1010, part of the df_* chain's own uniform wrong-anchor error; see batch-hotfix6-report.md."
+  },
+  {
+    "id": "david-jerusalem",
+    "label": "David captures Jerusalem; made king over all Israel",
+    "year": -1048,
+    "event_id": "sam2_jerusalem_captured",
+    "era_boundary": false,
+    "source": "Ussher's Annals of the World (1658)",
+    "note": null
+  },
+  {
+    "id": "solomon-crowned",
+    "label": "Solomon anointed king",
+    "year": -1015,
+    "event_id": "1ki_solomon_anointed",
+    "era_boundary": false,
+    "source": "Ussher's Annals of the World (1658)",
+    "note": null
+  },
+  {
+    "id": "temple-begun",
+    "label": "Solomon begins building the Temple (1 Kings 6:1)",
+    "year": -1012,
+    "event_id": "theo-162",
+    "era_boundary": false,
+    "source": "Ussher's Annals of the World (1658)",
+    "note": null
+  },
+  {
+    "id": "kingdom-divided",
+    "label": "The kingdom divides; Rehoboam and Jeroboam",
+    "year": -975,
+    "event_id": "1ki_kingdom_divided",
+    "era_boundary": true,
+    "source": "Ussher's Annals of the World (1658)",
+    "note": null
+  },
+  {
+    "id": "samaria-falls",
+    "label": "Samaria falls to Assyria; the northern kingdom ends",
+    "year": -721,
+    "event_id": null,
+    "era_boundary": false,
+    "source": "Ussher's Annals of the World (1658)",
+    "note": "This atlas's own already-curated 2ki_fall_of_samaria spans -730..-721 (the siege's own backstory through the fall) -- a real multi-year curated SPAN, not a single-year point, so it is left unbound here rather than forcing an exact from_year match against a headline year that is really its own to_year. -721 stands on its own as the documented, undisputed traditional date."
+  },
+  {
+    "id": "jerusalem-falls",
+    "label": "Jerusalem falls to Babylon; the Temple destroyed",
+    "year": -588,
+    "event_id": null,
+    "era_boundary": false,
+    "source": "Ussher's Annals of the World (1658)",
+    "note": "This atlas's own already-curated exile-era cluster (exl_jerusalem, the jer_*/ezk_*/2ki_* narrative content around it -- dozens of events) runs 2 years later, at -586, matching a well-attested alternate Nebuchadnezzar-regnal-year convention (the same well-known 586-vs-587-vs-588 spread real Near Eastern chronology carries generally). Left unbound deliberately -- see 'exile-begins' below for the bound structural anchor E4 actually uses. Not re-litigated here."
+  },
+  {
+    "id": "exile-begins",
+    "label": "Jerusalem falls (this atlas's own curated scale)",
+    "year": -586,
+    "event_id": "exl_jerusalem",
+    "era_boundary": true,
+    "source": "This atlas's own already-curated exile narrative chain (data/curated/narratives/exile.toml) and its surrounding jer_*/ezk_*/2ki_* content",
+    "note": "STRUCTURAL: stands in for the 'jerusalem-falls' anchor row above wherever E4 needs a real, bound timeline position for the divided-kingdoms->exile era boundary. See that row for the Ussher-literal -588 figure and the disclosed 2-year variance."
+  },
+  {
+    "id": "cyrus-decree",
+    "label": "Cyrus decrees the return from Babylon",
+    "year": -536,
+    "event_id": null,
+    "era_boundary": false,
+    "source": "Widely-cited traditional date (Cyrus's first regnal year over the whole empire, distinct from Babylon's own fall in 539 BC)",
+    "note": "This atlas's own already-curated return narrative chain (data/curated/narratives/return.toml; ret_babylon onward) dates the decree itself to -538 instead, a closely-adjacent, also well-attested convention tied to Babylon's own fall. Left unbound deliberately -- see 'return-begins' below for the bound structural anchor E4 actually uses. Not re-litigated here."
+  },
+  {
+    "id": "return-begins",
+    "label": "Cyrus decrees the return (this atlas's own curated scale)",
+    "year": -538,
+    "event_id": "ret_babylon",
+    "era_boundary": true,
+    "source": "This atlas's own already-curated return narrative chain (data/curated/narratives/return.toml)",
+    "note": "STRUCTURAL: stands in for the 'cyrus-decree' anchor row above wherever E4 needs a real, bound timeline position for the exile->return era boundary. See that row for the commonly-cited -536 figure and the disclosed variance."
+  },
+  {
+    "id": "temple-finished",
+    "label": "The second Temple is completed",
+    "year": -515,
+    "event_id": null,
+    "era_boundary": false,
+    "source": "Widely-cited traditional date (\"the sixth year of Darius,\" Ezra 6:15)",
+    "note": "This atlas's own already-curated ret_jerusalem_temple/ezr_temple_completed read -516 instead, a well-known 1-year variance (Adar/Nisan calendar-epoch conventions for regnal-year counts produce exactly this kind of +/-1 spread across sources, the same class as the Ezra-return spread below). Left unbound; not re-litigated here."
+  },
+  {
+    "id": "ezra-returns",
+    "label": "Ezra's commission and return to Jerusalem",
+    "year": -458,
+    "event_id": "ezr_ezra_arrives",
+    "era_boundary": false,
+    "source": "This atlas's own already-curated value, adopted as-is (not independently re-derived)",
+    "note": "Ussher's own original-1650s figure for this event is 467 BC (a since-superseded Persian-regnal assumption); modern treatments commonly cite 457 BC instead. -458 sits within that well-known +/-1yr spread for 'the seventh year of Artaxerxes' (Ezra 7:7-8) and is adopted directly from this atlas's own already-reviewed curated data."
+  },
+  {
+    "id": "nehemiah-wall",
+    "label": "Nehemiah completes Jerusalem's wall",
+    "year": -444,
+    "event_id": "ret_jerusalem_wall",
+    "era_boundary": true,
+    "source": "Ussher's Annals of the World (1658)",
+    "note": null
+  },
+  {
+    "id": "passion",
+    "label": "The Crucifixion at Golgotha (this atlas's own AD-33 Passion anchor)",
+    "year": 33,
+    "event_id": "pw_golgotha",
+    "era_boundary": false,
+    "source": "This atlas's own already-established AD-33 Passion anchor (HOTFIX-4's NT calibration); already calibrated, not re-litigated here",
+    "note": null
+  }
+]

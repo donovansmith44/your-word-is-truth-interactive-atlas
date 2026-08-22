@@ -147,12 +147,12 @@ ref_note = "GENERAL-kind: a genealogical restatement serving as a narrative brid
 [[event]]
 id = "1ch_ziklag_warriors"
 label = "The warriors who joined David at Ziklag"
-from_year = -1013
-to_year = -1010
+from_year = -1061
+to_year = -1058
 places = ["ziklag"]
 verses = ["1CH.12.1-22"]
 atlas_section = "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 12:1-22, a roster of the mighty men who came to David while he still kept himself close from Saul at Ziklag, including Benjamite kinsmen of Saul himself and a company of Gadites, closing with the captains of Manasseh who defected from Saul's own army."
-ref_note = "No 2 Samuel parallel -- Chronicles-unique material, a literary/content fact: 2 Samuel's own narrative of David's outlaw years (1 Samuel 27, in this atlas's own scope) never catalogues these particular warriors by name. Dated across David's own time at Ziklag (the pre-existing df_ziklag leg, -1010, and the years immediately before)."
+ref_note = "No 2 Samuel parallel -- Chronicles-unique material, a literary/content fact: 2 Samuel's own narrative of David's outlaw years (1 Samuel 27, in this atlas's own scope) never catalogues these particular warriors by name. Dated across David's own time at Ziklag (the df_ziklag leg and the years immediately before) -- BATCH HOTFIX-6: re-dated from -1013..-1010 to -1061..-1058, the SAME -48-year correction applied to the whole david-flight chain this event echoes but was never formally a leg of (df_* narrative-chain fix, batch-hotfix6-report.md); found by this batch's own full graph-wide audit, not named in the owner's own live report."
 
 [[event]]
 id = "1ch_hebron_warriors"

@@ -19,7 +19,7 @@
 //! trust class scene composition relies on).
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookMeta, CatechismItem, CatechismPart, Era, Event, Landmark, LandMaskRegion, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
+use atlas_core::data::{BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, Landmark, LandMaskRegion, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -40,6 +40,39 @@ struct ErasFile {
 pub fn parse_eras(input: &str) -> Result<Vec<Era>> {
     let f: ErasFile = toml::from_str(input).context("eras.toml: invalid TOML or does not match the [[era]] schema")?;
     Ok(f.era)
+}
+
+#[derive(Deserialize)]
+struct ChronologyAnchorsFile {
+    anchor: Vec<ChronologyAnchor>,
+}
+
+/// Batch HOTFIX-6: parses `chronology-anchors.toml` (that file's own header
+/// has the full schema/design rationale). Reuses `atlas_core::data::
+/// ChronologyAnchor` directly for deserialization (its field names already
+/// match the TOML schema exactly, same shape as `parse_eras` above). Pure
+/// and STRUCTURAL only -- cross-checking each `event_id` against the real
+/// compiled event set and each `era_boundary` row for a real bound
+/// `event_id` are `validate::run_chronology_anchors`'s own job (needs the
+/// fuller picture), matching every other curated schema in this module.
+pub fn parse_chronology_anchors(input: &str) -> Result<Vec<ChronologyAnchor>> {
+    let f: ChronologyAnchorsFile =
+        toml::from_str(input).context("chronology-anchors.toml: invalid TOML or does not match the [[anchor]] schema")?;
+    Ok(f.anchor)
+}
+
+#[derive(Deserialize)]
+struct BookNarrationWindowsFile {
+    window: Vec<BookNarrationWindow>,
+}
+
+/// Batch HOTFIX-6: parses `book-narration-windows.toml` (that file's own
+/// header has the full design rationale). Same reuse-the-atlas-core-struct
+/// shape as `parse_chronology_anchors` immediately above.
+pub fn parse_book_narration_windows(input: &str) -> Result<Vec<BookNarrationWindow>> {
+    let f: BookNarrationWindowsFile = toml::from_str(input)
+        .context("book-narration-windows.toml: invalid TOML or does not match the [[window]] schema")?;
+    Ok(f.window)
 }
 
 #[derive(Deserialize)]

@@ -31816,30 +31816,6 @@
     "order_key": 0
   },
   {
-    "id": "theo-67",
-    "label": "Judgeship of Jair",
-    "when": {
-      "from_year": -1992,
-      "to_year": -1992
-    },
-    "places": [
-      "canaan"
-    ],
-    "verses": [
-      "JDG.10.3",
-      "JDG.10.4",
-      "JDG.10.5"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": null,
-    "kjv_superscription": null,
-    "ref_note": null,
-    "order_key": 0
-  },
-  {
     "id": "theo-68",
     "label": "Death of Reu",
     "when": {
@@ -41953,6 +41929,30 @@
     "order_key": 0
   },
   {
+    "id": "theo-67",
+    "label": "Judgeship of Jair",
+    "when": {
+      "from_year": -1192,
+      "to_year": -1192
+    },
+    "places": [
+      "canaan"
+    ],
+    "verses": [
+      "JDG.10.3",
+      "JDG.10.4",
+      "JDG.10.5"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
     "id": "theo-144",
     "label": "Oppression by Ammon and Philistia",
     "when": {
@@ -43600,6 +43600,284 @@
     "order_key": 0
   },
   {
+    "id": "df_ramah",
+    "label": "David flees to Samuel at Ramah",
+    "when": {
+      "from_year": -1062,
+      "to_year": -1062
+    },
+    "places": [
+      "ramah-4"
+    ],
+    "verses": [
+      "1SA.19.18"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "df_nob",
+    "label": "David receives bread and a sword at Nob",
+    "when": {
+      "from_year": -1061,
+      "to_year": -1061
+    },
+    "places": [
+      "nob"
+    ],
+    "verses": [
+      "1SA.21.1",
+      "1SA.21.2",
+      "1SA.21.3",
+      "1SA.21.4",
+      "1SA.21.5",
+      "1SA.21.6",
+      "1SA.21.7",
+      "1SA.21.8",
+      "1SA.21.9"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "df_gath",
+    "label": "David feigns madness before Achish at Gath",
+    "when": {
+      "from_year": -1061,
+      "to_year": -1061
+    },
+    "places": [
+      "gath-1"
+    ],
+    "verses": [
+      "1SA.21.10",
+      "1SA.21.11",
+      "1SA.21.12",
+      "1SA.21.13",
+      "1SA.21.14",
+      "1SA.21.15"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "df_adullam",
+    "label": "David gathers followers at the cave of Adullam",
+    "when": {
+      "from_year": -1061,
+      "to_year": -1061
+    },
+    "places": [
+      "adullam"
+    ],
+    "verses": [
+      "1SA.22.1",
+      "1SA.22.2"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "1ch_ziklag_warriors",
+    "label": "The warriors who joined David at Ziklag",
+    "when": {
+      "from_year": -1061,
+      "to_year": -1058
+    },
+    "places": [
+      "ziklag"
+    ],
+    "verses": [
+      "1CH.12.1",
+      "1CH.12.2",
+      "1CH.12.3",
+      "1CH.12.4",
+      "1CH.12.5",
+      "1CH.12.6",
+      "1CH.12.7",
+      "1CH.12.8",
+      "1CH.12.9",
+      "1CH.12.10",
+      "1CH.12.11",
+      "1CH.12.12",
+      "1CH.12.13",
+      "1CH.12.14",
+      "1CH.12.15",
+      "1CH.12.16",
+      "1CH.12.17",
+      "1CH.12.18",
+      "1CH.12.19",
+      "1CH.12.20",
+      "1CH.12.21",
+      "1CH.12.22"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 12:1-22, a roster of the mighty men who came to David while he still kept himself close from Saul at Ziklag, including Benjamite kinsmen of Saul himself and a company of Gadites, closing with the captains of Manasseh who defected from Saul's own army.",
+    "kjv_superscription": null,
+    "ref_note": "No 2 Samuel parallel -- Chronicles-unique material, a literary/content fact: 2 Samuel's own narrative of David's outlaw years (1 Samuel 27, in this atlas's own scope) never catalogues these particular warriors by name. Dated across David's own time at Ziklag (the df_ziklag leg and the years immediately before) -- BATCH HOTFIX-6: re-dated from -1013..-1010 to -1061..-1058, the SAME -48-year correction applied to the whole david-flight chain this event echoes but was never formally a leg of (df_* narrative-chain fix, batch-hotfix6-report.md); found by this batch's own full graph-wide audit, not named in the owner's own live report.",
+    "order_key": 0
+  },
+  {
+    "id": "df_keilah",
+    "label": "David delivers Keilah from the Philistines",
+    "when": {
+      "from_year": -1060,
+      "to_year": -1060
+    },
+    "places": [
+      "keilah"
+    ],
+    "verses": [
+      "1SA.23.1",
+      "1SA.23.2",
+      "1SA.23.3",
+      "1SA.23.4",
+      "1SA.23.5",
+      "1SA.23.6",
+      "1SA.23.7",
+      "1SA.23.8",
+      "1SA.23.9",
+      "1SA.23.10",
+      "1SA.23.11",
+      "1SA.23.12",
+      "1SA.23.13"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "df_ziph",
+    "label": "Saul hunts David in the wilderness of Ziph",
+    "when": {
+      "from_year": -1060,
+      "to_year": -1060
+    },
+    "places": [
+      "ziph-1"
+    ],
+    "verses": [
+      "1SA.23.14",
+      "1SA.23.15",
+      "1SA.23.16",
+      "1SA.23.17",
+      "1SA.23.18",
+      "1SA.23.19",
+      "1SA.23.20",
+      "1SA.23.21",
+      "1SA.23.22",
+      "1SA.23.23",
+      "1SA.23.24"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "df_en_gedi",
+    "label": "David spares Saul's life at En-gedi",
+    "when": {
+      "from_year": -1059,
+      "to_year": -1059
+    },
+    "places": [
+      "engedi"
+    ],
+    "verses": [
+      "1SA.24.1",
+      "1SA.24.2",
+      "1SA.24.3",
+      "1SA.24.4",
+      "1SA.24.5",
+      "1SA.24.6",
+      "1SA.24.7",
+      "1SA.24.8",
+      "1SA.24.9",
+      "1SA.24.10",
+      "1SA.24.11",
+      "1SA.24.12",
+      "1SA.24.13",
+      "1SA.24.14",
+      "1SA.24.15",
+      "1SA.24.16",
+      "1SA.24.17",
+      "1SA.24.18",
+      "1SA.24.19",
+      "1SA.24.20",
+      "1SA.24.21",
+      "1SA.24.22"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "df_ziklag",
+    "label": "David given Ziklag by Achish",
+    "when": {
+      "from_year": -1058,
+      "to_year": -1058
+    },
+    "places": [
+      "ziklag"
+    ],
+    "verses": [
+      "1SA.27.5",
+      "1SA.27.6",
+      "1SA.27.7"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
     "id": "theo-158",
     "label": "Death of Saul",
     "when": {
@@ -44357,6 +44635,31 @@
       "2SA.24.23",
       "2SA.24.24",
       "2SA.24.25"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "df_hebron",
+    "label": "David anointed king over Judah at Hebron",
+    "when": {
+      "from_year": -1055,
+      "to_year": -1055
+    },
+    "places": [
+      "hebron"
+    ],
+    "verses": [
+      "2SA.2.1",
+      "2SA.2.2",
+      "2SA.2.3",
+      "2SA.2.4"
     ],
     "kind": "event",
     "witnesses": [],
@@ -47192,28 +47495,6 @@
     "order_key": 0
   },
   {
-    "id": "df_ramah",
-    "label": "David flees to Samuel at Ramah",
-    "when": {
-      "from_year": -1014,
-      "to_year": -1014
-    },
-    "places": [
-      "ramah-4"
-    ],
-    "verses": [
-      "1SA.19.18"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": null,
-    "kjv_superscription": null,
-    "ref_note": null,
-    "order_key": 0
-  },
-  {
     "id": "1ki_solomon_gibeon",
     "label": "Solomon's dream at Gibeon; the gift of wisdom",
     "when": {
@@ -47294,129 +47575,6 @@
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 3:1-15, Solomon's own sacrifice at the great high place of Gibeon, the Lord's own appearance to him in a dream, his own request for an understanding heart, and his own return to Jerusalem to sacrifice before the ark.",
     "kjv_superscription": null,
     "ref_note": "2 Chronicles parallel per Crockett Book Fourth: 2 Chronicles 1:1-13 -- witness row to be added with 2chronicles.toml's own coverage (see this file's own header note). Place: 'to Gibeon; for there was the great high place' (3:4), explicit.",
-    "order_key": 0
-  },
-  {
-    "id": "df_nob",
-    "label": "David receives bread and a sword at Nob",
-    "when": {
-      "from_year": -1013,
-      "to_year": -1013
-    },
-    "places": [
-      "nob"
-    ],
-    "verses": [
-      "1SA.21.1",
-      "1SA.21.2",
-      "1SA.21.3",
-      "1SA.21.4",
-      "1SA.21.5",
-      "1SA.21.6",
-      "1SA.21.7",
-      "1SA.21.8",
-      "1SA.21.9"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": null,
-    "kjv_superscription": null,
-    "ref_note": null,
-    "order_key": 0
-  },
-  {
-    "id": "df_gath",
-    "label": "David feigns madness before Achish at Gath",
-    "when": {
-      "from_year": -1013,
-      "to_year": -1013
-    },
-    "places": [
-      "gath-1"
-    ],
-    "verses": [
-      "1SA.21.10",
-      "1SA.21.11",
-      "1SA.21.12",
-      "1SA.21.13",
-      "1SA.21.14",
-      "1SA.21.15"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": null,
-    "kjv_superscription": null,
-    "ref_note": null,
-    "order_key": 0
-  },
-  {
-    "id": "df_adullam",
-    "label": "David gathers followers at the cave of Adullam",
-    "when": {
-      "from_year": -1013,
-      "to_year": -1013
-    },
-    "places": [
-      "adullam"
-    ],
-    "verses": [
-      "1SA.22.1",
-      "1SA.22.2"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": null,
-    "kjv_superscription": null,
-    "ref_note": null,
-    "order_key": 0
-  },
-  {
-    "id": "1ch_ziklag_warriors",
-    "label": "The warriors who joined David at Ziklag",
-    "when": {
-      "from_year": -1013,
-      "to_year": -1010
-    },
-    "places": [
-      "ziklag"
-    ],
-    "verses": [
-      "1CH.12.1",
-      "1CH.12.2",
-      "1CH.12.3",
-      "1CH.12.4",
-      "1CH.12.5",
-      "1CH.12.6",
-      "1CH.12.7",
-      "1CH.12.8",
-      "1CH.12.9",
-      "1CH.12.10",
-      "1CH.12.11",
-      "1CH.12.12",
-      "1CH.12.13",
-      "1CH.12.14",
-      "1CH.12.15",
-      "1CH.12.16",
-      "1CH.12.17",
-      "1CH.12.18",
-      "1CH.12.19",
-      "1CH.12.20",
-      "1CH.12.21",
-      "1CH.12.22"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": "1 Chronicles pericope (this project's own sectioning, CC0): 1 Chronicles 12:1-22, a roster of the mighty men who came to David while he still kept himself close from Saul at Ziklag, including Benjamite kinsmen of Saul himself and a company of Gadites, closing with the captains of Manasseh who defected from Saul's own army.",
-    "kjv_superscription": null,
-    "ref_note": "No 2 Samuel parallel -- Chronicles-unique material, a literary/content fact: 2 Samuel's own narrative of David's outlaw years (1 Samuel 27, in this atlas's own scope) never catalogues these particular warriors by name. Dated across David's own time at Ziklag (the pre-existing df_ziklag leg, -1010, and the years immediately before).",
     "order_key": 0
   },
   {
@@ -47709,164 +47867,6 @@
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Kings 5-7, the building of Solomon's temple. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 3:1-14 witness (Crockett, 1897).",
-    "kjv_superscription": null,
-    "ref_note": null,
-    "order_key": 0
-  },
-  {
-    "id": "df_keilah",
-    "label": "David delivers Keilah from the Philistines",
-    "when": {
-      "from_year": -1012,
-      "to_year": -1012
-    },
-    "places": [
-      "keilah"
-    ],
-    "verses": [
-      "1SA.23.1",
-      "1SA.23.2",
-      "1SA.23.3",
-      "1SA.23.4",
-      "1SA.23.5",
-      "1SA.23.6",
-      "1SA.23.7",
-      "1SA.23.8",
-      "1SA.23.9",
-      "1SA.23.10",
-      "1SA.23.11",
-      "1SA.23.12",
-      "1SA.23.13"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": null,
-    "kjv_superscription": null,
-    "ref_note": null,
-    "order_key": 0
-  },
-  {
-    "id": "df_ziph",
-    "label": "Saul hunts David in the wilderness of Ziph",
-    "when": {
-      "from_year": -1012,
-      "to_year": -1012
-    },
-    "places": [
-      "ziph-1"
-    ],
-    "verses": [
-      "1SA.23.14",
-      "1SA.23.15",
-      "1SA.23.16",
-      "1SA.23.17",
-      "1SA.23.18",
-      "1SA.23.19",
-      "1SA.23.20",
-      "1SA.23.21",
-      "1SA.23.22",
-      "1SA.23.23",
-      "1SA.23.24"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": null,
-    "kjv_superscription": null,
-    "ref_note": null,
-    "order_key": 0
-  },
-  {
-    "id": "df_en_gedi",
-    "label": "David spares Saul's life at En-gedi",
-    "when": {
-      "from_year": -1011,
-      "to_year": -1011
-    },
-    "places": [
-      "engedi"
-    ],
-    "verses": [
-      "1SA.24.1",
-      "1SA.24.2",
-      "1SA.24.3",
-      "1SA.24.4",
-      "1SA.24.5",
-      "1SA.24.6",
-      "1SA.24.7",
-      "1SA.24.8",
-      "1SA.24.9",
-      "1SA.24.10",
-      "1SA.24.11",
-      "1SA.24.12",
-      "1SA.24.13",
-      "1SA.24.14",
-      "1SA.24.15",
-      "1SA.24.16",
-      "1SA.24.17",
-      "1SA.24.18",
-      "1SA.24.19",
-      "1SA.24.20",
-      "1SA.24.21",
-      "1SA.24.22"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": null,
-    "kjv_superscription": null,
-    "ref_note": null,
-    "order_key": 0
-  },
-  {
-    "id": "df_ziklag",
-    "label": "David given Ziklag by Achish",
-    "when": {
-      "from_year": -1010,
-      "to_year": -1010
-    },
-    "places": [
-      "ziklag"
-    ],
-    "verses": [
-      "1SA.27.5",
-      "1SA.27.6",
-      "1SA.27.7"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": null,
-    "kjv_superscription": null,
-    "ref_note": null,
-    "order_key": 0
-  },
-  {
-    "id": "df_hebron",
-    "label": "David anointed king over Judah at Hebron",
-    "when": {
-      "from_year": -1010,
-      "to_year": -1010
-    },
-    "places": [
-      "hebron"
-    ],
-    "verses": [
-      "2SA.2.1",
-      "2SA.2.2",
-      "2SA.2.3",
-      "2SA.2.4"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": null,
     "kjv_superscription": null,
     "ref_note": null,
     "order_key": 0

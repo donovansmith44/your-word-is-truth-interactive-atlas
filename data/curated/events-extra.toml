@@ -436,6 +436,28 @@ places = ["shiloh"]
 verses = ["JOS.18.1"]
 
 # --- David's Flight from Saul ---
+# BATCH HOTFIX-6 (graph-wide chronology audit, owner live reports #8/#9,
+# 2026-08-22 -- "this is a lie... i'm sure these errors are graph-wide"):
+# every from_year/to_year below was RE-DATED. Controller-verified root
+# cause: this whole 9-event chain was authored ~48 years LATE relative to
+# this atlas's own declared Ussher scale -- a wrong-anchor calibration
+# error at original authoring time, the same defect class NT calibration
+# (nt_calibration.rs) already fixed for the Theographic import. Re-dated
+# onto data/curated/chronology-anchors.toml: df_ramah (persecution begins)
+# through df_ziklag are a UNIFORM -48-year shift of each event's own
+# pre-fix year (verified exact: -1014-48=-1062 .. -1010-48=-1058, matching
+# the brief's own "Ziklag ~-1058" anchor value exactly) -- the chain's own
+# RELATIVE spacing (already correct; not touched) simply lands on the
+# correct absolute years once the whole chain's own wrong anchor is
+# corrected. df_hebron is the one exception: pre-fix it read the SAME year
+# as df_ziklag (-1010, both), a second, compounding error (conflating
+# "given Ziklag" with "anointed at Hebron," years apart in the real
+# narrative -- 1 Samuel 27:7's own "a full year and four months," then
+# Saul's death, 1 Samuel 31, THEN Hebron, 2 Samuel 2) -- corrected directly
+# against the anchor table's own explicit "david-hebron" = -1055 row
+# (Ussher), not by the uniform shift, which would have left it wrongly
+# co-dated with Ziklag again. See batch-hotfix6-report.md for the full
+# audit table.
 # places: brief guessed "ramah", but geo ancient.jsonl collides into 9
 # entries (a common town name). ramah-1/4/7/9 share coords (31.8543,
 # 35.2316, Ramah of Benjamin, Samuel's home town); of these, only
@@ -446,15 +468,15 @@ verses = ["JOS.18.1"]
 [[event]]
 id = "df_ramah"
 label = "David flees to Samuel at Ramah"
-from_year = -1014
-to_year = -1014
+from_year = -1062
+to_year = -1062
 places = ["ramah-4"]
 verses = ["1SA.19.18"]
 [[event]]
 id = "df_nob"
 label = "David receives bread and a sword at Nob"
-from_year = -1013
-to_year = -1013
+from_year = -1061
+to_year = -1061
 places = ["nob"]
 verses = ["1SA.21.1-9"]
 # places: brief guessed "gath", but geo ancient.jsonl collides into
@@ -466,22 +488,22 @@ verses = ["1SA.21.1-9"]
 [[event]]
 id = "df_gath"
 label = "David feigns madness before Achish at Gath"
-from_year = -1013
-to_year = -1013
+from_year = -1061
+to_year = -1061
 places = ["gath-1"]
 verses = ["1SA.21.10-15"]
 [[event]]
 id = "df_adullam"
 label = "David gathers followers at the cave of Adullam"
-from_year = -1013
-to_year = -1013
+from_year = -1061
+to_year = -1061
 places = ["adullam"]
 verses = ["1SA.22.1-2"]
 [[event]]
 id = "df_keilah"
 label = "David delivers Keilah from the Philistines"
-from_year = -1012
-to_year = -1012
+from_year = -1060
+to_year = -1060
 places = ["keilah"]
 verses = ["1SA.23.1-13"]
 # places: brief guessed "ziph", but geo ancient.jsonl collides into
@@ -492,8 +514,8 @@ verses = ["1SA.23.1-13"]
 [[event]]
 id = "df_ziph"
 label = "Saul hunts David in the wilderness of Ziph"
-from_year = -1012
-to_year = -1012
+from_year = -1060
+to_year = -1060
 places = ["ziph-1"]
 verses = ["1SA.23.14-24"]
 # places: brief guessed "en-gedi"; the real friendly_id in geo
@@ -504,22 +526,22 @@ verses = ["1SA.23.14-24"]
 [[event]]
 id = "df_en_gedi"
 label = "David spares Saul's life at En-gedi"
-from_year = -1011
-to_year = -1011
+from_year = -1059
+to_year = -1059
 places = ["engedi"]
 verses = ["1SA.24.1-22"]
 [[event]]
 id = "df_ziklag"
 label = "David given Ziklag by Achish"
-from_year = -1010
-to_year = -1010
+from_year = -1058
+to_year = -1058
 places = ["ziklag"]
 verses = ["1SA.27.5-7"]
 [[event]]
 id = "df_hebron"
 label = "David anointed king over Judah at Hebron"
-from_year = -1010
-to_year = -1010
+from_year = -1055
+to_year = -1055
 places = ["hebron"]
 verses = ["2SA.2.1-4"]
 

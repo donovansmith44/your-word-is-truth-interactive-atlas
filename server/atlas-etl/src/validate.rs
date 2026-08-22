@@ -54,7 +54,7 @@
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{bail, Result};
-use atlas_core::data::{AtlasData, CatechismPart, Era, Event, Landmark, LandMaskRegion, Place, PlaceHistory, PlaceNameAlias, Polity};
+use atlas_core::data::{AtlasData, BookNarrationWindow, CatechismPart, ChronologyAnchor, Era, Event, Landmark, LandMaskRegion, Place, PlaceHistory, PlaceNameAlias, Polity};
 use atlas_core::event_merge::{
     cross_book_duplicate_candidate, is_layer0, title_jaccard, verse_jaccard, EventDistinct, EventMerge,
     DUPLICATE_JACCARD_THRESHOLD, TITLE_JACCARD_THRESHOLD,
@@ -1020,6 +1020,106 @@ pub fn run_cross_book_duplicates(merge_pairs: &[EventMerge], distinct_pairs: &[E
     }
     let joined = unlisted.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
     bail!("cross-book event-duplicate validation failed with {} error(s):\n{}", unlisted.len(), joined);
+}
+
+/// Batch HOTFIX-6 (graph-wide chronology audit): `data/curated/
+/// chronology-anchors.toml`'s own structural validity -- every `event_id`
+/// (when present) must name a real compiled event, and every `era_boundary`
+/// row MUST carry one (the E4 property test needs a real timeline position
+/// to gate on; an unbound era-boundary row is a curation error, not a
+/// legal "disclosed adjacency" gap the way an ordinary unbound anchor is).
+/// Runs against `data.events`, the FINAL (post-merge, post-calibration,
+/// post-override) compiled set -- same post-`finish()` orientation as
+/// `run` above, since an anchor binding an id a merge/override step could
+/// still touch should be checked against what actually ships.
+pub fn run_chronology_anchors(anchors: &[ChronologyAnchor], events: &[Event]) -> Result<()> {
+    let mut errors: Vec<String> = Vec::new();
+    let by_id: HashSet<&str> = events.iter().map(|e| e.id.as_str()).collect();
+
+    check_duplicate_ids(anchors.iter().map(|a| a.id.as_str()), "chronology anchor", &mut errors);
+
+    for a in anchors {
+        if let Some(eid) = &a.event_id {
+            if !by_id.contains(eid.as_str()) {
+                errors.push(format!("chronology anchor '{}': event_id '{eid}' does not exist in the compiled event set", a.id));
+            }
+        }
+        if a.era_boundary && a.event_id.is_none() {
+            errors.push(format!(
+                "chronology anchor '{}': era_boundary = true but event_id is unset -- an era-boundary anchor must bind to a real event (the E4 property test needs a timeline position); if this anchor carries a disclosed-adjacency tension, use the primary-row/structural-row split (see chronology-anchors.toml's own header)",
+                a.id
+            ));
+        }
+    }
+
+    if errors.is_empty() {
+        return Ok(());
+    }
+    let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("chronology-anchor validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// Batch HOTFIX-6: the ERA-WINDOW VALIDATOR itself -- the permanent,
+/// fail-loud guard the owner's own "i'm sure these errors are graph-wide"
+/// assertion earns. `atlas_core::chronology`'s own module doc comment has
+/// the full root-cause/design story; this is purely the "turn a finding
+/// into an ETL failure" half, same split every other validator in this file
+/// follows.
+///
+/// Two independent failure modes, both real curation errors, both reported
+/// together (never one masking the other):
+/// 1. `missing_windows`: a book some dated event actually cites (net of
+///    recounting citations) has no curated `BookNarrationWindow` row at
+///    all -- a curation gap, not silently un-checked.
+/// 2. `window_violations`: a dated event's own year falls outside a witness
+///    book's own curated window, and is not individually exempted
+///    (`chronology::WINDOW_EXEMPTIONS`) -- the df_ramah-class bug this
+///    validator exists to catch.
+pub fn run_chronology_windows(events: &[Event], windows: &[BookNarrationWindow]) -> Result<()> {
+    let mut errors: Vec<String> = Vec::new();
+
+    for book in atlas_core::chronology::missing_windows(events, windows) {
+        errors.push(format!("book '{book}' is cited by >=1 dated event (net of recounting citations) but has no BookNarrationWindow row in book-narration-windows.toml"));
+    }
+
+    for v in atlas_core::chronology::window_violations(events, windows) {
+        errors.push(format!(
+            "event '{}' ({:?}): year {}..{} falls outside '{}''s own narration window {}..{} -- FIX the date (with anchor-table justification) or add a WINDOW_EXEMPTIONS row with a stated reason",
+            v.event_id, v.label, v.year.0, v.year.1, v.book, v.window.0, v.window.1
+        ));
+    }
+
+    if errors.is_empty() {
+        return Ok(());
+    }
+    errors.sort();
+    let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("chronology era-window validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// Batch HOTFIX-6: the E4-shaped structural guard, generalizing HOTFIX-4's
+/// own single NT era-boundary gate (Passion cluster vs. every ACT-witnessed
+/// event) to EVERY `era_boundary` anchor in the curated table. Needs the
+/// full `AtlasData` (unlike the two checks above) because it reasons about
+/// GLOBAL TIMELINE POSITION, not raw years -- `atlas_core::chronology::
+/// era_boundary_violations`'s own doc comment has the full design.
+pub fn run_era_boundaries(data: &AtlasData) -> Result<()> {
+    let violations = atlas_core::chronology::era_boundary_violations(data);
+    if violations.is_empty() {
+        return Ok(());
+    }
+    let mut lines: Vec<String> = violations
+        .iter()
+        .map(|v| {
+            format!(
+                "event '{}' ({:?}) sorts on the WRONG side of era-boundary anchor '{}' (year {}) -- expected it to sort {} that boundary on the global timeline",
+                v.event_id, v.label, v.boundary_id, v.boundary_year, v.side
+            )
+        })
+        .collect();
+    lines.sort();
+    let joined = lines.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("chronology era-boundary validation failed with {} error(s):\n{}", violations.len(), joined);
 }
 
 fn check_duplicate_ids<'a>(ids: impl Iterator<Item = &'a str>, kind: &str, errors: &mut Vec<String>) {

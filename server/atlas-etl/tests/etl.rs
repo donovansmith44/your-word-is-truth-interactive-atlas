@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, EventWitness, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
+use atlas_core::data::{AtlasData, BookMeta, BookNarrationWindow, Canon, ChronologyAnchor, CrossRef, Era, Event, EventWitness, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
 use atlas_core::event_merge::{EventDistinct, EventMerge};
 use atlas_core::merge::PlaceMerge;
 use atlas_core::time::TimeRange;
@@ -1963,5 +1963,137 @@ fn run_cross_book_duplicates_ignores_general_kind_events() {
     a.kind = "general".into();
     b.kind = "general".into();
     let result = atlas_etl::validate::run_cross_book_duplicates(&[], &[], &[a, b]);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+// ---------------------------------------------------------------------
+// Batch HOTFIX-6 (graph-wide chronology audit): validate::run_chronology_anchors
+// / run_chronology_windows / run_era_boundaries. The first two mirror the
+// established quartet shape (run_place_merges/run_event_merges above)
+// exactly. run_era_boundaries needs a full AtlasData (it reasons about
+// GLOBAL TIMELINE POSITION, not raw years, unlike the other two) -- its own
+// tests build one directly via AtlasData::new(...).finish().
+// ---------------------------------------------------------------------
+
+fn chronology_event(id: &str, label: &str, year: i32, book: &str, chapter: u16, verse: u16) -> Event {
+    Event { id: id.into(), label: label.into(), when: TimeRange::new(year, year).unwrap(), verses: vec![format!("{book}.{chapter}.{verse}")], ..Default::default() }
+}
+
+fn anchor(id: &str, year: i32, event_id: Option<&str>, era_boundary: bool) -> ChronologyAnchor {
+    ChronologyAnchor { id: id.into(), label: id.into(), year, event_id: event_id.map(String::from), era_boundary, source: "test".into(), note: None }
+}
+
+fn window(book: &str, from: i32, to: i32) -> BookNarrationWindow {
+    BookNarrationWindow { book: book.into(), from_year: from, to_year: to, note: None }
+}
+
+#[test]
+fn run_chronology_anchors_unknown_event_id_fails_naming_it() {
+    let anchors = [anchor("a1", 100, Some("not-a-real-event"), false)];
+    let events = vec![chronology_event("e1", "e1", 100, "MAT", 1, 1)];
+    let err = atlas_etl::validate::run_chronology_anchors(&anchors, &events).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("not-a-real-event"), "{msg}");
+    assert!(msg.contains("does not exist"), "{msg}");
+}
+
+#[test]
+fn run_chronology_anchors_era_boundary_without_event_id_fails() {
+    let anchors = [anchor("a1", 100, None, true)];
+    let err = atlas_etl::validate::run_chronology_anchors(&anchors, &[]).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("a1"), "{msg}");
+    assert!(msg.contains("era_boundary"), "{msg}");
+}
+
+#[test]
+fn run_chronology_anchors_duplicate_id_fails() {
+    let anchors = [anchor("a1", 100, None, false), anchor("a1", 200, None, false)];
+    let err = atlas_etl::validate::run_chronology_anchors(&anchors, &[]).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("duplicate"), "{msg}");
+    assert!(msg.contains("a1"), "{msg}");
+}
+
+#[test]
+fn run_chronology_anchors_valid_table_passes() {
+    let anchors = [anchor("a1", 100, Some("e1"), true)];
+    let events = vec![chronology_event("e1", "e1", 100, "MAT", 1, 1)];
+    let result = atlas_etl::validate::run_chronology_anchors(&anchors, &events);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+#[test]
+fn run_chronology_windows_event_outside_its_book_window_fails_naming_it() {
+    // The owner's own case, synthetically reproduced: df_ramah's own
+    // pre-fix -1014 outside 1SA's own -1171..-1055 window.
+    let events = vec![chronology_event("df_ramah", "David flees to Ramah", -1014, "1SA", 19, 18)];
+    let windows = [window("1SA", -1171, -1055)];
+    let err = atlas_etl::validate::run_chronology_windows(&events, &windows).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("df_ramah"), "{msg}");
+    assert!(msg.contains("1SA"), "{msg}");
+}
+
+#[test]
+fn run_chronology_windows_missing_window_for_a_cited_book_fails_naming_it() {
+    let events = vec![chronology_event("e1", "e1", 100, "ROM", 1, 1)];
+    let err = atlas_etl::validate::run_chronology_windows(&events, &[]).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("ROM"), "{msg}");
+    assert!(msg.contains("no BookNarrationWindow"), "{msg}");
+}
+
+#[test]
+fn run_chronology_windows_recounting_chapter_citation_never_flags() {
+    // theo-7-shaped: correctly dated deep in Genesis-era history, citing a
+    // genealogy chapter (1 Chronicles 1) far outside 1 Chronicles's own
+    // tight window -- must pass via RECOUNTING_CHAPTERS, not fail.
+    let events = vec![chronology_event("theo-7", "Birth of Seth", -3874, "1CH", 1, 1)];
+    let windows = [window("1CH", -1062, -1015)];
+    let result = atlas_etl::validate::run_chronology_windows(&events, &windows);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+#[test]
+fn run_chronology_windows_in_bounds_events_pass() {
+    // df_ramah's own post-fix -1062, inside 1SA's own window.
+    let events = vec![chronology_event("df_ramah", "David flees to Ramah", -1062, "1SA", 19, 18)];
+    let windows = [window("1SA", -1171, -1055)];
+    let result = atlas_etl::validate::run_chronology_windows(&events, &windows);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+fn atlas_with_chronology(events: Vec<Event>, anchors: Vec<ChronologyAnchor>, windows: Vec<BookNarrationWindow>) -> AtlasData {
+    let mut d = AtlasData::new(Canon::default(), vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+    d.chronology_anchors = anchors;
+    d.book_narration_windows = windows;
+    d
+}
+
+#[test]
+fn run_era_boundaries_event_on_the_wrong_side_fails_naming_it_and_the_boundary() {
+    // Boundary "conquest-begins" at year -1406 (bound to real event "b1");
+    // "e1" is JDG-witnessed (JDG's own window entirely AFTER -1406) but its
+    // OWN year (-1500) sorts BEFORE the boundary on the timeline -- the same
+    // shape theo-124's own pre-exemption -1521 "Lifetime of Joshua" hit,
+    // found live by this batch's own full audit.
+    let events = vec![chronology_event("b1", "boundary event", -1406, "EXO", 1, 1), chronology_event("e1", "wrong-side event", -1500, "JDG", 3, 1)];
+    let anchors = vec![anchor("conquest-begins", -1406, Some("b1"), true)];
+    let windows = vec![window("EXO", -1600, -1400), window("JDG", -1400, -1100)];
+    let d = atlas_with_chronology(events, anchors, windows);
+    let err = atlas_etl::validate::run_era_boundaries(&d).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("e1"), "{msg}");
+    assert!(msg.contains("conquest-begins"), "{msg}");
+}
+
+#[test]
+fn run_era_boundaries_events_on_the_correct_side_pass() {
+    let events = vec![chronology_event("b1", "boundary event", -1406, "EXO", 1, 1), chronology_event("e1", "correct-side event", -1300, "JDG", 3, 1)];
+    let anchors = vec![anchor("conquest-begins", -1406, Some("b1"), true)];
+    let windows = vec![window("EXO", -1600, -1400), window("JDG", -1400, -1100)];
+    let d = atlas_with_chronology(events, anchors, windows);
+    let result = atlas_etl::validate::run_era_boundaries(&d);
     assert!(result.is_ok(), "{:?}", result.err());
 }

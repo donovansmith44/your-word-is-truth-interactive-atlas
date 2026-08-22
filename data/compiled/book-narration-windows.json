@@ -1,0 +1,398 @@
+[
+  {
+    "book": "GEN",
+    "from_year": -4004,
+    "to_year": -1635,
+    "note": "Creation through the death of Joseph (Genesis 50) -- wide and honest, per the brief's own worked example."
+  },
+  {
+    "book": "EXO",
+    "from_year": -1571,
+    "to_year": -1445,
+    "note": "Moses's own birth (Exodus 2, narrated as backstory) through the Tabernacle raised in year 2 (Exodus 40)."
+  },
+  {
+    "book": "LEV",
+    "from_year": -1491,
+    "to_year": -1489,
+    "note": "The law given at Sinai, within the wilderness encampment's first year."
+  },
+  {
+    "book": "NUM",
+    "from_year": -1529,
+    "to_year": -1406,
+    "note": "Includes Numbers 26/32's own backward-looking census references (theo-123 'Birth of Caleb') through the plains of Moab at the edge of Canaan."
+  },
+  {
+    "book": "DEU",
+    "from_year": -1571,
+    "to_year": -1406,
+    "note": "Moses's own lifetime span (narrated in his closing addresses) through his death and Israel's entry into the plains of Moab."
+  },
+  {
+    "book": "JOS",
+    "from_year": -1451,
+    "to_year": -1399,
+    "note": "Wide enough to hold BOTH the disclosed early/late-Exodus-adjacent conquest dates (theo-130 at -1451, ex_jordan/cq_* at -1406) through Joshua's own closing years."
+  },
+  {
+    "book": "JDG",
+    "from_year": -1424,
+    "to_year": -1102,
+    "note": "Joshua's death through Samson's own death -- tight, and (post-HOTFIX-6 fix) exactly what would catch theo-67's own pre-fix -1992 mis-tag."
+  },
+  {
+    "book": "RUT",
+    "from_year": -1210,
+    "to_year": -1180,
+    "note": "\"In the days when the judges ruled\" (Ruth 1:1) -- padded around this atlas's own -1200..-1190 placement; Ruth's own exact judge-era placement is traditionally approximate."
+  },
+  {
+    "book": "1SA",
+    "from_year": -1171,
+    "to_year": -1055,
+    "note": "Tight, per the brief's own worked example -- Eli's judgeship through Saul's own death. Exactly what catches df_ramah's pre-fix -1014."
+  },
+  {
+    "book": "2SA",
+    "from_year": -1055,
+    "to_year": -1015,
+    "note": "Saul's death (2 Samuel 1) through David's own final acts, immediately preceding his death (1 Kings 1-2)."
+  },
+  {
+    "book": "1KI",
+    "from_year": -1016,
+    "to_year": -864,
+    "note": "David's old age through Elijah's own translation/Elisha's call."
+  },
+  {
+    "book": "2KI",
+    "from_year": -910,
+    "to_year": -560,
+    "note": "Elijah's own prophetic ministry through Jehoiachin's release in Babylon (2 Kings 25:27-30), 2 Kings's own final narrated event."
+  },
+  {
+    "book": "1CH",
+    "from_year": -1062,
+    "to_year": -1015,
+    "note": "Tight: 1 Chronicles's own NARRATIVE (chapters 10-29) runs Saul's death through David's death/Solomon's succession -- EXCEPT chapter 12's own roster of warriors who joined David during the whole Saul-persecution period, \"while he yet kept himself close because of Saul\" (1 Chronicles 12:1), which reaches back to the persecution's own start (matching data/curated/chronology-anchors.toml's own 'df_ramah'-class -1062, found by this batch's own full audit against 1ch_ziklag_warriors). Chapters 1-9 (the genealogies from Adam onward, including the post-exilic resettlement list in ch. 9) are RECOUNTING content, per RECOUNTING_CHAPTERS -- exactly the brief's own theo-7 'Birth of Seth' worked example (1CH witness, -3874, correctly outside this window, correctly exempted as recounting)."
+  },
+  {
+    "book": "2CH",
+    "from_year": -1014,
+    "to_year": -538,
+    "note": "Solomon's own reign (2 Chronicles opens there) through Cyrus's decree (2 Chronicles 36:22-23, the book's own final verses)."
+  },
+  {
+    "book": "EZR",
+    "from_year": -538,
+    "to_year": -457,
+    "note": "Cyrus's decree through Ezra's own reforms."
+  },
+  {
+    "book": "NEH",
+    "from_year": -537,
+    "to_year": -433,
+    "note": "The roster of the first return (Nehemiah 7, repeating Ezra 2) through Nehemiah's own second term."
+  },
+  {
+    "book": "EST",
+    "from_year": -483,
+    "to_year": -465,
+    "note": "Ahasuerus's own third-year feast (Esther 1:3) through the institution of Purim and its own closing summary."
+  },
+  {
+    "book": "JOB",
+    "from_year": -1720,
+    "to_year": -1580,
+    "note": "Traditionally placed in the patriarchal era; matches this atlas's own already-curated Job placement."
+  },
+  {
+    "book": "PSA",
+    "from_year": -1451,
+    "to_year": -430,
+    "note": "Wide and honest, matching GEN's own precedent: the Psalter is a multi-century anthology (Psalm 90's own superscription attributes it to Moses; several psalms are explicitly post-exilic, e.g. Psalm 126)."
+  },
+  {
+    "book": "PRO",
+    "from_year": -1015,
+    "to_year": -975,
+    "note": "Solomon's own reign (Proverbs 1:1, 10:1, 25:1)."
+  },
+  {
+    "book": "ECC",
+    "from_year": -1015,
+    "to_year": -975,
+    "note": "Solomon's own reign (Ecclesiastes 1:1, 'the Preacher, the son of David, king in Jerusalem')."
+  },
+  {
+    "book": "SNG",
+    "from_year": -1015,
+    "to_year": -975,
+    "note": "Solomon's own reign (Song of Solomon 1:1)."
+  },
+  {
+    "book": "ISA",
+    "from_year": -759,
+    "to_year": -697,
+    "note": "Isaiah's own ministry per its introductory superscription (Isaiah 1:1: Uzziah, Jotham, Ahaz, Hezekiah)."
+  },
+  {
+    "book": "JER",
+    "from_year": -628,
+    "to_year": -560,
+    "note": "Jeremiah's own call (Jeremiah 1:2) through the narration of Jehoiachin's release (Jeremiah 52:31-34, paralleling 2 Kings 25)."
+  },
+  {
+    "book": "LAM",
+    "from_year": -588,
+    "to_year": -586,
+    "note": "Composed immediately after Jerusalem's fall -- padded to hold both this atlas's own -586 exile-cluster dating and Ussher's own -588."
+  },
+  {
+    "book": "EZK",
+    "from_year": -593,
+    "to_year": -571,
+    "note": "Ezekiel's own dated visions (Ezekiel 1:2 through 29:17, its own latest internal date)."
+  },
+  {
+    "book": "DAN",
+    "from_year": -606,
+    "to_year": -536,
+    "note": "Daniel's own long career: Nebuchadnezzar's second year (Daniel 1:1/2:1) through Cyrus's own third year (Daniel 10:1)."
+  },
+  {
+    "book": "HOS",
+    "from_year": -810,
+    "to_year": -697,
+    "note": "Hosea's own ministry per its introductory superscription (Hosea 1:1: Uzziah through Hezekiah of Judah, Jeroboam II of Israel)."
+  },
+  {
+    "book": "JOL",
+    "from_year": -830,
+    "to_year": -810,
+    "note": "No introductory regnal superscription; padded around this atlas's own placement. Traditional dating of Joel is genuinely disputed across sources -- not adjudicated here, no scale-debate register."
+  },
+  {
+    "book": "AMO",
+    "from_year": -793,
+    "to_year": -753,
+    "note": "Amos's own ministry per its introductory superscription (Amos 1:1: Uzziah of Judah, Jeroboam II of Israel, \"two years before the earthquake\")."
+  },
+  {
+    "book": "OBA",
+    "from_year": -588,
+    "to_year": -585,
+    "note": "Padded around Obadiah's own gloating-over-Jerusalem's-fall content (already the absorbed theo-244's own -585 placement, event_merge::EVENT_MERGE_PAIRS)."
+  },
+  {
+    "book": "JON",
+    "from_year": -830,
+    "to_year": -780,
+    "note": "Padded around Jonah's own connection to Jeroboam II's reign (2 Kings 14:25)."
+  },
+  {
+    "book": "MIC",
+    "from_year": -758,
+    "to_year": -697,
+    "note": "Micah's own ministry per its introductory superscription (Micah 1:1: Jotham, Ahaz, Hezekiah)."
+  },
+  {
+    "book": "NAM",
+    "from_year": -663,
+    "to_year": -612,
+    "note": "Between the fall of Thebes (Nahum 3:8, 663 BC) and the fall of Nineveh itself (612 BC), Nahum's own subject."
+  },
+  {
+    "book": "HAB",
+    "from_year": -612,
+    "to_year": -605,
+    "note": "Shortly before the Chaldean rise to power Habakkuk 1:6 announces."
+  },
+  {
+    "book": "ZEP",
+    "from_year": -641,
+    "to_year": -609,
+    "note": "Zephaniah's own ministry per its introductory superscription (Zephaniah 1:1: the days of Josiah)."
+  },
+  {
+    "book": "HAG",
+    "from_year": -520,
+    "to_year": -520,
+    "note": "Tight by design -- Haggai's own ministry is precisely dated within Darius's second year (Haggai 1:1, 2:1, 2:10, 2:20)."
+  },
+  {
+    "book": "ZEC",
+    "from_year": -520,
+    "to_year": -480,
+    "note": "Zechariah's own dated visions (chapters 1-8) begin alongside Haggai's; chapters 9-14's own oracles are traditionally read later in his ministry."
+  },
+  {
+    "book": "MAL",
+    "from_year": -445,
+    "to_year": -430,
+    "note": "Roughly contemporary with/shortly after Nehemiah's own governorship."
+  },
+  {
+    "book": "MAT",
+    "from_year": -6,
+    "to_year": 33,
+    "note": "Zacharias's vision (Luke's own parallel dating; Matthew opens with the same nativity era) through the Great Commission."
+  },
+  {
+    "book": "MRK",
+    "from_year": 26,
+    "to_year": 33,
+    "note": "John the Baptist's own ministry (Mark 1) through the resurrection appearances."
+  },
+  {
+    "book": "LUK",
+    "from_year": -6,
+    "to_year": 33,
+    "note": "Zacharias's vision (Luke 1) through the ascension. Luke 3's own genealogy (Adam to Joseph) is RECOUNTING content, per RECOUNTING_CHAPTERS -- theo-7/theo-11's own LUK witnesses (Genesis-era genealogy, correctly far outside this window) are correctly exempted there, not by widening this window."
+  },
+  {
+    "book": "JHN",
+    "from_year": 26,
+    "to_year": 33,
+    "note": "John the Baptist's own ministry through the resurrection appearances. (John 1:1-18's own prologue is theological, not a dated occurrence any curated event cites for its own year.)"
+  },
+  {
+    "book": "ACT",
+    "from_year": 33,
+    "to_year": 60,
+    "note": "Pentecost through Paul's own two years under house arrest in Rome (Acts 28:30)."
+  },
+  {
+    "book": "ROM",
+    "from_year": 56,
+    "to_year": 58,
+    "note": "Paul's own third missionary journey, shortly before the Jerusalem visit Acts 20-21 narrates."
+  },
+  {
+    "book": "1CO",
+    "from_year": 53,
+    "to_year": 55,
+    "note": "Paul's own Ephesian ministry (Acts 19)."
+  },
+  {
+    "book": "2CO",
+    "from_year": 55,
+    "to_year": 56,
+    "note": "Shortly after 1 Corinthians, from Macedonia."
+  },
+  {
+    "book": "GAL",
+    "from_year": 48,
+    "to_year": 53,
+    "note": "Around the Jerusalem council and Paul/Barnabas parting ways. theo-74's own EXO/GAL witnesses (the Abrahamic-covenant 430-year count, Galatians 3:17) are individually EXEMPTED (WINDOW_EXEMPTIONS) rather than widening this window -- a single prophecy-fulfillment citation, not a general recounting-chapter pattern."
+  },
+  {
+    "book": "EPH",
+    "from_year": 60,
+    "to_year": 62,
+    "note": "One of the traditional \"prison epistles,\" Paul's first Roman imprisonment."
+  },
+  {
+    "book": "PHP",
+    "from_year": 60,
+    "to_year": 62,
+    "note": "One of the traditional \"prison epistles,\" Paul's first Roman imprisonment."
+  },
+  {
+    "book": "COL",
+    "from_year": 60,
+    "to_year": 62,
+    "note": "One of the traditional \"prison epistles,\" Paul's first Roman imprisonment."
+  },
+  {
+    "book": "1TH",
+    "from_year": 50,
+    "to_year": 51,
+    "note": "Paul's own second missionary journey, shortly after leaving Thessalonica."
+  },
+  {
+    "book": "2TH",
+    "from_year": 50,
+    "to_year": 51,
+    "note": "Shortly after 1 Thessalonians, same journey."
+  },
+  {
+    "book": "1TI",
+    "from_year": 62,
+    "to_year": 66,
+    "note": "Between Paul's first and second Roman imprisonments."
+  },
+  {
+    "book": "2TI",
+    "from_year": 66,
+    "to_year": 67,
+    "note": "Paul's own second, final Roman imprisonment."
+  },
+  {
+    "book": "TIT",
+    "from_year": 62,
+    "to_year": 66,
+    "note": "Between Paul's first and second Roman imprisonments, alongside 1 Timothy."
+  },
+  {
+    "book": "PHM",
+    "from_year": 60,
+    "to_year": 62,
+    "note": "One of the traditional \"prison epistles,\" alongside Colossians (Onesimus)."
+  },
+  {
+    "book": "HEB",
+    "from_year": 64,
+    "to_year": 69,
+    "note": "Traditionally dated before AD 70 (no reference to the Temple's own destruction). Hebrews 11's own \"by faith\" roll call is RECOUNTING content, per RECOUNTING_CHAPTERS -- theo-24 'Enoch taken up' (-3017, HEB witness via Hebrews 11:5) is correctly exempted there, not by widening this window."
+  },
+  {
+    "book": "JAS",
+    "from_year": 45,
+    "to_year": 49,
+    "note": "Traditionally the earliest NT epistle, James the Just, before the Jerusalem council."
+  },
+  {
+    "book": "1PE",
+    "from_year": 62,
+    "to_year": 65,
+    "note": "Peter's own later ministry, from Rome (\"Babylon,\" 1 Peter 5:13)."
+  },
+  {
+    "book": "2PE",
+    "from_year": 65,
+    "to_year": 68,
+    "note": "Shortly before Peter's own death, which 2 Peter 1:14 anticipates."
+  },
+  {
+    "book": "1JN",
+    "from_year": 85,
+    "to_year": 95,
+    "note": "John's own late ministry at Ephesus."
+  },
+  {
+    "book": "2JN",
+    "from_year": 85,
+    "to_year": 95,
+    "note": "John's own late ministry at Ephesus, alongside 1 John."
+  },
+  {
+    "book": "3JN",
+    "from_year": 85,
+    "to_year": 95,
+    "note": "John's own late ministry at Ephesus, alongside 1 John."
+  },
+  {
+    "book": "JUD",
+    "from_year": 65,
+    "to_year": 80,
+    "note": "Traditionally close to 2 Peter in both content and dating."
+  },
+  {
+    "book": "REV",
+    "from_year": 94,
+    "to_year": 96,
+    "note": "The traditional Domitian-era dating (Patmos exile)."
+  }
+]

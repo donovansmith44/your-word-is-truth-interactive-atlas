@@ -330,6 +330,61 @@ pub struct Landmark {
     pub size: Option<String>,
 }
 
+/// Batch HOTFIX-6 (graph-wide chronology audit, `data/curated/
+/// chronology-anchors.toml`'s own header has the full schema/design
+/// rationale): one authoritative date on this project's own declared
+/// traditional scale (Ussher's Annals of the World for the OT, this atlas's
+/// own already-established AD-33 Passion anchor for the NT) -- THE canonical
+/// chronology reference, consulted by both `atlas_etl::validate`'s own
+/// fail-loud ETL-time checks and (loaded straight back off
+/// `chronology-anchors.json`, the SAME compiled artifact, per the
+/// controller's own "single source, two enforcement layers" instruction)
+/// the property tests in `atlas_core::narrative` that assert the compiled
+/// atlas actually ADHERES to this table (Amendment E's E1/E3/E4).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ChronologyAnchor {
+    /// Stable, machine-readable row key -- never renumbered/repositioned.
+    /// Forward-compatible per the controller's own "single-feed chronology"
+    /// end-state note: a future date-resolution table can reference this id
+    /// to compute an anchor-relative year arithmetically without this
+    /// file's own shape changing.
+    pub id: String,
+    pub label: String,
+    /// The single authoritative year on this atlas's own declared scale.
+    pub year: Year,
+    /// The real compiled event id this anchor equals, when one binds
+    /// CLEANLY (no disclosed scale tension) -- `None` where no single
+    /// compiled event corresponds, or where binding would misrepresent an
+    /// already-disclosed adjacency as a bug (an honest gap, not a
+    /// shortcut) -- see `chronology-anchors.toml`'s own "DISCLOSED
+    /// ADJACENCIES" header note.
+    #[serde(default)]
+    pub event_id: Option<String>,
+    /// True for the anchors used as the E4 (era-partition) property test's
+    /// own structural era boundaries -- always carries `event_id` when true
+    /// (E4 needs a real timeline position to gate on).
+    #[serde(default)]
+    pub era_boundary: bool,
+    pub source: String,
+    #[serde(default)]
+    pub note: Option<String>,
+}
+
+/// Batch HOTFIX-6: the widest span one canonical book's own narrative
+/// NARRATES (never the span it was written in) -- `data/curated/
+/// book-narration-windows.toml`'s own header has the full design rationale
+/// and the recounting-witness mechanism (`atlas_core::chronology`) this
+/// window check is paired with.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BookNarrationWindow {
+    /// Canonical 3-letter book code (`canon::BOOKS`), e.g. `"GEN"`.
+    pub book: String,
+    pub from_year: Year,
+    pub to_year: Year,
+    #[serde(default)]
+    pub note: Option<String>,
+}
+
 /// Batch E (time-accurate places): one curated period name for a place,
 /// e.g. "Luz" for `bethel-1` before Jacob's naming. `when` is the window
 /// this name applies for; `verses` are canonical refs SUPPORTING the name
@@ -732,6 +787,26 @@ pub struct AtlasData {
     /// end to end, not just atlas_core's pure functions in isolation.
     #[serde(skip)]
     pub catechism: Vec<CatechismPart>,
+
+    /// Batch HOTFIX-6 (graph-wide chronology audit): the curated chronology
+    /// anchor table (`data/curated/chronology-anchors.toml`, compiled to
+    /// `chronology-anchors.json`) -- same `#[serde(skip)]`-plus-bespoke-
+    /// `load()` treatment as `polities`/`landmarks`/`place_history`/
+    /// `land_mask`/`catechism` above. `demo_fixture()` leaves this empty (no
+    /// scene/narrative-fixture test needs real anchor rows); the Amendment E
+    /// property tests (E1/E3/E4) load it via `load_real_compiled_data()`,
+    /// the SAME real-compiled-data helper the rest of `narrative.rs`'s own
+    /// test suite already uses -- one compiled artifact, read by both the
+    /// ETL-time validator and these tests, per the controller's own "single
+    /// source, two enforcement layers" instruction.
+    #[serde(skip)]
+    pub chronology_anchors: Vec<ChronologyAnchor>,
+    /// Batch HOTFIX-6: the curated per-book narration windows
+    /// (`data/curated/book-narration-windows.toml`, compiled to
+    /// `book-narration-windows.json`). Same `#[serde(skip)]`-plus-bespoke-
+    /// `load()` treatment as `chronology_anchors` immediately above.
+    #[serde(skip)]
+    pub book_narration_windows: Vec<BookNarrationWindow>,
 
     /// Derived: place id -> index into `places`. Built by `finish()`.
     #[serde(skip)]
@@ -1445,6 +1520,11 @@ impl AtlasData {
         // shape (see `CatechismPart`'s own doc comment) -- a direct read, no
         // per-part unwrapping needed here, same as `polities.json` above.
         let catechism: Vec<CatechismPart> = read_json(dir, "catechism.json")?;
+        // Batch HOTFIX-6: `chronology-anchors.json`/`book-narration-windows.json`
+        // are both already the curated `Vec<_>` shape (see each struct's own
+        // doc comment) -- direct reads, same as `polities.json` above.
+        let chronology_anchors: Vec<ChronologyAnchor> = read_json(dir, "chronology-anchors.json")?;
+        let book_narration_windows: Vec<BookNarrationWindow> = read_json(dir, "book-narration-windows.json")?;
 
         let mut data = Self::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs);
         data.polities = polities;
@@ -1453,6 +1533,8 @@ impl AtlasData {
         data.landmarks = landmarks;
         data.land_mask = land_mask;
         data.catechism = catechism;
+        data.chronology_anchors = chronology_anchors;
+        data.book_narration_windows = book_narration_windows;
         Ok(data)
     }
 }
