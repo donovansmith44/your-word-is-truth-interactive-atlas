@@ -25,14 +25,17 @@
 #   year         the single authoritative year on this atlas's declared
 #                scale (signed, no year zero) -- the one number "resolve
 #                from the canonical table" (HOTFIX-7) will read.
-#   event_id     OPTIONAL: the real compiled event id this anchor equals,
-#                when one binds CLEANLY (no disclosed scale tension) -- this
-#                is what the E1 (anchor-equality) and E3 (canonical-order)
-#                property tests iterate. Omitted (not merely blank) where no
-#                single compiled event corresponds, or where binding would
-#                misrepresent a KNOWN, already-disclosed adjacency as a bug
-#                (see the "DISCLOSED ADJACENCIES" rows below) -- an honest
-#                gap, not a shortcut.
+#   event_id     OPTIONAL: the real compiled event id this anchor equals (or
+#                is DEFERRED against -- see below), when one binds at all.
+#                Bound + not deferred is what the E1 (anchor-equality) and
+#                E3 (canonical-order) property tests iterate as a live
+#                equality claim. Omitted (not merely blank) where no single
+#                compiled event corresponds, or where binding would
+#                misrepresent a genuinely DISCLOSED ADJACENCY as a bug (see
+#                that section below -- today, Exodus only). A row CAN bind
+#                without living up to E1's own plain-equality claim: see
+#                `atlas_core::chronology::ANCHOR_DEFERRALS` and the "TYPED
+#                DEFERRALS" section below for the other, time-bounded case.
 #   era_boundary OPTIONAL bool (default false): true for the anchors used as
 #                the E4 (era-partition) property test's own structural
 #                boundaries -- always carries event_id when true (E4 needs a
@@ -47,19 +50,32 @@
 #                scale-debate register -- a plain statement of which two
 #                already-legitimate traditions/values are in play.
 #
-# DISCLOSED ADJACENCIES (pre-existing, W1/W2-policy-governed per
+# DISCLOSED ADJACENCIES vs. TYPED DEFERRALS -- two DIFFERENT concepts, not
+# to be confused (owner sequencing redirect, 2026-08-22):
+#
+# A DISCLOSED ADJACENCY (pre-existing, W1/W2-policy-governed per
 # batch-hotfix6-brief.md's own "Context you can't get from the brief" --
-# NOT re-litigated, NOT bugs): this atlas already carries TWO internally-
-# consistent but mutually-offset OT sub-scales in places (the early/late
-# Exodus dating debate, and a few well-known 1-2 year regnal-reckoning
-# variances in the Persian period). Where a requirement-1-listed anchor's
-# own literal Ussher value does not cleanly match this atlas's own already-
-# curated data because of one of these adjacencies, this table carries BOTH:
-# the literal Ussher-Annals row (left unbound, honestly), and a separate,
-# clearly-marked "-begins"/"-departs" STRUCTURAL row bound to the real event
-# this atlas's own graph actually uses for that transition (so the E4
-# era-partition test still has a real timeline position to gate on). Search
-# for "STRUCTURAL" below for all three pairs.
+# NOT re-litigated, NOT a bug) is a genuine, legitimate, standing tension
+# where this atlas SHIPS its own declared Ussher value and discloses a
+# real alternative in prose. Exactly ONE such pair exists in this table --
+# Exodus, below (search for "STRUCTURAL" to find its own bound companion
+# row, "exodus-departs"). Its own literal row is deliberately left
+# UNBOUND (no `event_id`) -- E1 never even asks it a question.
+#
+# A TYPED DEFERRAL (`atlas_core::chronology::ANCHOR_DEFERRALS`) is
+# different: the shipped value is NOT a legitimate alternative -- it is
+# W2-era authoring DRIFT the controller's own fix-round-1 ruling already
+# named as such, but which the owner then ruled should NOT be hand-
+# corrected now (re-dating events by hand today is wasted work ahead of
+# HOTFIX-7's own single-feed migration, which deletes every inline year
+# literal and resolves dates from this table directly). A deferred row
+# DOES bind (`event_id` set, so the deferral has something concrete to
+# reference) and its own `year` is the canonical value the data will
+# become -- E1 reports every deferral by name, still verifying the
+# deferral's own recorded shipped-value claim stays honest, never
+# silently equating it to a real pass. Four rows carry this typing today
+# (jerusalem-falls, cyrus-decree, temple-finished, ezra-returns) -- search
+# for "DEFERRED" below.
 
 [[anchor]]
 id = "creation"
@@ -161,54 +177,87 @@ year = -721
 source = "Ussher's Annals of the World (1658)"
 note = "This atlas's own already-curated 2ki_fall_of_samaria spans -730..-721 (the siege's own backstory through the fall) -- a real multi-year curated SPAN, not a single-year point, so it is left unbound here rather than forcing an exact from_year match against a headline year that is really its own to_year. -721 stands on its own as the documented, undisputed traditional date."
 
-# --- Jerusalem falls: DISCLOSED ADJACENCY, STRUCTURAL pair 2 of 3 ----------
+# --- Jerusalem falls / Cyrus's decree / temple finished / Ezra's return:
+# FIX ROUND 1 (controller ruling, 2026-08-22) then a SEQUENCING REDIRECT
+# (owner, same day, near-verbatim: "why do the redates now if itll be
+# easier after hotfix 7"): these four rows were ORIGINALLY authored as
+# disclosed-adjacency pairs (like Exodus above). The controller first
+# overruled that framing -- unlike Exodus (which SHIPS the declared Ussher
+# value and discloses the alternative), these four shipped MODERN-
+# SCHOLARLY values that CONTRADICTED this atlas's own declared Ussher
+# scale, W2-era authoring drift, not a legitimate tension -- but the owner
+# then correctly pointed out that hand-re-dating the shipped events now is
+# WASTED WORK: HOTFIX-7's own single-feed migration deletes every inline
+# year literal and resolves dates from this table directly, so any hand
+# edit made now is immediately overwritten there. RESOLUTION: the RULING
+# stands (this table's own `year` below IS the canonical Ussher value,
+# already) but the DATA MOVE is a TYPED DEFERRAL, not a fix -- each row
+# below stays bound to its real event (so the deferral has something
+# concrete to reference) but is registered in
+# `atlas_core::chronology::ANCHOR_DEFERRALS`, which the E1 property test
+# consults: a deferred anchor's own equality claim is never silently
+# skipped (E1 still verifies the deferral's own recorded `shipped_value`
+# stays honest, i.e. matches the event's real current date) and never
+# silently passed as if genuinely equal -- it is reported, by name, in
+# E1's own output, distinctly from a real violation. This is a DIFFERENT,
+# TIME-BOUNDED kind of exemption from `RECOUNTING_CHAPTERS`/
+# `WINDOW_EXEMPTIONS` above (permanent, by design, for genealogies/
+# retrospective citations) -- a deferral resolves and is deleted the
+# moment HOTFIX-7 binds the real event to this table; see
+# `atlas_core::chronology`'s own module doc comment for the full
+# distinction. The paired "-begins" structural rows (still bound to the
+# REAL shipped value, still `era_boundary = true`) are UNCHANGED and
+# UN-deferred -- they honestly describe where the compiled graph actually
+# sits today, which is exactly what E4's own era-partition property needs.
 [[anchor]]
 id = "jerusalem-falls"
 label = "Jerusalem falls to Babylon; the Temple destroyed"
 year = -588
+event_id = "exl_jerusalem"
 source = "Ussher's Annals of the World (1658)"
-note = "This atlas's own already-curated exile-era cluster (exl_jerusalem, the jer_*/ezk_*/2ki_* narrative content around it -- dozens of events) runs 2 years later, at -586, matching a well-attested alternate Nebuchadnezzar-regnal-year convention (the same well-known 586-vs-587-vs-588 spread real Near Eastern chronology carries generally). Left unbound deliberately -- see 'exile-begins' below for the bound structural anchor E4 actually uses. Not re-litigated here."
+note = "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- exl_jerusalem (and its own exile-chain/jer_*/2ki_* dependents) still ships -586 today, a modern-scholarly value, not re-dated by hand per the owner's own sequencing redirect. See 'exile-begins' below for the bound structural row E4 uses today (the real, current -586)."
 
 [[anchor]]
 id = "exile-begins"
-label = "Jerusalem falls (this atlas's own curated scale)"
+label = "Jerusalem falls (this atlas's own currently-shipped scale)"
 year = -586
 event_id = "exl_jerusalem"
 era_boundary = true
 source = "This atlas's own already-curated exile narrative chain (data/curated/narratives/exile.toml) and its surrounding jer_*/ezk_*/2ki_* content"
-note = "STRUCTURAL: stands in for the 'jerusalem-falls' anchor row above wherever E4 needs a real, bound timeline position for the divided-kingdoms->exile era boundary. See that row for the Ussher-literal -588 figure and the disclosed 2-year variance."
+note = "STRUCTURAL, live (NOT deferred): the real, currently-shipped value -- stands in for 'jerusalem-falls' above wherever E4 needs a real, bound timeline position for the divided-kingdoms->exile era boundary, honestly describing today's compiled data. See 'jerusalem-falls' above for the canonical Ussher value this row will be retired in favor of once HOTFIX-7 lands."
 
-# --- Cyrus's decree: DISCLOSED ADJACENCY, STRUCTURAL pair 3 of 3 -----------
 [[anchor]]
 id = "cyrus-decree"
 label = "Cyrus decrees the return from Babylon"
 year = -536
+event_id = "ret_babylon"
 source = "Widely-cited traditional date (Cyrus's first regnal year over the whole empire, distinct from Babylon's own fall in 539 BC)"
-note = "This atlas's own already-curated return narrative chain (data/curated/narratives/return.toml; ret_babylon onward) dates the decree itself to -538 instead, a closely-adjacent, also well-attested convention tied to Babylon's own fall. Left unbound deliberately -- see 'return-begins' below for the bound structural anchor E4 actually uses. Not re-litigated here."
+note = "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- ret_babylon (and its own return-chain/ezr_*/1ch_*/dan_* dependents) still ships -538 today, tied to Babylon's own fall rather than the decree specifically, not re-dated by hand per the owner's own sequencing redirect. See 'return-begins' below for the bound structural row E4 uses today (the real, current -538)."
 
 [[anchor]]
 id = "return-begins"
-label = "Cyrus decrees the return (this atlas's own curated scale)"
+label = "Cyrus decrees the return (this atlas's own currently-shipped scale)"
 year = -538
 event_id = "ret_babylon"
 era_boundary = true
 source = "This atlas's own already-curated return narrative chain (data/curated/narratives/return.toml)"
-note = "STRUCTURAL: stands in for the 'cyrus-decree' anchor row above wherever E4 needs a real, bound timeline position for the exile->return era boundary. See that row for the commonly-cited -536 figure and the disclosed variance."
+note = "STRUCTURAL, live (NOT deferred): the real, currently-shipped value -- stands in for 'cyrus-decree' above wherever E4 needs a real, bound timeline position for the exile->return era boundary, honestly describing today's compiled data. See 'cyrus-decree' above for the canonical value this row will be retired in favor of once HOTFIX-7 lands."
 
 [[anchor]]
 id = "temple-finished"
 label = "The second Temple is completed"
 year = -515
+event_id = "ret_jerusalem_temple"
 source = "Widely-cited traditional date (\"the sixth year of Darius,\" Ezra 6:15)"
-note = "This atlas's own already-curated ret_jerusalem_temple/ezr_temple_completed read -516 instead, a well-known 1-year variance (Adar/Nisan calendar-epoch conventions for regnal-year counts produce exactly this kind of +/-1 spread across sources, the same class as the Ezra-return spread below). Left unbound; not re-litigated here."
+note = "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- ret_jerusalem_temple/ezr_temple_completed still ship -516 today (a 1-year Adar/Nisan calendar-epoch variance), not re-dated by hand per the owner's own sequencing redirect. Never an era_boundary anchor (no E4 boundary needed here), so no companion structural row."
 
 [[anchor]]
 id = "ezra-returns"
 label = "Ezra's commission and return to Jerusalem"
-year = -458
+year = -467
 event_id = "ezr_ezra_arrives"
-source = "This atlas's own already-curated value, adopted as-is (not independently re-derived)"
-note = "Ussher's own original-1650s figure for this event is 467 BC (a since-superseded Persian-regnal assumption); modern treatments commonly cite 457 BC instead. -458 sits within that well-known +/-1yr spread for 'the seventh year of Artaxerxes' (Ezra 7:7-8) and is adopted directly from this atlas's own already-reviewed curated data."
+source = "Ussher's Annals of the World (1658)"
+note = "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- ezr_ezra_arrives (and its own arrival-cluster dependents, ezr_journey_to_jerusalem/ezr_ezras_prayer/ezr_assembly_repents) still ship -458 today, which sits within the modern-scholarly ~457 BC spread, not Ussher's own actual original figure (467 BC, a since-superseded Persian-regnal assumption most modern treatments replace with 457 instead) -- not re-dated by hand per the owner's own sequencing redirect. Never an era_boundary anchor, so no companion structural row."
 
 [[anchor]]
 id = "nehemiah-wall"

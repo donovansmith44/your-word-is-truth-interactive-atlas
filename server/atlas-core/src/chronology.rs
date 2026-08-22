@@ -62,6 +62,25 @@
 //! on the raw pre-`finish()` Theographic event set (the SAME timing
 //! `nt_calibration::apply_nt_calibration` already established, for the same
 //! reason: idempotency across `finish()`'s own two real call sites).
+//!
+//! `ANCHOR_DEFERRALS` is a THIRD, still-DIFFERENT exemption kind from the
+//! two above -- and the two must never be confused (fix round 1, controller
+//! ruling + an owner sequencing redirect, both 2026-08-22). `RECOUNTING_
+//! CHAPTERS`/`WINDOW_EXEMPTIONS` are PERMANENT, by design: a genealogy
+//! citing an ancient birth is always going to do that. An anchor deferral
+//! is TIME-BOUNDED: four anchor-table rows (`jerusalem-falls`,
+//! `cyrus-decree`, `temple-finished`, `ezra-returns`) carry the table's own
+//! CANONICAL Ussher value while their bound event still ships an older,
+//! modern-scholarly value the controller's own fix-round-1 ruling already
+//! named as drift -- but the owner ruled that re-dating those events (and
+//! their own dependents) by hand now is wasted work, since HOTFIX-7's own
+//! single-feed migration will delete every inline year literal and resolve
+//! dates from `chronology-anchors.toml` directly. A deferral is never
+//! silent: `narrative.rs`'s own E1 test reports every one of them BY NAME,
+//! still verifying the deferral's own recorded `shipped_value` stays
+//! honest (matches the event's real current date) rather than either
+//! failing loud (a real E1 violation) or silently passing as if the
+//! canonical value were already live.
 
 use std::collections::HashSet;
 
@@ -146,6 +165,59 @@ pub const WINDOW_EXEMPTIONS: &[WindowExemption] = &[
 
 pub fn is_exempted(event_id: &str, book: &str) -> bool {
     WINDOW_EXEMPTIONS.iter().any(|x| x.event_id == event_id && x.book == book)
+}
+
+// ---------------------------------------------------------------------
+// ANCHOR_DEFERRALS -- the TYPED, TIME-BOUNDED anchor-equality deferral
+// (a DIFFERENT kind from RECOUNTING_CHAPTERS/WINDOW_EXEMPTIONS above --
+// see this module's own doc comment for the full distinction)
+// ---------------------------------------------------------------------
+
+/// One curated anchor-row deferral: `anchor_id` names a `ChronologyAnchor`
+/// row (`chronology-anchors.toml`) whose own `year` is the CANONICAL
+/// (Ussher/declared) value, bound to `event_id`, but whose compiled
+/// `from_year` still, honestly, reads `shipped_value` -- an OLDER,
+/// modern-scholarly value the fix-round-1 ruling already named as W2-era
+/// authoring drift, deliberately NOT hand-corrected per the owner's own
+/// sequencing redirect (HOTFIX-7's own single-feed migration will delete
+/// the inline literal and resolve it from the table directly, so a hand
+/// edit now would just be immediately overwritten there).
+pub struct AnchorDeferral {
+    pub anchor_id: &'static str,
+    pub event_id: &'static str,
+    pub shipped_value: Year,
+    pub reason: &'static str,
+}
+
+pub const ANCHOR_DEFERRALS: &[AnchorDeferral] = &[
+    AnchorDeferral {
+        anchor_id: "jerusalem-falls",
+        event_id: "exl_jerusalem",
+        shipped_value: -586,
+        reason: "-586 is a modern-scholarly Nebuchadnezzar-regnal-year value, not this atlas's own declared Ussher scale (-588) -- W2-era authoring drift (fix round 1, controller ruling, 2026-08-22). Resolves when HOTFIX-7's single-feed migration re-dates exl_jerusalem (and its own exile-chain/jer_*/2ki_* dependents) directly from this table.",
+    },
+    AnchorDeferral {
+        anchor_id: "cyrus-decree",
+        event_id: "ret_babylon",
+        shipped_value: -538,
+        reason: "-538 is tied to Babylon's own fall (539 BC) rather than Cyrus's own decree specifically (-536) -- W2-era authoring drift (fix round 1, controller ruling, 2026-08-22). Resolves when HOTFIX-7's single-feed migration re-dates ret_babylon (and its own return-chain/ezr_*/1ch_*/dan_* dependents) directly from this table.",
+    },
+    AnchorDeferral {
+        anchor_id: "temple-finished",
+        event_id: "ret_jerusalem_temple",
+        shipped_value: -516,
+        reason: "-516 vs -515 is a 1-year Adar/Nisan calendar-epoch variance; this atlas's own declared scale resolves to -515. Resolves when HOTFIX-7's single-feed migration re-dates ret_jerusalem_temple/ezr_temple_completed directly from this table.",
+    },
+    AnchorDeferral {
+        anchor_id: "ezra-returns",
+        event_id: "ezr_ezra_arrives",
+        shipped_value: -458,
+        reason: "-458 sits within the modern-scholarly ~457 BC spread, not Ussher's own actual original figure (467 BC -- a since-superseded Persian-regnal assumption most modern treatments replace with 457 instead; this atlas's own prior -458 sat within THAT spread, not Ussher's own). Resolves when HOTFIX-7's single-feed migration re-dates ezr_ezra_arrives (and its own arrival-cluster dependents) directly from this table.",
+    },
+];
+
+pub fn anchor_deferral(anchor_id: &str) -> Option<&'static AnchorDeferral> {
+    ANCHOR_DEFERRALS.iter().find(|d| d.anchor_id == anchor_id)
 }
 
 // ---------------------------------------------------------------------
@@ -538,5 +610,34 @@ mod tests {
         for x in WINDOW_EXEMPTIONS {
             assert!(seen.insert((x.event_id, x.book)), "({}, {}) listed twice in WINDOW_EXEMPTIONS", x.event_id, x.book);
         }
+    }
+
+    // --- ANCHOR_DEFERRALS (fix round 1 + owner sequencing redirect) ------
+
+    #[test]
+    fn anchor_deferrals_table_has_no_duplicate_anchor_ids() {
+        let mut seen = std::collections::HashSet::new();
+        for d in ANCHOR_DEFERRALS {
+            assert!(seen.insert(d.anchor_id), "'{}' listed twice in ANCHOR_DEFERRALS", d.anchor_id);
+        }
+    }
+
+    #[test]
+    fn anchor_deferral_looks_up_by_id() {
+        let d = anchor_deferral("jerusalem-falls").expect("jerusalem-falls is a registered deferral");
+        assert_eq!(d.event_id, "exl_jerusalem");
+        assert_eq!(d.shipped_value, -586);
+        assert!(anchor_deferral("not-a-real-anchor").is_none());
+    }
+
+    #[test]
+    fn exactly_four_anchors_are_deferred_today() {
+        // A deliberate, named count -- per this module's own doc comment,
+        // a deferral is never silent: gaining or losing one (e.g. HOTFIX-7
+        // resolving one) must force a conscious edit here, not a silent
+        // drift. If this ever fails, update ANCHOR_DEFERRALS AND this
+        // count together, not one without the other.
+        let ids: Vec<&str> = ANCHOR_DEFERRALS.iter().map(|d| d.anchor_id).collect();
+        assert_eq!(ids, vec!["jerusalem-falls", "cyrus-decree", "temple-finished", "ezra-returns"]);
     }
 }

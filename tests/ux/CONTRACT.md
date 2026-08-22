@@ -1081,13 +1081,32 @@ Notes:
   Annals of the World for the OT, this atlas's own AD-33 Passion anchor for
   the NT), each with real source provenance. Each row MAY bind to a real
   compiled `event_id` (`atlas_core::data::ChronologyAnchor`) -- bound only
-  where no DISCLOSED scale tension would be misrepresented as a bug (the
-  W1/W2-policy-governed early/late-Exodus adjacency and two well-known
-  1-2-year Persian-period regnal-reckoning variances each get BOTH a
-  Ussher-literal reference row, left honestly unbound, AND a separate
-  "-departs"/"-begins" STRUCTURAL row bound to the real event this atlas's
-  own graph actually uses for that transition -- search chronology-
-  anchors.toml for "STRUCTURAL" for all three pairs). A subset of rows
+  where no DISCLOSED scale tension would be misrepresented as a bug. The
+  W1/W2-policy-governed early/late-Exodus adjacency is this table's ONE
+  true disclosed adjacency: the Ussher-literal `exodus` reference row
+  stays honestly UNBOUND, paired with a separate `exodus-departs`
+  STRUCTURAL row bound to the real event this atlas's own graph actually
+  uses for that transition (search chronology-anchors.toml for
+  "STRUCTURAL"). Four further rows -- `jerusalem-falls`, `cyrus-decree`,
+  `temple-finished`, `ezra-returns` -- are NOT disclosed adjacencies and
+  must never be read as one (controller ruling, fix round on this same
+  batch, 2026-08-22): their shipped values (-586/-538/-516/-458) are
+  modern-scholarly drift against this atlas's own declared Ussher scale,
+  not an equally-valid alternate convention, so this table's `year` on
+  each of those four IS canonical -- full stop. Because a planned
+  HOTFIX-7 single-feed migration will delete every inline year literal
+  and re-date events FROM this table, the corresponding event data is
+  deliberately NOT hand-edited yet: each of the four is bound (`event_id`
+  set) but flagged a TYPED DEFERRAL in `atlas_core::chronology::
+  ANCHOR_DEFERRALS`, a time-bounded exemption kind (carries the anchor
+  id, the event id, the shipped value, and a reason) distinct from the
+  permanent RECOUNTING/WINDOW_EXEMPTIONS mechanisms below -- these four
+  enumerated deferrals exist pending that single-feed migration, and
+  resolve automatically once HOTFIX-7 binds their events to this table.
+  `jerusalem-falls`/`cyrus-decree` additionally keep their own live
+  `exile-begins`/`return-begins` STRUCTURAL companion rows, unchanged,
+  honestly describing today's actually-shipped -586/-538;
+  `temple-finished`/`ezra-returns` never had one. A subset of rows
   (`era_boundary = true`, always bound) mark the boundaries between the
   brief's own 8 named eras (patriarchal / exodus-wilderness / conquest-
   judges / united-monarchy / divided-kingdoms / exile / return / NT), for
@@ -1143,7 +1162,12 @@ Notes:
   core/src/narrative.rs`'s own test module, loaded via the SAME `load_real_
   compiled_data()` helper the HOTFIX-4 tests above already use): E1
   ANCHOR-EQUALITY -- every bound anchor row's own `year` equals its
-  compiled event's own `from_year`, one table-driven test over every row.
+  compiled event's own `from_year`, one table-driven test over every row
+  -- EXCEPT the 4 `ANCHOR_DEFERRALS` rows, each checked against its own
+  recorded `shipped_value` instead and surfaced in a separate,
+  always-visible `deferred` list (never silently, never counted as a
+  violation); a STALE deferral (the event re-dated without updating the
+  deferral entry) fails loud exactly like a real violation.
   E2 WINDOW-ADHERENCE -- every compiled dated event obeys its own witness
   books' windows, asserted against the COMPILED JSON on disk (independent
   of the ETL-time validator's own in-process run -- a regression in either
@@ -1151,8 +1175,11 @@ Notes:
   window_violations` predicate deliberately, since a second, independently
   -written implementation would itself be a defect risk -- the real
   independence this buys is LAYER, not a duplicated algorithm). E3
-  CANONICAL-ORDER -- bound anchors, sorted by the TABLE's own year, are
-  monotone on the global timeline. E4 ERA-PARTITION -- the OT-wide
+  CANONICAL-ORDER -- bound, NON-deferred anchors, sorted by the TABLE's
+  own year, are monotone on the global timeline (deferred anchors are
+  excluded from this set: `jerusalem-falls`/`exile-begins` deliberately
+  bind the SAME event at two different declared years, which would break
+  strict ordering if both were included). E4 ERA-PARTITION -- the OT-wide
   generalization of the NT CALIBRATION note's own two era-boundary gates
   above, to EVERY `era_boundary` anchor: an event whose witness-book
   windows sit entirely at-or-before a boundary's year must sort at-or-

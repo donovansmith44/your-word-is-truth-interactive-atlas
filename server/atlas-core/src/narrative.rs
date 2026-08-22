@@ -922,6 +922,20 @@ mod tests {
     /// `from_year` EQUALS the table's own `year`. One table-driven test over
     /// ALL rows (not one test per row) -- failures name the event, the
     /// table year, and the compiled year, per the amendment's own text.
+    ///
+    /// FIX ROUND 1 + owner sequencing redirect (both 2026-08-22): a bound
+    /// row registered in `atlas_core::chronology::ANCHOR_DEFERRALS` is
+    /// TYPED-DEFERRED, not a live equality claim -- its own canonical
+    /// `year` is correct but deliberately not yet re-dated onto the
+    /// compiled event (HOTFIX-7's own single-feed migration will do that
+    /// directly; hand-editing now would be immediately overwritten there).
+    /// Deferrals are NEVER silent: each is reported BY NAME below (visible
+    /// even without `--nocapture`, via the assertion message itself), and
+    /// the deferral's own recorded `shipped_value` is still checked against
+    /// the event's real current date -- a STALE deferral (the event moved
+    /// but the deferral entry wasn't updated) fails loud, exactly like a
+    /// real violation, never silently "passing." See that module's own doc
+    /// comment for the full distinction from a genuine E1 pass.
     #[test]
     fn e1_every_bound_anchor_equals_its_compiled_events_own_from_year() {
         let d = load_real_compiled_data();
@@ -929,17 +943,44 @@ mod tests {
         assert!(bound.len() >= 15, "expected the real curated anchor table to bind well over 15 rows to real events, got {}", bound.len());
 
         let mut violations: Vec<String> = Vec::new();
+        let mut deferred: Vec<String> = Vec::new();
         for a in &bound {
             let eid = a.event_id.as_deref().unwrap();
-            match d.event_by_id(eid) {
-                None => violations.push(format!("anchor '{}': bound event_id '{eid}' does not exist in the compiled event set", a.id)),
-                Some(e) if e.when.from_year != a.year => {
-                    violations.push(format!("anchor '{}': table year {} != compiled event '{eid}''s own from_year {}", a.id, a.year, e.when.from_year))
+            let Some(e) = d.event_by_id(eid) else {
+                violations.push(format!("anchor '{}': bound event_id '{eid}' does not exist in the compiled event set", a.id));
+                continue;
+            };
+            if let Some(def) = crate::chronology::anchor_deferral(&a.id) {
+                if e.when.from_year != def.shipped_value {
+                    violations.push(format!(
+                        "anchor '{}': STALE DEFERRAL -- ANCHOR_DEFERRALS records shipped_value {}, but compiled event '{eid}''s own from_year is now {} (re-dated without updating/removing the deferral entry?)",
+                        a.id, def.shipped_value, e.when.from_year
+                    ));
+                } else {
+                    deferred.push(format!("'{}' (canonical {}, event '{eid}' currently {}, DEFERRED to HOTFIX-7)", a.id, a.year, def.shipped_value));
                 }
-                Some(_) => {}
+                continue;
+            }
+            if e.when.from_year != a.year {
+                violations.push(format!("anchor '{}': table year {} != compiled event '{eid}''s own from_year {}", a.id, a.year, e.when.from_year));
             }
         }
-        assert!(violations.is_empty(), "E1 anchor-equality violated for {} row(s):\n{}", violations.len(), violations.join("\n"));
+
+        assert_eq!(
+            deferred.len(),
+            4,
+            "expected exactly 4 typed deferrals (jerusalem-falls/cyrus-decree/temple-finished/ezra-returns) visible here, got {}: {:?} -- this count is deliberate, not a floor; update it together with ANCHOR_DEFERRALS, never silently",
+            deferred.len(),
+            deferred
+        );
+        assert!(
+            violations.is_empty(),
+            "E1 anchor-equality violated for {} row(s) (this list never includes the {} typed deferrals reported separately above -- {:?}):\n{}",
+            violations.len(),
+            deferred.len(),
+            deferred,
+            violations.join("\n")
+        );
     }
 
     /// E2 -- WINDOW-ADHERENCE PROPERTY: every dated event in the COMPILED
@@ -968,19 +1009,33 @@ mod tests {
         );
     }
 
-    /// E3 -- CANONICAL-ORDER PROPERTY: the bound anchor rows, sorted by the
-    /// TABLE's own year, embed in the compiled global timeline in strictly
-    /// that order (monotone timeline positions) -- catches any future
-    /// re-sort or calibration drift between anchors. Non-decreasing in
-    /// general, strict specifically between two anchors whose own `year`
-    /// differs (today's real table has no same-year bound anchors at all,
-    /// but the property is stated this way so a future same-year anchor
-    /// pair never breaks this test for the wrong reason).
+    /// E3 -- CANONICAL-ORDER PROPERTY: the bound, NON-deferred anchor rows,
+    /// sorted by the TABLE's own year, embed in the compiled global
+    /// timeline in strictly that order (monotone timeline positions) --
+    /// catches any future re-sort or calibration drift between anchors.
+    /// Non-decreasing in general, strict specifically between two anchors
+    /// whose own `year` differs (today's real table has no same-year bound
+    /// anchors at all, but the property is stated this way so a future
+    /// same-year anchor pair never breaks this test for the wrong reason).
+    ///
+    /// FIX ROUND 1: typed-deferred anchors (`atlas_core::chronology::
+    /// ANCHOR_DEFERRALS`) are EXCLUDED here, not just at E1 -- a deferred
+    /// row's own `year` is the CANONICAL value, deliberately not yet the
+    /// value its bound event's own timeline position reflects (e.g.
+    /// `jerusalem-falls` at table-year -588 and `exile-begins` at
+    /// table-year -586 both bind the SAME event, `exl_jerusalem` -- sorting
+    /// them by table year would demand `jerusalem-falls` sort STRICTLY
+    /// before `exile-begins` on the timeline despite being the identical
+    /// node, which is not a real ordering claim to make). E1 already proves
+    /// every deferral's own recorded shipped-value stays honest; E3's own
+    /// job is the DIFFERENT question of live cross-anchor ordering, which a
+    /// deferred row cannot yet honestly answer.
     #[test]
     fn e3_bound_anchors_sorted_by_table_year_are_monotone_on_the_global_timeline() {
         let d = load_real_compiled_data();
-        let mut bound: Vec<&crate::data::ChronologyAnchor> = d.chronology_anchors.iter().filter(|a| a.event_id.is_some()).collect();
-        assert!(bound.len() >= 15);
+        let mut bound: Vec<&crate::data::ChronologyAnchor> =
+            d.chronology_anchors.iter().filter(|a| a.event_id.is_some() && crate::chronology::anchor_deferral(&a.id).is_none()).collect();
+        assert!(bound.len() >= 12, "expected well over 12 non-deferred bound anchors, got {}", bound.len());
         bound.sort_by_key(|a| a.year);
 
         let positions: Vec<(&str, i32, usize)> = bound

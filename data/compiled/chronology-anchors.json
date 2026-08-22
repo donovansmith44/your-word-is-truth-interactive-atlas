@@ -120,55 +120,55 @@
     "id": "jerusalem-falls",
     "label": "Jerusalem falls to Babylon; the Temple destroyed",
     "year": -588,
-    "event_id": null,
+    "event_id": "exl_jerusalem",
     "era_boundary": false,
     "source": "Ussher's Annals of the World (1658)",
-    "note": "This atlas's own already-curated exile-era cluster (exl_jerusalem, the jer_*/ezk_*/2ki_* narrative content around it -- dozens of events) runs 2 years later, at -586, matching a well-attested alternate Nebuchadnezzar-regnal-year convention (the same well-known 586-vs-587-vs-588 spread real Near Eastern chronology carries generally). Left unbound deliberately -- see 'exile-begins' below for the bound structural anchor E4 actually uses. Not re-litigated here."
+    "note": "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- exl_jerusalem (and its own exile-chain/jer_*/2ki_* dependents) still ships -586 today, a modern-scholarly value, not re-dated by hand per the owner's own sequencing redirect. See 'exile-begins' below for the bound structural row E4 uses today (the real, current -586)."
   },
   {
     "id": "exile-begins",
-    "label": "Jerusalem falls (this atlas's own curated scale)",
+    "label": "Jerusalem falls (this atlas's own currently-shipped scale)",
     "year": -586,
     "event_id": "exl_jerusalem",
     "era_boundary": true,
     "source": "This atlas's own already-curated exile narrative chain (data/curated/narratives/exile.toml) and its surrounding jer_*/ezk_*/2ki_* content",
-    "note": "STRUCTURAL: stands in for the 'jerusalem-falls' anchor row above wherever E4 needs a real, bound timeline position for the divided-kingdoms->exile era boundary. See that row for the Ussher-literal -588 figure and the disclosed 2-year variance."
+    "note": "STRUCTURAL, live (NOT deferred): the real, currently-shipped value -- stands in for 'jerusalem-falls' above wherever E4 needs a real, bound timeline position for the divided-kingdoms->exile era boundary, honestly describing today's compiled data. See 'jerusalem-falls' above for the canonical Ussher value this row will be retired in favor of once HOTFIX-7 lands."
   },
   {
     "id": "cyrus-decree",
     "label": "Cyrus decrees the return from Babylon",
     "year": -536,
-    "event_id": null,
+    "event_id": "ret_babylon",
     "era_boundary": false,
     "source": "Widely-cited traditional date (Cyrus's first regnal year over the whole empire, distinct from Babylon's own fall in 539 BC)",
-    "note": "This atlas's own already-curated return narrative chain (data/curated/narratives/return.toml; ret_babylon onward) dates the decree itself to -538 instead, a closely-adjacent, also well-attested convention tied to Babylon's own fall. Left unbound deliberately -- see 'return-begins' below for the bound structural anchor E4 actually uses. Not re-litigated here."
+    "note": "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- ret_babylon (and its own return-chain/ezr_*/1ch_*/dan_* dependents) still ships -538 today, tied to Babylon's own fall rather than the decree specifically, not re-dated by hand per the owner's own sequencing redirect. See 'return-begins' below for the bound structural row E4 uses today (the real, current -538)."
   },
   {
     "id": "return-begins",
-    "label": "Cyrus decrees the return (this atlas's own curated scale)",
+    "label": "Cyrus decrees the return (this atlas's own currently-shipped scale)",
     "year": -538,
     "event_id": "ret_babylon",
     "era_boundary": true,
     "source": "This atlas's own already-curated return narrative chain (data/curated/narratives/return.toml)",
-    "note": "STRUCTURAL: stands in for the 'cyrus-decree' anchor row above wherever E4 needs a real, bound timeline position for the exile->return era boundary. See that row for the commonly-cited -536 figure and the disclosed variance."
+    "note": "STRUCTURAL, live (NOT deferred): the real, currently-shipped value -- stands in for 'cyrus-decree' above wherever E4 needs a real, bound timeline position for the exile->return era boundary, honestly describing today's compiled data. See 'cyrus-decree' above for the canonical value this row will be retired in favor of once HOTFIX-7 lands."
   },
   {
     "id": "temple-finished",
     "label": "The second Temple is completed",
     "year": -515,
-    "event_id": null,
+    "event_id": "ret_jerusalem_temple",
     "era_boundary": false,
     "source": "Widely-cited traditional date (\"the sixth year of Darius,\" Ezra 6:15)",
-    "note": "This atlas's own already-curated ret_jerusalem_temple/ezr_temple_completed read -516 instead, a well-known 1-year variance (Adar/Nisan calendar-epoch conventions for regnal-year counts produce exactly this kind of +/-1 spread across sources, the same class as the Ezra-return spread below). Left unbound; not re-litigated here."
+    "note": "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- ret_jerusalem_temple/ezr_temple_completed still ship -516 today (a 1-year Adar/Nisan calendar-epoch variance), not re-dated by hand per the owner's own sequencing redirect. Never an era_boundary anchor (no E4 boundary needed here), so no companion structural row."
   },
   {
     "id": "ezra-returns",
     "label": "Ezra's commission and return to Jerusalem",
-    "year": -458,
+    "year": -467,
     "event_id": "ezr_ezra_arrives",
     "era_boundary": false,
-    "source": "This atlas's own already-curated value, adopted as-is (not independently re-derived)",
-    "note": "Ussher's own original-1650s figure for this event is 467 BC (a since-superseded Persian-regnal assumption); modern treatments commonly cite 457 BC instead. -458 sits within that well-known +/-1yr spread for 'the seventh year of Artaxerxes' (Ezra 7:7-8) and is adopted directly from this atlas's own already-reviewed curated data."
+    "source": "Ussher's Annals of the World (1658)",
+    "note": "DEFERRED (atlas_core::chronology::ANCHOR_DEFERRALS) to HOTFIX-7's own single-feed migration -- ezr_ezra_arrives (and its own arrival-cluster dependents, ezr_journey_to_jerusalem/ezr_ezras_prayer/ezr_assembly_repents) still ship -458 today, which sits within the modern-scholarly ~457 BC spread, not Ussher's own actual original figure (467 BC, a since-superseded Persian-regnal assumption most modern treatments replace with 457 instead) -- not re-dated by hand per the owner's own sequencing redirect. Never an era_boundary anchor, so no companion structural row."
   },
   {
     "id": "nehemiah-wall",
