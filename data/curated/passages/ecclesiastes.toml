@@ -1,0 +1,123 @@
+# Batch W3 (whole-Bible titled verse containers, third run: Job-Song of
+# Solomon). Ecclesiastes, in the SAME `[[event]]` schema
+# `events-extra.toml` uses -- see
+# `data/curated/passages/genesis.toml`'s own header comment for the full
+# reconciliation/provenance framing.
+#
+# RECONCILIATION: zero pre-existing events touch Ecclesiastes (fresh
+# authoring -- verified against the real compiled `events.json` before
+# authoring).
+#
+# GRANULARITY (the brief's own "Proverbs/Ecclesiastes = collection/
+# discourse units"): twelve discourse units, each boundary independently
+# read against the compiled KJV text before being drawn (a recurring
+# closing refrain -- "vanity and vexation of spirit" at 4:16, "Vanity of
+# vanities... all is vanity" at 12:8 echoing 1:2 -- and a clear topic or
+# register shift at each remaining seam, e.g. 8:1's own new "Who is as the
+# wise man?" opening, or 12:9's own shift into third-person description of
+# "the preacher," marking the book's own editorial epilogue). A
+# literary-structure decomposition, not textual criticism. The opening
+# unit alone carries `kjv_superscription` provenance (1:1 is a genuine
+# authorship-identifying heading verse, "The words of the Preacher, the
+# son of David, king in Jerusalem," the same KIND of verse as Proverbs
+# 1:1); the remaining eleven carry this project's own `atlas_section` CC0
+# title, since Ecclesiastes' own internal seams (unlike Proverbs') are
+# marked by refrain and topic shift, not a repeated formal heading tag.
+# ALL twelve are GENERAL-kind (wisdom/discourse genre -- the brief's own
+# honest default).
+
+[[event]]
+id = "ecc_words_of_the_preacher"
+label = "The words of the Preacher, the son of David, king in Jerusalem."
+kind = "general"
+verses = ["ECC.1.1-11"]
+kjv_superscription = "ECC.1.1, the book's own opening superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: a discourse unit, no date of its own. Verses 2-11 are the book's own opening poem, 'Vanity of vanities... there is no remembrance of former things,' closing this unit before the Preacher's own personal investigation begins at 1:12."
+
+[[event]]
+id = "ecc_preachers_investigation"
+label = "The Preacher's investigation of wisdom, pleasure, and labor"
+kind = "general"
+verses = ["ECC.1.12-18", "ECC.2.1-26"]
+atlas_section = "Ecclesiastes pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ecclesiastes 1:12-2:26, the Preacher's own first-person investigation -- his own great works, houses, vineyards, and pleasures, his own wisdom compared to folly, and his own conclusion that a man's labor is vanity, closing 'this also is vanity and vexation of spirit.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "ecc_a_time_for_everything"
+label = "A time for every purpose under heaven"
+kind = "general"
+verses = ["ECC.3.1-22"]
+atlas_section = "Ecclesiastes pericope (this project's own sectioning, CC0): Ecclesiastes 3, the poem 'to every thing there is a season' (3:1-8), followed by the Preacher's own reflection on God's own work in its time, and the like end of man and beast."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "ecc_oppression_toil_companionship"
+label = "Oppression, toil, and the value of companionship"
+kind = "general"
+verses = ["ECC.4.1-16"]
+atlas_section = "Ecclesiastes pericope (this project's own sectioning, CC0): Ecclesiastes 4, the Preacher's own observation of oppression under the sun, the vanity of toil pursued in envy or alone, the value of two better than one, and the vanity of popularity, closing 'this also is vanity and vexation of spirit.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "ecc_house_of_god"
+label = "A warning to keep thy foot when thou goest to the house of God"
+kind = "general"
+verses = ["ECC.5.1-7"]
+atlas_section = "Ecclesiastes pericope (this project's own sectioning, CC0): Ecclesiastes 5:1-7, a warning to approach God's own house with care, to be slow to vow, and to fear God rather than multiply words."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "ecc_riches_and_vanity"
+label = "The vanity of riches, and the ignorance of man's own future"
+kind = "general"
+verses = ["ECC.5.8-20", "ECC.6.1-12"]
+atlas_section = "Ecclesiastes pericope (this project's own sectioning, CC0): Ecclesiastes 5:8-6:12, the Preacher's own reflection on oppression and the love of money never satisfied, the emptiness of riches without the power to enjoy them, and the shortness of man's life, closing on man's own ignorance of what is good for him or what shall come after him."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "ecc_wisdom_sayings_1"
+label = "A collection of proverbs on wisdom, folly, and the crookedness of man"
+kind = "general"
+verses = ["ECC.7.1-29"]
+atlas_section = "Ecclesiastes pericope (this project's own sectioning, CC0): Ecclesiastes 7, a collection of short sayings -- 'a good name is better than precious ointment,' the house of mourning better than the house of feasting, and the Preacher's own closing observation that God made man upright, but man has sought out many inventions."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "ecc_obedience_and_fate"
+label = "Obedience to rulers, and the fate common to all"
+kind = "general"
+verses = ["ECC.8.1-17", "ECC.9.1-12"]
+atlas_section = "Ecclesiastes pericope (this project's own sectioning, CC0): Ecclesiastes 8:1-9:12, counsel to keep the king's own commandment, the Preacher's own observation that the same event happens to the righteous and the wicked alike, his own counsel to eat bread and drink wine with a merry heart, and his own closing observation that time and chance happen to all."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "ecc_wisdom_and_folly_sayings"
+label = "Wisdom better than strength; further sayings of wisdom and folly"
+kind = "general"
+verses = ["ECC.9.13-18", "ECC.10.1-20"]
+atlas_section = "Ecclesiastes pericope (this project's own sectioning, CC0): Ecclesiastes 9:13-10:20, the anecdote of the poor wise man who delivered a city yet was forgotten, and a further collection of sayings contrasting wisdom and folly, closing with a warning not to curse the king even in thought."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "ecc_cast_thy_bread"
+label = "Cast thy bread upon the waters: a call to diligence amid uncertainty"
+kind = "general"
+verses = ["ECC.11.1-6"]
+atlas_section = "Ecclesiastes pericope (this project's own sectioning, CC0): Ecclesiastes 11:1-6, counsel to give freely and work diligently despite not knowing what the future holds -- 'in the morning sow thy seed, and in the evening withhold not thine hand.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "ecc_remember_thy_creator"
+label = "Remember now thy Creator in the days of thy youth"
+kind = "general"
+verses = ["ECC.11.7-10", "ECC.12.1-8"]
+atlas_section = "Ecclesiastes pericope (this project's own sectioning, CC0): Ecclesiastes 11:7-12:8, an exhortation to rejoice in youth while remembering coming judgment, followed by the well-known allegory of old age and death (12:1-7), closing the book's own main body with 'Vanity of vanities, saith the preacher; all is vanity,' echoing the book's own opening (1:2)."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "ecc_epilogue"
+label = "The Preacher's own conclusion: fear God, and keep his commandments"
+kind = "general"
+verses = ["ECC.12.9-14"]
+atlas_section = "Ecclesiastes pericope (this project's own sectioning, CC0): Ecclesiastes 12:9-14, the book's own third-person editorial epilogue, describing the Preacher's own diligence in teaching and setting proverbs in order, and closing with the whole book's own conclusion: 'Fear God, and keep his commandments: for this is the whole duty of man.'"
+ref_note = "GENERAL-kind, per this file's own header note. Third-person description of 'the preacher' (12:9-10), distinct in register from the first-person voice of the rest of the book -- a literary-structure fact, not textual criticism."
