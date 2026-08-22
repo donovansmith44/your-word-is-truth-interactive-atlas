@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use atlas_core::data::{AtlasData, BookMeta, Canon, CrossRef, Era, Event, EventWitness, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
+use atlas_core::event_merge::{EventDistinct, EventMerge};
 use atlas_core::merge::PlaceMerge;
 use atlas_core::time::TimeRange;
 
@@ -1784,5 +1785,88 @@ fn run_place_merges_valid_pairs_pass_validation() {
         merge_place("kedesh-naphtali", 32.735, 35.55555),
     ];
     let result = atlas_etl::validate::run_place_merges(&pairs, &places);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+// ---------------------------------------------------------------------
+// atlas_core::event_merge::EVENT_MERGE_PAIRS/EVENT_DISTINCT_PAIRS +
+// validate::run_event_merges (HOTFIX-4 fix round 1, review finding I-2:
+// the validator itself had ZERO committed regression tests -- the
+// red-then-green test the original batch report cited,
+// `event_merge::red_then_green_baptism_pair_collapses_to_one_event_on_the_ad33_scale`,
+// exercises `apply_event_merges` (the MERGE mechanism), not
+// `run_event_merges` (this VALIDATOR) -- a genuinely different function.
+// Mirrors `run_place_merges`'s own quartet immediately above, exactly:
+// unknown survivor fails; unknown absorbed fails; an unlisted
+// over-threshold near-duplicate pair fails loud naming both ids and the
+// jaccard score; listed pairs (both list kinds) pass.
+// ---------------------------------------------------------------------
+
+fn freebie_event(id: &str, verses: &[&str]) -> Event {
+    Event { id: id.into(), label: id.into(), when: TimeRange::new(1, 1).unwrap(), verses: verses.iter().map(|s| s.to_string()).collect(), ..Default::default() }
+}
+
+fn real_event(id: &str, verses: &[&str]) -> Event {
+    Event {
+        id: id.into(),
+        label: id.into(),
+        when: TimeRange::new(1, 1).unwrap(),
+        verses: verses.iter().map(|s| s.to_string()).collect(),
+        robertson_section: Some("test".into()),
+        ..Default::default()
+    }
+}
+
+#[test]
+fn run_event_merges_unknown_survivor_id_fails_naming_the_entry() {
+    let pairs = [EventMerge { survivor: "not-a-real-event", absorbed: "theo-999", reason: "test" }];
+    let events = vec![freebie_event("theo-999", &["MAT.1.1"])];
+    let err = atlas_etl::validate::run_event_merges(&pairs, &[], &events).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("not-a-real-event"), "{msg}");
+    assert!(msg.contains("survivor id"), "{msg}");
+    assert!(msg.contains("does not exist"), "{msg}");
+}
+
+#[test]
+fn run_event_merges_unknown_absorbed_id_fails_naming_the_entry() {
+    let pairs = [EventMerge { survivor: "real-1", absorbed: "also-not-real", reason: "test" }];
+    let events = vec![real_event("real-1", &["MAT.1.1"])];
+    let err = atlas_etl::validate::run_event_merges(&pairs, &[], &events).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("also-not-real"), "{msg}");
+    assert!(msg.contains("absorbed id"), "{msg}");
+    assert!(msg.contains("does not exist"), "{msg}");
+}
+
+#[test]
+fn run_event_merges_over_threshold_unlisted_pair_fails_loud_naming_both_ids_and_jaccard() {
+    // Identical verse sets (jaccard 1.000) -- both ids real/present in the
+    // event set, so ONLY the unlisted-duplicate sweep can catch this
+    // (proves the validator really does find a near-duplicate the curated
+    // tables don't mention, the same live proof the review's own temporary
+    // probe test made -- now a permanent, committed one).
+    let events = vec![freebie_event("theo-1", &["MAT.1.1", "MAT.1.2"]), real_event("real-1", &["MAT.1.1", "MAT.1.2"])];
+    let err = atlas_etl::validate::run_event_merges(&[], &[], &events).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("'theo-1'") && msg.contains("'real-1'"), "{msg}");
+    assert!(msg.contains("jaccard"), "{msg}");
+    assert!(msg.contains("1.000"), "{msg}");
+}
+
+#[test]
+fn run_event_merges_listed_pairs_pass_validation() {
+    // Both list KINDS suppress the sweep -- a merge pair (theo-1/real-1)
+    // AND a distinct pair (theo-2/real-2), each otherwise an unlisted
+    // jaccard-1.0 near-duplicate the test immediately above would flag.
+    let merge_pairs = [EventMerge { survivor: "real-1", absorbed: "theo-1", reason: "test" }];
+    let distinct_pairs = [EventDistinct { a: "theo-2", b: "real-2", reason: "test" }];
+    let events = vec![
+        freebie_event("theo-1", &["MAT.1.1", "MAT.1.2"]),
+        real_event("real-1", &["MAT.1.1", "MAT.1.2"]),
+        freebie_event("theo-2", &["MRK.1.1", "MRK.1.2"]),
+        real_event("real-2", &["MRK.1.1", "MRK.1.2"]),
+    ];
+    let result = atlas_etl::validate::run_event_merges(&merge_pairs, &distinct_pairs, &events);
     assert!(result.is_ok(), "{:?}", result.err());
 }
