@@ -139,3 +139,86 @@ atlas_section = "1 Samuel pericope (this project's own sectioning, CC0 -- no ext
 [[section]]
 event_id = "theo-160"
 atlas_section = "1 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Kings 2:10-11, the death of David. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 1 Chronicles 29:26-30 witness (Crockett, 1897, section 121)."
+
+# --- Batch W2 (whole-Bible titled verse containers, second run): nineteen
+# further pre-existing bare Theographic "Reign of X"/"Death of X" events,
+# each gaining a 2 Chronicles witness this run (see
+# data/curated/event-witnesses.toml's own "2 Chronicles <-> 1/2 Kings"
+# section) -- enriched here with atlas_section too, the same disclosure
+# discipline as theo-158/theo-160 above.
+
+[[section]]
+event_id = "theo-162"
+atlas_section = "1 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Kings 5-7, the building of Solomon's temple. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 3:1-14 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-164"
+atlas_section = "1 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Kings 11:43, the death of Solomon. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 9:29-31 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-168"
+atlas_section = "1 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Kings 15:1-8, the reign of Abijam. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 13:1-14:1 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-170"
+atlas_section = "1 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Kings 15:9-24, the reign of Asa. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 14-16 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-188"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 8:16-24, the reign of Jehoram of Judah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 21 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-189"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 8:25-29, the reign of Ahaziah of Judah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 22:1-9 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-193"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 12, the reign of Joash of Judah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 24 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-198"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 14:1-22, the reign of Amaziah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 25 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-204"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 15:1-7, the reign of Uzziah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 26 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-219"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 15:32-38, the reign of Jotham. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 27 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-221"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 16, the reign of Ahaz. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 28 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-227"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 20:21, the death of Hezekiah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 32:32-33 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-228"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 21:1-18, the reign of Manasseh. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 33:1-20 witness (Crockett, 1897), which alone records Manasseh's own captivity and repentance."
+
+[[section]]
+event_id = "theo-231"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 21:19-26, the reign of Amon. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 33:21-25 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-233"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 22-23, the reign of Josiah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 34-35 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-237"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 23:31-35, the reign of Jehoahaz. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 36:1-4 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-238"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 23:36-24:7, the reign of Jehoiakim. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 36:5-8 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-241"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 24:8-17, the reign of Jeconiah (Jehoiachin). Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 36:9-10 witness (Crockett, 1897)."
+
+[[section]]
+event_id = "theo-242"
+atlas_section = "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 24:18-25:7, the reign of Zedekiah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 36:11-16 witness (Crockett, 1897)."

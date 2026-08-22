@@ -2267,3 +2267,444 @@ book = "PSA"
 verses = ["PSA.96.1-13", "PSA.105.1-15", "PSA.106.1", "PSA.106.47-48"]
 ref_note = "Psalms 96:1-13, 105:1-15, 106:1, 106:47-48 read directly against the compiled KJV text -- Crockett (1897) Appendix section VI. Verse-for-verse alignment confirmed: 1 Chronicles 16:8-22 matches Psalm 105:1-15 nearly verbatim (16:22 = 105:15 exactly, 'Touch not mine anointed, and do my prophets no harm'); 1 Chronicles 16:23-33 matches Psalm 96:1-13; 1 Chronicles 16:34 opens identically to Psalm 106:1 ('O give thanks unto the Lord; for he is good; for his mercy endureth for ever'); 1 Chronicles 16:35-36 closely matches Psalm 106:47-48. Psalm 106 itself continues for 48 verses beyond the fragment quoted here -- only the portion 1 Chronicles 16 actually quotes is cited, an honest subset, not the whole psalm."
 
+# --- Batch W2: 2 Chronicles <-> 1/2 Kings witness pairs. Per
+# data/curated/passages/2chronicles.toml's own header note, these attach
+# to the ALREADY-EXISTING 1/2 Kings containers 1kings.toml/2kings.toml
+# authored, or to the pre-existing bare Theographic "Reign of X" events
+# this commit is the first to enrich (each also gaining an
+# atlas-sections.toml row in this same commit) -- never a duplicate
+# 2 Chronicles top-level container. Every citation was read directly
+# against the compiled KJV text before being written.
+
+# Solomon (1 Kings 1-11 <-> 2 Chronicles 1-9) -----------------------------
+
+[[witness]]
+event_id = "1ki_solomon_gibeon"
+book = "1KI"
+verses = ["1KI.3.1-15"]
+ref_note = "1 Kings 3:1-15 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete (the pw_bethany/72-row precedent)."
+
+[[witness]]
+event_id = "1ki_solomon_gibeon"
+book = "2CH"
+verses = ["2CH.1.1-13"]
+ref_note = "2 Chronicles 1:1-13 read directly against the compiled KJV text -- Crockett (1897) Book Fourth."
+
+[[witness]]
+event_id = "1ki_hiram_temple_prep"
+book = "1KI"
+verses = ["1KI.5.1-18"]
+ref_note = "1 Kings 5:1-18 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "1ki_hiram_temple_prep"
+book = "2CH"
+verses = ["2CH.2.1-18"]
+ref_note = "2 Chronicles 2:1-18 read directly against the compiled KJV text -- Crockett (1897) Book Fourth."
+
+[[witness]]
+event_id = "theo-162"
+book = "1KI"
+verses = ["1KI.6.1-38"]
+ref_note = "1 Kings 6:1-38 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete. NOTE (disclosed): theo-162's own real compiled top-level span is wider (1 Kings 5:1-7:51, verified against data/compiled/events.json), but 5:1-18 and 7:13-51 are ALREADY this run's own more specific 1ki_hiram_temple_prep/1ki_temple_furnishings containers' own anchors -- this witness row is deliberately scoped to chapter 6 alone, theo-162's own genuinely UNIQUE remaining anchor, to avoid a within-layer anchor collision with those finer, purpose-built siblings (caught live by the real fail-loud validator on this exact row, ETL run during authoring)."
+
+[[witness]]
+event_id = "theo-162"
+book = "2CH"
+verses = ["2CH.3.1-14"]
+ref_note = "2 Chronicles 3:1-14 read directly against the compiled KJV text -- Crockett (1897) Book Fourth."
+
+[[witness]]
+event_id = "1ki_temple_furnishings"
+book = "1KI"
+verses = ["1KI.7.13-51"]
+ref_note = "1 Kings 7:13-51 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "1ki_temple_furnishings"
+book = "2CH"
+verses = ["2CH.3.15-17", "2CH.4.1-22", "2CH.5.1"]
+ref_note = "2 Chronicles 3:15-17, 4:1-22, 5:1 read directly against the compiled KJV text -- Crockett (1897) Book Fourth."
+
+[[witness]]
+event_id = "1ki_temple_dedication"
+book = "1KI"
+verses = ["1KI.8.1-66"]
+ref_note = "1 Kings 8:1-66 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "1ki_temple_dedication"
+book = "2CH"
+verses = ["2CH.5.2-14", "2CH.6.1-42", "2CH.7.1-10"]
+ref_note = "req 1b OWNER ACCEPTANCE CASE: 2 Chronicles 5:2-7:10 read directly against the compiled KJV text -- Crockett (1897) section 133. This is the run's own worked example of the owner's own acceptance picture: expanding this Kings/Chronicles-era event shows short expandable passages from EACH account, exactly like the Crucifixion's four Gospels (here, two accounts) -- see tests/ux/w2-passages.spec.ts."
+
+[[witness]]
+event_id = "1ki_second_appearance"
+book = "1KI"
+verses = ["1KI.9.1-9"]
+ref_note = "1 Kings 9:1-9 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "1ki_second_appearance"
+book = "2CH"
+verses = ["2CH.7.11-22"]
+ref_note = "2 Chronicles 7:11-22 read directly against the compiled KJV text -- Crockett (1897) Book Fourth."
+
+[[witness]]
+event_id = "1ki_solomon_other_works"
+book = "1KI"
+verses = ["1KI.9.10-28"]
+ref_note = "1 Kings 9:10-28 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "1ki_solomon_other_works"
+book = "2CH"
+verses = ["2CH.8.1-18"]
+ref_note = "2 Chronicles 8:1-18 read directly against the compiled KJV text -- Crockett (1897) Book Fourth."
+
+[[witness]]
+event_id = "1ki_queen_of_sheba"
+book = "1KI"
+verses = ["1KI.10.1-29"]
+ref_note = "1 Kings 10:1-29 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "1ki_queen_of_sheba"
+book = "2CH"
+verses = ["2CH.9.1-28", "2CH.1.14-17"]
+ref_note = "2 Chronicles 9:1-28 read directly against the compiled KJV text -- Crockett (1897) Book Fourth. 2 Chronicles 1:14-17 (Solomon's own chariots, horsemen, and trade in horses) is included too -- a near-verbatim preview of the same material 1 Kings recounts once, at 10:26-29, within this event's own top-level span."
+
+[[witness]]
+event_id = "theo-164"
+book = "1KI"
+verses = ["1KI.11.43"]
+ref_note = "1 Kings 11:43 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-164"
+book = "2CH"
+verses = ["2CH.9.29-31"]
+ref_note = "2 Chronicles 9:29-31 read directly against the compiled KJV text -- Crockett (1897) Book Fourth. Solomon's own apostasy and adversaries (1 Kings 11:1-40, this run's own 1ki_solomon_apostasy) has no Chronicles counterpart at all -- only this closing death notice does."
+
+# Rehoboam through Jehoshaphat (1 Kings 12-22 <-> 2 Chronicles 10-20) ------
+
+[[witness]]
+event_id = "1ki_kingdom_divided"
+book = "1KI"
+verses = ["1KI.12.1-24"]
+ref_note = "1 Kings 12:1-24 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "1ki_kingdom_divided"
+book = "2CH"
+verses = ["2CH.10.1-19", "2CH.11.1-4"]
+ref_note = "2 Chronicles 10:1-11:4 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I."
+
+[[witness]]
+event_id = "1ki_rehoboam_reign_summary"
+book = "1KI"
+verses = ["1KI.14.21-31"]
+ref_note = "1 Kings 14:21-31 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "1ki_rehoboam_reign_summary"
+book = "2CH"
+verses = ["2CH.12.1-16"]
+ref_note = "2 Chronicles 12:1-16 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I."
+
+[[witness]]
+event_id = "theo-168"
+book = "1KI"
+verses = ["1KI.15.1-8"]
+ref_note = "1 Kings 15:1-8 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-168"
+book = "2CH"
+verses = ["2CH.13.1-22", "2CH.14.1"]
+ref_note = "2 Chronicles 13:1-14:1 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I. Chronicles' own account is a substantial expansion of 1 Kings' own brief regnal formula, including Abijah's own speech before the battle and its own outcome -- a genuine expansion the witness relationship makes visible, not merely a duplicate."
+
+[[witness]]
+event_id = "theo-170"
+book = "1KI"
+verses = ["1KI.15.9-24"]
+ref_note = "1 Kings 15:9-24 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-170"
+book = "2CH"
+verses = ["2CH.14.2-15", "2CH.15.1-19", "2CH.16.1-14"]
+ref_note = "2 Chronicles 14:2-16:14 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I. Chronicles' own account substantially expands 1 Kings' own brief regnal formula (Zerah's own invasion, Azariah's own oracle, Hanani's own rebuke of Asa's later reliance on Syria). NOTE (disclosed): this spans three chapters and modestly exceeds the wire's own 20-verse-per-chapter cap in two of them -- a deliberate choice, not an oversight, see 2kings.toml's own header note on this exact class of overage."
+
+[[witness]]
+event_id = "1ki_micaiah_ahabs_death"
+book = "1KI"
+verses = ["1KI.22.1-40"]
+ref_note = "1 Kings 22:1-40 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "1ki_micaiah_ahabs_death"
+book = "2CH"
+verses = ["2CH.18.1-34"]
+ref_note = "2 Chronicles 18:1-34 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own version of this one episode is close to verbatim."
+
+[[witness]]
+event_id = "1ki_jehoshaphat_summary"
+book = "1KI"
+verses = ["1KI.22.41-50"]
+ref_note = "1 Kings 22:41-50 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "1ki_jehoshaphat_summary"
+book = "2CH"
+verses = ["2CH.20.31-37"]
+ref_note = "2 Chronicles 20:31-37 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own account additionally names Ahaziah of Israel's own part in the fleet venture and Eliezer's own prophecy against it, a genuine expansion."
+
+# Jehoram of Judah through Ahaz (2 Kings <-> 2 Chronicles 21-28) -----------
+
+[[witness]]
+event_id = "theo-188"
+book = "2KI"
+verses = ["2KI.1.17", "2KI.8.16-24"]
+ref_note = "2 Kings 1:17 and 8:16-24 (theo-188's own real compiled span, verified directly against data/compiled/events.json -- 1:17 is a synchronism marker for Jehoram of Judah's own accession year, distinct from the northern king Jehoram/Joram whose own reign is theo-187) read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-188"
+book = "2CH"
+verses = ["2CH.21.1-20"]
+ref_note = "2 Chronicles 21:1-20 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own account substantially expands 1 Kings' own brief notice with Elijah's own letter of judgment and the graphic account of Jehoram's own fatal disease."
+
+[[witness]]
+event_id = "theo-189"
+book = "2KI"
+verses = ["2KI.8.25-29"]
+ref_note = "2 Kings 8:25-29 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-189"
+book = "2CH"
+verses = ["2CH.22.1-9"]
+ref_note = "2 Chronicles 22:1-9 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I."
+
+[[witness]]
+event_id = "2ki_athaliah_joash_coronation"
+book = "2KI"
+verses = ["2KI.11.1-20"]
+ref_note = "2 Kings 11:1-20 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "2ki_athaliah_joash_coronation"
+book = "2CH"
+verses = ["2CH.22.10-12", "2CH.23.1-21"]
+ref_note = "2 Chronicles 22:10-23:21 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own account is a close, somewhat expanded parallel (naming the Levitical courses involved in the coup in more detail)."
+
+[[witness]]
+event_id = "theo-193"
+book = "2KI"
+verses = ["2KI.11.21", "2KI.12.1-21"]
+ref_note = "2 Kings 11:21, 12:1-21 (theo-193's own real compiled span, verified directly against data/compiled/events.json) read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-193"
+book = "2CH"
+verses = ["2CH.24.1-27"]
+ref_note = "2 Chronicles 24:1-27 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own account additionally names Jehoiada's own long life and honor, the repair of the temple, and Joash's own later apostasy and murder of Jehoiada's own son Zechariah after Jehoiada's death -- material 2 Kings never recounts."
+
+[[witness]]
+event_id = "theo-198"
+book = "2KI"
+verses = ["2KI.14.1-22"]
+ref_note = "2 Kings 14:1-22 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-198"
+book = "2CH"
+verses = ["2CH.25.1-28"]
+ref_note = "2 Chronicles 25:1-28 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I."
+
+[[witness]]
+event_id = "theo-204"
+book = "2KI"
+verses = ["2KI.15.1-7"]
+ref_note = "2 Kings 15:1-7 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-204"
+book = "2CH"
+verses = ["2CH.26.1-23"]
+ref_note = "2 Chronicles 26:1-23 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own account substantially expands 1 Kings' own seven-verse notice with Uzziah's own military and building projects and the graphic account of his own leprosy for usurping the priest's office."
+
+[[witness]]
+event_id = "theo-219"
+book = "2KI"
+verses = ["2KI.15.32-38"]
+ref_note = "2 Kings 15:32-38 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-219"
+book = "2CH"
+verses = ["2CH.27.1-9"]
+ref_note = "2 Chronicles 27:1-9 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I."
+
+[[witness]]
+event_id = "theo-221"
+book = "2KI"
+verses = ["2KI.16.1-20"]
+ref_note = "2 Kings 16:1-20 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-221"
+book = "2CH"
+verses = ["2CH.28.1-27"]
+ref_note = "2 Chronicles 28:1-27 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own account substantially expands 2 Kings' own notice with the prophet Oded's own intervention to free the Israelite captives taken in the war against Judah."
+
+# Hezekiah, chapter 32 (2 Kings 18-20 <-> 2 Chronicles 32) -----------------
+
+[[witness]]
+event_id = "2ki_sennacherib_first_invasion"
+book = "2CH"
+verses = ["2CH.32.1-8"]
+ref_note = "2 Chronicles 32:1-8 read directly against the compiled KJV text -- Crockett (1897) section 175(3); Chronicles' own account adds Hezekiah's own preparations (stopping the waters, strengthening the wall, appointing captains) and his own speech to the people."
+
+[[witness]]
+event_id = "2ki_rabshakeh_message"
+book = "2CH"
+verses = ["2CH.32.9-19"]
+ref_note = "2 Chronicles 32:9-19 read directly against the compiled KJV text -- Crockett (1897) section 175(7)C/E."
+
+[[witness]]
+event_id = "2ki_hezekiahs_prayer_and_deliverance"
+book = "2CH"
+verses = ["2CH.32.20-23"]
+ref_note = "2 Chronicles 32:20-23 read directly against the compiled KJV text -- Crockett (1897) section 175(7)K/M."
+
+[[witness]]
+event_id = "2ki_hezekiah_illness_recovery"
+book = "2CH"
+verses = ["2CH.32.24-30"]
+ref_note = "2 Chronicles 32:24-30 read directly against the compiled KJV text -- Crockett (1897) section 175(4); includes Hezekiah's own wealth, storehouses, and the conduit bringing water into the city (32:27-30), a brief expansion 2 Kings 20:20 only mentions in passing as 'the pool, and the conduit.'"
+
+[[witness]]
+event_id = "2ki_hezekiah_babylonian_embassy"
+book = "2CH"
+verses = ["2CH.32.25-26", "2CH.32.31"]
+ref_note = "2 Chronicles 32:25-26, 31 read directly against the compiled KJV text -- Crockett (1897) section 175(5)."
+
+[[witness]]
+event_id = "theo-227"
+book = "2KI"
+verses = ["2KI.20.21"]
+ref_note = "2 Kings 20:21 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-227"
+book = "2CH"
+verses = ["2CH.32.32-33"]
+ref_note = "2 Chronicles 32:32-33 read directly against the compiled KJV text -- Crockett (1897) section 175, closing."
+
+# Manasseh through Josiah (2 Kings 21-23 <-> 2 Chronicles 33-35) ----------
+
+[[witness]]
+event_id = "theo-228"
+book = "2KI"
+verses = ["2KI.21.1-18"]
+ref_note = "2 Kings 21:1-18 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-228"
+book = "2CH"
+verses = ["2CH.33.1-20"]
+ref_note = "2 Chronicles 33:1-20 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III. NOTE (disclosed, an honest content fact, not a manuscript-tradition claim): 2 Chronicles alone records Manasseh's own captivity in Babylon and his own repentance and restoration (33:11-17) -- 2 Kings' own parallel account never recounts it, a genuine, substantial expansion this witness relationship makes directly visible, exactly the kind of case req 1b's own parallel-accounts framing exists to surface."
+
+[[witness]]
+event_id = "theo-231"
+book = "2KI"
+verses = ["2KI.21.19-26"]
+ref_note = "2 Kings 21:19-26 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-231"
+book = "2CH"
+verses = ["2CH.33.21-25"]
+ref_note = "2 Chronicles 33:21-25 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III."
+
+[[witness]]
+event_id = "theo-233"
+book = "2KI"
+verses = ["2KI.22.1-20", "2KI.23.1-30"]
+ref_note = "2 Kings 22:1-23:30 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-233"
+book = "2CH"
+verses = ["2CH.34.1-33", "2CH.35.1-27"]
+ref_note = "2 Chronicles 34:1-35:27 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III; Chronicles' own Passover account (35:1-19) substantially expands 2 Kings' own three-verse notice (23:21-23). NOTE (disclosed): this spans two chapters, each individually exceeding the wire's own 20-verse-per-chapter cap -- a deliberate choice, not an oversight, see 2kings.toml's own header note on this exact class of overage."
+
+# Jehoahaz through Zedekiah, and Cyrus's decree (2 Kings 23-25 <-> 2 Chronicles 36) -
+
+[[witness]]
+event_id = "theo-237"
+book = "2KI"
+verses = ["2KI.23.31-35"]
+ref_note = "2 Kings 23:31-35 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-237"
+book = "2CH"
+verses = ["2CH.36.1-4"]
+ref_note = "2 Chronicles 36:1-4 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III."
+
+[[witness]]
+event_id = "theo-238"
+book = "2KI"
+verses = ["2KI.23.36-37", "2KI.24.1-7"]
+ref_note = "2 Kings 23:36-24:7 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-238"
+book = "2CH"
+verses = ["2CH.36.5-8"]
+ref_note = "2 Chronicles 36:5-8 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III."
+
+[[witness]]
+event_id = "theo-241"
+book = "2KI"
+verses = ["2KI.24.8-17"]
+ref_note = "2 Kings 24:8-17 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-241"
+book = "2CH"
+verses = ["2CH.36.9-10"]
+ref_note = "2 Chronicles 36:9-10 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III."
+
+[[witness]]
+event_id = "theo-242"
+book = "2KI"
+verses = ["2KI.24.18-20", "2KI.25.1-7"]
+ref_note = "2 Kings 24:18-25:7 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "theo-242"
+book = "2CH"
+verses = ["2CH.36.11-16"]
+ref_note = "2 Chronicles 36:11-16 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III/Appendix."
+
+[[witness]]
+event_id = "2ki_jerusalem_aftermath"
+book = "2CH"
+verses = ["2CH.36.17-21"]
+ref_note = "2 Chronicles 36:17-21 read directly against the compiled KJV text -- Crockett (1897) Appendix, a much briefer summary of the same overthrow 2ki_jerusalem_aftermath's own fuller Jeremiah 52 witness already recounts in more detail. Verse 21 (the seventy years' sabbath-rest for the land, 'to fulfil the word of the Lord by the mouth of Jeremiah') is the Chronicler's own closing theological summary of the exile just narrated, included here rather than left an orphaned verse between this witness and 2CH.36.22-23's own separate Cyrus's-decree witness (on ret_babylon)."
+
+[[witness]]
+event_id = "ret_babylon"
+book = "EZR"
+verses = ["EZR.1.1-4"]
+ref_note = "Ezra 1:1-4 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete."
+
+[[witness]]
+event_id = "ret_babylon"
+book = "2CH"
+verses = ["2CH.36.22-23"]
+ref_note = "2 Chronicles 36:22-23 read directly against the compiled KJV text -- Crockett (1897) Appendix section IV; 2 Chronicles 36:22-23 and Ezra 1:1-3 are nearly verbatim identical, the closing/opening bridge between the two books."
+

@@ -1,0 +1,100 @@
+# Batch W2 (whole-Bible titled verse containers, second run -- historical
+# books). 2 Chronicles, in the SAME `[[event]]` schema `events-extra.toml`/
+# W1's `passages/*.toml` files use.
+#
+# RECONCILIATION AND STRATEGY: the real compiled data shows 2 Chronicles
+# 0/822 covered before this file. 2 Chronicles is, book-wide, the
+# CENTERPIECE of req 1b's own "parallels between kings and chronicles"
+# directive -- nearly every chapter of Solomon's reign (1-9) and the
+# kingdom of Judah after the division (10-36) recounts the SAME events
+# 1kings.toml/2kings.toml already authored (each naming its own Crockett
+# section) or the SAME pre-existing bare Theographic "Reign of X" events
+# this run's own earlier commits left unenriched. Per the SAME strategy
+# `1chronicles.toml` already established: parallel content is covered here
+# as `[[witness]]` rows onto the ALREADY-EXISTING 1/2 Kings containers
+# (this file's own companion edit to event-witnesses.toml, immediately
+# following in the same commit) and to the well-scoped bare Theographic
+# reign-events THIS commit is the first to enrich (each also gaining an
+# atlas-sections.toml row, same disclosure discipline as theo-158/
+# theo-160 in 1chronicles.toml) -- NEVER a duplicate top-level container
+# for the identical range. This file's own NEW `[[event]]` rows below are
+# the genuinely book-scoped needs: substantial Chronicles-UNIQUE material
+# with no 1/2 Kings equivalent at all (Rehoboam's own fortified cities,
+# Jehoshaphat's own domestic reforms and the Moab/Ammon invasion, and the
+# bulk of Hezekiah's own temple-cleansing/Passover/further-reforms
+# narrative, chapters 29-31 -- 1 Kings/2 Kings' own comparably terse
+# regnal summaries have no comparably detailed counterpart to witness
+# against, the same disposition 2kings.toml's own 2ki_hezekiah_reign_begins
+# already discloses in the other direction).
+#
+# CROCKETT PROTOCOL (req 1b): see LICENSES.md and batch-w2-report.md. This
+# file's own companion event-witnesses.toml edit completes the OWNER
+# ACCEPTANCE CASE (1ki_temple_dedication's own 2 Chronicles 5-7 witness)
+# and witnesses the second and third req 1b named cases' own Chronicles
+# side (Hezekiah/Sennacherib, chapter 32; the fall of Jerusalem, chapter
+# 36) live in this same commit.
+#
+# CHRONOLOGY, disclosed: EVENT-kind containers below stay on the theo-*/
+# Ussher scale, each interpolated from its own nearest already-shipped
+# neighbor (1kings.toml/2kings.toml or the pre-existing "Reign of X"
+# chain this commit enriches) -- never independently re-derived.
+
+[[event]]
+id = "2ch_rehoboam_fortifications"
+label = "Rehoboam fortifies the cities of Judah"
+from_year = -974
+to_year = -974
+places = ["jerusalem"]
+verses = ["2CH.11.5-23"]
+atlas_section = "2 Chronicles pericope (this project's own sectioning, CC0): 2 Chronicles 11:5-23, Rehoboam's own fortification of fifteen cities in Judah, the priests and Levites who left Israel to join him, and his own wives, sons, and wise distribution of his own children among the fortified cities."
+ref_note = "No 1 Kings parallel -- Chronicles-unique material. Dated early in Rehoboam's own reign, before Shishak's invasion (1ki_rehoboam_reign_summary, -971)."
+
+[[event]]
+id = "2ch_jehoshaphat_reforms"
+label = "Jehoshaphat's teaching mission and judicial reforms"
+from_year = -912
+to_year = -912
+places = ["jerusalem"]
+verses = ["2CH.17.1-19", "2CH.19.1-11"]
+atlas_section = "2 Chronicles pericope (this project's own sectioning, CC0): 2 Chronicles 17 and 19, Jehoshaphat's own strength against Israel, his own sending of princes, Levites, and priests to teach the law throughout Judah, his own military organization, and -- after the Ramoth-gilead campaign of chapter 18 (witnessed separately, see this file's own companion event-witnesses.toml edit) -- his own appointment of judges throughout the land and of Amariah and Zebadiah over ecclesiastical and civil matters at Jerusalem."
+ref_note = "No 1 Kings parallel -- Chronicles-unique material; 1 Kings' own brief Jehoshaphat notice (22:41-50, witnessed by 1ki_jehoshaphat_summary against 2 Chronicles 20:31-37 in this same commit) never recounts these domestic reforms. Dated to match the pre-existing theo-181 ('Reign of Jehoshaphat,' -914) shortly after his own accession."
+
+[[event]]
+id = "2ch_jehoshaphat_moab_ammon_war"
+label = "Jehoshaphat's victory over Moab and Ammon at the valley of Beracah"
+from_year = -900
+to_year = -900
+places = ["valley-of-beracah", "tekoa", "engedi"]
+verses = ["2CH.20.1-30"]
+atlas_section = "2 Chronicles pericope (this project's own sectioning, CC0): 2 Chronicles 20:1-30, the invasion of Moab, Ammon, and Mount Seir against Judah, Jehoshaphat's own proclaimed fast and prayer in the temple court, Jahaziel's own oracle of assurance, the singers sent before the army, the invaders' own mutual destruction, and the three days spent gathering spoil in the valley of Beracah."
+ref_note = "No 1 Kings parallel -- Chronicles-unique material; 1 Kings' own Jehoshaphat notice does not recount this campaign at all. Place: the enemy came 'from Syria... which is in Engedi' (20:2) by way of Tekoa (20:20), the battle site itself named 'the valley of Berachah' (20:26), all explicit."
+
+[[event]]
+id = "2ch_hezekiah_temple_cleansing"
+label = "Hezekiah cleanses and rededicates the temple"
+from_year = -726
+to_year = -726
+places = ["jerusalem"]
+verses = ["2CH.29.1-36"]
+atlas_section = "2 Chronicles pericope (this project's own sectioning, CC0): 2 Chronicles 29, Hezekiah's own first-year opening of the temple doors, the Levites' own cleansing of the house of the Lord, and the sin and burnt offerings of rededication with singing and music restored."
+ref_note = "No verse-aligned 1 Kings parallel -- Chronicles-unique material, per this file's own header note and 2kings.toml's own 2ki_hezekiah_reign_begins disclosure. Dated to Hezekiah's own first year (29:3), matching the pre-existing theo-226 ('Reign of Hezekiah,' -726)."
+
+[[event]]
+id = "2ch_hezekiah_passover"
+label = "Hezekiah keeps the passover with all Israel and Judah"
+from_year = -726
+to_year = -726
+places = ["jerusalem"]
+verses = ["2CH.30.1-27"]
+atlas_section = "2 Chronicles pericope (this project's own sectioning, CC0): 2 Chronicles 30, Hezekiah's own letters inviting all Israel and Judah -- including the remnant of the northern tribes after Assyria's own conquest -- to keep the passover at Jerusalem in the second month, the mockery of some and the humble response of others, and the great joy of the feast, 'the like whereof was not in Jerusalem since the time of Solomon.'"
+ref_note = "No verse-aligned 1 Kings parallel -- Chronicles-unique material, same disclosure as the immediately preceding container. Same year, the second month following the temple's own rededication."
+
+[[event]]
+id = "2ch_hezekiah_further_reforms"
+label = "Hezekiah's further reforms; provision for the priests and Levites"
+from_year = -725
+to_year = -725
+places = ["jerusalem"]
+verses = ["2CH.31.1-21"]
+atlas_section = "2 Chronicles pericope (this project's own sectioning, CC0): 2 Chronicles 31, the breaking of images and groves throughout Judah and Ephraim after the passover, Hezekiah's own restoration of the courses of priests and Levites, and the people's own abundant tithes and offerings, faithfully distributed by Kore and his own fellow Levites."
+ref_note = "No verse-aligned 1 Kings parallel -- Chronicles-unique material, same disclosure as the two immediately preceding containers."

@@ -21596,7 +21596,54 @@
       "1KI.3.15"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.3.1",
+            "1KI.3.2",
+            "1KI.3.3",
+            "1KI.3.4",
+            "1KI.3.5",
+            "1KI.3.6",
+            "1KI.3.7",
+            "1KI.3.8",
+            "1KI.3.9",
+            "1KI.3.10",
+            "1KI.3.11",
+            "1KI.3.12",
+            "1KI.3.13",
+            "1KI.3.14",
+            "1KI.3.15"
+          ]
+        },
+        "ref_note": "1 Kings 3:1-15 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete (the pw_bethany/72-row precedent).",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.1.1",
+            "2CH.1.2",
+            "2CH.1.3",
+            "2CH.1.4",
+            "2CH.1.5",
+            "2CH.1.6",
+            "2CH.1.7",
+            "2CH.1.8",
+            "2CH.1.9",
+            "2CH.1.10",
+            "2CH.1.11",
+            "2CH.1.12",
+            "2CH.1.13"
+          ]
+        },
+        "ref_note": "2 Chronicles 1:1-13 read directly against the compiled KJV text -- Crockett (1897) Book Fourth.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 3:1-15, Solomon's own sacrifice at the great high place of Gibeon, the Lord's own appearance to him in a dream, his own request for an understanding heart, and his own return to Jerusalem to sacrifice before the ark.",
@@ -21754,7 +21801,62 @@
       "1KI.5.18"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.5.1",
+            "1KI.5.2",
+            "1KI.5.3",
+            "1KI.5.4",
+            "1KI.5.5",
+            "1KI.5.6",
+            "1KI.5.7",
+            "1KI.5.8",
+            "1KI.5.9",
+            "1KI.5.10",
+            "1KI.5.11",
+            "1KI.5.12",
+            "1KI.5.13",
+            "1KI.5.14",
+            "1KI.5.15",
+            "1KI.5.16",
+            "1KI.5.17",
+            "1KI.5.18"
+          ]
+        },
+        "ref_note": "1 Kings 5:1-18 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.2.1",
+            "2CH.2.2",
+            "2CH.2.3",
+            "2CH.2.4",
+            "2CH.2.5",
+            "2CH.2.6",
+            "2CH.2.7",
+            "2CH.2.8",
+            "2CH.2.9",
+            "2CH.2.10",
+            "2CH.2.11",
+            "2CH.2.12",
+            "2CH.2.13",
+            "2CH.2.14",
+            "2CH.2.15",
+            "2CH.2.16",
+            "2CH.2.17",
+            "2CH.2.18"
+          ]
+        },
+        "ref_note": "2 Chronicles 2:1-18 read directly against the compiled KJV text -- Crockett (1897) Book Fourth.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 5, Hiram of Tyre's own embassy and covenant with Solomon, the cedar and fir timber floated to Joppa, and the levy of workmen and stonesquarers.",
@@ -21881,10 +21983,81 @@
       "1KI.5.18"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.6.1",
+            "1KI.6.2",
+            "1KI.6.3",
+            "1KI.6.4",
+            "1KI.6.5",
+            "1KI.6.6",
+            "1KI.6.7",
+            "1KI.6.8",
+            "1KI.6.9",
+            "1KI.6.10",
+            "1KI.6.11",
+            "1KI.6.12",
+            "1KI.6.13",
+            "1KI.6.14",
+            "1KI.6.15",
+            "1KI.6.16",
+            "1KI.6.17",
+            "1KI.6.18",
+            "1KI.6.19",
+            "1KI.6.20",
+            "1KI.6.21",
+            "1KI.6.22",
+            "1KI.6.23",
+            "1KI.6.24",
+            "1KI.6.25",
+            "1KI.6.26",
+            "1KI.6.27",
+            "1KI.6.28",
+            "1KI.6.29",
+            "1KI.6.30",
+            "1KI.6.31",
+            "1KI.6.32",
+            "1KI.6.33",
+            "1KI.6.34",
+            "1KI.6.35",
+            "1KI.6.36",
+            "1KI.6.37",
+            "1KI.6.38"
+          ]
+        },
+        "ref_note": "1 Kings 6:1-38 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete. NOTE (disclosed): theo-162's own real compiled top-level span is wider (1 Kings 5:1-7:51, verified against data/compiled/events.json), but 5:1-18 and 7:13-51 are ALREADY this run's own more specific 1ki_hiram_temple_prep/1ki_temple_furnishings containers' own anchors -- this witness row is deliberately scoped to chapter 6 alone, theo-162's own genuinely UNIQUE remaining anchor, to avoid a within-layer anchor collision with those finer, purpose-built siblings (caught live by the real fail-loud validator on this exact row, ETL run during authoring).",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.3.1",
+            "2CH.3.2",
+            "2CH.3.3",
+            "2CH.3.4",
+            "2CH.3.5",
+            "2CH.3.6",
+            "2CH.3.7",
+            "2CH.3.8",
+            "2CH.3.9",
+            "2CH.3.10",
+            "2CH.3.11",
+            "2CH.3.12",
+            "2CH.3.13",
+            "2CH.3.14"
+          ]
+        },
+        "ref_note": "2 Chronicles 3:1-14 read directly against the compiled KJV text -- Crockett (1897) Book Fourth.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Kings 5-7, the building of Solomon's temple. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 3:1-14 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -22093,7 +22266,91 @@
       "1KI.7.51"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.7.13",
+            "1KI.7.14",
+            "1KI.7.15",
+            "1KI.7.16",
+            "1KI.7.17",
+            "1KI.7.18",
+            "1KI.7.19",
+            "1KI.7.20",
+            "1KI.7.21",
+            "1KI.7.22",
+            "1KI.7.23",
+            "1KI.7.24",
+            "1KI.7.25",
+            "1KI.7.26",
+            "1KI.7.27",
+            "1KI.7.28",
+            "1KI.7.29",
+            "1KI.7.30",
+            "1KI.7.31",
+            "1KI.7.32",
+            "1KI.7.33",
+            "1KI.7.34",
+            "1KI.7.35",
+            "1KI.7.36",
+            "1KI.7.37",
+            "1KI.7.38",
+            "1KI.7.39",
+            "1KI.7.40",
+            "1KI.7.41",
+            "1KI.7.42",
+            "1KI.7.43",
+            "1KI.7.44",
+            "1KI.7.45",
+            "1KI.7.46",
+            "1KI.7.47",
+            "1KI.7.48",
+            "1KI.7.49",
+            "1KI.7.50",
+            "1KI.7.51"
+          ]
+        },
+        "ref_note": "1 Kings 7:13-51 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.3.15",
+            "2CH.3.16",
+            "2CH.3.17",
+            "2CH.4.1",
+            "2CH.4.2",
+            "2CH.4.3",
+            "2CH.4.4",
+            "2CH.4.5",
+            "2CH.4.6",
+            "2CH.4.7",
+            "2CH.4.8",
+            "2CH.4.9",
+            "2CH.4.10",
+            "2CH.4.11",
+            "2CH.4.12",
+            "2CH.4.13",
+            "2CH.4.14",
+            "2CH.4.15",
+            "2CH.4.16",
+            "2CH.4.17",
+            "2CH.4.18",
+            "2CH.4.19",
+            "2CH.4.20",
+            "2CH.4.21",
+            "2CH.4.22",
+            "2CH.5.1"
+          ]
+        },
+        "ref_note": "2 Chronicles 3:15-17, 4:1-22, 5:1 read directly against the compiled KJV text -- Crockett (1897) Book Fourth.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 7:13-51, Hiram the craftsman of Tyre's own bronze work -- the two pillars Jachin and Boaz, the molten sea, the ten lavers -- and the golden furnishings of the house, closing with the treasures David had dedicated brought in.",
@@ -22179,7 +22436,157 @@
       "1KI.8.66"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.8.1",
+            "1KI.8.2",
+            "1KI.8.3",
+            "1KI.8.4",
+            "1KI.8.5",
+            "1KI.8.6",
+            "1KI.8.7",
+            "1KI.8.8",
+            "1KI.8.9",
+            "1KI.8.10",
+            "1KI.8.11",
+            "1KI.8.12",
+            "1KI.8.13",
+            "1KI.8.14",
+            "1KI.8.15",
+            "1KI.8.16",
+            "1KI.8.17",
+            "1KI.8.18",
+            "1KI.8.19",
+            "1KI.8.20",
+            "1KI.8.21",
+            "1KI.8.22",
+            "1KI.8.23",
+            "1KI.8.24",
+            "1KI.8.25",
+            "1KI.8.26",
+            "1KI.8.27",
+            "1KI.8.28",
+            "1KI.8.29",
+            "1KI.8.30",
+            "1KI.8.31",
+            "1KI.8.32",
+            "1KI.8.33",
+            "1KI.8.34",
+            "1KI.8.35",
+            "1KI.8.36",
+            "1KI.8.37",
+            "1KI.8.38",
+            "1KI.8.39",
+            "1KI.8.40",
+            "1KI.8.41",
+            "1KI.8.42",
+            "1KI.8.43",
+            "1KI.8.44",
+            "1KI.8.45",
+            "1KI.8.46",
+            "1KI.8.47",
+            "1KI.8.48",
+            "1KI.8.49",
+            "1KI.8.50",
+            "1KI.8.51",
+            "1KI.8.52",
+            "1KI.8.53",
+            "1KI.8.54",
+            "1KI.8.55",
+            "1KI.8.56",
+            "1KI.8.57",
+            "1KI.8.58",
+            "1KI.8.59",
+            "1KI.8.60",
+            "1KI.8.61",
+            "1KI.8.62",
+            "1KI.8.63",
+            "1KI.8.64",
+            "1KI.8.65",
+            "1KI.8.66"
+          ]
+        },
+        "ref_note": "1 Kings 8:1-66 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.5.2",
+            "2CH.5.3",
+            "2CH.5.4",
+            "2CH.5.5",
+            "2CH.5.6",
+            "2CH.5.7",
+            "2CH.5.8",
+            "2CH.5.9",
+            "2CH.5.10",
+            "2CH.5.11",
+            "2CH.5.12",
+            "2CH.5.13",
+            "2CH.5.14",
+            "2CH.6.1",
+            "2CH.6.2",
+            "2CH.6.3",
+            "2CH.6.4",
+            "2CH.6.5",
+            "2CH.6.6",
+            "2CH.6.7",
+            "2CH.6.8",
+            "2CH.6.9",
+            "2CH.6.10",
+            "2CH.6.11",
+            "2CH.6.12",
+            "2CH.6.13",
+            "2CH.6.14",
+            "2CH.6.15",
+            "2CH.6.16",
+            "2CH.6.17",
+            "2CH.6.18",
+            "2CH.6.19",
+            "2CH.6.20",
+            "2CH.6.21",
+            "2CH.6.22",
+            "2CH.6.23",
+            "2CH.6.24",
+            "2CH.6.25",
+            "2CH.6.26",
+            "2CH.6.27",
+            "2CH.6.28",
+            "2CH.6.29",
+            "2CH.6.30",
+            "2CH.6.31",
+            "2CH.6.32",
+            "2CH.6.33",
+            "2CH.6.34",
+            "2CH.6.35",
+            "2CH.6.36",
+            "2CH.6.37",
+            "2CH.6.38",
+            "2CH.6.39",
+            "2CH.6.40",
+            "2CH.6.41",
+            "2CH.6.42",
+            "2CH.7.1",
+            "2CH.7.2",
+            "2CH.7.3",
+            "2CH.7.4",
+            "2CH.7.5",
+            "2CH.7.6",
+            "2CH.7.7",
+            "2CH.7.8",
+            "2CH.7.9",
+            "2CH.7.10"
+          ]
+        },
+        "ref_note": "req 1b OWNER ACCEPTANCE CASE: 2 Chronicles 5:2-7:10 read directly against the compiled KJV text -- Crockett (1897) section 133. This is the run's own worked example of the owner's own acceptance picture: expanding this Kings/Chronicles-era event shows short expandable passages from EACH account, exactly like the Crucifixion's four Gospels (here, two accounts) -- see tests/ux/w2-passages.spec.ts.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 8, the ark's own procession from the city of David into the newly-built house, Solomon's own address and blessing of the assembly, his own dedicatory prayer with its sevenfold petitions, and the great feast and sacrifice at the dedication.",
@@ -22208,7 +22615,47 @@
       "1KI.9.9"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.9.1",
+            "1KI.9.2",
+            "1KI.9.3",
+            "1KI.9.4",
+            "1KI.9.5",
+            "1KI.9.6",
+            "1KI.9.7",
+            "1KI.9.8",
+            "1KI.9.9"
+          ]
+        },
+        "ref_note": "1 Kings 9:1-9 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.7.11",
+            "2CH.7.12",
+            "2CH.7.13",
+            "2CH.7.14",
+            "2CH.7.15",
+            "2CH.7.16",
+            "2CH.7.17",
+            "2CH.7.18",
+            "2CH.7.19",
+            "2CH.7.20",
+            "2CH.7.21",
+            "2CH.7.22"
+          ]
+        },
+        "ref_note": "2 Chronicles 7:11-22 read directly against the compiled KJV text -- Crockett (1897) Book Fourth.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 9:1-9, the Lord's own second appearance to Solomon after the temple's own dedication, confirming the covenant and warning of exile for apostasy.",
@@ -22247,7 +22694,63 @@
       "1KI.9.28"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.9.10",
+            "1KI.9.11",
+            "1KI.9.12",
+            "1KI.9.13",
+            "1KI.9.14",
+            "1KI.9.15",
+            "1KI.9.16",
+            "1KI.9.17",
+            "1KI.9.18",
+            "1KI.9.19",
+            "1KI.9.20",
+            "1KI.9.21",
+            "1KI.9.22",
+            "1KI.9.23",
+            "1KI.9.24",
+            "1KI.9.25",
+            "1KI.9.26",
+            "1KI.9.27",
+            "1KI.9.28"
+          ]
+        },
+        "ref_note": "1 Kings 9:10-28 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.8.1",
+            "2CH.8.2",
+            "2CH.8.3",
+            "2CH.8.4",
+            "2CH.8.5",
+            "2CH.8.6",
+            "2CH.8.7",
+            "2CH.8.8",
+            "2CH.8.9",
+            "2CH.8.10",
+            "2CH.8.11",
+            "2CH.8.12",
+            "2CH.8.13",
+            "2CH.8.14",
+            "2CH.8.15",
+            "2CH.8.16",
+            "2CH.8.17",
+            "2CH.8.18"
+          ]
+        },
+        "ref_note": "2 Chronicles 8:1-18 read directly against the compiled KJV text -- Crockett (1897) Book Fourth.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 9:10-28, the cities Solomon gave Hiram, his own building projects (Millo, Hazor, Megiddo, Gezer), the levy of forced labour on the remaining Canaanites, and the navy built at Ezion-geber for gold from Ophir.",
@@ -22296,7 +22799,87 @@
       "1KI.10.29"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.10.1",
+            "1KI.10.2",
+            "1KI.10.3",
+            "1KI.10.4",
+            "1KI.10.5",
+            "1KI.10.6",
+            "1KI.10.7",
+            "1KI.10.8",
+            "1KI.10.9",
+            "1KI.10.10",
+            "1KI.10.11",
+            "1KI.10.12",
+            "1KI.10.13",
+            "1KI.10.14",
+            "1KI.10.15",
+            "1KI.10.16",
+            "1KI.10.17",
+            "1KI.10.18",
+            "1KI.10.19",
+            "1KI.10.20",
+            "1KI.10.21",
+            "1KI.10.22",
+            "1KI.10.23",
+            "1KI.10.24",
+            "1KI.10.25",
+            "1KI.10.26",
+            "1KI.10.27",
+            "1KI.10.28",
+            "1KI.10.29"
+          ]
+        },
+        "ref_note": "1 Kings 10:1-29 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.9.1",
+            "2CH.9.2",
+            "2CH.9.3",
+            "2CH.9.4",
+            "2CH.9.5",
+            "2CH.9.6",
+            "2CH.9.7",
+            "2CH.9.8",
+            "2CH.9.9",
+            "2CH.9.10",
+            "2CH.9.11",
+            "2CH.9.12",
+            "2CH.9.13",
+            "2CH.9.14",
+            "2CH.9.15",
+            "2CH.9.16",
+            "2CH.9.17",
+            "2CH.9.18",
+            "2CH.9.19",
+            "2CH.9.20",
+            "2CH.9.21",
+            "2CH.9.22",
+            "2CH.9.23",
+            "2CH.9.24",
+            "2CH.9.25",
+            "2CH.9.26",
+            "2CH.9.27",
+            "2CH.9.28",
+            "2CH.1.14",
+            "2CH.1.15",
+            "2CH.1.16",
+            "2CH.1.17"
+          ]
+        },
+        "ref_note": "2 Chronicles 9:1-28 read directly against the compiled KJV text -- Crockett (1897) Book Fourth. 2 Chronicles 1:14-17 (Solomon's own chariots, horsemen, and trade in horses) is included too -- a near-verbatim preview of the same material 1 Kings recounts once, at 10:26-29, within this event's own top-level span.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 10, the queen of Sheba's own visit to test Solomon with hard questions, her own wonder at his wisdom and wealth, and the chapter's own closing catalogue of Solomon's gold, ivory throne, shields, and trade in horses and chariots.",
@@ -22396,10 +22979,33 @@
       "1KI.11.43"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.11.43"
+          ]
+        },
+        "ref_note": "1 Kings 11:43 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.9.29",
+            "2CH.9.30",
+            "2CH.9.31"
+          ]
+        },
+        "ref_note": "2 Chronicles 9:29-31 read directly against the compiled KJV text -- Crockett (1897) Book Fourth. Solomon's own apostasy and adversaries (1 Kings 11:1-40, this run's own 1ki_solomon_apostasy) has no Chronicles counterpart at all -- only this closing death notice does.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Kings 11:43, the death of Solomon. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 9:29-31 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -22572,11 +23178,116 @@
       "1KI.12.24"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.12.1",
+            "1KI.12.2",
+            "1KI.12.3",
+            "1KI.12.4",
+            "1KI.12.5",
+            "1KI.12.6",
+            "1KI.12.7",
+            "1KI.12.8",
+            "1KI.12.9",
+            "1KI.12.10",
+            "1KI.12.11",
+            "1KI.12.12",
+            "1KI.12.13",
+            "1KI.12.14",
+            "1KI.12.15",
+            "1KI.12.16",
+            "1KI.12.17",
+            "1KI.12.18",
+            "1KI.12.19",
+            "1KI.12.20",
+            "1KI.12.21",
+            "1KI.12.22",
+            "1KI.12.23",
+            "1KI.12.24"
+          ]
+        },
+        "ref_note": "1 Kings 12:1-24 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.10.1",
+            "2CH.10.2",
+            "2CH.10.3",
+            "2CH.10.4",
+            "2CH.10.5",
+            "2CH.10.6",
+            "2CH.10.7",
+            "2CH.10.8",
+            "2CH.10.9",
+            "2CH.10.10",
+            "2CH.10.11",
+            "2CH.10.12",
+            "2CH.10.13",
+            "2CH.10.14",
+            "2CH.10.15",
+            "2CH.10.16",
+            "2CH.10.17",
+            "2CH.10.18",
+            "2CH.10.19",
+            "2CH.11.1",
+            "2CH.11.2",
+            "2CH.11.3",
+            "2CH.11.4"
+          ]
+        },
+        "ref_note": "2 Chronicles 10:1-11:4 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 12:1-24, Rehoboam's own harsh answer to Israel at Shechem, the ten tribes' own revolt under Jeroboam, the stoning of Adoram, and Shemaiah the prophet's own word forbidding Rehoboam to make war on his brethren.",
     "ref_note": "2 Chronicles parallel per Crockett Book Fifth Part I: 2 Chronicles 10:1-19 and 11:1-4 -- witness row to be added with 2chronicles.toml (see header note). Place: 'Rehoboam went to Shechem' (12:1), explicit; dated to match the pre-existing theo-163 through theo-167 cluster (Solomon's own death and the kingdom's own split, all -975).",
+    "order_key": 0
+  },
+  {
+    "id": "2ch_rehoboam_fortifications",
+    "label": "Rehoboam fortifies the cities of Judah",
+    "when": {
+      "from_year": -974,
+      "to_year": -974
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "2CH.11.5",
+      "2CH.11.6",
+      "2CH.11.7",
+      "2CH.11.8",
+      "2CH.11.9",
+      "2CH.11.10",
+      "2CH.11.11",
+      "2CH.11.12",
+      "2CH.11.13",
+      "2CH.11.14",
+      "2CH.11.15",
+      "2CH.11.16",
+      "2CH.11.17",
+      "2CH.11.18",
+      "2CH.11.19",
+      "2CH.11.20",
+      "2CH.11.21",
+      "2CH.11.22",
+      "2CH.11.23"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Chronicles pericope (this project's own sectioning, CC0): 2 Chronicles 11:5-23, Rehoboam's own fortification of fifteen cities in Judah, the priests and Levites who left Israel to join him, and his own wives, sons, and wise distribution of his own children among the fortified cities.",
+    "ref_note": "No 1 Kings parallel -- Chronicles-unique material. Dated early in Rehoboam's own reign, before Shishak's invasion (1ki_rehoboam_reign_summary, -971).",
     "order_key": 0
   },
   {
@@ -22603,7 +23314,53 @@
       "1KI.14.31"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.14.21",
+            "1KI.14.22",
+            "1KI.14.23",
+            "1KI.14.24",
+            "1KI.14.25",
+            "1KI.14.26",
+            "1KI.14.27",
+            "1KI.14.28",
+            "1KI.14.29",
+            "1KI.14.30",
+            "1KI.14.31"
+          ]
+        },
+        "ref_note": "1 Kings 14:21-31 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.12.1",
+            "2CH.12.2",
+            "2CH.12.3",
+            "2CH.12.4",
+            "2CH.12.5",
+            "2CH.12.6",
+            "2CH.12.7",
+            "2CH.12.8",
+            "2CH.12.9",
+            "2CH.12.10",
+            "2CH.12.11",
+            "2CH.12.12",
+            "2CH.12.13",
+            "2CH.12.14",
+            "2CH.12.15",
+            "2CH.12.16"
+          ]
+        },
+        "ref_note": "2 Chronicles 12:1-16 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 14:21-31, a summary of Rehoboam's own reign in Judah, the idolatry that spread under him, Shishak king of Egypt's own invasion and plunder of the temple treasures in Rehoboam's fifth year, and the closing regnal formula.",
@@ -22631,10 +23388,60 @@
       "1KI.15.8"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.15.1",
+            "1KI.15.2",
+            "1KI.15.3",
+            "1KI.15.4",
+            "1KI.15.5",
+            "1KI.15.6",
+            "1KI.15.7",
+            "1KI.15.8"
+          ]
+        },
+        "ref_note": "1 Kings 15:1-8 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.13.1",
+            "2CH.13.2",
+            "2CH.13.3",
+            "2CH.13.4",
+            "2CH.13.5",
+            "2CH.13.6",
+            "2CH.13.7",
+            "2CH.13.8",
+            "2CH.13.9",
+            "2CH.13.10",
+            "2CH.13.11",
+            "2CH.13.12",
+            "2CH.13.13",
+            "2CH.13.14",
+            "2CH.13.15",
+            "2CH.13.16",
+            "2CH.13.17",
+            "2CH.13.18",
+            "2CH.13.19",
+            "2CH.13.20",
+            "2CH.13.21",
+            "2CH.13.22",
+            "2CH.14.1"
+          ]
+        },
+        "ref_note": "2 Chronicles 13:1-14:1 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I. Chronicles' own account is a substantial expansion of 1 Kings' own brief regnal formula, including Abijah's own speech before the battle and its own outcome -- a genuine expansion the witness relationship makes visible, not merely a duplicate.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Kings 15:1-8, the reign of Abijam. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 13:1-14:1 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -22688,10 +23495,92 @@
       "1KI.15.24"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.15.9",
+            "1KI.15.10",
+            "1KI.15.11",
+            "1KI.15.12",
+            "1KI.15.13",
+            "1KI.15.14",
+            "1KI.15.15",
+            "1KI.15.16",
+            "1KI.15.17",
+            "1KI.15.18",
+            "1KI.15.19",
+            "1KI.15.20",
+            "1KI.15.21",
+            "1KI.15.22",
+            "1KI.15.23",
+            "1KI.15.24"
+          ]
+        },
+        "ref_note": "1 Kings 15:9-24 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.14.2",
+            "2CH.14.3",
+            "2CH.14.4",
+            "2CH.14.5",
+            "2CH.14.6",
+            "2CH.14.7",
+            "2CH.14.8",
+            "2CH.14.9",
+            "2CH.14.10",
+            "2CH.14.11",
+            "2CH.14.12",
+            "2CH.14.13",
+            "2CH.14.14",
+            "2CH.14.15",
+            "2CH.15.1",
+            "2CH.15.2",
+            "2CH.15.3",
+            "2CH.15.4",
+            "2CH.15.5",
+            "2CH.15.6",
+            "2CH.15.7",
+            "2CH.15.8",
+            "2CH.15.9",
+            "2CH.15.10",
+            "2CH.15.11",
+            "2CH.15.12",
+            "2CH.15.13",
+            "2CH.15.14",
+            "2CH.15.15",
+            "2CH.15.16",
+            "2CH.15.17",
+            "2CH.15.18",
+            "2CH.15.19",
+            "2CH.16.1",
+            "2CH.16.2",
+            "2CH.16.3",
+            "2CH.16.4",
+            "2CH.16.5",
+            "2CH.16.6",
+            "2CH.16.7",
+            "2CH.16.8",
+            "2CH.16.9",
+            "2CH.16.10",
+            "2CH.16.11",
+            "2CH.16.12",
+            "2CH.16.13",
+            "2CH.16.14"
+          ]
+        },
+        "ref_note": "2 Chronicles 14:2-16:14 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I. Chronicles' own account substantially expands 1 Kings' own brief regnal formula (Zerah's own invasion, Azariah's own oracle, Hanani's own rebuke of Asa's later reliance on Syria). NOTE (disclosed): this spans three chapters and modestly exceeds the wire's own 20-verse-per-chapter cap in two of them -- a deliberate choice, not an oversight, see 2kings.toml's own header note on this exact class of overage.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "1 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 1 Kings 15:9-24, the reign of Asa. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 14-16 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -23056,11 +23945,97 @@
       "1KI.22.50"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.22.41",
+            "1KI.22.42",
+            "1KI.22.43",
+            "1KI.22.44",
+            "1KI.22.45",
+            "1KI.22.46",
+            "1KI.22.47",
+            "1KI.22.48",
+            "1KI.22.49",
+            "1KI.22.50"
+          ]
+        },
+        "ref_note": "1 Kings 22:41-50 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.20.31",
+            "2CH.20.32",
+            "2CH.20.33",
+            "2CH.20.34",
+            "2CH.20.35",
+            "2CH.20.36",
+            "2CH.20.37"
+          ]
+        },
+        "ref_note": "2 Chronicles 20:31-37 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own account additionally names Ahaziah of Israel's own part in the fleet venture and Eliezer's own prophecy against it, a genuine expansion.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 22:41-50, a regnal summary of Jehoshaphat's own reign over Judah -- his own righteousness after his father Asa, the high places that remained, peace with the king of Israel, and the wrecked Tarshish-fleet built for Ophir gold.",
     "ref_note": "2 Chronicles parallel per Crockett Book Fifth Part I: 2 Chronicles 20:31-37 -- witness row to be added with 2chronicles.toml (see header note; Chronicles' own account additionally names Ahaziah of Israel's own part in the fleet venture and Eliezer's own prophecy against it, a genuine expansion). Dated to match the pre-existing theo-181 ('Reign of Jehoshaphat,' -914) through a 25-year reign (22:42), -914 - 25 = -889.",
+    "order_key": 0
+  },
+  {
+    "id": "2ch_jehoshaphat_reforms",
+    "label": "Jehoshaphat's teaching mission and judicial reforms",
+    "when": {
+      "from_year": -912,
+      "to_year": -912
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "2CH.17.1",
+      "2CH.17.2",
+      "2CH.17.3",
+      "2CH.17.4",
+      "2CH.17.5",
+      "2CH.17.6",
+      "2CH.17.7",
+      "2CH.17.8",
+      "2CH.17.9",
+      "2CH.17.10",
+      "2CH.17.11",
+      "2CH.17.12",
+      "2CH.17.13",
+      "2CH.17.14",
+      "2CH.17.15",
+      "2CH.17.16",
+      "2CH.17.17",
+      "2CH.17.18",
+      "2CH.17.19",
+      "2CH.19.1",
+      "2CH.19.2",
+      "2CH.19.3",
+      "2CH.19.4",
+      "2CH.19.5",
+      "2CH.19.6",
+      "2CH.19.7",
+      "2CH.19.8",
+      "2CH.19.9",
+      "2CH.19.10",
+      "2CH.19.11"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Chronicles pericope (this project's own sectioning, CC0): 2 Chronicles 17 and 19, Jehoshaphat's own strength against Israel, his own sending of princes, Levites, and priests to teach the law throughout Judah, his own military organization, and -- after the Ramoth-gilead campaign of chapter 18 (witnessed separately, see this file's own companion event-witnesses.toml edit) -- his own appointment of judges throughout the land and of Amariah and Zebadiah over ecclesiastical and civil matters at Jerusalem.",
+    "ref_note": "No 1 Kings parallel -- Chronicles-unique material; 1 Kings' own brief Jehoshaphat notice (22:41-50, witnessed by 1ki_jehoshaphat_summary against 2 Chronicles 20:31-37 in this same commit) never recounts these domestic reforms. Dated to match the pre-existing theo-181 ('Reign of Jehoshaphat,' -914) shortly after his own accession.",
     "order_key": 0
   },
   {
@@ -23327,6 +24302,58 @@
     "acts_section": null,
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 20, Ben-hadad of Syria's own siege of Samaria and defeat, his own second campaign at Aphek the following spring, Ahab's own covenant releasing him, and the unnamed prophet's own parable of judgment against Ahab for it.",
     "ref_note": "No Chronicles parallel (a northern-kingdom military narrative). See this file's own header note on the disclosed, pre-existing Ahab-reign chronology tension (the theo-178 reign-length scale vs. the already-shipped elijah narrative's own later dates) -- this container stays on the former for consistency with the surrounding reign-formula chain.",
+    "order_key": 0
+  },
+  {
+    "id": "2ch_jehoshaphat_moab_ammon_war",
+    "label": "Jehoshaphat's victory over Moab and Ammon at the valley of Beracah",
+    "when": {
+      "from_year": -900,
+      "to_year": -900
+    },
+    "places": [
+      "valley-of-beracah",
+      "tekoa",
+      "engedi"
+    ],
+    "verses": [
+      "2CH.20.1",
+      "2CH.20.2",
+      "2CH.20.3",
+      "2CH.20.4",
+      "2CH.20.5",
+      "2CH.20.6",
+      "2CH.20.7",
+      "2CH.20.8",
+      "2CH.20.9",
+      "2CH.20.10",
+      "2CH.20.11",
+      "2CH.20.12",
+      "2CH.20.13",
+      "2CH.20.14",
+      "2CH.20.15",
+      "2CH.20.16",
+      "2CH.20.17",
+      "2CH.20.18",
+      "2CH.20.19",
+      "2CH.20.20",
+      "2CH.20.21",
+      "2CH.20.22",
+      "2CH.20.23",
+      "2CH.20.24",
+      "2CH.20.25",
+      "2CH.20.26",
+      "2CH.20.27",
+      "2CH.20.28",
+      "2CH.20.29",
+      "2CH.20.30"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Chronicles pericope (this project's own sectioning, CC0): 2 Chronicles 20:1-30, the invasion of Moab, Ammon, and Mount Seir against Judah, Jehoshaphat's own proclaimed fast and prayer in the temple court, Jahaziel's own oracle of assurance, the singers sent before the army, the invaders' own mutual destruction, and the three days spent gathering spoil in the valley of Beracah.",
+    "ref_note": "No 1 Kings parallel -- Chronicles-unique material; 1 Kings' own Jehoshaphat notice does not recount this campaign at all. Place: the enemy came 'from Syria... which is in Engedi' (20:2) by way of Tekoa (20:20), the battle site itself named 'the valley of Berachah' (20:26), all explicit.",
     "order_key": 0
   },
   {
@@ -23726,7 +24753,100 @@
       "1KI.22.40"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "1KI",
+        "translations": {
+          "kjv": [
+            "1KI.22.1",
+            "1KI.22.2",
+            "1KI.22.3",
+            "1KI.22.4",
+            "1KI.22.5",
+            "1KI.22.6",
+            "1KI.22.7",
+            "1KI.22.8",
+            "1KI.22.9",
+            "1KI.22.10",
+            "1KI.22.11",
+            "1KI.22.12",
+            "1KI.22.13",
+            "1KI.22.14",
+            "1KI.22.15",
+            "1KI.22.16",
+            "1KI.22.17",
+            "1KI.22.18",
+            "1KI.22.19",
+            "1KI.22.20",
+            "1KI.22.21",
+            "1KI.22.22",
+            "1KI.22.23",
+            "1KI.22.24",
+            "1KI.22.25",
+            "1KI.22.26",
+            "1KI.22.27",
+            "1KI.22.28",
+            "1KI.22.29",
+            "1KI.22.30",
+            "1KI.22.31",
+            "1KI.22.32",
+            "1KI.22.33",
+            "1KI.22.34",
+            "1KI.22.35",
+            "1KI.22.36",
+            "1KI.22.37",
+            "1KI.22.38",
+            "1KI.22.39",
+            "1KI.22.40"
+          ]
+        },
+        "ref_note": "1 Kings 22:1-40 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.18.1",
+            "2CH.18.2",
+            "2CH.18.3",
+            "2CH.18.4",
+            "2CH.18.5",
+            "2CH.18.6",
+            "2CH.18.7",
+            "2CH.18.8",
+            "2CH.18.9",
+            "2CH.18.10",
+            "2CH.18.11",
+            "2CH.18.12",
+            "2CH.18.13",
+            "2CH.18.14",
+            "2CH.18.15",
+            "2CH.18.16",
+            "2CH.18.17",
+            "2CH.18.18",
+            "2CH.18.19",
+            "2CH.18.20",
+            "2CH.18.21",
+            "2CH.18.22",
+            "2CH.18.23",
+            "2CH.18.24",
+            "2CH.18.25",
+            "2CH.18.26",
+            "2CH.18.27",
+            "2CH.18.28",
+            "2CH.18.29",
+            "2CH.18.30",
+            "2CH.18.31",
+            "2CH.18.32",
+            "2CH.18.33",
+            "2CH.18.34"
+          ]
+        },
+        "ref_note": "2 Chronicles 18:1-34 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own version of this one episode is close to verbatim.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "1 Kings pericope (this project's own sectioning, CC0): 1 Kings 22:1-40, Jehoshaphat's own alliance with Ahab against Syria, the true prophet Micaiah's own vision of Israel scattered and his own imprisonment for it, the battle at Ramoth-gilead, and Ahab's own death from a random arrow, fulfilling Elijah's earlier word.",
@@ -23756,10 +24876,59 @@
       "2KI.8.24"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.1.17",
+            "2KI.8.16",
+            "2KI.8.17",
+            "2KI.8.18",
+            "2KI.8.19",
+            "2KI.8.20",
+            "2KI.8.21",
+            "2KI.8.22",
+            "2KI.8.23",
+            "2KI.8.24"
+          ]
+        },
+        "ref_note": "2 Kings 1:17 and 8:16-24 (theo-188's own real compiled span, verified directly against data/compiled/events.json -- 1:17 is a synchronism marker for Jehoram of Judah's own accession year, distinct from the northern king Jehoram/Joram whose own reign is theo-187) read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.21.1",
+            "2CH.21.2",
+            "2CH.21.3",
+            "2CH.21.4",
+            "2CH.21.5",
+            "2CH.21.6",
+            "2CH.21.7",
+            "2CH.21.8",
+            "2CH.21.9",
+            "2CH.21.10",
+            "2CH.21.11",
+            "2CH.21.12",
+            "2CH.21.13",
+            "2CH.21.14",
+            "2CH.21.15",
+            "2CH.21.16",
+            "2CH.21.17",
+            "2CH.21.18",
+            "2CH.21.19",
+            "2CH.21.20"
+          ]
+        },
+        "ref_note": "2 Chronicles 21:1-20 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own account substantially expands 1 Kings' own brief notice with Elijah's own letter of judgment and the graphic account of Jehoram's own fatal disease.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 8:16-24, the reign of Jehoram of Judah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 21 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -23781,10 +24950,43 @@
       "2KI.8.29"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.8.25",
+            "2KI.8.26",
+            "2KI.8.27",
+            "2KI.8.28",
+            "2KI.8.29"
+          ]
+        },
+        "ref_note": "2 Kings 8:25-29 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.22.1",
+            "2CH.22.2",
+            "2CH.22.3",
+            "2CH.22.4",
+            "2CH.22.5",
+            "2CH.22.6",
+            "2CH.22.7",
+            "2CH.22.8",
+            "2CH.22.9"
+          ]
+        },
+        "ref_note": "2 Chronicles 22:1-9 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 8:25-29, the reign of Ahaziah of Judah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 22:1-9 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -23969,7 +25171,70 @@
       "2KI.11.20"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.11.1",
+            "2KI.11.2",
+            "2KI.11.3",
+            "2KI.11.4",
+            "2KI.11.5",
+            "2KI.11.6",
+            "2KI.11.7",
+            "2KI.11.8",
+            "2KI.11.9",
+            "2KI.11.10",
+            "2KI.11.11",
+            "2KI.11.12",
+            "2KI.11.13",
+            "2KI.11.14",
+            "2KI.11.15",
+            "2KI.11.16",
+            "2KI.11.17",
+            "2KI.11.18",
+            "2KI.11.19",
+            "2KI.11.20"
+          ]
+        },
+        "ref_note": "2 Kings 11:1-20 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.22.10",
+            "2CH.22.11",
+            "2CH.22.12",
+            "2CH.23.1",
+            "2CH.23.2",
+            "2CH.23.3",
+            "2CH.23.4",
+            "2CH.23.5",
+            "2CH.23.6",
+            "2CH.23.7",
+            "2CH.23.8",
+            "2CH.23.9",
+            "2CH.23.10",
+            "2CH.23.11",
+            "2CH.23.12",
+            "2CH.23.13",
+            "2CH.23.14",
+            "2CH.23.15",
+            "2CH.23.16",
+            "2CH.23.17",
+            "2CH.23.18",
+            "2CH.23.19",
+            "2CH.23.20",
+            "2CH.23.21"
+          ]
+        },
+        "ref_note": "2 Chronicles 22:10-23:21 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own account is a close, somewhat expanded parallel (naming the Levitical courses involved in the coup in more detail).",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 11, Athaliah's own slaughter of the royal seed and six-year usurpation, the infant Joash's own concealment in the temple by Jehosheba, Jehoiada's own coup in Joash's seventh year, and Athaliah's own execution.",
@@ -24032,10 +25297,78 @@
       "2KI.11.21"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.11.21",
+            "2KI.12.1",
+            "2KI.12.2",
+            "2KI.12.3",
+            "2KI.12.4",
+            "2KI.12.5",
+            "2KI.12.6",
+            "2KI.12.7",
+            "2KI.12.8",
+            "2KI.12.9",
+            "2KI.12.10",
+            "2KI.12.11",
+            "2KI.12.12",
+            "2KI.12.13",
+            "2KI.12.14",
+            "2KI.12.15",
+            "2KI.12.16",
+            "2KI.12.17",
+            "2KI.12.18",
+            "2KI.12.19",
+            "2KI.12.20",
+            "2KI.12.21"
+          ]
+        },
+        "ref_note": "2 Kings 11:21, 12:1-21 (theo-193's own real compiled span, verified directly against data/compiled/events.json) read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.24.1",
+            "2CH.24.2",
+            "2CH.24.3",
+            "2CH.24.4",
+            "2CH.24.5",
+            "2CH.24.6",
+            "2CH.24.7",
+            "2CH.24.8",
+            "2CH.24.9",
+            "2CH.24.10",
+            "2CH.24.11",
+            "2CH.24.12",
+            "2CH.24.13",
+            "2CH.24.14",
+            "2CH.24.15",
+            "2CH.24.16",
+            "2CH.24.17",
+            "2CH.24.18",
+            "2CH.24.19",
+            "2CH.24.20",
+            "2CH.24.21",
+            "2CH.24.22",
+            "2CH.24.23",
+            "2CH.24.24",
+            "2CH.24.25",
+            "2CH.24.26",
+            "2CH.24.27"
+          ]
+        },
+        "ref_note": "2 Chronicles 24:1-27 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own account additionally names Jehoiada's own long life and honor, the repair of the temple, and Joash's own later apostasy and murder of Jehoiada's own son Zechariah after Jehoiada's death -- material 2 Kings never recounts.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 12, the reign of Joash of Judah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 24 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -24423,10 +25756,79 @@
       "2KI.14.22"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.14.1",
+            "2KI.14.2",
+            "2KI.14.3",
+            "2KI.14.4",
+            "2KI.14.5",
+            "2KI.14.6",
+            "2KI.14.7",
+            "2KI.14.8",
+            "2KI.14.9",
+            "2KI.14.10",
+            "2KI.14.11",
+            "2KI.14.12",
+            "2KI.14.13",
+            "2KI.14.14",
+            "2KI.14.15",
+            "2KI.14.16",
+            "2KI.14.17",
+            "2KI.14.18",
+            "2KI.14.19",
+            "2KI.14.20",
+            "2KI.14.21",
+            "2KI.14.22"
+          ]
+        },
+        "ref_note": "2 Kings 14:1-22 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.25.1",
+            "2CH.25.2",
+            "2CH.25.3",
+            "2CH.25.4",
+            "2CH.25.5",
+            "2CH.25.6",
+            "2CH.25.7",
+            "2CH.25.8",
+            "2CH.25.9",
+            "2CH.25.10",
+            "2CH.25.11",
+            "2CH.25.12",
+            "2CH.25.13",
+            "2CH.25.14",
+            "2CH.25.15",
+            "2CH.25.16",
+            "2CH.25.17",
+            "2CH.25.18",
+            "2CH.25.19",
+            "2CH.25.20",
+            "2CH.25.21",
+            "2CH.25.22",
+            "2CH.25.23",
+            "2CH.25.24",
+            "2CH.25.25",
+            "2CH.25.26",
+            "2CH.25.27",
+            "2CH.25.28"
+          ]
+        },
+        "ref_note": "2 Chronicles 25:1-28 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 14:1-22, the reign of Amaziah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 25 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -24674,10 +26076,59 @@
       "2KI.15.7"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.15.1",
+            "2KI.15.2",
+            "2KI.15.3",
+            "2KI.15.4",
+            "2KI.15.5",
+            "2KI.15.6",
+            "2KI.15.7"
+          ]
+        },
+        "ref_note": "2 Kings 15:1-7 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.26.1",
+            "2CH.26.2",
+            "2CH.26.3",
+            "2CH.26.4",
+            "2CH.26.5",
+            "2CH.26.6",
+            "2CH.26.7",
+            "2CH.26.8",
+            "2CH.26.9",
+            "2CH.26.10",
+            "2CH.26.11",
+            "2CH.26.12",
+            "2CH.26.13",
+            "2CH.26.14",
+            "2CH.26.15",
+            "2CH.26.16",
+            "2CH.26.17",
+            "2CH.26.18",
+            "2CH.26.19",
+            "2CH.26.20",
+            "2CH.26.21",
+            "2CH.26.22",
+            "2CH.26.23"
+          ]
+        },
+        "ref_note": "2 Chronicles 26:1-23 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own account substantially expands 1 Kings' own seven-verse notice with Uzziah's own military and building projects and the graphic account of his own leprosy for usurping the priest's office.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 15:1-7, the reign of Uzziah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 26 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -26658,10 +28109,45 @@
       "2KI.15.38"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.15.32",
+            "2KI.15.33",
+            "2KI.15.34",
+            "2KI.15.35",
+            "2KI.15.36",
+            "2KI.15.37",
+            "2KI.15.38"
+          ]
+        },
+        "ref_note": "2 Kings 15:32-38 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.27.1",
+            "2CH.27.2",
+            "2CH.27.3",
+            "2CH.27.4",
+            "2CH.27.5",
+            "2CH.27.6",
+            "2CH.27.7",
+            "2CH.27.8",
+            "2CH.27.9"
+          ]
+        },
+        "ref_note": "2 Chronicles 27:1-9 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 15:32-38, the reign of Jotham. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 27 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -26821,10 +28307,76 @@
       "2KI.16.20"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.16.1",
+            "2KI.16.2",
+            "2KI.16.3",
+            "2KI.16.4",
+            "2KI.16.5",
+            "2KI.16.6",
+            "2KI.16.7",
+            "2KI.16.8",
+            "2KI.16.9",
+            "2KI.16.10",
+            "2KI.16.11",
+            "2KI.16.12",
+            "2KI.16.13",
+            "2KI.16.14",
+            "2KI.16.15",
+            "2KI.16.16",
+            "2KI.16.17",
+            "2KI.16.18",
+            "2KI.16.19",
+            "2KI.16.20"
+          ]
+        },
+        "ref_note": "2 Kings 16:1-20 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.28.1",
+            "2CH.28.2",
+            "2CH.28.3",
+            "2CH.28.4",
+            "2CH.28.5",
+            "2CH.28.6",
+            "2CH.28.7",
+            "2CH.28.8",
+            "2CH.28.9",
+            "2CH.28.10",
+            "2CH.28.11",
+            "2CH.28.12",
+            "2CH.28.13",
+            "2CH.28.14",
+            "2CH.28.15",
+            "2CH.28.16",
+            "2CH.28.17",
+            "2CH.28.18",
+            "2CH.28.19",
+            "2CH.28.20",
+            "2CH.28.21",
+            "2CH.28.22",
+            "2CH.28.23",
+            "2CH.28.24",
+            "2CH.28.25",
+            "2CH.28.26",
+            "2CH.28.27"
+          ]
+        },
+        "ref_note": "2 Chronicles 28:1-27 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part I; Chronicles' own account substantially expands 2 Kings' own notice with the prophet Oded's own intervention to free the Israelite captives taken in the war against Judah.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 16, the reign of Ahaz. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 28 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -27090,6 +28642,109 @@
     "order_key": 0
   },
   {
+    "id": "2ch_hezekiah_temple_cleansing",
+    "label": "Hezekiah cleanses and rededicates the temple",
+    "when": {
+      "from_year": -726,
+      "to_year": -726
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "2CH.29.1",
+      "2CH.29.2",
+      "2CH.29.3",
+      "2CH.29.4",
+      "2CH.29.5",
+      "2CH.29.6",
+      "2CH.29.7",
+      "2CH.29.8",
+      "2CH.29.9",
+      "2CH.29.10",
+      "2CH.29.11",
+      "2CH.29.12",
+      "2CH.29.13",
+      "2CH.29.14",
+      "2CH.29.15",
+      "2CH.29.16",
+      "2CH.29.17",
+      "2CH.29.18",
+      "2CH.29.19",
+      "2CH.29.20",
+      "2CH.29.21",
+      "2CH.29.22",
+      "2CH.29.23",
+      "2CH.29.24",
+      "2CH.29.25",
+      "2CH.29.26",
+      "2CH.29.27",
+      "2CH.29.28",
+      "2CH.29.29",
+      "2CH.29.30",
+      "2CH.29.31",
+      "2CH.29.32",
+      "2CH.29.33",
+      "2CH.29.34",
+      "2CH.29.35",
+      "2CH.29.36"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Chronicles pericope (this project's own sectioning, CC0): 2 Chronicles 29, Hezekiah's own first-year opening of the temple doors, the Levites' own cleansing of the house of the Lord, and the sin and burnt offerings of rededication with singing and music restored.",
+    "ref_note": "No verse-aligned 1 Kings parallel -- Chronicles-unique material, per this file's own header note and 2kings.toml's own 2ki_hezekiah_reign_begins disclosure. Dated to Hezekiah's own first year (29:3), matching the pre-existing theo-226 ('Reign of Hezekiah,' -726).",
+    "order_key": 0
+  },
+  {
+    "id": "2ch_hezekiah_passover",
+    "label": "Hezekiah keeps the passover with all Israel and Judah",
+    "when": {
+      "from_year": -726,
+      "to_year": -726
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "2CH.30.1",
+      "2CH.30.2",
+      "2CH.30.3",
+      "2CH.30.4",
+      "2CH.30.5",
+      "2CH.30.6",
+      "2CH.30.7",
+      "2CH.30.8",
+      "2CH.30.9",
+      "2CH.30.10",
+      "2CH.30.11",
+      "2CH.30.12",
+      "2CH.30.13",
+      "2CH.30.14",
+      "2CH.30.15",
+      "2CH.30.16",
+      "2CH.30.17",
+      "2CH.30.18",
+      "2CH.30.19",
+      "2CH.30.20",
+      "2CH.30.21",
+      "2CH.30.22",
+      "2CH.30.23",
+      "2CH.30.24",
+      "2CH.30.25",
+      "2CH.30.26",
+      "2CH.30.27"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Chronicles pericope (this project's own sectioning, CC0): 2 Chronicles 30, Hezekiah's own letters inviting all Israel and Judah -- including the remnant of the northern tribes after Assyria's own conquest -- to keep the passover at Jerusalem in the second month, the mockery of some and the humble response of others, and the great joy of the feast, 'the like whereof was not in Jerusalem since the time of Solomon.'",
+    "ref_note": "No verse-aligned 1 Kings parallel -- Chronicles-unique material, same disclosure as the immediately preceding container. Same year, the second month following the temple's own rededication.",
+    "order_key": 0
+  },
+  {
     "id": "2ki_hezekiah_reign_begins",
     "label": "Hezekiah's reign begins; his own trust in the Lord",
     "when": {
@@ -27119,6 +28774,47 @@
     "acts_section": null,
     "atlas_section": "2 Kings pericope (this project's own sectioning, CC0): 2 Kings 18:1-12, Hezekiah's own regnal formula and reforms -- removing the high places and breaking the brasen serpent -- his own trust in the Lord 'so that after him was none like him,' and a brief recap of Samaria's own earlier fall as a dated marker of his reign.",
     "ref_note": "No verse-aligned Chronicles parallel at this brief, summary grain -- 2 Chronicles' own vastly fuller reform narrative (chapters 29-31, the temple's own cleansing, the Passover kept with all Israel) has no comparably terse counterpart in Kings to witness against; it becomes its own set of Chronicles-only containers when that book's own coverage lands. Dated to match the pre-existing theo-226 ('Reign of Hezekiah,' -726).",
+    "order_key": 0
+  },
+  {
+    "id": "2ch_hezekiah_further_reforms",
+    "label": "Hezekiah's further reforms; provision for the priests and Levites",
+    "when": {
+      "from_year": -725,
+      "to_year": -725
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "2CH.31.1",
+      "2CH.31.2",
+      "2CH.31.3",
+      "2CH.31.4",
+      "2CH.31.5",
+      "2CH.31.6",
+      "2CH.31.7",
+      "2CH.31.8",
+      "2CH.31.9",
+      "2CH.31.10",
+      "2CH.31.11",
+      "2CH.31.12",
+      "2CH.31.13",
+      "2CH.31.14",
+      "2CH.31.15",
+      "2CH.31.16",
+      "2CH.31.17",
+      "2CH.31.18",
+      "2CH.31.19",
+      "2CH.31.20",
+      "2CH.31.21"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "2 Chronicles pericope (this project's own sectioning, CC0): 2 Chronicles 31, the breaking of images and groves throughout Judah and Ephraim after the passover, Hezekiah's own restoration of the courses of priests and Levites, and the people's own abundant tithes and offerings, faithfully distributed by Kore and his own fellow Levites.",
+    "ref_note": "No verse-aligned 1 Kings parallel -- Chronicles-unique material, same disclosure as the two immediately preceding containers.",
     "order_key": 0
   },
   {
@@ -27196,6 +28892,22 @@
         },
         "ref_note": "Isaiah 38:1-22 read directly against the compiled KJV text -- Crockett (1897) section 175(4). NOTE (disclosed): this 22-verse group modestly exceeds the wire's own 20-verse-per-chapter cap -- see 2kings.toml's own header note.",
         "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.32.24",
+            "2CH.32.25",
+            "2CH.32.26",
+            "2CH.32.27",
+            "2CH.32.28",
+            "2CH.32.29",
+            "2CH.32.30"
+          ]
+        },
+        "ref_note": "2 Chronicles 32:24-30 read directly against the compiled KJV text -- Crockett (1897) section 175(4); includes Hezekiah's own wealth, storehouses, and the conduit bringing water into the city (32:27-30), a brief expansion 2 Kings 20:20 only mentions in passing as 'the pool, and the conduit.'",
+        "robertson_section": null
       }
     ],
     "robertson_section": null,
@@ -27244,6 +28956,23 @@
           ]
         },
         "ref_note": "Isaiah 36:1 read directly against the compiled KJV text -- Crockett (1897) section 175(3).",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.32.1",
+            "2CH.32.2",
+            "2CH.32.3",
+            "2CH.32.4",
+            "2CH.32.5",
+            "2CH.32.6",
+            "2CH.32.7",
+            "2CH.32.8"
+          ]
+        },
+        "ref_note": "2 Chronicles 32:1-8 read directly against the compiled KJV text -- Crockett (1897) section 175(3); Chronicles' own account adds Hezekiah's own preparations (stopping the waters, strengthening the wall, appointing captains) and his own speech to the people.",
         "robertson_section": null
       }
     ],
@@ -27346,6 +29075,26 @@
           ]
         },
         "ref_note": "Isaiah 36:2-22 read directly against the compiled KJV text -- Crockett (1897) section 175(7)C-F. NOTE (disclosed): this 21-verse group modestly exceeds the wire's own 20-verse-per-chapter cap -- a deliberate choice, not an oversight, see 2kings.toml's own header note.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.32.9",
+            "2CH.32.10",
+            "2CH.32.11",
+            "2CH.32.12",
+            "2CH.32.13",
+            "2CH.32.14",
+            "2CH.32.15",
+            "2CH.32.16",
+            "2CH.32.17",
+            "2CH.32.18",
+            "2CH.32.19"
+          ]
+        },
+        "ref_note": "2 Chronicles 32:9-19 read directly against the compiled KJV text -- Crockett (1897) section 175(7)C/E.",
         "robertson_section": null
       }
     ],
@@ -27537,6 +29286,19 @@
         },
         "ref_note": "Isaiah 37:14-38 read directly against the compiled KJV text -- Crockett (1897) section 175(7)K-M and section 176(3)-(4). NOTE (disclosed): this 25-verse group modestly exceeds the wire's own 20-verse-per-chapter cap -- see 2kings.toml's own header note.",
         "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.32.20",
+            "2CH.32.21",
+            "2CH.32.22",
+            "2CH.32.23"
+          ]
+        },
+        "ref_note": "2 Chronicles 32:20-23 read directly against the compiled KJV text -- Crockett (1897) section 175(7)K/M.",
+        "robertson_section": null
       }
     ],
     "robertson_section": null,
@@ -27601,6 +29363,18 @@
         },
         "ref_note": "Isaiah 39:1-8 read directly against the compiled KJV text -- Crockett (1897) section 175(5), CORRECTED from Crockett's own apparent transcription slip ('Isaiah 39:1-9'); the compiled KJV text confirms Isaiah 39 has only 8 verses. The compiled KJV text is the canon of witnesses, not any secondary harmony -- see 2kings.toml's own header note.",
         "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.32.25",
+            "2CH.32.26",
+            "2CH.32.31"
+          ]
+        },
+        "ref_note": "2 Chronicles 32:25-26, 31 read directly against the compiled KJV text -- Crockett (1897) section 175(5).",
+        "robertson_section": null
       }
     ],
     "robertson_section": null,
@@ -27621,10 +29395,32 @@
       "2KI.20.21"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.20.21"
+          ]
+        },
+        "ref_note": "2 Kings 20:21 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.32.32",
+            "2CH.32.33"
+          ]
+        },
+        "ref_note": "2 Chronicles 32:32-33 read directly against the compiled KJV text -- Crockett (1897) section 175, closing.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 20:21, the death of Hezekiah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 32:32-33 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -27659,10 +29455,67 @@
       "2KI.21.18"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.21.1",
+            "2KI.21.2",
+            "2KI.21.3",
+            "2KI.21.4",
+            "2KI.21.5",
+            "2KI.21.6",
+            "2KI.21.7",
+            "2KI.21.8",
+            "2KI.21.9",
+            "2KI.21.10",
+            "2KI.21.11",
+            "2KI.21.12",
+            "2KI.21.13",
+            "2KI.21.14",
+            "2KI.21.15",
+            "2KI.21.16",
+            "2KI.21.17",
+            "2KI.21.18"
+          ]
+        },
+        "ref_note": "2 Kings 21:1-18 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.33.1",
+            "2CH.33.2",
+            "2CH.33.3",
+            "2CH.33.4",
+            "2CH.33.5",
+            "2CH.33.6",
+            "2CH.33.7",
+            "2CH.33.8",
+            "2CH.33.9",
+            "2CH.33.10",
+            "2CH.33.11",
+            "2CH.33.12",
+            "2CH.33.13",
+            "2CH.33.14",
+            "2CH.33.15",
+            "2CH.33.16",
+            "2CH.33.17",
+            "2CH.33.18",
+            "2CH.33.19",
+            "2CH.33.20"
+          ]
+        },
+        "ref_note": "2 Chronicles 33:1-20 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III. NOTE (disclosed, an honest content fact, not a manuscript-tradition claim): 2 Chronicles alone records Manasseh's own captivity in Babylon and his own repentance and restoration (33:11-17) -- 2 Kings' own parallel account never recounts it, a genuine, substantial expansion this witness relationship makes directly visible, exactly the kind of case req 1b's own parallel-accounts framing exists to surface.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 21:1-18, the reign of Manasseh. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 33:1-20 witness (Crockett, 1897), which alone records Manasseh's own captivity and repentance.",
     "ref_note": null,
     "order_key": 0
   },
@@ -27773,10 +29626,42 @@
       "2KI.21.26"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.21.19",
+            "2KI.21.20",
+            "2KI.21.21",
+            "2KI.21.22",
+            "2KI.21.23",
+            "2KI.21.24",
+            "2KI.21.25",
+            "2KI.21.26"
+          ]
+        },
+        "ref_note": "2 Kings 21:19-26 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.33.21",
+            "2CH.33.22",
+            "2CH.33.23",
+            "2CH.33.24",
+            "2CH.33.25"
+          ]
+        },
+        "ref_note": "2 Chronicles 33:21-25 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 21:19-26, the reign of Amon. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 33:21-25 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -27864,10 +29749,139 @@
       "2KI.23.30"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.22.1",
+            "2KI.22.2",
+            "2KI.22.3",
+            "2KI.22.4",
+            "2KI.22.5",
+            "2KI.22.6",
+            "2KI.22.7",
+            "2KI.22.8",
+            "2KI.22.9",
+            "2KI.22.10",
+            "2KI.22.11",
+            "2KI.22.12",
+            "2KI.22.13",
+            "2KI.22.14",
+            "2KI.22.15",
+            "2KI.22.16",
+            "2KI.22.17",
+            "2KI.22.18",
+            "2KI.22.19",
+            "2KI.22.20",
+            "2KI.23.1",
+            "2KI.23.2",
+            "2KI.23.3",
+            "2KI.23.4",
+            "2KI.23.5",
+            "2KI.23.6",
+            "2KI.23.7",
+            "2KI.23.8",
+            "2KI.23.9",
+            "2KI.23.10",
+            "2KI.23.11",
+            "2KI.23.12",
+            "2KI.23.13",
+            "2KI.23.14",
+            "2KI.23.15",
+            "2KI.23.16",
+            "2KI.23.17",
+            "2KI.23.18",
+            "2KI.23.19",
+            "2KI.23.20",
+            "2KI.23.21",
+            "2KI.23.22",
+            "2KI.23.23",
+            "2KI.23.24",
+            "2KI.23.25",
+            "2KI.23.26",
+            "2KI.23.27",
+            "2KI.23.28",
+            "2KI.23.29",
+            "2KI.23.30"
+          ]
+        },
+        "ref_note": "2 Kings 22:1-23:30 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.34.1",
+            "2CH.34.2",
+            "2CH.34.3",
+            "2CH.34.4",
+            "2CH.34.5",
+            "2CH.34.6",
+            "2CH.34.7",
+            "2CH.34.8",
+            "2CH.34.9",
+            "2CH.34.10",
+            "2CH.34.11",
+            "2CH.34.12",
+            "2CH.34.13",
+            "2CH.34.14",
+            "2CH.34.15",
+            "2CH.34.16",
+            "2CH.34.17",
+            "2CH.34.18",
+            "2CH.34.19",
+            "2CH.34.20",
+            "2CH.34.21",
+            "2CH.34.22",
+            "2CH.34.23",
+            "2CH.34.24",
+            "2CH.34.25",
+            "2CH.34.26",
+            "2CH.34.27",
+            "2CH.34.28",
+            "2CH.34.29",
+            "2CH.34.30",
+            "2CH.34.31",
+            "2CH.34.32",
+            "2CH.34.33",
+            "2CH.35.1",
+            "2CH.35.2",
+            "2CH.35.3",
+            "2CH.35.4",
+            "2CH.35.5",
+            "2CH.35.6",
+            "2CH.35.7",
+            "2CH.35.8",
+            "2CH.35.9",
+            "2CH.35.10",
+            "2CH.35.11",
+            "2CH.35.12",
+            "2CH.35.13",
+            "2CH.35.14",
+            "2CH.35.15",
+            "2CH.35.16",
+            "2CH.35.17",
+            "2CH.35.18",
+            "2CH.35.19",
+            "2CH.35.20",
+            "2CH.35.21",
+            "2CH.35.22",
+            "2CH.35.23",
+            "2CH.35.24",
+            "2CH.35.25",
+            "2CH.35.26",
+            "2CH.35.27"
+          ]
+        },
+        "ref_note": "2 Chronicles 34:1-35:27 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III; Chronicles' own Passover account (35:1-19) substantially expands 2 Kings' own three-verse notice (23:21-23). NOTE (disclosed): this spans two chapters, each individually exceeding the wire's own 20-verse-per-chapter cap -- a deliberate choice, not an oversight, see 2kings.toml's own header note on this exact class of overage.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 22-23, the reign of Josiah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 34-35 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -29363,10 +31377,38 @@
       "2KI.23.35"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.23.31",
+            "2KI.23.32",
+            "2KI.23.33",
+            "2KI.23.34",
+            "2KI.23.35"
+          ]
+        },
+        "ref_note": "2 Kings 23:31-35 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.36.1",
+            "2CH.36.2",
+            "2CH.36.3",
+            "2CH.36.4"
+          ]
+        },
+        "ref_note": "2 Chronicles 36:1-4 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 23:31-35, the reign of Jehoahaz. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 36:1-4 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -29392,10 +31434,42 @@
       "2KI.24.7"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.23.36",
+            "2KI.23.37",
+            "2KI.24.1",
+            "2KI.24.2",
+            "2KI.24.3",
+            "2KI.24.4",
+            "2KI.24.5",
+            "2KI.24.6",
+            "2KI.24.7"
+          ]
+        },
+        "ref_note": "2 Kings 23:36-24:7 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.36.5",
+            "2CH.36.6",
+            "2CH.36.7",
+            "2CH.36.8"
+          ]
+        },
+        "ref_note": "2 Chronicles 36:5-8 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 23:36-24:7, the reign of Jehoiakim. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 36:5-8 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -29871,10 +31945,41 @@
       "2KI.24.17"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.24.8",
+            "2KI.24.9",
+            "2KI.24.10",
+            "2KI.24.11",
+            "2KI.24.12",
+            "2KI.24.13",
+            "2KI.24.14",
+            "2KI.24.15",
+            "2KI.24.16",
+            "2KI.24.17"
+          ]
+        },
+        "ref_note": "2 Kings 24:8-17 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.36.9",
+            "2CH.36.10"
+          ]
+        },
+        "ref_note": "2 Chronicles 36:9-10 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 24:8-17, the reign of Jeconiah (Jehoiachin). Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 36:9-10 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -29901,10 +32006,45 @@
       "2KI.25.7"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.24.18",
+            "2KI.24.19",
+            "2KI.24.20",
+            "2KI.25.1",
+            "2KI.25.2",
+            "2KI.25.3",
+            "2KI.25.4",
+            "2KI.25.5",
+            "2KI.25.6",
+            "2KI.25.7"
+          ]
+        },
+        "ref_note": "2 Kings 24:18-25:7 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.36.11",
+            "2CH.36.12",
+            "2CH.36.13",
+            "2CH.36.14",
+            "2CH.36.15",
+            "2CH.36.16"
+          ]
+        },
+        "ref_note": "2 Chronicles 36:11-16 read directly against the compiled KJV text -- Crockett (1897) Book Fifth Part III/Appendix.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": null,
+    "atlas_section": "2 Kings pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Kings 24:18-25:7, the reign of Zedekiah. Title and date/verses are Theographic's own (CC BY-SA 4.0, credited); this row's own contribution is heading-worthy provenance, alongside this run's own new 2 Chronicles 36:11-16 witness (Crockett, 1897).",
     "ref_note": null,
     "order_key": 0
   },
@@ -31371,6 +33511,20 @@
         },
         "ref_note": "Jeremiah 52:12-23 read directly against the compiled KJV text -- Crockett (1897) Appendix section VIII, part of sections 182-183's own wider Jeremiah cross-references.",
         "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.36.17",
+            "2CH.36.18",
+            "2CH.36.19",
+            "2CH.36.20",
+            "2CH.36.21"
+          ]
+        },
+        "ref_note": "2 Chronicles 36:17-21 read directly against the compiled KJV text -- Crockett (1897) Appendix, a much briefer summary of the same overthrow 2ki_jerusalem_aftermath's own fuller Jeremiah 52 witness already recounts in more detail. Verse 21 (the seventy years' sabbath-rest for the land, 'to fulfil the word of the Lord by the mouth of Jeremiah') is the Chronicler's own closing theological summary of the exile just narrated, included here rather than left an orphaned verse between this witness and 2CH.36.22-23's own separate Cyrus's-decree witness (on ret_babylon).",
+        "robertson_section": null
       }
     ],
     "robertson_section": null,
@@ -31512,7 +33666,32 @@
       "EZR.1.4"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "EZR",
+        "translations": {
+          "kjv": [
+            "EZR.1.1",
+            "EZR.1.2",
+            "EZR.1.3",
+            "EZR.1.4"
+          ]
+        },
+        "ref_note": "Ezra 1:1-4 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete.",
+        "robertson_section": null
+      },
+      {
+        "book": "2CH",
+        "translations": {
+          "kjv": [
+            "2CH.36.22",
+            "2CH.36.23"
+          ]
+        },
+        "ref_note": "2 Chronicles 36:22-23 read directly against the compiled KJV text -- Crockett (1897) Appendix section IV; 2 Chronicles 36:22-23 and Ezra 1:1-3 are nearly verbatim identical, the closing/opening bridge between the two books.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": null,
