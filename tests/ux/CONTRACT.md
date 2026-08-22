@@ -1177,7 +1177,10 @@ Notes:
   `event-following-verse-timeline-{SPAN}` -- see the GLOBAL TIMELINE note
   under EVENT-1. `pericope-heading-{eventId}`
   (Reader.razor's own reader-flow heading, batch-t-brief.md requirement 5)
-  is ALSO explorable under this same rule -- see EVENT-1. batch-m-brief.md
+  is ALSO explorable under this same rule -- see EVENT-1; `verse-event-{eventId}`
+  and `pericope-heading-{eventId}` carry `.explorable-quiet` INSTEAD of
+  `.explorable` for a general-kind container specifically -- see AFFORDANCE-1
+  below. batch-m-brief.md
   adds `polity-delta-{id}-{from}-{ringIndex}` (a border ring's own delta
   hit-stroke, ONE-RULE's language adapted for an SVG shape -- see DELTA-1's
   own comment on why plain `.explorable` itself doesn't reach an SVG path)
@@ -1195,6 +1198,43 @@ Notes:
   `hover-passage-{SPAN}` row; clicking a specific verse span opens just that verse and
   never also bubbles into the passage's own click (stopPropagation on the inner
   element) -- the more specific target always wins.
+- AFFORDANCE-1 (batch-hotfix4-brief.md requirement 6, owner's own law,
+  2026-08-21, near-verbatim: "if something isn't traversable it shouldn't
+  look like other things that are actually traversable"). After
+  requirement 1's own fix, every DATED event traverses (global timeline,
+  narrative, or both); the non-traversable set is GENERAL-kind containers
+  (requirement 2's own explicit boundary) and single-direction CHAIN ENDS
+  (already honest via ONE-RULE's own existing conditional-presence
+  discipline -- one direction present, the other simply absent, no new
+  styling needed there). `.explorable-quiet` (app.css) REPLACES
+  `.explorable` (never both together) on a general-kind container's own
+  identity, everywhere it renders as an explorable target:
+  `pericope-heading-{eventId}` (Reader.razor, conditional on
+  `heading.Kind == "general"`) and `verse-event-{eventId}` (a VERSE node's
+  own EVENT membership row, `VerseEventMembershipSection`, conditional on
+  `e.Kind == "general"`) -- ONE rule, both surfaces, no per-surface
+  variant. Deliberately a NON-color distinction (unlike `.quiet-label`'s
+  own map-furniture precedent) -- both surfaces carry real content a
+  reader needs to read at full contrast, so the difference is the near-
+  total ABSENCE of `.explorable`'s own darken-on-hover wash
+  (`cursor: pointer` alone; whatever base component styling the element
+  already independently carries -- e.g. `.popover-event-row-button`'s own
+  hover -- is untouched, so the row stays honestly, visibly clickable,
+  just never wash-darkening the way a traversable node does). SWEPT, not
+  assumed: hover cards and the map itself are VERIFIED unreachable for a
+  general-kind container (every `kind == "general"` event has an empty
+  `places` list BY CONSTRUCTION -- see the data-model paragraph under
+  EVENT-1 -- confirmed against the real compiled data, 0 of 82 general-kind
+  events carry any place), so those two surfaces have nothing to sweep;
+  the two surfaces named above are the complete set. WIRE: `HeadingOut`
+  (`GET /api/chapter/{cref}`'s own per-verse `heading`) and `VerseEventOut`
+  (`GET /api/verse/{vref}`'s own `events` array, now its own dedicated
+  `VerseEventDto` client-side rather than a reuse of `SceneEvent` -- a
+  drive-by fix, found while adding `kind`: `SceneEvent`'s own non-nullable
+  `when` would have silently carried the server's internal undated
+  sentinel for a general-kind row, dormant only because neither renderer
+  ever read it) both gain `kind` (`"event"` | `"general"`) so the client
+  never needs a second fetch just to know whether to darken.
 - `marker-{placeId}` elements carry the visible place label -- batch-e-brief.md:
   this is the scene's own `display_name` (the period name resolved for the
   scene's current window when the place has curated history and one of its

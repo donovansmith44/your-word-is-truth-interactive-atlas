@@ -109,7 +109,14 @@
                        reused, not copied, for both -- SPLIT-1). *@
                     @if (v.Heading is { } heading)
                     {
-                        <h2 class="pericope-heading explorable" data-testid="@($"pericope-heading-{heading.EventId}")"
+                        @* Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY):
+                           a general-kind heading is NOT part of time
+                           traversal (req 2) -- .explorable-quiet REPLACES
+                           .explorable (never both) so it never looks like a
+                           dated heading, which DOES traverse after req 1.
+                           Same class, same rule, as VerseEventMembershipSection's
+                           own row -- "one rule, no per-surface variant." *@
+                        <h2 class="pericope-heading @(heading.Kind == "general" ? "explorable-quiet" : "explorable")" data-testid="@($"pericope-heading-{heading.EventId}")"
                             tabindex="0" role="button" aria-label="@($"Explore {heading.Title}")"
                             @onclick="() => OpenEvent(heading.EventId, heading.Title)"
                             @onkeydown="@(e => OnHeadingKeyDown(e, heading.EventId, heading.Title))">

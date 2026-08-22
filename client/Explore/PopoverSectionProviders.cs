@@ -867,7 +867,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             return null;
         }
 
-        List<SceneEvent> events;
+        List<VerseEventDto> events;
         try
         {
             events = (await v.DetailAsync(api)).Events; // memoized -- shares VerseTextSectionProvider's own fetch
@@ -895,9 +895,17 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             {
                 var id = e.Id; // local copies -- captured per-row by the onclick closure below
                 var label = e.Label;
+                // Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY): a
+                // general-kind event is NOT part of time traversal (req 2)
+                // -- its own row here must not look like a dated event's
+                // (which DOES traverse, after req 1). `.explorable-quiet`
+                // REPLACES `.explorable` (never both) -- same class,
+                // everywhere a non-traversable node's own identity renders,
+                // per that class's own app.css comment.
+                var explorableClass = e.Kind == "general" ? "explorable-quiet" : "explorable";
                 builder.OpenElement(seq++, "button");
                 builder.AddAttribute(seq++, "type", "button");
-                builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
+                builder.AddAttribute(seq++, "class", $"popover-event-row popover-event-row-button {explorableClass}");
                 builder.AddAttribute(seq++, "data-testid", $"verse-event-{id}");
                 builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label))));
                 builder.AddContent(seq++, label);

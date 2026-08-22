@@ -7,6 +7,15 @@ import { api } from './lib/api';
 // See CONTRACT.md's own "GLOBAL TIMELINE" note (under EVENT-1) for the
 // full ordering/wire-shape/presentation rules these tests pin.
 
+// Exact-membership class check (never a regex against the whole attribute
+// string, which can't cleanly distinguish "explorable" from "explorable-quiet"
+// as substrings of each other) -- splits the real `class` attribute on
+// whitespace and checks the token list directly.
+async function hasClass(locator: any, className: string): Promise<boolean> {
+  const attr = await locator.getAttribute('class');
+  return (attr ?? '').split(/\s+/).includes(className);
+}
+
 function parseVerse(vref: string): { book: string; chapter: number; verse: number } {
   const [book, chapter, verse] = vref.split('.');
   return { book, chapter: Number(chapter), verse: Number(verse) };
@@ -215,4 +224,58 @@ test('HOTFIX-4 req 3: map coherence -- traversing the global timeline from a map
 
   const staleFocus = await page.locator('[data-narrative-focus]').count();
   expect(staleFocus, 'a narrative-less Current must clear every arrow\'s own data-narrative-focus attribute to baseline').toBe(0);
+});
+
+// ---------------------------------------------------------------------
+// AFFORDANCE-1 (requirement 6): "if something isn't traversable it
+// shouldn't look like other things that are actually traversable."
+// ---------------------------------------------------------------------
+
+test('AFFORDANCE-1: a general-kind container\'s own reader heading renders visibly distinct from a dated event\'s (discriminating class asserted, not just wording)', async ({ page }) => {
+  const detail = await api.event('rob_luke_preface');
+  expect(detail.kind).toBe('general');
+
+  await page.goto('/read/LUK/1');
+  const heading = page.getByTestId('pericope-heading-rob_luke_preface');
+  await expect(heading).toBeVisible();
+  expect(await hasClass(heading, 'explorable'), 'a general-kind heading must NOT carry .explorable (that would claim traversal it does not have)').toBe(false);
+  expect(await hasClass(heading, 'explorable-quiet'), 'a general-kind heading MUST carry the discriminating .explorable-quiet class').toBe(true);
+
+  // Still honestly clickable -- opens its own real popover, just doesn't
+  // LOOK like a chain link beforehand.
+  await heading.click();
+  await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
+  await expect(page.getByTestId('popover-section-event-prior')).toHaveCount(0);
+  await expect(page.getByTestId('popover-section-event-prior-timeline')).toHaveCount(0);
+});
+
+test('AFFORDANCE-1: a dated event\'s own reader heading and verse EVENT-membership row keep the traversable .explorable class, and every one of a dated event\'s own affordances actually traverses', async ({ page }) => {
+  // jm_egypt is dated, real, heading-worthy (a narrative leg AND a merge
+  // survivor -- HOTFIX-4's own event_merge.rs) -- the positive control
+  // against the general-kind test immediately above.
+  const detail = await api.event('jm_egypt');
+  expect(detail.kind).toBe('event');
+  const vref = detail.witnesses[0].verse_groups[0].verses[0];
+  const v = parseVerse(vref);
+
+  await page.goto(`/read/${v.book}/${v.chapter}`);
+  const heading = page.getByTestId(`pericope-heading-jm_egypt`);
+  expect(await hasClass(heading, 'explorable')).toBe(true);
+  expect(await hasClass(heading, 'explorable-quiet')).toBe(false);
+
+  // Click the heading -- a real dated event's own affordance -- confirm it
+  // actually traverses (opens the popover, timeline sections present).
+  await heading.click();
+  await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
+  await expect(page.getByTestId('popover-section-event-prior-timeline').or(page.getByTestId('popover-section-event-following-timeline')).first()).toBeVisible();
+  await page.keyboard.press('Escape'); // close the popover before the next click -- it otherwise intercepts pointer events over the reader
+
+  // The SAME event's own verse-membership row also keeps .explorable --
+  // checked directly against the verse popover's own EVENT section.
+  await page.getByTestId(`verse-line-${v.verse}`).click();
+  const row = page.getByTestId('verse-event-jm_egypt');
+  expect(await hasClass(row, 'explorable')).toBe(true);
+  expect(await hasClass(row, 'explorable-quiet')).toBe(false);
+  await row.click();
+  await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
 });

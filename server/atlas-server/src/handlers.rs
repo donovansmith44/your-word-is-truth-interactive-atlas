@@ -229,11 +229,15 @@ pub struct PlaceRefOut {
 pub struct HeadingOut {
     pub event_id: String,
     pub title: String,
+    /// Batch HOTFIX-4 requirement 6: see `HeadingEntry::kind`'s own doc
+    /// comment -- lets the reader's own heading rendering apply the quiet,
+    /// non-traversable styling BEFORE a click, for a general-kind heading.
+    pub kind: String,
 }
 
 impl From<&atlas_core::data::HeadingEntry> for HeadingOut {
     fn from(h: &atlas_core::data::HeadingEntry) -> Self {
-        HeadingOut { event_id: h.event_id.clone(), title: h.title.clone() }
+        HeadingOut { event_id: h.event_id.clone(), title: h.title.clone(), kind: h.kind.clone() }
     }
 }
 
@@ -347,9 +351,27 @@ pub struct BookMetaOut {
 pub struct VerseEventOut {
     pub id: String,
     pub label: String,
-    pub when: TimeRange,
+    /// Batch HOTFIX-4 (drive-by fix, found while adding `kind` below):
+    /// OMITTED (not the server's own internal undated placeholder) for a
+    /// general-kind passage -- matches `EventDetailOut.when`'s own
+    /// established fabrication guard exactly (`to_scene_event`'s own `se.when`
+    /// is `e.when` unconditionally, which for `kind == "general"` is
+    /// `TimeRange::undated()`, never meant to be presented as a real date).
+    /// Dormant until now (this row's own CLIENT rendering only ever read
+    /// `Id`/`Label`, never `When`), but a real gap against house doctrine
+    /// nonetheless -- fixed here rather than left for a future reader of
+    /// this exact struct to copy the bad precedent forward.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub when: Option<TimeRange>,
     pub verse_groups: Vec<VerseGroup>,
     pub places: Vec<String>,
+    /// Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY): this EVENT-kind
+    /// PASSAGE's own `Event::kind` ("event" | "general") -- same reason as
+    /// `HeadingOut::kind`, one surface over (a verse's own EVENT membership
+    /// row, not a reader heading): the client applies the quiet,
+    /// non-traversable styling to a general-kind row BEFORE the click, no
+    /// second fetch needed to find out.
+    pub kind: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -574,7 +596,8 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
         .filter_map(|id| data.event_by_id(id))
         .map(|e| {
             let se = to_scene_event(e);
-            VerseEventOut { id: se.id, label: se.label, when: se.when, verse_groups: se.verse_groups, places: e.places.clone() }
+            let when = if e.kind == "event" { Some(se.when) } else { None };
+            VerseEventOut { id: se.id, label: se.label, when, verse_groups: se.verse_groups, places: e.places.clone(), kind: e.kind.clone() }
         })
         .collect();
 

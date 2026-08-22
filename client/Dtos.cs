@@ -106,19 +106,38 @@ public sealed record ChapterOut(string Ref, string Book, int Chapter, List<Verse
 /// `AtlasData::heading_for_verse`) -- `EventId` is what a click opens (a
 /// fresh `EventNode`); `Title` is rendered immediately, no second fetch
 /// needed just to show the heading text.
-public sealed record HeadingDto(string EventId, string Title);
+/// Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY): <see cref="Kind"/>
+/// ("event" | "general") lets Reader.razor apply the quiet, non-traversable
+/// styling to a general-kind heading BEFORE the click -- "if something
+/// isn't traversable it shouldn't look like other things that are actually
+/// traversable," the owner's own law.
+public sealed record HeadingDto(string EventId, string Title, string Kind);
 
 public sealed record VerseOut(int Verse, string Text, List<PlaceRefDto> Places, HeadingDto? Heading = null);
 
 public sealed record PlaceRefDto(string Id, string Name);
 
 /// <summary>
-/// <c>GET /api/verse/{vref}</c>. Its wire <c>events</c> array is
-/// SceneEvent-shaped plus an extra <c>places</c> field per event (so the
-/// server side can reuse to_scene_event); System.Text.Json ignores unmapped
-/// JSON members by default, so <c>places</c> is silently dropped here --
-/// this reuses <see cref="SceneEvent"/> rather than a separate type,
-/// exactly as the brief's record list specifies.
+/// The verse-detail endpoint's own event shape -- <see cref="SceneEvent"/>'s
+/// own four fields (id/label/verse_groups, <see cref="When"/> nullable
+/// here, see below) plus <see cref="Places"/>. Batch HOTFIX-4: given its
+/// OWN dedicated type (was a reuse of <see cref="SceneEvent"/> -- the map
+/// scene's own shape, which sends an extra <c>places</c> field this record
+/// silently dropped, and a NON-nullable <c>when</c>, which would have
+/// silently carried the server's own internal undated-sentinel placeholder
+/// for a general-kind event's row -- dormant only because this type's own
+/// renderer never read either field) -- disclosed drive-by fix, found
+/// while adding <see cref="Kind"/> below, not otherwise in this
+/// requirement's own scope.
+/// </summary>
+public sealed record VerseEventDto(string Id, string Label, TimeRangeDto? When, List<VerseGroup> VerseGroups, List<string> Places,
+    // Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY): "event" | "general"
+    // -- lets VerseEventMembershipSection apply the quiet, non-traversable
+    // styling to a general-kind row before the click.
+    string Kind);
+
+/// <summary>
+/// <c>GET /api/verse/{vref}</c>.
 /// </summary>
 /// Batch T requirement 3 ("verse popover: event membership replaces
 /// prev/next"): Batch N's own `NarrativePositions` field is RETIRED here --
@@ -132,7 +151,7 @@ public sealed record VerseDetail(
     string Ref,
     string Text,
     BookMetaDto BookMeta,
-    List<SceneEvent> Events,
+    List<VerseEventDto> Events,
     List<CrossRefOut> CrossRefs,
     // Batch F ("the small catechism"): catechism items citing this verse --
     // shares this ALREADY-fetched verse-detail response (server:

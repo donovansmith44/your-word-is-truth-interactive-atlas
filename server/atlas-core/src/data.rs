@@ -835,6 +835,14 @@ pub struct AtlasData {
 pub struct HeadingEntry {
     pub event_id: String,
     pub title: String,
+    /// Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY, owner's own law:
+    /// "if something isn't traversable it shouldn't look like other things
+    /// that are actually traversable"): this heading's own container's
+    /// `Event::kind` ("event" | "general") -- carried so the CLIENT can
+    /// tell, before ever clicking through, whether this heading leads to a
+    /// dated (traversable) or general-kind (NOT part of time traversal,
+    /// requirement 2) container, without a second fetch just to find out.
+    pub kind: String,
 }
 
 /// Batch T: one anchor verse per witness of `e` -- GRACEFUL (never panics)
@@ -1210,7 +1218,7 @@ impl AtlasData {
                 };
                 if should_replace {
                     verse_heading_precedence.insert(anchor.clone(), precedence);
-                    verse_heading.insert(anchor, HeadingEntry { event_id: e.id.clone(), title: e.label.clone() });
+                    verse_heading.insert(anchor, HeadingEntry { event_id: e.id.clone(), title: e.label.clone(), kind: e.kind.clone() });
                 }
             }
         }

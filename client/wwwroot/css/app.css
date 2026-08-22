@@ -168,6 +168,35 @@ input:focus-visible,
     }
 }
 
+/* Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY, owner's own law,
+   2026-08-21, near-verbatim: "if something isn't traversable it shouldn't
+   look like other things that are actually traversable"). Applies to a
+   general-kind (undated) container's own row/heading wherever ONE renders
+   -- `pericope-heading-{eventId}` (Reader.razor) and `verse-event-{eventId}`
+   (VerseEventMembershipSection) -- REPLACING `.explorable` on that one
+   element (never both together; see each caller's own conditional class).
+   Every DATED event traverses after requirement 1's own fix; a general-
+   kind one is a real, honestly-clickable node (it still opens its own real
+   popover -- "isn't traversable" means no PRIOR/FOLLOWING chain, not "isn't
+   explorable at all") but must never LOOK like a chain link.
+   Deliberately NOT a color change (unlike `.quiet-label`'s own map-furniture
+   precedent, which can afford --ink-soft's softer contrast on a small
+   decorative label): this class sits on REAL, must-stay-readable content --
+   a heading a reader is meant to read, an event's own title in a list --
+   so touching color at all would risk this popover's own established
+   contrast floor for zero benefit. The distinction is instead the near-
+   total ABSENCE of `.explorable`'s own signature darken-on-hover wash --
+   `cursor: pointer` alone (still honestly clickable; whatever base
+   component styling the element already carries, e.g.
+   `.popover-event-row-button`'s own hover, is untouched and stays as the
+   row's own real feedback) is unmistakably quieter than a wash-darkening
+   node without touching a single color token. "One rule, no per-surface
+   variant" -- this exact class, unconditionally, everywhere a
+   non-traversable node's own identity renders as an explorable target. */
+.explorable-quiet {
+    cursor: pointer;
+}
+
 /* Page scenes (design-direction.md "Page treatments"). Reader is daylight
    parchment; World is dusk indigo. Each page's root element carries one of
    these two classes -- they are never combined on the same element. */
