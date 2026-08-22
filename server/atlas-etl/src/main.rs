@@ -234,6 +234,17 @@ fn main() -> Result<()> {
     validate::run_place_merges(atlas_core::merge::MERGE_PAIRS, &all_places)
         .context("data/compiled/* was NOT written; fix atlas_core::merge::MERGE_PAIRS (bad id or over-threshold pair)")?;
 
+    // --- atlas_core::event_merge::EVENT_MERGE_PAIRS (Batch HOTFIX-4,
+    // duplicate-identity rectification) -----------------------------------
+    // Same timing/rationale as run_place_merges immediately above: checked
+    // against `all_events`, the REAL pre-merge compiled event set, BEFORE
+    // `AtlasData::new(...).finish()` below ever applies
+    // `atlas_core::event_merge::apply_event_merges` -- the fail-loud sweep's
+    // entire job is to find duplicates that are STILL THERE; running it
+    // after the merge would trivially always pass.
+    validate::run_event_merges(atlas_core::event_merge::EVENT_MERGE_PAIRS, atlas_core::event_merge::EVENT_DISTINCT_PAIRS, &all_events)
+        .context("data/compiled/* was NOT written; fix atlas_core::event_merge::EVENT_MERGE_PAIRS/EVENT_DISTINCT_PAIRS (an unlisted near-duplicate event pair, or a bad id)")?;
+
     // --- assemble, validate --------------------------------------------
     // NOTE (review finding I-2, fix-round-1): `finish()` applies
     // `atlas_core::merge::apply_place_merges` as its own first step (see
@@ -255,6 +266,15 @@ fn main() -> Result<()> {
     let data = AtlasData::new(canon, all_places, all_events, narratives, eras, books_meta, verses, xrefs_map).finish();
     validate::run(&data).context("data/compiled/* was NOT written; fix data/curated/ and re-run")?;
     counts.places = data.places.len(); // post-merge, matches the `places.json` length written below (fix-round-1, M-2)
+    // Batch HOTFIX-4: the identical fix, for the identical reason, now that
+    // `atlas_core::event_merge::apply_event_merges` (finish()'s own second
+    // merge pass, right after the place merge) can ALSO shrink `events`
+    // below its own pre-finish `all_events.len()` -- this field silently
+    // carried the pre-merge count until this batch's own event merges made
+    // the drift observable for the first time (0 event merges existed
+    // before now, so pre-/post-merge counts happened to coincide). Same
+    // "corrected here, matches the real written file" comment as M-2 above.
+    counts.events = data.events.len();
 
     // --- data/curated/polities/ (Batch B2: hand-authored per-polity
     // timerange borders, "borders v2, the cartographer's edition") --------

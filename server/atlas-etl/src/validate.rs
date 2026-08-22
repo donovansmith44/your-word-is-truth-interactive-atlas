@@ -55,6 +55,7 @@ use std::collections::{HashMap, HashSet};
 
 use anyhow::{bail, Result};
 use atlas_core::data::{AtlasData, CatechismPart, Era, Event, Landmark, LandMaskRegion, Place, PlaceHistory, PlaceNameAlias, Polity};
+use atlas_core::event_merge::{is_layer0, verse_jaccard, EventDistinct, EventMerge, DUPLICATE_JACCARD_THRESHOLD};
 use atlas_core::history::strip_disambiguation_suffix;
 use atlas_core::merge::{great_circle_km, PlaceMerge, SAME_PLACE_THRESHOLD_KM};
 use atlas_core::refs::VerseId;
@@ -853,6 +854,96 @@ pub fn run_place_merges(pairs: &[PlaceMerge], places: &[Place]) -> Result<()> {
     }
     let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
     bail!("place-merge validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// Batch HOTFIX-4 (duplicate-identity rectification, `atlas_core::event_merge`'s
+/// own module doc comment has the full root-cause chain): runs on the RAW,
+/// PRE-`AtlasData::finish()` event set (called from `main.rs`, same call
+/// position/timing as `run_place_merges` above -- BEFORE
+/// `atlas_core::event_merge::apply_event_merges` ever runs, so the
+/// duplicates this sweep is looking for are still actually there to find;
+/// running it post-merge would trivially always pass). Two checks:
+///
+/// 1. Every `EVENT_MERGE_PAIRS`/`EVENT_DISTINCT_PAIRS` entry names two real
+///    ids in the compiled event set (a stale/typo'd curated entry is a
+///    curation error, same class as `run_place_merges`'s own dangling-id
+///    check above).
+/// 2. THE FAIL-LOUD SWEEP ITSELF: every (LAYER-0, LAYER-1) event pair in
+///    the WHOLE compiled set at verse-set jaccard >= `DUPLICATE_JACCARD_THRESHOLD`
+///    must be accounted for -- either merged (`EVENT_MERGE_PAIRS`) or
+///    explicitly documented as genuinely distinct despite the overlap
+///    (`EVENT_DISTINCT_PAIRS`). An unlisted pair fails loud, naming both
+///    ids, both labels, and the jaccard score, so a future curator adding a
+///    new event that happens to duplicate an existing one is caught
+///    immediately, not silently shipped as a second "straight up lie" the
+///    way `theo-267`/`jm_jordan` was.
+pub fn run_event_merges(merge_pairs: &[EventMerge], distinct_pairs: &[EventDistinct], events: &[Event]) -> Result<()> {
+    let mut errors: Vec<String> = Vec::new();
+    let by_id: HashMap<&str, &Event> = events.iter().map(|e| (e.id.as_str(), e)).collect();
+
+    for pair in merge_pairs {
+        if !by_id.contains_key(pair.survivor) {
+            errors.push(format!(
+                "event-merge pair (survivor '{}', absorbed '{}'): survivor id does not exist in the compiled event set",
+                pair.survivor, pair.absorbed
+            ));
+        }
+        if !by_id.contains_key(pair.absorbed) {
+            errors.push(format!(
+                "event-merge pair (survivor '{}', absorbed '{}'): absorbed id does not exist in the compiled event set",
+                pair.survivor, pair.absorbed
+            ));
+        }
+    }
+    for pair in distinct_pairs {
+        if !by_id.contains_key(pair.a) {
+            errors.push(format!("event-distinct pair ('{}', '{}'): id '{}' does not exist in the compiled event set", pair.a, pair.b, pair.a));
+        }
+        if !by_id.contains_key(pair.b) {
+            errors.push(format!("event-distinct pair ('{}', '{}'): id '{}' does not exist in the compiled event set", pair.a, pair.b, pair.b));
+        }
+    }
+
+    // The sweep: every listed (merge OR distinct) pair, keyed BOTH
+    // directions -- a curator lists a merge pair as (survivor, absorbed)
+    // and a distinct pair in whatever order reads naturally, so the lookup
+    // below must not care which side is which.
+    let mut listed: HashSet<(&str, &str)> = HashSet::new();
+    for pair in merge_pairs {
+        listed.insert((pair.survivor, pair.absorbed));
+        listed.insert((pair.absorbed, pair.survivor));
+    }
+    for pair in distinct_pairs {
+        listed.insert((pair.a, pair.b));
+        listed.insert((pair.b, pair.a));
+    }
+
+    let layer0: Vec<&Event> = events.iter().filter(|e| is_layer0(e)).collect();
+    let layer1: Vec<&Event> = events.iter().filter(|e| !is_layer0(e)).collect();
+    let mut unlisted: Vec<String> = Vec::new();
+    for a in &layer0 {
+        for b in &layer1 {
+            let j = verse_jaccard(a, b);
+            if j < DUPLICATE_JACCARD_THRESHOLD {
+                continue;
+            }
+            if listed.contains(&(a.id.as_str(), b.id.as_str())) {
+                continue;
+            }
+            unlisted.push(format!(
+                "'{}' ({:?}) <-> '{}' ({:?}): jaccard {:.3} >= {DUPLICATE_JACCARD_THRESHOLD} and NEITHER merged (EVENT_MERGE_PAIRS) nor explicitly documented as distinct (EVENT_DISTINCT_PAIRS)",
+                a.id, a.label, b.id, b.label, j
+            ));
+        }
+    }
+    unlisted.sort();
+    errors.extend(unlisted);
+
+    if errors.is_empty() {
+        return Ok(());
+    }
+    let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("event-merge validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
 fn check_duplicate_ids<'a>(ids: impl Iterator<Item = &'a str>, kind: &str, errors: &mut Vec<String>) {

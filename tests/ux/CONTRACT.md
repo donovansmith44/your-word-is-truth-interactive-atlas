@@ -867,6 +867,58 @@ Notes:
   be fixed in the data, not the rule (see batch-t2-report.md for whether
   any fired during authoring).
 
+  EVENT-MERGE, DUPLICATE-IDENTITY RECTIFICATION (batch-hotfix4-brief.md's
+  own coordinator amendment, owner live report 2026-08-21: "the ordering of
+  the narratives is wrong. the temptation of Jesus in the wilderness, for
+  instance, is labeled as being before Jesus' baptism. this is a straight
+  up lie"). DISTINCT from WITHIN-LAYER ANCHOR COLLISIONS above (which
+  arbitrates which of two REAL containers wins a HEADING) and from the
+  ordinary layer-1-beats-layer-0 case (which arbitrates the SAME thing for
+  a real container vs. a freebie) -- this is a THIRD, prior concern: TWO
+  ids for the SAME real-world event, one a bare Theographic freebie on its
+  own approximate scale, one a real curated container on this atlas's own
+  AD-33-anchored scale, BOTH still existing as independent graph nodes.
+  `heading_precedence` already made the real container win the HEADING at
+  any shared verse -- but HOTFIX-4 requirement 1 (whole-DAG chronological
+  traversal) makes every dated event a real, independently-reachable node,
+  so the freebie stayed one click away, on the WRONG scale, silently
+  reachable from any verse it shares with its own richer twin -- exactly
+  how a Theographic-dated "Temptation" (AD 26) could sort before an
+  AD-33-anchored "Baptism" (AD 29). FIX: `atlas_core::event_merge`
+  (mirrors `atlas_core::merge`'s own same-place pattern) -- a curated
+  `EVENT_MERGE_PAIRS` table (`{survivor, absorbed, reason}`, 63 pairs,
+  verse-set Jaccard overlap >=0.8 against ANY real container found by an
+  automated sweep, plus one pair the owner named by hand below that floor)
+  applied by `apply_event_merges` in `AtlasData::finish()`, immediately
+  after the place merge and before every derived index -- `absorbed` is
+  removed from the compiled graph entirely; `survivor`'s own fields
+  (label/when/order_key/verses/witnesses/places/provenance) are NEVER read
+  from or written by this pass (IDENTITY-ONLY, never a content union) --
+  satisfying BOTH the owner's own container-algebra law (progress.md
+  "OWNER DIRECTIVE" -- verses stay immutable, never annotated; only a
+  duplicate CONTAINER RECORD disappears) and the amendment's own rule B
+  ("the superseded scale is not preserved in shipped data") by
+  construction. `EVENT_DISTINCT_PAIRS` documents every pair the automated
+  sweep also found (same threshold) that is NOT a clean 1:1 duplicate --
+  a Theographic MEGA-SPAN bundling two or more separately-curated
+  pericopes (merging into either would misattribute the other's own
+  citation) or a real duplicate outside this batch's own Gospel-era scope
+  (disclosed, deferred, not silently dropped) -- so the validator below
+  never re-flags either class every run. FAIL-LOUD VALIDATOR
+  (`atlas_etl::validate::run_event_merges`, called from `main.rs` on the
+  RAW pre-finish event set, same timing as `run_place_merges`): sweeps
+  EVERY (layer-0, layer-1) event pair in the whole compiled set at
+  verse-set jaccard >=0.8 -- any pair found that is in NEITHER
+  `EVENT_MERGE_PAIRS` nor `EVENT_DISTINCT_PAIRS` fails the ETL, naming
+  both ids/labels/the score, so a future curator's own new near-duplicate
+  event is caught immediately rather than silently shipped. Red-then-green
+  proven on the Baptism pair's own pre-merge shape (server/atlas-core/src/event_merge.rs's
+  own `red_then_green_baptism_pair_collapses_to_one_event_on_the_ad33_scale`
+  test). One survivor (`jm_jordan`) was additionally given real, individually
+  KJV-verified Mark/Luke witness rows (`data/curated/event-witnesses.toml`)
+  so the Baptism keeps the same 3-Gospel PARALLEL ACCOUNTS richness its
+  own absorbed freebie evidenced, rather than regressing to Matthew-only.
+
   PROVIDER (no popover surgery -- registered exactly like every other
   section, Explore/PopoverSections.cs). VERSE nodes gain ONE new section,
   appended after catechism: "EVENT" (`VerseEventMembershipSection`,

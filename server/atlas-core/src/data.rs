@@ -951,6 +951,16 @@ impl AtlasData {
         // the server's own `AtlasData::load().finish()` -- never double-merges.
         crate::merge::apply_place_merges(&mut self.places, &mut self.events);
 
+        // Batch HOTFIX-4 (duplicate event-identity rectification): applied
+        // immediately after the place merge and, like it, BEFORE every
+        // derived index below is built -- so `event_index`, `verse_to_events`,
+        // `verse_heading`, and the global timeline index (below) all come out
+        // correct for free, already reflecting the merged graph. See
+        // `event_merge`'s own module doc comment for the full root-cause
+        // chain and sweep methodology. Idempotent, same contract as
+        // `apply_place_merges`.
+        crate::event_merge::apply_event_merges(&mut self.events, &mut self.narratives);
+
         self.events.sort_by_key(|e| e.when.from_year);
 
         self.place_index = self

@@ -384,6 +384,41 @@ verses = ["LUK.3.15-18"]
 ref_note = "Luke 3:15-18 read directly against the compiled KJV text"
 robertson_section = "Robertson (1922) §23"
 
+# Batch HOTFIX-4 (duplicate-identity rectification, owner's own named case:
+# "the temptation of Jesus in the wilderness... is labeled as being before
+# Jesus' baptism"): jm_jordan's own top-level `verses` (Matthew 3:13-17
+# alone) is what merged theo-267 ("John Baptizes Jesus," a bare Theographic
+# freebie on the WRONG, pre-AD-33-anchor scale, now removed entirely --
+# server/atlas-core/src/event_merge.rs) also covered in full -- Mark 1:9-11
+# and Luke 3:21-22 both narrate the identical baptism. Adding them here as
+# real, individually-verified witnesses (not folding them into jm_jordan's
+# own top-level `verses`, mirroring rob_temptation's own established
+# MAT-primary-plus-witnesses shape immediately below) both restores the
+# Mark/Luke coverage theo-267's removal would otherwise silently drop (Mark
+# and Luke are both coverage-manifest-declared, gap-free books) and gives
+# the Baptism the same 3-Gospel PARALLEL ACCOUNTS richness its own very next
+# narrative leg, the Temptation, already has.
+[[witness]]
+event_id = "jm_jordan"
+book = "MAT"
+verses = ["MAT.3.13-17"]
+ref_note = "Matthew 3:13-17 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §24, \"Jesus Baptized by John in the Jordan\""
+
+[[witness]]
+event_id = "jm_jordan"
+book = "MRK"
+verses = ["MRK.1.9-11"]
+ref_note = "Mark 1:9-11 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §24"
+
+[[witness]]
+event_id = "jm_jordan"
+book = "LUK"
+verses = ["LUK.3.21-22"]
+ref_note = "Luke 3:21-22 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §24"
+
 [[witness]]
 event_id = "rob_temptation"
 book = "MAT"
@@ -1630,8 +1665,8 @@ robertson_section = "Robertson (1922) §86"
 [[witness]]
 event_id = "rob_demoniac_boy"
 book = "MAT"
-verses = ["MAT.17.14-20"]
-ref_note = "Matthew 17:14-20 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+verses = ["MAT.17.14-21"]
+ref_note = "Matthew 17:14-21 read directly against the compiled KJV text (extended 14-20 -> 14-21, Batch HOTFIX-4: MAT.17.21, this pericope's own closing verse -- 'Howbeit this kind goeth not out but by prayer and fasting' -- was previously cited only by theo-407, the bare Theographic freebie this batch merges away; folding it into this event's own MAT witness keeps it reachable, rather than orphaning it) -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
 robertson_section = "Robertson (1922) §87"
 
 [[witness]]
