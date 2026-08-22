@@ -440,6 +440,49 @@ pub trait Explorable {
     fn edges(&self, g: &Graph, q: EdgeQuery) -> EdgePage;    // one kind, one page
 }
 
+### The Explore monad, realized (the carrier the §0 algebra specifies)
+
+Rust has no higher-kinded Monad trait, so the monad is realized as one
+concrete carrier in the query layer. This is server-side machinery: it
+powers pooled multi-hop queries (map/timeline composites, deep
+questions) and it is WHERE THE MONAD LAWS RUN AS PROPERTY TESTS over
+the real compiled graph. The client never sees Holdings — it consumes
+views and pages; simple navigation never builds one bigger than a
+singleton.
+
+```rust
+/// Holdings: the exploration state. Set semantics — arrive at a node
+/// once (edges never dedup; they live in pages with EdgeIds).
+pub struct Holdings(BTreeSet<AnyNodeId>);
+
+impl Holdings {
+    /// return: hold one thing, frontier not yet consulted.
+    pub fn focus(n: AnyNodeId) -> Holdings;
+
+    /// bind, general form: follow-and-pool a continuation at every
+    /// held position.
+    pub fn bind(&self, f: impl Fn(AnyNodeId) -> Holdings) -> Holdings;
+
+    /// bind at one generating arrow: union, over held positions, of the
+    /// TOTAL frontier of kind k — i.e., the trait's edges(k) with all
+    /// pages taken. `step` is the bridge equation made executable.
+    pub fn step(&self, g: &Graph, k: EdgeKind) -> Holdings;
+
+    /// Kleisli chain: steps(&[Cites, CatechismLink]) ≡ step >=> step.
+    pub fn steps(&self, g: &Graph, path: &[EdgeKind]) -> Holdings;
+}
+
+/// THE LAWS, as committed property tests over the compiled graph
+/// (sampled nodes, every edge kind):
+///   left identity:   focus(n).bind(f)          == f(n)
+///   right identity:  h.bind(Holdings::focus)   == h
+///   associativity:   h.bind(f).bind(g2)        == h.bind(|x| f(x).bind(g2))
+///   step/page agreement (trait ↔ monad bridge):
+///                    focus(n).step(g, k)       == union of ALL pages of n.edges(k)
+/// The last law is what makes lazy pagination trustworthy: pages are
+/// windows over the same totals the monad composes.
+```
+
 pub struct EdgeQuery { pub kind: EdgeKind, pub cursor: Option<Cursor>, pub limit: u16 }
 pub struct EdgePage  { pub kind: EdgeKind, pub entries: Vec<EdgeEntry>, pub next: Option<Cursor> }
 pub struct EdgeEntry { pub edge: EdgeId, pub node: CardSummary, pub meta: EdgeMeta }
