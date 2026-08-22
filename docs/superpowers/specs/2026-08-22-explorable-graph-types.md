@@ -30,6 +30,9 @@ instance Monad Explore where
 --   step :: EdgeKind -> NodeId -> Exploration NodeId
 -- Multi-hop questions are Kleisli composition:
 --   step Cites >=> step CatechismLink
+-- POSITIONS include edges (owner, 2026-08-22: edges hold explorable
+-- information — a claim's justification is itself walkable):
+--   data Position = AtNode NodeId | AtEdge EdgeId
 -- Dedup is two-layered: HOLDINGS are a Set (you arrive at a node once);
 -- EDGES never dedup (every distinct connection stays visible, each with
 -- its own EdgeId).
@@ -292,11 +295,48 @@ pub struct Graph {
     pub parallels:   ParallelIndex,       // via co-witnessing one Event
 }
 
-/// A typed authored edge; the pattern for all of them:
+/// LAW (owner, 2026-08-22): "Edges also hold information that may be
+/// explorable. i.e., justification for mapping a narrative to a
+/// timerange would be derived from Scripture." Edges are POSITIONS: an
+/// EdgeId can take focus, presents (Entry = the row; Card = the
+/// justification view), and has a frontier of its own —
+///   endpoints    Edge → its two nodes            (structural, derived)
+///   grounded-in  Edge → loci / anchors / sources (from Grounds)
+///   derived-from derived Edge → authored Edges   (compiler-emitted)
+/// with duals grounds-for / derives — so a VERSE's frontier includes
+/// "claims grounded in this verse": Scripture justifying the structure,
+/// explorable from either end.
+pub enum Position { Node(AnyNodeId), Edge(EdgeId) }   // Holdings = BTreeSet<Position>
+
+/// GROUNDS ≠ PROVENANCE: provenance says WHO asserts (source+locator);
+/// grounds say WHAT JUSTIFIES the claim's content — typically Scripture.
+/// Authored rows: grounds optional-but-encouraged (populated
+/// progressively through migration). Derived rows: derivation is
+/// ALWAYS present, computed — a derived edge that cannot say what it
+/// derives from is unrepresentable.
+pub struct Grounds(Vec<Ground>);
+pub enum Ground {
+    Scripture(KjvLocusRange),     // the owner's example: sequence/date justified by the text
+    Anchor(AnchorId),             // chronology grounds
+    DerivedFrom(Vec<EdgeId>),     // derived edges: the exact rows the compiler used
+    Source(SourceId),             // e.g., a Robertson section for a harmony ordering
+}
+
+pub trait EdgeData {
+    fn id(&self) -> EdgeId;
+    fn kind(&self) -> EdgeKind;
+    fn endpoints(&self) -> (AnyNodeId, AnyNodeId);
+    fn provenance(&self) -> ProvenanceId;
+    fn grounds(&self) -> &Grounds;
+}
+
+/// A typed authored edge; the pattern for all of them (rows now carry
+/// grounds alongside provenance):
 pub struct Contains {
     pub container: ContainerId,
     pub content:   LocusSet,
     pub provenance: ProvenanceId,
+    pub grounds:   Grounds,
 }
 
 /// LAW (witness canon): parallel accounts are witnesses on ONE event —
@@ -544,12 +584,13 @@ over the graph — nothing else:
 /// Which node kinds can take focus, per surface. "What can I click?"
 /// has one answer: kinds focusable HERE. Enabling a new kind (Source
 /// nodes at Batch S; Person at Batch P) is a policy-row edit, not UI work.
-pub fn focusable(surface: Surface, kind: NodeKind) -> bool;
+pub fn focusable(surface: Surface, kind: PositionKind) -> bool;  // PositionKind = NodeKind | EdgeKind:
+                                                                 // edges take focus too ("why?" is a click)
 
 /// How a focus of a given kind displays its frontier, per surface:
 /// which edge kinds render, ordered how, clamped to how many initially,
 /// in which style, through which renderer.
-pub fn display(surface: Surface, kind: NodeKind) -> FrontierPresentation;
+pub fn display(surface: Surface, kind: PositionKind) -> FrontierPresentation;
 
 pub struct FrontierPresentation { pub sections: Vec<SectionSpec> }
 pub struct SectionSpec {
@@ -666,6 +707,10 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
 - One kind wearing two faces in the same context (Presentable is the
   single per-(kind, context) source of visual form; laws travel as
   server data and cannot be re-decided by styling).
+- A "why?" without an answer (every edge is a position with provenance
+  plus grounds or computed derivation; a derived edge that cannot name
+  its derivation is unrepresentable; the grounds-for dual lets Scripture
+  answer "what claims rest on me?").
 
 ## 10. Open type questions (flagged, not hidden)
 
