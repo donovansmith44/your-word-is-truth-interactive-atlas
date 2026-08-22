@@ -1,0 +1,186 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). 2 Corinthians.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: 2 Corinthians moves through three real, text-marked
+# movements -- Paul's own defence of his ministry and change of plans
+# (1-7), the collection for Jerusalem (8-9), and his own final defence
+# against the "super-apostles" (10-13) -- each subdivided at its own
+# natural paragraph seams. 6:14-7:1 is kept as one container spanning the
+# chapter break (7:1's own 'having therefore these promises' concludes the
+# 6:14-18 exhortation to separation, not a fresh topic) -- a literary-
+# structure fact, not textual criticism.
+
+[[event]]
+id = "2co_salutation"
+label = "Salutation to the church of God at Corinth, with all the saints in Achaia"
+kind = "general"
+verses = ["2CO.1.1-2"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 1:1-2, Paul's own opening greeting, with Timothy, to the church at Corinth and all the saints in Achaia."
+
+[[event]]
+id = "2co_god_of_all_comfort"
+label = "The God of all comfort; comfort in affliction"
+kind = "general"
+verses = ["2CO.1.3-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 1:3-11, blessing to 'the God of all comfort,' whose comfort in Paul's own tribulation in Asia overflows to comfort others."
+
+[[event]]
+id = "2co_pauls_integrity_and_changed_plans"
+label = "Paul's own integrity and his changed travel plans; God's promises Yea and Amen"
+kind = "general"
+verses = ["2CO.1.12-24"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 1:12-24, Paul's own defence of his sincerity against the charge of fickleness for altering his travel plans, and Christ as God's own 'Yea' to every promise."
+
+[[event]]
+id = "2co_forgiveness_for_the_offender"
+label = "Forgiveness for the offender; comfort him lest he be swallowed with sorrow"
+kind = "general"
+verses = ["2CO.2.1-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 2:1-11, Paul's own instruction to forgive and comfort the one who had caused grief, 'lest Satan should get an advantage of us.'"
+
+[[event]]
+id = "2co_pauls_anxiety_at_troas_and_triumph_in_christ"
+label = "Paul's own anxiety at Troas; triumph in Christ, a sweet savour"
+kind = "general"
+verses = ["2CO.2.12-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 2:12-17, Paul's own restlessness at Troas for want of Titus, and thanks to God 'which always causeth us to triumph in Christ.'"
+
+[[event]]
+id = "2co_living_epistles"
+label = "Living epistles; able ministers of the new testament, not of the letter but of the spirit"
+kind = "general"
+verses = ["2CO.3.1-6"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 3:1-6, the Corinthians themselves as Paul's own 'epistle... written not with ink, but with the Spirit,' and ministry of a new covenant, 'not of the letter, but of the spirit.'"
+
+[[event]]
+id = "2co_the_glory_that_excelleth"
+label = "The glory that excelleth; the vail taken away in Christ"
+kind = "general"
+verses = ["2CO.3.7-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 3:7-18, the fading glory on the face of Moses contrasted with the surpassing glory of the new covenant, and believers 'with open face beholding as in a glass the glory of the Lord.'"
+
+[[event]]
+id = "2co_not_preaching_ourselves_but_christ"
+label = "This ministry: not preaching ourselves, but Christ; light shining out of darkness"
+kind = "general"
+verses = ["2CO.4.1-6"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 4:1-6, ministry conducted 'not walking in craftiness,' preaching 'Christ Jesus the Lord,' by the same God who 'commanded the light to shine out of darkness.'"
+
+[[event]]
+id = "2co_treasure_in_earthen_vessels"
+label = "Treasure in earthen vessels; the light affliction and the eternal weight of glory"
+kind = "general"
+verses = ["2CO.4.7-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 4:7-18, the gospel's own treasure carried 'in earthen vessels,' and present affliction working 'a far more exceeding and eternal weight of glory.'"
+
+[[event]]
+id = "2co_our_earthly_house_dissolved"
+label = "Our earthly house dissolved; the building of God, eternal in the heavens"
+kind = "general"
+verses = ["2CO.5.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 5:1-10, the earthly tabernacle's own dissolution set against 'a building of God, an house not made with hands, eternal in the heavens,' and all appearing 'before the judgment seat of Christ.'"
+
+[[event]]
+id = "2co_ambassadors_for_christ"
+label = "Ambassadors for Christ: the ministry of reconciliation"
+kind = "general"
+verses = ["2CO.5.11-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 5:11-21, the love of Christ constraining, 'a new creature' in Christ, and believers 'ambassadors for Christ' entrusted with 'the word of reconciliation.'"
+
+[[event]]
+id = "2co_workers_together_with_god"
+label = "Workers together with God; approving ourselves as ministers in all things"
+kind = "general"
+verses = ["2CO.6.1-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 6:1-13, Paul's own catalogue of a minister's own hardships and paradoxes -- 'as dying, and, behold, we live' -- and his own appeal, 'be ye also enlarged.'"
+
+[[event]]
+id = "2co_be_not_unequally_yoked"
+label = "Be ye not unequally yoked; come out from among them"
+kind = "general"
+verses = ["2CO.6.14-18", "2CO.7.1"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 6:14-7:1, one unit spanning the chapter break -- the warning against unequal yokes with unbelievers, and the resulting exhortation to 'cleanse ourselves from all filthiness of the flesh and spirit.'"
+
+[[event]]
+id = "2co_titus_comfort_and_godly_sorrow"
+label = "Titus's own comfort; godly sorrow that worketh repentance"
+kind = "general"
+verses = ["2CO.7.2-16"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 7:2-16, Paul's own comfort at the coming of Titus with good news from Corinth, and 'godly sorrow worketh repentance to salvation not to be repented of.'"
+
+[[event]]
+id = "2co_the_grace_of_giving"
+label = "The grace of giving: the example of Macedonia and of Christ's own poverty"
+kind = "general"
+verses = ["2CO.8.1-15"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 8:1-15, the Macedonian churches' own liberality out of deep poverty, and Christ, 'though he was rich, yet for your sakes he became poor,' as the pattern for giving."
+
+[[event]]
+id = "2co_the_sending_of_titus"
+label = "The sending of Titus and the brethren to Corinth"
+kind = "general"
+verses = ["2CO.8.16-24"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 8:16-24, Titus and two brethren sent ahead to Corinth to complete the collection, 'avoiding this, that no man should blame us.'"
+
+[[event]]
+id = "2co_the_collection_a_cheerful_giver"
+label = "The collection for the saints: a cheerful giver, God's own unspeakable gift"
+kind = "general"
+verses = ["2CO.9.1-15"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 9, Paul's own final appeal for the Jerusalem collection -- sowing bountifully, 'God loveth a cheerful giver,' and thanks 'for his unspeakable gift' -- kept as one chapter-length unit continuing ch8's own topic to its close."
+
+[[event]]
+id = "2co_pauls_defence_of_his_authority"
+label = "Paul's own defence of his apostolic authority against those who judge by appearance"
+kind = "general"
+verses = ["2CO.10.1-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 10, Paul's own defence against the charge of walking 'according to the flesh,' the weapons of his warfare 'not carnal,' and 'he that glorieth, let him glory in the Lord' -- kept whole, the letter's own turn into its final, sharper section."
+
+[[event]]
+id = "2co_pauls_godly_jealousy_and_false_apostles"
+label = "Paul's own godly jealousy; false apostles transformed as ministers of righteousness"
+kind = "general"
+verses = ["2CO.11.1-15"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 11:1-15, Paul's own jealousy over the Corinthians 'as a chaste virgin to Christ,' and a warning that false apostles transform themselves, 'as Satan himself is transformed into an angel of light.'"
+
+[[event]]
+id = "2co_pauls_fools_boast"
+label = "Paul's own 'fool's' boast: his own sufferings for Christ"
+kind = "general"
+verses = ["2CO.11.16-33"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 11:16-33, Paul's own reluctant boasting 'as a fool' in his own labors, stripes, shipwrecks, and perils, closing on his own escape from Damascus in a basket."
+
+[[event]]
+id = "2co_pauls_vision_and_the_thorn_in_the_flesh"
+label = "Paul's own vision of paradise and the thorn in the flesh; strength made perfect in weakness"
+kind = "general"
+verses = ["2CO.12.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 12:1-10, Paul's own vision of being 'caught up to the third heaven,' the thorn in the flesh given to keep him from exaltation, and the Lord's own answer, 'my strength is made perfect in weakness.'"
+
+[[event]]
+id = "2co_pauls_coming_visit_and_fear_of_contention"
+label = "Paul's own coming visit; his fear of finding contention among them"
+kind = "general"
+verses = ["2CO.12.11-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 12:11-21, Paul's own defence that he was 'not burdensome' to them, and his own fear of finding 'debates, envyings, wraths, strifes' when he comes."
+
+[[event]]
+id = "2co_a_final_warning_examine_yourselves"
+label = "A final warning: examine yourselves, whether ye be in the faith"
+kind = "general"
+verses = ["2CO.13.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 13:1-10, Paul's own third-visit warning that he 'will not spare,' and the charge 'examine yourselves, whether ye be in the faith.'"
+
+[[event]]
+id = "2co_closing_exhortation_and_benediction"
+label = "Closing exhortation and the apostolic benediction"
+kind = "general"
+verses = ["2CO.13.11-14"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): 2 Corinthians 13:11-14, the closing exhortation to 'be perfect, be of good comfort,' and the letter's own trinitarian benediction -- 'the grace of the Lord Jesus Christ, and the love of God, and the communion of the Holy Ghost.'"

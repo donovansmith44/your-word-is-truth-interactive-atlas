@@ -1,0 +1,253 @@
+# Batch W5 (whole-Bible titled verse containers, fifth and FINAL run: the
+# epistles, Romans through Revelation -- see this file's own sibling files'
+# headers and batch-w5-report.md for the full slice disclosure).
+#
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: letter-structure units per the master brief's own req 2 --
+# salutation, thanksgiving, argument/body units by real theme-boundary (not
+# arbitrary chapter chunks), exhortation, closing. Romans' own argument
+# (justification by faith / the place of Israel / the transformed life)
+# divides at real paragraph seams throughout; 9:30-10:13 is kept as one
+# container spanning the chapter break (9:30-33's own "Gentiles...attained
+# to righteousness" opens the SAME sustained argument 10:1-13 completes,
+# not a fresh topic at the chapter boundary) -- a literary-structure fact,
+# not textual criticism.
+
+[[event]]
+id = "rom_salutation"
+label = "Salutation: Paul, a servant of Jesus Christ, called to be an apostle"
+kind = "general"
+verses = ["ROM.1.1-7"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 1:1-7, Paul's own opening self-identification and apostolic calling, closing on the grace-and-peace greeting to the saints at Rome."
+
+[[event]]
+id = "rom_thanksgiving_and_longing_to_see_rome"
+label = "Thanksgiving, and Paul's longing to come to Rome"
+kind = "general"
+verses = ["ROM.1.8-15"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 1:8-15, Paul's thanksgiving for the Romans' own faith 'spoken of throughout the whole world,' and his own long-held desire to visit them."
+
+[[event]]
+id = "rom_the_just_shall_live_by_faith"
+label = "The gospel of God: the righteousness of God revealed, the just shall live by faith"
+kind = "general"
+verses = ["ROM.1.16-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 1:16-17, the letter's own thesis statement -- 'I am not ashamed of the gospel of Christ... the just shall live by faith.'"
+
+[[event]]
+id = "rom_the_wrath_of_god_against_gentile_ungodliness"
+label = "The wrath of God revealed against the ungodliness of the Gentile world"
+kind = "general"
+verses = ["ROM.1.18-32"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 1:18-32, mankind's suppression of the truth known from creation, and God's own giving them up to a reprobate mind."
+
+[[event]]
+id = "rom_the_righteous_judgment_of_god"
+label = "The righteous judgment of God, without respect of persons"
+kind = "general"
+verses = ["ROM.2.1-16"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 2:1-16, the self-righteous judge who does the same things he condemns, and God's own impartial judgment of Jew and Gentile alike 'according to his deeds.'"
+
+[[event]]
+id = "rom_the_jew_the_law_and_true_circumcision"
+label = "The Jew, the law, and true circumcision of the heart"
+kind = "general"
+verses = ["ROM.2.17-29"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 2:17-29, the Jew who boasts in the law yet breaks it, and Paul's own definition of the true Jew -- 'circumcision is that of the heart, in the spirit.'"
+
+[[event]]
+id = "rom_the_whole_world_guilty_before_god"
+label = "The whole world guilty before God: none righteous, no, not one"
+kind = "general"
+verses = ["ROM.3.1-20"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 3:1-20, the advantage of the Jew notwithstanding, both Jew and Gentile proved 'all under sin' by Paul's own catena of scripture citations, closing on 'by the law is the knowledge of sin.'"
+
+[[event]]
+id = "rom_the_righteousness_of_god_by_faith"
+label = "The righteousness of God by faith in Jesus Christ, apart from the law"
+kind = "general"
+verses = ["ROM.3.21-31"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 3:21-31, righteousness 'without the law,' received through faith in Christ's own propitiatory blood, closing on 'we establish the law.'"
+
+[[event]]
+id = "rom_abraham_justified_by_faith"
+label = "Abraham justified by faith, the father of all who believe"
+kind = "general"
+verses = ["ROM.4.1-25"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 4, Abraham's own faith 'counted unto him for righteousness' before circumcision or law, the pattern for every believer, closing on Christ 'raised again for our justification.'"
+
+[[event]]
+id = "rom_peace_with_god_through_christ"
+label = "Peace with God and reconciliation through our Lord Jesus Christ"
+kind = "general"
+verses = ["ROM.5.1-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 5:1-11, the peace, access, and hope that follow justification by faith, and reconciliation to God 'by the death of his Son.'"
+
+[[event]]
+id = "rom_adam_and_christ"
+label = "Adam and Christ: sin's entrance by one man, grace's abounding by one man"
+kind = "general"
+verses = ["ROM.5.12-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 5:12-21, the typology of Adam and Christ -- death reigning through the one man's offence, grace reigning through the One man's righteousness."
+
+[[event]]
+id = "rom_dead_to_sin_alive_to_god"
+label = "Dead to sin, alive unto God: baptized into Christ's own death and resurrection"
+kind = "general"
+verses = ["ROM.6.1-14"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 6:1-14, believers buried with Christ by baptism into death and raised to walk in newness of life, closing 'ye are not under the law, but under grace.'"
+
+[[event]]
+id = "rom_servants_of_righteousness"
+label = "Servants of righteousness: the wages of sin and the gift of God"
+kind = "general"
+verses = ["ROM.6.15-23"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 6:15-23, freedom from sin issuing in service to righteousness, closing on the letter's own famous antithesis -- 'the wages of sin is death; but the gift of God is eternal life.'"
+
+[[event]]
+id = "rom_freed_from_the_law_by_union_with_christ"
+label = "Freed from the law by union with Christ"
+kind = "general"
+verses = ["ROM.7.1-6"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 7:1-6, the illustration of a wife bound to her husband only while he lives, applied to the believer's own death to the law 'by the body of Christ.'"
+
+[[event]]
+id = "rom_the_law_is_holy_the_war_within"
+label = "The law is holy; the war between the flesh and the inward man"
+kind = "general"
+verses = ["ROM.7.7-25"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 7:7-25, Paul's own first-person account of sin's use of a holy law to produce death, and the cry 'O wretched man that I am! who shall deliver me' answered only 'through Jesus Christ our Lord.'"
+
+[[event]]
+id = "rom_life_in_the_spirit_no_condemnation"
+label = "Life in the Spirit: no condemnation, and the adoption of sons"
+kind = "general"
+verses = ["ROM.8.1-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 8:1-17, 'no condemnation to them which are in Christ Jesus,' the Spirit of life setting free from the law of sin and death, and the Spirit's own witness that believers are 'heirs of God, and joint-heirs with Christ.'"
+
+[[event]]
+id = "rom_the_glory_to_be_revealed_and_the_love_of_god"
+label = "The glory to be revealed, the Spirit's intercession, and the love of God from which nothing can separate us"
+kind = "general"
+verses = ["ROM.8.18-39"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 8:18-39, creation's own groaning for redemption, the Spirit's intercession 'with groanings which cannot be uttered,' and the closing crescendo -- neither death, nor life... 'shall be able to separate us from the love of God, which is in Christ Jesus our Lord.'"
+
+[[event]]
+id = "rom_pauls_sorrow_for_israel"
+label = "Paul's own sorrow for his kinsmen after the flesh"
+kind = "general"
+verses = ["ROM.9.1-5"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 9:1-5, Paul's own 'great heaviness and continual sorrow' for Israel, to whom belong 'the adoption, and the glory, and the covenants.'"
+
+[[event]]
+id = "rom_not_all_israel_is_israel"
+label = "Not all Israel is Israel: the sovereign election of God, the potter and the clay"
+kind = "general"
+verses = ["ROM.9.6-29"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 9:6-29, God's own word not made void though 'they are not all Israel, which are of Israel' -- Isaac and Ishmael, Jacob and Esau, and the potter's own right over the clay."
+
+[[event]]
+id = "rom_israels_stumbling_and_the_nearness_of_the_word"
+label = "Israel's stumbling at the stumblingstone; the nearness of the word, and salvation for whosoever calls on the Lord"
+kind = "general"
+verses = ["ROM.9.30-33", "ROM.10.1-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 9:30-10:13, one sustained argument spanning the chapter break -- Israel's own pursuit of righteousness by works caused them to stumble where Gentiles who did not pursue it attained it by faith, and 'whosoever shall call upon the name of the Lord shall be saved.'"
+
+[[event]]
+id = "rom_how_shall_they_hear_without_a_preacher"
+label = "How shall they hear without a preacher? Israel's own unbelief despite a full witness"
+kind = "general"
+verses = ["ROM.10.14-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 10:14-21, the necessity of a sent preacher for saving faith, and Israel's own persistent unbelief despite the gospel's own worldwide sound."
+
+[[event]]
+id = "rom_a_remnant_according_to_grace"
+label = "A remnant according to the election of grace"
+kind = "general"
+verses = ["ROM.11.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 11:1-10, God has not cast away his people -- a present remnant, on the pattern of the seven thousand who had not bowed to Baal in Elijah's own day."
+
+[[event]]
+id = "rom_the_wild_olive_tree"
+label = "The wild olive tree: Israel's own fall, the fulness of the Gentiles, and Israel's own future mercy"
+kind = "general"
+verses = ["ROM.11.11-32"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 11:11-32, the allegory of the wild olive branch graffed in among the natural branches, a warning against Gentile boasting, and the mystery that 'all Israel shall be saved.'"
+
+[[event]]
+id = "rom_doxology_the_riches_of_gods_wisdom"
+label = "Doxology: the unsearchable riches of the wisdom of God"
+kind = "general"
+verses = ["ROM.11.33-36"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 11:33-36, the closing doxology of the letter's own doctrinal half -- 'O the depth of the riches both of the wisdom and knowledge of God!'"
+
+[[event]]
+id = "rom_living_sacrifices_and_gifts_that_differ"
+label = "Living sacrifices, the renewed mind, and gifts that differ"
+kind = "general"
+verses = ["ROM.12.1-8"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 12:1-8, the letter's own pivot from doctrine to exhortation -- presenting the body 'a living sacrifice,' the renewing of the mind, and the gifts given 'according to the grace' of each member."
+
+[[event]]
+id = "rom_marks_of_true_love"
+label = "Marks of true love; overcoming evil with good"
+kind = "general"
+verses = ["ROM.12.9-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 12:9-21, a chain of exhortations on genuine love -- rejoicing with those who rejoice, blessing persecutors, and 'overcome evil with good.'"
+
+[[event]]
+id = "rom_subjection_to_the_higher_powers"
+label = "Subjection to the higher powers"
+kind = "general"
+verses = ["ROM.13.1-7"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 13:1-7, submission to civil authority as 'ordained of God,' and the payment of tribute, custom, fear, and honour that is due."
+
+[[event]]
+id = "rom_love_the_fulfilling_of_the_law"
+label = "Love, the fulfilling of the law; putting on the Lord Jesus Christ"
+kind = "general"
+verses = ["ROM.13.8-14"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 13:8-14, love as the summary of the commandments, and the eschatological exhortation to 'cast off the works of darkness' since 'the night is far spent.'"
+
+[[event]]
+id = "rom_the_weak_and_the_strong"
+label = "The weak and the strong: not judging one another in doubtful things"
+kind = "general"
+verses = ["ROM.14.1-23"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 14, one sustained argument on conscience in matters of food and days -- 'let every man be fully persuaded in his own mind' -- kept as a single chapter-length unit per the text's own continuous discourse."
+
+[[event]]
+id = "rom_bearing_the_infirmities_of_the_weak"
+label = "Bearing the infirmities of the weak, after the pattern of Christ; Jew and Gentile united in praise"
+kind = "general"
+verses = ["ROM.15.1-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 15:1-13, the strong bearing with the weak as Christ himself 'pleased not himself,' and a catena of Old Testament citations on the Gentiles' own praise, closing with the benediction of hope."
+
+[[event]]
+id = "rom_pauls_ministry_and_travel_plans"
+label = "Paul's own ministry, and his plans to visit Rome and go to Spain"
+kind = "general"
+verses = ["ROM.15.14-33"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 15:14-33, Paul's own account of his ministry to the Gentiles, his intended journey to Spain by way of Rome, and his request for prayer over the collection for Jerusalem."
+
+[[event]]
+id = "rom_commendation_of_phebe_and_greetings"
+label = "Commendation of Phebe, and greetings to the saints at Rome"
+kind = "general"
+verses = ["ROM.16.1-16"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 16:1-16, Phebe commended as a servant of the church at Cenchrea, and Paul's own extended roll of personal greetings to the Roman church."
+
+[[event]]
+id = "rom_warning_and_closing_doxology"
+label = "A warning against those who cause divisions; the closing doxology"
+kind = "general"
+verses = ["ROM.16.17-27"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Romans 16:17-27, a final warning to mark and avoid those who cause offences, the greetings of Paul's own companions, and the letter's own closing doxology 'to God only wise.'"
