@@ -1,0 +1,276 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run -- the LAST book
+# of the whole W-series; when this file lands, all 66 canonical books are
+# declared, per the master brief's own "Scale protocol" and this batch's
+# own req 4, THE COMPLETION MILESTONE). Revelation.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: per-vision units, per the master brief's own named grouping
+# for this book -- "the seven letters individually (REV.2-3), throne room,
+# seals, trumpets, the woman/dragon/beasts, bowls, Babylon, the millennium
+# and judgment, new Jerusalem." Each named grouping above is represented by
+# one or more containers at the text's own real scene-breaks within it (the
+# seven letters individually, exactly as named; the trumpet septet split at
+# its own real narrative interludes -- ch7's sealing/multitude scene, then
+# ch10-11's angel/little-book/two-witnesses scene, both genuinely
+# interrupting the trumpet sequence before it resumes -- while the seal
+# septet and the bowl septet, each textually UNinterrupted within their own
+# one chapter, are each kept as one container). PROVENANCE: REV.1.1 itself
+# functions as a real, text-native title for the whole book (the source of
+# its own traditional English name, "Revelation") -- unlike every other
+# epistle's own opening self-identification in this whole W5 slice, quoted
+# here verbatim as this book's own sole kjv_superscription in the entire
+# slice; every other container in this file is atlas_section, our own CC0
+# sectioning, per this batch's own req 2 expectation ("epistles have almost
+# no canon-text titles... atlas_section provenance nearly everywhere").
+
+[[event]]
+id = "rev_prologue_and_greeting"
+label = "The Revelation of Jesus Christ, which God gave unto him, to shew unto his servants things which must shortly come to pass; and he sent and signified it by his angel unto his servant John:"
+kind = "general"
+verses = ["REV.1.1-8"]
+kjv_superscription = "REV.1.1, quoted verbatim in full (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- the book's own real, traditional-name-supplying title/superscription, phrased as a transmission chain (God to Christ to his angel to John) rather than a bare title clause, but functioning identically; the whole verse is quoted (an 'exact match,' not a trimmed prefix) since it carries no internal sentence-final punctuation to trim to. Distinct from the vision content proper, which begins at 1:9 ('I was in the Spirit on the Lord's day...'); this container's own remaining verses (1:2-8) carry the rest of the prologue -- John's own greeting to the seven churches and the Alpha-and-Omega self-declaration."
+
+[[event]]
+id = "rev_vision_of_the_son_of_man"
+label = "John's own vision of the Son of man among the seven candlesticks"
+kind = "general"
+verses = ["REV.1.9-20"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 1:9-20, John on Patmos 'in the Spirit on the Lord's day,' the vision of one like the Son of man amid seven golden candlesticks, and the vision's own interpretation -- 'the seven stars are the angels of the seven churches... the seven candlesticks... are the seven churches.'"
+
+[[event]]
+id = "rev_letter_to_ephesus"
+label = "The letter to the church at Ephesus"
+kind = "general"
+verses = ["REV.2.1-7"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 2:1-7, the letter to Ephesus -- commended for labour and discernment of false apostles, rebuked for having 'left thy first love,' and the promise 'to eat of the tree of life.'"
+
+[[event]]
+id = "rev_letter_to_smyrna"
+label = "The letter to the church at Smyrna"
+kind = "general"
+verses = ["REV.2.8-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 2:8-11, the letter to Smyrna -- tribulation and poverty acknowledged as true riches, the charge 'be thou faithful unto death,' and the promise of 'a crown of life.'"
+
+[[event]]
+id = "rev_letter_to_pergamos"
+label = "The letter to the church at Pergamos"
+kind = "general"
+verses = ["REV.2.12-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 2:12-17, the letter to Pergamos -- commended for holding fast 'where Satan's seat is,' rebuked for tolerating the doctrine of Balaam and the Nicolaitans, and the promise of 'hidden manna' and a white stone."
+
+[[event]]
+id = "rev_letter_to_thyatira"
+label = "The letter to the church at Thyatira"
+kind = "general"
+verses = ["REV.2.18-29"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 2:18-29, the letter to Thyatira -- commended for works and charity, rebuked for suffering 'that woman Jezebel' to teach and seduce, and the promise of 'power over the nations' to him that overcometh."
+
+[[event]]
+id = "rev_letter_to_sardis"
+label = "The letter to the church at Sardis"
+kind = "general"
+verses = ["REV.3.1-6"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 3:1-6, the letter to Sardis -- 'thou hast a name that thou livest, and art dead,' the charge to 'be watchful,' and the promise that the overcomer's own name will not be blotted 'out of the book of life.'"
+
+[[event]]
+id = "rev_letter_to_philadelphia"
+label = "The letter to the church at Philadelphia"
+kind = "general"
+verses = ["REV.3.7-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 3:7-13, the letter to Philadelphia -- 'an open door, and no man can shut it,' kept 'from the hour of temptation,' and the promise of a place as 'a pillar in the temple of my God.'"
+
+[[event]]
+id = "rev_letter_to_laodicea"
+label = "The letter to the church at Laodicea"
+kind = "general"
+verses = ["REV.3.14-22"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 3:14-22, the letter to Laodicea -- rebuked as 'neither cold nor hot,' counselled to buy true riches of Christ, and the promise, 'behold, I stand at the door, and knock.'"
+
+[[event]]
+id = "rev_the_throne_room"
+label = "The throne room: the twenty-four elders and the four living creatures"
+kind = "general"
+verses = ["REV.4.1-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 4, John caught up 'in the spirit' to a door opened in heaven, the throne set with its rainbow, the four and twenty elders, and the four beasts crying 'Holy, holy, holy, Lord God Almighty' -- kept whole, the chapter's own single continuous throne-room vision."
+
+[[event]]
+id = "rev_the_sealed_book_and_the_lamb"
+label = "The sealed book and the Lamb that was slain"
+kind = "general"
+verses = ["REV.5.1-14"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 5, the book sealed with seven seals that none but 'the Lion of the tribe of Juda' is worthy to open, the Lamb 'as it had been slain' who takes the book, and the new song of every creature -- kept whole, the chapter's own single continuous vision."
+
+[[event]]
+id = "rev_the_opening_of_the_six_seals"
+label = "The opening of the six seals"
+kind = "general"
+verses = ["REV.6.1-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 6, the Lamb opening six seals in turn -- the four horsemen (white, red, black, and pale), the souls under the altar crying for judgment, and the sixth seal's own great earthquake and cosmic shaking, closing 'the great day of his wrath is come' -- kept whole, per this file's own header note (the seal septet is textually unbroken within this one chapter)."
+
+[[event]]
+id = "rev_the_sealing_and_the_great_multitude"
+label = "The sealing of the 144,000 and the great multitude"
+kind = "general"
+verses = ["REV.7.1-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 7, an interlude between the sixth and seventh seals -- the sealing of 144,000 'of all the tribes of the children of Israel,' and the great multitude 'which no man could number,' who 'came out of great tribulation' -- kept whole, the chapter's own single continuous interlude vision."
+
+[[event]]
+id = "rev_the_seventh_seal_and_first_trumpets"
+label = "The seventh seal; the first four trumpets"
+kind = "general"
+verses = ["REV.8.1-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 8, the seventh seal's own silence in heaven, the seven trumpets given to seven angels, and the first four sounding -- hail and fire, a burning mountain, the star Wormwood, and a third part of sun, moon, and stars darkened -- kept whole, the chapter's own single continuous sequence."
+
+[[event]]
+id = "rev_the_fifth_and_sixth_trumpets"
+label = "The fifth and sixth trumpets: the locusts and the army from the Euphrates"
+kind = "general"
+verses = ["REV.9.1-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 9, the fifth trumpet's own locusts from the bottomless pit, led by Abaddon/Apollyon, and the sixth trumpet's own army of two hundred million loosed from the Euphrates -- kept whole, the chapter's own single continuous sequence."
+
+[[event]]
+id = "rev_the_angel_and_the_little_book"
+label = "The angel and the little book"
+kind = "general"
+verses = ["REV.10.1-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 10, a second interlude before the seventh trumpet -- the mighty angel with the little book, the seven thunders sealed up unspoken, and John's own eating of the book, 'sweet as honey' yet bitter in the belly."
+
+[[event]]
+id = "rev_the_two_witnesses"
+label = "The two witnesses"
+kind = "general"
+verses = ["REV.11.1-14"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 11:1-14, the measuring of the temple, the two witnesses who prophesy 1,260 days, are slain and lie unburied, then rise and ascend to heaven, closing 'the third woe cometh quickly.'"
+
+[[event]]
+id = "rev_the_seventh_trumpet"
+label = "The seventh trumpet: the kingdoms of this world become the kingdom of our Lord"
+kind = "general"
+verses = ["REV.11.15-19"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 11:15-19, the seventh trumpet sounding -- 'the kingdoms of this world are become the kingdoms of our Lord, and of his Christ' -- and the temple of God opened in heaven, revealing the ark of his testament."
+
+[[event]]
+id = "rev_the_woman_the_man_child_and_the_dragon"
+label = "The woman, the man child, and the great red dragon"
+kind = "general"
+verses = ["REV.12.1-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 12, the woman clothed with the sun, the great red dragon who seeks to devour her child, the war in heaven and Michael's own victory, and the dragon's own persecution of the woman and her remaining seed -- kept whole, the chapter's own single continuous vision."
+
+[[event]]
+id = "rev_the_beast_from_the_sea"
+label = "The beast rising out of the sea"
+kind = "general"
+verses = ["REV.13.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 13:1-10, the beast rising from the sea with seven heads and ten horns, given the dragon's own power and authority to 'make war with the saints,' closing 'here is the patience and the faith of the saints.'"
+
+[[event]]
+id = "rev_the_beast_from_the_earth_and_the_mark"
+label = "The beast rising out of the earth, and the mark of the beast"
+kind = "general"
+verses = ["REV.13.11-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 13:11-18, the second beast rising from the earth, exercising the first beast's own power, causing all to receive 'a mark in their right hand, or in their foreheads,' and the number of the beast, 'Six hundred threescore and six.'"
+
+[[event]]
+id = "rev_the_lamb_on_mount_sion_and_the_three_angels"
+label = "The Lamb and the 144,000 on mount Sion; the three angels' own proclamations"
+kind = "general"
+verses = ["REV.14.1-13"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 14:1-13, the Lamb on mount Sion with the 144,000 who 'follow the Lamb whithersoever he goeth,' and three angels proclaiming the everlasting gospel, the fall of Babylon, and a warning against worshipping the beast."
+
+[[event]]
+id = "rev_the_harvest_and_the_vintage"
+label = "The harvest and the vintage of the earth"
+kind = "general"
+verses = ["REV.14.14-20"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 14:14-20, 'one like unto the Son of man' reaping the earth's own harvest with a sickle, and an angel gathering 'the vine of the earth' into 'the great winepress of the wrath of God.'"
+
+[[event]]
+id = "rev_the_seven_angels_with_the_seven_last_plagues"
+label = "The seven angels with the seven last plagues"
+kind = "general"
+verses = ["REV.15.1-8"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 15, the sign of seven angels bearing 'the seven last plagues,' the victors' own song of Moses and of the Lamb, and the temple filled with smoke 'from the glory of God' until the plagues are fulfilled -- kept whole, the chapter's own single continuous prelude to the vials."
+
+[[event]]
+id = "rev_the_seven_vials_poured_out"
+label = "The seven vials of the wrath of God poured out"
+kind = "general"
+verses = ["REV.16.1-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 16, the seven vials poured out in turn -- sores, the sea and rivers turned to blood, scorching heat, darkness on the beast's own kingdom, the drying of the Euphrates and the gathering to Armageddon, and the great earthquake that divides 'the great city' -- kept whole, per this file's own header note (the bowl septet is textually unbroken within this one chapter)."
+
+[[event]]
+id = "rev_the_great_whore_and_the_scarlet_beast"
+label = "The great whore and the scarlet beast"
+kind = "general"
+verses = ["REV.17.1-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 17, the woman arrayed in purple and scarlet upon the scarlet beast, named 'MYSTERY, BABYLON THE GREAT,' and the angel's own interpretation of the beast's seven heads and ten horns -- kept whole, the chapter's own single continuous explanatory vision."
+
+[[event]]
+id = "rev_the_fall_of_babylon"
+label = "The fall of Babylon the great"
+kind = "general"
+verses = ["REV.18.1-24"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 18, the announcement 'Babylon the great is fallen,' the call to 'come out of her, my people,' and the lament of the kings, merchants, and shipmasters over her sudden desolation -- kept whole, the chapter's own single continuous dirge, distinct in form from ch17's own explanatory vision (see this file's own header note)."
+
+[[event]]
+id = "rev_heavenly_rejoicing_and_the_marriage_supper"
+label = "Heavenly rejoicing; the marriage supper of the Lamb"
+kind = "general"
+verses = ["REV.19.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 19:1-10, the fourfold 'Alleluia' of heaven at Babylon's own fall, and the announcement 'the marriage of the Lamb is come, and his wife hath made herself ready.'"
+
+[[event]]
+id = "rev_the_rider_on_the_white_horse"
+label = "The rider on the white horse; the beast and false prophet cast into the lake of fire"
+kind = "general"
+verses = ["REV.19.11-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 19:11-21, heaven opened and 'Faithful and True' on a white horse, 'KING OF KINGS, AND LORD OF LORDS,' and the beast and false prophet 'cast alive into a lake of fire burning with brimstone.'"
+
+[[event]]
+id = "rev_the_thousand_years"
+label = "The thousand years: Satan bound, then loosed; Gog and Magog"
+kind = "general"
+verses = ["REV.20.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 20:1-10, the dragon bound a thousand years, the first resurrection and the reign of the saints with Christ, Satan's own loosing to deceive Gog and Magog, and his own final casting 'into the lake of fire and brimstone.'"
+
+[[event]]
+id = "rev_the_great_white_throne"
+label = "The great white throne judgment"
+kind = "general"
+verses = ["REV.20.11-15"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 20:11-15, the great white throne, the dead judged 'according to their works' out of the opened books, and 'whosoever was not found written in the book of life' cast into the lake of fire."
+
+[[event]]
+id = "rev_the_new_heaven_and_new_earth"
+label = "The new heaven and the new earth; the tabernacle of God with men"
+kind = "general"
+verses = ["REV.21.1-8"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 21:1-8, the new heaven and new earth, 'no more sea,' the tabernacle of God with men, and 'no more death, neither sorrow, nor crying,' closing on the promise and warning to the overcomer and the fearful alike."
+
+[[event]]
+id = "rev_the_new_jerusalem_descending"
+label = "The new Jerusalem descending from God"
+kind = "general"
+verses = ["REV.21.9-27"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 21:9-27, the detailed vision of 'the holy Jerusalem, descending out of heaven from God' -- its own twelve gates and foundations, its own measurements, and its own light, 'for the glory of God did lighten it.'"
+
+[[event]]
+id = "rev_the_river_and_tree_of_life"
+label = "The river and tree of life"
+kind = "general"
+verses = ["REV.22.1-5"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 22:1-5, the pure river of the water of life and the tree of life within the city, 'the leaves of the tree were for the healing of the nations,' and the promise 'they shall reign for ever and ever.'"
+
+[[event]]
+id = "rev_closing_words_and_final_blessing"
+label = "Closing words: the promise of Christ's own coming, and the final blessing and warning"
+kind = "general"
+verses = ["REV.22.6-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Revelation 22:6-21, the angel's own confirmation that 'these sayings are faithful and true,' the blessing on those who keep 'the sayings of the prophecy of this book,' the warning against adding to or taking from it, and the book's own closing words, 'Surely I come quickly. Amen. Even so, come, Lord Jesus.'"
