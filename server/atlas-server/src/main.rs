@@ -63,7 +63,32 @@ async fn main() -> Result<()> {
         .finish();
     let data = Arc::new(data);
 
-    let app = atlas_server::app::build(data, args.static_dir);
+    // Batch M-A (controller ruling 2): the Explorable Graph is built IN
+    // MEMORY at startup from the same raw sources atlas-etl reads --
+    // `data/raw/`, always the sibling of `--data-dir`'s own `data/compiled`
+    // under one `data/` parent (true of every real invocation of this
+    // binary, including start-api.ps1's own `--data-dir ../data/compiled`;
+    // deriving it this way avoids a second CLI flag for M-A's own pragmatic
+    // scope). 31,102 KJV verses plus ~344k raw cross-reference rows is
+    // trivial startup work.
+    let raw_dir = args.data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| PathBuf::from("../data/raw"));
+    let graph = atlas_graph::GraphState::build(&raw_dir)
+        .with_context(|| format!("building the explorable graph from {} (kjv.json + xrefs/cross_references.txt)", raw_dir.display()))?;
+
+    // FAIL-LOUD FIDELITY GATE (design doc P3): the KJV adapter's own
+    // bijection + reconstruction boundary law must hold before this graph
+    // ever serves a byte of text. A violation here refuses to start the
+    // server, on purpose -- "proof at the boundary," not a best-effort
+    // warning.
+    graph.check_fidelity().with_context(|| "KJV adapter fidelity boundary law failed -- refusing to start")?;
+
+    println!(
+        "atlas-graph: {} KJV text units, {} cites edges ({} negative-vote rows dropped, disclosed), graph version {}",
+        graph.stats.kjv_verses, graph.stats.cites_rows, graph.stats.cites_dropped_negative_votes, graph.version
+    );
+    let graph = Arc::new(graph);
+
+    let app = atlas_server::app::build(data, graph, args.static_dir);
 
     let addr = format!("0.0.0.0:{}", args.port);
     let listener = tokio::net::TcpListener::bind(&addr).await.with_context(|| format!("binding {addr}"))?;

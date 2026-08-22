@@ -6,4 +6,6 @@
 
 pub mod app;
 pub mod error;
+pub mod graph_handlers;
+pub mod graph_wire;
 pub mod handlers;

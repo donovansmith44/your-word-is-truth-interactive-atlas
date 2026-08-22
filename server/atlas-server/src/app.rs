@@ -5,6 +5,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use axum::extract::FromRef;
 use axum::http::StatusCode;
 use axum::routing::get;
 use axum::Router;
@@ -12,8 +13,36 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
 
 use atlas_core::data::AtlasData;
+use atlas_graph::GraphState;
 
-use crate::handlers;
+use crate::{graph_handlers, handlers};
+
+/// Batch M-A: the two pieces of server state every handler now draws from
+/// -- the pre-existing `AtlasData` (places/events/headings/etc., still the
+/// source for everything the graph doesn't materialize yet) and the new
+/// `GraphState` (the in-memory Explorable Graph, built once at startup).
+/// `FromRef` lets EVERY pre-existing handler keep its own
+/// `State<Arc<AtlasData>>` extractor completely unchanged -- axum resolves
+/// it from this composed state automatically -- while the new graph
+/// handlers extract `State<Arc<GraphState>>` the same way. Neither state
+/// type needs to know about the other.
+#[derive(Clone)]
+pub struct AppState {
+    pub data: Arc<AtlasData>,
+    pub graph: Arc<GraphState>,
+}
+
+impl FromRef<AppState> for Arc<AtlasData> {
+    fn from_ref(s: &AppState) -> Self {
+        s.data.clone()
+    }
+}
+
+impl FromRef<AppState> for Arc<GraphState> {
+    fn from_ref(s: &AppState) -> Self {
+        s.graph.clone()
+    }
+}
 
 /// Builds the full application router: the `/api/*` + `/health` JSON API,
 /// permissive CORS (this is a local sketch app with no auth/cookies to
@@ -51,7 +80,9 @@ use crate::handlers;
 /// test in `tests/api.rs`, which asserts the CORS header on both an `/api`
 /// response and a fallback-served response so this ordering can't silently
 /// regress.
-pub fn build(data: Arc<AtlasData>, static_dir: Option<PathBuf>) -> Router {
+pub fn build(data: Arc<AtlasData>, graph: Arc<GraphState>, static_dir: Option<PathBuf>) -> Router {
+    let state = AppState { data, graph };
+
     let api = Router::new()
         .route("/health", get(handlers::health))
         .route("/api/scene", get(handlers::scene_time))
@@ -70,7 +101,13 @@ pub fn build(data: Arc<AtlasData>, static_dir: Option<PathBuf>) -> Router {
         .route("/api/polities", get(handlers::polities))
         .route("/api/landmarks", get(handlers::landmarks))
         .route("/api/land-mask", get(handlers::land_mask))
-        .with_state(data);
+        // Batch M-A: the two generic graph endpoints (design doc §5) + the
+        // text-window endpoint (design doc §6). Uniform across every
+        // node/edge kind the graph carries -- not bespoke per-feature shapes.
+        .route("/api/node/{id}", get(graph_handlers::node_card))
+        .route("/api/node/{id}/edges", get(graph_handlers::node_edges))
+        .route("/api/text", get(graph_handlers::text_window))
+        .with_state(state);
 
     let router = match static_dir {
         Some(dir) => {

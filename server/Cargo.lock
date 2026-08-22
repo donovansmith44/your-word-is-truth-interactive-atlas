@@ -31,11 +31,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-graph"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "atlas-core",
+ "atlas-etl",
+ "atlas-graph-types",
+ "proptest",
+]
+
+[[package]]
+name = "atlas-graph-types"
+version = "0.1.0"
+
+[[package]]
 name = "atlas-server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "atlas-core",
+ "atlas-graph",
+ "atlas-graph-types",
  "axum",
  "http-body-util",
  "serde",

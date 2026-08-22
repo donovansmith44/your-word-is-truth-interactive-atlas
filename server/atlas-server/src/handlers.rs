@@ -17,6 +17,7 @@ use atlas_core::scene::{compose_scripture_scene, compose_time_scene, to_scene_ev
 use atlas_core::time::TimeRange;
 use atlas_core::wire::{Scene, SceneEvent, VerseGroup};
 use atlas_core::xrefs::aggregate_span_xrefs;
+use atlas_graph::{GraphState, WindowDir};
 
 use crate::error::ApiError;
 
@@ -286,7 +287,26 @@ pub struct ChapterOut {
 /// with an empty `verses` list. Same rationale as `scene_scripture`: a
 /// reader showing "no verses in this chapter" is a meaningful response, not
 /// a failure.
-pub async fn chapter(State(data): State<Arc<AtlasData>>, Path(cref): Path<String>) -> Result<Json<ChapterOut>, ApiError> {
+///
+/// Batch M-A (brief requirement 5, "re-implement the OLD /api/chapter
+/// handler as a VIEW over the window query"): the verse TEXT below now
+/// comes from `GraphState::chapter_span` + `GraphState::window` -- the SAME
+/// windowed reading-order query `GET /api/text?scope=chapter` calls --
+/// instead of `data.verses.get(key)`. Everything else (places, headings,
+/// the verse-count bound, the out-of-canon policy above) is UNCHANGED,
+/// still sourced from `AtlasData` (M-A materializes only TextUnit nodes and
+/// `cites` edges; headings/places/events join the graph at M-B/M-C). The
+/// WIRE SHAPE is byte-for-byte identical -- proven by
+/// `tests/graph_equivalence.rs`'s own all-1,189-chapters comparison -- so
+/// every existing caller of this endpoint (the reader's chapter view/
+/// mini-reader/split view, `ChapterNode`, `PlaceCard`'s hover verse text,
+/// `PassageBlock`, `PopoverSectionProviders`) now serves from the graph
+/// with NO client-side change and no reader-visible behavior change.
+pub async fn chapter(
+    State(data): State<Arc<AtlasData>>,
+    State(graph): State<Arc<GraphState>>,
+    Path(cref): Path<String>,
+) -> Result<Json<ChapterOut>, ApiError> {
     let (book, chapter) = match ScriptureRef::parse(&cref) {
         Ok(ScriptureRef::Chapter { book, chapter }) => (book, chapter),
         _ => return Err(ApiError::bad_ref(&cref)),
@@ -302,10 +322,25 @@ pub async fn chapter(State(data): State<Arc<AtlasData>>, Path(cref): Path<String
         .copied()
         .unwrap_or(0);
 
+    // The graph's own view of this chapter's text, keyed by verse number --
+    // empty (not an error) when the graph has no such chapter, mirroring
+    // `data.verses.get(key)`'s own prior "absent means skip this verse"
+    // tolerance below.
+    let graph_texts: HashMap<u16, &str> = graph
+        .chapter_span(book.0, chapter)
+        .map(|(start, n)| {
+            graph
+                .window(start, n, WindowDir::Onward)
+                .iter()
+                .filter_map(|id| atlas_graph::kjv_adapter::decode_text_unit(id).map(|(_, _, v)| (v, graph.render(id).unwrap_or_default())))
+                .collect()
+        })
+        .unwrap_or_default();
+
     let mut verses = Vec::new();
     for v in 1..=verse_count {
         let key = format!("{code}.{chapter}.{v}");
-        if let Some(text) = data.verses.get(&key) {
+        if let Some(&text) = graph_texts.get(&v) {
             let places = data
                 .places_for_verse(&key)
                 .iter()
@@ -328,7 +363,7 @@ pub async fn chapter(State(data): State<Arc<AtlasData>>, Path(cref): Path<String
                 })
                 .collect();
             let heading = data.heading_for_verse(&key).map(HeadingOut::from);
-            verses.push(VerseOut { verse: v, text: text.clone(), places, heading });
+            verses.push(VerseOut { verse: v, text: text.to_string(), places, heading });
         }
     }
 

@@ -12,8 +12,34 @@ use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
+// Batch M-A: `/api/chapter` now sources its verse TEXT from the graph (see
+// handlers::chapter's own doc comment) while places/headings stay on
+// `AtlasData` -- so a test fixture's `GraphState` MUST agree with whatever
+// `AtlasData` the same `app()` call uses about which chapters exist, or the
+// chapter endpoint silently comes back empty (a real drift bug this exact
+// helper hit once, in this batch's own development). `graph_fixture_for`
+// derives the graph from `data`'s OWN `canon`/`verses` fields
+// (`atlas_graph::GraphState::from_canon_and_verses`) so there is exactly
+// ONE source of truth per test, never two independently hand-authored
+// fixtures that can drift apart. No cross-references in this shared
+// fixture (`""` xrefs source, valid input -- an empty table, not an
+// error) -- tests that need real `cites` edges build their own richer
+// graph (see `tests/graph_api.rs`, `tests/graph_equivalence.rs`).
+fn graph_fixture_for(data: &AtlasData) -> Arc<atlas_graph::GraphState> {
+    Arc::new(
+        atlas_graph::GraphState::from_canon_and_verses(&data.canon, &data.verses, "From Verse\tTo Verse\tVotes\t#comment\n")
+            .expect("fixture graph must build from this AtlasData's own canon+verses"),
+    )
+}
+
+fn graph_fixture() -> Arc<atlas_graph::GraphState> {
+    graph_fixture_for(&demo_fixture())
+}
+
 fn app() -> axum::Router {
-    atlas_server::app::build(Arc::new(demo_fixture()), None)
+    let data = demo_fixture();
+    let graph = graph_fixture_for(&data);
+    atlas_server::app::build(Arc::new(data), graph, None)
 }
 
 /// Fetches `uri` from `app` and parses the response body as JSON. Only for
@@ -338,7 +364,8 @@ async fn event_endpoint_omits_when_for_general_kind_passages() {
         },
     ];
     let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish();
-    let app = atlas_server::app::build(Arc::new(data), None);
+    let graph = graph_fixture_for(&data);
+    let app = atlas_server::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/event/g1").await;
     assert_eq!(st, 200);
@@ -400,7 +427,8 @@ async fn general_kind_event_places_never_resolve_a_spurious_period_name() {
         ..Default::default()
     });
     let data = data.finish();
-    let app = atlas_server::app::build(Arc::new(data), None);
+    let graph = graph_fixture_for(&data);
+    let app = atlas_server::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/event/g-hebron").await;
     assert_eq!(st, 200);
@@ -434,7 +462,8 @@ async fn data_hebron_period_name_still_resolves_for_a_real_event_kind_window() {
         ..Default::default()
     });
     let data = data.finish();
-    let app = atlas_server::app::build(Arc::new(data), None);
+    let graph = graph_fixture_for(&data);
+    let app = atlas_server::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/event/e-hebron-period").await;
     assert_eq!(st, 200);
@@ -463,7 +492,8 @@ async fn event_endpoint_carries_acts_section_when_present() {
         Event { id: "a2".into(), label: "No Acts provenance".into(), when: TimeRange::new(30, 30).unwrap(), places: vec![], verses: vec![], ..Default::default() },
     ];
     let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
-    let app = atlas_server::app::build(Arc::new(data), None);
+    let graph = graph_fixture_for(&data);
+    let app = atlas_server::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/event/a1").await;
     assert_eq!(st, 200);
@@ -501,7 +531,8 @@ async fn event_endpoint_carries_kjv_superscription_when_present() {
         Event { id: "k2".into(), label: "No KJV-superscription provenance".into(), when: TimeRange::undated(), places: vec![], verses: vec![], kind: "general".into(), ..Default::default() },
     ];
     let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
-    let app = atlas_server::app::build(Arc::new(data), None);
+    let graph = graph_fixture_for(&data);
+    let app = atlas_server::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/event/k1").await;
     assert_eq!(st, 200);
@@ -552,7 +583,8 @@ async fn event_endpoint_general_kind_with_multiple_witnesses_shows_parallel_acco
         ..Default::default()
     }];
     let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish();
-    let app = atlas_server::app::build(Arc::new(data), None);
+    let graph = graph_fixture_for(&data);
+    let app = atlas_server::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/event/g_general_witnessed").await;
     assert_eq!(st, 200);
@@ -922,7 +954,8 @@ fn app_with_test_polities() -> axum::Router {
         },
     ];
     let data: AtlasData = data.finish();
-    atlas_server::app::build(Arc::new(data), None)
+    let graph = graph_fixture_for(&data);
+    atlas_server::app::build(Arc::new(data), graph, None)
 }
 
 #[tokio::test]
@@ -1044,7 +1077,8 @@ async fn polities_transition_and_fall_conditional_presence_on_the_wire() {
         ],
     }];
     let data: AtlasData = data.finish();
-    let app = atlas_server::app::build(Arc::new(data), None);
+    let graph = graph_fixture_for(&data);
+    let app = atlas_server::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/polities?from=-1000&to=-600").await;
     assert_eq!(st, 200);
@@ -1110,7 +1144,7 @@ async fn static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_
     std::fs::write(dir.join("index.html"), "<html>shell</html>").unwrap();
     std::fs::write(dir.join("app.css"), "body{color:red}").unwrap();
 
-    let app = atlas_server::app::build(Arc::new(demo_fixture()), Some(dir.clone()));
+    let app = atlas_server::app::build(Arc::new(demo_fixture()), graph_fixture(), Some(dir.clone()));
 
     let response = app
         .clone()

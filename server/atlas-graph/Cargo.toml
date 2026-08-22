@@ -1,0 +1,21 @@
+[package]
+name = "atlas-graph"
+version = "0.1.0"
+edition = "2021"
+description = "Batch M-A: storage/adapters/build over atlas-graph-types -- builds the Explorable Graph in memory at server startup from the same raw sources atlas-etl reads. The types crate (graph-types/) stays pure types+laws; this crate is the pragmatic, disclosed M-A materialization (converges on the serialized one-artifact form at M-C)."
+
+[dependencies]
+atlas-graph-types = { path = "../../graph-types" }
+atlas-core = { path = "../atlas-core" }
+# Disclosed strangler deviation (controller ruling 2): a RUNTIME dependency
+# on atlas-etl, reusing its raw-source parsers (kjv::parse, xrefs::parse,
+# xrefs::filter_missing_first_verse) verbatim as this crate's adapter
+# readers, rather than forking/duplicating them. Reverses the pre-M-A
+# "atlas-server never depends on atlas-etl (build-time-only ETL binary)"
+# convention on purpose -- retires at M-C when the parallel compiled
+# artifacts are deleted and the graph becomes the only build path (P1).
+atlas-etl = { path = "../atlas-etl" }
+anyhow = "1"
+
+[dev-dependencies]
+proptest = "1"

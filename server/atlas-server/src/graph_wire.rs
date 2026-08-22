@@ -1,0 +1,146 @@
+//! Wire-identity conversions for the two generic graph endpoints (design
+//! doc §5; M-A brief requirement 4): a human-inspectable, round-trippable
+//! STRING form for `AnyNodeId` and `EdgeKind`, kept entirely at this DTO
+//! layer -- graph-types' own `AnyNodeId`/`EdgeKind` shapes are untouched;
+//! this module only converts.
+//!
+//! Node ids: `"text-unit:{BOOK}.{chapter}.{verse}"` (e.g.
+//! `"text-unit:JHN.3.16"`) for the only node kind M-A materializes.
+//! Internally a TextUnit's `AnyNodeId.raw` is a numeric-book-index string
+//! (`atlas_graph::kjv_adapter`'s own adapter convention, chosen for a
+//! stable identity independent of any one citation scheme -- "names are
+//! refs, not identity," design doc §9b); this layer is where that internal
+//! identity is dressed up into the human/dot-ref form the REST of this
+//! app's wire already uses everywhere (`ChapterOut.ref`, `/api/chapter/{cref}`,
+//! ...), and back.
+//!
+//! Edge kinds: the wire `kind` string IS `EdgeKind::label()` (already a
+//! stable, human-legible string graph-types computes from its own relation
+//! manifest -- `"cites"`/`"cited-by"`/...); `parse_edge_kind` is its total
+//! inverse, built by scanning `RelationId::ALL`/`SymRelationId::ALL` (the
+//! SAME manifest, so a new relation never needs a second hand-written
+//! table here).
+
+use atlas_graph_types::edge::{Direction, EdgeKind, RelationId, SymRelationId};
+use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
+
+/// Encodes any node id this batch's graph can produce. Only `NodeKind::TextUnit`
+/// is ever actually built in M-A; the fallback keeps this function total
+/// (never a panic) for whichever kind materializes next (M-B/M-C), at the
+/// cost of a less pretty wire string until THAT batch's own DTO work lands.
+pub fn encode_node_id(id: &AnyNodeId) -> String {
+    match id.kind {
+        NodeKind::TextUnit => match atlas_graph::kjv_adapter::decode_text_unit(id) {
+            Some((book, chapter, verse)) => format!("text-unit:{}", atlas_graph::kjv_adapter::dot_ref(book, chapter, verse)),
+            None => format!("text-unit:{}", id.raw),
+        },
+        other => format!("{other:?}:{}", id.raw),
+    }
+}
+
+/// The inverse of `encode_node_id` for the one kind this batch resolves
+/// (`text-unit:...`). `None` for anything else -- a syntactically odd or
+/// unsupported-kind id is a 400 `bad_ref` at the handler, never a panic.
+pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
+    let (kind, rest) = s.split_once(':')?;
+    match kind {
+        "text-unit" => {
+            let vid = atlas_core::refs::VerseId::parse_canonical(rest).ok()?;
+            Some(atlas_graph::kjv_adapter::verse_node_id(vid.book.0, vid.chapter, vid.verse))
+        }
+        _ => None,
+    }
+}
+
+/// Total inverse of `EdgeKind::label()`, built from graph-types' own
+/// relation manifest (`RelationId::ALL`/`SymRelationId::ALL`) rather than a
+/// hand-duplicated match -- an added relation can never drift out of sync
+/// with what this function accepts.
+pub fn parse_edge_kind(label: &str) -> Option<EdgeKind> {
+    for r in RelationId::ALL {
+        if r.forward_label() == label {
+            return Some(EdgeKind::Directed(*r, Direction::Forward));
+        }
+        if r.inverse_label() == label {
+            return Some(EdgeKind::Directed(*r, Direction::Inverse));
+        }
+    }
+    for s in SymRelationId::ALL {
+        if s.label() == label {
+            return Some(EdgeKind::Symmetric(*s));
+        }
+    }
+    None
+}
+
+/// A short, human-legible label for a node -- the citation string for a
+/// TextUnit (e.g. `"JHN.3.16"`), or a generic fallback for any other kind.
+/// Deliberately NOT `graph_types::node::card()`'s own placeholder label
+/// (`"text unit (bible)"`) -- that function is documented as a skeleton
+/// stand-in awaiting real `CorpusScheme::cite`-driven citation strings
+/// (types doc §6); this is this DTO layer's own such computation, an
+/// EXTENSION (new conversion), not a change to graph-types' shipped `card()`.
+pub fn describe_node(id: &AnyNodeId, graph: &atlas_graph_types::graph::Graph) -> (String, String) {
+    match id.kind {
+        NodeKind::TextUnit => {
+            if let Some((book, chapter, verse)) = atlas_graph::kjv_adapter::decode_text_unit(id) {
+                return (atlas_graph::kjv_adapter::dot_ref(book, chapter, verse), "TextUnit".to_string());
+            }
+            ("text unit".to_string(), "TextUnit".to_string())
+        }
+        _ => {
+            // Not TextUnit (M-A never materializes another kind): fall back
+            // to graph-types' own `card()` view assembly rather than
+            // re-deriving its match here -- one label computation, reused.
+            let label = graph
+                .nodes
+                .get(id)
+                .map(|n| atlas_graph_types::node::card(n).label)
+                .unwrap_or_else(|| format!("{:?}", id.kind));
+            (label, format!("{:?}", id.kind))
+        }
+    }
+}
+
+/// A `Position` (a node or an edge -- edges take focus too, design doc §0)
+/// rendered as a wire node-reference: `(id, kind, label)`. Total over both
+/// variants, never a panic -- M-A's own `edges()` calls only ever surface
+/// `Position::Node` today (no edge-as-position query exists yet), but the
+/// type is `Position` so this stays honest about the full shape.
+pub fn describe_position(pos: &Position, graph: &atlas_graph_types::graph::Graph) -> (String, String, String) {
+    match pos {
+        Position::Node(id) => {
+            let (label, kind) = describe_node(id, graph);
+            (encode_node_id(id), kind, label)
+        }
+        Position::Edge(eid) => (format!("edge:{}", eid.0), "Edge".to_string(), eid.0.clone()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn text_unit_id_round_trips_through_the_wire_form() {
+        let id = atlas_graph::kjv_adapter::verse_node_id(42, 3, 16); // JHN is index 42
+        let wire = encode_node_id(&id);
+        assert_eq!(wire, "text-unit:JHN.3.16");
+        assert_eq!(decode_node_id(&wire), Some(id));
+    }
+
+    #[test]
+    fn edge_kind_labels_round_trip_for_every_relation() {
+        for r in RelationId::ALL {
+            for dir in [Direction::Forward, Direction::Inverse] {
+                let k = EdgeKind::Directed(*r, dir);
+                assert_eq!(parse_edge_kind(k.label()), Some(k));
+            }
+        }
+        for s in SymRelationId::ALL {
+            let k = EdgeKind::Symmetric(*s);
+            assert_eq!(parse_edge_kind(k.label()), Some(k));
+        }
+        assert_eq!(parse_edge_kind("not-a-real-kind"), None);
+    }
+}

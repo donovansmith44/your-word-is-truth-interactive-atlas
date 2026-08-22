@@ -1,3 +1,19 @@
 [workspace]
-members = ["atlas-core", "atlas-etl", "atlas-server"]
+# Batch M-A (controller ruling 1): graph-types/ (repo root) is NOT listed
+# here as an explicit member -- Cargo hard-requires every `members` entry
+# to be hierarchically BELOW the workspace root directory (confirmed:
+# cargo 1.97.1 refuses `"../graph-types"` with "is not hierarchically below
+# the workspace root"; graph-types/ is a sibling of server/, not a
+# descendant, and relocating the owner-approved crate to satisfy this would
+# be a bigger deviation than working within it). Its own `[workspace]`
+# marker is still removed (graph-types/Cargo.toml) so it has no competing
+# workspace of its own; atlas-graph's plain `path = "../../graph-types"`
+# dependency below pulls it into THIS workspace's resolution/lockfile the
+# same way any path dependency does -- one workspace, one Cargo.lock, and
+# `cargo test -p atlas-graph-types` from server/ still runs its own 13 law
+# tests (Cargo resolves `-p` against every package reachable from the
+# workspace, member or not). This is a build-tooling-level adjustment, not
+# a type-shape change -- the outcome the ruling asked for (one lockfile,
+# `-p atlas-graph-types` works) is unaffected.
+members = ["atlas-core", "atlas-etl", "atlas-server", "atlas-graph"]
 resolver = "2"

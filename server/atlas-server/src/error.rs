@@ -44,6 +44,15 @@ impl ApiError {
     pub fn not_found(what: &str) -> Self {
         Self { status: StatusCode::NOT_FOUND, code: "not_found", message: format!("{what} not found") }
     }
+
+    /// Batch M-A: `GET /api/node/{id}/edges?kind=` names a `kind` label that
+    /// doesn't match any (relation, direction) or symmetric-relation label
+    /// in graph-types' own relation manifest (`RelationId`/`SymRelationId`),
+    /// or omits `kind` entirely -- same "typed error, not axum's default
+    /// rejection body" discipline as `bad_ref`/`bad_window`.
+    pub fn bad_kind(raw: &str) -> Self {
+        Self { status: StatusCode::BAD_REQUEST, code: "bad_kind", message: format!("unknown or missing edge kind: '{raw}'") }
+    }
 }
 
 #[derive(Serialize)]
