@@ -22,10 +22,12 @@ pub mod ingest;
 pub mod graph;
 pub mod explore;
 pub mod present;
+pub mod store;
 
 pub use edge::{dual, Direction, EdgeId, EdgeKind, RelationId, SymRelationId};
 pub use explore::{Explorable, Holdings};
 pub use graph::Graph;
+pub use store::{GraphPublisher, GraphSnapshot, GraphStore, GraphVersion, MemStore};
 pub use id::{AnyNodeId, NodeKind, Pid, Position, PositionKind};
 pub use text::{BibleLocus, Locus, TextLocus, TextRef, VerseRef};
 
