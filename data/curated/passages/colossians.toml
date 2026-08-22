@@ -1,0 +1,100 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). Colossians.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: Colossians' own real seams -- the supremacy of Christ (1),
+# warning against false philosophy (2), and the transformed household
+# life that follows (3-4). 3:18-4:1 (the household code) is kept as one
+# container spanning the chapter break -- a literary-structure fact (the
+# same wife/husband/child/servant/master sequence Ephesians 5:22-6:9 also
+# runs as one continuous unit), not textual criticism.
+
+[[event]]
+id = "col_salutation_and_thanksgiving"
+label = "Salutation and thanksgiving for their faith and love"
+kind = "general"
+verses = ["COL.1.1-8"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 1:1-8, Paul's own greeting to the saints at Colosse, and thanksgiving for their 'faith in Christ Jesus, and... love... to all the saints,' learned of Epaphras."
+
+[[event]]
+id = "col_pauls_prayer_filled_with_knowledge"
+label = "Paul's own prayer: filled with the knowledge of his will; delivered into the kingdom of the Son"
+kind = "general"
+verses = ["COL.1.9-14"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 1:9-14, Paul's own prayer that they 'be filled with the knowledge of his will,' and thanks to the Father who 'hath delivered us from the power of darkness, and hath translated us into the kingdom of his dear Son.'"
+
+[[event]]
+id = "col_the_supremacy_of_christ"
+label = "The supremacy of Christ: image of the invisible God, head of the body, reconciling all things"
+kind = "general"
+verses = ["COL.1.15-23"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 1:15-23, the hymn to Christ as 'the image of the invisible God, the firstborn of every creature,' by whom and for whom all things were created, and 'the head of the body, the church.'"
+
+[[event]]
+id = "col_pauls_ministry_the_mystery_made_manifest"
+label = "Paul's own ministry: the mystery made manifest, Christ in you the hope of glory"
+kind = "general"
+verses = ["COL.1.24-29"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 1:24-29, Paul's own sufferings 'for his body's sake, which is the church,' and his stewardship to make known 'the mystery... which is Christ in you, the hope of glory.'"
+
+[[event]]
+id = "col_pauls_conflict_of_care"
+label = "Paul's own conflict of care for the Colossians; rooted and built up in Christ"
+kind = "general"
+verses = ["COL.2.1-7"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 2:1-7, Paul's own 'great conflict' of concern for those who have not seen his face, and the charge to be 'rooted and built up in him.'"
+
+[[event]]
+id = "col_the_fulness_of_the_godhead"
+label = "The fulness of the Godhead in Christ; complete in him"
+kind = "general"
+verses = ["COL.2.8-15"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 2:8-15, a warning against being spoiled 'through philosophy and vain deceit,' since 'in him dwelleth all the fulness of the Godhead bodily,' and the handwriting of ordinances 'nailing it to his cross.'"
+
+[[event]]
+id = "col_a_warning_against_manmade_ordinances"
+label = "A warning against man-made ordinances and false humility"
+kind = "general"
+verses = ["COL.2.16-23"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 2:16-23, a warning against being judged in meat, drink, holydays, or 'worshipping of angels,' ordinances that have 'a shew of wisdom' but no real value against the flesh."
+
+[[event]]
+id = "col_risen_with_christ"
+label = "Risen with Christ: seeking things above, putting off the old man"
+kind = "general"
+verses = ["COL.3.1-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 3:1-11, 'if ye then be risen with Christ, seek those things which are above,' mortifying the earthly members and putting off 'the old man with his deeds.'"
+
+[[event]]
+id = "col_putting_on_the_new_man"
+label = "Putting on the new man: compassion, forgiveness, the peace of God, the word of Christ"
+kind = "general"
+verses = ["COL.3.12-17"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 3:12-17, the call to 'put on... bowels of mercies, kindness, humbleness of mind,' letting 'the peace of God rule in your hearts,' and doing all 'in the name of the Lord Jesus.'"
+
+[[event]]
+id = "col_household_duties"
+label = "Household duties: wives, husbands, children, fathers, servants, masters"
+kind = "general"
+verses = ["COL.3.18-25", "COL.4.1"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 3:18-4:1, one unit spanning the chapter break -- mutual household duties for wives and husbands, children and fathers, servants and masters, closing 'ye also have a Master in heaven.'"
+
+[[event]]
+id = "col_continuing_in_prayer"
+label = "Continuing in prayer; walking in wisdom toward outsiders"
+kind = "general"
+verses = ["COL.4.2-6"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 4:2-6, the call to 'continue in prayer,' walking 'in wisdom toward them that are without,' with speech 'alway with grace, seasoned with salt.'"
+
+[[event]]
+id = "col_closing_greetings_and_instructions"
+label = "Closing greetings and instructions"
+kind = "general"
+verses = ["COL.4.7-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 4:7-18, Paul's own closing report by Tychicus and Onesimus, greetings from his own companions, instructions for the letter's own circulation to Laodicea, and his 'salutation by the hand of me Paul.'"

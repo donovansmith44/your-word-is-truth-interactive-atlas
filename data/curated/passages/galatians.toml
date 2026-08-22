@@ -1,0 +1,116 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). Galatians.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: Galatians' own real seams -- autobiography (1-2), the
+# theological argument from the law and the promise (3-4), and the ethical
+# application of liberty (5-6). LITERARY-STRUCTURE FACT (not textual
+# criticism): Galatians' own salutation (1:1-5) moves directly into
+# astonishment and rebuke (1:6) with NO thanksgiving paragraph at all --
+# the one letter in this whole slice that omits it, a real, text-visible
+# feature of Paul's own urgency here, disclosed rather than silently
+# matched to every other letter's own shape.
+
+[[event]]
+id = "gal_salutation"
+label = "Salutation: Paul, an apostle, not of men, neither by man, but by Jesus Christ"
+kind = "general"
+verses = ["GAL.1.1-5"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 1:1-5, Paul's own opening insistence on an apostleship not of human origin, closing the greeting -- with no thanksgiving paragraph following, unlike every other Pauline letter in this slice (a literary-structure fact, see this file's own header note)."
+
+[[event]]
+id = "gal_no_other_gospel"
+label = "Astonishment: no other gospel; let him be accursed"
+kind = "general"
+verses = ["GAL.1.6-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 1:6-10, Paul's own astonishment that the Galatians are 'so soon removed' to another gospel, and the twice-repeated anathema on anyone who preaches a different one."
+
+[[event]]
+id = "gal_pauls_gospel_by_revelation"
+label = "Paul's own gospel by revelation, not from man; his own conversion and early years"
+kind = "general"
+verses = ["GAL.1.11-24"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 1:11-24, Paul's own account of receiving the gospel 'by the revelation of Jesus Christ,' his former persecution of the church, and his own movements after his conversion."
+
+[[event]]
+id = "gal_the_jerusalem_council"
+label = "The Jerusalem council: Paul's own gospel confirmed by the pillar apostles"
+kind = "general"
+verses = ["GAL.2.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 2:1-10, Paul's own visit to Jerusalem fourteen years later, Titus not compelled to be circumcised, and James, Cephas, and John giving 'the right hands of fellowship.'"
+
+[[event]]
+id = "gal_paul_withstands_peter_at_antioch"
+label = "Paul withstands Peter at Antioch; justified by faith, not works of the law"
+kind = "general"
+verses = ["GAL.2.11-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 2:11-21, Paul's own public rebuke of Peter for withdrawing from Gentile fellowship, and the letter's own doctrinal center -- 'a man is not justified by the works of the law, but by the faith of Jesus Christ.'"
+
+[[event]]
+id = "gal_the_spirit_received_by_faith"
+label = "The Spirit received by faith, not works; the blessing of Abraham for the Gentiles"
+kind = "general"
+verses = ["GAL.3.1-14"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 3:1-14, 'O foolish Galatians' -- the Spirit received by the hearing of faith, not the works of the law, and Christ's own redemption from the law's curse so 'the blessing of Abraham might come on the Gentiles.'"
+
+[[event]]
+id = "gal_the_law_and_the_promise"
+label = "The law and the promise: the law our schoolmaster to bring us to Christ"
+kind = "general"
+verses = ["GAL.3.15-29"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 3:15-29, the promise to Abraham's own 'seed... which is Christ' predating and unaltered by the law given 430 years later, and the law as 'our schoolmaster to bring us unto Christ,' closing 'there is neither Jew nor Greek... for ye are all one in Christ Jesus.'"
+
+[[event]]
+id = "gal_heirs_of_god_from_bondage_to_sonship"
+label = "Heirs of God: from bondage to sonship, from servant to son"
+kind = "general"
+verses = ["GAL.4.1-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 4:1-11, the heir under tutors as a child compared to the believer's own adoption as a son 'when the fulness of the time was come,' and Paul's own fear the Galatians turn back to 'weak and beggarly elements.'"
+
+[[event]]
+id = "gal_pauls_affection_for_the_galatians"
+label = "Paul's own affection for the Galatians; his own former reception among them"
+kind = "general"
+verses = ["GAL.4.12-20"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 4:12-20, Paul's own appeal to their former warm reception of him 'as an angel of God,' and his own travail 'until Christ be formed in you.'"
+
+[[event]]
+id = "gal_the_allegory_of_hagar_and_sarah"
+label = "The allegory of Hagar and Sarah: two covenants"
+kind = "general"
+verses = ["GAL.4.21-31"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 4:21-31, the allegory of Abraham's two sons -- the bondwoman and the freewoman -- as the two covenants, closing 'we are not children of the bondwoman, but of the free.'"
+
+[[event]]
+id = "gal_stand_fast_in_liberty"
+label = "Stand fast in liberty; a warning against seeking justification by circumcision"
+kind = "general"
+verses = ["GAL.5.1-12"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 5:1-12, 'stand fast therefore in the liberty wherewith Christ hath made us free,' and the warning that to seek circumcision as justification is to fall 'from grace.'"
+
+[[event]]
+id = "gal_liberty_in_love_flesh_and_spirit"
+label = "Liberty used in love; the works of the flesh and the fruit of the Spirit"
+kind = "general"
+verses = ["GAL.5.13-26"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 5:13-26, liberty not for 'an occasion to the flesh, but by love serve one another,' and the contrasted catalogues -- the works of the flesh, and 'the fruit of the Spirit.'"
+
+[[event]]
+id = "gal_bearing_one_anothers_burdens"
+label = "Bearing one another's burdens; sowing to the Spirit"
+kind = "general"
+verses = ["GAL.6.1-10"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 6:1-10, restoring one overtaken in a fault 'in the spirit of meekness,' bearing one another's burdens, and 'whatsoever a man soweth, that shall he also reap.'"
+
+[[event]]
+id = "gal_pauls_closing_words_in_his_own_hand"
+label = "Paul's own closing words in his own hand; glorying only in the cross"
+kind = "general"
+verses = ["GAL.6.11-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 6:11-18, Paul's own closing note in 'how large a letter... with mine own hand,' refusing to glory 'save in the cross of our Lord Jesus Christ.'"

@@ -3570,6 +3570,329 @@
     "order_key": 0
   },
   {
+    "id": "col_salutation_and_thanksgiving",
+    "label": "Salutation and thanksgiving for their faith and love",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "COL.1.1",
+      "COL.1.2",
+      "COL.1.3",
+      "COL.1.4",
+      "COL.1.5",
+      "COL.1.6",
+      "COL.1.7",
+      "COL.1.8"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 1:1-8, Paul's own greeting to the saints at Colosse, and thanksgiving for their 'faith in Christ Jesus, and... love... to all the saints,' learned of Epaphras.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "col_pauls_prayer_filled_with_knowledge",
+    "label": "Paul's own prayer: filled with the knowledge of his will; delivered into the kingdom of the Son",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "COL.1.9",
+      "COL.1.10",
+      "COL.1.11",
+      "COL.1.12",
+      "COL.1.13",
+      "COL.1.14"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 1:9-14, Paul's own prayer that they 'be filled with the knowledge of his will,' and thanks to the Father who 'hath delivered us from the power of darkness, and hath translated us into the kingdom of his dear Son.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "col_the_supremacy_of_christ",
+    "label": "The supremacy of Christ: image of the invisible God, head of the body, reconciling all things",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "COL.1.15",
+      "COL.1.16",
+      "COL.1.17",
+      "COL.1.18",
+      "COL.1.19",
+      "COL.1.20",
+      "COL.1.21",
+      "COL.1.22",
+      "COL.1.23"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 1:15-23, the hymn to Christ as 'the image of the invisible God, the firstborn of every creature,' by whom and for whom all things were created, and 'the head of the body, the church.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "col_pauls_ministry_the_mystery_made_manifest",
+    "label": "Paul's own ministry: the mystery made manifest, Christ in you the hope of glory",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "COL.1.24",
+      "COL.1.25",
+      "COL.1.26",
+      "COL.1.27",
+      "COL.1.28",
+      "COL.1.29"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 1:24-29, Paul's own sufferings 'for his body's sake, which is the church,' and his stewardship to make known 'the mystery... which is Christ in you, the hope of glory.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "col_pauls_conflict_of_care",
+    "label": "Paul's own conflict of care for the Colossians; rooted and built up in Christ",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "COL.2.1",
+      "COL.2.2",
+      "COL.2.3",
+      "COL.2.4",
+      "COL.2.5",
+      "COL.2.6",
+      "COL.2.7"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 2:1-7, Paul's own 'great conflict' of concern for those who have not seen his face, and the charge to be 'rooted and built up in him.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "col_the_fulness_of_the_godhead",
+    "label": "The fulness of the Godhead in Christ; complete in him",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "COL.2.8",
+      "COL.2.9",
+      "COL.2.10",
+      "COL.2.11",
+      "COL.2.12",
+      "COL.2.13",
+      "COL.2.14",
+      "COL.2.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 2:8-15, a warning against being spoiled 'through philosophy and vain deceit,' since 'in him dwelleth all the fulness of the Godhead bodily,' and the handwriting of ordinances 'nailing it to his cross.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "col_a_warning_against_manmade_ordinances",
+    "label": "A warning against man-made ordinances and false humility",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "COL.2.16",
+      "COL.2.17",
+      "COL.2.18",
+      "COL.2.19",
+      "COL.2.20",
+      "COL.2.21",
+      "COL.2.22",
+      "COL.2.23"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 2:16-23, a warning against being judged in meat, drink, holydays, or 'worshipping of angels,' ordinances that have 'a shew of wisdom' but no real value against the flesh.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "col_risen_with_christ",
+    "label": "Risen with Christ: seeking things above, putting off the old man",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "COL.3.1",
+      "COL.3.2",
+      "COL.3.3",
+      "COL.3.4",
+      "COL.3.5",
+      "COL.3.6",
+      "COL.3.7",
+      "COL.3.8",
+      "COL.3.9",
+      "COL.3.10",
+      "COL.3.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 3:1-11, 'if ye then be risen with Christ, seek those things which are above,' mortifying the earthly members and putting off 'the old man with his deeds.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "col_putting_on_the_new_man",
+    "label": "Putting on the new man: compassion, forgiveness, the peace of God, the word of Christ",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "COL.3.12",
+      "COL.3.13",
+      "COL.3.14",
+      "COL.3.15",
+      "COL.3.16",
+      "COL.3.17"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 3:12-17, the call to 'put on... bowels of mercies, kindness, humbleness of mind,' letting 'the peace of God rule in your hearts,' and doing all 'in the name of the Lord Jesus.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "col_household_duties",
+    "label": "Household duties: wives, husbands, children, fathers, servants, masters",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "COL.3.18",
+      "COL.3.19",
+      "COL.3.20",
+      "COL.3.21",
+      "COL.3.22",
+      "COL.3.23",
+      "COL.3.24",
+      "COL.3.25",
+      "COL.4.1"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 3:18-4:1, one unit spanning the chapter break -- mutual household duties for wives and husbands, children and fathers, servants and masters, closing 'ye also have a Master in heaven.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "col_continuing_in_prayer",
+    "label": "Continuing in prayer; walking in wisdom toward outsiders",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "COL.4.2",
+      "COL.4.3",
+      "COL.4.4",
+      "COL.4.5",
+      "COL.4.6"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 4:2-6, the call to 'continue in prayer,' walking 'in wisdom toward them that are without,' with speech 'alway with grace, seasoned with salt.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "col_closing_greetings_and_instructions",
+    "label": "Closing greetings and instructions",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "COL.4.7",
+      "COL.4.8",
+      "COL.4.9",
+      "COL.4.10",
+      "COL.4.11",
+      "COL.4.12",
+      "COL.4.13",
+      "COL.4.14",
+      "COL.4.15",
+      "COL.4.16",
+      "COL.4.17",
+      "COL.4.18"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Colossians 4:7-18, Paul's own closing report by Tychicus and Onesimus, greetings from his own companions, instructions for the letter's own circulation to Laodicea, and his 'salutation by the hand of me Paul.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
     "id": "dan_vision_of_the_four_beasts",
     "label": "The vision of the four beasts",
     "when": {
@@ -4569,6 +4892,446 @@
     "atlas_section": "Ecclesiastes pericope (this project's own sectioning, CC0): Ecclesiastes 12:9-14, the book's own third-person editorial epilogue, describing the Preacher's own diligence in teaching and setting proverbs in order, and closing with the whole book's own conclusion: 'Fear God, and keep his commandments: for this is the whole duty of man.'",
     "kjv_superscription": null,
     "ref_note": "GENERAL-kind, per this file's own header note. Third-person description of 'the preacher' (12:9-10), distinct in register from the first-person voice of the rest of the book -- a literary-structure fact, not textual criticism.",
+    "order_key": 0
+  },
+  {
+    "id": "eph_salutation",
+    "label": "Salutation to the saints at Ephesus, and the faithful in Christ Jesus",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.1.1",
+      "EPH.1.2"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 1:1-2, Paul's own opening greeting to the saints at Ephesus.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_blessed_with_every_spiritual_blessing",
+    "label": "Blessed with every spiritual blessing: chosen, adopted, redeemed, sealed",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.1.3",
+      "EPH.1.4",
+      "EPH.1.5",
+      "EPH.1.6",
+      "EPH.1.7",
+      "EPH.1.8",
+      "EPH.1.9",
+      "EPH.1.10",
+      "EPH.1.11",
+      "EPH.1.12",
+      "EPH.1.13",
+      "EPH.1.14"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 1:3-14, the letter's own opening doxology -- chosen before the foundation of the world, adopted as sons, redeemed through Christ's own blood, and 'sealed with that holy Spirit of promise.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_pauls_prayer_the_eyes_of_understanding",
+    "label": "Paul's own prayer: the eyes of understanding enlightened; Christ head over all things to the church",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.1.15",
+      "EPH.1.16",
+      "EPH.1.17",
+      "EPH.1.18",
+      "EPH.1.19",
+      "EPH.1.20",
+      "EPH.1.21",
+      "EPH.1.22",
+      "EPH.1.23"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 1:15-23, Paul's own prayer that the Ephesians' own 'eyes of your understanding' be enlightened, closing on Christ 'head over all things to the church, which is his body.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_quickened_together_with_christ",
+    "label": "Quickened together with Christ: by grace through faith, not of works",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.2.1",
+      "EPH.2.2",
+      "EPH.2.3",
+      "EPH.2.4",
+      "EPH.2.5",
+      "EPH.2.6",
+      "EPH.2.7",
+      "EPH.2.8",
+      "EPH.2.9",
+      "EPH.2.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 2:1-10, believers once 'dead in trespasses and sins' made alive together with Christ, 'by grace are ye saved through faith... not of works, lest any man should boast.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_one_new_man_jew_and_gentile_reconciled",
+    "label": "One new man: Jew and Gentile reconciled, the household of God",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.2.11",
+      "EPH.2.12",
+      "EPH.2.13",
+      "EPH.2.14",
+      "EPH.2.15",
+      "EPH.2.16",
+      "EPH.2.17",
+      "EPH.2.18",
+      "EPH.2.19",
+      "EPH.2.20",
+      "EPH.2.21",
+      "EPH.2.22"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 2:11-22, Christ 'our peace, who hath made both one,' breaking down 'the middle wall of partition' to make Jew and Gentile 'one new man,' built together 'for an habitation of God through the Spirit.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_the_mystery_of_christ_revealed",
+    "label": "The mystery of Christ revealed: the Gentiles fellowheirs; Paul's own stewardship",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.3.1",
+      "EPH.3.2",
+      "EPH.3.3",
+      "EPH.3.4",
+      "EPH.3.5",
+      "EPH.3.6",
+      "EPH.3.7",
+      "EPH.3.8",
+      "EPH.3.9",
+      "EPH.3.10",
+      "EPH.3.11",
+      "EPH.3.12",
+      "EPH.3.13"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 3:1-13, the mystery 'hid from ages' now revealed -- Gentiles 'fellowheirs' with Israel -- and Paul's own ministry to make it known, 'the prisoner of Jesus Christ for you Gentiles.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_pauls_prayer_strengthened_with_might",
+    "label": "Paul's own prayer: strengthened with might, rooted in love; the closing doxology",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.3.14",
+      "EPH.3.15",
+      "EPH.3.16",
+      "EPH.3.17",
+      "EPH.3.18",
+      "EPH.3.19",
+      "EPH.3.20",
+      "EPH.3.21"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 3:14-21, Paul's own prayer that they be 'strengthened with might by his Spirit in the inner man,' 'rooted and grounded in love,' closing on the doxology 'unto him that is able to do exceeding abundantly above all that we ask or think.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_the_unity_of_the_spirit_and_gifts_for_the_body",
+    "label": "The unity of the Spirit; gifts given for the perfecting of the saints, the body built up in love",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.4.1",
+      "EPH.4.2",
+      "EPH.4.3",
+      "EPH.4.4",
+      "EPH.4.5",
+      "EPH.4.6",
+      "EPH.4.7",
+      "EPH.4.8",
+      "EPH.4.9",
+      "EPH.4.10",
+      "EPH.4.11",
+      "EPH.4.12",
+      "EPH.4.13",
+      "EPH.4.14",
+      "EPH.4.15",
+      "EPH.4.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 4:1-16, the call to 'walk worthy of the vocation,' keeping 'the unity of the Spirit,' and Christ's own gifts of apostles, prophets, evangelists, pastors, and teachers for the body's own growth 'unto the edifying of itself in love.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_put_off_the_old_man_put_on_the_new",
+    "label": "Put off the old man, put on the new: a renewed manner of life",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.4.17",
+      "EPH.4.18",
+      "EPH.4.19",
+      "EPH.4.20",
+      "EPH.4.21",
+      "EPH.4.22",
+      "EPH.4.23",
+      "EPH.4.24",
+      "EPH.4.25",
+      "EPH.4.26",
+      "EPH.4.27",
+      "EPH.4.28",
+      "EPH.4.29",
+      "EPH.4.30",
+      "EPH.4.31",
+      "EPH.4.32"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 4:17-32, the call to no longer 'walk as other Gentiles walk,' putting off 'the old man' and putting on 'the new man... created in righteousness and true holiness,' with concrete instructions on lying, anger, and stealing.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_walk_as_children_of_light",
+    "label": "Walk as children of light; no fellowship with the unfruitful works of darkness",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.5.1",
+      "EPH.5.2",
+      "EPH.5.3",
+      "EPH.5.4",
+      "EPH.5.5",
+      "EPH.5.6",
+      "EPH.5.7",
+      "EPH.5.8",
+      "EPH.5.9",
+      "EPH.5.10",
+      "EPH.5.11",
+      "EPH.5.12",
+      "EPH.5.13",
+      "EPH.5.14"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 5:1-14, the call to 'walk in love, as Christ also hath loved us,' avoiding fornication and covetousness, and to 'walk as children of light.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_walk_circumspectly_filled_with_the_spirit",
+    "label": "Walk circumspectly: filled with the Spirit, not with wine",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.5.15",
+      "EPH.5.16",
+      "EPH.5.17",
+      "EPH.5.18",
+      "EPH.5.19",
+      "EPH.5.20",
+      "EPH.5.21"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 5:15-21, walking 'circumspectly,' redeeming the time, and being 'filled with the Spirit' in psalms, hymns, and mutual submission.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_wives_and_husbands",
+    "label": "Wives and husbands: the church and Christ",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.5.22",
+      "EPH.5.23",
+      "EPH.5.24",
+      "EPH.5.25",
+      "EPH.5.26",
+      "EPH.5.27",
+      "EPH.5.28",
+      "EPH.5.29",
+      "EPH.5.30",
+      "EPH.5.31",
+      "EPH.5.32",
+      "EPH.5.33"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 5:22-33, the mutual duty of wives and husbands framed by Christ's own love for the church, closing 'this is a great mystery: but I speak concerning Christ and the church.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_children_and_parents_servants_and_masters",
+    "label": "Children and parents; servants and masters",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.6.1",
+      "EPH.6.2",
+      "EPH.6.3",
+      "EPH.6.4",
+      "EPH.6.5",
+      "EPH.6.6",
+      "EPH.6.7",
+      "EPH.6.8",
+      "EPH.6.9"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 6:1-9, household instruction for children and fathers, and for servants and masters, closing 'neither is there respect of persons with him.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_the_whole_armour_of_god",
+    "label": "The whole armour of God",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.6.10",
+      "EPH.6.11",
+      "EPH.6.12",
+      "EPH.6.13",
+      "EPH.6.14",
+      "EPH.6.15",
+      "EPH.6.16",
+      "EPH.6.17",
+      "EPH.6.18",
+      "EPH.6.19",
+      "EPH.6.20"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 6:10-20, the call to 'put on the whole armour of God' against 'spiritual wickedness in high places,' piece by piece, closing on Paul's own request for boldness 'as an ambassador in bonds.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "eph_closing_tychicus_and_benediction",
+    "label": "Closing: Tychicus sent, and the benediction",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "EPH.6.21",
+      "EPH.6.22",
+      "EPH.6.23",
+      "EPH.6.24"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ephesians 6:21-24, Tychicus sent to report Paul's own affairs, and the letter's own closing benediction of peace and grace.",
+    "kjv_superscription": null,
+    "ref_note": null,
     "order_key": 0
   },
   {
@@ -5808,6 +6571,421 @@
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "Ezekiel pericope (this project's own sectioning, CC0): Ezekiel 38-39, an extensive oracle against Gog of the land of Magog, chief prince of Meshech and Tubal, gathering a great confederacy against a peaceful, regathered Israel -- overthrown by the Lord's own hand, an earthquake, and confusion, buried in 'the valley of Hamon-gog,' closing on the promise that the Lord will no more hide his own face from the house of Israel, having poured out his Spirit upon them.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_salutation",
+    "label": "Salutation: Paul, an apostle, not of men, neither by man, but by Jesus Christ",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.1.1",
+      "GAL.1.2",
+      "GAL.1.3",
+      "GAL.1.4",
+      "GAL.1.5"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 1:1-5, Paul's own opening insistence on an apostleship not of human origin, closing the greeting -- with no thanksgiving paragraph following, unlike every other Pauline letter in this slice (a literary-structure fact, see this file's own header note).",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_no_other_gospel",
+    "label": "Astonishment: no other gospel; let him be accursed",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.1.6",
+      "GAL.1.7",
+      "GAL.1.8",
+      "GAL.1.9",
+      "GAL.1.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 1:6-10, Paul's own astonishment that the Galatians are 'so soon removed' to another gospel, and the twice-repeated anathema on anyone who preaches a different one.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_pauls_gospel_by_revelation",
+    "label": "Paul's own gospel by revelation, not from man; his own conversion and early years",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.1.11",
+      "GAL.1.12",
+      "GAL.1.13",
+      "GAL.1.14",
+      "GAL.1.15",
+      "GAL.1.16",
+      "GAL.1.17",
+      "GAL.1.18",
+      "GAL.1.19",
+      "GAL.1.20",
+      "GAL.1.21",
+      "GAL.1.22",
+      "GAL.1.23",
+      "GAL.1.24"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 1:11-24, Paul's own account of receiving the gospel 'by the revelation of Jesus Christ,' his former persecution of the church, and his own movements after his conversion.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_the_jerusalem_council",
+    "label": "The Jerusalem council: Paul's own gospel confirmed by the pillar apostles",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.2.1",
+      "GAL.2.2",
+      "GAL.2.3",
+      "GAL.2.4",
+      "GAL.2.5",
+      "GAL.2.6",
+      "GAL.2.7",
+      "GAL.2.8",
+      "GAL.2.9",
+      "GAL.2.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 2:1-10, Paul's own visit to Jerusalem fourteen years later, Titus not compelled to be circumcised, and James, Cephas, and John giving 'the right hands of fellowship.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_paul_withstands_peter_at_antioch",
+    "label": "Paul withstands Peter at Antioch; justified by faith, not works of the law",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.2.11",
+      "GAL.2.12",
+      "GAL.2.13",
+      "GAL.2.14",
+      "GAL.2.15",
+      "GAL.2.16",
+      "GAL.2.17",
+      "GAL.2.18",
+      "GAL.2.19",
+      "GAL.2.20",
+      "GAL.2.21"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 2:11-21, Paul's own public rebuke of Peter for withdrawing from Gentile fellowship, and the letter's own doctrinal center -- 'a man is not justified by the works of the law, but by the faith of Jesus Christ.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_the_spirit_received_by_faith",
+    "label": "The Spirit received by faith, not works; the blessing of Abraham for the Gentiles",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.3.1",
+      "GAL.3.2",
+      "GAL.3.3",
+      "GAL.3.4",
+      "GAL.3.5",
+      "GAL.3.6",
+      "GAL.3.7",
+      "GAL.3.8",
+      "GAL.3.9",
+      "GAL.3.10",
+      "GAL.3.11",
+      "GAL.3.12",
+      "GAL.3.13",
+      "GAL.3.14"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 3:1-14, 'O foolish Galatians' -- the Spirit received by the hearing of faith, not the works of the law, and Christ's own redemption from the law's curse so 'the blessing of Abraham might come on the Gentiles.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_the_law_and_the_promise",
+    "label": "The law and the promise: the law our schoolmaster to bring us to Christ",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.3.15",
+      "GAL.3.16",
+      "GAL.3.17",
+      "GAL.3.18",
+      "GAL.3.19",
+      "GAL.3.20",
+      "GAL.3.21",
+      "GAL.3.22",
+      "GAL.3.23",
+      "GAL.3.24",
+      "GAL.3.25",
+      "GAL.3.26",
+      "GAL.3.27",
+      "GAL.3.28",
+      "GAL.3.29"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 3:15-29, the promise to Abraham's own 'seed... which is Christ' predating and unaltered by the law given 430 years later, and the law as 'our schoolmaster to bring us unto Christ,' closing 'there is neither Jew nor Greek... for ye are all one in Christ Jesus.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_heirs_of_god_from_bondage_to_sonship",
+    "label": "Heirs of God: from bondage to sonship, from servant to son",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.4.1",
+      "GAL.4.2",
+      "GAL.4.3",
+      "GAL.4.4",
+      "GAL.4.5",
+      "GAL.4.6",
+      "GAL.4.7",
+      "GAL.4.8",
+      "GAL.4.9",
+      "GAL.4.10",
+      "GAL.4.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 4:1-11, the heir under tutors as a child compared to the believer's own adoption as a son 'when the fulness of the time was come,' and Paul's own fear the Galatians turn back to 'weak and beggarly elements.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_pauls_affection_for_the_galatians",
+    "label": "Paul's own affection for the Galatians; his own former reception among them",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.4.12",
+      "GAL.4.13",
+      "GAL.4.14",
+      "GAL.4.15",
+      "GAL.4.16",
+      "GAL.4.17",
+      "GAL.4.18",
+      "GAL.4.19",
+      "GAL.4.20"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 4:12-20, Paul's own appeal to their former warm reception of him 'as an angel of God,' and his own travail 'until Christ be formed in you.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_the_allegory_of_hagar_and_sarah",
+    "label": "The allegory of Hagar and Sarah: two covenants",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.4.21",
+      "GAL.4.22",
+      "GAL.4.23",
+      "GAL.4.24",
+      "GAL.4.25",
+      "GAL.4.26",
+      "GAL.4.27",
+      "GAL.4.28",
+      "GAL.4.29",
+      "GAL.4.30",
+      "GAL.4.31"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 4:21-31, the allegory of Abraham's two sons -- the bondwoman and the freewoman -- as the two covenants, closing 'we are not children of the bondwoman, but of the free.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_stand_fast_in_liberty",
+    "label": "Stand fast in liberty; a warning against seeking justification by circumcision",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.5.1",
+      "GAL.5.2",
+      "GAL.5.3",
+      "GAL.5.4",
+      "GAL.5.5",
+      "GAL.5.6",
+      "GAL.5.7",
+      "GAL.5.8",
+      "GAL.5.9",
+      "GAL.5.10",
+      "GAL.5.11",
+      "GAL.5.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 5:1-12, 'stand fast therefore in the liberty wherewith Christ hath made us free,' and the warning that to seek circumcision as justification is to fall 'from grace.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_liberty_in_love_flesh_and_spirit",
+    "label": "Liberty used in love; the works of the flesh and the fruit of the Spirit",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.5.13",
+      "GAL.5.14",
+      "GAL.5.15",
+      "GAL.5.16",
+      "GAL.5.17",
+      "GAL.5.18",
+      "GAL.5.19",
+      "GAL.5.20",
+      "GAL.5.21",
+      "GAL.5.22",
+      "GAL.5.23",
+      "GAL.5.24",
+      "GAL.5.25",
+      "GAL.5.26"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 5:13-26, liberty not for 'an occasion to the flesh, but by love serve one another,' and the contrasted catalogues -- the works of the flesh, and 'the fruit of the Spirit.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_bearing_one_anothers_burdens",
+    "label": "Bearing one another's burdens; sowing to the Spirit",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.6.1",
+      "GAL.6.2",
+      "GAL.6.3",
+      "GAL.6.4",
+      "GAL.6.5",
+      "GAL.6.6",
+      "GAL.6.7",
+      "GAL.6.8",
+      "GAL.6.9",
+      "GAL.6.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 6:1-10, restoring one overtaken in a fault 'in the spirit of meekness,' bearing one another's burdens, and 'whatsoever a man soweth, that shall he also reap.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "gal_pauls_closing_words_in_his_own_hand",
+    "label": "Paul's own closing words in his own hand; glorying only in the cross",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "GAL.6.11",
+      "GAL.6.12",
+      "GAL.6.13",
+      "GAL.6.14",
+      "GAL.6.15",
+      "GAL.6.16",
+      "GAL.6.17",
+      "GAL.6.18"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Galatians 6:11-18, Paul's own closing note in 'how large a letter... with mine own hand,' refusing to glory 'save in the cross of our Lord Jesus Christ.'",
     "kjv_superscription": null,
     "ref_note": null,
     "order_key": 0
@@ -15930,6 +17108,300 @@
     "atlas_section": null,
     "kjv_superscription": "OBA.1.1's own opening clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- the book's own superscription, distinct from the oracle's own content beginning immediately after ('Thus saith the Lord GOD concerning Edom...').",
     "ref_note": "GENERAL-kind: oracle, no date of its own claimed, per this file's own header note. The oracle's own content (1:11-14) looks back on the fall of Jerusalem (already anchored at -586 by exl_jerusalem/2ki_jerusalem_aftermath) as a recent past event Edom gloated over -- absorbs the pre-existing theo-244 ('Prophecies of Obadiah'), see this file's own header note and EVENT_MERGE_PAIRS.",
+    "order_key": 0
+  },
+  {
+    "id": "php_salutation_and_thanksgiving",
+    "label": "Salutation and thanksgiving; Paul's own prayer for their love to abound",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "PHP.1.1",
+      "PHP.1.2",
+      "PHP.1.3",
+      "PHP.1.4",
+      "PHP.1.5",
+      "PHP.1.6",
+      "PHP.1.7",
+      "PHP.1.8",
+      "PHP.1.9",
+      "PHP.1.10",
+      "PHP.1.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 1:1-11, Paul's own greeting to the saints at Philippi 'with the bishops and deacons,' his own thanksgiving 'for your fellowship in the gospel,' and his prayer that their 'love may abound yet more and more.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "php_pauls_bonds_further_the_gospel",
+    "label": "Paul's own bonds further the gospel; to live is Christ, to die is gain",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "PHP.1.12",
+      "PHP.1.13",
+      "PHP.1.14",
+      "PHP.1.15",
+      "PHP.1.16",
+      "PHP.1.17",
+      "PHP.1.18",
+      "PHP.1.19",
+      "PHP.1.20",
+      "PHP.1.21",
+      "PHP.1.22",
+      "PHP.1.23",
+      "PHP.1.24",
+      "PHP.1.25",
+      "PHP.1.26"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 1:12-26, Paul's own report that his imprisonment has fallen out 'rather unto the furtherance of the gospel,' and his own reflection, 'for to me to live is Christ, and to die is gain.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "php_standing_fast_in_one_spirit",
+    "label": "Standing fast in one spirit for the faith of the gospel",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "PHP.1.27",
+      "PHP.1.28",
+      "PHP.1.29",
+      "PHP.1.30"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 1:27-30, the charge to let their 'conversation be as it becometh the gospel,' standing fast 'in one spirit, with one mind' and unafraid of adversaries.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "php_the_mind_of_christ",
+    "label": "Christ's own humility, the pattern for the church; the Christ hymn",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "PHP.2.1",
+      "PHP.2.2",
+      "PHP.2.3",
+      "PHP.2.4",
+      "PHP.2.5",
+      "PHP.2.6",
+      "PHP.2.7",
+      "PHP.2.8",
+      "PHP.2.9",
+      "PHP.2.10",
+      "PHP.2.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 2:1-11, the appeal to unity and lowliness 'let this mind be in you, which was also in Christ Jesus,' and the hymn of his own self-emptying, obedience unto death, and exaltation to the name above every name.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "php_working_out_salvation",
+    "label": "Working out salvation with fear and trembling; shining as lights in the world",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "PHP.2.12",
+      "PHP.2.13",
+      "PHP.2.14",
+      "PHP.2.15",
+      "PHP.2.16",
+      "PHP.2.17",
+      "PHP.2.18"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 2:12-18, the charge to 'work out your own salvation with fear and trembling,' shining 'as lights in the world... holding forth the word of life.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "php_sending_timothy_and_epaphroditus",
+    "label": "Paul's own plans to send Timothy and Epaphroditus",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "PHP.2.19",
+      "PHP.2.20",
+      "PHP.2.21",
+      "PHP.2.22",
+      "PHP.2.23",
+      "PHP.2.24",
+      "PHP.2.25",
+      "PHP.2.26",
+      "PHP.2.27",
+      "PHP.2.28",
+      "PHP.2.29",
+      "PHP.2.30"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 2:19-30, Paul's own hope to send Timothy shortly, and his own commendation of Epaphroditus, who 'was sick nigh unto death' in the Philippians' own service.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "php_confidence_in_the_flesh_counted_as_loss",
+    "label": "Paul's own confidence in the flesh counted as loss for the excellency of Christ",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "PHP.3.1",
+      "PHP.3.2",
+      "PHP.3.3",
+      "PHP.3.4",
+      "PHP.3.5",
+      "PHP.3.6",
+      "PHP.3.7",
+      "PHP.3.8",
+      "PHP.3.9",
+      "PHP.3.10",
+      "PHP.3.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 3:1-11, a warning against 'the concision,' Paul's own former confidence 'in the flesh' recounted and counted 'but dung, that I may win Christ.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "php_pressing_toward_the_mark",
+    "label": "Pressing toward the mark; our own conversation is in heaven",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "PHP.3.12",
+      "PHP.3.13",
+      "PHP.3.14",
+      "PHP.3.15",
+      "PHP.3.16",
+      "PHP.3.17",
+      "PHP.3.18",
+      "PHP.3.19",
+      "PHP.3.20",
+      "PHP.3.21"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 3:12-21, 'I press toward the mark for the prize of the high calling of God in Christ Jesus,' and the closing contrast between earthly-minded enemies of the cross and citizens 'whose conversation is in heaven.'",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "php_standing_fast_rejoicing_and_the_peace_of_god",
+    "label": "Standing fast; rejoicing always; the peace of God",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "PHP.4.1",
+      "PHP.4.2",
+      "PHP.4.3",
+      "PHP.4.4",
+      "PHP.4.5",
+      "PHP.4.6",
+      "PHP.4.7",
+      "PHP.4.8",
+      "PHP.4.9"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 4:1-9, the appeal to Euodias and Syntyche, 'rejoice in the Lord alway,' and the peace of God that 'passeth all understanding' guarding hearts and minds.",
+    "kjv_superscription": null,
+    "ref_note": null,
+    "order_key": 0
+  },
+  {
+    "id": "php_pauls_contentment_and_the_philippians_gift",
+    "label": "Paul's own contentment; the Philippians' own gift, and the closing benediction",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "PHP.4.10",
+      "PHP.4.11",
+      "PHP.4.12",
+      "PHP.4.13",
+      "PHP.4.14",
+      "PHP.4.15",
+      "PHP.4.16",
+      "PHP.4.17",
+      "PHP.4.18",
+      "PHP.4.19",
+      "PHP.4.20",
+      "PHP.4.21",
+      "PHP.4.22",
+      "PHP.4.23"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 4:10-23, Paul's own learned contentment 'in whatsoever state I am,' thanks for the Philippians' own repeated gifts, closing 'I can do all things through Christ which strengtheneth me' and the final benediction.",
+    "kjv_superscription": null,
+    "ref_note": null,
     "order_key": 0
   },
   {

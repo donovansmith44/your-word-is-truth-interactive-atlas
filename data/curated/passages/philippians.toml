@@ -1,0 +1,83 @@
+# Batch W5 (whole-Bible titled verse containers, fifth run). Philippians.
+# KIND POLICY (applies across this whole W5 slice, stated here once, per
+# the master brief's own requirement 2, "KIND DISCIPLINE"): every
+# container in this file is GENERAL-kind (undated, placeless) -- a
+# letter's own teaching content is not a datable occurrence, and Theographic's
+# own dated "X writes Y" EVENT nodes (where any exist) are a DIFFERENT
+# identity from these content containers -- never merged into them, never
+# given a fabricated dated twin. See batch-w5-report.md for the full
+# reconciliation sweep against the real compiled events.json.
+#
+# GRANULARITY: Philippians' own real seams -- salutation/thanksgiving,
+# Paul's own circumstances, the Christ-hymn and its ethical outworking,
+# Paul's own testimony, and closing thanks for their gift.
+
+[[event]]
+id = "php_salutation_and_thanksgiving"
+label = "Salutation and thanksgiving; Paul's own prayer for their love to abound"
+kind = "general"
+verses = ["PHP.1.1-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 1:1-11, Paul's own greeting to the saints at Philippi 'with the bishops and deacons,' his own thanksgiving 'for your fellowship in the gospel,' and his prayer that their 'love may abound yet more and more.'"
+
+[[event]]
+id = "php_pauls_bonds_further_the_gospel"
+label = "Paul's own bonds further the gospel; to live is Christ, to die is gain"
+kind = "general"
+verses = ["PHP.1.12-26"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 1:12-26, Paul's own report that his imprisonment has fallen out 'rather unto the furtherance of the gospel,' and his own reflection, 'for to me to live is Christ, and to die is gain.'"
+
+[[event]]
+id = "php_standing_fast_in_one_spirit"
+label = "Standing fast in one spirit for the faith of the gospel"
+kind = "general"
+verses = ["PHP.1.27-30"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 1:27-30, the charge to let their 'conversation be as it becometh the gospel,' standing fast 'in one spirit, with one mind' and unafraid of adversaries."
+
+[[event]]
+id = "php_the_mind_of_christ"
+label = "Christ's own humility, the pattern for the church; the Christ hymn"
+kind = "general"
+verses = ["PHP.2.1-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 2:1-11, the appeal to unity and lowliness 'let this mind be in you, which was also in Christ Jesus,' and the hymn of his own self-emptying, obedience unto death, and exaltation to the name above every name."
+
+[[event]]
+id = "php_working_out_salvation"
+label = "Working out salvation with fear and trembling; shining as lights in the world"
+kind = "general"
+verses = ["PHP.2.12-18"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 2:12-18, the charge to 'work out your own salvation with fear and trembling,' shining 'as lights in the world... holding forth the word of life.'"
+
+[[event]]
+id = "php_sending_timothy_and_epaphroditus"
+label = "Paul's own plans to send Timothy and Epaphroditus"
+kind = "general"
+verses = ["PHP.2.19-30"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 2:19-30, Paul's own hope to send Timothy shortly, and his own commendation of Epaphroditus, who 'was sick nigh unto death' in the Philippians' own service."
+
+[[event]]
+id = "php_confidence_in_the_flesh_counted_as_loss"
+label = "Paul's own confidence in the flesh counted as loss for the excellency of Christ"
+kind = "general"
+verses = ["PHP.3.1-11"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 3:1-11, a warning against 'the concision,' Paul's own former confidence 'in the flesh' recounted and counted 'but dung, that I may win Christ.'"
+
+[[event]]
+id = "php_pressing_toward_the_mark"
+label = "Pressing toward the mark; our own conversation is in heaven"
+kind = "general"
+verses = ["PHP.3.12-21"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 3:12-21, 'I press toward the mark for the prize of the high calling of God in Christ Jesus,' and the closing contrast between earthly-minded enemies of the cross and citizens 'whose conversation is in heaven.'"
+
+[[event]]
+id = "php_standing_fast_rejoicing_and_the_peace_of_god"
+label = "Standing fast; rejoicing always; the peace of God"
+kind = "general"
+verses = ["PHP.4.1-9"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 4:1-9, the appeal to Euodias and Syntyche, 'rejoice in the Lord alway,' and the peace of God that 'passeth all understanding' guarding hearts and minds."
+
+[[event]]
+id = "php_pauls_contentment_and_the_philippians_gift"
+label = "Paul's own contentment; the Philippians' own gift, and the closing benediction"
+kind = "general"
+verses = ["PHP.4.10-23"]
+atlas_section = "pericope (this project's own sectioning, CC0 -- no external PD source claimed): Philippians 4:10-23, Paul's own learned contentment 'in whatsoever state I am,' thanks for the Philippians' own repeated gifts, closing 'I can do all things through Christ which strengtheneth me' and the final benediction."
