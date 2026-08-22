@@ -30,8 +30,14 @@
 # batch-w2-report.md's own coverage table) -- 2 Samuel, 1/2 Kings, 1/2
 # Chronicles, Ezra, Nehemiah, and Esther follow as each lands in turn,
 # same one-book-at-a-time growth discipline W1 established.
+# Batch W3 (whole-Bible titled verse containers, third run): Job, Psalms,
+# Proverbs, Ecclesiastes, and Song of Solomon added below, each once every
+# one of its own verses was confirmed covered against the real compiled
+# data (see batch-w3-report.md's own coverage table) -- same one-book-at-
+# a-time growth discipline, one book per commit.
 declared = [
   "MAT", "MRK", "LUK", "JHN", "ACT",
   "GEN", "EXO", "LEV", "RUT", "NUM", "DEU", "JOS", "JDG",
   "1SA", "2SA", "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST",
+  "JOB",
 ]

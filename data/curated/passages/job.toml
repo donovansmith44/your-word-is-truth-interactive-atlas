@@ -1,0 +1,302 @@
+# Batch W3 (whole-Bible titled verse containers, third run: Job-Song of
+# Solomon). Job, in the SAME `[[event]]` schema `events-extra.toml` uses --
+# see `data/curated/passages/genesis.toml`'s own header comment for the
+# full reconciliation/provenance framing.
+#
+# RECONCILIATION (checked against the real compiled `events.json` before
+# authoring, per the brief's own explicit instruction to check Job's
+# narrative frame against theo-* events first): THREE pre-existing bare
+# Theographic events touch this book -- `theo-108` ("Lifetime of Job,"
+# GEN.46.13 + JOB.42.16-17, -1720), `theo-117` ("Job's Trial," ALL 1070
+# verses of the book in one mega-span, -1650), and `theo-119` ("Death of
+# Job," JOB.42.16-17, -1580). All three are LAYER-0 (no witnesses, no
+# robertson/acts/atlas_section) -- none is heading-worthy today, and none
+# is touched by this file: `theo-117`'s own mega-span is the "multi-scene
+# mega-span, not worth a single misleading heading" case this project has
+# already established a disposition for (batch-w1-report.md), and every
+# one of the 30 finer pericope containers below stays well under the
+# EVENT_MERGE_PAIRS/EVENT_DISTINCT_PAIRS 0.8-verse-set-jaccard sweep floor
+# against all three (the largest, job_final_defense, is 96/1070 = 0.09
+# against theo-117; the closest to a small stub, job_epilogue_restoration,
+# is 11/11 verses shared with theo-119's own 2 but a union of 11, jaccard
+# 0.18 -- deliberately kept a whole natural prose unit, never narrowed to
+# theo-119's own bare 2-verse stub, precisely so no near-duplicate is ever
+# created). `theo-117`'s own -1650 anchor and `theo-119`'s own -1580 are
+# reused (interpolated, never re-derived) for this file's own three
+# EVENT-kind containers below; the remaining 27 containers cover Job's own
+# poetic dialogue (chapters 3-42:6), GENERAL-kind per the brief's own genre
+# guidance ("poetry... is the honest default"), no fabricated date.
+#
+# GRANULARITY: standard, non-controversial literary-structure divisions
+# (who is speaking, in which chapters) -- three friends' three speech
+# cycles, Elihu's four speeches, the Lord's two speeches, Job's own
+# replies -- a natural-unit decomposition, the same class of fact this
+# project's own doctrine note permits ("literary-structure facts... two
+# textually distinct pericopes"), not textual criticism. PLACE: "the land
+# of Uz" (1:1) throughout, the pre-geocoded `uz` place (30.745843,
+# 35.603919) -- the narrative's own anchor place regardless of which
+# distant homeland each of the three friends is separately named from
+# (Teman/Shuah/Naamah), since the action itself never leaves Job's own
+# dwelling in Uz.
+
+# --- Prologue (prose, EVENT-kind) ------------------------------------
+
+[[event]]
+id = "job_prologue_calamities"
+label = "Job's character and wealth; the first heavenly council; his calamities"
+from_year = -1650
+to_year = -1650
+places = ["uz"]
+verses = ["JOB.1.1-22"]
+atlas_section = "Job pericope (this project's own sectioning, CC0 -- no external PD source claimed): Job 1, Job's own blamelessness and wealth described, the first council in heaven where Satan is given leave to test him, and the loss of Job's oxen, sheep, camels, servants, and all ten children in one day -- closing on 'the Lord gave, and the Lord hath taken away; blessed be the name of the Lord.'"
+ref_note = "Date interpolated from the pre-existing theo-117 ('Job's Trial,' -1650), which spans this whole book as one bare mega-span (this project's own sectioning row above promotes only this finer prologue container, not theo-117 itself -- see this file's own header note). Place: 'the land of Uz' (1:1), explicit."
+
+[[event]]
+id = "job_affliction_and_friends"
+label = "The second heavenly council; Job's own affliction with boils; his three friends arrive"
+from_year = -1650
+to_year = -1650
+places = ["uz"]
+verses = ["JOB.2.1-13"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 2, the second council in heaven, Job smitten with sore boils from head to foot, his wife's counsel to 'curse God, and die,' and the arrival of Eliphaz, Bildad, and Zophar, who sit with him seven days and seven nights in silence."
+ref_note = "Same traditional year as job_prologue_calamities, immediately following. Place: Uz, unchanged."
+
+# --- Job's opening lament (poetry, GENERAL-kind) ----------------------
+
+[[event]]
+id = "job_first_lament"
+label = "Job curses the day of his birth"
+kind = "general"
+verses = ["JOB.3.1-26"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 3, Job's own opening lament after the seven days of silence -- 'Let the day perish wherein I was born' -- and his longing for the rest of death."
+ref_note = "GENERAL-kind: poetry, no date of its own, per this file's own header note."
+
+# --- First cycle of dialogue -------------------------------------------
+
+[[event]]
+id = "job_eliphaz_first_speech"
+label = "Eliphaz's first speech: affliction, and the innocent do not perish"
+kind = "general"
+verses = ["JOB.4.1-21", "JOB.5.1-27"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 4-5, Eliphaz the Temanite's own first speech, appealing to a night vision and urging Job that the innocent are not cut off, and that God's own chastening should be received."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_reply_to_eliphaz_1"
+label = "Job's reply to Eliphaz: the weight of his grief, and his friends' unkindness"
+kind = "general"
+verses = ["JOB.6.1-30", "JOB.7.1-21"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 6-7, Job's own reply -- his grief outweighs the sand of the sea, his friends have dealt deceitfully as a dried-up brook, and his own address to God directly, asking 'what is man, that thou shouldest magnify him?'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_bildad_first_speech"
+label = "Bildad's first speech: God does not pervert justice"
+kind = "general"
+verses = ["JOB.8.1-22"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 8, Bildad the Shuhite's own first speech, appealing to the wisdom of former ages that God does not cast away a perfect man, and urging Job to seek God early."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_reply_to_bildad_1"
+label = "Job's reply to Bildad: how should man be just with God?"
+kind = "general"
+verses = ["JOB.9.1-35", "JOB.10.1-22"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 9-10, Job's own reply -- God's own unsearchable greatness and power, Job's own longing for a daysman to lay his hand upon them both, and his own address to God asking why he was ever brought out of the womb."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_zophar_first_speech"
+label = "Zophar's first speech: the limits of man's own wisdom"
+kind = "general"
+verses = ["JOB.11.1-20"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 11, Zophar the Naamathite's own first speech, urging that God's own wisdom is unsearchable and that Job should put away iniquity to find rest."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_reply_to_zophar_1"
+label = "Job's reply to Zophar: wisdom shall die with you; an appeal to God"
+kind = "general"
+verses = ["JOB.12.1-25", "JOB.13.1-28", "JOB.14.1-22"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 12-14, Job's own reply -- his own sharp rebuke of his friends' pretended wisdom, his desire to reason with God directly, and his own closing meditation on the shortness of man's life and the hope 'if a man die, shall he live again?'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+# --- Second cycle of dialogue -------------------------------------------
+
+[[event]]
+id = "job_eliphaz_second_speech"
+label = "Eliphaz's second speech: the portion of the wicked man"
+kind = "general"
+verses = ["JOB.15.1-35"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 15, Eliphaz's own second speech, sharper than his first, describing at length the terrors and downfall that await the wicked man."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_reply_to_eliphaz_2"
+label = "Job's reply to Eliphaz: miserable comforters, and Job's own witness in heaven"
+kind = "general"
+verses = ["JOB.16.1-22", "JOB.17.1-16"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 16-17, Job's own reply, calling his three friends 'miserable comforters,' yet affirming 'also now, behold, my witness is in heaven,' and lamenting that his own hope has become the grave."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_bildad_second_speech"
+label = "Bildad's second speech: the light of the wicked is put out"
+kind = "general"
+verses = ["JOB.18.1-21"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 18, Bildad's own second speech, describing at length the snares, terrors, and utter forgetting that overtake the wicked man."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_reply_to_bildad_2"
+label = "Job's reply to Bildad: 'I know that my redeemer liveth'"
+kind = "general"
+verses = ["JOB.19.1-29"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 19, Job's own reply -- his own kinsmen and friends have turned against him, yet he confesses, 'I know that my redeemer liveth, and that he shall stand at the latter day upon the earth.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_zophar_second_speech"
+label = "Zophar's second speech: the triumphing of the wicked is short"
+kind = "general"
+verses = ["JOB.20.1-29"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 20, Zophar's own second and final speech, describing the brief triumph and sudden downfall of the wicked man."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_reply_to_zophar_2"
+label = "Job's reply to Zophar: the wicked often prosper in this life"
+kind = "general"
+verses = ["JOB.21.1-34"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 21, Job's own reply, observing plainly that the wicked often live out their days in prosperity and die in peace, against his friends' own theory."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+# --- Third cycle of dialogue, and Job's closing discourse ---------------
+
+[[event]]
+id = "job_eliphaz_third_speech"
+label = "Eliphaz's third speech: an accusation, and a call to return to God"
+kind = "general"
+verses = ["JOB.22.1-30"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 22, Eliphaz's own third and final speech, now directly accusing Job of specific sins, and urging him to acquaint himself with God and be at peace."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_reply_to_eliphaz_3"
+label = "Job's reply: longing to find God, and the ways of the wicked unpunished"
+kind = "general"
+verses = ["JOB.23.1-17", "JOB.24.1-25"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 23-24, Job's own reply -- his longing to come even to God's own seat and plead his cause before him, and his own extended observation of violence and oppression left unpunished in the world."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_bildad_third_speech"
+label = "Bildad's third speech: how then can man be justified with God?"
+kind = "general"
+verses = ["JOB.25.1-6"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 25, Bildad's own third and briefest speech, on God's own dominion and the frailty of man, who is but 'a worm.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_job_continues"
+label = "Job continues: God's own power in creation, and the friends' own silence"
+kind = "general"
+verses = ["JOB.26.1-14", "JOB.27.1-23"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 26-27, Job's own further reply -- his own description of God's own power over the deep and the pillars of heaven, and his own oath maintaining his integrity as his friends fall silent, no fourth speech from Zophar following."
+ref_note = "GENERAL-kind, per this file's own header note. The dialogue cycle closes here without a third Zophar speech -- a literary-structure fact, not any claim about the underlying text's own transmission."
+
+[[event]]
+id = "job_hymn_to_wisdom"
+label = "Where shall wisdom be found?"
+kind = "general"
+verses = ["JOB.28.1-28"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 28, a self-contained hymn on wisdom -- man's own skill to mine the earth's hidden treasures, yet wisdom itself is found with God alone, who declared to man, 'the fear of the Lord, that is wisdom; and to depart from evil is understanding.'"
+ref_note = "GENERAL-kind, per this file's own header note. A recognized, self-contained poem within the wider dialogue -- a literary-structure fact, not textual criticism."
+
+[[event]]
+id = "job_final_defense"
+label = "Job's closing self-defense: his former honor, present scorn, and oath of innocence"
+kind = "general"
+verses = ["JOB.29.1-25", "JOB.30.1-31", "JOB.31.1-40"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 29-31, Job's own closing address -- chapter 29 recalling his former honor, chapter 30 lamenting his present scorn among the basest of men, and chapter 31 his own extended oath of innocence, closing 'the words of Job are ended.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+# --- Elihu's four speeches -----------------------------------------------
+
+[[event]]
+id = "job_elihu_first_speech"
+label = "Elihu's first speech: his own youth, and why he now speaks"
+kind = "general"
+verses = ["JOB.32.1-22", "JOB.33.1-33"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 32-33, the narrator's own introduction of Elihu the Buzite (32:1-5), angry that the three friends found no answer yet condemned Job, followed by Elihu's own first speech directly to Job, that God speaks to man in dreams and by affliction, as a messenger of mercy."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_elihu_second_speech"
+label = "Elihu's second speech: God does not pervert judgment"
+kind = "general"
+verses = ["JOB.34.1-37"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 34, Elihu's own second speech, defending God's own justice against Job's own words, and warning against adding rebellion to sin."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_elihu_third_speech"
+label = "Elihu's third speech: man's sin cannot touch God's own greatness"
+kind = "general"
+verses = ["JOB.35.1-16"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 35, Elihu's own third speech, that neither man's sin harms God nor his righteousness profits God, and that God does not hear an empty cry."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_elihu_fourth_speech"
+label = "Elihu's fourth speech: God's own greatness in the storm"
+kind = "general"
+verses = ["JOB.36.1-33", "JOB.37.1-24"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 36-37, Elihu's own fourth and final speech, extolling God's own greatness and justice, and his own power displayed in thunder, snow, and storm, preparing the way for the Lord's own answer that follows."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+# --- The Lord's own speeches, and Job's replies --------------------------
+
+[[event]]
+id = "job_lord_first_speech"
+label = "The Lord answers Job out of the whirlwind: the wonders of creation"
+kind = "general"
+verses = ["JOB.38.1-41", "JOB.39.1-30", "JOB.40.1-2"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 38:1-40:2, the Lord's own first speech to Job out of the whirlwind, questioning him about the foundations of the earth, the sea, the stars, and the ways of the wild creatures, closing 'shall he that contendeth with the Almighty instruct him?'"
+ref_note = "GENERAL-kind, per this file's own header note. Not dated separately from the rest of the poetic dialogue, per the brief's own genre guidance."
+
+[[event]]
+id = "job_job_brief_reply"
+label = "Job's brief reply: 'I am vile... I will lay mine hand upon my mouth'"
+kind = "general"
+verses = ["JOB.40.3-5"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 40:3-5, Job's own brief first reply to the Lord, humbled into silence."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_lord_second_speech"
+label = "The Lord's second speech: behemoth and leviathan"
+kind = "general"
+verses = ["JOB.40.6-24", "JOB.41.1-34"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 40:6-41:34, the Lord's own second speech, describing at length behemoth and leviathan, creatures of his own making that no man can tame or conquer."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "job_repentance"
+label = "Job's repentance: 'I have heard of thee... but now mine eye seeth thee'"
+kind = "general"
+verses = ["JOB.42.1-6"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 42:1-6, Job's own final reply to the Lord, confessing that he had spoken of things too wonderful for him, and repenting in dust and ashes."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+# --- Epilogue (prose, EVENT-kind) ----------------------------------------
+
+[[event]]
+id = "job_epilogue_restoration"
+label = "The Lord rebukes the three friends; Job's own restoration and death"
+from_year = -1650
+to_year = -1580
+places = ["uz"]
+verses = ["JOB.42.7-17"]
+atlas_section = "Job pericope (this project's own sectioning, CC0): Job 42:7-17, the Lord's own rebuke of Eliphaz, Bildad, and Zophar for not speaking rightly of him as Job had, Job's own prayer for his friends, his own restoration to twice what he had before, ten more children, and his death 'being old and full of days' at one hundred and forty years afterward."
+ref_note = "from_year (-1650) interpolated from the pre-existing theo-117 ('Job's Trial'); to_year (-1580) reused directly from the pre-existing theo-119 ('Death of Job') -- both events' own bare JOB.42.16-17 verses fall within this container's own wider 42:7-17 span (an honest superset, not a narrowed duplicate: see this file's own header note on the jaccard check against theo-119). Place: Uz, unchanged -- Job's restoration and remaining years are never narrated as taking place anywhere else."
