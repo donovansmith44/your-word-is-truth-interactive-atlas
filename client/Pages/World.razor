@@ -1325,7 +1325,7 @@
     // OpenPlaceFromCard's PlaceNode -- ever reads Brightness off it anyway).
     private ScenePlace? QuietAsScenePlace(string id)
     {
-        var quiet = _scene?.QuietPlaces.FirstOrDefault(p => p.Id == id);
+        var quiet = _scene?.QuietPlaces?.FirstOrDefault(p => p.Id == id);
         return quiet is null ? null : new ScenePlace(quiet.Id, quiet.DisplayName, quiet.DisplayName, quiet.Lat, quiet.Lon, 0, new List<SceneEvent>());
     }
 
