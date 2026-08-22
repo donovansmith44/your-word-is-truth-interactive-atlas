@@ -23,6 +23,26 @@ class Explorable e where
 -- Honesty is totality: an affordance exists iff the relation is inhabited.
 ```
 
+GLOSSARY (owner-calibrated, 2026-08-22):
+- FOCUS: the node you stand on. One thing.
+- FRONTIER: derived, never stored — the one-hop reach of what you hold,
+  per edge kind. frontier(focus) exists IN FULL in the graph; what any
+  screen shows is policy (below). The popover = card(focus) + a chosen
+  presentation of frontier(focus).
+- HOLDINGS: the set of positions a pooled multi-hop question currently
+  stands on. Simple navigation never pools (holdings = one focus);
+  bind advances holdings through kind-filtered frontiers. return x =
+  "hold just x, frontier not yet consulted."
+- The exploration monad is the powerset monad over positions read
+  against the graph (ReaderT Graph); explore ≡ bind, laws are property
+  tests (left/right identity = popover semantics / no phantom hops;
+  associativity = incremental clicking agrees with one-shot deep
+  queries, so lazy pages are windows over a lawful whole).
+- The sketch's Discovery {focus, crossRefs, timeAndPlace} survives as
+  the VIEW — the screen shape for one position: card(focus) plus paged
+  frontier sections. Views render; the monad composes; the frontier
+  function bridges them.
+
 ## 1. Identity and text addressing
 
 ```rust
@@ -388,19 +408,48 @@ GET /api/node/{id}/edges?kind&cursor&n  → EdgePage
 GET /api/text?from=<locus>&n=&dir=      → Window               (per-corpus reading spine)
 ```
 
-## 7. Surfaces = selections (presentation discipline as data)
+## 7. Presentation algebra: focusability + frontier display
+
+LAW (owner, 2026-08-22): "the frontier is part of the DAG but the whole
+UI/UX design is basically deciding what elements of the graph are
+focus-able and how we display a frontier for an explorable of a given
+type." The presentation layer is therefore exactly two policy functions
+over the graph — nothing else:
 
 ```rust
-pub struct SurfaceSpec { pub sections: Vec<SectionSpec> }
+/// Which node kinds can take focus, per surface. "What can I click?"
+/// has one answer: kinds focusable HERE. Enabling a new kind (Source
+/// nodes at Batch S; Person at Batch P) is a policy-row edit, not UI work.
+pub fn focusable(surface: Surface, kind: NodeKind) -> bool;
+
+/// How a focus of a given kind displays its frontier, per surface:
+/// which edge kinds render, ordered how, clamped to how many initially,
+/// in which style, through which renderer.
+pub fn display(surface: Surface, kind: NodeKind) -> FrontierPresentation;
+
+pub struct FrontierPresentation { pub sections: Vec<SectionSpec> }
 pub struct SectionSpec {
     pub kind: EdgeKind,
+    pub renderer: Renderer,         // entry-list | text-flow | map-pins | timeline-rows
     pub style: SectionStyle,        // standard | quiet | superscript-marker ...
-    pub initial: u8,                // clamp; honest "+N more" beyond it
+    pub initial: u8,                // clamp; hidden remainder MUST be signaled
     pub order: SectionOrder,        // votes-ranked | chain | canonical | resolved-date
 }
-/// Affordance honesty is now a totality property: the renderer can only
-/// draw entries returned by `edges`; a section renders iff count > 0.
 ```
+
+A frontier renderer is not always a list: map pins display a SiteOf
+frontier within a time window; the mini-reader's text flow displays a
+Contains frontier as prose; timeline rows display FollowsIn/
+TemporalAdjacency. One graph fact, several renderers.
+
+The honesty laws are DERIVED at the policy gap, no longer decreed:
+- shown ⊆ frontier(focus) — the renderer can only draw entries returned
+  by `edges`; fabricated affordances have no data path (affordance
+  honesty).
+- |shown| < |frontier section| ⇒ a visible signal with the true count
+  (the "+N more" law, generalized to every surface).
+- focusable(surface, kind) = false ⇒ rendered inert AND visually
+  distinct (capability parity of styling).
 
 ## 8. Client contract (C#, Blazor)
 
