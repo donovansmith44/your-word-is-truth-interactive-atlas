@@ -1,0 +1,146 @@
+# Batch W2 (whole-Bible titled verse containers, second run -- historical
+# books). Ezra, in the SAME `[[event]]` schema `events-extra.toml`/W1's
+# `passages/*.toml` files use.
+#
+# RECONCILIATION: the real compiled data shows Ezra only 9/280 covered
+# before this file -- the pre-existing `return` narrative's own three legs
+# touching this book (`ret_babylon`, 1:1-4; `ret_jerusalem_altar`, 2:1 and
+# 3:1-2; `ret_jerusalem_temple`, 6:14-15) are single-verse-or-two
+# markers, not full coverage, untouched here. This file authors fresh
+# whole-book coverage; several of its own containers legally overlap
+# those pre-existing narrative-leg anchors (a real curated container
+# superseding a bare narrative-leg freebie at the same anchor is
+# EXPECTED, per the decisive-container model -- the same jm_bethany/
+# pw_bethany precedent, not a new risk).
+#
+# Ezra has no Crockett coverage at all -- William Day Crockett's own 1897
+# Harmony is explicitly scoped to Samuel, Kings, and Chronicles (its own
+# title page, confirmed during this run's own source-verification work,
+# see LICENSES.md); its own Appendix cites Ezra only ONCE, as the source
+# of Cyrus's decree paralleling 2 Chronicles 36:22-23 (already witnessed
+# onto `ret_babylon` in this run's own 2chronicles.toml commit). This
+# file's own req 1b contribution is instead the brief's own separately
+# NAMED CASE entirely internal to Ezra/Nehemiah -- Ezra 2 <-> Nehemiah 7
+# -- hand-verified directly against the compiled KJV text (no secondary
+# harmony source needed for a same-corpus, two-book comparison); the
+# witness row itself is authored with Nehemiah's own coverage
+# (nehemiah.toml, a later commit this same run), the same lockstep
+# discipline this run has followed throughout.
+#
+# GENRE (req 1's own guidance): 2:1-70, the roster of returned exiles by
+# family, is a genealogical/census LIST, not a narrative scene -- GENERAL-
+# kind is the honest default here too, per the same reasoning
+# 1chronicles.toml's own genealogical chapters already establish, though
+# this list DOES carry one real, dateable, placeable frame (the return
+# itself, matching the pre-existing ret_jerusalem_altar's own -537
+# window) -- EVENT-kind is used instead, consistent with that frame,
+# mirroring 1chronicles.toml's own 1ch_jerusalem_resettled disposition
+# for the comparable case there.
+#
+# LITERARY-STRUCTURE FACT (explicitly permitted, not textual criticism,
+# per the owner's own doctrine note -- "literary-structure facts: two
+# textually distinct pericopes"): chapter 4:6-23 is a chronological
+# digression -- the author interrupts the Darius-era narrative to
+# illustrate a THEMATIC point (opposition to the Jews recurred under
+# later kings too) with two LATER episodes, under Ahasuerus and
+# Artaxerxes, decades after the surrounding Darius-era events -- before
+# the narrative resumes Darius's own reign at 4:24. This structural
+# feature is disclosed in ezr_opposition_to_rebuilding's own `ref_note`
+# below.
+#
+# CHRONOLOGY, disclosed: EVENT-kind containers stay on the theo-*/Ussher
+# scale, interpolated from the pre-existing return narrative's own
+# -538/-537/-516 anchors for chapters 1-6; Ezra's own arrival (chapters
+# 7-10) is dated to the traditional -458 (the seventh year of Artaxerxes
+# I, 7:7-8), a widely-used traditional identification, disclosed as such
+# rather than independently re-derived.
+
+[[event]]
+id = "ezr_exiles_prepare_return"
+label = "The exiles prepare to return; the temple vessels restored"
+from_year = -538
+to_year = -538
+places = ["babylon-1"]
+verses = ["EZR.1.5-11"]
+atlas_section = "Ezra pericope (this project's own sectioning, CC0 -- no external PD source claimed): Ezra 1:5-11, the chief fathers of Judah and Benjamin, the priests, and the Levites rising up to go, their neighbors' own freewill gifts, and Cyrus's own restoration of the temple vessels Nebuchadnezzar had taken, numbered and delivered to Sheshbazzar."
+ref_note = "Same year as the pre-existing ret_babylon (Cyrus's decree, -538)."
+
+[[event]]
+id = "ezr_list_of_returnees"
+label = "The roster of those who returned from exile"
+from_year = -537
+to_year = -537
+places = ["jerusalem"]
+verses = ["EZR.2.1-70"]
+atlas_section = "Ezra pericope (this project's own sectioning, CC0): Ezra 2, the roster of the children of the province who returned from Babylon, family by family, with the priests, Levites, singers, porters, and Nethinims, closing with the total congregation's own numbers and the freewill offerings for the house of the Lord."
+ref_note = "req 1b NAMED CASE: witness row (Nehemiah 7) to be added with nehemiah.toml's own coverage (see this file's own header note). Dated to match the pre-existing ret_jerusalem_altar (-537)."
+
+[[event]]
+id = "ezr_altar_and_foundation"
+label = "The altar rebuilt; the temple's foundation laid"
+from_year = -536
+to_year = -536
+places = ["jerusalem"]
+verses = ["EZR.3.1-13"]
+atlas_section = "Ezra pericope (this project's own sectioning, CC0): Ezra 3, the altar set up on its own base amid fear of the surrounding peoples, the feast of tabernacles kept, the hiring of masons and carpenters and Tyrian cedar exactly as at Solomon's own first temple, and the foundation laid with both shouts of joy from the young and weeping from the old who remembered the first house."
+ref_note = "Dated 'in the second year of their coming unto the house of God at Jerusalem' (3:8), the year after the pre-existing ret_jerusalem_altar (-537)."
+
+[[event]]
+id = "ezr_opposition_to_rebuilding"
+label = "Opposition halts the rebuilding of the temple"
+from_year = -534
+to_year = -520
+places = ["jerusalem"]
+verses = ["EZR.4.1-24"]
+atlas_section = "Ezra pericope (this project's own sectioning, CC0): Ezra 4, the adversaries' own offer to help rebuild rebuffed, their own hired counsel to frustrate the work throughout Cyrus's own reign, and a letter of accusation under Artaxerxes leading to a royal decree halting the work -- which ceased 'unto the second year of the reign of Darius king of Persia' (4:24)."
+ref_note = "LITERARY-STRUCTURE FACT, disclosed per this file's own header note: verses 6-23 are a chronological digression -- the author illustrates that opposition recurred under LATER kings too (Ahasuerus, then Artaxerxes, both decades after the surrounding Darius-era narrative) before the narrative itself resumes Darius's own reign at verse 24. Dated across the broad span from the work's own initial hindering (Cyrus's reign) to its resumption under Darius (-520, matching ezr_temple_completed, immediately below)."
+
+[[event]]
+id = "ezr_temple_completed"
+label = "The temple is completed under Darius"
+from_year = -520
+to_year = -516
+places = ["jerusalem"]
+verses = ["EZR.5.1-17", "EZR.6.1-22"]
+atlas_section = "Ezra pericope (this project's own sectioning, CC0): Ezra 5-6, Haggai and Zechariah's own prophesying that restarts the work, Tatnai the governor's own inquiry and letter to Darius, the search of the royal archives that confirms Cyrus's own decree, Darius's own further decree for the work's support, the temple's own completion and dedication, and the Passover kept by the returned exiles."
+ref_note = "Dated from the prophets' own restarting of the work in Darius's second year (5:1, -520, per the pre-existing return narrative's own adjacent dating) through the temple's own completion, matching the pre-existing ret_jerusalem_temple (-516) exactly."
+
+[[event]]
+id = "ezr_ezra_arrives"
+label = "Ezra's commission and arrival from Babylon"
+from_year = -458
+to_year = -458
+places = ["babylon-1", "jerusalem"]
+verses = ["EZR.7.1-28"]
+atlas_section = "Ezra pericope (this project's own sectioning, CC0): Ezra 7, Ezra's own priestly genealogy back to Aaron, his own skill in the law of Moses, King Artaxerxes' own letter granting him authority and provision, and Ezra's own blessing of the Lord for putting it in the king's heart."
+ref_note = "Traditionally dated to the seventh year of Artaxerxes I (7:7-8), circa -458 BC, a widely-used traditional identification -- disclosed as such, not independently re-derived."
+
+[[event]]
+id = "ezr_journey_to_jerusalem"
+label = "Ezra's caravan journeys to Jerusalem"
+from_year = -458
+to_year = -458
+places = ["babylon-1", "jerusalem"]
+verses = ["EZR.8.1-36"]
+atlas_section = "Ezra pericope (this project's own sectioning, CC0): Ezra 8, the genealogy of those who went up with Ezra, his own search for Levites at the river Ahava, the proclaimed fast for a safe journey rather than asking the king for soldiers, the weighing out of the silver and gold entrusted to the priests, the journey itself, and the offerings and commissions delivered on arrival."
+ref_note = "Same year as ezr_ezra_arrives, the journey immediately following the commission."
+
+[[event]]
+id = "ezr_ezras_prayer"
+label = "Ezra's grief and prayer over the people's intermarriage"
+from_year = -458
+to_year = -458
+places = ["jerusalem"]
+verses = ["EZR.9.1-15"]
+atlas_section = "Ezra pericope (this project's own sectioning, CC0): Ezra 9, the princes' own report that the people, priests, and Levites had intermarried with the surrounding peoples, Ezra's own astonished mourning and rending of his garments, and his own prayer of confession before the Lord at the evening sacrifice."
+ref_note = "Same year as Ezra's own arrival, shortly after it."
+
+[[event]]
+id = "ezr_assembly_repents"
+label = "The assembly's confession; the list of those who had intermarried"
+from_year = -457
+to_year = -457
+places = ["jerusalem"]
+verses = ["EZR.10.1-44"]
+atlas_section = "Ezra pericope (this project's own sectioning, CC0): Ezra 10, the great assembly weeping with Ezra, Shechaniah's own proposal of a covenant to put away the foreign wives, the proclamation gathering all Judah to Jerusalem within three days, the three-month inquiry by the heads of the fathers, and the closing roster of those found to have taken strange wives."
+ref_note = "Dated shortly after ezr_ezras_prayer, closing this book's own narrative."

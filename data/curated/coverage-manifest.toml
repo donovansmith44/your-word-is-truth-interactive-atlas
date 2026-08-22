@@ -33,5 +33,5 @@
 declared = [
   "MAT", "MRK", "LUK", "JHN", "ACT",
   "GEN", "EXO", "LEV", "RUT", "NUM", "DEU", "JOS", "JDG",
-  "1SA", "2SA", "1KI", "2KI", "1CH", "2CH",
+  "1SA", "2SA", "1KI", "2KI", "1CH", "2CH", "EZR",
 ]
