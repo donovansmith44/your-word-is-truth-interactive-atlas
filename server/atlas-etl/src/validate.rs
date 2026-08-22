@@ -55,7 +55,10 @@ use std::collections::{HashMap, HashSet};
 
 use anyhow::{bail, Result};
 use atlas_core::data::{AtlasData, CatechismPart, Era, Event, Landmark, LandMaskRegion, Place, PlaceHistory, PlaceNameAlias, Polity};
-use atlas_core::event_merge::{is_layer0, verse_jaccard, EventDistinct, EventMerge, DUPLICATE_JACCARD_THRESHOLD};
+use atlas_core::event_merge::{
+    cross_book_duplicate_candidate, is_layer0, title_jaccard, verse_jaccard, EventDistinct, EventMerge,
+    DUPLICATE_JACCARD_THRESHOLD, TITLE_JACCARD_THRESHOLD,
+};
 use atlas_core::history::strip_disambiguation_suffix;
 use atlas_core::merge::{great_circle_km, PlaceMerge, SAME_PLACE_THRESHOLD_KM};
 use atlas_core::refs::VerseId;
@@ -944,6 +947,79 @@ pub fn run_event_merges(merge_pairs: &[EventMerge], distinct_pairs: &[EventDisti
     }
     let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
     bail!("event-merge validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// Batch W4 fix round 1 (batch-w4-review.md Critical-1's own SYSTEMIC
+/// GUARD): the SECOND duplicate-identity sweep. `atlas_core::event_merge`'s
+/// own doc comment above `cross_book_duplicate_candidate` has the full "why
+/// a second detector" rationale -- `verse_jaccard`/`run_event_merges` above
+/// are structurally blind to a same-occurrence pair that cites disjoint
+/// verse sets (different books, or a small subset fully contained in a much
+/// larger sibling). Same call timing as `run_event_merges` (pre-merge event
+/// set, called from `main.rs` right after it) and the SAME two-part shape:
+///
+/// 1. Dangling-id checking is NOT repeated here: this function is handed the
+///    identical `merge_pairs`/`distinct_pairs`/`events` `run_event_merges`
+///    already validates for stale/typo'd ids -- re-checking would only ever
+///    duplicate that function's own errors verbatim.
+/// 2. THE FAIL-LOUD SWEEP ITSELF: every DISTINCT pair of `kind == "event"`
+///    entries in the whole compiled set that `cross_book_duplicate_candidate`
+///    flags must be accounted for -- either merged (`EVENT_MERGE_PAIRS`) or
+///    explicitly documented as genuinely distinct (`EVENT_DISTINCT_PAIRS`) --
+///    checked against the SAME shared exemption tables `run_event_merges`
+///    uses (that module's own updated doc comment: "this list is now
+///    consulted by BOTH... sweeps"). An unlisted pair fails loud, naming
+///    both ids, both labels, and the title-jaccard score, so a future
+///    curator authoring a fresh dated event that happens to duplicate an
+///    existing one's real-world occurrence is caught immediately -- the
+///    exact gap that let `jer_the_fall_of_jerusalem_retold`/`exl_jerusalem`
+///    and `jer_jeremiah_stays_with_gedaliah`+`jer_the_assassination_of_gedaliah`
+///    /`exl_mizpah` ship live undetected in the first place.
+///
+/// O(n^2) over every `kind == "event"` entry (not LAYER-0-vs-LAYER-1 like
+/// `run_event_merges` -- this shape can strike two LAYER-1 events, e.g.
+/// `exl_mizpah`'s own `atlas_section` provenance against
+/// `jer_jeremiah_stays_with_gedaliah`'s own curated-but-not-`kjv_superscription`
+/// row), but `cross_book_duplicate_candidate`'s own cheap early checks
+/// (kind, year-overlap, place-overlap) reject the overwhelming majority of
+/// pairs before the title-jaccard word-set computation ever runs, and the
+/// compiled dated-event count (~900) keeps this sweep well under a second
+/// in practice.
+pub fn run_cross_book_duplicates(merge_pairs: &[EventMerge], distinct_pairs: &[EventDistinct], events: &[Event]) -> Result<()> {
+    let mut listed: HashSet<(&str, &str)> = HashSet::new();
+    for pair in merge_pairs {
+        listed.insert((pair.survivor, pair.absorbed));
+        listed.insert((pair.absorbed, pair.survivor));
+    }
+    for pair in distinct_pairs {
+        listed.insert((pair.a, pair.b));
+        listed.insert((pair.b, pair.a));
+    }
+
+    let dated: Vec<&Event> = events.iter().filter(|e| e.kind == "event").collect();
+    let mut unlisted: Vec<String> = Vec::new();
+    for (i, a) in dated.iter().enumerate() {
+        for b in dated[i + 1..].iter() {
+            if !cross_book_duplicate_candidate(a, b) {
+                continue;
+            }
+            if listed.contains(&(a.id.as_str(), b.id.as_str())) {
+                continue;
+            }
+            let j = title_jaccard(&a.label, &b.label);
+            unlisted.push(format!(
+                "'{}' ({:?}) <-> '{}' ({:?}): title jaccard {:.3} >= {TITLE_JACCARD_THRESHOLD}, same-year-range and sharing a place, and NEITHER merged (EVENT_MERGE_PAIRS) nor explicitly documented as distinct (EVENT_DISTINCT_PAIRS)",
+                a.id, a.label, b.id, b.label, j
+            ));
+        }
+    }
+    unlisted.sort();
+
+    if unlisted.is_empty() {
+        return Ok(());
+    }
+    let joined = unlisted.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("cross-book event-duplicate validation failed with {} error(s):\n{}", unlisted.len(), joined);
 }
 
 fn check_duplicate_ids<'a>(ids: impl Iterator<Item = &'a str>, kind: &str, errors: &mut Vec<String>) {

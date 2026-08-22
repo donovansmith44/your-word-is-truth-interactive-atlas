@@ -2846,3 +2846,91 @@ ref_note = "Jeremiah 52:1-11 read directly against the compiled KJV text -- Croc
 # W2, above) was EXTENDED in place from JER.52.12-23 to JER.52.12-27 --
 # not duplicated here -- see that row's own updated ref_note.
 
+# --- Batch W4 fix round 1 (batch-w4-review.md Critical-1, DUPLICATE
+# DATED-EVENT IDENTITY, the HOTFIX-4 bug class reintroduced): `exl_jerusalem`
+# and `exl_mizpah` (data/curated/events-extra.toml, both pre-existing,
+# dated, zero-witness "exile" narrative-chain legs) were each independently
+# duplicated by a brand-new W4 top-level container narrating the identical
+# real-world occurrence via a DISJOINT book (JER, not 2KI) -- invisible to
+# `atlas_etl::validate::run_event_merges`'s own verse-jaccard sweep by
+# construction (it compares verse-ID strings; these pairs share none). Both
+# reconciled the SAME way JER.52's own gap was closed earlier in this file:
+# the pre-existing event gains the witnesses (its own 2KI self-witness,
+# "included here too, explicitly, so this event's own PARALLEL ACCOUNTS
+# section is complete" -- the pw_bethany/72-row precedent -- plus the new
+# JER witness), and the Jeremiah-side container is trimmed to keep only
+# its own genuinely non-overlapping remainder (data/curated/passages/
+# jeremiah.toml -- see that file's own "FIX ROUND 1" header note and each
+# affected container's own ref_note for the full per-pair reasoning).
+[[witness]]
+event_id = "exl_jerusalem"
+book = "2KI"
+verses = ["2KI.25.1-10"]
+ref_note = "2 Kings 25:1-10 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete (the pw_bethany/72-row precedent), promoting exl_jerusalem to a real, witnessed container for the first time (Batch W4 fix round 1)."
+
+[[witness]]
+event_id = "exl_jerusalem"
+book = "JER"
+verses = ["JER.39.1-10"]
+ref_note = "Jeremiah 39:1-10 read directly against the compiled KJV text -- both accounts read side by side (the siege begins, the city broken up, Zedekiah's own flight, capture at the plains of Jericho, brought to Riblah, sons slain before his eyes, his own eyes put out, the city and temple burned, the walls broken down, the poor left with vineyards and fields): the identical sequence in the identical order as 2 Kings 25:1-10, hand-verified directly (outside Crockett's own scope, a Samuel/Kings/Chronicles harmony, never Jeremiah's own historical appendix chapters). Jeremiah 39:11-18, Jeremiah's own personal treatment and the word to Ebed-melech, is narrated nowhere in 2 Kings and is NOT part of this witness -- it stays a fresh, genuinely non-duplicate container (jer_jeremiahs_release_and_the_word_to_ebedmelech)."
+
+[[witness]]
+event_id = "jer_jeremiah_stays_with_gedaliah"
+book = "2KI"
+verses = ["2KI.25.22-24"]
+ref_note = "2 Kings 25:22-24 read directly against the compiled KJV text -- Gedaliah appointed governor and the captains' own gathering to him at Mizpah with his oath of safety, the identical content the pre-existing exl_mizpah ('Gedaliah governs the remnant at Mizpah') compressed into one bare 4-verse span alongside the assassination (2KI.25.25, now witnessed separately on jer_the_assassination_of_gedaliah below) -- exl_mizpah is retired (EVENT_MERGE_PAIRS, server/atlas-core/src/event_merge.rs), this event the survivor for its own governorship half."
+
+# Self-witness (the pw_bethany/72-row precedent, applied correctly here):
+# this event's own top-level `verses` (JER.40.1-16, data/curated/passages/
+# jeremiah.toml) are a JER book, but the row immediately above just gave
+# this event its FIRST witness, for a DIFFERENT book (2KI) -- once ANY
+# witness exists, `heading_anchors_for` anchors ONLY from witnesses, never
+# from top-level `verses` directly, so JER's own reader heading and
+# PARALLEL ACCOUNTS entry would silently vanish without this row (the exact
+# "72 rows lost their own heading" bug this precedent is named for).
+[[witness]]
+event_id = "jer_jeremiah_stays_with_gedaliah"
+book = "JER"
+verses = ["JER.40.1-16"]
+ref_note = "Jeremiah 40:1-16 read directly against the compiled KJV text -- this event's own top-level verses, restated as an explicit self-witness so JER keeps its own reader heading now that a 2KI witness exists alongside it (see this row's own comment, immediately above)."
+
+[[witness]]
+event_id = "jer_the_assassination_of_gedaliah"
+book = "2KI"
+verses = ["2KI.25.25"]
+ref_note = "2 Kings 25:25 read directly against the compiled KJV text -- Ishmael's own assassination of Gedaliah at Mizpah, the same single verse the pre-existing exl_mizpah's own coarse 4-verse span compressed alongside the governorship (2KI.25.22-24, now witnessed separately on jer_jeremiah_stays_with_gedaliah above) -- exl_mizpah is retired (EVENT_MERGE_PAIRS), this event the survivor for its own assassination half, a real, separate leg of the 'exile' narrative chain in its own right (data/curated/narratives/exile.toml)."
+
+# Self-witness, same 72-row reason as jer_jeremiah_stays_with_gedaliah's own
+# JER row immediately above -- this event's own top-level verses (JER.41.1-18)
+# need an explicit JER witness now that a 2KI witness exists alongside them.
+[[witness]]
+event_id = "jer_the_assassination_of_gedaliah"
+book = "JER"
+verses = ["JER.41.1-18"]
+ref_note = "Jeremiah 41:1-18 read directly against the compiled KJV text -- this event's own top-level verses, restated as an explicit self-witness so JER keeps its own reader heading now that a 2KI witness exists alongside it."
+
+# NOTE (theo-242 / 2ki_jerusalem_aftermath / exl_jerusalem -- the review's
+# own named "content overlap," reconciled by disclosure, not by a forced
+# merge): all three are now real, witnessed, dated containers touching
+# overlapping ground -- theo-242 ("Reign of Zedekiah," -597) is a REIGN-
+# LEVEL node, dated by the reign's own start year, whose own witnessed
+# range (2KI.24.18-25.7 / JER.52.1-11) runs, as a reign summary naturally
+# does, right up through the reign's own end (the siege and Zedekiah's own
+# capture/blinding); exl_jerusalem (-586) and 2ki_jerusalem_aftermath
+# (-586) are EVENT-LEVEL nodes, dated to the specific year the siege
+# itself concluded, each covering a distinct stage of the same short
+# window (the breach/capture/blinding; the burning/plunder). These are
+# genuinely different granularities of the SAME underlying history, not a
+# duplicate-identity problem of the Critical-1 shape (they were placed
+# there by Batch W2, not freshly introduced by fresh W4 authoring, and a
+# REIGN node and an EVENT node are not interchangeable the way two EVENT
+# nodes of the identical occurrence are) -- kept as three separate dated
+# nodes deliberately, per the controller's own "pick the honest structure"
+# instruction, applied here by KEEPING the real structural distinction
+# rather than erasing it. The NEW cross-book duplicate detector (below)
+# does not flag any pair among these three: theo-242's own -597 does not
+# year-overlap either -586 node's own point-year (`TimeRange::intersects`
+# is false for two disjoint point-years), so the detector correctly leaves
+# this reign-vs-event distinction alone without needing an EVENT_DISTINCT_
+# PAIRS entry to say so.
+

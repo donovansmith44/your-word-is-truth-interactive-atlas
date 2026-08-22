@@ -23,6 +23,25 @@
 # already-witnessed 31 verses) against this file's own authored spans
 # before it was ever run through the ETL: zero gaps, zero overlaps.
 #
+# FIX ROUND 1 (batch-w4-review.md Critical-1, DUPLICATE DATED-EVENT
+# IDENTITY -- the HOTFIX-4 bug class): the ORIGINAL version of this file
+# authored JER.39 (the fall of Jerusalem, Jeremiah's own eyewitness retelling)
+# and JER.40-41 (Gedaliah's own governorship and assassination) as brand-new
+# TOP-LEVEL dated containers, each independently duplicating the real-world
+# identity of a pre-existing, dated, zero-witness "exile" narrative-chain
+# event (`exl_jerusalem`/`exl_mizpah`, data/curated/events-extra.toml) --
+# exactly the JEREMIAH-52 mistake this file's own header note above
+# correctly avoided, not extended to these two chapters the first time.
+# Both are now reconciled the SAME way JER.52 already was: the overlapping
+# content is a JER witness on the pre-existing event (data/curated/
+# event-witnesses.toml), and only the genuinely non-overlapping remainder
+# stays a fresh top-level container here -- `jer_jeremiahs_release_and_the_
+# word_to_ebedmelech` (39:11-18 only, not the whole chapter) and
+# `jer_jeremiah_stays_with_gedaliah`/`jer_the_assassination_of_gedaliah`
+# (unchanged verse ranges, now witnessed rather than orphaned). See each
+# container's own ref_note below for the full per-pair reasoning, and
+# event_merge.rs's own EVENT_MERGE_PAIRS for exl_mizpah's own retirement.
+#
 # GRANULARITY: the burdens against the nations (46-51) split one container
 # per named nation, the same "burdens per nation" genre the master brief
 # names for Isaiah; sign-acts (the linen girdle, the potter's house, the
@@ -160,10 +179,10 @@ atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremia
 
 [[event]]
 id = "jer_the_great_drought"
-label = "The word of the Lord that came to Jeremiah concerning the dearth"
+label = "The word of the Lord that came to Jeremiah concerning the dearth."
 kind = "general"
 verses = ["JER.14.1-22"]
-kjv_superscription = "JER.14.1, this section's own superscription clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+kjv_superscription = "JER.14.1, this section's own superscription clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row). Fix round 1 (batch-w4-review.md Minor-1): restored the verse's own trailing period, dropped in the first draft."
 ref_note = "Content: Judah mourning under a great drought, false prophets who prophesy peace and truth falsely rebuked, and Jeremiah's own intercession for a people the Lord will not spare."
 
 [[event]]
@@ -375,15 +394,15 @@ atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremia
 ref_note = "Same siege-era setting, -587, per this file's own header note. Place: Jerusalem."
 
 [[event]]
-id = "jer_the_fall_of_jerusalem_retold"
-label = "In the ninth year of Zedekiah... the city was broken up"
+id = "jer_jeremiahs_release_and_the_word_to_ebedmelech"
+label = "Nebuchadrezzar's own charge concerning Jeremiah; the word of the Lord to Ebed-melech"
 kind = "event"
 from_year = -586
 to_year = -586
 places = ["jerusalem"]
-verses = ["JER.39.1-18"]
-atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 39, Jeremiah's own eyewitness account of the fall of Jerusalem -- the breach, Zedekiah's own flight and capture at the plains of Jericho, his own sons slain before his eyes and his own eyes then put out, and the Lord's own word of deliverance kept for Ebed-melech, who trusted him."
-ref_note = "Date: 'the ninth year of Zedekiah king of Judah' (39:1), reused from the pre-existing exl_jerusalem ('Jerusalem falls to Babylon,' -586) -- the same event this chapter itself narrates. Place: Jerusalem."
+verses = ["JER.39.11-18"]
+atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 39:11-18, the genuinely Jeremiah-only remainder of this chapter -- Nebuchadrezzar's own charge to Nebuzaradan to do Jeremiah no harm, Jeremiah taken out of the prison and delivered to Gedaliah, and a distinct, separate word of the Lord to Ebed-melech the Ethiopian, promising him deliverance for his own trust."
+ref_note = "Fix round 1 (batch-w4-review.md Critical-1): this container formerly covered all of JER.39.1-18 as `jer_the_fall_of_jerusalem_retold`, duplicating the real-world identity of the pre-existing, dated `exl_jerusalem` ('Jerusalem falls to Babylon,' -586, 2KI.25.1-10) without being witnessed to it -- a second, undisclosed dated timeline node for the SAME occurrence (the controller's own binding ruling: exactly one dated node per historical occurrence; parallel scripture lives as witness rows on that node). 39:1-10, the portion that genuinely parallels exl_jerusalem's own 2KI.25.1-10 (siege/breach/capture/blinding/burning), is now a JER witness ON exl_jerusalem itself (data/curated/event-witnesses.toml) instead of a competing top-level container. Only 39:11-18 -- Jeremiah's own personal treatment and the word to Ebed-melech, narrated nowhere in 2 Kings at all -- remains here, genuinely unique, not a duplicate of anything. Date/place unchanged (same occasion, same day, immediately following)."
 
 [[event]]
 id = "jer_jeremiah_stays_with_gedaliah"
@@ -391,10 +410,11 @@ label = "Nebuzaradan releases Jeremiah; the remnant gathers to Gedaliah at Mizpa
 kind = "event"
 from_year = -586
 to_year = -586
+order_key = 1
 places = ["mizpah-3"]
 verses = ["JER.40.1-16"]
 atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 40, Jeremiah found among the captives in chains and released by Nebuzaradan, his own choice to remain in the land with Gedaliah rather than go to Babylon, the scattered remnant gathering to Gedaliah at Mizpah, and Johanan's own early warning of Ishmael's plot to kill him -- a warning Gedaliah refuses to believe."
-ref_note = "Same year as jer_the_fall_of_jerusalem_retold, immediately following. Place: Mizpah (40:6, explicit)."
+ref_note = "Fix round 1 (batch-w4-review.md Critical-1): this container duplicated the real-world identity of the pre-existing, dated `exl_mizpah` ('Gedaliah governs the remnant at Mizpah,' -586, 2KI.25.22-25, zero witnesses) without being witnessed to it. exl_mizpah's own coarse 4-verse span in fact compresses TWO real, finer occasions Jeremiah 40-41 narrates at much greater length -- the governorship (2KI.25.22-24) and, separately, the assassination (2KI.25.25) -- so per the controller's own ruling ('where granularity genuinely differs... finer events dated, coarse twin absorbed'), exl_mizpah is retired (EVENT_MERGE_PAIRS, server/atlas-core/src/event_merge.rs -- this container is the survivor for the governorship half) and its own 2KI.25.22-24 becomes a witness HERE; the assassination half (2KI.25.25) becomes its own witness on jer_the_assassination_of_gedaliah, immediately below -- now a real second leg of the 'exile' narrative chain in its own right (data/curated/narratives/exile.toml), not folded silently into this one. order_key=1 keeps this leg before its own immediate successor within the shared year. Same year as jer_jeremiahs_release_and_the_word_to_ebedmelech, immediately following. Place: Mizpah (40:6, explicit)."
 
 [[event]]
 id = "jer_the_assassination_of_gedaliah"
@@ -402,10 +422,11 @@ label = "Ishmael smites Gedaliah, and all the Jews that were with him at Mizpah"
 kind = "event"
 from_year = -586
 to_year = -586
+order_key = 2
 places = ["mizpah-3"]
 verses = ["JER.41.1-18"]
 atlas_section = "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 41, dated the seventh month -- Ishmael the son of Nethaniah assassinating Gedaliah and the men with him at Mizpah, a further massacre of eighty pilgrims, and Johanan's own pursuit and rescue of the surviving captives, who then flee toward Egypt, halting near Bethlehem."
-ref_note = "Same year as jer_jeremiah_stays_with_gedaliah, the seventh month following (41:1). Place: Mizpah."
+ref_note = "Fix round 1 (batch-w4-review.md Critical-1): the finer, dated survivor for exl_mizpah's own assassination half (2KI.25.25, now a witness here) -- see jer_jeremiah_stays_with_gedaliah's own ref_note, immediately above, for the full reconciliation. order_key=2 keeps this leg after its own immediate predecessor within the shared year. Same year as jer_jeremiah_stays_with_gedaliah, the seventh month following (41:1). Place: Mizpah."
 
 [[event]]
 id = "jer_the_remnant_asks_guidance_and_is_warned"

@@ -7875,7 +7875,7 @@
   },
   {
     "id": "jer_the_great_drought",
-    "label": "The word of the Lord that came to Jeremiah concerning the dearth",
+    "label": "The word of the Lord that came to Jeremiah concerning the dearth.",
     "when": {
       "from_year": -4004,
       "to_year": 100
@@ -7910,7 +7910,7 @@
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": null,
-    "kjv_superscription": "JER.14.1, this section's own superscription clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row).",
+    "kjv_superscription": "JER.14.1, this section's own superscription clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row). Fix round 1 (batch-w4-review.md Minor-1): restored the verse's own trailing period, dropped in the first draft.",
     "ref_note": "Content: Judah mourning under a great drought, false prophets who prophesy peace and truth falsely rebuked, and Jeremiah's own intercession for a people the Lord will not spare.",
     "order_key": 0
   },
@@ -21155,7 +21155,7 @@
   },
   {
     "id": "zec_jerusalem_cup_of_trembling",
-    "label": "The burden of the word of the Lord for Israel",
+    "label": "The burden of the word of the Lord for Israel, saith the Lord, which stretcheth forth the heavens, and layeth the foundation of the earth, and formeth the spirit of man within him.",
     "when": {
       "from_year": -4004,
       "to_year": 100
@@ -21182,7 +21182,7 @@
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": null,
-    "kjv_superscription": "ZEC.12.1's own opening clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- the second of this book's own two 'burden' superscriptions, here cleanly separable from the content that follows at 12:2.",
+    "kjv_superscription": "ZEC.12.1, this book's own second 'burden' superscription, quoted verbatim IN FULL (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- Fix round 1 (batch-w4-review.md Important-1): the first draft cut this label at the first comma, mid-sentence ('...for Israel'), not at the verse's own real period -- the same defect class self-corrected for Amos/Micah/Zephaniah in commit 84e29bf, missed here because that commit's own sweep was a bare-substring check, not a sentence-boundary check. The whole of ZEC.12.1 is one continuous sentence (unlike ZEC.9.1, whose own 'burden' formula runs directly into a second clause with no self-contained sentence to quote -- see this file's own header note on why that one stays atlas_section instead).",
     "ref_note": "GENERAL-kind, per this file's own header note. Content: Jerusalem made 'a cup of trembling' and 'a burdensome stone' to the nations besieging her, the spirit of grace and supplication poured out on the house of David, and 'they shall look upon me whom they have pierced, and they shall mourn for him.'",
     "order_key": 0
   },
@@ -52218,7 +52218,46 @@
       "2KI.25.10"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.25.1",
+            "2KI.25.2",
+            "2KI.25.3",
+            "2KI.25.4",
+            "2KI.25.5",
+            "2KI.25.6",
+            "2KI.25.7",
+            "2KI.25.8",
+            "2KI.25.9",
+            "2KI.25.10"
+          ]
+        },
+        "ref_note": "2 Kings 25:1-10 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete (the pw_bethany/72-row precedent), promoting exl_jerusalem to a real, witnessed container for the first time (Batch W4 fix round 1).",
+        "robertson_section": null
+      },
+      {
+        "book": "JER",
+        "translations": {
+          "kjv": [
+            "JER.39.1",
+            "JER.39.2",
+            "JER.39.3",
+            "JER.39.4",
+            "JER.39.5",
+            "JER.39.6",
+            "JER.39.7",
+            "JER.39.8",
+            "JER.39.9",
+            "JER.39.10"
+          ]
+        },
+        "ref_note": "Jeremiah 39:1-10 read directly against the compiled KJV text -- both accounts read side by side (the siege begins, the city broken up, Zedekiah's own flight, capture at the plains of Jericho, brought to Riblah, sons slain before his eyes, his own eyes put out, the city and temple burned, the walls broken down, the poor left with vineyards and fields): the identical sequence in the identical order as 2 Kings 25:1-10, hand-verified directly (outside Crockett's own scope, a Samuel/Kings/Chronicles harmony, never Jeremiah's own historical appendix chapters). Jeremiah 39:11-18, Jeremiah's own personal treatment and the word to Ebed-melech, is narrated nowhere in 2 Kings and is NOT part of this witness -- it stays a fresh, genuinely non-duplicate container (jer_jeremiahs_release_and_the_word_to_ebedmelech).",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": null,
@@ -52264,31 +52303,6 @@
     "verses": [
       "2KI.25.11",
       "PSA.137.1"
-    ],
-    "kind": "event",
-    "witnesses": [],
-    "robertson_section": null,
-    "acts_section": null,
-    "atlas_section": null,
-    "kjv_superscription": null,
-    "ref_note": null,
-    "order_key": 0
-  },
-  {
-    "id": "exl_mizpah",
-    "label": "Gedaliah governs the remnant at Mizpah",
-    "when": {
-      "from_year": -586,
-      "to_year": -586
-    },
-    "places": [
-      "mizpah-3"
-    ],
-    "verses": [
-      "2KI.25.22",
-      "2KI.25.23",
-      "2KI.25.24",
-      "2KI.25.25"
     ],
     "kind": "event",
     "witnesses": [],
@@ -52562,8 +52576,8 @@
     "order_key": 0
   },
   {
-    "id": "jer_the_fall_of_jerusalem_retold",
-    "label": "In the ninth year of Zedekiah... the city was broken up",
+    "id": "jer_jeremiahs_release_and_the_word_to_ebedmelech",
+    "label": "Nebuchadrezzar's own charge concerning Jeremiah; the word of the Lord to Ebed-melech",
     "when": {
       "from_year": -586,
       "to_year": -586
@@ -52572,16 +52586,6 @@
       "jerusalem"
     ],
     "verses": [
-      "JER.39.1",
-      "JER.39.2",
-      "JER.39.3",
-      "JER.39.4",
-      "JER.39.5",
-      "JER.39.6",
-      "JER.39.7",
-      "JER.39.8",
-      "JER.39.9",
-      "JER.39.10",
       "JER.39.11",
       "JER.39.12",
       "JER.39.13",
@@ -52595,9 +52599,9 @@
     "witnesses": [],
     "robertson_section": null,
     "acts_section": null,
-    "atlas_section": "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 39, Jeremiah's own eyewitness account of the fall of Jerusalem -- the breach, Zedekiah's own flight and capture at the plains of Jericho, his own sons slain before his eyes and his own eyes then put out, and the Lord's own word of deliverance kept for Ebed-melech, who trusted him.",
+    "atlas_section": "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 39:11-18, the genuinely Jeremiah-only remainder of this chapter -- Nebuchadrezzar's own charge to Nebuzaradan to do Jeremiah no harm, Jeremiah taken out of the prison and delivered to Gedaliah, and a distinct, separate word of the Lord to Ebed-melech the Ethiopian, promising him deliverance for his own trust.",
     "kjv_superscription": null,
-    "ref_note": "Date: 'the ninth year of Zedekiah king of Judah' (39:1), reused from the pre-existing exl_jerusalem ('Jerusalem falls to Babylon,' -586) -- the same event this chapter itself narrates. Place: Jerusalem.",
+    "ref_note": "Fix round 1 (batch-w4-review.md Critical-1): this container formerly covered all of JER.39.1-18 as `jer_the_fall_of_jerusalem_retold`, duplicating the real-world identity of the pre-existing, dated `exl_jerusalem` ('Jerusalem falls to Babylon,' -586, 2KI.25.1-10) without being witnessed to it -- a second, undisclosed dated timeline node for the SAME occurrence (the controller's own binding ruling: exactly one dated node per historical occurrence; parallel scripture lives as witness rows on that node). 39:1-10, the portion that genuinely parallels exl_jerusalem's own 2KI.25.1-10 (siege/breach/capture/blinding/burning), is now a JER witness ON exl_jerusalem itself (data/curated/event-witnesses.toml) instead of a competing top-level container. Only 39:11-18 -- Jeremiah's own personal treatment and the word to Ebed-melech, narrated nowhere in 2 Kings at all -- remains here, genuinely unique, not a duplicate of anything. Date/place unchanged (same occasion, same day, immediately following).",
     "order_key": 0
   },
   {
@@ -52629,13 +52633,51 @@
       "JER.40.16"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.25.22",
+            "2KI.25.23",
+            "2KI.25.24"
+          ]
+        },
+        "ref_note": "2 Kings 25:22-24 read directly against the compiled KJV text -- Gedaliah appointed governor and the captains' own gathering to him at Mizpah with his oath of safety, the identical content the pre-existing exl_mizpah ('Gedaliah governs the remnant at Mizpah') compressed into one bare 4-verse span alongside the assassination (2KI.25.25, now witnessed separately on jer_the_assassination_of_gedaliah below) -- exl_mizpah is retired (EVENT_MERGE_PAIRS, server/atlas-core/src/event_merge.rs), this event the survivor for its own governorship half.",
+        "robertson_section": null
+      },
+      {
+        "book": "JER",
+        "translations": {
+          "kjv": [
+            "JER.40.1",
+            "JER.40.2",
+            "JER.40.3",
+            "JER.40.4",
+            "JER.40.5",
+            "JER.40.6",
+            "JER.40.7",
+            "JER.40.8",
+            "JER.40.9",
+            "JER.40.10",
+            "JER.40.11",
+            "JER.40.12",
+            "JER.40.13",
+            "JER.40.14",
+            "JER.40.15",
+            "JER.40.16"
+          ]
+        },
+        "ref_note": "Jeremiah 40:1-16 read directly against the compiled KJV text -- this event's own top-level verses, restated as an explicit self-witness so JER keeps its own reader heading now that a 2KI witness exists alongside it (see this row's own comment, immediately above).",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 40, Jeremiah found among the captives in chains and released by Nebuzaradan, his own choice to remain in the land with Gedaliah rather than go to Babylon, the scattered remnant gathering to Gedaliah at Mizpah, and Johanan's own early warning of Ishmael's plot to kill him -- a warning Gedaliah refuses to believe.",
     "kjv_superscription": null,
-    "ref_note": "Same year as jer_the_fall_of_jerusalem_retold, immediately following. Place: Mizpah (40:6, explicit).",
-    "order_key": 0
+    "ref_note": "Fix round 1 (batch-w4-review.md Critical-1): this container duplicated the real-world identity of the pre-existing, dated `exl_mizpah` ('Gedaliah governs the remnant at Mizpah,' -586, 2KI.25.22-25, zero witnesses) without being witnessed to it. exl_mizpah's own coarse 4-verse span in fact compresses TWO real, finer occasions Jeremiah 40-41 narrates at much greater length -- the governorship (2KI.25.22-24) and, separately, the assassination (2KI.25.25) -- so per the controller's own ruling ('where granularity genuinely differs... finer events dated, coarse twin absorbed'), exl_mizpah is retired (EVENT_MERGE_PAIRS, server/atlas-core/src/event_merge.rs -- this container is the survivor for the governorship half) and its own 2KI.25.22-24 becomes a witness HERE; the assassination half (2KI.25.25) becomes its own witness on jer_the_assassination_of_gedaliah, immediately below -- now a real second leg of the 'exile' narrative chain in its own right (data/curated/narratives/exile.toml), not folded silently into this one. order_key=1 keeps this leg before its own immediate successor within the shared year. Same year as jer_jeremiahs_release_and_the_word_to_ebedmelech, immediately following. Place: Mizpah (40:6, explicit).",
+    "order_key": 1
   },
   {
     "id": "jer_the_assassination_of_gedaliah",
@@ -52668,13 +52710,51 @@
       "JER.41.18"
     ],
     "kind": "event",
-    "witnesses": [],
+    "witnesses": [
+      {
+        "book": "2KI",
+        "translations": {
+          "kjv": [
+            "2KI.25.25"
+          ]
+        },
+        "ref_note": "2 Kings 25:25 read directly against the compiled KJV text -- Ishmael's own assassination of Gedaliah at Mizpah, the same single verse the pre-existing exl_mizpah's own coarse 4-verse span compressed alongside the governorship (2KI.25.22-24, now witnessed separately on jer_jeremiah_stays_with_gedaliah above) -- exl_mizpah is retired (EVENT_MERGE_PAIRS), this event the survivor for its own assassination half, a real, separate leg of the 'exile' narrative chain in its own right (data/curated/narratives/exile.toml).",
+        "robertson_section": null
+      },
+      {
+        "book": "JER",
+        "translations": {
+          "kjv": [
+            "JER.41.1",
+            "JER.41.2",
+            "JER.41.3",
+            "JER.41.4",
+            "JER.41.5",
+            "JER.41.6",
+            "JER.41.7",
+            "JER.41.8",
+            "JER.41.9",
+            "JER.41.10",
+            "JER.41.11",
+            "JER.41.12",
+            "JER.41.13",
+            "JER.41.14",
+            "JER.41.15",
+            "JER.41.16",
+            "JER.41.17",
+            "JER.41.18"
+          ]
+        },
+        "ref_note": "Jeremiah 41:1-18 read directly against the compiled KJV text -- this event's own top-level verses, restated as an explicit self-witness so JER keeps its own reader heading now that a 2KI witness exists alongside it.",
+        "robertson_section": null
+      }
+    ],
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "Jeremiah pericope (this project's own sectioning, CC0): Jeremiah 41, dated the seventh month -- Ishmael the son of Nethaniah assassinating Gedaliah and the men with him at Mizpah, a further massacre of eighty pilgrims, and Johanan's own pursuit and rescue of the surviving captives, who then flee toward Egypt, halting near Bethlehem.",
     "kjv_superscription": null,
-    "ref_note": "Same year as jer_jeremiah_stays_with_gedaliah, the seventh month following (41:1). Place: Mizpah.",
-    "order_key": 0
+    "ref_note": "Fix round 1 (batch-w4-review.md Critical-1): the finer, dated survivor for exl_mizpah's own assassination half (2KI.25.25, now a witness here) -- see jer_jeremiah_stays_with_gedaliah's own ref_note, immediately above, for the full reconciliation. order_key=2 keeps this leg after its own immediate predecessor within the shared year. Same year as jer_jeremiah_stays_with_gedaliah, the seventh month following (41:1). Place: Mizpah.",
+    "order_key": 2
   },
   {
     "id": "jer_the_remnant_asks_guidance_and_is_warned",

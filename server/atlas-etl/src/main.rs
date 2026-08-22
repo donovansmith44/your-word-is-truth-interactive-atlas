@@ -245,6 +245,22 @@ fn main() -> Result<()> {
     validate::run_event_merges(atlas_core::event_merge::EVENT_MERGE_PAIRS, atlas_core::event_merge::EVENT_DISTINCT_PAIRS, &all_events)
         .context("data/compiled/* was NOT written; fix atlas_core::event_merge::EVENT_MERGE_PAIRS/EVENT_DISTINCT_PAIRS (an unlisted near-duplicate event pair, or a bad id)")?;
 
+    // --- atlas_core::event_merge::cross_book_duplicate_candidate (Batch W4
+    // fix round 1, batch-w4-review.md Critical-1's own SYSTEMIC GUARD) -----
+    // Same timing/rationale/shared exemption tables as run_event_merges
+    // immediately above -- checked against the SAME `all_events` pre-merge
+    // set, for the SAME reason (a duplicate this sweep exists to find must
+    // still be there to find). A second, orthogonal sweep rather than a
+    // change to run_event_merges itself: verse_jaccard above is keyed on
+    // verse IDs and only ever compares LAYER-0 against LAYER-1; this one is
+    // keyed on title/year/place and compares every dated event against
+    // every other, closing the cross-book blind spot that let
+    // `jer_the_fall_of_jerusalem_retold`/`exl_jerusalem` and
+    // `jer_jeremiah_stays_with_gedaliah`+`jer_the_assassination_of_gedaliah`
+    // /`exl_mizpah` ship live undetected.
+    validate::run_cross_book_duplicates(atlas_core::event_merge::EVENT_MERGE_PAIRS, atlas_core::event_merge::EVENT_DISTINCT_PAIRS, &all_events)
+        .context("data/compiled/* was NOT written; fix atlas_core::event_merge::EVENT_MERGE_PAIRS/EVENT_DISTINCT_PAIRS (an unlisted cross-book duplicate event pair, found by title/year/place similarity)")?;
+
     // --- atlas_core::nt_calibration (HOTFIX-4 fix round 1, review finding
     // C-1, Critical) -------------------------------------------------------
     // Runs on `all_events`, the RAW pre-`finish()` event set -- MUST run

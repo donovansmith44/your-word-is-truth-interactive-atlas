@@ -1870,3 +1870,98 @@ fn run_event_merges_listed_pairs_pass_validation() {
     let result = atlas_etl::validate::run_event_merges(&merge_pairs, &distinct_pairs, &events);
     assert!(result.is_ok(), "{:?}", result.err());
 }
+
+// ---------------------------------------------------------------------
+// Batch W4 fix round 1 (batch-w4-review.md Critical-1's own SYSTEMIC
+// GUARD): validate::run_cross_book_duplicates -- the second, orthogonal
+// duplicate-identity sweep, mirroring the run_event_merges quartet above.
+// Two of the original four (unknown-survivor-id / unknown-absorbed-id) are
+// deliberately NOT mirrored here: this validator's own doc comment
+// explains why -- dangling-id checking is run_event_merges's own job
+// against the SAME merge_pairs/distinct_pairs/events, and re-checking here
+// would only ever duplicate that function's errors verbatim.
+// ---------------------------------------------------------------------
+
+fn titled_dated_event(id: &str, label: &str, year: i32, place: &str, verses: &[&str]) -> Event {
+    Event {
+        id: id.into(),
+        label: label.into(),
+        when: TimeRange::new(year, year).unwrap(),
+        places: vec![place.to_string()],
+        verses: verses.iter().map(|s| s.to_string()).collect(),
+        ..Default::default()
+    }
+}
+
+#[test]
+fn run_cross_book_duplicates_unlisted_pair_fails_loud_naming_both_ids_and_title_jaccard() {
+    // Cross-book shape: identical labels, same year, common place, but
+    // DISJOINT verse sets (different books) -- exactly what verse_jaccard
+    // (run_event_merges's own sweep, tested above) is structurally blind
+    // to, and exactly the shape batch-w4-review.md Critical-1 found live
+    // (jer_the_fall_of_jerusalem_retold/exl_jerusalem,
+    // jer_jeremiah_stays_with_gedaliah+jer_the_assassination_of_gedaliah/
+    // exl_mizpah).
+    let events = vec![
+        titled_dated_event("a-1", "Gedaliah governs the remnant at Mizpah", -586, "mizpah", &["2KI.25.22"]),
+        titled_dated_event("a-2", "Gedaliah governs the remnant at Mizpah", -586, "mizpah", &["JER.40.7"]),
+    ];
+    let err = atlas_etl::validate::run_cross_book_duplicates(&[], &[], &events).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("'a-1'") && msg.contains("'a-2'"), "{msg}");
+    assert!(msg.contains("title jaccard"), "{msg}");
+    assert!(msg.contains("1.000"), "{msg}");
+}
+
+#[test]
+fn run_cross_book_duplicates_listed_pairs_pass_validation() {
+    // Both list kinds suppress the sweep here too -- a merge pair (a-1/a-2)
+    // AND a distinct pair (b-1/b-2), each otherwise an unlisted
+    // title-jaccard-1.0 cross-book candidate the test immediately above
+    // would flag.
+    let merge_pairs = [EventMerge { survivor: "a-1", absorbed: "a-2", reason: "test" }];
+    let distinct_pairs = [EventDistinct { a: "b-1", b: "b-2", reason: "test" }];
+    let events = vec![
+        titled_dated_event("a-1", "Gedaliah governs the remnant at Mizpah", -586, "mizpah", &["2KI.25.22"]),
+        titled_dated_event("a-2", "Gedaliah governs the remnant at Mizpah", -586, "mizpah", &["JER.40.7"]),
+        titled_dated_event("b-1", "Paul arrives at Rome", 60, "rome", &["ACT.28.14"]),
+        titled_dated_event("b-2", "Paul arrives at Rome", 60, "rome", &["ACT.28.16"]),
+    ];
+    let result = atlas_etl::validate::run_cross_book_duplicates(&merge_pairs, &distinct_pairs, &events);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+#[test]
+fn run_cross_book_duplicates_ignores_a_legitimate_low_title_similarity_neighbor() {
+    // Same year, same place, but genuinely different titles (title jaccard
+    // well under TITLE_JACCARD_THRESHOLD) -- the "legitimate
+    // same-place-same-year neighbor" shape the threshold is tuned not to
+    // flood on (see event_merge's own threshold-derivation doc comment;
+    // the real curated instance of this shape, ret_susa/
+    // neh_nehemiah_hears_report, is documented in EVENT_DISTINCT_PAIRS --
+    // this is a synthetic, further-below-threshold pair so the regression
+    // doesn't depend on today's real curated titles staying byte-identical).
+    let events = vec![
+        titled_dated_event("c-1", "Nehemiah hears of Jerusalem's ruin in Susa", -445, "susa", &["NEH.1.1"]),
+        titled_dated_event("c-2", "The people gather at Mizpah to mourn", -445, "susa", &["NEH.1.2"]),
+    ];
+    let result = atlas_etl::validate::run_cross_book_duplicates(&[], &[], &events);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+#[test]
+fn run_cross_book_duplicates_ignores_general_kind_events() {
+    // Same title/year/place as the positive-detection test above, but both
+    // rows are kind="general" -- out of scope for a TIMELINE-node duplicate
+    // check by definition (no `when` genuinely comparable). Exercised
+    // through the real validator entry point's own dated-event filter, not
+    // just cross_book_duplicate_candidate's internal kind guard (belt and
+    // suspenders, deliberately -- see run_cross_book_duplicates's own doc
+    // comment).
+    let mut a = titled_dated_event("d-1", "Gedaliah governs the remnant at Mizpah", -586, "mizpah", &["2KI.25.22"]);
+    let mut b = titled_dated_event("d-2", "Gedaliah governs the remnant at Mizpah", -586, "mizpah", &["JER.40.7"]);
+    a.kind = "general".into();
+    b.kind = "general".into();
+    let result = atlas_etl::validate::run_cross_book_duplicates(&[], &[], &[a, b]);
+    assert!(result.is_ok(), "{:?}", result.err());
+}

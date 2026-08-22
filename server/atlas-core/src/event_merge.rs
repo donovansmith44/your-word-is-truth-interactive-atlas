@@ -93,7 +93,7 @@ pub struct EventMerge {
     pub reason: &'static str,
 }
 
-/// 64 pairs, every one individually verified against the real compiled
+/// 65 pairs, every one individually verified against the real compiled
 /// `data/compiled/events.json` before being added here: 62 found by the
 /// automated verse-set-Jaccard sweep (>=0.8, book-consistent,
 /// label-consistent) plus 1 added by hand (`jm_jordan`/`theo-267`, jaccard
@@ -101,9 +101,14 @@ pub struct EventMerge {
 /// case, see that entry's own reason) -- the full per-pair table lives in
 /// batch-hotfix4-report.md, not duplicated here -- plus 1 added by Batch W4
 /// (`oba_vision`/`theo-244`, jaccard 1.0, Obadiah's own single-container-book
-/// exception, see that entry's own reason). Alphabetical by `survivor` for
-/// easy scanning/diffing.
+/// exception, see that entry's own reason) -- plus 1 added by Batch W4 fix
+/// round 1 (`jer_jeremiah_stays_with_gedaliah`/`exl_mizpah`, jaccard 0.000,
+/// a CROSS-BOOK duplicate the verse-jaccard metric cannot see at all, found
+/// only by the new `cross_book_duplicate_candidate` detector below -- see
+/// that entry's own reason). Alphabetical by `survivor` for easy
+/// scanning/diffing.
 pub const EVENT_MERGE_PAIRS: &[EventMerge] = &[
+    EventMerge { survivor: "jer_jeremiah_stays_with_gedaliah", absorbed: "exl_mizpah", reason: "CROSS-BOOK duplicate (jaccard 0.000 by this module's own verse-ID metric -- completely invisible to it, since the two sides cite entirely disjoint books, 2KI vs JER, for the identical occurrence; caught instead by Batch W4 fix round 1's own new cross-book title-similarity detector, `cross_book_duplicate_candidate` below, added specifically because this exact shape slipped past the original sweep -- see batch-w4-review.md Critical-1): \"Gedaliah governs the remnant at Mizpah\" (exl_mizpah, a pre-existing, bare, zero-witness curated event, 2KI.25.22-25) coarsely compresses TWO real, separately-narrated occasions -- Gedaliah's own governorship (2KI.25.22-24) AND, distinctly, his own assassination (2KI.25.25) -- that Jeremiah 40-41 narrates at much finer granularity and which this batch's own fresh authoring already dates as two separate containers. Per the controller's own binding ruling (\"where granularity genuinely differs... finer events dated, coarse twin absorbed\"), exl_mizpah is absorbed into the governorship half (jer_jeremiah_stays_with_gedaliah, this pair's own survivor); its own 2KI.25.22-24 verses are preserved as that survivor's own new witness row, and its own 2KI.25.25 verse becomes a witness on jer_the_assassination_of_gedaliah instead (data/curated/event-witnesses.toml) -- no coverage lost, only reorganized onto the honest, finer structure. The 'exile' narrative's own leg list is updated accordingly (data/curated/narratives/exile.toml), gaining a genuine extra leg rather than losing one." },
     EventMerge { survivor: "jm_bethsaida", absorbed: "theo-393", reason: "Theographic freebie duplicate (jaccard 0.978 verse-set overlap, same Gospel pericope): \"Feeding of Five Thousand\" (theo-393, Theographic-scale date) is the identical event as \"Jesus feeds the five thousand near Bethsaida\" (jm_bethsaida, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "jm_cana", absorbed: "theo-271", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"Water to Wine\" (theo-271, Theographic-scale date) is the identical event as \"Jesus turns water to wine at Cana\" (jm_cana, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "jm_egypt", absorbed: "theo-257", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"Joseph and Mary Flee to Egypt\" (theo-257, Theographic-scale date) is the identical event as \"The holy family flees to Egypt\" (jm_egypt, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
@@ -170,11 +175,16 @@ pub const EVENT_MERGE_PAIRS: &[EventMerge] = &[
     EventMerge { survivor: "rob_zacharias_vision", absorbed: "theo-248", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"John's birth predicted\" (theo-248, Theographic-scale date) is the identical event as \"The angel Gabriel appears to Zacharias in the temple\" (rob_zacharias_vision, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
 ];
 
-/// Pairs the sweep's own threshold (verse-set jaccard >=0.8, book-sharing
-/// LAYER-0-vs-LAYER-1) genuinely finds, but which are NOT a 1:1 duplicate --
-/// listed here, with a real reason, so `validate::run_event_merges` never
+/// Pairs a sweep's own threshold genuinely finds, but which are NOT a 1:1
+/// duplicate -- listed here, with a real reason, so the sweep never
 /// re-flags them (the "genuinely-distinct similar-titled events get curated
 /// explicitly-distinct entries with ref_notes" half of the amendment).
+/// Batch W4 fix round 1: this list is now consulted by BOTH
+/// `validate::run_event_merges`'s own verse-jaccard sweep (>=0.8,
+/// book-sharing LAYER-0-vs-LAYER-1) AND the new cross-book title-similarity
+/// detector below (`cross_book_duplicate_candidate`) -- one shared
+/// exemption registry for "same real-world event or genuinely distinct,
+/// documented either way," regardless of which sweep raised the question.
 pub struct EventDistinct {
     pub a: &'static str,
     pub b: &'static str,
@@ -211,6 +221,26 @@ pub const EVENT_DISTINCT_PAIRS: &[EventDistinct] = &[
         a: "theo-129",
         b: "deu_death_of_moses",
         reason: "Real OT duplicate (jaccard 0.923), same bug class, OUTSIDE Gospel-era scope -- ALSO already independently disclosed in batch-w1-report.md section 5: theo-129's own compiled `verses` field carries a genuine pre-existing anomaly (a stray GEN.34.1 entry colliding with gen_dinah_shechem), which is why W1 authored deu_death_of_moses fresh rather than enriching theo-129 directly. Merging theo-129 into deu_death_of_moses today would also import that anomaly's own within-layer collision risk -- deferred to a follow-up that fixes the GEN.34.1 anomaly first, not silently merged around it.",
+    },
+    // --- Batch W4 fix round 1: entries raised by the NEW cross-book
+    // title-similarity detector (`cross_book_duplicate_candidate` below),
+    // none of them from this batch's own fresh authoring -- all three
+    // pre-exist this batch, surfaced only because this fix round is the
+    // first time anything has ever checked for this shape at all.
+    EventDistinct {
+        a: "theo-384",
+        b: "pr_rome",
+        reason: "CROSS-BOOK duplicate candidate (title jaccard 1.000, IDENTICAL labels \"Paul arrives at Rome\", same year AD 60, common place 'rome') -- both LAYER-0 (zero witnesses, no robertson/acts/atlas/kjv_superscription section on either side), which is WHY the original verse-jaccard sweep never even compared them (`run_event_merges`'s own nested loop is layer0 x layer1 only) despite their own verse sets (theo-384: ACT.28.11-16; pr_rome: ACT.28.16 alone, a genuine subset) also overlapping substantially. A real, pre-existing duplicate-identity pair, controller-confirmed and explicitly parked, not introduced by and not in scope for this batch -- queued for HOTFIX-5 remaining-duplicates sweep. Do not fix here.",
+    },
+    EventDistinct {
+        a: "theo-337",
+        b: "theo-338",
+        reason: "SAME-book (both ACT), but a shape the ORIGINAL verse-jaccard sweep also missed, for a different reason than the cross-book pairs above (verse-set SIZE disparity, not book disjointness): theo-337 \"First missionary journey begins\" (ACT.12.24-13.3, 5 verses) is verse-for-verse a PREFIX of theo-338 \"First Missionary Journey\" (ACT.12.24-14.28, 79 verses) -- intersection 5 / union 79 = jaccard 0.063, far below the 0.8 floor, even though theo-337's own entire verse set is wholly contained in theo-338's own. Title jaccard 0.750 (both LAYER-0, both Theographic-sourced, same year AD 48, common place antioch_68) is what this batch's own new detector actually catches it by. Likely a genuine latent duplicate (a short lead-in freebie vs. a mega-span covering the same lead-in plus the whole rest of the journey) -- NOT introduced by and not in scope for this batch, discovered only because this fix round is the first time anything has checked title similarity at all. Queued for HOTFIX-5 remaining-duplicates sweep, the same disposition as theo-384/pr_rome immediately above. Do not fix here.",
+    },
+    EventDistinct {
+        a: "ret_susa",
+        b: "neh_nehemiah_hears_report",
+        reason: "CONFIRMED NOT a duplicate, disclosed rather than silently excluded by a higher threshold: title jaccard 0.714 (\"Nehemiah hears of Jerusalem's ruin in Susa\" / \"...and prays\", same year -445, common place 'susa') clears this module's own cross-book gate, but the two events' own verse sets are ZERO-OVERLAP and immediately adjacent within the same chapter -- ret_susa is NEH.1.1 alone (the book's own scene-setting superscription-like opening verse), neh_nehemiah_hears_report is NEH.1.2-11 (Hanani's own report and Nehemiah's own prayer that follows it) -- two genuinely sequential, complementary narrative beats of ONE continuous moment, not two independent accounts of the identical occurrence. Exactly the 'legitimate same-place-same-year neighbor' this module's own threshold is tuned not to flood on; listed here explicitly, with the verse-level evidence, rather than silently tuning the threshold just high enough to dodge it.",
     },
 ];
 
@@ -277,6 +307,141 @@ pub fn verse_jaccard(a: &Event, b: &Event) -> f64 {
 /// is the owner's own named exception, not a sweep-threshold case -- see
 /// its own table entry). Crate-PUBLIC, same reason as `is_layer0` above.
 pub const DUPLICATE_JACCARD_THRESHOLD: f64 = 0.8;
+
+// -------------------------------------------------------------------------
+// Batch W4 fix round 1 (batch-w4-review.md Critical-1's own SYSTEMIC GUARD):
+// a SECOND duplicate-identity detector, orthogonal to `verse_jaccard` above.
+//
+// `verse_jaccard` is structurally blind to a real class of duplicate: two
+// dated events narrating the SAME real-world historical occurrence via
+// DISJOINT verse sets, because they cite DIFFERENT books (e.g. one witnesses
+// 2 Kings, the other Jeremiah, and neither yet witnesses the other) or
+// because one is a small subset embedded in the other's own much larger
+// verse range (near-zero jaccard despite full containment). This exact
+// shape shipped live in fresh Batch W4 data (`exl_jerusalem` vs. the
+// original `jer_the_fall_of_jerusalem_retold`; `exl_mizpah` vs. the original
+// `jer_jeremiah_stays_with_gedaliah`/`jer_the_assassination_of_gedaliah`,
+// all three fixed this same fix round) and, independently, in older,
+// pre-existing data this fix round's own sweep discovered while tuning the
+// new detector against the real compiled dataset (`theo-384`/`pr_rome`,
+// `theo-337`/`theo-338`) -- "the blind spot... proven three times," per the
+// controller's own words. A cross-book/cross-verse-set twin is invisible to
+// ANY verse-ID-based metric by construction; the only signal left is the
+// event's own metadata: does it happen in the same place, in an overlapping
+// year, described in near-identical words?
+//
+// A pair is a CANDIDATE duplicate when ALL THREE hold:
+// 1. Both `kind == "event"` (dated; a general-kind passage has no `when` to
+//    compare and is out of scope for a TIMELINE-node duplicate by definition).
+// 2. `when.intersects` (`TimeRange::intersects`, already used elsewhere for
+//    exactly this "do these two years overlap" question).
+// 3. `places` share >= 1 common id (`Event::places[0]` is already this
+//    app's own narrative-arrow anchor; two events set in different places
+//    are not narrating the same occurrence, almost by definition here).
+// AND title similarity (word-set Jaccard over normalized, stopword-stripped
+// `label` tokens) is >= `TITLE_JACCARD_THRESHOLD`.
+//
+// THRESHOLD DERIVATION (empirical, against the real compiled `events.json`,
+// the same "measure, don't guess" discipline `DUPLICATE_JACCARD_THRESHOLD`
+// above was derived with): every (year-overlapping, place-sharing) dated
+// pair in the whole compiled dataset was scored. The four real, confirmed
+// duplicate-shaped pairs score 1.000, 1.000 (`theo-384`/`pr_rome`, an exact
+// title match), 0.750 (`theo-337`/`theo-338`), and (after this fix round's
+// own repair) no longer exist in duplicate form at all. The highest score
+// among every pair CONFIRMED legitimately distinct is 0.714
+// (`ret_susa`/`neh_nehemiah_hears_report` -- title-similar, but their own
+// verse sets are zero-overlap and simply adjacent, two complementary beats
+// of one scene, not two accounts of one occurrence) with a clean gap down
+// to 0.667 for the next-highest legitimate neighbor. `0.70` sits inside
+// that gap, catching all three real candidates (all three now disclosed in
+// `EVENT_DISTINCT_PAIRS`, none newly fixed by this fix round beyond the
+// three genuinely fresh W4-authored cases already reconciled directly) and
+// nothing else in today's real data -- tuned to avoid flooding on
+// legitimate same-place-same-year neighbors, per the controller's own
+// explicit instruction, not merely set low enough to catch every known case.
+// -------------------------------------------------------------------------
+
+/// Stopwords stripped before comparing two event titles -- common English
+/// function words this app's own titles are saturated with (articles,
+/// prepositions, the house style's own frequent "his own"/"her own"
+/// possessive filler) that would otherwise inflate the similarity score of
+/// almost any two titles regardless of real content, the same reasoning
+/// `TITLE_STOPWORDS`'s own absence would make `DUPLICATE_JACCARD_THRESHOLD`
+/// pointless if verse ids worked the same way (they don't need this
+/// treatment -- a canonical verse id has no "stopword" version).
+const TITLE_STOPWORDS: &[&str] = &[
+    "the", "a", "an", "of", "to", "in", "and", "at", "his", "her", "own", "is", "for", "with",
+    "by", "from", "upon", "that", "this", "when", "into", "unto", "on", "as", "he", "she", "it",
+    "was", "are", "be", "were", "their", "them", "who", "which", "or", "but", "not", "all",
+    "out", "up",
+];
+
+/// Normalizes one event `label` into a lowercased, punctuation-stripped,
+/// stopword-filtered word set -- the unit `title_jaccard` compares. Crate-
+/// PUBLIC, same reason as `is_layer0`/`verse_jaccard` above (this module's
+/// own unit tests, and any future ETL-side consumer, need the identical
+/// normalization the fail-loud sweep itself uses, never a second
+/// reimplementation that could silently drift from it).
+pub fn title_words(label: &str) -> HashSet<String> {
+    label
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { ' ' })
+        .collect::<String>()
+        .split_whitespace()
+        .filter(|w| !TITLE_STOPWORDS.contains(w))
+        .map(|w| w.to_string())
+        .collect()
+}
+
+/// Word-set Jaccard similarity between two event titles, using
+/// `title_words`'s own normalization. `0.0` when either side has no
+/// content words left after stopword-stripping (never a division by zero;
+/// mirrors `verse_jaccard`'s own empty-set handling exactly).
+pub fn title_jaccard(a: &str, b: &str) -> f64 {
+    let (wa, wb) = (title_words(a), title_words(b));
+    if wa.is_empty() || wb.is_empty() {
+        return 0.0;
+    }
+    let inter = wa.intersection(&wb).count();
+    let union = wa.union(&wb).count();
+    if union == 0 {
+        0.0
+    } else {
+        inter as f64 / union as f64
+    }
+}
+
+/// The threshold's own empirically-verified value -- this module's own doc
+/// comment (above `TITLE_STOPWORDS`) has the full derivation against the
+/// real compiled dataset. Crate-PUBLIC, same reason as
+/// `DUPLICATE_JACCARD_THRESHOLD` above.
+pub const TITLE_JACCARD_THRESHOLD: f64 = 0.70;
+
+/// True when `a`/`b` are a CANDIDATE cross-book duplicate per this module's
+/// own doc comment (dated, year-overlapping, place-sharing, title-similar
+/// above `TITLE_JACCARD_THRESHOLD`) -- a candidate, not a verdict: the real
+/// fail-loud decision (candidate AND not listed in `EVENT_MERGE_PAIRS` or
+/// `EVENT_DISTINCT_PAIRS`) lives in `atlas_etl::validate::run_cross_book_duplicates`,
+/// mirroring `verse_jaccard`'s/`DUPLICATE_JACCARD_THRESHOLD`'s own split
+/// between "compute the metric" (here, pure, unit-testable) and "decide
+/// what counts as unlisted" (the validator, which needs the curated
+/// exemption tables this module intentionally does not import). Crate-
+/// PUBLIC, same reason as `verse_jaccard` above.
+pub fn cross_book_duplicate_candidate(a: &Event, b: &Event) -> bool {
+    if a.kind != "event" || b.kind != "event" {
+        return false;
+    }
+    if !a.when.intersects(&b.when) {
+        return false;
+    }
+    let pa: HashSet<&str> = a.places.iter().map(String::as_str).collect();
+    let pb: HashSet<&str> = b.places.iter().map(String::as_str).collect();
+    if pa.is_disjoint(&pb) {
+        return false;
+    }
+    title_jaccard(&a.label, &b.label) >= TITLE_JACCARD_THRESHOLD
+}
 
 /// Applies `EVENT_MERGE_PAIRS` to `events`/`narratives` in place -- called
 /// once by `AtlasData::finish()`, BEFORE `events.sort_by_key` (mirrors
@@ -372,13 +537,56 @@ mod tests {
     }
 
     #[test]
-    fn merge_table_has_exactly_64_verified_pairs() {
+    fn merge_table_has_exactly_65_verified_pairs() {
         // 62 found by the automated >=0.8 jaccard sweep (HOTFIX-4) + 1 added
         // by hand (jm_jordan/theo-267, jaccard 0.5 -- below the sweep's own
         // floor, the owner's own named proof case, see that entry's own
         // reason) + 1 added by Batch W4 (oba_vision/theo-244, jaccard 1.0,
-        // Obadiah's own brief-sanctioned single-container-book exception).
-        assert_eq!(EVENT_MERGE_PAIRS.len(), 64);
+        // Obadiah's own brief-sanctioned single-container-book exception) +
+        // 1 added by Batch W4 fix round 1
+        // (jer_jeremiah_stays_with_gedaliah/exl_mizpah, jaccard 0.000 by
+        // verse-ID -- found only by the new cross-book title-similarity
+        // detector, `cross_book_duplicate_candidate`, tested below).
+        assert_eq!(EVENT_MERGE_PAIRS.len(), 65);
+    }
+
+    #[test]
+    fn the_gedaliah_mizpah_cross_book_pair_is_in_the_table() {
+        assert!(EVENT_MERGE_PAIRS
+            .iter()
+            .any(|p| p.survivor == "jer_jeremiah_stays_with_gedaliah" && p.absorbed == "exl_mizpah"));
+    }
+
+    #[test]
+    fn distinct_pairs_table_has_no_exact_duplicate_entries() {
+        let mut seen = HashSet::new();
+        for pair in EVENT_DISTINCT_PAIRS {
+            let key = if pair.a < pair.b { (pair.a, pair.b) } else { (pair.b, pair.a) };
+            assert!(seen.insert(key), "{key:?} listed more than once in EVENT_DISTINCT_PAIRS");
+        }
+    }
+
+    #[test]
+    fn the_new_cross_book_detectors_findings_are_documented_in_distinct_pairs() {
+        // Batch W4 fix round 1: every pair the new `cross_book_duplicate_candidate`
+        // sweep actually flags in today's real compiled data (per this
+        // module's own threshold-derivation doc comment) must be either
+        // merged (EVENT_MERGE_PAIRS, checked by the previous test) or
+        // explicitly exempted here -- never silently unlisted, which is
+        // exactly what `validate::run_cross_book_duplicates` fails loud on.
+        let expected = [
+            ("theo-384", "pr_rome"),
+            ("theo-337", "theo-338"),
+            ("ret_susa", "neh_nehemiah_hears_report"),
+        ];
+        for (a, b) in expected {
+            assert!(
+                EVENT_DISTINCT_PAIRS
+                    .iter()
+                    .any(|p| (p.a == a && p.b == b) || (p.a == b && p.b == a)),
+                "{a}/{b} must be documented in EVENT_DISTINCT_PAIRS"
+            );
+        }
     }
 
     // --- apply_event_merges -------------------------------------------------
@@ -487,5 +695,147 @@ mod tests {
     fn is_layer0_true_only_for_a_bare_freebie() {
         assert!(is_layer0(&theo_freebie("a", "A", 1, &["MAT.1.1"])));
         assert!(!is_layer0(&real_container("b", "B", 1, &["MAT.1.1"])));
+    }
+
+    // --- title_words / title_jaccard (the new detector's own primitives,
+    // Batch W4 fix round 1) -------------------------------------------------
+
+    #[test]
+    fn title_words_strips_punctuation_and_stopwords() {
+        let words = title_words("The Fall of Jerusalem, Retold.");
+        let expected: HashSet<String> = ["fall", "jerusalem", "retold"].iter().map(|s| s.to_string()).collect();
+        assert_eq!(words, expected);
+    }
+
+    #[test]
+    fn title_words_is_empty_for_an_all_stopword_title() {
+        assert!(title_words("The a of to in and").is_empty());
+    }
+
+    #[test]
+    fn title_jaccard_is_one_for_identical_titles() {
+        assert_eq!(title_jaccard("Paul arrives at Rome", "Paul arrives at Rome"), 1.0);
+    }
+
+    #[test]
+    fn title_jaccard_is_zero_for_disjoint_titles() {
+        assert_eq!(title_jaccard("Water to Wine", "Feeding of Five Thousand"), 0.0);
+    }
+
+    #[test]
+    fn title_jaccard_is_zero_when_only_stopwords_overlap() {
+        // "The Death of the King" / "A Reign of the Queen" share only
+        // stopwords ("the"/"of") after stripping -- without stopword
+        // removal these would score deceptively high, the exact reason
+        // `TITLE_STOPWORDS` exists (see this module's own doc comment).
+        assert_eq!(title_jaccard("The Death of the King", "A Reign of the Queen"), 0.0);
+    }
+
+    #[test]
+    fn title_jaccard_partial_overlap_matches_hand_computed_value() {
+        // {"gedaliah","governs","remnant","mizpah"} vs
+        // {"gedaliah","assassinated","mizpah"} -- intersection 2
+        // (gedaliah, mizpah), union 5 -- 0.4, a hand-computed check of the
+        // module's own arithmetic on a realistic partial-overlap title pair.
+        let j = title_jaccard("Gedaliah governs the remnant at Mizpah", "Gedaliah is assassinated at Mizpah");
+        assert!((j - 0.4).abs() < 1e-9, "expected 0.4, got {j}");
+    }
+
+    // --- cross_book_duplicate_candidate (the new detector itself, Batch W4
+    // fix round 1) ------------------------------------------------------------
+
+    fn dated_event(id: &str, label: &str, year: i32, places: &[&str]) -> Event {
+        Event {
+            id: id.into(),
+            label: label.into(),
+            when: TimeRange::new(year, year).unwrap(),
+            places: places.iter().map(|s| s.to_string()).collect(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn red_then_green_cross_book_twin_invisible_to_verse_jaccard_but_caught_here() {
+        // RED: this is exactly the shape batch-w4-review.md Critical-1 found
+        // live in real curated data -- two events narrating the SAME
+        // occasion via DIFFERENT books' own disjoint verse sets (2 Kings vs
+        // Jeremiah, here). verse_jaccard (the OLD sweep) scores a pair like
+        // this 0.0 -- and, worse, `run_event_merges`'s own layer0-vs-layer1
+        // nested loop would never even compare two LAYER-1 events against
+        // each other in the first place, since both sides here carry their
+        // own real provenance.
+        let a = Event {
+            verses: vec!["2KI.25.22".into()],
+            robertson_section: None,
+            ..dated_event("exl_mizpah", "Gedaliah governs the remnant at Mizpah", -586, &["mizpah"])
+        };
+        let b = Event {
+            verses: vec!["JER.40.7".into()],
+            robertson_section: None,
+            ..dated_event(
+                "jer_jeremiah_stays_with_gedaliah",
+                "Gedaliah governs the remnant at Mizpah",
+                -586,
+                &["mizpah"],
+            )
+        };
+        assert_eq!(verse_jaccard(&a, &b), 0.0, "RED: the old verse-ID metric is structurally blind to a cross-book pair like this");
+
+        // GREEN: the new detector catches it anyway, from title+year+place
+        // alone -- exactly the blind spot this fix round's own SYSTEMIC
+        // GUARD was written to close.
+        assert!(
+            cross_book_duplicate_candidate(&a, &b),
+            "GREEN: caught by title/year/place even though verse_jaccard could never see it"
+        );
+    }
+
+    #[test]
+    fn cross_book_duplicate_candidate_false_when_years_do_not_overlap() {
+        let a = dated_event("a", "Gedaliah governs the remnant at Mizpah", -586, &["mizpah"]);
+        let b = dated_event("b", "Gedaliah governs the remnant at Mizpah", -400, &["mizpah"]);
+        assert!(!cross_book_duplicate_candidate(&a, &b));
+    }
+
+    #[test]
+    fn cross_book_duplicate_candidate_false_when_places_are_disjoint() {
+        let a = dated_event("a", "Gedaliah governs the remnant at Mizpah", -586, &["mizpah"]);
+        let b = dated_event("b", "Gedaliah governs the remnant at Mizpah", -586, &["rome"]);
+        assert!(!cross_book_duplicate_candidate(&a, &b));
+    }
+
+    #[test]
+    fn cross_book_duplicate_candidate_false_below_title_threshold() {
+        // Same year, same place -- title alone must be the deciding factor,
+        // and this pair (jaccard ~0.143) sits well below the threshold: a
+        // "legitimate same-place-same-year neighbor" the detector must not
+        // flood on, per the controller's own explicit instruction.
+        let a = dated_event("a", "Gedaliah governs the remnant at Mizpah", -586, &["mizpah"]);
+        let b = dated_event("b", "The people gather at Mizpah to mourn", -586, &["mizpah"]);
+        assert!(!cross_book_duplicate_candidate(&a, &b));
+    }
+
+    #[test]
+    fn cross_book_duplicate_candidate_false_for_general_kind_events() {
+        let mut a = dated_event("a", "Paul arrives at Rome", 60, &["rome"]);
+        let mut b = dated_event("b", "Paul arrives at Rome", 60, &["rome"]);
+        a.kind = "general".into();
+        b.kind = "general".into();
+        assert!(
+            !cross_book_duplicate_candidate(&a, &b),
+            "a general-kind (undated in spirit) passage is out of scope for a TIMELINE-node duplicate check"
+        );
+    }
+
+    #[test]
+    fn cross_book_duplicate_candidate_true_for_the_confirmed_theo_384_pr_rome_shape() {
+        // Not synthetic: this is the real, controller-confirmed pair this
+        // module's own EVENT_DISTINCT_PAIRS entry documents (identical
+        // labels, same year, common place) -- pinning that the detector's
+        // own logic actually reproduces the finding the threshold was tuned
+        // against, not just a made-up example.
+        let a = dated_event("theo-384", "Paul arrives at Rome", 60, &["rome"]);
+        let b = dated_event("pr_rome", "Paul arrives at Rome", 60, &["rome"]);
+        assert!(cross_book_duplicate_candidate(&a, &b));
     }
 }

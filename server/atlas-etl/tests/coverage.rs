@@ -25,6 +25,7 @@
 use std::collections::HashSet;
 
 use atlas_core::data::{Canon, Event, EventWitness};
+use atlas_core::event_merge::{cross_book_duplicate_candidate, title_jaccard, EVENT_DISTINCT_PAIRS};
 
 /// Robertson's own full section list, 1-184, with 128 split into 128a/128b
 /// exactly as his own table does (no other section carries a letter
@@ -542,4 +543,95 @@ fn declared_books_never_shrink_below_the_established_floor() {
     for code in FLOOR {
         assert!(declared.contains(*code), "'{code}' must stay declared in coverage-manifest.toml -- the declared list may only ever grow, never shrink");
     }
+}
+
+// ---------------------------------------------------------------------
+// Batch W4 fix round 1 (batch-w4-review.md Critical-1's own ACCEPTANCE
+// criterion, verbatim: "probe the compiled global timeline -- exactly one
+// fall-of-Jerusalem dated node; no duplicate-occurrence nodes in the
+// Gedaliah/Mizpah sequence; a committed test pins it"). Reads the REAL
+// compiled `events.json` (POST-merge, POST-`AtlasData::finish()` -- exactly
+// what a reader's own timeline actually shows), the same "deliberately
+// reads the real compiled output" discipline the coverage test above
+// already established for this file. NOT a re-run of
+// `validate::run_event_merges`/`run_cross_book_duplicates` themselves (both
+// are documented to run on the RAW PRE-merge event set -- every
+// `EVENT_MERGE_PAIRS` entry's own `absorbed` id is, by design, already
+// gone from this POST-merge file, so re-running those validators here
+// would misfire on every single pair as a dangling id, not a real bug);
+// this test instead re-runs the cross-book sweep's own CANDIDATE logic
+// directly against the compiled output, checked only against
+// `EVENT_DISTINCT_PAIRS` (the only list a genuinely-surviving compiled pair
+// could ever legitimately need -- a true duplicate's own `absorbed` half is
+// never present here to begin with).
+// ---------------------------------------------------------------------
+
+#[test]
+fn no_duplicate_fall_of_jerusalem_or_gedaliah_mizpah_nodes_in_the_real_compiled_timeline() {
+    let events: Vec<Event> = read_compiled_json("events.json");
+    let by_id: HashSet<&str> = events.iter().map(|e| e.id.as_str()).collect();
+
+    // RED (pre-fix-round-1 shape, named explicitly so a future regression
+    // reads as a real historical fact, not a mystery assertion): these two
+    // ids were retired/renamed because each duplicated a pre-existing
+    // event's own real-world identity -- `exl_mizpah` (absorbed into
+    // `jer_jeremiah_stays_with_gedaliah`, EVENT_MERGE_PAIRS) and
+    // `jer_the_fall_of_jerusalem_retold` (trimmed and renamed to
+    // `jer_jeremiahs_release_and_the_word_to_ebedmelech` once its own
+    // duplicate JER.39.1-10 span moved onto `exl_jerusalem` as a witness).
+    assert!(
+        !by_id.contains("exl_mizpah"),
+        "exl_mizpah must stay retired -- its own occurrence is now dated by jer_jeremiah_stays_with_gedaliah/jer_the_assassination_of_gedaliah"
+    );
+    assert!(
+        !by_id.contains("jer_the_fall_of_jerusalem_retold"),
+        "jer_the_fall_of_jerusalem_retold must stay retired/renamed -- its own duplicate span is now a witness on exl_jerusalem"
+    );
+
+    // GREEN: the real survivors are present, each a real dated EVENT-kind
+    // node, each carrying >=1 witness row (the 72-row anchor fix, proven
+    // against the real compiled data, not just a synthetic fixture).
+    for id in [
+        "exl_jerusalem",
+        "jer_jeremiah_stays_with_gedaliah",
+        "jer_the_assassination_of_gedaliah",
+        "jer_jeremiahs_release_and_the_word_to_ebedmelech",
+    ] {
+        let e = events.iter().find(|e| e.id == id).unwrap_or_else(|| panic!("'{id}' must exist in the real compiled event set"));
+        assert_eq!(e.kind, "event", "'{id}' must be a real dated EVENT-kind node");
+    }
+    for id in ["exl_jerusalem", "jer_jeremiah_stays_with_gedaliah", "jer_the_assassination_of_gedaliah"] {
+        let e = events.iter().find(|e| e.id == id).unwrap();
+        assert!(!e.witnesses.is_empty(), "'{id}' must carry >=1 witness row after the fix round 1 reconciliation");
+    }
+
+    // The acceptance criterion's own literal words, run for real: sweep the
+    // WHOLE compiled global timeline for any dated-event pair the cross-book
+    // detector would flag as a candidate duplicate. A future curated edit
+    // that reintroduces a duplicate-occurrence node -- in this Jerusalem/
+    // Gedaliah/Mizpah sequence or anywhere else in the whole compiled data
+    // -- fails this test loud, naming both ids, the same day it's authored.
+    let dated: Vec<&Event> = events.iter().filter(|e| e.kind == "event").collect();
+    let mut unlisted: Vec<String> = Vec::new();
+    for (i, a) in dated.iter().enumerate() {
+        for b in dated[i + 1..].iter() {
+            if !cross_book_duplicate_candidate(a, b) {
+                continue;
+            }
+            let listed = EVENT_DISTINCT_PAIRS.iter().any(|p| (p.a == a.id && p.b == b.id) || (p.a == b.id && p.b == a.id));
+            if listed {
+                continue;
+            }
+            unlisted.push(format!(
+                "'{}' ({:?}) <-> '{}' ({:?}): title jaccard {:.3} -- candidate duplicate in the COMPILED timeline, not documented in EVENT_DISTINCT_PAIRS",
+                a.id,
+                a.label,
+                b.id,
+                b.label,
+                title_jaccard(&a.label, &b.label)
+            ));
+        }
+    }
+    unlisted.sort();
+    assert!(unlisted.is_empty(), "duplicate-occurrence node(s) found in the real compiled global timeline:\n{}", unlisted.join("\n"));
 }

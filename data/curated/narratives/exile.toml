@@ -1,4 +1,11 @@
 id = "exile"
 name = "The Exile to Babylon"
 color = "#64748B"
-legs = ["exl_jerusalem", "exl_riblah", "exl_babylon", "exl_mizpah", "exl_tahpanhes"]
+# Batch W4 fix round 1 (batch-w4-review.md Critical-1): `exl_mizpah`
+# retired (EVENT_MERGE_PAIRS, server/atlas-core/src/event_merge.rs) --
+# its own coarse 4-verse span compressed two real, finer, now-dated
+# occasions Jeremiah 40-41 narrates separately; `apply_event_merges`
+# repoints this leg's own id automatically. The chain gains a genuine
+# extra leg (the assassination, previously compressed into the SAME
+# bare span as the governorship) rather than losing granularity.
+legs = ["exl_jerusalem", "exl_riblah", "exl_babylon", "jer_jeremiah_stays_with_gedaliah", "jer_the_assassination_of_gedaliah", "exl_tahpanhes"]

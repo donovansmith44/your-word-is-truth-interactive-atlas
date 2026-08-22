@@ -208,10 +208,10 @@ ref_note = "GENERAL-kind, per this file's own header note -- no date of its own 
 
 [[event]]
 id = "zec_jerusalem_cup_of_trembling"
-label = "The burden of the word of the Lord for Israel"
+label = "The burden of the word of the Lord for Israel, saith the Lord, which stretcheth forth the heavens, and layeth the foundation of the earth, and formeth the spirit of man within him."
 kind = "general"
 verses = ["ZEC.12.1-14"]
-kjv_superscription = "ZEC.12.1's own opening clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- the second of this book's own two 'burden' superscriptions, here cleanly separable from the content that follows at 12:2."
+kjv_superscription = "ZEC.12.1, this book's own second 'burden' superscription, quoted verbatim IN FULL (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- Fix round 1 (batch-w4-review.md Important-1): the first draft cut this label at the first comma, mid-sentence ('...for Israel'), not at the verse's own real period -- the same defect class self-corrected for Amos/Micah/Zephaniah in commit 84e29bf, missed here because that commit's own sweep was a bare-substring check, not a sentence-boundary check. The whole of ZEC.12.1 is one continuous sentence (unlike ZEC.9.1, whose own 'burden' formula runs directly into a second clause with no self-contained sentence to quote -- see this file's own header note on why that one stays atlas_section instead)."
 ref_note = "GENERAL-kind, per this file's own header note. Content: Jerusalem made 'a cup of trembling' and 'a burdensome stone' to the nations besieging her, the spirit of grace and supplication poured out on the house of David, and 'they shall look upon me whom they have pierced, and they shall mourn for him.'"
 
 [[event]]
