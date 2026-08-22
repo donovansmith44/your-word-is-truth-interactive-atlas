@@ -1,0 +1,145 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Daniel, in the SAME `[[event]]` schema every other `passages/*.toml` file
+# uses. KIND POLICY: see obadiah.toml's own header note. Chapters 1-6 are
+# real NARRATED history (court narratives at Babylon, historically situated
+# and explicitly placed) -- EVENT-kind throughout, reusing/interpolating
+# from existing anchors, never independently re-derived. Chapters 7-12 (the
+# master brief's own named 'Daniel's visions per vision' granularity) split
+# by kind: 9 and 10-12 reuse a clean, disclosed anchor (Darius's/Cyrus's own
+# already-anchored regnal transition, below); 7-8 (Belshazzar's own 1st and
+# 3rd years) have no comparably reusable anchor anywhere in this app's
+# existing data, so they stay GENERAL-kind, undated -- lawful and by
+# design, not an inconsistency with 9/10-12's own EVENT-kind treatment.
+#
+# RECONCILIATION: one pre-existing bare Theographic event touches this book
+# -- `theo-240` ("Prophecies of Daniel," all 357 verses, -606). LAYER-0, not
+# heading-worthy today; every container below stays well under the 0.8
+# jaccard sweep floor against it (largest, 79/357 = 0.221).
+#
+# DATES: chapters 1-4 reuse theo-240's own -606 (1:1's own 'third year of
+# Jehoiakim' matches the traditional deportation date theo-240 already
+# represents; chapters 2-4's own internal chronology is genuinely debated
+# among conservative harmonizers -- ch2 is dated to Nebuchadnezzar's OWN
+# second regnal year, arguably before ch1's own three-year training
+# completes -- so -606 is DISCLOSED as a shared early-reign anchor for the
+# whole span, not independently re-derived per chapter, the OT dating
+# policy's own sanctioned 'disclosed early-date adjacency'). Chapters 5-6
+# reuse `ret_babylon`'s own -538 (the fall of Babylon to the Medo-Persians
+# and Belshazzar's own death, 5:30-31, immediately precede Cyrus's own
+# decree already anchored there). Chapter 9 ('the first year of Darius')
+# reuses that same -538, matching Darius's own regnal transition already
+# established at chapter 6. Chapters 10-12 ('the third year of Cyrus,'
+# 10:1) are a simple, text-explicit two-year forward count from that same
+# -538 anchor -- the SAME discipline data/curated/passages/1samuel.toml's
+# own 'twenty years after the ark's own capture' precedent already
+# establishes, never an independently fresh Ussher derivation. PLACE:
+# babylon-1 throughout (Daniel's own place_history/write_place, per
+# data/curated/books.toml's own EZK/DAN disambiguation note -- 248 direct
+# DAN verse_links, vs. babylon-2/3's own zero); chapters 10-12 additionally
+# cite `tigris` (10:4's own explicit 'by the side of the great river,
+# which is Hiddekel' -- the compiled `places.json` carries a direct
+# DAN.10.4 verse_link for this id).
+
+[[event]]
+id = "dan_daniels_own_faithfulness_in_babylon"
+label = "Daniel and his companions refuse the king's own meat"
+kind = "event"
+from_year = -606
+to_year = -606
+places = ["babylon-1"]
+verses = ["DAN.1.1-21"]
+atlas_section = "Daniel pericope (this project's own sectioning, CC0 -- no external PD source claimed): Daniel 1, dated the third year of Jehoiakim -- Daniel, Hananiah, Mishael, and Azariah taken to Babylon, renamed, and Daniel's own purpose not to defile himself with the king's meat, proven over ten days on pulse and water, closing on his own service 'even unto the first year of king Cyrus.'"
+ref_note = "Date interpolated from the pre-existing theo-240 ('Prophecies of Daniel,' -606), matching 1:1's own 'third year of Jehoiakim.' Place: Babylon, explicit."
+
+[[event]]
+id = "dan_nebuchadnezzars_dream_of_the_image"
+label = "Nebuchadnezzar's dream of the great image; the stone cut out without hands"
+kind = "event"
+from_year = -606
+to_year = -606
+places = ["babylon-1"]
+verses = ["DAN.2.1-49"]
+atlas_section = "Daniel pericope (this project's own sectioning, CC0): Daniel 2, the king's own forgotten dream, the wise men of Babylon condemned to die for their own inability to recover it, and Daniel's own God-given interpretation -- the great image of gold, silver, brass, iron, and clay, broken by a stone cut out without hands that becomes a great mountain filling the whole earth -- for which Daniel is made ruler over the whole province of Babylon."
+ref_note = "Date interpolated from theo-240's own -606, a shared early-reign anchor per this file's own header note (2:1's own 'second year of Nebuchadnezzar' is not independently re-derived). Place: Babylon, unchanged."
+
+[[event]]
+id = "dan_the_fiery_furnace"
+label = "Shadrach, Meshach, and Abed-nego in the fiery furnace"
+kind = "event"
+from_year = -606
+to_year = -606
+places = ["babylon-1"]
+verses = ["DAN.3.1-30"]
+atlas_section = "Daniel pericope (this project's own sectioning, CC0): Daniel 3, Nebuchadnezzar's own golden image in the plain of Dura, the refusal of Shadrach, Meshach, and Abed-nego to worship it, their own deliverance unburned from the furnace heated seven times hotter, and the king's own decree honoring their God."
+ref_note = "Date interpolated from theo-240's own -606, per this file's own header note (no year is given in the text itself). Place: Babylon (the plain of Dura, 'in the province of Babylon,' 3:1)."
+
+[[event]]
+id = "dan_nebuchadnezzars_own_madness_and_restoration"
+label = "Nebuchadnezzar's own dream of the great tree; his madness and restoration"
+kind = "event"
+from_year = -606
+to_year = -606
+places = ["babylon-1"]
+verses = ["DAN.4.1-37"]
+atlas_section = "Daniel pericope (this project's own sectioning, CC0): Daniel 4, Nebuchadnezzar's own decree recounting his own dream of a great tree cut down, Daniel's own interpretation -- seven years of madness until he acknowledges 'the most High ruleth in the kingdom of men' -- and the king's own restoration and closing praise."
+ref_note = "Date interpolated from theo-240's own -606 -- DISCLOSED as an early-date adjacency per this file's own header note: this chapter's own events are clearly late in Nebuchadnezzar's reign ('I built this great Babylon,' 4:30, implying decades of building already completed), but no year is given in the text itself and no closer anchor exists in this app's own compiled data, so the earliest available anchor is reused rather than an independently fabricated later year. Place: Babylon, unchanged."
+
+[[event]]
+id = "dan_belshazzars_feast_and_the_writing_on_the_wall"
+label = "Belshazzar's feast; the writing on the wall; the fall of Babylon"
+kind = "event"
+from_year = -538
+to_year = -538
+places = ["babylon-1"]
+verses = ["DAN.5.1-31"]
+atlas_section = "Daniel pericope (this project's own sectioning, CC0): Daniel 5, Belshazzar's own great feast using the temple's own sacred vessels, the handwriting on the wall -- MENE, MENE, TEKEL, UPHARSIN -- Daniel's own interpretation of the kingdom weighed, divided, and given to the Medes and Persians, and Belshazzar's own death that same night as Darius the Median takes the kingdom."
+ref_note = "Date reused from the pre-existing `ret_babylon` ('Cyrus decrees the return from Babylon,' -538) -- Belshazzar's own death and the fall of Babylon to the Medo-Persians (5:30-31) immediately precede that already-anchored decree, per this file's own header note. Place: Babylon, unchanged."
+
+[[event]]
+id = "dan_daniel_in_the_lions_den"
+label = "Daniel in the lions' den"
+kind = "event"
+from_year = -538
+to_year = -538
+places = ["babylon-1"]
+verses = ["DAN.6.1-28"]
+atlas_section = "Daniel pericope (this project's own sectioning, CC0): Daniel 6, Darius's own decree against praying to any god or man, Daniel's own faithfulness regardless, his own night in the lions' den unharmed, and the king's own decree that all should fear the God of Daniel -- closing on Daniel's own prospering 'in the reign of Darius, and in the reign of Cyrus the Persian.'"
+ref_note = "Same year as dan_belshazzars_feast_and_the_writing_on_the_wall, immediately following (Darius's own reign begins at 5:31). Place: Babylon, unchanged."
+
+[[event]]
+id = "dan_vision_of_the_four_beasts"
+label = "The vision of the four beasts"
+kind = "general"
+verses = ["DAN.7.1-28"]
+atlas_section = "Daniel pericope (this project's own sectioning, CC0): Daniel 7, dated 'the first year of Belshazzar king of Babylon' -- four great beasts rising from the sea, the Ancient of days seated in judgment, and 'one like the Son of man' given an everlasting dominion; the fourth beast's own interpretation given to Daniel by one who stood by."
+ref_note = "GENERAL-kind: no comparably reusable anchor exists in this app's own compiled data for Belshazzar's own first regnal year specifically (unlike chapters 9/10-12, below), per this file's own header note. First of Daniel's own remaining visions, the master brief's own named 'per vision' granularity."
+
+[[event]]
+id = "dan_vision_of_the_ram_and_the_goat"
+label = "The vision of the ram and the goat"
+kind = "general"
+verses = ["DAN.8.1-27"]
+atlas_section = "Daniel pericope (this project's own sectioning, CC0): Daniel 8, dated 'the third year of the reign of king Belshazzar' -- a ram with two horns overthrown by a fierce one-horned goat, whose own great horn is broken and replaced by four; Gabriel's own interpretation of the vision, which Daniel could not understand and which made him sick."
+ref_note = "GENERAL-kind, per this file's own header note (same reasoning as dan_vision_of_the_four_beasts)."
+
+[[event]]
+id = "dan_daniels_prayer_and_the_seventy_weeks"
+label = "Daniel's own prayer of confession; the seventy weeks"
+kind = "event"
+from_year = -538
+to_year = -538
+places = ["babylon-1"]
+verses = ["DAN.9.1-27"]
+atlas_section = "Daniel pericope (this project's own sectioning, CC0): Daniel 9, dated 'the first year of Darius,' Daniel's own understanding by books of the seventy years of Jeremiah's own prophecy, his own extended prayer of confession for his people, and Gabriel's own answer -- the vision of the seventy weeks determined upon the people and the holy city."
+ref_note = "Date: 'the first year of Darius the son of Ahasuerus' (9:1), reused from the same -538 anchor as dan_daniel_in_the_lions_den (Darius's own regnal transition, already established at chapter 6), per this file's own header note. Place: Babylon, unchanged."
+
+[[event]]
+id = "dan_the_final_vision"
+label = "The final vision: kings of the north and south, and the time of the end"
+kind = "event"
+from_year = -536
+to_year = -536
+places = ["babylon-1", "tigris"]
+verses = ["DAN.10.1-21", "DAN.11.1-45", "DAN.12.1-13"]
+atlas_section = "Daniel pericope (this project's own sectioning, CC0): Daniel 10-12, one continuous vision (no new formal introduction breaks it across the chapter boundaries) -- dated 'the third year of Cyrus,' Daniel's own three weeks of mourning by the river Hiddekel (the Tigris), a heavenly messenger's own long discourse on the kings of the north and south, and the book's own closing word on the time of the end: Michael standing up, the resurrection of 'many that sleep in the dust of the earth,' the sealed book, and the promise, 'blessed is he that waiteth.'"
+ref_note = "Date: 'the third year of Cyrus king of Persia' (10:1) -- a simple, text-explicit two-year forward count from ret_babylon's own -538 anchor, per this file's own header note. Place: Babylon (Daniel's own base) plus the Tigris/Hiddekel (10:4, explicit, direct DAN.10.4 verse_link in the compiled places.json)."

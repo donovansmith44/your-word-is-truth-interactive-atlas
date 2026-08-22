@@ -54,7 +54,7 @@ declared = [
   "1SA", "2SA", "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST",
   "JOB", "PSA", "PRO", "ECC", "SNG",
   "OBA", "JON", "NAM", "HAB", "ZEP", "HAG", "JOL",
-  "MAL", "AMO", "HOS", "ZEC",
+  "MAL", "AMO", "HOS", "ZEC", "LAM", "DAN",
 ]
 # NOTE: Micah is intentionally NOT yet declared here, though the real
 # compiled data already fully covers it (theo-220's own pre-existing

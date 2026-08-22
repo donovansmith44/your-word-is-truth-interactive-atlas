@@ -1,0 +1,60 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Lamentations, in the SAME `[[event]]` schema every other
+# `passages/*.toml` file uses. KIND POLICY: see obadiah.toml's own header
+# note -- GENERAL-kind throughout (the fall of Jerusalem it mourns is
+# already anchored at -586 by exl_jerusalem/2ki_jerusalem_aftermath, but
+# this book's own five poems carry no date-stamp of their own).
+#
+# RECONCILIATION: ZERO pre-existing events touch this book -- verified
+# against the real compiled `events.json` before authoring (the same
+# "genuinely fresh whole-book authoring" disposition Batch W3's own
+# Proverbs/Ecclesiastes/Song of Solomon had). No EVENT_MERGE_PAIRS concern.
+#
+# GRANULARITY: the master brief's own explicit instruction -- "Lamentations:
+# per-poem (5)." Each of the book's own five chapters is a single, complete
+# acrostic poem (chapters 1, 2, and 4 each 22 verses, one per letter of the
+# Hebrew alphabet; chapter 3 66 verses, three per letter; chapter 5 22
+# verses, unacrosticized but matching the same length) -- a real, documented
+# literary-structure fact, not textual criticism, per this project's own
+# standing doctrine note. PLACE: none -- these are poems of mourning, not
+# narrated action at a place; GENERAL-kind claims none.
+
+[[event]]
+id = "lam_the_citys_desolation"
+label = "How doth the city sit solitary, that was full of people!"
+kind = "general"
+verses = ["LAM.1.1-22"]
+atlas_section = "Lamentations pericope (this project's own sectioning, CC0 -- no external PD source claimed): Lamentations 1, the first acrostic poem -- Jerusalem pictured as a widowed, solitary city, her own priests and elders perished seeking bread, closing on a plea for the Lord to see her affliction and requite her enemies."
+ref_note = "GENERAL-kind: poetry, no date of its own claimed, per this file's own header note."
+
+[[event]]
+id = "lam_the_lords_anger_against_zion"
+label = "How hath the Lord covered the daughter of Zion with a cloud in his anger!"
+kind = "general"
+verses = ["LAM.2.1-22"]
+atlas_section = "Lamentations pericope (this project's own sectioning, CC0): Lamentations 2, the second acrostic poem -- the Lord's own anger described as the direct cause of Zion's ruin, the temple and feasts forgotten, the horror of famine even among children, closing on 'those that I have swaddled and brought up hath mine enemy consumed.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "lam_the_man_who_hath_seen_affliction"
+label = "I am the man that hath seen affliction by the rod of his wrath"
+kind = "general"
+verses = ["LAM.3.1-66"]
+atlas_section = "Lamentations pericope (this project's own sectioning, CC0): Lamentations 3, the book's own central, longest poem (66 verses, three per Hebrew letter) -- personal affliction giving way to the book's own turning point, 'it is of the Lord's mercies that we are not consumed, because his compassions fail not. They are new every morning: great is thy faithfulness' (3:22-23), closing on a prayer for the Lord's own vengeance on his persecutors."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "lam_the_gold_become_dim"
+label = "How is the gold become dim! how is the most fine gold changed!"
+kind = "general"
+verses = ["LAM.4.1-22"]
+atlas_section = "Lamentations pericope (this project's own sectioning, CC0): Lamentations 4, the fourth acrostic poem -- the siege's own horrors remembered in vivid detail, the fall of 'the anointed of the Lord' (the king, taken in their pits), and a closing word to the daughter of Edom, whose own punishment is yet to come."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "lam_closing_prayer_for_restoration"
+label = "Remember, O Lord, what is come upon us: consider, and behold our reproach"
+kind = "general"
+verses = ["LAM.5.1-22"]
+atlas_section = "Lamentations pericope (this project's own sectioning, CC0): Lamentations 5, the book's own closing prayer -- orphans and widows, an inheritance turned to strangers, and a plea for the Lord to turn his people back to himself and renew their days as of old, ending in the honest tension of unanswered lament: 'thou hast utterly rejected us; thou art very wroth against us.'"
+ref_note = "GENERAL-kind, per this file's own header note."
