@@ -110,7 +110,7 @@ GLOSSARY (owner-calibrated, 2026-08-22):
 ///   curated, re-pointable; the hash beneath never lies.
 /// - EXPLORATIONS: serialized walks, content-addressed like everything
 ///   else — shareable, commentable, never compiled truth.
-pub struct Pid { pub kind: PositionKindTag, pub hash: Multihash }
+pub struct Pid { pub kind: PositionKind, pub hash: Multihash }  // SWEEP F16: one kind vocabulary
 pub struct Tombstone { pub retired: Pid, pub superseded_by: Option<Pid>,
                        pub reason: ProvenanceId }
 pub trait ContentAddressed {
@@ -312,20 +312,28 @@ pub struct LocusSet<C: CorpusTag>(BTreeSet<Locus<C>>);
 /// compiler forces every match site to acknowledge (P5: a new node kind
 /// is a record + compiler rule + display rule — the exhaustive match IS
 /// the checklist).
-pub enum NodeKind { Book, Chapter, Verse, Container, Event, Narrative,
+pub enum NodeKind { TextUnit, Container, Event, Narrative,
                     Place, Person, Anchor, Era, Polity, CatechismItem,
                     Source, Translation }
+// SWEEP F11: Book/Chapter/Verse were Bible-shaped kinds; the structural
+// kind is TextUnit, whose LEVEL (book/chapter/verse -- or Concord's
+// part/article/paragraph) is known to its corpus scheme. Kind-tags and
+// pids derive from (corpus, ref); nothing Bible-specific in the enum.
 
 pub struct Node { pub id: AnyNodeId, pub payload: NodePayload }
 
 pub enum NodePayload {
-    TextUnit { corpus: CorpusId, layer: TranslationId, text: String },
-        // the ONLY store of ANY corpus text (P1), keyed by layer: a KJV
-        // verse is the Bible corpus's canonical-layer unit at its
-        // VerseRef; another translation's rendering of the same VerseRef
-        // is another unit, same skeleton position, different layer.
-        // Per-layer fidelity laws (each translation's adapter proves
-        // bijection + reconstruction against ITS source).
+    TextUnit { corpus: CorpusId, renderings: LayerMap<String> },
+        // ONE node per SKELETON position (the thing loci address and
+        // reading-order chains -- so a verse chain is verse, verse,
+        // verse: homogeneous, the owner's chain-consistency law), with
+        // ALL layer renderings as payload (canonical layer required,
+        // others optional). SWEEP F1: the previous shape (one node per
+        // (ref, layer)) contradicted layer-neutral addressing -- a locus
+        // names a skeleton position, so the node must BE the skeleton
+        // position. Per-layer fidelity laws unchanged (each layer's
+        // adapter proves bijection + reconstruction against ITS source,
+        // over these nodes' renderings).
     Translation { label: Label },                // explorable: provenance, coverage, license
     Container{ corpus: CorpusId, title: DecisiveTitle, content: ErasedLocusSet, provenance: SourceRef },
         // typed as Container<C>/LocusSet<C> in the authoring/compiler
@@ -335,7 +343,7 @@ pub enum NodePayload {
     Event    { label: Label },                   // dates/places live on EDGES
     Narrative{ label: Label },                   // membership lives on succession edges
     Place    { canonical: Label },               // names live on `named` edges
-    Anchor   { year: Year, citation: Citation }, // explorable "why this date?"
+    Anchor   { at: TimePoint, citation: Citation }, // explorable "why this date?" -- day-capable (Passion week is daily)
     // ... Person, Era, Polity, CatechismItem, Source, Book, Chapter
 }
 
@@ -438,8 +446,12 @@ relations! {
                               labels: "confesses" / "confessed-in" }
     directed  Succession    { row: Succession,    subject: EventId,        object: EventId,
                               labels: "follows-in" / "precedes-in",  tagged_by: NarrativeId }
-    directed  DatedBy       { row: DatedBy,       subject: EventId,        object: AnchorId,
+    directed  DatedBy       { row: DatedBy,       subject: EventId,        object: ChronoTarget,
                               labels: "dated-by" / "dates" }
+        // SWEEP F5: the placement's target is heterogeneous --
+        // ChronoTarget = Anchor(AnchorId) | Prior(EventId) | Era(EraId)
+        // matching DatePlacement's forms; Anchor's "dates" frontier
+        // remains the useful inverse
     directed  LocatedAt     { row: LocatedAt,     subject: EventId,        object: PlaceId,
                               labels: "located-at" / "site-of" }
     directed  Named         { row: Named,         subject: PlaceId,        object: Alias,
@@ -451,9 +463,10 @@ relations! {
                               labels: "cites" / "cited-by" }
     directed  Quotes        { row: Quotes,        subject: TextLocus,      object: BibleLocusRange,
                               labels: "quotes" / "quoted-by" }
-    // ---- edge-position relations (edges are positions; §3 Grounds) ----
-    directed  GroundedIn    { row: GroundRow,     subject: EdgeId,         object: GroundTarget,
-                              labels: "grounded-in" / "grounds-for" }
+    // ---- edge-position relations (edges are positions; §3 Justification) ----
+    directed  JustifiedBy   { row: JustifyRow,    subject: EdgeId,         object: GroundTarget,
+                              labels: "justified-by" / "justifies" }
+        // rows LOWERED from each edge's justification.grounds at compile
     directed  DerivedFrom   { row: DerivationRow, subject: EdgeId,         object: EdgeId,
                               labels: "derived-from" / "derives" }
     // ---- authored, symmetric ----
@@ -471,6 +484,11 @@ relations! {
 // of a relation. endpoints (Edge -> its two nodes) needs no manifest
 // row either: it is structural, read off any row directly.
 
+/// SWEEP F10: a SET-valued row (Contains holds a LocusSet) expands to
+/// one ENTRY per element; the EdgeId is the ENTRY's content hash
+/// (relation + subject pid + object pid + discriminant) -- deterministic
+/// under content addressing, so expansion is stable across recompiles
+/// and the bijection witness is per-connection, as required.
 /// Built, never authored: both adjacency maps from one row table.
 pub struct BiIndex { /* fwd: subject → [(EdgeId, object)], inv: object → [(EdgeId, subject)] */ }
 impl BiIndex { pub fn build<R: Relation>(rows: &Table<R::Row>) -> BiIndex { /* one pass */ } }
@@ -506,33 +524,50 @@ pub struct Graph {
 /// EdgeId can take focus, presents (Entry = the row; Card = the
 /// justification view), and has a frontier of its own —
 ///   endpoints    Edge → its two nodes            (structural, derived)
-///   grounded-in  Edge → loci / anchors / sources (from Grounds)
+///   justified-by Edge → loci / anchors / sources (from the
+///                justification's grounds)
 ///   derived-from derived Edge → authored Edges   (compiler-emitted)
-/// with duals grounds-for / derives — so a VERSE's frontier includes
-/// "claims grounded in this verse": Scripture justifying the structure,
+/// with duals justifies / derives — so a VERSE's frontier includes
+/// "claims this verse justifies": Scripture justifying the structure,
 /// explorable from either end.
 pub enum Position { Node(AnyNodeId), Edge(EdgeId) }   // Holdings = BTreeSet<Position>
 
-/// GROUNDS ≠ PROVENANCE: provenance says WHO asserts (source+locator);
-/// grounds say WHAT JUSTIFIES the claim's content — typically Scripture.
-/// Authored rows: grounds optional-but-encouraged (populated
-/// progressively through migration). Derived rows: derivation is
-/// ALWAYS present, computed — a derived edge that cannot say what it
-/// derives from is unrepresentable.
-pub struct Grounds(Vec<Ground>);
+/// JUSTIFICATION ≠ PROVENANCE (owner, 2026-08-22: "a justification has
+/// a set of grounds... use justification everywhere that we have
+/// grounds"): provenance says WHO asserts (source+locator);
+/// JUSTIFICATION says WHY the claim stands — optional prose plus the
+/// set of grounds it rests on, typically Scripture. ONE carrier
+/// everywhere a claim carries its why; empty-prose justification
+/// degenerates to bare grounds, so nothing is lost and the "why?"
+/// frontier renders uniformly. Authored rows: justification
+/// optional-but-encouraged (populated progressively). Derived rows:
+/// derivation is NOT justification — it is mechanical, ALWAYS present,
+/// and carried by the compiler-emitted DerivedFrom relation (F6);
+/// justification remains the human-reasoned why.
+pub struct Justification { pub text: Option<String>, pub grounds: BTreeSet<Ground> }
 pub enum Ground {
     Scripture(BibleLocusRange),   // the owner's example: sequence/date justified by the text
     Anchor(AnchorId),             // chronology grounds
-    DerivedFrom(Vec<EdgeId>),     // derived edges: the exact rows the compiler used
     Source(SourceId),             // e.g., a Robertson section for a harmony ordering
 }
+// SWEEP F6: Ground::DerivedFrom removed -- derivation is NEVER authored;
+// it exists only as the compiler-emitted DerivedFrom relation on derived
+// edges. Authored grounds LOWER into grounded-in relation rows at
+// compile time (one representation, two views -- the bijection rule).
+
+/// SWEEP F7/F8/F9 -- previously used, never defined:
+pub struct LocusRange<C: CorpusTag> { pub from: Locus<C>, pub to: Locus<C> } // from <= to, same scheme
+pub type BibleLocusRange = LocusRange<BibleTag>;
+pub enum GroundTarget { Scripture(BibleLocusRange), Anchor(AnchorId), Source(SourceId) }
+pub struct ExplStep { pub chosen: EdgeId }   // a hop is a chosen edge; the
+                                             // record is a path of edge pids
 
 pub trait EdgeData {
     fn id(&self) -> EdgeId;
     fn kind(&self) -> EdgeKind;
     fn endpoints(&self) -> (AnyNodeId, AnyNodeId);
     fn provenance(&self) -> ProvenanceId;
-    fn grounds(&self) -> &Grounds;
+    fn justification(&self) -> &Justification;
 }
 
 /// A typed authored edge; the pattern for all of them (rows now carry
@@ -542,7 +577,7 @@ pub struct Contains<C: CorpusTag> {
     pub container: ContainerId<C>,
     pub content:   LocusSet<C>,
     pub provenance: ProvenanceId,
-    pub grounds:   Grounds,
+    pub justification: Justification,
 }
 
 /// LAW (attestation law, nee witness canon): parallel accounts are
@@ -651,12 +686,11 @@ pub struct Duration { pub years: i32, pub months: u8, pub days: u8 }
 /// content-addressed, basis and justification are IN THE HASH —
 /// changing the justification mints a new pid (a new version of the
 /// claim, with supersession), exactly as the owner specified.
-pub enum PlacementBasis {
-    Textual,                               // the text itself fixes the time
-    Traditional { justification: Option<Justification> },
-                                           // confessionally acceptable tradition
-}
-pub struct Justification { pub text: String, pub grounds: Grounds }
+pub enum PlacementBasis { Textual, Traditional }
+    // the WHY of a Traditional placement lives in the row's own
+    // justification (one carrier, J1) — still inside the hash
+// (Justification defined once in §3 — the single carrier; the
+// placement-basis prose lives in the ROW's justification)
 
 pub struct DatedBy { pub event: EventId, pub placement: DatePlacement,
                      pub basis: PlacementBasis, pub provenance: ProvenanceId }
@@ -668,6 +702,10 @@ pub struct DatedBy { pub event: EventId, pub placement: DatePlacement,
 /// basis is hashed into the claim's identity, and the properties (E1-E4
 /// class) verify the whole order against the anchor table and the
 /// declared tradition:
+pub struct ResolvedPlacement { pub date: ResolvedDate, pub seq: SeqKey,
+                               pub basis: PlacementBasis }
+    // SeqKey: the traditional-sequence position within equal TimePoints,
+    // resolved from SequenceAfter chains (total by construction)
 pub fn temporal_order(a: &ResolvedPlacement, b: &ResolvedPlacement) -> Ordering;
 
 pub enum TimeNeighbor {
@@ -708,7 +746,8 @@ pub enum Assertion {
     Placement(DatedByAssertion),
     Mention(MentionAssertion),
     CrossRef(CrossRefAssertion),
-    // ... Place, Named, CatechismLink, Era, Polity, Person, Merge, Exemption
+    // ... Place, Named, CatechismLink, Confession, Correspondence,
+    //     Era, Polity, Person, Merge, Exemption
 }
 
 /// LAW (P3, owner: "the data structure itself should prove this"): each
@@ -790,15 +829,16 @@ singleton.
 ```rust
 /// Holdings: the exploration state. Set semantics — arrive at a node
 /// once (edges never dedup; they live in pages with EdgeIds).
-pub struct Holdings(BTreeSet<AnyNodeId>);
+pub struct Holdings(BTreeSet<Position>);   // SWEEP F2: positions, not node ids --
+                                           // edges are positions too (justification walks)
 
 impl Holdings {
     /// return: hold one thing, frontier not yet consulted.
-    pub fn focus(n: AnyNodeId) -> Holdings;
+    pub fn focus(p: Position) -> Holdings;
 
     /// bind, general form: follow-and-pool a continuation at every
     /// held position.
-    pub fn bind(&self, f: impl Fn(AnyNodeId) -> Holdings) -> Holdings;
+    pub fn bind(&self, f: impl Fn(Position) -> Holdings) -> Holdings;
 
     /// bind at one generating arrow: union, over held positions, of the
     /// TOTAL frontier of kind k — i.e., the trait's edges(k) with all
@@ -836,7 +876,8 @@ pub struct GraphVersion(Hash);        // one stamp invalidates all caches
 /// per-kind order (deterministic graph ⇒ deterministic pages).
 
 /// The reader is not special — it is this query:
-pub fn reading_window(g: &Graph, from: TextLocus, n: u16, dir: Direction) -> Window; // corpus from the locus
+pub fn reading_window(g: &Graph, from: TextLocus, n: u16, dir: ReadDir) -> Window; // corpus from the locus
+pub enum ReadDir { Onward, Backward }  // SWEEP F3: renamed -- Direction now names edge duals
 /// LAW: for any partition into windows, concatenation is invariant
 /// (lazy loading can never change what the Bible says).
 ```
@@ -877,6 +918,13 @@ pub struct SectionSpec {
     pub order: SectionOrder,        // votes-ranked | chain | canonical | resolved-date
 }
 ```
+
+CHAIN HOMOGENEITY (owner, 2026-08-22: traversal must never be "verse
+verse verse [cluster of passages] verse"): a frontier SECTION renders
+entries of ONE kind-shape -- guaranteed by construction, since a
+SectionSpec is per edge kind and an edge kind has typed endpoints; and
+the reading chain is homogeneous skeleton units (F1). No surface ever
+interleaves unlike things in one sequence.
 
 A frontier renderer is not always a list: map pins display a SiteOf
 frontier within a time window; the mini-reader's text flow displays a
@@ -963,7 +1011,7 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
   justification mints a new pid).
 - A malformed narrative chain (chains are stored as lists, not stitched pointers).
 - A second copy of scripture (Verse payload is the only text; views query it).
-- An event with a year literal (DatePlacement is the only way to be dated).
+- An event with a date literal (DatePlacement is the only way to be dated).
 - A cross-kind id confusion (NodeId<K> phantom types).
 - A fact without provenance (`Asserted<T>` is the only ingestion currency).
 - A silent exemption (typed kind + reason + subject, enumerable).

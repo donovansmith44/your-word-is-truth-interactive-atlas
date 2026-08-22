@@ -99,13 +99,13 @@ by the UI machinery.
 | confesses | Concord locus → Scripture range | authored | doctrinal accord (normed norm confessing the norming norm); catechism-link migrates into this family |
 | succession(n) | Event ↔ Event, tagged by Narrative n | authored | the doubly-linked lists; the ONLY fine-grained sequence truth |
 | reading-order | TextSpan ↔ TextSpan | derived (canon) | canon sequence at every granularity; the reader's spine |
-| temporal-adjacency | Event ↔ Event | derived (anchors) | ONLY where resolved dates actually differ; never a tiebreak |
+| temporal-adjacency | Event ↔ Event | derived (anchors + declared tradition) | TOTAL order: TimePoint precision, then traditional sequence; basis + optional justification hashed into the claim |
 | dated-by | Event → Anchor (binding / offset / sequence / era form) | authored | single-feed chronology; salvages parked HOTFIX-7 resolution design |
 | located-at | Event → Place | authored | |
 | mentions | TextSpan locus → Place / Person | imported | Theographic verse refs today; refinable to word spans later |
 | cross-ref | locus → locus | imported | votes-ranked; verse-level today, loci by design |
 | catechism-link | locus ↔ CatechismItem | authored | |
-| member-of | TextSpan → Event / Container | derived | inverse of contains/attests |
+| member-of | TextUnit → Event / Container | (inverse reading) | the inverse projection of contains/attests — same rows, not a separate index |
 | parallel | Container ↔ Container | derived | via co-attestation of one Event |
 | named | Place → alias set | authored | E3 KJV naming |
 
