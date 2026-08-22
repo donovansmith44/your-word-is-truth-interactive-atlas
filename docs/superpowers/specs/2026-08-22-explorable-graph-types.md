@@ -10,9 +10,33 @@ field names and exact widths are illustrative; the SHAPES are the design.
 ## 0. Conceptual spine (Haskell)
 
 ```haskell
--- Exploration is bind over heterogeneous nodes (BibleGraph.hs, kept):
-class Explorable e where
-  explore :: e a -> (a -> [e b]) -> [e b]
+-- Exploration is PROPER monadic bind. The monad ranges over exploration
+-- STATE (holdings: a set of focused positions), not over nodes — the
+-- multiplicity lives INSIDE the monad, which is what makes the bind
+-- lawful. (BibleGraph.hs's `a -> [e b]` was an encoding workaround for
+-- an Ord constraint — its own comment says so — and is SUPERSEDED: it
+-- put multiplicity outside e and broke the monad shape. Debate settled
+-- 2026-08-22.)
+newtype Explore a = Explore (Set (Position, a))   -- holdings with payloads
+
+instance Monad Explore where
+  return a = Explore {(here, a)}                  -- hold ONE thing, frontier
+                                                  -- not yet consulted
+  m >>= f  = unions (f applied at every held position of m)
+                                                  -- follow-and-pool
+
+-- Exploration reads the graph:      type Exploration = ReaderT Graph Explore
+-- The graph supplies the generating Kleisli arrows, one per edge kind:
+--   step :: EdgeKind -> NodeId -> Exploration NodeId
+-- Multi-hop questions are Kleisli composition:
+--   step Cites >=> step CatechismLink
+-- Dedup is two-layered: HOLDINGS are a Set (you arrive at a node once);
+-- EDGES never dedup (every distinct connection stays visible, each with
+-- its own EdgeId).
+-- Laws are property tests on the query layer: left identity = the
+-- popover's semantics; right identity = no phantom hops; associativity =
+-- incremental clicking agrees with the one-shot deep query, so lazy
+-- pages are windows over a lawful whole.
 
 -- The graph is a family of typed edge relations over typed nodes:
 --   edges  :: EdgeKind k => Node -> [Target k]
