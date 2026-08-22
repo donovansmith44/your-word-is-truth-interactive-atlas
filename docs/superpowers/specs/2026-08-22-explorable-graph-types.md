@@ -160,6 +160,26 @@ pub trait CorpusScheme {
 /// Concord later (German/Latin/English editions as layers) for free.
 pub struct TranslationId(Interned);       // "kjv" = the Bible corpus's canonical layer
 
+/// LAW (owner, 2026-08-22): "we are gonna need to be able to make
+/// correspondences between any translation corpora of the same type
+/// (particularly between bible translations)." Three levels, one free:
+/// - UNIT-LEVEL correspondence between layers is FREE: layers share the
+///   skeleton, so the same VerseRef IS the correspondence.
+/// - SPAN-LEVEL correspondence (which KJV words render which words of
+///   another translation) is the symmetric Corresponds<C> relation --
+///   both ends layer-tagged spans of the SAME corpus family, enforced
+///   by the type parameter (a Bible-Concord pairing cannot inhabit it;
+///   cross-TYPE links go through quotes/cites/confesses). Rows may be
+///   curated or emitted as derived by alignment analyses; provenance
+///   records the deriving process; symmetric semantics, one stored row.
+/// - VERSIFICATION: a translation whose native versification deviates
+///   from the canonical skeleton (KJV versification) is NORMALIZED AT
+///   THE ADAPTER BOUNDARY -- internally everything is canonical-skeleton
+///   addressed -- and the native/canonical map is PRESERVED as
+///   correspondence data (explorable, auditable, fail-loud where
+///   unmappable). The layer model survives deviation; nothing
+///   downstream ever sees two skeletons.
+
 /// Closed enum today; a new corpus is a deliberate variant (same
 /// philosophy as NodeKind — every match site acknowledges it).
 /// Addresses are LAYER-NEUTRAL: a TextRef names skeleton position, not
@@ -439,6 +459,10 @@ relations! {
     // ---- authored, symmetric ----
     symmetric CatechismLink { row: CatechismLink, end: TextLocus,          label: "catechism-link" }
     // ---- derived, symmetric ----
+    symmetric Corresponds<C>    { end: Locus<C>,  label: "corresponds-to" }
+        // span-level alignment between layers of one corpus family;
+        // same-type-ness enforced by C; versification maps land here;
+        // authored OR analysis-derived
     symmetric Parallel          { derived, end: ContainerId,  label: "parallel" }
     symmetric TemporalAdjacency { derived, end: EventId,      label: "temporal-adjacency" }
 }
@@ -917,6 +941,12 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
   explorable references).
 - A sub-verse span outliving its translation (TokenSpan carries its
   layer; a span cannot be read against another layer's tokenization).
+- A cross-skeleton pairing smuggled through Corresponds (both ends share
+  the corpus parameter; Bible-Concord links exist only as
+  quotes/cites/confesses).
+- A second skeleton in the interior (deviant versification is normalized
+  at the adapter with the map preserved as explorable correspondence
+  data).
 - A nested address (recursion is relational — flat loci, edges carry the
   structure).
 - An inverse view that disagrees with its forward view (both are
