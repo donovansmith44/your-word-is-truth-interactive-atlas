@@ -24,6 +24,7 @@ file is the detailed version of record.
 | Luther's Small Catechism, English (1921 Bente–Dau translation, *Triglot Concordia / Concordia Triglotta*) | Public domain (published 1921, USA) | Redistributed — compiled into `catechism.json`; provenance and verification below |
 | Catechism verse mapping ([brain-fuel/catechism](https://github.com/brain-fuel/catechism)) | No license file — used by the project owner's explicit direction (see "Batch F2" below) | Redistributed — canonicalized and compiled into `catechism.json` (`CatechismItem.questions`) |
 | A.T. Robertson, *A Harmony of the Gospels for Students of the Life of Christ* (1922) | Public domain (published 1922, USA; copyright notice reads "COPYRIGHT, 1922, BY HARPER & BROTHERS") | Not redistributed as text — section titles/numbers and parallel-account groupings consulted as PROVENANCE for our own curated `event-witnesses.toml`/`events-extra.toml` fields (`robertson_section`, `ref_note`); every displayed event title/date/verse citation is independently authored (CC0) or Theographic-credited, per the mapping below |
+| William Day Crockett, *A Harmony of the Books of Samuel, Kings and Chronicles* (1897) | Public domain (published 1897, USA; title page reads "Copyright, 1897, William Day Crockett") | Not redistributed as text — section numbers/titles and parallel-account groupings (Samuel/Kings/Chronicles, plus the book's own Appendix of cross-references to Genesis, Joshua, Ruth, Ezra, Nehemiah, Psalms, Isaiah, Jeremiah, Matthew, and Luke) consulted as PROVENANCE for our own curated `event-witnesses.toml` witness rows (Batch W2); every displayed event title/date/verse citation is independently authored (CC0), Theographic-credited, or the compiled KJV text itself, per "Crockett's Harmony of Samuel, Kings, and Chronicles" below |
 
 ## Theographic CC BY-SA 4.0 — controller ruling
 
@@ -354,6 +355,102 @@ Robertson's own section groupings were consulted for STRUCTURE (which
 passages belong together, in what order), never trusted as a substitute for
 reading the actual cited verses ourselves.
 
+## Crockett's Harmony of Samuel, Kings, and Chronicles — public domain (Batch W2)
+
+Batch W2 ("whole-Bible titled verse containers, second run — the historical
+books") required the owner's own named PRIMARY source for the
+Samuel/Kings/Chronicles parallel-witness columns (req 1b, "the parallels
+must be there in the Bible wide thing too... I'd expect to see parallels
+between kings and chronicles"): William Day Crockett, *A Harmony of the
+Books of Samuel, Kings and Chronicles: The Books of the Kings of Judah and
+Israel* (Fleming H. Revell Company, New York/Chicago/Toronto/London/
+Edinburgh, 1897), with an introduction by Willis Judson Beecher.
+
+**Source and provenance.** Public domain (published 1897, USA — the work's
+own title page reads "Copyright, 1897, William Day Crockett," confirmed
+directly, see verification below). Obtained via a real HTML transcription
+hosted at swartzentrover.com/cotor (the Analytical Outline,
+`.../christ/Crockett/HSKC_AO.htm`, and the Appendix of cross-references to
+other books, `.../christ/Crockett/HSKC_App.htm`) — fetched live (curl, via
+the Bash tool) rather than redistributed here, since only the section
+STRUCTURE (numbers, titles, which Samuel/Kings/Chronicles — and other —
+passages Crockett groups together) was needed, never the book's own prose;
+the site's own transcription additionally quotes the actual Bible text
+using the World English Bible (a different, unrelated modern public-domain
+translation, its own copyright page confirms) for readability, but that
+quoted text was never consulted or trusted — every verse citation used by
+this app was independently read against the compiled KJV text instead (see
+below).
+
+**Verification (per the batch brief's own "verify it IS Crockett,
+spot-check famous parallels" instruction).** Two INDEPENDENT sources were
+cross-checked, not trusted from a single mirror: (1) the swartzentrover.com
+HTML transcription described above, and (2) a real Google Books scan of a
+1951 Baker Book House photolithoprint of the same 1897 work (12 pages,
+covering sections 41-62 and 115-121, hosted at a professor's own course
+page, `people.bethel.edu/~pferris/ot102/harmonysamuelchron-crockett.pdf` —
+an image-only PDF with no text layer, read directly as page images via
+Python/PyMuPDF rendering, since it predates OCR). The two sources matched
+WORD FOR WORD on real, substantial passages: section 41 ("David chosen and
+anointed as Saul's Successor by Samuel," 1 Samuel 16:1-13) through section
+51, and section 115 through section 121 ("The Death of David," matching
+2 Samuel 5:4-5 / 1 Kings 2:10-11 / 1 Chronicles 3:4b / 1 Chronicles
+29:26-30 across FOUR parallel citation columns) — including the scanned
+edition's own visible parallel-column layout (e.g. section 46(3), "To the
+Cave of Adullam," showing "1 Samuel 22:1, 2" in the main column and
+"1 Chronicles 12:16-18" in a second, right-hand column), confirming the
+HTML transcription's own structure is a faithful rendering of the real
+1897 harmony table, not a paraphrase or a different work entirely. The
+title page (its own separate page on the same site,
+`.../christ/Crockett/HSKC_TP.htm`) independently confirms authorship,
+title, publisher, and the 1897 copyright date.
+
+**What was used, and how.** Crockett's SECTION NUMBERS and his own grouping
+of which Samuel/Kings/Chronicles (and other) passages narrate the same
+event directly grounded this batch's own curated `event-witnesses.toml`
+witness rows (which book+verse-range pairs are PARALLEL WITNESSES of the
+same event) — cited in each row's own `ref_note` as "Crockett (1897)
+section NNN," since (unlike Robertson's own `robertson_section` field) no
+dedicated provenance field was added for this run: overloading
+`Event::robertson_section`/`EventWitness::robertson_section` (a field
+explicitly named and documented for Robertson's own 1922 Gospel Harmony)
+for an unrelated 1897 Old Testament harmony would be a false attribution,
+so `ref_note`'s own general-purpose citation field was used instead, the
+same disclosure convention `atlas_section`/`acts_section` already
+established for non-Robertson provenance. Named cases this run drew
+DIRECTLY from Crockett's own Appendix table ("Table of Passages from
+various Books of the Bible parallel with certain Sections of the
+Harmony"): 2 Samuel 22 ↔ Psalm 18 (section 93); 1 Chronicles 16 ↔ Psalms
+96/105/106 (section 94); 2 Kings 18-20 ↔ Isaiah 36-39 (sections 175-176);
+2 Kings 24-25 ↔ Jeremiah 52 (sections 182-183, Appendix section VIII). The
+owner's own acceptance case — the temple dedication expanding to
+per-account passages from EACH account, the Crucifixion pattern — is
+Crockett's own section 133 (1 Kings 8 ↔ 2 Chronicles 5-7). Ezra 2 ↔
+Nehemiah 7 (also a req 1b named case) has NO Crockett coverage at all —
+Crockett's own scope is explicitly Samuel/Kings/Chronicles plus his own
+named cross-references, never Ezra or Nehemiah's own narrative content —
+so that one pairing was hand-verified directly against the compiled KJV
+text instead, disclosed as such in `ezra.toml`/`nehemiah.toml`'s own
+header comments.
+
+One CITATION-INTEGRITY CATCH, disclosed (per the standing rule that the
+compiled KJV text is the canon of witnesses, not any secondary harmony):
+Crockett's own Appendix cites "Isaiah 39:1-9" for the Babylonian-embassy
+parallel (section 175(5)) — the compiled KJV text itself shows Isaiah 39
+has only 8 verses. This app's own witness row cites the real text (Isaiah
+39:1-8), corrected from the secondary source's own apparent transcription
+slip, disclosed in `2kings.toml`'s own header comment and the witness
+row's own `ref_note`.
+
+Every DISPLAYED event title in this app is our own phrasing (CC0), not
+Crockett's own period wording. Every verse citation in
+`event-witnesses.toml`'s own "1 Chronicles/2 Chronicles <-> Samuel/Kings"
+sections and the named cross-book cases was independently read against the
+compiled KJV text (`data/compiled/verses-kjv.json`) before being written —
+Crockett's own section groupings were consulted for STRUCTURE (which
+passages belong together), never trusted as a substitute for reading the
+actual cited verses ourselves.
+
 ## Per-artifact label (`data/compiled/*`)
 
 Compiled outputs are derived works: an artifact built from a
@@ -365,7 +462,7 @@ even though the file itself is generated, not hand-authored.
 | `canon.json` | Public domain (KJV) | Book/chapter structure derived from parsing the KJV text |
 | `verses-kjv.json` | Public domain (KJV) | |
 | `places.json` | CC-BY 4.0 (OpenBible geocoding) + CC BY-SA 4.0 (Theographic, for places synthesized only from Theographic's `places.json`) | Merged; the Theographic-derived subset carries share-alike |
-| `events.json` | CC BY-SA 4.0 (Theographic `events.json`) + CC0 (`data/curated/events-extra.toml` + `data/curated/event-witnesses.toml` + `data/curated/acts-sections.toml` + `data/curated/atlas-sections.toml` + `data/curated/passages/*.toml`, ours) | Merged; Batch T's own `witnesses`/`robertson_section`/`order_key` fields are CC0 curated additions, GROUNDED IN (not copied from) the public-domain Robertson Harmony structure — see "Robertson's Harmony of the Gospels" above. Batch T2's own `acts_section` field (`data/curated/acts-sections.toml`) is a separate CC0 curated addition for Acts 1-12 sectioning, honestly NOT grounded in any external public-domain source (see that file's own header comment) — its natural-narrative-unit boundaries come from Theographic's own pre-existing event data, already covered by the CC BY-SA 4.0 credit in this same row. Batch W1's own `atlas_section` field is the general, whole-Bible sibling of `acts_section` — same CC0 status, same "no external PD source claimed" honesty, used two ways: enriching a pre-existing bare Theographic event's own heading-worthiness (`data/curated/atlas-sections.toml`, same "boundaries come from Theographic's own pre-existing event data" disclosure as `acts_section`), or a brand-new container authored directly (`data/curated/passages/*.toml`, one file per book — Genesis, Exodus, Leviticus, Numbers, Deuteronomy, Joshua, Judges, Ruth as of Batch W1 — title/verse-range/date/place all CC0 ours, citation-verified against the compiled KJV text). |
+| `events.json` | CC BY-SA 4.0 (Theographic `events.json`) + CC0 (`data/curated/events-extra.toml` + `data/curated/event-witnesses.toml` + `data/curated/acts-sections.toml` + `data/curated/atlas-sections.toml` + `data/curated/passages/*.toml`, ours) | Merged; Batch T's own `witnesses`/`robertson_section`/`order_key` fields are CC0 curated additions, GROUNDED IN (not copied from) the public-domain Robertson Harmony structure — see "Robertson's Harmony of the Gospels" above. Batch T2's own `acts_section` field (`data/curated/acts-sections.toml`) is a separate CC0 curated addition for Acts 1-12 sectioning, honestly NOT grounded in any external public-domain source (see that file's own header comment) — its natural-narrative-unit boundaries come from Theographic's own pre-existing event data, already covered by the CC BY-SA 4.0 credit in this same row. Batch W1's own `atlas_section` field is the general, whole-Bible sibling of `acts_section` — same CC0 status, same "no external PD source claimed" honesty, used two ways: enriching a pre-existing bare Theographic event's own heading-worthiness (`data/curated/atlas-sections.toml`, same "boundaries come from Theographic's own pre-existing event data" disclosure as `acts_section`), or a brand-new container authored directly (`data/curated/passages/*.toml`, one file per book — Genesis, Exodus, Leviticus, Numbers, Deuteronomy, Joshua, Judges, Ruth as of Batch W1; 1/2 Samuel, 1/2 Kings, 1/2 Chronicles, Ezra, Nehemiah, Esther added Batch W2 — title/verse-range/date/place all CC0 ours, citation-verified against the compiled KJV text). Batch W2's own `event-witnesses.toml` additions (the "1 Chronicles/2 Chronicles <-> Samuel/Kings" sections and the Ezra 2 ↔ Nehemiah 7 / 2 Samuel 22 ↔ Psalm 18 / 1 Chronicles 16 ↔ Psalms 96,105,106 / 2 Kings 18-20 ↔ Isaiah 36-39 / 2 Kings 24-25 ↔ Jeremiah 52 named cases) are CC0 curated additions GROUNDED IN (not copied from) the public-domain Crockett Harmony structure where a Crockett section is cited — see "Crockett's Harmony of Samuel, Kings, and Chronicles" above; the Ezra/Nehemiah pairing is hand-verified against the compiled KJV text directly, disclosed as outside Crockett's own scope. |
 | `narratives.json` | CC0 (ours) | `data/curated/narratives/*.toml` |
 | `eras.json` | CC0 (ours) | `data/curated/eras.toml` |
 | `books-meta.json` | CC0 (ours) | `data/curated/books.toml` |
