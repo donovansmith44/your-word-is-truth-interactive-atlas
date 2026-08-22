@@ -1,0 +1,142 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Hosea, in the SAME `[[event]]` schema every other `passages/*.toml` file
+# uses. KIND POLICY: see obadiah.toml's own header note. Chapters 1-3 are a
+# real NARRATED sign-act (Hosea's own marriage as a living parable of
+# Israel's own unfaithfulness) -- genuinely event-like in genre -- but no
+# place is ever named for where it took place (unlike Jonah's Joppa/
+# Nineveh or Amos's Beth-el), so the brief's own "EVENT-kind only where...
+# defensible place mapping exist" condition is not met; GENERAL-kind
+# throughout this whole book, undated and place-less, per this file's own
+# header note.
+#
+# RECONCILIATION: one pre-existing bare Theographic event touches this book
+# -- `theo-206` ("Prophecies of Hosea," all 197 verses, -785). LAYER-0, not
+# heading-worthy today; every container below stays well under the 0.8
+# jaccard sweep floor against it (largest, 23/197 = 0.117).
+#
+# GRANULARITY: one container per chapter throughout -- chapters 1-3 are
+# each a distinct, well-marked sign-act scene (Gomer and the three
+# symbolically-named children; the extended estranged-wife allegory; the
+# second sign-act of buying back an adulteress); chapters 4-14 are a
+# sustained oracle without the sharper formal markers (a repeated "burden
+# of X" or "for three transgressions" refrain) this slice's own Isaiah/
+# Amos containers split finer on -- each chapter is nonetheless its own
+# recognizable movement (priestly corruption, 4; princely alliance with
+# Assyria, 5; the call to return, 6; foreign conspiracies, 7; the calf
+# idol, 8; Gilgal's own wickedness and exile, 9; the empty vine, 10; the
+# Lord's own parental love, 11; Jacob's own history, 12; the lion of
+# judgment and ransom from death, 13; the closing call to return and be
+# healed, 14) -- chapter-level division here is the text's own real
+# structure, not an arbitrary chunk imposed on a formally undivided oracle.
+
+[[event]]
+id = "hos_gomer_and_the_three_children"
+label = "The word of the Lord that came unto Hosea, the son of Beeri, in the days of Uzziah, Jotham, Ahaz, and Hezekiah, kings of Judah, and in the days of Jeroboam the son of Joash, king of Israel."
+kind = "general"
+verses = ["HOS.1.1-11"]
+kjv_superscription = "HOS.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind, per this file's own header note. Content: the Lord's own command to take Gomer, a wife of whoredoms, and the three children named as living signs -- Jezreel, Lo-ruhamah ('not pitied'), Lo-ammi ('not my people') -- closing on the promise of restoration, 'ye are the sons of the living God.'"
+
+[[event]]
+id = "hos_the_estranged_wife_and_the_valley_of_achor"
+label = "The estranged wife: judgment, then the valley of Achor for a door of hope"
+kind = "general"
+verses = ["HOS.2.1-23"]
+atlas_section = "Hosea pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hosea 2, Israel pictured as an adulterous wife who forgot her true husband for her own lovers, the Lord's own judgment to strip and hedge her way, giving way to allurement and restoration -- 'I will give her... the valley of Achor for a door of hope' -- and a renewed betrothal 'in righteousness, and in judgment, and in lovingkindness.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "hos_the_second_sign_act_buying_back_the_adulteress"
+label = "The second sign: buying back an adulteress for fifteen pieces of silver"
+kind = "general"
+verses = ["HOS.3.1-5"]
+atlas_section = "Hosea pericope (this project's own sectioning, CC0): Hosea 3, a second commanded sign -- 'go yet, love a woman beloved of her friend, yet an adulteress' -- bought back for fifteen pieces of silver and barley, a living picture of Israel's own many days without king or sacrifice before their own eventual return to 'seek the Lord their God, and David their king.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "hos_no_knowledge_of_god_in_the_land"
+label = "No truth, nor mercy, nor knowledge of God in the land"
+kind = "general"
+verses = ["HOS.4.1-19"]
+atlas_section = "Hosea pericope (this project's own sectioning, CC0): Hosea 4, the Lord's own controversy with the land for its lack of truth and knowledge of God, priest and people alike corrupted, closing on Ephraim 'joined to idols: let him alone.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "hos_princes_of_judah_and_the_appeal_to_assyria"
+label = "Judgment on priests and princes; Ephraim's own vain appeal to Assyria"
+kind = "general"
+verses = ["HOS.5.1-15"]
+atlas_section = "Hosea pericope (this project's own sectioning, CC0): Hosea 5, judgment toward priests, people, and the house of the king, Ephraim's own appeal to 'king Jareb' of Assyria that could not heal them, and the Lord's own withdrawal 'till they acknowledge their offence, and seek my face.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "hos_come_let_us_return_unto_the_lord"
+label = "Come, and let us return unto the Lord; Gilead's own city of iniquity"
+kind = "general"
+verses = ["HOS.6.1-11"]
+atlas_section = "Hosea pericope (this project's own sectioning, CC0): Hosea 6, the call to return -- 'after two days will he revive us: in the third day he will raise us up' -- 'I desired mercy, and not sacrifice,' and the indictment of Gilead and the priests' own company of murderers."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "hos_conspiracies_and_foreign_alliances"
+label = "Ephraim's own foreign alliances: they call to Egypt, they go to Assyria"
+kind = "general"
+verses = ["HOS.7.1-16"]
+atlas_section = "Hosea pericope (this project's own sectioning, CC0): Hosea 7, conspiracies within the royal court pictured as an unwatched baker's oven, and Ephraim's own foolish courting of Egypt and Assyria -- 'a silly dove without heart.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "hos_the_calf_of_samaria_and_the_covenant_broken"
+label = "They have sown the wind, and shall reap the whirlwind: the calf of Samaria"
+kind = "general"
+verses = ["HOS.8.1-14"]
+atlas_section = "Hosea pericope (this project's own sectioning, CC0): Hosea 8, kings and idols set up without the Lord, the calf of Samaria to be broken in pieces, and Israel's own covenant-breaking summed up: 'they have sown the wind, and they shall reap the whirlwind.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "hos_gilgals_wickedness_and_the_return_to_egypt"
+label = "Rejoice not, O Israel: Gilgal's own wickedness, and a return to Egypt and Assyria"
+kind = "general"
+verses = ["HOS.9.1-17"]
+atlas_section = "Hosea pericope (this project's own sectioning, CC0): Hosea 9, 'rejoice not, O Israel, for joy, as other people, for thou hast gone a whoring from thy God' -- exile pictured as a return to Egypt and unclean food in Assyria, and the days of Gibeah's own corruption recalled."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "hos_israel_the_empty_vine"
+label = "Israel is an empty vine: the multiplied altars broken down"
+kind = "general"
+verses = ["HOS.10.1-15"]
+atlas_section = "Hosea pericope (this project's own sectioning, CC0): Hosea 10, Israel pictured as an empty vine whose increase only multiplied altars and idols, the calves of Beth-aven carried to Assyria, and the call to 'sow to yourselves in righteousness, reap in mercy.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "hos_when_israel_was_a_child_i_loved_him"
+label = "When Israel was a child, then I loved him, and called my son out of Egypt"
+kind = "general"
+verses = ["HOS.11.1-12"]
+atlas_section = "Hosea pericope (this project's own sectioning, CC0): Hosea 11, the Lord's own tender remembrance of Israel as a child led by cords of love, the Lord's own compassion overruling deserved judgment -- 'how shall I give thee up, Ephraim?... I am God, and not man' -- and the promise of a trembling return 'as a bird out of Egypt.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "hos_jacobs_own_history_and_ephraims_deceit"
+label = "Ephraim feedeth on wind: Jacob's own history recalled"
+kind = "general"
+verses = ["HOS.12.1-14"]
+atlas_section = "Hosea pericope (this project's own sectioning, CC0): Hosea 12, Ephraim's own covenant-making with Assyria and Egypt rebuked, Jacob's own history recalled -- wrestling with the angel at Beth-el, serving for a wife in Syria -- and Ephraim's own deceitful balances."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "hos_the_lion_of_judgment_and_ransom_from_death"
+label = "I will be unto them as a lion: yet I will ransom them from the power of the grave"
+kind = "general"
+verses = ["HOS.13.1-16"]
+atlas_section = "Hosea pericope (this project's own sectioning, CC0): Hosea 13, molten images and calf-worship rebuked, the Lord's own judgment pictured as a lion, a leopard, a bereaved bear -- yet 'I will ransom them from the power of the grave; I will redeem them from death: O death, I will be thy plagues' -- closing on Samaria's own coming desolation."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "hos_return_unto_the_lord_and_be_healed"
+label = "O Israel, return unto the Lord thy God; I will heal their backsliding"
+kind = "general"
+verses = ["HOS.14.1-9"]
+atlas_section = "Hosea pericope (this project's own sectioning, CC0): Hosea 14, the book's own closing call -- 'take with you words, and turn to the Lord... Asshur shall not save us' -- the Lord's own promise, 'I will heal their backsliding, I will love them freely,' and a final wisdom saying: 'the ways of the Lord are right, and the just shall walk in them.'"
+ref_note = "GENERAL-kind, per this file's own header note."

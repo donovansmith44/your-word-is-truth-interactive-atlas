@@ -1,0 +1,66 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Malachi, in the SAME `[[event]]` schema every other `passages/*.toml` file
+# uses. KIND POLICY: see obadiah.toml's own header note -- pure oracle, no
+# text-explicit date-stamp, GENERAL-kind throughout.
+#
+# RECONCILIATION: one pre-existing bare Theographic event touches this book
+# -- `theo-247` ("Prophecies of Malachi," all 55 verses, -442). LAYER-0, not
+# heading-worthy today; every container below stays well under the 0.8
+# jaccard sweep floor against it (largest, 18/55 = 0.327).
+#
+# GRANULARITY: the book's own well-recognized literary structure -- six
+# disputations, each a question-and-answer exchange between the Lord and
+# the people (a real, documented literary-structure fact, not textual
+# criticism, per this project's own standing doctrine note) -- rather than
+# a plain four-chapter chunk, since two of the six cross a chapter boundary
+# (1:6-2:9; 2:17-3:5). PLACE: none -- the disputations concern the temple's
+# own worship and the covenant generally, with no single narrated place of
+# action -- lawful for GENERAL-kind.
+
+[[event]]
+id = "mal_first_disputation_the_lords_love"
+label = "The burden of the word of the Lord to Israel by Malachi."
+kind = "general"
+verses = ["MAL.1.1-5"]
+kjv_superscription = "MAL.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: oracle, no date of its own claimed, per this file's own header note. First disputation: 'I have loved you, saith the Lord' -- Jacob loved, Esau (Edom) given over to desolation."
+
+[[event]]
+id = "mal_second_disputation_polluted_offerings"
+label = "The second disputation: the priests' own polluted offerings, and the covenant of Levi"
+kind = "general"
+verses = ["MAL.1.6-14", "MAL.2.1-9"]
+atlas_section = "Malachi pericope (this project's own sectioning, CC0 -- no external PD source claimed): Malachi 1:6-2:9, the priests' own contempt for the Lord's table -- offering the blind, the lame, and the sick -- set against Levi's own former covenant of life and peace, 'for the priest's lips should keep knowledge.'"
+ref_note = "GENERAL-kind, per this file's own header note. Cross-chapter span (1:6-2:9) mechanically split into same-chapter range strings, canon-verified against data/compiled/canon.json before authoring."
+
+[[event]]
+id = "mal_third_disputation_treachery_and_divorce"
+label = "The third disputation: dealing treacherously, and the wife of thy youth"
+kind = "general"
+verses = ["MAL.2.10-16"]
+atlas_section = "Malachi pericope (this project's own sectioning, CC0): Malachi 2:10-16, Judah's own profaning of the covenant, and the Lord's own witness between a man and 'the wife of his youth' -- 'for the Lord... saith that he hateth putting away.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "mal_fourth_disputation_the_coming_messenger"
+label = "The fourth disputation: wearying the Lord, and the coming messenger of the covenant"
+kind = "general"
+verses = ["MAL.2.17", "MAL.3.1-5"]
+atlas_section = "Malachi pericope (this project's own sectioning, CC0): Malachi 2:17-3:5, 'ye have wearied the Lord with your words... where is the God of judgment?' answered by the promise of a messenger who shall prepare the way, and the Lord himself coming suddenly to his temple as a refiner's fire."
+ref_note = "GENERAL-kind, per this file's own header note. Cross-chapter span mechanically split, canon-verified."
+
+[[event]]
+id = "mal_fifth_disputation_robbing_god"
+label = "The fifth disputation: will a man rob God? Tithes and the open windows of heaven"
+kind = "general"
+verses = ["MAL.3.6-12"]
+atlas_section = "Malachi pericope (this project's own sectioning, CC0): Malachi 3:6-12, 'will a man rob God? yet ye have robbed me... in tithes and offerings' -- the call to bring the whole tithe into the storehouse, and the Lord's own promise to open the windows of heaven."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "mal_sixth_disputation_the_book_of_remembrance"
+label = "The sixth disputation: it is vain to serve God; the book of remembrance, and the coming of Elijah"
+kind = "general"
+verses = ["MAL.3.13-18", "MAL.4.1-6"]
+atlas_section = "Malachi pericope (this project's own sectioning, CC0): Malachi 3:13-4:6, the complaint that it is vain to serve God, answered by the book of remembrance written for them that feared the Lord, the great and dreadful day burning as an oven, the Sun of righteousness arising with healing in his wings, and the book's own closing promise: 'I will send you Elijah the prophet before the coming of the great and dreadful day of the Lord.'"
+ref_note = "GENERAL-kind, per this file's own header note. Cross-chapter span mechanically split, canon-verified. English (KJV) versification gives this book four chapters; the Hebrew Bible's own three-chapter numbering is a translation fact, not cited here as textual criticism."

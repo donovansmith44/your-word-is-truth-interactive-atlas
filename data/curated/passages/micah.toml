@@ -1,0 +1,97 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Micah, in the SAME `[[event]]` schema every other `passages/*.toml` file
+# uses. KIND POLICY: see obadiah.toml's own header note -- pure oracle, a
+# three-king reign-window superscription (1:1) but no text-explicit
+# day/year date-stamp, GENERAL-kind throughout.
+#
+# RECONCILIATION: one pre-existing bare Theographic event touches this book
+# -- `theo-220` ("Prophecies of Micah," all 105 verses, -754). LAYER-0, not
+# heading-worthy today; every container below stays well under the 0.8
+# jaccard sweep floor against it (largest, 16/105 = 0.152).
+#
+# req 1b NAMED CASE (master brief: "Isaiah 2:2-4 || Micah 4:1-3"), BOTH
+# SIDES this project's own to author: Micah 4:1-3 is deliberately NOT given
+# a top-level container of its own here -- it is covered instead as a
+# WITNESS row on `isa_mountain_of_the_lords_house` (hosted in isaiah.toml,
+# its own top-level verses ISA.2.2-4; witness row in
+# data/curated/event-witnesses.toml), the SAME "scope away from the
+# witness's own anchor" discipline Batch W3 established for Psalm 18/96/53
+# -- a second, independent Micah-side container claiming MIC.4.1 as its own
+# anchor would be a real, fail-loud anchor collision, not a style choice.
+# `mic_gathering_of_the_outcasts_and_daughter_of_zion` (below) therefore
+# begins at 4:4, not 4:1, by design. Hand-verified directly against the
+# compiled KJV text (both ISA.2.2-4 and MIC.4.1-3 read in full before
+# either side was authored) -- outside Crockett's own scope (a
+# Samuel/Kings/Chronicles harmony, never Isaiah or Micah).
+#
+# GRANULARITY: one container per chapter for 1-3, 5, and 6 (each a real,
+# coherent oracle movement); chapter 4 split at the parallel boundary
+# above; chapter 7 split at its own clear tonal pivot (Micah's own personal
+# lament over universal corruption, 7:1-7, giving way to confident hope and
+# the closing doxology on the Lord's own mercy, 7:8-20 -- 'who is a God
+# like unto thee, that pardoneth iniquity,' the verse this prophet's own
+# name, Micah/Micaiah, echoes).
+
+[[event]]
+id = "mic_superscription_and_coming_judgment"
+label = "The word of the Lord that came to Micah the Morasthite in the days of Jotham, Ahaz, and Hezekiah, kings of Judah."
+kind = "general"
+verses = ["MIC.1.1-16"]
+kjv_superscription = "MIC.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: oracle, no date of its own claimed beyond the superscription's own broad three-king reign-window, per this file's own header note. Content: judgment coming down upon Samaria and Jerusalem, and a lament playing on the names of Judah's own towns (Gath, Aphrah, Saphir, Lachish, Moresheth-gath...) -- a literary-structure fact (wordplay), not textual criticism."
+
+[[event]]
+id = "mic_woe_to_the_oppressors_and_hope_of_gathering"
+label = "Woe to them that devise iniquity; the promise to gather the remnant of Israel"
+kind = "general"
+verses = ["MIC.2.1-13"]
+atlas_section = "Micah pericope (this project's own sectioning, CC0 -- no external PD source claimed): Micah 2, woe to those who covet fields and houses and take them by violence, false prophets who preach only of wine and strong drink, and the Lord's own promise: 'I will surely assemble, O Jacob, all of thee.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "mic_corrupt_rulers_and_zion_plowed"
+label = "Corrupt rulers, prophets, and priests; Zion shall be plowed as a field"
+kind = "general"
+verses = ["MIC.3.1-12"]
+atlas_section = "Micah pericope (this project's own sectioning, CC0): Micah 3, the heads of Jacob who 'eat the flesh of my people,' prophets who divine for money yet lean on the Lord, and the coming ruin: 'Zion... plowed as a field, and Jerusalem shall become heaps.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "mic_gathering_of_the_outcasts_and_daughter_of_zion"
+label = "The gathering of the outcasts; the daughter of Zion's own labor and deliverance"
+kind = "general"
+verses = ["MIC.4.4-13"]
+atlas_section = "Micah pericope (this project's own sectioning, CC0): Micah 4:4-13, every man sitting under his own vine and fig tree, the Lord's own promise to gather the lame and driven-out, the daughter of Zion's own labor pains -- 'thou shalt go even to Babylon; there shalt thou be delivered' -- and her own threshing of the nations."
+ref_note = "GENERAL-kind, per this file's own header note. Begins at 4:4, not 4:1 -- see this file's own header note on the req 1b Isaiah 2:2-4 || Micah 4:1-3 parallel (hosted on isa_mountain_of_the_lords_house, witnessed here)."
+
+[[event]]
+id = "mic_bethlehem_ruler_and_the_assyrian"
+label = "The ruler out of Bethlehem; deliverance from the Assyrian"
+kind = "general"
+verses = ["MIC.5.1-15"]
+atlas_section = "Micah pericope (this project's own sectioning, CC0): Micah 5, 'thou, Beth-lehem Ephratah... out of thee shall he come forth unto me that is to be ruler in Israel; whose goings forth have been from of old, from everlasting' (5:2), the promised deliverance from Assyria by 'seven shepherds, and eight principal men,' and the purging of witchcraft and idolatry from the land."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "mic_the_lords_controversy_what_doth_the_lord_require"
+label = "The Lord's own controversy with his people: what doth the Lord require of thee?"
+kind = "general"
+verses = ["MIC.6.1-16"]
+atlas_section = "Micah pericope (this project's own sectioning, CC0): Micah 6, the Lord's own covenant lawsuit against Israel, recalling the exodus and Balaam, and the answer to 'wherewith shall I come before the Lord' -- 'he hath shewed thee, O man, what is good; and what doth the Lord require of thee, but to do justly, and to love mercy, and to walk humbly with thy God?' (6:8), closing on the statutes of Omri and the works of the house of Ahab still kept."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "mic_micahs_own_lament"
+label = "Micah's own lament: the good man perished out of the earth"
+kind = "general"
+verses = ["MIC.7.1-7"]
+atlas_section = "Micah pericope (this project's own sectioning, CC0): Micah 7:1-7, the prophet's own lament over universal corruption -- 'the good man is perished out of the earth... a man's enemies are the men of his own house' -- turning to confidence: 'I will look unto the Lord; I will wait for the God of my salvation.'"
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "mic_gods_compassion_and_faithfulness"
+label = "Who is a God like unto thee, that pardoneth iniquity?"
+kind = "general"
+verses = ["MIC.7.8-20"]
+atlas_section = "Micah pericope (this project's own sectioning, CC0): Micah 7:8-20, confidence addressed first to Micah's own enemy ('rejoice not against me... when I fall, I shall arise'), then the book's own closing doxology on the Lord's own mercy -- 'who is a God like unto thee, that pardoneth iniquity... he will subdue our iniquities; and thou wilt cast all their sins into the depths of the sea.'"
+ref_note = "GENERAL-kind, per this file's own header note."

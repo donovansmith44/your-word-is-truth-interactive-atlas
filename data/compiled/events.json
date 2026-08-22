@@ -1199,6 +1199,543 @@
     "order_key": 0
   },
   {
+    "id": "amo_superscription_and_the_lords_roar",
+    "label": "The words of Amos, who was among the herdmen of Tekoa, in the days of Uzziah king of Judah and Jeroboam the son of Joash king of Israel.",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.1.1",
+      "AMO.1.2"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": "AMO.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row).",
+    "ref_note": "GENERAL-kind: oracle, no date of its own claimed beyond the superscription's own broad reign-window ('two years before the earthquake' is a specific but not independently datable detail), per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_oracle_against_damascus",
+    "label": "For three transgressions of Damascus, and for four",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.1.3",
+      "AMO.1.4",
+      "AMO.1.5"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0 -- no external PD source claimed): Amos 1:3-5, judgment on Damascus (Syria) for threshing Gilead with instruments of iron.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_oracle_against_gaza",
+    "label": "For three transgressions of Gaza, and for four",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.1.6",
+      "AMO.1.7",
+      "AMO.1.8"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 1:6-8, judgment on Gaza and the Philistine cities for delivering up a whole captivity to Edom.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_oracle_against_tyre",
+    "label": "For three transgressions of Tyrus, and for four",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.1.9",
+      "AMO.1.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 1:9-10, judgment on Tyre for delivering up captives to Edom and forgetting 'the brotherly covenant.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_oracle_against_edom",
+    "label": "For three transgressions of Edom, and for four",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.1.11",
+      "AMO.1.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 1:11-12, judgment on Edom for pursuing his brother (Israel) with the sword without pity.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_oracle_against_ammon",
+    "label": "For three transgressions of the children of Ammon, and for four",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.1.13",
+      "AMO.1.14",
+      "AMO.1.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 1:13-15, judgment on Ammon for ripping up the women with child of Gilead to enlarge its own border.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_oracle_against_moab",
+    "label": "For three transgressions of Moab, and for four",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.2.1",
+      "AMO.2.2",
+      "AMO.2.3"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 2:1-3, judgment on Moab for burning the bones of the king of Edom into lime.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_oracle_against_judah",
+    "label": "For three transgressions of Judah, and for four",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.2.4",
+      "AMO.2.5"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 2:4-5, judgment on Judah for despising the law of the Lord.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_oracle_against_israel",
+    "label": "For three transgressions of Israel, and for four",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.2.6",
+      "AMO.2.7",
+      "AMO.2.8",
+      "AMO.2.9",
+      "AMO.2.10",
+      "AMO.2.11",
+      "AMO.2.12",
+      "AMO.2.13",
+      "AMO.2.14",
+      "AMO.2.15",
+      "AMO.2.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 2:6-16, the book's own longest and central indictment -- Israel selling the righteous for silver and the poor for a pair of shoes, recalling the Lord's own deliverance from Egypt and the raising up of prophets and Nazarites, closing on the day none shall escape.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_you_only_have_i_known",
+    "label": "You only have I known of all the families of the earth: the Lord's necessity to prophesy",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.3.1",
+      "AMO.3.2",
+      "AMO.3.3",
+      "AMO.3.4",
+      "AMO.3.5",
+      "AMO.3.6",
+      "AMO.3.7",
+      "AMO.3.8",
+      "AMO.3.9",
+      "AMO.3.10",
+      "AMO.3.11",
+      "AMO.3.12",
+      "AMO.3.13",
+      "AMO.3.14",
+      "AMO.3.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 3, 'you only have I known of all the families of the earth: therefore I will punish you for all your iniquities' -- the lion has roared, who will not fear? -- closing on the altars of Beth-el visited and the winter and summer houses smitten.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_kine_of_bashan_and_the_five_refusals",
+    "label": "The kine of Bashan; five judgments sent, and Israel still did not return",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.4.1",
+      "AMO.4.2",
+      "AMO.4.3",
+      "AMO.4.4",
+      "AMO.4.5",
+      "AMO.4.6",
+      "AMO.4.7",
+      "AMO.4.8",
+      "AMO.4.9",
+      "AMO.4.10",
+      "AMO.4.11",
+      "AMO.4.12",
+      "AMO.4.13"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 4, the women of Samaria rebuked as 'kine of Bashan,' the five-fold refrain 'yet have ye not returned unto me, saith the Lord' over famine, drought, blight, pestilence, and overthrow, closing on 'prepare to meet thy God, O Israel.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_lament_and_call_to_seek_the_lord",
+    "label": "A lamentation for Israel; seek the Lord, and ye shall live",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.5.1",
+      "AMO.5.2",
+      "AMO.5.3",
+      "AMO.5.4",
+      "AMO.5.5",
+      "AMO.5.6",
+      "AMO.5.7",
+      "AMO.5.8",
+      "AMO.5.9",
+      "AMO.5.10",
+      "AMO.5.11",
+      "AMO.5.12",
+      "AMO.5.13",
+      "AMO.5.14",
+      "AMO.5.15",
+      "AMO.5.16",
+      "AMO.5.17"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 5:1-17, 'the virgin of Israel is fallen' -- a lamentation taken up against the house of Israel -- and the call to seek the Lord rather than Beth-el or Gilgal, with 'let judgment run down as waters, and righteousness as a mighty stream' at its own center.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_woe_the_day_of_the_lord_and_empty_ritual",
+    "label": "Woe unto you that desire the day of the Lord; I hate, I despise your feast days",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.5.18",
+      "AMO.5.19",
+      "AMO.5.20",
+      "AMO.5.21",
+      "AMO.5.22",
+      "AMO.5.23",
+      "AMO.5.24",
+      "AMO.5.25",
+      "AMO.5.26",
+      "AMO.5.27"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 5:18-27, 'woe unto you that desire the day of the Lord... it is darkness, and not light' -- the Lord's own rejection of empty feasts and offerings without justice, closing on captivity 'beyond Damascus.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_woe_to_those_at_ease_in_zion",
+    "label": "Woe to them that are at ease in Zion, and trust in the mountain of Samaria",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.6.1",
+      "AMO.6.2",
+      "AMO.6.3",
+      "AMO.6.4",
+      "AMO.6.5",
+      "AMO.6.6",
+      "AMO.6.7",
+      "AMO.6.8",
+      "AMO.6.9",
+      "AMO.6.10",
+      "AMO.6.11",
+      "AMO.6.12",
+      "AMO.6.13",
+      "AMO.6.14"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 6, woe to the complacent who lie upon beds of ivory and are not grieved for the affliction of Joseph -- a nation raised up against Israel from the entering in of Hamath unto the river of the wilderness.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_vision_of_the_locusts",
+    "label": "The first vision: the locusts",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.7.1",
+      "AMO.7.2",
+      "AMO.7.3"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 7:1-3, the Lord shews Amos a plague of locusts devouring the land; Amos intercedes, 'by whom shall Jacob arise? for he is small,' and the Lord repents of it.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. First of five visions (7:1-3, 7:4-6, 7:7-9, 8:1-3, 9:1-10), the master brief's own named 'per vision' granularity.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_vision_of_the_fire",
+    "label": "The second vision: the devouring fire",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.7.4",
+      "AMO.7.5",
+      "AMO.7.6"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 7:4-6, the Lord shews Amos a fire that devours the great deep; Amos again intercedes, and the Lord again repents.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. Second of five visions.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_vision_of_the_plumbline",
+    "label": "The third vision: the plumbline",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.7.7",
+      "AMO.7.8",
+      "AMO.7.9"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 7:7-9, the Lord standing upon a wall made by a plumbline -- 'I will set a plumbline in the midst of my people Israel: I will not again pass by them any more' -- the high places of Isaac laid waste, and judgment on the house of Jeroboam.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. Third of five visions -- this is the first vision the text itself no longer records the Lord repenting of.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_vision_of_the_summer_fruit",
+    "label": "The fourth vision: the basket of summer fruit",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.8.1",
+      "AMO.8.2",
+      "AMO.8.3"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 8:1-3, a basket of summer fruit -- 'the end is come upon my people of Israel' -- a wordplay between the Hebrew for 'summer fruit' and 'end,' a literary-structure fact, not textual criticism.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. Fourth of five visions.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_the_famine_of_hearing_the_word",
+    "label": "A famine of hearing the words of the Lord",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.8.4",
+      "AMO.8.5",
+      "AMO.8.6",
+      "AMO.8.7",
+      "AMO.8.8",
+      "AMO.8.9",
+      "AMO.8.10",
+      "AMO.8.11",
+      "AMO.8.12",
+      "AMO.8.13",
+      "AMO.8.14"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 8:4-14, indictment of merchants who swallow up the needy and falsify the balances, and the Lord's own promise of 'a famine... of hearing the words of the Lord' -- they shall run to and fro to seek it, and shall not find it.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_vision_of_the_lord_by_the_altar",
+    "label": "The fifth vision: the Lord standing by the altar; none shall escape",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.9.1",
+      "AMO.9.2",
+      "AMO.9.3",
+      "AMO.9.4",
+      "AMO.9.5",
+      "AMO.9.6",
+      "AMO.9.7",
+      "AMO.9.8",
+      "AMO.9.9",
+      "AMO.9.10"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 9:1-10, the Lord standing upon the altar commanding the lintel smitten -- though they dig into hell or climb to heaven, none shall escape -- yet 'I will not utterly destroy the house of Jacob,' as Israel is sifted among the nations like corn in a sieve.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. Fifth of five visions.",
+    "order_key": 0
+  },
+  {
+    "id": "amo_restoration_of_davids_tabernacle",
+    "label": "The tabernacle of David raised up again",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "AMO.9.11",
+      "AMO.9.12",
+      "AMO.9.13",
+      "AMO.9.14",
+      "AMO.9.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 9:11-15, the book's own closing restoration oracle -- 'in that day will I raise up the tabernacle of David that is fallen' -- planting Israel again upon their own land, never again to be pulled up.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. Translation/literary fact, not textual criticism: this is the passage James cites at the Jerusalem council (Acts 15:16-17).",
+    "order_key": 0
+  },
+  {
     "id": "deu_worship_idolatry_laws",
     "label": "Worship at one place only; laws against idolatry",
     "when": {
@@ -2974,6 +3511,469 @@
     "atlas_section": null,
     "kjv_superscription": "HAB.3.1, this closing prayer's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- a second, distinct superscription within the same book, opening its own final unit exactly as Psalm 3's own does (Batch W3 precedent).",
     "ref_note": "GENERAL-kind, per this file's own header note. A psalm-like closing prayer, ending on its own musical notation ('To the chief singer on my stringed instruments,' 3:19) -- the same genre marker several Psalms carry.",
+    "order_key": 0
+  },
+  {
+    "id": "hos_gomer_and_the_three_children",
+    "label": "The word of the Lord that came unto Hosea, the son of Beeri, in the days of Uzziah, Jotham, Ahaz, and Hezekiah, kings of Judah, and in the days of Jeroboam the son of Joash, king of Israel.",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.1.1",
+      "HOS.1.2",
+      "HOS.1.3",
+      "HOS.1.4",
+      "HOS.1.5",
+      "HOS.1.6",
+      "HOS.1.7",
+      "HOS.1.8",
+      "HOS.1.9",
+      "HOS.1.10",
+      "HOS.1.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": "HOS.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row).",
+    "ref_note": "GENERAL-kind, per this file's own header note. Content: the Lord's own command to take Gomer, a wife of whoredoms, and the three children named as living signs -- Jezreel, Lo-ruhamah ('not pitied'), Lo-ammi ('not my people') -- closing on the promise of restoration, 'ye are the sons of the living God.'",
+    "order_key": 0
+  },
+  {
+    "id": "hos_the_estranged_wife_and_the_valley_of_achor",
+    "label": "The estranged wife: judgment, then the valley of Achor for a door of hope",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.2.1",
+      "HOS.2.2",
+      "HOS.2.3",
+      "HOS.2.4",
+      "HOS.2.5",
+      "HOS.2.6",
+      "HOS.2.7",
+      "HOS.2.8",
+      "HOS.2.9",
+      "HOS.2.10",
+      "HOS.2.11",
+      "HOS.2.12",
+      "HOS.2.13",
+      "HOS.2.14",
+      "HOS.2.15",
+      "HOS.2.16",
+      "HOS.2.17",
+      "HOS.2.18",
+      "HOS.2.19",
+      "HOS.2.20",
+      "HOS.2.21",
+      "HOS.2.22",
+      "HOS.2.23"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Hosea pericope (this project's own sectioning, CC0 -- no external PD source claimed): Hosea 2, Israel pictured as an adulterous wife who forgot her true husband for her own lovers, the Lord's own judgment to strip and hedge her way, giving way to allurement and restoration -- 'I will give her... the valley of Achor for a door of hope' -- and a renewed betrothal 'in righteousness, and in judgment, and in lovingkindness.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "hos_the_second_sign_act_buying_back_the_adulteress",
+    "label": "The second sign: buying back an adulteress for fifteen pieces of silver",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.3.1",
+      "HOS.3.2",
+      "HOS.3.3",
+      "HOS.3.4",
+      "HOS.3.5"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Hosea pericope (this project's own sectioning, CC0): Hosea 3, a second commanded sign -- 'go yet, love a woman beloved of her friend, yet an adulteress' -- bought back for fifteen pieces of silver and barley, a living picture of Israel's own many days without king or sacrifice before their own eventual return to 'seek the Lord their God, and David their king.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "hos_no_knowledge_of_god_in_the_land",
+    "label": "No truth, nor mercy, nor knowledge of God in the land",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.4.1",
+      "HOS.4.2",
+      "HOS.4.3",
+      "HOS.4.4",
+      "HOS.4.5",
+      "HOS.4.6",
+      "HOS.4.7",
+      "HOS.4.8",
+      "HOS.4.9",
+      "HOS.4.10",
+      "HOS.4.11",
+      "HOS.4.12",
+      "HOS.4.13",
+      "HOS.4.14",
+      "HOS.4.15",
+      "HOS.4.16",
+      "HOS.4.17",
+      "HOS.4.18",
+      "HOS.4.19"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Hosea pericope (this project's own sectioning, CC0): Hosea 4, the Lord's own controversy with the land for its lack of truth and knowledge of God, priest and people alike corrupted, closing on Ephraim 'joined to idols: let him alone.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "hos_princes_of_judah_and_the_appeal_to_assyria",
+    "label": "Judgment on priests and princes; Ephraim's own vain appeal to Assyria",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.5.1",
+      "HOS.5.2",
+      "HOS.5.3",
+      "HOS.5.4",
+      "HOS.5.5",
+      "HOS.5.6",
+      "HOS.5.7",
+      "HOS.5.8",
+      "HOS.5.9",
+      "HOS.5.10",
+      "HOS.5.11",
+      "HOS.5.12",
+      "HOS.5.13",
+      "HOS.5.14",
+      "HOS.5.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Hosea pericope (this project's own sectioning, CC0): Hosea 5, judgment toward priests, people, and the house of the king, Ephraim's own appeal to 'king Jareb' of Assyria that could not heal them, and the Lord's own withdrawal 'till they acknowledge their offence, and seek my face.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "hos_come_let_us_return_unto_the_lord",
+    "label": "Come, and let us return unto the Lord; Gilead's own city of iniquity",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.6.1",
+      "HOS.6.2",
+      "HOS.6.3",
+      "HOS.6.4",
+      "HOS.6.5",
+      "HOS.6.6",
+      "HOS.6.7",
+      "HOS.6.8",
+      "HOS.6.9",
+      "HOS.6.10",
+      "HOS.6.11"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Hosea pericope (this project's own sectioning, CC0): Hosea 6, the call to return -- 'after two days will he revive us: in the third day he will raise us up' -- 'I desired mercy, and not sacrifice,' and the indictment of Gilead and the priests' own company of murderers.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "hos_conspiracies_and_foreign_alliances",
+    "label": "Ephraim's own foreign alliances: they call to Egypt, they go to Assyria",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.7.1",
+      "HOS.7.2",
+      "HOS.7.3",
+      "HOS.7.4",
+      "HOS.7.5",
+      "HOS.7.6",
+      "HOS.7.7",
+      "HOS.7.8",
+      "HOS.7.9",
+      "HOS.7.10",
+      "HOS.7.11",
+      "HOS.7.12",
+      "HOS.7.13",
+      "HOS.7.14",
+      "HOS.7.15",
+      "HOS.7.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Hosea pericope (this project's own sectioning, CC0): Hosea 7, conspiracies within the royal court pictured as an unwatched baker's oven, and Ephraim's own foolish courting of Egypt and Assyria -- 'a silly dove without heart.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "hos_the_calf_of_samaria_and_the_covenant_broken",
+    "label": "They have sown the wind, and shall reap the whirlwind: the calf of Samaria",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.8.1",
+      "HOS.8.2",
+      "HOS.8.3",
+      "HOS.8.4",
+      "HOS.8.5",
+      "HOS.8.6",
+      "HOS.8.7",
+      "HOS.8.8",
+      "HOS.8.9",
+      "HOS.8.10",
+      "HOS.8.11",
+      "HOS.8.12",
+      "HOS.8.13",
+      "HOS.8.14"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Hosea pericope (this project's own sectioning, CC0): Hosea 8, kings and idols set up without the Lord, the calf of Samaria to be broken in pieces, and Israel's own covenant-breaking summed up: 'they have sown the wind, and they shall reap the whirlwind.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "hos_gilgals_wickedness_and_the_return_to_egypt",
+    "label": "Rejoice not, O Israel: Gilgal's own wickedness, and a return to Egypt and Assyria",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.9.1",
+      "HOS.9.2",
+      "HOS.9.3",
+      "HOS.9.4",
+      "HOS.9.5",
+      "HOS.9.6",
+      "HOS.9.7",
+      "HOS.9.8",
+      "HOS.9.9",
+      "HOS.9.10",
+      "HOS.9.11",
+      "HOS.9.12",
+      "HOS.9.13",
+      "HOS.9.14",
+      "HOS.9.15",
+      "HOS.9.16",
+      "HOS.9.17"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Hosea pericope (this project's own sectioning, CC0): Hosea 9, 'rejoice not, O Israel, for joy, as other people, for thou hast gone a whoring from thy God' -- exile pictured as a return to Egypt and unclean food in Assyria, and the days of Gibeah's own corruption recalled.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "hos_israel_the_empty_vine",
+    "label": "Israel is an empty vine: the multiplied altars broken down",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.10.1",
+      "HOS.10.2",
+      "HOS.10.3",
+      "HOS.10.4",
+      "HOS.10.5",
+      "HOS.10.6",
+      "HOS.10.7",
+      "HOS.10.8",
+      "HOS.10.9",
+      "HOS.10.10",
+      "HOS.10.11",
+      "HOS.10.12",
+      "HOS.10.13",
+      "HOS.10.14",
+      "HOS.10.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Hosea pericope (this project's own sectioning, CC0): Hosea 10, Israel pictured as an empty vine whose increase only multiplied altars and idols, the calves of Beth-aven carried to Assyria, and the call to 'sow to yourselves in righteousness, reap in mercy.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "hos_when_israel_was_a_child_i_loved_him",
+    "label": "When Israel was a child, then I loved him, and called my son out of Egypt",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.11.1",
+      "HOS.11.2",
+      "HOS.11.3",
+      "HOS.11.4",
+      "HOS.11.5",
+      "HOS.11.6",
+      "HOS.11.7",
+      "HOS.11.8",
+      "HOS.11.9",
+      "HOS.11.10",
+      "HOS.11.11",
+      "HOS.11.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Hosea pericope (this project's own sectioning, CC0): Hosea 11, the Lord's own tender remembrance of Israel as a child led by cords of love, the Lord's own compassion overruling deserved judgment -- 'how shall I give thee up, Ephraim?... I am God, and not man' -- and the promise of a trembling return 'as a bird out of Egypt.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "hos_jacobs_own_history_and_ephraims_deceit",
+    "label": "Ephraim feedeth on wind: Jacob's own history recalled",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.12.1",
+      "HOS.12.2",
+      "HOS.12.3",
+      "HOS.12.4",
+      "HOS.12.5",
+      "HOS.12.6",
+      "HOS.12.7",
+      "HOS.12.8",
+      "HOS.12.9",
+      "HOS.12.10",
+      "HOS.12.11",
+      "HOS.12.12",
+      "HOS.12.13",
+      "HOS.12.14"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Hosea pericope (this project's own sectioning, CC0): Hosea 12, Ephraim's own covenant-making with Assyria and Egypt rebuked, Jacob's own history recalled -- wrestling with the angel at Beth-el, serving for a wife in Syria -- and Ephraim's own deceitful balances.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "hos_the_lion_of_judgment_and_ransom_from_death",
+    "label": "I will be unto them as a lion: yet I will ransom them from the power of the grave",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.13.1",
+      "HOS.13.2",
+      "HOS.13.3",
+      "HOS.13.4",
+      "HOS.13.5",
+      "HOS.13.6",
+      "HOS.13.7",
+      "HOS.13.8",
+      "HOS.13.9",
+      "HOS.13.10",
+      "HOS.13.11",
+      "HOS.13.12",
+      "HOS.13.13",
+      "HOS.13.14",
+      "HOS.13.15",
+      "HOS.13.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Hosea pericope (this project's own sectioning, CC0): Hosea 13, molten images and calf-worship rebuked, the Lord's own judgment pictured as a lion, a leopard, a bereaved bear -- yet 'I will ransom them from the power of the grave; I will redeem them from death: O death, I will be thy plagues' -- closing on Samaria's own coming desolation.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "hos_return_unto_the_lord_and_be_healed",
+    "label": "O Israel, return unto the Lord thy God; I will heal their backsliding",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "HOS.14.1",
+      "HOS.14.2",
+      "HOS.14.3",
+      "HOS.14.4",
+      "HOS.14.5",
+      "HOS.14.6",
+      "HOS.14.7",
+      "HOS.14.8",
+      "HOS.14.9"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Hosea pericope (this project's own sectioning, CC0): Hosea 14, the book's own closing call -- 'take with you words, and turn to the Lord... Asshur shall not save us' -- the Lord's own promise, 'I will heal their backsliding, I will love them freely,' and a final wisdom saying: 'the ways of the Lord are right, and the just shall walk in them.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
     "order_key": 0
   },
   {
@@ -6415,6 +7415,429 @@
     "atlas_section": "Leviticus code unit (this project's own sectioning, CC0 -- no external PD source claimed): Leviticus 27, the valuation of vowed persons, animals, houses, and fields, and the tithe -- closing the book.",
     "kjv_superscription": null,
     "ref_note": "General-kind: ritual/economic law, no single dateable moment or place of its own.",
+    "order_key": 0
+  },
+  {
+    "id": "mal_first_disputation_the_lords_love",
+    "label": "The burden of the word of the Lord to Israel by Malachi.",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MAL.1.1",
+      "MAL.1.2",
+      "MAL.1.3",
+      "MAL.1.4",
+      "MAL.1.5"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": "MAL.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row).",
+    "ref_note": "GENERAL-kind: oracle, no date of its own claimed, per this file's own header note. First disputation: 'I have loved you, saith the Lord' -- Jacob loved, Esau (Edom) given over to desolation.",
+    "order_key": 0
+  },
+  {
+    "id": "mal_second_disputation_polluted_offerings",
+    "label": "The second disputation: the priests' own polluted offerings, and the covenant of Levi",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MAL.1.6",
+      "MAL.1.7",
+      "MAL.1.8",
+      "MAL.1.9",
+      "MAL.1.10",
+      "MAL.1.11",
+      "MAL.1.12",
+      "MAL.1.13",
+      "MAL.1.14",
+      "MAL.2.1",
+      "MAL.2.2",
+      "MAL.2.3",
+      "MAL.2.4",
+      "MAL.2.5",
+      "MAL.2.6",
+      "MAL.2.7",
+      "MAL.2.8",
+      "MAL.2.9"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Malachi pericope (this project's own sectioning, CC0 -- no external PD source claimed): Malachi 1:6-2:9, the priests' own contempt for the Lord's table -- offering the blind, the lame, and the sick -- set against Levi's own former covenant of life and peace, 'for the priest's lips should keep knowledge.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. Cross-chapter span (1:6-2:9) mechanically split into same-chapter range strings, canon-verified against data/compiled/canon.json before authoring.",
+    "order_key": 0
+  },
+  {
+    "id": "mal_third_disputation_treachery_and_divorce",
+    "label": "The third disputation: dealing treacherously, and the wife of thy youth",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MAL.2.10",
+      "MAL.2.11",
+      "MAL.2.12",
+      "MAL.2.13",
+      "MAL.2.14",
+      "MAL.2.15",
+      "MAL.2.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Malachi pericope (this project's own sectioning, CC0): Malachi 2:10-16, Judah's own profaning of the covenant, and the Lord's own witness between a man and 'the wife of his youth' -- 'for the Lord... saith that he hateth putting away.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "mal_fourth_disputation_the_coming_messenger",
+    "label": "The fourth disputation: wearying the Lord, and the coming messenger of the covenant",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MAL.2.17",
+      "MAL.3.1",
+      "MAL.3.2",
+      "MAL.3.3",
+      "MAL.3.4",
+      "MAL.3.5"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Malachi pericope (this project's own sectioning, CC0): Malachi 2:17-3:5, 'ye have wearied the Lord with your words... where is the God of judgment?' answered by the promise of a messenger who shall prepare the way, and the Lord himself coming suddenly to his temple as a refiner's fire.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. Cross-chapter span mechanically split, canon-verified.",
+    "order_key": 0
+  },
+  {
+    "id": "mal_fifth_disputation_robbing_god",
+    "label": "The fifth disputation: will a man rob God? Tithes and the open windows of heaven",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MAL.3.6",
+      "MAL.3.7",
+      "MAL.3.8",
+      "MAL.3.9",
+      "MAL.3.10",
+      "MAL.3.11",
+      "MAL.3.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Malachi pericope (this project's own sectioning, CC0): Malachi 3:6-12, 'will a man rob God? yet ye have robbed me... in tithes and offerings' -- the call to bring the whole tithe into the storehouse, and the Lord's own promise to open the windows of heaven.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "mal_sixth_disputation_the_book_of_remembrance",
+    "label": "The sixth disputation: it is vain to serve God; the book of remembrance, and the coming of Elijah",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MAL.3.13",
+      "MAL.3.14",
+      "MAL.3.15",
+      "MAL.3.16",
+      "MAL.3.17",
+      "MAL.3.18",
+      "MAL.4.1",
+      "MAL.4.2",
+      "MAL.4.3",
+      "MAL.4.4",
+      "MAL.4.5",
+      "MAL.4.6"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Malachi pericope (this project's own sectioning, CC0): Malachi 3:13-4:6, the complaint that it is vain to serve God, answered by the book of remembrance written for them that feared the Lord, the great and dreadful day burning as an oven, the Sun of righteousness arising with healing in his wings, and the book's own closing promise: 'I will send you Elijah the prophet before the coming of the great and dreadful day of the Lord.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. Cross-chapter span mechanically split, canon-verified. English (KJV) versification gives this book four chapters; the Hebrew Bible's own three-chapter numbering is a translation fact, not cited here as textual criticism.",
+    "order_key": 0
+  },
+  {
+    "id": "mic_superscription_and_coming_judgment",
+    "label": "The word of the Lord that came to Micah the Morasthite in the days of Jotham, Ahaz, and Hezekiah, kings of Judah.",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MIC.1.1",
+      "MIC.1.2",
+      "MIC.1.3",
+      "MIC.1.4",
+      "MIC.1.5",
+      "MIC.1.6",
+      "MIC.1.7",
+      "MIC.1.8",
+      "MIC.1.9",
+      "MIC.1.10",
+      "MIC.1.11",
+      "MIC.1.12",
+      "MIC.1.13",
+      "MIC.1.14",
+      "MIC.1.15",
+      "MIC.1.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": "MIC.1.1, the book's own superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row).",
+    "ref_note": "GENERAL-kind: oracle, no date of its own claimed beyond the superscription's own broad three-king reign-window, per this file's own header note. Content: judgment coming down upon Samaria and Jerusalem, and a lament playing on the names of Judah's own towns (Gath, Aphrah, Saphir, Lachish, Moresheth-gath...) -- a literary-structure fact (wordplay), not textual criticism.",
+    "order_key": 0
+  },
+  {
+    "id": "mic_woe_to_the_oppressors_and_hope_of_gathering",
+    "label": "Woe to them that devise iniquity; the promise to gather the remnant of Israel",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MIC.2.1",
+      "MIC.2.2",
+      "MIC.2.3",
+      "MIC.2.4",
+      "MIC.2.5",
+      "MIC.2.6",
+      "MIC.2.7",
+      "MIC.2.8",
+      "MIC.2.9",
+      "MIC.2.10",
+      "MIC.2.11",
+      "MIC.2.12",
+      "MIC.2.13"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Micah pericope (this project's own sectioning, CC0 -- no external PD source claimed): Micah 2, woe to those who covet fields and houses and take them by violence, false prophets who preach only of wine and strong drink, and the Lord's own promise: 'I will surely assemble, O Jacob, all of thee.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "mic_corrupt_rulers_and_zion_plowed",
+    "label": "Corrupt rulers, prophets, and priests; Zion shall be plowed as a field",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MIC.3.1",
+      "MIC.3.2",
+      "MIC.3.3",
+      "MIC.3.4",
+      "MIC.3.5",
+      "MIC.3.6",
+      "MIC.3.7",
+      "MIC.3.8",
+      "MIC.3.9",
+      "MIC.3.10",
+      "MIC.3.11",
+      "MIC.3.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Micah pericope (this project's own sectioning, CC0): Micah 3, the heads of Jacob who 'eat the flesh of my people,' prophets who divine for money yet lean on the Lord, and the coming ruin: 'Zion... plowed as a field, and Jerusalem shall become heaps.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "mic_gathering_of_the_outcasts_and_daughter_of_zion",
+    "label": "The gathering of the outcasts; the daughter of Zion's own labor and deliverance",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MIC.4.4",
+      "MIC.4.5",
+      "MIC.4.6",
+      "MIC.4.7",
+      "MIC.4.8",
+      "MIC.4.9",
+      "MIC.4.10",
+      "MIC.4.11",
+      "MIC.4.12",
+      "MIC.4.13"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Micah pericope (this project's own sectioning, CC0): Micah 4:4-13, every man sitting under his own vine and fig tree, the Lord's own promise to gather the lame and driven-out, the daughter of Zion's own labor pains -- 'thou shalt go even to Babylon; there shalt thou be delivered' -- and her own threshing of the nations.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note. Begins at 4:4, not 4:1 -- see this file's own header note on the req 1b Isaiah 2:2-4 || Micah 4:1-3 parallel (hosted on isa_mountain_of_the_lords_house, witnessed here).",
+    "order_key": 0
+  },
+  {
+    "id": "mic_bethlehem_ruler_and_the_assyrian",
+    "label": "The ruler out of Bethlehem; deliverance from the Assyrian",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MIC.5.1",
+      "MIC.5.2",
+      "MIC.5.3",
+      "MIC.5.4",
+      "MIC.5.5",
+      "MIC.5.6",
+      "MIC.5.7",
+      "MIC.5.8",
+      "MIC.5.9",
+      "MIC.5.10",
+      "MIC.5.11",
+      "MIC.5.12",
+      "MIC.5.13",
+      "MIC.5.14",
+      "MIC.5.15"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Micah pericope (this project's own sectioning, CC0): Micah 5, 'thou, Beth-lehem Ephratah... out of thee shall he come forth unto me that is to be ruler in Israel; whose goings forth have been from of old, from everlasting' (5:2), the promised deliverance from Assyria by 'seven shepherds, and eight principal men,' and the purging of witchcraft and idolatry from the land.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "mic_the_lords_controversy_what_doth_the_lord_require",
+    "label": "The Lord's own controversy with his people: what doth the Lord require of thee?",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MIC.6.1",
+      "MIC.6.2",
+      "MIC.6.3",
+      "MIC.6.4",
+      "MIC.6.5",
+      "MIC.6.6",
+      "MIC.6.7",
+      "MIC.6.8",
+      "MIC.6.9",
+      "MIC.6.10",
+      "MIC.6.11",
+      "MIC.6.12",
+      "MIC.6.13",
+      "MIC.6.14",
+      "MIC.6.15",
+      "MIC.6.16"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Micah pericope (this project's own sectioning, CC0): Micah 6, the Lord's own covenant lawsuit against Israel, recalling the exodus and Balaam, and the answer to 'wherewith shall I come before the Lord' -- 'he hath shewed thee, O man, what is good; and what doth the Lord require of thee, but to do justly, and to love mercy, and to walk humbly with thy God?' (6:8), closing on the statutes of Omri and the works of the house of Ahab still kept.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "mic_micahs_own_lament",
+    "label": "Micah's own lament: the good man perished out of the earth",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MIC.7.1",
+      "MIC.7.2",
+      "MIC.7.3",
+      "MIC.7.4",
+      "MIC.7.5",
+      "MIC.7.6",
+      "MIC.7.7"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Micah pericope (this project's own sectioning, CC0): Micah 7:1-7, the prophet's own lament over universal corruption -- 'the good man is perished out of the earth... a man's enemies are the men of his own house' -- turning to confidence: 'I will look unto the Lord; I will wait for the God of my salvation.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "mic_gods_compassion_and_faithfulness",
+    "label": "Who is a God like unto thee, that pardoneth iniquity?",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "MIC.7.8",
+      "MIC.7.9",
+      "MIC.7.10",
+      "MIC.7.11",
+      "MIC.7.12",
+      "MIC.7.13",
+      "MIC.7.14",
+      "MIC.7.15",
+      "MIC.7.16",
+      "MIC.7.17",
+      "MIC.7.18",
+      "MIC.7.19",
+      "MIC.7.20"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Micah pericope (this project's own sectioning, CC0): Micah 7:8-20, confidence addressed first to Micah's own enemy ('rejoice not against me... when I fall, I shall arise'), then the book's own closing doxology on the Lord's own mercy -- 'who is a God like unto thee, that pardoneth iniquity... he will subdue our iniquities; and thou wilt cast all their sins into the depths of the sea.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
     "order_key": 0
   },
   {
@@ -14483,6 +15906,229 @@
     "robertson_section": null,
     "acts_section": null,
     "atlas_section": "Song of Solomon pericope (this project's own sectioning, CC0): Song of Solomon 8:5-14, the book's own closing scenes -- 'who is this that cometh up from the wilderness, leaning upon her beloved?' -- the well-known 'set me as a seal upon thine heart... for love is strong as death' (8:6-7), and the book's own final exchange, closing 'make haste, my beloved, and be thou like to a roe or to a young hart upon the mountains of spices.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "zec_burden_1_judgment_on_the_nations",
+    "label": "The burden of the word of the Lord in the land of Hadrach",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "ZEC.9.1",
+      "ZEC.9.2",
+      "ZEC.9.3",
+      "ZEC.9.4",
+      "ZEC.9.5",
+      "ZEC.9.6",
+      "ZEC.9.7",
+      "ZEC.9.8"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0 -- no external PD source claimed): Zechariah 9:1-8, the first of two 'burden' oracles opening this book's own second part -- judgment on Hadrach, Damascus, Hamath, Tyre, Sidon, and the Philistine cities, with a remnant of Ekron becoming 'as a Jebusite,' and the Lord's own promise to encamp about his house.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind: oracle, no date of its own claimed, per this file's own header note. The 'burden' formula (9:1) is not cleanly separable into a short title clause the way Nahum's/Habakkuk's own superscriptions are (it runs directly into 'and Damascus shall be the rest thereof'), so this container's own title is this project's own CC0 phrasing, not a kjv_superscription.",
+    "order_key": 0
+  },
+  {
+    "id": "zec_the_coming_king_on_a_donkey",
+    "label": "Rejoice greatly, O daughter of Zion: thy King cometh unto thee, lowly, and riding upon an ass",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "ZEC.9.9",
+      "ZEC.9.10",
+      "ZEC.9.11",
+      "ZEC.9.12",
+      "ZEC.9.13",
+      "ZEC.9.14",
+      "ZEC.9.15",
+      "ZEC.9.16",
+      "ZEC.9.17"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 9:9-17, the promised king who comes 'lowly, and riding upon an ass, and upon a colt the foal of an ass,' the prisoners set free 'by the blood of thy covenant,' and Judah and Ephraim raised up as a mighty bow against Greece.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "zec_shepherds_and_the_flock_gathered",
+    "label": "Ask ye of the Lord rain: false shepherds rebuked, and the flock gathered home",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "ZEC.10.1",
+      "ZEC.10.2",
+      "ZEC.10.3",
+      "ZEC.10.4",
+      "ZEC.10.5",
+      "ZEC.10.6",
+      "ZEC.10.7",
+      "ZEC.10.8",
+      "ZEC.10.9",
+      "ZEC.10.10",
+      "ZEC.10.11",
+      "ZEC.10.12"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 10, a call to ask the Lord (not idols or diviners) for rain, judgment on false shepherds, and the promise to strengthen Judah and Joseph and bring them home again from Egypt and Assyria.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "zec_the_two_staves_and_thirty_pieces_of_silver",
+    "label": "The two staves, Beauty and Bands; thirty pieces of silver cast to the potter",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "ZEC.11.1",
+      "ZEC.11.2",
+      "ZEC.11.3",
+      "ZEC.11.4",
+      "ZEC.11.5",
+      "ZEC.11.6",
+      "ZEC.11.7",
+      "ZEC.11.8",
+      "ZEC.11.9",
+      "ZEC.11.10",
+      "ZEC.11.11",
+      "ZEC.11.12",
+      "ZEC.11.13",
+      "ZEC.11.14",
+      "ZEC.11.15",
+      "ZEC.11.16",
+      "ZEC.11.17"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 11, a sign-act narrated in the first person -- feeding the flock of slaughter with two staves, Beauty and Bands, cutting the first asunder to break the covenant with 'all the people,' receiving 'thirty pieces of silver' as his own price and casting it to the potter in the house of the Lord, cutting the second staff to break the brotherhood of Judah and Israel, and a closing woe against 'the idol shepherd that leaveth the flock.'",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note -- no date of its own claimed for this second-part oracle, consistent with this file's own header policy, even though narrated in a vivid first-person sign-act voice.",
+    "order_key": 0
+  },
+  {
+    "id": "zec_jerusalem_cup_of_trembling",
+    "label": "The burden of the word of the Lord for Israel",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "ZEC.12.1",
+      "ZEC.12.2",
+      "ZEC.12.3",
+      "ZEC.12.4",
+      "ZEC.12.5",
+      "ZEC.12.6",
+      "ZEC.12.7",
+      "ZEC.12.8",
+      "ZEC.12.9",
+      "ZEC.12.10",
+      "ZEC.12.11",
+      "ZEC.12.12",
+      "ZEC.12.13",
+      "ZEC.12.14"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": null,
+    "kjv_superscription": "ZEC.12.1's own opening clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- the second of this book's own two 'burden' superscriptions, here cleanly separable from the content that follows at 12:2.",
+    "ref_note": "GENERAL-kind, per this file's own header note. Content: Jerusalem made 'a cup of trembling' and 'a burdensome stone' to the nations besieging her, the spirit of grace and supplication poured out on the house of David, and 'they shall look upon me whom they have pierced, and they shall mourn for him.'",
+    "order_key": 0
+  },
+  {
+    "id": "zec_the_fountain_opened_and_the_shepherd_smitten",
+    "label": "A fountain opened for sin; awake, O sword, against my shepherd",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "ZEC.13.1",
+      "ZEC.13.2",
+      "ZEC.13.3",
+      "ZEC.13.4",
+      "ZEC.13.5",
+      "ZEC.13.6",
+      "ZEC.13.7",
+      "ZEC.13.8",
+      "ZEC.13.9"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 13, a fountain opened to the house of David for sin and uncleanness, idols and false prophets cut off from the land, and the Lord's own sword called against 'my shepherd, and against the man that is my fellow: smite the shepherd, and the sheep shall be scattered' -- closing on a third of the people refined as silver through the fire.",
+    "kjv_superscription": null,
+    "ref_note": "GENERAL-kind, per this file's own header note.",
+    "order_key": 0
+  },
+  {
+    "id": "zec_the_day_of_the_lord_and_living_waters",
+    "label": "The day of the Lord: living waters flow from Jerusalem, and the Lord is king over all the earth",
+    "when": {
+      "from_year": -4004,
+      "to_year": 100
+    },
+    "places": [],
+    "verses": [
+      "ZEC.14.1",
+      "ZEC.14.2",
+      "ZEC.14.3",
+      "ZEC.14.4",
+      "ZEC.14.5",
+      "ZEC.14.6",
+      "ZEC.14.7",
+      "ZEC.14.8",
+      "ZEC.14.9",
+      "ZEC.14.10",
+      "ZEC.14.11",
+      "ZEC.14.12",
+      "ZEC.14.13",
+      "ZEC.14.14",
+      "ZEC.14.15",
+      "ZEC.14.16",
+      "ZEC.14.17",
+      "ZEC.14.18",
+      "ZEC.14.19",
+      "ZEC.14.20",
+      "ZEC.14.21"
+    ],
+    "kind": "general",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 14, the book's own closing apocalyptic vision -- Jerusalem besieged, the Lord's own feet standing on the mount of Olives, which cleaves in two; living waters flowing out from Jerusalem toward both seas; the Lord king over all the earth; and the surviving nations going up year by year to keep the feast of tabernacles, closing on 'HOLINESS UNTO THE LORD' upon the very bells of the horses.",
     "kjv_superscription": null,
     "ref_note": "GENERAL-kind, per this file's own header note.",
     "order_key": 0
@@ -36540,6 +38186,35 @@
     "order_key": 0
   },
   {
+    "id": "amo_amaziah_confronts_amos",
+    "label": "Amaziah the priest of Beth-el confronts Amos; Amos's own defense",
+    "when": {
+      "from_year": -788,
+      "to_year": -788
+    },
+    "places": [
+      "bethel-1"
+    ],
+    "verses": [
+      "AMO.7.10",
+      "AMO.7.11",
+      "AMO.7.12",
+      "AMO.7.13",
+      "AMO.7.14",
+      "AMO.7.15",
+      "AMO.7.16",
+      "AMO.7.17"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Amos pericope (this project's own sectioning, CC0): Amos 7:10-17, a real narrated confrontation (not a pure oracle) -- Amaziah the priest of Beth-el accuses Amos before Jeroboam and orders him to flee to Judah; Amos's own defense, 'I was no prophet, neither was I a prophet's son; but I was an herdman... and the Lord took me as I followed the flock,' followed by his own sentence against Amaziah.",
+    "kjv_superscription": null,
+    "ref_note": "Date interpolated from the pre-existing theo-205 ('Prophecies of Amos,' -788). Place: Beth-el, explicit (7:10, 7:13) -- geo disambiguation per this file's own header note.",
+    "order_key": 0
+  },
+  {
     "id": "theo-206",
     "label": "Prophecies of Hosea",
     "when": {
@@ -44930,6 +46605,379 @@
     "kjv_superscription": null,
     "ref_note": "Date: 'the same day' as hag_third_oracle_priests_ruling_on_holiness (2:20, 'and again the word of the Lord came... in the four and twentieth day of the month'), marked as a formally separate word by the text's own 'and again,' addressed to a different recipient (Zerubbabel alone, not the people generally) -- order_key=4 keeps it after its own same-day sibling in the global chronological timeline. Place: Jerusalem, unchanged.",
     "order_key": 4
+  },
+  {
+    "id": "zec_call_to_repentance",
+    "label": "Turn ye unto me, saith the Lord of hosts, and I will turn unto you",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "ZEC.1.1",
+      "ZEC.1.2",
+      "ZEC.1.3",
+      "ZEC.1.4",
+      "ZEC.1.5",
+      "ZEC.1.6"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0 -- no external PD source claimed): Zechariah 1:1-6, dated the eighth month of the second year of Darius -- an opening call not to be as the fathers, who did not hearken to the former prophets.",
+    "kjv_superscription": null,
+    "ref_note": "Date: 'the eighth month, in the second year of Darius' (1:1), interpolated from the pre-existing theo-246. Place: Jerusalem, implicit throughout via this book's own shared setting with Haggai.",
+    "order_key": 1
+  },
+  {
+    "id": "zec_vision_1_horsemen_among_the_myrtles",
+    "label": "The first vision: the horsemen among the myrtle trees",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "ZEC.1.7",
+      "ZEC.1.8",
+      "ZEC.1.9",
+      "ZEC.1.10",
+      "ZEC.1.11",
+      "ZEC.1.12",
+      "ZEC.1.13",
+      "ZEC.1.14",
+      "ZEC.1.15",
+      "ZEC.1.16",
+      "ZEC.1.17"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 1:7-17, dated the twenty-fourth day of the eleventh month (Sebat), second year of Darius -- riders patrol the earth and report it at rest, and the Lord answers with comfortable words: 'my house shall be built in it... and a line shall be stretched forth upon Jerusalem.'",
+    "kjv_superscription": null,
+    "ref_note": "Date: 'upon the four and twentieth day of the eleventh month, which is the month Sebat, in the second year of Darius' (1:7), interpolated from theo-246. Place: Jerusalem, explicit throughout (1:12, 1:14, 1:16-17). First of eight night visions (the master brief's own named 'per vision' granularity).",
+    "order_key": 2
+  },
+  {
+    "id": "zec_vision_2_four_horns_and_four_carpenters",
+    "label": "The second vision: the four horns and the four carpenters",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "ZEC.1.18",
+      "ZEC.1.19",
+      "ZEC.1.20",
+      "ZEC.1.21"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 1:18-21, four horns that scattered Judah, Israel, and Jerusalem, and four carpenters (smiths) raised up to fray them.",
+    "kjv_superscription": null,
+    "ref_note": "Same dated night as zec_vision_1_horsemen_among_the_myrtles. Second of eight night visions.",
+    "order_key": 3
+  },
+  {
+    "id": "zec_vision_3_the_man_with_the_measuring_line",
+    "label": "The third vision: the man with the measuring line",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "ZEC.2.1",
+      "ZEC.2.2",
+      "ZEC.2.3",
+      "ZEC.2.4",
+      "ZEC.2.5",
+      "ZEC.2.6",
+      "ZEC.2.7",
+      "ZEC.2.8",
+      "ZEC.2.9",
+      "ZEC.2.10",
+      "ZEC.2.11",
+      "ZEC.2.12",
+      "ZEC.2.13"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 2, a man measuring Jerusalem, told instead that the city shall be inhabited without walls, for the Lord himself 'will be unto her a wall of fire round about' -- closing on the call for Zion to escape Babylon while many nations join themselves to the Lord.",
+    "kjv_superscription": null,
+    "ref_note": "Same dated setting as zec_vision_1_horsemen_among_the_myrtles. Third of eight night visions.",
+    "order_key": 4
+  },
+  {
+    "id": "zec_vision_4_joshua_before_satan_and_the_branch",
+    "label": "The fourth vision: Joshua the high priest before Satan, and the promised BRANCH",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "ZEC.3.1",
+      "ZEC.3.2",
+      "ZEC.3.3",
+      "ZEC.3.4",
+      "ZEC.3.5",
+      "ZEC.3.6",
+      "ZEC.3.7",
+      "ZEC.3.8",
+      "ZEC.3.9",
+      "ZEC.3.10"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 3, Joshua the high priest standing in filthy garments before the angel of the Lord, with Satan resisting him; the Lord rebukes Satan, removes Joshua's own iniquity, and promises 'my servant the BRANCH,' a stone with seven eyes.",
+    "kjv_superscription": null,
+    "ref_note": "Same dated setting as zec_vision_1_horsemen_among_the_myrtles. Fourth of eight night visions.",
+    "order_key": 5
+  },
+  {
+    "id": "zec_vision_5_the_golden_candlestick_and_olive_trees",
+    "label": "The fifth vision: the golden candlestick and the two olive trees",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "ZEC.4.1",
+      "ZEC.4.2",
+      "ZEC.4.3",
+      "ZEC.4.4",
+      "ZEC.4.5",
+      "ZEC.4.6",
+      "ZEC.4.7",
+      "ZEC.4.8",
+      "ZEC.4.9",
+      "ZEC.4.10",
+      "ZEC.4.11",
+      "ZEC.4.12",
+      "ZEC.4.13",
+      "ZEC.4.14"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 4, an all-gold candlestick with seven lamps fed by two olive trees, and the word to Zerubbabel -- 'not by might, nor by power, but by my spirit, saith the Lord of hosts' -- his own hands having laid the temple's foundation shall also finish it.",
+    "kjv_superscription": null,
+    "ref_note": "Same dated setting as zec_vision_1_horsemen_among_the_myrtles. Fifth of eight night visions.",
+    "order_key": 6
+  },
+  {
+    "id": "zec_vision_6_the_flying_roll",
+    "label": "The sixth vision: the flying roll",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "ZEC.5.1",
+      "ZEC.5.2",
+      "ZEC.5.3",
+      "ZEC.5.4"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 5:1-4, a flying scroll twenty cubits by ten -- the curse that goes forth over the whole earth against thieves and false swearers.",
+    "kjv_superscription": null,
+    "ref_note": "Same dated setting as zec_vision_1_horsemen_among_the_myrtles. Sixth of eight night visions.",
+    "order_key": 7
+  },
+  {
+    "id": "zec_vision_7_the_woman_in_the_ephah",
+    "label": "The seventh vision: the woman in the ephah",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "ZEC.5.5",
+      "ZEC.5.6",
+      "ZEC.5.7",
+      "ZEC.5.8",
+      "ZEC.5.9",
+      "ZEC.5.10",
+      "ZEC.5.11"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 5:5-11, an ephah with a woman named Wickedness sealed inside it by a weight of lead, carried away by two winged women to be set up in the land of Shinar.",
+    "kjv_superscription": null,
+    "ref_note": "Same dated setting as zec_vision_1_horsemen_among_the_myrtles. Seventh of eight night visions.",
+    "order_key": 8
+  },
+  {
+    "id": "zec_vision_8_the_four_chariots",
+    "label": "The eighth vision: the four chariots",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "ZEC.6.1",
+      "ZEC.6.2",
+      "ZEC.6.3",
+      "ZEC.6.4",
+      "ZEC.6.5",
+      "ZEC.6.6",
+      "ZEC.6.7",
+      "ZEC.6.8"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 6:1-8, four chariots between two mountains of brass, the four spirits of the heavens sent to patrol the earth -- those toward the north country have quieted the Lord's own spirit there.",
+    "kjv_superscription": null,
+    "ref_note": "Same dated setting as zec_vision_1_horsemen_among_the_myrtles. Eighth and last of the night visions.",
+    "order_key": 9
+  },
+  {
+    "id": "zec_the_crowning_of_joshua",
+    "label": "The crowning of Joshua the high priest: Behold the man whose name is The BRANCH",
+    "when": {
+      "from_year": -520,
+      "to_year": -520
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "ZEC.6.9",
+      "ZEC.6.10",
+      "ZEC.6.11",
+      "ZEC.6.12",
+      "ZEC.6.13",
+      "ZEC.6.14",
+      "ZEC.6.15"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 6:9-15, a real, narrated sign-act following the eight night visions -- silver and gold crowns made from the returned exiles' own gift and set upon Joshua the high priest's own head, with the promise, 'behold the man whose name is The BRANCH... he shall build the temple of the Lord... and he shall be a priest upon his throne.'",
+    "kjv_superscription": null,
+    "ref_note": "Same dated setting as the night visions immediately preceding (no new date given, and 'the same day' framing continues from 6:10). Place: Jerusalem, the temple, explicit (6:12-15).",
+    "order_key": 10
+  },
+  {
+    "id": "zec_the_question_of_fasting",
+    "label": "Should I weep in the fifth month? A question about the fasts",
+    "when": {
+      "from_year": -518,
+      "to_year": -518
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "ZEC.7.1",
+      "ZEC.7.2",
+      "ZEC.7.3",
+      "ZEC.7.4",
+      "ZEC.7.5",
+      "ZEC.7.6",
+      "ZEC.7.7",
+      "ZEC.7.8",
+      "ZEC.7.9",
+      "ZEC.7.10",
+      "ZEC.7.11",
+      "ZEC.7.12",
+      "ZEC.7.13",
+      "ZEC.7.14"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 7, dated the fourth day of the ninth month (Chisleu), fourth year of Darius -- envoys from Beth-el ask the priests whether the mourning fasts of the exile should continue, answered first by a rebuke recalling the former prophets and the seventy years, and the call to execute true judgment and shew mercy.",
+    "kjv_superscription": null,
+    "ref_note": "Date: 'the fourth year of king Darius... the fourth day of the ninth month, even in Chisleu' (7:1) -- a simple, text-explicit two-year forward count from the night visions' own 'second year of Darius' (theo-246's own -520 reused as the anchor), the same discipline 1samuel.toml's own 'twenty years after the ark's own capture' precedent already establishes. Place: Jerusalem, explicit ('the house of God,' 7:2-3).",
+    "order_key": 11
+  },
+  {
+    "id": "zec_gods_answer_true_judgment_and_future_joy",
+    "label": "The Lord's own answer: true judgment now, and joy and gladness to come",
+    "when": {
+      "from_year": -518,
+      "to_year": -518
+    },
+    "places": [
+      "jerusalem"
+    ],
+    "verses": [
+      "ZEC.8.1",
+      "ZEC.8.2",
+      "ZEC.8.3",
+      "ZEC.8.4",
+      "ZEC.8.5",
+      "ZEC.8.6",
+      "ZEC.8.7",
+      "ZEC.8.8",
+      "ZEC.8.9",
+      "ZEC.8.10",
+      "ZEC.8.11",
+      "ZEC.8.12",
+      "ZEC.8.13",
+      "ZEC.8.14",
+      "ZEC.8.15",
+      "ZEC.8.16",
+      "ZEC.8.17",
+      "ZEC.8.18",
+      "ZEC.8.19",
+      "ZEC.8.20",
+      "ZEC.8.21",
+      "ZEC.8.22",
+      "ZEC.8.23"
+    ],
+    "kind": "event",
+    "witnesses": [],
+    "robertson_section": null,
+    "acts_section": null,
+    "atlas_section": "Zechariah pericope (this project's own sectioning, CC0): Zechariah 8, the Lord's own extended answer, formally distinct ('again the word of the Lord of hosts came to me') -- Jerusalem to be called 'a city of truth,' old men and women and playing children again filling her streets, the fasts turned to joy and gladness, and many nations coming to seek the Lord in Jerusalem, taking hold of the skirt of a Jew, saying, 'we will go with you: for we have heard that God is with you.'",
+    "kjv_superscription": null,
+    "ref_note": "Same dated setting as zec_the_question_of_fasting (its own direct, formally-marked answer). Place: Jerusalem, explicit throughout.",
+    "order_key": 12
   },
   {
     "id": "ret_jerusalem_temple",

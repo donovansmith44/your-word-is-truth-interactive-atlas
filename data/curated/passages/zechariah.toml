@@ -1,0 +1,231 @@
+# Batch W4 (whole-Bible titled verse containers, fourth run: the Prophets).
+# Zechariah, in the SAME `[[event]]` schema every other `passages/*.toml`
+# file uses. KIND POLICY: see obadiah.toml's own header note.
+#
+# RECONCILIATION: one pre-existing bare Theographic event touches this book
+# -- `theo-246` ("Prophecies of Zechariah," all 211 verses, -520). LAYER-0,
+# not heading-worthy today; every container below stays well under the 0.8
+# jaccard sweep floor against it (largest, 23/211 = 0.109).
+#
+# GRANULARITY/KIND, the book's own well-recognized two-part structure:
+# chapters 1-8 ("First Zechariah") carry the text's OWN explicit
+# day/month/regnal-year date-stamps throughout (1:1, 1:7, 7:1) -- this
+# slice's own EVENT-kind case, matching Haggai's contemporaneous setting
+# (the same "second year of Darius," reused/interpolated from theo-246's
+# own -520; chapters 7-8's own explicit 'fourth year of Darius' is a
+# simple, text-explicit two-year forward count from that same anchor, the
+# same discipline data/curated/passages/1samuel.toml's own 'twenty years
+# after the ark's own capture' precedent already establishes -- never an
+# independently fresh Ussher derivation). The EIGHT NIGHT VISIONS
+# (1:7-6:8) are split per-vision, the master brief's own named 'Daniel's
+# visions per vision' granularity; the crowning of Joshua (6:9-15) is a
+# real, narrated sign-act in the same dated setting. Chapters 9-14 ("Second
+# Zechariah," two 'burdens,' 9:1 and 12:1) carry NO text-explicit date --
+# GENERAL-kind, per this file's own header policy. PLACE (Part 1 only):
+# Jerusalem throughout -- explicit via Zerubbabel/Joshua the high priest's
+# own presence and the temple's own rebuilding, the same setting Haggai
+# shares.
+
+# --- Part 1: dated (1:1-8:23), EVENT-kind -------------------------------
+
+[[event]]
+id = "zec_call_to_repentance"
+label = "Turn ye unto me, saith the Lord of hosts, and I will turn unto you"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 1
+places = ["jerusalem"]
+verses = ["ZEC.1.1-6"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0 -- no external PD source claimed): Zechariah 1:1-6, dated the eighth month of the second year of Darius -- an opening call not to be as the fathers, who did not hearken to the former prophets."
+ref_note = "Date: 'the eighth month, in the second year of Darius' (1:1), interpolated from the pre-existing theo-246. Place: Jerusalem, implicit throughout via this book's own shared setting with Haggai."
+
+[[event]]
+id = "zec_vision_1_horsemen_among_the_myrtles"
+label = "The first vision: the horsemen among the myrtle trees"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 2
+places = ["jerusalem"]
+verses = ["ZEC.1.7-17"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 1:7-17, dated the twenty-fourth day of the eleventh month (Sebat), second year of Darius -- riders patrol the earth and report it at rest, and the Lord answers with comfortable words: 'my house shall be built in it... and a line shall be stretched forth upon Jerusalem.'"
+ref_note = "Date: 'upon the four and twentieth day of the eleventh month, which is the month Sebat, in the second year of Darius' (1:7), interpolated from theo-246. Place: Jerusalem, explicit throughout (1:12, 1:14, 1:16-17). First of eight night visions (the master brief's own named 'per vision' granularity)."
+
+[[event]]
+id = "zec_vision_2_four_horns_and_four_carpenters"
+label = "The second vision: the four horns and the four carpenters"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 3
+places = ["jerusalem"]
+verses = ["ZEC.1.18-21"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 1:18-21, four horns that scattered Judah, Israel, and Jerusalem, and four carpenters (smiths) raised up to fray them."
+ref_note = "Same dated night as zec_vision_1_horsemen_among_the_myrtles. Second of eight night visions."
+
+[[event]]
+id = "zec_vision_3_the_man_with_the_measuring_line"
+label = "The third vision: the man with the measuring line"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 4
+places = ["jerusalem"]
+verses = ["ZEC.2.1-13"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 2, a man measuring Jerusalem, told instead that the city shall be inhabited without walls, for the Lord himself 'will be unto her a wall of fire round about' -- closing on the call for Zion to escape Babylon while many nations join themselves to the Lord."
+ref_note = "Same dated setting as zec_vision_1_horsemen_among_the_myrtles. Third of eight night visions."
+
+[[event]]
+id = "zec_vision_4_joshua_before_satan_and_the_branch"
+label = "The fourth vision: Joshua the high priest before Satan, and the promised BRANCH"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 5
+places = ["jerusalem"]
+verses = ["ZEC.3.1-10"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 3, Joshua the high priest standing in filthy garments before the angel of the Lord, with Satan resisting him; the Lord rebukes Satan, removes Joshua's own iniquity, and promises 'my servant the BRANCH,' a stone with seven eyes."
+ref_note = "Same dated setting as zec_vision_1_horsemen_among_the_myrtles. Fourth of eight night visions."
+
+[[event]]
+id = "zec_vision_5_the_golden_candlestick_and_olive_trees"
+label = "The fifth vision: the golden candlestick and the two olive trees"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 6
+places = ["jerusalem"]
+verses = ["ZEC.4.1-14"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 4, an all-gold candlestick with seven lamps fed by two olive trees, and the word to Zerubbabel -- 'not by might, nor by power, but by my spirit, saith the Lord of hosts' -- his own hands having laid the temple's foundation shall also finish it."
+ref_note = "Same dated setting as zec_vision_1_horsemen_among_the_myrtles. Fifth of eight night visions."
+
+[[event]]
+id = "zec_vision_6_the_flying_roll"
+label = "The sixth vision: the flying roll"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 7
+places = ["jerusalem"]
+verses = ["ZEC.5.1-4"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 5:1-4, a flying scroll twenty cubits by ten -- the curse that goes forth over the whole earth against thieves and false swearers."
+ref_note = "Same dated setting as zec_vision_1_horsemen_among_the_myrtles. Sixth of eight night visions."
+
+[[event]]
+id = "zec_vision_7_the_woman_in_the_ephah"
+label = "The seventh vision: the woman in the ephah"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 8
+places = ["jerusalem"]
+verses = ["ZEC.5.5-11"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 5:5-11, an ephah with a woman named Wickedness sealed inside it by a weight of lead, carried away by two winged women to be set up in the land of Shinar."
+ref_note = "Same dated setting as zec_vision_1_horsemen_among_the_myrtles. Seventh of eight night visions."
+
+[[event]]
+id = "zec_vision_8_the_four_chariots"
+label = "The eighth vision: the four chariots"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 9
+places = ["jerusalem"]
+verses = ["ZEC.6.1-8"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 6:1-8, four chariots between two mountains of brass, the four spirits of the heavens sent to patrol the earth -- those toward the north country have quieted the Lord's own spirit there."
+ref_note = "Same dated setting as zec_vision_1_horsemen_among_the_myrtles. Eighth and last of the night visions."
+
+[[event]]
+id = "zec_the_crowning_of_joshua"
+label = "The crowning of Joshua the high priest: Behold the man whose name is The BRANCH"
+kind = "event"
+from_year = -520
+to_year = -520
+order_key = 10
+places = ["jerusalem"]
+verses = ["ZEC.6.9-15"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 6:9-15, a real, narrated sign-act following the eight night visions -- silver and gold crowns made from the returned exiles' own gift and set upon Joshua the high priest's own head, with the promise, 'behold the man whose name is The BRANCH... he shall build the temple of the Lord... and he shall be a priest upon his throne.'"
+ref_note = "Same dated setting as the night visions immediately preceding (no new date given, and 'the same day' framing continues from 6:10). Place: Jerusalem, the temple, explicit (6:12-15)."
+
+[[event]]
+id = "zec_the_question_of_fasting"
+label = "Should I weep in the fifth month? A question about the fasts"
+kind = "event"
+from_year = -518
+to_year = -518
+order_key = 11
+places = ["jerusalem"]
+verses = ["ZEC.7.1-14"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 7, dated the fourth day of the ninth month (Chisleu), fourth year of Darius -- envoys from Beth-el ask the priests whether the mourning fasts of the exile should continue, answered first by a rebuke recalling the former prophets and the seventy years, and the call to execute true judgment and shew mercy."
+ref_note = "Date: 'the fourth year of king Darius... the fourth day of the ninth month, even in Chisleu' (7:1) -- a simple, text-explicit two-year forward count from the night visions' own 'second year of Darius' (theo-246's own -520 reused as the anchor), the same discipline 1samuel.toml's own 'twenty years after the ark's own capture' precedent already establishes. Place: Jerusalem, explicit ('the house of God,' 7:2-3)."
+
+[[event]]
+id = "zec_gods_answer_true_judgment_and_future_joy"
+label = "The Lord's own answer: true judgment now, and joy and gladness to come"
+kind = "event"
+from_year = -518
+to_year = -518
+order_key = 12
+places = ["jerusalem"]
+verses = ["ZEC.8.1-23"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 8, the Lord's own extended answer, formally distinct ('again the word of the Lord of hosts came to me') -- Jerusalem to be called 'a city of truth,' old men and women and playing children again filling her streets, the fasts turned to joy and gladness, and many nations coming to seek the Lord in Jerusalem, taking hold of the skirt of a Jew, saying, 'we will go with you: for we have heard that God is with you.'"
+ref_note = "Same dated setting as zec_the_question_of_fasting (its own direct, formally-marked answer). Place: Jerusalem, explicit throughout."
+
+# --- Part 2: undated (9:1-14:21, the two 'burdens'), GENERAL-kind --------
+
+[[event]]
+id = "zec_burden_1_judgment_on_the_nations"
+label = "The burden of the word of the Lord in the land of Hadrach"
+kind = "general"
+verses = ["ZEC.9.1-8"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0 -- no external PD source claimed): Zechariah 9:1-8, the first of two 'burden' oracles opening this book's own second part -- judgment on Hadrach, Damascus, Hamath, Tyre, Sidon, and the Philistine cities, with a remnant of Ekron becoming 'as a Jebusite,' and the Lord's own promise to encamp about his house."
+ref_note = "GENERAL-kind: oracle, no date of its own claimed, per this file's own header note. The 'burden' formula (9:1) is not cleanly separable into a short title clause the way Nahum's/Habakkuk's own superscriptions are (it runs directly into 'and Damascus shall be the rest thereof'), so this container's own title is this project's own CC0 phrasing, not a kjv_superscription."
+
+[[event]]
+id = "zec_the_coming_king_on_a_donkey"
+label = "Rejoice greatly, O daughter of Zion: thy King cometh unto thee, lowly, and riding upon an ass"
+kind = "general"
+verses = ["ZEC.9.9-17"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 9:9-17, the promised king who comes 'lowly, and riding upon an ass, and upon a colt the foal of an ass,' the prisoners set free 'by the blood of thy covenant,' and Judah and Ephraim raised up as a mighty bow against Greece."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "zec_shepherds_and_the_flock_gathered"
+label = "Ask ye of the Lord rain: false shepherds rebuked, and the flock gathered home"
+kind = "general"
+verses = ["ZEC.10.1-12"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 10, a call to ask the Lord (not idols or diviners) for rain, judgment on false shepherds, and the promise to strengthen Judah and Joseph and bring them home again from Egypt and Assyria."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "zec_the_two_staves_and_thirty_pieces_of_silver"
+label = "The two staves, Beauty and Bands; thirty pieces of silver cast to the potter"
+kind = "general"
+verses = ["ZEC.11.1-17"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 11, a sign-act narrated in the first person -- feeding the flock of slaughter with two staves, Beauty and Bands, cutting the first asunder to break the covenant with 'all the people,' receiving 'thirty pieces of silver' as his own price and casting it to the potter in the house of the Lord, cutting the second staff to break the brotherhood of Judah and Israel, and a closing woe against 'the idol shepherd that leaveth the flock.'"
+ref_note = "GENERAL-kind, per this file's own header note -- no date of its own claimed for this second-part oracle, consistent with this file's own header policy, even though narrated in a vivid first-person sign-act voice."
+
+[[event]]
+id = "zec_jerusalem_cup_of_trembling"
+label = "The burden of the word of the Lord for Israel"
+kind = "general"
+verses = ["ZEC.12.1-14"]
+kjv_superscription = "ZEC.12.1's own opening clause, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row) -- the second of this book's own two 'burden' superscriptions, here cleanly separable from the content that follows at 12:2."
+ref_note = "GENERAL-kind, per this file's own header note. Content: Jerusalem made 'a cup of trembling' and 'a burdensome stone' to the nations besieging her, the spirit of grace and supplication poured out on the house of David, and 'they shall look upon me whom they have pierced, and they shall mourn for him.'"
+
+[[event]]
+id = "zec_the_fountain_opened_and_the_shepherd_smitten"
+label = "A fountain opened for sin; awake, O sword, against my shepherd"
+kind = "general"
+verses = ["ZEC.13.1-9"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 13, a fountain opened to the house of David for sin and uncleanness, idols and false prophets cut off from the land, and the Lord's own sword called against 'my shepherd, and against the man that is my fellow: smite the shepherd, and the sheep shall be scattered' -- closing on a third of the people refined as silver through the fire."
+ref_note = "GENERAL-kind, per this file's own header note."
+
+[[event]]
+id = "zec_the_day_of_the_lord_and_living_waters"
+label = "The day of the Lord: living waters flow from Jerusalem, and the Lord is king over all the earth"
+kind = "general"
+verses = ["ZEC.14.1-21"]
+atlas_section = "Zechariah pericope (this project's own sectioning, CC0): Zechariah 14, the book's own closing apocalyptic vision -- Jerusalem besieged, the Lord's own feet standing on the mount of Olives, which cleaves in two; living waters flowing out from Jerusalem toward both seas; the Lord king over all the earth; and the surviving nations going up year by year to keep the feast of tabernacles, closing on 'HOLINESS UNTO THE LORD' upon the very bells of the horses."
+ref_note = "GENERAL-kind, per this file's own header note."

@@ -54,4 +54,15 @@ declared = [
   "1SA", "2SA", "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST",
   "JOB", "PSA", "PRO", "ECC", "SNG",
   "OBA", "JON", "NAM", "HAB", "ZEP", "HAG", "JOL",
+  "MAL", "AMO", "HOS", "ZEC",
 ]
+# NOTE: Micah is intentionally NOT yet declared here, though the real
+# compiled data already fully covers it (theo-220's own pre-existing
+# whole-book mega-span silently backstops MIC.4.1-3, the SAME "genuine
+# finding, not leaned on" disposition batch-w3-report.md already
+# established for Job/theo-117) -- MIC.4.1-3's own REAL heading comes from
+# the req 1b Isaiah 2:2-4 || Micah 4:1-3 witness (hosted on
+# isa_mountain_of_the_lords_house), authored together with Isaiah. Declared
+# once Isaiah lands in the same run, so this book's own declared coverage
+# reflects real titled/witnessed containers throughout, not the backstop
+# alone.
