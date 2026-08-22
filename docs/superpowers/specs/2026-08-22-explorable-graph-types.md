@@ -182,14 +182,24 @@ pub struct TokenSpan { pub layer: TranslationId, pub start: u16, pub end: u16 }
 /// The general text address: any corpus, any unit, optional sub-span.
 pub struct TextLocus { pub at: TextRef, pub span: Option<TokenSpan> }
 
-/// REFINEMENT where LAW demands Scripture specifically. The witness canon
-/// ("the compiled KJV text is the canon of witnesses") is a type, not a
-/// convention: `witnesses` accepts KjvLocus, so an extrabiblical witness
-/// is a compile error, while `mentions`/future citation edges accept the
-/// general TextLocus and may cross corpora freely.
-pub struct KjvLocus { pub verse: VerseRef, pub span: Option<TokenSpan> }
-// impl From<KjvLocus> for TextLocus — widening is free; narrowing is a
-// checked parse.
+/// REFINEMENT where LAW demands Scripture specifically — typed to the
+/// CORPUS, not to any one translation (owner, 2026-08-22: "parallel
+/// accounts are necessarily scriptural... the KJV isn't the only
+/// trustworthy translation and our types should reflect that").
+/// BibleLocus is layer-neutral at verse level (the skeleton); which
+/// translations are TRUSTWORTHY to render law-bearing text is registry
+/// data on Translation nodes, with the KJV as the canonical layer
+/// (inerrancy directive; citation integrity checks against it). So: an
+/// extrabiblical witness is a compile error (corpus bound), and a
+/// witness pinned to one translation is unrepresentable (the locus
+/// carries no layer; renderings are per-trusted-layer) — while
+/// `mentions`/citation edges accept the general TextLocus and may cross
+/// corpora freely.
+pub struct BibleLocus { pub verse: VerseRef, pub span: Option<TokenSpan> }
+// = Locus<BibleTag>; the historical name KjvLocus is retired — it
+// conflated the corpus with its canonical layer.
+// impl From<BibleLocus> for TextLocus — widening is free; narrowing is
+// a checked parse.
 
 /// LAW (owner, 2026-08-22): refs are RECURSIVE-BY-RELATION, and the Book
 /// of Concord must never be confusable with Scripture. Both are enforced
@@ -228,11 +238,11 @@ pub struct CorpusMeta {
 /// with the rest of it." A container groups text WITHIN one corpus (it
 /// is part of that corpus's structural layer); Scripture appearing in
 /// extrabiblical material is reachable ONLY through Scripture-typed
-/// edges (quotes/cites, whose objects are KjvLocusRange) — never as
+/// edges (quotes/cites, whose objects are BibleLocusRange) — never as
 /// content. The general locus is parameterized by corpus, and KjvLocus
 /// becomes an INSTANCE of it rather than a special case:
 pub struct Locus<C: CorpusTag> { pub unit: C::Ref, pub span: Option<TokenSpan> }
-//   pub type KjvLocus     = Locus<KjvTag>;      // the witness-canon refinement, unified
+//   pub type BibleLocus   = Locus<BibleTag>;    // the witness-canon refinement, unified
 //   pub type ConcordLocus = Locus<ConcordTag>;
 // (TextLocus remains the corpus-erased wire/UI form; narrowing is a
 // checked parse, as with AnyNodeId.)
@@ -377,7 +387,7 @@ relations! {
     // ---- authored, directed ----
     directed  Contains<C>   { row: Contains<C>,   subject: ContainerId<C>, object: Locus<C>,
                               labels: "contains" / "member-of" }
-    directed  Witnesses     { row: Witnesses,     subject: EventId,        object: KjvLocusRange,
+    directed  Witnesses     { row: Witnesses,     subject: EventId,        object: BibleLocusRange,
                               labels: "witnesses" / "witnessed-by" }
     directed  Succession    { row: Succession,    subject: EventId,        object: EventId,
                               labels: "follows-in" / "precedes-in",  tagged_by: NarrativeId }
@@ -392,7 +402,7 @@ relations! {
                               labels: "mentions" / "mentioned-in" }
     directed  Cites         { row: CrossRef,      subject: TextLocus,      object: TextLocus,
                               labels: "cites" / "cited-by" }
-    directed  Quotes        { row: Quotes,        subject: TextLocus,      object: KjvLocusRange,
+    directed  Quotes        { row: Quotes,        subject: TextLocus,      object: BibleLocusRange,
                               labels: "quotes" / "quoted-by" }
     // ---- edge-position relations (edges are positions; §3 Grounds) ----
     directed  GroundedIn    { row: GroundRow,     subject: EdgeId,         object: GroundTarget,
@@ -459,7 +469,7 @@ pub enum Position { Node(AnyNodeId), Edge(EdgeId) }   // Holdings = BTreeSet<Pos
 /// derives from is unrepresentable.
 pub struct Grounds(Vec<Ground>);
 pub enum Ground {
-    Scripture(KjvLocusRange),     // the owner's example: sequence/date justified by the text
+    Scripture(BibleLocusRange),   // the owner's example: sequence/date justified by the text
     Anchor(AnchorId),             // chronology grounds
     DerivedFrom(Vec<EdgeId>),     // derived edges: the exact rows the compiler used
     Source(SourceId),             // e.g., a Robertson section for a harmony ordering
@@ -487,7 +497,12 @@ pub struct Contains<C: CorpusTag> {
 /// so `parallel` is DERIVED from co-witnessing and cannot disagree with it.
 pub struct Witnesses {
     pub event: EventId,
-    pub witness: KjvLocusRange,           // Scripture-typed: the witness canon as a type
+    pub witness: BibleLocusRange,         // SCRIPTURE-typed (corpus bound; Concord can
+                                          // never witness), layer-neutral: renderings
+                                          // come from trusted translation layers, KJV
+                                          // canonical (the existing witness data's
+                                          // translations->verse-set indirection was
+                                          // this shape all along)
     pub provenance: ProvenanceId,
 }
 
@@ -498,7 +513,7 @@ pub struct Witnesses {
 /// "corrected" in either corpus (both fidelity laws stand).
 pub struct Quotes {
     pub quoting: TextLocus,               // e.g. a span within an SD paragraph
-    pub quoted:  KjvLocusRange,           // Scripture, by refinement
+    pub quoted:  BibleLocusRange,         // Scripture, by refinement (layer-neutral; wording-match metadata may name a layer)
     pub provenance: ProvenanceId,
 }
 
