@@ -73,8 +73,52 @@ GLOSSARY (owner-calibrated, 2026-08-22):
 ## 1. Identity and text addressing
 
 ```rust
+/// LAW (owner, 2026-08-22): "we need IDs for everything... IDs must be
+/// hashes of the thing to which they correspond from which we can derive
+/// the thing." Identity is CONTENT-ADDRESSED, and the id is a key into a
+/// content-addressed store — the git model, fitting a community project
+/// that lives on git:
+///
+///   pid            = kind-tag ++ hash(canonical_bytes(thing))
+///   derive         : Store -> Pid -> Thing          (lookup)
+///   VERIFICATION   : hash(canonical_bytes(derive(store, pid))) == pid
+///                    — every fetch is SELF-VERIFYING; a tampered or
+///                    corrupted thing cannot satisfy its own id.
+///
+/// - CANONICAL BYTES: every thing kind defines one deterministic
+///   serialization (fixed field order, normalized text) — the same form
+///   derive returns. Identical content ⇒ identical pid ⇒ stored once
+///   (dedup is free).
+/// - MERKLE STRUCTURE: things reference other things BY PID (edges name
+///   endpoint pids; containers name locus pids; explorations name step
+///   pids), so a pid roots a verifiable subgraph and deriving a thing
+///   can transitively derive everything it references. GraphVersion IS
+///   the root hash: two compiles are equal iff their roots are equal.
+/// - CHANGE = NEW PID: fixing a thing creates a new thing (the avalanche
+///   through referencing pids is honest — a claim about a corrected node
+///   is a different claim). Continuity is SUPERSESSION: each recompile
+///   emits old-pid -> new-pid records (tombstones with superseded_by),
+///   so a community citation never rots — it resolves to the exact
+///   version discussed, with the chain forward. Comments attach to
+///   pids, i.e., to exact content versions; the governance loop is
+///   comment -> curation -> assertion change -> recompile ->
+///   supersession keeps the discussion attached.
+/// - NAMES ARE REFS, NOT IDENTITY: human handles (jm_jordan, JHN.3.16)
+///   are a mutable name->pid layer (git refs, exactly) — readable,
+///   curated, re-pointable; the hash beneath never lies.
+/// - EXPLORATIONS: serialized walks, content-addressed like everything
+///   else — shareable, commentable, never compiled truth.
+pub struct Pid { pub kind: PositionKindTag, pub hash: Multihash }
+pub struct Tombstone { pub retired: Pid, pub superseded_by: Option<Pid>,
+                       pub reason: ProvenanceId }
+pub trait ContentAddressed {
+    fn canonical_bytes(&self) -> Vec<u8>;        // the derivation format
+    fn pid(&self) -> Pid;                        // = hash of canonical_bytes
+}
+
 /// Kind-tagged identity: a NodeId knows what sort of thing it names, so a
 /// cross-kind reference is a type error, not a runtime surprise.
+/// (NodeId/EdgeId are TYPED in-memory handles resolving to Pids.)
 pub struct NodeId<K: NodeKindTag>(Interned, PhantomData<K>);
 pub type EventId     = NodeId<EventTag>;
 pub type ContainerId = NodeId<ContainerTag>;
@@ -711,6 +755,14 @@ IReadOnlyDictionary<EdgeKind, ISectionRenderer> Registry { get; }
   plus grounds or computed derivation; a derived edge that cannot name
   its derivation is unrepresentable; the grounds-for dual lets Scripture
   answer "what claims rest on me?").
+- An unaddressable thing (every node, edge, and saved exploration IS its
+  content hash; comments always have somewhere exact to land).
+- An unverifiable fetch (derive's round-trip law: what comes back must
+  hash to the pid that asked for it).
+- Identical content stored twice (content addressing dedups by
+  construction).
+- A community citation rotting (change mints a new pid; supersession
+  records carry the chain; nothing is recycled).
 
 ## 10. Open type questions (flagged, not hidden)
 

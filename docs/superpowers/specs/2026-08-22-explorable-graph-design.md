@@ -200,6 +200,22 @@ pairs and remaining polish items carry into the re-scoped queue.
 - Sub-verse exploration requires no schema change when materialized
   (locus addressing already carries it).
 
+## 9b. Community addressability (owner, 2026-08-22)
+
+The project is headed for open-source, community-driven development:
+people comment on nodes, edges, and explorations, and those comments
+inform direction ("This edge has heretical implications. Fix it!"). The
+identity contract serving that community: EVERY thing's id is the hash
+of its canonical content, and the id is a key from which the thing is
+derivable (content-addressed store; self-verifying fetches; Merkle
+references; GraphVersion = root hash). Change mints a new id; recompiles
+emit supersession records so citations resolve to the exact version
+discussed and chain forward — nothing recycled, nothing rotting. Human
+handles are a mutable name->id ref layer (the git model). The community
+layer (GitHub issues first; in-app annotation later) consumes ids and is
+never part of compiled truth; the governance loop is comment ->
+curation -> assertion change -> recompile -> supersession.
+
 ## 10. Deferred (deliberately)
 
 - Phrase/Word materialization trigger and KJV tokenization rules
