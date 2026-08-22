@@ -1,0 +1,95 @@
+# Batch W3 (whole-Bible titled verse containers, third run: Job-Song of
+# Solomon). Proverbs, in the SAME `[[event]]` schema `events-extra.toml`
+# uses -- see `data/curated/passages/genesis.toml`'s own header comment for
+# the full reconciliation/provenance framing.
+#
+# RECONCILIATION: zero pre-existing events touch Proverbs (fresh authoring
+# -- verified against the real compiled `events.json` before authoring).
+#
+# GRANULARITY (the brief's own "Proverbs/Ecclesiastes = collection/
+# discourse units"): nine sections, matching the book's own well-known
+# internal divisions -- most of which are marked by the KJV's OWN literal
+# heading verses ("The proverbs of Solomon...," "These are also proverbs
+# of Solomon, which the men of Hezekiah king of Judah copied out," "The
+# words of Agur...," "The words of king Lemuel...") and so carry
+# `kjv_superscription` provenance; the remainder (the extended discourses
+# of chapters 1-9, "the words of the wise" at 22:17, and the closing
+# acrostic praise of the virtuous woman at 31:10) carry no such formal KJV
+# tag of their own and so carry this project's own `atlas_section` CC0
+# title instead. A well-established, non-controversial literary-structure
+# decomposition (the same class of fact the owner's own doctrine note
+# explicitly permits), not textual criticism. ALL nine are GENERAL-kind
+# (wisdom/collection genre -- the brief's own honest default; no
+# traditional narrative date attaches to a collection of proverbs).
+
+[[event]]
+id = "pro_purpose_and_motto"
+label = "The proverbs of Solomon the son of David, king of Israel;"
+kind = "general"
+verses = ["PRO.1.1-7"]
+kjv_superscription = "PRO.1.1, the book's own opening superscription, quoted verbatim (public domain KJV text, per LICENSES.md's own 'KJV text' row)."
+ref_note = "GENERAL-kind: a collection/discourse unit, no date of its own. Verses 2-6 state the book's own purpose (to know wisdom and instruction); verse 7, 'The fear of the Lord is the beginning of knowledge,' is the book's own motto, closing this short opening unit."
+
+[[event]]
+id = "pro_discourses_and_wisdoms_call"
+label = "A father's discourses to his son, and Wisdom's own call"
+kind = "general"
+verses = ["PRO.1.8-33", "PRO.2.1-22", "PRO.3.1-35", "PRO.4.1-27", "PRO.5.1-23", "PRO.6.1-35", "PRO.7.1-27", "PRO.8.1-36", "PRO.9.1-18"]
+atlas_section = "Proverbs pericope (this project's own sectioning, CC0 -- no external PD source claimed): Proverbs 1:8-9:18, the extended parental discourses warning against the enticement of sinners and the strange woman, and Wisdom's own repeated calls -- personified crying in the streets (1:20-33), inviting all to her house (chapter 8-9) -- set against Folly's own competing invitation (9:13-18). Carries no KJV superscription of its own (distinct in KIND from the numbered-collection headings elsewhere in this book)."
+ref_note = "GENERAL-kind, per this file's own header note. Ends at 9:18 where the next section's own literal heading (10:1, 'The proverbs of Solomon') begins a structurally different kind of material (short, largely unconnected two-line sayings)."
+
+[[event]]
+id = "pro_proverbs_of_solomon"
+label = "The proverbs of Solomon."
+kind = "general"
+verses = ["PRO.10.1-32", "PRO.11.1-31", "PRO.12.1-28", "PRO.13.1-25", "PRO.14.1-35", "PRO.15.1-33", "PRO.16.1-33", "PRO.17.1-28", "PRO.18.1-24", "PRO.19.1-29", "PRO.20.1-30", "PRO.21.1-31", "PRO.22.1-16"]
+kjv_superscription = "PRO.10.1, the section's own literal KJV heading, quoted verbatim (public domain KJV text)."
+ref_note = "GENERAL-kind: a collection unit, no date of its own. The classic core of the book -- short, largely independent two-line proverbs, 10:1 through 22:16."
+
+[[event]]
+id = "pro_words_of_the_wise"
+label = "The words of the wise"
+kind = "general"
+verses = ["PRO.22.17-29", "PRO.23.1-35", "PRO.24.1-22"]
+atlas_section = "Proverbs pericope (this project's own sectioning, CC0): Proverbs 22:17-24:22, opening 'Bow down thine ear, and hear the words of the wise' (22:17) -- a collection of longer, more developed sayings than 10:1-22:16's own short couplets, closing with a warning against joining the rebellious (24:21-22)."
+ref_note = "GENERAL-kind, per this file's own header note. 22:17 functions as this section's own heading in sense (naming 'the words of the wise' explicitly) but is grammatically an exhortation, not a bare title tag like 10:1/25:1/30:1/31:1 -- titled here as atlas_section, not kjv_superscription, on that distinction."
+
+[[event]]
+id = "pro_further_words_of_the_wise"
+label = "These things also belong to the wise."
+kind = "general"
+verses = ["PRO.24.23-34"]
+kjv_superscription = "PRO.24.23, the section's own literal KJV heading, quoted verbatim (public domain KJV text)."
+ref_note = "GENERAL-kind, per this file's own header note. A short further collection, closing with the sluggard's field parable (24:30-34)."
+
+[[event]]
+id = "pro_hezekiahs_men_copied"
+label = "These are also proverbs of Solomon, which the men of Hezekiah king of Judah copied out."
+kind = "general"
+verses = ["PRO.25.1-28", "PRO.26.1-28", "PRO.27.1-27", "PRO.28.1-28", "PRO.29.1-27"]
+kjv_superscription = "PRO.25.1, the section's own literal KJV heading, quoted verbatim (public domain KJV text) -- a provenance note within the KJV text itself, naming King Hezekiah's own scribes, not a claim this project makes independently."
+ref_note = "GENERAL-kind, per this file's own header note. A second, larger Solomonic collection, chapters 25-29."
+
+[[event]]
+id = "pro_words_of_agur"
+label = "The words of Agur the son of Jakeh, even the prophecy:"
+kind = "general"
+verses = ["PRO.30.1-33"]
+kjv_superscription = "PRO.30.1, the chapter's own literal KJV heading, quoted verbatim (public domain KJV text)."
+ref_note = "GENERAL-kind, per this file's own header note. Agur's own sayings, including the well-known numerical proverbs ('there be three things... yea, four,' repeated through the chapter)."
+
+[[event]]
+id = "pro_words_of_lemuel"
+label = "The words of king Lemuel, the prophecy that his mother taught him."
+kind = "general"
+verses = ["PRO.31.1-9"]
+kjv_superscription = "PRO.31.1, the section's own literal KJV heading, quoted verbatim (public domain KJV text)."
+ref_note = "GENERAL-kind, per this file's own header note. King Lemuel's mother's own instruction, against wine and in favor of just judgment."
+
+[[event]]
+id = "pro_virtuous_woman"
+label = "In praise of the virtuous woman"
+kind = "general"
+verses = ["PRO.31.10-31"]
+atlas_section = "Proverbs pericope (this project's own sectioning, CC0): Proverbs 31:10-31, the closing acrostic poem (each verse beginning a successive letter of the Hebrew alphabet, in the original) in praise of the virtuous woman, 'whose price is far above rubies,' closing the book."
+ref_note = "GENERAL-kind, per this file's own header note. No KJV heading of its own -- 31:10 opens directly with the poem's own rhetorical question, unlike 25:1/30:1/31:1 immediately above it."
