@@ -26,12 +26,12 @@ fn load_real_atlas_data() -> AtlasData {
     AtlasData::load(&dir).expect("data/compiled/*.json must exist -- run `cargo run -p atlas-etl` from server/ first").finish()
 }
 
-fn load_real_graph() -> GraphService {
+fn load_real_graph(atlas: &AtlasData) -> GraphService {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
     // GraphService::build runs the FIDELITY LAW unconditionally as part of
     // construction (fix round 1) -- reaching this line already proves it
     // passed on the real committed KJV source.
-    GraphService::build(&dir).expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law")
+    GraphService::build(&dir, atlas).expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law")
 }
 
 /// The OLD `/api/chapter` handler's own text-gathering logic, reproduced
@@ -64,7 +64,7 @@ fn new_chapter_texts(graph: &GraphService, book_index: u8, chapter: u16) -> Vec<
 #[test]
 fn every_chapter_in_canon_matches_between_the_old_lookup_and_the_new_window_query() {
     let data = load_real_atlas_data();
-    let graph = load_real_graph();
+    let graph = load_real_graph(&data);
 
     let mut chapters_checked = 0usize;
     let mut mismatches: Vec<String> = Vec::new();
@@ -102,7 +102,7 @@ fn every_chapter_in_canon_matches_between_the_old_lookup_and_the_new_window_quer
 #[test]
 fn john_3_16_text_matches_between_old_and_new_paths() {
     let data = load_real_atlas_data();
-    let graph = load_real_graph();
+    let graph = load_real_graph(&data);
 
     let expected = data.verses.get("JHN.3.16").cloned().expect("JHN.3.16 must be in the real compiled verses map");
     let jhn_index = atlas_core::canon::resolve_alias("JHN").unwrap().0;

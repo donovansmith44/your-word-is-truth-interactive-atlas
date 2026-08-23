@@ -288,7 +288,7 @@ mod tests {
 
     #[test]
     fn green_on_a_clean_fixture() {
-        let (graph, _) = build_graph_from_sources(GOOD_KJV, NO_XREFS).unwrap();
+        let (graph, ..) = build_graph_from_sources(GOOD_KJV, NO_XREFS, &crate::event_world::empty_atlas()).unwrap();
         assert_eq!(check_kjv_fidelity(GOOD_KJV, &graph), Ok(()));
     }
 
@@ -308,7 +308,7 @@ mod tests {
 
     #[test]
     fn red_when_a_verse_is_dropped_from_the_built_graph() {
-        let (mut graph, _) = build_graph_from_sources(GOOD_KJV, NO_XREFS).unwrap();
+        let (mut graph, ..) = build_graph_from_sources(GOOD_KJV, NO_XREFS, &crate::event_world::empty_atlas()).unwrap();
         let dropped_id = kjv_adapter::verse_node_id(0, 1, 2);
         graph.nodes.remove(&dropped_id);
         if let Some(spine) = graph.reading.get_mut(kjv_adapter::BIBLE_CORPUS) {
@@ -320,7 +320,7 @@ mod tests {
 
     #[test]
     fn red_when_a_rendering_byte_is_mutated() {
-        let (mut graph, _) = build_graph_from_sources(GOOD_KJV, NO_XREFS).unwrap();
+        let (mut graph, ..) = build_graph_from_sources(GOOD_KJV, NO_XREFS, &crate::event_world::empty_atlas()).unwrap();
         let id = kjv_adapter::verse_node_id(0, 1, 1);
         if let Some(node) = graph.nodes.get_mut(&id) {
             if let NodePayload::TextUnit { renderings, .. } = &mut node.payload {
@@ -338,7 +338,7 @@ mod tests {
         let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist (committed real data)");
         let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt"))
             .expect("data/raw/xrefs/cross_references.txt must exist (committed real data)");
-        let (graph, stats) = build_graph_from_sources(&kjv_json, &xrefs_tsv).expect("the real KJV source must parse");
+        let (graph, stats, ..) = build_graph_from_sources(&kjv_json, &xrefs_tsv, &crate::event_world::empty_atlas()).expect("the real KJV source must parse");
         assert_eq!(stats.kjv_verses, 31_102, "the real KJV text is 31,102 verses");
         assert_eq!(check_kjv_fidelity(&kjv_json, &graph), Ok(()), "the real KJV source must satisfy its own bijection + reconstruction law");
     }

@@ -88,7 +88,7 @@ mod tests {
     const NO_XREFS: &str = "From Verse\tTo Verse\tVotes\t#comment\n";
 
     fn service() -> GraphService {
-        GraphService::from_sources(KJV_FIXTURE, NO_XREFS).unwrap()
+        GraphService::from_sources(KJV_FIXTURE, NO_XREFS, &crate::event_world::empty_atlas()).unwrap()
     }
 
     #[test]
@@ -116,7 +116,7 @@ mod tests {
         // implements GraphQuery directly, graph-types' own canonical
         // instance) and a MemSnapshot presenting the SAME content, and
         // confirm this module's own functions agree.
-        let (graph, _) = crate::build::build_graph_from_sources(KJV_FIXTURE, NO_XREFS).unwrap();
+        let (graph, ..) = crate::build::build_graph_from_sources(KJV_FIXTURE, NO_XREFS, &crate::event_world::empty_atlas()).unwrap();
         let svc = service();
         let snap = svc.snapshot();
         let pos = svc.position_of(0, 1, 1).unwrap();

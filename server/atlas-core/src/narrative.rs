@@ -81,7 +81,18 @@ pub struct NarrativePosition {
 /// same "trust but verify" stance `scene::build_arrows`'s own
 /// `filter_map(|id| d.event_by_id(id))` already takes for the identical
 /// input).
-fn adjacent_event(d: &AtlasData, event_id: &str) -> Option<NarrativeAdjacentEvent> {
+///
+/// Batch M-B: made `pub` (was private) so `atlas_server::handlers::
+/// narrative_event_positions`'s own graph-view re-implementation can reuse
+/// this EXACT presentation builder (id -> label/places/verse_groups) rather
+/// than duplicating it -- the view's own TOPOLOGY (which events are prior/
+/// following, in which narratives, and on the global timeline) now comes
+/// from the graph (`atlas_graph::EventWorld`); this function's job was
+/// always presentation, not topology, and stays exactly as it was,
+/// untouched beyond this visibility widening (a safe, non-breaking change:
+/// every existing caller/test in this file keeps compiling and passing
+/// unmodified).
+pub fn adjacent_event(d: &AtlasData, event_id: &str) -> Option<NarrativeAdjacentEvent> {
     let e = d.event_by_id(event_id)?;
     let se = crate::scene::to_scene_event(e); // SAME function every other "event's own verses on the wire" case uses
     Some(NarrativeAdjacentEvent { id: se.id, label: se.label, places: e.places.clone(), verse_groups: se.verse_groups })

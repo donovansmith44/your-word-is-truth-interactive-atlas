@@ -14,10 +14,11 @@ use std::collections::HashMap;
 
 use anyhow::Context;
 
-use atlas_core::data::Canon;
+use atlas_core::data::{AtlasData, Canon};
 use atlas_graph_types::edge::CrossRef as GraphCrossRef;
 use atlas_graph_types::graph::{Graph, ReadingSpine};
 
+use crate::event_world::{self, ChronologyDerivation, EventWorldStats};
 use crate::{kjv_adapter, xref_adapter};
 
 /// Startup-log-friendly counts -- also asserted against in tests (the
@@ -31,15 +32,17 @@ pub struct BuildStats {
     pub cites_dropped_negative_votes: usize,
 }
 
-/// Builds the graph from the two raw sources' own text content -- the KJV
-/// adapter (first relation to prove node materialization) and the
-/// cross-references adapter (first relation to prove the generic edge path
-/// end-to-end, controller ruling 3). Node insertion, the reading spine, and
-/// the `cites` row table are all populated here; `Graph::build_indexes` (an
-/// unmodified graph-types primitive) does the one BiIndex pass at the end.
-pub fn build_graph_from_sources(kjv_json: &str, xrefs_tsv: &str) -> anyhow::Result<(Graph, BuildStats)> {
+/// Builds the graph from the two raw KJV/xrefs sources PLUS the event world
+/// (Batch M-B: events/attestations/narratives/anchors/chronology, from the
+/// already-built `atlas` -- see `event_world`'s own module doc comment for
+/// why `AtlasData` is this adapter's source, not a second independent TOML
+/// parse). Node insertion, the reading spine, the `cites` row table, and
+/// the whole event world are all populated here; `Graph::build_indexes` (an
+/// unmodified graph-types primitive) does the one BiIndex pass at the end,
+/// after EVERY row table (M-A's and M-B's alike) is populated.
+pub fn build_graph_from_sources(kjv_json: &str, xrefs_tsv: &str, atlas: &AtlasData) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
     let (canon, verses) = atlas_etl::kjv::parse(kjv_json).context("parsing the KJV source (kjv.json)")?;
-    build_graph_from_canon_and_verses(&canon, &verses, xrefs_tsv)
+    build_graph_from_canon_and_verses(&canon, &verses, xrefs_tsv, atlas)
 }
 
 /// The same build, starting from an already-parsed `(Canon, verses)` pair
@@ -47,7 +50,12 @@ pub fn build_graph_from_sources(kjv_json: &str, xrefs_tsv: &str) -> anyhow::Resu
 /// `AtlasData` fixture, most notably) build a graph that is BY CONSTRUCTION
 /// consistent with that same canon/verses, rather than maintaining a second,
 /// independently-authored raw-JSON fixture that can silently drift from it.
-pub fn build_graph_from_canon_and_verses(canon: &Canon, verses: &HashMap<String, String>, xrefs_tsv: &str) -> anyhow::Result<(Graph, BuildStats)> {
+pub fn build_graph_from_canon_and_verses(
+    canon: &Canon,
+    verses: &HashMap<String, String>,
+    xrefs_tsv: &str,
+    atlas: &AtlasData,
+) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
     let ordered = kjv_adapter::ordered_verses_from_canon(canon, verses).context("walking the KJV canon/verses into reading order")?;
 
     let mut graph = Graph::default();
@@ -73,14 +81,26 @@ pub fn build_graph_from_canon_and_verses(canon: &Canon, verses: &HashMap<String,
         });
     }
 
+    // Batch M-B: the event world -- Event/Narrative/Anchor/Place-STUB nodes
+    // + Attests/Succession/DatedBy/LocatedAt rows -- populated BEFORE the
+    // one `build_indexes()` pass below, exactly like the KJV/xrefs rows
+    // above (every row table, from every adapter, is filled in first; the
+    // index pass runs once, over the complete graph).
+    let chrono = event_world::derive_chronology(atlas);
+    let event_world_stats = event_world::populate(&mut graph, atlas, &chrono);
+
     graph.build_indexes();
+    // Brief requirement 4 ("justified-by where grounds exist"): a post-
+    // processing step, not part of build_indexes itself -- see
+    // event_world::add_justified_by's own doc comment.
+    event_world::add_justified_by(&mut graph);
 
     let stats = BuildStats {
         kjv_verses: ordered.len(),
         cites_rows: xref_rows.len(),
         cites_dropped_negative_votes: xref_stats.dropped_negative_votes,
     };
-    Ok((graph, stats))
+    Ok((graph, stats, event_world_stats, chrono))
 }
 
 #[cfg(test)]
@@ -110,7 +130,7 @@ mod tests {
 
     #[test]
     fn builds_one_text_unit_per_verse_in_canon_order() {
-        let (graph, stats) = build_graph_from_sources(KJV_FIXTURE, XREFS_FIXTURE).unwrap();
+        let (graph, stats, ..) = build_graph_from_sources(KJV_FIXTURE, XREFS_FIXTURE, &crate::event_world::empty_atlas()).unwrap();
         assert_eq!(stats.kjv_verses, 4);
         assert_eq!(graph.nodes.len(), 4);
         let spine = graph.reading.get(kjv_adapter::BIBLE_CORPUS).expect("bible reading spine must exist");
@@ -122,7 +142,7 @@ mod tests {
 
     #[test]
     fn cites_row_is_queryable_through_the_generic_explorable_machinery() {
-        let (graph, stats) = build_graph_from_sources(KJV_FIXTURE, XREFS_FIXTURE).unwrap();
+        let (graph, stats, ..) = build_graph_from_sources(KJV_FIXTURE, XREFS_FIXTURE, &crate::event_world::empty_atlas()).unwrap();
         assert_eq!(stats.cites_rows, 1);
 
         let gen11 = kjv_adapter::verse_node_id(0, 1, 1);

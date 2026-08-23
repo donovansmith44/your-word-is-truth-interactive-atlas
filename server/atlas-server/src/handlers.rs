@@ -19,6 +19,7 @@ use atlas_core::wire::{Scene, SceneEvent, VerseGroup};
 use atlas_core::xrefs::aggregate_span_xrefs;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
+use atlas_graph_types::store::GraphQuery;
 
 use crate::error::ApiError;
 
@@ -295,9 +296,11 @@ pub struct ChapterOut {
 /// windowed reading-order query `GET /api/text?scope=chapter` calls --
 /// instead of `data.verses.get(key)`. Everything else (places, headings,
 /// the verse-count bound, the out-of-canon policy above) is UNCHANGED,
-/// still sourced from `AtlasData` (M-A materializes only TextUnit nodes and
-/// `cites` edges; headings/places/events join the graph at M-B/M-C). The
-/// WIRE SHAPE is byte-for-byte identical -- proven by
+/// still sourced from `AtlasData` -- THIS endpoint (the reader's own
+/// chapter view) is untouched by Batch M-B's own event-world migration;
+/// only `/api/narrative/event/{id}` (see that handler's own doc comment)
+/// and the generic `/api/node`/`/edges` endpoints move to the graph this
+/// batch. The WIRE SHAPE is byte-for-byte identical -- proven by
 /// `tests/graph_equivalence.rs`'s own all-1,189-chapters comparison -- so
 /// every existing caller of this endpoint (the reader's chapter view/
 /// mini-reader/split view, `ChapterNode`, `PlaceCard`'s hover verse text,
@@ -698,20 +701,73 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
 /// case, not the "bad identifier" case), same as `positions_for_events`
 /// itself naturally returns for a bare, narrative-less event (see
 /// `narrative::tests::event_in_no_narrative_returns_no_positions`).
+///
+/// BATCH M-B (controller decision 3): re-implemented as a VIEW over graph
+/// queries -- succession duals (`atlas_graph::EventWorld::narrative_positions`,
+/// built from the SAME `Narrative.legs` data the graph's own `Succession`
+/// rows are populated from) and temporal neighbors
+/// (`EventWorld::temporal_neighbors`, built from `ChronologyDerivation::order`,
+/// which `tests/timeline_equivalence.rs` proves is EXACTLY
+/// `atlas_core::narrative::global_timeline_position`'s own timeline order --
+/// the acceptance centerpiece). The bespoke resolvers this endpoint used to
+/// call (`positions_for_events`/`global_timeline_position`) RETIRE from this
+/// production call site -- `atlas_core::narrative`'s own module is
+/// otherwise completely untouched (its OWN tests, including E1-E5, stay
+/// green, unmodified) and its two topology functions remain `pub`, still
+/// directly unit-tested, simply no longer reached by any live server
+/// response.
+///
+/// WIRE SHAPE IS BYTE-IDENTICAL (hard requirement, verified by the
+/// pre-existing Playwright `event-timeline.spec.ts`/`popover-sections.spec.ts`
+/// suites, which exercise this exact endpoint through the unmodified
+/// client): `NarrativeEventPositionsOut`/`NarrativePositionOut`/
+/// `TimelinePositionOut`/`NarrativeAdjacentEventOut` are UNCHANGED. Each
+/// adjacent event's own presentation (label/places/verse_groups) still
+/// calls `atlas_core::narrative::adjacent_event` directly (made `pub` this
+/// batch, see that function's own doc comment) -- the SAME presentation
+/// builder the OLD resolver used, so label/places/verse_group formatting
+/// cannot drift from what shipped before; only the TOPOLOGY (which ids are
+/// prior/following, in which narratives) now originates from the graph.
 pub async fn narrative_event_positions(
     State(data): State<Arc<AtlasData>>,
+    State(graph): State<Arc<GraphService>>,
     Path(id): Path<String>,
 ) -> Result<Json<NarrativeEventPositionsOut>, ApiError> {
-    if data.event_by_id(&id).is_none() {
+    let snap = graph.snapshot();
+    if snap.node(&atlas_graph::event_world::event_node_id(&id)).is_none() {
         return Err(ApiError::not_found("event"));
     }
-    let narrative = atlas_core::narrative::positions_for_events(&data, std::slice::from_ref(&id)).into_iter().map(Into::into).collect();
-    // Batch HOTFIX-4 requirement 1: the SAME id-keyed lookup, additionally
-    // resolving the global-timeline half -- `None` (field omitted) for a
-    // general-kind passage, by construction (`global_timeline_position`'s
-    // own doc comment: absence from the timeline index IS the "not part of
-    // time traversal" signal, no special-cased branch needed here).
-    let timeline = atlas_core::narrative::global_timeline_position(&data, &id).map(Into::into);
+    let event_label = data.event_by_id(&id).map(|e| e.label.clone()).unwrap_or_default();
+
+    let narrative = graph
+        .event_world
+        .narrative_positions
+        .get(&id)
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .map(|leg| NarrativePositionOut {
+            narrative_id: leg.narrative_id,
+            narrative_name: leg.narrative_name,
+            event_id: id.clone(),
+            event_label: event_label.clone(),
+            prior: leg.prior.and_then(|pid| atlas_core::narrative::adjacent_event(&data, &pid)).map(Into::into),
+            following: leg.following.and_then(|pid| atlas_core::narrative::adjacent_event(&data, &pid)).map(Into::into),
+        })
+        .collect();
+
+    // Batch HOTFIX-4 requirement 1's own "global chronological PRIOR/
+    // FOLLOWING" half, now graph-sourced: `None` (field omitted) for a
+    // general-kind passage, by construction -- a general-kind event never
+    // gets a `ChronologyDerivation` entry at all (`derive_chronology`
+    // filters to `kind == "event"`), so it is absent from
+    // `temporal_neighbors` exactly like it was absent from the old
+    // `timeline_index`.
+    let timeline = graph.event_world.temporal_neighbors.get(&id).map(|(prior, following)| TimelinePositionOut {
+        prior: prior.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(&data, pid)).map(Into::into),
+        following: following.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(&data, pid)).map(Into::into),
+    });
+
     Ok(Json(NarrativeEventPositionsOut { narrative, timeline }))
 }
 

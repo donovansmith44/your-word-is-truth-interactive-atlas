@@ -29,6 +29,7 @@
 //! disclosed as a strangler deviation, not a quiet one.
 
 pub mod build;
+pub mod event_world;
 pub mod fidelity;
 pub mod kjv_adapter;
 pub mod service;
@@ -36,6 +37,7 @@ pub mod window;
 pub mod xref_adapter;
 
 pub use build::BuildStats;
+pub use event_world::{ChronologyDerivation, EventWorld, EventWorldStats};
 pub use fidelity::{check_kjv_fidelity, FidelityViolation};
 pub use service::GraphService;
 pub use window::WindowDir;

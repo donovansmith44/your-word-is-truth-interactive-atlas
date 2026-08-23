@@ -1,8 +1,13 @@
 //! The two generic graph endpoints (design doc §5) plus the text-window
 //! endpoint (design doc §6; M-A brief requirement 4) -- Batch M-A's own
-//! new surfaces, uniform across every node/edge kind the graph carries
-//! (only TextUnit nodes and `cites` edges exist yet; nothing here is
-//! TextUnit-specific machinery dressed up as generic).
+//! new surfaces, uniform across every node/edge kind the graph carries.
+//! M-A materialized only TextUnit nodes and `cites` edges; Batch M-B adds
+//! Event/Narrative/Anchor/Place-stub nodes and the attests/succession/
+//! dated-by/located-at/justified-by relations with ZERO changes to this
+//! file -- the generic path was already total over any node/edge kind
+//! (only `graph_wire::decode_node_id`/`encode_node_id`'s own id-grammar
+//! layer needed the four new kinds' arms; see that module's own doc
+//! comment).
 //!
 //! Fix round 1 (C1): every handler below opens a snapshot
 //! (`GraphService::snapshot`) and performs every actual graph query
@@ -63,10 +68,11 @@ pub struct NodeCardOut {
 /// stamp. `{id}` is the wire form `graph_wire::encode_node_id` produces; a
 /// malformed or unresolvable id is `bad_ref` (matches every other
 /// ref-shaped endpoint's own 400 convention), an id that parses but names
-/// no node in the built graph is `not_found` (M-A materializes only
-/// TextUnit nodes: any structurally valid `text-unit:BOOK.C.V` id naming a
-/// real canon verse resolves; any other kind prefix 400s, since nothing of
-/// that kind exists yet to be "not found" instead).
+/// no node in the built graph is `not_found` (six kinds resolve as of
+/// Batch M-B: `text-unit:BOOK.C.V` naming a real canon verse, and
+/// `Event:`/`Narrative:`/`Anchor:`/`Place:` naming a real curated/
+/// Theographic id; any other kind prefix, or a real-shaped id this batch's
+/// event world doesn't carry, 400s/404s per the same convention).
 pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<NodeCardOut>, ApiError> {
     let node_id = decode_node_id(&id).ok_or_else(|| ApiError::bad_ref(&id))?;
     let snap = graph.snapshot();

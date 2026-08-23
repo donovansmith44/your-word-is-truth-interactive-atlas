@@ -27,7 +27,7 @@ fn real_app() -> axum::Router {
     // GraphService::build runs the FIDELITY LAW unconditionally as part of
     // construction (fix round 1) -- reaching this line already proves it
     // passed on the real committed KJV source.
-    let graph = GraphService::build(&raw).expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law");
+    let graph = GraphService::build(&raw, &data).expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law");
     atlas_server::app::build(Arc::new(data), Arc::new(graph), None)
 }
 
@@ -164,6 +164,83 @@ async fn node_card_unknown_id_is_404_malformed_id_is_400() {
     let (st2, body2, _) = get(&app, "/api/node/not-a-real-id").await;
     assert_eq!(st2, 400);
     assert_eq!(body2["error"]["code"], "bad_ref");
+}
+
+// ---------------------------------------------------------------------
+// Batch M-B: the generic endpoints growing to serve Event/Narrative/
+// Anchor/Place-stub cards and their frontiers (brief requirement 4).
+// `ab_ur` ("Terah's family leaves Ur," the real, committed FIRST leg of
+// the real `abraham-migration` narrative -- `data/curated/narratives/
+// abraham-migration.toml`'s own `legs = ["ab_ur", "ab_haran", ...]`) is
+// used throughout: a real, stable, multi-relation event.
+// ---------------------------------------------------------------------
+
+#[tokio::test]
+async fn event_card_and_frontiers_are_served_by_the_generic_endpoints() {
+    let app = real_app();
+
+    let (st, body, _) = get(&app, "/api/node/Event:ab_ur").await;
+    assert_eq!(st, 200, "{body}");
+    assert_eq!(body["id"], "Event:ab_ur");
+    assert_eq!(body["kind"], "Event");
+    assert_eq!(body["label"], "Terah's family leaves Ur");
+    let summary: Vec<String> = body["edge_summary"].as_array().unwrap().iter().map(|e| e["kind"].as_str().unwrap().to_string()).collect();
+    assert!(summary.contains(&"attested-in".to_string()), "ab_ur must carry a real attested-in frontier: {summary:?}");
+    assert!(summary.contains(&"located-at".to_string()), "ab_ur must carry a real located-at frontier: {summary:?}");
+    assert!(summary.contains(&"dated-by".to_string()), "ab_ur must carry a real dated-by frontier: {summary:?}");
+    assert!(summary.contains(&"follows-in".to_string()), "ab_ur is abraham-migration's own first leg -- it must follow-in to ab_haran: {summary:?}");
+
+    let (st2, edges, _) = get(&app, "/api/node/Event:ab_ur/edges?kind=located-at").await;
+    assert_eq!(st2, 200, "{edges}");
+    let entries = edges["entries"].as_array().unwrap();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0]["node"]["id"], "Place:ur-1");
+    assert_eq!(entries[0]["node"]["kind"], "Place");
+
+    let (st3, followed, _) = get(&app, "/api/node/Event:ab_ur/edges?kind=follows-in").await;
+    assert_eq!(st3, 200, "{followed}");
+    let followed_entries = followed["entries"].as_array().unwrap();
+    assert_eq!(followed_entries.len(), 1);
+    assert_eq!(followed_entries[0]["node"]["id"], "Event:ab_haran");
+}
+
+#[tokio::test]
+async fn narrative_card_and_place_stub_card_are_served_generically() {
+    let app = real_app();
+
+    let (st, body, _) = get(&app, "/api/node/Narrative:abraham-migration").await;
+    assert_eq!(st, 200, "{body}");
+    assert_eq!(body["kind"], "Narrative");
+    assert_eq!(body["label"], "Abraham's Migration");
+
+    let (st2, place, _) = get(&app, "/api/node/Place:ur-1").await;
+    assert_eq!(st2, 200, "{place}");
+    assert_eq!(place["kind"], "Place");
+    let summary: Vec<String> = place["edge_summary"].as_array().unwrap().iter().map(|e| e["kind"].as_str().unwrap().to_string()).collect();
+    assert!(summary.contains(&"site-of".to_string()), "ur-1 must show its real inverse located-at frontier: {summary:?}");
+}
+
+/// An Anchor's own card carries its citation ("why this date?" explorable
+/// -- the owner's own design, brief requirement 4). `solomon-crowned`
+/// (`data/curated/chronology-anchors.toml`) is a real, bound anchor row.
+#[tokio::test]
+async fn anchor_card_carries_its_citation_and_dates_frontier() {
+    let app = real_app();
+
+    let (st, body, _) = get(&app, "/api/node/Anchor:solomon-crowned").await;
+    assert_eq!(st, 200, "{body}");
+    assert_eq!(body["kind"], "Anchor");
+    let label = body["label"].as_str().unwrap();
+    assert!(label.contains("Source:"), "an Anchor's own card label IS its citation: {label}");
+
+    let (st2, dates, _) = get(&app, "/api/node/Anchor:solomon-crowned/edges?kind=dates").await;
+    assert_eq!(st2, 200, "{dates}");
+    let entries = dates["entries"].as_array().unwrap();
+    assert!(!entries.is_empty(), "solomon-crowned must date at least one real event");
+
+    let (st3, justifies, _) = get(&app, "/api/node/Anchor:solomon-crowned/edges?kind=justifies").await;
+    assert_eq!(st3, 200, "{justifies}");
+    assert!(!justifies["entries"].as_array().unwrap().is_empty(), "an anchor-bound DatedBy row's own justified-by ground must resolve back to this anchor (brief requirement 4)");
 }
 
 #[tokio::test]

@@ -30,7 +30,7 @@ use tower::ServiceExt;
 // concretely (not `Arc<dyn ...>`) in `AppState`.
 fn graph_fixture_for(data: &AtlasData) -> Arc<atlas_graph::GraphService> {
     Arc::new(
-        atlas_graph::GraphService::from_canon_and_verses(&data.canon, &data.verses, "From Verse\tTo Verse\tVotes\t#comment\n")
+        atlas_graph::GraphService::from_canon_and_verses(&data.canon, &data.verses, "From Verse\tTo Verse\tVotes\t#comment\n", data)
             .expect("fixture graph must build from this AtlasData's own canon+verses"),
     )
 }

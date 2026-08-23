@@ -32,12 +32,13 @@ use std::path::Path;
 
 use anyhow::Context;
 
-use atlas_core::data::Canon;
+use atlas_core::data::{AtlasData, Canon};
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::AnyNodeId;
 use atlas_graph_types::store::{GraphPublisher, GraphQuery, GraphStore, GraphVersion, MemSnapshot, MemStore};
 
 use crate::build::{self, BuildStats};
+use crate::event_world::{EventWorld, EventWorldStats};
 use crate::fidelity;
 
 pub struct GraphService {
@@ -49,6 +50,13 @@ pub struct GraphService {
     /// "start from this ref" without scanning the whole spine per call.
     bible_position: HashMap<AnyNodeId, usize>,
     pub stats: BuildStats,
+    /// Batch M-B: the event-world companion index (chronology derivation +
+    /// narrative/temporal-neighbor lookups) -- same status as
+    /// `bible_position` above (the generic `GraphQuery` port does not model
+    /// either; see `event_world::EventWorld`'s own doc comment for exactly
+    /// which two gaps this fills and why they're disclosed, not silent).
+    pub event_world: EventWorld,
+    pub event_world_stats: EventWorldStats,
 }
 
 /// The longest KJV chapter (Psalm 119) has 176 verses; this probe width is
@@ -57,11 +65,12 @@ const MAX_CHAPTER_SPAN_PROBE: usize = 200;
 
 impl GraphService {
     /// The real KJV/xrefs raw-source path -- the FIDELITY LAW is enforced
-    /// unconditionally here (module doc comment above).
-    pub fn from_sources(kjv_json: &str, xrefs_tsv: &str) -> anyhow::Result<Self> {
-        let (graph, stats) = build::build_graph_from_sources(kjv_json, xrefs_tsv)?;
+    /// unconditionally here (module doc comment above). `atlas`: Batch M-B's
+    /// own event-world source (see `event_world`'s own module doc comment).
+    pub fn from_sources(kjv_json: &str, xrefs_tsv: &str, atlas: &AtlasData) -> anyhow::Result<Self> {
+        let (graph, stats, event_world_stats, _chrono) = build::build_graph_from_sources(kjv_json, xrefs_tsv, atlas)?;
         fidelity::check_kjv_fidelity(kjv_json, &graph).map_err(|e| anyhow::anyhow!("{e}"))?;
-        Ok(Self::assemble(graph, stats))
+        Ok(Self::assemble(graph, stats, event_world_stats, atlas))
     }
 
     /// Test-fixture path: builds from an already-parsed `(Canon, verses)`
@@ -69,28 +78,32 @@ impl GraphService {
     /// comment) -- no raw source BYTES exist to re-derive "expected" from,
     /// so the fidelity law is not applicable here (there is nothing
     /// independent to check the already-typed input against).
-    pub fn from_canon_and_verses(canon: &Canon, verses: &HashMap<String, String>, xrefs_tsv: &str) -> anyhow::Result<Self> {
-        let (graph, stats) = build::build_graph_from_canon_and_verses(canon, verses, xrefs_tsv)?;
-        Ok(Self::assemble(graph, stats))
+    pub fn from_canon_and_verses(canon: &Canon, verses: &HashMap<String, String>, xrefs_tsv: &str, atlas: &AtlasData) -> anyhow::Result<Self> {
+        let (graph, stats, event_world_stats, _chrono) = build::build_graph_from_canon_and_verses(canon, verses, xrefs_tsv, atlas)?;
+        Ok(Self::assemble(graph, stats, event_world_stats, atlas))
     }
 
     /// Reads `raw_dir/kjv.json` and `raw_dir/xrefs/cross_references.txt`
-    /// and builds from them — the only filesystem-touching function in
-    /// this crate.
-    pub fn build(raw_dir: &Path) -> anyhow::Result<Self> {
+    /// and builds from them, plus the event world from `atlas` — the only
+    /// filesystem-touching function in this crate.
+    pub fn build(raw_dir: &Path, atlas: &AtlasData) -> anyhow::Result<Self> {
         let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json"))
             .with_context(|| format!("reading {}", raw_dir.join("kjv.json").display()))?;
         let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt"))
             .with_context(|| format!("reading {}", raw_dir.join("xrefs/cross_references.txt").display()))?;
-        Self::from_sources(&kjv_json, &xrefs_tsv)
+        Self::from_sources(&kjv_json, &xrefs_tsv, atlas)
     }
 
-    fn assemble(graph: Graph, stats: BuildStats) -> Self {
+    fn assemble(graph: Graph, stats: BuildStats, event_world_stats: EventWorldStats, atlas: &AtlasData) -> Self {
         let bible_position = graph
             .reading
             .get(crate::kjv_adapter::BIBLE_CORPUS)
             .map(|spine| spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect())
             .unwrap_or_default();
+        // Batch M-B: the event-world companion index, built from the SAME
+        // `atlas` the graph's own Event/Narrative/Anchor rows were just
+        // populated from -- see `EventWorld`'s own doc comment.
+        let event_world = EventWorld::build(atlas);
         // GraphPublisher::publish (design doc §9a): the compiler
         // publishes; serving never writes. One publish, at startup; M-A
         // never calls it again (no hot-reload exists yet) -- MemStore's
@@ -101,7 +114,7 @@ impl GraphService {
         let mut store = MemStore::default();
         let version = store.publish(graph);
         let snapshot = store.open(version).expect("the version just published must always be open-able");
-        GraphService { snapshot, bible_position, stats }
+        GraphService { snapshot, bible_position, stats, event_world, event_world_stats }
     }
 
     /// The version this service published at construction (M-A: the only
@@ -168,7 +181,7 @@ mod tests {
     const NO_XREFS: &str = "From Verse\tTo Verse\tVotes\t#comment\n";
 
     fn service() -> GraphService {
-        GraphService::from_sources(KJV_FIXTURE, NO_XREFS).unwrap()
+        GraphService::from_sources(KJV_FIXTURE, NO_XREFS, &crate::event_world::empty_atlas()).unwrap()
     }
 
     #[test]

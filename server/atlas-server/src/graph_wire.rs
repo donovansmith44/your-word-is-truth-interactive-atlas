@@ -14,6 +14,20 @@
 //! app's wire already uses everywhere (`ChapterOut.ref`, `/api/chapter/{cref}`,
 //! ...), and back.
 //!
+//! BATCH M-B id grammar (extends M-A's, per the brief's own requirement 4):
+//! Event/Narrative/Anchor/Place-stub ids are the curated string ids
+//! themselves (`ab_ur`, `theo-157`, `conquest`, `solomon-crowned`,
+//! `jericho`, ...) -- already stable, unique, human-legible, with no
+//! numeric re-encoding needed (unlike TextUnit's book-index scheme, which
+//! exists only because `VerseRef` has no string form of its own). The wire
+//! form is `"{Kind:?}:{raw}"` (e.g. `"Event:ab_ur"`, `"Anchor:solomon-crowned"`)
+//! -- this is NOT a new convention: `encode_node_id`'s own pre-existing
+//! generic fallback (`other => format!("{other:?}:{}", id.raw)`) already
+//! PRODUCES exactly this shape for any non-TextUnit kind, unmodified since
+//! M-A. `decode_node_id` below adds the matching arms so the four kinds
+//! this batch newly materializes complete that round trip -- the encode
+//! half needed no change at all.
+//!
 //! Edge kinds: the wire `kind` string IS `EdgeKind::label()` (already a
 //! stable, human-legible string graph-types computes from its own relation
 //! manifest -- `"cites"`/`"cited-by"`/...); `parse_edge_kind` is its total
@@ -44,11 +58,23 @@ pub fn encode_node_id(id: &AnyNodeId) -> String {
 /// unsupported-kind id is a 400 `bad_ref` at the handler, never a panic.
 pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
     let (kind, rest) = s.split_once(':')?;
+    if rest.is_empty() {
+        return None;
+    }
     match kind {
         "text-unit" => {
             let vid = atlas_core::refs::VerseId::parse_canonical(rest).ok()?;
             Some(atlas_graph::kjv_adapter::verse_node_id(vid.book.0, vid.chapter, vid.verse))
         }
+        // Batch M-B: the four newly-materialized kinds, completing the
+        // round trip `encode_node_id`'s own pre-existing generic fallback
+        // (`{Kind:?}:{raw}`) already produces for them (module doc
+        // comment above) -- `raw` is the curated id verbatim, no
+        // re-encoding.
+        "Event" => Some(AnyNodeId { kind: NodeKind::Event, raw: rest.to_string() }),
+        "Narrative" => Some(AnyNodeId { kind: NodeKind::Narrative, raw: rest.to_string() }),
+        "Anchor" => Some(AnyNodeId { kind: NodeKind::Anchor, raw: rest.to_string() }),
+        "Place" => Some(AnyNodeId { kind: NodeKind::Place, raw: rest.to_string() }),
         _ => None,
     }
 }
@@ -120,6 +146,27 @@ pub fn describe_position(pos: &Position, query: &dyn GraphQuery) -> (String, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn event_narrative_anchor_place_ids_round_trip_through_the_wire_form() {
+        for (kind, raw, expected_wire) in [
+            (NodeKind::Event, "ab_ur", "Event:ab_ur"),
+            (NodeKind::Narrative, "conquest", "Narrative:conquest"),
+            (NodeKind::Anchor, "solomon-crowned", "Anchor:solomon-crowned"),
+            (NodeKind::Place, "jericho", "Place:jericho"),
+        ] {
+            let id = AnyNodeId { kind, raw: raw.to_string() };
+            let wire = encode_node_id(&id);
+            assert_eq!(wire, expected_wire, "encode_node_id's own pre-existing generic fallback must already produce this shape");
+            assert_eq!(decode_node_id(&wire), Some(id), "decode must be encode's exact inverse for every M-B kind");
+        }
+    }
+
+    #[test]
+    fn decode_node_id_rejects_an_empty_raw_id() {
+        assert_eq!(decode_node_id("Event:"), None);
+        assert_eq!(decode_node_id("not-even-a-colon-pair"), None);
+    }
 
     #[test]
     fn text_unit_id_round_trips_through_the_wire_form() {

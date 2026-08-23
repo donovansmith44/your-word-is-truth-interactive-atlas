@@ -22,7 +22,11 @@ fn real_graph() -> &'static GraphService {
     static GRAPH: OnceLock<GraphService> = OnceLock::new();
     GRAPH.get_or_init(|| {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-        GraphService::build(&dir).expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist (committed real data)")
+        // Window law scope: reading-order only, no event-world assertions --
+        // an empty AtlasData is the right fixture (Batch M-B, event_world's
+        // own doc comment).
+        GraphService::build(&dir, &atlas_graph::event_world::empty_atlas())
+            .expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist (committed real data)")
     })
 }
 
@@ -35,7 +39,9 @@ fn real_raw_graph() -> &'static Graph {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
         let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist (committed real data)");
         let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist (committed real data)");
-        atlas_graph::build::build_graph_from_sources(&kjv_json, &xrefs_tsv).expect("the real KJV source must parse").0
+        atlas_graph::build::build_graph_from_sources(&kjv_json, &xrefs_tsv, &atlas_graph::event_world::empty_atlas())
+            .expect("the real KJV source must parse")
+            .0
     })
 }
 

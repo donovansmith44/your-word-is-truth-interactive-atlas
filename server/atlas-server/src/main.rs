@@ -83,7 +83,11 @@ async fn main() -> Result<()> {
     // downstream consumer (app::build, every handler, the window/text
     // path) queries it as `atlas_graph_types::store::GraphQuery`, never a
     // raw `Graph` field (fix round 1, C1).
-    let graph = GraphService::build(&raw_dir)
+    // Batch M-B: the event world (events/attestations/narratives/anchors/
+    // chronology) is built from the SAME already-loaded `data` -- see
+    // `atlas_graph::event_world`'s own module doc comment for why this
+    // adapter reads `AtlasData` rather than re-parsing `data/curated/`.
+    let graph = GraphService::build(&raw_dir, &data)
         .with_context(|| format!("building the explorable graph from {} (kjv.json + xrefs/cross_references.txt)", raw_dir.display()))?;
 
     println!(
@@ -92,6 +96,17 @@ async fn main() -> Result<()> {
         graph.stats.cites_rows,
         graph.stats.cites_dropped_negative_votes,
         atlas_graph::version_hex(graph.version())
+    );
+    println!(
+        "atlas-graph (M-B event world): {} events ({} dated), {} narratives ({} succession rows), {} anchors, {} attests rows, {} located-at rows, {} dated-by rows",
+        graph.event_world_stats.events,
+        graph.event_world_stats.dated_events,
+        graph.event_world_stats.narratives,
+        graph.event_world_stats.succession_rows,
+        graph.event_world_stats.anchors,
+        graph.event_world_stats.attests_rows,
+        graph.event_world_stats.located_at_rows,
+        graph.event_world_stats.dated_by_rows,
     );
     let graph = Arc::new(graph);
 

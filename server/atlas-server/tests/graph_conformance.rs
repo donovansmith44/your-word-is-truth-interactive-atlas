@@ -49,6 +49,7 @@
 use std::collections::HashSet;
 use std::path::Path;
 
+use atlas_core::data::AtlasData;
 use atlas_graph::build::build_graph_from_sources;
 use atlas_graph_types::store::{assert_answers_match, GraphPublisher, GraphStore, MemStore};
 
@@ -83,11 +84,15 @@ fn the_real_kjv_derived_graph_is_admitted_the_in_memory_store_answers_match_the_
     // not a token 1-2-verse toy.
     let kjv_json = real_kjv_slice(&["Ruth"]);
     let xrefs_tsv = real_xrefs();
+    // Ruth-slice scope: KJV/xrefs conformance only, no event-world claim --
+    // an empty AtlasData is the right fixture here (Batch M-B's own
+    // full-scale variant, below, is where the event world is exercised).
+    let atlas = atlas_graph::event_world::empty_atlas();
 
     // The model: the raw, built Graph -- compared against directly (Graph
     // implements GraphQuery itself, graph-types' own canonical instance;
     // no "canonical clone" indirection needed).
-    let (model, model_stats) = build_graph_from_sources(&kjv_json, &xrefs_tsv).expect("the real Ruth slice must parse");
+    let (model, model_stats, ..) = build_graph_from_sources(&kjv_json, &xrefs_tsv, &atlas).expect("the real Ruth slice must parse");
     assert_eq!(model_stats.kjv_verses, 85, "Ruth has 85 verses in the real KJV text");
 
     // The candidate: an independently-built copy of the SAME content
@@ -96,7 +101,7 @@ fn the_real_kjv_derived_graph_is_admitted_the_in_memory_store_answers_match_the_
     // store.rs::laws::conformance_snapshot_matches_the_graph_itself),
     // published into MemStore (implementation #1) and opened as a
     // MemSnapshot -- exactly what atlas-server holds in production.
-    let (for_store, _) = build_graph_from_sources(&kjv_json, &xrefs_tsv).expect("the real Ruth slice must parse a second time identically");
+    let (for_store, ..) = build_graph_from_sources(&kjv_json, &xrefs_tsv, &atlas).expect("the real Ruth slice must parse a second time identically");
     let mut store = MemStore::default();
     let version = store.publish(for_store);
     let snapshot = store.open(version).expect("the just-published version must be open-able");
@@ -107,4 +112,66 @@ fn the_real_kjv_derived_graph_is_admitted_the_in_memory_store_answers_match_the_
     // (fails the test) at the first divergence, precisely named -- see
     // graph-types' own `assert_answers_match` doc comment.
     assert_answers_match(&snapshot, &model);
+}
+
+/// BATCH M-B, brief requirement 5: "assert_answers_match over the FULL
+/// graph (31,102 text units + events + all M-B relations) — feasible now
+/// via the approved pid index; report the wall time (M-C perf-law
+/// preview)." Unlike the Ruth-slice test above (still kept, still fast,
+/// still a meaningful KJV/xrefs-only proof), this runs over the REAL, FULL
+/// atlas: every KJV verse, every real cross-reference, and the complete
+/// Batch M-B event world (curated + Theographic events, narratives,
+/// chronology anchors, attestations, successions, located-at rows, dated-by
+/// placements) -- the graph's own real production scale.
+///
+/// FEASIBILITY (disclosed, per the brief's own instruction): M-A's report
+/// found `Graph::derive`/`MemSnapshot::derive` (`graph-types/src/store.rs`,
+/// owner-authored) infeasible at full scale because, AT THAT TIME, `derive`
+/// resolved a `Pid` via a linear scan over every node. At this batch's own
+/// base (`a3d0726`), `Graph`'s own `pid_index: BTreeMap<Pid, AnyNodeId>`
+/// (built inside `build_indexes`, confirmed by reading `graph-types/src/
+/// graph.rs` and `store.rs` fresh) makes `derive` an O(log n) map lookup
+/// instead -- an owner-side fix between M-A's report and this batch's base,
+/// not anything this batch changed (graph-types stays untouched, per the
+/// extend-only law). This test is the direct, measured proof that the fix
+/// makes the full-scale conformance check actually run to completion, with
+/// its own wall time reported below rather than assumed.
+#[test]
+fn the_full_real_graph_is_admitted_the_in_memory_store_answers_match_the_model_exactly() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
+    let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist (committed real data)");
+    let xrefs_tsv =
+        std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist (committed real data)");
+
+    let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
+    let atlas = AtlasData::load(&compiled).expect("data/compiled/*.json must exist -- run `cargo run -p atlas-etl` from server/ first").finish();
+
+    let start = std::time::Instant::now();
+
+    let (model, model_stats, model_ew_stats, _) = build_graph_from_sources(&kjv_json, &xrefs_tsv, &atlas).expect("the real KJV source must parse");
+    assert_eq!(model_stats.kjv_verses, 31_102, "the real KJV text is 31,102 verses");
+    assert!(model_ew_stats.dated_events >= 450, "expected the real compiled event set to carry well over 450 dated events, got {}", model_ew_stats.dated_events);
+
+    let (for_store, ..) = build_graph_from_sources(&kjv_json, &xrefs_tsv, &atlas).expect("the real KJV source must parse a second time identically");
+    let mut store = MemStore::default();
+    let version = store.publish(for_store);
+    let snapshot = store.open(version).expect("the just-published version must be open-able");
+
+    assert_answers_match(&snapshot, &model);
+
+    let elapsed = start.elapsed();
+    eprintln!(
+        "M-B FULL-SCALE CONFORMANCE: {} text units, {} cites edges, {} events ({} dated), {} narratives, {} anchors, {} attests, {} succession rows, {} located-at rows, {} dated-by rows -- assert_answers_match wall time: {:?}",
+        model_stats.kjv_verses,
+        model_stats.cites_rows,
+        model_ew_stats.events,
+        model_ew_stats.dated_events,
+        model_ew_stats.narratives,
+        model_ew_stats.anchors,
+        model_ew_stats.attests_rows,
+        model_ew_stats.succession_rows,
+        model_ew_stats.located_at_rows,
+        model_ew_stats.dated_by_rows,
+        elapsed
+    );
 }
