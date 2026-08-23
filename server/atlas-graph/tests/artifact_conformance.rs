@@ -20,15 +20,27 @@ use atlas_graph::GraphService;
 /// red build, not a hope.
 const LOAD_CEILING: std::time::Duration = std::time::Duration::from_secs(3);
 
+// M-C2 DELETION EVENT: `AtlasData::load`'s own five retiring-file reads
+// return empty now -- `atlas_etl::compile::compile` is this crate's own
+// real-data source from here on (already a normal dependency). Its own
+// `AtlasData.eras` is already populated (compile() parses eras.toml
+// internally), so `real_eras` below just reads it off, rather than a
+// second, independent re-parse. Cached so both real-graph tests in this
+// file share one compile.
 fn real_atlas_data() -> atlas_core::data::AtlasData {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
-    atlas_core::data::AtlasData::load(&dir).expect("data/compiled must exist (committed real data)").finish()
+    static CACHED: std::sync::OnceLock<atlas_core::data::AtlasData> = std::sync::OnceLock::new();
+    CACHED
+        .get_or_init(|| {
+            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
+            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
+                .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
+                .data
+        })
+        .clone()
 }
 
 fn real_eras() -> Vec<atlas_core::data::Era> {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/curated/eras.toml");
-    let text = std::fs::read_to_string(&path).expect("data/curated/eras.toml must exist");
-    atlas_etl::curated::parse_eras(&text).expect("eras.toml must parse")
+    real_atlas_data().eras.clone()
 }
 
 #[test]

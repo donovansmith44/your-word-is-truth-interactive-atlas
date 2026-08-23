@@ -21,10 +21,7 @@ use tower::ServiceExt;
 // derives the graph from `data`'s OWN `canon`/`verses` fields
 // (`atlas_graph::GraphService::from_canon_and_verses`) so there is exactly
 // ONE source of truth per test, never two independently hand-authored
-// fixtures that can drift apart. No cross-references in this shared
-// fixture (`""` xrefs source, valid input -- an empty table, not an
-// error) -- tests that need real `cites` edges build their own richer
-// graph (see `tests/graph_api.rs`, `tests/graph_equivalence.rs`).
+// fixtures that can drift apart.
 // `GraphService` wraps the owner-approved `atlas_graph_types::store` port
 // (fix round 1, C1) -- see `app.rs`'s own doc comment for why it's held
 // concretely (not `Arc<dyn ...>`) in `AppState`.
@@ -38,11 +35,62 @@ use tower::ServiceExt;
 // already reads `AtlasData.polities` directly (that source stands, per
 // the deletion inventory), which `graph_fixture_for`'s own `data: &AtlasData`
 // parameter already supplies.
+//
+// M-C2: was `""` (an empty xrefs TSV, "valid input -- an empty table, not
+// an error... tests that need real cites edges build their own richer
+// graph") -- no longer true once `handlers::xrefs`/`handlers::verse`'s own
+// cross-ref sections moved onto `GraphService.cross_refs_by_from` (sourced
+// from the graph's own `cites` rows, never `AtlasData.cross_refs`
+// directly): a shared fixture whose GRAPH has no cites rows at all would
+// silently diverge from `data.cross_refs`'s own real content, the exact
+// "one source of truth" drift this helper's own doc comment already
+// guards against for canon/verses/eras. `xrefs_tsv_from` (below) derives a
+// raw TSV from `data.cross_refs` directly so there is still exactly one
+// authored cross-ref fixture, not two.
 fn graph_fixture_for(data: &AtlasData) -> Arc<atlas_graph::GraphService> {
+    let xrefs_tsv = xrefs_tsv_from(data);
     Arc::new(
-        atlas_graph::GraphService::from_canon_and_verses_with_eras(&data.canon, &data.verses, "From Verse\tTo Verse\tVotes\t#comment\n", data, &data.eras)
-            .expect("fixture graph must build from this AtlasData's own canon+verses"),
+        atlas_graph::GraphService::from_canon_and_verses_with_eras(&data.canon, &data.verses, &xrefs_tsv, data, &data.eras)
+            .expect("fixture graph must build from this AtlasData's own canon+verses+cross_refs"),
     )
+}
+
+/// Renders `data.cross_refs` back into openbible.info's own raw TSV shape
+/// (`atlas_etl::xrefs::parse`'s own input format -- module doc comment:
+/// "Line 1 is a 4-tab-field header... every data row has exactly 3
+/// fields") so `graph_fixture_for` can feed the SAME cross-ref content
+/// `AtlasData.cross_refs` already carries into the graph's own `cites`
+/// adapter, rather than authoring a second, independent xrefs fixture. A
+/// same-chapter range target (`demo_fixture()`'s own canonical
+/// `"JOS.6.20-21"`) is expanded back to the TSV's own full `Book.C.V-
+/// Book.C.V` range form (`parse_to_span`'s own split-on-`-` parse needs a
+/// complete verse ref on both sides, not a bare trailing verse number) --
+/// every other target in this fixture is already a plain single verse,
+/// parseable as-is. Iterates `data.cross_refs` in a fixed (sorted) key
+/// order for a deterministic, diffable TSV -- `HashMap`'s own iteration
+/// order is not a fixture's business.
+fn xrefs_tsv_from(data: &AtlasData) -> String {
+    let mut out = String::from("From Verse\tTo Verse\tVotes\t#comment\n");
+    let mut froms: Vec<&String> = data.cross_refs.keys().collect();
+    froms.sort();
+    for from in froms {
+        for cr in &data.cross_refs[from] {
+            let to = match cr.target.rsplit_once('-') {
+                // A same-chapter range like "JOS.6.20-21": the part before
+                // the LAST '.' in the left half is the shared "book.chapter"
+                // prefix the bare trailing verse number needs repeated.
+                Some((left, last_verse)) if last_verse.chars().all(|c| c.is_ascii_digit()) => {
+                    match left.rsplit_once('.') {
+                        Some((prefix, _first_verse)) => format!("{left}-{prefix}.{last_verse}"),
+                        None => cr.target.clone(),
+                    }
+                }
+                _ => cr.target.clone(),
+            };
+            out.push_str(&format!("{from}\t{to}\t{}\n", cr.votes));
+        }
+    }
+    out
 }
 
 fn graph_fixture() -> Arc<atlas_graph::GraphService> {
@@ -154,7 +202,13 @@ async fn health_books_eras_narratives_shapes() {
     assert_eq!(books.len(), 2);
     assert_eq!(books[0]["code"], "GEN");
     assert_eq!(books[0]["name"], "Genesis");
-    assert_eq!(books[0]["chapters"], serde_json::json!([31]));
+    // M-C2: widened from `[31]` -- `demo_fixture()`'s own GEN canon now
+    // also declares chapters 13/23 (a real fixture bug fix, see that
+    // function's own comment: GEN.13.18/GEN.23.* need to exist as real
+    // graph TextUnit nodes for cross-ref-target and event-place resolution
+    // to find them, now that those paths read the graph instead of
+    // `AtlasData` directly).
+    assert_eq!(books[0]["chapters"], serde_json::json!([31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19]));
     assert_eq!(books[1]["code"], "JOS");
 
     let (st, body) = call(&app, "/api/eras").await;

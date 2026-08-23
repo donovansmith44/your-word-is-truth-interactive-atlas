@@ -23,21 +23,24 @@
 
 use std::path::Path;
 
-use atlas_core::data::AtlasData;
 use atlas_graph::build::build_graph_from_sources_with_eras;
 use atlas_graph::heading::build_heading_index;
 
 fn real_graph() -> atlas_graph_types::graph::Graph {
     let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
     let raw_dir = data_dir.join("raw");
-    let compiled_dir = data_dir.join("compiled");
     let curated_dir = data_dir.join("curated");
 
     let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
     let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
-    let atlas = AtlasData::load(&compiled_dir).expect("data/compiled must exist (committed real data)").finish();
-    let eras_toml = std::fs::read_to_string(curated_dir.join("eras.toml")).expect("data/curated/eras.toml must exist");
-    let eras = atlas_etl::curated::parse_eras(&eras_toml).expect("eras.toml must parse");
+    // M-C2 DELETION EVENT: `AtlasData::load`'s own five retiring-file
+    // reads (places/events/narratives/verses-kjv/cross-refs.json) return
+    // empty now -- `atlas_etl::compile::compile` is the real-data source
+    // for this test's own two named cases (both need real curated
+    // events/witnesses).
+    let out = atlas_etl::compile::compile(&raw_dir, &curated_dir).expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify");
+    let atlas = out.data;
+    let eras = atlas.eras.clone();
 
     let (graph, ..) = build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &eras).expect("the real committed sources must build");
     graph

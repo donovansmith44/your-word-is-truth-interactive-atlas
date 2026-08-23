@@ -120,12 +120,18 @@ fn touches_nt(verse_id: &str) -> bool {
 /// contained pericope" concept `GOSPEL_ORDER_KEY_OVERRIDES`'s own doc
 /// comment names. `None` if this event touches that book not at all.
 ///
-/// `pub(crate)` (fix round 1, Fix 1 acceptance (b)): `narrative.rs`'s own
-/// era-boundary gate test ("every ACT-witnessed event sorts after the
-/// Passion cluster") reuses this EXACT predicate for "is this event
-/// ACT-witnessed" -- the calibration's own idea of "touches Acts" and the
-/// gate's own idea of it must never disagree.
-pub(crate) fn first_verse_in_book(e: &Event, book_code: &str) -> Option<(u16, u16)> {
+/// `pub` (widened from `pub(crate)` at M-C2 -- fix round 1, Fix 1
+/// acceptance (b), originally): `narrative.rs`'s own era-boundary gate
+/// test ("every ACT-witnessed event sorts after the Passion cluster")
+/// reuses this EXACT predicate for "is this event ACT-witnessed" -- the
+/// calibration's own idea of "touches Acts" and the gate's own idea of it
+/// must never disagree. M-C2: that test relocated to `atlas-graph/tests/
+/// narrative_real_data.rs` (this crate cannot take a dev-dependency on
+/// atlas-etl -- see that file's own doc comment), so the caller is now
+/// outside this crate -- `pub(crate)` no longer reaches it, the SAME
+/// "widen visibility for a legitimate cross-crate reuse" precedent
+/// `atlas_core::narrative::adjacent_event` already set at M-B.
+pub fn first_verse_in_book(e: &Event, book_code: &str) -> Option<(u16, u16)> {
     let mut best: Option<(u16, u16)> = None;
     for v in crate::event_merge::effective_verses(e) {
         let Ok(vid) = VerseId::parse_canonical(v) else { continue };

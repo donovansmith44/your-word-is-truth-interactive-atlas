@@ -1484,35 +1484,41 @@ impl AtlasData {
         Some((&self.catechism[pi], &self.catechism[pi].items[ii]))
     }
 
-    /// Reads the compiled JSON files ETL writes under `dir` (exact
-    /// filenames mirror `atlas-etl/src/main.rs`'s `write_json` calls:
-    /// `canon.json`, `places.json`, `events.json`, `narratives.json`,
-    /// `eras.json`, `books-meta.json`, `verses-kjv.json`, `cross-refs.json`,
-    /// plus `polities.json`, plus `landmarks.json`, plus `place-history.json`)
-    /// and assembles an `AtlasData`. Does NOT call `.finish()` — the derived
-    /// indexes are `#[serde(skip)]` and come back empty from a fresh
-    /// deserialize (see the struct doc comment); callers (the server's
-    /// `main.rs`) must call `.finish()` themselves.
+    /// Reads the SURVIVING compiled JSON files ETL writes under `dir`
+    /// (exact filenames mirror `atlas-etl/src/main.rs`'s `write_json`
+    /// calls: `canon.json`, `books-meta.json`, plus `polities.json`,
+    /// `landmarks.json`, `place-history.json`, ...) and assembles an
+    /// `AtlasData`. Does NOT call `.finish()` — the derived indexes are
+    /// `#[serde(skip)]` and come back empty from a fresh deserialize (see
+    /// the struct doc comment); callers must call `.finish()` themselves
+    /// (or, on the server's own DEFAULT startup path, overlay the five
+    /// fields below from the graph FIRST -- see `atlas_graph::legacy::
+    /// atlas_data_overlay`'s own doc comment -- then call `.finish()`
+    /// once).
+    ///
+    /// M-C2 DELETION EVENT (requirement 2, completing P1): `places.json`/
+    /// `events.json`/`narratives.json`/`verses-kjv.json`/`cross-refs.json`
+    /// retire, joining `eras.json`'s own M-C retirement -- every
+    /// production reader of these five fields migrated onto the graph
+    /// this batch (`handlers::place`/`event`/`verse`/`xrefs`/`narratives`
+    /// directly; every NOT-yet-migrated surface via `atlas_graph::legacy::
+    /// atlas_data_overlay`/`atlas_etl::compile::compile`, both graph/
+    /// raw-sourced, never this loader -- see batch-mc2-report.md's own
+    /// deletion inventory for the grep proof). The FIVE FIELDS stay on
+    /// `AtlasData` (ETL-time validation, `.finish()`'s own derived-index
+    /// web, and several test fixtures across this workspace still need
+    /// them) -- only THIS loader's own reads retire; a fresh
+    /// `AtlasData::load` now always starts with all five honestly empty,
+    /// never stale or fabricated, exactly like `.eras` already does.
     pub fn load(dir: &std::path::Path) -> Result<Self, crate::CoreError> {
         let canon: Canon = read_json(dir, "canon.json")?;
-        let places: Vec<Place> = read_json(dir, "places.json")?;
-        let events: Vec<Event> = read_json(dir, "events.json")?;
-        let narratives: Vec<Narrative> = read_json(dir, "narratives.json")?;
-        // M-C DELETION EVENT (controller decision 5): eras.json retired --
-        // `/api/eras` now serves from the graph's own Era nodes
-        // (era_adapter.rs), the only production reader this field ever
-        // had (confirmed grep-proven in the batch report's own deletion
-        // inventory: no other atlas-core/atlas-server code path reads
-        // `.eras`). The FIELD stays on `AtlasData` (atlas-etl's own
-        // ETL-time `validate::check_eras` still needs it, and several
-        // test fixtures across this workspace still construct it
-        // directly) -- only this SERVER-SIDE loader retires; a fresh
-        // `AtlasData::load` now always starts with an empty `.eras`,
-        // honestly, never a stale or fabricated value.
+        let places: Vec<Place> = Vec::new();
+        let events: Vec<Event> = Vec::new();
+        let narratives: Vec<Narrative> = Vec::new();
         let eras: Vec<Era> = Vec::new();
         let books_meta: Vec<BookMeta> = read_json(dir, "books-meta.json")?;
-        let verses: HashMap<String, String> = read_json(dir, "verses-kjv.json")?;
-        let cross_refs: HashMap<String, Vec<CrossRef>> = read_json(dir, "cross-refs.json")?;
+        let verses: HashMap<String, String> = HashMap::new();
+        let cross_refs: HashMap<String, Vec<CrossRef>> = HashMap::new();
 
         let polities: Vec<Polity> = read_json(dir, "polities.json")?;
         let landmarks: Vec<Landmark> = read_json(dir, "landmarks.json")?;
@@ -1661,8 +1667,44 @@ pub fn demo_fixture() -> AtlasData {
 
     let canon = Canon {
         books: vec![
-            CanonBook { code: "GEN".into(), name: "Genesis".into(), chapters: vec![31] },
-            CanonBook { code: "JOS".into(), name: "Joshua".into(), chapters: vec![3] },
+            // M-C2: widened from `vec![31]` (chapter 1 only) to also cover
+            // chapters 13/23, the SAME "canon must cover every verse this
+            // fixture actually has text/cross-refs for" fix as JOS below --
+            // `xref_adapter::normalize`'s own "target's first verse must
+            // exist" check (`atlas_etl::xrefs::filter_missing_first_verse`)
+            // is checked against the GRAPH's own rebuilt verse map (that
+            // module's own doc comment: "rebuilt by walking the
+            // JUST-NORMALIZED graph nodes"), so a cross-ref TARGET outside
+            // the declared canon (GEN.13.18, cited by JOS.6.20's own third
+            // cross-ref below) was silently dropped at graph-build time
+            // even though `data.verses`/`data.cross_refs` both carried it.
+            // `/api/books` reads `data.canon` directly (unaffected by
+            // which handler sources its OWN text from) so its own
+            // `books[0]["chapters"]` wire value changes with this fix --
+            // `health_books_eras_narratives_shapes`'s own assertion is
+            // updated in the SAME commit, per this file's own citation-
+            // integrity discipline (never let a wire assertion silently
+            // drift from the fixture it's supposed to pin).
+            CanonBook { code: "GEN".into(), name: "Genesis".into(), chapters: vec![31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19] },
+            // M-C2: widened from `vec![3]` (chapter 1 only) to cover every
+            // JOS chapter this fixture's own `verses` map below actually
+            // has text for (1/4/6/8) -- a real, self-found fixture bug:
+            // `handlers::verse`/`handlers::chapter`'s own verse TEXT now
+            // comes from the graph's TextUnit node table, which
+            // `kjv_adapter::normalize` builds by walking `canon.books`'s
+            // own declared chapter/verse counts (`ordered_verses_from_canon`),
+            // NOT by scanning `verses` directly -- unlike the pre-M-C2
+            // `data.verses.get(key)` read, which never consulted `canon` at
+            // all. A `verses` entry for a chapter `canon` never declares
+            // (JOS.4/6/8 against the old `chapters: vec![3]`) was silently
+            // reachable through the old flat-map read but invisible to the
+            // graph -- exactly the kind of drift `graph_fixture_for`'s own
+            // doc comment above already warns this fixture must avoid.
+            // Interior chapters this fixture has no verses for (2/3/5/7)
+            // stay 0 (a lawful, honest "no verses this chapter" -- the
+            // graph simply never materializes nodes for them, same as any
+            // real book's own unwritten chapters would).
+            CanonBook { code: "JOS".into(), name: "Joshua".into(), chapters: vec![3, 0, 0, 20, 0, 24, 0, 28] },
         ],
     };
     let eras = vec![

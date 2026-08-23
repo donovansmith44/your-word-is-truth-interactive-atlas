@@ -31,9 +31,22 @@ use std::path::Path;
 use atlas_graph::GraphService;
 use atlas_graph_types::store::GraphSnapshot as _;
 
+// M-C2 DELETION EVENT: `AtlasData::load`'s own five retiring-file reads
+// (places/events/narratives/verses-kjv/cross-refs.json) return empty now
+// -- `atlas_etl::compile::compile` is this crate's own real-data source
+// for every test needing a fully-populated `AtlasData` from here on
+// (already a normal dependency, no layering concern). Cached so this
+// binary's own multiple `#[test]`s (if any) share one real compile.
 fn real_atlas_data() -> atlas_core::data::AtlasData {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
-    atlas_core::data::AtlasData::load(&dir).expect("data/compiled must exist (committed real data)").finish()
+    static CACHED: std::sync::OnceLock<atlas_core::data::AtlasData> = std::sync::OnceLock::new();
+    CACHED
+        .get_or_init(|| {
+            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
+            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
+                .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
+                .data
+        })
+        .clone()
 }
 
 #[test]

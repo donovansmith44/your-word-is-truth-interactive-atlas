@@ -26,6 +26,7 @@ use atlas_graph_types::explore::{EdgeEntry, EdgeQuery};
 use atlas_graph_types::id::{AnyNodeId, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
+use atlas_graph_types::text::{TextLocus, TextRef};
 
 /// Drains every page of one edge kind at one position -- same shape as
 /// `atlas_server::handlers::drain_edges` (duplicated, not shared: that one
@@ -123,6 +124,17 @@ pub fn narrative_from_node(id: &AnyNodeId, q: &impl GraphQuery, legs: &[String])
     let node = q.node(id)?;
     let NodePayload::Narrative { label, color } = node.payload else { return None };
     Some(Narrative { id: id.raw.clone(), name: label, color, legs: legs.to_vec() })
+}
+
+/// A Bible-corpus `TextLocus`'s own canonical dot-ref (e.g. `"JHN.3.16"`),
+/// via the SAME `kjv_adapter::dot_ref` every other verse-id round trip in
+/// this crate uses -- `None` for a Concord locus (reserved, unpopulated
+/// today) or a sub-verse span (not yet materialized).
+pub fn locus_dot_ref(l: &TextLocus) -> Option<String> {
+    match &l.at {
+        TextRef::Bible(v) => Some(crate::kjv_adapter::dot_ref(v.book, v.chapter, v.verse)),
+        TextRef::Concord(_) => None,
+    }
 }
 
 /// Reconstructs the full `verse -> KJV text` map by walking the bible

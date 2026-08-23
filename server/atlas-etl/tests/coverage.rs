@@ -432,13 +432,21 @@ fn every_authored_acts_section_is_present_and_distinct() {
 // bare Theographic records with no curated-TOML footprint at all).
 // ---------------------------------------------------------------------
 
-/// Reads and parses `data/compiled/{name}` as JSON, relative to this
-/// crate's own manifest dir (same CWD-independent trick `read_curated`
-/// above already uses for `data/curated/`).
-fn read_compiled_json<T: serde::de::DeserializeOwned>(name: &str) -> T {
-    let path = format!("{}/../../data/compiled/{name}", env!("CARGO_MANIFEST_DIR"));
-    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read {path}: {e}"));
-    serde_json::from_str(&text).unwrap_or_else(|e| panic!("failed to parse {path} as JSON: {e}"))
+/// M-C2 DELETION EVENT: `events.json` retired -- this crate (unlike
+/// `atlas-core`/`atlas-graph`, which read it via `AtlasData::load`, now
+/// empty) IS `atlas-etl` itself, so `atlas_etl::compile::compile` is a
+/// same-crate call, no layering question at all. Cached (`OnceLock`) so
+/// this file's own three call sites share one real compile.
+fn real_compiled_data() -> atlas_core::data::AtlasData {
+    static CACHED: std::sync::OnceLock<atlas_core::data::AtlasData> = std::sync::OnceLock::new();
+    CACHED
+        .get_or_init(|| {
+            let data_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
+            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
+                .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
+                .data
+        })
+        .clone()
 }
 
 /// The full set of canonical verse ids for one book, derived from the REAL
@@ -482,8 +490,9 @@ fn every_declared_book_is_fully_covered_by_the_real_compiled_data() {
     let declared = atlas_etl::curated::parse_coverage_manifest(&manifest_toml).expect("coverage-manifest.toml must parse");
     assert!(!declared.is_empty(), "coverage-manifest.toml's own declared list must not be empty");
 
-    let canon: Canon = read_compiled_json("canon.json");
-    let events: Vec<Event> = read_compiled_json("events.json");
+    let real = real_compiled_data();
+    let canon = real.canon.clone();
+    let events = real.events.clone();
     let covered = covered_verses(&events);
 
     let mut failures: Vec<String> = Vec::new();
@@ -576,7 +585,7 @@ fn declared_books_never_shrink_below_the_established_floor() {
 
 #[test]
 fn no_duplicate_fall_of_jerusalem_or_gedaliah_mizpah_nodes_in_the_real_compiled_timeline() {
-    let events: Vec<Event> = read_compiled_json("events.json");
+    let events = real_compiled_data().events;
     let by_id: HashSet<&str> = events.iter().map(|e| e.id.as_str()).collect();
 
     // RED (pre-fix-round-1 shape, named explicitly so a future regression
@@ -696,8 +705,9 @@ fn no_duplicate_fall_of_jerusalem_or_gedaliah_mizpah_nodes_in_the_real_compiled_
 
 #[test]
 fn every_canonical_book_is_declared_and_the_whole_kjv_is_fully_covered() {
-    let canon: Canon = read_compiled_json("canon.json");
-    let events: Vec<Event> = read_compiled_json("events.json");
+    let real = real_compiled_data();
+    let canon = real.canon.clone();
+    let events = real.events.clone();
     let covered = covered_verses(&events);
 
     // (a) the declared list is EXACTLY the 66 real canonical book codes --

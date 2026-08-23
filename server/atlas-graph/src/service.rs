@@ -102,6 +102,23 @@ pub struct GraphService {
     /// lookup for a whole-chapter fetch" reasoning `bible_position` itself
     /// already established.
     pub heading_index: BTreeMap<String, crate::heading::HeadingEntry>,
+    /// M-C2 (requirement 2, unblocking `aggregate_span_xrefs`): FROM-verse
+    /// dot-ref -> every `cites` row it authors, in the SAME
+    /// `atlas_core::data::CrossRef { target, votes }` shape
+    /// `atlas_core::xrefs::aggregate_span_xrefs` already takes (`target` is
+    /// the row's own `target_display` -- the ORIGINAL citation string,
+    /// never a re-synthesized one) -- lets `handlers::xrefs`/`handlers::
+    /// verse` call that EXISTING, already-tested aggregation function
+    /// completely unchanged (its own signature is `&HashMap<...>`, hence
+    /// `HashMap` here, not `BTreeMap` -- this companion is ONLY ever
+    /// read via per-key `.get()`, never iterated as a whole, so its own
+    /// iteration order is irrelevant and carries no determinism concern,
+    /// unlike a value that gets serialized). The port's own `edges()`
+    /// cannot serve this (an `EdgeEntry` carries only the target's FIRST
+    /// verse + `EdgeMeta::Votes`, not the row's own `to_last`/
+    /// `target_display`) -- same "port doesn't model this access shape"
+    /// class as `narrative_legs` above.
+    pub cross_refs_by_from: HashMap<String, Vec<atlas_core::data::CrossRef>>,
 }
 
 /// The longest KJV chapter (Psalm 119) has 176 verses; this probe width is
@@ -240,6 +257,14 @@ impl GraphService {
         // "cheap, once, at assemble time" treatment every other companion
         // above already gets.
         let heading_index = crate::heading::build_heading_index(&graph);
+        // M-C2 (requirement 2): the SAME treatment for the cites relation's
+        // own span data -- see this struct's own `cross_refs_by_from` doc
+        // comment.
+        let mut cross_refs_by_from: HashMap<String, Vec<atlas_core::data::CrossRef>> = HashMap::new();
+        for row in &graph.cross_refs {
+            let Some(key) = crate::legacy::locus_dot_ref(&row.from) else { continue };
+            cross_refs_by_from.entry(key).or_default().push(atlas_core::data::CrossRef { target: row.target_display.clone(), votes: row.votes as i32 });
+        }
         // GraphPublisher::publish (design doc §9a): the compiler
         // publishes; serving never writes. One publish, at startup; M-A
         // never calls it again (no hot-reload exists yet) -- MemStore's
@@ -263,6 +288,7 @@ impl GraphService {
             place_ids,
             narrative_legs,
             heading_index,
+            cross_refs_by_from,
         }
     }
 

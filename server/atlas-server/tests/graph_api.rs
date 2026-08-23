@@ -20,10 +20,27 @@ use tower::ServiceExt;
 use atlas_core::data::AtlasData;
 use atlas_graph::GraphService;
 
+// M-C2 DELETION EVENT: `AtlasData::load`'s own five retiring-file reads
+// return empty now -- `atlas_etl::compile::compile` is this crate's own
+// real-data source from here on. Cached (`OnceLock`) so this file's own
+// 15 `real_app()` call sites share one real compile -- `GraphService::
+// build` itself still runs fresh per call (unchanged from before this
+// batch), since a real app needs its own graph instance.
+fn real_atlas_data() -> AtlasData {
+    static CACHED: std::sync::OnceLock<AtlasData> = std::sync::OnceLock::new();
+    CACHED
+        .get_or_init(|| {
+            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
+            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
+                .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
+                .data
+        })
+        .clone()
+}
+
 fn real_app() -> axum::Router {
-    let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
     let raw = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-    let data = AtlasData::load(&compiled).expect("data/compiled/*.json must exist").finish();
+    let data = real_atlas_data();
     // GraphService::build runs the FIDELITY LAW unconditionally as part of
     // construction (fix round 1) -- reaching this line already proves it
     // passed on the real committed KJV source.

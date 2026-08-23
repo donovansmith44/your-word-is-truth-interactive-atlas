@@ -10,3 +10,13 @@ thiserror = "2"
 
 [dev-dependencies]
 proptest = "1"
+# M-C2: a dev-dependency on atlas-etl here was tried and reverted -- Cargo
+# rejects it (`error[E0308]: mismatched types... there are multiple
+# different versions of crate atlas_core in the dependency graph`): a
+# dev-dependency cycle only works when no TYPE from the cycling crate
+# crosses the boundary, and atlas_etl::compile::compile returns
+# atlas_core::data::AtlasData itself, which is exactly the case Cargo
+# cannot unify (the test-cfg build of this crate and the normal build
+# atlas-etl links against become two distinct types with the same name).
+# See narrative.rs's own test module for where the real-data tests that
+# needed this moved instead (server/atlas-graph/tests/narrative_real_data.rs).

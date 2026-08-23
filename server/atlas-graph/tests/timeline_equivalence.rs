@@ -34,9 +34,14 @@ use atlas_graph::Chronology;
 use atlas_graph_types::chrono::{temporal_order, ResolvedDate, ResolvedPlacement};
 use atlas_graph_types::id::EventId;
 
+// M-C2 DELETION EVENT: `AtlasData::load`'s own five retiring-file reads
+// return empty now -- `atlas_etl::compile::compile` is this crate's own
+// real-data source from here on.
 fn load_real_atlas() -> AtlasData {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
-    AtlasData::load(&dir).expect("data/compiled/*.json must exist -- run `cargo run -p atlas-etl` from server/ first").finish()
+    let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
+    atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
+        .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
+        .data
 }
 
 /// The OLD resolver's own total order, walked via its OWN public accessor

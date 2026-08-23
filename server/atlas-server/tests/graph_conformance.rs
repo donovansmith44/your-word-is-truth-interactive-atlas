@@ -49,7 +49,6 @@
 use std::collections::HashSet;
 use std::path::Path;
 
-use atlas_core::data::AtlasData;
 use atlas_graph::build::build_graph_from_sources;
 use atlas_graph_types::store::{assert_answers_match, GraphPublisher, GraphStore, MemStore};
 
@@ -143,8 +142,11 @@ fn the_full_real_graph_is_admitted_the_in_memory_store_answers_match_the_model_e
     let xrefs_tsv =
         std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist (committed real data)");
 
-    let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
-    let atlas = AtlasData::load(&compiled).expect("data/compiled/*.json must exist -- run `cargo run -p atlas-etl` from server/ first").finish();
+    // M-C2 DELETION EVENT: `AtlasData::load`'s own five retiring-file
+    // reads return empty now -- `atlas_etl::compile::compile` is this
+    // crate's own real-data source from here on.
+    let curated = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/curated");
+    let atlas = atlas_etl::compile::compile(&dir, &curated).expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify").data;
 
     let (model, model_stats, model_ew_stats, _) = build_graph_from_sources(&kjv_json, &xrefs_tsv, &atlas).expect("the real KJV source must parse");
     assert_eq!(model_stats.kjv_verses, 31_102, "the real KJV text is 31,102 verses");

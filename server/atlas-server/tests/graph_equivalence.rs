@@ -21,9 +21,20 @@ use atlas_core::data::AtlasData;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
 
+// M-C2 DELETION EVENT: `AtlasData::load`'s own five retiring-file reads
+// return empty now -- `atlas_etl::compile::compile` is this crate's own
+// real-data source from here on. Cached (`OnceLock`) so this file's two
+// call sites share one real compile.
 fn load_real_atlas_data() -> AtlasData {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
-    AtlasData::load(&dir).expect("data/compiled/*.json must exist -- run `cargo run -p atlas-etl` from server/ first").finish()
+    static CACHED: std::sync::OnceLock<AtlasData> = std::sync::OnceLock::new();
+    CACHED
+        .get_or_init(|| {
+            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
+            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
+                .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
+                .data
+        })
+        .clone()
 }
 
 fn load_real_graph(atlas: &AtlasData) -> GraphService {

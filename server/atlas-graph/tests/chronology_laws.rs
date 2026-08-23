@@ -41,9 +41,20 @@ use atlas_graph::Chronology;
 use atlas_graph_types::chrono::temporal_order;
 use atlas_graph_types::edge::Attests;
 
+// M-C2 DELETION EVENT: `AtlasData::load`'s own five retiring-file reads
+// return empty now -- `atlas_etl::compile::compile` is this crate's own
+// real-data source from here on. Cached (`OnceLock`) so this file's own
+// multiple `#[test]`s calling `build_real()` share one compile.
 fn load_real_atlas() -> AtlasData {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
-    AtlasData::load(&dir).expect("data/compiled/*.json must exist -- run `cargo run -p atlas-etl` from server/ first").finish()
+    static CACHED: std::sync::OnceLock<AtlasData> = std::sync::OnceLock::new();
+    CACHED
+        .get_or_init(|| {
+            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
+            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
+                .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
+                .data
+        })
+        .clone()
 }
 
 struct RealGraph {

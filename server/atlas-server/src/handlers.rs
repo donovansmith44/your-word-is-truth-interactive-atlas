@@ -19,6 +19,8 @@ use atlas_core::wire::{Scene, SceneEvent, VerseGroup};
 use atlas_core::xrefs::aggregate_span_xrefs;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
+use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
+use atlas_graph_types::id::Position;
 use atlas_graph_types::store::GraphQuery;
 
 use crate::error::ApiError;
@@ -104,8 +106,24 @@ pub async fn eras(State(graph): State<Arc<GraphService>>) -> Json<Vec<Era>> {
     Json(out)
 }
 
-pub async fn narratives(State(data): State<Arc<AtlasData>>) -> Json<Vec<Narrative>> {
-    Json(data.narratives.clone())
+/// `GET /api/narratives` (M-C2, definitive surface list). Re-implemented as
+/// a VIEW over the graph's own Narrative nodes -- `GraphService.
+/// narrative_ids` is the companion enumeration (same "port doesn't model
+/// 'list every node of kind K'" class as `era_ids`/`polity_ids`, already
+/// confirmed to match `data/curated/narratives/`'s own sorted-by-filename
+/// compiled order -- see that field's own doc comment); `legs` comes from
+/// `narrative_legs` (the `succession` relation's own row `chain`, the
+/// single source -- never duplicated onto the payload). WIRE SHAPE
+/// UNCHANGED: `atlas_core::data::Narrative { id, name, color, legs }`.
+pub async fn narratives(State(graph): State<Arc<GraphService>>) -> Json<Vec<Narrative>> {
+    let snap = graph.snapshot();
+    let empty_legs: Vec<String> = Vec::new();
+    let out: Vec<Narrative> = graph
+        .narrative_ids
+        .iter()
+        .filter_map(|id| atlas_graph::legacy::narrative_from_node(id, &snap, graph.narrative_legs.get(&id.raw).unwrap_or(&empty_legs)))
+        .collect();
+    Json(out)
 }
 
 pub async fn landmarks(State(data): State<Arc<AtlasData>>) -> Json<Vec<Landmark>> {
@@ -413,7 +431,13 @@ pub async fn chapter(
                     name: resolve_display_name(&p.name, data.place_history_for(&p.id), None, data.place_name_alias_for(&p.id)),
                 })
                 .collect();
-            let heading = data.heading_for_verse(&key).map(HeadingOut::from);
+            // M-C2 (requirement 1, decisive-title law re-homed as a graph
+            // query): `graph.heading_index` (precomputed at `GraphService::
+            // assemble` time by `heading::build_heading_index`), not
+            // `data.heading_for_verse` -- see that module's own doc
+            // comment for the full re-homing (kept in lockstep with
+            // CONTRACT.md and the atlas-core original).
+            let heading = graph.heading_index.get(&key).map(|h| HeadingOut { event_id: h.event_id.clone(), title: h.title.clone(), kind: h.kind.clone() });
             verses.push(VerseOut { verse: v, text: text.to_string(), places, heading });
         }
     }
@@ -662,11 +686,16 @@ fn first_verse_of_target(target: &str) -> Option<VerseId> {
 /// Cross-ref preview rows fail soft (ruling 4): ETL guarantees every
 /// compiled cross-ref target's first verse exists in the verses map, but if
 /// that's ever violated the row is skipped rather than panicking.
-pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>) -> Result<Json<VerseDetailOut>, ApiError> {
+pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Path(vref): Path<String>) -> Result<Json<VerseDetailOut>, ApiError> {
     let vid = VerseId::parse_canonical(&vref).map_err(|_| ApiError::bad_ref(&vref))?;
     let canonical = format!("{}.{}.{}", vid.book.code(), vid.chapter, vid.verse);
 
-    let text = data.verses.get(&canonical).cloned().ok_or_else(|| ApiError::not_found("verse"))?;
+    // M-C2 (definitive surface list): the verse's own text now comes from
+    // the graph's own TextUnit node -- the SAME `window::render` primitive
+    // `handlers::chapter` already uses -- not `data.verses.get(key)`.
+    let snap = graph.snapshot();
+    let text_id = atlas_graph::kjv_adapter::verse_node_id(vid.book.0, vid.chapter, vid.verse);
+    let text = window::render(&snap, &text_id).ok_or_else(|| ApiError::not_found("verse"))?;
 
     let book_meta = data.books_meta.iter().find(|b| b.book == vid.book.code()).cloned().unwrap_or_else(|| BookMeta {
         book: vid.book.code().to_string(),
@@ -676,19 +705,42 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
         write_to: None,
     });
 
-    let events: Vec<VerseEventOut> = data
-        .events_for_verse(&canonical)
-        .iter()
-        .filter_map(|id| data.event_by_id(id))
+    // M-C2: "which events attest this verse" is now the INVERSE
+    // `attested-in` frontier at the verse's own TextUnit position -- real
+    // per-verse `attests` rows (event_world.rs's own M-C2 fix, one row per
+    // witness VERSE rather than per verse GROUP) close the exact gap that
+    // would otherwise drop a witness-interior verse like `MAT.26.6`.
+    // Deduped by event id (an event whose OWN top-level `verses` and a
+    // witness both happen to name the identical verse must still surface
+    // once, mirroring `AtlasData::finish()`'s own `verse_to_events`
+    // dedup); sorted by `from_year` to match that index's own inherited
+    // (from `self.events`'s own from_year-sorted order) iteration order.
+    let mut seen_events: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut attesting_events: Vec<Event> = drain_edges(&snap, &Position::Node(text_id.clone()), EdgeKind::Directed(RelationId::Attests, Direction::Inverse))
+        .into_iter()
+        .filter_map(|entry| match entry.node {
+            Position::Node(eid) => Some(eid),
+            Position::Edge(_) => None,
+        })
+        .filter(|eid| seen_events.insert(eid.raw.clone()))
+        .filter_map(|eid| atlas_graph::legacy::event_from_node(&eid, &snap))
+        .collect();
+    attesting_events.sort_by_key(|e| e.when.from_year);
+    let events: Vec<VerseEventOut> = attesting_events
+        .into_iter()
         .map(|e| {
-            let se = to_scene_event(e);
+            let se = to_scene_event(&e);
             let when = if e.kind == "event" { Some(se.when) } else { None };
             VerseEventOut { id: se.id, label: se.label, when, verse_groups: se.verse_groups, places: e.places.clone(), kind: e.kind.clone() }
         })
         .collect();
 
-    let cross_refs: Vec<CrossRefOut> = data
-        .cross_refs
+    // M-C2 (requirement 2): `graph.cross_refs_by_from` (the graph's own
+    // `cites` rows, dot-ref keyed, `target` = each row's own
+    // `target_display` -- the honest original citation string) instead of
+    // `data.cross_refs` -- see that field's own doc comment.
+    let cross_refs: Vec<CrossRefOut> = graph
+        .cross_refs_by_from
         .get(&canonical)
         .map(Vec::as_slice)
         .unwrap_or(&[])
@@ -1005,8 +1057,16 @@ pub struct EventDetailOut {
 /// scene/narrative machinery) since this is a passage's own STANDALONE
 /// content -- title/date/places/witnesses -- not anything scoped to a
 /// window or a narrative position.
-pub async fn event(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -> Result<Json<EventDetailOut>, ApiError> {
-    let e: &Event = data.event_by_id(&id).ok_or_else(|| ApiError::not_found("event"))?;
+pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<EventDetailOut>, ApiError> {
+    // M-C2 (definitive surface list): reconstructed from the graph's own
+    // Event node (`NodePayload::Event`'s own M-C2 widening carries every
+    // field this handler needs) instead of `data.event_by_id`.
+    // `place_history_for`/`place_name_alias_for` below stay on `AtlasData`
+    // deliberately -- `place-history.json`/`place-names-kjv.json` are not
+    // this batch's deletion target, unaffected by the migration.
+    let snap = graph.snapshot();
+    let e: Event = atlas_graph::legacy::event_from_node(&atlas_graph::event_world::event_node_id(&id), &snap).ok_or_else(|| ApiError::not_found("event"))?;
+    let e: &Event = &e;
 
     // Batch E3: resolved name (period-history- and KJV-alias-aware), not the
     // bare Theographic default -- this is the "PARALLEL ACCOUNTS place
@@ -1028,7 +1088,7 @@ pub async fn event(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -
     let places = e
         .places
         .iter()
-        .filter_map(|pid| data.place_by_id(pid))
+        .filter_map(|pid| atlas_graph::legacy::place_from_node(&atlas_graph::event_world::place_stub_node_id(pid), &snap))
         .map(|p| EventPlaceOut {
             id: p.id.clone(),
             name: resolve_display_name(&p.name, data.place_history_for(&p.id), window, data.place_name_alias_for(&p.id)),
@@ -1202,13 +1262,21 @@ pub async fn catechism_item(State(data): State<Arc<AtlasData>>, Path(id): Path<S
 /// handler is pure response-shape assembly, per this module's own file
 /// header. Reuses `data.cross_refs`/`data.verses` verbatim -- no new data
 /// source, no ETL change.
-pub async fn xrefs(State(data): State<Arc<AtlasData>>, Path(sref): Path<String>) -> Result<Json<Vec<CrossRefOut>>, ApiError> {
+/// M-C2 (definitive surface list): `aggregate_span_xrefs` itself is
+/// UNCHANGED (business logic stays in `atlas_core::xrefs`, per this
+/// module's own file header) -- only its DATA SOURCE moves, from
+/// `data.cross_refs` to `graph.cross_refs_by_from` (the graph's own
+/// `cites` rows, in the identical `HashMap<String, Vec<atlas_core::data::
+/// CrossRef>>`-compatible shape that function already expects; `target`
+/// carries each row's own `target_display`, the honest original citation
+/// string -- graph_types::edge::CrossRef's own M-C2 widening).
+pub async fn xrefs(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Path(sref): Path<String>) -> Result<Json<Vec<CrossRefOut>>, ApiError> {
     let span = match ScriptureRef::parse(&sref) {
         Ok(span @ (ScriptureRef::Verse(_) | ScriptureRef::Passage { .. })) => span,
         _ => return Err(ApiError::bad_ref(&sref)),
     };
 
-    let aggregated = aggregate_span_xrefs(&span, &data.cross_refs, &data.verses);
+    let aggregated = aggregate_span_xrefs(&span, &graph.cross_refs_by_from, &data.verses);
     let out = aggregated.into_iter().map(|x| CrossRefOut { target: x.target, votes: x.votes, preview: x.preview }).collect();
     Ok(Json(out))
 }
@@ -1278,14 +1346,33 @@ pub struct PlaceDetailOut {
 /// present, so a missing or malformed window just means `history` (when the
 /// place has one at all) reports its default display name and no blurb,
 /// rather than rejecting the whole request over an optional refinement.
+/// M-C2 (definitive surface list): `place`/`events` now come from the
+/// graph -- `atlas_graph::legacy::place_from_node` for the place itself,
+/// the `site-of` (`located-at` INVERSE) frontier at the place's own
+/// position for its own events (every LocatedAt row event_world.rs builds
+/// for this place, order-independent here since the explicit `sort_by_key`
+/// below already re-establishes the from_year order regardless).
+/// `place_history_for`/`place_name_alias_for` stay on `AtlasData`
+/// deliberately -- `place-history.json`/`place-names-kjv.json` are not
+/// this batch's deletion target.
 pub async fn place(
     State(data): State<Arc<AtlasData>>,
+    State(graph): State<Arc<GraphService>>,
     Path(id): Path<String>,
     Query(params): Query<HashMap<String, String>>,
 ) -> Result<Json<PlaceDetailOut>, ApiError> {
-    let place = data.place_by_id(&id).ok_or_else(|| ApiError::not_found("place"))?;
+    let snap = graph.snapshot();
+    let place_id = atlas_graph::event_world::place_stub_node_id(&id);
+    let place = atlas_graph::legacy::place_from_node(&place_id, &snap).ok_or_else(|| ApiError::not_found("place"))?;
 
-    let mut events: Vec<SceneEvent> = data.events.iter().filter(|e| e.places.contains(&id)).map(to_scene_event).collect();
+    let mut events: Vec<SceneEvent> = drain_edges(&snap, &Position::Node(place_id.clone()), EdgeKind::Directed(RelationId::LocatedAt, Direction::Inverse))
+        .into_iter()
+        .filter_map(|entry| match entry.node {
+            Position::Node(eid) => atlas_graph::legacy::event_from_node(&eid, &snap),
+            Position::Edge(_) => None,
+        })
+        .map(|e| to_scene_event(&e))
+        .collect();
     events.sort_by_key(|e| e.when.from_year);
 
     let window = match (params.get("from").and_then(|s| s.parse::<i32>().ok()), params.get("to").and_then(|s| s.parse::<i32>().ok()))
