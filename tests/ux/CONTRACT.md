@@ -327,19 +327,19 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   the down-arrow reveal / up-arrow snap-back for the cross-references list
   -- present only when there are more entries than the current cap; see
   XREF-1),
-  `event-section-heading` (batch-n-brief.md, retargeted batch-t-brief.md;
-  small-caps eyebrow, the SAME shared testid every section-registry heading
-  in this popover platform uses -- `catechism-section-heading`'s own class,
-  reused directly, not a fourth copy under a fourth name (Batch T retires
-  the pixel-identical `narrative-section-heading`) -- rendered on FOUR
-  different section bodies with FOUR different texts: "EVENT" (a VERSE
-  node's own event-membership list, see EVENT-1), "PARALLEL ACCOUNTS" (an
-  EVENT node's own witness list, conditional -- absent for a single-witness
-  event, see EVENT-1), and "PRIOR EVENT"/"FOLLOWING EVENT" bare when the
-  current EVENT node touches exactly one qualifying narrative in that
-  direction, else one heading per qualifying narrative, each reading
-  "PRIOR EVENT — {narrative name}" (`FOLLOWING EVENT` symmetrically) --
-  see EVENT-1),
+  `event-section-heading` (batch-n-brief.md, retargeted batch-t-brief.md,
+  NARROWED M-D3/U1; small-caps eyebrow, the SAME shared testid every
+  section-registry heading in this popover platform uses --
+  `catechism-section-heading`'s own class, reused directly, not a fourth
+  copy under a fourth name (Batch T retires the pixel-identical
+  `narrative-section-heading`) -- rendered on THREE section bodies today
+  (was four; M-D3/U1 retires the narrative PRIOR EVENT/FOLLOWING EVENT
+  headings below, folding that traversal into a headingless nav row -- see
+  EVENT-1's own U1 note): "EVENT" (a VERSE node's own event-membership
+  list, see EVENT-1), "PARALLEL ACCOUNTS" (an EVENT node's own witness
+  list, conditional -- absent for a single-witness event, see EVENT-1),
+  and "PRIOR IN TIME"/"FOLLOWING IN TIME" (the GLOBAL-timeline adjacency,
+  UNCHANGED by M-D3/U1 -- see the GLOBAL TIMELINE note under EVENT-1),
   `verse-event-{eventId}` (batch-t-brief.md; button; one per EVENT-kind
   PASSAGE citing the current VERSE, inside `popover-section-event-membership`
   -- REPLACES batch-n-brief.md's own verse-level PRIOR/FOLLOWING (retired,
@@ -356,24 +356,38 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   entry among an EVENT node's own PARALLEL ACCOUNTS/single-passage list, via
   the shared passage-list component, clamped per PASSAGE-1's own
   `ClampVerses` extension -- see EVENT-1),
+  `event-nav` (M-D3/U1; wraps the WHOLE narrative prior/following nav --
+  one or more `event-nav-row-{idSuffix}` rows, each holding one
+  `event-nav-arrows` pair; present iff the event belongs to >=1 narrative
+  with a Prior and/or Following on either side -- see EVENT-1's own U1
+  note), `popover-event-nav-narrative` (a row's own narrative-name label
+  -- present ONLY when the event belongs to >1 narrative; a single
+  qualifying narrative needs no name, see EVENT-1),
   `event-prior-event-{narrativeId}` / `event-following-event-{narrativeId}`
-  (batch-n-brief.md, retargeted batch-t-brief.md; button; the adjacent
-  event's own label; present once per qualifying narrative position in
-  that direction -- a SECOND position sharing the same `narrativeId` (a
-  real case in the compiled data, see EVENT-1) gets a numbered `--2`/`--3`
-  suffix, same disambiguation shape as `catechism-item-{ID}--q2`; clicking
-  (or Enter) traverses -- pushes a fresh `EventNode` re-anchoring the
-  popover onto that event, recursively -- see EVENT-1),
-  `event-prior-verse-{narrativeId}-{SPAN}` / `event-following-verse-{narrativeId}-{SPAN}`
-  (batch-n-brief.md, retargeted batch-t-brief.md; one per passage entry
-  among the adjacent event's own verses, via the shared passage-list
-  component -- PASSAGE-1's own `popover-verse-expand{-ENTRY-ID}`/etc.
-  nested testids apply here identically; opens a `VerseNode`/`PassageNode`
-  for `SPAN`, same as any other passage-list entry; when the event-row
-  testid above carries a `--2`/`--3` disambiguation suffix, this verse-row's
-  own `{narrativeId}` segment inherits that EXACT suffix verbatim too (e.g.
-  `event-prior-verse-exodus--2-EXO.12.37`), never the bare `{narrativeId}`
-  form -- see EVENT-1),
+  (batch-n-brief.md, retargeted batch-t-brief.md, REBUILT M-D3/U1; button;
+  the adjacent event's own label; present once per qualifying narrative
+  position in that direction -- a SECOND position sharing the same
+  `narrativeId` (a theoretical edge case, guarded defensively -- see
+  EVENT-1's own U1 note) gets a numbered `--2`/`--3` suffix, same
+  disambiguation shape as `catechism-item-{ID}--q2`; clicking (or Enter)
+  traverses -- pushes a fresh `EventNode` re-anchoring the popover onto
+  that event, recursively -- see EVENT-1). M-D3/U1 REBUILDS this button's
+  own surrounding markup (a compact flanking arrow inside `event-nav`, not
+  its own headed "PRIOR EVENT"/"FOLLOWING EVENT" section) -- the testid
+  itself, its click behavior, and its recursive-traversal semantics are
+  UNCHANGED,
+  `event-prior-verse-{narrativeId}` / `event-following-verse-{narrativeId}`
+  (M-D3/U1, REPLACES the retired `event-prior-verse-{narrativeId}-{SPAN}`/
+  `event-following-verse-{narrativeId}-{SPAN}` passage-list-entry shape;
+  a plain, non-explorable quiet caption -- "those foci truncated to ONE
+  VERSE," the owner's own words -- carrying the adjacent event's own FIRST
+  vref's text only (never the full multi-verse-group preview the retired
+  shape showed, and never itself a `VerseNode`/`PassageNode` explorable
+  target -- the ARROW beside it is the one explorable affordance for that
+  side of the row); present only when that side's adjacent event has
+  >=1 verse group with >=1 verse; carries the SAME `--2`/`--3` disambiguation
+  suffix as its own `event-{prior,following}-event-{narrativeId}` sibling
+  when one applies -- see EVENT-1),
   `event-prior-event-timeline` / `event-following-event-timeline`
   (batch-hotfix4-brief.md requirement 1; button; the GLOBAL-timeline
   adjacent event's own label -- present once per direction, independent of
@@ -440,26 +454,24 @@ Notes:
   shift-click passage span's own per-verse narrative/event membership is
   genuinely ambiguous in a way a single verse never is). EVENT node
   sections (batch-t-brief.md; an `EventNode`, reached by a verse's own
-  "EVENT" row above, a reader heading, or a PRIOR/FOLLOWING traversal row
-  below, recursively), in this order: date + place(s)
-  (`popover-section-event-date-places` -- batch-t2-brief.md: the WHOLE
-  section is conditional, absent for a general-kind passage with neither a
-  date nor a place to show; otherwise present, with the date line and
-  place row EACH independently conditional within it -- the date line
-  renders only when this passage `kind == "event"` (never a fabricated
-  line for a general-kind one), the place row only if >=1 place resolves),
-  PARALLEL ACCOUNTS
+  "EVENT" row above, a reader heading, or a narrative-nav arrow, below,
+  recursively), in this order: date + place(s) + narrative nav
+  (`popover-section-event-date-places` -- batch-t2-brief.md: the date/
+  places half is conditional, present only with a date, a resolved place,
+  or (M-D3/U1) a narrative-nav entry to show -- the date line renders only
+  when this passage `kind == "event"` (never a fabricated line for a
+  general-kind one), the place row only if >=1 place resolves; M-D3/U1
+  folds the narrative PRIOR/FOLLOWING traversal directly into the TOP of
+  this SAME section, `event-nav`, a compact flanking-arrow row rather than
+  its own two separate headed sections -- see EVENT-1's own U1 note for
+  the full shape/conditional-presence rule), then PARALLEL ACCOUNTS
   (`popover-section-event-witnesses`, conditional heading -- present with
   the "PARALLEL ACCOUNTS" eyebrow only when the event has >=2 witnesses;
   exactly one witness renders the SAME section id as `event-witness`
   (singular) with no eyebrow at all, requirement 4's own "no 'parallel'
-  framing when n=1" -- see EVENT-1), then "PRIOR EVENT"
-  (`popover-section-event-prior`, conditional -- absent for an event
-  touching no narrative, or touching one only at its own FIRST leg -- see
-  EVENT-1) and "FOLLOWING EVENT" (`popover-section-event-following`,
-  symmetric, absent at a narrative's own LAST leg) -- recursion falls out
-  of an EventNode's own traversal row pushing ANOTHER EventNode, the SAME
-  `AppliesTo` clause matching it too, not a second mechanism. PLACE node
+  framing when n=1" -- see EVENT-1) -- recursion falls out
+  of an EventNode's own narrative-nav arrow pushing ANOTHER EventNode, the
+  SAME `AppliesTo` clause matching it too, not a second mechanism. PLACE node
   sections, in this order:
   an empty seam reserved for a future place-description provider (renders
   nothing today), established/destroyed dates (`popover-section-place-dates`,
@@ -1795,61 +1807,84 @@ Notes:
   appended after catechism: "EVENT" (`VerseEventMembershipSection`,
   conditional -- absent for a verse touching zero titled events), one
   `verse-event-{eventId}` row per event, explorable, opening a fresh
-  `EventNode`. EVENT nodes get their own one-to-four sections (the witness
-  passage(s) always present; date+places and PRIOR/FOLLOWING each
-  conditional), in order:
-  date + place(s) (`EventDateAndPlacesSection` -- Batch T2: the WHOLE
-  section is conditional, absent when a general-kind passage has neither a
-  date nor a place to show; for an `event`-kind passage, or a
-  `general`-kind one with resolved places, present as before: `event-date`
-  present only when this passage HAS a date (i.e. `kind == "event"` --
-  never the server's own internal undated placeholder, see the data-model
-  paragraph above); `event-places`, one `event-place-{placeId}` row per
-  resolved place, each explorable, opening a `PlaceNode` -- "place opens
-  the place node," requirement 4 verbatim; the date line carries the
-  event's own curated `ref_note`, when present, as a plain hover tooltip
-  -- "ref_note provenance on hover or a quiet note"), PARALLEL ACCOUNTS
-  (`EventWitnessesSection` -- one passage-list
+  `EventNode`. EVENT nodes get their own two-to-three sections (the
+  witness passage(s) always present; date+places+nav conditional), in
+  order:
+
+  date + place(s) + narrative nav (`EventDateAndPlacesSection` -- M-D3/U1,
+  see that note below, REBUILDS the narrative-traversal half of this
+  section; the date+places half is Batch T2's own UNCHANGED behavior: the
+  WHOLE section is conditional, absent when a general-kind passage has
+  neither a date nor a place to show AND belongs to no narrative;
+  `event-date` present only when this passage HAS a date (i.e.
+  `kind == "event"` -- never the server's own internal undated
+  placeholder, see the data-model paragraph above); `event-places`, one
+  `event-place-{placeId}` row per resolved place, each explorable, opening
+  a `PlaceNode` -- "place opens the place node," requirement 4 verbatim;
+  the date line carries the event's own curated `ref_note`, when present,
+  as a plain hover tooltip -- "ref_note provenance on hover or a quiet
+  note"), PARALLEL ACCOUNTS (`EventWitnessesSection` -- one passage-list
   unit per witness, captioned with that witness's own book's DISPLAY name
   -- "Gospel name + passage ref" falls out of the shared component's
   existing Caption + auto-rendered Span, no bespoke rendering needed --
   each clamped to 2 verses via `PassageList`'s own `ClampVerses` (PASSAGE-1);
   the "PARALLEL ACCOUNTS" eyebrow itself is conditional -- present only for
   >=2 witnesses; exactly one witness renders the single passage directly,
-  no eyebrow, no "parallel" framing at all, requirement 4 verbatim), then
-  "PRIOR EVENT"/"FOLLOWING EVENT" (`EventPriorSection`/`EventFollowingSection`
-  -- the SAME shared resolver Batch N's own retired Verse-scoped providers
-  used, just retargeted onto Event; unlike Batch N's own `NarrativeEventNode`,
-  an `EventNode` is NEVER locked to one narrative -- it has no single
-  "reached through" narrative the way a Verse-originated traversal did (it
-  may be reached from a heading, a verse's own EVENT row, OR a PRIOR/
-  FOLLOWING traversal), so it always surfaces the FULL, unfiltered position
-  list, one block per qualifying narrative, each named "PRIOR EVENT —
-  {narrative name}" (bare when there is only one); the rare case where TWO
-  qualifying positions share one narrative name additionally names the
-  current event, "PRIOR EVENT — {narrative name} ({event label})," so the
-  two stay distinguishable). Each PRIOR/FOLLOWING block's own adjacent
-  event renders via the SAME shared passage-list component (PASSAGE-1)
-  every other verse list in this app uses -- grouped passages,
-  truncation-free (no cap asked for), expand-to-chapter all inherited,
-  zero parallel implementation.
+  no eyebrow, no "parallel" framing at all, requirement 4 verbatim).
 
-  TRAVERSAL. Each adjacent event is EXPLORABLE (ONE-RULE): its own row
-  (`event-prior-event-{narrativeId}`/`event-following-event-{narrativeId}`,
-  the event's own label) is the traversal target -- clicking pushes a fresh
-  `EventNode`, re-anchoring the popover onto that event ("its verses become
-  the subject," now richer -- date/places/witnesses too, not just verses).
-  The traversed node's OWN PRIOR/FOLLOWING sections resolve by ITS event id
-  (never a re-derived verse), recursing exactly as far as the underlying
-  `Narrative.legs` chain goes -- first leg has no PRIOR section, last has
-  no FOLLOWING, both by plain conditional presence, never a disabled stub.
-  Also explorable, independently: each adjacent event's own passage-list
-  entries (`event-prior-verse-*`/`event-following-verse-*`) and each
-  witness's own passage-list entries (`event-witness-{SPAN}`) -- clicking
-  one of THOSE opens an ordinary `VerseNode`/`PassageNode` for that
-  specific verse/span instead of traversing the event as a whole
-  (PASSAGE-1's own default click contract, unmodified) -- a second,
-  independent way into the same graph, not a competing mechanism.
+  U1 -- NARRATIVE NAV (M-D3, owner UI spec, progress.md near-verbatim:
+  "immediately below focus, left arrow w/ PRIOR event name, right arrow w/
+  FOLLOWING (narrative); explorable; hover = normal focus+frontier; those
+  foci truncated to ONE VERSE"): RETIRES Batch N/T's own separate "PRIOR
+  EVENT"/"FOLLOWING EVENT" sections (`EventPriorSection`/
+  `EventFollowingSection`) -- the identical traversal, folded INSIDE
+  `EventDateAndPlacesSection` (`event-nav`, at the TOP of that section's
+  own body, above the date line) as a compact flanking-arrow row, one per
+  qualifying narrative position (unlike Batch N's own retired
+  `NarrativeEventNode`, an `EventNode` is never locked to one narrative --
+  it has no single "reached through" narrative the way a Verse-originated
+  traversal did, so it always surfaces the FULL, unfiltered position list,
+  one row per qualifying narrative). LEFT arrow = that narrative's own
+  PRIOR event (`event-prior-event-{narrativeId}`, glyph ◂ leading); RIGHT
+  = FOLLOWING (`event-following-event-{narrativeId}`, glyph ▸ trailing);
+  either side absent (a placeholder span, not a fabricated arrow) when
+  that narrative has no adjacent event in that direction -- the narrative's
+  own first/last leg. A SINGLE qualifying narrative renders its own row
+  with NO name label at all; >1 renders one NAMED row
+  (`popover-event-nav-narrative`) per narrative, stacked -- the rare case
+  where two qualifying positions would share one narrative id is guarded
+  defensively (a numbered `--2`/`--3` testid suffix, same disambiguation
+  shape as `catechism-item-{ID}--q2`) though not currently observed in the
+  real compiled data. ONE-VERSE FOCI: each side's own adjacent-event
+  caption (`event-prior-verse-{narrativeId}`/`event-following-verse-{narrativeId}`)
+  is the adjacent event's own FIRST vref only, a plain non-explorable
+  quiet line -- NEVER the shared passage-list component's full
+  multi-verse-group rendering the retired PRIOR/FOLLOWING sections used
+  (that richer, expandable, multi-verse rendering stays exactly as before
+  for PARALLEL ACCOUNTS and the GLOBAL TIMELINE pair below, both
+  unaffected by U1's own one-verse scoping). "hover = normal
+  focus+frontier": no bespoke hover interaction -- `.explorable`, the SAME
+  ink-wash ONE-RULE gives every other explorable element in this popover
+  platform, is the whole of it.
+
+  TRAVERSAL. Each adjacent event's own arrow is EXPLORABLE (ONE-RULE):
+  clicking (or Enter) pushes a fresh `EventNode`, re-anchoring the popover
+  onto that event ("its verses become the subject," now richer --
+  date/places/witnesses too, not just verses). The traversed node's OWN
+  nav resolves by ITS event id (never a re-derived verse), recursing
+  exactly as far as the underlying `Narrative.legs` chain goes -- the
+  narrative's own first leg has no PRIOR arrow, last has no FOLLOWING,
+  both by plain conditional presence (an empty placeholder span, never a
+  disabled stub). Each witness's own passage-list entries
+  (`event-witness-{SPAN}`) remain independently explorable too -- clicking
+  one opens an ordinary `VerseNode`/`PassageNode` for that specific
+  verse/span instead of traversing the event as a whole (PASSAGE-1's own
+  default click contract, unmodified) -- a second, independent way into
+  the same graph, not a competing mechanism. The one-verse nav CAPTION
+  itself (`event-prior-verse-*`/`event-following-verse-*`) is NOT
+  independently explorable (unlike its retired passage-list-entry
+  predecessor) -- the arrow beside it is the row's one explorable
+  affordance, by design (a compact nav row, not a second passage list).
 
   Batch T2: a general-kind EVENT node's own `popover-chip-map` ("Show on
   the map") chip is ABSENT, not merely inert -- there is no date/place to
@@ -1925,11 +1960,14 @@ Notes:
   TRUE first/last dated event only -- conditional presence, no stubs
   anywhere else), and the WHOLE `timeline` key is OMITTED (not an
   empty/null object) for a general-kind or unknown event id. PRESENTATION:
-  narrative rows render exactly as before ("PRIOR EVENT"/"FOLLOWING
-  EVENT," `EventPriorSection`/`EventFollowingSection`, unchanged);
-  alongside them (narrative primacy preserved -- BOTH render for a
-  narrative member, registered directly after the narrative pair so
-  narrative rows always sit above), a quiet, clearly distinct pair --
+  the narrative nav row (M-D3/U1's own `event-nav`, see that note above --
+  named "PRIOR EVENT"/"FOLLOWING EVENT" at the time this requirement
+  originally shipped, since REBUILT into a headingless flanking-arrow row,
+  the traversal semantics themselves untouched by that later rebuild)
+  renders first; alongside it (narrative primacy preserved -- BOTH render
+  for a narrative member, the timeline pair registered directly after
+  `EventDateAndPlacesSection` so the narrative nav always sits above), a
+  quiet, clearly distinct pair --
   "PRIOR IN TIME"/"FOLLOWING IN TIME" (`EventTimelinePriorSection`/
   `EventTimelineFollowingSection`, `event-prior-timeline`/
   `event-following-timeline` sections; `event-prior-event-timeline`/
@@ -2055,11 +2093,17 @@ Notes:
   (a VERSE node's own "EVENT" membership rows), `event-place-{placeId}` (an
   EVENT node's own explorable places), `event-prior-event-{narrativeId}`/
   `event-following-event-{narrativeId}` (the PRIOR/FOLLOWING sections' own
-  event-traversal rows, now EVENT-node-only) and
-  `event-prior-verse-{narrativeId}-{SPAN}`/`event-following-verse-{narrativeId}-{SPAN}`/
-  `event-witness-{SPAN}` (their own passage-list entries, PASSAGE-1's
-  existing "every passage-list entry is explorable" rule already covers
-  these generically) -- see EVENT-1. batch-hotfix4-brief.md requirement 1
+  event-traversal rows, now EVENT-node-only -- M-D3/U1 REBUILDS their own
+  surrounding markup into a compact flanking-arrow nav, see EVENT-1's own
+  U1 note; these two testids/their explorable click behavior are
+  otherwise unchanged) and `event-witness-{SPAN}` (its own passage-list
+  entries, PASSAGE-1's existing "every passage-list entry is explorable"
+  rule already covers these generically -- M-D3/U1's own one-verse nav
+  caption, `event-prior-verse-{narrativeId}`/`event-following-verse-{narrativeId}`,
+  is the ONE exception to that PASSAGE-1 rule: a plain non-explorable
+  quiet line, not a passage-list entry at all, precisely because it
+  REPLACES what used to be one -- see EVENT-1's own U1 note for why) --
+  see EVENT-1. batch-hotfix4-brief.md requirement 1
   adds the GLOBAL-timeline counterparts, same rule: `event-prior-event-timeline`/
   `event-following-event-timeline` and `event-prior-verse-timeline-{SPAN}`/
   `event-following-verse-timeline-{SPAN}` -- see the GLOBAL TIMELINE note

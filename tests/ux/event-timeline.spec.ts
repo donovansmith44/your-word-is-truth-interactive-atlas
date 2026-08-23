@@ -46,10 +46,11 @@ test('HOTFIX-4 req 1/4: gen_binding_isaac (a real W1 container event, no narrati
 
   await openEventPopover(page, 'gen_binding_isaac');
 
-  // No NARRATIVE sections at all (conditional presence -- there is no
-  // narrative to show); the TIMELINE sections are what carry traversal here.
-  await expect(page.getByTestId('popover-section-event-prior')).toHaveCount(0);
-  await expect(page.getByTestId('popover-section-event-following')).toHaveCount(0);
+  // No NARRATIVE nav at all (conditional presence -- there is no narrative
+  // to show; M-D3/U1 folded it into event-date-places, no more separate
+  // section -- `event-nav` is the presence signal now); the TIMELINE
+  // sections are what carry traversal here.
+  await expect(page.getByTestId('event-nav')).toHaveCount(0);
   await expect(page.getByTestId('popover-section-event-prior-timeline')).toBeVisible();
   await expect(page.getByTestId('popover-section-event-following-timeline')).toBeVisible();
 
@@ -86,25 +87,33 @@ test('HOTFIX-4 req 1/req 5: a narrative-member event shows BOTH its narrative ro
 
   await openEventPopover(page, 'pw_gethsemane');
 
-  await expect(page.getByTestId('popover-section-event-prior')).toBeVisible();
-  await expect(page.getByTestId('popover-section-event-following')).toBeVisible();
+  // M-D3/U1: the narrative row is now a compact flanking-arrow nav folded
+  // into event-date-places (`event-nav`), not its own headed section --
+  // the timeline row is UNCHANGED, still its own separate, headed section.
+  await expect(page.getByTestId('event-nav')).toBeVisible();
   await expect(page.getByTestId('popover-section-event-prior-timeline')).toBeVisible();
   await expect(page.getByTestId('popover-section-event-following-timeline')).toBeVisible();
 
-  // The narrative row's own eyebrow reads "PRIOR EVENT"/"FOLLOWING EVENT"
-  // (unchanged wording); the timeline row's own eyebrow reads "PRIOR IN
-  // TIME"/"FOLLOWING IN TIME" -- "quiet, clearly distinct," never
-  // mistakable for each other.
+  // "quiet, clearly distinct," never mistakable for each other -- now true
+  // by CONSTRUCTION, not just wording: the narrative row carries NO
+  // `event-section-heading`-styled eyebrow at all for a single-narrative
+  // event (pw_gethsemane's own case, confirmed above), while the timeline
+  // row still does, reading "PRIOR IN TIME"/"FOLLOWING IN TIME" -- the two
+  // families are structurally distinguishable, not merely differently
+  // worded.
   const headings = await page.getByTestId('event-section-heading').allTextContents();
-  expect(headings.some((h: string) => h.includes('FOLLOWING EVENT'))).toBeTruthy();
+  expect(headings.some((h: string) => h.includes('EVENT'))).toBeFalsy();
   expect(headings.some((h: string) => h.includes('FOLLOWING IN TIME'))).toBeTruthy();
 
   // The narrative row's own target and the timeline row's own target need
   // not be the same event (different questions -- "next in this
   // narrative's own leg chain" vs "next chronologically at all") -- both
   // are independently explorable and correct per their own semantics.
+  // .popover-event-nav-label specifically -- the button's own FULL text
+  // also includes its decorative directional glyph (a sibling span, never
+  // meant to be part of an exact-text comparison).
   if (narrativePos.following) {
-    await expect(page.getByTestId('event-following-event-passion-week')).toHaveText(narrativePos.following.label);
+    await expect(page.getByTestId('event-following-event-passion-week').locator('.popover-event-nav-label')).toHaveText(narrativePos.following.label);
   }
   await expect(page.getByTestId('event-following-event-timeline')).toHaveText(positions.timeline.following.label);
 });
@@ -153,8 +162,7 @@ test('HOTFIX-4 req 2/5: a general-kind container shows no traversal section at a
   await page.getByTestId('verse-event-rob_luke_preface').click();
   await expect(page.getByTestId('popover-title')).toHaveText('Luke\'s preface to Theophilus');
 
-  await expect(page.getByTestId('popover-section-event-prior')).toHaveCount(0);
-  await expect(page.getByTestId('popover-section-event-following')).toHaveCount(0);
+  await expect(page.getByTestId('event-nav')).toHaveCount(0);
   await expect(page.getByTestId('popover-section-event-prior-timeline')).toHaveCount(0);
   await expect(page.getByTestId('popover-section-event-following-timeline')).toHaveCount(0);
 });
@@ -254,7 +262,7 @@ test('AFFORDANCE-1: a general-kind container\'s own reader heading renders visib
   // LOOK like a chain link beforehand.
   await heading.click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
-  await expect(page.getByTestId('popover-section-event-prior')).toHaveCount(0);
+  await expect(page.getByTestId('event-nav')).toHaveCount(0);
   await expect(page.getByTestId('popover-section-event-prior-timeline')).toHaveCount(0);
 });
 

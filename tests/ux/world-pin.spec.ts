@@ -313,8 +313,8 @@ test('TRAVERSAL-3: the place card\'s next-event traversal agrees with the popove
   await expect(page.getByTestId('popover-title')).toHaveText('NUM.13.26');
   await page.getByTestId('verse-event-ex_kadesh').click();
   await expect(page.getByTestId('popover-title')).toHaveText('Spies return to Kadesh-barnea');
-  const followingSection = page.getByTestId('popover-section-event-following');
+  const followingSection = page.getByTestId('popover-section-event-date-places');
   await expect(followingSection).toBeVisible();
   const followingBtn = followingSection.getByTestId('event-following-event-exodus');
-  await expect(followingBtn).toHaveText(followingLabel);
+  await expect(followingBtn.locator('.popover-event-nav-label')).toHaveText(followingLabel);
 });

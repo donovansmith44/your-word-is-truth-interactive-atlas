@@ -151,14 +151,16 @@ public interface IPopoverSectionProvider
 /// "later batches append below" convention, conditional on the verse
 /// touching >=1 titled EVENT-kind passage), each row explorable, opening a
 /// fresh <see cref="EventNode"/>. EVENT node sections, in order: date +
-/// place(s) (<see cref="EventDateAndPlacesSection"/>), PARALLEL ACCOUNTS
+/// place(s) + narrative prior/following nav
+/// (<see cref="EventDateAndPlacesSection"/> -- M-D3/U1 folds the narrative
+/// traversal arrows, formerly their own two Batch N/T sections, directly
+/// into this one, "immediately below focus" the owner's own words; see
+/// that class's own doc comment for the full story), PARALLEL ACCOUNTS
 /// (<see cref="EventWitnessesSection"/>, conditional presence: no "PARALLEL
-/// ACCOUNTS" framing at all when the event has exactly one witness),
-/// PRIOR EVENT (<see cref="EventPriorSection"/>) / FOLLOWING EVENT
-/// (<see cref="EventFollowingSection"/>, both retargeted from Batch N's own
-/// Verse/NarrativeEvent onto Event only -- recursion falls out of an
-/// EventNode's own traversal row pushing ANOTHER EventNode, the SAME
-/// `AppliesTo` clause matching it too, not a second mechanism).
+/// ACCOUNTS" framing at all when the event has exactly one witness) --
+/// recursion falls out of an EventNode's own traversal arrow pushing
+/// ANOTHER EventNode, the SAME `AppliesTo` clause matching it too, not a
+/// second mechanism.
 /// </summary>
 public static class PopoverSectionRegistry
 {
@@ -190,20 +192,19 @@ public static class PopoverSectionRegistry
         // strictly after cross-references/catechism (none of the
         // PLACE/CATECHISM-only providers above apply to Verse).
         new VerseEventMembershipSection(),
-        // Batch T: EVENT node sections, in order -- date+places, PARALLEL
-        // ACCOUNTS, then PRIOR/FOLLOWING (unchanged registration slot from
-        // Batch N, just retargeted onto Event instead of Verse/NarrativeEvent).
+        // Batch T, M-D3/U1: EVENT node sections, in order -- date+places+
+        // narrative-nav (one merged section now, see EventDateAndPlacesSection's
+        // own doc comment), then PARALLEL ACCOUNTS.
         new EventDateAndPlacesSection(),
         new EventWitnessesSection(),
-        new EventPriorSection(),
-        new EventFollowingSection(),
         // Batch HOTFIX-4 requirement 1 ("whole-DAG chronological traversal"):
-        // the GLOBAL-timeline counterparts to the two rows immediately
-        // above -- registered directly after them (narrative primacy: the
-        // narrative-scoped rows always render first, requirement 1
-        // verbatim), independent of narrative membership, so a
-        // narrative-less dated event gets these two instead, and a
-        // narrative member gets BOTH pairs.
+        // the GLOBAL-timeline counterparts to the narrative nav folded into
+        // EventDateAndPlacesSection above -- registered directly after the
+        // sections above (narrative primacy: the narrative-scoped nav
+        // always renders first, requirement 1 verbatim, unaffected by
+        // M-D3/U1's own reshuffle of ITS rendering), independent of
+        // narrative membership, so a narrative-less dated event gets these
+        // two instead, and a narrative member gets BOTH.
         new EventTimelinePriorSection(),
         new EventTimelineFollowingSection(),
         // Batch M ("the DAG grows a node type"): PolityDelta's own three

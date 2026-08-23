@@ -3836,6 +3836,92 @@ input:focus-visible,
     color: var(--bronze-ink);
 }
 
+/* M-D3/U1: an EVENT node's own narrative prior/following traversal, folded
+   INSIDE the date+places section (EventDateAndPlacesSection's own doc
+   comment has the full story) -- "immediately below focus," so this list
+   sits at the TOP of that section, above the date line. One row per
+   qualifying narrative; almost always exactly one (a single-narrative
+   event, the overwhelming majority), stacked vertically on the rare
+   multi-narrative event. */
+.popover-event-nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    margin-bottom: .5rem;
+}
+
+.popover-event-nav-row + .popover-event-nav-row {
+    padding-top: .5rem;
+    border-top: 1px solid rgba(138, 107, 61, .18);
+}
+
+/* Present only when this event belongs to >1 narrative (see the C# side's
+   own "a single qualifying entry needs no name" rule) -- a quiet label
+   sitting ABOVE its own row's arrows, never squeezed into their own flex
+   space. */
+.popover-event-nav-narrative {
+    margin: 0 0 .25rem;
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--bronze-ink);
+}
+
+.popover-event-nav-arrows {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+/* Both the real (button) and empty-placeholder (span, an absent side --
+   e.g. a narrative's own first leg has no prior) variants share this base
+   layout -- .explorable (added only on the real button) is what supplies
+   the actual hover/focus ink-wash ("hover = normal focus+frontier," the
+   owner's own words: no bespoke interaction here). */
+.popover-event-nav-arrow {
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+    max-width: 47%;
+    padding: .2rem .35rem;
+    border: none;
+    background: none;
+    font-family: var(--font-serif);
+    text-align: start;
+    cursor: pointer;
+}
+
+.popover-event-nav-arrow-empty {
+    cursor: default;
+}
+
+.popover-event-nav-arrow-following {
+    text-align: end;
+    align-items: flex-end;
+}
+
+.popover-event-nav-glyph {
+    flex: none;
+    color: var(--bronze-ink);
+}
+
+.popover-event-nav-label {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+/* The one-verse focus (owner: "those foci truncated to ONE VERSE") -- a
+   quiet caption under the event's own name, never the full multi-verse
+   passage-list preview the retired PRIOR/FOLLOWING sections showed. */
+.popover-event-nav-verse {
+    margin: 0;
+    font-size: .82rem;
+    color: var(--ink-soft);
+    line-height: 1.35;
+}
+
 /* Batch R requirement 3: one section's own wrapper -- a stable hook
    (data-testid="popover-section-{id}") independent of whatever a provider
    renders inside it; visually just a vertical rhythm/divider between
