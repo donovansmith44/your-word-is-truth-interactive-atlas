@@ -39,9 +39,9 @@
 
 use std::collections::BTreeMap;
 
-use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
+use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis, ResolvedDate, ResolvedPlacement, SeqKey, TimePoint, Year};
 use atlas_graph_types::edge::{
-    Attests, CatechismLink, CrossRef, Ground, Justification, LocatedAt, Mentions, Named, PlaceOrPerson, Succession,
+    Attests, CatechismLink, CrossRef, Ground, Justification, LocatedAt, Mentions, PlaceOrPerson, Succession,
 };
 use atlas_graph_types::graph::{Graph, ReadingSpine};
 use atlas_graph_types::id::{AnchorId, AnyNodeId, CatechismItemId, EraId, EventId, NarrativeId, NodeKind, PersonId, PlaceId, SourceId};
@@ -214,12 +214,12 @@ enum DtoPayload {
     Container { title: String },
     /// M-C2: mirrors `NodePayload::Event`'s own widening -- see that
     /// variant's own doc comment for why each field rides the payload.
+    /// M-D3 (owner ruling R1): from_year/to_year/order_key dropped -- see
+    /// `NodePayload::Event`'s own doc comment; chronology now rides
+    /// `ArtifactDump.chrono_years`, ordering-uninvolved.
     Event {
         label: String,
         kind: String,
-        from_year: i32,
-        to_year: i32,
-        order_key: i32,
         verses: Vec<String>,
         witnesses: Vec<DtoEventWitness>,
         robertson_section: Option<String>,
@@ -248,12 +248,9 @@ fn payload_to_dto(p: &NodePayload) -> DtoPayload {
             renderings: renderings.iter().map(|(k, v)| (k.0.clone(), v.clone())).collect(),
         },
         NodePayload::Container { title } => DtoPayload::Container { title: title.clone() },
-        NodePayload::Event { label, kind, from_year, to_year, order_key, verses, witnesses, robertson_section, acts_section, atlas_section, kjv_superscription, ref_note } => DtoPayload::Event {
+        NodePayload::Event { label, kind, verses, witnesses, robertson_section, acts_section, atlas_section, kjv_superscription, ref_note } => DtoPayload::Event {
             label: label.clone(),
             kind: kind.clone(),
-            from_year: *from_year,
-            to_year: *to_year,
-            order_key: *order_key,
             verses: verses.clone(),
             witnesses: witnesses.iter().map(DtoEventWitness::from).collect(),
             robertson_section: robertson_section.clone(),
@@ -291,12 +288,9 @@ fn payload_from_dto(d: DtoPayload) -> Result<NodePayload, ArtifactError> {
             NodePayload::TextUnit { corpus, renderings: renderings.into_iter().map(|(k, v)| (TranslationId(k), v)).collect() }
         }
         DtoPayload::Container { title } => NodePayload::Container { title },
-        DtoPayload::Event { label, kind, from_year, to_year, order_key, verses, witnesses, robertson_section, acts_section, atlas_section, kjv_superscription, ref_note } => NodePayload::Event {
+        DtoPayload::Event { label, kind, verses, witnesses, robertson_section, acts_section, atlas_section, kjv_superscription, ref_note } => NodePayload::Event {
             label,
             kind,
-            from_year,
-            to_year,
-            order_key,
             verses,
             witnesses: witnesses.into_iter().map(Into::into).collect(),
             robertson_section,
@@ -508,13 +502,9 @@ struct DtoLocatedAt {
     justification: DtoJustification,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct DtoNamed {
-    place: String,
-    alias: String,
-    provenance: String,
-    justification: DtoJustification,
-}
+// M-D3 (owner ruling R2): `DtoNamed` retired alongside the `named`
+// relation whole -- see graph-types' own edge.rs/graph.rs doc comments and
+// this crate's place_adapter.rs for the full retirement.
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DtoCatechismLink {
@@ -570,7 +560,9 @@ pub struct ArtifactDump {
     succession: Vec<DtoSuccession>,
     dated_by: Vec<DtoDatedBy>,
     located_at: Vec<DtoLocatedAt>,
-    named: Vec<DtoNamed>,
+    // M-D3 (owner ruling R2): `named: Vec<DtoNamed>` field retired here --
+    // the `named` relation is gone from the graph entirely (see graph-types'
+    // own edge.rs/graph.rs).
     catechism: Vec<DtoCatechismLink>,
     mentions: Vec<DtoMentions>,
     cross_refs: Vec<DtoCrossRef>,
@@ -579,13 +571,37 @@ pub struct ArtifactDump {
     /// `AtlasData` (see `event_world::Chronology::from_derivation`'s own
     /// doc comment), so it rides in the artifact as its own fields:
     /// `chrono_order` mirrors `ChronologyDerivation.order` exactly;
-    /// `chrono_placements` mirrors `.placements` (`.resolved` is NOT
-    /// serialized -- confirmed unread by any production code path, grep-
-    /// checked, so carrying it would be dead weight); `temporal_neighbors`
+    /// `chrono_placements` mirrors `.placements`; `temporal_neighbors`
     /// mirrors `Chronology.temporal_neighbors` directly (already exactly
     /// the pairs the field holds, so no further reconstruction needed).
+    ///
+    /// M-D3 (owner ruling R1, CORRECTING the note this field used to carry):
+    /// `.resolved` was "NOT serialized -- confirmed unread by any production
+    /// code path" as of M-C2/fix-round-1 -- true THEN, because
+    /// `NodePayload::Event` carried its own from_year/to_year/order_key
+    /// mirror and every reader used that instead. That mirror is GONE now
+    /// (owner R1: "only keep narrative"), so `.resolved` -- and the genuine
+    /// `to_year`/`order_key` `ResolvedPlacement` never carried (see
+    /// `event_world::SourceEventMeta`'s own doc comment) -- became the SOLE
+    /// remaining source `legacy::event_from_node`/`heading::
+    /// build_heading_index` need, on EVERY startup path including
+    /// `from_artifact`, which never has an `AtlasData` to re-derive years
+    /// from. `chrono_years` carries exactly the three genuine per-event
+    /// scalars neither `chrono_order` (ids only) nor `chrono_placements`
+    /// (`DatePlacement`+basis, not a resolved year) supply -- `(event_id,
+    /// from_year, to_year, order_key)`, iterated in `chrono_order` order
+    /// (the SAME determinism discipline `chrono_placements` already
+    /// follows). `seq` is NOT serialized a second time -- it is recomputed,
+    /// on load, as the event's own position in `chrono_order`
+    /// (`ChronologyDerivation.resolved`'s own construction: `SeqKey(i as
+    /// u32)`, exactly this order's index) -- `order_key` here is the
+    /// DIFFERENT, literal curated value `heading::precedence` does NOT need
+    /// but `legacy::event_from_node`'s reconstruction must reproduce
+    /// exactly (`SourceEventMeta`'s own doc comment has the full "seq is a
+    /// faithful ordering substitute, not the same VALUE" argument).
     chrono_order: Vec<String>,
     chrono_placements: Vec<DtoPlacedChronology>,
+    chrono_years: Vec<(String, i32, i32, i32)>,
     temporal_neighbors: Vec<(String, Option<String>, Option<String>)>,
     /// Startup-log-friendly counts (`build::BuildStats`/
     /// `event_world::EventWorldStats`) -- carried verbatim so
@@ -611,7 +627,15 @@ pub struct ArtifactDump {
 /// `to_last`/`target_display` addition (commit `5e07e8f`) -- both already
 /// shipped as of `f1a27ab`'s own graph.bin regeneration, so this bump
 /// itself is a housekeeping catch-up, not a new shape change of its own.
-const FORMAT_VERSION: u32 = 2;
+///
+/// M-D3 (owner rulings R1+R2): bumped 2 -> 3. Trigger: `DtoPayload::Event`
+/// drops `from_year`/`to_year`/`order_key` (R1 -- narrative-only payload);
+/// `DtoNamed`/`ArtifactDump.named` retired whole (R2 -- the `named`
+/// relation is gone); `ArtifactDump.chrono_years` added (R1 propagation --
+/// `.resolved`/genuine `to_year` must now survive the artifact round trip,
+/// see that field's own doc comment). `data/compiled/graph.bin` rebuilt in
+/// this same commit (the suites-green-every-commit law).
+const FORMAT_VERSION: u32 = 3;
 
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
@@ -675,12 +699,6 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         .map(|r: &LocatedAt| DtoLocatedAt { event: r.event.0.clone(), place: r.place.0.clone(), provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) })
         .collect();
 
-    let named = g
-        .named
-        .iter()
-        .map(|r: &Named| DtoNamed { place: r.place.0.clone(), alias: r.alias.clone(), provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) })
-        .collect();
-
     let catechism = g
         .catechism
         .iter()
@@ -738,6 +756,22 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         })
         .collect();
     let temporal_neighbors = chronology.chrono.order.iter().filter_map(|id| chronology.temporal_neighbors.get(id).map(|(p, f)| (id.clone(), p.clone(), f.clone()))).collect();
+    // M-D3 (R1 propagation, ArtifactDump.chrono_years's own doc comment):
+    // the genuine (from_year, to_year, order_key) triple -- `resolved.
+    // date.from.year` is the resolved anchor; `chrono.source_meta`'s own
+    // genuine, ordering-uninvolved companion supplies the possibly-wider
+    // `to_year` and the literal curated `order_key`, never the resolver's
+    // own always-equal `.date.to` / ordering-only `.seq`.
+    let chrono_years: Vec<(String, i32, i32, i32)> = chronology
+        .chrono
+        .order
+        .iter()
+        .filter_map(|id| {
+            let from_year = chronology.chrono.resolved.get(id)?.date.from.year.get();
+            let meta = chronology.chrono.source_meta.get(id).copied().unwrap_or(crate::event_world::SourceEventMeta { to_year: from_year, order_key: 0 });
+            Some((id.clone(), from_year, meta.to_year, meta.order_key))
+        })
+        .collect();
 
     Ok(ArtifactDump {
         format_version: FORMAT_VERSION,
@@ -747,12 +781,12 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         succession,
         dated_by,
         located_at,
-        named,
         catechism,
         mentions,
         cross_refs,
         chrono_order,
         chrono_placements,
+        chrono_years,
         temporal_neighbors,
         stats: stats.clone(),
         event_world_stats: event_world_stats.clone(),
@@ -831,10 +865,6 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
         g.located_at.push(LocatedAt { event: EventId::new(r.event), place: PlaceId::new(r.place), provenance: r.provenance, justification: dto_to_justification(r.justification)? });
     }
 
-    for r in d.named {
-        g.named.push(Named { place: PlaceId::new(r.place), alias: r.alias, provenance: r.provenance, justification: dto_to_justification(r.justification)? });
-    }
-
     for r in d.catechism {
         g.catechism.push(CatechismLink { locus: r.locus.try_into()?, item: CatechismItemId::new(r.item), provenance: r.provenance, justification: dto_to_justification(r.justification)? });
     }
@@ -875,7 +905,27 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
         };
         placements.insert(p.event, PlacedChronology { placement, basis, justification: dto_to_justification(p.justification)? });
     }
-    let chrono = ChronologyDerivation { order: d.chrono_order, placements, resolved: Default::default() };
+    // M-D3 (R1 propagation): `.resolved`/`.source_meta` reconstructed from
+    // the serialized `chrono_years` rows -- `seq` is recomputed as each
+    // event's own position in `chrono_order` (NOT re-serialized; see
+    // `ArtifactDump.chrono_years`'s own doc comment for why this is exact,
+    // not approximate: it is the identical formula `derive_chronology`
+    // used to assign `seq` in the first place). Looked up via a real
+    // position index over `chrono_order` -- never assumed to align
+    // positionally with `chrono_years`'s own iteration order, so this stays
+    // correct even if the two ever carry a different length (a general-kind
+    // id's genuine absence from `chrono_years`, e.g.).
+    let order_position: std::collections::HashMap<&str, usize> = d.chrono_order.iter().enumerate().map(|(i, id)| (id.as_str(), i)).collect();
+    let mut resolved = std::collections::HashMap::new();
+    let mut source_meta = std::collections::HashMap::new();
+    for (event_id, from_year, to_year, order_key) in d.chrono_years {
+        let tp = TimePoint::year_only(Year::new(from_year).map_err(|_| ArtifactError(format!("chrono_years entry '{event_id}' carries year 0 in serialized artifact")))?);
+        let seq = order_position.get(event_id.as_str()).copied().ok_or_else(|| ArtifactError(format!("chrono_years entry '{event_id}' names no position in chrono_order")))?;
+        let basis = placements.get(&event_id).map(|p: &PlacedChronology| p.basis).unwrap_or(PlacementBasis::Traditional);
+        resolved.insert(event_id.clone(), ResolvedPlacement { date: ResolvedDate { from: tp, to: tp }, seq: SeqKey(seq as u32), basis });
+        source_meta.insert(event_id, crate::event_world::SourceEventMeta { to_year, order_key });
+    }
+    let chrono = ChronologyDerivation { order: d.chrono_order, placements, resolved, source_meta };
     let temporal_neighbors = d.temporal_neighbors.into_iter().map(|(id, prior, following)| (id, (prior, following))).collect();
     let chronology = Chronology { chrono, temporal_neighbors };
 
@@ -930,7 +980,13 @@ mod tests {
         use atlas_core::data::{AtlasData, Canon, ChronologyAnchor, Event, Place};
         use std::collections::HashMap;
         let places = vec![Place { id: "eden".into(), name: "Eden".into(), lat: 33.0, lon: 44.0, verse_links: vec!["GEN.1.1".into()] }];
-        let events = vec![Event { id: "creation".into(), label: "Creation".into(), when: atlas_core::time::TimeRange::new(-4004, -4004).unwrap(), places: vec!["eden".into()], ..Default::default() }];
+        // M-D3: a genuine RANGE (-4004..-4000, not a point) plus a
+        // nonzero, non-seq-shaped order_key (137, an arbitrary curated-
+        // looking value, deliberately NOT equal to this event's own
+        // timeline position 0) -- so this round-trip test actually
+        // exercises `chrono_years`'s own from_year != to_year case AND
+        // proves `order_key` survives as the literal value, not `seq`.
+        let events = vec![Event { id: "creation".into(), label: "Creation".into(), when: atlas_core::time::TimeRange::new(-4004, -4000).unwrap(), places: vec!["eden".into()], order_key: 137, ..Default::default() }];
         let mut d = AtlasData::new(Canon { books: vec![] }, places, events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
         d.chronology_anchors = vec![ChronologyAnchor { id: "creation-anchor".into(), label: "Creation".into(), year: -4004, event_id: Some("creation".into()), era_boundary: false, source: "test".into(), note: None }];
         d
@@ -966,6 +1022,21 @@ mod tests {
         // (which only ever sees the graph/port side).
         assert_eq!(chronology2.chrono.order, chronology.chrono.order);
         assert_eq!(chronology2.temporal_neighbors.len(), chronology.temporal_neighbors.len());
+
+        // M-D3 (R1 propagation): `.resolved`/`.to_year` must ALSO survive
+        // the round trip now -- `legacy::event_from_node`/`heading::
+        // build_heading_index` depend on them on EVERY startup path,
+        // including this one (`from_artifact`, which never has an
+        // `AtlasData` to re-derive years from).
+        let before = &chronology.chrono.resolved["creation"];
+        let after = &chronology2.chrono.resolved["creation"];
+        assert_eq!(after.date.from.year.get(), before.date.from.year.get(), "resolved from_year must round-trip");
+        assert_eq!(after.date.from.year.get(), -4004, "sanity: creation's own real from_year");
+        assert_eq!(after.seq, before.seq, "resolved seq must round-trip");
+        assert_eq!(after.basis, before.basis, "resolved basis must round-trip");
+        assert_eq!(chronology2.chrono.source_meta["creation"], chronology.chrono.source_meta["creation"], "the genuine source_meta companion (to_year + order_key) must round-trip");
+        assert_eq!(chronology2.chrono.source_meta["creation"].to_year, -4000, "sanity: creation's own real, WIDER to_year -- the exact case ResolvedPlacement.date.to alone would have collapsed to -4004");
+        assert_eq!(chronology2.chrono.source_meta["creation"].order_key, 137, "sanity: creation's own real, literal order_key -- the exact case seq (always 0, this fixture's only dated event) would NOT have reproduced");
 
         // Fix round 1 (I-1): to_last/target_display are NOT visible through
         // the GraphQuery port at all (EdgeEntry carries only the target's

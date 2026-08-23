@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use crate::edge::{
     at, Attests, BiIndex, CatechismLink, Confesses, Contains, Corresponds, CrossRef, LocatedAt,
-    Mentions, Named, PlaceOrPerson, Quotes, RelationId, Succession,
+    Mentions, PlaceOrPerson, Quotes, RelationId, Succession,
 };
 use crate::chrono::DatedBy;
 use crate::id::{AnyNodeId, NodeKind, Position};
@@ -30,7 +30,6 @@ pub struct Graph {
     pub succession: Vec<Succession>,
     pub dated_by: Vec<DatedBy>,
     pub located_at: Vec<LocatedAt>,
-    pub named: Vec<Named>,
     pub catechism: Vec<CatechismLink>,
     // -------- imported --------
     pub mentions: Vec<Mentions>,
@@ -149,28 +148,13 @@ impl Graph {
                 M::None,
             ));
         }
-        // NOTE (M-C, disclosed, not fixed -- a genuine shape gap, not an
-        // oversight this batch's own scope covers): `self.named` rows
-        // (`Named { place: PlaceId, alias: String, .. }`) are NOT lowered
-        // into `pairs` here. `RelationId::Named` is declared as a directed
-        // relation over `Position` endpoints, but a `Named` row's own
-        // OBJECT is a bare `String` (an alias), which has no `Position`
-        // representation at all (`Position` is exactly `Node(AnyNodeId) |
-        // Edge(EdgeId)` -- confirmed reading `id.rs` fresh; there is no
-        // third variant for "a plain string," and inventing one would be a
-        // real shape change to `Position` itself, used pervasively
-        // throughout the whole crate, not a narrow extension). The types
-        // spec's own illustrative `object: Alias` was never resolved to a
-        // concrete Position-compatible type in the compiled crate ("the
-        // crate wins" where prose and crate disagree). This batch's own
-        // place adapter still POPULATES `graph.named` (real, content-
-        // addressed, authored data), and the map/reader surfaces read a
-        // place's aliases directly off `NodePayload::Place`'s own payload
-        // field instead (see `node.rs`) -- the SAME "payload, not a new
-        // relation kind" shape the brief's own controller decision 2 uses
-        // for Polity border data, chosen here for the same reason: the
-        // target isn't itself an explorable thing with a card/frontier of
-        // its own, it's a fact ABOUT the place.
+        // M-D3 (owner ruling R2) closed M-C's long-disclosed `named` shape
+        // gap by RETIRING the relation: a `Named` row's object was a bare
+        // `String` with no `Position` representation, so the relation
+        // could never lower into `pairs` -- and the serving path was
+        // always `NodePayload::Place`'s own `aliases` payload field
+        // (node.rs). Manifest row, row struct, and the `graph.named`
+        // table are gone; aliases remain a fact ABOUT the place.
 
         self.indexes = pairs
             .into_iter()

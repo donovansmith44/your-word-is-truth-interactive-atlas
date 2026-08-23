@@ -66,6 +66,53 @@ pub struct PlacedChronology {
 /// event's chosen `DatePlacement`, and each one's resolved placement
 /// (`graph_types::chrono::ResolvedPlacement`, the type `temporal_order`
 /// compares).
+/// M-D3 (owner ruling R1 propagation): the event's own genuine curated
+/// `to_year`/`order_key` -- carried SEPARATELY from `resolved` (never
+/// folded into `ResolvedPlacement`) for two independent reasons:
+///
+/// - `to_year`: `resolved.date.to` is, BY DESIGN, always a copy of `.from`
+///   (this file's own `derive_chronology` doc comment: "no M-B wire surface
+///   exposes ResolvedDate.to yet"), and `temporal_order` compares
+///   `(date.from, date.to, seq)` in that order -- widening `.to` to a
+///   genuine, possibly-differing value would make it a live SECOND ordering
+///   tier ahead of `seq` for any two events sharing `from_year` (137 real
+///   same-`from_year` groups in the compiled data), risking a silent
+///   divergence from `seq`'s own proven-correct total order.
+/// - `order_key`: `resolved.seq` (the event's own global timeline position)
+///   is a FAITHFUL ordering substitute for `order_key` (`heading::
+///   precedence`'s own doc comment has the full argument) but is NOT the
+///   same VALUE -- `overlay_equivalence.rs`'s own
+///   `every_reconstructed_event_equals_compiles_own_real_event_field_for_field`
+///   law (real-data discovery made landing this fix) proved the literal
+///   curated `order_key` (e.g. `345`, `8001` -- Passion-Week/Acts
+///   calibration keys, not positions) must reconstruct EXACTLY, not merely
+///   "an equally-valid ordering," since `atlas_core::data::Event.order_key`
+///   is a real, independently-consumed field (`nt_calibration.rs`'s own
+///   calibrated keys, narrative-leg validation), not a pure ordering
+///   convenience `event_from_node` is free to re-derive differently.
+///
+/// `NodePayload::Event` dropped its own from_year/to_year/order_key mirror
+/// this batch (owner R1: "only keep narrative" — chronology lives in
+/// placements now), so `legacy::event_from_node` (the ONLY reader) needs a
+/// genuine, ordering-uninvolved source to keep reconstructing
+/// `atlas_core::data::Event.when.to_year`/`.order_key` losslessly (a real,
+/// if minority, curated shape for `to_year` specifically -- ~40 of 554 real
+/// dated events have `from_year != to_year`, e.g. a reign-summary span) for
+/// the `/api/event/{id}` wire and `EventNode.cs`'s own "explore geo-
+/// temporally" map-window affordance. General-kind (undated) events have no
+/// entry (same absence as `resolved`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SourceEventMeta {
+    pub to_year: i32,
+    pub order_key: i32,
+}
+
+/// The full chronology derivation: the reconstructed global timeline order
+/// (dated events only, exactly `AtlasData`'s own `timeline_order` --
+/// verified, not assumed, by `tests/timeline_equivalence.rs`), each dated
+/// event's chosen `DatePlacement`, and each one's resolved placement
+/// (`graph_types::chrono::ResolvedPlacement`, the type `temporal_order`
+/// compares).
 #[derive(Clone, Debug, Default)]
 pub struct ChronologyDerivation {
     /// Dated (`kind == "event"`) event ids, in global timeline order --
@@ -73,6 +120,10 @@ pub struct ChronologyDerivation {
     pub order: Vec<String>,
     pub placements: HashMap<String, PlacedChronology>,
     pub resolved: HashMap<String, ResolvedPlacement>,
+    /// M-D3: genuine curated `to_year`/`order_key`, ordering-uninvolved --
+    /// see `SourceEventMeta`'s own doc comment for the full "why separate"
+    /// reasoning.
+    pub source_meta: HashMap<String, SourceEventMeta>,
 }
 
 /// Mirrors `atlas_core::data::AtlasData::finish`'s own `timeline_order`
@@ -278,6 +329,7 @@ pub fn derive_chronology(atlas: &AtlasData) -> ChronologyDerivation {
 
     let mut placements = HashMap::new();
     let mut resolved = HashMap::new();
+    let mut source_meta = HashMap::new();
 
     for (i, id) in order.iter().enumerate() {
         let e = atlas.event_by_id(id).expect("id just collected from atlas.events");
@@ -289,9 +341,13 @@ pub fn derive_chronology(atlas: &AtlasData) -> ChronologyDerivation {
 
         placements.insert(id.clone(), placed);
         resolved.insert(id.clone(), rp);
+        // M-D3: the genuine curated to_year/order_key, ordering-uninvolved
+        // -- see `SourceEventMeta`'s own doc comment for why these are a
+        // separate field, never folded into `rp`.
+        source_meta.insert(id.clone(), SourceEventMeta { to_year: e.when.to_year, order_key: e.order_key });
     }
 
-    ChronologyDerivation { order, placements, resolved }
+    ChronologyDerivation { order, placements, resolved, source_meta }
 }
 
 /// RETIRED (controller decision 1, M-C): `NarrativeLegPosition` and the
@@ -460,6 +516,11 @@ fn event_provenance(id: &str) -> &'static str {
 /// own filtering set, distinct from witness verses -- see `NodePayload::
 /// Event`'s own doc comment). `places` deliberately does NOT ride here --
 /// `located_at` rows (below) are the single, order-preserving source.
+/// M-D3 (owner ruling R1): `from_year`/`to_year`/`order_key` no longer ride
+/// here at all -- chronology lives SOLELY in `dated_by` placements now (see
+/// `ChronologyDerivation`); `legacy::event_from_node` re-points its own
+/// reconstruction of these three fields at `chrono.resolved`/`chrono.to_year`
+/// instead of this payload.
 fn event_node(e: &Event) -> Node {
     let witnesses: Vec<atlas_graph_types::node::EventWitnessPayload> = e
         .witnesses
@@ -476,9 +537,6 @@ fn event_node(e: &Event) -> Node {
         payload: NodePayload::Event {
             label: e.label.clone(),
             kind: e.kind.clone(),
-            from_year: e.when.from_year,
-            to_year: e.when.to_year,
-            order_key: e.order_key,
             verses: e.verses.clone(),
             witnesses,
             robertson_section: e.robertson_section.clone(),

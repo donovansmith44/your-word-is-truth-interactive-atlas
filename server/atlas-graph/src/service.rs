@@ -271,8 +271,13 @@ impl GraphService {
         // M-C2 (requirement 1): the decisive-title law's own precomputed
         // index -- built here, over the pre-store `graph`, the SAME
         // "cheap, once, at assemble time" treatment every other companion
-        // above already gets.
-        let heading_index = crate::heading::build_heading_index(&graph);
+        // above already gets. M-D3 (owner ruling R1 propagation):
+        // `chronology.chrono.resolved` is ALREADY fully built by this point
+        // (the `chronology` parameter, assembled by every caller before
+        // `assemble` runs) -- passed in so `build_heading_index` can source
+        // chronology tie-breaking from the timeline's one authority instead
+        // of the payload's now-removed `from_year`/`order_key` mirror.
+        let heading_index = crate::heading::build_heading_index(&graph, &chronology.chrono.resolved);
         // M-C2 (requirement 2): the SAME treatment for the cites relation's
         // own span data -- see this struct's own `cross_refs_by_from` doc
         // comment.

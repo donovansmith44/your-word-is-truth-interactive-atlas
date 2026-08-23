@@ -28,7 +28,12 @@ use atlas_graph::build::build_graph_from_sources_with_eras;
 use atlas_graph::heading::build_heading_index;
 use atlas_graph_types::id::NodeKind;
 
-fn real_graph() -> atlas_graph_types::graph::Graph {
+// M-D3 (owner ruling R1 propagation): `build_heading_index` now takes the
+// resolved-placement companion too (`NodePayload::Event` dropped its own
+// from_year/order_key mirror -- see `heading::build_heading_index`'s own
+// doc comment), so `real_graph` returns the chronology derivation
+// alongside the graph rather than discarding it via `..`.
+fn real_graph() -> (atlas_graph_types::graph::Graph, std::collections::HashMap<String, atlas_graph_types::chrono::ResolvedPlacement>) {
     let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
     let raw_dir = data_dir.join("raw");
     let curated_dir = data_dir.join("curated");
@@ -44,14 +49,14 @@ fn real_graph() -> atlas_graph_types::graph::Graph {
     let atlas = out.data;
     let eras = atlas.eras.clone();
 
-    let (graph, ..) = build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &eras).expect("the real committed sources must build");
-    graph
+    let (graph, _stats, _ews, chrono) = build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &eras).expect("the real committed sources must build");
+    (graph, chrono.resolved)
 }
 
 #[test]
 fn named_case_jhn_12_1_the_real_container_beats_the_freebie() {
-    let graph = real_graph();
-    let index = build_heading_index(&graph);
+    let (graph, resolved) = real_graph();
+    let index = build_heading_index(&graph, &resolved);
 
     let heading = index.get("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
     assert_eq!(heading.event_id, "pw_bethany", "the real, witness-bearing container must win over the bare narrative-leg freebie (jm_bethany)");
@@ -60,8 +65,8 @@ fn named_case_jhn_12_1_the_real_container_beats_the_freebie() {
 
 #[test]
 fn named_case_psa_53_1_the_shared_fool_incipit_container_anchors_both_psalms() {
-    let graph = real_graph();
-    let index = build_heading_index(&graph);
+    let (graph, resolved) = real_graph();
+    let index = build_heading_index(&graph, &resolved);
 
     let psa53 = index.get("PSA.53.1").expect("PSA.53.1 must anchor a heading -- psa_014's own second (parallel) witness");
     assert_eq!(psa53.event_id, "psa_014");
@@ -93,8 +98,8 @@ fn named_case_psa_53_1_the_shared_fool_incipit_container_anchors_both_psalms() {
 /// container's own CANONICALLY FIRST covered verse, GEN.6.1, is the anchor.
 #[test]
 fn named_case_gen_6_1_anchors_canonically_first_not_curated_import_order() {
-    let graph = real_graph();
-    let index = build_heading_index(&graph);
+    let (graph, resolved) = real_graph();
+    let index = build_heading_index(&graph, &resolved);
 
     let heading = index.get("GEN.6.1").expect("GEN.6.1 must anchor a heading -- theo-32's own canonically first covered verse (M-D1 req 1, owner live report #2)");
     assert_eq!(heading.event_id, "theo-32");
@@ -119,8 +124,8 @@ fn named_case_gen_6_1_anchors_canonically_first_not_curated_import_order() {
 /// carries a CONTINUATION heading for the SAME container.
 #[test]
 fn named_case_ezr_temple_completed_spans_chapters_5_and_6_with_a_continuation_heading_at_6_1() {
-    let graph = real_graph();
-    let index = build_heading_index(&graph);
+    let (graph, resolved) = real_graph();
+    let index = build_heading_index(&graph, &resolved);
 
     let primary = index.get("EZR.5.1").expect("EZR.5.1 must anchor ezr_temple_completed's own PRIMARY heading");
     assert_eq!(primary.event_id, "ezr_temple_completed");
@@ -161,8 +166,8 @@ fn named_case_ezr_temple_completed_spans_chapters_5_and_6_with_a_continuation_he
 /// tautologically hidden inside the one function under test.
 #[test]
 fn m_d1_every_chapter_with_heading_worthy_coverage_opens_with_a_real_heading() {
-    let graph = real_graph();
-    let index = build_heading_index(&graph);
+    let (graph, resolved) = real_graph();
+    let index = build_heading_index(&graph, &resolved);
     let narrative_legs = atlas_graph::heading::narrative_leg_event_ids(&graph);
 
     let mut worthy_chapters: BTreeSet<(String, u16)> = BTreeSet::new();

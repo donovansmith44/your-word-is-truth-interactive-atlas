@@ -31,8 +31,9 @@
 //! case; only makes the theoretical tie-break provably deterministic.
 
 use std::cmp::Reverse;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+use atlas_graph_types::chrono::ResolvedPlacement;
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::NodeKind;
 use atlas_graph_types::node::{EventWitnessPayload, NodePayload};
@@ -186,9 +187,46 @@ fn continuation_candidates_for(verses: &[String], witnesses: &[EventWitnessPaylo
 /// Mirrors `atlas_core::data::heading_precedence`'s own 3-tier rule (layer,
 /// kind, chronology) plus the disclosed 5th determinism tier (event id --
 /// this module's own doc comment).
-fn precedence(layer: u8, kind: &str, from_year: i32, order_key: i32, event_id: &str) -> Precedence {
+///
+/// M-D3 (owner ruling R1 propagation): `year`/`seq` replace the former
+/// `from_year`/`order_key` payload reads -- sourced from the event's own
+/// `ResolvedPlacement` (`event_world::ChronologyDerivation.resolved`, the
+/// timeline's one authority) instead, via `build_heading_index`'s own new
+/// parameter. `seq` (the event's own position in the reconstructed global
+/// timeline, `event_world::derive_chronology`'s own doc comment: "assigned
+/// DIRECTLY from the reconstructed timeline position... exact, not a
+/// shortcut") is a faithful, STRICTER substitute for `order_key` here: the
+/// timeline itself is already sorted by `(from_year, order_key, array
+/// position)`, so comparing `seq` alone reproduces every `(from_year,
+/// order_key)` ordering the old tuple decided, and never ties between two
+/// distinct dated events (order_key defaulted to 0 for the overwhelming
+/// majority, so the old tuple tied far more often, falling through to the
+/// event-id tier below more frequently than this one now needs to).
+fn precedence(layer: u8, kind: &str, year: i32, seq: i32, event_id: &str) -> Precedence {
     let kind_bit: u8 = if kind == "event" { 1 } else { 0 };
-    (layer, kind_bit, Reverse(from_year), Reverse(order_key), Reverse(event_id.to_string()))
+    (layer, kind_bit, Reverse(year), Reverse(seq), Reverse(event_id.to_string()))
+}
+
+/// Sentinel `(year, seq)` for a heading-worthy node with NO resolved
+/// placement -- exclusively general-kind ("undated") events, which
+/// `event_world::derive_chronology` correctly excludes from `resolved`
+/// entirely (never a real dated event: `derive_chronology` resolves EVERY
+/// `kind == "event"` id `timeline_order` collects). Mirrors
+/// `atlas_core::time::TimeRange::undated()`'s own whole-atlas-span sentinel
+/// (`-4004`) rather than inventing a new one -- the SAME "deliberately
+/// undated, not a mystery number" idiom every other general-kind call site
+/// in this workspace already uses. The exact value is functionally inert
+/// here: `kind_bit` (0 for every general-kind node) already outranks the
+/// chronology tier ahead of it, so this sentinel only ever breaks a tie
+/// between two OTHER general-kind nodes, which then falls through to the
+/// always-distinct event-id tier regardless.
+const UNDATED_SENTINEL: (i32, i32) = (-4004, 0);
+
+fn resolved_year_seq(id: &str, resolved: &HashMap<String, ResolvedPlacement>) -> (i32, i32) {
+    match resolved.get(id) {
+        Some(rp) => (rp.date.from.year.get(), rp.seq.0 as i32),
+        None => UNDATED_SENTINEL,
+    }
 }
 
 /// `event_id -> true` iff it is a leg of ANY narrative -- callers build
@@ -219,7 +257,7 @@ pub fn narrative_leg_event_ids(graph: &Graph) -> BTreeSet<String> {
 /// precedence tuple), so continuations can only ever FILL gaps, never
 /// contest an already-decided verse. This is what keeps "decisive rule
 /// still yields exactly one label" true even with continuations in play.
-pub fn build_heading_index(graph: &Graph) -> BTreeMap<String, HeadingEntry> {
+pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPlacement>) -> BTreeMap<String, HeadingEntry> {
     let narrative_legs = narrative_leg_event_ids(graph);
     let mut winners: BTreeMap<String, (Precedence, HeadingEntry)> = BTreeMap::new();
     let mut continuation_candidates: Vec<(String, Precedence, HeadingEntry)> = Vec::new();
@@ -231,8 +269,6 @@ pub fn build_heading_index(graph: &Graph) -> BTreeMap<String, HeadingEntry> {
         let NodePayload::Event {
             label,
             kind,
-            from_year,
-            order_key,
             verses,
             witnesses,
             robertson_section,
@@ -253,7 +289,8 @@ pub fn build_heading_index(graph: &Graph) -> BTreeMap<String, HeadingEntry> {
         }
 
         let layer: u8 = if is_real_container { 1 } else { 0 };
-        let prec = precedence(layer, kind, *from_year, *order_key, &id.raw);
+        let (year, seq) = resolved_year_seq(&id.raw, resolved);
+        let prec = precedence(layer, kind, year, seq, &id.raw);
 
         for anchor in heading_anchors_for(verses, witnesses) {
             let should_replace = match winners.get(&anchor) {

@@ -65,25 +65,25 @@ pub enum NodePayload {
     /// homogeneous (sweep F1).
     TextUnit { corpus: &'static str, renderings: LayerMap },
     Container { title: String },
-    /// M-C2: real payload, not a stub (same controller-decision-2 precedent
-    /// as Place/Polity's own M-C widening) -- every field
-    /// `atlas_core::data::Event` carries beyond its own `id`/`places`/
-    /// `verses`-as-edges (`places` rides `located-at` edges, order-
-    /// preserved; witness/attestation verses ride `attested-in` edges,
-    /// one row per verse -- both explorable relations, not payload facts).
-    /// `verses` here is the CONTAINER's own top-level verse set
-    /// (`Event.verses`, distinct from witness verses -- scene composition's
-    /// scripture-mode filtering needs this exact set, not a derived one).
-    /// `from_year`/`to_year` mirror `Event.when` (a general-kind passage's
-    /// own `TimeRange::undated()` sentinel included, verbatim -- never
-    /// re-derived, so a reconstructed `Event` can never disagree with the
-    /// source about whether a passage is dated).
+    /// M-C2 widened this to a real payload (controller decision 2); M-D3
+    /// NARROWED it to narrative-only by owner order (2026-08-23, ledgered
+    /// R1: "we don't need to have both narrative and chronological stuff
+    /// in the payload right now. only keep narrative"). Chronology lives
+    /// in ONE place: `dated-by` edges resolved through `DatePlacement` ->
+    /// `ResolvedPlacement` (chrono.rs) -- the payload carries NO
+    /// `from_year`/`to_year`/`order_key` mirror, so an Event's date can
+    /// never disagree with its placement (the M-C2 verified-cache law
+    /// retired WITH the duplicate fields it existed to police; deleting
+    /// the copy is the stronger fix). `places` rides `located-at` edges,
+    /// order-preserved; witness/attestation verses ride `attested-in`
+    /// edges, one row per verse -- both explorable relations, not payload
+    /// facts. `verses` here is the CONTAINER's own top-level verse set
+    /// (`Event.verses`, distinct from witness verses -- scene
+    /// composition's scripture-mode filtering needs this exact set, not a
+    /// derived one).
     Event {
         label: String,
         kind: String,
-        from_year: i32,
-        to_year: i32,
-        order_key: i32,
         verses: Vec<String>,
         witnesses: Vec<EventWitnessPayload>,
         robertson_section: Option<String>,
@@ -103,11 +103,14 @@ pub enum NodePayload {
     /// M-C: real payload, not a stub (controller decision 2) — geographic
     /// coordinates join the canonical name so the map can plot a Place
     /// node directly from its own payload, with no companion lookup.
-    /// `aliases` (E3 KJV naming) rides here rather than as `named` edges:
-    /// a `Named` row's object is a bare alias string, which has no
-    /// `Position` representation to index through the generic port (see
-    /// `graph.rs::build_indexes`'s own disclosed note) -- the payload is
-    /// where a fact ABOUT a place, not a further explorable thing, belongs.
+    /// `aliases` (E3 KJV naming) rides here as payload: a bare alias
+    /// string has no `Position` representation to index through the
+    /// generic port -- the payload is where a fact ABOUT a place, not a
+    /// further explorable thing, belongs. (M-D3, owner ruling R2: the
+    /// vacant `named` relation -- manifest row, `Named` row struct, and
+    /// `graph.named` table -- was RETIRED outright; this payload field
+    /// was already the sole serving path, so the parallel authored rows
+    /// were exactly the "second, weaker path" the discipline forbids.)
     Place { canonical: String, lat: f64, lon: f64, aliases: Vec<String> },
     /// Batch P (the extensibility proof): widened the SAME way M-C widened
     /// Place/Polity (controller decision 2) -- real payload, not a stub.

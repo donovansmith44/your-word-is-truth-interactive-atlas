@@ -773,7 +773,7 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
             Position::Edge(_) => None,
         })
         .filter(|eid| seen_events.insert(eid.raw.clone()))
-        .filter_map(|eid| atlas_graph::legacy::event_from_node(&eid, &snap))
+        .filter_map(|eid| atlas_graph::legacy::event_from_node(&eid, &snap, &graph.chronology.chrono))
         .collect();
     attesting_events.sort_by_key(|e| e.when.from_year);
     let events: Vec<VerseEventOut> = attesting_events
@@ -1124,7 +1124,7 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     // deliberately -- `place-history.json`/`place-names-kjv.json` are not
     // this batch's deletion target, unaffected by the migration.
     let snap = graph.snapshot();
-    let e: Event = atlas_graph::legacy::event_from_node(&atlas_graph::event_world::event_node_id(&id), &snap).ok_or_else(|| ApiError::not_found("event"))?;
+    let e: Event = atlas_graph::legacy::event_from_node(&atlas_graph::event_world::event_node_id(&id), &snap, &graph.chronology.chrono).ok_or_else(|| ApiError::not_found("event"))?;
     let e: &Event = &e;
 
     // Batch E3: resolved name (period-history- and KJV-alias-aware), not the
@@ -1434,7 +1434,7 @@ pub async fn place(
     let mut events: Vec<SceneEvent> = drain_edges(&snap, &Position::Node(place_id.clone()), EdgeKind::Directed(RelationId::LocatedAt, Direction::Inverse))
         .into_iter()
         .filter_map(|entry| match entry.node {
-            Position::Node(eid) => atlas_graph::legacy::event_from_node(&eid, &snap),
+            Position::Node(eid) => atlas_graph::legacy::event_from_node(&eid, &snap, &graph.chronology.chrono),
             Position::Edge(_) => None,
         })
         .map(|e| to_scene_event(&e))

@@ -250,10 +250,10 @@ impl Pass for LawCheckPass {
                 .context("KJV adapter fidelity law (bijection + reconstruction)")?;
         }
         crate::law_check::every_authored_edge_resolves(&ctx.graph).context("referential integrity of authored edge rows")?;
-        // Fix round 1 (delegated ruling): the verified-cache law -- see
-        // `law_check::payload_years_match_resolved_placements`'s own doc
-        // comment.
-        crate::law_check::payload_years_match_resolved_placements(&ctx.graph, &ctx.chrono).context("NodePayload::Event years must equal their own resolved dated_by placement (verified-cache law)")?;
+        // M-D3 (owner ruling R1): the "verified-cache law"
+        // (`law_check::payload_years_match_resolved_placements`) RETIRED
+        // WITH the `NodePayload::Event.from_year`/`.to_year` fields it
+        // existed to police -- see law_check.rs's own retirement note.
         // Batch P (the extensibility proof): the Person adapter's own
         // boundary fidelity law (bijection + mentions completeness) --
         // referential integrity of Person mentions rows is ALREADY covered

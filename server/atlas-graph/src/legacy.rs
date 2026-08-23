@@ -56,11 +56,26 @@ fn drain(q: &impl GraphQuery, p: &Position, kind: EdgeKind) -> Vec<EdgeEntry> {
 /// endpoints and `handlers::event`'s implicit "first place" conventions)
 /// -- never duplicated onto the payload (the located-at relation is the
 /// single source).
-pub fn event_from_node(id: &AnyNodeId, q: &impl GraphQuery) -> Option<Event> {
+///
+/// M-D3 (owner ruling R1 propagation): `from_year`/`to_year`/`order_key` no
+/// longer ride the payload at all (chronology lives solely in `dated_by`
+/// placements now) -- `chrono` (`event_world::ChronologyDerivation`, the
+/// SAME derivation `GraphService.chronology` publishes on every startup
+/// path, from-sources AND from-artifact) is the single remaining source:
+/// `from_year` comes from `chrono.resolved` (the timeline's own authority);
+/// the genuine `to_year`/`order_key` come from the SEPARATE `chrono.
+/// source_meta` companion, never `resolved.date.to`/`.seq` (see
+/// `SourceEventMeta`'s own doc comment for why a faithful ORDERING
+/// substitute -- `seq` -- is not the same thing as the literal curated
+/// VALUE this reconstruction must reproduce exactly, a real gap
+/// `overlay_equivalence.rs` caught). A general-kind (undated) event has no
+/// entry in either map -- falls back to `TimeRange::undated()`'s own
+/// whole-atlas sentinel, order_key 0, the SAME "deliberately undated" idiom
+/// every other general-kind call site in this workspace already uses,
+/// never a fabricated date.
+pub fn event_from_node(id: &AnyNodeId, q: &impl GraphQuery, chrono: &crate::event_world::ChronologyDerivation) -> Option<Event> {
     let node = q.node(id)?;
-    let NodePayload::Event { label, kind, from_year, to_year, order_key, verses, witnesses, robertson_section, acts_section, atlas_section, kjv_superscription, ref_note } =
-        node.payload
-    else {
+    let NodePayload::Event { label, kind, verses, witnesses, robertson_section, acts_section, atlas_section, kjv_superscription, ref_note } = node.payload else {
         return None;
     };
 
@@ -76,6 +91,15 @@ pub fn event_from_node(id: &AnyNodeId, q: &impl GraphQuery) -> Option<Event> {
         .into_iter()
         .map(|w| EventWitness { book: w.book, translations: w.translations.into_iter().collect(), ref_note: w.ref_note, robertson_section: w.robertson_section })
         .collect();
+
+    let (from_year, to_year, order_key) = match chrono.resolved.get(&id.raw) {
+        Some(rp) => {
+            let from_year = rp.date.from.year.get();
+            let meta = chrono.source_meta.get(&id.raw).copied().unwrap_or(crate::event_world::SourceEventMeta { to_year: from_year, order_key: 0 });
+            (from_year, meta.to_year, meta.order_key)
+        }
+        None => (TimeRange::undated().from_year, TimeRange::undated().to_year, 0),
+    };
 
     Some(Event {
         id: id.raw.clone(),
@@ -196,7 +220,7 @@ pub struct LegacyAtlasFields {
 pub fn atlas_data_overlay(gs: &crate::service::GraphService) -> LegacyAtlasFields {
     let snap = gs.snapshot();
 
-    let events: Vec<Event> = gs.event_ids.iter().filter_map(|id| event_from_node(id, &snap)).collect();
+    let events: Vec<Event> = gs.event_ids.iter().filter_map(|id| event_from_node(id, &snap, &gs.chronology.chrono)).collect();
     let places: Vec<Place> = gs.place_ids.iter().filter_map(|id| place_from_node(id, &snap)).collect();
     let empty_legs: Vec<String> = Vec::new();
     let narratives: Vec<Narrative> = gs

@@ -125,4 +125,16 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // thousands of new node ids and edge rows feeding the content hash is
 // exactly the expected effect of a new adapter shipping real data, not a
 // bug. New captured value: "d004fd6f72196214".
-const EXPECTED_VERSION_HEX: &str = "d004fd6f72196214";
+//
+// MOVED AGAIN (deliberately -- Batch M-D3, owner rulings R1+R2): every
+// `NodePayload::Event` node's own content hash changes (from_year/to_year/
+// order_key dropped from the payload -- owner R1: "only keep narrative");
+// every `Named` "row" that used to feed `graph.named` is gone from the
+// content hash entirely (owner R2 -- the relation retired whole, and those
+// rows never lowered into the port's own indexes in the first place, so
+// this is a real, if narrow, "the hash used to include phantom weight"
+// correction, not a data loss -- `NodePayload::Place.aliases` carries the
+// SAME alias content, and Place node hashes are unaffected). Real,
+// deliberate content changes to node payloads and a retired relation, not
+// a bug. New captured value: "b668c9886baff013".
+const EXPECTED_VERSION_HEX: &str = "b668c9886baff013";

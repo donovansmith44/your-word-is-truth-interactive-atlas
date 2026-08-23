@@ -68,7 +68,6 @@ relations! {
         Succession  => "follows-in" / "precedes-in",
         DatedBy     => "dated-by" / "dates",
         LocatedAt   => "located-at" / "site-of",
-        Named       => "named" / "name-of",
         Mentions    => "mentions" / "mentioned-in",
         Cites       => "cites" / "cited-by",
         Quotes      => "quotes" / "quoted-by",
@@ -202,13 +201,9 @@ pub struct LocatedAt {
     pub justification: Justification,
 }
 
-#[derive(Clone, Debug)]
-pub struct Named {
-    pub place: PlaceId,
-    pub alias: String,
-    pub provenance: ProvenanceId,
-    pub justification: Justification,
-}
+// M-D3 (owner ruling R2): the `Named` row struct was retired with the
+// `named` manifest row -- a place's aliases are `NodePayload::Place`'s
+// own `aliases` payload field, the sole path since M-C.
 
 #[derive(Clone, Debug)]
 pub struct CatechismLink {
