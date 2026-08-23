@@ -31,8 +31,8 @@ pub fn polity_node_id(id: &str) -> atlas_graph_types::id::AnyNodeId {
     PolityId::new(id.to_string()).erase()
 }
 
-fn delta_summary(d: &atlas_core::data::PolityDelta) -> String {
-    format!("{} ({})", d.event, d.ref_note)
+fn delta_payload(d: &atlas_core::data::PolityDelta) -> atlas_graph_types::node::PolityDeltaPayload {
+    atlas_graph_types::node::PolityDeltaPayload { event: d.event.clone(), verses: d.verses.clone(), ref_note: d.ref_note.clone() }
 }
 
 fn polity_node(p: &atlas_core::data::Polity) -> Node {
@@ -45,8 +45,8 @@ fn polity_node(p: &atlas_core::data::Polity) -> Node {
             to_year: era.to,
             rings: era.rings.clone(),
             ref_note: era.ref_note.clone(),
-            transition: era.transition.as_ref().map(delta_summary),
-            fall: era.fall.as_ref().map(delta_summary),
+            transition: era.transition.as_ref().map(delta_payload),
+            fall: era.fall.as_ref().map(delta_payload),
         })
         .collect();
     // A polity's own display label is its MOST RECENT era's name (mirrors
@@ -137,8 +137,11 @@ mod tests {
                 assert_eq!(label, "Ptolemaic Egypt", "label follows the most recent era");
                 assert_eq!(color_key, 3);
                 assert_eq!(eras.len(), 2);
-                assert_eq!(eras[0].fall.as_deref(), Some("Alexander conquers Egypt (tradition only)"));
-                assert_eq!(eras[1].transition.as_deref(), Some("Ptolemy I founds the dynasty (tradition only)"));
+                let fall = eras[0].fall.as_ref().expect("egypt's own first era carries a fall delta");
+                assert_eq!(fall.event, "Alexander conquers Egypt");
+                assert_eq!(fall.ref_note, "tradition only");
+                let transition = eras[1].transition.as_ref().expect("egypt's own second era carries a transition delta");
+                assert_eq!(transition.event, "Ptolemy I founds the dynasty");
                 assert!(eras[1].transition.is_some() && eras[1].fall.is_none());
             }
             other => panic!("expected Polity payload, got {other:?}"),

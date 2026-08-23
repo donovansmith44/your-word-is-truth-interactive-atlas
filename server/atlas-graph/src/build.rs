@@ -77,7 +77,22 @@ pub fn build_graph_from_canon_and_verses(
     xrefs_tsv: &str,
     atlas: &AtlasData,
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
-    run_pipeline_build(canon, verses, None, xrefs_tsv, atlas, &[])
+    build_graph_from_canon_and_verses_with_eras(canon, verses, xrefs_tsv, atlas, &[])
+}
+
+/// M-C: the eras-carrying form of `build_graph_from_canon_and_verses` --
+/// same "test fixture that already has a Canon" rationale, extended to a
+/// fixture that also wants real Era nodes (e.g. `AtlasData::demo_fixture`'s
+/// own `.eras`, so `/api/eras` has something real to serve in tests that
+/// exercise it).
+pub fn build_graph_from_canon_and_verses_with_eras(
+    canon: &Canon,
+    verses: &HashMap<String, String>,
+    xrefs_tsv: &str,
+    atlas: &AtlasData,
+    eras: &[atlas_core::data::Era],
+) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
+    run_pipeline_build(canon, verses, None, xrefs_tsv, atlas, eras)
 }
 
 fn run_pipeline_build(

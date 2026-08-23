@@ -70,5 +70,13 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // `data/compiled/*.json` this test's own `real_atlas_data()` loads --
 // this test itself calls the plain (eras-less) `GraphService::from_sources`,
 // so eras stay absent from THIS particular root; the place/polity/
-// catechism content change alone is what moved it.
-const EXPECTED_VERSION_HEX: &str = "ea2276b34f44d29f";
+// catechism content change alone is what moved it: "ea2276b34f44d29f".
+//
+// MOVED AGAIN (deliberately -- map migration, controller decision 7):
+// `PolityEraPayload.transition`/`.fall` widened from a collapsed display
+// string to the fully structured `PolityDeltaPayload { event, verses,
+// ref_note }` (graph-types/src/node.rs), so `/api/polities`'s own wire
+// response (`PolityDeltaOut`) reconstructs losslessly from the graph
+// payload alone instead of a lossy formatted summary -- real content
+// change, not a bug.
+const EXPECTED_VERSION_HEX: &str = "2003993f12d099ab";

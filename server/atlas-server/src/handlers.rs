@@ -75,8 +75,33 @@ pub async fn books(State(data): State<Arc<AtlasData>>) -> Json<Vec<CanonBook>> {
     Json(data.canon.books.clone())
 }
 
-pub async fn eras(State(data): State<Arc<AtlasData>>) -> Json<Vec<Era>> {
-    Json(data.eras.clone())
+/// `GET /api/eras` (Batch M-C, controller decision 7: "map migration...
+/// become views over graph queries"). BATCH M-C: re-implemented as a VIEW
+/// over the graph's own Era nodes (`atlas_graph::era_adapter`) instead of
+/// `AtlasData.eras` -- `GraphService.era_ids` is the companion enumeration
+/// `GraphQuery`'s own minimal port surface doesn't model (no "list every
+/// node of kind K" primitive; see that field's own doc comment), already
+/// held in chronological order; every actual FIELD comes from a real
+/// `GraphQuery::node` call on this request's own snapshot. WIRE SHAPE
+/// UNCHANGED: `Era { id, name, from_year, to_year }`, same order, same
+/// JSON -- `AtlasData.eras`/`eras.json` retire this batch (deletion
+/// inventory) with this endpoint as their only production reader.
+pub async fn eras(State(graph): State<Arc<GraphService>>) -> Json<Vec<Era>> {
+    use atlas_graph_types::node::NodePayload;
+
+    let snap = graph.snapshot();
+    let out: Vec<Era> = graph
+        .era_ids
+        .iter()
+        .filter_map(|id| {
+            let node = snap.node(id)?;
+            match node.payload {
+                NodePayload::Era { label, from_year, to_year } => Some(Era { id: id.raw.clone(), name: label, from_year, to_year }),
+                _ => None,
+            }
+        })
+        .collect();
+    Json(out)
 }
 
 pub async fn narratives(State(data): State<Arc<AtlasData>>) -> Json<Vec<Narrative>> {
@@ -175,28 +200,45 @@ pub struct PolitiesOut {
 /// lists a polity's OLDER era before its newer one (the exact order
 /// map.js's `BorderLayer` needs to paint older-under-newer and pick the
 /// dotted/lightest era correctly without re-sorting client-side).
+/// BATCH M-C (controller decision 7): re-implemented as a VIEW over the
+/// graph's own Polity nodes (`atlas_graph::polity_adapter`) instead of
+/// `AtlasData.polities` -- border data as node payloads (controller
+/// decision 2), the map consuming payloads directly, per era, off each
+/// Polity node's own `NodePayload::Polity.eras`. `GraphService.polity_ids`
+/// is the companion enumeration (same status as `era_ids`, see that
+/// field's own doc comment). WIRE SHAPE UNCHANGED: `PolityOut`/
+/// `PolityDeltaOut`, same fields, same conditional presence, same
+/// deterministic sort -- `AtlasData.polities`/`polities.json` stay
+/// standing (deliberately NOT this batch's deletion target: still the
+/// adapter's own curated source, same status as `event_world`'s own
+/// `atlas.events`/`.narratives`).
 pub async fn polities(
-    State(data): State<Arc<AtlasData>>,
+    State(graph): State<Arc<GraphService>>,
     Query(params): Query<HashMap<String, String>>,
 ) -> Result<Json<PolitiesOut>, ApiError> {
+    use atlas_graph_types::node::NodePayload;
+
     let from = parse_year(&params, "from")?;
     let to = parse_year(&params, "to")?;
     let window = TimeRange::new(from, to).map_err(|_| ApiError::bad_window())?;
 
+    let snap = graph.snapshot();
     let mut out: Vec<PolityOut> = Vec::new();
-    for p in &data.polities {
-        for era in &p.eras {
-            let era_range = TimeRange { from_year: era.from, to_year: era.to };
+    for id in &graph.polity_ids {
+        let Some(node) = snap.node(id) else { continue };
+        let NodePayload::Polity { color_key, eras, .. } = node.payload else { continue };
+        for era in &eras {
+            let era_range = TimeRange { from_year: era.from_year, to_year: era.to_year };
             if window.intersects(&era_range) {
                 out.push(PolityOut {
-                    id: p.id.clone(),
+                    id: id.raw.clone(),
                     name: era.name.clone(),
-                    from: era.from,
-                    to: era.to,
+                    from: era.from_year,
+                    to: era.to_year,
                     rings: era.rings.clone(),
-                    color_key: p.color_key,
-                    transition: era.transition.as_ref().map(PolityDeltaOut::from),
-                    fall: era.fall.as_ref().map(PolityDeltaOut::from),
+                    color_key,
+                    transition: era.transition.as_ref().map(|d| PolityDeltaOut { event: d.event.clone(), verses: d.verses.clone(), ref_note: d.ref_note.clone() }),
+                    fall: era.fall.as_ref().map(|d| PolityDeltaOut { event: d.event.clone(), verses: d.verses.clone(), ref_note: d.ref_note.clone() }),
                 });
             }
         }

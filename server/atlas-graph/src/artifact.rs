@@ -136,23 +136,56 @@ impl From<DtoNodeId> for AnyNodeId {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoPolityDelta {
+    event: String,
+    verses: Vec<String>,
+    ref_note: String,
+}
+impl From<&atlas_graph_types::node::PolityDeltaPayload> for DtoPolityDelta {
+    fn from(d: &atlas_graph_types::node::PolityDeltaPayload) -> Self {
+        DtoPolityDelta { event: d.event.clone(), verses: d.verses.clone(), ref_note: d.ref_note.clone() }
+    }
+}
+impl From<DtoPolityDelta> for atlas_graph_types::node::PolityDeltaPayload {
+    fn from(d: DtoPolityDelta) -> Self {
+        atlas_graph_types::node::PolityDeltaPayload { event: d.event, verses: d.verses, ref_note: d.ref_note }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct DtoPolityEra {
     name: String,
     from_year: i32,
     to_year: i32,
     rings: Vec<Vec<(f64, f64)>>,
     ref_note: String,
-    transition: Option<String>,
-    fall: Option<String>,
+    transition: Option<DtoPolityDelta>,
+    fall: Option<DtoPolityDelta>,
 }
 impl From<&PolityEraPayload> for DtoPolityEra {
     fn from(e: &PolityEraPayload) -> Self {
-        DtoPolityEra { name: e.name.clone(), from_year: e.from_year, to_year: e.to_year, rings: e.rings.clone(), ref_note: e.ref_note.clone(), transition: e.transition.clone(), fall: e.fall.clone() }
+        DtoPolityEra {
+            name: e.name.clone(),
+            from_year: e.from_year,
+            to_year: e.to_year,
+            rings: e.rings.clone(),
+            ref_note: e.ref_note.clone(),
+            transition: e.transition.as_ref().map(DtoPolityDelta::from),
+            fall: e.fall.as_ref().map(DtoPolityDelta::from),
+        }
     }
 }
 impl From<DtoPolityEra> for PolityEraPayload {
     fn from(d: DtoPolityEra) -> Self {
-        PolityEraPayload { name: d.name, from_year: d.from_year, to_year: d.to_year, rings: d.rings, ref_note: d.ref_note, transition: d.transition, fall: d.fall }
+        PolityEraPayload {
+            name: d.name,
+            from_year: d.from_year,
+            to_year: d.to_year,
+            rings: d.rings,
+            ref_note: d.ref_note,
+            transition: d.transition.map(Into::into),
+            fall: d.fall.map(Into::into),
+        }
     }
 }
 

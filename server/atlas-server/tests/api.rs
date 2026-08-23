@@ -28,9 +28,19 @@ use tower::ServiceExt;
 // `GraphService` wraps the owner-approved `atlas_graph_types::store` port
 // (fix round 1, C1) -- see `app.rs`'s own doc comment for why it's held
 // concretely (not `Arc<dyn ...>`) in `AppState`.
+// Batch M-C: `/api/eras`/`/api/polities` now serve from the graph's own
+// Era/Polity nodes (era_adapter/polity_adapter), not `AtlasData.eras`/
+// `.polities` directly -- `from_canon_and_verses_with_eras` carries
+// `data.eras` through so a fixture's own eras (`demo_fixture()`'s two
+// real entries) actually reach the graph, same "one source of truth per
+// test" reasoning this helper's own doc comment above already states for
+// canon/verses. `data.polities` needs no such threading -- `polity_adapter`
+// already reads `AtlasData.polities` directly (that source stands, per
+// the deletion inventory), which `graph_fixture_for`'s own `data: &AtlasData`
+// parameter already supplies.
 fn graph_fixture_for(data: &AtlasData) -> Arc<atlas_graph::GraphService> {
     Arc::new(
-        atlas_graph::GraphService::from_canon_and_verses(&data.canon, &data.verses, "From Verse\tTo Verse\tVotes\t#comment\n", data)
+        atlas_graph::GraphService::from_canon_and_verses_with_eras(&data.canon, &data.verses, "From Verse\tTo Verse\tVotes\t#comment\n", data, &data.eras)
             .expect("fixture graph must build from this AtlasData's own canon+verses"),
     )
 }

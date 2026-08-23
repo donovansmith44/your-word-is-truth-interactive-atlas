@@ -6,13 +6,24 @@ use crate::id::{AnyNodeId, ContentAddressed, PositionKind};
 use crate::ingest::ProvenanceId;
 use crate::text::LayerMap;
 
+/// One Scripture-mapped historical delta at an era boundary (rise/fall/
+/// internal transition) -- a plain data mirror of
+/// `atlas_core::data::PolityDelta`'s own load-bearing fields, kept FULLY
+/// STRUCTURED (not collapsed to display prose) so the map's own wire
+/// response (`PolityDeltaOut { event, verses, ref_note }`) reconstructs
+/// losslessly from the payload alone.
+#[derive(Clone, Debug)]
+pub struct PolityDeltaPayload {
+    pub event: String,
+    pub verses: Vec<String>,
+    pub ref_note: String,
+}
+
 /// One time-ranged, colored, bordered ERA of one Polity node's own
 /// lifetime (M-C: "border data as node payloads — the map consumes
 /// payloads, not new relation kinds," controller decision 2). A plain
 /// data mirror of `atlas_core::data::PolityEra`'s own load-bearing fields
-/// (name/from/to/rings/ref_note); transition/fall summaries are carried
-/// as short display prose rather than the richer nested delta shape —
-/// the map's own popover need, not a new edge kind.
+/// (name/from/to/rings/ref_note/transition/fall).
 #[derive(Clone, Debug)]
 pub struct PolityEraPayload {
     pub name: String,
@@ -20,8 +31,8 @@ pub struct PolityEraPayload {
     pub to_year: i32,
     pub rings: Vec<Vec<(f64, f64)>>,
     pub ref_note: String,
-    pub transition: Option<String>,
-    pub fall: Option<String>,
+    pub transition: Option<PolityDeltaPayload>,
+    pub fall: Option<PolityDeltaPayload>,
 }
 
 #[derive(Clone, Debug)]

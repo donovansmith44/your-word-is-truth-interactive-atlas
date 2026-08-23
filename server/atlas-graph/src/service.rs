@@ -64,6 +64,18 @@ pub struct GraphService {
     /// now served by the generic port's `EdgeMeta::Narrative`).
     pub chronology: Chronology,
     pub event_world_stats: EventWorldStats,
+    /// M-C (map migration, controller decision 7): every Era/Polity node's
+    /// own id, in ascending id order -- `GraphQuery`'s port surface is
+    /// deliberately minimal (derive/node-lookup/edges/reading-window, no
+    /// "list every node of kind K" operation), so a LISTING endpoint
+    /// (`/api/eras`, `/api/polities`) needs a companion enumeration, same
+    /// status as `bible_position` above. Built once, from the graph's own
+    /// node table (a cheap one-time scan; era/polity counts stay in the
+    /// tens) -- every actual FIELD each listed era/polity carries still
+    /// comes from that node's own payload via a real `GraphQuery::node`
+    /// call at request time, never cached here.
+    pub era_ids: Vec<AnyNodeId>,
+    pub polity_ids: Vec<AnyNodeId>,
 }
 
 /// The longest KJV chapter (Psalm 119) has 176 verses; this probe width is
@@ -95,7 +107,16 @@ impl GraphService {
     /// so the fidelity law is not applicable here (there is nothing
     /// independent to check the already-typed input against).
     pub fn from_canon_and_verses(canon: &Canon, verses: &HashMap<String, String>, xrefs_tsv: &str, atlas: &AtlasData) -> anyhow::Result<Self> {
-        let (graph, stats, event_world_stats, chrono) = build::build_graph_from_canon_and_verses(canon, verses, xrefs_tsv, atlas)?;
+        Self::from_canon_and_verses_with_eras(canon, verses, xrefs_tsv, atlas, &[])
+    }
+
+    /// M-C: the eras-carrying form of `from_canon_and_verses` -- lets a
+    /// fixture that already has real `Era` data (e.g. `AtlasData::
+    /// demo_fixture`'s own `.eras`) build a graph whose `/api/eras` view
+    /// has something real to serve, without a round trip through raw KJV
+    /// JSON text just to reach the eras-carrying constructor.
+    pub fn from_canon_and_verses_with_eras(canon: &Canon, verses: &HashMap<String, String>, xrefs_tsv: &str, atlas: &AtlasData, eras: &[atlas_core::data::Era]) -> anyhow::Result<Self> {
+        let (graph, stats, event_world_stats, chrono) = build::build_graph_from_canon_and_verses_with_eras(canon, verses, xrefs_tsv, atlas, eras)?;
         Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono)))
     }
 
@@ -149,6 +170,31 @@ impl GraphService {
             .get(crate::kjv_adapter::BIBLE_CORPUS)
             .map(|spine| spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect())
             .unwrap_or_default();
+        // M-C (map migration): the era_ids/polity_ids companion
+        // enumeration (this struct's own doc comment) -- a one-time scan
+        // over the node table's own kind tag, before the graph moves into
+        // the store below. `era_ids` is sorted by `from_year` (chronological,
+        // ascending) rather than left in the node table's own id-alphabetical
+        // order (`BTreeMap<AnyNodeId, _>`'s own iteration order): the
+        // pre-M-C `/api/eras` wire response's own order was the curated
+        // TOML's file order, itself chronological (verified: the real
+        // `eras.toml` lists primeval/patriarchs/egypt-exodus/... in
+        // strictly ascending `from_year` order) -- sorting by `from_year`
+        // reproduces that exact order without needing to thread the
+        // original parse order through this far. `polity_ids` needs no
+        // such care: the handler re-sorts its own results explicitly
+        // (by polity id, then era `from`), unchanged from before this batch.
+        let mut era_nodes: Vec<(i32, AnyNodeId)> = graph
+            .nodes
+            .iter()
+            .filter_map(|(id, n)| match &n.payload {
+                atlas_graph_types::node::NodePayload::Era { from_year, .. } if id.kind == atlas_graph_types::id::NodeKind::Era => Some((*from_year, id.clone())),
+                _ => None,
+            })
+            .collect();
+        era_nodes.sort_by_key(|(from_year, id)| (*from_year, id.raw.clone()));
+        let era_ids: Vec<AnyNodeId> = era_nodes.into_iter().map(|(_, id)| id).collect();
+        let polity_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Polity).cloned().collect();
         // GraphPublisher::publish (design doc §9a): the compiler
         // publishes; serving never writes. One publish, at startup; M-A
         // never calls it again (no hot-reload exists yet) -- MemStore's
@@ -159,7 +205,7 @@ impl GraphService {
         let mut store = MemStore::default();
         let version = store.publish(graph);
         let snapshot = store.open(version).expect("the version just published must always be open-able");
-        GraphService { snapshot, bible_position, stats, chronology, event_world_stats }
+        GraphService { snapshot, bible_position, stats, chronology, event_world_stats, era_ids, polity_ids }
     }
 
     /// The version this service published at construction (M-A: the only
