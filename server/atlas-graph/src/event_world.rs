@@ -346,9 +346,20 @@ impl Chronology {
     /// `Chronology` from the serialized artifact's own chronology fields,
     /// and so the compile step (`bin/compile_graph.rs`) can reuse the
     /// SAME `ChronologyDerivation` the pipeline's own RESOLVE stage already
-    /// computed instead of recomputing `derive_chronology(atlas)` a
-    /// second time (a pre-existing, disclosed minor redundancy in
-    /// `GraphService::assemble`'s own from-sources path, unaffected here).
+    /// computed instead of recomputing `derive_chronology(atlas)` a second
+    /// time. M-C2 (definitive surface list, requirement 5 cleanup):
+    /// verified, not fixed here -- `GraphService::from_sources_with_eras`/
+    /// `from_canon_and_verses_with_eras` were ALREADY calling this
+    /// function with the pipeline's own `ctx.chrono` (the tuple
+    /// `build_graph_from_sources_with_eras`/`build_graph_from_canon_and_
+    /// verses_with_eras` return) by the time this batch started at
+    /// `76e10f2` -- the redundancy M-C's own report flagged as a standing
+    /// concern was already gone at base; this doc comment's own former
+    /// claim that it still existed was the only thing left stale, now
+    /// corrected. `Chronology::build(atlas)` (above) still exists and
+    /// still does its own single fresh `derive_chronology` call, but its
+    /// only caller left is this module's own test suite, not any
+    /// production from-sources path.
     pub fn from_derivation(chrono: ChronologyDerivation) -> Chronology {
         let mut temporal_neighbors: HashMap<String, (Option<String>, Option<String>)> = HashMap::new();
         for (i, id) in chrono.order.iter().enumerate() {
