@@ -119,7 +119,15 @@ public sealed record ChapterOut(string Ref, string Book, int Chapter, List<Verse
 /// data discipline <see cref="Kind"/> above already establishes).
 public sealed record HeadingDto(string EventId, string Title, string Kind, bool IsContinuation = false);
 
-public sealed record VerseOut(int Verse, string Text, List<PlaceRefDto> Places, HeadingDto? Heading = null);
+/// Batch M-D2 (the owner's cross-reference superscript directive): <see cref="XrefCount"/>
+/// is this verse's own `cites` edge-summary COUNT (design spec §5), read
+/// straight off the generic graph port server-side and folded onto the
+/// per-chapter response -- see <c>handlers::chapter</c>'s own doc comment for
+/// why (one round trip for the whole chapter, not N). ALWAYS present (0, not
+/// omitted) -- Reader.razor's own superscript decision is a pure function of
+/// this one integer (see <c>Pages.Reader.XrefMarkerText</c>): 0 -> no
+/// marker, 1-3 -> that many lettered superscripts, &gt;3 -> the many-marker.
+public sealed record VerseOut(int Verse, string Text, List<PlaceRefDto> Places, HeadingDto? Heading = null, int XrefCount = 0);
 
 public sealed record PlaceRefDto(string Id, string Name);
 
@@ -426,3 +434,43 @@ public sealed record LandmarkDto(string Name, string Kind, double Lat, double Lo
 /// coordinates, only forwards them to map.js" reasoning as
 /// <see cref="PolityEraOut.Rings"/>.
 public sealed record LandMaskOut(JsonElement Rings);
+
+// -----------------------------------------------------------------------
+// Batch M-D2 (P7 closure, "CLIENT ACCESS" -- design spec §5/§8): wire DTOs
+// for the two generic graph endpoints + the text-window endpoint. "Wire
+// DTOs: deliberately NOT a further seam -- HTTP itself is the interface;
+// the DTOs are its schema" (design doc §2) -- these mirror
+// `graph_handlers::{NodeCardOut,EdgeSummaryEntryOut,EdgePageOut,
+// EdgeEntryOut,NodeRefOut,TextWindowOut,TextUnitOut}` field for field, the
+// SAME "one wire form, no codec layer" convention every other DTO in this
+// file already follows. Node ids/edge kinds stay plain STRINGS (the wire
+// form `graph_wire::encode_node_id`/`EdgeKind::label()` already produce,
+// e.g. `"text-unit:JHN.3.16"`/`"cites"`) rather than a parallel C# type
+// hierarchy for `AnyNodeId`/`EdgeKind`/`Direction` -- this client already
+// treats every ref as a plain string everywhere (`VerseNode.Title` IS the
+// vref, `CanonRef` parses strings, never a typed ref object), so a richer
+// client-side id/kind type would be a SECOND representation of the exact
+// same thing this app already has one of. See <see cref="IExplorableClient"/>.
+// -----------------------------------------------------------------------
+
+public sealed record EdgeSummaryEntryDto(string Kind, int Count);
+
+public sealed record NodeCardDto(string Id, string Kind, string Label, string Provenance, List<EdgeSummaryEntryDto> EdgeSummary, string Version);
+
+public sealed record NodeRefDto(string Id, string Kind, string Label);
+
+public sealed record EdgeEntryDto(string Edge, NodeRefDto Node);
+
+public sealed record EdgePageDto(string Kind, List<EdgeEntryDto> Entries, int? Next, string Version);
+
+public sealed record TextUnitDto(
+    // `[JsonPropertyName]` not needed: `ref` collides with the C# keyword,
+    // so the wire's own `ref` key needs an explicit override the same way
+    // `ChapterOut.Ref`/`VerseDetail.Ref` already read the identical wire key
+    // via ordinary snake_case mapping (`ref` has no case variants to map,
+    // so `Wire.Options`'s naming policy alone already resolves it) -- no
+    // attribute needed, consistent with those two existing records.
+    string Ref,
+    string Text);
+
+public sealed record TextWindowDto(List<TextUnitDto> Units, string? Next, string Version);

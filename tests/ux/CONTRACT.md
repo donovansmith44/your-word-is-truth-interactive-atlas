@@ -590,6 +590,65 @@ Notes:
   distinguish there the way there is for xrefs. See
   `popover-place-date-established-verse-{SPAN}`/`-destroyed-verse-{SPAN}`
   and their own `-more`/`-collapse` pair in the testid inventory above.
+- CLIENT-ACCESS-1 (batch-md2-brief.md; P7's "CLIENT ACCESS" seam closure --
+  design doc §2's own seam inventory: "GAP: the Blazor client still calls
+  bespoke endpoints via a concrete AtlasClient. CLOSES AT M-D: the client
+  consumes the generic IExplorableClient contract as surfaces migrate").
+
+  THE CONTRACT AS SHIPPED: `client/IExplorableClient.cs` -- three methods,
+  1:1 onto the design spec's own two generic endpoints plus the
+  text-window endpoint (types doc §6/§8): `Card(string id)` ->
+  `GET /api/node/{id}`; `Edges(string id, string kind, int? cursor, int
+  limit)` -> `GET /api/node/{id}/edges?kind=&cursor=&limit=`;
+  `Reading(string fromRef, int n, string dir)` -> `GET /api/text?ref=&n=&dir=`.
+  DISCLOSED SIMPLIFICATION from the design spec's own literal C# sketch
+  (`AnyNodeId`/`EdgeKind`/`Cursor`/`Direction`, typed): every parameter is a
+  plain STRING, matching how this client already represents every ref
+  everywhere else (`VerseNode.Title` IS the vref; no typed ref wrapper
+  exists anywhere in `client/` today) and how the wire itself is already
+  string-keyed (`graph_wire::encode_node_id`/`EdgeKind::label()`) -- see
+  that file's own doc comment for the full reasoning. ONE concrete
+  implementation, `client/GraphExplorableClient.cs`, DI-registered as a
+  singleton (`Program.cs`) independent of `AtlasClient` -- no caching, no
+  retry, no derived state ("client stays thin: no business logic; the
+  server's summaries/pages are the truth," the batch brief's own controller
+  decision 1). Proven correct in isolation (URL construction + real-wire-
+  shape JSON deserialization, no live server needed) by
+  `client.Tests/GraphExplorableClientTests.cs` (5 tests, a stub
+  `HttpMessageHandler`); the underlying wire contract itself (both generic
+  endpoints, live, real compiled data) is proven by
+  `server/atlas-server/tests/graph_api.rs`'s own pre-existing suite plus
+  this batch's own 3 new tests (see XSCRIPT-1's own "ORDERING" note).
+
+  THE EDGE-KIND SECTION REGISTRY: `client/Explore/EdgeSectionRegistry.cs`
+  -- a small, REAL realization of the design spec's own `SectionSpec` shape
+  (types doc §7: `{ kind, renderer, style, initial, order }`), keyed by
+  edge-kind label. `Cites` is the one entry this batch populates (style
+  Quiet/entry-point-capable, `InitialClamp=3`, order VotesRanked) --
+  consulted by `CrossRefsSection` for the ONE "3" both its general
+  xrefs-only cap (F2) and its NEW entry-point cap (CAP-RECONCILE-1) must
+  agree on. A real, live consumer, not a paper interface -- see that C#
+  file's own doc comment for the registry's own design.
+
+  STRANGLER INVENTORY (disclosed, per the batch brief's own "surfaces not
+  touched this batch may stay bespoke" allowance -- strangler, not big
+  bang):
+
+  | Surface | This batch | Status |
+  |---|---|---|
+  | Superscript xref COUNT (`VerseOut.xref_count`) | Server-side: computed via `GraphQuery::edge_summary` (THE PORT), inline on the existing `/api/chapter` response | MIGRATED -- genuinely NEW capability, generic-native from day one (no bespoke predecessor existed) |
+  | Xrefs section display POLICY (cap/order) | Client-side: `EdgeSectionRegistry.Cites` consulted by `CrossRefsSection` | MIGRATED -- a real registry lookup replaces what were two bare integer literals |
+  | `IExplorableClient`/`GraphExplorableClient` | Built, DI-wired, unit-tested | SHIPPED, but ZERO live in-app UI call sites this batch -- disclosed, not silently hidden; see this batch's own report/concerns |
+  | Xrefs section DATA FETCH (`CrossRefsSection`'s own preview text) | Unchanged | STAYS BESPOKE (`VerseDetail.CrossRefs`/`PassageNode.XrefsAsync`) -- the generic `cites` edge stores only a target's FIRST verse (design doc §4: "verse-level today, loci by design"); `to_last`/`target_display` (F2's own same-chapter-range full-text enrichment, ~25% of real targets) live on the AUTHORED `CrossRef` row, never lowered into the generic edge index's `EdgeMeta` (only `Votes` is). Migrating this fetch would either silently truncate that ~25% down to one verse (a real regression against F2's own shipped, tested behavior) or require widening `EdgeMeta` -- a relation-shape change "reviewed like any relation change" (graph-types' own law), correctly bigger than this batch's own scope |
+  | Every OTHER popover data path (catechism, place, events, PARALLEL ACCOUNTS, traversal) | Untouched | STAYS BESPOKE -- not touched by the superscript work at all, per the brief's own explicit scope |
+
+  Reading the table plainly: the superscript feature itself is fully
+  graph-native (count + display policy, both generic); the CLIENT-ACCESS
+  seam's OWN structural closure (interface + one implementation + DI
+  wiring + tests) shipped as a real, correct, reusable contract for a
+  FUTURE batch's own migration to build on, rather than forcing a
+  same-batch data-fetch migration that would have cost real, shipped
+  fidelity to gain a checkbox.
 - READER-1 (batch-r-brief.md requirement 4): `popover-verse-expand`
   collapsed shows exactly the compact text the popover always showed (one
   verse, or a passage's own already-known concatenated text); clicking it
