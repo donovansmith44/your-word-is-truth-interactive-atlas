@@ -1498,7 +1498,18 @@ impl AtlasData {
         let places: Vec<Place> = read_json(dir, "places.json")?;
         let events: Vec<Event> = read_json(dir, "events.json")?;
         let narratives: Vec<Narrative> = read_json(dir, "narratives.json")?;
-        let eras: Vec<Era> = read_json(dir, "eras.json")?;
+        // M-C DELETION EVENT (controller decision 5): eras.json retired --
+        // `/api/eras` now serves from the graph's own Era nodes
+        // (era_adapter.rs), the only production reader this field ever
+        // had (confirmed grep-proven in the batch report's own deletion
+        // inventory: no other atlas-core/atlas-server code path reads
+        // `.eras`). The FIELD stays on `AtlasData` (atlas-etl's own
+        // ETL-time `validate::check_eras` still needs it, and several
+        // test fixtures across this workspace still construct it
+        // directly) -- only this SERVER-SIDE loader retires; a fresh
+        // `AtlasData::load` now always starts with an empty `.eras`,
+        // honestly, never a stale or fabricated value.
+        let eras: Vec<Era> = Vec::new();
         let books_meta: Vec<BookMeta> = read_json(dir, "books-meta.json")?;
         let verses: HashMap<String, String> = read_json(dir, "verses-kjv.json")?;
         let cross_refs: HashMap<String, Vec<CrossRef>> = read_json(dir, "cross-refs.json")?;

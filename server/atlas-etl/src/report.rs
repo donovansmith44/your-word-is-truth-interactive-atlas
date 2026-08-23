@@ -101,7 +101,12 @@ pub fn write(r: &Report) -> String {
     writeln!(s, "  places.json       {} places", r.counts.places).unwrap();
     writeln!(s, "  events.json       {} events", r.counts.events).unwrap();
     writeln!(s, "  narratives.json   {} narratives", r.counts.narratives).unwrap();
-    writeln!(s, "  eras.json         {} eras", r.counts.eras).unwrap();
+    // M-C deletion event: eras.json retired (era.rs / era_adapter.rs data
+    // now lives on the graph, GraphStore-served -- see the batch report's
+    // own deletion inventory). This line stays (the curated COUNT is still
+    // real, still worth reporting) but no longer claims a file this ETL
+    // run does not write.
+    writeln!(s, "  eras (curated)    {} eras (graph-only; eras.json retired at M-C)", r.counts.eras).unwrap();
     writeln!(s, "  books-meta.json   {} rows", r.counts.books_meta).unwrap();
     writeln!(s, "  verses-kjv.json   {} verses", r.counts.verses).unwrap();
     writeln!(s, "  cross-refs.json   {} source verses", r.counts.cross_ref_sources).unwrap();

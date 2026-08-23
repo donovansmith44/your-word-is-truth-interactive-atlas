@@ -6,7 +6,7 @@ Compiled file counts:
   places.json       1373 places
   events.json       1738 events
   narratives.json   13 narratives
-  eras.json         10 eras
+  eras (curated)    10 eras (graph-only; eras.json retired at M-C)
   books-meta.json   66 rows
   verses-kjv.json   31102 verses
   cross-refs.json   29364 source verses

@@ -483,7 +483,14 @@ fn main() -> Result<()> {
     write_json(&compiled_dir.join("places.json"), &data.places)?;
     write_json(&compiled_dir.join("events.json"), &data.events)?;
     write_json(&compiled_dir.join("narratives.json"), &data.narratives)?;
-    write_json(&compiled_dir.join("eras.json"), &data.eras)?;
+    // M-C DELETION EVENT (controller decision 5): eras.json retired --
+    // `data.eras` stays populated in THIS process (era_adapter.rs's own
+    // ETL-time validation via `validate::check_eras` still needs it, see
+    // `AtlasData::new`'s own call a few dozen lines up), but is no longer
+    // written to disk: the graph's own Era nodes (era_adapter.rs, server/
+    // atlas-graph) are the only place this data lives once compiled --
+    // no surface reads eras.json anymore (grep-proven in the batch
+    // report's own deletion inventory).
     write_json(&compiled_dir.join("books-meta.json"), &data.books_meta)?;
     write_json(&compiled_dir.join("verses-kjv.json"), &data.verses)?;
     write_json(&compiled_dir.join("cross-refs.json"), &data.cross_refs)?;
