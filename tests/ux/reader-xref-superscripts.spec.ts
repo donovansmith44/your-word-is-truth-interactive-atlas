@@ -58,15 +58,19 @@ async function findVerseByXrefCount(
 }
 
 test.describe('M-D2: cross-reference superscripts', () => {
-  // GATED OFF (2026-08-23, owner order, ledgered): "just disable
-  // superscripts until the rework is released." The rendering is gated
-  // by FeatureFlags.XrefSuperscripts = false (client/FeatureFlags.cs);
-  // these 8 tests skip on the same gate rather than red-fail against a
-  // deliberately absent feature. M-D3's rework (click AND hover entry,
-  // anchored over the verse, always visible, no auto-modal) flips the
-  // flag ON and DELETES this skip -- the suite below remains the binding
-  // contract for the re-enabled state (CONTRACT.md XSCRIPT-GATE).
-  test.skip(true, 'superscripts gated off by owner order until the M-D3 rework (FeatureFlags.XrefSuperscripts)');
+  // UN-GATED (M-D3, R3, this batch): the rework promised when the flag
+  // went off has landed -- FeatureFlags.XrefSuperscripts is true again
+  // (client/FeatureFlags.cs), and the popover now anchors OVER THE VERSE
+  // (ExplorerPopover.razor's own VerseAnchorSelector/VerseAnchorStyle,
+  // clamped to stay fully on-screen) instead of pane/viewport-centered, and
+  // a HOVER-only open (never a click or keyboard focus) auto-dismisses a
+  // short grace period after the pointer leaves both the marker and the
+  // popover (Reader.razor's own OpenVerseXrefEntryHover/CancelHoverClose) --
+  // "no auto-modal that must be X'd out," the owner's own named bug. See
+  // reader-xref-anchoring.spec.ts for the new anchoring/viewport-edge/
+  // hover-dismiss coverage; the suite below is unchanged from M-D2 and
+  // remains the binding contract for click/keyboard-focus entry, the
+  // lettering scheme, expansion, and the cap reconciliation.
 
   test('XSCRIPT-1: superscript presence/count is wire-driven, letters for 1-3, many-marker for >3 -- a sample sweep, not hardcoded verses', async ({ page }) => {
     const toc = await loadToc();
@@ -225,7 +229,39 @@ test.describe('M-D2: cross-reference superscripts', () => {
     // re-enter via the marker for a fresh entry-point popover, to verify
     // collapse restores the capped view.
     await page.getByTestId('popover-close').click();
+    // R3, a real live-caught race, root-caused with a live diagnostic (this
+    // whole suite was test.skip'd before R3 landed, so this exact
+    // close-then-immediately-re-hover sequence had never once run until
+    // now): identical in kind to XSCRIPT-1 "entry-point parameter vs F2's
+    // general popover"'s own close, a few tests below, whose comment names
+    // it exactly -- ExplorerPopover.RequestClose (the popover's own
+    // popover-close handler) does a JS interop call BEFORE it ever invokes
+    // Reader.razor's own OnClose (which is what actually nulls
+    // _activeNode). Playwright's `.click()` resolves once the synchronous
+    // portion of that DOM dispatch returns, not once that whole async chain
+    // settles, so an immediately-following `.hover({force:true})` on the
+    // marker can fire, open a fresh entry-point popover, and then have that
+    // very popover clobbered a tick later when the STILL-IN-FLIGHT close
+    // finally applies its own (by-then-stale) null -- observed directly via
+    // a live diagnostic as a popover count of exactly 0, stable for the
+    // rest of the window, not a late-arriving 3 (ruling out "just a render
+    // that hasn't caught up yet"). The wait below is that same sibling
+    // test's own fix, applied here too: let the close fully settle before
+    // asking for anything new.
+    await expect(page.getByTestId('popover')).toHaveCount(0);
     await page.getByTestId(`verse-xref-marker-${v.verse}`).hover({ force: true });
+    // A second, independent race sits right after the first: PassageList
+    // only renders `xrefs-more` once the freshly-opened popover's own async
+    // resolve (verse-anchor measurement, xref preview-text fetch) has
+    // finished, and a hover-opened popover is (correctly, per the brief's
+    // "hover-only auto-dismisses") racing its own close timer from the
+    // instant the pointer leaves the marker. This SAME test's first
+    // hover+click above (line ~209-212) never hits either race because it
+    // waits for `items` to reach its settled count before ever touching
+    // `xrefs-more` -- that auto-retrying wait is what absorbs the open
+    // latency there. Mirrored here for the same reason (not a product
+    // change -- Reader.razor's own hover-close grace period is unchanged).
+    await expect(items).toHaveCount(3);
     await page.getByTestId('xrefs-more').click();
     await expect(items).toHaveCount(v.xref_count);
     await page.getByTestId('xrefs-collapse').click();

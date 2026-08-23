@@ -86,8 +86,16 @@
                        unmodified heading -- App.razor's FocusOnNavigate
                        still finds and focuses IT, not this button, so
                        document-outline semantics are untouched. *@
+                    @* M-D3 (U4/B3, owner: "heading hover/click -> the
+                       metadata-and-context card"): @onmouseenter added
+                       alongside the pre-existing @onclick -- OpenChapter
+                       itself now guards against a redundant remount the
+                       same way OpenVerseXrefEntry already does (re-entering
+                       a chapter whose popover is already open no-ops
+                       instead of tearing down and rebuilding ExplorerPopover,
+                       which is keyed by _activeNode's own reference). *@
                     <button type="button" class="chapter-head-button explorable" data-testid="chapter-head"
-                            aria-label="@($"Explore {_book}.{_chapterNum}")" @onclick="OpenChapter">
+                            aria-label="@($"Explore {_book}.{_chapterNum}")" @onclick="OpenChapter" @onmouseenter="OpenChapter">
                         <span class="chapter-head-book">@BookName</span>
                         <span class="chapter-head-num">@_chapterNum</span>
                     </button>
@@ -202,16 +210,28 @@
                            button already establishes one line up -- keeps
                            this from ALSO triggering the verse-line's own
                            click-opens-a-plain-popover handler. *@
-                        @* GATED: FeatureFlags.XrefSuperscripts (owner
-                           disable order 2026-08-23; M-D3's rework
-                           re-enables -- see FeatureFlags.cs). *@
+                        @* M-D3 (R3): FeatureFlags.XrefSuperscripts flipped
+                           back ON -- the rework itself. Click/focus vs
+                           hover are now two DELIBERATELY DIFFERENT
+                           handlers (OpenVerseXrefEntryPersistent vs
+                           OpenVerseXrefEntryHover), not the same method
+                           bound four ways -- "click AND hover both open
+                           it" stays true, but only a HOVER-only open is
+                           eligible for the auto-dismiss grace period
+                           OnXrefMarkerPointerLeave schedules below (see
+                           that method's own comment, and _hoverOnlyOpen's,
+                           for the full "no auto-modal that must be X'd
+                           out" mechanism -- a click or keyboard focus
+                           marks the SAME popover persistent, exactly like
+                           every other popover in this app, the instant
+                           either fires). *@
                         <span class="verse-text">@v.Text@if (FeatureFlags.XrefSuperscripts && v.XrefCount > 0)
                                                          {
                                                              <sup class="verse-xref-marker" data-testid="@($"verse-xref-marker-{v.Verse}")"
                                                                   tabindex="0" role="button" aria-label="@XrefMarkerAriaLabel(v)"
-                                                                  @onclick="() => OpenVerseXrefEntry(v.Verse)" @onclick:stopPropagation="true"
-                                                                  @onmouseenter="() => OpenVerseXrefEntry(v.Verse)"
-                                                                  @onfocus="() => OpenVerseXrefEntry(v.Verse)"
+                                                                  @onclick="() => OpenVerseXrefEntryPersistent(v.Verse)" @onclick:stopPropagation="true"
+                                                                  @onmouseenter="() => OpenVerseXrefEntryHover(v.Verse)" @onmouseleave="OnXrefMarkerPointerLeave"
+                                                                  @onfocus="() => OpenVerseXrefEntryPersistent(v.Verse)"
                                                                   @onkeydown="@(e => OnXrefMarkerKeyDown(e, v.Verse))" @onkeydown:stopPropagation="true">@XrefMarkerText(v.XrefCount)</sup>
                                                          }</span>
                     </div>
@@ -265,8 +285,18 @@
 
     @if (_activeNode is not null)
     {
+        @* M-D3 (R3): VerseAnchorSelector/OnPanelPointerEnter/OnPanelPointerLeave
+           are ONLY meaningful while _activeNode was reached via a
+           superscript entry point (_xrefEntryVerse is set) -- every other
+           entry point (a plain verse-line click, a chip drill-in, a
+           chapter/event/place push, ...) passes null/unbound, which
+           ExplorerPopover's own parameter doc comments already establish
+           as a correct no-op, keeping this component's pre-existing
+           viewport/pane-centered behavior byte-for-byte unchanged there. *@
         <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover"
-                          InSplit="_splitOpen" OnNavigateWorldInSplit="NavigateWorldInSplit" PaneAnchor="@(_splitOpen ? "reader" : null)" />
+                          InSplit="_splitOpen" OnNavigateWorldInSplit="NavigateWorldInSplit" PaneAnchor="@(_splitOpen ? "reader" : null)"
+                          VerseAnchorSelector="@(_xrefEntryVerse is int xv ? $"#v{xv}" : null)" ShowBackdrop="!_hoverOnlyOpen"
+                          OnPanelPointerEnter="CancelHoverClose" OnPanelPointerLeave="OnPanelPointerLeaveHoverGuard" />
     }
 </div>
 
@@ -520,6 +550,7 @@
 
         _book = book;
         _chapterNum = chapterNum;
+        ResetXrefEntryState();
         _activeNode = null;
         _scrolledFragment = null;
         await LoadChapter();
@@ -623,7 +654,27 @@
         }
     }
 
-    private void OpenVerse(int verseNum) => _activeNode = new VerseNode($"{_book}.{_chapterNum}.{verseNum}");
+    // M-D3 (R3): clears _xrefEntryVerse/_hoverOnlyOpen/any pending hover-
+    // close timer -- an ordinary verse-line open is never verse-anchored or
+    // hover-dismissible (see the <ExplorerPopover> tag's own comment); a
+    // stale value here would otherwise wrongly verse-anchor (or auto-close)
+    // a DIFFERENT, unrelated popover opened right after a superscript one.
+    private void OpenVerse(int verseNum)
+    {
+        ResetXrefEntryState();
+        _activeNode = new VerseNode($"{_book}.{_chapterNum}.{verseNum}");
+    }
+
+    // Shared by every popover-opening method that is NOT a superscript
+    // entry point (OpenVerse/OpenEvent/OpenChapter/OpenPassage/
+    // ClosePopover) -- one place, so a future new entry point can't forget
+    // this the way a hand-copied three-line reset at each call site risks.
+    private void ResetXrefEntryState()
+    {
+        _xrefEntryVerse = null;
+        _hoverOnlyOpen = false;
+        CancelHoverCloseTimer();
+    }
 
     // Batch M-D2 (owner's cross-reference superscript directive): the
     // owner's own literal letters ("i,j,k") -- taken at face value as the
@@ -663,22 +714,164 @@
     // after a click already did -- would otherwise tear down and rebuild
     // the whole popover (losing scroll position, re-fetching) for no actual
     // change; this no-ops instead, same as any other idempotent open.
-    private void OpenVerseXrefEntry(int verseNum)
+    //
+    // M-D3 (R3): also stamps _xrefEntryVerse (the ExplorerPopover's own
+    // VerseAnchorSelector source, see that tag's own comment) -- unlike
+    // XrefEntryPoint (a property ON the pushed VerseNode, so it survives
+    // exactly as long as THAT node is Current, per XrefEntryPoint's own
+    // "the emphasis correctly does not propagate past the one hop that
+    // opened it" rule), _xrefEntryVerse is Reader.razor's OWN field: it
+    // must stay stable for the WHOLE popover session (verse-anchoring a
+    // drill-in two hops deep, e.g. an xref target's own further xref,
+    // would anchor over a DIFFERENT verse than the one still on screen,
+    // which is wrong) -- so only the methods that OPEN a fresh popover
+    // touch it; PushAsync/Back never do.
+    private int? _xrefEntryVerse;
+
+    private void OpenVerseXrefEntry(int verseNum, bool persistent)
     {
         var vref = $"{_book}.{_chapterNum}.{verseNum}";
+        _xrefEntryVerse = verseNum;
         if (_activeNode is VerseNode { XrefEntryPoint: true } current && current.Title == vref)
         {
+            if (persistent)
+            {
+                _hoverOnlyOpen = false;
+                CancelHoverCloseTimer();
+            }
             return;
         }
 
         _activeNode = new VerseNode(vref, xrefEntryPoint: true);
+        _hoverOnlyOpen = !persistent;
+        CancelHoverCloseTimer();
     }
 
+    // A click or keyboard focus -- "click AND hover both open it," but only
+    // THIS path (plus keyboard focus, below) makes the popover PERSISTENT:
+    // same dismiss contract as every other popover in this app (backdrop
+    // click / Escape / the close button), never an implicit mouseleave.
+    private void OpenVerseXrefEntryPersistent(int verseNum) => OpenVerseXrefEntry(verseNum, persistent: true);
+
+    // A genuine mouse hover, and ONLY a hover -- eligible for the auto-
+    // dismiss grace period OnXrefMarkerPointerLeave/CancelHoverClose below
+    // schedule/cancel. See FeatureFlags.XrefSuperscripts's own doc comment
+    // for the owner's exact complaint this exists to fix ("a hover menu
+    // that i have to x out of comes up automatically").
+    private void OpenVerseXrefEntryHover(int verseNum) => OpenVerseXrefEntry(verseNum, persistent: false);
+
+    // M-D3 (R3): "no auto-modal that must be X'd out" -- true for exactly
+    // as long as the CURRENT popover was opened by a mouse hover and has
+    // NOT since been made persistent by a click or keyboard focus
+    // (OpenVerseXrefEntry's own `persistent` branch clears this the instant
+    // either fires, even on an idempotent re-open of the same verse).
+    private bool _hoverOnlyOpen;
+
+    // Debounces the auto-dismiss so moving the pointer FROM the marker
+    // THROUGH the gap INTO the popover panel (ExplorerPopover's own
+    // OnPanelPointerEnter, wired to CancelHoverCloseTimer below) never
+    // closes it mid-transit -- a real, expected mouse path for "now read
+    // the xrefs the hover already opened," not a dismiss signal. A fresh
+    // CancellationTokenSource per scheduled close (never reused) -- the
+    // standard, race-free way to debounce in C# without a stale timer
+    // firing after a newer one has already superseded it.
+    private CancellationTokenSource? _hoverCloseCts;
+
+    private void CancelHoverCloseTimer()
+    {
+        _hoverCloseCts?.Cancel();
+        _hoverCloseCts = null;
+    }
+
+    // Wired to BOTH the marker's own @onmouseleave (below) and
+    // ExplorerPopover's own OnPanelPointerLeave (the <ExplorerPopover> tag
+    // above, via OnPanelPointerLeaveHoverGuard) -- either edge of "the
+    // pointer just left something that was keeping a hover-only popover
+    // open" schedules the SAME short grace-period close, cancelled by
+    // CancelHoverCloseTimer the instant the pointer re-enters EITHER the
+    // marker (OpenVerseXrefEntryHover, called again on re-enter) or the
+    // panel (OnPanelPointerEnter -> CancelHoverClose below).
+    private void OnXrefMarkerPointerLeave() => ScheduleHoverClose();
+
+    // ExplorerPopover.OnPanelPointerLeave's own callback target -- same
+    // schedule, only while THIS popover is still hover-only (a persistent
+    // one, or any non-xref popover, must never be touched by pointer
+    // leave at all -- OnPanelPointerEnter/Leave are wired unconditionally
+    // on every ExplorerPopover instance, per that component's own doc
+    // comment, so the gate belongs here, the one place that knows both
+    // _hoverOnlyOpen and which node kind is actually current).
+    private void OnPanelPointerLeaveHoverGuard() => ScheduleHoverClose();
+
+    // ExplorerPopover.OnPanelPointerEnter's own callback target.
+    private void CancelHoverClose() => CancelHoverCloseTimer();
+
+    private void ScheduleHoverClose()
+    {
+        if (!_hoverOnlyOpen)
+        {
+            return; // persistent (click/focus) or no popover at all -- pointer leave is a no-op
+        }
+
+        CancelHoverCloseTimer();
+        var cts = new CancellationTokenSource();
+        _hoverCloseCts = cts;
+        _ = DelayedHoverClose(cts);
+    }
+
+    // 1000ms: a real, live-caught fix, tuned twice -- an earlier draft used
+    // 250ms, long enough on paper for "a real mouse transit from the marker
+    // into the popover panel," but too tight in practice: the panel's own
+    // open animation (app.css popover-in, 120ms) plus genuine cursor travel
+    // time together routinely ATE the whole window before
+    // OnPanelPointerEnter ever landed, closing the popover mid-transit --
+    // caught not as a test artifact but as a real interaction bug
+    // (reader-xref-superscripts.spec.ts's own pre-existing "expansion
+    // reveals the rest" case, moving the mouse from the marker to the
+    // popover's own "show more" button deeper inside the panel, hit the
+    // race and timed out entirely once the popover vanished out from under
+    // the click). 500ms still wasn't a reliable floor: reaching a control
+    // further inside the panel (not just its own near edge) costs more
+    // transit time, and a loaded test/CI environment's own real wall-clock
+    // overhead for the browser's move+actionability sequence can still
+    // exceed a tight margin even when the APPLICATION logic is correct.
+    // 1000ms still reads as "followed the hover, not stuck open by
+    // accident" for a real user (a mouse trip of a few dozen pixels is
+    // over almost immediately; nothing here is EVER held open for a full
+    // second by ordinary use) while giving real, repeatable margin over
+    // both the animation and slower, multi-step cursor travel. Re-checks
+    // _hoverOnlyOpen after the delay (not just the cancellation token) -- a
+    // click could have landed during the delay window and made the SAME
+    // popover persistent without ever cancelling a leave that was already
+    // in flight from an earlier, unrelated marker.
+    private async Task DelayedHoverClose(CancellationTokenSource cts)
+    {
+        try
+        {
+            await Task.Delay(1000, cts.Token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        if (cts.IsCancellationRequested || !_hoverOnlyOpen || _activeNode is not VerseNode { XrefEntryPoint: true })
+        {
+            return;
+        }
+
+        _activeNode = null;
+        _xrefEntryVerse = null;
+        _hoverOnlyOpen = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // Enter is a deliberate activation, the SAME persistence contract as a
+    // click (OpenVerseXrefEntryPersistent, not the hover variant).
     private void OnXrefMarkerKeyDown(KeyboardEventArgs e, int verseNum)
     {
         if (e.Key == "Enter")
         {
-            OpenVerseXrefEntry(verseNum);
+            OpenVerseXrefEntryPersistent(verseNum);
         }
     }
 
@@ -686,7 +879,12 @@
     // mirrors OpenVerse/OpenChapter's own "construct the node directly,
     // no fetch needed just to open the popover" shape exactly (EventNode's
     // own DetailAsync fetches the rest lazily, once the popover is open).
-    private void OpenEvent(string eventId, string title) => _activeNode = new EventNode(eventId, title);
+    // M-D3 (R3): ResetXrefEntryState -- see OpenVerse's own comment.
+    private void OpenEvent(string eventId, string title)
+    {
+        ResetXrefEntryState();
+        _activeNode = new EventNode(eventId, title);
+    }
 
     private void OnHeadingKeyDown(KeyboardEventArgs e, string eventId, string title)
     {
@@ -697,13 +895,32 @@
     }
 
     // Batch G1 requirement 1: the chapter header's own explore target
-    // (chapter-head-button's @onclick) -- the ChapterNode type already
-    // existed in client/Explore/ (spec node table row "Passage/Chapter/
-    // Book"), unused by any UI surface before this batch.
-    private void OpenChapter() => _activeNode = new ChapterNode(_book, _chapterNum);
+    // (chapter-head-button's @onclick/@onmouseenter -- M-D3 U4/B3 added the
+    // hover trigger, matching R3's own click-AND-hover precedent; see this
+    // method's own call sites). ChapterNode's own content is the M-D3
+    // metadata-and-context card now, never the chapter's own text -- see
+    // that class's own doc comment. TotalChapters (for "Chapter N of M")
+    // and AlreadyLoaded (this page's own already-fetched _chapter, so
+    // opening the heading of the chapter you're CURRENTLY reading costs no
+    // extra round trip) both come straight off this page's own state.
+    // M-D3 (R3): ResetXrefEntryState, same reasoning as OpenVerse/OpenEvent
+    // above.
+    private void OpenChapter()
+    {
+        var title = $"{_book}.{_chapterNum}";
+        if (_activeNode is ChapterNode current && current.Title == title)
+        {
+            return; // already open on this exact chapter -- no-op, matches OpenVerseXrefEntry's own guard
+        }
+
+        ResetXrefEntryState();
+        var totalChapters = _toc?.FirstOrDefault(b => b.Code == _book)?.Chapters.Count;
+        _activeNode = new ChapterNode(_book, _chapterNum, totalChapters) { AlreadyLoaded = _chapter };
+    }
 
     private Task ClosePopover()
     {
+        ResetXrefEntryState();
         _activeNode = null;
         return Task.CompletedTask;
     }
@@ -807,6 +1024,7 @@
         if (e.ShiftKey && _anchorVerse is int anchor && anchor != verseNum)
         {
             _passageRange = (Math.Min(anchor, verseNum), Math.Max(anchor, verseNum));
+            ResetXrefEntryState();
             _activeNode = null; // suppress the popover -- the chip is the result of a shift-click, not a new popover
             return;
         }
@@ -860,6 +1078,7 @@
             return;
         }
 
+        ResetXrefEntryState();
         var text = string.Join(" ", chapter.Verses
             .Where(v => v.Verse >= range.From && v.Verse <= range.To)
             .Select(v => v.Text));
@@ -940,6 +1159,12 @@
 
     public async ValueTask DisposeAsync()
     {
+        // M-D3 (R3): cancels any in-flight hover-close delay -- without
+        // this, DelayedHoverClose's own await could resolve AFTER this
+        // component is disposed (a real navigation-away-while-hovering
+        // case) and call StateHasChanged on a torn-down component.
+        CancelHoverCloseTimer();
+
         if (_readerJs is not null)
         {
             try

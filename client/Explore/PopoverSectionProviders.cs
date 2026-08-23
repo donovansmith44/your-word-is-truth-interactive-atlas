@@ -4,6 +4,144 @@ using Microsoft.AspNetCore.Components.Rendering;
 namespace BibleAtlas.Client.Explore;
 
 /// <summary>
+/// M-D3 (owner rulings U4/B3): the chapter's own metadata-and-context card
+/// -- "when you're reading a chapter, you're in its focus. you can focus
+/// further by clicking chapter heading and you get metadata and context...
+/// container title, position in book, edge summary -- what the graph knows
+/// ABOUT the chapter" -- NEVER the chapter's own verse text (B3, the
+/// standing "first verse" bug; see <see cref="ChapterNode"/>'s own doc
+/// comment for the fuller history). Every fact below is read straight off
+/// the SAME <c>ChapterOut</c> the reading view itself already fetched
+/// (<see cref="ChapterNode.AlreadyLoaded"/>, reused via
+/// <see cref="ChapterNode.Load"/> -- zero new network cost for the common
+/// "open the heading of the chapter you're currently reading" case).
+/// Headings/places are deduplicated (a multi-witness container, or M-D1's
+/// own chapter-boundary continuation, can anchor more than one verse in
+/// this same chapter) and individually explorable via the SAME
+/// <see cref="IPopoverSectionContext.PushAsync"/> every other section-native
+/// row in this file already uses -- "outward connections," not a dead-end
+/// summary. Cross-references are a plain, non-explorable total (summing
+/// each verse's own already-on-the-wire XrefCount, never a fetch of its
+/// own) -- there is no single node a chapter-wide xref COUNT could push to.
+/// </summary>
+public sealed class ChapterCardSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Chapter";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not ChapterNode chapterNode)
+        {
+            return null;
+        }
+
+        ChapterOut chapter;
+        try
+        {
+            chapter = await chapterNode.Load(api);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        var headings = chapter.Verses
+            .Where(v => v.Heading is not null)
+            .Select(v => v.Heading!)
+            .GroupBy(h => h.EventId)
+            .Select(g => g.First())
+            .ToList();
+        var places = chapter.Verses
+            .SelectMany(v => v.Places)
+            .GroupBy(p => p.Id)
+            .Select(g => g.First())
+            .ToList();
+        var xrefTotal = chapter.Verses.Sum(v => v.XrefCount);
+        var verseCount = chapter.Verses.Count;
+        var positionText = chapterNode.TotalChapters is int total ? $"Chapter {chapterNode.Chapter} of {total}" : $"Chapter {chapterNode.Chapter}";
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "popover-meta");
+            builder.AddAttribute(seq++, "data-testid", "chapter-card-position");
+            builder.AddContent(seq++, positionText);
+            builder.CloseElement();
+
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "popover-meta");
+            builder.AddAttribute(seq++, "data-testid", "chapter-card-verse-count");
+            builder.AddContent(seq++, $"{verseCount} verse{(verseCount == 1 ? "" : "s")}.");
+            builder.CloseElement();
+
+            if (headings.Count > 0)
+            {
+                builder.OpenElement(seq++, "p");
+                builder.AddAttribute(seq++, "class", "catechism-section-heading");
+                builder.AddAttribute(seq++, "data-testid", "chapter-card-headings-heading");
+                builder.AddContent(seq++, "CONTAINERS IN THIS CHAPTER");
+                builder.CloseElement();
+
+                builder.OpenElement(seq++, "div");
+                builder.AddAttribute(seq++, "class", "popover-chapter-card-list");
+                builder.AddAttribute(seq++, "data-testid", "chapter-card-headings");
+                foreach (var h in headings)
+                {
+                    var eventId = h.EventId; // local copies -- captured per-row by the onclick closure below
+                    var title = h.Title;
+                    builder.OpenElement(seq++, "button");
+                    builder.AddAttribute(seq++, "type", "button");
+                    builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
+                    builder.AddAttribute(seq++, "data-testid", $"chapter-card-heading-{eventId}");
+                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(eventId, title))));
+                    builder.AddContent(seq++, title);
+                    builder.CloseElement();
+                }
+                builder.CloseElement();
+            }
+
+            if (places.Count > 0)
+            {
+                builder.OpenElement(seq++, "p");
+                builder.AddAttribute(seq++, "class", "catechism-section-heading");
+                builder.AddAttribute(seq++, "data-testid", "chapter-card-places-heading");
+                builder.AddContent(seq++, "PLACES MENTIONED");
+                builder.CloseElement();
+
+                builder.OpenElement(seq++, "div");
+                builder.AddAttribute(seq++, "class", "popover-chapter-card-list");
+                builder.AddAttribute(seq++, "data-testid", "chapter-card-places");
+                foreach (var p in places)
+                {
+                    var placeId = p.Id; // local copies -- captured per-row by the onclick closure below
+                    var placeName = p.Name;
+                    builder.OpenElement(seq++, "button");
+                    builder.AddAttribute(seq++, "type", "button");
+                    builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
+                    builder.AddAttribute(seq++, "data-testid", $"chapter-card-place-{placeId}");
+                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PlaceNode(placeId, placeName))));
+                    builder.AddContent(seq++, placeName);
+                    builder.CloseElement();
+                }
+                builder.CloseElement();
+            }
+
+            if (xrefTotal > 0)
+            {
+                builder.OpenElement(seq++, "p");
+                builder.AddAttribute(seq++, "class", "popover-meta");
+                builder.AddAttribute(seq++, "data-testid", "chapter-card-xref-total");
+                builder.AddContent(seq++, $"{xrefTotal} cross-reference{(xrefTotal == 1 ? "" : "s")} in this chapter.");
+                builder.CloseElement();
+            }
+        };
+        return new PopoverSection("chapter-card", body);
+    }
+}
+
+/// <summary>
 /// Batch R requirement 3(a)/4: the verse/passage's OWN text, with the
 /// expand-into-a-scrollable-mini-reader affordance requirement 4 asks for.
 /// Applies to Verse and Passage nodes; resolves the (book, chapter, focal

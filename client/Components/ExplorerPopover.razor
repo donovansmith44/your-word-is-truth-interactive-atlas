@@ -63,11 +63,49 @@
 @inject IJSRuntime JS
 @implements IPopoverSectionContext
 
-<div class="popover-backdrop @(_paneRect is not null ? "popover-pane-anchored" : null)"
-     style="@PaneRectStyle" data-testid="popover-backdrop" @onclick="RequestClose"></div>
+@* M-D3 (R3): ShowBackdrop=false (Reader.razor passes this while the
+   current popover is hover-only -- see that parameter's own doc comment)
+   OMITS the backdrop ENTIRELY, not just makes it invisible/inert. This is
+   the real fix for a genuine, live-caught bug: the backdrop is a
+   full-viewport `position:fixed` element that appears SYNCHRONOUSLY as
+   part of opening the popover, so by the time a real "click" gesture's own
+   mousedown/mouseup/click/focus events fire (all AFTER the mouseenter that
+   opened it), the backdrop is already covering the marker and swallows
+   them -- `.reader-page`'s own `contain:layout` traps the marker's
+   stacking context below the backdrop's, so no z-index fix on the marker
+   alone can win that fight. Without a backdrop at all, a hover-only
+   popover's own marker stays fully interactive for exactly as long as it
+   remains hover-only -- a genuine click/focus reaches it cleanly, flips
+   _hoverOnlyOpen false (Reader.razor), and the NEXT render correctly grows
+   a backdrop for the now-persistent popover, same as clicking any other
+   explorable element in this app. Also a happy side effect, not just a
+   workaround: a mere hover no longer dims the whole screen at all -- "no
+   auto-modal," even more literally than dismiss-timing alone would give. *@
+@if (ShowBackdrop)
+{
+    <div class="popover-backdrop @(_paneRect is not null ? "popover-pane-anchored" : null)"
+         style="@PaneRectStyle" data-testid="popover-backdrop" @onclick="RequestClose"></div>
+}
 
-<div class="popover @(_paneRect is not null ? "popover-pane-anchored" : null)"
-     style="@PaneRectStyle" data-testid="popover" tabindex="-1" @ref="_panelRef" @onkeydown="OnKeyDown">
+@* M-D3 (R3): verse- and pane-anchoring compose on the BACKDROP (both
+   classes may apply there -- a superscript hover-opened WHILE a split is
+   showing still gets a pane-scoped dimmed backdrop, see the backdrop's own
+   markup above) but are MUTUALLY EXCLUSIVE on the PANEL itself -- a real,
+   live-caught bug in an earlier draft: `.popover-pane-anchored`'s own
+   `width`/`max-height` rule and `.popover-verse-anchored`'s own `top`/
+   `left`/`max-height` rule, both at equal specificity, would otherwise
+   BOTH apply to the same element (CSS applies every declaration from every
+   matching rule; only same-PROPERTY collisions are decided by source
+   order) -- `left`/`top` correctly came from verse-anchoring (declared
+   later in app.css), but `width` has no verse-anchoring declaration to
+   override it, so the panel silently rendered at the PANE's own width
+   while positioned by VerseAnchorStyle's math (which assumes the base
+   rule's ordinary width) -- confirmed live: a verse near a narrow split
+   pane's own edge rendered with its LEFT edge off-screen. Verse-anchoring
+   wins outright when present (VerseAnchorStyle is checked first below). *@
+<div class="popover @(_verseAnchorRect is not null ? "popover-verse-anchored" : _paneRect is not null ? "popover-pane-anchored" : null)"
+     style="@(VerseAnchorStyle ?? PaneRectStyle)" data-testid="popover" tabindex="-1" @ref="_panelRef" @onkeydown="OnKeyDown"
+     @onpointerenter="OnPanelPointerEnter" @onpointerleave="OnPanelPointerLeave">
     <div class="popover-head">
         @if (_stack.Count > 1)
         {
@@ -75,6 +113,26 @@
                     aria-label="Back" @onclick="Back">&lsaquo;</button>
         }
         <p class="popover-title" data-testid="popover-title" data-ref="@(IsRefKind(Current.Kind) ? "true" : "false")">@Current.Title</p>
+        @* M-D3 (U3', owner: "the buttons... should be right next to the
+           header... make sure it's ergonomic and fits well"): MOVED here
+           from a separate .popover-chips row beneath the whole body (see
+           this file's own git history for the prior markup) -- same
+           _explorations/Activate wiring, unchanged CONTRACT testids
+           (ex.ChipTestId), just relocated and rendered icon-scale
+           (ChipGlyph below) instead of a full-text pill. The accessible
+           name is still ex.Label verbatim, via aria-label + a native
+           title tooltip -- an icon-only control needs both, not just the
+           glyph. *@
+        @if (_explorations.Count > 0)
+        {
+            <div class="popover-head-actions" data-testid="popover-head-actions">
+                @foreach (var ex in _explorations)
+                {
+                    <button type="button" class="popover-head-action" data-testid="@ex.ChipTestId"
+                            aria-label="@ex.Label" title="@ex.Label" @onclick="() => Activate(ex)">@ChipGlyph(ex.ChipTestId)</button>
+                }
+            </div>
+        }
         <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" @onclick="RequestClose">&times;</button>
     </div>
 
@@ -111,16 +169,6 @@
         }
     </div>
 
-    @if (_explorations.Count > 0)
-    {
-        <div class="popover-chips">
-            @foreach (var ex in _explorations)
-            {
-                <button type="button" class="popover-chip" data-testid="@ex.ChipTestId" @onclick="() => Activate(ex)">@ex.Label</button>
-            }
-        </div>
-    }
-
     @if (_miniMapSref is { } miniMapSref)
     {
         <MiniWorld @key="miniMapSref" SRef="@miniMapSref" />
@@ -149,6 +197,39 @@
     // -- see PaneSelector.
     [Parameter] public string? PaneAnchor { get; set; }
 
+    // M-D3 (R3, the superscript rework): a CSS selector naming the specific
+    // verse-line element this popover should anchor OVER (Reader.razor
+    // passes "#v{n}" when opened via a superscript entry point; null for
+    // every other entry point -- click on the verse LINE, a chip drill-in,
+    // etc. -- which keep the pre-existing viewport/pane-centered behavior
+    // unchanged). Measured the SAME one-shot-on-first-render way PaneAnchor
+    // already is (see OnAfterRenderAsync below) -- never re-measured on
+    // scroll/resize, matching PlaceCard/CardPlacement's own proven
+    // "snapshot at open" discipline this file's own header already cites.
+    [Parameter] public string? VerseAnchorSelector { get; set; }
+
+    // M-D3 (R3): true (the default) for every popover except a HOVER-only
+    // superscript one -- see the backdrop markup's own doc comment above
+    // for the real bug this fixes (a click/focus that should PERSIST the
+    // popover instead gets swallowed by the backdrop's own synchronous
+    // appearance). Read on every render (not measured once) -- Reader.razor
+    // binds it straight to its own `!_hoverOnlyOpen` field, so the backdrop
+    // grows in on the SAME render that a click flips that field, no
+    // separate signal needed.
+    [Parameter] public bool ShowBackdrop { get; set; } = true;
+
+    // M-D3 (R3): "no auto-modal that must be X'd out" -- the owner's own
+    // complaint was specific to the HOVER path (a popover that appeared
+    // without a click still demanded an explicit click to dismiss). Wired
+    // by Reader.razor (the only caller that knows whether THIS open was a
+    // genuine hover or a click/keyboard-focus -- see that file's own
+    // OnXrefMarker*/CancelHoverClose comments) to cancel/reschedule its own
+    // debounced auto-close as the pointer moves between the marker and this
+    // panel. Harmless no-ops when unbound (every other entry point, and a
+    // superscript popover that has since been made persistent by a click).
+    [Parameter] public EventCallback OnPanelPointerEnter { get; set; }
+    [Parameter] public EventCallback OnPanelPointerLeave { get; set; }
+
     private readonly Stack<IExplorable> _stack = new();
     private IExplorable Current => _stack.Peek();
 
@@ -175,6 +256,16 @@
     // discipline PlaceCard/CardPlacement already established).
     private PaneRectDto? _paneRect;
     private bool _paneMeasured;
+
+    // M-D3 (R3): the verse-anchor's own measured rect (reader.js's
+    // getVerseAnchorRect), same one-shot-on-first-render discipline as
+    // _paneRect/_paneMeasured immediately above -- null whenever
+    // VerseAnchorSelector is null (every non-superscript entry point) or
+    // the measurement hasn't landed yet (graceful degrade to the ordinary
+    // viewport/pane-centered default for that one instant, same as
+    // _paneRect's own comment already establishes).
+    private VerseAnchorRectDto? _verseAnchorRect;
+    private bool _verseAnchorMeasured;
 
     // Real, live-caught bug (fixed before this ever shipped, not guessed):
     // Reader.razor's own split-pane root always carries data-testid
@@ -205,6 +296,61 @@
           $"--pane-width:{r.Width.ToString(CultureInfo.InvariantCulture)}px;" +
           $"--pane-height:{r.Height.ToString(CultureInfo.InvariantCulture)}px;"
         : null;
+
+    // M-D3 (R3): "anchors OVER THE VERSE... ALWAYS VISIBLE, never cut off."
+    // Horizontally: centered on the verse's own midpoint (translateX(-50%)
+    // in CSS), clamped so the popover's OWN ordinary width (base .popover
+    // rule: min(34rem, 100vw-3rem) -- mirrored here as a fixed px estimate
+    // purely for this clamp's own arithmetic, never overriding that CSS
+    // value itself) can never spill past either viewport edge. Vertically:
+    // "grow away from the nearer edge" (this property's own doc comment on
+    // .popover-verse-anchored in app.css has the full reasoning) -- a verse
+    // in the top half sets --verse-anchor-top (grows down); bottom half
+    // sets --verse-anchor-bottom (grows up) -- with --verse-anchor-max-height
+    // computed to fit exactly the space available on whichever side was
+    // picked, so real overflow degrades to the base rule's own
+    // overflow-y:auto scroll, never an off-screen spill.
+    private const double VerseAnchorGapPx = 10;
+    private const double VerseAnchorMarginPx = 16;
+    private const double VerseAnchorEstimatedWidthPx = 544; // 34rem @ 16px root -- the base .popover rule's own min(34rem, ...) width, mirrored for horizontal clamp math only
+
+    private string? VerseAnchorStyle
+    {
+        get
+        {
+            if (_verseAnchorRect is not { } r)
+            {
+                return null;
+            }
+
+            var halfWidth = Math.Min(VerseAnchorEstimatedWidthPx, r.ViewportWidth - 2 * VerseAnchorMarginPx) / 2;
+            var centerX = Math.Clamp(r.Left + r.Width / 2, VerseAnchorMarginPx + halfWidth, r.ViewportWidth - VerseAnchorMarginPx - halfWidth);
+
+            var verseMidY = r.Top + r.Height / 2;
+            var openBelow = verseMidY < r.ViewportHeight / 2;
+
+            string verticalProp;
+            double verticalPx;
+            double maxHeightPx;
+            if (openBelow)
+            {
+                verticalProp = "--verse-anchor-top";
+                verticalPx = Math.Max(r.Top + r.Height + VerseAnchorGapPx, VerseAnchorMarginPx);
+                maxHeightPx = Math.Max(r.ViewportHeight - verticalPx - VerseAnchorMarginPx, 0);
+            }
+            else
+            {
+                verticalProp = "--verse-anchor-bottom";
+                verticalPx = Math.Max(r.ViewportHeight - r.Top + VerseAnchorGapPx, VerseAnchorMarginPx);
+                maxHeightPx = Math.Max(r.ViewportHeight - verticalPx - VerseAnchorMarginPx, 0);
+            }
+
+            return $"{verticalProp}:{verticalPx.ToString(CultureInfo.InvariantCulture)}px;" +
+                   $"--verse-anchor-left:{centerX.ToString(CultureInfo.InvariantCulture)}px;" +
+                   $"--verse-anchor-max-height:{maxHeightPx.ToString(CultureInfo.InvariantCulture)}px;";
+        }
+    }
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -237,6 +383,30 @@
                 // degradation stance CardPlacement's own measurement takes: a
                 // failed measurement just leaves the popover at its default,
                 // full-viewport-centered placement.
+            }
+        }
+
+        // M-D3 (R3): the SAME one-shot-on-first-render discipline as
+        // _paneMeasured immediately above, independently gated (both can
+        // run on the same instance -- see this file's own header comment on
+        // why verse- and pane-anchoring compose).
+        if (!_verseAnchorMeasured && VerseAnchorSelector is not null)
+        {
+            _verseAnchorMeasured = true;
+            try
+            {
+                var readerJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
+                _verseAnchorRect = await readerJs.InvokeAsync<VerseAnchorRectDto?>("getVerseAnchorRect", VerseAnchorSelector);
+                if (_verseAnchorRect is not null)
+                {
+                    StateHasChanged();
+                }
+            }
+            catch (Exception)
+            {
+                // Same graceful-degradation stance as _paneRect's own catch
+                // immediately above -- a failed measurement leaves the
+                // popover at its ordinary viewport-centered default.
             }
         }
 
@@ -544,9 +714,36 @@
     // as ordinary prose headings instead.
     private static bool IsRefKind(string kind) => kind is "Verse" or "Passage" or "Chapter" or "Book";
 
+    // M-D3 (U3'): the icon-scale glyph for a head action, keyed by its own
+    // CONTRACT testid -- exactly the THREE distinct ids every IExplorable's
+    // own ExploreAsync actually emits today (grep-confirmed across every
+    // Explore/*.cs node type): popover-chip-map ("Show on /world"/"Explore
+    // geo-temporally"), popover-chip-book ("About this book"),
+    // popover-chip-context ("Read in context"). Chosen from this file's own
+    // established "quiet Unicode instrument glyph, never an emoji" register
+    // (breadcrumb-back's ‹, close's ×, PassageList's ▾/▲) -- a small dot-
+    // in-crosshairs for a map/location action, a fleuron for "about the
+    // book" (a printer's ornament, at home beside this app's own serif/
+    // small-caps chrome), a pilcrow for "read the surrounding text." The
+    // glyph is decorative ONLY -- aria-label/title (the markup above) carry
+    // the real accessible name; an unrecognized id (defensive -- nothing
+    // constructs one today) falls back to a plain bullet rather than
+    // rendering empty.
+    private static string ChipGlyph(string chipTestId) => chipTestId switch
+    {
+        "popover-chip-map" => "⌖",
+        "popover-chip-book" => "❧",
+        "popover-chip-context" => "¶",
+        _ => "•",
+    };
+
     // Batch F2 requirement 6d: reader.js's own getPaneRect return shape --
     // deserialized via Blazor's DEFAULT (camelCase) JS-interop JSON options,
     // not Wire.Options (this never crosses the real HTTP API either, same
     // reasoning as MapInterop.cs's own CardMeasurementDto).
     private sealed record PaneRectDto(double Left, double Top, double Width, double Height);
+
+    // M-D3 (R3): reader.js's own getVerseAnchorRect return shape -- same
+    // deserialization reasoning as PaneRectDto immediately above.
+    private sealed record VerseAnchorRectDto(double Left, double Top, double Width, double Height, double ViewportWidth, double ViewportHeight);
 }

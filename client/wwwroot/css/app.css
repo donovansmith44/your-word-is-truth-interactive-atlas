@@ -3232,10 +3232,113 @@ input:focus-visible,
     }
 }
 
+/* M-D3 (R3, the superscript rework): "the popover anchors OVER THE VERSE
+   (not pane-centered), ALWAYS VISIBLE, never cut off by other UI." Applies
+   to the PANEL ONLY (never .popover-backdrop -- there is no "originating
+   pane" sub-region to scope dimming to here the way .popover-pane-anchored
+   scopes it in split view; a verse-anchored popover's own backdrop stays
+   whichever rule already applies -- full-viewport standalone, or STILL
+   pane-scoped in split view via the pre-existing .popover-pane-anchored
+   class, which composes independently since it targets the backdrop and
+   this targets the panel). Horizontally centered on the verse
+   (translateX(-50%) against --verse-anchor-left, the verse's own horizontal
+   midpoint -- ExplorerPopover.razor's own clamping keeps that midpoint far
+   enough from both edges that the popover's own ordinary width, set below,
+   unchanged from the base rule, never overflows). Vertically, EXACTLY ONE
+   of --verse-anchor-top/--verse-anchor-bottom is ever set (the other stays
+   `auto` via its own fallback) -- "grow away from the nearer edge": a verse
+   in the top half of the viewport gets `top` (grows downward, opening below
+   the verse); a verse in the bottom half gets `bottom` (grows upward,
+   opening above it) -- so the popover is never anchored from the edge it's
+   already closest to, which is what "never cut off" actually requires
+   (anchoring from the far edge with an ordinary max-height could still
+   overflow the near one). --verse-anchor-max-height is computed to fit
+   EXACTLY the remaining space on whichever side was chosen, so the
+   pre-existing overflow-y:auto (base .popover rule) is what "always
+   visible" degrades to when real content genuinely exceeds that space,
+   never an off-screen spill. */
+.popover.popover-verse-anchored {
+    top: var(--verse-anchor-top, auto);
+    bottom: var(--verse-anchor-bottom, auto);
+    left: var(--verse-anchor-left);
+    transform: translateX(-50%);
+    max-height: var(--verse-anchor-max-height);
+    /* animation-name ONLY (a longhand override of .popover's own shorthand
+       above) -- duration/timing-function/fill-mode stay inherited from that
+       rule unchanged; only the KEYFRAMES differ, because the base
+       popover-in keyframes animate transform: translate(-50%,-50%), which
+       would fight this rule's own translateX(-50%) for the animation's
+       120ms duration (a real, visible glitch: full 2D centering during the
+       animation, then a snap to the correct edge-anchored position the
+       instant it ends) -- see popover-in-verse-anchored below, identical in
+       every way except the transform axis. */
+    animation-name: popover-in-verse-anchored;
+}
+
+@keyframes popover-in-verse-anchored {
+    from { opacity: 0; transform: translateX(-50%) scale(.97); }
+    to { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .popover.popover-verse-anchored {
+        animation: none;
+    }
+}
+
 .popover-head {
     display: flex;
     align-items: center;
     gap: .6rem;
+}
+
+/* M-D3 (U3', owner: "the buttons (explore geo temporally, etc.) should be
+   right next to the header (<Chp.Verse>) thing. make sure it's ergonomic
+   and fits well"): the action row that used to be .popover-chips, rendered
+   BELOW the whole body -- now inline in the head, between the title and
+   the close button. flex-shrink:0 -- these buttons keep their own natural
+   icon size unconditionally; .popover-title (below) is what yields space
+   at the narrow end instead, via min-width:0 + ellipsis, so the row never
+   wraps onto a second line ("must not wrap awkwardly at popover
+   min-width"). flex-wrap would be the OTHER way to avoid wrapping-looking-
+   broken, but a wrapped icon row beneath a truncated title reads as more
+   broken, not less -- ellipsis is the one degradation this app already
+   uses for exactly this kind of narrow-width overflow (e.g.
+   .reader-nav-label's own overflow-wrap). */
+.popover-head-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: .3rem;
+}
+
+/* Icon-scale: same footprint as .popover-breadcrumb-back immediately above
+   (a deliberate match -- both are small, bordered, single-glyph controls
+   sitting in the same flex row), not .popover-chip's own larger, labelled-
+   pill shape (retired below; the CONTRACT testids -- popover-chip-map/
+   -book/-context -- are UNCHANGED, only their container/visual form
+   moved). The glyph itself is a decorative Unicode character; the REAL
+   accessible name is the aria-label ExplorerPopover.razor already sets
+   from Exploration.Label verbatim (unchanged), plus a native `title`
+   tooltip for a sighted mouse user who doesn't recognize the glyph on
+   sight -- an icon that only works for users who already know what it
+   means is not actually ergonomic. */
+.popover-head-action {
+    flex: none;
+    width: 1.9rem;
+    height: 1.9rem;
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    line-height: 1;
+    color: var(--bronze-ink);
+    background: none;
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.popover-head-action:hover {
+    color: var(--lapis);
+    border-color: var(--lapis);
 }
 
 .popover-breadcrumb-back {
@@ -3265,6 +3368,21 @@ input:focus-visible,
    attribute from the current node's Kind). */
 .popover-title {
     flex: 1 1 auto;
+    /* M-D3 (U3'): min-width:0 is the well-known flexbox trick that lets a
+       flex item shrink BELOW its own content's natural width -- without it,
+       a flex item's default min-width is `auto` (its content size), so this
+       title could never actually shrink to make room for the new inline
+       action icons beside it, and the WHOLE .popover-head row would wrap
+       instead ("must not wrap awkwardly at popover min-width," the owner's
+       own words). overflow/text-overflow/white-space together turn that
+       shrinkage into a graceful single-line ellipsis rather than a clipped,
+       unreadable ref -- real canonical refs are short enough that this is
+       rarely visible in practice, but a long Passage span on the narrowest
+       supported popover width is exactly the case this guards. */
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     margin: 0;
     font-family: var(--font-mono);
     font-size: 1.15rem;
@@ -3333,28 +3451,11 @@ input:focus-visible,
     color: var(--ink-soft);
 }
 
-.popover-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .5rem;
-}
-
-.popover-chip {
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: .05em;
-    font-size: .82rem;
-    color: var(--ink);
-    background: rgba(138, 107, 61, .1);
-    border: 1px solid var(--bronze);
-    border-radius: 4px;
-    padding: .35rem .65rem;
-    cursor: pointer;
-}
-
-.popover-chip:hover {
-    background: rgba(138, 107, 61, .2);
-}
+/* M-D3 (U3'): .popover-chips/.popover-chip retired -- the exploration row
+   they styled now renders inline in .popover-head as .popover-head-actions/
+   .popover-head-action (near .popover-head's own rules, above); recoverable
+   from git history if ever needed again (the P7 way, same reversibility
+   discipline this workspace's own server-side deletions already follow). */
 
 /* Batch F2, 6-ARCH: the ONE shared passage-list visual language --
    PassageList.razor/PassageEntry rows -- used by cross-references (req 6),

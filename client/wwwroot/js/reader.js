@@ -286,3 +286,37 @@ export function getPaneRect(selector) {
     const bottom = Math.min(r.bottom, window.innerHeight);
     return { left, top, width: Math.max(right - left, 0), height: Math.max(bottom - top, 0) };
 }
+
+// M-D3 (R3, the superscript rework): "the popover anchors OVER THE VERSE
+// (not pane-centered), ALWAYS VISIBLE, never cut off by other UI." Unlike
+// getPaneRect above (which only ever needs the target's own clamped rect --
+// the popover that reads it centers ON that rect and is deliberately
+// BOUNDED to it), a verse-anchored popover keeps its own ORDINARY preferred
+// size (same as the default, viewport-centered case) and must still never
+// spill off-screen regardless of where in the chapter the anchor verse
+// sits -- top-of-chapter, bottom-of-chapter, or (split view) hugging either
+// pane's own edge. That needs the viewport's own dimensions alongside the
+// verse's rect, which getPaneRect's own return shape doesn't carry (its
+// only consumer, PaneRectStyle, computes purely from the rect + a fixed
+// margin already known in CSS) -- returned here instead of added there so
+// getPaneRect's own existing contract/callers stay untouched.
+//
+// left/top are UNCLAMPED viewport-relative coordinates (getBoundingClientRect
+// itself, not getPaneRect's own "visible slice" clamp -- a verse can
+// legitimately sit just above/below the visible area for a frame during
+// scroll-into-view, and ExplorerPopover.razor's own clamping arithmetic
+// below needs the TRUE position to grow the popover away from the correct
+// edge, not a pre-clamped one that could already read as "at the edge"
+// when it truly isn't yet).
+export function getVerseAnchorRect(selector) {
+    const el = document.querySelector(selector);
+    if (!el) {
+        return null;
+    }
+
+    const r = el.getBoundingClientRect();
+    return {
+        left: r.left, top: r.top, width: r.width, height: r.height,
+        viewportWidth: window.innerWidth, viewportHeight: window.innerHeight,
+    };
+}

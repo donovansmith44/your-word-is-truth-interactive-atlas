@@ -432,8 +432,12 @@ test('CATECH-1: verse -> catechism item -> proof verse hop, with Luther\'s own v
   await expect(proofVerse).toContainText('MAT.28.19');
   await expect(proofVerse).toContainText('baptizing them in the name of the Father');
 
-  // A CatechismNode offers no chips at all (no geography).
-  await expect(page.locator('.popover-chips')).toHaveCount(0);
+  // A CatechismNode offers no chips at all (no geography). M-D3 (U3'):
+  // the chip row moved from .popover-chips (below the body) into
+  // .popover-head-actions (inline beside the title) -- same "zero
+  // explorations, no container renders at all" conditional presence,
+  // new class name.
+  await expect(page.locator('.popover-head-actions')).toHaveCount(0);
 
   // The hop: clicking the proof verse pushes an ordinary VerseNode for the
   // SAME verse the item was originally reached from -- onward navigation

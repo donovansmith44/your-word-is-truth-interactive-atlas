@@ -164,6 +164,14 @@ public static class PopoverSectionRegistry
 {
     public static readonly IReadOnlyList<IPopoverSectionProvider> Providers = new IPopoverSectionProvider[]
     {
+        // M-D3 (U4/B3): CHAPTER's own metadata-and-context card -- a
+        // brand-new node kind (Kind == "Chapter"), so its registration
+        // position doesn't interleave with any VERSE/PASSAGE/PLACE/EVENT/
+        // CATECHISM/PolityDelta/Person provider's own AppliesTo above or
+        // below it; listed first only because it is the FIRST node kind
+        // alphabetically among this file's own section headers, not because
+        // order matters here.
+        new ChapterCardSection(),
         new VerseTextSectionProvider(),
         new CrossRefsSection(),
         new CatechismSeamSection(),

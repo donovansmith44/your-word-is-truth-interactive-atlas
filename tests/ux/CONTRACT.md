@@ -143,7 +143,13 @@ Picker (ScripturePicker, shared by world and reader):
   `picker-apply` (button; composes the canonical ref)
 Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   book-name/chapter-numeral spans; opens the ExplorerPopover with a
-  ChapterNode), `verse-line-{n}` (batch-g1-brief.md; THE explorable element
+  ChapterNode -- M-D3/U4/B3: that popover's own content is now the
+  chapter's metadata-and-context card, `ChapterCardSection` -- see
+  B3-CARD below and the `chapter-card-*` testids further down -- NEVER
+  the chapter's own verse text, hover OR click both open it (`@onmouseenter`
+  added alongside the existing `@onclick`, matching every other superscript/
+  heading entry point's own "hover and click are the same open" rule)),
+  `verse-line-{n}` (batch-g1-brief.md; THE explorable element
   for that verse -- see ONE-RULE below; the retired `verse-explore-{n}` ∴
   button's replacement, not an addition alongside it), `verse-num-{n}`,
   `reader-prev`, `reader-next` (batch-r-brief.md requirement 6, "always
@@ -383,7 +389,31 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `popover-verse-expand{-ENTRY-ID}`/etc. testids apply identically; absent
   entirely for a delta with zero curated verses, or for the minimal-
   popover case -- see DELTA-1),
-  `mini-map`, `mini-map-open-world`
+  `mini-map`, `mini-map-open-world`,
+  `popover-head-actions` (M-D3/U3'; wraps the chip row -- see the REGISTRY-1
+  note's own chip-relocation paragraph above; present exactly when
+  `popover-chip-*` would be, i.e. whenever the current node offers at
+  least one chip), `popover-head-action` (the per-chip button class inside
+  it; the SAME `popover-chip-{map,book,context,verse-{VREF}}` testid
+  lives on this same element, unchanged),
+  `chapter-card-position` (M-D3/U4/B3; a CHAPTER node's own "Chapter N of
+  M" line, `M` present only when the book's own TOC total chapter count
+  is known -- see B3-CARD below), `chapter-card-verse-count` (plain
+  "N verses." line), `chapter-card-headings-heading` (small-caps eyebrow,
+  "CONTAINERS IN THIS CHAPTER", present only when >=1 heading anchors in
+  this chapter), `chapter-card-headings` (wraps one `chapter-card-heading-
+  {eventId}` button per DISTINCT heading container anchored in this
+  chapter -- a multi-witness container anchoring more than one verse here
+  still contributes exactly one row, deduplicated by `EventId`; opens a
+  fresh `EventNode`), `chapter-card-places-heading` (small-caps eyebrow,
+  "PLACES MENTIONED", present only when >=1 place is mentioned somewhere
+  in this chapter), `chapter-card-places` (wraps one `chapter-card-place-
+  {placeId}` button per distinct place mentioned in this chapter,
+  deduplicated by place id; opens a fresh `PlaceNode`),
+  `chapter-card-xref-total` (plain "N cross-references in this chapter."
+  line, present only when the chapter's own verses carry at least one
+  cross-reference between them -- a non-explorable aggregate total, not a
+  list; there is no single node a chapter-wide xref COUNT could push to)
 Notes:
 - REGISTRY-1 (batch-r-brief.md requirement 3, "the popover becomes a
   content-first section platform"): the popover body is a composable,
@@ -458,14 +488,23 @@ Notes:
   (`popover-section-polity-delta-scriptures`, conditional -- one
   `polity-delta-verse-{SPAN}` passage entry per curated verse, per
   PASSAGE-1), the grounding note (`popover-section-polity-delta-grounding`,
-  conditional, quiet). A node `Kind` no
-  provider claims at all (Chapter/Book/Author/TimeAndPlace/Year) keeps its
-  own PRE-BATCH-R rendering, byte for byte -- unaffected by this note. The
-  chips row (`popover-chip-map`/`-book`/`-context`/`-verse-{VREF}`) is
-  UNCHANGED, pre-existing machinery, rendered below every section exactly as
-  before -- "Explore" (the map affordance) is `popover-chip-map`, not a
-  registry section; a CATECHISM node offers NO chips at all (no geography --
-  conditional presence extends to affordances too, per CATECH-1).
+  conditional, quiet). CHAPTER node sections (M-D3, U4/B3 -- `ChapterCardSection`,
+  reached by `chapter-head` or a reader heading's own container link, see
+  B3-CARD below) -- a node `Kind` no OTHER provider claims at all
+  (Book/Author/TimeAndPlace/Year) keeps its own PRE-BATCH-R rendering,
+  byte for byte -- unaffected by this note. The chips row
+  (`popover-chip-map`/`-book`/`-context`/`-verse-{VREF}`) is unchanged,
+  pre-existing machinery -- "Explore" (the map affordance) is
+  `popover-chip-map`, not a registry section; a CATECHISM node offers NO
+  chips at all (no geography -- conditional presence extends to
+  affordances too, per CATECH-1). M-D3 (U3') RELOCATES this row from
+  below the body to inline beside the title in the popover HEAD (icon-
+  scale glyphs, `.popover-head-actions` wrapping `.popover-head-action`
+  buttons -- ⌖/❧/¶ for map/book/context respectively, the SAME
+  `popover-chip-{map,book,context,verse-{VREF}}` testids, condition, and
+  click behavior, unchanged -- a visual/DOM-position move only, disclosed
+  here since this note's own "rendered below every section" wording
+  predates it; the retired below-body `.popover-chips` CSS class is gone).
 - PASSAGE-1 (batch-f2-brief.md, 6-ARCH, user direction 2026-08-20,
   near-verbatim: "it should use the same underlying data structure as the
   hover menu everywhere else - showing sequential verses as passages...
@@ -597,16 +636,58 @@ Notes:
   distinguish there the way there is for xrefs. See
   `popover-place-date-established-verse-{SPAN}`/`-destroyed-verse-{SPAN}`
   and their own `-more`/`-collapse` pair in the testid inventory above.
-- XSCRIPT-GATE (2026-08-23, owner order, ledgered): the ENTIRE
-  superscript feature below is currently GATED OFF by
+- B3-CARD (M-D3, owner decisions U4/B3, "when you're reading a chapter,
+  you're in its focus. you can focus further by clicking chapter heading
+  and you get metadata and context... container title, position in book,
+  edge summary -- what the graph knows ABOUT the chapter" -- NEVER the
+  chapter's own verse text): `chapter-head`'s own popover
+  (`ChapterCardSection`, a new `IPopoverSectionProvider` claiming
+  `Kind == "Chapter"`, registered in `PopoverSectionRegistry.Providers`)
+  replaces the standing "first verse of the chapter appears, that's
+  completely pointless" bug (M-D1's own live report #3, quoted in the
+  M-D1 REQUIREMENT 2 note above for the SIBLING `pericope-heading` click,
+  which was already fixed then -- `chapter-head` itself had no such fix
+  before this batch, since `ChapterNode.BodyAsync` had no drill-in
+  mechanism of its own to build one on; it is now a minimal, unreachable-
+  in-practice defensive fallback, superseded by this section provider).
+  Content, every fact read straight off the SAME `ChapterOut` the reading
+  view itself already fetched when opened on the chapter currently being
+  read (`ChapterNode.AlreadyLoaded`/`.Load`, zero extra network cost for
+  that common case): position in book (`chapter-card-position`), verse
+  count (`chapter-card-verse-count`), every DISTINCT heading container
+  anchored in this chapter (`chapter-card-headings`, conditional,
+  deduplicated by event id -- see the testid inventory above), every
+  DISTINCT place mentioned in this chapter (`chapter-card-places`,
+  conditional, deduplicated by place id), and a plain cross-reference
+  COUNT for the whole chapter (`chapter-card-xref-total`, conditional,
+  summing each verse's own already-on-the-wire `XrefCount` -- never a
+  fetch of its own, and never a list, since no single node a chapter-wide
+  total could push to). Headings and places are independently explorable
+  (`IPopoverSectionContext.PushAsync`, the SAME drill-in mechanism every
+  other section-native row in the popover platform uses) -- "outward
+  connections," not a dead-end summary. `chapter-head` opens on hover OR
+  click, identically (see the testid-inventory note above) -- the SAME
+  "hover and click both open the same popover" rule XSCRIPT-1's own ENTRY
+  POINT note establishes for the superscript entry point, applied here
+  too, though `chapter-head` has no auto-dismiss of its own (it was
+  already a plain click-opens-a-persistent-popover affordance before this
+  batch; only the superscript entry point carries `_hoverOnlyOpen`).
+- XSCRIPT-GATE (2026-08-23, owner order, ledgered; RESOLVED M-D3/R3): the
+  superscript feature was briefly GATED OFF by
   `FeatureFlags.XrefSuperscripts = false` (`client/FeatureFlags.cs`) --
   owner verbatim: "just disable superscripts until the rework is
-  released." The 8 XSCRIPT tests skip-with-reason on the same gate.
-  M-D3's rework (click AND hover entry, popover anchored OVER the verse,
-  always visible, never cut off, no auto-modal requiring an X) flips the
-  flag ON and un-skips them. XSCRIPT-1 below remains the binding
-  contract for the re-enabled state -- the gate suspends it, never
-  rewrites it.
+  released." M-D3's rework (click AND hover entry, popover anchored OVER
+  the verse -- see XSCRIPT-1's own ANCHORING note below, ALWAYS VISIBLE
+  and never cut off at a viewport edge -- see XSCRIPT-ANCHOR-1..4, no
+  auto-modal requiring an X -- a hover-only open auto-dismisses on its
+  own once the pointer leaves both the marker and the panel, see
+  XSCRIPT-1's own ENTRY POINT note below and XSCRIPT-DISMISS-1..4) flips
+  the flag back to `true` and un-skips the 8 XSCRIPT tests (plus the 8
+  new anchoring/dismiss tests, `tests/ux/reader-xref-anchoring.spec.ts`).
+  XSCRIPT-1 below is the binding contract for this now-live state; its
+  own ANCHORING/ENTRY POINT paragraphs are updated in place for R3 rather
+  than superseded by a separate note, since the gate suspended the
+  feature, it never rewrote the contract underneath it.
 - XSCRIPT-1 (batch-md2-brief.md; the owner's cross-reference superscript
   directive, batch-x-brief.md verbatim, 2026-08-21: "little superscripts
   visible near verses/passages to which cross references apply... `i,j,k`
@@ -668,49 +749,107 @@ Notes:
   abstraction, never a second node type or a parallel popover, owner
   decree: "a parallel popover implementation is a defect") -- see
   CAP-RECONCILE-1 immediately below for exactly what that parameter
-  changes. CLOSING follows the SAME mechanism every other popover already
-  uses (backdrop click / Escape / the close button) -- deliberately NOT
-  mouseleave, which would make a hover-opened popover physically impossible
-  to reach with the mouse (the popover panel is not anchored at the
-  marker's own screen position -- see this note's own "ANCHORING" paragraph
-  below). Once open, the pre-existing full-viewport `.popover-backdrop`
-  (unchanged, `position:fixed; inset:0`) already covers the reader text
-  underneath, which is what keeps a mouse in transit toward a
-  viewport-centered popover panel from crossing -- and accidentally
-  re-triggering -- some OTHER verse's own marker along the way; no
-  additional debounce mechanism was added or found necessary.
-  `Reader.razor`'s own `OpenVerseXrefEntry` no-ops when the popover is
-  ALREADY open for the SAME verse's own entry point (a redundant re-hover,
-  or focus firing right after a click already did) -- `ExplorerPopover` is
-  keyed by `_activeNode` itself (a plain class, no value equality), so an
-  unguarded reassignment to an equivalent-but-distinct `VerseNode` instance
-  would otherwise tear down and rebuild the whole popover for no actual
-  change.
+  changes.
 
-  TESTING NOTE, self-obscuring target: the SAME backdrop-covers-the-marker
-  effect this note just described is exactly what makes a plain, un-forced
-  Playwright `locator.hover()`/`.click()` on the marker retry for the FULL
-  test timeout rather than resolve -- the low-level action performs
-  correctly on its own first attempt (confirmed live: "performing hover
-  action" precedes the backdrop appearing in Playwright's own actionability
-  log), but the target can never again pass Playwright's own "still cleanly
-  actionable" re-check once its own reaction covers it, which a REAL human
-  hover/click never needs (one event, done). `tests/ux/reader-xref-
-  superscripts.spec.ts` uses `{ force: true }` on every such call, disclosed
-  in that file's own header comment -- real production behavior, a
-  Playwright automation artifact, not a defect either side.
+  M-D3/R3 (owner order, "no auto-modal that must be X'd out... hover
+  brings it up automatically, so it should also go away automatically
+  without needing to click an X"): a HOVER-only open (`mouseenter`/
+  `Reader.razor`'s own `OpenVerseXrefEntryHover`, tracked by the private
+  `_hoverOnlyOpen` field) now auto-dismisses on its own once the pointer
+  leaves BOTH the marker and the popover panel, no explicit close needed
+  -- see XSCRIPT-DISMISS-1 (`tests/ux/reader-xref-anchoring.spec.ts`). A
+  CLICK or keyboard-FOCUS open (`OpenVerseXrefEntryPersistent`) is, and
+  remains, PERSISTENT -- the ordinary backdrop-click/Escape/close-button
+  dismissal every other popover already uses, unaffected (XSCRIPT-DISMISS-
+  3/4). The two are the SAME popover and SAME entry point, not two
+  behaviors bolted together: `_hoverOnlyOpen` is cleared the instant a
+  click or focus fires on an already-hover-open marker (XSCRIPT-DISMISS's
+  own "hover then click" case), and re-hovering an already-open entry
+  point is idempotent (below), so there is no scenario where a genuinely
+  persistent popover is ever silently auto-closed.
+  Mechanism: leaving the marker (`@onmouseleave`) OR leaving the popover
+  PANEL itself (`ExplorerPopover`'s own `OnPanelPointerLeave`, wired
+  through `ShowBackdrop`'s sibling parameters `OnPanelPointerEnter`/
+  `-Leave`) each schedule the SAME short grace-period close
+  (`DelayedHoverClose`, 1000ms -- see that method's own doc comment in
+  `Reader.razor` for the two, real, live-caught timing bugs that landed on
+  this figure: too tight a window closes the popover mid-transit, whether
+  the user is moving the mouse from the marker into the panel, or
+  Playwright's own synthetic move+actionability-check sequence is simply
+  slower than a real cursor), cancelled the instant the pointer re-enters
+  EITHER the marker or the panel. `ShowBackdrop` (a NEW `ExplorerPopover`
+  parameter) is `false` for exactly as long as `_hoverOnlyOpen` is true --
+  a real, live-caught bug: the pre-existing full-viewport
+  `.popover-backdrop` used to render unconditionally the instant the
+  popover opened, which (combined with `.reader-page`'s own
+  `contain:layout` stacking context) physically intercepted every
+  mousedown/mouseup/click aimed at the marker that had just opened it,
+  silently re-closing the popover on what looked, from the outside, like
+  a plain click; the backdrop now only grows in once the SAME popover
+  becomes persistent, by which point there is no marker-click race left to
+  intercept. `Reader.razor`'s own `OpenVerseXrefEntry` still no-ops (an
+  idempotent open, not a teardown/rebuild) when the popover is ALREADY
+  open for the SAME verse's own entry point -- `ExplorerPopover` is keyed
+  by `_activeNode` itself (a plain class, no value equality), so an
+  unguarded reassignment to an equivalent-but-distinct `VerseNode`
+  instance would otherwise tear down and rebuild the whole popover for no
+  actual change.
 
-  ANCHORING: "anchored at the superscript" (batch-x-brief.md) is realized
-  as "opened BY WAY OF the superscript, for that verse" -- the SAME
-  positioning the popover already uses for every other verse-triggered open
-  (viewport-centered full-page; pane-centered while split, F2 requirement
-  6d) -- NOT a new pixel-precise, element-relative anchoring mode. No
-  EXISTING popover trigger in this app (verse-line click, chapter-head,
-  pericope-heading) visually pins the popover to the clicked element's own
-  screen position either; a superscript-specific exception would be a new,
-  narrower positioning primitive with no other consumer, disclosed here as
-  a deliberate reading rather than a silently narrower implementation of
-  the brief's own words.
+  TESTING NOTE, self-obscuring target: a plain, un-forced Playwright
+  `locator.hover()`/`.click()` on the marker still cannot be trusted to
+  resolve cleanly -- pre-R3 this was the backdrop (see above) always
+  covering the marker the instant it opened; post-R3 a PERSISTENT
+  popover's backdrop still does, and even a hover-only popover's own
+  panel sits close enough to the marker that a real click's own
+  actionability re-check can still land on it mid-retry. `tests/ux/
+  reader-xref-superscripts.spec.ts` and `reader-xref-anchoring.spec.ts`
+  both use `{ force: true }` on every marker hover/click for exactly this
+  reason, disclosed in each file's own header/inline comments -- real
+  production behavior, a Playwright automation artifact, not a defect
+  either side. A SEPARATE, genuinely PRODUCT-side race exists right after
+  an explicit close (`popover-close` click): `ExplorerPopover.RequestClose`
+  performs a JS interop call BEFORE it ever nulls the parent's own
+  `_activeNode`, so an immediately-following re-open (no intervening wait)
+  can occasionally have its own fresh state clobbered a tick later by that
+  still-in-flight close -- live-caught via `reader-xref-superscripts.spec.ts`'s
+  own "expansion reveals the rest" test, whose second close-then-re-hover
+  now waits for `popover` to reach count 0 first, the same guard this
+  file's own "entry-point parameter vs F2's general popover" test already
+  used one test earlier. Not a bug in `_activeNode`/`OpenVerseXrefEntry`
+  itself (confirmed live: the SAME re-hover reliably reopens a fully
+  correct popover once that wait is in place) -- a Blazor render-ordering
+  hazard around an async close, not a stale-state defect.
+
+  ANCHORING (M-D3/R3, REPLACES the pre-R3 viewport-centered/pane-centered
+  reading below): the popover now anchors OVER THE VERSE that opened it --
+  horizontally centered on the marker's own verse LINE (not the viewport
+  or the pane), vertically flush against that line's own top or bottom
+  edge (below by default, flipping above when there is not enough room
+  below), clamped so it is ALWAYS FULLY VISIBLE and never cut off at any
+  viewport (or, in split view, PANE -- see PANE-ANCHOR-1) edge -- see
+  XSCRIPT-ANCHOR-1 (horizontal centering on the line), XSCRIPT-ANCHOR-2/3
+  (top-of-chapter / bottom-of-viewport edge cases), XSCRIPT-ANCHOR-4
+  (split-view pane edges). Measured live via a small JS interop helper
+  (`reader.js`'s own `getVerseAnchorRect`) against the marker's OWN verse
+  line element (`#v{n}`, `ExplorerPopover`'s new `VerseAnchorSelector`
+  parameter) once per open, not assumed from static layout math -- a real
+  DOM measurement, the same "measure once via JS interop, then position"
+  pattern the pre-existing pane-anchored mode (F2 requirement 6d) already
+  established, applied to a finer-grained target. `popover-verse-anchored`
+  and `popover-pane-anchored` are MUTUALLY EXCLUSIVE on the popover PANEL
+  itself (verse-anchoring wins outright when both could apply, e.g. a
+  superscript opened inside a split-view reader pane) -- a real, live-
+  caught bug when they briefly were not: pane-anchoring's own `width` rule
+  silently applied underneath verse-anchoring's own centering math, which
+  assumes the wider, non-pane-capped base width, producing a popover
+  rendered off-screen to the left. Pane-anchoring remains independently
+  applicable to the BACKDROP regardless (SPLIT-1's own pane-confinement,
+  unaffected). Every OTHER existing popover trigger in this app
+  (verse-line click, chapter-head, pericope-heading) is UNCHANGED --
+  still viewport-centered full-page / pane-centered while split, F2
+  requirement 6d -- this finer anchoring is scoped to the superscript
+  entry point alone, the one case where the brief asks for it explicitly
+  ("anchored at the superscript").
 
   JANK GUARD (the brief's own explicit test: "verse line-height/measure
   unchanged"): `.verse-xref-marker`'s own `vertical-align: super` +

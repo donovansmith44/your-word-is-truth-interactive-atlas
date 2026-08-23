@@ -125,7 +125,7 @@ test('DATE-1: the established date affordance opens a popover that lists curated
   await expect(page.getByTestId('popover-title')).toHaveText(`Established ${formatClaim(-1003, -1003, 'traditional')}`);
 
   // Supporting verses lead, in curated order, all BEFORE the map chip.
-  const chipTestIds = await popover.locator('.popover-chips [data-testid]').evaluateAll(
+  const chipTestIds = await popover.locator('.popover-head-actions [data-testid]').evaluateAll(
     els => els.map(el => el.getAttribute('data-testid')));
   expect(chipTestIds).toEqual([
     'popover-chip-verse-2SA.5.6',
@@ -160,7 +160,7 @@ test('DATE-1: the established date affordance opens a popover that lists curated
   // (no "c." -- no note curated for this claim).
   await destroyed.click();
   await expect(page.getByTestId('popover-title')).toHaveText(`Destroyed ${formatClaim(-586, -586, null)}`);
-  const destroyedChips = await page.getByTestId('popover').locator('.popover-chips [data-testid]').evaluateAll(
+  const destroyedChips = await page.getByTestId('popover').locator('.popover-head-actions [data-testid]').evaluateAll(
     els => els.map(el => el.getAttribute('data-testid')));
   expect(destroyedChips).toEqual(['popover-chip-verse-2KI.25.9', 'popover-chip-verse-2KI.25.10', 'popover-chip-map']);
 });
