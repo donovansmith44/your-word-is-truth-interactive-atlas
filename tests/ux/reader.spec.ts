@@ -24,7 +24,17 @@ test('READ-2: verse popover shows the API text', async ({ page }) => {
   await fcAssert(fc.asyncProperty(arbVerseRef(toc), async vref => {
     const [b, c, v] = vref.split('.');
     await page.goto(`/read/${b}/${c}`);
-    await page.getByTestId(`verse-line-${v}`).click();
+    // M-D3/U5, a real, live-caught regression (caught by THIS property
+    // test itself, sampling 1JN.4.1 -- "God" is one of that verse's own
+    // attested person mentions): a plain coordinate .click() on the
+    // verse-line clicks its own geometric center, which can land on one of
+    // ITS OWN new in-text mention spans (Reader.razor's
+    // @onclick:stopPropagation, PlaceMentions.Scan) instead of the line
+    // itself -- the SAME class of hazard already documented in CONTRACT.md's
+    // own MENTION-1 note (DEU.5.26's "God", JHN.12.1's "Bethany"/"Lazarus").
+    // Keyboard activation sidesteps the coordinates entirely.
+    await page.getByTestId(`verse-line-${v}`).focus();
+    await page.keyboard.press('Enter');
     await expect(page.getByTestId('popover-title')).toHaveText(vref);
     const detail = await api.verse(vref);
     await expect(page.getByTestId('popover')).toContainText(detail.text.slice(0, 40));

@@ -96,7 +96,8 @@
                        instead of tearing down and rebuilding ExplorerPopover,
                        which is keyed by _activeNode's own reference). *@
                     <button type="button" class="chapter-head-button explorable" data-testid="chapter-head"
-                            aria-label="@($"Explore {_book}.{_chapterNum}")" @onclick="OpenChapter" @onmouseenter="OpenChapter">
+                            aria-label="@($"Explore {_book}.{_chapterNum}")"
+                            @onclick="() => OpenChapter(persistent: true)" @onmouseenter="() => OpenChapter(persistent: false)" @onmouseleave="ScheduleHoverClose">
                         <span class="chapter-head-book">@BookName</span>
                         <span class="chapter-head-num">@_chapterNum</span>
                     </button>
@@ -920,7 +921,19 @@
             return;
         }
 
-        if (cts.IsCancellationRequested || !_hoverOnlyOpen || _activeNode is not VerseNode { XrefEntryPoint: true })
+        // M-D3 fix round: widened from the original xref-only `_activeNode is
+        // not VerseNode { XrefEntryPoint: true }` to plain `!_hoverOnlyOpen`
+        // now that OpenChapter's own hover case (above) sets it too --
+        // _hoverOnlyOpen is ALREADY the general "opened via hover, not a
+        // real click/focus" signal (ScheduleHoverClose's own guard, right
+        // above, already relies on it alone), and every OTHER Open* method
+        // resets it to false via ResetXrefEntryState before assigning a
+        // DIFFERENT node, so by construction it can only still be true here
+        // if _activeNode is still the SAME hover-opened node this timer was
+        // scheduled for -- the extra node-kind check was never load-bearing
+        // beyond that, just no longer accurate once a second hover-open
+        // case existed.
+        if (cts.IsCancellationRequested || !_hoverOnlyOpen)
         {
             return;
         }
@@ -1019,17 +1032,46 @@
     // extra round trip) both come straight off this page's own state.
     // M-D3 (R3): ResetXrefEntryState, same reasoning as OpenVerse/OpenEvent
     // above.
-    private void OpenChapter()
+    //
+    // M-D3 fix round (a real, live-caught bug -- found by this batch's own
+    // full Playwright suite, not guessed): U4/B3's own @onmouseenter hover
+    // trigger was originally wired straight to this SAME no-parameter
+    // method, which -- unlike OpenVerseXrefEntry's own hover case -- never
+    // set _hoverOnlyOpen, so ShowBackdrop stayed permanently true even for
+    // a hover-triggered open. Every mouse click is PRECEDED by its own
+    // hover (the pointer moves onto the element before the click fires) --
+    // so clicking chapter-head opened the full-viewport backdrop on the
+    // hover half of that SAME gesture, and the click half then landed on
+    // the now-covering backdrop instead of the button, closing the popover
+    // it had just opened (reader.spec.ts's own READ-2c property test caught
+    // this as a multi-minute stall: Playwright's own click retries against
+    // an element that kept re-appearing-then-vanishing under it). Now takes
+    // the SAME `persistent` parameter/_hoverOnlyOpen wiring
+    // OpenVerseXrefEntry already established -- hover opens quietly (no
+    // backdrop, auto-dismisses via ScheduleHoverClose below on
+    // mouseleave/DelayedHoverClose, mirroring the marker-to-panel grace
+    // period), a genuine click (or Enter -- native <button> semantics
+    // dispatch @onclick, no separate keydown handler needed) upgrades the
+    // SAME popover to persistent in place, matching OpenVerseXrefEntry's
+    // own re-entry guard exactly.
+    private void OpenChapter(bool persistent)
     {
         var title = $"{_book}.{_chapterNum}";
         if (_activeNode is ChapterNode current && current.Title == title)
         {
+            if (persistent)
+            {
+                _hoverOnlyOpen = false;
+                CancelHoverCloseTimer();
+            }
             return; // already open on this exact chapter -- no-op, matches OpenVerseXrefEntry's own guard
         }
 
         ResetXrefEntryState();
         var totalChapters = _toc?.FirstOrDefault(b => b.Code == _book)?.Chapters.Count;
         _activeNode = new ChapterNode(_book, _chapterNum, totalChapters) { AlreadyLoaded = _chapter };
+        _hoverOnlyOpen = !persistent;
+        CancelHoverCloseTimer();
     }
 
     private Task ClosePopover()

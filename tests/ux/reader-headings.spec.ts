@@ -253,7 +253,16 @@ test('fix-round-1/Important-1: a verse anchored by TWO titled containers renders
   // The shadowed event stays reachable at the SAME verse, one click away,
   // via the verse popover's own EVENT membership section (Important-1's
   // own reason this is Important rather than Critical).
-  await page.getByTestId('verse-line-1').click();
+  // M-D3/U5, a real, live-caught regression: JHN.12.1's own real text
+  // attests both "Bethany" (place) and "Lazarus" (person) as in-text
+  // mentions (Reader.razor's new @onclick:stopPropagation spans,
+  // PlaceMentions.Scan) -- a plain coordinate .click() on the verse-line
+  // clicks its own geometric center, which lands on one of them instead of
+  // the line itself (the SAME class of hazard popover-sections.spec.ts's
+  // own CATECH-1 test hit on DEU.5.26's "God" -- see CONTRACT.md's own
+  // MENTION-1 note). Keyboard activation sidesteps the coordinates.
+  await page.getByTestId('verse-line-1').focus();
+  await page.keyboard.press('Enter');
   await expect(page.getByTestId(`verse-event-${SHADOWED_EVENT_ID}`)).toBeVisible();
   await page.getByTestId(`verse-event-${SHADOWED_EVENT_ID}`).click();
   const shadowedDetail = await api.event(SHADOWED_EVENT_ID);

@@ -26,6 +26,26 @@ namespace BibleAtlas.Client.Explore;
 /// </summary>
 public sealed class ChapterCardSection : IPopoverSectionProvider
 {
+    // M-D3 fix round -- a real, live-caught bug, not a style preference:
+    // both lists below were rendered fully unbounded, and a long acrostic
+    // psalm (PSA.119, 22 Hebrew-letter sections -- CONTAINERS IN THIS
+    // CHAPTER alone runs to 22 rows) makes this card tall enough to cover
+    // chapter-head's OWN screen position while open. Since U4/B3 also
+    // opens this SAME card on hover (matching XSCRIPT-1's own "hover and
+    // click open the same popover" rule), that self-overlap means a
+    // genuine click gesture -- which always hovers the target FIRST -- can
+    // never actually land on chapter-head again once the hover-opened card
+    // already covers it: reader.spec.ts's own READ-2c property test caught
+    // this as an unrecoverable, indefinitely-retrying click specifically
+    // whenever it happened to sample PSA.119. A hard cap bounds the card's
+    // own height for every chapter, not just the pathological one found --
+    // a plain, honest "+N more" line (not yet the full RevealControls
+    // interactive mechanic U2 gives cross-refs/catechism elsewhere in this
+    // same batch) rather than silently dropping the rest; widening this to
+    // a real reveal control is a disclosed, deliberate follow-up, not
+    // pretended-finished here.
+    private const int ListCap = 8;
+
     public bool AppliesTo(IExplorable node) => node.Kind == "Chapter";
 
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
@@ -87,7 +107,7 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
                 builder.OpenElement(seq++, "div");
                 builder.AddAttribute(seq++, "class", "popover-chapter-card-list");
                 builder.AddAttribute(seq++, "data-testid", "chapter-card-headings");
-                foreach (var h in headings)
+                foreach (var h in headings.Take(ListCap))
                 {
                     var eventId = h.EventId; // local copies -- captured per-row by the onclick closure below
                     var title = h.Title;
@@ -100,6 +120,15 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
                     builder.CloseElement();
                 }
                 builder.CloseElement();
+
+                if (headings.Count > ListCap)
+                {
+                    builder.OpenElement(seq++, "p");
+                    builder.AddAttribute(seq++, "class", "popover-meta");
+                    builder.AddAttribute(seq++, "data-testid", "chapter-card-headings-more");
+                    builder.AddContent(seq++, $"+ {headings.Count - ListCap} more container{(headings.Count - ListCap == 1 ? "" : "s")} in this chapter.");
+                    builder.CloseElement();
+                }
             }
 
             if (places.Count > 0)
@@ -113,7 +142,7 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
                 builder.OpenElement(seq++, "div");
                 builder.AddAttribute(seq++, "class", "popover-chapter-card-list");
                 builder.AddAttribute(seq++, "data-testid", "chapter-card-places");
-                foreach (var p in places)
+                foreach (var p in places.Take(ListCap))
                 {
                     var placeId = p.Id; // local copies -- captured per-row by the onclick closure below
                     var placeName = p.Name;
@@ -126,6 +155,15 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
                     builder.CloseElement();
                 }
                 builder.CloseElement();
+
+                if (places.Count > ListCap)
+                {
+                    builder.OpenElement(seq++, "p");
+                    builder.AddAttribute(seq++, "class", "popover-meta");
+                    builder.AddAttribute(seq++, "data-testid", "chapter-card-places-more");
+                    builder.AddContent(seq++, $"+ {places.Count - ListCap} more place{(places.Count - ListCap == 1 ? "" : "s")} mentioned in this chapter.");
+                    builder.CloseElement();
+                }
             }
 
             if (xrefTotal > 0)

@@ -802,9 +802,25 @@ Notes:
   click, identically (see the testid-inventory note above) -- the SAME
   "hover and click both open the same popover" rule XSCRIPT-1's own ENTRY
   POINT note establishes for the superscript entry point, applied here
-  too, though `chapter-head` has no auto-dismiss of its own (it was
-  already a plain click-opens-a-persistent-popover affordance before this
-  batch; only the superscript entry point carries `_hoverOnlyOpen`).
+  too, INCLUDING `_hoverOnlyOpen`/`ShowBackdrop`/auto-dismiss (fix round,
+  corrected from this note's own original claim that `chapter-head` had no
+  auto-dismiss of its own): a real, live-caught bug -- the hover trigger
+  originally called the SAME no-parameter open method a click did, which
+  never set `_hoverOnlyOpen`, so `ShowBackdrop` stayed permanently true
+  even for a hover-only open. Every mouse click is PRECEDED by its own
+  hover (the pointer moves onto the element before the click fires), so
+  clicking `chapter-head` opened the full-viewport backdrop on the hover
+  half of that SAME gesture, and the click half then landed on the
+  now-covering backdrop instead of the button -- caught by reader.spec.ts's
+  own READ-2c property test stalling for minutes, Playwright's own click
+  retrying against a target that kept reappearing then vanishing under it.
+  `OpenChapter` now takes the identical `persistent` parameter/
+  `_hoverOnlyOpen` wiring `OpenVerseXrefEntry` already established: hover
+  opens quietly (no backdrop, auto-dismisses via the SAME `ScheduleHoverClose`/
+  `DelayedHoverClose` grace-period mechanism, now generalized off
+  `_hoverOnlyOpen` alone rather than an xref-specific node-kind check), a
+  genuine click (or Enter -- native `<button>` semantics) upgrades the SAME
+  popover to persistent in place.
 - XSCRIPT-GATE (2026-08-23, owner order, ledgered; RESOLVED M-D3/R3): the
   superscript feature was briefly GATED OFF by
   `FeatureFlags.XrefSuperscripts = false` (`client/FeatureFlags.cs`) --
