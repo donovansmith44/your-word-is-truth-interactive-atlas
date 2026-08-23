@@ -103,6 +103,15 @@ test('quiet dot hover card: Jerusalem in the primeval era shows the quiet line, 
   await expect(page.getByTestId('popover-title')).toHaveText('Jebus');
   const detail = await api.place('jerusalem');
   expect(detail.events.length).toBeGreaterThan(0);
+  // M-D1 requirement 4 (TRUNCATION AUDIT): this list is capped now
+  // (PlaceEventsList.razor, cap 10) -- Jerusalem alone real-carries 236
+  // located-at events, previously rendered with no cap at all. Capped
+  // count visible by default; the down-arrow reveals every remaining row.
+  const cap = 10;
+  expect(detail.events.length, 'jerusalem must still real-carry MORE than the cap for this assertion to exercise it').toBeGreaterThan(cap);
+  await expect(page.locator('[data-testid^="place-event-"]')).toHaveCount(cap);
+  await expect(page.getByTestId('place-events-more')).toBeVisible();
+  await page.getByTestId('place-events-more').click();
   await expect(page.locator('[data-testid^="place-event-"]')).toHaveCount(detail.events.length);
 });
 

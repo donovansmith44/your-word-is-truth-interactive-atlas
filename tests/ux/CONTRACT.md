@@ -290,9 +290,11 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   present only when this place's displayed name differs from its own bare
   canonical name (a curated KJV alias resolved to something else); see
   ALIAS-1 below for the full precedence and conditional-presence rule),
-  `place-event-{id}` (button; one per this place's own recorded event,
-  pushes a `TimeAndPlaceNode`; PRE-EXISTING since Task 15, undocumented
-  before this batch -- see REGISTRY-1),
+  `place-event-{id}` (button; one per this place's own recorded event, up
+  to M-D1's own truncation-audit cap of 10 (`place-events-more`/`-collapse`
+  reveal the rest -- see the M-D1 TRUNCATION AUDIT note), pushes a
+  `TimeAndPlaceNode`; PRE-EXISTING since Task 15, undocumented before
+  Batch R -- see REGISTRY-1),
   `popover-chip-map`, `popover-chip-book`, `popover-chip-context`,
   `popover-chip-verse-{VREF}` (batch-e-brief.md; one per a `YearNode`'s own curated
   supporting verses, in curated order, ALWAYS rendered before that same node's
