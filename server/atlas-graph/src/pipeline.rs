@@ -238,6 +238,10 @@ impl Pass for LawCheckPass {
                 .context("KJV adapter fidelity law (bijection + reconstruction)")?;
         }
         crate::law_check::every_authored_edge_resolves(&ctx.graph).context("referential integrity of authored edge rows")?;
+        // Fix round 1 (delegated ruling): the verified-cache law -- see
+        // `law_check::payload_years_match_resolved_placements`'s own doc
+        // comment.
+        crate::law_check::payload_years_match_resolved_placements(&ctx.graph, &ctx.chrono).context("NodePayload::Event years must equal their own resolved dated_by placement (verified-cache law)")?;
         Ok(())
     }
 }
