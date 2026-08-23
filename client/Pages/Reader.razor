@@ -164,7 +164,53 @@
                         <button type="button" class="verse-num" data-testid="verse-num-@v.Verse"
                                 @onclick="@(e => OnVerseNumClick(e, v.Verse))" @onclick:stopPropagation="true"
                                 @onkeydown:stopPropagation="true">@v.Verse</button>
-                        <span class="verse-text">@v.Text</span>
+                        @* Batch M-D2 (owner's cross-reference superscript
+                           directive, 2026-08-21, verbatim: "little
+                           superscripts visible near verses/passages to
+                           which cross references apply... i,j,k to
+                           represent multiple cross references to a single
+                           element if there are > 3 xrefs, the superscript
+                           should be `...`"). ONE cluster per verse (never
+                           per-letter targets -- "hovering... the superscript
+                           CLUSTER... opens the SAME composable popover,"
+                           the controller brief's own words), driven purely
+                           by the wire's own XrefCount (this verse's own
+                           `cites` edge-summary count, ChapterOut.Verses[].XrefCount)
+                           -- a PURE function of that one integer
+                           (XrefMarkerText below), no per-render mutable
+                           accumulator anywhere: the exact shape the house
+                           pattern warns against (per-chapter superscript
+                           lettering closures, "the shape that bit Batch N")
+                           is sidestepped by construction, not guarded
+                           against after the fact -- there is no shared
+                           state to leak between verses OR between renders
+                           in the first place. Entry point into THE ONE
+                           composable popover (owner decree: never a
+                           parallel interface) -- hover, keyboard focus, AND
+                           click all open the identical ExplorerPopover,
+                           xrefs section leading, 3 initial entries
+                           (VerseNode.XrefEntryPoint; see
+                           PopoverSectionProviders.CrossRefsSection's own
+                           entry-point cap doc comment). Closing follows the
+                           SAME mechanism every other popover already uses
+                           (backdrop click / Escape / close button) --
+                           deliberately NOT mouseleave, which would make a
+                           hover-opened popover impossible to reach with the
+                           mouse at all (see this batch's own CONTRACT note).
+                           @onclick:stopPropagation -- the SAME "more
+                           specific target always wins" rule verse-num's own
+                           button already establishes one line up -- keeps
+                           this from ALSO triggering the verse-line's own
+                           click-opens-a-plain-popover handler. *@
+                        <span class="verse-text">@v.Text@if (v.XrefCount > 0)
+                                                         {
+                                                             <sup class="verse-xref-marker" data-testid="@($"verse-xref-marker-{v.Verse}")"
+                                                                  tabindex="0" role="button" aria-label="@XrefMarkerAriaLabel(v)"
+                                                                  @onclick="() => OpenVerseXrefEntry(v.Verse)" @onclick:stopPropagation="true"
+                                                                  @onmouseenter="() => OpenVerseXrefEntry(v.Verse)"
+                                                                  @onfocus="() => OpenVerseXrefEntry(v.Verse)"
+                                                                  @onkeydown="@(e => OnXrefMarkerKeyDown(e, v.Verse))" @onkeydown:stopPropagation="true">@XrefMarkerText(v.XrefCount)</sup>
+                                                         }</span>
                     </div>
                 }
             </article>
@@ -575,6 +621,63 @@
     }
 
     private void OpenVerse(int verseNum) => _activeNode = new VerseNode($"{_book}.{_chapterNum}.{verseNum}");
+
+    // Batch M-D2 (owner's cross-reference superscript directive): the
+    // owner's own literal letters ("i,j,k") -- taken at face value as the
+    // scheme itself (not merely an illustrative example of "some sequential
+    // letters"), since a verse only ever needs 1-3 of them (>3 is always the
+    // many-marker instead, never a 4th letter) -- CONTRACT-documented, see
+    // this batch's own CONTRACT.md note. RESTART BOUNDARY: per VERSE, not
+    // per chapter or globally -- "i,j,k to represent multiple cross
+    // references to a SINGLE ELEMENT," the owner's own words; every verse
+    // with 1-3 xrefs independently starts its own lettering at "i". A PURE
+    // array index, never a mutable counter -- see the markup's own comment
+    // above for why this sidesteps the Batch N closure-capture defect class
+    // by construction.
+    private static readonly string[] XrefLetters = { "i", "j", "k" };
+
+    // The owner's own suggested many-marker ("...", or "something else that
+    // would make sense") -- realized as the single Unicode HORIZONTAL
+    // ELLIPSIS character (U+2026), not three ASCII periods, for typographic
+    // correctness (the same glyph any serif font's own "..." ligature would
+    // render, without depending on the font to supply that ligature).
+    private const string XrefManyMarker = "…";
+
+    private static string XrefMarkerText(int count) => count > 3 ? XrefManyMarker : string.Concat(XrefLetters.Take(count));
+
+    private static string XrefMarkerAriaLabel(VerseOut v) =>
+        v.XrefCount > 3 ? $"Many cross-references for verse {v.Verse}" : $"{v.XrefCount} cross-reference{(v.XrefCount == 1 ? "" : "s")} for verse {v.Verse}";
+
+    // Batch M-D2: the superscript's own entry point into THE composable
+    // popover (owner decree, never a parallel interface) -- constructs the
+    // SAME VerseNode OpenVerse does, just with XrefEntryPoint=true (a
+    // parameter on the one abstraction; see that class's own doc comment).
+    // Guarded against a redundant remount: ExplorerPopover is keyed by
+    // `_activeNode` itself (Reader.razor's own <ExplorerPopover @key=...>),
+    // and VerseNode has no value equality (a plain class), so reassigning
+    // to a FRESH instance naming the SAME verse -- e.g. re-entering the
+    // marker that's already driving the open popover, or focus firing right
+    // after a click already did -- would otherwise tear down and rebuild
+    // the whole popover (losing scroll position, re-fetching) for no actual
+    // change; this no-ops instead, same as any other idempotent open.
+    private void OpenVerseXrefEntry(int verseNum)
+    {
+        var vref = $"{_book}.{_chapterNum}.{verseNum}";
+        if (_activeNode is VerseNode { XrefEntryPoint: true } current && current.Title == vref)
+        {
+            return;
+        }
+
+        _activeNode = new VerseNode(vref, xrefEntryPoint: true);
+    }
+
+    private void OnXrefMarkerKeyDown(KeyboardEventArgs e, int verseNum)
+    {
+        if (e.Key == "Enter")
+        {
+            OpenVerseXrefEntry(verseNum);
+        }
+    }
 
     // Batch T requirement 5: a pericope heading's own explore target --
     // mirrors OpenVerse/OpenChapter's own "construct the node directly,

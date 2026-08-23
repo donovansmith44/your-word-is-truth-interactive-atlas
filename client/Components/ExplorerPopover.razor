@@ -308,7 +308,19 @@
             {
                 var sectionTasks = applicable.Select(p => p.ResolveAsync(Current, Atlas, this)).ToList();
                 await Task.WhenAll(sectionTasks.Cast<Task>().Append(explorationsTask));
-                _sections = sectionTasks.Select(t => t.Result).Where(s => s is not null).Select(s => s!).ToList();
+                var resolved = sectionTasks.Select(t => t.Result).Where(s => s is not null).Select(s => s!).ToList();
+                // Batch M-D2 (owner's cross-reference superscript directive,
+                // entry-point parameter): "xrefs section LEADING" -- when
+                // this popover was opened via a verse's own superscript, the
+                // xrefs section moves to the FRONT of the already-resolved
+                // list (a stable reorder over the SAME registry-ordered
+                // result every other open produces, never a second
+                // registry/ordering rule). One small, disclosed special
+                // case living directly in this file, matching its own
+                // established precedent immediately below (map-focus sync,
+                // ShowMiniMap) for a cross-cutting concern the per-node
+                // registry itself has no business modeling.
+                _sections = XrefEntryPoint ? resolved.OrderByDescending(s => s.Testid == "xrefs").ToList() : resolved;
                 _explorations = explorationsTask.Result;
             }
             else
@@ -419,6 +431,15 @@
     // siblings, not itself) are excluded; every other resolved section
     // counts, generically -- no hardcoded catechism check.
     public int OtherContextSectionCount => _sections.Count(s => s.Testid is not ("verse-text" or "xrefs"));
+
+    // Batch M-D2: read live off Current (render time, same as
+    // OtherContextSectionCount immediately above) -- never captured into a
+    // field at push time, so it always reflects whichever node is CURRENTLY
+    // on top of the stack (a drill-in from an entry-point-opened popover
+    // pushes an ordinary VerseNode with XrefEntryPoint defaulted false, per
+    // that class's own doc comment, so the emphasis correctly does not
+    // propagate past the one hop that opened it).
+    public bool XrefEntryPoint => Current is VerseNode { XrefEntryPoint: true };
 
     private async Task Activate(Exploration ex)
     {

@@ -37,4 +37,14 @@ export const api = {
   // Batch R requirement 1: GET /api/land-mask -- the curated coastline
   // clip geometry.
   landMask: () => getJson('/api/land-mask'),
+  // Batch M-D2 (P7 closure): the two generic graph endpoints -- the SAME
+  // shapes client/IExplorableClient.cs's Card()/Edges() consume, read here
+  // directly (raw fetch, not through the Blazor app) for CONTRACT-lockstep
+  // assertions that need to compare the generic contract's own wire shape
+  // against the bespoke endpoints' own (e.g. votes-ranked order).
+  node: (id: string) => getJson(`/api/node/${encodeURIComponent(id)}`),
+  nodeEdges: (id: string, kind: string, opts: { cursor?: number; limit?: number } = {}) => {
+    const params = new URLSearchParams({ kind, ...(opts.limit != null ? { limit: String(opts.limit) } : {}), ...(opts.cursor != null ? { cursor: String(opts.cursor) } : {}) });
+    return getJson(`/api/node/${encodeURIComponent(id)}/edges?${params}`);
+  },
 };

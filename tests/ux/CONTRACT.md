@@ -170,7 +170,14 @@ Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   absent entirely for an uncovered book/chapter (no verse there is ever a
   heading anchor); clicking opens a fresh `EventNode` for that heading's own
   `event_id` -- see EVENT-1. Shares this SAME code path for the split-view
-  reader pane (Reader.razor is reused, not copied, for both -- SPLIT-1))
+  reader pane (Reader.razor is reused, not copied, for both -- SPLIT-1)),
+  `verse-xref-marker-{n}` (batch-md2-brief.md, the owner's cross-reference
+  superscript directive; one `<sup>`, immediately after `verse-line-{n}`'s
+  own verse text, present iff `GET /api/chapter/{cref}`'s own per-verse
+  `xref_count` (batch-md2-brief.md; the verse's own `cites` edge-summary
+  count, THE PORT) is `> 0` -- see XSCRIPT-1 below for the full lettering
+  scheme; entry point into the SAME `ExplorerPopover`, xrefs section
+  leading -- see XSCRIPT-1/CAP-RECONCILE-1)
 Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
   FOLLOW-1/VIEWSTATE-1 below for the full behavior these wire up):
   `split-open-reader` (button, reader only, absent once split is open;
@@ -590,6 +597,171 @@ Notes:
   distinguish there the way there is for xrefs. See
   `popover-place-date-established-verse-{SPAN}`/`-destroyed-verse-{SPAN}`
   and their own `-more`/`-collapse` pair in the testid inventory above.
+- XSCRIPT-1 (batch-md2-brief.md; the owner's cross-reference superscript
+  directive, batch-x-brief.md verbatim, 2026-08-21: "little superscripts
+  visible near verses/passages to which cross references apply... `i,j,k`
+  to represent multiple cross references to a single element if there are
+  > 3 xrefs, the superscript should be `...`... if you hover over it you
+  get another explorable, collapsable/expandable hover menu that shows 3
+  explorable verses to start"). Closed on the graph platform (M-D2's own
+  controller decisions): a verse's superscript STATE is its `cites`
+  edge-summary COUNT at its TextUnit locus (`GraphQuery::edge_summary`,
+  design spec §5) -- served inline on `GET /api/chapter/{cref}` as
+  `VerseOut.xref_count` (server-side reuse of the SAME generic query `GET
+  /api/node/{id}` itself answers, batched onto the existing per-chapter
+  response rather than one round trip per verse -- see
+  `handlers::chapter`'s own doc comment). `0` -> no marker; `1..=3` -> that
+  many lettered superscripts; `>3` -> the many-marker. ONLY verse-attached
+  (the original brief's own data note, re-affirmed): headings/passages
+  carry no superscript of their own, and verse xrefs are never aggregated
+  UP to a heading's own container -- the mechanism (a plain per-locus
+  count) does not preclude passage-level attachment later, it simply is not
+  wired to one today, since no passage-level xref data exists.
+
+  LETTERING SCHEME: the owner's own literal letters, `i`/`j`/`k` (taken as
+  the scheme itself, not an illustrative stand-in for "some sequential
+  letters" -- a verse only ever needs 1-3 of them, since 4+ is always the
+  many-marker instead). RESTART BOUNDARY: PER VERSE -- "to represent
+  multiple cross references to a SINGLE ELEMENT," the owner's own words --
+  every verse with 1-3 xrefs independently starts its own lettering at
+  `i`; there is no chapter-wide or global counter anywhere (a pure function
+  of ONE integer, `Reader.razor`'s own `XrefMarkerText(int count)` --
+  `"ijk"`'s own first `count` characters -- with no mutable accumulator to
+  declare inside or outside a closure in the first place, which is what
+  sidesteps the house pattern's own named hazard, "the shape that bit Batch
+  N" -- per-render state captured OUTSIDE a re-invoked `RenderFragment`
+  closure -- by construction, not by a guard). MANY-MARKER: the owner's own
+  suggested `...`, realized as the single Unicode HORIZONTAL ELLIPSIS
+  character (U+2026, `…`) rather than three ASCII periods, for typographic
+  correctness. ORDERING: letters map 1:1 onto the wire's own order, which
+  is ALREADY votes-ranked (`EdgeMeta::Votes`, design types doc §3) --
+  proven, not merely assumed, by
+  `server/atlas-server/tests/graph_api.rs::generic_cites_edges_are_already_votes_descending_matching_the_bespoke_verse_endpoint`
+  (a real multi-xref verse's own generic `cites` edge page compared,
+  position for position, against the bespoke, provably-votes-sorted
+  `/api/verse/{vref}` endpoint) -- no client-side re-sort exists or is
+  needed.
+
+  PLACEMENT: immediately after the verse's own text (inside `.verse-text`,
+  trailing `<sup class="verse-xref-marker">`) -- the brief's own explicit
+  "after the verse text/number" allowance, chosen over "after the verse
+  NUMBER" specifically because this app's own xref granularity is
+  whole-verse (no sub-verse/word-level addressing materializes yet, design
+  doc §3), so placing the marker at the verse's own END never implies a
+  word-level precision this data does not carry.
+
+  ENTRY POINT (batch-x-brief.md requirement 2, owner's composability law,
+  verbatim: "the hover menu... should not have parallel interfaces"):
+  hovering (`mouseenter`), keyboard-focusing (`focus`), OR clicking the
+  marker all open the SAME `ExplorerPopover` for that verse (a fresh
+  `VerseNode` with `XrefEntryPoint=true` -- a PARAMETER on the one
+  abstraction, never a second node type or a parallel popover, owner
+  decree: "a parallel popover implementation is a defect") -- see
+  CAP-RECONCILE-1 immediately below for exactly what that parameter
+  changes. CLOSING follows the SAME mechanism every other popover already
+  uses (backdrop click / Escape / the close button) -- deliberately NOT
+  mouseleave, which would make a hover-opened popover physically impossible
+  to reach with the mouse (the popover panel is not anchored at the
+  marker's own screen position -- see this note's own "ANCHORING" paragraph
+  below). Once open, the pre-existing full-viewport `.popover-backdrop`
+  (unchanged, `position:fixed; inset:0`) already covers the reader text
+  underneath, which is what keeps a mouse in transit toward a
+  viewport-centered popover panel from crossing -- and accidentally
+  re-triggering -- some OTHER verse's own marker along the way; no
+  additional debounce mechanism was added or found necessary.
+  `Reader.razor`'s own `OpenVerseXrefEntry` no-ops when the popover is
+  ALREADY open for the SAME verse's own entry point (a redundant re-hover,
+  or focus firing right after a click already did) -- `ExplorerPopover` is
+  keyed by `_activeNode` itself (a plain class, no value equality), so an
+  unguarded reassignment to an equivalent-but-distinct `VerseNode` instance
+  would otherwise tear down and rebuild the whole popover for no actual
+  change.
+
+  TESTING NOTE, self-obscuring target: the SAME backdrop-covers-the-marker
+  effect this note just described is exactly what makes a plain, un-forced
+  Playwright `locator.hover()`/`.click()` on the marker retry for the FULL
+  test timeout rather than resolve -- the low-level action performs
+  correctly on its own first attempt (confirmed live: "performing hover
+  action" precedes the backdrop appearing in Playwright's own actionability
+  log), but the target can never again pass Playwright's own "still cleanly
+  actionable" re-check once its own reaction covers it, which a REAL human
+  hover/click never needs (one event, done). `tests/ux/reader-xref-
+  superscripts.spec.ts` uses `{ force: true }` on every such call, disclosed
+  in that file's own header comment -- real production behavior, a
+  Playwright automation artifact, not a defect either side.
+
+  ANCHORING: "anchored at the superscript" (batch-x-brief.md) is realized
+  as "opened BY WAY OF the superscript, for that verse" -- the SAME
+  positioning the popover already uses for every other verse-triggered open
+  (viewport-centered full-page; pane-centered while split, F2 requirement
+  6d) -- NOT a new pixel-precise, element-relative anchoring mode. No
+  EXISTING popover trigger in this app (verse-line click, chapter-head,
+  pericope-heading) visually pins the popover to the clicked element's own
+  screen position either; a superscript-specific exception would be a new,
+  narrower positioning primitive with no other consumer, disclosed here as
+  a deliberate reading rather than a silently narrower implementation of
+  the brief's own words.
+
+  JANK GUARD (the brief's own explicit test: "verse line-height/measure
+  unchanged"): `.verse-xref-marker`'s own `vertical-align: super` +
+  `line-height: 1` (app.css) keeps the marker in normal inline flow (never
+  `position:absolute/relative`) without ever inflating `.verse-text`'s own
+  line box -- verified live, not merely asserted in CSS:
+  `tests/ux/reader-xref-superscripts.spec.ts`'s own `JANK-1` tests compare
+  `.verse-text`'s own COMPUTED `line-height` between a marker-bearing and a
+  marker-free verse in the same chapter (content-length-independent,
+  mechanism-level) and, for a pair short enough to trust as single-line,
+  their own rendered `.verse-line` `boundingBox().height` too (the brief's
+  own literal ask, a real-world proxy, skipped gracefully rather than
+  asserted against a wrapped multi-line verse where content length, not
+  jank, would explain any difference). REDUCED MOTION: no rule declares any
+  transition/animation on `.verse-xref-marker` at all -- satisfied by
+  construction (`.pericope-heading`'s own established precedent for the
+  identical reasoning), confirmed live under `prefers-reduced-motion:
+  reduce` emulation by the same spec file's own second `JANK-1` test.
+  CONTRAST: the brief's own explicit quiet-accent allowance (`>=7:1`, not
+  body text's `>=10:1`) -- reuses `--bronze-ink` (ALREADY this exact role
+  one level up, `.verse-num`, same `--parchment` background), computed
+  (this file's own established WCAG relative-luminance method) at ~7.27:1
+  against `--parchment` specifically (`#654A2A`/`#F6F1E5`) -- clears the
+  floor with real, if modest, margin. NOT the same 7.85:1 figure
+  `.verse-num`'s own `:root` comment elsewhere in this file cites -- that
+  figure is against the LIGHTER `--parchment-raised` the POPOVER sits on,
+  a materially different background from this darker `--parchment` the
+  READER itself sits on (see NAV-4's own note on why the two are not
+  interchangeable for a contrast claim); the ~7.27:1 figure here is this
+  batch's own independent computation against the correct background.
+- CAP-RECONCILE-1 (batch-x-brief.md requirement 2, "CAP RECONCILIATION" --
+  owner decree, verbatim: "do not silently break F2... implement it as
+  such [a parameter on the one abstraction, NOT a second interface] -- a
+  parallel popover implementation is a defect"): `IPopoverSectionContext`
+  gains ONE new property, `XrefEntryPoint` (bool; `true` exactly when
+  `Current` is a `VerseNode` with its own `XrefEntryPoint=true` -- see
+  XSCRIPT-1's own "ENTRY POINT" note), read the SAME way
+  `OtherContextSectionCount` already is (INSIDE `CrossRefsSection`'s own
+  returned `RenderFragment`, at RENDER time, never captured during the
+  concurrent `ResolveAsync` phase -- both are the ONLY two inputs that
+  method's own cap decision reads). `Cap` becomes:
+  `ctx.XrefEntryPoint ? 3 : (ctx.OtherContextSectionCount > 0 ? 2 : 3)` --
+  F2's own xrefs-only-vs-mixed-context rule (2 vs 3) governs the GENERAL
+  (non-entry-point) popover byte-for-byte UNCHANGED; the entry-point
+  popover shows 3 UNCONDITIONALLY, regardless of whether catechism or any
+  other context section is also present (the owner's own words, "shows 3
+  explorable verses to start"). Both branches' "3" read
+  `client/Explore/EdgeSectionRegistry.cs`'s own `Cites.InitialClamp` -- one
+  constant, not two coincidentally-equal literals. ORDER: the entry-point
+  popover ALSO reorders its already-resolved section list so `xrefs` LEADS
+  (a stable `OrderByDescending` in `ExplorerPopover.LoadCurrent`, over the
+  SAME registry-produced list every other open already produces -- one
+  small, disclosed special case living directly in that file, the same
+  established shape its own map-focus-sync/ShowMiniMap special cases
+  already take for a cross-cutting concern the per-node registry has no
+  business modeling) -- the GENERAL popover's own section order (verse-text
+  first, xrefs second, ...) is unchanged. Proven directly:
+  `tests/ux/reader-xref-superscripts.spec.ts`'s own "entry-point parameter
+  vs F2's general popover" test opens the IDENTICAL verse both ways in one
+  test and asserts BOTH caps in the SAME run, never two separately-
+  plausible-but-unconnected assertions.
 - CLIENT-ACCESS-1 (batch-md2-brief.md; P7's "CLIENT ACCESS" seam closure --
   design doc §2's own seam inventory: "GAP: the Blazor client still calls
   bespoke endpoints via a concrete AtlasClient. CLOSES AT M-D: the client

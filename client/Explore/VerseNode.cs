@@ -21,7 +21,31 @@ public sealed class VerseNode : IExplorable
     private readonly string _vref;
     private VerseDetail? _cached;
 
-    public VerseNode(string vref) => _vref = vref;
+    /// <summary>
+    /// Batch M-D2 (owner's cross-reference superscript directive):
+    /// <c>true</c> exactly when this node was pushed by way of a verse's own
+    /// xref superscript cluster/many-marker (Reader.razor's
+    /// <c>OpenVerseXrefEntry</c>) rather than the ordinary verse line/
+    /// verse-num click. A PARAMETER on the one abstraction, never a second
+    /// node type or a parallel popover (owner decree, batch-x-brief.md
+    /// verbatim: "a parallel popover implementation is a defect") -- reads
+    /// through <see cref="Explore.IPopoverSectionContext.XrefEntryPoint"/>
+    /// to change exactly two things about the SAME popover machinery: the
+    /// xrefs section's own initial cap (3, unconditionally, vs. F2's
+    /// existing 2-when-mixed-context rule) and its LEADING position among
+    /// sections (both in <c>ExplorerPopover.razor</c>/
+    /// <c>PopoverSectionProviders.CrossRefsSection</c>). Default <c>false</c>
+    /// -- every pre-existing call site (<c>PassageList.Explore</c>,
+    /// <c>Reader.razor</c>'s own plain <c>OpenVerse</c>, every provider that
+    /// pushes a fresh <c>VerseNode</c> onward) is byte-for-byte unchanged.
+    /// </summary>
+    public bool XrefEntryPoint { get; }
+
+    public VerseNode(string vref, bool xrefEntryPoint = false)
+    {
+        _vref = vref;
+        XrefEntryPoint = xrefEntryPoint;
+    }
 
     public string Title => _vref;
     public string Kind => "Verse";

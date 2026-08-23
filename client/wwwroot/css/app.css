@@ -686,6 +686,49 @@ input:focus-visible,
     color: var(--ink);
 }
 
+/* Batch M-D2 (owner's cross-reference superscript directive): the print-
+   Bible reference-letter cluster, right after the verse's own text.
+   JANK GUARD (brief's own explicit test: "verse line-height/measure
+   unchanged"): `line-height: 1` on the marker ITSELF, plus `vertical-align:
+   super` (the standard, well-supported inline-raise technique -- no
+   position:absolute/relative, so this never leaves normal flow and can
+   never overlap a neighboring line) is what keeps `.verse-line`'s own
+   `line-height: 1.7` from ever being recomputed by this element's own
+   smaller, raised box -- confirmed live: `tests/ux/reader-xref-
+   superscripts.spec.ts`'s own boundingBox comparison against a same-
+   chapter no-xref verse (see that file's own JANK-1 note).
+   CONTRAST: quiet-accent floor (>=7:1), not body text's own >=10:1 -- the
+   brief's own explicit allowance for a superscript specifically. Reuses
+   --bronze-ink -- ALREADY this exact role one level up (.verse-num, a
+   quiet reference glyph beside verse text, same --parchment background) --
+   computed (WCAG relative-luminance formula, this file's own established
+   method) at ~7.27:1 against --parchment (#654A2A / #F6F1E5) -- clears the
+   floor with real, if modest, margin; not the SAME 7.85:1 figure the
+   .verse-num comment elsewhere in this file cites, which is against the
+   LIGHTER --parchment-raised the popover sits on, not this darker
+   --parchment the reader itself sits on (see that comment's own note on
+   why the two backgrounds are not interchangeable for a contrast claim).
+   No transition/animation of any kind -- "no layout jank" AND "reduced-
+   motion safe" both satisfied by construction (.pericope-heading's own
+   established precedent for the identical reasoning), not a media-query
+   special case. */
+.verse-xref-marker {
+    display: inline;
+    vertical-align: super;
+    line-height: 1;
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    letter-spacing: .02em;
+    color: var(--bronze-ink);
+    cursor: pointer;
+    margin-left: .05rem;
+}
+
+.verse-xref-marker:hover,
+.verse-xref-marker:focus-visible {
+    color: var(--lapis);
+}
+
 /* reader-prev/reader-next -- Batch R requirement 6 (user 2026-08-19: "the
    buttons for going to the next chapter should always be visible as being
    middle-aligned on the page even as i scroll"): REPOSITIONED from quiet

@@ -98,6 +98,21 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
 /// concurrent <c>ResolveAsync</c> call. A down-arrow (<c>xrefs-more</c>)
 /// reveals the rest; fewer entries than the cap means no arrow at all
 /// (conditional presence, per <c>PassageList.razor</c>'s own rule).
+///
+/// Batch M-D2 (owner's cross-reference superscript directive, ENTRY-POINT
+/// PARAMETER -- CAP RECONCILIATION, owner decree: "do not silently break
+/// F2... a parameter on the one abstraction, NOT a second interface"):
+/// <see cref="IPopoverSectionContext.XrefEntryPoint"/>, read the SAME way
+/// (render time, inside this closure) as <see cref="IPopoverSectionContext.OtherContextSectionCount"/>
+/// immediately above, OVERRIDES the F2 ternary entirely when true -- 3
+/// initial entries UNCONDITIONALLY (the owner's own words, "shows 3
+/// explorable verses to start"), regardless of whether catechism or any
+/// other context section is also present. F2's own 3-vs-2 rule governs the
+/// GENERAL (non-entry-point) popover UNCHANGED -- this is the reconciled
+/// parameter, not a fork: one `Cap` expression, one component, one section
+/// provider. Both branches' own "3" reads
+/// <see cref="EdgeSectionRegistry.Cites"/>'s own <c>InitialClamp</c> -- one
+/// constant, not two coincidentally-equal literals.
 /// </summary>
 public sealed class CrossRefsSection : IPopoverSectionProvider
 {
@@ -176,7 +191,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             builder.OpenComponent<Components.PassageList>(0);
             builder.AddAttribute(1, "Units", (IReadOnlyList<PassageSourceUnit>)units);
             builder.AddAttribute(2, "RefTestIdPrefix", "xref-item");
-            builder.AddAttribute(3, "Cap", ctx.OtherContextSectionCount > 0 ? 2 : 3);
+            builder.AddAttribute(3, "Cap", ctx.XrefEntryPoint ? EdgeSectionRegistry.Cites.InitialClamp : (ctx.OtherContextSectionCount > 0 ? 2 : EdgeSectionRegistry.Cites.InitialClamp));
             builder.AddAttribute(4, "MoreTestId", "xrefs-more");
             builder.AddAttribute(5, "CollapseTestId", "xrefs-collapse");
             builder.AddAttribute(6, "RevealNoun", "cross-references");

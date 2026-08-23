@@ -40,6 +40,24 @@ public interface IPopoverSectionContext
     /// unchanged when Batch P (or any later batch) adds a new provider.
     /// </summary>
     int OtherContextSectionCount { get; }
+
+    /// <summary>
+    /// Batch M-D2 (owner's cross-reference superscript directive, entry-
+    /// point parameter): <c>true</c> exactly when the CURRENT node is a
+    /// <c>VerseNode</c> pushed via its own xref superscript cluster/many-
+    /// marker (<see cref="Explore.VerseNode.XrefEntryPoint"/>) rather than
+    /// the ordinary verse line/verse-num. Read from a <c>RenderFragment</c>
+    /// at RENDER time, same discipline as <see cref="OtherContextSectionCount"/>
+    /// immediately above (both are read INSIDE <see cref="CrossRefsSection"/>'s
+    /// own returned closure, never captured during the concurrent
+    /// <c>ResolveAsync</c> phase) -- house pattern, non-negotiable per this
+    /// batch's own brief ("the per-chapter superscript lettering is exactly
+    /// the shape that bit Batch N"). A parameter on the ONE shared
+    /// abstraction (owner decree: never a parallel interface) -- this
+    /// property, plus <see cref="OtherContextSectionCount"/>, are the ONLY
+    /// two inputs <c>CrossRefsSection</c>'s own cap decision reads.
+    /// </summary>
+    bool XrefEntryPoint { get; }
 }
 
 /// <summary>
