@@ -32,7 +32,7 @@
 //! explicitly; the guarantee is unchanged (a `GraphService` still cannot
 //! exist without the check having passed), only WHERE it runs moved.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 use anyhow::Context;
@@ -76,6 +76,32 @@ pub struct GraphService {
     /// call at request time, never cached here.
     pub era_ids: Vec<AnyNodeId>,
     pub polity_ids: Vec<AnyNodeId>,
+    /// M-C2: the same "companion enumeration the generic port doesn't
+    /// model" class as `era_ids`/`polity_ids` above -- `handlers::
+    /// narratives`' own full listing and `legacy::atlas_data_overlay`'s
+    /// own reconstruction both need "every node of kind K," never a
+    /// per-position query. `narrative_ids` is `graph.nodes`'s own
+    /// alphabetical-by-id order (unmodified -- confirmed to already match
+    /// `data/curated/narratives/`'s own sorted-by-filename compiled order,
+    /// since a narrative's filename stem IS its id).
+    pub narrative_ids: Vec<AnyNodeId>,
+    pub event_ids: Vec<AnyNodeId>,
+    pub place_ids: Vec<AnyNodeId>,
+    /// M-C2: narrative id -> its own `succession` row's `chain`, in order
+    /// -- the single source `handlers::narratives`/`legacy::
+    /// narrative_from_node` read for `legs`, never duplicated onto the
+    /// `Narrative` node's own payload (see `NodePayload::Narrative`'s own
+    /// doc comment). A narrative with zero legs has no entry at all
+    /// (lawful, honest absence -- `event_world::populate_nodes_and_
+    /// direct_rows` never emits a `Succession` row for one).
+    pub narrative_legs: BTreeMap<String, Vec<String>>,
+    /// M-C2 (requirement 1, the decisive-title law re-homed as a graph
+    /// query): verse -> the one pericope heading that wins there, per
+    /// `heading::build_heading_index`'s own 3-tier (+ determinism) rule --
+    /// precomputed once here (not per-request), the same "O(1) per-verse
+    /// lookup for a whole-chapter fetch" reasoning `bible_position` itself
+    /// already established.
+    pub heading_index: BTreeMap<String, crate::heading::HeadingEntry>,
 }
 
 /// The longest KJV chapter (Psalm 119) has 176 verses; this probe width is
@@ -195,6 +221,25 @@ impl GraphService {
         era_nodes.sort_by_key(|(from_year, id)| (*from_year, id.raw.clone()));
         let era_ids: Vec<AnyNodeId> = era_nodes.into_iter().map(|(_, id)| id).collect();
         let polity_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Polity).cloned().collect();
+        // M-C2: the same one-time node-table scan, for the three kinds
+        // `handlers::narratives`/`legacy::atlas_data_overlay` need to
+        // enumerate. `graph.nodes` is a `BTreeMap<AnyNodeId, _>`, so this
+        // is already alphabetical-by-id order (confirmed to match
+        // `data/curated/narratives/`'s own sorted-by-filename compiled
+        // order for `narrative_ids` -- no separate sort needed here,
+        // unlike `era_ids` above).
+        let narrative_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Narrative).cloned().collect();
+        let event_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Event).cloned().collect();
+        let place_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Place).cloned().collect();
+        let mut narrative_legs: BTreeMap<String, Vec<String>> = BTreeMap::new();
+        for row in &graph.succession {
+            narrative_legs.insert(row.narrative.0.clone(), row.chain.iter().map(|e| e.0.clone()).collect());
+        }
+        // M-C2 (requirement 1): the decisive-title law's own precomputed
+        // index -- built here, over the pre-store `graph`, the SAME
+        // "cheap, once, at assemble time" treatment every other companion
+        // above already gets.
+        let heading_index = crate::heading::build_heading_index(&graph);
         // GraphPublisher::publish (design doc §9a): the compiler
         // publishes; serving never writes. One publish, at startup; M-A
         // never calls it again (no hot-reload exists yet) -- MemStore's
@@ -205,7 +250,20 @@ impl GraphService {
         let mut store = MemStore::default();
         let version = store.publish(graph);
         let snapshot = store.open(version).expect("the version just published must always be open-able");
-        GraphService { snapshot, bible_position, stats, chronology, event_world_stats, era_ids, polity_ids }
+        GraphService {
+            snapshot,
+            bible_position,
+            stats,
+            chronology,
+            event_world_stats,
+            era_ids,
+            polity_ids,
+            narrative_ids,
+            event_ids,
+            place_ids,
+            narrative_legs,
+            heading_index,
+        }
     }
 
     /// The version this service published at construction (M-A: the only
