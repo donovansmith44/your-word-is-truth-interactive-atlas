@@ -340,6 +340,25 @@ pub struct VerseOut {
     /// anchor a heading at all.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub heading: Option<HeadingOut>,
+    /// Batch M-D2 (owner's cross-reference superscript directive, closed on
+    /// the graph platform): this verse's own `cites` edge-summary COUNT at
+    /// its TextUnit locus -- read straight off THE PORT (`GraphQuery::
+    /// edge_summary`, design doc §5), the SAME generic query the `/api/node/
+    /// {id}` handler itself calls (`graph_handlers::node_card`) -- never a
+    /// second, bespoke tally. This is a genuinely NEW field (no bespoke
+    /// predecessor existed), sourced NATIVELY from the generic contract from
+    /// day one: the reader's own superscript markers ARE a query of the
+    /// graph, per the design's own P1/P4 laws, just batched onto the
+    /// EXISTING per-chapter response (one HTTP round trip for a whole
+    /// chapter) rather than issuing 20-30 individual `GET /api/node/{id}`
+    /// calls per chapter, which `client/IExplorableClient.cs`'s own concrete
+    /// implementation is what a SINGLE node's lookup uses (see that file's
+    /// own doc comment + `GraphExplorableClientTests` for the direct,
+    /// unbatched proof the same contract is correct in isolation). Always
+    /// present (0 for the overwhelming majority of verses, never omitted --
+    /// the client's own superscript decision is `count == 0` -> nothing,
+    /// never a missing-field special case).
+    pub xref_count: usize,
 }
 
 #[derive(Debug, Serialize)]
@@ -457,7 +476,19 @@ pub async fn chapter(
                 .heading_index
                 .get(&key)
                 .map(|h| HeadingOut { event_id: h.event_id.clone(), title: h.title.clone(), kind: h.kind.clone(), is_continuation: h.continuation });
-            verses.push(VerseOut { verse: v, text: text.to_string(), places, heading });
+            // Batch M-D2: the generic port, inline -- `Position::Node` +
+            // `GraphQuery::edge_summary` are the EXACT calls
+            // `graph_handlers::node_card` makes for `GET /api/node/{id}`;
+            // reused here as a library call (not a second HTTP round trip
+            // per verse) so a whole chapter's worth of superscript counts
+            // ships in the ONE fetch the reader already makes. `cites` is
+            // ALWAYS the Forward direction from a verse's own locus (a verse
+            // citing others, not "who cites me" -- `cited-by` is the
+            // Inverse reading of the SAME relation, unused here).
+            let verse_pos = Position::Node(atlas_graph::kjv_adapter::verse_node_id(book.0, chapter, v));
+            let xref_count =
+                snap.edge_summary(&verse_pos).get(&EdgeKind::Directed(RelationId::Cites, Direction::Forward)).copied().unwrap_or(0);
+            verses.push(VerseOut { verse: v, text: text.to_string(), places, heading, xref_count });
         }
     }
 

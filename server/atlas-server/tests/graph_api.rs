@@ -339,3 +339,146 @@ async fn bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id()
         "the target's own cited-by pages must list JHN.3.16 as a citer, carrying the SAME edge id -- one row, two projections, one id, read from the wire"
     );
 }
+
+// ---------------------------------------------------------------------
+// Batch M-D2 (the owner's cross-reference superscript directive, closed on
+// the graph platform): `VerseOut.xref_count` -- a NEW, additive field on the
+// bespoke `/api/chapter/{cref}` response, sourced from THE PORT's own
+// `edge_summary` for the `cites` relation at each verse's TextUnit locus (the
+// exact same generic query `GET /api/node/{id}` itself answers, reused
+// server-side so a whole chapter's superscript counts ship in ONE round
+// trip). These tests pin the two claims the client-side superscript
+// rendering depends on without re-deriving them itself: (1) the count is the
+// SAME true count the generic node/edges endpoints already serve, and (2)
+// the generic `cites` edge page is ALREADY votes-descending, matching the
+// bespoke, provably-votes-sorted `/api/verse/{vref}` endpoint exactly --
+// "votes-ranked order comes from EdgeMeta::Votes on the entries (already on
+// the wire)" is a tested fact here, not an assumed one.
+// ---------------------------------------------------------------------
+
+/// Extracts a cross-reference target's own FIRST verse ref
+/// (`"COL.1.16-19"` -> `"COL.1.16"`, `"MAT.5.3-MAT.6.2"` -> `"MAT.5.3"`,
+/// `"JOB.26.13"` -> itself unchanged) -- mirrors the three-shape parse this
+/// whole codebase already duplicates a few times over (`handlers::
+/// first_verse_of_target`, `atlas_core::xrefs::target_span`,
+/// `xref_adapter::target_span`), reimplemented locally here (test-only, no
+/// production `pub` surface to reuse) rather than exposing a fourth `pub fn`
+/// just for this assertion.
+fn first_verse_of(target: &str) -> String {
+    let head = target.split('-').next().unwrap_or(target);
+    let parts: Vec<&str> = head.split('.').collect();
+    assert!(parts.len() >= 3, "a cross-reference target's own head must be a canonical BOOK.CHAPTER.VERSE ref: {target}");
+    format!("{}.{}.{}", parts[0], parts[1], parts[2])
+}
+
+#[tokio::test]
+async fn chapter_verse_xref_count_is_always_present_and_matches_the_generic_edges_page() {
+    let app = real_app();
+
+    // JHN.3.16 -- already this file's own "many real cross-references"
+    // exemplar (the pagination/bijection tests above).
+    let (st, chapter, _) = get(&app, "/api/chapter/JHN.3").await;
+    assert_eq!(st, 200);
+    let v16 = chapter["verses"].as_array().unwrap().iter().find(|v| v["verse"] == 16).expect("JHN.3.16 must be in the chapter");
+    let chapter_count = v16["xref_count"].as_u64().expect("xref_count must always be present, even at 0") as usize;
+    assert!(chapter_count > 1, "JHN.3.16 must carry real, multiple cross-references in the compiled data: {chapter_count}");
+
+    let (st2, edges, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=200").await;
+    assert_eq!(st2, 200);
+    let entries = edges["entries"].as_array().unwrap();
+    assert!(entries.len() < 200, "limit=200 must exceed JHN.3.16's own real total, or this test's own page needs widening");
+    assert_eq!(chapter_count, entries.len(), "the chapter view's own xref_count must equal the generic edges page's own true count for the SAME verse");
+
+    // And the generic node card's own edge_summary (a DIFFERENT read of the
+    // exact same underlying generic query) must agree too.
+    let (st3, card, _) = get(&app, "/api/node/text-unit:JHN.3.16").await;
+    assert_eq!(st3, 200);
+    let cites_summary = card["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == "cites").expect("JHN.3.16 must summarize a real cites frontier");
+    assert_eq!(chapter_count, cites_summary["count"].as_u64().unwrap() as usize, "the chapter view's own xref_count must equal the node card's own edge_summary count");
+}
+
+#[tokio::test]
+async fn chapter_verse_xref_count_is_always_present_never_omitted_across_a_whole_chapter() {
+    let app = real_app();
+
+    // Shape/presence, proven over EVERY verse of a real chapter (not one
+    // hand-picked verse): `xref_count` is a plain non-negative integer key
+    // on every single entry, never a conditionally-omitted field the way
+    // `heading` is. (GEN.1.1 itself turns out to carry 61 REAL
+    // cross-references in the full compiled openbible.info dataset --
+    // densely cited, not the zero-xref exemplar a stale assumption might
+    // suggest -- so this test proves presence structurally rather than
+    // asserting a specific hardcoded verse's own count.)
+    let (st, chapter, _) = get(&app, "/api/chapter/GEN.1").await;
+    assert_eq!(st, 200);
+    let verses = chapter["verses"].as_array().unwrap();
+    assert!(!verses.is_empty());
+    for v in verses {
+        let count = v.get("xref_count");
+        assert!(count.is_some(), "xref_count must never be omitted, even at 0: verse {}", v["verse"]);
+        assert!(count.unwrap().as_u64().is_some(), "xref_count must be a plain non-negative integer: verse {}", v["verse"]);
+    }
+}
+
+#[tokio::test]
+async fn chapter_verse_xref_count_is_zero_not_omitted_for_a_real_verse_with_no_cross_references() {
+    let app = real_app();
+
+    // Discovers a real zero-xref verse by scanning real chapters (sample-
+    // driven, never a hardcoded assumption about which specific verse
+    // qualifies -- the prior draft of this test hardcoded GEN.1.1 and was
+    // wrong: real data cites it 61 times). Genealogical/list-heavy chapters
+    // are the likeliest real candidates; falls through gracefully (no hard
+    // failure) if this bounded scan happens not to find one -- a data fact,
+    // not a logic bug, the SAME "skip rather than flake" discipline this
+    // project's own Playwright suites already apply to sample-driven finds.
+    let candidates = ["GEN.5", "GEN.10", "GEN.36", "NUM.1", "1CH.1", "1CH.2", "EZR.2", "NEH.7"];
+    let mut zero_count_found = false;
+    'outer: for cref in candidates {
+        let (st, chapter, _) = get(&app, &format!("/api/chapter/{cref}")).await;
+        if st != StatusCode::OK {
+            continue;
+        }
+        for v in chapter["verses"].as_array().unwrap() {
+            if v["xref_count"] == 0 {
+                zero_count_found = true;
+                // The generic port must independently agree: no `cites`
+                // entry at all in this verse's own edge_summary (edge_summary
+                // only ever lists INHABITED kinds -- absence IS zero).
+                let verse_num = v["verse"].as_u64().unwrap();
+                let (book, chnum) = cref.split_once('.').unwrap();
+                let (_, card, _) = get(&app, &format!("/api/node/text-unit:{book}.{chnum}.{verse_num}")).await;
+                let has_cites = card["edge_summary"].as_array().unwrap().iter().any(|e| e["kind"] == "cites");
+                assert!(!has_cites, "a zero xref_count verse must have NO cites entry in its own node card's edge_summary");
+                break 'outer;
+            }
+        }
+    }
+    assert!(zero_count_found, "expected at least one real zero-cross-reference verse among the scanned candidate chapters");
+}
+
+#[tokio::test]
+async fn generic_cites_edges_are_already_votes_descending_matching_the_bespoke_verse_endpoint() {
+    let app = real_app();
+
+    // The bespoke endpoint's own `cross_refs` is built by iterating
+    // `graph.cross_refs_by_from` with no re-sort -- which is itself built,
+    // unsorted-again, directly from `xref_adapter::read_xrefs_ordered`'s own
+    // per-`from`-key votes-descending order (that module's own doc comment).
+    // So `/api/verse/{vref}`'s own `cross_refs` order IS the votes-ranked
+    // order, independently of the generic endpoint entirely -- the oracle
+    // for this test, not a second copy of the claim under test.
+    let (st, verse, _) = get(&app, "/api/verse/JHN.3.16").await;
+    assert_eq!(st, 200);
+    let bespoke: Vec<String> = verse["cross_refs"].as_array().unwrap().iter().map(|cr| first_verse_of(cr["target"].as_str().unwrap())).collect();
+    assert!(bespoke.len() > 1, "need >1 real cross-references to prove an ORDER, not just a singleton");
+
+    let (st2, edges, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=200").await;
+    assert_eq!(st2, 200);
+    let generic: Vec<String> = edges["entries"].as_array().unwrap().iter().map(|e| e["node"]["id"].as_str().unwrap().trim_start_matches("text-unit:").to_string()).collect();
+
+    assert_eq!(
+        generic, bespoke,
+        "the generic `cites` edge page must already be votes-descending, position for position matching the bespoke, provably-votes-sorted /api/verse endpoint -- no client-side re-sort should ever be needed"
+    );
+}
