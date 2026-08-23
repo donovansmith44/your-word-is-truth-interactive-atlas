@@ -93,8 +93,8 @@ pub struct EventMerge {
     pub reason: &'static str,
 }
 
-/// 65 pairs, every one individually verified against the real compiled
-/// `data/compiled/events.json` before being added here: 62 found by the
+/// 68 pairs, every one individually verified against the real compiled
+/// event set before being added here: 62 found by the
 /// automated verse-set-Jaccard sweep (>=0.8, book-consistent,
 /// label-consistent) plus 1 added by hand (`jm_jordan`/`theo-267`, jaccard
 /// 0.5 -- below the sweep's own floor, but the owner's own named proof
@@ -105,15 +105,26 @@ pub struct EventMerge {
 /// round 1 (`jer_jeremiah_stays_with_gedaliah`/`exl_mizpah`, jaccard 0.000,
 /// a CROSS-BOOK duplicate the verse-jaccard metric cannot see at all, found
 /// only by the new `cross_book_duplicate_candidate` detector below -- see
-/// that entry's own reason). Alphabetical by `survivor` for easy
-/// scanning/diffing.
+/// that entry's own reason) -- plus 3 added by Batch M-D1 (the HOTFIX-5
+/// "remaining duplicates" tail, parked across HOTFIX-4/W4/HOTFIX-6 and
+/// finally rectified here, per the owner's own report #6 "rectify those
+/// kinds of problems" generalized): `pr_rome`/`theo-384` (CROSS-BOOK,
+/// title jaccard 1.000, both LAYER-0 -- the original layer0-vs-layer1
+/// sweep never compared them), `theo-338`/`theo-337` (SAME-book, a
+/// verse-set PREFIX the plain jaccard metric scores at 0.063 despite full
+/// containment), `ezr_altar_and_foundation`/`ret_jerusalem_altar` (below
+/// BOTH existing detectors' own floors -- found only by HOTFIX-6's own
+/// chronology audit; see each entry's own reason below).
+/// Alphabetical by `survivor` for easy scanning/diffing.
 pub const EVENT_MERGE_PAIRS: &[EventMerge] = &[
+    EventMerge { survivor: "ezr_altar_and_foundation", absorbed: "ret_jerusalem_altar", reason: "SAME real-world occasion under the decisive-container pattern (the jm_bethany/pw_bethany class, but for IDENTITY, not just heading precedence), Batch M-D1 remaining-duplicates sweep (queued at HOTFIX-6 fix round 1, 2026-08-22, controller ruling: \"ret_jerusalem_altar/ezr_altar_and_foundation added to HOTFIX-5 remaining-duplicates list\"): ret_jerusalem_altar (a bare `return`-narrative leg, LAYER-0, EZR.2.1 + EZR.3.1-2, dated -537) and ezr_altar_and_foundation (Batch W2's own real curated container, LAYER-1 via `atlas_section`, EZR.3.1-13, dated -536) both narrate the altar's own rebuilding in Ezra 3. Verse-jaccard is only 0.143 (ret_jerusalem_altar's own EZR.2.1 falls outside chapter 3 entirely -- already independently covered by the pre-existing `ezr_list_of_returnees`, EZR.2.1-70, so absorbing loses no coverage) and title-jaccard only 0.286, both well under either existing automated sweep's own floor -- this pair was invisible to both, found only by HOTFIX-6's own live chronology audit. ezr_altar_and_foundation survives (the richer, atlas_section-provenanced container, on its own established -536 dating, \"the second year of their coming,\" Ezra 3:8); ret_jerusalem_altar absorbed, its own `return`-narrative leg repointed to the survivor automatically by this module's own ALIASING mechanism below -- no hand edit to `data/curated/narratives/return.toml` needed or made." },
     EventMerge { survivor: "jer_jeremiah_stays_with_gedaliah", absorbed: "exl_mizpah", reason: "CROSS-BOOK duplicate (jaccard 0.000 by this module's own verse-ID metric -- completely invisible to it, since the two sides cite entirely disjoint books, 2KI vs JER, for the identical occurrence; caught instead by Batch W4 fix round 1's own new cross-book title-similarity detector, `cross_book_duplicate_candidate` below, added specifically because this exact shape slipped past the original sweep -- see batch-w4-review.md Critical-1): \"Gedaliah governs the remnant at Mizpah\" (exl_mizpah, a pre-existing, bare, zero-witness curated event, 2KI.25.22-25) coarsely compresses TWO real, separately-narrated occasions -- Gedaliah's own governorship (2KI.25.22-24) AND, distinctly, his own assassination (2KI.25.25) -- that Jeremiah 40-41 narrates at much finer granularity and which this batch's own fresh authoring already dates as two separate containers. Per the controller's own binding ruling (\"where granularity genuinely differs... finer events dated, coarse twin absorbed\"), exl_mizpah is absorbed into the governorship half (jer_jeremiah_stays_with_gedaliah, this pair's own survivor); its own 2KI.25.22-24 verses are preserved as that survivor's own new witness row, and its own 2KI.25.25 verse becomes a witness on jer_the_assassination_of_gedaliah instead (data/curated/event-witnesses.toml) -- no coverage lost, only reorganized onto the honest, finer structure. The 'exile' narrative's own leg list is updated accordingly (data/curated/narratives/exile.toml), gaining a genuine extra leg rather than losing one." },
     EventMerge { survivor: "jm_bethsaida", absorbed: "theo-393", reason: "Theographic freebie duplicate (jaccard 0.978 verse-set overlap, same Gospel pericope): \"Feeding of Five Thousand\" (theo-393, Theographic-scale date) is the identical event as \"Jesus feeds the five thousand near Bethsaida\" (jm_bethsaida, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "jm_cana", absorbed: "theo-271", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"Water to Wine\" (theo-271, Theographic-scale date) is the identical event as \"Jesus turns water to wine at Cana\" (jm_cana, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "jm_egypt", absorbed: "theo-257", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"Joseph and Mary Flee to Egypt\" (theo-257, Theographic-scale date) is the identical event as \"The holy family flees to Egypt\" (jm_egypt, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "jm_jordan", absorbed: "theo-267", reason: "Theographic freebie duplicate (jaccard 0.500 verse-set overlap -- below this module's own 0.8 sweep floor, so NOT found by the automated sweep; added by hand because the owner's own live report named this exact pair as proof the traversal lies: 'the temptation of Jesus in the wilderness... is labeled as being before Jesus' baptism'): \"John Baptizes Jesus\" (theo-267, Theographic-scale AD 26, covering MAT+MRK+LUK) is the identical event as \"Jesus is baptized in the Jordan\" (jm_jordan, the AD-33-anchored, Robertson-grounded curated container, AD 29, MAT-primary). Absorbed; theo-267's own extra Mark/Luke coverage is restored not by touching jm_jordan's own top-level verses but by giving jm_jordan real, individually-verified MAT/MRK/LUK witness rows (data/curated/event-witnesses.toml), the same shape its own very next narrative leg (rob_temptation) already has." },
     EventMerge { survivor: "oba_vision", absorbed: "theo-244", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap -- Obadiah is a single 21-verse book, the brief's own explicit lawful single-container exception): \"Prophecies of Obadiah\" (theo-244, Theographic-scale date -585) is the identical event as \"The vision of Obadiah.\" (oba_vision, Batch W4, kjv_superscription-titled whole-book container, GENERAL-kind/undated per that file's own kind policy). Absorbed; survivor's own citation stands unmodified." },
+    EventMerge { survivor: "pr_rome", absorbed: "theo-384", reason: "CROSS-BOOK duplicate, Batch M-D1 remaining-duplicates sweep (queued at HOTFIX-4 fix round 1's own re-review, batch-hotfix4-rereview.md's own Minor finding, 2026-08-22): theo-384 \"Paul arrives at Rome\" (Theographic freebie, LAYER-0, ACT.28.11-16) is the identical event as pr_rome \"Paul arrives at Rome\" (this atlas's own curated `paul-rome-voyage` narrative's own final leg, LAYER-0 too, ACT.28.16 -- a genuine verse-set subset of theo-384's own wider range) -- IDENTICAL labels (title jaccard 1.000), same year AD 60, common place 'rome'. Both sides being LAYER-0 is exactly why the original layer0-vs-layer1 verse-jaccard sweep never even compared them; caught only by the cross-book title-similarity detector. pr_rome survives: it is this atlas's own deliberately-authored, narrative-integrated identity (nine-leg `paul-rome-voyage` chain) on the atlas's own established AD-60 scale -- the exact id `server/atlas-graph/tests/narrative_real_data.rs`'s own `global_timeline_true_extremes_of_the_real_atlas` test and `tests/ux/event-timeline.spec.ts` already assert resolves and sorts strictly before theo-385's own imprisonment. theo-384 absorbed; its own wider ACT.28.11-15 coverage is not preserved as a witness (unlike jm_jordan/theo-267) -- pr_rome's own single-verse identity, ACT.28.16, is this atlas's own deliberate anchor for the arrival MOMENT, not the wider stay, and no other event narrows to exactly that gap." },
     EventMerge { survivor: "pw_gethsemane", absorbed: "theo-454", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"Prayer and Betrayal in Gethsemane\" (theo-454, Theographic-scale date) is the identical event as \"Jesus prays and is arrested at Gethsemane\" (pw_gethsemane, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "pw_jerusalem_entry", absorbed: "theo-444", reason: "Theographic freebie duplicate (jaccard 0.978 verse-set overlap, same Gospel pericope): \"Triumphal Entry\" (theo-444, Theographic-scale date) is the identical event as \"The triumphal entry into Jerusalem\" (pw_jerusalem_entry, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "rob_adulterous_woman", absorbed: "theo-419", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"Woman Caught in Adultery\" (theo-419, Theographic-scale date) is the identical event as \"A woman taken in adultery is brought to Jesus for judgment\" (rob_adulterous_woman, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
@@ -173,6 +184,7 @@ pub const EVENT_MERGE_PAIRS: &[EventMerge] = &[
     EventMerge { survivor: "rob_withered_hand", absorbed: "theo-293", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"Healing a Withered Hand\" (theo-293, Theographic-scale date) is the identical event as \"Jesus heals a man's withered hand on the sabbath\" (rob_withered_hand, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "rob_woes_on_cities", absorbed: "theo-300", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"Woe to Chorazin and Bethsaida\" (theo-300, Theographic-scale date) is the identical event as \"Jesus denounces the unrepentant cities of Galilee\" (rob_woes_on_cities, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
     EventMerge { survivor: "rob_zacharias_vision", absorbed: "theo-248", reason: "Theographic freebie duplicate (jaccard 1.000 verse-set overlap, same Gospel pericope): \"John's birth predicted\" (theo-248, Theographic-scale date) is the identical event as \"The angel Gabriel appears to Zacharias in the temple\" (rob_zacharias_vision, the AD-33-anchored, Robertson-grounded curated container). Absorbed; survivor's own citation and date stand unmodified." },
+    EventMerge { survivor: "theo-338", absorbed: "theo-337", reason: "SAME-book duplicate by verse-set CONTAINMENT, Batch M-D1 remaining-duplicates sweep (queued at Batch W4 fix round 1, 2026-08-22, this module's own former `EVENT_DISTINCT_PAIRS` entry has the full jaccard derivation): theo-337 \"First missionary journey begins\" (ACT.12.24-13.3, 5 verses) is verse-for-verse a PREFIX of theo-338 \"First Missionary Journey\" (ACT.12.24-14.28, 79 verses) -- a short lead-in freebie and the mega-span covering that same lead-in plus the whole rest of the journey, both LAYER-0, same year AD 48, common place antioch_68 (verse jaccard only 0.063, title jaccard 0.750, caught only by the cross-book title-similarity detector, invisible to the plain verse-jaccard sweep despite full containment). theo-338 survives: the broader, verse-complete identity -- absorbing theo-337 loses ZERO coverage, since theo-337's own entire 5-verse set is already a proper subset of theo-338's own 79. theo-337 absorbed." },
 ];
 
 /// Pairs a sweep's own threshold genuinely finds, but which are NOT a 1:1
@@ -223,20 +235,17 @@ pub const EVENT_DISTINCT_PAIRS: &[EventDistinct] = &[
         reason: "Real OT duplicate (jaccard 0.923), same bug class, OUTSIDE Gospel-era scope -- ALSO already independently disclosed in batch-w1-report.md section 5: theo-129's own compiled `verses` field carries a genuine pre-existing anomaly (a stray GEN.34.1 entry colliding with gen_dinah_shechem), which is why W1 authored deu_death_of_moses fresh rather than enriching theo-129 directly. Merging theo-129 into deu_death_of_moses today would also import that anomaly's own within-layer collision risk -- deferred to a follow-up that fixes the GEN.34.1 anomaly first, not silently merged around it.",
     },
     // --- Batch W4 fix round 1: entries raised by the NEW cross-book
-    // title-similarity detector (`cross_book_duplicate_candidate` below),
-    // none of them from this batch's own fresh authoring -- all three
-    // pre-exist this batch, surfaced only because this fix round is the
-    // first time anything has ever checked for this shape at all.
-    EventDistinct {
-        a: "theo-384",
-        b: "pr_rome",
-        reason: "CROSS-BOOK duplicate candidate (title jaccard 1.000, IDENTICAL labels \"Paul arrives at Rome\", same year AD 60, common place 'rome') -- both LAYER-0 (zero witnesses, no robertson/acts/atlas/kjv_superscription section on either side), which is WHY the original verse-jaccard sweep never even compared them (`run_event_merges`'s own nested loop is layer0 x layer1 only) despite their own verse sets (theo-384: ACT.28.11-16; pr_rome: ACT.28.16 alone, a genuine subset) also overlapping substantially. A real, pre-existing duplicate-identity pair, controller-confirmed and explicitly parked, not introduced by and not in scope for this batch -- queued for HOTFIX-5 remaining-duplicates sweep. Do not fix here.",
-    },
-    EventDistinct {
-        a: "theo-337",
-        b: "theo-338",
-        reason: "SAME-book (both ACT), but a shape the ORIGINAL verse-jaccard sweep also missed, for a different reason than the cross-book pairs above (verse-set SIZE disparity, not book disjointness): theo-337 \"First missionary journey begins\" (ACT.12.24-13.3, 5 verses) is verse-for-verse a PREFIX of theo-338 \"First Missionary Journey\" (ACT.12.24-14.28, 79 verses) -- intersection 5 / union 79 = jaccard 0.063, far below the 0.8 floor, even though theo-337's own entire verse set is wholly contained in theo-338's own. Title jaccard 0.750 (both LAYER-0, both Theographic-sourced, same year AD 48, common place antioch_68) is what this batch's own new detector actually catches it by. Likely a genuine latent duplicate (a short lead-in freebie vs. a mega-span covering the same lead-in plus the whole rest of the journey) -- NOT introduced by and not in scope for this batch, discovered only because this fix round is the first time anything has checked title similarity at all. Queued for HOTFIX-5 remaining-duplicates sweep, the same disposition as theo-384/pr_rome immediately above. Do not fix here.",
-    },
+    // title-similarity detector (`cross_book_duplicate_candidate` below).
+    // Two siblings that once stood here -- theo-384/pr_rome and
+    // theo-337/theo-338 -- were the HOTFIX-5 "remaining duplicates" this
+    // module's own doc comment names; Batch M-D1 rectified both (see
+    // `EVENT_MERGE_PAIRS`'s own `pr_rome`/`theo-338` entries, each with the
+    // full jaccard derivation this comment used to carry). ret_susa/
+    // neh_nehemiah_hears_report is the one genuinely CONFIRMED-DISTINCT
+    // survivor of that original three-pair group -- it stays here, not in
+    // EVENT_MERGE_PAIRS, because the two events are two complementary
+    // narrative beats of ONE moment, never two accounts of one occurrence
+    // (see its own reason below).
     EventDistinct {
         a: "ret_susa",
         b: "neh_nehemiah_hears_report",
@@ -537,7 +546,7 @@ mod tests {
     }
 
     #[test]
-    fn merge_table_has_exactly_65_verified_pairs() {
+    fn merge_table_has_exactly_68_verified_pairs() {
         // 62 found by the automated >=0.8 jaccard sweep (HOTFIX-4) + 1 added
         // by hand (jm_jordan/theo-267, jaccard 0.5 -- below the sweep's own
         // floor, the owner's own named proof case, see that entry's own
@@ -546,8 +555,11 @@ mod tests {
         // 1 added by Batch W4 fix round 1
         // (jer_jeremiah_stays_with_gedaliah/exl_mizpah, jaccard 0.000 by
         // verse-ID -- found only by the new cross-book title-similarity
-        // detector, `cross_book_duplicate_candidate`, tested below).
-        assert_eq!(EVENT_MERGE_PAIRS.len(), 65);
+        // detector, `cross_book_duplicate_candidate`, tested below) + 3
+        // added by Batch M-D1 (pr_rome/theo-384, theo-338/theo-337,
+        // ezr_altar_and_foundation/ret_jerusalem_altar -- the HOTFIX-5
+        // "remaining duplicates" tail, see each entry's own reason).
+        assert_eq!(EVENT_MERGE_PAIRS.len(), 68);
     }
 
     #[test]
@@ -574,11 +586,14 @@ mod tests {
         // merged (EVENT_MERGE_PAIRS, checked by the previous test) or
         // explicitly exempted here -- never silently unlisted, which is
         // exactly what `validate::run_cross_book_duplicates` fails loud on.
-        let expected = [
-            ("theo-384", "pr_rome"),
-            ("theo-337", "theo-338"),
-            ("ret_susa", "neh_nehemiah_hears_report"),
-        ];
+        // Batch M-D1: theo-384/pr_rome and theo-337/theo-338, this
+        // detector's own original two findings alongside ret_susa/
+        // neh_nehemiah_hears_report, are RECTIFIED now (see
+        // `the_paul_arrives_at_rome_pair_is_in_the_merge_table`/
+        // `the_first_missionary_journey_prefix_pair_is_in_the_merge_table`
+        // below) -- removed from this expectation, since they no longer
+        // exist as two separate ids for the sweep to compare at all.
+        let expected = [("ret_susa", "neh_nehemiah_hears_report")];
         for (a, b) in expected {
             assert!(
                 EVENT_DISTINCT_PAIRS
@@ -587,6 +602,59 @@ mod tests {
                 "{a}/{b} must be documented in EVENT_DISTINCT_PAIRS"
             );
         }
+    }
+
+    // --- Batch M-D1: the three remaining HOTFIX-5 duplicate pairs ----------
+
+    #[test]
+    fn the_paul_arrives_at_rome_pair_is_in_the_merge_table() {
+        assert!(EVENT_MERGE_PAIRS.iter().any(|p| p.survivor == "pr_rome" && p.absorbed == "theo-384"));
+    }
+
+    #[test]
+    fn the_first_missionary_journey_prefix_pair_is_in_the_merge_table() {
+        assert!(EVENT_MERGE_PAIRS.iter().any(|p| p.survivor == "theo-338" && p.absorbed == "theo-337"));
+    }
+
+    #[test]
+    fn the_jerusalem_altar_rebuilt_pair_is_in_the_merge_table() {
+        assert!(EVENT_MERGE_PAIRS
+            .iter()
+            .any(|p| p.survivor == "ezr_altar_and_foundation" && p.absorbed == "ret_jerusalem_altar"));
+    }
+
+    /// Batch M-D1 red-then-green (mirrors `red_then_green_baptism_pair_
+    /// collapses_to_one_event_on_the_ad33_scale` above): the narrower
+    /// `ret_jerusalem_altar` freebie -- deliberately built here NOT a
+    /// clean subset (it carries an extra EZR.2.1, exercising the
+    /// container-algebra "no coverage lost, the other verse is already
+    /// covered elsewhere" reasoning this pair's own table reason names) --
+    /// collapses into `ezr_altar_and_foundation`, and the `return`
+    /// narrative's own leg naming the absorbed id repoints automatically.
+    #[test]
+    fn red_then_green_jerusalem_altar_pair_collapses_and_repoints_the_return_narrative_leg() {
+        let mut events = vec![
+            theo_freebie("ret_jerusalem_altar", "The altar rebuilt in Jerusalem", -537, &["EZR.2.1", "EZR.3.1", "EZR.3.2"]),
+            real_container("ezr_altar_and_foundation", "The altar rebuilt; the temple's foundation laid", -536, &["EZR.3.1", "EZR.3.2", "EZR.3.3"]),
+        ];
+        assert_eq!(events.len(), 2, "RED: both ids exist pre-merge");
+        let mut narratives = vec![Narrative {
+            id: "return".into(),
+            name: "The Return from Exile".into(),
+            color: "#000".into(),
+            legs: vec!["ret_babylon".into(), "ret_jerusalem_altar".into(), "ret_jerusalem_temple".into()],
+        }];
+
+        apply_event_merges(&mut events, &mut narratives);
+
+        assert_eq!(events.len(), 1, "GREEN: ret_jerusalem_altar removed, ezr_altar_and_foundation alone remains");
+        assert_eq!(events[0].id, "ezr_altar_and_foundation");
+        assert_eq!(events[0].when.from_year, -536, "survivor's own date is untouched, never the absorbed freebie's -537");
+        assert_eq!(
+            narratives[0].legs,
+            vec!["ret_babylon".to_string(), "ezr_altar_and_foundation".to_string(), "ret_jerusalem_temple".to_string()],
+            "the return narrative's own leg list must repoint to the survivor, in place, order unchanged"
+        );
     }
 
     // --- apply_event_merges -------------------------------------------------

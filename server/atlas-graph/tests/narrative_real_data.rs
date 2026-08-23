@@ -104,6 +104,56 @@ use atlas_core::narrative::global_timeline_position;
         assert!(imprisonment.following.is_none(), "theo-385 is now the atlas's true last dated event");
     }
 
+    /// Batch M-D1, red-then-green over the REAL compiled data: the three
+    /// remaining HOTFIX-5 "remaining duplicates" pairs (owner report #6,
+    /// "rectify those kinds of problems," generalized past the Baptism/
+    /// Temptation/Sermon trio HOTFIX-4 already fixed) are gone from the
+    /// live graph -- each absorbed id 404s (this test's own `event_by_id`
+    /// probe is the SAME check `GET /api/event/{id}` uses, per
+    /// `atlas_core::event_merge`'s own ALIASING law), each survivor id
+    /// still resolves, and `pr_rome`'s own `paul-rome-voyage` narrative
+    /// leg and `ezr_altar_and_foundation`'s repointed `return` leg both
+    /// still walk cleanly. RED before this batch (all three absorbed ids
+    /// were real, independently-reachable nodes; ret_jerusalem_altar was
+    /// still a live `return` leg) -- see `event_merge.rs`'s own three new
+    /// `EVENT_MERGE_PAIRS` entries for the full jaccard/title derivation.
+    #[test]
+    fn m_d1_the_three_remaining_duplicate_pairs_are_rectified_on_the_real_graph() {
+        let d = load_real_compiled_data();
+
+        // pr_rome / theo-384 -- CROSS-BOOK, both LAYER-0.
+        assert!(d.event_by_id("theo-384").is_none(), "theo-384 'Paul arrives at Rome' (the Theographic freebie) must be merged away");
+        assert!(d.event_by_id("pr_rome").is_some(), "pr_rome survives -- this atlas's own narrative-integrated identity");
+
+        // theo-338 / theo-337 -- verse-set PREFIX, both LAYER-0.
+        assert!(d.event_by_id("theo-337").is_none(), "theo-337 'First missionary journey begins' (the 5-verse prefix) must be merged away");
+        assert!(d.event_by_id("theo-338").is_some(), "theo-338 'First Missionary Journey' (the 79-verse superset) survives");
+
+        // ezr_altar_and_foundation / ret_jerusalem_altar -- below both
+        // existing detectors' own floors, found by the HOTFIX-6 audit.
+        assert!(d.event_by_id("ret_jerusalem_altar").is_none(), "ret_jerusalem_altar (the bare `return`-narrative freebie) must be merged away");
+        let altar = d.event_by_id("ezr_altar_and_foundation").expect("ezr_altar_and_foundation (the real curated container) survives");
+        assert_eq!(altar.when.from_year, -536, "the survivor's own established date is untouched by the merge");
+
+        // ALIASING: the `return` narrative's own leg list must repoint to
+        // the survivor, in place, not simply drop the leg.
+        let return_narrative = d.narratives.iter().find(|n| n.id == "return").expect("the `return` narrative must still exist");
+        assert!(
+            !return_narrative.legs.contains(&"ret_jerusalem_altar".to_string()),
+            "the absorbed id must not linger in the return narrative's own leg list"
+        );
+        assert!(
+            return_narrative.legs.contains(&"ezr_altar_and_foundation".to_string()),
+            "the return narrative's own leg list must repoint to the survivor"
+        );
+
+        // `paul-rome-voyage` is UNCHANGED (pr_rome was already its own
+        // correct leg id pre-merge; theo-384 was never a narrative leg).
+        let paul_rome = d.narratives.iter().find(|n| n.id == "paul-rome-voyage").expect("the paul-rome-voyage narrative must still exist");
+        assert!(paul_rome.legs.contains(&"pr_rome".to_string()), "paul-rome-voyage's own final leg stays pr_rome");
+        assert_eq!(paul_rome.legs.len(), 9, "no leg lost or duplicated by the merge");
+    }
+
     /// AMENDMENT C (owner's own named acceptance, red-then-green): after
     /// the HOTFIX-4 event merge, exactly one Baptism event (`jm_jordan`)
     /// and one Temptation event (`rob_temptation`) exist, Baptism is

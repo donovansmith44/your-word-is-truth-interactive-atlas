@@ -1180,6 +1180,41 @@ Notes:
   persists one). Amendment A's own "id aliasing so old ids stay resolvable"
   wording is superseded by this ruling.
 
+  M-D1 REMAINING-DUPLICATES RECTIFICATION (owner live report #6's own
+  tail + the two HOTFIX-6-era parked pairs, "rectify those kinds of
+  problems" applied to the THREE pairs the original HOTFIX-4 sweep left
+  parked in `EVENT_DISTINCT_PAIRS`, deferred rather than merged): all
+  three now MERGED, via this SAME `EVENT_MERGE_PAIRS`/`apply_event_merges`
+  mechanism -- no separate graph-adapter-level merge pass exists or was
+  needed, since the graph is built FROM the already-merged, post-`finish()`
+  `AtlasData` (P1: one artifact). `pr_rome`/`theo-384` (CROSS-BOOK, title
+  jaccard 1.000, both LAYER-0 -- neither the layer0-vs-layer1 verse-jaccard
+  sweep nor a within-layer comparison would catch this shape; `pr_rome`
+  survives as this atlas's own narrative-integrated identity, on the
+  atlas's own established AD-60 scale). `theo-338`/`theo-337` (a verse-set
+  PREFIX, 5 of 79 verses, jaccard 0.063 despite full containment; the
+  broader, verse-complete `theo-338` survives, absorbing its own redundant
+  lead-in freebie). `ezr_altar_and_foundation`/`ret_jerusalem_altar` (below
+  BOTH existing detectors' own floors -- verse jaccard 0.143, title jaccard
+  0.286 -- found only by HOTFIX-6's own live chronology audit; the real
+  curated, `atlas_section`-provenanced `ezr_altar_and_foundation` survives,
+  absorbing the bare `return`-narrative freebie, whose own leg repoints to
+  the survivor automatically via ALIASING, above). ORDER-DIVERGENCE POLICY
+  (owner directive, corrections are lawful data changes w/ justification):
+  the `ezr_altar_and_foundation`/`ret_jerusalem_altar` merge is the one
+  pair of the three with a real date shift (-537 -> -536, the survivor's
+  own already-correct dating for "the second year of their coming," Ezra
+  3:8) -- checked against `server/atlas-graph/tests/timeline_equivalence.rs`
+  (the graph-vs-old-resolver total-order equivalence test) and
+  `narrative_real_data.rs`'s own `amendment_d_monotonicity_audit`: both
+  compare independently-derived orders over the SAME live, already-merged
+  data, so removing an id changes nothing about how either order agrees
+  with itself -- no typed expected-divergence entry was needed for this
+  batch's own three pairs (verified, not assumed: full suites green
+  unchanged after the merge). Full real-data red-then-green:
+  `server/atlas-graph/tests/narrative_real_data.rs`'s own
+  `m_d1_the_three_remaining_duplicate_pairs_are_rectified_on_the_real_graph`.
+
   NT CALIBRATION (HOTFIX-4 fix round 1, review finding C-1, Critical --
   owner's own "straight up lie" bug, still live for content this rectification
   pass above never touches: the Gospel MEGA-SPANS `EVENT_DISTINCT_PAIRS`

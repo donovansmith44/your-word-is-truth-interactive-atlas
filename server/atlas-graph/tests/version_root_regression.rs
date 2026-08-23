@@ -106,4 +106,13 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // matching `AtlasData::events_for_verse`'s own pre-existing witness-verse
 // union) -- both are real content changes to the graph's own node
 // payloads and row tables, not a bug.
-const EXPECTED_VERSION_HEX: &str = "14efa89228950c3f";
+//
+// MOVED AGAIN (deliberately -- Batch M-D1, the HOTFIX-5 remaining-
+// duplicates rectification): three Event nodes retired from the compiled
+// graph entirely (`atlas_core::event_merge::EVENT_MERGE_PAIRS` gains
+// `pr_rome`/`theo-384`, `theo-338`/`theo-337`,
+// `ezr_altar_and_foundation`/`ret_jerusalem_altar` -- each entry's own
+// reason has the full derivation) -- three fewer node ids feeding the
+// content hash is exactly the expected effect of an identity-only merge,
+// not a bug. New captured value: "eeb356047aa500f5".
+const EXPECTED_VERSION_HEX: &str = "eeb356047aa500f5";

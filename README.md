@@ -93,7 +93,7 @@ validation failure — unknown place ids referenced by an event, a dangling
 narrative leg, a non-canonical verse ref, an era gap/overlap, a duplicate id,
 non-chronological narrative legs, etc. (see `server/atlas-etl/src/validate.rs`
 for the full list). A clean run currently compiles 66 books, 1,373 places,
-1,738 events (939 dated), **13 narratives**, 10 eras, 31,102 KJV verses,
+1,735 events (936 dated), **13 narratives**, 10 eras, 31,102 KJV verses,
 29,364 cross-reference source verses, and 14 CC0 hand-authored polities (25
 timerange eras total), with 0 warnings. `atlas-graph-compile` prints its own
 line (text units / cites edges / events / places / narratives / anchors +

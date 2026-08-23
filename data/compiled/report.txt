@@ -3,13 +3,13 @@ Bible Atlas ETL report
 
 Compiled file counts:
   canon.json        66 books
-  places.json       1373 places
-  events.json       1738 events
-  narratives.json   13 narratives
+  places (graph-only, places.json retired at M-C2)      1373
+  events (graph-only, events.json retired at M-C2)      1735
+  narratives (graph-only, narratives.json retired at M-C2) 13
   eras (curated)    10 eras (graph-only; eras.json retired at M-C)
   books-meta.json   66 rows
-  verses-kjv.json   31102 verses
-  cross-refs.json   29364 source verses
+  verses (graph-only, verses-kjv.json retired at M-C2)   31102
+  cross-refs (graph-only, cross-refs.json retired at M-C2) 29364 source verses
 
 Coverage:
   100.0% of Theographic events have a usable date

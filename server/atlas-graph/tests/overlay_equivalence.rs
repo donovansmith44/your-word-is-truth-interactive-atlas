@@ -70,7 +70,7 @@ fn every_reconstructed_event_equals_compiles_own_real_event_field_for_field() {
     let mut got = real_overlay().events;
     want.sort_by(|a, b| a.id.cmp(&b.id));
     got.sort_by(|a, b| a.id.cmp(&b.id));
-    assert_eq!(got.len(), want.len(), "event count must match exactly (real data: 1,738)");
+    assert_eq!(got.len(), want.len(), "event count must match exactly (real data: 1,735 as of M-D1's own 3-pair remaining-duplicates merge)");
     assert_eq!(got, want, "every ID must reconstruct to an Event equal in EVERY field to compile()'s own real Event -- a diff here means atlas_data_overlay silently drops or corrupts data for at least one real event");
 }
 
