@@ -127,6 +127,26 @@ pub fn dot_ref(book: u8, chapter: u16, verse: u16) -> String {
     format!("{code}.{chapter}.{verse}")
 }
 
+/// Pipeline-facing NORMALIZE entry point (`pipeline::NormalizePass`):
+/// walks `ctx.kjv_canon`/`ctx.kjv_verses` into one TextUnit node per verse
+/// plus the bible reading spine -- mirrors exactly what
+/// `build::build_graph_from_canon_and_verses`'s own opening block did
+/// before the pipeline restructuring (module doc comment above), just
+/// reading/writing through `BuildCtx` instead of loose parameters.
+pub fn normalize(ctx: &mut crate::pipeline::BuildCtx) -> anyhow::Result<()> {
+    let ordered = ordered_verses_from_canon(ctx.kjv_canon, ctx.kjv_verses)?;
+    let mut order = Vec::with_capacity(ordered.len());
+    for v in &ordered {
+        let node = verse_node(v);
+        let id = node.id.clone();
+        ctx.graph.nodes.insert(id.clone(), node);
+        order.push(id);
+    }
+    ctx.stats.kjv_verses = ordered.len();
+    ctx.graph.reading.insert(BIBLE_CORPUS, atlas_graph_types::graph::ReadingSpine { order });
+    Ok(())
+}
+
 /// The TextUnit node for one parsed verse -- one node per skeleton position,
 /// the canonical KJV layer as its only rendering today (sweep F1: ALL layer
 /// renderings live on the node; N translations join as more layers later

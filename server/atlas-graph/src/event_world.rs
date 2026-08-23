@@ -479,6 +479,20 @@ fn verse_group_to_range(book_code: &str, vg: &atlas_core::wire::VerseGroup) -> O
 /// build_graph_from_canon_and_verses` already does for M-A's own two
 /// relations.
 pub fn populate(graph: &mut Graph, atlas: &AtlasData, chrono: &ChronologyDerivation) -> EventWorldStats {
+    let mut stats = populate_nodes_and_direct_rows(graph, atlas);
+    stats.dated_by_rows = populate_dated_by(graph, chrono);
+    stats
+}
+
+/// NORMALIZE-shaped half (pipeline.rs's own stage mapping): nodes
+/// (Place-stub/Event/Narrative/Anchor) plus the directly-authored
+/// `attests`/`located_at`/`succession` rows -- none of these need any
+/// OTHER pass's output first (in particular, none read `chrono`). Split
+/// from the RESOLVE-shaped `populate_dated_by` below so the M-C pipeline
+/// contract can run each at its own documented stage; `populate` above
+/// keeps calling both, in order, for every pre-existing direct caller
+/// (this module's own tests) that has no reason to care about the split.
+pub fn populate_nodes_and_direct_rows(graph: &mut Graph, atlas: &AtlasData) -> EventWorldStats {
     let mut stats = EventWorldStats::default();
 
     for p in &atlas.places {
@@ -548,16 +562,31 @@ pub fn populate(graph: &mut Graph, atlas: &AtlasData, chrono: &ChronologyDerivat
         stats.anchors += 1;
     }
 
-    // Iterates `chrono.order` (a plain, deterministic `Vec<String>`), NOT
-    // `chrono.placements` directly (a `HashMap`, whose iteration order is
-    // randomized per-instance by `RandomState` -- confirmed empirically:
-    // two independent `populate` calls over IDENTICAL input produced
-    // DIFFERENT `graph.dated_by` row orders, which `assert_answers_match`
-    // correctly caught as a real divergence in `DatedBy`'s own inverse
-    // edge order wherever two+ events share one target, e.g. two events
-    // both chained `SequenceAfter` off the same `prior`). Row order must
-    // be a pure function of content, not of a HashMap's incidental
-    // per-instance hash seed -- this is what makes it one again.
+    stats
+}
+
+/// RESOLVE-shaped half (pipeline.rs's own stage mapping): `DatePlacement`
+/// resolution's own row construction, from an ALREADY-COMPUTED
+/// `ChronologyDerivation` (`derive_chronology`, the pipeline's own RESOLVE
+/// stage runs this first) -- exactly `resolve(DatePlacement)` per the
+/// ingestion contract's own naming (design doc §7). Split out of
+/// `populate` so this can run at its own pipeline stage, after NORMALIZE.
+/// Returns the row count (folded into `EventWorldStats.dated_by_rows` by
+/// `populate` above; the pipeline's own `ResolvePass` folds it into
+/// `BuildCtx.event_world_stats` the same way).
+///
+/// Iterates `chrono.order` (a plain, deterministic `Vec<String>`), NOT
+/// `chrono.placements` directly (a `HashMap`, whose iteration order is
+/// randomized per-instance by `RandomState` -- confirmed empirically:
+/// two independent `populate` calls over IDENTICAL input produced
+/// DIFFERENT `graph.dated_by` row orders, which `assert_answers_match`
+/// correctly caught as a real divergence in `DatedBy`'s own inverse
+/// edge order wherever two+ events share one target, e.g. two events
+/// both chained `SequenceAfter` off the same `prior`). Row order must
+/// be a pure function of content, not of a HashMap's incidental
+/// per-instance hash seed -- this is what makes it one again.
+pub fn populate_dated_by(graph: &mut Graph, chrono: &ChronologyDerivation) -> usize {
+    let mut dated_by_rows = 0;
     for id in &chrono.order {
         let Some(placed) = chrono.placements.get(id) else { continue };
         graph.dated_by.push(atlas_graph_types::chrono::DatedBy {
@@ -567,10 +596,27 @@ pub fn populate(graph: &mut Graph, atlas: &AtlasData, chrono: &ChronologyDerivat
             justification: placed.justification.clone(),
             provenance: "chronology-derivation".to_string(),
         });
-        stats.dated_by_rows += 1;
+        dated_by_rows += 1;
     }
+    dated_by_rows
+}
 
-    stats
+/// Pipeline-facing NORMALIZE entry point (`pipeline::NormalizePass`):
+/// event-world nodes + direct rows, from `ctx.atlas` -- mirrors
+/// `populate_nodes_and_direct_rows` exactly (that function's own doc
+/// comment), just reading/writing through `BuildCtx` instead of loose
+/// parameters.
+pub fn normalize(ctx: &mut crate::pipeline::BuildCtx) {
+    ctx.event_world_stats = populate_nodes_and_direct_rows(&mut ctx.graph, ctx.atlas);
+}
+
+/// Pipeline-facing RESOLVE entry point (`pipeline::ResolvePass`): computes
+/// the chronology derivation (`derive_chronology`) and its own `dated_by`
+/// rows (`populate_dated_by`) -- exactly `resolve(DatePlacement)` per the
+/// ingestion contract's own naming (design doc §7).
+pub fn resolve(ctx: &mut crate::pipeline::BuildCtx) {
+    ctx.chrono = derive_chronology(ctx.atlas);
+    ctx.event_world_stats.dated_by_rows = populate_dated_by(&mut ctx.graph, &ctx.chrono);
 }
 
 /// The SAME node-id shape `graph_types::graph::Graph::build_indexes`'s own

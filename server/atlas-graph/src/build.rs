@@ -15,11 +15,9 @@ use std::collections::HashMap;
 use anyhow::Context;
 
 use atlas_core::data::{AtlasData, Canon};
-use atlas_graph_types::edge::CrossRef as GraphCrossRef;
-use atlas_graph_types::graph::{Graph, ReadingSpine};
+use atlas_graph_types::graph::Graph;
 
-use crate::event_world::{self, ChronologyDerivation, EventWorldStats};
-use crate::{kjv_adapter, xref_adapter};
+use crate::event_world::{ChronologyDerivation, EventWorldStats};
 
 /// Startup-log-friendly counts -- also asserted against in tests (the
 /// FIDELITY LAW's own bijection count and the xref adapter's disclosed
@@ -36,13 +34,17 @@ pub struct BuildStats {
 /// (Batch M-B: events/attestations/narratives/anchors/chronology, from the
 /// already-built `atlas` -- see `event_world`'s own module doc comment for
 /// why `AtlasData` is this adapter's source, not a second independent TOML
-/// parse). Node insertion, the reading spine, the `cites` row table, and
-/// the whole event world are all populated here; `Graph::build_indexes` (an
-/// unmodified graph-types primitive) does the one BiIndex pass at the end,
-/// after EVERY row table (M-A's and M-B's alike) is populated.
+/// parse).
+///
+/// BATCH M-C (controller decision 3): drives the six-stage compiler
+/// pipeline contract (`pipeline::pipeline`/`pipeline::run_pipeline`) rather
+/// than calling each adapter step directly in a hardcoded sequence -- see
+/// `pipeline.rs`'s own module doc comment for the full stage mapping and
+/// the version-root regression proof that this restructuring is
+/// behavior-identical to the pre-M-C call chain it replaces.
 pub fn build_graph_from_sources(kjv_json: &str, xrefs_tsv: &str, atlas: &AtlasData) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
     let (canon, verses) = atlas_etl::kjv::parse(kjv_json).context("parsing the KJV source (kjv.json)")?;
-    build_graph_from_canon_and_verses(&canon, &verses, xrefs_tsv, atlas)
+    run_pipeline_build(&canon, &verses, Some(kjv_json), xrefs_tsv, atlas)
 }
 
 /// The same build, starting from an already-parsed `(Canon, verses)` pair
@@ -50,62 +52,35 @@ pub fn build_graph_from_sources(kjv_json: &str, xrefs_tsv: &str, atlas: &AtlasDa
 /// `AtlasData` fixture, most notably) build a graph that is BY CONSTRUCTION
 /// consistent with that same canon/verses, rather than maintaining a second,
 /// independently-authored raw-JSON fixture that can silently drift from it.
+/// No raw source bytes exist on this path, so the pipeline's own LAW-CHECK
+/// stage skips the KJV fidelity law here, exactly as before this batch's
+/// pipeline restructuring (see `pipeline::BuildCtx::kjv_json_source`'s own
+/// doc comment).
 pub fn build_graph_from_canon_and_verses(
     canon: &Canon,
     verses: &HashMap<String, String>,
     xrefs_tsv: &str,
     atlas: &AtlasData,
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
-    let ordered = kjv_adapter::ordered_verses_from_canon(canon, verses).context("walking the KJV canon/verses into reading order")?;
+    run_pipeline_build(canon, verses, None, xrefs_tsv, atlas)
+}
 
-    let mut graph = Graph::default();
-    let mut order = Vec::with_capacity(ordered.len());
-    let mut verses_by_ref: HashMap<String, String> = HashMap::with_capacity(ordered.len());
-    for v in &ordered {
-        let node = kjv_adapter::verse_node(v);
-        let id = node.id.clone();
-        graph.nodes.insert(id.clone(), node);
-        order.push(id);
-        verses_by_ref.insert(kjv_adapter::dot_ref(v.book_index, v.chapter, v.verse), v.text.clone());
-    }
-    graph.reading.insert(kjv_adapter::BIBLE_CORPUS, ReadingSpine { order });
-
-    let (xref_rows, xref_stats) =
-        xref_adapter::read_xrefs_ordered(xrefs_tsv, &verses_by_ref).context("parsing the cross-references source (xrefs/cross_references.txt)")?;
-    for row in &xref_rows {
-        graph.cross_refs.push(GraphCrossRef {
-            from: row.from.clone(),
-            to: row.to.clone(),
-            votes: row.votes,
-            provenance: "openbible.info-cross-references".to_string(),
-        });
-    }
-
-    // Batch M-B: the event world -- Event/Narrative/Anchor/Place-STUB nodes
-    // + Attests/Succession/DatedBy/LocatedAt rows -- populated BEFORE the
-    // one `build_indexes()` pass below, exactly like the KJV/xrefs rows
-    // above (every row table, from every adapter, is filled in first; the
-    // index pass runs once, over the complete graph).
-    let chrono = event_world::derive_chronology(atlas);
-    let event_world_stats = event_world::populate(&mut graph, atlas, &chrono);
-
-    graph.build_indexes();
-    // Brief requirement 4 ("justified-by where grounds exist"): a post-
-    // processing step, not part of build_indexes itself -- see
-    // event_world::add_justified_by's own doc comment.
-    event_world::add_justified_by(&mut graph);
-
-    let stats = BuildStats {
-        kjv_verses: ordered.len(),
-        cites_rows: xref_rows.len(),
-        cites_dropped_negative_votes: xref_stats.dropped_negative_votes,
-    };
-    Ok((graph, stats, event_world_stats, chrono))
+fn run_pipeline_build(
+    canon: &Canon,
+    verses: &HashMap<String, String>,
+    kjv_json_source: Option<&str>,
+    xrefs_tsv: &str,
+    atlas: &AtlasData,
+) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
+    let mut ctx = crate::pipeline::BuildCtx::new(canon, verses, kjv_json_source, xrefs_tsv, atlas);
+    crate::pipeline::run_pipeline(&mut ctx, &crate::pipeline::pipeline())?;
+    Ok((ctx.graph, ctx.stats, ctx.event_world_stats, ctx.chrono))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::kjv_adapter;
     use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
     use atlas_graph_types::explore::{Explorable, PositionRef};
     use atlas_graph_types::id::Position;

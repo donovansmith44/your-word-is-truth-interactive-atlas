@@ -32,6 +32,8 @@ pub mod build;
 pub mod event_world;
 pub mod fidelity;
 pub mod kjv_adapter;
+pub mod law_check;
+pub mod pipeline;
 pub mod service;
 pub mod window;
 pub mod xref_adapter;
@@ -39,6 +41,7 @@ pub mod xref_adapter;
 pub use build::BuildStats;
 pub use event_world::{Chronology, ChronologyDerivation, EventWorldStats};
 pub use fidelity::{check_kjv_fidelity, FidelityViolation};
+pub use pipeline::{pipeline as compiler_pipeline, BuildCtx, Pass};
 pub use service::GraphService;
 pub use window::WindowDir;
 

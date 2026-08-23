@@ -17,7 +17,7 @@
 //! (`node`/`edges`/`edge_summary`/`reading_window`) -- see `window.rs`,
 //! which is generic over `&dyn GraphQuery` and touches nothing else.
 //!
-//! FIDELITY (design doc P3) is enforced HERE, unconditionally, as part of
+//! FIDELITY (design doc P3) is enforced unconditionally, as part of
 //! `from_sources`/`build` -- a `GraphService` built from real raw KJV JSON
 //! cannot exist without having already passed `fidelity::check_kjv_fidelity`
 //! (checked on the raw `Graph`, BEFORE it is ever published to the store --
@@ -25,7 +25,12 @@
 //! the compiled graph, which is exactly the pre-publish moment; publishing
 //! moves the `Graph` by value, and `GraphQuery` has no "enumerate every
 //! node" operation, so a full bijection check isn't expressible through
-//! the port alone after that point in any case).
+//! the port alone after that point in any case). BATCH M-C: the check
+//! itself now runs INSIDE `build::build_graph_from_sources`, as the
+//! compiler pipeline's own LAW-CHECK stage (`pipeline.rs`) -- this
+//! module's own `from_sources` no longer calls it a second time
+//! explicitly; the guarantee is unchanged (a `GraphService` still cannot
+//! exist without the check having passed), only WHERE it runs moved.
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -39,7 +44,6 @@ use atlas_graph_types::store::{GraphPublisher, GraphQuery, GraphStore, GraphVers
 
 use crate::build::{self, BuildStats};
 use crate::event_world::{Chronology, EventWorldStats};
-use crate::fidelity;
 
 pub struct GraphService {
     snapshot: MemSnapshot,
@@ -67,11 +71,13 @@ const MAX_CHAPTER_SPAN_PROBE: usize = 200;
 
 impl GraphService {
     /// The real KJV/xrefs raw-source path -- the FIDELITY LAW is enforced
-    /// unconditionally here (module doc comment above). `atlas`: Batch M-B's
-    /// own event-world source (see `event_world`'s own module doc comment).
+    /// unconditionally, as the pipeline's own LAW-CHECK stage
+    /// (`build::build_graph_from_sources` -> `pipeline::run_pipeline`;
+    /// see `pipeline.rs`'s own module doc comment, controller decision 3).
+    /// `atlas`: Batch M-B's own event-world source (see `event_world`'s
+    /// own module doc comment).
     pub fn from_sources(kjv_json: &str, xrefs_tsv: &str, atlas: &AtlasData) -> anyhow::Result<Self> {
         let (graph, stats, event_world_stats, _chrono) = build::build_graph_from_sources(kjv_json, xrefs_tsv, atlas)?;
-        fidelity::check_kjv_fidelity(kjv_json, &graph).map_err(|e| anyhow::anyhow!("{e}"))?;
         Ok(Self::assemble(graph, stats, event_world_stats, atlas))
     }
 

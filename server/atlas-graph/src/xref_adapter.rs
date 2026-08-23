@@ -109,6 +109,60 @@ pub fn read_xrefs_ordered(
     Ok((rows, stats))
 }
 
+/// Pipeline-facing NORMALIZE entry point (`pipeline::NormalizePass`, run
+/// AFTER `kjv_adapter::normalize` within the same pass -- xref rows need
+/// the KJV nodes' own dot-ref-keyed text to exist first): parses
+/// `ctx.xrefs_tsv` and lowers surviving rows into `cites`-ready `CrossRef`
+/// rows on `ctx.graph`. Mirrors exactly what
+/// `build::build_graph_from_canon_and_verses`'s own middle block did
+/// before the pipeline restructuring, with ONE deliberate difference: the
+/// dot-ref-keyed verse-text map it checks "first verse of target exists"
+/// against is rebuilt by walking the JUST-NORMALIZED graph nodes (not a
+/// second parameter threaded alongside `ctx.kjv_verses`) -- this is the
+/// SAME set of verses `ordered_verses_from_canon` actually inserted (the
+/// filtered, canon-walked set, not `ctx.kjv_verses` as originally handed
+/// in, which could theoretically carry a stray key no chapter/verse slot
+/// ever reached), so behavior is unchanged, not merely similar.
+pub fn normalize(ctx: &mut crate::pipeline::BuildCtx) -> anyhow::Result<()> {
+    use atlas_graph_types::node::NodePayload;
+    use atlas_graph_types::text::TranslationId;
+
+    let verses_by_ref: HashMap<String, String> = ctx
+        .graph
+        .reading
+        .get(crate::kjv_adapter::BIBLE_CORPUS)
+        .map(|spine| {
+            spine
+                .order
+                .iter()
+                .filter_map(|id| {
+                    let (b, c, v) = crate::kjv_adapter::decode_text_unit(id)?;
+                    let text = match &ctx.graph.nodes.get(id)?.payload {
+                        NodePayload::TextUnit { renderings, .. } => {
+                            renderings.get(&TranslationId(crate::kjv_adapter::KJV_TRANSLATION.to_string())).cloned()
+                        }
+                        _ => None,
+                    }?;
+                    Some((crate::kjv_adapter::dot_ref(b, c, v), text))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let (xref_rows, xref_stats) = read_xrefs_ordered(ctx.xrefs_tsv, &verses_by_ref)?;
+    for row in &xref_rows {
+        ctx.graph.cross_refs.push(atlas_graph_types::edge::CrossRef {
+            from: row.from.clone(),
+            to: row.to.clone(),
+            votes: row.votes,
+            provenance: "openbible.info-cross-references".to_string(),
+        });
+    }
+    ctx.stats.cites_rows = xref_rows.len();
+    ctx.stats.cites_dropped_negative_votes = xref_stats.dropped_negative_votes;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
