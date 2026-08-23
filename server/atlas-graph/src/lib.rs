@@ -29,11 +29,15 @@
 //! disclosed as a strangler deviation, not a quiet one.
 
 pub mod build;
+pub mod catechism_adapter;
+pub mod era_adapter;
 pub mod event_world;
 pub mod fidelity;
 pub mod kjv_adapter;
 pub mod law_check;
 pub mod pipeline;
+pub mod place_adapter;
+pub mod polity_adapter;
 pub mod service;
 pub mod window;
 pub mod xref_adapter;

@@ -92,6 +92,17 @@ pub struct BuildCtx<'a> {
     pub kjv_json_source: Option<&'a str>,
     pub xrefs_tsv: &'a str,
     pub atlas: &'a AtlasData,
+    /// M-C's own Era adapter source (`era_adapter.rs`): pre-parsed rows
+    /// from `data/curated/eras.toml`, via the SAME `atlas_etl::curated::
+    /// parse_eras` the pre-M-C `AtlasData.eras`/`eras.json` path used --
+    /// NOT read from `AtlasData` (unlike every other M-C adapter's own
+    /// source), since `.eras` is one of the fields this batch's own
+    /// deletion event retires (see the batch report's deletion inventory).
+    /// Defaults to empty for every caller that doesn't supply real eras
+    /// (most test fixtures, via `build_graph_from_sources`/
+    /// `build_graph_from_canon_and_verses`'s own plain forms) -- an empty
+    /// slice is a lawful, honest "no eras this build," not a placeholder.
+    pub eras: &'a [atlas_core::data::Era],
     pub graph: Graph,
     pub stats: BuildStats,
     pub event_world_stats: EventWorldStats,
@@ -107,12 +118,24 @@ impl<'a> BuildCtx<'a> {
         xrefs_tsv: &'a str,
         atlas: &'a AtlasData,
     ) -> Self {
+        Self::with_eras(kjv_canon, kjv_verses, kjv_json_source, xrefs_tsv, atlas, &[])
+    }
+
+    pub fn with_eras(
+        kjv_canon: &'a Canon,
+        kjv_verses: &'a std::collections::HashMap<String, String>,
+        kjv_json_source: Option<&'a str>,
+        xrefs_tsv: &'a str,
+        atlas: &'a AtlasData,
+        eras: &'a [atlas_core::data::Era],
+    ) -> Self {
         BuildCtx {
             kjv_canon,
             kjv_verses,
             kjv_json_source,
             xrefs_tsv,
             atlas,
+            eras,
             graph: Graph::default(),
             stats: BuildStats::default(),
             event_world_stats: EventWorldStats::default(),
@@ -140,6 +163,9 @@ impl Pass for NormalizePass {
         crate::kjv_adapter::normalize(ctx).context("normalizing the KJV canon/verses into TextUnit nodes")?;
         crate::xref_adapter::normalize(ctx).context("normalizing the raw cross-references TSV into cites rows")?;
         crate::event_world::normalize(ctx);
+        crate::era_adapter::normalize(ctx);
+        crate::polity_adapter::normalize(ctx);
+        crate::catechism_adapter::normalize(ctx);
         Ok(())
     }
 }
@@ -150,12 +176,8 @@ impl Pass for MergeAliasPass {
         "merge_alias"
     }
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
-        // M-C's own new adapters land here (places' KJV naming -> `named`
-        // rows, `verse_links` -> `mentions` rows, catechism legacy
-        // vocabulary -> `catechism-link` rows); this stage is a documented
-        // no-op until then, present in the list so those additions are
-        // "extend the pass's body," never "add a new pass mid-pipeline."
-        let _ = ctx;
+        crate::place_adapter::merge_alias(ctx);
+        crate::catechism_adapter::merge_alias(ctx);
         Ok(())
     }
 }

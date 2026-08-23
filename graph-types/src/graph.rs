@@ -42,6 +42,15 @@ pub struct Graph {
     // -------- spines & indexes (built, never authored) --------
     pub reading: BTreeMap<&'static str, ReadingSpine>,
     pub indexes: BTreeMap<RelationId, BiIndex>,
+    /// M-C: the symmetric sibling of `indexes` -- closes the "Symmetric
+    /// relations: skeleton serves none yet" gap `explore.rs`'s own
+    /// `raw_neighbors` has documented since M-A (a disclosed, standing gap,
+    /// not a law; M-B's own report named it explicitly for
+    /// `temporal-adjacency`). Built the SAME way (one `BiIndex::
+    /// build_symmetric` pass per inhabited `SymRelationId`, from the row
+    /// tables below) -- `catechism-link` is the first relation to actually
+    /// populate it.
+    pub symmetric_indexes: BTreeMap<crate::edge::SymRelationId, BiIndex>,
     /// pid -> node id, built alongside the other indexes: derive() is a
     /// lookup, not a scan (same derived-state class as `indexes`;
     /// content addressing makes it deterministic).
@@ -140,10 +149,53 @@ impl Graph {
                 M::None,
             ));
         }
+        // NOTE (M-C, disclosed, not fixed -- a genuine shape gap, not an
+        // oversight this batch's own scope covers): `self.named` rows
+        // (`Named { place: PlaceId, alias: String, .. }`) are NOT lowered
+        // into `pairs` here. `RelationId::Named` is declared as a directed
+        // relation over `Position` endpoints, but a `Named` row's own
+        // OBJECT is a bare `String` (an alias), which has no `Position`
+        // representation at all (`Position` is exactly `Node(AnyNodeId) |
+        // Edge(EdgeId)` -- confirmed reading `id.rs` fresh; there is no
+        // third variant for "a plain string," and inventing one would be a
+        // real shape change to `Position` itself, used pervasively
+        // throughout the whole crate, not a narrow extension). The types
+        // spec's own illustrative `object: Alias` was never resolved to a
+        // concrete Position-compatible type in the compiled crate ("the
+        // crate wins" where prose and crate disagree). This batch's own
+        // place adapter still POPULATES `graph.named` (real, content-
+        // addressed, authored data), and the map/reader surfaces read a
+        // place's aliases directly off `NodePayload::Place`'s own payload
+        // field instead (see `node.rs`) -- the SAME "payload, not a new
+        // relation kind" shape the brief's own controller decision 2 uses
+        // for Polity border data, chosen here for the same reason: the
+        // target isn't itself an explorable thing with a card/frontier of
+        // its own, it's a fact ABOUT the place.
 
         self.indexes = pairs
             .into_iter()
             .map(|(rel, ps)| (rel, BiIndex::build(rel, &ps)))
+            .collect();
+
+        // M-C: the symmetric sibling of the directed pass above -- closes
+        // the "Symmetric relations: skeleton serves none yet" gap
+        // (`explore.rs`'s own `raw_neighbors`, disclosed since M-A).
+        // `catechism` (`CatechismLink { locus: TextLocus, item:
+        // CatechismItemId, .. }`) is the first symmetric relation with
+        // real rows to index; both ends resolve to real `Position`s (a
+        // TextUnit and a CatechismItem node respectively), unlike
+        // `named`'s own bare-string object (see this function's own note
+        // above) -- there is nothing blocking this one.
+        use crate::edge::SymRelationId as S;
+        let mut sym_pairs: BTreeMap<S, Vec<(Position, Position, M)>> = BTreeMap::new();
+        for row in &self.catechism {
+            let locus = at(&text_node(&row.locus));
+            let item = at(&row.item.erase());
+            sym_pairs.entry(S::CatechismLink).or_default().push((locus, item, M::None));
+        }
+        self.symmetric_indexes = sym_pairs
+            .into_iter()
+            .map(|(rel, ps)| (rel, BiIndex::build_symmetric(rel, &ps)))
             .collect();
     }
 

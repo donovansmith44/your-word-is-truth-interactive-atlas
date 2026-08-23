@@ -403,10 +403,21 @@ pub fn place_stub_node_id(id: &str) -> atlas_graph_types::id::AnyNodeId {
     PlaceId::new(id.to_string()).erase()
 }
 
-fn place_node(p: &atlas_core::data::Place) -> Node {
+fn place_node(p: &atlas_core::data::Place, atlas: &AtlasData) -> Node {
+    // M-C (controller decision 2): real payload, not a stub -- lat/lon and
+    // the KJV alias (E3 naming; `Named` rows have no `Position`-typed
+    // object to index through the generic port, see `graph.rs::
+    // build_indexes`'s own disclosed note -- the payload is the queryable
+    // form) join the canonical name.
+    let aliases: Vec<String> = atlas
+        .place_name_alias_for(&p.id)
+        .and_then(|a| a.translations.get(crate::kjv_adapter::KJV_TRANSLATION))
+        .cloned()
+        .into_iter()
+        .collect();
     Node {
         id: PlaceId::new(p.id.clone()).erase(),
-        payload: NodePayload::Place { canonical: p.name.clone() },
+        payload: NodePayload::Place { canonical: p.name.clone(), lat: p.lat, lon: p.lon, aliases },
         provenance: "curated-places".to_string(),
     }
 }
@@ -496,7 +507,7 @@ pub fn populate_nodes_and_direct_rows(graph: &mut Graph, atlas: &AtlasData) -> E
     let mut stats = EventWorldStats::default();
 
     for p in &atlas.places {
-        let node = place_node(p);
+        let node = place_node(p, atlas);
         graph.nodes.insert(node.id.clone(), node);
         stats.places += 1;
     }

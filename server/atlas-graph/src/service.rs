@@ -77,7 +77,14 @@ impl GraphService {
     /// `atlas`: Batch M-B's own event-world source (see `event_world`'s
     /// own module doc comment).
     pub fn from_sources(kjv_json: &str, xrefs_tsv: &str, atlas: &AtlasData) -> anyhow::Result<Self> {
-        let (graph, stats, event_world_stats, _chrono) = build::build_graph_from_sources(kjv_json, xrefs_tsv, atlas)?;
+        Self::from_sources_with_eras(kjv_json, xrefs_tsv, atlas, &[])
+    }
+
+    /// M-C: the richer form real startup (and the artifact compile step)
+    /// use -- `eras` is `era_adapter.rs`'s own pre-parsed source. See
+    /// `build::build_graph_from_sources_with_eras`'s own doc comment.
+    pub fn from_sources_with_eras(kjv_json: &str, xrefs_tsv: &str, atlas: &AtlasData, eras: &[atlas_core::data::Era]) -> anyhow::Result<Self> {
+        let (graph, stats, event_world_stats, _chrono) = build::build_graph_from_sources_with_eras(kjv_json, xrefs_tsv, atlas, eras)?;
         Ok(Self::assemble(graph, stats, event_world_stats, atlas))
     }
 
@@ -93,13 +100,19 @@ impl GraphService {
 
     /// Reads `raw_dir/kjv.json` and `raw_dir/xrefs/cross_references.txt`
     /// and builds from them, plus the event world from `atlas` — the only
-    /// filesystem-touching function in this crate.
+    /// filesystem-touching function in this crate. M-C: also reads
+    /// `data/curated/eras.toml` (`raw_dir`'s own sibling `curated/`,
+    /// matching every real invocation's own `data/` parent layout, the
+    /// SAME derivation `atlas-server/src/main.rs` already uses for
+    /// `raw_dir` itself) via `atlas_etl::curated::parse_eras` -- the SAME
+    /// parser the pre-M-C `eras.json` compilation path used.
     pub fn build(raw_dir: &Path, atlas: &AtlasData) -> anyhow::Result<Self> {
         let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json"))
             .with_context(|| format!("reading {}", raw_dir.join("kjv.json").display()))?;
         let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt"))
             .with_context(|| format!("reading {}", raw_dir.join("xrefs/cross_references.txt").display()))?;
-        Self::from_sources(&kjv_json, &xrefs_tsv, atlas)
+        let eras = load_eras(raw_dir)?;
+        Self::from_sources_with_eras(&kjv_json, &xrefs_tsv, atlas, &eras)
     }
 
     fn assemble(graph: Graph, stats: BuildStats, event_world_stats: EventWorldStats, atlas: &AtlasData) -> Self {
@@ -164,6 +177,16 @@ impl GraphService {
             Some((start, n))
         }
     }
+}
+
+/// `raw_dir`'s sibling `curated/eras.toml`, parsed via
+/// `atlas_etl::curated::parse_eras` -- the one other filesystem read this
+/// crate performs, alongside `GraphService::build`'s own KJV/xrefs reads.
+fn load_eras(raw_dir: &Path) -> anyhow::Result<Vec<atlas_core::data::Era>> {
+    let curated_dir = raw_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| Path::new("../data/curated").to_path_buf());
+    let path = curated_dir.join("eras.toml");
+    let text = std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
+    atlas_etl::curated::parse_eras(&text).with_context(|| format!("parsing {}", path.display()))
 }
 
 #[cfg(test)]

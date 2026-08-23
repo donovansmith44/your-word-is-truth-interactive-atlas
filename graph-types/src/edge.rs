@@ -319,6 +319,32 @@ impl BiIndex {
         }
         ix
     }
+
+    /// The symmetric sibling of `build`: BOTH ends are interchangeable, so
+    /// each pair populates `fwd` from EITHER end -- querying from `a` or
+    /// from `b` returns the other one, under the SAME `EdgeId`
+    /// (`entry_id_symmetric`'s own sort-then-hash is what makes that true).
+    /// `inv` stays empty: a symmetric relation has no second reading to
+    /// hold (design doc §3's own "no directions" shape) --
+    /// `raw_neighbors`'s `EdgeKind::Symmetric` arm only ever reads `fwd`.
+    pub fn build_symmetric(
+        rel: SymRelationId,
+        pairs: &[(Position, Position, crate::explore::EdgeMeta)],
+    ) -> BiIndex {
+        let mut ix = BiIndex::default();
+        for (a, b, m) in pairs {
+            let eid = entry_id_symmetric(rel, a, b);
+            ix.fwd
+                .entry(a.clone())
+                .or_default()
+                .push((eid.clone(), b.clone(), m.clone()));
+            ix.fwd
+                .entry(b.clone())
+                .or_default()
+                .push((eid, a.clone(), m.clone()));
+        }
+        ix
+    }
 }
 
 /// Content-derived entry id: hash of (relation, subject, object).
@@ -333,6 +359,27 @@ pub fn entry_id(rel: RelationId, s: &Position, o: &Position) -> EdgeId {
         }
     }
     let pid = E(rel, s, o).pid();
+    EdgeId(format!("{:?}:{:016x}", rel, pid.hash.0))
+}
+
+/// The symmetric sibling of `entry_id`: a SYMMETRIC relation's two ends are
+/// interchangeable (design doc §3: "a symmetric relation lives in a
+/// separate id space that HAS no directions"), so the id must be the SAME
+/// regardless of which end a caller happens to hash first -- sorting the
+/// pair by `Position`'s own `Ord` before hashing is what makes that true
+/// (the bijection witness, symmetric case).
+pub fn entry_id_symmetric(rel: SymRelationId, a: &Position, b: &Position) -> EdgeId {
+    let (lo, hi) = if a <= b { (a, b) } else { (b, a) };
+    struct E<'a>(SymRelationId, &'a Position, &'a Position);
+    impl<'a> ContentAddressed for E<'a> {
+        fn canonical_bytes(&self) -> Vec<u8> {
+            format!("{:?}|{:?}|{:?}", self.0, self.1, self.2).into_bytes()
+        }
+        fn position_kind(&self) -> PositionKind {
+            PositionKind::Edge(EdgeKind::Symmetric(self.0))
+        }
+    }
+    let pid = E(rel, lo, hi).pid();
     EdgeId(format!("{:?}:{:016x}", rel, pid.hash.0))
 }
 

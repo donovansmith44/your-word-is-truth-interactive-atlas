@@ -60,5 +60,15 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 
 // Captured 2026-08-22, pre-pipeline-restructuring, base commit ddb4b73
 // (EdgeMeta fix + EventWorld narrative retirement -- no adapter/graph
-// content change), over the real committed data/raw + data/compiled.
-const EXPECTED_VERSION_HEX: &str = "4ad17fd0f68660f7";
+// content change), over the real committed data/raw + data/compiled:
+// "4ad17fd0f68660f7".
+//
+// MOVED (deliberately -- controller decision 2, new adapters): the place/
+// polity/catechism adapters now build real payload (Place gains lat/lon +
+// KJV aliases, was `canonical` only; Polity/CatechismItem nodes newly
+// exist) and new rows (named/mentions/catechism-link) over the SAME real
+// `data/compiled/*.json` this test's own `real_atlas_data()` loads --
+// this test itself calls the plain (eras-less) `GraphService::from_sources`,
+// so eras stay absent from THIS particular root; the place/polity/
+// catechism content change alone is what moved it.
+const EXPECTED_VERSION_HEX: &str = "ea2276b34f44d29f";

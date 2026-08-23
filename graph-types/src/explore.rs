@@ -79,9 +79,28 @@ fn raw_neighbors(g: &Graph, p: &Position, kind: EdgeKind) -> Vec<EdgeEntry> {
                 })
                 .unwrap_or_default()
         }
-        // Symmetric relations: skeleton serves none yet; the shape is
-        // the same (one row table, ends interchangeable).
-        EdgeKind::Symmetric(_) => Vec::new(),
+        // M-C: closes the "skeleton serves none yet" gap -- both ends of a
+        // symmetric relation are interchangeable, so BOTH populate the
+        // SAME `fwd` map at index-build time (`BiIndex::build_symmetric`);
+        // querying from either end reads the SAME map, no `inv` involved.
+        EdgeKind::Symmetric(rel) => {
+            let ix = match g.symmetric_indexes.get(&rel) {
+                Some(ix) => ix,
+                None => return Vec::new(),
+            };
+            ix.fwd
+                .get(p)
+                .map(|v| {
+                    v.iter()
+                        .map(|(eid, o, m)| EdgeEntry {
+                            edge: eid.clone(),
+                            node: o.clone(),
+                            meta: m.clone(),
+                        })
+                        .collect()
+                })
+                .unwrap_or_default()
+        }
     }
 }
 

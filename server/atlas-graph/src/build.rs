@@ -43,8 +43,23 @@ pub struct BuildStats {
 /// the version-root regression proof that this restructuring is
 /// behavior-identical to the pre-M-C call chain it replaces.
 pub fn build_graph_from_sources(kjv_json: &str, xrefs_tsv: &str, atlas: &AtlasData) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
+    build_graph_from_sources_with_eras(kjv_json, xrefs_tsv, atlas, &[])
+}
+
+/// M-C: the richer form real startup (and the artifact compile step) use --
+/// `eras` is `era_adapter.rs`'s own pre-parsed source (see
+/// `pipeline::BuildCtx::eras`'s own doc comment for why it isn't read off
+/// `AtlasData`). Every OTHER caller (most test fixtures) keeps calling the
+/// plain `build_graph_from_sources` above, unaffected, getting an honestly
+/// empty era set.
+pub fn build_graph_from_sources_with_eras(
+    kjv_json: &str,
+    xrefs_tsv: &str,
+    atlas: &AtlasData,
+    eras: &[atlas_core::data::Era],
+) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
     let (canon, verses) = atlas_etl::kjv::parse(kjv_json).context("parsing the KJV source (kjv.json)")?;
-    run_pipeline_build(&canon, &verses, Some(kjv_json), xrefs_tsv, atlas)
+    run_pipeline_build(&canon, &verses, Some(kjv_json), xrefs_tsv, atlas, eras)
 }
 
 /// The same build, starting from an already-parsed `(Canon, verses)` pair
@@ -62,7 +77,7 @@ pub fn build_graph_from_canon_and_verses(
     xrefs_tsv: &str,
     atlas: &AtlasData,
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
-    run_pipeline_build(canon, verses, None, xrefs_tsv, atlas)
+    run_pipeline_build(canon, verses, None, xrefs_tsv, atlas, &[])
 }
 
 fn run_pipeline_build(
@@ -71,8 +86,9 @@ fn run_pipeline_build(
     kjv_json_source: Option<&str>,
     xrefs_tsv: &str,
     atlas: &AtlasData,
+    eras: &[atlas_core::data::Era],
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
-    let mut ctx = crate::pipeline::BuildCtx::new(canon, verses, kjv_json_source, xrefs_tsv, atlas);
+    let mut ctx = crate::pipeline::BuildCtx::with_eras(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras);
     crate::pipeline::run_pipeline(&mut ctx, &crate::pipeline::pipeline())?;
     Ok((ctx.graph, ctx.stats, ctx.event_world_stats, ctx.chrono))
 }

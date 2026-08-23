@@ -75,6 +75,11 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
         "Narrative" => Some(AnyNodeId { kind: NodeKind::Narrative, raw: rest.to_string() }),
         "Anchor" => Some(AnyNodeId { kind: NodeKind::Anchor, raw: rest.to_string() }),
         "Place" => Some(AnyNodeId { kind: NodeKind::Place, raw: rest.to_string() }),
+        // Batch M-C: three more newly-materialized kinds (era_adapter/
+        // polity_adapter/catechism_adapter), same round-trip completion.
+        "Era" => Some(AnyNodeId { kind: NodeKind::Era, raw: rest.to_string() }),
+        "Polity" => Some(AnyNodeId { kind: NodeKind::Polity, raw: rest.to_string() }),
+        "CatechismItem" => Some(AnyNodeId { kind: NodeKind::CatechismItem, raw: rest.to_string() }),
         _ => None,
     }
 }
@@ -154,11 +159,15 @@ mod tests {
             (NodeKind::Narrative, "conquest", "Narrative:conquest"),
             (NodeKind::Anchor, "solomon-crowned", "Anchor:solomon-crowned"),
             (NodeKind::Place, "jericho", "Place:jericho"),
+            // Batch M-C.
+            (NodeKind::Era, "patriarchs", "Era:patriarchs"),
+            (NodeKind::Polity, "egypt", "Polity:egypt"),
+            (NodeKind::CatechismItem, "first-commandment", "CatechismItem:first-commandment"),
         ] {
             let id = AnyNodeId { kind, raw: raw.to_string() };
             let wire = encode_node_id(&id);
             assert_eq!(wire, expected_wire, "encode_node_id's own pre-existing generic fallback must already produce this shape");
-            assert_eq!(decode_node_id(&wire), Some(id), "decode must be encode's exact inverse for every M-B kind");
+            assert_eq!(decode_node_id(&wire), Some(id), "decode must be encode's exact inverse for every M-B/M-C kind");
         }
     }
 
