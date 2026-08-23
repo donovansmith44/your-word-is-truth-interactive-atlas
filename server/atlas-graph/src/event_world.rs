@@ -51,7 +51,7 @@ use atlas_graph_types::text::{BibleLocus, BibleLocusRange, BibleTag, Locus, Vers
 /// One event's chosen date placement, plus the justification carried on its
 /// `DatedBy` row -- kept alongside `DatePlacement`/`PlacementBasis` (rather
 /// than folded into the graph row directly) so both `populate` (which
-/// writes the row) and `EventWorld`/tests (which inspect the choice without
+/// writes the row) and `Chronology`/tests (which inspect the choice without
 /// a full `Graph` scan) share one source.
 #[derive(Clone, Debug)]
 pub struct PlacedChronology {
@@ -294,63 +294,49 @@ pub fn derive_chronology(atlas: &AtlasData) -> ChronologyDerivation {
     ChronologyDerivation { order, placements, resolved }
 }
 
-/// One (narrative, event) leg position -- mirrors
-/// `atlas_core::narrative::NarrativePosition`'s own `prior`/`following`
-/// shape (event ids only here; the view handler resolves label/places/
-/// verse_groups per id via the SAME `scene::to_scene_event` presentation
-/// the pre-existing wire already uses, see `batch-mb-report.md`).
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct NarrativeLegPosition {
-    pub narrative_id: String,
-    pub narrative_name: String,
-    pub prior: Option<String>,
-    pub following: Option<String>,
-}
-
-/// The server-side companion index (same status as `GraphService`'s own
-/// `bible_position`: a lookup the generic `GraphQuery` port does not model,
-/// built once alongside the graph). Two gaps this fills, both disclosed in
-/// batch-mb-report.md:
-/// 1. `graph_types::edge::EdgeEntry` carries no per-edge NARRATIVE TAG (the
-///    types spec's own illustrative `tagged_by: NarrativeId` on `Succession`
-///    is prose-only in the compiled crate -- confirmed by reading
-///    `graph-types/src/edge.rs` fresh), so "which narrative is this
-///    follows-in edge FOR" cannot be recovered from the generic port alone.
-///    `narrative_positions` answers it directly from the same
-///    `Narrative.legs` data the graph's own `Succession` rows are built
-///    from.
-/// 2. `temporal-adjacency` is a derived SYMMETRIC relation the real
-///    `Graph::build_indexes` does not populate yet (`explore.rs`'s own
-///    `raw_neighbors` comment: "Symmetric relations: skeleton serves none
-///    yet") -- out of this batch's required scope (design §8 M-B lists
-///    dated-by resolution and the timeline-equivalence proof, not a
-///    materialized temporal-adjacency edge; requirement 4's own generic-
-///    endpoint kind list does not name it either). `temporal_neighbors`
-///    answers "global chronological prior/following" directly from
-///    `ChronologyDerivation::order`.
-pub struct EventWorld {
+/// RETIRED (controller decision 1, M-C): `NarrativeLegPosition` and the
+/// `narrative_positions` index it fed used to exist ONLY because
+/// `graph_types::edge::EdgeEntry` carried no per-edge NARRATIVE TAG -- the
+/// types spec's own illustrative `tagged_by: NarrativeId` on `Succession`
+/// was prose-only in the compiled crate at M-B's base. That gap CLOSED at
+/// this batch's own base: `graph-types` commit `13184e1` (owner-approved,
+/// "EdgeMeta -- per-entry relation metadata") gives every `follows-in`/
+/// `precedes-in` entry a real `EdgeMeta::Narrative(NarrativeId)` -- see
+/// `graph_types::graph::Graph::build_indexes`'s own `Succession` pairing,
+/// which has tagged every entry with its narrative since before this
+/// batch. "Which narrative is this succession edge FOR" is now answerable
+/// straight off the generic port (`snap.edges(event, follows-in)`'s own
+/// `EdgePage.entries[].meta`, filtered/grouped by `EdgeMeta::Narrative`) --
+/// `handlers::narrative_event_positions` now builds its own narrative-leg
+/// view this way (see that handler's own doc comment); this module no
+/// longer duplicates the lookup. The M-B review's I-3 (validation bypass:
+/// this companion index could silently diverge from the graph's own
+/// `Succession` rows, since nothing PROVED the two agreed) dies with it --
+/// there is now only one representation of "which narrative is this leg
+/// in," not two.
+///
+/// KEPT (chronology half, renamed honestly): `temporal-adjacency` is STILL
+/// a derived SYMMETRIC relation `Graph::build_indexes` does not populate
+/// (`explore.rs`'s own `raw_neighbors` comment: "Symmetric relations:
+/// skeleton serves none yet") -- out of this batch's own named scope
+/// (design §8 M-C: cross-refs/catechism/places/eras/mentions; M-C does
+/// close the symmetric-index gap for `catechism-link`, see
+/// `graph.rs`/`explore.rs`, but `temporal-adjacency` specifically is not
+/// among this batch's new relations and stays a disclosed, standing gap --
+/// see Concerns). `Chronology` (renamed from `EventWorld`, since
+/// `narrative_positions` was the other half of that name's own "world")
+/// is now PURELY the chronology companion: the derivation
+/// (`ChronologyDerivation`, still needed to BUILD `dated_by` rows) plus
+/// `temporal_neighbors` (global chronological prior/following, answering
+/// the SAME functional need `EventWorld::temporal_neighbors` always did).
+pub struct Chronology {
     pub chrono: ChronologyDerivation,
-    pub narrative_positions: HashMap<String, Vec<NarrativeLegPosition>>,
     pub temporal_neighbors: HashMap<String, (Option<String>, Option<String>)>,
 }
 
-impl EventWorld {
-    pub fn build(atlas: &AtlasData) -> EventWorld {
+impl Chronology {
+    pub fn build(atlas: &AtlasData) -> Chronology {
         let chrono = derive_chronology(atlas);
-
-        let mut narrative_positions: HashMap<String, Vec<NarrativeLegPosition>> = HashMap::new();
-        for n in &atlas.narratives {
-            for (idx, eid) in n.legs.iter().enumerate() {
-                let prior = idx.checked_sub(1).and_then(|i| n.legs.get(i)).cloned();
-                let following = n.legs.get(idx + 1).cloned();
-                narrative_positions.entry(eid.clone()).or_default().push(NarrativeLegPosition {
-                    narrative_id: n.id.clone(),
-                    narrative_name: n.name.clone(),
-                    prior,
-                    following,
-                });
-            }
-        }
 
         let mut temporal_neighbors: HashMap<String, (Option<String>, Option<String>)> = HashMap::new();
         for (i, id) in chrono.order.iter().enumerate() {
@@ -359,7 +345,7 @@ impl EventWorld {
             temporal_neighbors.insert(id.clone(), (prior, following));
         }
 
-        EventWorld { chrono, narrative_positions, temporal_neighbors }
+        Chronology { chrono, temporal_neighbors }
     }
 
     /// `AnchorId.0 -> TimePoint`, for law tests / the resolver -- built
@@ -624,9 +610,16 @@ fn bible_locus_node_id(v: &VerseRef) -> atlas_graph_types::id::AnyNodeId {
 pub fn add_justified_by(graph: &mut Graph) -> usize {
     use atlas_graph_types::chrono::ChronoTarget;
     use atlas_graph_types::edge::{at, entry_id, BiIndex, Ground, RelationId};
+    use atlas_graph_types::explore::EdgeMeta;
     use atlas_graph_types::id::Position;
 
-    let mut pairs: Vec<(Position, Position)> = Vec::new();
+    // Controller decision 1 (EdgeMeta alignment): `BiIndex::build` now takes
+    // (Position, Position, EdgeMeta) triples (graph-types commit 13184e1,
+    // owner-approved at this batch's base) -- `justified-by` rows carry no
+    // per-entry metadata of their own, so every triple supplies
+    // `EdgeMeta::None` honestly (there is nothing else to say about a
+    // justification pointer beyond which node it targets).
+    let mut pairs: Vec<(Position, Position, EdgeMeta)> = Vec::new();
     for row in &graph.dated_by {
         if row.justification.grounds.is_empty() {
             continue;
@@ -649,7 +642,7 @@ pub fn add_justified_by(graph: &mut Graph) -> usize {
                 Ground::Anchor(a) => at(&a.erase()),
                 Ground::Source(s) => at(&s.erase()),
             };
-            pairs.push((Position::Edge(edge_id.clone()), target));
+            pairs.push((Position::Edge(edge_id.clone()), target, EdgeMeta::None));
         }
     }
 
@@ -771,8 +764,8 @@ mod tests {
             vec![anchor("solomon-crowned", -1015, Some("anchored"))],
         );
         let chrono = derive_chronology(&atlas);
-        let anchor_years = EventWorld::anchor_years(&atlas);
-        let event_years = EventWorld::event_years(&atlas);
+        let anchor_years = Chronology::anchor_years(&atlas);
+        let event_years = Chronology::event_years(&atlas);
         for (id, placed) in &chrono.placements {
             let e = atlas.event_by_id(id).unwrap();
             let resolved = resolve_timepoint(&placed.placement, &anchor_years, &event_years)
@@ -781,19 +774,16 @@ mod tests {
         }
     }
 
-    #[test]
-    fn narrative_positions_mirror_the_windows_adjacency_the_old_resolver_used() {
-        let atlas = atlas_with(
-            vec![event("e1", -1406, 0), event("e2", -1406, 0), event("e3", -1405, 0)],
-            vec![Narrative { id: "conquest".into(), name: "Conquest".into(), color: "#000".into(), legs: vec!["e1".into(), "e2".into(), "e3".into()] }],
-            vec![],
-        );
-        let world = EventWorld::build(&atlas);
-        let positions = &world.narrative_positions["e2"];
-        assert_eq!(positions.len(), 1);
-        assert_eq!(positions[0].prior.as_deref(), Some("e1"));
-        assert_eq!(positions[0].following.as_deref(), Some("e3"));
-    }
+    // `narrative_positions_mirror_the_windows_adjacency_the_old_resolver_used`
+    // RETIRED (controller decision 1, M-C): the subject it proved --
+    // "querying narrative-leg adjacency for an event returns the right
+    // prior/following" -- moved to the generic port (EdgeMeta::Narrative on
+    // `follows-in`/`precedes-in` entries) and is now proven at the SERVER
+    // layer, over real HTTP, by
+    // `atlas-server/tests/graph_api.rs::narrative_leg_positions_come_from_
+    // the_generic_ports_own_edgemeta_narrative_tag` -- not duplicated here,
+    // since `Chronology` no longer computes this at all (see this module's
+    // own `Chronology` doc comment).
 
     #[test]
     fn temporal_neighbors_follow_the_global_timeline_not_narrative_membership() {
@@ -802,7 +792,7 @@ mod tests {
             vec![],
             vec![],
         );
-        let world = EventWorld::build(&atlas);
+        let world = Chronology::build(&atlas);
         assert_eq!(world.temporal_neighbors["e5"], (None, Some("e1".to_string())));
         assert_eq!(world.temporal_neighbors["e1"], (Some("e5".to_string()), Some("e2".to_string())));
         assert_eq!(world.temporal_neighbors["e2"], (Some("e1".to_string()), None));

@@ -703,11 +703,9 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
 /// `narrative::tests::event_in_no_narrative_returns_no_positions`).
 ///
 /// BATCH M-B (controller decision 3): re-implemented as a VIEW over graph
-/// queries -- succession duals (`atlas_graph::EventWorld::narrative_positions`,
-/// built from the SAME `Narrative.legs` data the graph's own `Succession`
-/// rows are populated from) and temporal neighbors
-/// (`EventWorld::temporal_neighbors`, built from `ChronologyDerivation::order`,
-/// which `tests/timeline_equivalence.rs` proves is EXACTLY
+/// queries -- temporal neighbors come from `atlas_graph::Chronology::
+/// temporal_neighbors` (built from `ChronologyDerivation::order`, which
+/// `tests/timeline_equivalence.rs` proves is EXACTLY
 /// `atlas_core::narrative::global_timeline_position`'s own timeline order --
 /// the acceptance centerpiece). The bespoke resolvers this endpoint used to
 /// call (`positions_for_events`/`global_timeline_position`) RETIRE from this
@@ -717,14 +715,31 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, Path(vref): Path<String>)
 /// directly unit-tested, simply no longer reached by any live server
 /// response.
 ///
+/// BATCH M-C (controller decision 1): succession duals now come straight
+/// off the GENERIC PORT instead of a companion index. `graph-types` commit
+/// `13184e1` (owner-approved, "EdgeMeta -- per-entry relation metadata")
+/// tags every `follows-in`/`precedes-in` entry with the `NarrativeId` it
+/// belongs to (`Graph::build_indexes`'s own `Succession` pairing), so "every
+/// narrative this event is a leg of, and its neighbor in each" is answerable
+/// by draining both direction's pages at this event's own Position and
+/// grouping entries by `EdgeMeta::Narrative` -- exactly the SAME
+/// `Narrative.legs`-derived data the graph's own `Succession` rows were
+/// always built from, just read back through the port instead of a
+/// second, hand-maintained index (`atlas_graph::event_world::EventWorld`'s
+/// own `narrative_positions` field, RETIRED this batch -- see that
+/// module's own `Chronology` doc comment). This closes the M-B review's I-3
+/// (validation bypass): there is now only one representation of "which
+/// narrative is this leg in," so it cannot silently diverge from the
+/// graph's own rows.
+///
 /// WIRE SHAPE IS BYTE-IDENTICAL (hard requirement, verified by the
 /// pre-existing Playwright `event-timeline.spec.ts`/`popover-sections.spec.ts`
 /// suites, which exercise this exact endpoint through the unmodified
 /// client): `NarrativeEventPositionsOut`/`NarrativePositionOut`/
 /// `TimelinePositionOut`/`NarrativeAdjacentEventOut` are UNCHANGED. Each
 /// adjacent event's own presentation (label/places/verse_groups) still
-/// calls `atlas_core::narrative::adjacent_event` directly (made `pub` this
-/// batch, see that function's own doc comment) -- the SAME presentation
+/// calls `atlas_core::narrative::adjacent_event` directly (made `pub` at
+/// M-B, see that function's own doc comment) -- the SAME presentation
 /// builder the OLD resolver used, so label/places/verse_group formatting
 /// cannot drift from what shipped before; only the TOPOLOGY (which ids are
 /// prior/following, in which narratives) now originates from the graph.
@@ -733,42 +748,125 @@ pub async fn narrative_event_positions(
     State(graph): State<Arc<GraphService>>,
     Path(id): Path<String>,
 ) -> Result<Json<NarrativeEventPositionsOut>, ApiError> {
+    use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
+    use atlas_graph_types::explore::EdgeMeta;
+    use atlas_graph_types::id::{NarrativeId, Position};
+    use atlas_graph_types::node::NodePayload;
+    use std::collections::BTreeSet;
+
     let snap = graph.snapshot();
-    if snap.node(&atlas_graph::event_world::event_node_id(&id)).is_none() {
+    let event_id = atlas_graph::event_world::event_node_id(&id);
+    if snap.node(&event_id).is_none() {
         return Err(ApiError::not_found("event"));
     }
     let event_label = data.event_by_id(&id).map(|e| e.label.clone()).unwrap_or_default();
+    let event_pos = Position::Node(event_id);
 
-    let narrative = graph
-        .event_world
-        .narrative_positions
-        .get(&id)
-        .cloned()
-        .unwrap_or_default()
+    // "follows-in" (Forward) is THIS event's own following-event page;
+    // "precedes-in" (Inverse) is its own prior-event page -- see
+    // `graph_types::graph::Graph::build_indexes`'s own Succession pairing
+    // (subject = the earlier leg, object = the later leg; `fwd` reads
+    // subject -> object, `inv` reads object -> subject).
+    let following_entries = drain_edges(&snap, &event_pos, EdgeKind::Directed(RelationId::Succession, Direction::Forward));
+    let prior_entries = drain_edges(&snap, &event_pos, EdgeKind::Directed(RelationId::Succession, Direction::Inverse));
+
+    let mut narrative_ids: BTreeSet<NarrativeId> = following_entries
+        .iter()
+        .chain(prior_entries.iter())
+        .filter_map(|e| match &e.meta {
+            EdgeMeta::Narrative(nid) => Some(nid.clone()),
+            _ => None,
+        })
+        .collect();
+    // A narrative whose `legs` names exactly ONE event (a real, if rare,
+    // shape -- e.g. `demo_fixture()`'s own "patriarchs-demo") produces NO
+    // `Succession` row pair at all: `chain.windows(2)` on a one-element
+    // chain is empty by construction (a doubly-linked list of one node has
+    // no links), so its membership is genuinely invisible to the port's
+    // EdgeMeta-tagged succession pages -- a real, structural gap in the
+    // `succession` relation's own shape (it communicates SEQUENCE, not bare
+    // membership), not a bug in this batch's port-based rewrite. Solo-leg
+    // narratives are enumerated directly off `data.narratives` (a small,
+    // in-memory scan -- narrative counts stay in the tens, never paged) so
+    // this event's own membership in one is never silently dropped; every
+    // narrative reached this way that DOES have a real prior/following
+    // still gets it from the port entries above, never from `AtlasData`.
+    for n in &data.narratives {
+        if n.legs.len() == 1 && n.legs[0] == id {
+            narrative_ids.insert(NarrativeId::new(n.id.clone()));
+        }
+    }
+
+    let leg_event_id = |entries: &[atlas_graph_types::explore::EdgeEntry], nid: &NarrativeId| -> Option<String> {
+        entries.iter().find(|e| matches!(&e.meta, EdgeMeta::Narrative(n) if n == nid)).and_then(|e| match &e.node {
+            Position::Node(id) => Some(id.raw.clone()),
+            Position::Edge(_) => None,
+        })
+    };
+
+    let narrative: Vec<NarrativePositionOut> = narrative_ids
         .into_iter()
-        .map(|leg| NarrativePositionOut {
-            narrative_id: leg.narrative_id,
-            narrative_name: leg.narrative_name,
-            event_id: id.clone(),
-            event_label: event_label.clone(),
-            prior: leg.prior.and_then(|pid| atlas_core::narrative::adjacent_event(&data, &pid)).map(Into::into),
-            following: leg.following.and_then(|pid| atlas_core::narrative::adjacent_event(&data, &pid)).map(Into::into),
+        .map(|nid| {
+            let narrative_name = snap
+                .node(&nid.erase())
+                .map(|n| match n.payload {
+                    NodePayload::Narrative { label } => label,
+                    _ => String::new(),
+                })
+                .unwrap_or_default();
+            let prior = leg_event_id(&prior_entries, &nid);
+            let following = leg_event_id(&following_entries, &nid);
+            NarrativePositionOut {
+                narrative_id: nid.0,
+                narrative_name,
+                event_id: id.clone(),
+                event_label: event_label.clone(),
+                prior: prior.and_then(|pid| atlas_core::narrative::adjacent_event(&data, &pid)).map(Into::into),
+                following: following.and_then(|pid| atlas_core::narrative::adjacent_event(&data, &pid)).map(Into::into),
+            }
         })
         .collect();
 
     // Batch HOTFIX-4 requirement 1's own "global chronological PRIOR/
-    // FOLLOWING" half, now graph-sourced: `None` (field omitted) for a
+    // FOLLOWING" half, still graph-sourced via the chronology companion
+    // (temporal-adjacency is not a materialized graph edge -- see
+    // `Chronology`'s own doc comment): `None` (field omitted) for a
     // general-kind passage, by construction -- a general-kind event never
     // gets a `ChronologyDerivation` entry at all (`derive_chronology`
     // filters to `kind == "event"`), so it is absent from
     // `temporal_neighbors` exactly like it was absent from the old
     // `timeline_index`.
-    let timeline = graph.event_world.temporal_neighbors.get(&id).map(|(prior, following)| TimelinePositionOut {
+    let timeline = graph.chronology.temporal_neighbors.get(&id).map(|(prior, following)| TimelinePositionOut {
         prior: prior.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(&data, pid)).map(Into::into),
         following: following.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(&data, pid)).map(Into::into),
     });
 
     Ok(Json(NarrativeEventPositionsOut { narrative, timeline }))
+}
+
+/// Drains every page of one edge kind at one position -- the SAME
+/// cursor-loop shape `atlas_graph_types::store`'s own (private) conformance
+/// harness uses internally, needed here because a handler-side consumer
+/// (unlike the generic `/api/node/{id}/edges` endpoint, which hands back
+/// exactly one page) sometimes genuinely needs the WHOLE frontier of one
+/// kind (e.g. every narrative an event is a leg of) rather than one honest
+/// page of it.
+fn drain_edges(
+    snap: &impl atlas_graph_types::store::GraphQuery,
+    p: &atlas_graph_types::id::Position,
+    kind: atlas_graph_types::edge::EdgeKind,
+) -> Vec<atlas_graph_types::explore::EdgeEntry> {
+    let mut cursor = None;
+    let mut out = Vec::new();
+    loop {
+        let page = snap.edges(p, &atlas_graph_types::explore::EdgeQuery { kind, cursor, limit: 200 });
+        out.extend(page.entries);
+        match page.next {
+            Some(c) => cursor = Some(c),
+            None => break,
+        }
+    }
+    out
 }
 
 /// Batch T requirement 4: one EVENT-kind PASSAGE's own resolved place --

@@ -25,7 +25,7 @@
 //! `AtlasData` this batch's own adapter already treats as its curated
 //! input (per the disclosed deviation) rather than re-derived a second
 //! time: `book_narration_windows` (E2/E4) and each anchor's own
-//! `era_boundary` flag (E4) -- see `event_world::EventWorld`'s own doc
+//! `era_boundary` flag (E4) -- see `event_world::Chronology`'s own doc
 //! comment for why `era_boundary` specifically stays off the graph-types
 //! `NodePayload::Anchor` shape (not part of the binding types spec; a
 //! genuine shape change graph-types' extend-only law does not require).
@@ -36,7 +36,8 @@ use std::path::Path;
 use atlas_core::chronology::{anchor_deferral, is_exempted, is_recounting};
 use atlas_core::data::AtlasData;
 use atlas_graph::build::build_graph_from_sources;
-use atlas_graph::event_world::{self, EventWorld};
+use atlas_graph::event_world::{self};
+use atlas_graph::Chronology;
 use atlas_graph_types::chrono::temporal_order;
 use atlas_graph_types::edge::Attests;
 
@@ -58,8 +59,8 @@ fn build_real() -> RealGraph {
     let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
     let (graph, _kjv_stats, _ew_stats, chrono) = build_graph_from_sources(&kjv_json, &xrefs_tsv, &atlas).expect("the real graph must build");
 
-    let anchor_years = EventWorld::anchor_years(&atlas);
-    let event_years = EventWorld::event_years(&atlas);
+    let anchor_years = Chronology::anchor_years(&atlas);
+    let event_years = Chronology::event_years(&atlas);
     let mut resolved = HashMap::new();
     for row in &graph.dated_by {
         let id = row.event.0.clone();

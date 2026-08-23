@@ -87,7 +87,8 @@ pub struct NarrativePosition {
 /// this EXACT presentation builder (id -> label/places/verse_groups) rather
 /// than duplicating it -- the view's own TOPOLOGY (which events are prior/
 /// following, in which narratives, and on the global timeline) now comes
-/// from the graph (`atlas_graph::EventWorld`); this function's job was
+/// from the graph (the generic port's own `EdgeMeta::Narrative` tags plus
+/// `atlas_graph::Chronology`); this function's job was
 /// always presentation, not topology, and stays exactly as it was,
 /// untouched beyond this visibility widening (a safe, non-breaking change:
 /// every existing caller/test in this file keeps compiling and passing

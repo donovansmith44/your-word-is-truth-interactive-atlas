@@ -29,7 +29,8 @@ use std::path::Path;
 
 use atlas_core::data::AtlasData;
 use atlas_graph::build::build_graph_from_sources;
-use atlas_graph::event_world::{self, EventWorld};
+use atlas_graph::event_world::{self};
+use atlas_graph::Chronology;
 use atlas_graph_types::chrono::{temporal_order, ResolvedDate, ResolvedPlacement};
 use atlas_graph_types::id::EventId;
 
@@ -72,8 +73,8 @@ fn the_graphs_total_order_over_resolved_placements_equals_the_old_resolvers_time
     // graph's OWN rows (what a real server actually publishes) resolve
     // correctly, not merely that the in-memory derivation struct is
     // self-consistent.
-    let anchor_years = EventWorld::anchor_years(&atlas);
-    let event_years = EventWorld::event_years(&atlas);
+    let anchor_years = Chronology::anchor_years(&atlas);
+    let event_years = Chronology::event_years(&atlas);
 
     let mut resolved: HashMap<String, ResolvedPlacement> = HashMap::new();
     for row in &graph.dated_by {

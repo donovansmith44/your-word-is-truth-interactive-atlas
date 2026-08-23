@@ -38,7 +38,7 @@ use atlas_graph_types::id::AnyNodeId;
 use atlas_graph_types::store::{GraphPublisher, GraphQuery, GraphStore, GraphVersion, MemSnapshot, MemStore};
 
 use crate::build::{self, BuildStats};
-use crate::event_world::{EventWorld, EventWorldStats};
+use crate::event_world::{Chronology, EventWorldStats};
 use crate::fidelity;
 
 pub struct GraphService {
@@ -50,12 +50,14 @@ pub struct GraphService {
     /// "start from this ref" without scanning the whole spine per call.
     bible_position: HashMap<AnyNodeId, usize>,
     pub stats: BuildStats,
-    /// Batch M-B: the event-world companion index (chronology derivation +
-    /// narrative/temporal-neighbor lookups) -- same status as
-    /// `bible_position` above (the generic `GraphQuery` port does not model
-    /// either; see `event_world::EventWorld`'s own doc comment for exactly
-    /// which two gaps this fills and why they're disclosed, not silent).
-    pub event_world: EventWorld,
+    /// Batch M-B (narrowed at M-C, renamed `EventWorld` -> `Chronology`):
+    /// the chronology companion index -- same status as `bible_position`
+    /// above (the generic `GraphQuery` port does not model
+    /// `temporal-adjacency`; see `event_world::Chronology`'s own doc
+    /// comment for why it's disclosed, not silent, and for the M-C
+    /// retirement of this struct's own former narrative-positions half,
+    /// now served by the generic port's `EdgeMeta::Narrative`).
+    pub chronology: Chronology,
     pub event_world_stats: EventWorldStats,
 }
 
@@ -100,10 +102,10 @@ impl GraphService {
             .get(crate::kjv_adapter::BIBLE_CORPUS)
             .map(|spine| spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect())
             .unwrap_or_default();
-        // Batch M-B: the event-world companion index, built from the SAME
-        // `atlas` the graph's own Event/Narrative/Anchor rows were just
-        // populated from -- see `EventWorld`'s own doc comment.
-        let event_world = EventWorld::build(atlas);
+        // Batch M-B (renamed at M-C): the chronology companion index, built
+        // from the SAME `atlas` the graph's own Event/Narrative/Anchor rows
+        // were just populated from -- see `Chronology`'s own doc comment.
+        let chronology = Chronology::build(atlas);
         // GraphPublisher::publish (design doc §9a): the compiler
         // publishes; serving never writes. One publish, at startup; M-A
         // never calls it again (no hot-reload exists yet) -- MemStore's
@@ -114,7 +116,7 @@ impl GraphService {
         let mut store = MemStore::default();
         let version = store.publish(graph);
         let snapshot = store.open(version).expect("the version just published must always be open-able");
-        GraphService { snapshot, bible_position, stats, event_world, event_world_stats }
+        GraphService { snapshot, bible_position, stats, chronology, event_world_stats }
     }
 
     /// The version this service published at construction (M-A: the only
