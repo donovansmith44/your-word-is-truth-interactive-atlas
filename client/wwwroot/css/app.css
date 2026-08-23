@@ -301,8 +301,16 @@ input:focus-visible,
    later edit); harmless as originally written here (a space followed the
    asterisk, not a slash), but not worth keeping around as a standing
    temptation. */
+/* M-D3/B2: flex-grow/shrink both 0 -- this pane's own width is now
+   EXACTLY what --split-reader-width (Reader.razor's own style attribute
+   on .split-view, SplitDivider.razor) says, not a proportional share of
+   extra space; .split-pane-atlas below is .flex-pane-atlas's own
+   complementary "1 1 auto", filling whatever room remains. The bare `55%`
+   fallback only matters for the (practically unreachable -- Reader.razor
+   always sets the custom property from its very first render) instant the
+   custom property is genuinely unset. */
 .split-pane-reader {
-    flex: 1 1 55%;
+    flex: 0 0 var(--split-reader-width, 55%);
     min-width: 0;
     --reader-col-pad-x: 3rem;
     --nav-left: .375rem;
@@ -311,10 +319,57 @@ input:focus-visible,
     --nav-label-size: .62rem;
 }
 
+/* M-D3/B2 (SplitDivider.razor): the OLD .split-divider -- a static 1px
+   line, zero interactivity -- is now the inner VISUAL element only,
+   unchanged in appearance, wrapped in a wider (13px) `.split-divider-hit`
+   that owns the actual drag/keyboard interaction. A 1px line is a
+   genuinely difficult mouse target (and an impossible touch one); widening
+   only the INVISIBLE hit area keeps the thin-bronze-rule look this app's
+   own split view has always had while making it comfortably grabbable --
+   the same "widen the interactive target, not the visual" move
+   .verse-num/every other thin control in this app already gets via real
+   padding, just via a dedicated wrapper here since the visual element
+   itself (a background-color rule with no content) has no text/padding
+   box of its own to widen. touch-action:none -- a horizontal drag on a
+   touchscreen must not ALSO try to scroll/pan the page underneath it. */
+.split-divider-hit {
+    flex: 0 0 13px;
+    align-self: stretch;
+    display: flex;
+    justify-content: center;
+    cursor: col-resize;
+    touch-action: none;
+}
+
 .split-divider {
     flex: 0 0 1px;
     align-self: stretch;
     background: var(--bronze);
+    transition: background-color 120ms ease-out;
+}
+
+/* Hover/focus widen the VISUAL line itself (1px -> 3px, still centered in
+   the 13px hit area) -- discoverability for a control with no text label
+   and no icon; the darker --lapis (this file's own "amplified on hover"
+   convention, .verse-num/.verse-xref-marker's own rules right above)
+   makes the widen read as "this highlighted, wait, this is grabbable," not
+   an unexplained width jump. No layout shift: the hit area's own width
+   never changes, only the line drawn inside it. */
+.split-divider-hit:hover .split-divider,
+.split-divider-hit:focus-visible .split-divider {
+    /* flex-basis, not width -- .split-divider is a flex ITEM of
+       .split-divider-hit with an explicit `flex: 0 0 1px` basis (not
+       auto), so a bare `width` rule here would be silently overridden by
+       that basis instead of widening anything -- a real mistake this
+       exact rule's own first draft made, caught before commit. */
+    flex-basis: 3px;
+    background: var(--lapis);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .split-divider {
+        transition: none;
+    }
 }
 
 /* Sticky, not scrolling-away: the atlas pane stays pinned at the top of the
@@ -324,8 +379,12 @@ input:focus-visible,
    height:100vh + overflow:hidden together mean .world-page's own
    min-height:100vh (unchanged, the same rule every standalone /world visit
    already uses) exactly fills this box instead of overflowing it. */
+/* M-D3/B2: 1 1 auto -- fills whatever room .split-pane-reader's own now
+   drag-adjustable, fixed-basis width (SplitDivider.razor) doesn't claim,
+   rather than competing for a separate proportional share (the old bare
+   `45%`) that a resized reader pane would otherwise fight with. */
 .split-pane-atlas {
-    flex: 1 1 45%;
+    flex: 1 1 auto;
     min-width: 0;
     height: 100vh;
     position: sticky;

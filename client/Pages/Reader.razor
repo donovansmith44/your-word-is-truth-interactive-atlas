@@ -53,6 +53,7 @@
    so adding display:flex here never affects them -- they still render
    exactly like "normal", full-viewport, per the brief. *@
 <div class="@(_shiftHeld ? "reader-shift-active" : "") @(_splitOpen ? "split-view" : "")"
+     style="--split-reader-width:@(_splitReaderWidthPx.ToString(System.Globalization.CultureInfo.InvariantCulture))px;"
      @onkeydown="OnPageKeyDown" @onkeyup="OnPageKeyUp" data-testid="@(_splitOpen ? "split-view" : null)">
     <div class="@(_splitOpen ? "reader-page split-pane-reader" : "reader-page")" data-testid="reader-root">
         @if (!_splitOpen)
@@ -316,7 +317,13 @@
        ordinary Blazor parameter diffing, no event bus needed. *@
     @if (_splitOpen)
     {
-        <div class="split-divider" aria-hidden="true"></div>
+        @* M-D3/B2: the drag-resize divider -- see SplitDivider.razor's own
+           header comment. WidthPx/WidthPxChanged read/write this page's own
+           _splitReaderWidthPx directly (Reader.razor is the split's only
+           ever host -- see this page's own SplitMode/OnRequestClose
+           comments elsewhere -- so there is exactly one owner for this
+           value, the same reasoning _splitOpen itself already follows). *@
+        <SplitDivider WidthPx="_splitReaderWidthPx" WidthPxChanged="w => _splitReaderWidthPx = w" />
         <World @ref="_worldPane" SplitMode="true" FollowRef="@CurrentRef" OnRequestClose="CloseSplitAtlas" />
     }
 
@@ -369,6 +376,22 @@
     private bool _splitOpen;
     private bool _splitQueryConsumed;
     private World? _worldPane;
+
+    // M-D3/B2: the reader pane's own drag-adjustable width (SplitDivider.razor),
+    // read by the outer wrapper's own --split-reader-width custom property
+    // (app.css's own .split-pane-reader rule reads it via var()) -- a plain
+    // field, not ViewStateService, for the SAME "Reader.razor is reused
+    // across chapter navigation, so a plain field already survives it for
+    // free" reasoning _splitOpen's own comment above gives; also matches
+    // _splitOpen's own persistence TIER (session-local, resets on a fresh
+    // page load) rather than reaching for cross-session persistence nothing
+    // else about split-view has either. 704px matches this app's own
+    // pre-existing 55%-of-1280px default look (a common real viewport
+    // width) closely enough that a first-ever split-open, before any drag,
+    // is visually indistinguishable from the static split this batch
+    // replaces -- see SplitDivider.razor's own header comment for the full
+    // mechanism this value now feeds.
+    private double _splitReaderWidthPx = 704;
 
     private List<BookTocEntry>? _toc;
     private string _book = "GEN";

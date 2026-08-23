@@ -459,3 +459,167 @@ test('PANE-ANCHOR-1: full-page (non-split) popovers stay viewport-centered, unaf
     expect(Math.abs(popoverCenterX - viewportCenterX)).toBeLessThan(5);
   }
 });
+
+// DIVIDER-1 (M-D3/B2, owner morning address verbatim: "map toggles halfway
+// into view, reader can't -- parity"; brief: "the split-view drag
+// affordance works from the reader side too"): the split divider
+// (previously a static 1px line) is now a real drag-resize handle --
+// Components/SplitDivider.razor, mirroring TimeSlider.razor's own pointer-
+// drag mechanics. See CONTRACT.md's own DIVIDER-1 note for the full
+// mechanism (pixel-delta tracking, pointer capture, min/max clamps).
+
+test('DIVIDER-1: dragging the divider resizes the reader pane by exactly the drag distance, atlas fills the rest', async ({ page }) => {
+  await page.goto('/read/GEN/12');
+  await page.getByTestId('split-open-reader').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+
+  const readerBefore = await page.getByTestId('reader-root').boundingBox();
+  const atlasBefore = await page.getByTestId('split-pane-atlas').boundingBox();
+  const dividerBefore = await page.getByTestId('split-divider').boundingBox();
+  expect(readerBefore).toBeTruthy();
+  expect(atlasBefore).toBeTruthy();
+  expect(dividerBefore).toBeTruthy();
+  if (!readerBefore || !atlasBefore || !dividerBefore) return;
+
+  // A real, live-caught bug in an earlier draft of this test: `.split-
+  // divider-hit` stretches (align-self:stretch) to match `.split-view`'s
+  // own tallest child, which for a real chapter is the READER pane's full
+  // (routinely multi-thousand-px) scrollable content height, not just one
+  // viewport -- `boundingBox().height` reports THAT full height, so
+  // `y + height/4` landed far below the actual visible viewport, and
+  // `page.mouse.move` (viewport-relative coordinates) silently moved the
+  // pointer nowhere near the divider at all -- the drag then did nothing
+  // (received delta 0), not even an error to point at the real cause.
+  // Capped at a small, always-on-screen offset from the divider's own top
+  // instead.
+  const startX = dividerBefore.x + dividerBefore.width / 2;
+  const startY = dividerBefore.y + Math.min(dividerBefore.height, 300) / 2;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX + 120, startY, { steps: 8 });
+  await page.mouse.up();
+
+  const readerAfter = await page.getByTestId('reader-root').boundingBox();
+  const atlasAfter = await page.getByTestId('split-pane-atlas').boundingBox();
+  expect(readerAfter).toBeTruthy();
+  expect(atlasAfter).toBeTruthy();
+  if (!readerAfter || !atlasAfter) return;
+
+  // Exact pixel tracking (SplitDivider.razor's own delta-from-drag-start
+  // math, not an approximate/animated settle) -- the reader pane grew by
+  // precisely the drag distance, and the atlas pane absorbed precisely the
+  // same amount from the other side (flex: 1 1 auto, app.css), so the
+  // divider itself never visibly moved off the cursor mid-drag.
+  expect(Math.round(readerAfter.width - readerBefore.width)).toBe(120);
+  expect(Math.round(atlasBefore.width - atlasAfter.width)).toBe(120);
+
+  // Both panes, and the verse text/map inside them, stay fully functional
+  // post-drag -- a resize is cosmetic, not a teardown/rebuild of either.
+  await expect(page.getByTestId('verse-line-1')).toBeVisible();
+  await expect(page.getByTestId('world-map')).toBeVisible();
+});
+
+test('DIVIDER-1: keyboard ArrowRight/ArrowLeft while the divider is focused nudges the split by a fixed step', async ({ page }) => {
+  await page.goto('/read/GEN/12');
+  await page.getByTestId('split-open-reader').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+
+  const divider = page.getByTestId('split-divider');
+  await divider.focus();
+  const before = await page.getByTestId('reader-root').boundingBox();
+  expect(before).toBeTruthy();
+  if (!before) return;
+
+  await page.keyboard.press('ArrowRight');
+  const afterRight = await page.getByTestId('reader-root').boundingBox();
+  expect(afterRight).toBeTruthy();
+  if (!afterRight) return;
+  expect(afterRight.width).toBeGreaterThan(before.width);
+
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  const afterLeft = await page.getByTestId('reader-root').boundingBox();
+  expect(afterLeft).toBeTruthy();
+  if (!afterLeft) return;
+  // Net one step (24px) narrower than the very first reading, not just
+  // narrower than afterRight -- proves the SAME WidthPx state round-trips
+  // through both directions (ArrowRight then two ArrowLefts = net -1 step),
+  // never drifting from a separately-tracked "visual only" value.
+  expect(Math.round(before.width - afterLeft.width)).toBe(24);
+});
+
+test('DIVIDER-1: dragging far in either direction clamps at a sane floor for BOTH panes, never collapsing one to zero', async ({ page }) => {
+  await page.goto('/read/GEN/12');
+  await page.getByTestId('split-open-reader').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+
+  const drag = async (deltaX: number) => {
+    const box = await page.getByTestId('split-divider').boundingBox();
+    if (!box) return;
+    const x = box.x + box.width / 2;
+    const y = box.y + Math.min(box.height, 300) / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + deltaX, y, { steps: 15 });
+    await page.mouse.up();
+  };
+
+  await drag(-3000); // absurdly far left
+  let readerBox = await page.getByTestId('reader-root').boundingBox();
+  let atlasBox = await page.getByTestId('split-pane-atlas').boundingBox();
+  expect(readerBox).toBeTruthy();
+  expect(atlasBox).toBeTruthy();
+  if (readerBox && atlasBox) {
+    expect(readerBox.width).toBeGreaterThanOrEqual(300); // SplitDivider.razor's own MinWidthPx floor (320), with a little slack
+    expect(atlasBox.width).toBeGreaterThan(0);
+  }
+
+  await drag(3000); // absurdly far right
+  readerBox = await page.getByTestId('reader-root').boundingBox();
+  atlasBox = await page.getByTestId('split-pane-atlas').boundingBox();
+  expect(readerBox).toBeTruthy();
+  expect(atlasBox).toBeTruthy();
+  if (readerBox && atlasBox) {
+    // The atlas pane keeps the SAME floor the reader pane gets -- a real,
+    // live-caught bug in an earlier draft (SplitDivider.razor's own
+    // EnsureMaxWidthAsync) shorted this by exactly the divider's own
+    // hit-area width (13px) by not subtracting it from the measured
+    // container before clamping.
+    expect(atlasBox.width).toBeGreaterThanOrEqual(300);
+  }
+
+  // Neither extreme leaves the app unusable -- both panes' own real
+  // content still renders.
+  await expect(page.getByTestId('verse-line-1')).toBeVisible();
+  await expect(page.getByTestId('world-map')).toBeVisible();
+});
+
+test('DIVIDER-1/parity: the divider is equally present and draggable whichever side opened the split ("Read beside the map" vs. "Open the map beside the text")', async ({ page }) => {
+  // The owner's own words this batch's B2 answers: "map toggles halfway
+  // into view, reader can't -- parity." Both entry points land on the
+  // SAME host (Reader.razor always hosts split-view -- see this file's
+  // own header comment) at the SAME URL shape, so this proves there is no
+  // second, divergent code path that only wires the divider up from one
+  // side.
+  await page.goto('/world');
+  await page.getByTestId('split-open-world').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+
+  const divider = page.getByTestId('split-divider');
+  await expect(divider).toBeVisible();
+  const before = await page.getByTestId('reader-root').boundingBox();
+  const box = await divider.boundingBox();
+  expect(before).toBeTruthy();
+  expect(box).toBeTruthy();
+  if (!before || !box) return;
+
+  await page.mouse.move(box.x + box.width / 2, box.y + Math.min(box.height, 300) / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 80, box.y + Math.min(box.height, 300) / 2, { steps: 6 });
+  await page.mouse.up();
+
+  const after = await page.getByTestId('reader-root').boundingBox();
+  expect(after).toBeTruthy();
+  if (!after) return;
+  expect(Math.round(after.width - before.width)).toBe(80);
+});

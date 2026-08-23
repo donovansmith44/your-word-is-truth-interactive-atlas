@@ -199,6 +199,9 @@ Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
   wrapper),
   `split-pane-atlas` (present on the atlas pane's own root only while
   embedded in a split -- absent on a standalone /world visit),
+  `split-divider` (M-D3/B2, Components/SplitDivider.razor; present only
+  while split is open -- the drag-resize handle between the two panes; see
+  DIVIDER-1 below for the full mechanism),
   `split-close-reader` (button, closes the READER pane -> full `/world`),
   `split-close-atlas` (button, closes the ATLAS pane -> full reader, same
   route),
@@ -2827,9 +2830,13 @@ Notes:
   unchanged.
 - SPLIT-1 (batch-h-brief.md, "study without page-turning"): the reader
   (`split-open-reader`) and `/world` (`split-open-world`) each offer an
-  affordance into the SAME split layout -- reader pane left (~55% width),
-  atlas pane right (~45%), a thin bronze `split-divider` between them, both
-  fully functional. The atlas pane IS the existing World.razor page
+  affordance into the SAME split layout -- reader pane left, atlas pane
+  right, a thin bronze `split-divider` between them, both fully functional.
+  M-D3/B2: the divider is now a real drag-resize handle, not a fixed
+  ~55%/45% split -- see DIVIDER-1 below for the full mechanism; ~55%/45%
+  (704px reader on a common 1280px-wide viewport) remains only the
+  UNDRAGGED default, not an enforced ratio. The atlas pane IS the existing
+  World.razor page
   componentry (a real child-component instance, `SplitMode=true`, never a
   copy); the reader pane is the existing Reader.razor content, unchanged,
   just narrowed. Reader.razor is ALWAYS the split's host (the URL always
@@ -2885,6 +2892,51 @@ Notes:
   instead applies its exact query (a scripture ref or a time window) to the
   atlas pane THAT'S ALREADY SHOWING, in place; no second atlas ever opens
   while a split is up, from either pane's own popover.
+- DIVIDER-1 (M-D3/B2, owner morning address verbatim: "map toggles halfway
+  into view, reader can't -- parity ('not good')"; brief: "the split-view
+  drag affordance works from the reader side too"): `Components/
+  SplitDivider.razor` -- the `split-divider` line from SPLIT-1 above,
+  unchanged in appearance, now wrapped in a wider (13px) invisible
+  `split-divider-hit` that owns real drag/keyboard interaction (`role=
+  "separator"`, `aria-orientation="vertical"`, `aria-valuenow`/-min/-max in
+  pixels). Mouse: pointerdown seeds a drag-start snapshot (`WidthPx` at
+  that instant + the pointer's own `ClientX`) and captures the pointer
+  (`reader.js`'s `capturePointer`, `setPointerCapture` -- so the gesture
+  keeps tracking even once the cursor travels well past the narrow 13px
+  strip, unlike TimeSlider.razor's own track-bounded drag, which has no
+  equivalently-narrow surface to begin with); every pointermove recomputes
+  the reader pane's own width as `dragStartWidth + (currentClientX -
+  dragStartClientX)`, clamped, and fires it straight through to
+  Reader.razor's own `_splitReaderWidthPx` (no separate "commit at
+  release" step -- the resize is live, not a preview). Keyboard: ArrowLeft/
+  ArrowRight while the divider is focused nudge by a fixed 24px step,
+  identically clamped. Both panes stay independently floored at 320px (MIN)
+  -- the reader pane can never be dragged so wide the atlas pane (or vice
+  versa) drops below a still-comfortably-usable width; the ceiling is
+  computed from a real, live measurement of `.split-view`'s own current
+  content-box width (`reader.js`'s `getPaneRect`, already used by
+  ExplorerPopover.razor's own pane-anchoring) MINUS both floors AND the
+  divider's own 13px hit-area width (a real, live-caught bug in an earlier
+  draft shorted the far pane's own floor by exactly that 13px by omitting
+  it). `.split-pane-reader`'s own CSS is now `flex: 0 0
+  var(--split-reader-width, 55%)` (an exact pixel basis, grow/shrink both
+  0 -- Reader.razor sets the custom property on `.split-view` itself, the
+  same "custom property set by a context class, read via var() on the
+  actual rule" technique `--reader-col-pad-x` already established one
+  section up); `.split-pane-atlas` is `flex: 1 1 auto`, filling whatever
+  the reader pane's own explicit width doesn't claim, rather than competing
+  for its own separate proportional share. `_splitReaderWidthPx` is a
+  plain Reader.razor field (survives ordinary chapter-to-chapter
+  navigation for free, same reasoning `_splitOpen` itself already has --
+  SPLIT-1 above), not `ViewStateService` -- session-local, resets on a
+  fresh page load, matching `_splitOpen`'s own persistence tier rather than
+  reaching for cross-session persistence nothing else about split-view has
+  either. PARITY (the owner's own word): the divider is wired into
+  Reader.razor's own markup, the split's one and only host (SPLIT-1 above)
+  -- there is exactly one code path, reached identically whichever
+  affordance (`split-open-reader` or `split-open-world`) opened it, so
+  "works from the reader side too" is true by construction, not a second,
+  separately-tested implementation.
 - FOLLOW-1 (batch-h-brief.md): follow is ON by default the moment a split
   opens. While following, the atlas pane shows the scripture scene of the
   reader's CURRENT chapter via the exact same mechanism `/world?ref=`

@@ -320,3 +320,25 @@ export function getVerseAnchorRect(selector) {
         viewportWidth: window.innerWidth, viewportHeight: window.innerHeight,
     };
 }
+
+// M-D3/U5+B2 (split-view drag-resize divider, Components/SplitDivider.razor):
+// setPointerCapture is a real DOM element method with no Blazor-side
+// equivalent (PointerEventArgs carries PointerId as plain data, not a
+// capturable handle) -- SplitDivider's own OnPointerDown calls this once,
+// at drag start, with its own @ref ElementReference and the fired event's
+// PointerId, so every subsequent pointermove/pointerup keeps targeting
+// the divider itself for the rest of the gesture even once the cursor
+// travels beyond its own (deliberately narrow, 13px) hit area -- e.g. a
+// fast drag toward one pane's own text/map content. Without this, the
+// gesture would silently stop tracking (Blazor's own pointerleave firing on
+// the divider) the instant the cursor left that narrow strip, which for a
+// horizontal-only drag intended to travel far in the X direction is the
+// common case, not an edge case. TimeSlider.razor's own drag mechanic gets
+// away with no equivalent because its own draggable surface (.slider-track)
+// is the FULL travel range already -- a single-purpose narrow strip like
+// this divider has no equally-wide native target to rely on instead.
+export function capturePointer(el, pointerId) {
+    if (el && typeof el.setPointerCapture === 'function') {
+        el.setPointerCapture(pointerId);
+    }
+}
