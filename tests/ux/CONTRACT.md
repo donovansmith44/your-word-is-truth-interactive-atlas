@@ -839,9 +839,86 @@ Notes:
   below) is still the chronological PRIOR/FOLLOWING source -- only its
   CALLER changed (`EventNode` replaces the retired `NarrativeEventNode`).
   `GET /api/chapter/{cref}`'s own per-verse `heading` field (new,
-  `{event_id, title}`, omitted when this verse is not a heading ANCHOR) is
-  what Reader.razor reads to place a `pericope-heading-{eventId}` directly
-  in the reading flow.
+  `{event_id, title, kind, is_continuation}` -- `is_continuation` M-D1,
+  see below -- omitted when this verse is not a heading ANCHOR) is what
+  Reader.razor reads to place a `pericope-heading-{eventId}` directly in
+  the reading flow.
+
+  M-D1 REQUIREMENT 2, CONFIRMED (owner live report #3, 2026-08-21,
+  verbatim: "when you click on a chapter heading, the first verse of the
+  chapter appears. that's completely pointless."): a heading click MUST
+  open the CONTAINER's own node (its card + frontier), never a bare verse
+  popover. LIVE-VERIFIED at this batch's own BASE (b5b3949, pre-dating any
+  M-D1 change) already correct: `Reader.razor`'s own heading markup
+  constructs `new EventNode(heading.EventId, heading.Title)` directly
+  (`OpenEvent`, unconditional for both event-kind and general-kind
+  headings) -- the SAME code path `tests/ux/reader-headings.spec.ts`
+  already exercised (`popover-title` == the container's own title after a
+  heading click, an EventNode popover, never a verse's). No regression
+  found or fixed; this batch's own CHAPTER-BOUNDARY CONTINUATION headings
+  (above) reuse the IDENTICAL click/keydown wiring -- one mechanism, every
+  heading kind, primary or continuation.
+
+  M-D1 SPAN-NOT-ECHO (requirement 3, owner live report #4, 2026-08-21,
+  verbatim: "it also is completely redundant to just show the verses
+  associated with a container in the container's hover box. we should
+  just see the passage span."). A container's OWN popover (the
+  PARALLEL-ACCOUNTS-style section every EVENT node's own witnesses render
+  through, `EventWitnessesSection`) previously echoed the full verse text
+  of a SINGLE-witness container -- the overwhelming majority of events --
+  identically to a multi-witness one (clamped-to-2 + expand), redundant
+  with the text the reader is already looking at. FIX: `PassageList.razor`
+  gains a `SpanOnly` parameter -- when true, an entry renders its own ref-
+  label SPAN only (no compact text, no clamp toggle); the ONLY affordance
+  left is the shared `MiniReaderExpand` "Read the whole chapter"
+  mechanism, reused unchanged, never reimplemented. `EventWitnessesSection`
+  sets `SpanOnly = !multi` -- a SINGLE-witness event (n=1, `units.Count ==
+  1`) renders its span line only; a MULTI-witness event's own PARALLEL
+  ACCOUNTS list is UNCHANGED (every witness -- this book's own included --
+  keeps its real clamped, expandable text; the Crucifixion's own 4-Gospel
+  case stays exactly as rich as before). SCOPED, disclosed: the
+  requirement's own further nuance -- "where a multi-witness event's
+  popover currently repeats the CURRENT book's own text, the current
+  book's witness collapses to its span line too" -- is NOT implemented
+  this batch (no "what book is the reader currently reading" context
+  currently threads through the popover-section-provider architecture,
+  and building that thread is a bigger architectural change than this
+  batch's own "client stays thin, existing wire shapes" scope); the
+  concretely-named acceptance (single-witness -> span; multi-witness ->
+  unchanged) is what red-then-greens (`tests/ux/popover-sections.spec.ts`'s
+  own two M-D1 req 3 tests). `PlaceCard.razor`'s own map-hover MergedVerses
+  preview is DELIBERATELY untouched -- a materially different, pre-
+  existing, already-disclosed "different truncation model" (PassageList's
+  own header comment), not a container node's own popover at all; map-side
+  users reach a container's own span (and its inline expand) the identical
+  way reader-side users do, by opening that container's own EventNode.
+
+  M-D1 TRUNCATION AUDIT (requirement 4, owner priority statement
+  2026-08-21: truncating hover-menu output "we need that to improve user
+  experience," ranked ABOVE new features) -- POLICY TABLE, swept across
+  every popover/hover section in the app:
+
+  | Section | Cap mechanism | Compliant? |
+  |---|---|---|
+  | Cross-references (`CrossRefsSection`) | `PassageList.Cap` = 3 (xrefs-only) / 2 (mixed context), F2 req 6 | YES, pre-existing |
+  | THE SCRIPTURES (`CatechismScripturesSection`) | uncapped (`Cap=null`), DELIBERATE -- the whole small catechism's own proof-text set per item is small and bounded by curation, "no cap asked for" | YES, disclosed exemption |
+  | Place est/dest supporting verses (`PlaceDatesSection`) | `PassageList.Cap` = `SupportingVersesCap` (2) | YES, pre-existing |
+  | PARALLEL ACCOUNTS, per-witness text (`EventWitnessesSection`) | `PassageList.ClampVerses` = 2 per entry | YES, pre-existing |
+  | PARALLEL ACCOUNTS, witness COUNT | uncapped, DELIBERATE -- bounded by construction (how many KJV books narrate one event; realistically <=4-6, the four Gospels' own ceiling) | YES, disclosed exemption |
+  | Container's own span (`EventWitnessesSection`, n=1) | span-only, no text by default (M-D1 req 3, above) | YES, this batch |
+  | THE SMALL CATECHISM seam, citing items (`CatechismSeamSection`) | uncapped, DELIBERATE -- the whole catechism is 33 items; a single verse citing all of them is the real ceiling, never large | YES, disclosed exemption |
+  | Verse's own EVENT membership (`VerseEventMembershipSection`) | uncapped, DELIBERATE -- bounded by construction (overlapping containers per verse is a small integer; W5's own coverage is largely partition-like, never approaching a wall of text) | YES, disclosed exemption |
+  | A place's own EVENTS list (`PlaceEventsSection`) | **was uncapped -- a REAL, live-verified gap** (Jerusalem: 236 located-at events across the whole atlas, unbounded by any time window, zero disclosure) | **FIXED this batch** -- `PlaceEventsList.razor` (new component, mirrors `PassageList`'s own down-arrow reveal exactly), cap 10, `place-events-more`/`-collapse` |
+  | Reader chapter fetch, per-verse-group truncation (`scene::verse_groups_for`) | server `take(20)`, `GroupCount`/`TruncatedBy` disclosed to `MiniReaderExpand`'s own "+N more" label | YES, pre-existing (HOTFIX-4 req 7) |
+  | Map hover preview (`PlaceCard.razor` `MergedVerses`) | Batch D's own reveal-by-5/2-at-a-time mechanism, pre-existing, deliberately untouched (a different truncation model -- see SPAN-NOT-ECHO above) | YES, pre-existing, out of scope |
+
+  Only ONE real gap found: the place-events list, fixed. Every other
+  section either already had a real cap with honest "+N more" disclosure,
+  or is correctly EXEMPT because its own real-world ceiling is small and
+  bounded by construction (never by hope) -- disclosed here rather than
+  silently assumed. `tests/ux/popover-sections.spec.ts`'s own
+  `REGISTRY-1` test is the live, real-data red-then-green for the one fix
+  (Jerusalem's own 236-event list, capped + revealed).
 
   HEADING-WORTHY RULE (server: `atlas_graph::heading::build_heading_index`,
   the live production path as of M-C2's decisive-title-law migration --

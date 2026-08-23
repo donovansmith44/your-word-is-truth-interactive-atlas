@@ -781,6 +781,11 @@ public sealed class PlaceBlurbSection : IPopoverSectionProvider
 /// for a place with zero recorded events (impossible for a REAL lit/quiet
 /// place opened via its own card -- SCENE-2/QUIET-1 -- but a place explored
 /// some other way, e.g. a future search feature, could still have none).
+/// M-D1 requirement 4 (TRUNCATION AUDIT): the row list itself is now
+/// CAPPED (<see cref="Components.PlaceEventsList"/>, cap 10, down-arrow
+/// reveal) -- a real, live-verified gap this batch found and fixed
+/// (Jerusalem alone real-carries 236 located-at events, unbounded by any
+/// time window, previously rendered with no cap or disclosure at all).
 /// </summary>
 public sealed class PlaceEventsSection : IPopoverSectionProvider
 {
@@ -810,31 +815,20 @@ public sealed class PlaceEventsSection : IPopoverSectionProvider
 
         var placeName = place.Title;
         var events = detail.Events;
+        // M-D1 requirement 4 (TRUNCATION AUDIT): a real, live-verified gap
+        // -- this list previously had NO cap at all (Jerusalem alone: 236
+        // located-at events across the whole atlas). Delegated to a real
+        // component (PlaceEventsList.razor) rather than a hand-built
+        // RenderFragment here, mirroring VerseTextSectionProvider's own
+        // established "a provider instance is shared/static and cannot own
+        // per-popover expand state; a component can" precedent.
         RenderFragment body = builder =>
         {
-            var seq = 0;
-            foreach (var e in events)
-            {
-                var ev = e; // local copy -- captured per-row by the onclick closure below
-                builder.OpenElement(seq++, "button");
-                builder.AddAttribute(seq++, "type", "button");
-                builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
-                builder.AddAttribute(seq++, "data-testid", $"place-event-{ev.Id}");
-                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () =>
-                    ctx.PushAsync(new TimeAndPlaceNode(placeName, ev.When, ev.Label, ev.VerseGroups))));
-
-                builder.OpenElement(seq++, "span");
-                builder.AddAttribute(seq++, "class", "popover-event-label");
-                builder.AddContent(seq++, ev.Label);
-                builder.CloseElement();
-
-                builder.OpenElement(seq++, "span");
-                builder.AddAttribute(seq++, "class", "popover-event-years");
-                builder.AddContent(seq++, YearText.FormatRange(ev.When.FromYear, ev.When.ToYear));
-                builder.CloseElement();
-
-                builder.CloseElement();
-            }
+            builder.OpenComponent<Components.PlaceEventsList>(0);
+            builder.AddAttribute(1, "PlaceName", placeName);
+            builder.AddAttribute(2, "Events", events);
+            builder.AddAttribute(3, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.CloseComponent();
         };
         return new PopoverSection("place-events", body);
     }
@@ -1102,6 +1096,22 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
             builder.AddAttribute(seq++, "RefTestIdPrefix", "event-witness");
             builder.AddAttribute(seq++, "ClampVerses", 2);
+            // M-D1 requirement 3 (span-not-echo, owner live report #4,
+            // verbatim: "it also is completely redundant to just show the
+            // verses associated with a container in the container's hover
+            // box. we should just see the passage span."): a SINGLE-witness
+            // container (the overwhelming majority -- every event this
+            // batch does not curate parallel accounts for) shows its own
+            // span line only, never an enumerated verse-list echo -- !multi
+            // is exactly "exactly one witness" here (units.Count <= 1 by
+            // construction once `detail.Witnesses.Count == 0` already
+            // returned null above). A MULTI-witness event's own PARALLEL
+            // ACCOUNTS list is UNCHANGED (every witness keeps its clamped,
+            // expandable preview text -- "PARALLEL ACCOUNTS from OTHER
+            // witnesses keep their clamped expandable passage text," the
+            // requirement's own explicit distinction; the Crucifixion's
+            // four-Gospel case stays exactly as rich as before).
+            builder.AddAttribute(seq++, "SpanOnly", !multi);
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
         };

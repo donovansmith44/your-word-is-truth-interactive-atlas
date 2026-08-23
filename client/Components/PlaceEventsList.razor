@@ -1,0 +1,55 @@
+@* M-D1 requirement 4 (TRUNCATION AUDIT, owner priority statement 2026-08-21:
+   truncating hover-menu output "we need that to improve user experience" --
+   ranked ABOVE new features): a place's own EVENTS section
+   (PlaceEventsSection, Explore/PopoverSectionProviders.cs) rendered every
+   located-at event with NO cap at all -- a real, live-verified gap (a
+   central place like Jerusalem carries 236 events across the whole atlas'
+   own timeline; the popover would have rendered all 236 rows). This is now
+   the ONE place that list renders, following VerseTextSectionProvider's own
+   established precedent ("hand the actual rendering to a real component...
+   unlike a hand-built RenderFragment, this owns real interactive STATE a
+   closure has no clean way to hold") -- PlaceEventsSection itself is a
+   static, provider-instance-shared RenderFragment builder and cannot safely
+   own a per-popover "expanded" bool; this component can.
+
+   Same down-arrow reveal AFFORDANCE/CSS class (.popover-passage-reveal) and
+   glyphs (▾/▲) PassageList.razor's own Cap mechanism already established --
+   "reuse the shared bits" even where the CONTENT shape (event summary rows,
+   not passage text blocks) does not fit PassageList itself. *@
+@using BibleAtlas.Client.Explore
+
+@{
+    var shown = _showAll ? Events : Events.Take(Cap);
+}
+@foreach (var e in shown)
+{
+    var ev = e; // local copy -- captured per-row by the onclick closure below
+    <button type="button" class="popover-event-row popover-event-row-button explorable" data-testid="@($"place-event-{ev.Id}")"
+            @onclick="() => OnExplore.InvokeAsync(new TimeAndPlaceNode(PlaceName, ev.When, ev.Label, ev.VerseGroups))">
+        <span class="popover-event-label">@ev.Label</span>
+        <span class="popover-event-years">@YearText.FormatRange(ev.When.FromYear, ev.When.ToYear)</span>
+    </button>
+}
+
+@if (Events.Count > Cap)
+{
+    @if (!_showAll)
+    {
+        <button type="button" class="popover-passage-reveal" data-testid="place-events-more" aria-label="@($"Show {Events.Count - Cap} more events")"
+                @onclick="() => _showAll = true">&#9662;</button>
+    }
+    else
+    {
+        <button type="button" class="popover-passage-reveal" data-testid="place-events-collapse" aria-label="Show fewer events"
+                @onclick="() => _showAll = false">&#9652;</button>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public string PlaceName { get; set; } = default!;
+    [Parameter, EditorRequired] public List<SceneEvent> Events { get; set; } = new();
+    [Parameter] public int Cap { get; set; } = 10;
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    private bool _showAll;
+}

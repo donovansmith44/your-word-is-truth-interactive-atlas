@@ -189,8 +189,19 @@ test('REGISTRY-1: a PLACE popover shows dates and events, in order, no thin even
   await expect(page.getByTestId('popover-place-date-established')).toBeVisible();
   await expect(page.getByTestId('popover-place-date-destroyed')).toBeVisible();
 
+  // M-D1 requirement 4 (TRUNCATION AUDIT): this list is capped now
+  // (PlaceEventsList.razor, cap 10) -- Jerusalem alone real-carries 236
+  // located-at events across the whole atlas, previously rendered with NO
+  // cap at all. Capped count visible by default; the down-arrow reveals
+  // every remaining row, honest disclosure per the standard pattern.
   const detail = await api.place('jerusalem');
+  const cap = 10;
+  expect(detail.events.length, 'jerusalem must still real-carry MORE than the cap for this assertion to exercise it').toBeGreaterThan(cap);
+  await expect(page.locator('[data-testid^="place-event-"]')).toHaveCount(cap);
+  await expect(page.getByTestId('place-events-more')).toBeVisible();
+  await page.getByTestId('place-events-more').click();
   await expect(page.locator('[data-testid^="place-event-"]')).toHaveCount(detail.events.length);
+  await expect(page.getByTestId('place-events-collapse')).toBeVisible();
 });
 
 // Batch F2 requirement 6b (user direction 2026-08-20, verbatim: "on the
@@ -971,6 +982,75 @@ test('EVENT-1: a single-witness event shows the one passage with no "PARALLEL AC
   await expect(page.getByTestId('popover-section-event-witness')).toBeVisible();
   await expect(page.getByTestId('popover-section-event-witnesses')).toHaveCount(0);
   await expect(page.getByTestId('popover-section-event-witness').getByTestId('event-section-heading')).toHaveCount(0);
+});
+
+// ---------------------------------------------------------------------
+// M-D1 requirement 3 (SPAN-NOT-ECHO, owner live report #4, verbatim: "it
+// also is completely redundant to just show the verses associated with a
+// container in the container's hover box. we should just see the passage
+// span."): RED before this batch -- a single-witness container's own
+// popover echoed its full verse-list text (clamped-to-2 + expand), the
+// SAME rendering a multi-witness PARALLEL ACCOUNTS entry gets; GREEN after
+// -- a compact span line only, click-to-expand-inline, no default text.
+// ---------------------------------------------------------------------
+
+test('M-D1 req 3: a single-witness event\'s popover shows its SPAN, never an enumerated own-verse-list echo', async ({ page }) => {
+  const detail = await api.event('jm_temple_cleansing');
+  expect(detail.witnesses.length).toBe(1);
+
+  await page.goto('/read/JHN/2');
+  await page.getByTestId('verse-line-13').click();
+  await page.getByTestId('verse-event-jm_temple_cleansing').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('Jesus cleanses the temple for the first time');
+
+  const section = page.getByTestId('popover-section-event-witness');
+  await expect(section).toBeVisible();
+
+  // The compact SPAN reference renders (the ref label PassageList.razor
+  // always shows) --
+  const entry = section.locator('[data-testid^="event-witness-"]');
+  await expect(entry).toHaveCount(1);
+  await expect(entry.locator('.popover-passage-ref-label')).toBeVisible();
+
+  // -- but NOT an enumerated verse-list echo: no compact passage text, no
+  // per-verse superscript numbers, no clamp toggle (nothing to clamp when
+  // nothing renders by default).
+  await expect(entry.locator('.popover-passage-text')).toHaveCount(0);
+  await expect(entry.locator('.popover-passage-verse-num')).toHaveCount(0);
+  await expect(entry.locator('[data-testid^="popover-passage-clamp-"]')).toHaveCount(0);
+
+  // The span click STILL reads the passage inline -- the existing
+  // MiniReaderExpand "read the whole chapter" affordance, reused, not
+  // reimplemented.
+  const expandBtn = entry.locator('[data-testid^="popover-verse-expand"]');
+  await expect(expandBtn).toBeVisible();
+  await expandBtn.click();
+  await expect(entry.locator('[data-testid^="popover-verse-reader"]')).toBeVisible();
+  await expect(entry.locator('.popover-reader-verse')).not.toHaveCount(0);
+});
+
+test('M-D1 req 3: a multi-witness event (Crucifixion) still shows other-book clamped text -- span-not-echo does not touch PARALLEL ACCOUNTS', async ({ page }) => {
+  const detail = await api.event('pw_golgotha');
+  expect(detail.witnesses.length).toBe(4);
+
+  const matWitness = detail.witnesses.find((w: any) => w.book === 'MAT');
+  const firstVref = matWitness.verse_groups[0].verses[0];
+  const [book, chapter, verse] = firstVref.split('.');
+  await page.goto(`/read/${book}/${chapter}`);
+  await page.getByTestId(`verse-line-${verse}`).click();
+  await page.getByTestId('verse-event-pw_golgotha').click();
+
+  const witnessesSection = page.getByTestId('popover-section-event-witnesses');
+  await expect(witnessesSection).toBeVisible();
+  await expect(witnessesSection.getByTestId('event-section-heading')).toHaveText('PARALLEL ACCOUNTS');
+  // UNCHANGED by this batch -- every one of the 4 witnesses (this book's
+  // own included) still shows real clamped text, not a span-only line.
+  const entries = witnessesSection.locator('[data-testid^="event-witness-"]');
+  await expect(entries).toHaveCount(4);
+  for (let i = 0; i < 4; i++) {
+    await expect(entries.nth(i).locator('.popover-passage-text')).toBeVisible();
+    await expect(entries.nth(i).locator('.popover-passage-verse-num').first()).toBeVisible();
+  }
 });
 
 test('EVENT-1: chronological-vs-reading-order -- a JHN-witnessed event\'s FOLLOWING is not the next pericope in John (requirement 2/6/7, the owner\'s own "John doesn\'t have everything in order")', async ({ page }) => {

@@ -77,7 +77,22 @@
                 <MiniReaderExpand Book="@BookOf(entry.Block)" Chapter="@ChapterOf(entry.Block)" FocalFromVerse="@FocalFromOf(entry.Block)" FocalToVerse="@FocalToOf(entry.Block)"
                                    TestIdSuffix="@($"-{entry.TestId}")" TruncatedBy="@entry.Block.TruncatedBy">
                     <CompactContent>
-                        @{
+                        @* M-D1 requirement 3 (owner live report #4, verbatim:
+                           "it also is completely redundant to just show the
+                           verses associated with a container in the
+                           container's hover box. we should just see the
+                           passage span."): SpanOnly renders NOTHING here --
+                           the ref label above (@entry.Block.Span) is already
+                           the compact SPAN reference; the ONLY affordance
+                           left is MiniReaderExpand's own "Read the whole
+                           chapter" button below, which reuses the identical
+                           inline-expand mechanism every other passage entry
+                           already has (reuse, not a parallel implementation
+                           -- the requirement's own explicit instruction). No
+                           verse-list echo, no clamp toggle (nothing to
+                           clamp when nothing renders by default). *@
+                        @if (!SpanOnly)
+                        {
                             // Batch N2 requirement 2: clamp THIS entry's own
                             // compact text to ClampVerses verses, independent
                             // of MiniReaderExpand's own (unaffected) chapter
@@ -88,35 +103,35 @@
                             var clamps = entry.Block.IsPassage && ClampVerses is int clamp && entry.Block.Verses.Count > clamp;
                             var clampExpanded = clamps && _clampExpanded.Contains(entry.TestId);
                             var shown = clamps && !clampExpanded ? entry.Block.Verses.Take(ClampVerses!.Value) : entry.Block.Verses;
-                        }
-                        <p class="popover-passage-text">
-                            @if (entry.Block.IsPassage)
-                            {
-                                @foreach (var v in shown)
+                            <p class="popover-passage-text">
+                                @if (entry.Block.IsPassage)
                                 {
-                                    <sup class="popover-passage-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup>@v.Text<text> </text>
+                                    @foreach (var v in shown)
+                                    {
+                                        <sup class="popover-passage-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup>@v.Text<text> </text>
+                                    }
                                 }
-                            }
-                            else
+                                else
+                                {
+                                    @entry.Block.Verses[0].Text
+                                }
+                            </p>
+                            @if (clamps)
                             {
-                                @entry.Block.Verses[0].Text
-                            }
-                        </p>
-                        @if (clamps)
-                        {
-                            @if (!clampExpanded)
-                            {
-                                <button type="button" class="popover-passage-clamp-toggle" data-testid="@($"popover-passage-clamp-expand-{entry.TestId}")"
-                                        aria-expanded="false" @onclick="() => ToggleClamp(entry.TestId)" @onclick:stopPropagation="true">
-                                    Show the rest of this passage
-                                </button>
-                            }
-                            else
-                            {
-                                <button type="button" class="popover-passage-clamp-toggle" data-testid="@($"popover-passage-clamp-collapse-{entry.TestId}")"
-                                        aria-expanded="true" @onclick="() => ToggleClamp(entry.TestId)" @onclick:stopPropagation="true">
-                                    Show fewer verses
-                                </button>
+                                @if (!clampExpanded)
+                                {
+                                    <button type="button" class="popover-passage-clamp-toggle" data-testid="@($"popover-passage-clamp-expand-{entry.TestId}")"
+                                            aria-expanded="false" @onclick="() => ToggleClamp(entry.TestId)" @onclick:stopPropagation="true">
+                                        Show the rest of this passage
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="popover-passage-clamp-toggle" data-testid="@($"popover-passage-clamp-collapse-{entry.TestId}")"
+                                            aria-expanded="true" @onclick="() => ToggleClamp(entry.TestId)" @onclick:stopPropagation="true">
+                                        Show fewer verses
+                                    </button>
+                                }
                             }
                         }
                     </CompactContent>
@@ -152,6 +167,16 @@
     // Batch N2 requirement 2: when set, caps a PASSAGE entry's own compact
     // text at this many verses -- see this file's own header comment.
     [Parameter] public int? ClampVerses { get; set; }
+
+    // M-D1 requirement 3 (span-not-echo, owner live report #4): when true,
+    // every entry renders its own ref-label span ONLY -- no compact text,
+    // no clamp toggle -- leaving MiniReaderExpand's own "Read the whole
+    // chapter" affordance as the sole way to see the passage's own words.
+    // Default false: every OTHER consumer (cross-references, THE
+    // SCRIPTURES, place est/dest, PRIOR/FOLLOWING, multi-witness PARALLEL
+    // ACCOUNTS) is UNCHANGED by this batch -- see this file's own header
+    // comment block for the full rationale.
+    [Parameter] public bool SpanOnly { get; set; }
 
     // Per-entry clamp-expanded state, keyed by TestId -- a plain HashSet
     // (not a bool on PassageBlockData itself, which is rebuilt fresh every
