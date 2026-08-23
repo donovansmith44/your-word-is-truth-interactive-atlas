@@ -119,6 +119,22 @@ pub struct GraphService {
     /// `target_display`) -- same "port doesn't model this access shape"
     /// class as `narrative_legs` above.
     pub cross_refs_by_from: HashMap<String, Vec<atlas_core::data::CrossRef>>,
+    /// M-C2 FIX (definitive surface list, requirement 1 -- a gap this
+    /// batch's own first pass at `handlers::verse`/`handlers::xrefs` left
+    /// behind): dot-ref -> that verse's own KJV text, the SAME content
+    /// `legacy::verses_from_graph` builds for `atlas_data_overlay`'s
+    /// `AtlasData.verses` -- computed ONCE here instead, off this
+    /// service's own just-published snapshot, so the two named handlers'
+    /// cross-ref PREVIEW text (the one remaining `data.verses.get(...)`
+    /// read each had) can go through a real graph query instead of
+    /// `AtlasData`, exactly like the cross-ref ROWS themselves already do
+    /// via `cross_refs_by_from` above. `atlas_data_overlay` now reuses
+    /// this field (`gs.verse_text.clone()`) rather than recomputing the
+    /// identical map a second time -- one source, not two. `HashMap`, not
+    /// `BTreeMap`, for the same reason as `cross_refs_by_from`: only ever
+    /// `.get()`'d by key, never iterated or serialized, so iteration order
+    /// carries no determinism concern.
+    pub verse_text: HashMap<String, String>,
 }
 
 /// The longest KJV chapter (Psalm 119) has 176 verses; this probe width is
@@ -275,6 +291,11 @@ impl GraphService {
         let mut store = MemStore::default();
         let version = store.publish(graph);
         let snapshot = store.open(version).expect("the version just published must always be open-able");
+        // M-C2 FIX (this struct's own `verse_text` doc comment): needs a
+        // snapshot (the `GraphQuery` trait, not raw `Graph` field access),
+        // so computed here, after publish/open, unlike the `&graph`-based
+        // companions above.
+        let verse_text = crate::legacy::verses_from_graph(&snapshot);
         GraphService {
             snapshot,
             bible_position,
@@ -289,6 +310,7 @@ impl GraphService {
             narrative_legs,
             heading_index,
             cross_refs_by_from,
+            verse_text,
         }
     }
 

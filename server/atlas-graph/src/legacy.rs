@@ -178,9 +178,16 @@ pub struct LegacyAtlasFields {
 /// after `GraphService::from_artifact` -- never per-request, never on the
 /// `--build-from-raw` dev-fallback path (which has no graph yet to
 /// reconstruct FROM; it builds `AtlasData` from raw+curated sources
-/// directly, via `atlas_etl::compile::compile`, the same real data this
-/// function's own output is independently checked against -- see
-/// `atlas-graph/tests/legacy_overlay_conformance.rs`). Fast: an in-memory
+/// directly, via `atlas_etl::compile::compile`). DISCLOSED GAP (found
+/// while landing the M-C2 FIX above, not new to it): no dedicated test
+/// file independently checks this function's own output against real
+/// `atlas_etl::compile::compile` data end to end -- the only verification
+/// on record is the manual live-curl comparison this batch's own commit
+/// messages describe (both startup paths served identical results on a
+/// real scratch-port server). Its own composed pieces (`event_from_node`/
+/// `place_from_node`/`narrative_from_node`/`verses_from_graph`) each have
+/// real unit coverage individually; the WHOLE-function, both-paths-agree
+/// property does not. Fast: an in-memory
 /// pass over the graph's own `event_ids`/`place_ids`/`narrative_ids`
 /// companions (thousands of entries, no file I/O) plus one walk of the
 /// reading spine -- this is what keeps the artifact LOAD-TIME ceiling
@@ -197,7 +204,13 @@ pub fn atlas_data_overlay(gs: &crate::service::GraphService) -> LegacyAtlasField
         .iter()
         .filter_map(|id| narrative_from_node(id, &snap, gs.narrative_legs.get(&id.raw).unwrap_or(&empty_legs)))
         .collect();
-    let verses = verses_from_graph(&snap);
+    // M-C2 FIX: `gs.verse_text` (this service's own precomputed companion,
+    // added so `handlers::verse`/`handlers::xrefs` can read verse-preview
+    // text through the graph instead of `AtlasData`) is built from this
+    // SAME `verses_from_graph(&snap)` call -- reused here, not
+    // recomputed, so the full ~31,102-verse reading-spine walk happens
+    // once per startup, not twice.
+    let verses = gs.verse_text.clone();
 
     LegacyAtlasFields { events, places, narratives, verses }
 }

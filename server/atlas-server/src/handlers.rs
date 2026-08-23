@@ -739,6 +739,13 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     // `cites` rows, dot-ref keyed, `target` = each row's own
     // `target_display` -- the honest original citation string) instead of
     // `data.cross_refs` -- see that field's own doc comment.
+    //
+    // M-C2 FIX: the preview TEXT itself now comes from `graph.verse_text`
+    // (a real graph-derived companion, see its own doc comment), not
+    // `data.verses` -- the one `AtlasData` read this handler's own M-C2
+    // migration pass left behind. Same fail-soft behavior as before (a
+    // missing preview skips the row, per this endpoint's own "ruling 4"
+    // doc comment above): only the DATA SOURCE moved.
     let cross_refs: Vec<CrossRefOut> = graph
         .cross_refs_by_from
         .get(&canonical)
@@ -748,7 +755,7 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         .filter_map(|cr| {
             let first = first_verse_of_target(&cr.target)?;
             let key = format!("{}.{}.{}", first.book.code(), first.chapter, first.verse);
-            let preview = data.verses.get(&key)?;
+            let preview = graph.verse_text.get(&key)?;
             Some(CrossRefOut { target: cr.target.clone(), votes: cr.votes, preview: preview.clone() })
         })
         .collect();
@@ -1053,10 +1060,12 @@ pub struct EventDetailOut {
 /// fetch -- id-keyed, same exact-identifier "unknown id -> 404 not_found"
 /// precedent `narrative_event_positions`/`catechism_item`/`place` already
 /// set (never a user-typed id; always one a prior response, or a reader
-/// heading, already handed back). Reads `data.events` directly (not the
-/// scene/narrative machinery) since this is a passage's own STANDALONE
-/// content -- title/date/places/witnesses -- not anything scoped to a
-/// window or a narrative position.
+/// heading, already handed back). Reads the graph's own Event node directly
+/// (M-C2: via `legacy::event_from_node`, not the scene/narrative machinery,
+/// and no longer `data.event_by_id` -- see the M-C2 comment inside this
+/// function) since this is a passage's own STANDALONE content --
+/// title/date/places/witnesses -- not anything scoped to a window or a
+/// narrative position.
 pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<EventDetailOut>, ApiError> {
     // M-C2 (definitive surface list): reconstructed from the graph's own
     // Event node (`NodePayload::Event`'s own M-C2 widening carries every
@@ -1251,32 +1260,39 @@ pub async fn catechism_item(State(data): State<Arc<AtlasData>>, Path(id): Path<S
 /// atlas's compiled canon -- is NOT an error: 200 with an empty list, the
 /// same "gracefully empty, never a 404" policy `scene_scripture`/`chapter`
 /// already follow. This falls out of the aggregation itself needing no
-/// special-casing: `aggregate_span_xrefs` only ever reads `data.cross_refs`/
-/// `data.verses` by key, and a key simply absent from either map
-/// contributes nothing, which is exactly as true for a real, canonical verse
-/// with zero curated cross-references (the overwhelmingly common case) as
-/// for an out-of-canon one.
+/// special-casing: `aggregate_span_xrefs` only ever reads its two map
+/// arguments (`graph.cross_refs_by_from`/`graph.verse_text` as of M-C2) by
+/// key, and a key simply absent from either map contributes nothing, which
+/// is exactly as true for a real, canonical verse with zero curated
+/// cross-references (the overwhelmingly common case) as for an
+/// out-of-canon one.
 ///
 /// Business logic (the union-and-sum aggregation, self-target drop, sort,
 /// cap-at-20) lives in `atlas_core::xrefs::aggregate_span_xrefs` -- this
 /// handler is pure response-shape assembly, per this module's own file
-/// header. Reuses `data.cross_refs`/`data.verses` verbatim -- no new data
-/// source, no ETL change.
+/// header.
 /// M-C2 (definitive surface list): `aggregate_span_xrefs` itself is
 /// UNCHANGED (business logic stays in `atlas_core::xrefs`, per this
-/// module's own file header) -- only its DATA SOURCE moves, from
-/// `data.cross_refs` to `graph.cross_refs_by_from` (the graph's own
-/// `cites` rows, in the identical `HashMap<String, Vec<atlas_core::data::
-/// CrossRef>>`-compatible shape that function already expects; `target`
+/// module's own file header, and that crate still has no `graph-types`
+/// dependency of its own -- its signature is still `&HashMap<...>` in,
+/// `&HashMap<...>` out) -- only WHAT `handlers::xrefs` passes in moved:
+/// `graph.cross_refs_by_from` (the graph's own `cites` rows -- `target`
 /// carries each row's own `target_display`, the honest original citation
-/// string -- graph_types::edge::CrossRef's own M-C2 widening).
-pub async fn xrefs(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Path(sref): Path<String>) -> Result<Json<Vec<CrossRefOut>>, ApiError> {
+/// string, graph_types::edge::CrossRef's own M-C2 widening) for the rows,
+/// and `graph.verse_text` (M-C2 FIX -- this handler's own migration pass
+/// first missed this second argument, still reading `data.verses`; see
+/// `GraphService::verse_text`'s own doc comment) for the preview text.
+/// Both are real graph-derived data, just handed to the SAME unmodified
+/// `atlas_core` function as plain maps -- no new dependency, no crate
+/// boundary crossed. `AtlasData` is no longer read anywhere in this
+/// handler at all, so it no longer takes one as a parameter.
+pub async fn xrefs(State(graph): State<Arc<GraphService>>, Path(sref): Path<String>) -> Result<Json<Vec<CrossRefOut>>, ApiError> {
     let span = match ScriptureRef::parse(&sref) {
         Ok(span @ (ScriptureRef::Verse(_) | ScriptureRef::Passage { .. })) => span,
         _ => return Err(ApiError::bad_ref(&sref)),
     };
 
-    let aggregated = aggregate_span_xrefs(&span, &graph.cross_refs_by_from, &data.verses);
+    let aggregated = aggregate_span_xrefs(&span, &graph.cross_refs_by_from, &graph.verse_text);
     let out = aggregated.into_iter().map(|x| CrossRefOut { target: x.target, votes: x.votes, preview: x.preview }).collect();
     Ok(Json(out))
 }
