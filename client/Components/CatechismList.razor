@@ -1,0 +1,80 @@
+@* M-D3 (U2/U6, owner: "Catechism defaults to 2 shown + U2 mechanics"): the
+   citing-item button list "THE SMALL CATECHISM" renders (CatechismSeamSection's
+   own former inline rendering, extracted here) -- a genuine, stateful
+   component (unlike that plain C# provider, which has no persistent
+   instance to hold reveal state across re-renders) so it can own its own
+   `_shown` field exactly the way PassageList.razor already owns one for
+   its own, differently-shaped list. RevealControls.razor (the shared
+   +2/-2/all/default mechanic, "one component/behavior, parameterized --
+   never two implementations," the owner's own words) is a controlled,
+   stateless child of BOTH this component and PassageList.razor -- this is
+   the OTHER half of that contract: the list-owning component, one per
+   list SHAPE (passage blocks vs. plain citing-item buttons), each
+   delegating the reveal UI to the one shared mechanic. *@
+@using BibleAtlas.Client.Explore
+@if (Items.Count > 0)
+{
+    @* M-D3/U2: rendered BEFORE the item list -- see PassageList.razor's own
+       matching comment (and RevealControls.razor's own doc comment) for
+       the full, real, live-caught reasoning: revealing more items must
+       never shift these controls' own on-screen position, or a genuine
+       rapid double-click's second sub-click can land on a newly-revealed
+       item instead, exploring it rather than expanding the list further. *@
+    @if (Cap is int cap && Items.Count > cap)
+    {
+        <RevealControls Total="@Items.Count" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="@(n => _shown = n)"
+                         MoreTestId="@MoreTestId" CollapseTestId="@CollapseTestId" RevealNoun="catechism items" />
+    }
+    <div class="popover-catechism-list">
+        @foreach (var entry in Visible)
+        {
+            <button type="button" class="popover-catechism-item explorable" data-testid="@entry.TestId"
+                    @onclick="() => OnExplore.InvokeAsync(new CatechismNode(entry.Item.Id, entry.Item.Name))">
+                @entry.Label
+            </button>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<CatechismRefDto> Items { get; set; } = Array.Empty<CatechismRefDto>();
+    [Parameter] public int? Cap { get; set; }
+    [Parameter] public string MoreTestId { get; set; } = "catechism-more";
+    [Parameter] public string CollapseTestId { get; set; } = "catechism-collapse";
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    // Same "starts at the collapsed default, lazily initialized, never
+    // auto-resets on an unrelated re-render" risk profile PassageList.razor's
+    // own _shown field carries -- see that field's own doc comment and
+    // RevealControls.razor's own header for the fuller reasoning (this
+    // component is freshly instantiated per popover-section resolve, not
+    // reused across genuinely different Items).
+    private int? _shown;
+    private int ShownCount(int cap) => _shown ??= cap;
+
+    // Same shape as CatechismSeamSection's own retired inline disambiguation
+    // (a citing item can legitimately produce >1 row -- an item-level hit
+    // AND one or more question-level hits -- the FIRST occurrence of a
+    // given id keeps the bare testid, later ones get a numbered --q2/--q3
+    // suffix), now applied only to the CURRENTLY VISIBLE (capped) slice,
+    // freshly recomputed each access (PassageList.razor's own Visible
+    // getter follows the identical discipline, for the identical reason:
+    // a Dictionary captured across renders would keep accumulating).
+    private sealed record VisibleEntry(CatechismRefDto Item, string TestId, string Label);
+
+    private IEnumerable<VisibleEntry> Visible
+    {
+        get
+        {
+            var shown = Cap is int cap ? Items.Take(ShownCount(cap)) : Items;
+            var occurrences = new Dictionary<string, int>();
+            foreach (var it in shown)
+            {
+                var count = occurrences[it.Id] = occurrences.GetValueOrDefault(it.Id) + 1;
+                var testId = count == 1 ? $"catechism-item-{it.Id}" : $"catechism-item-{it.Id}--q{count}";
+                var label = it.Question is { } q ? $"{it.Name} — {q}" : it.Name;
+                yield return new VisibleEntry(it, testId, label);
+            }
+        }
+    }
+}

@@ -47,6 +47,24 @@
 
 @if (_blocks.Count > 0)
 {
+    @* M-D3/U2, a real, live-caught bug (see RevealControls.razor's own doc
+       comment): rendered BEFORE the list, not after -- revealing more
+       entries inserts new content ABOVE these controls in document flow
+       when they trail the list, which shifts their own on-screen position
+       downward on every reveal. A genuine rapid double-click (the shared
+       mechanic's own "double-down expands ALL" shortcut) has its SECOND
+       sub-click still aimed at the FIRST click's own now-stale screen
+       coordinate, which -- once the list has grown -- lands on whatever
+       newly-revealed passage entry slid into that spot instead, exploring
+       IT rather than expanding the list any further (observed live: the
+       popover navigating away entirely mid-gesture). Leading placement
+       keeps this row's own position permanently stable regardless of how
+       many entries are ever revealed below it. *@
+    @if (Cap is int cap && _blocks.Count > cap)
+    {
+        <RevealControls Total="@_blocks.Count" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="@(n => _shown = n)"
+                         MoreTestId="@MoreTestId" CollapseTestId="@CollapseTestId" RevealNoun="@RevealNoun" />
+    }
     <div class="popover-passage-list">
         @foreach (var entry in Visible)
         {
@@ -139,20 +157,6 @@
             </div>
         }
     </div>
-
-    @if (Cap is int cap && _blocks.Count > cap)
-    {
-        @if (!_showAll)
-        {
-            <button type="button" class="popover-passage-reveal" data-testid="@MoreTestId" aria-label="@($"Show {_blocks.Count - cap} more {RevealNoun}")"
-                    @onclick="() => _showAll = true">&#9662;</button>
-        }
-        else
-        {
-            <button type="button" class="popover-passage-reveal" data-testid="@CollapseTestId" aria-label="@($"Show fewer {RevealNoun}")"
-                    @onclick="() => _showAll = false">&#9652;</button>
-        }
-    }
 }
 
 @code {
@@ -229,7 +233,19 @@
     private sealed record VisibleEntry(PassageBlockData Block, string TestId);
 
     private List<PassageBlockData> _blocks = new();
-    private bool _showAll;
+
+    // M-D3/U2: how many blocks are currently revealed -- null until first
+    // touched, at which point it starts at Cap (the default view), same
+    // "starts at the collapsed default, never auto-resets on an unrelated
+    // re-render" risk profile the retired `_showAll` bool always had (this
+    // component is freshly instantiated per popover-section resolve, not
+    // reused across genuinely different Units -- see RevealControls.razor's
+    // own doc comment for the fuller reasoning). RevealControls owns the
+    // actual +2/-2/all/default arithmetic; this field is purely the
+    // CURRENT VALUE it proposes changes to via ShownChanged.
+    private int? _shown;
+
+    private int ShownCount(int cap) => _shown ??= cap;
 
     protected override void OnParametersSet()
     {
@@ -240,7 +256,7 @@
     {
         get
         {
-            var shown = Cap is int cap && !_showAll ? _blocks.Take(cap) : _blocks;
+            var shown = Cap is int cap ? _blocks.Take(ShownCount(cap)) : _blocks;
             var seen = new Dictionary<string, int>();
             foreach (var block in shown)
             {

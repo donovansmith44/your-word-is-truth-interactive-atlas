@@ -209,7 +209,13 @@ test.describe('M-D2: cross-reference superscripts', () => {
     const items = page.getByTestId(/^xref-item-/);
     await expect(items).toHaveCount(3);
 
-    await page.getByTestId('xrefs-more').click();
+    // M-D3/U2: "reveals the REST" (not merely "some more") -- Shift-click
+    // is the shared mechanic's own all-at-once shortcut (RevealControls.razor,
+    // its own doc comment has the full story on why Shift-click and not a
+    // literal double-click); a single click would only reveal +2, which
+    // the wire's own count here (only known to be >3, not bounded) can't
+    // guarantee reaches the end.
+    await page.getByTestId('xrefs-more').click({ modifiers: ['Shift'] });
     await expect(items).toHaveCount(v.xref_count);
     await expect(page.getByTestId('xrefs-collapse')).toBeVisible();
 
@@ -262,9 +268,11 @@ test.describe('M-D2: cross-reference superscripts', () => {
     // latency there. Mirrored here for the same reason (not a product
     // change -- Reader.razor's own hover-close grace period is unchanged).
     await expect(items).toHaveCount(3);
-    await page.getByTestId('xrefs-more').click();
+    // Same Shift-click shortcuts as above -- "reveals the rest"/"collapse
+    // restores" mean all-the-way, not a single +2/-2 step.
+    await page.getByTestId('xrefs-more').click({ modifiers: ['Shift'] });
     await expect(items).toHaveCount(v.xref_count);
-    await page.getByTestId('xrefs-collapse').click();
+    await page.getByTestId('xrefs-collapse').click({ modifiers: ['Shift'] });
     await expect(page.getByTestId(/^xref-item-/)).toHaveCount(3);
   });
 

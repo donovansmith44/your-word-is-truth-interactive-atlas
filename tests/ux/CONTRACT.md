@@ -235,7 +235,16 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   FIRST occurrence of a given `ID` keeps the bare `catechism-item-{ID}`
   testid (every pre-F2 single-occurrence case, e.g. Baptism's own items,
   unaffected); the second and later occurrences of the SAME id get a
-  numbered suffix, `catechism-item-{ID}--q2`, `--q3`, ...),
+  numbered suffix, `catechism-item-{ID}--q2`, `--q3`, ...; M-D3/U2/U6:
+  only the first 2 (Default) render initially -- see `catechism-more`/
+  `catechism-collapse` immediately below and the XREF-1 note's own
+  CATECH-1/U6 paragraph),
+  `catechism-more` / `catechism-collapse` (M-D3/U2/U6; the shared
+  RevealControls.razor mechanic's own arrows for THE SMALL CATECHISM's own
+  citing-item list -- present only when there are more items than the
+  Default (2); see the XREF-1 note's own CATECH-1/U6 paragraph for the
+  full +2/-2/all/default behavior, identical to `xrefs-more`/
+  `xrefs-collapse`),
   `catechism-verse-{SPAN}` (batch-f-brief.md, rebuilt batch-f2-brief.md
   6-ARCH; button; one per PASSAGE ENTRY inside
   `popover-section-catechism-scriptures` -- `SPAN` is a bare vref for a lone
@@ -631,14 +640,10 @@ Notes:
   CATECHISM today; any future provider counts automatically -- the
   determination reads the LIVE, fully-resolved section-registry list, never
   a hardcoded "is catechism present" check, so this keeps working unchanged
-  as later batches add providers) is ALSO present. `xrefs-more` reveals the
-  rest (all remaining entries at once -- not an incremental step);
-  `xrefs-collapse` snaps back to the capped view -- same down-arrow-reveal/
-  up-arrow-snap-back interaction language `place-card-more`/`-collapse`
-  (Batch D) already established, reused rather than a second one. Fewer
-  entries than the cap -> no arrow at all (conditional presence). Counts
-  exclude the verse-text section itself (`popover-section-verse-text` is
-  the subject being read, not context pulled in alongside it).
+  as later batches add providers) is ALSO present. Fewer entries than the
+  cap -> no arrow at all (conditional presence). Counts exclude the
+  verse-text section itself (`popover-section-verse-text` is the subject
+  being read, not context pulled in alongside it).
   batch-f2-brief.md requirement 6b extends the SAME cap/reveal MECHANISM
   (via PASSAGE-1's shared component) to the PLACE popover's own
   established/destroyed supporting verses -- but with an UNCONDITIONAL cap
@@ -648,6 +653,61 @@ Notes:
   distinguish there the way there is for xrefs. See
   `popover-place-date-established-verse-{SPAN}`/`-destroyed-verse-{SPAN}`
   and their own `-more`/`-collapse` pair in the testid inventory above.
+
+  M-D3/U2 REBUILDS the reveal MECHANIC itself (`xrefs-more`/`xrefs-collapse`
+  keep their own testids, click behavior, and conditional-presence rule
+  unchanged -- this is a mechanic change, not a new affordance): owner,
+  verbatim, progress.md: "down: +2 refs; up: -2; double-down: all;
+  double-up: collapse to original." RETIRES the all-or-nothing toggle
+  ("reveals the rest... all remaining entries at once -- not an
+  incremental step," this note's own retired wording) in favor of
+  `RevealControls.razor` (`client/Components/RevealControls.razor`), the
+  ONE shared mechanic -- "one component/behavior, parameterized -- never
+  two implementations," the owner's own words -- now used EVERYWHERE
+  `PassageList.razor`'s own `Cap` parameter applies (xrefs AND the place
+  est/dest supporting-verse lists above; every OTHER `PassageList`
+  consumer -- THE SCRIPTURES, event witnesses, PRIOR/FOLLOWING -- passes
+  no `Cap` at all and is structurally untouched, per PASSAGE-1's own "no
+  cap asked for" note). A single click on the down arrow reveals `Step`
+  (2) MORE, never past the true total; a single click on the up arrow
+  collapses `Step` fewer, NEVER below the section's own Default (3 xrefs-
+  only / 2 mixed-context / 2 est-dest, per the rules above -- "never below
+  the default," the owner's own words). BOTH arrows can render together
+  now, in a genuine middle state the retired toggle never had (past the
+  first reveal, short of the true total). SHIFT-CLICKING either arrow
+  jumps straight to its own far end -- ALL on the down arrow, back to
+  Default on the up -- realizing the owner's own literal "double-down"/
+  "double-up" wording. DISCLOSED DEVIATION: a real native double-click
+  gesture was tried first and found genuinely unsafe, reproducibly, not
+  merely in theory -- this popover platform re-centers its own outer panel
+  as content height changes (every popover here is viewport- or
+  pane-centered), so a dblclick's own SECOND sub-click (aimed at the
+  first's now-stale screen coordinate, after the first sub-click's own
+  Reveal already grew the panel and shifted it) can land on a
+  newly-revealed entry instead of the arrow, pushing THAT node and
+  navigating the whole popover away from what the user was expanding --
+  observed live, repeatedly. A Shift-click needs exactly one physical
+  click/dispatch, structurally immune to this (no second, separately-
+  targeted coordinate to go stale). Disclosed via each arrow's own `title`
+  tooltip, the same disclosure a dblclick shortcut would have needed
+  anyway; the SINGLE-click, fully keyboard-reachable step remains the
+  PRIMARY affordance either way. See RevealControls.razor's own doc
+  comment for the fuller interaction/accessibility reasoning.
+
+  CATECH-1/U6 (owner: "Catechism defaults to 2 shown"): THE SMALL
+  CATECHISM (`CatechismSeamSection`) gets a cap for the first time this
+  batch -- previously EVERY citing item rendered unconditionally, no
+  reveal mechanism at all. Its own citing-item list is NOT
+  `PassageList`-shaped (plain buttons, not passage blocks), so it cannot
+  route through that component -- `CatechismList.razor` (a new, genuinely
+  stateful sibling to `PassageList.razor`, extracted from
+  `CatechismSeamSection`'s own former inline rendering) owns its own
+  reveal state and renders `RevealControls` directly, the SAME shared
+  mechanic xrefs uses (`catechism-more`/`catechism-collapse`, Default 2,
+  Step 2, identical +2/-2/all/default behavior) -- see CatechismList.razor's
+  own doc comment. `catechism-item-{ID}`'s own testid/disambiguation/click
+  behavior (CATECH-1 below) is otherwise UNCHANGED; only which of them are
+  currently rendered is new.
 - B3-CARD (M-D3, owner decisions U4/B3, "when you're reading a chapter,
   you're in its focus. you can focus further by clicking chapter heading
   and you get metadata and context... container title, position in book,

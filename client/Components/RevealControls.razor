@@ -1,0 +1,123 @@
+@* M-D3 owner ruling (U2), progress.md near-verbatim: "U2 xref expansion --
+   down: +2 refs; up: -2; double-down: all; double-up: collapse to
+   original." Extended by U6 to Catechism ("Catechism defaults to 2 shown
+   + U2 mechanics") -- ONE component, parameterized, backing BOTH lists
+   ("one component/behavior, parameterized -- never two implementations,"
+   the brief's own words, the identical discipline PASSAGE-1/
+   CAP-RECONCILE-1 already establish elsewhere in this popover platform).
+   PassageList.razor uses this INTERNALLY for its own cross-references/
+   THE SCRIPTURES/place est-dest reveal (REPLACES its retired binary
+   Cap/_showAll all-or-nothing toggle); CatechismSeamSection uses it
+   DIRECTLY (its own list is a plain button row, not a PassageList/
+   PassageSourceUnit consumer, so it cannot go through that component --
+   this one is deliberately shaped generically enough for either caller:
+   a total count, a floor, a step, and a currently-shown count, nothing
+   about WHAT is being shown).
+
+   INTERACTION: a SINGLE click on the down arrow reveals Step MORE (never
+   past Total); a single click on the up arrow collapses Step FEWER
+   (never below Default -- "never below the default," the brief's own
+   words).
+
+   "DOUBLE-DOWN"/"DOUBLE-UP" -- DISCLOSED DEVIATION FROM THE LITERAL
+   WORDING, a real, live-caught, reproducible bug forced this: a genuine
+   native DOUBLE-CLICK gesture was tried first (both sub-clicks of a
+   dblclick target ONE fixed screen coordinate), but THIS popover platform
+   re-centers/repositions its OWN outer panel as its content's height
+   changes (every popover here is viewport- or pane-centered, R3's own
+   verse-anchored mode included) -- so the FIRST click's own Reveal()
+   growing the list by Step entries shifts the WHOLE panel, and with it
+   this arrow's own on-screen position, before the second sub-click of the
+   SAME gesture lands. Reordering these controls to lead the list (see
+   PassageList.razor's/CatechismList.razor's own matching comment)
+   stabilizes their position RELATIVE to the list, but not the panel's own
+   ABSOLUTE screen position, which still moves with it. Observed live,
+   repeatedly, not merely theorized: the second sub-click landing on a
+   newly-revealed passage entry or catechism item instead of the arrow,
+   PUSHING THAT NODE and navigating the whole popover away from what the
+   user was actually trying to expand -- a materially worse outcome than
+   the shortcut simply not firing. A SHIFT-CLICK realizes the identical
+   "jump to the far end" semantic with exactly ONE physical click/dispatch
+   -- structurally immune to this hazard, since there is no second,
+   separately-targeted screen coordinate to go stale. Every arrow's own
+   `title` attribute spells out the shortcut as a native hover tooltip,
+   the same disclosure a dblclick shortcut would have needed anyway (it is
+   otherwise as undiscoverable as this app's every other reveal control,
+   e.g. place-card-more/-collapse, always was); the plain, single-step
+   click remains the PRIMARY, fully keyboard-reachable path either way.
+   MouseEventArgs.ShiftKey (native to Blazor's own @onclick binding, no JS
+   interop needed) is read directly -- no second event handler, no
+   competing dispatch.
+
+   CONDITIONAL PRESENCE: renders nothing at all when Total &lt;= Default
+   (nothing to reveal, same "no arrow at all under the cap" rule XREF-1
+   always followed); the collapse arrow is independently conditional on
+   Shown &gt; Default, the more arrow on Shown &lt; Total -- BOTH can render
+   together in a genuine middle state (this component's own incremental
+   model has one, unlike the retired all-or-nothing toggle, which never
+   showed both at once). *@
+@if (Total > Default)
+{
+    <div class="popover-reveal-controls">
+        @if (Shown > Default)
+        {
+            <button type="button" class="popover-reveal-arrow popover-reveal-collapse" data-testid="@CollapseTestId"
+                    aria-label="@($"Show fewer {RevealNoun}")"
+                    title="@($"Show {Math.Min(Step, Shown - Default)} fewer {RevealNoun} -- Shift-click to collapse to the default view")"
+                    @onclick="OnCollapseClick">&#9652;</button>
+        }
+        else
+        {
+            @* A same-sized, empty placeholder -- NOT the button, kept
+               entirely out of the DOM when absent (`.toHaveCount(0)` stays
+               a true "does not exist" check for CollapseTestId, the same
+               conditional-presence guarantee every other reveal arrow in
+               this app already gives). Its ONLY job is to hold the collapse
+               arrow's own slot at a fixed width regardless of whether the
+               real button is present -- see the more-arrow's own slot,
+               .popover-reveal-slot, for why this matters. *@
+            <span class="popover-reveal-slot"></span>
+        }
+        @if (Shown < Total)
+        {
+            <button type="button" class="popover-reveal-arrow popover-reveal-more" data-testid="@MoreTestId"
+                    aria-label="@($"Show {Math.Min(Step, Total - Shown)} more {RevealNoun}")"
+                    title="@($"Show {Math.Min(Step, Total - Shown)} more {RevealNoun} -- Shift-click to show all {Total}")"
+                    @onclick="OnMoreClick">&#9662;</button>
+        }
+    </div>
+}
+
+@code {
+    // The list's own true total size -- never re-derived from Shown/Step,
+    // always the caller's own ground truth (PassageList's own _blocks.Count,
+    // CatechismSeamSection's own items.Count).
+    [Parameter, EditorRequired] public int Total { get; set; }
+
+    // The floor collapsing never crosses -- the SAME number the list's own
+    // initial render already shows (PassageList's existing Cap parameter,
+    // CatechismSeamSection's own new 2, F2/CAP-RECONCILE-1's 2-vs-3 xrefs
+    // rule) -- "never below the default," the owner's own words.
+    [Parameter, EditorRequired] public int Default { get; set; }
+
+    [Parameter] public int Step { get; set; } = 2;
+
+    // Two-way bound -- the caller owns the actual state (its own _shown
+    // field), this component only ever proposes the next value via
+    // ShownChanged, never mutates anything itself (a stateless control,
+    // matching PassageList.razor's/MiniReaderExpand.razor's own established
+    // "per-render state lives in the CALLER, not silently duplicated in a
+    // shared child" discipline).
+    [Parameter, EditorRequired] public int Shown { get; set; }
+    [Parameter, EditorRequired] public EventCallback<int> ShownChanged { get; set; }
+
+    [Parameter] public string MoreTestId { get; set; } = "reveal-more";
+    [Parameter] public string CollapseTestId { get; set; } = "reveal-collapse";
+    [Parameter] public string RevealNoun { get; set; } = "entries";
+
+    private Task OnMoreClick(MouseEventArgs e) =>
+        ShownChanged.InvokeAsync(e.ShiftKey ? Total : Math.Min(Shown + Step, Total));
+
+    private Task OnCollapseClick(MouseEventArgs e) =>
+        ShownChanged.InvokeAsync(e.ShiftKey ? Default : Math.Max(Shown - Step, Default));
+}

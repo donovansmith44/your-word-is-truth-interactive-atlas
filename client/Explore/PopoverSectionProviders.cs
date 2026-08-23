@@ -417,29 +417,21 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
             builder.AddContent(seq++, "THE SMALL CATECHISM");
             builder.CloseElement();
 
-            builder.OpenElement(seq++, "div");
-            builder.AddAttribute(seq++, "class", "popover-catechism-list");
-            var occurrences = new Dictionary<string, int>();
-            foreach (var it in items)
-            {
-                var id = it.Id; // local copies -- captured per-row by the onclick closure below
-                var name = it.Name;
-                var count = occurrences[id] = occurrences.GetValueOrDefault(id) + 1;
-                var testid = count == 1 ? $"catechism-item-{id}" : $"catechism-item-{id}--q{count}";
-                var label = it.Question is { } q ? $"{name} — {q}" : name;
-
-                builder.OpenElement(seq++, "button");
-                builder.AddAttribute(seq++, "type", "button");
-                builder.AddAttribute(seq++, "class", "popover-catechism-item explorable");
-                builder.AddAttribute(seq++, "data-testid", testid);
-                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new CatechismNode(id, name))));
-                builder.AddContent(seq++, label);
-                builder.CloseElement();
-            }
-            builder.CloseElement();
+            // M-D3 (U2/U6, owner: "Catechism defaults to 2 shown + U2
+            // mechanics"): CatechismList.razor owns the actual rendering +
+            // reveal state (a genuine component instance, unlike this
+            // stateless provider) -- see that component's own doc comment.
+            builder.OpenComponent<Components.CatechismList>(seq++);
+            builder.AddAttribute(seq++, "Items", items);
+            builder.AddAttribute(seq++, "Cap", CatechismDefaultCap);
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.CloseComponent();
         };
         return new PopoverSection("catechism", body);
     }
+
+    // Owner, verbatim (progress.md, U6): "Catechism defaults to 2 shown."
+    private const int CatechismDefaultCap = 2;
 }
 
 /// <summary>

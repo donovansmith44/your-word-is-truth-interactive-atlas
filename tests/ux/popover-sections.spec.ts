@@ -357,6 +357,14 @@ test('CATECH-1: the Baptism institution verse keeps its item-level citation, now
 
   await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
   await expect(page.getByTestId('popover-section-catechism').getByTestId('catechism-section-heading')).toHaveText('THE SMALL CATECHISM');
+  // M-D3/U2/U6: THE SMALL CATECHISM now defaults to 2 shown -- reveal
+  // everything first, since baptism-1's own position among MAT.28.19's
+  // many citing items isn't guaranteed (this test's own concern is content,
+  // not the reveal mechanic itself).
+  const catechismMoreBaptism = page.getByTestId('catechism-more');
+  if (await catechismMoreBaptism.count() > 0) {
+    await catechismMoreBaptism.click({ modifiers: ['Shift'] });
+  }
 
   // Luther's OWN item-level embedded citation (Batch F, unchanged) -- the
   // bare, unsuffixed "Baptism — Part One" row must still be exactly this
@@ -399,6 +407,22 @@ test('CATECH-1: the Baptism institution verse keeps its item-level citation, now
 test('CATECH-1: verse -> catechism item -> proof verse hop, with Luther\'s own verbatim heading', async ({ page }) => {
   await page.goto('/read/MAT/28');
   await page.getByTestId('verse-line-19').click();
+  // M-D3/U2/U6: THE SMALL CATECHISM now defaults to 2 shown -- MAT.28.19
+  // cites many items (the prior test's own subject), so baptism-1 is not
+  // guaranteed to be among the initial 2; reveal everything first (this
+  // test's own concern is the item -> proof-verse hop, not the reveal
+  // mechanic itself). A real, live-caught race: `.count()` has no
+  // auto-retry (unlike `expect()`), so checking it immediately after the
+  // click can catch LoadCurrent's own documented "cleared, then filled"
+  // intermediate frame and wrongly skip the reveal step entirely --
+  // waiting for the section to actually settle first (the SAME "wait for
+  // a real settled signal" discipline this file's own EVENT-1 traversal
+  // tests already apply) is the fix.
+  await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
+  const catechismMore = page.getByTestId('catechism-more');
+  if (await catechismMore.count() > 0) {
+    await catechismMore.click({ modifiers: ['Shift'] });
+  }
   await page.getByTestId('catechism-item-baptism-1').click();
 
   // The CatechismNode popover: title is the item's own display name.
@@ -468,6 +492,14 @@ test('CATECH-1: a same-chapter passage selection aggregates catechism citations 
   await expect(page.getByTestId('popover-title')).toHaveText('MAT.26.26-28');
 
   await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
+  // M-D3/U2/U6: THE SMALL CATECHISM now defaults to 2 shown -- MAT.26.26-28
+  // cites well over that (this test's own dedup subject below proves it),
+  // so reveal everything first; this test's own concern is dedup, not the
+  // reveal mechanic itself (XREF-1/U2's own dedicated test covers that).
+  const catechismMore = page.getByTestId('catechism-more');
+  if (await catechismMore.count() > 0) {
+    await catechismMore.click({ modifiers: ['Shift'] });
+  }
   // The bare (item-level, no question) altar-1 row -- first occurrence,
   // unsuffixed testid -- appears exactly once despite being cited by all
   // three member verses.
@@ -499,6 +531,13 @@ test('CATECH-1/6-ARCH: a verse reachable only via the repo mapping shows a quest
   await page.getByTestId('verse-line-13').click();
   await expect(page.getByTestId('popover-title')).toHaveText('LUK.12.13');
   await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
+  // M-D3/U2/U6: reveal everything first -- this test's own concern is the
+  // question-titled row's own content/hop, not the reveal mechanic
+  // (position among the citing items isn't guaranteed).
+  const catechismMore = page.getByTestId('catechism-more');
+  if (await catechismMore.count() > 0) {
+    await catechismMore.click({ modifiers: ['Shift'] });
+  }
 
   const items = page.getByTestId(/^catechism-item-/);
   const texts = await items.allTextContents();
@@ -520,6 +559,57 @@ test('CATECH-1/6-ARCH: a verse reachable only via the repo mapping shows a quest
   const godAloneEntry = scriptures.getByTestId('catechism-verse-LUK.12.13-14');
   await expect(godAloneEntry).toBeVisible();
   await expect(godAloneEntry).toContainText('God Alone as Judge');
+});
+
+test('CATECH-1/U2/U6: THE SMALL CATECHISM defaults to 2 shown, +2 per down-arrow click, Shift-click jumps straight to the ends', async ({ page }) => {
+  const toc = await loadToc();
+  const found = await findVerseWithCounts(toc, d => d.catechism.length > 2);
+  test.skip(!found, 'no sampled verse had >2 catechism citations');
+  if (!found) return;
+  const v = parseVerse(found.vref);
+  const total = found.detail.catechism.length;
+
+  await page.goto(`/read/${v.book}/${v.chapter}`);
+  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await expect(page.getByTestId('popover-title')).toHaveText(found.vref);
+
+  const items = page.getByTestId(/^catechism-item-/);
+  const more = page.getByTestId('catechism-more');
+  const collapse = page.getByTestId('catechism-collapse');
+
+  // U6, owner verbatim: "Catechism defaults to 2 shown."
+  await expect(items).toHaveCount(2);
+  await expect(more).toBeVisible();
+  await expect(collapse).toHaveCount(0);
+
+  // The SAME shared mechanic RevealControls.razor gives cross-references
+  // (XREF-1/U2 above) -- +2 per click, all-at-once on Shift-click, never
+  // below the default either direction.
+  await more.click({ modifiers: ['Shift'] });
+  await expect(items).toHaveCount(total);
+  await expect(more).toHaveCount(0);
+  await expect(collapse).toBeVisible();
+
+  await collapse.click({ modifiers: ['Shift'] });
+  await expect(items).toHaveCount(2);
+  await expect(collapse).toHaveCount(0);
+  await expect(more).toBeVisible();
+});
+
+test('CATECH-1: a verse with 1-2 catechism citations shows no reveal arrow at all (at-or-under the default)', async ({ page }) => {
+  const toc = await loadToc();
+  const found = await findVerseWithCounts(toc, d => d.catechism.length >= 1 && d.catechism.length <= 2);
+  test.skip(!found, 'no sampled verse had 1-2 catechism citations');
+  if (!found) return;
+  const v = parseVerse(found.vref);
+
+  await page.goto(`/read/${v.book}/${v.chapter}`);
+  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
+
+  await expect(page.getByTestId(/^catechism-item-/)).toHaveCount(found.detail.catechism.length);
+  await expect(page.getByTestId('catechism-more')).toHaveCount(0);
+  await expect(page.getByTestId('catechism-collapse')).toHaveCount(0);
 });
 
 // ---------------------------------------------------------------------
@@ -549,30 +639,77 @@ async function findVerseWithCounts(toc: any, predicate: (d: any) => boolean, max
   return null;
 }
 
-test('XREF-1: a verse with only cross-reference context caps at 3 with a down-arrow reveal', async ({ page }) => {
+test('XREF-1/U2: +2 per down-arrow click, -2 per up-arrow click, never below the default, Shift-click jumps to the far end', async ({ page }) => {
   const toc = await loadToc();
-  const found = await findVerseWithCounts(toc, d => d.cross_refs.length > 3 && d.catechism.length === 0);
-  test.skip(!found, 'no sampled verse had >3 xrefs and 0 catechism');
+  // >5 (not merely >3): guarantees at least one genuine MIDDLE state where
+  // both arrows show together, regardless of whether this sampled verse's
+  // own initial cap turns out to be F2's 3 (xrefs-only) or 2 (mixed
+  // context, e.g. a real Persons/Places mention alongside -- a live
+  // possibility this predicate doesn't control for, deliberately: this
+  // test's own subject is the +2/-2/all/default MECHANIC, not the cap
+  // VALUE, which REGISTRY-1/XREF-1's own dedicated tests already pin --
+  // reading the actual initial count off the page rather than assuming 3
+  // keeps this test meaningful either way).
+  const found = await findVerseWithCounts(toc, d => d.cross_refs.length > 5);
+  test.skip(!found, 'no sampled verse had >5 xrefs');
   if (!found) return;
   const v = parseVerse(found.vref);
+  const total = found.detail.cross_refs.length;
 
   await page.goto(`/read/${v.book}/${v.chapter}`);
   await page.getByTestId(`verse-line-${v.verse}`).click();
   await expect(page.getByTestId('popover-title')).toHaveText(found.vref);
-  await expect(page.getByTestId('popover-section-catechism')).toHaveCount(0);
 
   const items = page.getByTestId(/^xref-item-/);
-  await expect(items).toHaveCount(3);
-  await expect(page.getByTestId('xrefs-more')).toBeVisible();
-  await expect(page.getByTestId('xrefs-collapse')).toHaveCount(0);
+  const more = page.getByTestId('xrefs-more');
+  const collapse = page.getByTestId('xrefs-collapse');
 
-  await page.getByTestId('xrefs-more').click();
-  await expect(items).toHaveCount(found.detail.cross_refs.length);
-  await expect(page.getByTestId('xrefs-collapse')).toBeVisible();
-  await expect(page.getByTestId('xrefs-more')).toHaveCount(0);
+  await expect(more).toBeVisible();
+  const defaultShown = await items.count();
+  expect(defaultShown, 'the default cap must be F2\'s own 2 (mixed context) or 3 (xrefs-only)').toBeGreaterThanOrEqual(2);
+  expect(defaultShown).toBeLessThanOrEqual(3);
+  await expect(collapse).toHaveCount(0); // "never below the default" -- nothing to collapse AT the default
 
-  await page.getByTestId('xrefs-collapse').click();
-  await expect(items).toHaveCount(3);
+  // Step up by exactly +2 per click until the true total is reached --
+  // hop count read from the wire (never hardcoded), so this test keeps
+  // proving itself regardless of which real verse it happens to sample.
+  let shown = defaultShown;
+  let hops = 0;
+  while (shown < total) {
+    await expect(more, `expected a MORE arrow with ${total - shown} left to reveal`).toBeVisible();
+    await more.click();
+    shown = Math.min(shown + 2, total);
+    await expect(items).toHaveCount(shown);
+    await expect(collapse, 'once past the default, the collapse arrow must also be available').toBeVisible();
+    hops++;
+    expect(hops, 'XREF-1 +2 reveal walk did not terminate within a sane number of hops').toBeLessThan(total);
+  }
+  await expect(more).toHaveCount(0); // fully revealed -- no more to show
+
+  // Step back down by exactly -2 per click, never below the default.
+  while (shown > defaultShown) {
+    await collapse.click();
+    shown = Math.max(shown - 2, defaultShown);
+    await expect(items).toHaveCount(shown);
+  }
+  await expect(collapse).toHaveCount(0); // back at the default -- nothing left to collapse
+  await expect(more).toBeVisible();
+
+  // Shift-click: jumps straight to ALL, skipping every intermediate step
+  // (RevealControls.razor's own disclosed stand-in for the owner's literal
+  // "double-down" -- a real dblclick gesture proved structurally unsafe
+  // against this app's own re-centering popovers; see that component's
+  // own doc comment for the full, live-caught story).
+  await more.click({ modifiers: ['Shift'] });
+  await expect(items).toHaveCount(total);
+  await expect(more).toHaveCount(0);
+  await expect(collapse).toBeVisible();
+
+  // Shift-click: jumps straight back to the default, never below it.
+  await collapse.click({ modifiers: ['Shift'] });
+  await expect(items).toHaveCount(defaultShown);
+  await expect(collapse).toHaveCount(0);
+  await expect(more).toBeVisible();
 });
 
 test('XREF-1: a verse with catechism context ALSO present caps cross-references at 2', async ({ page }) => {

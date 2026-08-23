@@ -3560,6 +3560,65 @@ input:focus-visible,
     color: var(--lapis);
 }
 
+/* M-D3/U2 (RevealControls.razor, the shared incremental +2/-2/all/default
+   reveal mechanic -- cross-references, THE SMALL CATECHISM): a flex row so
+   BOTH the collapse and more arrows can sit side by side in a genuine
+   "middle" state (the retired all-or-nothing toggle never had one). Same
+   "no border/background, ink-soft resting / lapis hover" control language
+   .popover-passage-reveal/place-card-more/-collapse already established,
+   reused verbatim rather than inventing a second interaction language for
+   this closely-related gesture. */
+.popover-reveal-controls {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    /* M-D3/U2: bottom margin, not top -- these controls lead the list they
+       govern now (see PassageList.razor's/CatechismList.razor's own
+       matching comment for why), so the gap belongs below them, before
+       the first entry, not above. */
+    margin: 0 0 .3rem .65rem;
+}
+
+.popover-reveal-arrow {
+    display: block;
+    width: 1rem;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-serif);
+    font-size: .95rem;
+    line-height: 1;
+    text-align: center;
+    color: var(--ink-soft);
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.popover-reveal-arrow:hover {
+    color: var(--lapis);
+}
+
+/* A real, live-caught bug: the collapse arrow's own CONDITIONAL presence
+   (absent exactly at the default view) let the more arrow's own on-screen
+   position shift sideways the instant collapse first appeared -- fatal
+   specifically for a genuine rapid DOUBLE-click (the shared mechanic's own
+   "double-down expands ALL" shortcut): Playwright's `.dblclick()`, and a
+   real browser's own native dblclick gesture alike, target ONE fixed
+   screen coordinate for both sub-clicks, so a target that moves between
+   them can have its second click land on whatever slid into its place
+   instead (observed live: the reveal count moving the WRONG direction,
+   never reaching "all"). This placeholder holds the collapse arrow's own
+   slot at the SAME fixed width whether or not the real button occupies it
+   -- `width` matches `.popover-reveal-arrow` exactly -- so the more
+   arrow's own position never moves regardless of collapse's own
+   conditional presence (collapse itself, always the FIRST child, needs no
+   equivalent placeholder of its own: nothing ever renders before it that
+   could shift it). */
+.popover-reveal-slot {
+    display: block;
+    width: 1rem;
+}
+
 /* Batch N2 requirement 2 (folded into Batch T): the per-entry passage
    clamp toggle -- deliberately a DIFFERENT visual language from
    .popover-verse-expand just below (small-caps, lapis-resting) so the two
