@@ -71,26 +71,28 @@ impl Graph {
 
         use RelationId as R;
 
-        let mut pairs: BTreeMap<RelationId, Vec<(Position, Position)>> = BTreeMap::new();
+        use crate::explore::EdgeMeta as M;
+        let mut pairs: BTreeMap<RelationId, Vec<(Position, Position, M)>> = BTreeMap::new();
 
         for row in &self.contains_bible {
             let c = at(&row.container.erase());
             for l in &row.content.0 {
                 let tl: TextLocus = l.clone().into();
-                pairs.entry(R::Contains).or_default().push((c.clone(), at(&text_node(&tl))));
+                pairs.entry(R::Contains).or_default().push((c.clone(), at(&text_node(&tl)), M::None));
             }
         }
         for row in &self.attests {
             let e = at(&row.event.erase());
             let tl: TextLocus = row.attestation.from.clone().into();
-            pairs.entry(R::Attests).or_default().push((e, at(&text_node(&tl))));
+            pairs.entry(R::Attests).or_default().push((e, at(&text_node(&tl)), M::None));
         }
         for row in &self.succession {
             for w in row.chain.windows(2) {
-                pairs
-                    .entry(R::Succession)
-                    .or_default()
-                    .push((at(&w[0].erase()), at(&w[1].erase())));
+                pairs.entry(R::Succession).or_default().push((
+                    at(&w[0].erase()),
+                    at(&w[1].erase()),
+                    M::Narrative(row.narrative.clone()),
+                ));
             }
         }
         for row in &self.dated_by {
@@ -100,13 +102,14 @@ impl Graph {
                 crate::chrono::ChronoTarget::Prior(p) => at(&p.erase()),
                 crate::chrono::ChronoTarget::Era(er) => at(&er.erase()),
             };
-            pairs.entry(R::DatedBy).or_default().push((e, t));
+            pairs.entry(R::DatedBy).or_default().push((e, t, M::None));
         }
         for row in &self.located_at {
-            pairs
-                .entry(R::LocatedAt)
-                .or_default()
-                .push((at(&row.event.erase()), at(&row.place.erase())));
+            pairs.entry(R::LocatedAt).or_default().push((
+                at(&row.event.erase()),
+                at(&row.place.erase()),
+                M::None,
+            ));
         }
         for row in &self.mentions {
             let s = at(&text_node(&row.locus));
@@ -114,26 +117,28 @@ impl Graph {
                 PlaceOrPerson::Place(p) => at(&p.erase()),
                 PlaceOrPerson::Person(p) => at(&p.erase()),
             };
-            pairs.entry(R::Mentions).or_default().push((s, o));
+            pairs.entry(R::Mentions).or_default().push((s, o, M::None));
         }
         for row in &self.cross_refs {
-            pairs
-                .entry(R::Cites)
-                .or_default()
-                .push((at(&text_node(&row.from)), at(&text_node(&row.to))));
+            pairs.entry(R::Cites).or_default().push((
+                at(&text_node(&row.from)),
+                at(&text_node(&row.to)),
+                M::Votes(row.votes),
+            ));
         }
         for row in &self.quotes {
             let s = at(&text_node(&row.quoting));
             let tl: TextLocus = row.quoted.from.clone().into();
-            pairs.entry(R::Quotes).or_default().push((s, at(&text_node(&tl))));
+            pairs.entry(R::Quotes).or_default().push((s, at(&text_node(&tl)), M::None));
         }
         for row in &self.confesses {
             let s: TextLocus = row.confessing.clone().into();
             let o: TextLocus = row.confessed.from.clone().into();
-            pairs
-                .entry(R::Confesses)
-                .or_default()
-                .push((at(&text_node(&s)), at(&text_node(&o))));
+            pairs.entry(R::Confesses).or_default().push((
+                at(&text_node(&s)),
+                at(&text_node(&o)),
+                M::None,
+            ));
         }
 
         self.indexes = pairs

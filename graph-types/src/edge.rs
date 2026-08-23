@@ -296,17 +296,26 @@ pub struct EdgeRecord {
 /// content-derived, so expansion is stable across recompiles.
 #[derive(Debug, Default)]
 pub struct BiIndex {
-    pub fwd: BTreeMap<Position, Vec<(EdgeId, Position)>>,
-    pub inv: BTreeMap<Position, Vec<(EdgeId, Position)>>,
+    pub fwd: BTreeMap<Position, Vec<(EdgeId, Position, crate::explore::EdgeMeta)>>,
+    pub inv: BTreeMap<Position, Vec<(EdgeId, Position, crate::explore::EdgeMeta)>>,
 }
 
 impl BiIndex {
-    pub fn build(rel: RelationId, pairs: &[(Position, Position)]) -> BiIndex {
+    pub fn build(
+        rel: RelationId,
+        pairs: &[(Position, Position, crate::explore::EdgeMeta)],
+    ) -> BiIndex {
         let mut ix = BiIndex::default();
-        for (s, o) in pairs {
+        for (s, o, m) in pairs {
             let eid = entry_id(rel, s, o);
-            ix.fwd.entry(s.clone()).or_default().push((eid.clone(), o.clone()));
-            ix.inv.entry(o.clone()).or_default().push((eid, s.clone()));
+            ix.fwd
+                .entry(s.clone())
+                .or_default()
+                .push((eid.clone(), o.clone(), m.clone()));
+            ix.inv
+                .entry(o.clone())
+                .or_default()
+                .push((eid, s.clone(), m.clone()));
         }
         ix
     }

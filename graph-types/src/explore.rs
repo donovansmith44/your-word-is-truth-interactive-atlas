@@ -15,10 +15,25 @@ pub struct EdgeQuery {
     pub limit: usize,
 }
 
+/// Per-entry relation metadata (the types artifact's §10 open question,
+/// answered by demonstrated need — M-B's EventWorld workaround existed
+/// because entries could not carry this): a succession entry names its
+/// narrative; a citation entry carries its votes rank. The SAME meta is
+/// visible from both directions of a row (one row, two projections), so
+/// the bijection witness extends to meta. Extending this enum is a
+/// deliberate act reviewed like any relation change.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum EdgeMeta {
+    None,
+    Narrative(crate::id::NarrativeId),  // follows-in/precedes-in: which chain
+    Votes(u32),                         // cites/cited-by: ranking
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EdgeEntry {
     pub edge: EdgeId,
     pub node: Position,
+    pub meta: EdgeMeta,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -55,7 +70,11 @@ fn raw_neighbors(g: &Graph, p: &Position, kind: EdgeKind) -> Vec<EdgeEntry> {
             map.get(p)
                 .map(|v| {
                     v.iter()
-                        .map(|(eid, o)| EdgeEntry { edge: eid.clone(), node: o.clone() })
+                        .map(|(eid, o, m)| EdgeEntry {
+                            edge: eid.clone(),
+                            node: o.clone(),
+                            meta: m.clone(),
+                        })
                         .collect()
                 })
                 .unwrap_or_default()
