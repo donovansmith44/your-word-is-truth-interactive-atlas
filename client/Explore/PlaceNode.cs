@@ -13,11 +13,12 @@ namespace BibleAtlas.Client.Explore;
 ///
 /// <see cref="OnSelectEvent"/> is a deliberate, narrow escape from
 /// IExplorable's usual "ExplorerPopover renders every node identically"
-/// promise -- documented here rather than hidden, and chosen over adding a
-/// THIRD ExplorerPopover-side special case (alongside xrefs/ShowMiniMap):
-/// CONTRACT.md places no fixed testid on "click an event row" the way it
-/// does for xrefs/mini-map, so nothing forces this interaction out of the
-/// node's own BodyAsync the way those two are forced out. Also, unlike
+/// promise -- documented here rather than hidden, and chosen over adding
+/// another ExplorerPopover-side special case (alongside xrefs, and --
+/// before O1, 2026-08-23, retired it -- ShowMiniMap): CONTRACT.md places no
+/// fixed testid on "click an event row" the way it did for xrefs/mini-map,
+/// so nothing forces this interaction out of the node's own BodyAsync the
+/// way those were forced out. Also, unlike
 /// xrefs (a toggleable, chip-gated list), WORLD-8 requires the event years
 /// to be visible in the body IMMEDIATELY on open, with no chip click first
 /// -- which only BodyAsync's own always-rendered content can satisfy.

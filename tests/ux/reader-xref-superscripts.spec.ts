@@ -209,13 +209,14 @@ test.describe('M-D2: cross-reference superscripts', () => {
     const items = page.getByTestId(/^xref-item-/);
     await expect(items).toHaveCount(3);
 
-    // M-D3/U2: "reveals the REST" (not merely "some more") -- Shift-click
-    // is the shared mechanic's own all-at-once shortcut (RevealControls.razor,
-    // its own doc comment has the full story on why Shift-click and not a
-    // literal double-click); a single click would only reveal +2, which
-    // the wire's own count here (only known to be >3, not bounded) can't
-    // guarantee reaches the end.
-    await page.getByTestId('xrefs-more').click({ modifiers: ['Shift'] });
+    // M-D3/U2: "reveals the REST" (not merely "some more") -- the
+    // "more-all" double-arrow button is the shared mechanic's own
+    // all-at-once control (M-D3 fix round 3, R-D3: a separate, always-
+    // paired BUTTON, not a Shift-click/dblclick gesture on the single
+    // arrow -- RevealControls.razor's own doc comment has the full story);
+    // a single click would only reveal +2, which the wire's own count here
+    // (only known to be >3, not bounded) can't guarantee reaches the end.
+    await page.getByTestId('xrefs-more-all').click();
     await expect(items).toHaveCount(v.xref_count);
     await expect(page.getByTestId('xrefs-collapse')).toBeVisible();
 
@@ -268,11 +269,11 @@ test.describe('M-D2: cross-reference superscripts', () => {
     // latency there. Mirrored here for the same reason (not a product
     // change -- Reader.razor's own hover-close grace period is unchanged).
     await expect(items).toHaveCount(3);
-    // Same Shift-click shortcuts as above -- "reveals the rest"/"collapse
+    // Same double-arrow buttons as above -- "reveals the rest"/"collapse
     // restores" mean all-the-way, not a single +2/-2 step.
-    await page.getByTestId('xrefs-more').click({ modifiers: ['Shift'] });
+    await page.getByTestId('xrefs-more-all').click();
     await expect(items).toHaveCount(v.xref_count);
-    await page.getByTestId('xrefs-collapse').click({ modifiers: ['Shift'] });
+    await page.getByTestId('xrefs-collapse-all').click();
     await expect(page.getByTestId(/^xref-item-/)).toHaveCount(3);
   });
 

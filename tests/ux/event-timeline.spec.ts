@@ -354,13 +354,16 @@ test('TRUNC-1: the temple-dedication popover\'s 1KI.8 witness shows the +46-more
 
   // The truncated 1 Kings 8 entry specifically (the cap keeps the LOWEST-
   // numbered 20 of 66, so its own delivered span is deterministically
-  // 1KI.8.1-20): quiet "+46 more — read the chapter" affordance, a
-  // `data-truncated="true"` marker (robust hook independent of exact
-  // wording), wired to the SAME MiniReaderExpand control (no parallel
-  // affordance) -- clicking it opens the real, full chapter.
+  // 1KI.8.1-20): quiet "+46 more — read the chapter" affordance. O2
+  // (2026-08-23) retired the old text-button (and its own `data-truncated`
+  // marker) in favor of RevealControls' shared down/double-down arrow pair
+  // -- the identical truncation-aware wording now lives in the button's own
+  // title/aria-label (RevealControls' MoreLabel override, MiniReaderExpand.razor's
+  // own O2 comment) rather than its visible text (an icon glyph now), still
+  // wired to the SAME MiniReaderExpand control, no parallel affordance --
+  // clicking it opens the real, full chapter.
   const kingsExpand = page.getByTestId('popover-verse-expand-event-witness-1KI.8.1-20');
-  await expect(kingsExpand).toHaveAttribute('data-truncated', 'true');
-  await expect(kingsExpand).toHaveText(`+${missing} more — read the chapter`);
+  await expect(kingsExpand).toHaveAttribute('title', `+${missing} more — read the chapter`);
   await kingsExpand.click();
   const chapter = await api.chapter('1KI.8');
   await expect(page.getByTestId(/^popover-reader-verse-/).first()).toBeVisible();
@@ -382,15 +385,22 @@ test('TRUNC-1: the temple-dedication popover\'s 1KI.8 witness shows the +46-more
   await page.getByTestId('verse-event-1ki_temple_dedication').click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
   const chroniclesExpand = page.getByTestId('popover-verse-expand-event-witness-2CH.5.2-14');
-  await expect(chroniclesExpand).toHaveAttribute('data-truncated', 'false');
-  await expect(chroniclesExpand).toHaveText('Read the whole chapter');
+  await expect(chroniclesExpand).toHaveAttribute('title', 'Read the whole chapter');
 
   // 2 Chronicles 6 (fully inside this same witness's own 5:2-7:10 span) is
   // ALSO over the cap (42 true verses) -- the SAME honest signal fires a
   // second time in this one popover, not just for the owner's own named
-  // 1 Kings case.
+  // 1 Kings case. O2: no more `data-truncated` marker to count directly --
+  // a truncated entry's own title CONTAINS "more — read the chapter"
+  // (untruncated ones read exactly "Read the whole chapter", no "more"
+  // substring), the same distinguishing signal one layer over.
+  // .popover-reveal-more (the single-arrow class, an exact token match)
+  // deliberately excludes its own always-paired .popover-reveal-more-all
+  // sibling, which carries the IDENTICAL title (MiniReaderExpand's binary
+  // case shares one MoreLabel across both -- see RevealControls.razor's own
+  // O2 comment) and would otherwise double this count.
   const chroniclesCh6 = chroniclesWitness.verse_groups.find((g: any) => g.chapter === 6);
   const chroniclesCh6Missing = chroniclesCh6.count - chroniclesCh6.verses.length;
   expect(chroniclesCh6Missing).toBeGreaterThan(0);
-  await expect(page.locator('[data-truncated="true"]')).toHaveCount(2);
+  await expect(page.locator('.popover-reveal-more[title*="more — read the chapter"]')).toHaveCount(2);
 });

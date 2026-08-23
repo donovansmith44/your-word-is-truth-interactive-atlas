@@ -1,30 +1,22 @@
 import { test, expect } from '@playwright/test';
 import fc from 'fast-check';
 import { api } from './lib/api';
-import { loadToc, arbVerseRef, arbChapterRef } from './lib/canon';
+import { loadToc, arbChapterRef } from './lib/canon';
 import { fcAssert, RUNS_UI } from './lib/fc';
 import { independentlyHoverableIds } from './lib/hoverSafety';
 
-test('READ-4: mini-map equals scripture scene; open-in-world carries the ref', async ({ page }) => {
-  const toc = await loadToc();
-  await fcAssert(fc.asyncProperty(arbVerseRef(toc), async vref => {
-    const [b, c, v] = vref.split('.');
-    await page.goto(`/read/${b}/${c}`);
-    // Batch G1: verse-num no longer opens a popover on plain click (that's
-    // the verse LINE's own job now, see reader.spec.ts's own header note) --
-    // this test's own subject is the mini-map chip inside the popover, not
-    // how the popover got opened, so it just opens via the line instead.
-    await page.getByTestId(`verse-line-${v}`).click();
-    await page.getByTestId('popover-chip-map').click();
-    await expect(page.getByTestId('mini-map')).toBeVisible();
-    const scene = await api.sceneScripture(vref);
-    await expect(page.getByTestId('mini-map').locator('[data-testid^="marker-"]'))
-      .toHaveCount(scene.places.length);
-    await page.getByTestId('mini-map-open-world').click();
-    await page.waitForURL(u => u.pathname === '/world' && u.searchParams.get('ref') === vref);
-    await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
-  }), RUNS_UI);
-});
+// READ-4 ("mini-map equals scripture scene; open-in-world carries the ref")
+// retired O1 (owner live-preview correction, 2026-08-23): the popover's own
+// "Explore geo-temporally" chip -- this test's entire subject -- is gone
+// ("it's not serving us right now"). Dead-code law took the whole mechanism
+// with it (ExplorationTarget.ShowMiniMap, MiniWorld.razor, the mini-map/
+// mini-map-open-world testids); nothing survives to test under this name.
+// This also retires the ONLY path a verse's own popover ever had to /world
+// carrying that specific vref -- VerseNode/PassageNode offer no OTHER
+// NavigateWorld chip (unlike EventNode/YearNode/ChapterNode/polity-delta,
+// which keep their own "Show on the map"/"Show this time on the map" chips
+// untouched, see ExplorerPopover.razor's own header comment) -- a disclosed
+// consequence of the owner's own instruction, not an oversight.
 
 // Batch C2 (requirement 0b/0c): `scene.places[0]` used to be a safe,
 // arbitrary pick regardless of which place it happened to be -- the OLD
@@ -73,10 +65,12 @@ test('READ-5: shift-click passage selection', async ({ page }) => {
     await expect(page.getByTestId('passage-chip')).toContainText(pref);
     await page.getByTestId('passage-chip').click();
     await expect(page.getByTestId('popover-title')).toHaveText(pref);
-    await page.getByTestId('popover-chip-map').click();
-    const scene = await api.sceneScripture(pref);
-    await expect(page.getByTestId('mini-map').locator('[data-testid^="marker-"]'))
-      .toHaveCount(scene.places.length);
+    // O1 (2026-08-23): this test used to continue into the passage
+    // popover's own map chip (Explore geo-temporally -> mini-map) here --
+    // retired along with the chip itself; see reader-map.spec.ts's own
+    // former READ-4 test, now a disclosure comment in its place above.
+    // READ-5's own subject (shift-click passage SELECTION, asserted above:
+    // the formed passage-chip and the popover it opens) is unaffected.
   }), RUNS_UI);
 });
 

@@ -675,8 +675,11 @@
         // copy) is what actually detects that and drops the now-stale
         // result -- same "compare a captured id against current state after
         // an await" shape World.razor's own GoToAdjacent/OpenPlaceFromCard
-        // and MiniWorld.razor's own _disposed dance already use elsewhere
-        // in this codebase for the identical class of race.
+        // already uses elsewhere in this codebase for the identical class
+        // of race (MiniWorld.razor's own _disposed dance used to be a
+        // second example of the same pattern; retired along with the rest
+        // of that component by O1, 2026-08-23 -- see ExplorerPopover.razor's
+        // own header comment).
         var placeId = Place.Id;
         CardMeasurementDto measurement;
         try

@@ -19,71 +19,109 @@
    (never below Default -- "never below the default," the brief's own
    words).
 
-   "DOUBLE-DOWN"/"DOUBLE-UP" -- DISCLOSED DEVIATION FROM THE LITERAL
-   WORDING, a real, live-caught, reproducible bug forced this: a genuine
-   native DOUBLE-CLICK gesture was tried first (both sub-clicks of a
-   dblclick target ONE fixed screen coordinate), but THIS popover platform
-   re-centers/repositions its OWN outer panel as its content's height
-   changes (every popover here is viewport- or pane-centered, R3's own
-   verse-anchored mode included) -- so the FIRST click's own Reveal()
-   growing the list by Step entries shifts the WHOLE panel, and with it
-   this arrow's own on-screen position, before the second sub-click of the
-   SAME gesture lands. Reordering these controls to lead the list (see
-   PassageList.razor's/CatechismList.razor's own matching comment)
-   stabilizes their position RELATIVE to the list, but not the panel's own
-   ABSOLUTE screen position, which still moves with it. Observed live,
-   repeatedly, not merely theorized: the second sub-click landing on a
-   newly-revealed passage entry or catechism item instead of the arrow,
-   PUSHING THAT NODE and navigating the whole popover away from what the
-   user was actually trying to expand -- a materially worse outcome than
-   the shortcut simply not firing. A SHIFT-CLICK realizes the identical
-   "jump to the far end" semantic with exactly ONE physical click/dispatch
-   -- structurally immune to this hazard, since there is no second,
-   separately-targeted screen coordinate to go stale. Every arrow's own
-   `title` attribute spells out the shortcut as a native hover tooltip,
-   the same disclosure a dblclick shortcut would have needed anyway (it is
-   otherwise as undiscoverable as this app's every other reveal control,
-   e.g. place-card-more/-collapse, always was); the plain, single-step
-   click remains the PRIMARY, fully keyboard-reachable path either way.
-   MouseEventArgs.ShiftKey (native to Blazor's own @onclick binding, no JS
-   interop needed) is read directly -- no second event handler, no
-   competing dispatch.
+   "DOUBLE-DOWN"/"DOUBLE-UP" -- M-D3 fix round 3 (R-D3, controller
+   interpretation ruling, review Important-2): an EARLIER draft of this
+   component read "double-down"/"double-up" as a native DOUBLE-CLICK
+   gesture on the SAME single arrow, realized instead as Shift+click after
+   a real, live-caught, reproducible bug: a genuine dblclick's two
+   sub-clicks target ONE fixed screen coordinate, but this popover
+   platform re-centers/repositions its OWN outer panel as content height
+   changes, so the first sub-click's own Reveal() growing the list shifted
+   the whole panel -- and this arrow's own on-screen position -- before the
+   second sub-click landed, observed landing on a newly-revealed row
+   instead and pushing THAT node. The controller's own re-reading of the
+   owner's verbatim words ("double down arrow should expand all") is that
+   "double [X] arrow" names a SECOND, always-paired ARROW BUTTON next to
+   the single one -- not a double-CLICK gesture on the single arrow at
+   all -- which sidesteps the whole hazard class by construction: TWO
+   separate, stationary buttons never share one screen coordinate the way
+   two sub-clicks of one dblclick do, so there is no repositioning race to
+   have. Shift+click (the prior fix-round's own mitigation) is RETIRED
+   here, not kept alongside these buttons -- one mechanism, not two
+   competing ones (dead-code law) -- `MouseEventArgs.ShiftKey` is no longer
+   read anywhere in this file. The double-arrow buttons render as a PAIR
+   with their own single-step sibling (same conditional presence: the
+   double-collapse pair appears exactly when Shown &gt; Default, the
+   double-more pair exactly when Shown &lt; Total) -- "always visible"
+   means "visible whenever there is somewhere further to jump to," not
+   unconditionally.
 
    CONDITIONAL PRESENCE: renders nothing at all when Total &lt;= Default
    (nothing to reveal, same "no arrow at all under the cap" rule XREF-1
-   always followed); the collapse arrow is independently conditional on
-   Shown &gt; Default, the more arrow on Shown &lt; Total -- BOTH can render
+   always followed); the collapse pair is independently conditional on
+   Shown &gt; Default, the more pair on Shown &lt; Total -- BOTH can render
    together in a genuine middle state (this component's own incremental
    model has one, unlike the retired all-or-nothing toggle, which never
-   showed both at once). *@
+   showed both at once).
+
+   O2 (owner live-preview correction, 2026-08-23, "we have redundant
+   buttons... Show the rest of this passage and Read the whole chapter...
+   replace with just a down/double down arrow"): MiniReaderExpand.razor's
+   OWN compact/whole-chapter toggle -- a genuinely BINARY state (Default=0/
+   Total=1/Step=1 below, never a count of list entries) -- reuses this SAME
+   component rather than growing a second implementation, but its two
+   labels ("Read the whole chapter"/"+N more -- read the chapter" one way,
+   "Show just this verse" the other) don't fit the generic "{N} more
+   {RevealNoun}" template below at all (that template is built for counting
+   LIST ENTRIES; a chapter isn't one). MoreLabel/CollapseLabel let a caller
+   supply its own verbatim aria-label/title text instead, for exactly this
+   "qualitatively different content, not just more of the same list" case
+   -- optional, additive, every existing caller (PassageList's own list-
+   level Cap reveal, CatechismSeamSection) leaves both null and keeps its
+   byte-for-byte existing generated copy. The single- and double-arrow
+   button on the SAME side share one override (both really do perform the
+   identical jump in MiniReaderExpand's own binary case -- honestly
+   identical text for an honestly identical action, not a bug).
+
+   All four buttons stop click propagation (added for O2): MiniReaderExpand's
+   own new usage nests inside PassageList.razor's clickable `.popover-
+   passage-entry` (`@onclick="() => Explore(entry.Block)"`) the SAME way its
+   own retired button always needed to guard against -- see that file's own
+   comment. A no-op for every OTHER existing caller (PassageList's own
+   list-level Cap reveal, CatechismSeamSection), neither of which nests
+   inside a clickable ancestor, so this is safe to apply unconditionally
+   here rather than growing a per-caller opt-in. *@
 @if (Total > Default)
 {
     <div class="popover-reveal-controls">
         @if (Shown > Default)
         {
+            <button type="button" class="popover-reveal-arrow popover-reveal-collapse-all" data-testid="@($"{CollapseTestId}-all")"
+                    aria-label="@(CollapseLabel ?? $"Collapse all {RevealNoun} to the default view")"
+                    title="@(CollapseLabel ?? $"Collapse to the default view ({Default} {RevealNoun})")"
+                    @onclick="OnCollapseAllClick" @onclick:stopPropagation="true">&#9652;&#9652;</button>
             <button type="button" class="popover-reveal-arrow popover-reveal-collapse" data-testid="@CollapseTestId"
-                    aria-label="@($"Show fewer {RevealNoun}")"
-                    title="@($"Show {Math.Min(Step, Shown - Default)} fewer {RevealNoun} -- Shift-click to collapse to the default view")"
-                    @onclick="OnCollapseClick">&#9652;</button>
+                    aria-label="@(CollapseLabel ?? $"Show fewer {RevealNoun}")"
+                    title="@(CollapseLabel ?? $"Show {Math.Min(Step, Shown - Default)} fewer {RevealNoun}")"
+                    @onclick="OnCollapseClick" @onclick:stopPropagation="true">&#9652;</button>
         }
         else
         {
-            @* A same-sized, empty placeholder -- NOT the button, kept
+            @* Same-sized, empty placeholders -- NOT the buttons, kept
                entirely out of the DOM when absent (`.toHaveCount(0)` stays
-               a true "does not exist" check for CollapseTestId, the same
-               conditional-presence guarantee every other reveal arrow in
-               this app already gives). Its ONLY job is to hold the collapse
-               arrow's own slot at a fixed width regardless of whether the
-               real button is present -- see the more-arrow's own slot,
-               .popover-reveal-slot, for why this matters. *@
+               a true "does not exist" check for CollapseTestId/its own
+               `-all` sibling, the same conditional-presence guarantee
+               every other reveal arrow in this app already gives). Their
+               ONLY job is to hold the collapse pair's own slot at a fixed
+               width regardless of whether the real buttons are present --
+               see the more pair's own slots, .popover-reveal-slot, for why
+               this matters (the SAME position-stability reasoning the
+               dblclick-rejection story above already established, now
+               protecting two stationary buttons instead of one moving
+               target -- a different failure mode, the identical fix). *@
+            <span class="popover-reveal-slot"></span>
             <span class="popover-reveal-slot"></span>
         }
         @if (Shown < Total)
         {
             <button type="button" class="popover-reveal-arrow popover-reveal-more" data-testid="@MoreTestId"
-                    aria-label="@($"Show {Math.Min(Step, Total - Shown)} more {RevealNoun}")"
-                    title="@($"Show {Math.Min(Step, Total - Shown)} more {RevealNoun} -- Shift-click to show all {Total}")"
-                    @onclick="OnMoreClick">&#9662;</button>
+                    aria-label="@(MoreLabel ?? $"Show {Math.Min(Step, Total - Shown)} more {RevealNoun}")"
+                    title="@(MoreLabel ?? $"Show {Math.Min(Step, Total - Shown)} more {RevealNoun}")"
+                    @onclick="OnMoreClick" @onclick:stopPropagation="true">&#9662;</button>
+            <button type="button" class="popover-reveal-arrow popover-reveal-more-all" data-testid="@($"{MoreTestId}-all")"
+                    aria-label="@(MoreLabel ?? $"Show all {Total} {RevealNoun}")"
+                    title="@(MoreLabel ?? $"Show all {Total} {RevealNoun}")"
+                    @onclick="OnMoreAllClick" @onclick:stopPropagation="true">&#9662;&#9662;</button>
         }
     </div>
 }
@@ -115,9 +153,19 @@
     [Parameter] public string CollapseTestId { get; set; } = "reveal-collapse";
     [Parameter] public string RevealNoun { get; set; } = "entries";
 
-    private Task OnMoreClick(MouseEventArgs e) =>
-        ShownChanged.InvokeAsync(e.ShiftKey ? Total : Math.Min(Shown + Step, Total));
+    // O2: verbatim aria-label/title override for the more/more-all (resp.
+    // collapse/collapse-all) pair, for a caller whose reveal isn't "N more
+    // list entries" -- see this file's own header comment. Null (every
+    // pre-existing caller) keeps the generated "{N} more {RevealNoun}" copy
+    // exactly as before.
+    [Parameter] public string? MoreLabel { get; set; }
+    [Parameter] public string? CollapseLabel { get; set; }
 
-    private Task OnCollapseClick(MouseEventArgs e) =>
-        ShownChanged.InvokeAsync(e.ShiftKey ? Default : Math.Max(Shown - Step, Default));
+    private Task OnMoreClick() => ShownChanged.InvokeAsync(Math.Min(Shown + Step, Total));
+
+    private Task OnCollapseClick() => ShownChanged.InvokeAsync(Math.Max(Shown - Step, Default));
+
+    private Task OnMoreAllClick() => ShownChanged.InvokeAsync(Total);
+
+    private Task OnCollapseAllClick() => ShownChanged.InvokeAsync(Default);
 }

@@ -8,6 +8,34 @@
    instance. VerseTextSection.razor itself now wraps THIS component (see
    its own comment) -- one mechanism, every caller.
 
+   O2 (owner live-preview correction, 2026-08-23: "we have redundant
+   buttons... Show the rest of this passage and Read the whole chapter...
+   get rid of the read the whole chapter and replace with just a down/
+   double down arrow that manages expansion/collapsing"): the expand
+   trigger below used to be a single `popover-verse-expand` TEXT button
+   (one element, three labels depending on state -- "Read the whole
+   chapter"/"+N more -- read the chapter"/"Show just this verse"),
+   toggling `_expanded` itself. That button, and PassageList.razor's own
+   SEPARATE per-entry `popover-passage-clamp-expand/-collapse` toggle that
+   used to sit alongside it on the SAME entry (the "redundant pair" the
+   owner named), are BOTH retired -- replaced by ONE RevealControls
+   instance below, the SAME shared reveal component U2/R-D3 already
+   established for xrefs/catechism, reused here (not reimplemented) for a
+   genuinely BINARY case: Default=0/Total=1/Step=1, so "Shown" is just
+   `_expanded` as 0-or-1. This is the one place the underlying "how many
+   verses of the passage's own CLAMPED text are showing" nuance
+   PassageList's old per-entry clamp toggle offered is honestly lost --
+   revealing ANY more now always means the full lazy-fetched chapter, never
+   a partial reveal of just the clamped entry's own remaining verses -- a
+   disclosed simplification in service of "ONE expansion idiom," not an
+   oversight (PassageList.razor's own STATIC clamp -- how many verses show
+   BEFORE either arrow is ever touched -- is unaffected; see that file's
+   own comment). RevealNoun/MoreLabel/CollapseLabel below supply this
+   binary case's own verbatim copy -- see RevealControls.razor's own O2
+   paragraph for why the generic "{N} more {RevealNoun}" template doesn't
+   fit a chapter. TestIdSuffix, PassageList.razor's own multi-instance
+   discipline (see below), extends naturally to the new CollapseTestId too.
+
    TestIdSuffix lets multiple instances coexist in one popover without
    colliding testids: "" (VerseTextSection's own usage) reproduces the
    EXACT original bare testids (popover-verse-expand/-reader/-reader-verse-{n})
@@ -82,19 +110,19 @@ else
    disabled stub: when the reader is ACTIVELY showing this exact
    Book/Chapter right now (ViewStateService.MountedReaderChapter's own doc
    comment has the full "why not the persistent ViewState.Reader" story),
-   the whole button is absent, never merely inert -- reading the SAME
-   content the button would open is already on screen, so there is nothing
-   left for it to honestly offer (the compact preview above still renders
-   exactly as before; only this one affordance disappears). _expanded can
-   never become true in this state, by construction -- this button is the
-   only thing that ever sets it. *@
+   the whole control is absent, never merely inert -- reading the SAME
+   content it would open is already on screen, so there is nothing left for
+   it to honestly offer (the compact preview above still renders exactly as
+   before; only this one affordance disappears). _expanded can never become
+   true in this state, by construction -- this control is the only thing
+   that ever sets it. *@
 @if (!AlreadyInCurrentReaderChapter)
 {
-    <button type="button" class="popover-verse-expand" data-testid="@($"popover-verse-expand{TestIdSuffix}")"
-            aria-expanded="@(_expanded ? "true" : "false")" data-truncated="@(!_expanded && TruncatedBy > 0 ? "true" : "false")"
-            @onclick="ToggleExpand" @onclick:stopPropagation="true">
-        @(_expanded ? "Show just this verse" : TruncatedBy > 0 ? $"+{TruncatedBy} more — read the chapter" : "Read the whole chapter")
-    </button>
+    <RevealControls Total="1" Default="0" Step="1" Shown="@(_expanded ? 1 : 0)" ShownChanged="OnShownChanged"
+                     MoreTestId="@($"popover-verse-expand{TestIdSuffix}")" CollapseTestId="@($"popover-verse-collapse{TestIdSuffix}")"
+                     RevealNoun="verses"
+                     MoreLabel="@(TruncatedBy > 0 ? $"+{TruncatedBy} more — read the chapter" : "Read the whole chapter")"
+                     CollapseLabel="Show just this verse" />
 }
 
 @code {
@@ -128,13 +156,14 @@ else
 
     // Batch HOTFIX-4 requirement 7 (honest truncation signal, W2 review
     // Important-1: "VerseGroup.Count ships on the wire but the client
-    // never reads it"): when >0, the COLLAPSED button's own label becomes
-    // "+{N} more — read the chapter" instead of the plain "Read the whole
-    // chapter" -- SAME control, SAME testid, SAME click handler (opens
-    // the identical full-chapter reader below; "wired to the existing
-    // MiniReaderExpand," no parallel affordance). The EXPANDED-state label
-    // ("Show just this verse") is unaffected -- once the reader is open,
-    // the true content is already visible, nothing left to signal.
+    // never reads it"): when >0, the COLLAPSED control's own MoreLabel
+    // becomes "+{N} more — read the chapter" instead of the plain "Read
+    // the whole chapter" -- SAME control, SAME testid, SAME click handler
+    // (opens the identical full-chapter reader below; "wired to the
+    // existing MiniReaderExpand," no parallel affordance). The
+    // EXPANDED-state label ("Show just this verse") is unaffected -- once
+    // the reader is open, the true content is already visible, nothing
+    // left to signal.
     [Parameter] public int TruncatedBy { get; set; }
 
     private bool _expanded;
@@ -153,9 +182,16 @@ else
     // requested once the user actually asks to read it, via AtlasClient's
     // own Chapter LRU cache (so re-expanding after a collapse, or a later
     // expand of a DIFFERENT block in the same chapter, is free).
-    private async Task ToggleExpand()
+    //
+    // O2: RevealControls' own ShownChanged always proposes a fully-
+    // determined target (0 or 1 here, this component's own binary case --
+    // see this file's own header comment), never a relative toggle, so this
+    // is `shown == 1` directly rather than the old `!_expanded` inversion --
+    // otherwise byte-for-byte the same fetch-on-expand body the retired
+    // ToggleExpand() always had.
+    private async Task OnShownChanged(int shown)
     {
-        _expanded = !_expanded;
+        _expanded = shown == 1;
         if (_expanded && _chapter is null)
         {
             _error = null;

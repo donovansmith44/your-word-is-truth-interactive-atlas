@@ -21,12 +21,23 @@
    per provider ("no popover surgery" for Batch F/P, whichever content they
    add).
 
-   One node-specific behavior stays special-cased here (unrelated to the
-   registry): any ShowMiniMap-targeted chip reveals a mini-map area IN PLACE
-   (no stack push) -- CONTRACT's mini-map testid lives inside the still-open
-   popover beside its own chips/breadcrumb, not as a separate node. Renders a
-   real <MiniWorld> (Task 15); MiniWorld's own root carries the mini-map
-   testid, so this file adds no extra wrapping element around it. (The old
+   O1 (owner live-preview correction, 2026-08-23: "explore geotemporally
+   ... it's not serving us right now") RETIRED a node-specific behavior that
+   used to be special-cased here (unrelated to the registry): VerseNode/
+   PassageNode's own "Explore geo-temporally" chip used to reveal a mini-map
+   area IN PLACE (no stack push) via any ShowMiniMap-targeted chip --
+   CONTRACT's mini-map testid used to live inside the still-open popover
+   beside its own chips/breadcrumb, not as a separate node, rendering a real
+   <MiniWorld> (Task 15). Dead-code law took the whole mechanism with the
+   chip: ExplorationTarget.ShowMiniMap (the chip's only producers were
+   VerseNode/PassageNode), this file's own ShowMiniMap case/_miniMapSref
+   field/<MiniWorld> render block, MiniWorld.razor itself (its only
+   consumer), and its dedicated .popover-mini-map/.mini-world-map/
+   .mini-world-open-world CSS -- all gone, not kept behind a flag. (Genuinely
+   distinct: EventNode's OWN "Show on the map" chip also carries the shared
+   popover-chip-map testid but targets NavigateWorld, not ShowMiniMap -- it
+   leaves the popover for /world entirely and is UNCHANGED by O1; see
+   ExplorationTarget.cs's own doc comment on the shared testid.) (The old
    popover-chip-xrefs toggle -- VerseNode/PassageNode's own retired chip --
    and its ToggleXrefs/_xrefs machinery are GONE: cross-references render
    inline now, via the registry's own CrossRefsSection, "no extra button
@@ -44,7 +55,7 @@
    Batch F2 requirement 6d ("the hover windows ought not be smack dab in
    the center of the screen, but on the side of the screen where the hover
    exploration originated"): PaneAnchor (set by Reader.razor/World.razor
-   from their own split state -- "reader"/"atlas"/null) anchors the popover
+   from their own split state -- "reader"/"atlas"/null) anchors the PANEL
    to the ORIGINATING PANE's currently-visible region instead of the full
    viewport, while a split is open. Measured ONCE, on this instance's first
    render (mirrors PlaceCard/CardPlacement's own proven "snapshot at open,
@@ -55,7 +66,34 @@
    function's own comment). Full-page (non-split) behavior is byte-for-byte
    unchanged: PaneAnchor is null there, so .popover-pane-anchored is never
    applied and every rule falls back to its pre-existing, viewport-centered
-   base. *@
+   base.
+
+   O6 (owner live-preview correction, 2026-08-23, verbatim: "when you focus
+   on something the background behind the hover menu gets greyed, which is
+   okay, but it should be over the whole reader, rather than some weird box
+   that follows your scroll and inconsistently moves around"): the
+   BACKDROP used to pane-anchor too (see this file's own now-superseded
+   comment, immediately above its own markup below) -- exactly the ONE-SHOT
+   "measured at open, never re-measured on scroll" snapshot this paragraph
+   already documents, applied to a box meant to dim EVERYTHING behind an
+   open popover. That measurement going stale the instant the user
+   scrolled the reader pane's own content afterward (nothing prevents
+   scrolling while a popover is open) is the real, live-caught bug behind
+   the owner's own report: the backdrop stayed frozen at wherever the pane
+   happened to be on screen at open time -- a fixed rectangle the page then
+   scrolled past/around, landing in a different, seemingly arbitrary spot
+   on every fresh open depending on scroll position at that moment ("some
+   weird box... inconsistently moves around"). FIX: the backdrop no longer
+   reads PaneRect/PaneRectStyle at all -- always the plain, unconditional
+   full-viewport `.popover-backdrop` rule (`position:fixed; inset:0`),
+   split view or not, so there is no measurement left to go stale. Disclosed
+   trade-off: split view's own "explore on both sides independently, the
+   OTHER pane stays undimmed and clickable" (the SAME requirement 6d)
+   is retired along with it -- both panes now dim together, matching every
+   other popover in this app, one rule, no split-specific exception. The
+   PANEL itself (pane-anchored POSITION, immediately below) is completely
+   unaffected -- a popover opened from a pane still appears beside that
+   pane, only the backdrop's own coverage changed. *@
 @using System.Globalization
 @inject AtlasClient Atlas
 @inject IExplorableClient GraphClient
@@ -81,28 +119,36 @@
    explorable element in this app. Also a happy side effect, not just a
    workaround: a mere hover no longer dims the whole screen at all -- "no
    auto-modal," even more literally than dismiss-timing alone would give. *@
+@* O6 (owner live-preview correction, 2026-08-23): plain, unconditional
+   full-viewport backdrop now -- no PaneRect/PaneRectStyle, no
+   .popover-pane-anchored class, ever. See this file's own header comment
+   for the full story (the retired pane-scoped variant's own ONE-SHOT
+   measurement going stale on scroll is the real bug the owner reported);
+   the base `.popover-backdrop` rule in app.css (`position:fixed; inset:0`)
+   is now the ONLY rule that ever applies to this element. *@
 @if (ShowBackdrop)
 {
-    <div class="popover-backdrop @(_paneRect is not null ? "popover-pane-anchored" : null)"
-         style="@PaneRectStyle" data-testid="popover-backdrop" @onclick="RequestClose"></div>
+    <div class="popover-backdrop" data-testid="popover-backdrop" @onclick="RequestClose"></div>
 }
 
-@* M-D3 (R3): verse- and pane-anchoring compose on the BACKDROP (both
-   classes may apply there -- a superscript hover-opened WHILE a split is
-   showing still gets a pane-scoped dimmed backdrop, see the backdrop's own
-   markup above) but are MUTUALLY EXCLUSIVE on the PANEL itself -- a real,
-   live-caught bug in an earlier draft: `.popover-pane-anchored`'s own
-   `width`/`max-height` rule and `.popover-verse-anchored`'s own `top`/
-   `left`/`max-height` rule, both at equal specificity, would otherwise
-   BOTH apply to the same element (CSS applies every declaration from every
-   matching rule; only same-PROPERTY collisions are decided by source
-   order) -- `left`/`top` correctly came from verse-anchoring (declared
-   later in app.css), but `width` has no verse-anchoring declaration to
-   override it, so the panel silently rendered at the PANE's own width
-   while positioned by VerseAnchorStyle's math (which assumes the base
-   rule's ordinary width) -- confirmed live: a verse near a narrow split
-   pane's own edge rendered with its LEFT edge off-screen. Verse-anchoring
-   wins outright when present (VerseAnchorStyle is checked first below). *@
+@* M-D3 (R3), O6 UPDATE (2026-08-23): pane-anchoring no longer reaches the
+   BACKDROP at all (see that element's own comment immediately above) --
+   verse- and pane-anchoring now only ever compose on the PANEL, which is
+   the ONLY reason they were ever said to be "mutually exclusive" in the
+   first place; that finding, and the fix below, are both unaffected by O6
+   and still fully apply here. A real, live-caught bug in an earlier draft:
+   `.popover-pane-anchored`'s own `width`/`max-height` rule and
+   `.popover-verse-anchored`'s own `top`/`left`/`max-height` rule, both at
+   equal specificity, would otherwise BOTH apply to the same element (CSS
+   applies every declaration from every matching rule; only same-PROPERTY
+   collisions are decided by source order) -- `left`/`top` correctly came
+   from verse-anchoring (declared later in app.css), but `width` has no
+   verse-anchoring declaration to override it, so the panel silently
+   rendered at the PANE's own width while positioned by VerseAnchorStyle's
+   math (which assumes the base rule's ordinary width) -- confirmed live: a
+   verse near a narrow split pane's own edge rendered with its LEFT edge
+   off-screen. Verse-anchoring wins outright when present (VerseAnchorStyle
+   is checked first below). *@
 <div class="popover @(_verseAnchorRect is not null ? "popover-verse-anchored" : _paneRect is not null ? "popover-pane-anchored" : null)"
      style="@(VerseAnchorStyle ?? PaneRectStyle)" data-testid="popover" tabindex="-1" @ref="_panelRef" @onkeydown="OnKeyDown"
      @onpointerenter="OnPanelPointerEnter" @onpointerleave="OnPanelPointerLeave">
@@ -144,15 +190,19 @@
        particular) -- is torn down and rebuilt fresh on every navigation,
        never silently reused across two different nodes that happen to
        render a same-shaped section in the same registry slot. A "body:"
-       prefix (NOT the bare Title) -- fix, a real bug caught live: a
-       VerseNode's own Title and its ShowMiniMap chip's own SRef are
-       routinely the EXACT SAME string (e.g. both "GEN.1.1"), and
-       <MiniWorld @key="miniMapSref"> below is this element's own SIBLING,
-       not a descendant -- Blazor's own key-uniqueness check is scoped to
-       the sibling group being diffed regardless of element/component type,
-       so two unrelated siblings sharing the bare "GEN.1.1" key crashed the
+       prefix (NOT the bare Title) -- fix, a real bug caught live, now
+       HISTORICAL (O1, 2026-08-23, retired the mini-map entirely -- see this
+       file's own header comment): a VerseNode's own Title and its
+       since-removed ShowMiniMap chip's own SRef were routinely the EXACT
+       SAME string (e.g. both "GEN.1.1"), and the since-removed <MiniWorld>
+       element used to render as THIS element's own SIBLING, not a
+       descendant -- Blazor's own key-uniqueness check is scoped to the
+       sibling group being diffed regardless of element/component type, so
+       two unrelated siblings sharing the bare "GEN.1.1" key crashed the
        renderer outright ("More than one sibling... has the same key
-       value") the instant a mini-map was opened. *@
+       value") the instant a mini-map was opened. Left prefixed rather than
+       reverted to the bare Title -- correct either way now that the sibling
+       is gone, and reverting would be pure churn for no behavior change. *@
     <div class="popover-body" data-testid="popover-body" @key="@($"body:{Current.Title}")">
         @if (_usingSectionRegistry)
         {
@@ -168,11 +218,6 @@
             @_body
         }
     </div>
-
-    @if (_miniMapSref is { } miniMapSref)
-    {
-        <MiniWorld @key="miniMapSref" SRef="@miniMapSref" />
-    }
 </div>
 
 @code {
@@ -243,7 +288,6 @@
     // false and _body is exactly this file's own pre-Batch-R rendering.
     private bool _usingSectionRegistry;
     private IReadOnlyList<PopoverSection> _sections = Array.Empty<PopoverSection>();
-    private string? _miniMapSref;
     private ElementReference _panelRef;
     private bool _focused;
 
@@ -446,7 +490,6 @@
     // path is taken, same concurrency reasoning.
     private async Task LoadCurrent()
     {
-        _miniMapSref = null;
         // Fix, a real bug caught live (diagnostic script against the actual
         // running app, not static review): Blazor's own event-dispatch
         // machinery renders once at THIS method's first genuine await (the
@@ -488,9 +531,9 @@
                 // result every other open produces, never a second
                 // registry/ordering rule). One small, disclosed special
                 // case living directly in this file, matching its own
-                // established precedent immediately below (map-focus sync,
-                // ShowMiniMap) for a cross-cutting concern the per-node
-                // registry itself has no business modeling.
+                // established precedent immediately below (map-focus sync)
+                // for a cross-cutting concern the per-node registry itself
+                // has no business modeling.
                 _sections = XrefEntryPoint ? resolved.OrderByDescending(s => s.Testid == "xrefs").ToList() : resolved;
                 _explorations = explorationsTask.Result;
             }
@@ -521,10 +564,11 @@
     }
 
     // Batch N requirement 3 ("map focus sync -- the same graph, seen
-    // twice"): a SECOND small, node-specific special case in this file,
-    // alongside the pre-existing ShowMiniMap one this file's own header
-    // comment already documents -- map-focus is a cross-cutting concern
-    // (it targets the MAP, not this popover's own body), not a section, so
+    // twice"): a small, node-specific special case in this file (O1,
+    // 2026-08-23, retired the ONLY other one that used to sit alongside it
+    // here -- ShowMiniMap; see this file's own header comment) -- map-focus
+    // is a cross-cutting concern (it targets the MAP, not this popover's
+    // own body), not a section, so
     // it does not belong in the registry the way PRIOR/FOLLOWING's own
     // CONTENT does (see Explore/PopoverSectionProviders.cs). Runs at the
     // end of EVERY LoadCurrent (the initial open, every push, every pop,
@@ -589,7 +633,6 @@
     // subtlety a second time.
     public async Task PushAsync(IExplorable node)
     {
-        _miniMapSref = null;
         _stack.Push(node);
         await LoadCurrent();
         StateHasChanged();
@@ -621,13 +664,8 @@
         switch (ex.Target)
         {
             case ExplorationTarget.Push push:
-                _miniMapSref = null;
                 _stack.Push(push.Next);
                 await LoadCurrent();
-                break;
-
-            case ExplorationTarget.ShowMiniMap map:
-                _miniMapSref = _miniMapSref == map.SRef ? null : map.SRef;
                 break;
 
             case ExplorationTarget.NavigateWorld world:
@@ -717,9 +755,12 @@
     // M-D3 (U3'): the icon-scale glyph for a head action, keyed by its own
     // CONTRACT testid -- exactly the THREE distinct ids every IExplorable's
     // own ExploreAsync actually emits today (grep-confirmed across every
-    // Explore/*.cs node type): popover-chip-map ("Show on /world"/"Explore
-    // geo-temporally"), popover-chip-book ("About this book"),
-    // popover-chip-context ("Read in context"). Chosen from this file's own
+    // Explore/*.cs node type): popover-chip-map (EventNode's own "Show on
+    // the map" -- O1, 2026-08-23, retired VerseNode/PassageNode's own
+    // "Explore geo-temporally", the OTHER chip that used to share this same
+    // testid; see this file's own header comment), popover-chip-book
+    // ("About this book"), popover-chip-context ("Read in context"). Chosen
+    // from this file's own
     // established "quiet Unicode instrument glyph, never an emoji" register
     // (breadcrumb-back's ‹, close's ×, PassageList's ▾/▲) -- a small dot-
     // in-crosshairs for a map/location action, a fleuron for "about the

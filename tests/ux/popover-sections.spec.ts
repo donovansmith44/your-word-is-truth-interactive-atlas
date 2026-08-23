@@ -176,14 +176,24 @@ test('READER-1: expanding a verse popover fetches the whole chapter and highligh
   await expect(page.getByTestId('popover-title')).toHaveText('2CO.4.6');
 
   // Compact view first -- no mini-reader yet (requirement 4: "fetch on
-  // expand, not before").
+  // expand, not before"). O2 (owner live-preview correction, 2026-08-23)
+  // retired the old single-button's own `aria-expanded` toggle along with
+  // the button itself -- MiniReaderExpand's own trigger is now a
+  // RevealControls-driven arrow pair (down expands, up collapses; see that
+  // component's own O2 comment), which communicates state via its own
+  // changing label ("Read the whole chapter" vs "Show just this verse",
+  // MoreLabel/CollapseLabel) rather than an aria-expanded flag -- verified
+  // here the same way every OTHER expand/collapse test in this file already
+  // is, by `popover-verse-reader`'s own presence/absence directly, never a
+  // separate ARIA proxy for it.
   await expect(page.getByTestId('popover-verse-reader')).toHaveCount(0);
   const expandBtn = page.getByTestId('popover-verse-expand');
-  await expect(expandBtn).toHaveAttribute('aria-expanded', 'false');
+  const collapseBtn = page.getByTestId('popover-verse-collapse');
+  await expect(collapseBtn).toHaveCount(0);
 
   await expandBtn.click();
   await expect(page.getByTestId('popover-verse-reader')).toBeVisible();
-  await expect(expandBtn).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByTestId('popover-verse-expand')).toHaveCount(0);
 
   const chapter = await api.chapter('2CO.4');
   await expect(page.getByTestId(/^popover-reader-verse-/)).toHaveCount(chapter.verses.length);
@@ -194,9 +204,9 @@ test('READER-1: expanding a verse popover fetches the whole chapter and highligh
   await expect(page.getByTestId('popover-reader-verse-1')).toHaveAttribute('data-focal', 'false');
 
   // Collapse restores the exact compact view.
-  await expandBtn.click();
+  await collapseBtn.click();
   await expect(page.getByTestId('popover-verse-reader')).toHaveCount(0);
-  await expect(expandBtn).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByTestId('popover-verse-collapse')).toHaveCount(0);
 });
 
 // A passage's own focal range highlights EVERY member verse, not just the
@@ -336,6 +346,148 @@ test('REGISTRY-1/XREF-1: a PLACE popover\'s established/destroyed verses render 
 });
 
 // ---------------------------------------------------------------------
+// CHAPTER-CARD-1 (M-D3 fix round, R-D2/review I1): ChapterCardSection --
+// U4/B3's own metadata-and-context card, owner verbatim (progress.md):
+// "when you're reading a chapter, you're in its focus. you can focus
+// further by clicking chapter heading and you get metadata and context...
+// container title, position in book, edge summary -- what the graph knows
+// ABOUT the chapter" -- NEVER the chapter's own verse text (B3, the
+// standing "first verse" bug). This section had zero direct Playwright
+// content assertions before this fix round -- every `chapter-card-*`
+// testid lived only in CONTRACT.md prose. JOS.6 is this file's own real,
+// curated exemplar: exactly one heading container ("The walls of Jericho
+// fall", cq_jericho) and exactly one attested place (Jericho) for the
+// whole chapter -- small enough to assert precisely, real enough to prove
+// the card's own data plumbing, not a tautology.
+// ---------------------------------------------------------------------
+
+test('CHAPTER-CARD-1: hovering chapter-head opens the metadata-and-context card -- real position/verse-count/headings/places, never the chapter\'s own first verse or its text', async ({ page }) => {
+  const toc = await loadToc();
+  const jos = toc.find((b: any) => b.code === 'JOS');
+  const totalChapters = jos.chapters.length;
+  const chapterOut = await api.chapter('JOS.6');
+  const verse1Text = chapterOut.verses.find((v: any) => v.verse === 1).text;
+
+  await page.goto('/read/JOS/6');
+  await page.getByTestId('chapter-head').hover();
+  await expect(page.getByTestId('popover')).toBeVisible();
+  await expect(page.getByTestId('popover-title')).toHaveText('JOS.6');
+
+  // Real content, read straight off the wire -- not just "a popover opened."
+  await expect(page.getByTestId('chapter-card-position')).toHaveText(`Chapter 6 of ${totalChapters}`);
+  await expect(page.getByTestId('chapter-card-verse-count')).toHaveText(`${chapterOut.verses.length} verses.`);
+  await expect(page.getByTestId('chapter-card-headings-heading')).toHaveText('CONTAINERS IN THIS CHAPTER');
+  await expect(page.getByTestId('chapter-card-heading-cq_jericho')).toHaveText('The walls of Jericho fall');
+  await expect(page.getByTestId('chapter-card-places-heading')).toHaveText('PLACES MENTIONED');
+  await expect(page.getByTestId('chapter-card-place-jericho-1')).toHaveText('Jericho');
+
+  // B3's own standing bug, concretely disproven: the chapter's own first
+  // verse (or any verse text at all) never appears -- neither as a
+  // dedicated reader testid nor as literal text anywhere in the popover.
+  await expect(page.getByTestId(/^popover-reader-verse-/)).toHaveCount(0);
+  await expect(page.getByTestId('popover-verse-text')).toHaveCount(0);
+  const popoverText = (await page.getByTestId('popover').textContent()) ?? '';
+  expect(popoverText).not.toContain(verse1Text);
+
+  // Both entry points are conditionally explorable -- proves this card is
+  // real outward-connection content, not a dead-end summary.
+  await page.getByTestId('chapter-card-heading-cq_jericho').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('The walls of Jericho fall');
+});
+
+test('CHAPTER-CARD-1: clicking chapter-head opens the identical card (hover and click are the same open, XSCRIPT-1\'s own entry-point rule applied here too)', async ({ page }) => {
+  await page.goto('/read/JOS/6');
+  await page.getByTestId('chapter-head').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('JOS.6');
+  await expect(page.getByTestId('chapter-card-position')).toBeVisible();
+  await expect(page.getByTestId('chapter-card-heading-cq_jericho')).toHaveText('The walls of Jericho fall');
+  await expect(page.getByTestId('chapter-card-place-jericho-1')).toHaveText('Jericho');
+  await expect(page.getByTestId(/^popover-reader-verse-/)).toHaveCount(0);
+
+  // A genuine click persists (does not auto-dismiss the way a hover-only
+  // open would) -- confirms OpenChapter(persistent: true) actually ran,
+  // not merely that SOME popover happened to be on screen at click time.
+  await page.mouse.move(2, 2);
+  await page.waitForTimeout(1200);
+  await expect(page.getByTestId('popover')).toBeVisible();
+});
+
+// The fix round's own live-caught bug, now covered directly: PSA.119's real
+// 22 acrostic-stanza heading containers (confirmed against the compiled
+// data) made this card tall enough to self-overlap chapter-head before the
+// cap existed. No places are attested anywhere in PSA.119 (real, confirmed
+// data) -- this test exercises the headings cap specifically, the one the
+// live bug actually turned on; the places cap shares the identical
+// ListCap/ChapterCardSection code path, not independently re-proven here.
+test('CHAPTER-CARD-1: the 8-row containers cap renders an honest "+N more" line on a many-container chapter (PSA.119, 22 real acrostic sections)', async ({ page }) => {
+  const chapterOut = await api.chapter('PSA.119');
+  const distinctHeadings = new Set(chapterOut.verses.filter((v: any) => v.heading).map((v: any) => v.heading.event_id));
+  const cap = 8;
+  expect(distinctHeadings.size, 'PSA.119 must still real-carry MORE than the cap for this assertion to exercise it').toBeGreaterThan(cap);
+
+  await page.goto('/read/PSA/119');
+  await page.getByTestId('chapter-head').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('PSA.119');
+
+  await expect(page.locator('[data-testid^="chapter-card-heading-"]')).toHaveCount(cap);
+  const moreLine = page.getByTestId('chapter-card-headings-more');
+  await expect(moreLine).toBeVisible();
+  await expect(moreLine).toHaveText(`+ ${distinctHeadings.size - cap} more containers in this chapter.`);
+
+  // The exact bug this cap fixes: chapter-head itself must still be
+  // reachable and clickable with the card open -- proving the card no
+  // longer covers its own trigger the way the uncapped version did.
+  await expect(page.getByTestId('chapter-head')).toBeVisible();
+});
+
+// ---------------------------------------------------------------------
+// PARALLELS-1 (O5, owner live-preview correction, 2026-08-23, verbatim:
+// "parallels has double headers. for instance we have 1Ki.3.1-15 and 1
+// kings right below it when focused on 2ch.1.2. Get rid of the second
+// header"): VerseParallelsSection's own "PARALLELS" entries show ONE
+// header (the ref-label span) per entry, never a second book-name caption
+// beneath it -- see PopoverSectionProviders.cs's own O5 comment
+// (WitnessUnitsResolver.ResolveAsync's own book-name Caption is stripped
+// to null here, unlike EventWitnessesSection's own "PARALLEL ACCOUNTS,"
+// which keeps it -- see event-timeline.spec.ts/popover-sections.spec.ts's
+// own EVENT-1 tests for that section, untouched by this ruling). No prior
+// test in this suite covered VerseParallelsSection's own rendering at all
+// -- this is that coverage's first test, not just a regression guard for
+// O5's own fix.
+// ---------------------------------------------------------------------
+
+test('PARALLELS-1: a verse\'s own PARALLELS entry shows the ref-label ONLY, never a second book-name header beneath it (O5)', async ({ page }) => {
+  // Real, live-verified data (curl-confirmed against GET /api/verse/2CH.1.2
+  // and GET /api/event/1ki_solomon_gibeon): 2CH.1.2 belongs to exactly one
+  // titled event, "1ki_solomon_gibeon" (Solomon's dream at Gibeon; the gift
+  // of wisdom), whose ONLY other witness is 1KI.3.1-15 (15 verses) -- the
+  // owner's own named example, verbatim, reproduced exactly.
+  await page.goto('/read/2CH/1');
+  await page.getByTestId('verse-line-2').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('2CH.1.2');
+
+  // Single QUALIFYING event (2CH.1.2 cites exactly one titled event) -- the
+  // plain "PARALLELS" heading, not the "PARALLELS — {label}" multi-event
+  // variant (VerseParallelsSection's own "single entry needs no name" rule).
+  const section = page.getByTestId('popover-section-parallels');
+  await expect(section).toBeVisible();
+  await expect(section.getByTestId('event-section-heading')).toHaveText('PARALLELS');
+
+  const entry = section.locator('[data-testid^="verse-parallel-"]');
+  await expect(entry).toHaveCount(1);
+  await expect(entry.locator('.popover-passage-ref-label')).toHaveText('1KI.3.1-15');
+
+  // O5's own fix: no second header (the book-name caption, "1 Kings")
+  // beneath the ref-label -- one header per parallel entry.
+  await expect(entry.locator('.popover-passage-caption')).toHaveCount(0);
+
+  // The entry is still explorable (O5 only removed the caption, nothing
+  // else) -- pushes the real witness passage, same as any other PassageList entry.
+  await entry.click();
+  await expect(page.getByTestId('popover-title')).toHaveText('1KI.3.1-15');
+});
+
+// ---------------------------------------------------------------------
 // BLINK-1: hovering a place mention inside the mini-reader blinks the
 // SAME place's own live marker.
 // ---------------------------------------------------------------------
@@ -390,7 +542,10 @@ test('BLINK-1: hovering a place mention in the mini-reader blinks its map marker
   await expect(page.getByTestId('popover-verse-expand')).toHaveCount(0); // chapter-aware suppression, verified above
   const more = page.getByTestId('xrefs-more');
   await expect(more).toBeVisible();
-  await more.click({ modifiers: ['Shift'] }); // reveal all -- GEN.28.19 is not among the initial cap
+  // M-D3 fix round 3 (R-D3): "reveal all" is now a separate, always-paired
+  // double-arrow button, not a Shift-click on the single arrow -- see
+  // RevealControls.razor's own doc comment for the full story.
+  await page.getByTestId('xrefs-more-all').click(); // reveal all -- GEN.28.19 is not among the initial cap
   const xrefItem = page.getByTestId('xref-item-GEN.28.19');
   await expect(xrefItem).toBeVisible();
   await xrefItem.click();
@@ -503,7 +658,7 @@ test('MENTION-4: clicking a place mention INSIDE the mini-reader pushes a new po
   await page.getByTestId('verse-line-8').click();
   const more = page.getByTestId('xrefs-more');
   await expect(more).toBeVisible();
-  await more.click({ modifiers: ['Shift'] });
+  await page.getByTestId('xrefs-more-all').click();
   await page.getByTestId('xref-item-GEN.28.19').click();
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.28.19');
 
@@ -540,7 +695,7 @@ test('CATECH-1: the Baptism institution verse keeps its item-level citation, now
   // not the reveal mechanic itself).
   const catechismMoreBaptism = page.getByTestId('catechism-more');
   if (await catechismMoreBaptism.count() > 0) {
-    await catechismMoreBaptism.click({ modifiers: ['Shift'] });
+    await page.getByTestId('catechism-more-all').click();
   }
 
   // Luther's OWN item-level embedded citation (Batch F, unchanged) -- the
@@ -601,7 +756,7 @@ test('CATECH-1: verse -> catechism item -> proof verse hop, with Luther\'s own v
   await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
   const catechismMore = page.getByTestId('catechism-more');
   if (await catechismMore.count() > 0) {
-    await catechismMore.click({ modifiers: ['Shift'] });
+    await page.getByTestId('catechism-more-all').click();
   }
   await page.getByTestId('catechism-item-baptism-1').click();
 
@@ -678,7 +833,7 @@ test('CATECH-1: a same-chapter passage selection aggregates catechism citations 
   // reveal mechanic itself (XREF-1/U2's own dedicated test covers that).
   const catechismMore = page.getByTestId('catechism-more');
   if (await catechismMore.count() > 0) {
-    await catechismMore.click({ modifiers: ['Shift'] });
+    await page.getByTestId('catechism-more-all').click();
   }
   // The bare (item-level, no question) altar-1 row -- first occurrence,
   // unsuffixed testid -- appears exactly once despite being cited by all
@@ -716,7 +871,7 @@ test('CATECH-1/6-ARCH: a verse reachable only via the repo mapping shows a quest
   // (position among the citing items isn't guaranteed).
   const catechismMore = page.getByTestId('catechism-more');
   if (await catechismMore.count() > 0) {
-    await catechismMore.click({ modifiers: ['Shift'] });
+    await page.getByTestId('catechism-more-all').click();
   }
 
   const items = page.getByTestId(/^catechism-item-/);
@@ -741,7 +896,7 @@ test('CATECH-1/6-ARCH: a verse reachable only via the repo mapping shows a quest
   await expect(godAloneEntry).toContainText('God Alone as Judge');
 });
 
-test('CATECH-1/U2/U6: THE SMALL CATECHISM defaults to 2 shown, +2 per down-arrow click, Shift-click jumps straight to the ends', async ({ page }) => {
+test('CATECH-1/U2/U6: THE SMALL CATECHISM defaults to 2 shown, +2 per down-arrow click, the double-arrow buttons jump straight to the ends', async ({ page }) => {
   const toc = await loadToc();
   const found = await findVerseWithCounts(toc, d => d.catechism.length > 2);
   test.skip(!found, 'no sampled verse had >2 catechism citations');
@@ -755,25 +910,36 @@ test('CATECH-1/U2/U6: THE SMALL CATECHISM defaults to 2 shown, +2 per down-arrow
 
   const items = page.getByTestId(/^catechism-item-/);
   const more = page.getByTestId('catechism-more');
+  const moreAll = page.getByTestId('catechism-more-all');
   const collapse = page.getByTestId('catechism-collapse');
+  const collapseAll = page.getByTestId('catechism-collapse-all');
 
   // U6, owner verbatim: "Catechism defaults to 2 shown."
   await expect(items).toHaveCount(2);
   await expect(more).toBeVisible();
+  await expect(moreAll).toBeVisible();
   await expect(collapse).toHaveCount(0);
+  await expect(collapseAll).toHaveCount(0);
 
   // The SAME shared mechanic RevealControls.razor gives cross-references
-  // (XREF-1/U2 above) -- +2 per click, all-at-once on Shift-click, never
-  // below the default either direction.
-  await more.click({ modifiers: ['Shift'] });
+  // (XREF-1/U2 above) -- +2 per single-arrow click, all-at-once on the
+  // double-arrow button (M-D3 fix round 3, R-D3: a separate, always-paired
+  // BUTTON now, not a Shift-click gesture on the single arrow -- see
+  // RevealControls.razor's own doc comment), never below the default
+  // either direction.
+  await moreAll.click();
   await expect(items).toHaveCount(total);
   await expect(more).toHaveCount(0);
+  await expect(moreAll).toHaveCount(0);
   await expect(collapse).toBeVisible();
+  await expect(collapseAll).toBeVisible();
 
-  await collapse.click({ modifiers: ['Shift'] });
+  await collapseAll.click();
   await expect(items).toHaveCount(2);
   await expect(collapse).toHaveCount(0);
+  await expect(collapseAll).toHaveCount(0);
   await expect(more).toBeVisible();
+  await expect(moreAll).toBeVisible();
 });
 
 test('CATECH-1: a verse with 1-2 catechism citations shows no reveal arrow at all (at-or-under the default)', async ({ page }) => {
@@ -819,7 +985,7 @@ async function findVerseWithCounts(toc: any, predicate: (d: any) => boolean, max
   return null;
 }
 
-test('XREF-1/U2: +2 per down-arrow click, -2 per up-arrow click, never below the default, Shift-click jumps to the far end', async ({ page }) => {
+test('XREF-1/U2: +2 per down-arrow click, -2 per up-arrow click, never below the default, the double-arrow buttons jump to the far end', async ({ page }) => {
   const toc = await loadToc();
   // >5 (not merely >3): guarantees at least one genuine MIDDLE state where
   // both arrows show together, regardless of whether this sampled verse's
@@ -875,20 +1041,29 @@ test('XREF-1/U2: +2 per down-arrow click, -2 per up-arrow click, never below the
   await expect(collapse).toHaveCount(0); // back at the default -- nothing left to collapse
   await expect(more).toBeVisible();
 
-  // Shift-click: jumps straight to ALL, skipping every intermediate step
-  // (RevealControls.razor's own disclosed stand-in for the owner's literal
-  // "double-down" -- a real dblclick gesture proved structurally unsafe
-  // against this app's own re-centering popovers; see that component's
-  // own doc comment for the full, live-caught story).
-  await more.click({ modifiers: ['Shift'] });
+  // The double-arrow "more-all" button: jumps straight to ALL, skipping
+  // every intermediate step (M-D3 fix round 3, R-D3 -- a separate, always-
+  // paired BUTTON, not a Shift-click/dblclick gesture on the single arrow;
+  // RevealControls.razor's own doc comment has the full, live-caught story
+  // on why a real dblclick proved structurally unsafe against this app's
+  // own re-centering popovers, and why the controller's own re-reading of
+  // "double down arrow" as a second button sidesteps that hazard entirely).
+  const moreAll = page.getByTestId('xrefs-more-all');
+  await expect(moreAll).toBeVisible();
+  await moreAll.click();
   await expect(items).toHaveCount(total);
   await expect(more).toHaveCount(0);
+  await expect(moreAll).toHaveCount(0);
   await expect(collapse).toBeVisible();
 
-  // Shift-click: jumps straight back to the default, never below it.
-  await collapse.click({ modifiers: ['Shift'] });
+  // The double-arrow "collapse-all" button: jumps straight back to the
+  // default, never below it.
+  const collapseAll = page.getByTestId('xrefs-collapse-all');
+  await expect(collapseAll).toBeVisible();
+  await collapseAll.click();
   await expect(items).toHaveCount(defaultShown);
   await expect(collapse).toHaveCount(0);
+  await expect(collapseAll).toHaveCount(0);
   await expect(more).toBeVisible();
 });
 
@@ -1276,7 +1451,7 @@ test('EVENT-1: the three-narrative full walk -- FOLLOWING hop by hop to the last
 // FOLLOWING is not the next pericope in JHN").
 // ---------------------------------------------------------------------
 
-test('EVENT-1/PASSAGE-1: the Crucifixion event shows 4 witness passages under "PARALLEL ACCOUNTS", each clamped to 2 verses with independent expand/collapse', async ({ page }) => {
+test('EVENT-1/PASSAGE-1: the Crucifixion event shows 4 witness passages under "PARALLEL ACCOUNTS", each clamped to 2 verses, each independently expandable to its own whole chapter', async ({ page }) => {
   const detail = await api.event('pw_golgotha');
   expect(detail.witnesses.length).toBe(4);
   const books = detail.witnesses.map((w: any) => w.book).sort();
@@ -1311,24 +1486,66 @@ test('EVENT-1/PASSAGE-1: the Crucifixion event shows 4 witness passages under "P
   const entries = witnessesSection.locator('[data-testid^="event-witness-"]');
   await expect(entries).toHaveCount(4);
 
+  // O2 (owner live-preview correction, 2026-08-23) retired the per-entry
+  // popover-passage-clamp-expand/-collapse toggle this test used to
+  // exercise (see PassageList.razor's own O2 comment) -- "each clamped to 2
+  // verses with independent expand/collapse" now means MiniReaderExpand's
+  // own control (a RevealControls-driven arrow pair, popover-verse-expand/
+  // -collapse{-ENTRY-ID}) is the SOLE remaining affordance, and it always
+  // jumps straight to that witness's own WHOLE chapter -- never a partial
+  // reveal of just this entry's own remaining clamped verses (a disclosed
+  // simplification; see PassageList.razor's own header comment). The
+  // compact `.popover-passage-verse-num` list and the expanded mini-reader's
+  // own `popover-reader-verse-*` are mutually exclusive (MiniReaderExpand.razor's
+  // own `@if (!_expanded)`), so "expanded" is verified the same
+  // structural-swap way READER-1 already verifies it, not by counting the
+  // SAME clamped list grow.
+  //
+  // Real, live-caught (not guessed): this event was opened via MATTHEW's
+  // own first verse, so the reader is now ACTIVELY showing Matthew's own
+  // chapter -- M-D3/U6's chapter-aware suppression (READER-1's own
+  // established rule, `ViewStateService.MountedReaderChapter`) correctly
+  // makes the MATTHEW witness entry's own popover-verse-expand UNCONDITIONALLY
+  // ABSENT, the exact same way a verse-line-opened verse popover's own
+  // affordance always is -- there is no book/chapter this event could be
+  // opened FROM that doesn't land the reader on one of its own four
+  // witnesses' books, so exactly one of the four is always structurally
+  // suppressed this way; asserted explicitly below rather than avoided.
   for (let i = 0; i < 4; i++) {
     const entry = entries.nth(i);
     const entryTestId = await entry.getAttribute('data-testid');
     expect(entryTestId).toBeTruthy();
 
-    const expandBtn = entry.locator('[data-testid^="popover-passage-clamp-expand-"]');
-    await expect(expandBtn, `witness ${i}'s own clamp-expand affordance`).toBeVisible();
+    await expect(entry.locator('[data-testid^="popover-passage-clamp-"]'), `witness ${i} carries no retired clamp-toggle testid`).toHaveCount(0);
     const versesBeforeExpand = await entry.locator('.popover-passage-verse-num').count();
     expect(versesBeforeExpand, `witness ${i} must show exactly 2 clamped verses`).toBe(2);
 
+    if (entryTestId!.startsWith(`event-witness-${book}.`)) {
+      // The reader's own current book -- the expand control is correctly,
+      // structurally absent (M-D3/U6); nothing further to exercise here.
+      await expect(entry.getByTestId(`popover-verse-expand-${entryTestId}`), `witness ${i} (${book}, the reader's own chapter) suppresses its expand affordance`).toHaveCount(0);
+      await expect(entry.getByTestId(`popover-verse-collapse-${entryTestId}`)).toHaveCount(0);
+      continue;
+    }
+
+    // Exact getByTestId, not a prefix locator -- popover-verse-expand-{id}
+    // and its own always-paired popover-verse-expand-{id}-all sibling both
+    // start with this same prefix (R-D3's own double-arrow button), which
+    // would make a prefix locator ambiguous (strict-mode violation).
+    const expandBtn = entry.getByTestId(`popover-verse-expand-${entryTestId}`);
+    await expect(expandBtn, `witness ${i}'s own expand affordance`).toBeVisible();
+    await expect(entry.locator('[data-testid^="popover-reader-verse-"]')).toHaveCount(0);
+
     await expandBtn.click();
-    const collapseBtn = entry.locator('[data-testid^="popover-passage-clamp-collapse-"]');
+    const collapseBtn = entry.getByTestId(`popover-verse-collapse-${entryTestId}`);
     await expect(collapseBtn).toBeVisible();
-    const versesAfterExpand = await entry.locator('.popover-passage-verse-num').count();
-    expect(versesAfterExpand, `witness ${i} must show all its own verses once expanded`).toBeGreaterThan(2);
+    await expect(entry.locator('.popover-passage-verse-num')).toHaveCount(0); // compact clamp view torn down
+    const readerVerses = await entry.locator('[data-testid^="popover-reader-verse-"]').count();
+    expect(readerVerses, `witness ${i} must show its own WHOLE chapter once expanded`).toBeGreaterThan(2);
 
     await collapseBtn.click();
-    await expect(entry.locator('.popover-passage-verse-num')).toHaveCount(2); // restored
+    await expect(entry.locator('.popover-passage-verse-num')).toHaveCount(2); // restored, compact clamp
+    await expect(entry.locator('[data-testid^="popover-reader-verse-"]')).toHaveCount(0);
   }
 });
 
@@ -1391,7 +1608,7 @@ test('M-D1 req 3: a single-witness event\'s popover shows its SPAN, never an enu
   // showing.
   await page.goto('/read/GEN/12');
   await page.getByTestId('verse-line-8').click();
-  await page.getByTestId('xrefs-more').click({ modifiers: ['Shift'] });
+  await page.getByTestId('xrefs-more-all').click();
   await page.getByTestId('xref-item-GEN.28.19').click();
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.28.19');
   await page.getByTestId('verse-event-jj_bethel_dream').click();
@@ -1405,6 +1622,7 @@ test('M-D1 req 3: a single-witness event\'s popover shows its SPAN, never an enu
   const entry = section.locator('[data-testid^="event-witness-"]');
   await expect(entry).toHaveCount(1);
   await expect(entry.locator('.popover-passage-ref-label')).toBeVisible();
+  const entryTestId = await entry.getAttribute('data-testid');
 
   // -- but NOT an enumerated verse-list echo: no compact passage text, no
   // per-verse superscript numbers, no clamp toggle (nothing to clamp when
@@ -1414,9 +1632,13 @@ test('M-D1 req 3: a single-witness event\'s popover shows its SPAN, never an enu
   await expect(entry.locator('[data-testid^="popover-passage-clamp-"]')).toHaveCount(0);
 
   // The span click STILL reads the passage inline -- the existing
-  // MiniReaderExpand "read the whole chapter" affordance, reused, not
-  // reimplemented.
-  const expandBtn = entry.locator('[data-testid^="popover-verse-expand"]');
+  // MiniReaderExpand control, reused, not reimplemented (O2: now a
+  // RevealControls-driven arrow pair -- see that component's own O2
+  // comment). Exact getByTestId, not a prefix locator: this entry's own
+  // popover-verse-expand-{id} and its always-paired popover-verse-expand-
+  // {id}-all sibling (R-D3's own double-arrow button) share this prefix,
+  // which would otherwise make a prefix locator ambiguous.
+  const expandBtn = entry.getByTestId(`popover-verse-expand-${entryTestId}`);
   await expect(expandBtn).toBeVisible();
   await expandBtn.click();
   await expect(entry.locator('[data-testid^="popover-verse-reader"]')).toBeVisible();

@@ -14,17 +14,6 @@
 @using BibleAtlas.Client.Explore
 @if (Items.Count > 0)
 {
-    @* M-D3/U2: rendered BEFORE the item list -- see PassageList.razor's own
-       matching comment (and RevealControls.razor's own doc comment) for
-       the full, real, live-caught reasoning: revealing more items must
-       never shift these controls' own on-screen position, or a genuine
-       rapid double-click's second sub-click can land on a newly-revealed
-       item instead, exploring it rather than expanding the list further. *@
-    @if (Cap is int cap && Items.Count > cap)
-    {
-        <RevealControls Total="@Items.Count" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="@(n => _shown = n)"
-                         MoreTestId="@MoreTestId" CollapseTestId="@CollapseTestId" RevealNoun="catechism items" />
-    }
     <div class="popover-catechism-list">
         @foreach (var entry in Visible)
         {
@@ -34,6 +23,19 @@
             </button>
         }
     </div>
+    @* O3 (owner live-preview correction, 2026-08-23): moved from BEFORE the
+       item list to AFTER it -- see PassageList.razor's own matching O3
+       comment (and RevealControls.razor's own doc comment) for the full
+       history: M-D3/U2's original leading placement was a deliberate
+       workaround for a real, live-caught double-click hazard that R-D3
+       already retired ("double" is a second, stationary arrow button now,
+       never a double-click gesture on one moving target), so it's safe to
+       honor the owner's own placement here too. *@
+    @if (Cap is int cap && Items.Count > cap)
+    {
+        <RevealControls Total="@Items.Count" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="@(n => _shown = n)"
+                         MoreTestId="@MoreTestId" CollapseTestId="@CollapseTestId" RevealNoun="catechism items" />
+    }
 }
 
 @code {

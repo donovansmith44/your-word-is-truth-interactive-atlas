@@ -7,8 +7,9 @@ namespace BibleAtlas.Client.Explore;
 /// (verse-level narrative-awareness retired -- see <see cref="VerseNode"/>'s
 /// own doc comment): opted into by <see cref="EventNode"/>, the ONLY
 /// remaining implementor. <see cref="ExplorerPopover"/> reads this directly
-/// (a small, node-specific special case alongside its own pre-existing
-/// ShowMiniMap one -- see that file's own header comment) purely for
+/// (a small, node-specific special case -- see that file's own header
+/// comment, which also covers the ShowMiniMap one this used to sit
+/// alongside before O1, 2026-08-23, retired it) purely for
 /// MAP-FOCUS-SYNC: which narrative(s)' arrows to bring into particular
 /// focus, and which event id is "the current leg." The SAME data also
 /// drives the PRIOR/FOLLOWING section providers' own rendering

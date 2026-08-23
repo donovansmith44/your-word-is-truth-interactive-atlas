@@ -62,7 +62,12 @@ public sealed class VerseNode : IExplorable
         var (book, chapter, verse) = CanonRef.ParseVerse(_vref);
         IReadOnlyList<Exploration> list = new[]
         {
-            new Exploration("Explore geo-temporally", "popover-chip-map", new ExplorationTarget.ShowMiniMap(_vref)),
+            // O1 (owner live-preview correction, 2026-08-23): "Explore
+            // geo-temporally" (popover-chip-map, ExplorationTarget.ShowMiniMap)
+            // removed -- "it's not serving us right now." Dead-code law took
+            // the whole mechanism with it (ShowMiniMap itself and
+            // MiniWorld.razor, its only renderer): see ExplorerPopover.razor's
+            // own header comment.
             new Exploration("About this book", "popover-chip-book", new ExplorationTarget.Push(new AuthorNode(book))),
             new Exploration("Read in context", "popover-chip-context", new ExplorationTarget.NavigateReader(book, chapter, verse)),
         };

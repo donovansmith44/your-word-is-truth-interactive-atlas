@@ -6,9 +6,13 @@ namespace BibleAtlas.Client.Explore;
 /// testid <see cref="ChipTestId"/> (one of <c>popover-chip-xrefs</c>,
 /// <c>popover-chip-map</c>, <c>popover-chip-book</c>, <c>popover-chip-context</c> --
 /// the same four ids are reused across node kinds for the conceptually-same
-/// action, e.g. every map-ish chip is <c>popover-chip-map</c> whether its
-/// target is <see cref="ExplorationTarget.ShowMiniMap"/> or
-/// <see cref="ExplorationTarget.NavigateWorld"/>).
+/// action, e.g. <c>popover-chip-map</c> is <see cref="EventNode"/>'s own
+/// "Show on the map" chip, target <see cref="ExplorationTarget.NavigateWorld"/>.
+/// O1 (owner live-preview correction, 2026-08-23) retired the OTHER chip that
+/// used to share this testid -- VerseNode/PassageNode's "Explore
+/// geo-temporally", target ShowMiniMap, reveal-a-mini-map-in-place -- along
+/// with the ShowMiniMap case itself and MiniWorld.razor, its only renderer;
+/// see ExplorerPopover.razor's own header comment for the fuller story).
 /// </summary>
 public sealed record Exploration(string Label, string ChipTestId, ExplorationTarget Target);
 
@@ -18,7 +22,6 @@ public sealed record Exploration(string Label, string ChipTestId, ExplorationTar
 /// case:
 /// <list type="bullet">
 /// <item><see cref="Push"/> -- go deeper in the SAME popover (grows its breadcrumb stack).</item>
-/// <item><see cref="ShowMiniMap"/> -- reveal the mini-map area for this ref, in place (no stack push; Task 15 fills the map itself in).</item>
 /// <item><see cref="NavigateWorld"/> -- leave for <c>/world?{Query}</c>. <see cref="NavigateWorld.Query"/>
 /// is the EXACT query-string suffix, already escaped, ready to append verbatim after
 /// <c>/world?</c> -- either a scripture ref (<c>ref=GEN.1</c>) or a time window
@@ -30,7 +33,6 @@ public sealed record Exploration(string Label, string ChipTestId, ExplorationTar
 public abstract record ExplorationTarget
 {
     public sealed record Push(IExplorable Next) : ExplorationTarget;
-    public sealed record ShowMiniMap(string SRef) : ExplorationTarget;
     public sealed record NavigateWorld(string Query) : ExplorationTarget;
     public sealed record NavigateReader(string Book, int Chapter, int? Verse) : ExplorationTarget;
 }

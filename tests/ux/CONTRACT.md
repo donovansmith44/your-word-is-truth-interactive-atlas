@@ -49,7 +49,7 @@ World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief
   lit this window, see QUIET-1 below -- distinct from and never overlapping
   `marker-{placeId}`'s own ids for the same scene, per QUIET-1's disjointness; a small,
   unlit, non-glowing dot, hoverable/clickable exactly like a lit marker; absent entirely
-  in scripture mode and on mini-maps), `place-card` (attr `data-pinned` = "true"|"false" --
+  in scripture mode), `place-card` (attr `data-pinned` = "true"|"false" --
   batch-g1-brief.md requirement 3, PIN-1 below; attr `data-flip` = "true"|"false" --
   batch-hotfix-brief.md requirement 1, CARD-FLIP-1 below), `place-card-title`,
   `place-card-close` (batch-g1-brief.md; button; present ONLY while `data-pinned="true"`;
@@ -246,11 +246,15 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `catechism-collapse` immediately below and the XREF-1 note's own
   CATECH-1/U6 paragraph),
   `catechism-more` / `catechism-collapse` (M-D3/U2/U6; the shared
-  RevealControls.razor mechanic's own arrows for THE SMALL CATECHISM's own
-  citing-item list -- present only when there are more items than the
-  Default (2); see the XREF-1 note's own CATECH-1/U6 paragraph for the
-  full +2/-2/all/default behavior, identical to `xrefs-more`/
-  `xrefs-collapse`),
+  RevealControls.razor mechanic's own single-step arrows for THE SMALL
+  CATECHISM's own citing-item list -- present only when there are more
+  items than the Default (2); see the XREF-1 note's own CATECH-1/U6
+  paragraph for the full +2/-2/all/default behavior, identical to
+  `xrefs-more`/`xrefs-collapse`), `catechism-more-all` / `catechism-collapse-all`
+  (M-D3 fix round 3/R-D3; each's own always-paired double-arrow sibling --
+  present exactly when, respectively, `catechism-more`/`catechism-collapse`
+  is; jumps straight to ALL items shown / back to the Default (2) in one
+  click -- see the XREF-1 note's own "DOUBLE-DOWN"/"DOUBLE-UP" paragraph),
   `catechism-verse-{SPAN}` (batch-f-brief.md, rebuilt batch-f2-brief.md
   6-ARCH; button; one per PASSAGE ENTRY inside
   `popover-section-catechism-scriptures` -- `SPAN` is a bare vref for a lone
@@ -262,34 +266,66 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   one; opens a `VerseNode` (lone verse) or `PassageNode` (passage) for
   `SPAN` -- onward navigation from there is ordinary Verse/PassageNode
   behavior, unchanged -- see CATECH-1),
-  `popover-verse-expand{-ENTRY-ID}` (batch-r-brief.md requirement 4,
-  generalized batch-f2-brief.md 6-ARCH; button; present on EVERY passage
-  entry rendered by the shared passage-list component (see PASSAGE-1 below)
-  -- the verse-text section's own SINGLE entry keeps the bare
-  `popover-verse-expand` testid, byte for byte (no suffix, unchanged since
-  Batch R); every entry in a MULTI-entry list (cross-references, THE
-  SCRIPTURES, place est/dest) gets its own uniquely-scoped
-  `popover-verse-expand-{ENTRY-ID}` -- fix-round-1 correction: `ENTRY-ID` is
-  that entry's own FULL, already-prefixed testid (`{RefTestIdPrefix}-{Span}`,
-  e.g. `xref-item-GEN.1.1-3`), the exact same string as that entry's own
+  `popover-verse-expand{-ENTRY-ID}` / `popover-verse-collapse{-ENTRY-ID}`
+  (batch-r-brief.md requirement 4, generalized batch-f2-brief.md 6-ARCH;
+  O2 owner live-preview correction 2026-08-23 retired the single TEXT
+  button this pair used to be -- "we have redundant buttons... Show the
+  rest of this passage and Read the whole chapter... replace with just a
+  down/double down arrow" -- in favor of MiniReaderExpand.razor's own
+  RevealControls instance, the SAME shared down/double-down/up/double-up
+  arrow-pair mechanic U2/R-D3 established for xrefs/catechism, reused here
+  for a genuinely BINARY case (Default=0/Total=1/Step=1 -- see
+  RevealControls.razor's own O2 comment): `popover-verse-expand{-ENTRY-ID}`
+  is the down arrow (MoreTestId), `popover-verse-collapse{-ENTRY-ID}` the
+  up arrow (CollapseTestId, a NEW id -- the retired single button toggled
+  in place and needed only one), each with its own always-paired
+  `-all` double-arrow sibling (`popover-verse-expand{-ENTRY-ID}-all` /
+  `popover-verse-collapse{-ENTRY-ID}-all`) that performs the IDENTICAL
+  jump in this binary case (R-D3's own "always visible whenever there is
+  somewhere further to jump" rule, degenerate here since there is only
+  ever one further place to jump to). Present on EVERY passage entry
+  rendered by the shared passage-list component (see PASSAGE-1 below) --
+  the verse-text section's own SINGLE entry keeps the bare
+  `popover-verse-expand`/`popover-verse-collapse` testids, byte for byte
+  (no suffix, unchanged since Batch R); every entry in a MULTI-entry list
+  (cross-references, THE SCRIPTURES, place est/dest) gets its own
+  uniquely-scoped `popover-verse-expand-{ENTRY-ID}`/`popover-verse-collapse-
+  {ENTRY-ID}` -- fix-round-1 correction: `ENTRY-ID` is that entry's own
+  FULL, already-prefixed testid (`{RefTestIdPrefix}-{Span}`, e.g.
+  `xref-item-GEN.1.1-3`), the exact same string as that entry's own
   `data-testid` (PassageList.razor's `TestIdSuffix="@($"-{entry.TestId}")"`)
   -- NOT a bare span. This also means a repeated-span entry's own numbered
   `--2`/`--3` disambiguation (see PASSAGE-1) carries straight through into
   these nested testids too, so they stay collision-free for exactly the
   same reason the entries themselves do; so several entries can each be
-  expanded independently in the same popover; text "Read the whole chapter"
-  collapsed / "Show just this verse" expanded, attr `aria-expanded`; toggles
-  the compact passage text vs. that entry's own scrollable mini-reader.
-  M-D3/U6, owner verbatim: "'read the whole chapter' affordance REMOVED
-  when already reading that chapter -- a chapter-aware policy, not a new
-  data path." CONDITIONAL PRESENCE, applying to every instance of this
-  button regardless of which section renders it (verse-text, xrefs, THE
-  SCRIPTURES, place est/dest, event witnesses, narrative/timeline
-  PRIOR/FOLLOWING -- MiniReaderExpand.razor is the ONE shared mechanism,
-  so this is one check in one place, not a per-caller flag): absent
-  entirely, not merely disabled, whenever the Book+Chapter it would open
-  is the SAME Book+Chapter a Reader.razor instance is ACTIVELY showing
-  right now (`ViewStateService.MountedReaderChapter` -- deliberately
+  expanded independently in the same popover. Conditional presence mirrors
+  every other RevealControls instance in this app: the collapse pair shows
+  only once expanded, the expand pair only while collapsed (never both --
+  this control's own Total=1 leaves no genuine middle state, unlike xrefs/
+  catechism's own incremental scale). CollapseLabel is the static text
+  "Show just this verse"; MoreLabel is "Read the whole chapter" OR (owner
+  live report #4's own truncation-aware wording, HOTFIX-4 requirement 7)
+  "+{N} more — read the chapter" when TruncatedBy > 0 -- carried on the
+  arrow buttons' own `aria-label`/`title` now, not visible button text (an
+  icon glyph in its place; O2 also retired the old single button's own
+  `aria-expanded` attribute along with it -- expand/collapse state is
+  observable directly via `popover-verse-reader{-ENTRY-ID}`'s own
+  presence, the same signal every consumer of this control already reads).
+  Toggles the compact passage text vs. that entry's own scrollable
+  mini-reader -- ALWAYS the full chapter once triggered at all now (O2
+  retired PassageList's own separate per-entry `popover-passage-clamp-
+  expand/-collapse` toggle -- see PASSAGE-1's own note below -- so there is
+  no longer a partial, less-than-the-whole-chapter reveal state to toggle
+  through first). M-D3/U6, owner verbatim: "'read the whole chapter'
+  affordance REMOVED when already reading that chapter -- a chapter-aware
+  policy, not a new data path." CONDITIONAL PRESENCE, applying to every
+  instance of this control regardless of which section renders it
+  (verse-text, xrefs, THE SCRIPTURES, place est/dest, event witnesses,
+  narrative/timeline PRIOR/FOLLOWING -- MiniReaderExpand.razor is the ONE
+  shared mechanism, so this is one check in one place, not a per-caller
+  flag): absent entirely, not merely disabled, whenever the Book+Chapter it
+  would open is the SAME Book+Chapter a Reader.razor instance is ACTIVELY
+  showing right now (`ViewStateService.MountedReaderChapter` -- deliberately
   separate from the pre-existing, PERSISTENT `ViewState.Reader` "last
   known position" record, which stays set even after Reader.razor
   unmounts and would wrongly suppress the affordance on a plain `/world`
@@ -300,7 +336,7 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   screen, so its own `popover-verse-expand` is now unconditionally absent
   every time; exploring onward (a cross-reference, a catechism proof
   verse, a witness, ...) to a DIFFERENT book/chapter keeps that entry's
-  own expand button fully present and functional, unaffected),
+  own expand control fully present and functional, unaffected),
   `popover-verse-reader{-ENTRY-ID}` (same generalization; the mini-reader's
   own scrollable container; present only while that entry is expanded),
   `popover-reader-verse-{n}{-ENTRY-ID}` (same generalization; one per verse
@@ -333,7 +369,9 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `popover-place-date-destroyed-more` / `-collapse` (batch-f2-brief.md
   requirement 6b; the down-arrow reveal / up-arrow snap-back for each
   date's own supporting-verse list -- present only when that date has more
-  than 2 passage entries),
+  than 2 passage entries), and each's own `-more-all`/`-collapse-all`
+  always-paired double-arrow sibling (M-D3 fix round 3/R-D3; see the
+  XREF-1 note's own "DOUBLE-DOWN"/"DOUBLE-UP" paragraph),
   `popover-place-blurb` (batch-r-brief.md requirement 3; the popover-native
   rendering of the SAME BLURB-1-resolved text `place-card-blurb` already
   shows; conditional presence, same BLURB-1 rule),
@@ -365,7 +403,11 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   below), `xrefs-more` / `xrefs-collapse` (batch-f2-brief.md requirement 6;
   the down-arrow reveal / up-arrow snap-back for the cross-references list
   -- present only when there are more entries than the current cap; see
-  XREF-1),
+  XREF-1), `xrefs-more-all` / `xrefs-collapse-all` (M-D3 fix round 3/R-D3;
+  each's own always-paired double-arrow sibling -- present exactly when,
+  respectively, `xrefs-more`/`xrefs-collapse` is; jumps straight to ALL
+  entries shown / back to the section's own Default in one click -- see
+  the XREF-1 note's own "DOUBLE-DOWN"/"DOUBLE-UP" paragraph),
   `event-section-heading` (batch-n-brief.md, retargeted batch-t-brief.md,
   NARROWED M-D3/U1; small-caps eyebrow, the SAME shared testid every
   section-registry heading in this popover platform uses --
@@ -411,7 +453,11 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   establishes. Conditional presence, doubly: absent when the verse cites
   no titled event at all, and absent per-event when that event turns out
   to have no OTHER witness once the current one is excluded -- see
-  VerseParallelsSection's own doc comment),
+  VerseParallelsSection's own doc comment. O5, 2026-08-23: each entry's own
+  `.popover-passage-caption` (the book-name second header) is
+  UNCONDITIONALLY absent here -- one header per entry, the ref-label only;
+  see this file's own U6 -- PARALLELS note below, and PARALLELS-1,
+  `tests/ux/popover-sections.spec.ts`),
   `event-nav` (M-D3/U1; wraps the WHOLE narrative prior/following nav --
   one or more `event-nav-row-{idSuffix}` rows, each holding one
   `event-nav-arrows` pair; present iff the event belongs to >=1 narrative
@@ -459,7 +505,6 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `popover-verse-expand{-ENTRY-ID}`/etc. testids apply identically; absent
   entirely for a delta with zero curated verses, or for the minimal-
   popover case -- see DELTA-1),
-  `mini-map`, `mini-map-open-world`,
   `popover-head-actions` (M-D3/U3'; wraps the chip row -- see the REGISTRY-1
   note's own chip-relocation paragraph above; present exactly when
   `popover-chip-*` would be, i.e. whenever the current node offers at
@@ -634,25 +679,32 @@ Notes:
   like we've already got"): `PassageList.razor`'s own `ClampVerses`
   parameter caps a PASSAGE entry's own COMPACT text at N verses --
   independent of, and orthogonal to, `Cap` above (which counts whole
-  ENTRIES; `ClampVerses` clamps WITHIN one entry). A per-entry
+  ENTRIES; `ClampVerses` clamps WITHIN one entry). O2 (owner live-preview
+  correction, 2026-08-23: "we have redundant buttons, too. Show the rest
+  of this passage and Read the whole chapter... get rid of the read the
+  whole chapter and replace with just a down/double down arrow") RETIRED
+  the per-entry TOGGLE this clamp used to carry -- a
   `popover-passage-clamp-expand-{ENTRY-ID}` button (text "Show the rest of
-  this passage") reveals the entry's own remaining verses in place;
-  `popover-passage-clamp-collapse-{ENTRY-ID}` (text "Show fewer verses",
-  `aria-expanded="true"` on the expand button throughout) restores the
-  clamped view -- `ENTRY-ID` is ALWAYS present here (unlike
-  `popover-verse-expand{-ENTRY-ID}`'s own optional suffix, READER-1: this
-  control has no bare, single-instance context the way that one's
-  VerseTextSection caller does -- it only ever exists inside a
-  `PassageList` entry, so the suffix is unconditional, no empty-string
-  case). Visually and testid-distinct from `popover-verse-expand` (italic,
-  bronze-ink-resting vs. that control's own small-caps lapis-resting) so
-  the two independent affordances on one entry
-  -- "expand THIS passage" vs. "read the whole CHAPTER" -- never read as
-  the same control; both are keyboard-reachable, and expanding/collapsing
-  one never disturbs the other's own state on the same entry. Conditional
-  presence: a lone-verse entry, or a passage entry whose own verse count is
-  already `<=` `ClampVerses`, shows no clamp affordance at all. Currently
-  applied only where a caller passes `ClampVerses` (EVENT-1's own PARALLEL
+  this passage") that used to reveal the entry's own remaining verses in
+  place, and `popover-passage-clamp-collapse-{ENTRY-ID}` (text "Show fewer
+  verses") that restored the clamped view, sitting alongside
+  `popover-verse-expand{-ENTRY-ID}` on the SAME entry -- exactly the
+  "redundant pair" the owner named (two independent "show more" controls on
+  one entry). BOTH testids are GONE, not merely hidden; `ClampVerses`'
+  own STATIC clamp (how much of a passage entry's text shows before either
+  arrow is ever touched) is UNCHANGED and still computed the same way.
+  `popover-verse-expand{-ENTRY-ID}`/`popover-verse-collapse{-ENTRY-ID}`
+  (see this file's own note above) is now the SOLE expansion affordance on
+  a clamped entry -- revealing more of it always means the whole,
+  lazy-fetched chapter now, never a partial reveal of just this entry's own
+  remaining clamped verses; a disclosed simplification (the middle-ground
+  nuance the retired toggle offered is honestly lost) in service of "ONE
+  expansion idiom... passage text, cross-refs, catechism all use the
+  identical component," the controller's own words for this ruling.
+  Conditional presence (of the static clamp itself, independent of any
+  toggle now): a lone-verse entry, or a passage entry whose own verse count
+  is already `<=` `ClampVerses`, is never clamped at all. Currently applied
+  only where a caller passes `ClampVerses` (EVENT-1's own PARALLEL
   ACCOUNTS/single-witness section, `ClampVerses="2"`) -- every other
   `PassageList` consumer (xrefs, THE SCRIPTURES, place est/dest,
   PRIOR/FOLLOWING) leaves it unset (no clamp, unchanged behavior), since the
@@ -681,19 +733,22 @@ Notes:
   HIGHEST delivered verse -- the cap always keeps the LOWEST-numbered
   verses, so the missing tail always follows it). WIRED TO THE EXISTING
   MINI-READER, NO PARALLEL AFFORDANCE: `MiniReaderExpand`'s OWN
-  `popover-verse-expand{-ENTRY-ID}` button (unchanged testid, unchanged
-  click handler, unchanged full-chapter-fetch behavior) reads
-  `TruncatedBy` and, when collapsed and `>0`, reads "+{N} more — read the
-  chapter" instead of "Read the whole chapter" (`data-truncated="true"` on
-  the SAME button, for a robust hook independent of exact wording) --
-  clicking it opens the identical full chapter the plain wording already
-  did. CONDITIONAL PRESENCE: a group at or under the cap (`GroupCount` ==
-  the delivered count, or `null`) shows the ordinary "Read the whole
-  chapter" wording, no signal at all -- the SAME "no affordance where
-  nothing is missing" discipline every other conditional-presence rule in
-  this file follows. NEVER assumed reachable via a general redesign of the
-  cap itself -- the cap (`scene::verse_groups_for`'s own `take(20)`) is
-  UNCHANGED by this fix; only the client's own honesty about hitting it.
+  `popover-verse-expand{-ENTRY-ID}` control (unchanged testid, unchanged
+  click handler, unchanged full-chapter-fetch behavior; O2, 2026-08-23,
+  changed only ITS OWN presentation from a text button to a RevealControls
+  arrow pair -- see this file's own note above) reads `TruncatedBy` and,
+  when collapsed and `>0`, its own MoreLabel (`aria-label`/`title`, not
+  visible text now) reads "+{N} more — read the chapter" instead of "Read
+  the whole chapter" (the SAME wording carried a retired `data-truncated="true"`
+  marker on the old button before O2; the label text alone is now the
+  robust hook) -- clicking it opens the identical full chapter the plain
+  wording already did. CONDITIONAL PRESENCE: a group at or under the cap
+  (`GroupCount` == the delivered count, or `null`) shows the ordinary "Read
+  the whole chapter" wording, no signal at all -- the SAME "no affordance
+  where nothing is missing" discipline every other conditional-presence
+  rule in this file follows. NEVER assumed reachable via a general redesign
+  of the cap itself -- the cap (`scene::verse_groups_for`'s own `take(20)`)
+  is UNCHANGED by this fix; only the client's own honesty about hitting it.
 - XREF-1 (batch-f2-brief.md requirement 6, user direction 2026-08-20,
   near-verbatim: "truncate the cross references to show no more than 3 if
   cross references are the only kind of context that we're pulling into the
@@ -739,25 +794,59 @@ Notes:
   only / 2 mixed-context / 2 est-dest, per the rules above -- "never below
   the default," the owner's own words). BOTH arrows can render together
   now, in a genuine middle state the retired toggle never had (past the
-  first reveal, short of the true total). SHIFT-CLICKING either arrow
-  jumps straight to its own far end -- ALL on the down arrow, back to
-  Default on the up -- realizing the owner's own literal "double-down"/
-  "double-up" wording. DISCLOSED DEVIATION: a real native double-click
-  gesture was tried first and found genuinely unsafe, reproducibly, not
-  merely in theory -- this popover platform re-centers its own outer panel
-  as content height changes (every popover here is viewport- or
-  pane-centered), so a dblclick's own SECOND sub-click (aimed at the
-  first's now-stale screen coordinate, after the first sub-click's own
-  Reveal already grew the panel and shifted it) can land on a
-  newly-revealed entry instead of the arrow, pushing THAT node and
-  navigating the whole popover away from what the user was expanding --
-  observed live, repeatedly. A Shift-click needs exactly one physical
-  click/dispatch, structurally immune to this (no second, separately-
-  targeted coordinate to go stale). Disclosed via each arrow's own `title`
-  tooltip, the same disclosure a dblclick shortcut would have needed
-  anyway; the SINGLE-click, fully keyboard-reachable step remains the
-  PRIMARY affordance either way. See RevealControls.razor's own doc
-  comment for the fuller interaction/accessibility reasoning.
+  first reveal, short of the true total).
+
+  "DOUBLE-DOWN"/"DOUBLE-UP" -- M-D3 fix round 3 (R-D3, controller
+  interpretation ruling, review Important-2): realized as TWO SEPARATE,
+  always-paired-with-their-single-sibling BUTTONS
+  (`{MoreTestId}-all`/`{CollapseTestId}-all`, e.g. `xrefs-more-all`/
+  `xrefs-collapse-all`, `catechism-more-all`/`catechism-collapse-all`,
+  `popover-place-date-{suffix}-more-all`/`-collapse-all`) -- `-all` jumps
+  straight to the LIST's own far end (ALL entries revealed / back to
+  Default) in one click, no per-step counting. RETIRED, NOT kept alongside
+  these buttons: an earlier draft realized "double-down"/"double-up" as a
+  Shift-click on the SINGLE arrow instead (dead-code law -- one mechanism,
+  not two competing ones; `MouseEventArgs.ShiftKey` is no longer read
+  anywhere in `RevealControls.razor`). History, disclosed rather than
+  erased: a genuine native DOUBLE-CLICK gesture was tried FIRST (before
+  Shift-click), and found genuinely unsafe, reproducibly -- this popover
+  platform re-centers its own outer panel as content height changes, so a
+  dblclick's own second sub-click (aimed at the first's now-stale screen
+  coordinate, after the first sub-click's own Reveal already grew the
+  panel and shifted it) could land on a newly-revealed entry instead of
+  the arrow, pushing THAT node and navigating the whole popover away from
+  what the user was expanding. The controller's own re-reading of the
+  owner's literal words ("double down arrow should expand all") is that
+  "double [X] arrow" names a second, always-visible ARROW BUTTON, not a
+  double-CLICK gesture on the single one at all -- which sidesteps the
+  hazard by construction (two stationary buttons, never one moving target
+  hit twice) rather than working around it the way Shift-click did. Each
+  double-arrow button's own conditional presence matches its single
+  sibling exactly (visible whenever there is somewhere further to jump
+  to); a same-sized placeholder slot (`.popover-reveal-slot`, x2 now) keeps
+  the more-pair's own on-screen position stable regardless of the
+  collapse-pair's own presence, the same "no layout shift" principle the
+  original dblclick-rejection story already established. The single-click,
+  fully keyboard-reachable step remains the PRIMARY affordance either way.
+  See RevealControls.razor's own doc comment for the fuller interaction/
+  accessibility reasoning and the full history.
+
+  PLACEMENT (O3, owner live-preview correction, 2026-08-23, xrefs named
+  specifically -- "that button should be below the list of xrefs, not
+  above" -- ruled universal for the shared component, one rule): every
+  `RevealControls` instance in this app renders AFTER (below) the list/
+  content it governs -- `PassageList.razor`'s own list-level reveal (xrefs,
+  place est/dest), `CatechismList.razor`'s own, and MiniReaderExpand's own
+  binary expand/collapse control (see this file's own
+  `popover-verse-expand{-ENTRY-ID}` note above) all follow this ONE rule
+  now, no per-caller exception. This REVERSES M-D3/U2's own original
+  leading placement, which was a disclosed WORKAROUND for a real,
+  live-caught double-click hazard (the panel re-centering as content grows
+  could shift a TRAILING control's own on-screen position mid-gesture,
+  landing a dblclick's second sub-click on a newly-revealed entry instead)
+  -- R-D3 already retired that hazard's own root cause (a stationary
+  second BUTTON, never a double-click gesture on one moving target), so
+  honoring the owner's own preferred placement is safe now.
 
   CATECH-1/U6 (owner: "Catechism defaults to 2 shown"): THE SMALL
   CATECHISM (`CatechismSeamSection`) gets a cap for the first time this
@@ -777,7 +866,15 @@ Notes:
   you're in its focus. you can focus further by clicking chapter heading
   and you get metadata and context... container title, position in book,
   edge summary -- what the graph knows ABOUT the chapter" -- NEVER the
-  chapter's own verse text): `chapter-head`'s own popover
+  chapter's own verse text -- see CHAPTER-CARD-1 below,
+  `popover-sections.spec.ts`, for direct Playwright content assertions
+  added M-D3 fix round 3/R-D2: real position/verse-count/headings/places
+  text on a real chapter (JOS.6), the 8-row cap's own "+N more" line on a
+  real many-container chapter (PSA.119), and a concrete proof that no
+  verse text -- neither a `popover-reader-verse-*` element nor the
+  chapter's own literal first-verse text -- ever appears; every
+  `chapter-card-*` testid below previously lived only in this file's own
+  prose): `chapter-head`'s own popover
   (`ChapterCardSection`, a new `IPopoverSectionProvider` claiming
   `Kind == "Chapter"`, registered in `PopoverSectionRegistry.Providers`)
   replaces the standing "first verse of the chapter appears, that's
@@ -1007,9 +1104,12 @@ Notes:
   caught bug when they briefly were not: pane-anchoring's own `width` rule
   silently applied underneath verse-anchoring's own centering math, which
   assumes the wider, non-pane-capped base width, producing a popover
-  rendered off-screen to the left. Pane-anchoring remains independently
-  applicable to the BACKDROP regardless (SPLIT-1's own pane-confinement,
-  unaffected). Every OTHER existing popover trigger in this app
+  rendered off-screen to the left. (This paragraph's own "mutually
+  exclusive on the PANEL" scope note is now the FULL story, not a
+  qualifier: O6, 2026-08-23, retired pane-anchoring's own reach onto the
+  BACKDROP entirely -- see PANE-ANCHOR-1's own O6 update below for why;
+  the backdrop is unconditionally full-viewport now, verse-anchored
+  popover or not.) Every OTHER existing popover trigger in this app
   (verse-line click, chapter-head, pericope-heading) is UNCHANGED --
   still viewport-centered full-page / pane-centered while split, F2
   requirement 6d -- this finer anchoring is scoped to the superscript
@@ -1068,9 +1168,11 @@ Notes:
   (a stable `OrderByDescending` in `ExplorerPopover.LoadCurrent`, over the
   SAME registry-produced list every other open already produces -- one
   small, disclosed special case living directly in that file, the same
-  established shape its own map-focus-sync/ShowMiniMap special cases
-  already take for a cross-cutting concern the per-node registry has no
-  business modeling) -- the GENERAL popover's own section order (verse-text
+  established shape its own map-focus-sync special case already takes
+  (ShowMiniMap used to be a second such special case; retired by O1,
+  2026-08-23 -- see `ExplorerPopover.razor`'s own header comment) for a
+  cross-cutting concern the per-node registry has no business modeling) --
+  the GENERAL popover's own section order (verse-text
   first, xrefs second, ...) is unchanged. Proven directly:
   `tests/ux/reader-xref-superscripts.spec.ts`'s own "entry-point parameter
   vs F2's general popover" test opens the IDENTICAL verse both ways in one
@@ -1135,19 +1237,22 @@ Notes:
   FUTURE batch's own migration to build on, rather than forcing a
   same-batch data-fetch migration that would have cost real, shipped
   fidelity to gain a checkbox.
-- READER-1 (batch-r-brief.md requirement 4): `popover-verse-expand`
-  collapsed shows exactly the compact text the popover always showed (one
-  verse, or a passage's own already-known concatenated text); clicking it
-  fetches the WHOLE chapter (`GET /api/chapter/{cref}`, lazily -- not before
-  expand, cached like every other chapter fetch) and replaces the compact
-  text with `popover-verse-reader`, a bounded, independently-scrollable
-  region (the popover's own head/chips stay in place; only this region
-  scrolls) listing every verse of that chapter, auto-scrolled once so the
-  node's own focal verse (or, for a passage, its own first focal verse) is
-  immediately visible, with every verse in the focal range carrying
-  `data-focal="true"` and a calm, static highlight (no flash/animation).
-  Collapsing restores the exact compact view; a later re-expand reuses the
-  already-fetched chapter (no second fetch).
+- READER-1 (batch-r-brief.md requirement 4): collapsed (`popover-verse-expand`
+  visible, `popover-verse-collapse` absent -- O2, 2026-08-23, split the
+  retired single toggle button into this RevealControls arrow pair; see
+  this file's own testid-inventory note above) shows exactly the compact
+  text the popover always showed (one verse, or a passage's own
+  already-known concatenated text); clicking `popover-verse-expand` fetches
+  the WHOLE chapter (`GET /api/chapter/{cref}`, lazily -- not before expand,
+  cached like every other chapter fetch) and replaces the compact text with
+  `popover-verse-reader`, a bounded, independently-scrollable region (the
+  popover's own head/chips stay in place; only this region scrolls) listing
+  every verse of that chapter, auto-scrolled once so the node's own focal
+  verse (or, for a passage, its own first focal verse) is immediately
+  visible, with every verse in the focal range carrying `data-focal="true"`
+  and a calm, static highlight (no flash/animation). Clicking
+  `popover-verse-collapse` restores the exact compact view; a later
+  re-expand reuses the already-fetched chapter (no second fetch).
 - BLINK-1 (batch-r-brief.md requirement 5, user 2026-08-19: "if i hover
   over a place within that verse, then the glowy dot associated with that
   location... should blink and be noticeable"): every verse rendered inside
@@ -1266,8 +1371,9 @@ Notes:
   its own cross-references -> ..., the batch brief's own onward-navigation
   requirement, verbatim). A `CatechismNode` offers NO chips
   (`popover-chip-map`/`-book`/`-context`) at all -- catechism items have no
-  geography, so "Explore geo-temporally"/"Read in context" have nothing to
-  target; conditional presence extends to affordances, not just sections.
+  geography or authorship of their own, so "About this book"/"Read in
+  context" (VerseNode/PassageNode's own chips) have nothing to target;
+  conditional presence extends to affordances, not just sections.
 
   batch-f2-brief.md requirement 3/4 ("the user's own catechism verse
   mapping" -- user direction 2026-08-20: "I gave you the mapping very
@@ -1474,9 +1580,11 @@ Notes:
   identically to a multi-witness one (clamped-to-2 + expand), redundant
   with the text the reader is already looking at. FIX: `PassageList.razor`
   gains a `SpanOnly` parameter -- when true, an entry renders its own ref-
-  label SPAN only (no compact text, no clamp toggle); the ONLY affordance
-  left is the shared `MiniReaderExpand` "Read the whole chapter"
-  mechanism, reused unchanged, never reimplemented. `EventWitnessesSection`
+  label SPAN only (no compact text, no clamp); the ONLY affordance
+  left is the shared `MiniReaderExpand` expand control (O2, 2026-08-23: a
+  RevealControls arrow pair now, "Read the whole chapter" living in its
+  title/aria-label -- see this file's own note above), reused unchanged,
+  never reimplemented. `EventWitnessesSection`
   sets `SpanOnly = !multi` -- a SINGLE-witness event (n=1, `units.Count ==
   1`) renders its span line only; a MULTI-witness event's own PARALLEL
   ACCOUNTS list is UNCHANGED (every witness -- this book's own included --
@@ -2111,8 +2219,20 @@ Notes:
   registered directly after `VerseEventMembershipSection` (so it renders
   immediately below "EVENT" -- see the REGISTRY-1/U6 note above for the
   full VERSE/PASSAGE section order). Reuses `WitnessUnitsResolver`
-  (extracted from `EventWitnessesSection`'s own former inline body, no
-  behavior change there) fed a FILTERED witness list -- every witness
+  (extracted from `EventWitnessesSection`'s own former inline body; O5,
+  owner live-preview correction, 2026-08-23, "parallels has double
+  headers... 1Ki.3.1-15 and 1 kings right below it... get rid of the
+  second header": THIS section strips `WitnessUnitsResolver`'s own
+  book-name `Caption` to null before handing units to `PassageList` -- a
+  per-entry projection living in `VerseParallelsSection` itself, not a
+  `WitnessUnitsResolver` parameter, so `EventWitnessesSection`'s own
+  "PARALLEL ACCOUNTS" keeps the caption, genuinely load-bearing there for
+  telling several Gospels apart at a glance -- see EVENT-1's own tests,
+  unaffected. `.popover-passage-ref-label` already carries the book CODE,
+  so the caption was a genuine second header duplicating it here, not a
+  useful second signal; proven by `tests/ux/popover-sections.spec.ts`'s own
+  PARALLELS-1, real data: 2CH.1.2 -> `1ki_solomon_gibeon` -> `1KI.3.1-15`,
+  the owner's own named example) fed a FILTERED witness list -- every witness
   EXCEPT the one the current verse itself belongs to (a real per-event
   `EventDetail` fetch, concurrent across every candidate event, since a
   verse's own slim `.Events` membership list carries no sibling-witness
@@ -2522,7 +2642,7 @@ Notes:
   the SAME rules `marker-{placeId}`'s own label does (NAME-1), so a place's name never
   contradicts itself as it crosses from quiet to lit (or back) while a window is
   dragged. Scripture mode has no quiet places at all (`quiet-marker-{placeId}` is
-  entirely absent there, same as on a mini-map) -- period relevance without a time
+  entirely absent there) -- period relevance without a time
   window has nothing for GLOW to mean.
 - SAMEPLACE-1 (batch-hotfix2-brief.md, same-place dedupe -- user report 2026-08-20:
   "in judges 4, zaananim, kedesh-naphtali, hazor are all in the ocean"): two compiled
@@ -2917,9 +3037,7 @@ Notes:
   in-memory-only design), not a gap.
   NO-NESTED-POPUP: an ExplorerPopover opened from EITHER pane while split
   is open still renders normally -- full-viewport backdrop/panel, unchanged
-  (this includes VerseNode/PassageNode's own `popover-chip-map` ->
-  ShowMiniMap, "Explore geo-temporally": still a mini-map revealed in place,
-  never affected by split at all) -- but a chip that would otherwise
+  -- but a chip that would otherwise
   `Nav.NavigateTo("/world?...")` (opening what would be a SECOND full atlas)
   instead applies its exact query (a scripture ref or a time window) to the
   atlas pane THAT'S ALREADY SHOWING, in place; no second atlas ever opens
@@ -3106,11 +3224,12 @@ Notes:
   from a marker down into a flipped (or clamped) card exactly as reliably
   as it travels up into a non-flipped one. Applies identically everywhere
   this card renders (full `/world`, split view's embedded atlas pane) --
-  one shared positioning rule, no per-page fork. The reader's own mini-map
-  (`mini-map`, `MiniWorld.razor`) never renders this card at all (its own
-  marker hover callbacks are deliberate no-ops, per that component's own
-  comment, unaffected by and unrelated to this note) -- there is nothing
-  there for CARD-FLIP-1 to apply to.
+  one shared positioning rule, no per-page fork. (The popover's own mini-map
+  -- `mini-map`, `MiniWorld.razor` -- used to be a THIRD place this note
+  provably did not apply to, since its own marker hover callbacks were
+  deliberate no-ops; retired entirely by O1, 2026-08-23, so there is no
+  longer a third venue to even discuss -- see `ExplorerPopover.razor`'s own
+  header comment.)
 - NAV-4 (batch-hotfix-brief.md requirement 2, user report 2026-08-20: "the
   buttons to go chapter to chapter on the Bible in split screen are too
   tiny to see" -- measured live before this fix, split view: 14.8x22.8px at
@@ -3203,10 +3322,31 @@ Notes:
   currently-visible region instead of the full viewport -- a verse clicked
   in the reader pane opens centered within the reader pane; an exploration
   started on the atlas pane (a marker/place card promoted into a popover)
-  opens centered within the atlas pane. The OTHER pane stays completely
-  undimmed and clickable (the backdrop itself is pane-scoped, not just the
-  panel) -- "explore on both sides of the screen independently, while still
-  following text," per the brief verbatim. Full-page (non-split) popovers
+  opens centered within the atlas pane.
+
+  O6 (owner live-preview correction, 2026-08-23: "it should be over the
+  whole reader, rather than some weird box that follows your scroll and
+  inconsistently moves around") RETIRED the paragraph's own former next
+  sentence here -- the OTHER pane used to stay completely undimmed and
+  clickable (the backdrop itself was pane-scoped, not just the panel,
+  "explore on both sides of the screen independently, while still following
+  text," per the brief verbatim). The backdrop's own ONE-SHOT, never-
+  re-measured-on-scroll snapshot (below) going stale the moment the user
+  scrolled after opening a popover is what the owner actually saw -- a
+  frozen rectangle the page then scrolled past, landing in a different,
+  seemingly arbitrary spot on every fresh open. FIX: the backdrop is now
+  the plain, unconditional full-viewport `.popover-backdrop` rule ALWAYS,
+  split view or not -- both panes dim together now, one rule, no
+  split-specific exception, a disclosed trade-off (the "independently"
+  half of the brief's own words above no longer holds for the backdrop) in
+  exchange for never going stale. The PANEL's own pane-anchored POSITION,
+  described in this same paragraph, is completely UNCHANGED -- a popover
+  still opens centered within whichever pane triggered it; only the
+  backdrop's own COVERAGE changed. Proven by
+  `tests/ux/split-view.spec.ts`'s own BACKDROP-1 (scroll-position-invariant
+  boundingBox, both split and standalone).
+
+  Full-page (non-split) popovers
   are byte-for-byte unchanged (still viewport-centered) -- this is purely a
   split-mode behavior, gated on each host page's own split state
   (`Reader.razor`'s `_splitOpen`, `World.razor`'s `SplitMode`), passed down
@@ -3238,25 +3378,49 @@ Notes:
   that interface (M-D2 shipped it DI-wired with none; CLIENT-ACCESS-1's own
   "zero live in-app UI call sites" concern is what this batch closes).
 
-  VERSE/PASSAGE POPOVER, PERSONS SECTION: `persons-section-heading` (text
-  "PERSONS"; present iff the locus's own generic `mentions` edge page
-  carries >=1 Person-kind entry -- conditional presence, the same "a
-  section renders iff count > 0" law every other section already follows).
-  One `verse-person-{slug}` button per mentioned person (slug = the
-  person's own display name, lowercased, non-alphanumeric runs collapsed to
-  a single `-`, leading/trailing `-` trimmed -- `PopoverSectionProviders.cs`'s
-  own `VersePersonsSection.Slug`); text is the person's own name; click
-  pushes a `PersonNode`. A verse's own `mentions` frontier carries BOTH
-  Place and Person entities under ONE edge kind (`graph_types::edge::
-  Mentions`, `PlaceOrPerson`-typed rows) -- this section filters to
-  `Kind == "Person"` client-side (design doc §7's own CHAIN HOMOGENEITY
-  law: one section renders entries of ONE kind-shape only; a mixed list
-  would violate it). Fetched at `EdgeSectionRegistry.Mentions.InitialClamp`
-  (50) in one page -- a real verse's own total mentions (places+persons
-  combined) never comes remotely close to that in the real compiled data;
-  if the true total somehow exceeds it (`page.next` non-null), a quiet,
-  non-interactive `persons-section-more` line ("+ more mentions in this
-  verse") discloses it honestly rather than silently under-reporting.
+  VERSE/PASSAGE POPOVER, PERSONS SECTION -- RETIRED (O4, owner live-preview
+  correction, 2026-08-23: "remove persons from hover menus for now").
+  `persons-section-heading`/`verse-person-{slug}`/`persons-section-more`
+  NEVER render from any node today -- `VersePersonsSection` (still fully
+  intact, `PopoverSectionProviders.cs`) is unregistered from
+  `PopoverSectionRegistry.Providers`, "machinery retained" per the ruling's
+  own explicit words, a deliberate exception to this app's usual dead-code
+  law (contrast O1's own FULL removal of ShowMiniMap/MiniWorld.razor, this
+  same batch -- disclosed there too). Proven absent unconditionally (not
+  merely "usually doesn't show") by `tests/ux/reader-persons.spec.ts`'s own
+  reworked PERSONS-1. The paragraph immediately below describes this
+  section's own pre-O4 behavior, preserved as history rather than erased,
+  for whenever it is re-registered:
+
+  `persons-section-heading` (text "PERSONS"; present iff the locus's own
+  generic `mentions` edge page carries >=1 Person-kind entry -- conditional
+  presence, the same "a section renders iff count > 0" law every other
+  section already follows). One `verse-person-{slug}` button per mentioned
+  person (slug = the person's own display name, lowercased, non-alphanumeric
+  runs collapsed to a single `-`, leading/trailing `-` trimmed --
+  `PopoverSectionProviders.cs`'s own `VersePersonsSection.Slug`); text is
+  the person's own name; click pushes a `PersonNode`. A verse's own
+  `mentions` frontier carries BOTH Place and Person entities under ONE edge
+  kind (`graph_types::edge::Mentions`, `PlaceOrPerson`-typed rows) -- this
+  section filters to `Kind == "Person"` client-side (design doc §7's own
+  CHAIN HOMOGENEITY law: one section renders entries of ONE kind-shape
+  only; a mixed list would violate it). Fetched at
+  `EdgeSectionRegistry.Mentions.InitialClamp` (50) in one page -- a real
+  verse's own total mentions (places+persons combined) never comes
+  remotely close to that in the real compiled data; if the true total
+  somehow exceeds it (`page.next` non-null), a quiet, non-interactive
+  `persons-section-more` line ("+ more mentions in this verse") discloses
+  it honestly rather than silently under-reporting.
+
+  SURVIVING ENTRY PATH (O4): every place this note's own examples below
+  used to describe reaching a `PersonNode` "through the PERSONS section"
+  now reaches it through the in-text mention link instead (M-D3/U5,
+  `verse-mention-person-{verse}-{personId}`, Reader.razor's own primary
+  verse text -- a pre-existing, different affordance the owner's own order
+  never touched, see U5's own CONTRACT note). Both paths always pushed the
+  IDENTICAL `PersonNode`, so everything below (the person popover itself,
+  honest clamps, canon order) is completely unaffected by which entry path
+  reaches it.
 
   PERSON POPOVER: title is the person's own name (`PersonNode.Title`, the
   label carried on the SAME `EdgeEntryDto` the triggering verse's own

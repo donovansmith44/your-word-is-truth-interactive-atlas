@@ -109,13 +109,20 @@
 </div>
 
 @* Rendered as a SIBLING of .world-page, not nested inside it -- same
-   placement Reader.razor already uses for its own ExplorerPopover. Load-
-   bearing, not just conventional: a mini-map (Task 15's <MiniWorld>, opened
-   via WORLD-8's place-history flow) is meant to stay a "daylight" figure
-   regardless of which page opened it (see MiniWorld.razor's own comment);
-   nesting the popover inside .world-page would make its embedded Leaflet
-   tile pane a DOM descendant of ".world-page .leaflet-tile-pane", picking
-   up the dusk page's own sepia warmth filter by CSS accident. *@
+   placement Reader.razor already uses for its own ExplorerPopover (see that
+   file's own header comment on why: keydown/keyup bubbling to one shared
+   handler pair, and a position:fixed backdrop/panel that must reach the
+   full viewport). Historically ALSO load-bearing for a second reason now
+   retired: a mini-map (Task 15's <MiniWorld>, reachable via WORLD-8's
+   place-history flow into a VerseNode's own map chip) was meant to stay a
+   "daylight" figure regardless of which page opened it -- nesting the
+   popover inside .world-page would have made its embedded Leaflet tile pane
+   a DOM descendant of ".world-page .leaflet-tile-pane", picking up the dusk
+   page's own sepia warmth filter by CSS accident. O1 (2026-08-23) retired
+   that mini-map entirely (MiniWorld.razor gone with it -- see
+   ExplorerPopover.razor's own header comment), so this placement is kept
+   for the FIRST reason alone now, not reverted -- it is correct on its own
+   terms regardless. *@
 @if (_activeNode is not null)
 {
     <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover"

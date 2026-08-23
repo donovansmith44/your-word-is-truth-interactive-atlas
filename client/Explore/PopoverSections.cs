@@ -160,15 +160,16 @@ public interface IPopoverSectionProvider
 /// scope note below), "PARALLELS" (<see cref="VerseParallelsSection"/>,
 /// NEW this batch -- other witnesses of an event the verse belongs to, a
 /// quick peek without a click into the EVENT node first; see that class's
-/// own doc comment), "PERSONS" (<see cref="VersePersonsSection"/>, moved
-/// here from its former position near the very end of this list -- the
-/// controller's own "Persons then Places" reconciliation; no VERSE-scoped
-/// "Places" popover section exists anywhere in this codebase to also
-/// reposition, so only Persons actually moves), "THE SMALL CATECHISM"
+/// own doc comment), "THE SMALL CATECHISM"
 /// (<see cref="CatechismSeamSection"/>, now capped to 2 shown + U2's
 /// shared reveal mechanic -- previously unconditional/uncapped), and
 /// cross-references LAST (<see cref="CrossRefsSection"/>, moved from its
-/// former 2nd slot). EVENT node sections, in order: date + place(s) +
+/// former 2nd slot). ("PERSONS" -- <see cref="VersePersonsSection"/> --
+/// used to sit here too, between Parallels and Catechism, the controller's
+/// own "Persons then Places" reconciliation; O4, 2026-08-23, owner
+/// live-preview correction, unregistered it -- "remove persons from hover
+/// menus for now," machinery retained, not deleted -- see the registry's
+/// own comment below for the fuller story.) EVENT node sections, in order: date + place(s) +
 /// narrative prior/following nav (<see cref="EventDateAndPlacesSection"/>
 /// -- M-D3/U1 folds the narrative traversal arrows, formerly their own two
 /// Batch N/T sections, directly into this one, "immediately below focus"
@@ -224,7 +225,21 @@ public static class PopoverSectionRegistry
         // completely different mechanism, Explore/PlaceMentions.cs's own
         // hover-blink, not a popover section -- so only Persons actually
         // moves here).
-        new VersePersonsSection(),
+        //
+        // O4 (owner live-preview correction, 2026-08-23: "remove persons
+        // from hover menus for now") UNREGISTERS VersePersonsSection --
+        // `new VersePersonsSection()` used to sit on the very next line.
+        // The class itself is NOT deleted: the ruling's own words ("removed
+        // for now... machinery retained") are a deliberate, disclosed
+        // exception to dead-code law, distinct from O1's own full removal a
+        // few lines above this file's own history -- see
+        // Explore/PopoverSectionProviders.cs's own VersePersonsSection for
+        // the still-intact class. In-text person mentions (M-D3/U5,
+        // Reader.razor's own verse-mention-person-* spans, PersonNode/
+        // PersonCardAndMentionsSection below) are a DIFFERENT affordance,
+        // not named by the order, and stay fully live -- see
+        // reader-persons.spec.ts's own header comment for how its coverage
+        // moved to that surviving entry path.
         new CatechismSeamSection(),
         // Cross-references LAST among Verse/Passage sections, per the
         // owner's own explicit ordering -- moved from its former 2nd slot.

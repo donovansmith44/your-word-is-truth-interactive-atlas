@@ -12,12 +12,11 @@ namespace BibleAtlas.Client.Explore;
 /// content already in memory. Reader.razor owns the actual shift-click
 /// wiring (Task 15).
 ///
-/// The map chip is <see cref="ExplorationTarget.ShowMiniMap"/> (Task 15) --
-/// "chips: map/context like VerseNode" per the brief, i.e. reveals the
-/// <c>mini-map</c> IN PLACE the same way VerseNode's own map chip does,
-/// rather than Task 14's placeholder <c>NavigateWorld</c> (which would have
-/// left the popover entirely, breaking READ-5's own "chip -&gt; popover-chip-
-/// map -&gt; mini-map, all within the SAME still-open passage popover" flow).
+/// The map chip that used to live here -- <see cref="ExplorationTarget.ShowMiniMap"/>
+/// (Task 15), "chips: map/context like VerseNode" per the brief -- is gone as
+/// of O1 (owner live-preview correction, 2026-08-23: "explore geotemporally
+/// ... it's not serving us right now"). Dead-code law took ShowMiniMap and
+/// MiniWorld.razor with it; see ExplorerPopover.razor's own header comment.
 /// </summary>
 public sealed class PassageNode : IExplorable
 {
@@ -57,7 +56,6 @@ public sealed class PassageNode : IExplorable
         var (book, chapter, verse) = CanonRef.ParseVerse(CanonRef.FirstVerseOf(_sref));
         IReadOnlyList<Exploration> list = new[]
         {
-            new Exploration("Explore geo-temporally", "popover-chip-map", new ExplorationTarget.ShowMiniMap(_sref)),
             new Exploration("Read in context", "popover-chip-context",
                 new ExplorationTarget.NavigateReader(book, chapter, verse)),
             new Exploration("About this book", "popover-chip-book",

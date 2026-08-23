@@ -257,8 +257,14 @@ export function unwatchChapterNavCenter() {
 // clamped to the viewport on every side -- called ONCE, at popover-open
 // time (ExplorerPopover.razor's own OnAfterRenderAsync, mirroring
 // CardPlacement's proven "measure once, on open" snapshot discipline, not a
-// continuous tracker), so the popover can center itself within whichever
-// PANE it opened from rather than the full viewport.
+// continuous tracker), so the popover PANEL can center itself within
+// whichever PANE it opened from rather than the full viewport. O6
+// (2026-08-23): the BACKDROP no longer consumes this at all -- its own
+// one-shot-then-stale snapshot, left uncorrected across subsequent
+// scrolling, was the real cause of the owner's own reported bug; see
+// ExplorerPopover.razor's own header comment and app.css's own
+// .popover-backdrop comment for the fuller story. This function's own
+// PANEL-only contract is otherwise byte-for-byte unchanged.
 //
 // Viewport-clamped, not the element's own raw getBoundingClientRect(): the
 // reader pane (.split-pane-reader) is an ordinary in-flow box that can be

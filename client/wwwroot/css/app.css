@@ -1043,8 +1043,11 @@ input:focus-visible,
    CSS-discipline exception the file header documents -- Leaflet, not this
    page, generates .leaflet-tile-pane and .leaflet-container, so they can
    only be reached by targeting Leaflet's own class names, scoped under
-   .world-page so the (daylight) mini-map inside popovers is never
-   affected. */
+   .world-page so this warmth filter stays specific to the full /world map
+   (O1, 2026-08-23: used to also matter for keeping the popover's own
+   mini-map "daylight" regardless of which page opened it -- that mini-map
+   is retired now, MiniWorld.razor gone with it, but the scoping is still
+   correct/necessary on its own terms, so it stays unchanged). */
 .world-page .leaflet-tile-pane {
     filter: sepia(.12) saturate(.95);
 }
@@ -3230,34 +3233,26 @@ input:focus-visible,
     background: rgba(43, 33, 23, .18);
 }
 
-/* Batch F2 requirement 6d ("the hover windows ought not be smack dab in
-   the center of the screen, but on the side of the screen where the hover
-   exploration originated"): while a split is open, the backdrop dims and
-   catches clicks ONLY over the originating pane's own currently-visible
-   region (--pane-center-x/-y/-width/-height, set inline by
-   ExplorerPopover.razor once its own one-shot measurement lands -- see
-   that file's own header) -- the OTHER pane stays fully undimmed and
-   clickable, "explore on both sides independently" per the brief. Falls
-   back to the base, full-viewport rule above until the measurement lands
-   (a graceful, brief default, same discipline PlaceCard/CardPlacement
-   already established) or on any full-page (non-split) popover, where
-   this class is never applied at all.
-
-   Fix-round-1 (batch-f2-review.md Minor-1): this rule, and
-   .popover.popover-pane-anchored below, both chain two classes -- a
-   disclosed deviation from this file's own single-class discipline (line
-   5). Both need a DIFFERENT base class already (.popover-backdrop vs
-   .popover) to pick which element's own property set applies, so one
-   shared .popover-pane-anchored modifier can't stand alone on either;
-   not worth splitting into two entirely separate modifier classes for
-   what already reads as one obvious pane-anchoring pair. */
-.popover-backdrop.popover-pane-anchored {
-    left: calc(var(--pane-center-x) - var(--pane-width) / 2);
-    top: calc(var(--pane-center-y) - var(--pane-height) / 2);
-    width: var(--pane-width);
-    height: var(--pane-height);
-    inset: auto;
-}
+/* O6 (owner live-preview correction, 2026-08-23, verbatim: "it should be
+   over the whole reader, rather than some weird box that follows your
+   scroll and inconsistently moves around"): Batch F2 requirement 6d used
+   to pane-scope the backdrop here -- while a split was open, dimming
+   (and click-catching) only the originating pane's own currently-visible
+   region, via --pane-center-x/-y/-width/-height (ExplorerPopover.razor's
+   own one-shot measurement, taken ONCE at open and never re-measured on
+   scroll). That staleness IS the bug the owner reported: scrolling the
+   reader pane's own content after a popover opened left the backdrop
+   frozen at wherever the pane happened to sit on screen at that instant,
+   landing in a different, seemingly arbitrary spot on every fresh open.
+   RETIRED -- `.popover-backdrop` above (`position:fixed; inset:0`) is now
+   the ONLY rule that ever applies to the backdrop, split view or not; this
+   compound-selector rule (and the "explore on both sides independently"
+   trade-off it existed for -- the OTHER pane no longer stays undimmed
+   during split view) is gone with it, a disclosed simplification, not an
+   oversight. `.popover.popover-pane-anchored` below is UNRELATED and
+   UNCHANGED -- the PANEL's own pane-anchored POSITION (a popover still
+   opens beside the pane that triggered it) never depended on the
+   backdrop's own coverage. */
 
 /* Fix round 1 (Task 15 finding, Reader.razor): Reader.razor toggles
    .reader-shift-active on its own outer wrapper for exactly as long as
@@ -3326,13 +3321,11 @@ input:focus-visible,
 
 /* M-D3 (R3, the superscript rework): "the popover anchors OVER THE VERSE
    (not pane-centered), ALWAYS VISIBLE, never cut off by other UI." Applies
-   to the PANEL ONLY (never .popover-backdrop -- there is no "originating
-   pane" sub-region to scope dimming to here the way .popover-pane-anchored
-   scopes it in split view; a verse-anchored popover's own backdrop stays
-   whichever rule already applies -- full-viewport standalone, or STILL
-   pane-scoped in split view via the pre-existing .popover-pane-anchored
-   class, which composes independently since it targets the backdrop and
-   this targets the panel). Horizontally centered on the verse
+   to the PANEL ONLY, never `.popover-backdrop` -- a verse-anchored
+   popover's own backdrop is just the plain, always-full-viewport
+   `.popover-backdrop` rule now (O6, 2026-08-23 -- see that rule's own
+   comment; `.popover-pane-anchored` no longer reaches the backdrop at all,
+   split view or not). Horizontally centered on the verse
    (translateX(-50%) against --verse-anchor-left, the verse's own horizontal
    midpoint -- ExplorerPopover.razor's own clamping keeps that midpoint far
    enough from both edges that the popover's own ordinary width, set below,
@@ -3573,11 +3566,13 @@ input:focus-visible,
    ref-only button beside a separate paragraph. See PassageList.razor's own
    comment for the real, live-caught bug this fixes (a testid on a
    ref-only element left full-text assertions against it seeing only the
-   ref). `.popover-verse-expand`/`.popover-reader` (MiniReaderExpand.razor,
-   nested inside) each stop click propagation, so toggling the mini-reader
-   or interacting inside it never ALSO fires this entry's own explore
-   click -- the SAME "the more specific target always wins" rule ONE-RULE
-   already documents for a passage's nested per-verse spans. */
+   ref). MiniReaderExpand.razor's own expand control (O2: RevealControls'
+   own arrow buttons, each stops click propagation -- see that component's
+   own O2 comment) and `.popover-reader` (nested inside, its own
+   stopPropagation unchanged) mean toggling the mini-reader or interacting
+   inside it never ALSO fires this entry's own explore click -- the SAME
+   "the more specific target always wins" rule ONE-RULE already documents
+   for a passage's nested per-verse spans. */
 .popover-passage-entry {
     display: flex;
     flex-direction: column;
@@ -3664,11 +3659,14 @@ input:focus-visible,
     display: flex;
     align-items: center;
     gap: .5rem;
-    /* M-D3/U2: bottom margin, not top -- these controls lead the list they
-       govern now (see PassageList.razor's/CatechismList.razor's own
-       matching comment for why), so the gap belongs below them, before
-       the first entry, not above. */
-    margin: 0 0 .3rem .65rem;
+    /* O3 (owner live-preview correction, 2026-08-23): TOP margin, not
+       bottom -- these controls now TRAIL the list they govern (see
+       PassageList.razor's/CatechismList.razor's own matching O3 comment
+       for the full history: M-D3/U2's original leading placement, and this
+       rule's own bottom margin to match, were a disclosed double-click-
+       hazard workaround, since retired by R-D3), so the gap belongs above
+       them, after the last entry, not below. */
+    margin: .3rem 0 0 .65rem;
 }
 
 .popover-reveal-arrow {
@@ -3690,56 +3688,40 @@ input:focus-visible,
     color: var(--lapis);
 }
 
-/* A real, live-caught bug: the collapse arrow's own CONDITIONAL presence
-   (absent exactly at the default view) let the more arrow's own on-screen
-   position shift sideways the instant collapse first appeared -- fatal
-   specifically for a genuine rapid DOUBLE-click (the shared mechanic's own
-   "double-down expands ALL" shortcut): Playwright's `.dblclick()`, and a
-   real browser's own native dblclick gesture alike, target ONE fixed
-   screen coordinate for both sub-clicks, so a target that moves between
-   them can have its second click land on whatever slid into its place
-   instead (observed live: the reveal count moving the WRONG direction,
-   never reaching "all"). This placeholder holds the collapse arrow's own
-   slot at the SAME fixed width whether or not the real button occupies it
-   -- `width` matches `.popover-reveal-arrow` exactly -- so the more
-   arrow's own position never moves regardless of collapse's own
-   conditional presence (collapse itself, always the FIRST child, needs no
-   equivalent placeholder of its own: nothing ever renders before it that
-   could shift it). */
+/* A real, live-caught bug: the collapse pair's own CONDITIONAL presence
+   (absent exactly at the default view) let the more pair's own on-screen
+   position shift sideways the instant collapse first appeared -- originally
+   fatal for a genuine rapid DOUBLE-click (RevealControls.razor's own header
+   comment has the full, now-superseded story: a real dblclick's two
+   sub-clicks target ONE fixed screen coordinate, so a target that moved
+   between them could have its second click land on whatever slid into its
+   place instead). M-D3 fix round 3 (R-D3): "double-down"/"double-up" are
+   now separate, always-paired-with-their-single-sibling BUTTONS
+   (`.popover-reveal-collapse-all`/`.popover-reveal-more-all`, two
+   stationary targets, never one moving one hit twice) rather than a
+   dblclick/Shift-click gesture on the single arrow -- the position-shift
+   HAZARD this placeholder guards against no longer applies to a click
+   gesture at all, but the underlying "don't let unrelated conditional
+   presence shift a sibling control's own position" principle is still
+   worth keeping: TWO placeholders now (one per collapse-pair button), each
+   still `width: 1rem` matching `.popover-reveal-arrow` exactly, so the
+   more pair's own position never moves regardless of the collapse pair's
+   own conditional presence (the collapse pair itself, always the FIRST
+   children, needs no equivalent placeholder of its own: nothing ever
+   renders before it that could shift it). */
 .popover-reveal-slot {
     display: block;
     width: 1rem;
 }
 
-/* Batch N2 requirement 2 (folded into Batch T): the per-entry passage
-   clamp toggle -- deliberately a DIFFERENT visual language from
-   .popover-verse-expand just below (small-caps, lapis-resting) so the two
-   independent "expand THIS passage" / "read the whole CHAPTER" affordances
-   on the same entry never read as the same control: italic serif (echoing
-   .popover-passage-caption's own italic treatment, since this is also a
-   quiet annotation ABOUT the passage, not the passage itself), bronze-ink
-   resting / lapis hover -- the same pairing PlaceCard's own place-card-more/
-   -collapse (Batch D) and .popover-passage-reveal above already use for an
-   analogous reveal gesture, just inverted in direction (bronze rests here
-   specifically so it doesn't visually collide with .popover-verse-expand's
-   own lapis-resting state when both sit on one entry at once). */
-.popover-passage-clamp-toggle {
-    display: block;
-    margin: .35rem 0 0;
-    padding: 0;
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-size: .82rem;
-    text-align: start;
-    color: var(--bronze-ink);
-    background: none;
-    border: none;
-    cursor: pointer;
-}
-
-.popover-passage-clamp-toggle:hover {
-    color: var(--lapis);
-}
+/* O2 (owner live-preview correction, 2026-08-23): the per-entry passage
+   clamp TOGGLE (.popover-passage-clamp-toggle) that used to render here,
+   an independent "expand THIS passage a bit further" control alongside
+   MiniReaderExpand's own "read the whole CHAPTER" one on the SAME entry,
+   is retired -- exactly the "redundant pair" the owner named. See
+   PassageList.razor's own header comment for the fuller story; ClampVerses'
+   own STATIC clamp (how much of a passage entry's text shows before either
+   arrow is touched) is unaffected and unchanged. */
 
 /* Batch F ("the small catechism"): the shared small-caps eyebrow every
    catechism section title uses -- "THE SMALL CATECHISM" (the VERSE/PASSAGE
@@ -3863,55 +3845,13 @@ input:focus-visible,
    alongside -- "parallel implementations are a defect," per the user's own
    words. */
 
-/* MiniWorld's own host (Task 15, READ-4/READ-5, design-direction.md: "the
-   mini-map inside popovers... a small engraved figure on a paper card").
-   MiniWorld.razor renders this whole element (data-testid="mini-map" lives
-   on ITS root, not a wrapper this file adds) -- .popover-mini-map is just
-   the parchment frame; .mini-world-map is the literal 320x240 Leaflet
-   mount per the brief. Deliberately NOT scoped under .world-page (see
-   World.razor's own comment on where it renders <ExplorerPopover>), so the
-   figure stays unfiltered "daylight" basemap tiles regardless of which page
-   opened the popover -- MiniWorld.razor's own header comment explains why
-   that reading of "inherits the atlas-plate base naturally" was chosen.
-   align-items FIXED, Batch C (queued from the published demo's own hot-patch
-   -- source never had it): flex-end hugged the 320px map to the frame's
-   right edge, leaving a dead gap on the left whenever "Open in world" (the
-   frame's only other child) rendered narrower than the map -- center keeps
-   both children visually centered in the frame; .mini-world-open-world's
-   own align-self below re-pins JUST that link to the right edge, matching
-   the original intent for it specifically without dragging the map along. */
-.popover-mini-map {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: .45rem;
-    padding: .5rem;
-    background: var(--parchment);
-    border: 1px solid var(--bronze);
-    border-radius: 4px;
-}
-
-.mini-world-map {
-    width: 320px;
-    max-width: 100%;
-    height: 240px;
-    border: 1px solid rgba(138, 107, 61, .35);
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.mini-world-open-world {
-    align-self: flex-end;
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: .05em;
-    font-size: .8rem;
-    color: var(--lapis);
-}
-
-.mini-world-open-world:hover {
-    color: var(--bronze-ink);
-}
+/* O1 (owner live-preview correction, 2026-08-23): MiniWorld.razor's own
+   host rules (.popover-mini-map/.mini-world-map/.mini-world-open-world)
+   lived here (Task 15, READ-4/READ-5) until the popover's "Explore
+   geo-temporally" chip that triggered them was retired -- "it's not
+   serving us right now." Dead-code law took MiniWorld.razor and this CSS
+   with it; see ExplorerPopover.razor's own header comment for the fuller
+   story. */
 
 /* Base layout, shared by TimeAndPlaceNode's own (non-interactive <p>) rows
    and PlaceNode's clickable event rows below -- .popover-event-row-button
@@ -4093,26 +4033,14 @@ input:focus-visible,
 }
 
 /* Batch R requirement 4 (expandable popover + in-context chapter reading).
-   The toggle itself: small-caps, quiet -- design-direction.md's own
-   letterspaced-eyebrow convention for controls, --lapis so it reads as
-   distinctly interactive against the section's own prose. */
-.popover-verse-expand {
-    display: block;
-    margin-top: .5rem;
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: .06em;
-    font-size: .8rem;
-    color: var(--lapis);
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-}
-
-.popover-verse-expand:hover {
-    color: var(--bronze-ink);
-}
+   O2 (owner live-preview correction, 2026-08-23) retired the toggle
+   BUTTON this rule used to style (small-caps text, "Read the whole
+   chapter"/etc.) -- MiniReaderExpand.razor's own trigger is now a
+   RevealControls-driven arrow pair, styled by .popover-reveal-arrow and
+   friends instead (see RevealControls.razor's own O2 comment).
+   `popover-verse-expand`/`popover-verse-collapse` (plus each one's own
+   TestIdSuffix) survive only as data-testid values now, no matching CSS
+   class of their own left to style. */
 
 /* The mini-reader itself: a bounded, independently-scrollable region (NOT
    relying solely on .popover's own outer overflow -- requirement 4: "the

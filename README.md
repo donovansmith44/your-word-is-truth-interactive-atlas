@@ -61,9 +61,12 @@ Server-side legacy machinery gets the same treatment: M-D3 retired a few
 genuinely-unreached `atlas_core`/`atlas_server` functions (a narrative-
 position resolver superseded by the graph's own succession edges, plus two
 orphaned wire-DTO conversions) rather than leaving them in the live binary
-— not behind a runtime flag, just gone from HEAD; `git log`/the batch
-report (`.superpowers/sdd/2026-08-17-bible-atlas-m1/batch-md3-report.md`)
-has the exact commit if you ever want them back.
+— not behind a runtime flag, just gone from HEAD; the deleted code still
+exists in full at commit `850a792` (the last commit before the deletion,
+`e24b14c`) if you ever want it back — `git show 850a792:server/atlas-core/src/narrative.rs`,
+or `git log`/the batch report
+(`.superpowers/sdd/2026-08-17-bible-atlas-m1/batch-md3-report.md`) for the
+fuller story.
 
 ### Regenerating (only if you change `data/raw/` or `data/curated/`)
 

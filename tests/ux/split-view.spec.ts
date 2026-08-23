@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import { api } from './lib/api';
+import { loadToc } from './lib/canon';
 
 // VIEWSTATE-1's own camera round-trip needs the map's EXACT (lat, lng,
 // zoom), not a rendered pixel position -- a rendered marker's own
@@ -457,6 +458,106 @@ test('PANE-ANCHOR-1: full-page (non-split) popovers stay viewport-centered, unaf
     const viewportCenterX = 700;
     const popoverCenterX = popoverBox.x + popoverBox.width / 2;
     expect(Math.abs(popoverCenterX - viewportCenterX)).toBeLessThan(5);
+  }
+});
+
+// BACKDROP-1 (O6, owner live-preview correction, 2026-08-23, verbatim:
+// "when you focus on something the background behind the hover menu gets
+// greyed, which is okay, but it should be over the whole reader, rather
+// than some weird box that follows your scroll and inconsistently moves
+// around"): the popover backdrop must cover the FULL VIEWPORT
+// (position:fixed, inset:0) at ANY scroll position, standalone or split --
+// see ExplorerPopover.razor's own O6 header comment and app.css's own
+// .popover-backdrop comment for the fix (PaneRect/PaneRectStyle, the
+// retired ONE-SHOT-then-stale measurement, no longer reaches the backdrop
+// at all). "Longest real chapter" discovery mirrors reader.spec.ts's own
+// NAV-5/NAV-6 precedent -- real scroll room, never a hardcoded/assumed-tall
+// book/chapter.
+async function longestChapter(toc: any): Promise<{ book: string; chapter: number; verses: number }> {
+  let longest = { book: toc[0].code, chapter: 1, verses: toc[0].chapters[0] };
+  for (const b of toc) {
+    b.chapters.forEach((v: number, i: number) => {
+      if (v > longest.verses) longest = { book: b.code, chapter: i + 1, verses: v };
+    });
+  }
+  expect(longest.verses, 'expected a real long chapter for real scroll room').toBeGreaterThan(30);
+  return longest;
+}
+
+// Three GENUINELY DISTINCT scroll checkpoints (0, half, max), derived from
+// the page's OWN real scrollable height at runtime rather than a guessed
+// pixel-per-verse estimate -- robust to whatever the real rendered chapter
+// height actually is, never risking two "different" checkpoints landing on
+// the identical (clamped) position.
+async function scrollCheckpoints(page: Page): Promise<number[]> {
+  const max = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+  expect(max, 'expected genuine scroll room on a long chapter').toBeGreaterThan(200);
+  return [0, Math.floor(max / 2), max];
+}
+
+test('BACKDROP-1: the popover backdrop covers the full viewport at any scroll position, standalone (O6)', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  const toc = await loadToc();
+  const longest = await longestChapter(toc);
+
+  await page.goto(`/read/${longest.book}/${longest.chapter}`);
+  await page.getByTestId('verse-line-1').click();
+  await expect(page.getByTestId('popover-backdrop')).toBeVisible();
+
+  // Sampled at rest (0), mid-scroll, and deep-scroll -- the SAME box every
+  // time, never re-measured/re-anchored from wherever the popover happened
+  // to open, and never left frozen at a stale pre-scroll snapshot either.
+  // Compared against page.viewportSize() itself (the exact dimensions just
+  // configured above), not a re-hardcoded literal -- and a small (2px)
+  // tolerance rather than a sub-pixel one, robust to a platform's own
+  // scrollbar/rounding quirks unrelated to this fix.
+  const viewport = page.viewportSize();
+  expect(viewport).toBeTruthy();
+  for (const y of await scrollCheckpoints(page)) {
+    await page.evaluate(scrollY => window.scrollTo(0, scrollY), y);
+    const box = await page.getByTestId('popover-backdrop').boundingBox();
+    expect(box, `backdrop boundingBox at scrollY=${y}`).toBeTruthy();
+    if (box && viewport) {
+      expect(box.x, `x at scrollY=${y}`).toBeLessThanOrEqual(2);
+      expect(box.y, `y at scrollY=${y}`).toBeLessThanOrEqual(2);
+      expect(box.width, `width at scrollY=${y}`).toBeGreaterThanOrEqual(viewport.width - 2);
+      expect(box.height, `height at scrollY=${y}`).toBeGreaterThanOrEqual(viewport.height - 2);
+    }
+  }
+});
+
+test('BACKDROP-1: the popover backdrop covers the full viewport at any scroll position, split view too -- not pane-scoped (O6)', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  const toc = await loadToc();
+  const longest = await longestChapter(toc);
+
+  await page.goto(`/read/${longest.book}/${longest.chapter}?split=1`);
+  await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
+  await page.getByTestId('verse-line-1').click();
+  await expect(page.getByTestId('popover-backdrop')).toBeVisible();
+
+  // The reader pane's own box (what the backdrop USED to be scoped to,
+  // pre-O6) -- asserted distinct from the full viewport below, so this test
+  // would genuinely have failed against the retired pane-scoped behavior,
+  // not just against a hypothetical.
+  const readerBox = await page.getByTestId('reader-root').boundingBox();
+  expect(readerBox).toBeTruthy();
+  if (readerBox) {
+    expect(readerBox.width, 'sanity: the reader pane is narrower than the full viewport in split view').toBeLessThan(1300);
+  }
+
+  const viewport = page.viewportSize();
+  expect(viewport).toBeTruthy();
+  for (const y of await scrollCheckpoints(page)) {
+    await page.evaluate(scrollY => window.scrollTo(0, scrollY), y);
+    const box = await page.getByTestId('popover-backdrop').boundingBox();
+    expect(box, `backdrop boundingBox at scrollY=${y}, split view`).toBeTruthy();
+    if (box && viewport) {
+      expect(box.x, `x at scrollY=${y}`).toBeLessThanOrEqual(2);
+      expect(box.y, `y at scrollY=${y}`).toBeLessThanOrEqual(2);
+      expect(box.width, `width at scrollY=${y} -- the FULL viewport, not just the reader pane`).toBeGreaterThanOrEqual(viewport.width - 2);
+      expect(box.height, `height at scrollY=${y}`).toBeGreaterThanOrEqual(viewport.height - 2);
+    }
   }
 });
 

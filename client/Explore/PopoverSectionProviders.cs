@@ -1533,6 +1533,15 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
 /// by that event's own label when there is more than one -- the SAME
 /// "single entry needs no name, multiple entries each get named" rule
 /// EventDateAndPlacesSection's own narrative nav (U1) already establishes.
+///
+/// O5 (owner live-preview correction, 2026-08-23, "parallels has double
+/// headers... 1Ki.3.1-15 and 1 kings right below it... get rid of the
+/// second header"): unlike <see cref="EventWitnessesSection"/>'s own
+/// "PARALLEL ACCOUNTS" (which keeps <see cref="WitnessUnitsResolver"/>'s
+/// own book-name Caption -- genuinely load-bearing there, telling several
+/// Gospels apart at a glance), this section strips it to null before
+/// handing units to <see cref="Components.PassageList"/> -- one header
+/// (the ref-label, which already carries the book CODE) per entry, not two.
 /// </summary>
 public sealed class VerseParallelsSection : IPopoverSectionProvider
 {
@@ -1623,7 +1632,26 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
             unitsPerEvent = new List<List<PassageSourceUnit>>();
             foreach (var (_, others) in qualifying)
             {
-                unitsPerEvent.Add(await WitnessUnitsResolver.ResolveAsync(api, others));
+                var units = await WitnessUnitsResolver.ResolveAsync(api, others);
+                // O5 (owner live-preview correction, 2026-08-23, verbatim:
+                // "parallels has double headers. for instance we have
+                // 1Ki.3.1-15 and 1 kings right below it when focused on
+                // 2ch.1.2. Get rid of the second header"): WitnessUnitsResolver
+                // captions every unit with its own book's display name --
+                // exactly right for EventWitnessesSection's own "PARALLEL
+                // ACCOUNTS" (EventNode's own multi-Gospel comparison, where
+                // the caption is the ONLY thing telling MAT.27/MRK.15/LUK.23/
+                // JHN.19 apart at a glance, unchanged by this ruling), but
+                // genuinely redundant here: PassageList.razor's own ref-label
+                // ("1Ki.3.1-15") already carries the book CODE, so spelling
+                // the same book out a second time right below it read as two
+                // headers on one entry, not one. Stripped to null (a plain
+                // per-entry projection, not a WitnessUnitsResolver parameter
+                // -- the shared resolver itself, and EventWitnessesSection's
+                // own caption, are both otherwise untouched) so PassageList
+                // renders ref-label ONLY, matching every other single-header
+                // PassageList consumer in this app.
+                unitsPerEvent.Add(units.Select(u => u with { Caption = null }).ToList());
             }
         }
         catch (Exception)
@@ -1953,6 +1981,18 @@ public sealed class PolityDeltaGroundingSection : IPopoverSectionProvider
 }
 
 /// <summary>
+/// O4 (owner live-preview correction, 2026-08-23: "remove persons from
+/// hover menus for now") UNREGISTERED this class from
+/// <see cref="PopoverSectionRegistry.Providers"/> -- it is never
+/// constructed anywhere today, so nothing below actually runs. Kept intact
+/// rather than deleted per the ruling's own explicit words ("machinery
+/// retained"), a deliberate, disclosed exception to this codebase's usual
+/// dead-code law; see <see cref="PopoverSectionRegistry"/>'s own comment
+/// for the fuller story and reader-persons.spec.ts's own header comment for
+/// how its test coverage moved to the surviving in-text-mention entry path
+/// (M-D3/U5) instead. The doc comment below describes this class's own
+/// pre-O4 behavior, unchanged, for whenever it is re-registered.
+///
 /// Batch P (the extensibility proof; M-D2 ruling): the VERSE/PASSAGE
 /// popover's own PERSONS section -- mentioned persons, conditional
 /// presence. THE FIRST <see cref="IExplorableClient"/> CONSUMER: reads the

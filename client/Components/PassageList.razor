@@ -31,40 +31,39 @@
    passage (and also read the whole chapter like we've already got)", the
    owner verbatim): ClampVerses caps a PASSAGE entry's own COMPACT text at N
    verses, independent of (and orthogonal to) Cap above, which counts whole
-   ENTRIES -- this clamps WITHIN one entry. A per-entry
-   popover-passage-clamp-expand{-ENTRY-ID}/-collapse toggle (visually and
-   testid-distinct from MiniReaderExpand's own popover-verse-expand -- "two
-   distinct affordances," the brief's own words) reveals/re-hides the rest
-   of THAT entry's own text; the chapter-wide mini-reader expand stays
-   completely unaffected, sitting alongside it on the SAME entry. Implemented
+   ENTRIES -- this clamps WITHIN one entry.
+
+   O2 (owner live-preview correction, 2026-08-23: "we have redundant
+   buttons, too. Show the rest of this passage and Read the whole
+   chapter"): the per-entry `popover-passage-clamp-expand{-ENTRY-ID}/
+   -collapse` TOGGLE that used to sit right here -- reveal/re-hide the rest
+   of THAT entry's own clamped text, independent of and alongside
+   MiniReaderExpand's own chapter-wide expand on the SAME entry -- is
+   RETIRED; it was exactly the "redundant pair" the owner named (two
+   different "show more" controls on one entry). ClampVerses' own STATIC
+   clamp -- how many verses of a passage entry's text show before either
+   arrow is ever touched -- is UNCHANGED and still computed below; only the
+   separate per-entry TOGGLE that used to grow it a little further (without
+   yet reaching the whole chapter) is gone. MiniReaderExpand's own control
+   (now a RevealControls-driven down/double-down/up/double-up arrow pair,
+   see its own O2 comment) is the SOLE remaining expansion affordance on a
+   clamped entry -- revealing more of it now always means the whole,
+   lazy-fetched chapter, never a partial reveal of just this entry's own
+   remaining verses; a disclosed simplification (the nuance the old
+   per-entry toggle offered is honestly lost) in service of "ONE expansion
+   idiom... passage text, cross-refs, catechism all use the identical
+   component," the controller's own words for this ruling. Implemented
    ONCE here so every consumer (xrefs, THE SCRIPTURES, place est/dest,
-   PRIOR/FOLLOWING event sections, EVENT witnesses) inherits it for free --
-   "parallel implementations are a defect," the owner's own F2 6-ARCH decree,
-   extended to this requirement too. A lone-verse entry, or a passage entry
-   whose own verse count is already <= ClampVerses, shows no clamp
-   affordance at all (conditional presence) -- unaffected, unchanged. *@
+   PRIOR/FOLLOWING event sections, EVENT witnesses) inherits the static
+   clamp for free -- "parallel implementations are a defect," the owner's
+   own F2 6-ARCH decree, extended to this requirement too. A lone-verse
+   entry, or a passage entry whose own verse count is already <=
+   ClampVerses, is never clamped at all (conditional) -- unaffected,
+   unchanged. *@
 @using BibleAtlas.Client.Explore
 
 @if (_blocks.Count > 0)
 {
-    @* M-D3/U2, a real, live-caught bug (see RevealControls.razor's own doc
-       comment): rendered BEFORE the list, not after -- revealing more
-       entries inserts new content ABOVE these controls in document flow
-       when they trail the list, which shifts their own on-screen position
-       downward on every reveal. A genuine rapid double-click (the shared
-       mechanic's own "double-down expands ALL" shortcut) has its SECOND
-       sub-click still aimed at the FIRST click's own now-stale screen
-       coordinate, which -- once the list has grown -- lands on whatever
-       newly-revealed passage entry slid into that spot instead, exploring
-       IT rather than expanding the list any further (observed live: the
-       popover navigating away entirely mid-gesture). Leading placement
-       keeps this row's own position permanently stable regardless of how
-       many entries are ever revealed below it. *@
-    @if (Cap is int cap && _blocks.Count > cap)
-    {
-        <RevealControls Total="@_blocks.Count" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="@(n => _shown = n)"
-                         MoreTestId="@MoreTestId" CollapseTestId="@CollapseTestId" RevealNoun="@RevealNoun" />
-    }
     <div class="popover-passage-list">
         @foreach (var entry in Visible)
         {
@@ -102,25 +101,27 @@
                            passage span."): SpanOnly renders NOTHING here --
                            the ref label above (@entry.Block.Span) is already
                            the compact SPAN reference; the ONLY affordance
-                           left is MiniReaderExpand's own "Read the whole
-                           chapter" button below, which reuses the identical
-                           inline-expand mechanism every other passage entry
-                           already has (reuse, not a parallel implementation
-                           -- the requirement's own explicit instruction). No
-                           verse-list echo, no clamp toggle (nothing to
-                           clamp when nothing renders by default). *@
+                           left is MiniReaderExpand's own expand control
+                           below, which reuses the identical inline-expand
+                           mechanism every other passage entry already has
+                           (reuse, not a parallel implementation -- the
+                           requirement's own explicit instruction). No
+                           verse-list echo, no clamp (nothing to clamp when
+                           nothing renders by default). *@
                         @if (!SpanOnly)
                         {
-                            // Batch N2 requirement 2: clamp THIS entry's own
+                            // Batch N2 requirement 2, STATIC half (the toggle
+                            // that used to grow this further -- O2's own
+                            // "redundant pair" -- is retired; see this file's
+                            // own header comment): clamp THIS entry's own
                             // compact text to ClampVerses verses, independent
                             // of MiniReaderExpand's own (unaffected) chapter
-                            // expand above. Only ever narrows a PASSAGE entry
+                            // expand below. Only ever narrows a PASSAGE entry
                             // (IsPassage, >=2 verses) whose own verse count
                             // exceeds the clamp -- a lone verse, or a passage
                             // already at or under it, is never clamped.
                             var clamps = entry.Block.IsPassage && ClampVerses is int clamp && entry.Block.Verses.Count > clamp;
-                            var clampExpanded = clamps && _clampExpanded.Contains(entry.TestId);
-                            var shown = clamps && !clampExpanded ? entry.Block.Verses.Take(ClampVerses!.Value) : entry.Block.Verses;
+                            var shown = clamps ? entry.Block.Verses.Take(ClampVerses!.Value) : entry.Block.Verses;
                             <p class="popover-passage-text">
                                 @if (entry.Block.IsPassage)
                                 {
@@ -134,29 +135,31 @@
                                     @entry.Block.Verses[0].Text
                                 }
                             </p>
-                            @if (clamps)
-                            {
-                                @if (!clampExpanded)
-                                {
-                                    <button type="button" class="popover-passage-clamp-toggle" data-testid="@($"popover-passage-clamp-expand-{entry.TestId}")"
-                                            aria-expanded="false" @onclick="() => ToggleClamp(entry.TestId)" @onclick:stopPropagation="true">
-                                        Show the rest of this passage
-                                    </button>
-                                }
-                                else
-                                {
-                                    <button type="button" class="popover-passage-clamp-toggle" data-testid="@($"popover-passage-clamp-collapse-{entry.TestId}")"
-                                            aria-expanded="true" @onclick="() => ToggleClamp(entry.TestId)" @onclick:stopPropagation="true">
-                                        Show fewer verses
-                                    </button>
-                                }
-                            }
                         }
                     </CompactContent>
                 </MiniReaderExpand>
             </div>
         }
     </div>
+    @* O3 (owner live-preview correction, 2026-08-23, xrefs named
+       specifically, ruled universal for the shared reveal component --
+       "that button should be below the list of xrefs, not above"): moved
+       from BEFORE the list to AFTER it. M-D3/U2's own original placement
+       here was a deliberate, disclosed WORKAROUND for a real, live-caught
+       bug -- a genuine rapid native DOUBLE-CLICK's second sub-click landing
+       on a newly-revealed entry instead of the (now-shifted) control, once
+       the list grew beneath a TRAILING control (RevealControls.razor's own
+       header comment has the full story) -- not a preference of its own.
+       R-D3 already retired the hazard that workaround existed for: "double"
+       is now a SECOND, STATIONARY arrow button beside the single one, never
+       a double-click gesture on one moving target, so there is no second
+       sub-click that could ever land on shifted content. Safe to honor the
+       owner's own placement now that the reason to defy it is gone. *@
+    @if (Cap is int cap && _blocks.Count > cap)
+    {
+        <RevealControls Total="@_blocks.Count" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="@(n => _shown = n)"
+                         MoreTestId="@MoreTestId" CollapseTestId="@CollapseTestId" RevealNoun="@RevealNoun" />
+    }
 }
 
 @code {
@@ -173,32 +176,15 @@
     [Parameter] public int? ClampVerses { get; set; }
 
     // M-D1 requirement 3 (span-not-echo, owner live report #4): when true,
-    // every entry renders its own ref-label span ONLY -- no compact text,
-    // no clamp toggle -- leaving MiniReaderExpand's own "Read the whole
-    // chapter" affordance as the sole way to see the passage's own words.
-    // Default false: every OTHER consumer (cross-references, THE
-    // SCRIPTURES, place est/dest, PRIOR/FOLLOWING, multi-witness PARALLEL
-    // ACCOUNTS) is UNCHANGED by this batch -- see this file's own header
-    // comment block for the full rationale.
+    // every entry renders its own ref-label span ONLY -- no compact text --
+    // leaving MiniReaderExpand's own control (O2: a RevealControls-driven
+    // arrow pair, "Read the whole chapter" now living in its title/
+    // aria-label rather than visible button text) as the sole way to see
+    // the passage's own words. Default false: every OTHER consumer
+    // (cross-references, THE SCRIPTURES, place est/dest, PRIOR/FOLLOWING,
+    // multi-witness PARALLEL ACCOUNTS) is UNCHANGED by this batch -- see
+    // this file's own header comment block for the full rationale.
     [Parameter] public bool SpanOnly { get; set; }
-
-    // Per-entry clamp-expanded state, keyed by TestId -- a plain HashSet
-    // (not a bool on PassageBlockData itself, which is rebuilt fresh every
-    // OnParametersSet) so re-expanding a specific entry survives an
-    // unrelated re-render of this component, same "state that must outlive
-    // a single render lives in @code, keyed by a stable id" discipline
-    // MiniReaderExpand's own `_expanded` field already follows one level
-    // down (there, per-component-instance; here, per-entry within ONE
-    // instance, since ClampVerses applies list-wide, not per sub-component).
-    private readonly HashSet<string> _clampExpanded = new();
-
-    private void ToggleClamp(string testId)
-    {
-        if (!_clampExpanded.Add(testId))
-        {
-            _clampExpanded.Remove(testId);
-        }
-    }
 
     // A real, live-caught regression (found by the full pre-existing suite,
     // not guessed): CrossRefsSection's OWN pre-Batch-F2 click contract --
