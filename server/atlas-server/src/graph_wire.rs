@@ -80,6 +80,14 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
         "Era" => Some(AnyNodeId { kind: NodeKind::Era, raw: rest.to_string() }),
         "Polity" => Some(AnyNodeId { kind: NodeKind::Polity, raw: rest.to_string() }),
         "CatechismItem" => Some(AnyNodeId { kind: NodeKind::CatechismItem, raw: rest.to_string() }),
+        // Batch P (the extensibility proof): the ONE line this batch adds
+        // to this file -- completing the round trip `encode_node_id`'s own
+        // pre-existing generic fallback ALREADY produces for Person
+        // ("Person:aaron_1"), the identical one-arm pattern every prior
+        // node-kind batch added here (M-B's four, M-C's three). Nothing
+        // else in `graph_handlers.rs`/`store.rs`/`explore.rs` needed a
+        // change for the two generic endpoints to serve Person nodes.
+        "Person" => Some(AnyNodeId { kind: NodeKind::Person, raw: rest.to_string() }),
         _ => None,
     }
 }
@@ -163,6 +171,8 @@ mod tests {
             (NodeKind::Era, "patriarchs", "Era:patriarchs"),
             (NodeKind::Polity, "egypt", "Polity:egypt"),
             (NodeKind::CatechismItem, "first-commandment", "CatechismItem:first-commandment"),
+            // Batch P.
+            (NodeKind::Person, "aaron_1", "Person:aaron_1"),
         ] {
             let id = AnyNodeId { kind, raw: raw.to_string() };
             let wire = encode_node_id(&id);

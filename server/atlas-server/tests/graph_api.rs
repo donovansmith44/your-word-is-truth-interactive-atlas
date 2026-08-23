@@ -260,6 +260,70 @@ async fn anchor_card_carries_its_citation_and_dates_frontier() {
     assert!(!justifies["entries"].as_array().unwrap().is_empty(), "an anchor-bound DatedBy row's own justified-by ground must resolve back to this anchor (brief requirement 4)");
 }
 
+/// Batch P (the extensibility proof): a Person's own card + "mentioned-in"
+/// frontier, served by the SAME generic endpoints every other kind above
+/// already uses -- zero new bespoke endpoints, the batch's own thesis.
+/// `aaron_1` is a real Theographic person (`data/raw/theographic/.../
+/// people.json`); `331` is that record's own real, committed
+/// `verseCount`/resolved `verse_links` length -- an end-to-end fidelity
+/// check (raw source count -> ETL -> graph adapter -> this wire), not a
+/// number invented for the test.
+#[tokio::test]
+async fn person_card_and_mentioned_in_frontier_are_served_by_the_generic_endpoints() {
+    let app = real_app();
+
+    let (st, body, _) = get(&app, "/api/node/Person:aaron_1").await;
+    assert_eq!(st, 200, "{body}");
+    assert_eq!(body["id"], "Person:aaron_1");
+    assert_eq!(body["kind"], "Person");
+    assert_eq!(body["label"], "Aaron");
+    assert_eq!(body["provenance"], "theographic-people");
+    let summary: Vec<serde_json::Value> = body["edge_summary"].as_array().unwrap().clone();
+    let mentioned_in = summary.iter().find(|e| e["kind"] == "mentioned-in").expect("aaron_1 must carry a real mentioned-in frontier");
+    assert_eq!(mentioned_in["count"], 331, "must equal the real Theographic record's own resolved verse_links count");
+
+    let (st2, page, _) = get(&app, "/api/node/Person:aaron_1/edges?kind=mentioned-in&limit=3").await;
+    assert_eq!(st2, 200, "{page}");
+    let entries = page["entries"].as_array().unwrap();
+    assert_eq!(entries.len(), 3);
+    // CANON ORDER (batch-p-brief.md: "mentioned-in: every mention in
+    // Scripture, canon order") -- the graph's own bijection-witnessed row
+    // order, over real data, not a fixture.
+    assert_eq!(entries[0]["node"]["id"], "text-unit:EXO.4.14");
+    assert_eq!(entries[1]["node"]["id"], "text-unit:EXO.4.27");
+    assert_eq!(entries[2]["node"]["id"], "text-unit:EXO.4.28");
+    assert_eq!(page["next"], 3, "a 331-entry frontier at limit=3 must page, not silently truncate");
+}
+
+/// The inverse direction of the same relation: a VERSE's own `mentions`
+/// frontier carries BOTH Place and Person entities under one edge kind
+/// (design doc §4: `mentions` locus -> `Place | Person`) -- EXO.4.14 (the
+/// FIRST entry in the test above) is a real, committed verse citing all
+/// three of Aaron, God, and Moses by Theographic's own tagging.
+#[tokio::test]
+async fn a_verses_mentions_frontier_carries_person_entities_alongside_place() {
+    let app = real_app();
+
+    let (st, page, _) = get(&app, "/api/node/text-unit:EXO.4.14/edges?kind=mentions").await;
+    assert_eq!(st, 200, "{page}");
+    let entries = page["entries"].as_array().unwrap();
+    let person_labels: Vec<String> = entries.iter().filter(|e| e["node"]["kind"] == "Person").map(|e| e["node"]["label"].as_str().unwrap().to_string()).collect();
+    assert!(person_labels.contains(&"Aaron".to_string()), "{person_labels:?}");
+    assert!(person_labels.contains(&"Moses".to_string()), "{person_labels:?}");
+}
+
+/// A bogus Person id resolves 404 (not_found), not a 500 or a bespoke
+/// error shape -- the SAME honest-not-found convention every other kind's
+/// own unknown-id case already gets (node_card_unknown_id_is_404...
+/// above), proven for Person specifically since `graph_wire::decode_node_id`
+/// gained its own new match arm this batch.
+#[tokio::test]
+async fn person_card_unknown_id_is_404() {
+    let app = real_app();
+    let (st, body, _) = get(&app, "/api/node/Person:nonexistent-xyz").await;
+    assert_eq!(st, 404, "{body}");
+}
+
 #[tokio::test]
 async fn node_edges_bad_kind_and_missing_kind_are_400() {
     let app = real_app();

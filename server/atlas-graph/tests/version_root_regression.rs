@@ -115,4 +115,14 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // reason has the full derivation) -- three fewer node ids feeding the
 // content hash is exactly the expected effect of an identity-only merge,
 // not a bug. New captured value: "eeb356047aa500f5".
-const EXPECTED_VERSION_HEX: &str = "eeb356047aa500f5";
+//
+// MOVED AGAIN (deliberately -- Batch P, the extensibility proof):
+// person_adapter.rs newly runs in both NORMALIZE and MERGE/ALIAS, building
+// 3,067 real Person nodes (widened payload: label/gender/birth_year/
+// death_year/also_called) plus one `mentions` row per resolved, canon-
+// sorted verse link (28,240 raw refs, all resolved) over the SAME real
+// data/raw + data/compiled this test's own real_atlas_data() loads --
+// thousands of new node ids and edge rows feeding the content hash is
+// exactly the expected effect of a new adapter shipping real data, not a
+// bug. New captured value: "d004fd6f72196214".
+const EXPECTED_VERSION_HEX: &str = "d004fd6f72196214";

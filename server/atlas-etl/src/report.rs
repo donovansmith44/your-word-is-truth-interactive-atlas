@@ -16,6 +16,11 @@ pub struct Counts {
     /// Number of distinct `From` verses that have at least one surviving
     /// cross-reference (i.e. `cross_refs.len()`, the compiled map's key count).
     pub cross_ref_sources: usize,
+    /// Batch P (the extensibility proof): Theographic person records
+    /// compiled onto `AtlasData.people` -- graph-only from birth, no
+    /// compiled JSON file at any point (see `AtlasData.people`'s own doc
+    /// comment).
+    pub people: usize,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -111,6 +116,11 @@ pub fn write(r: &Report) -> String {
     writeln!(s, "  books-meta.json   {} rows", r.counts.books_meta).unwrap();
     writeln!(s, "  verses (graph-only, verses-kjv.json retired at M-C2)   {}", r.counts.verses).unwrap();
     writeln!(s, "  cross-refs (graph-only, cross-refs.json retired at M-C2) {} source verses", r.counts.cross_ref_sources).unwrap();
+    // Batch P: graph-only from the start, never a compiled JSON file (see
+    // AtlasData.people's own doc comment) -- reported the same "count stays
+    // real and worth reporting" way as the M-C2-retired fields just above,
+    // minus the "retired" framing (nothing here was ever a standalone file).
+    writeln!(s, "  people (graph-only, no compiled file -- Batch P)       {}", r.counts.people).unwrap();
     writeln!(s).unwrap();
 
     writeln!(s, "Coverage:").unwrap();

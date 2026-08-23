@@ -1389,6 +1389,7 @@ fn report_contains_expected_sections() {
             books_meta: 66,
             verses: 100,
             cross_ref_sources: 3,
+            people: 3067,
         },
         pct_events_dated: 80.0,
         pct_verses_geocoded: 12.5,
@@ -1423,6 +1424,7 @@ fn report_contains_expected_sections() {
     assert!(text.contains("30/33 items reachable"), "{text}");
     assert!(text.contains("210 distinct verse(s)"), "{text}");
     assert!(text.contains("The Ten Commandments: 11/11 reachable"), "{text}");
+    assert!(text.contains("3067"), "{text}"); // Batch P: people count
 }
 
 // ---------------------------------------------------------------------

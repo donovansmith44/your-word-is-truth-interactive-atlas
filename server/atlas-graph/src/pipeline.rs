@@ -33,10 +33,13 @@
 //!   pass's output first).
 //! - MERGE/ALIAS: legacy-vocabulary boundary crossings -- place KJV
 //!   naming -> `named` rows, place `verse_links` -> `mentions` rows,
-//!   catechism item/question verse citations -> `catechism-link` rows.
+//!   catechism item/question verse citations -> `catechism-link` rows,
+//!   and (Batch P) person `verse_links` -> `mentions` rows (no `named`
+//!   counterpart for Person -- see `person_adapter.rs`'s own doc comment).
 //!   Matches the ingestion contract's own parenthetical almost exactly
 //!   ("event and place merge tables become assertion-level rules") --
-//!   this batch's place/catechism adapters are that instruction realized.
+//!   this batch's place/catechism/person adapters are that instruction
+//!   realized.
 //! - RESOLVE: `DatePlacement` resolution -- `derive_chronology` chooses
 //!   each dated event's placement and the `dated_by` rows it grounds,
 //!   exactly `resolve(DatePlacement)` per the ingestion contract's own
@@ -166,6 +169,11 @@ impl Pass for NormalizePass {
         crate::era_adapter::normalize(ctx);
         crate::polity_adapter::normalize(ctx);
         crate::catechism_adapter::normalize(ctx);
+        // Batch P (the extensibility proof): Person nodes need no OTHER
+        // pass's output first (same NORMALIZE-eligibility reasoning as
+        // every sibling call above) -- ctx.atlas.people is already fully
+        // resolved by atlas_etl::people::parse_people before this ever runs.
+        crate::person_adapter::normalize(ctx);
         Ok(())
     }
 }
@@ -178,6 +186,10 @@ impl Pass for MergeAliasPass {
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
         crate::place_adapter::merge_alias(ctx);
         crate::catechism_adapter::merge_alias(ctx);
+        // Batch P: Person.verse_links -> mentions rows, the SAME
+        // "legacy-vocabulary boundary crossing" shape place_adapter's own
+        // mentions half already is (this stage's own doc comment above).
+        crate::person_adapter::merge_alias(ctx);
         Ok(())
     }
 }
@@ -242,6 +254,15 @@ impl Pass for LawCheckPass {
         // `law_check::payload_years_match_resolved_placements`'s own doc
         // comment.
         crate::law_check::payload_years_match_resolved_placements(&ctx.graph, &ctx.chrono).context("NodePayload::Event years must equal their own resolved dated_by placement (verified-cache law)")?;
+        // Batch P (the extensibility proof): the Person adapter's own
+        // boundary fidelity law (bijection + mentions completeness) --
+        // referential integrity of Person mentions rows is ALREADY covered
+        // by every_authored_edge_resolves above (see person_adapter.rs's
+        // own module doc comment), so this is the adapter-specific half
+        // only, not a duplicate.
+        crate::person_adapter::check_person_fidelity(ctx.atlas, &ctx.graph)
+            .map_err(|e| anyhow::anyhow!("{e}"))
+            .context("Theographic person adapter fidelity law (bijection + mentions completeness)")?;
         Ok(())
     }
 }

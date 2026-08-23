@@ -10,6 +10,7 @@ Compiled file counts:
   books-meta.json   66 rows
   verses (graph-only, verses-kjv.json retired at M-C2)   31102
   cross-refs (graph-only, cross-refs.json retired at M-C2) 29364 source verses
+  people (graph-only, no compiled file -- Batch P)       3067
 
 Coverage:
   100.0% of Theographic events have a usable date

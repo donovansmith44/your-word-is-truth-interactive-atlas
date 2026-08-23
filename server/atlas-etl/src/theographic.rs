@@ -85,7 +85,15 @@ pub struct TheoStats {
 /// Converts a Theographic `startDate` string into atlas-core's historical
 /// (no-year-zero) year convention. Returns `None` for empty/unparseable
 /// input or the (should-be-impossible) case of landing on year zero.
-fn parse_theo_year(raw: &str) -> Option<i32> {
+///
+/// `pub(crate)` (Batch P): `atlas_etl::people::parse_people` reuses this
+/// verbatim for `birthYear`/`deathYear` -- the SAME astronomical-year
+/// convention Theographic uses for both its Events and People tables, so a
+/// second, independently-authored copy would only risk drifting from this
+/// one, never add real independence (unlike `fidelity.rs`'s OWN
+/// deliberately-independent re-derivation, which exists specifically to
+/// catch bugs IN shared code -- this is not that kind of law).
+pub(crate) fn parse_theo_year(raw: &str) -> Option<i32> {
     let s = raw.trim();
     if s.is_empty() {
         return None;

@@ -39,7 +39,7 @@ use anyhow::{bail, Context, Result};
 use atlas_core::data::{AtlasData, Polity};
 
 use crate::report::{Counts, PolityStats, Report};
-use crate::{catechism_map, curated, geo, kjv, polities, theographic, validate, xrefs};
+use crate::{catechism_map, curated, geo, kjv, people, polities, theographic, validate, xrefs};
 
 /// Everything `main.rs`'s own report/write phase needs, alongside the
 /// fully-populated, validated `AtlasData` every graph-building caller
@@ -100,6 +100,13 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     let events_json = read(&theo_dir.join("events.json"))?;
     let (theo_events, theo_new_places, theo_stats) =
         theographic::parse_events(&places_json, &verses_json, &events_json, &place_slug_by_name)?;
+
+    // Batch P (the extensibility proof): Theographic PERSONS -> the
+    // `AtlasData.people` sidecar (person_adapter.rs's own graph-side
+    // source). Reads the SAME `theo_dir`/`verses_json` already in scope
+    // above -- one more sibling fact file, not a new source tree.
+    let people_json = read(&theo_dir.join("people.json"))?;
+    let (people_list, people_stats) = people::parse_people(&people_json, &verses_json)?;
 
     let xrefs_raw = read(&raw_dir.join("xrefs/cross_references.txt"))?;
     let (xrefs_map, xref_stats) = xrefs::parse(&xrefs_raw)?;
@@ -197,7 +204,12 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         books_meta: books_meta.len(),
         verses: verses.len(),
         cross_ref_sources: xrefs_map.len(),
+        people: people_list.len(),
     };
+    eprintln!(
+        "THEOGRAPHIC PEOPLE: {} person record(s) compiled ({} with >=1 resolved verse link; {} of {} raw verse refs unresolved, dropped)",
+        people_stats.total, people_stats.with_verses, people_stats.verse_refs_unresolved, people_stats.verse_refs_total
+    );
     let narrative_leg_counts: Vec<(String, usize)> = narratives.iter().map(|n| (n.id.clone(), n.legs.len())).collect();
 
     let mut geocoded_verses: HashSet<&str> = HashSet::new();
@@ -249,6 +261,12 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     let mut data = AtlasData::new(canon, all_places, all_events, narratives, eras, books_meta, verses, xrefs_map).finish();
     validate::run(&data).context("data/compiled/* was NOT written; fix data/curated/ and re-run")?;
     counts.places = data.places.len();
+    // Batch P: `people` needs no `validate::run`-style check of its own --
+    // its own fail-loud boundary law (bijection + mentions completeness)
+    // lives at the GRAPH adapter (`atlas_graph::person_adapter::
+    // check_person_fidelity`, run unconditionally at pipeline LAW-CHECK
+    // time), not here -- see that function's own doc comment for why.
+    data.people = people_list;
 
     // --- chronology anchor table + era-window validator ---
     data.chronology_anchors = chronology_anchors;

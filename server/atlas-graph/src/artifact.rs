@@ -230,7 +230,9 @@ enum DtoPayload {
     },
     Narrative { label: String, color: String },
     Place { canonical: String, lat: f64, lon: f64, aliases: Vec<String> },
-    Person { label: String },
+    /// Batch P: mirrors `NodePayload::Person`'s own widening -- see that
+    /// variant's own doc comment.
+    Person { label: String, gender: Option<String>, birth_year: Option<i32>, death_year: Option<i32>, also_called: Vec<String> },
     Anchor { year: i32, month: Option<u8>, day: Option<u8>, citation: String },
     Era { label: String, from_year: i32, to_year: i32 },
     Polity { label: String, color_key: u8, eras: Vec<DtoPolityEra> },
@@ -262,7 +264,13 @@ fn payload_to_dto(p: &NodePayload) -> DtoPayload {
         },
         NodePayload::Narrative { label, color } => DtoPayload::Narrative { label: label.clone(), color: color.clone() },
         NodePayload::Place { canonical, lat, lon, aliases } => DtoPayload::Place { canonical: canonical.clone(), lat: *lat, lon: *lon, aliases: aliases.clone() },
-        NodePayload::Person { label } => DtoPayload::Person { label: label.clone() },
+        NodePayload::Person { label, gender, birth_year, death_year, also_called } => DtoPayload::Person {
+            label: label.clone(),
+            gender: gender.clone(),
+            birth_year: *birth_year,
+            death_year: *death_year,
+            also_called: also_called.clone(),
+        },
         NodePayload::Anchor { at, citation } => DtoPayload::Anchor { year: at.year.get(), month: at.month, day: at.day, citation: citation.clone() },
         NodePayload::Era { label, from_year, to_year } => DtoPayload::Era { label: label.clone(), from_year: *from_year, to_year: *to_year },
         NodePayload::Polity { label, color_key, eras } => DtoPayload::Polity { label: label.clone(), color_key: *color_key, eras: eras.iter().map(DtoPolityEra::from).collect() },
@@ -299,7 +307,9 @@ fn payload_from_dto(d: DtoPayload) -> Result<NodePayload, ArtifactError> {
         },
         DtoPayload::Narrative { label, color } => NodePayload::Narrative { label, color },
         DtoPayload::Place { canonical, lat, lon, aliases } => NodePayload::Place { canonical, lat, lon, aliases },
-        DtoPayload::Person { label } => NodePayload::Person { label },
+        DtoPayload::Person { label, gender, birth_year, death_year, also_called } => {
+            NodePayload::Person { label, gender, birth_year, death_year, also_called }
+        }
         DtoPayload::Anchor { year, month, day, citation } => {
             let at = atlas_graph_types::chrono::TimePoint::new(
                 atlas_graph_types::chrono::Year::new(year).map_err(|_| ArtifactError("anchor year 0 in serialized artifact".into()))?,

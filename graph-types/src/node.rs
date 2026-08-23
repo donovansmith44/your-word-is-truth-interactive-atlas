@@ -109,7 +109,16 @@ pub enum NodePayload {
     /// `graph.rs::build_indexes`'s own disclosed note) -- the payload is
     /// where a fact ABOUT a place, not a further explorable thing, belongs.
     Place { canonical: String, lat: f64, lon: f64, aliases: Vec<String> },
-    Person { label: String },
+    /// Batch P (the extensibility proof): widened the SAME way M-C widened
+    /// Place/Polity (controller decision 2) -- real payload, not a stub.
+    /// `label` is the display name; `gender`/`birth_year`/`death_year` ride
+    /// verbatim as tagged by the Theographic source (life years absent for
+    /// the overwhelming majority of real persons -- `Option`, never a
+    /// fabricated sentinel); `also_called` is the source's own comma-split
+    /// alternate-name list -- the SAME "payload, not a new relation kind"
+    /// shape Place's own KJV aliases and Polity's own border data already
+    /// use (a fact ABOUT the person, not a further explorable thing).
+    Person { label: String, gender: Option<String>, birth_year: Option<i32>, death_year: Option<i32>, also_called: Vec<String> },
     /// Explorable "why this date?" — day-capable (sweep F4).
     Anchor { at: TimePoint, citation: String },
     /// M-C: a time-range boundary node for the map/era selector — payload
@@ -185,7 +194,7 @@ pub fn card(n: &dyn NodeData) -> Card {
         NodePayload::Container { title } => title.clone(),
         NodePayload::Event { label, .. }
         | NodePayload::Narrative { label, .. }
-        | NodePayload::Person { label }
+        | NodePayload::Person { label, .. }
         | NodePayload::Era { label, .. }
         | NodePayload::Polity { label, .. }
         | NodePayload::CatechismItem { label }

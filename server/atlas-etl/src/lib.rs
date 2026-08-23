@@ -21,6 +21,7 @@ pub mod curated;
 pub mod geo;
 pub mod kjv;
 pub mod osis;
+pub mod people;
 pub mod polities;
 pub mod report;
 pub mod theographic;

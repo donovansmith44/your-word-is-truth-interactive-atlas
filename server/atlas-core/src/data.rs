@@ -31,6 +31,40 @@ pub struct Place {
     pub verse_links: Vec<String>,
 }
 
+/// Batch P (the extensibility proof): a Theographic PERSON -- `atlas_etl::
+/// people::parse_people`'s own output, the Person adapter's SOURCE (mirrors
+/// `Place`'s own role for the place adapter exactly). `verse_links` are
+/// canonical verse ids, resolved AND explicitly canon-sorted at parse time
+/// (never trusted in Theographic's own upstream list order -- see
+/// `atlas_etl::people`'s own module doc comment); this is what lets the
+/// graph's own `mentioned-in` frontier be canon-ordered by construction.
+///
+/// DISCLOSED, kept vs. dropped (batch-p-brief.md requirement 1): kept --
+/// `name` (display name), `gender`/`birth_year`/`death_year` (as tagged by
+/// the source; life years use the SAME astronomical-to-historical
+/// conversion `atlas_etl::theographic::parse_theo_year` already established
+/// for events), `also_called` (comma-separated alternate names, split);
+/// dropped -- Easton's Bible Dictionary prose (`dictionaryText`/
+/// `dictionaryLink`, 19th-century external commentary, out of this batch's
+/// scope for the SAME reason the place adapter never carried Theographic's
+/// own richer place fields beyond canonical/lat/lon/aliases), `status`
+/// (Theographic's own "has a prose bio been finished" authoring-workflow
+/// flag -- verified NOT a notability signal: filtering to its `"publish"`
+/// value would silently drop Saul/Elijah/Jeremiah/Daniel/Job and dozens of
+/// other unmistakably major figures, so every person ships regardless of
+/// this field), `isProperName`/`ambiguous`/`surname`/`personID` (thin
+/// Theographic bookkeeping with no rendering surface this batch built).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Person {
+    pub id: String,
+    pub name: String,
+    pub gender: Option<String>,
+    pub birth_year: Option<i32>,
+    pub death_year: Option<i32>,
+    pub also_called: Vec<String>,
+    pub verse_links: Vec<String>,
+}
+
 /// A datable happening. `places[0]` is the anchor place used for arrow
 /// endpoints; `places` may list more than one place (e.g. a campaign
 /// touching several locations), all of which light up in time mode.
@@ -807,6 +841,23 @@ pub struct AtlasData {
     /// `load()` treatment as `chronology_anchors` immediately above.
     #[serde(skip)]
     pub book_narration_windows: Vec<BookNarrationWindow>,
+
+    /// Batch P (the extensibility proof): Theographic PERSONS
+    /// (`atlas_etl::people::parse_people`, reading `people.json`+
+    /// `verses.json`). Same `#[serde(skip)]`-plus-bespoke-populate treatment
+    /// as `polities`/`catechism`/etc. above, with ONE deliberate difference,
+    /// disclosed: there is no `people.json` compiled sidecar file, and never
+    /// will be -- unlike `places`/`events`/etc., Person was born AFTER the
+    /// graph became the one artifact (design doc P1), so it goes straight
+    /// from raw source into the graph with no intermediate JSON stage to
+    /// retire later. `atlas_etl::compile::compile` populates this field;
+    /// the graph's own `person_adapter.rs` is its only reader
+    /// (`ctx.atlas.people`). `demo_fixture()`/every other test fixture
+    /// leaves this empty for free (no test needs real person data; `Default`
+    /// already gives every OTHER existing `AtlasData::new(...)` call site
+    /// this exact same empty value with zero changes to any of them).
+    #[serde(skip)]
+    pub people: Vec<Person>,
 
     /// Derived: place id -> index into `places`. Built by `finish()`.
     #[serde(skip)]
