@@ -235,10 +235,30 @@ pub struct Mentions {
     pub provenance: ProvenanceId,
 }
 
+/// M-C2 (requirement 2: "extend the cites relation to range-level
+/// (span-capable per the types)"): `to` remains the graph's own edge
+/// endpoint (the target's FIRST verse -- unchanged index shape, unchanged
+/// `build_indexes` behavior) alongside the honest resolution of the
+/// verse-level simplification M-A's own decision 1 disclosed (design doc
+/// §4: "cross-ref: verse-level today, loci by design"). `to_last`/
+/// `target_display` are SPAN DATA riding the row, not a second edge: a
+/// cross-ref target may cite a same-chapter or cross-book/chapter SPAN
+/// (`"COL.1.16-19"`, `"MAT.5.3-MAT.6.2"`), and `aggregate_span_xrefs`'s own
+/// self-target-subset check needs the target's TRUE last verse (not just
+/// its first) to tell "starts inside the span" apart from "wholly inside
+/// the span" -- collapsing to `to` alone (the pre-M-C2 shape) can only ever
+/// approximate that check. `target_display` is the ORIGINAL citation
+/// string exactly as imported (openbible.info's own three canonical
+/// shapes) -- `to`/`to_last` are a lossless structured decomposition of
+/// it into typed loci, but the wire's own `CrossRefOut.target` field is
+/// this exact string, never a re-synthesized one (a source `COL.1.16-19`
+/// must never round-trip as `COL.1.16-COL.1.19`).
 #[derive(Clone, Debug)]
 pub struct CrossRef {
     pub from: TextLocus,
     pub to: TextLocus,
+    pub to_last: Option<TextLocus>,
+    pub target_display: String,
     pub votes: u32,
     pub provenance: ProvenanceId,
 }

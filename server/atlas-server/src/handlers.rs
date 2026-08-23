@@ -852,7 +852,7 @@ pub async fn narrative_event_positions(
             let narrative_name = snap
                 .node(&nid.erase())
                 .map(|n| match n.payload {
-                    NodePayload::Narrative { label } => label,
+                    NodePayload::Narrative { label, .. } => label,
                     _ => String::new(),
                 })
                 .unwrap_or_default();

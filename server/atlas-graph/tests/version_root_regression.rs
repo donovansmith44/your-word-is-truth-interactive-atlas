@@ -79,4 +79,18 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // response (`PolityDeltaOut`) reconstructs losslessly from the graph
 // payload alone instead of a lossy formatted summary -- real content
 // change, not a bug.
-const EXPECTED_VERSION_HEX: &str = "2003993f12d099ab";
+//
+// MOVED AGAIN (deliberately -- M-C2, re-homing handlers::place/event/
+// verse/xrefs/narratives onto the graph): `NodePayload::Event` widened
+// from `{ label }` to carry kind/from_year/to_year/order_key/verses/
+// witnesses/robertson_section/acts_section/atlas_section/
+// kjv_superscription/ref_note (real payload, not a stub -- same precedent
+// as Place/Polity); `NodePayload::Narrative` widened from `{ label }` to
+// `{ label, color }`; `event_world.rs`'s own `attests` row construction
+// changed from one row per witness VERSE GROUP to one row per witness
+// VERSE (a real gap fix -- a verse cited only in the interior of a group,
+// e.g. MAT.26.6, now resolves back to its event through `attested-in`,
+// matching `AtlasData::events_for_verse`'s own pre-existing witness-verse
+// union) -- both are real content changes to the graph's own node
+// payloads and row tables, not a bug.
+const EXPECTED_VERSION_HEX: &str = "14efa89228950c3f";

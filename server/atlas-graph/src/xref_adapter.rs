@@ -35,9 +35,17 @@ use atlas_core::refs::{ScriptureRef, VerseId};
 use atlas_graph_types::text::{BibleLocus, TextLocus, VerseRef as GVerseRef};
 
 /// One `cites`-ready row, lowered from a raw (from, target, votes) triple.
+/// M-C2 (requirement 2): `to_last`/`target_display` carry the honest
+/// resolution of the verse-level simplification -- see `graph_types::edge::
+/// CrossRef`'s own doc comment for the full reasoning; this is the SAME
+/// (first, last, original-string) triple `target_span` below resolves, just
+/// not yet lowered into an edge (`to` alone stays the graph's own edge
+/// endpoint, unchanged).
 pub struct XrefRow {
     pub from: TextLocus,
     pub to: TextLocus,
+    pub to_last: Option<TextLocus>,
+    pub target_display: String,
     pub votes: u32,
 }
 
@@ -47,23 +55,29 @@ pub struct XrefAdapterStats {
     pub dropped_negative_votes: usize,
 }
 
-/// Extracts a cross-ref TARGET's first verse -- mirrors
-/// `atlas_server::handlers::first_verse_of_target` / `atlas_core::xrefs::target_span`'s
-/// three-shape parse (single verse / same-chapter range / cross-chapter
-/// range) over an ALREADY-CANONICALIZED target string (3-letter codes,
-/// `atlas_etl::xrefs::parse`'s own output shape) -- duplicated rather than
-/// imported because those two live in atlas-server/atlas-core respectively
-/// and this is the same small, stable, three-branch parse already
-/// duplicated twice in this codebase for analogous reasons.
-fn first_verse_of_target(target: &str) -> Option<VerseId> {
+/// Extracts a cross-ref TARGET's own (first, last) verse endpoints --
+/// mirrors `atlas_server::handlers::first_verse_of_target` (first-verse-
+/// only) / `atlas_core::xrefs::target_span`'s (first+last) three-shape parse
+/// (single verse / same-chapter range / cross-chapter range) over an
+/// ALREADY-CANONICALIZED target string (3-letter codes, `atlas_etl::xrefs::
+/// parse`'s own output shape) -- duplicated rather than imported because
+/// those two live in atlas-server/atlas-core respectively and this is the
+/// same small, stable, three-branch parse already duplicated twice in this
+/// codebase for analogous reasons. M-C2: widened from first-verse-only
+/// (`first_verse_of_target`) to the full span, so this adapter's own
+/// `to_last` can be built from the identical parse `to` already uses,
+/// never a second, differently-shaped lookup.
+fn target_span(target: &str) -> Option<(VerseId, VerseId)> {
     if let Ok(v) = VerseId::parse_canonical(target) {
-        return Some(v);
+        return Some((v, v));
     }
-    if let Ok(ScriptureRef::Passage { book, chapter, from_verse, .. }) = ScriptureRef::parse(target) {
-        return Some(VerseId { book, chapter, verse: from_verse });
+    if let Ok(ScriptureRef::Passage { book, chapter, from_verse, to_verse }) = ScriptureRef::parse(target) {
+        return Some((VerseId { book, chapter, verse: from_verse }, VerseId { book, chapter, verse: to_verse }));
     }
-    let (left, _right) = target.split_once('-')?;
-    VerseId::parse_canonical(left).ok()
+    let (left, right) = target.split_once('-')?;
+    let lv = VerseId::parse_canonical(left).ok()?;
+    let rv = VerseId::parse_canonical(right).ok()?;
+    Some((lv, rv))
 }
 
 fn text_locus(v: VerseId) -> TextLocus {
@@ -102,8 +116,15 @@ pub fn read_xrefs_ordered(
                 stats.dropped_negative_votes += 1;
                 continue;
             }
-            let Some(to_v) = first_verse_of_target(target) else { continue };
-            rows.push(XrefRow { from: text_locus(from_v), to: text_locus(to_v), votes: *votes as u32 });
+            let Some((to_v, last_v)) = target_span(target) else { continue };
+            let to_last = if last_v != to_v { Some(text_locus(last_v)) } else { None };
+            rows.push(XrefRow {
+                from: text_locus(from_v),
+                to: text_locus(to_v),
+                to_last,
+                target_display: target.clone(),
+                votes: *votes as u32,
+            });
         }
     }
     Ok((rows, stats))
@@ -154,6 +175,8 @@ pub fn normalize(ctx: &mut crate::pipeline::BuildCtx) -> anyhow::Result<()> {
         ctx.graph.cross_refs.push(atlas_graph_types::edge::CrossRef {
             from: row.from.clone(),
             to: row.to.clone(),
+            to_last: row.to_last.clone(),
+            target_display: row.target_display.clone(),
             votes: row.votes,
             provenance: "openbible.info-cross-references".to_string(),
         });

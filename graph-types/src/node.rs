@@ -1,10 +1,33 @@
 //! Nodes: identity + payload (NodeData), with Card demoted to a view
 //! function — capability and presentation deliberately separated.
 
+use std::collections::BTreeMap;
+
 use crate::chrono::TimePoint;
 use crate::id::{AnyNodeId, ContentAddressed, PositionKind};
 use crate::ingest::ProvenanceId;
 use crate::text::LayerMap;
+
+/// M-C2: one witness account of an Event -- a plain data mirror of
+/// `atlas_core::data::EventWitness`'s own load-bearing fields (book +
+/// translations + ref_note + robertson_section), kept FULLY STRUCTURED
+/// (not collapsed to a display string) so `handlers::event`'s own
+/// `EventDetailOut.witnesses` -- and any other consumer needing a real
+/// `atlas_core::data::Event` -- reconstructs losslessly from the payload
+/// alone, the SAME "real payload, not a stub" precedent M-C's Place/Polity
+/// widening already set (controller decision 2). `translations` is a
+/// `BTreeMap` (the source `EventWitness.translations` is a `HashMap`) --
+/// deliberately, for serialization determinism (M-C2 requirement 3: the
+/// serialized graph artifact must be byte-deterministic; a `HashMap`'s
+/// randomized iteration order has no place riding into a payload that gets
+/// dumped to bytes).
+#[derive(Clone, Debug)]
+pub struct EventWitnessPayload {
+    pub book: String,
+    pub translations: BTreeMap<String, Vec<String>>,
+    pub ref_note: Option<String>,
+    pub robertson_section: Option<String>,
+}
 
 /// One Scripture-mapped historical delta at an era boundary (rise/fall/
 /// internal transition) -- a plain data mirror of
@@ -42,8 +65,41 @@ pub enum NodePayload {
     /// homogeneous (sweep F1).
     TextUnit { corpus: &'static str, renderings: LayerMap },
     Container { title: String },
-    Event { label: String },
-    Narrative { label: String },
+    /// M-C2: real payload, not a stub (same controller-decision-2 precedent
+    /// as Place/Polity's own M-C widening) -- every field
+    /// `atlas_core::data::Event` carries beyond its own `id`/`places`/
+    /// `verses`-as-edges (`places` rides `located-at` edges, order-
+    /// preserved; witness/attestation verses ride `attested-in` edges,
+    /// one row per verse -- both explorable relations, not payload facts).
+    /// `verses` here is the CONTAINER's own top-level verse set
+    /// (`Event.verses`, distinct from witness verses -- scene composition's
+    /// scripture-mode filtering needs this exact set, not a derived one).
+    /// `from_year`/`to_year` mirror `Event.when` (a general-kind passage's
+    /// own `TimeRange::undated()` sentinel included, verbatim -- never
+    /// re-derived, so a reconstructed `Event` can never disagree with the
+    /// source about whether a passage is dated).
+    Event {
+        label: String,
+        kind: String,
+        from_year: i32,
+        to_year: i32,
+        order_key: i32,
+        verses: Vec<String>,
+        witnesses: Vec<EventWitnessPayload>,
+        robertson_section: Option<String>,
+        acts_section: Option<String>,
+        atlas_section: Option<String>,
+        kjv_superscription: Option<String>,
+        ref_note: Option<String>,
+    },
+    /// M-C2: `color` joins `label` -- a narrative's own map-arrow color is a
+    /// fact ABOUT the narrative, not an explorable relation (mirrors
+    /// Polity's own `color_key`). `legs` deliberately does NOT ride here --
+    /// the `succession` relation (`follows-in`/`precedes-in` edges, tagged
+    /// by this narrative) is already the single, authoritative ordered
+    /// chain; duplicating it onto the payload would be exactly the
+    /// "second, weaker path" this migration's own discipline forbids.
+    Narrative { label: String, color: String },
     /// M-C: real payload, not a stub (controller decision 2) — geographic
     /// coordinates join the canonical name so the map can plot a Place
     /// node directly from its own payload, with no companion lookup.
@@ -127,8 +183,8 @@ pub fn card(n: &dyn NodeData) -> Card {
     let label = match n.payload() {
         NodePayload::TextUnit { corpus, .. } => format!("text unit ({corpus})"),
         NodePayload::Container { title } => title.clone(),
-        NodePayload::Event { label }
-        | NodePayload::Narrative { label }
+        NodePayload::Event { label, .. }
+        | NodePayload::Narrative { label, .. }
         | NodePayload::Person { label }
         | NodePayload::Era { label, .. }
         | NodePayload::Polity { label, .. }

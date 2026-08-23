@@ -442,18 +442,51 @@ fn event_provenance(id: &str) -> &'static str {
     }
 }
 
+/// M-C2: real payload, not a stub -- every field `handlers::event`'s own
+/// full detail fetch (title/kind/when/witnesses/robertson_section/
+/// acts_section/atlas_section/kjv_superscription/ref_note) needs, plus the
+/// container's own top-level `verses` (scripture-mode scene composition's
+/// own filtering set, distinct from witness verses -- see `NodePayload::
+/// Event`'s own doc comment). `places` deliberately does NOT ride here --
+/// `located_at` rows (below) are the single, order-preserving source.
 fn event_node(e: &Event) -> Node {
+    let witnesses: Vec<atlas_graph_types::node::EventWitnessPayload> = e
+        .witnesses
+        .iter()
+        .map(|w| atlas_graph_types::node::EventWitnessPayload {
+            book: w.book.clone(),
+            translations: w.translations.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
+            ref_note: w.ref_note.clone(),
+            robertson_section: w.robertson_section.clone(),
+        })
+        .collect();
     Node {
         id: EventId::new(e.id.clone()).erase(),
-        payload: NodePayload::Event { label: e.label.clone() },
+        payload: NodePayload::Event {
+            label: e.label.clone(),
+            kind: e.kind.clone(),
+            from_year: e.when.from_year,
+            to_year: e.when.to_year,
+            order_key: e.order_key,
+            verses: e.verses.clone(),
+            witnesses,
+            robertson_section: e.robertson_section.clone(),
+            acts_section: e.acts_section.clone(),
+            atlas_section: e.atlas_section.clone(),
+            kjv_superscription: e.kjv_superscription.clone(),
+            ref_note: e.ref_note.clone(),
+        },
         provenance: event_provenance(&e.id).to_string(),
     }
 }
 
+/// M-C2: `color` joins `label` -- see `NodePayload::Narrative`'s own doc
+/// comment for why `legs` stays off the payload (the `succession` relation
+/// is the single source).
 fn narrative_node(n: &atlas_core::data::Narrative) -> Node {
     Node {
         id: NarrativeId::new(n.id.clone()).erase(),
-        payload: NodePayload::Narrative { label: n.name.clone() },
+        payload: NodePayload::Narrative { label: n.name.clone(), color: n.color.clone() },
         provenance: "curated-narratives".to_string(),
     }
 }
@@ -478,20 +511,37 @@ fn anchor_node(a: &ChronologyAnchor) -> Node {
 
 /// Legacy `[[witness]]` rows (and the top-level `verses` synthesis
 /// `scene::witnesses_for` already performs for events with none) BECOME
-/// `attests` rows -- one per contiguous verse group, so a multi-passage
-/// witness (a Gospel account spanning two verse runs) yields multiple
-/// attestations on the SAME event, matching "parallel accounts = multiple
-/// attestations on ONE event" (design doc §4). Nothing in
-/// `event-witnesses.toml`/`events-extra.toml`/`passages/*.toml` is
-/// re-parsed or re-authored -- `scene::witnesses_for` is the SAME resolver
-/// `GET /api/event/{id}` already calls.
-fn verse_group_to_range(book_code: &str, vg: &atlas_core::wire::VerseGroup) -> Option<BibleLocusRange> {
-    let book = atlas_core::canon::resolve_alias(book_code)?.0;
-    let first = atlas_core::refs::VerseId::parse_canonical(vg.verses.first()?).ok()?;
-    let last = atlas_core::refs::VerseId::parse_canonical(vg.verses.last()?).ok()?;
-    let from: BibleLocus = Locus::<BibleTag>::whole(VerseRef { book, chapter: vg.chapter, verse: first.verse });
-    let to: BibleLocus = Locus::<BibleTag>::whole(VerseRef { book, chapter: vg.chapter, verse: last.verse });
-    BibleLocusRange::new(from, to).ok()
+/// `attests` rows -- one per INDIVIDUAL VERSE (not per contiguous verse
+/// group), so parallel accounts remain "multiple attestations on ONE
+/// event" (design doc §4) AND every witnessed verse -- not just each
+/// group's own first -- resolves back to its event through the generic
+/// port. M-C2, a real gap found while migrating `handlers::verse`'s own
+/// `events_for_verse` reconstruction onto the graph, disclosed: the
+/// pre-M-C2 shape collapsed each verse GROUP to one `BibleLocusRange`
+/// row spanning only its own first/last verse, and `Graph::build_indexes`
+/// only ever lowers a relation's row into ONE edge per row (this is true
+/// of `cites` too, by the same shape -- see `graph_types::edge::CrossRef`'s
+/// own M-C2 widening) -- so a verse cited ONLY by a witness in the
+/// INTERIOR of a group (e.g. `MAT.26.6`, Matthew's own account of the
+/// Bethany anointing, `pw_bethany`'s own top-level `verses` field is
+/// JHN.12.1-11 only) would never resolve to its own event via `attested-in`
+/// at all, even though `AtlasData::events_for_verse` (the pre-M-C2 index
+/// this migration retires) already unions witness verses in too (Batch T
+/// requirement 3's own fix, `data.rs`'s own doc comment: "a real, live-
+/// caught bug"). One row per verse closes this the SAME way, at the
+/// SOURCE, rather than re-introducing a companion index: each row's own
+/// `attestation` is a single-verse range (`from == to`), so `to_last`-style
+/// span data is unnecessary here (unlike `cites`, whose target is a
+/// DIFFERENT locus than its subject) -- `handlers::event`'s own witness
+/// display is UNAFFECTED (it reads the widened `NodePayload::Event.
+/// witnesses` payload directly, never these rows -- see `event_node`'s own
+/// doc comment). Nothing in `event-witnesses.toml`/`events-extra.toml`/
+/// `passages/*.toml` is re-parsed or re-authored -- `scene::witnesses_for`
+/// is the SAME resolver `GET /api/event/{id}` already calls.
+fn verse_to_range(v: &str) -> Option<BibleLocusRange> {
+    let vid = atlas_core::refs::VerseId::parse_canonical(v).ok()?;
+    let locus: BibleLocus = Locus::<BibleTag>::whole(VerseRef { book: vid.book.0, chapter: vid.chapter, verse: vid.verse });
+    BibleLocusRange::new(locus.clone(), locus).ok()
 }
 
 /// Populates Event/Narrative/Anchor/Place-STUB nodes and Attests/
@@ -535,21 +585,23 @@ pub fn populate_nodes_and_direct_rows(graph: &mut Graph, atlas: &AtlasData) -> E
         let event_id = EventId::new(e.id.clone());
 
         for w in atlas_core::scene::witnesses_for(e) {
+            let text = match (&w.ref_note, &w.robertson_section) {
+                (Some(r), Some(rs)) => Some(format!("{r}; {rs}")),
+                (Some(r), None) => Some(r.clone()),
+                (None, Some(rs)) => Some(rs.clone()),
+                (None, None) => None,
+            };
             for vg in &w.verse_groups {
-                let Some(range) = verse_group_to_range(&w.book, vg) else { continue };
-                let text = match (&w.ref_note, &w.robertson_section) {
-                    (Some(r), Some(rs)) => Some(format!("{r}; {rs}")),
-                    (Some(r), None) => Some(r.clone()),
-                    (None, Some(rs)) => Some(rs.clone()),
-                    (None, None) => None,
-                };
-                graph.attests.push(Attests {
-                    event: event_id.clone(),
-                    attestation: range,
-                    provenance: "event-witnesses".to_string(),
-                    justification: Justification { text, grounds: BTreeSet::new() },
-                });
-                stats.attests_rows += 1;
+                for v in &vg.verses {
+                    let Some(range) = verse_to_range(v) else { continue };
+                    graph.attests.push(Attests {
+                        event: event_id.clone(),
+                        attestation: range,
+                        provenance: "event-witnesses".to_string(),
+                        justification: Justification { text: text.clone(), grounds: BTreeSet::new() },
+                    });
+                    stats.attests_rows += 1;
+                }
             }
         }
 

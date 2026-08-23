@@ -189,12 +189,46 @@ impl From<DtoPolityEra> for PolityEraPayload {
     }
 }
 
+/// M-C2: DTO mirror of `graph_types::node::EventWitnessPayload`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoEventWitness {
+    book: String,
+    translations: BTreeMap<String, Vec<String>>,
+    ref_note: Option<String>,
+    robertson_section: Option<String>,
+}
+impl From<&atlas_graph_types::node::EventWitnessPayload> for DtoEventWitness {
+    fn from(w: &atlas_graph_types::node::EventWitnessPayload) -> Self {
+        DtoEventWitness { book: w.book.clone(), translations: w.translations.clone(), ref_note: w.ref_note.clone(), robertson_section: w.robertson_section.clone() }
+    }
+}
+impl From<DtoEventWitness> for atlas_graph_types::node::EventWitnessPayload {
+    fn from(d: DtoEventWitness) -> Self {
+        atlas_graph_types::node::EventWitnessPayload { book: d.book, translations: d.translations, ref_note: d.ref_note, robertson_section: d.robertson_section }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 enum DtoPayload {
     TextUnit { corpus: String, renderings: BTreeMap<String, String> },
     Container { title: String },
-    Event { label: String },
-    Narrative { label: String },
+    /// M-C2: mirrors `NodePayload::Event`'s own widening -- see that
+    /// variant's own doc comment for why each field rides the payload.
+    Event {
+        label: String,
+        kind: String,
+        from_year: i32,
+        to_year: i32,
+        order_key: i32,
+        verses: Vec<String>,
+        witnesses: Vec<DtoEventWitness>,
+        robertson_section: Option<String>,
+        acts_section: Option<String>,
+        atlas_section: Option<String>,
+        kjv_superscription: Option<String>,
+        ref_note: Option<String>,
+    },
+    Narrative { label: String, color: String },
     Place { canonical: String, lat: f64, lon: f64, aliases: Vec<String> },
     Person { label: String },
     Anchor { year: i32, month: Option<u8>, day: Option<u8>, citation: String },
@@ -212,8 +246,21 @@ fn payload_to_dto(p: &NodePayload) -> DtoPayload {
             renderings: renderings.iter().map(|(k, v)| (k.0.clone(), v.clone())).collect(),
         },
         NodePayload::Container { title } => DtoPayload::Container { title: title.clone() },
-        NodePayload::Event { label } => DtoPayload::Event { label: label.clone() },
-        NodePayload::Narrative { label } => DtoPayload::Narrative { label: label.clone() },
+        NodePayload::Event { label, kind, from_year, to_year, order_key, verses, witnesses, robertson_section, acts_section, atlas_section, kjv_superscription, ref_note } => DtoPayload::Event {
+            label: label.clone(),
+            kind: kind.clone(),
+            from_year: *from_year,
+            to_year: *to_year,
+            order_key: *order_key,
+            verses: verses.clone(),
+            witnesses: witnesses.iter().map(DtoEventWitness::from).collect(),
+            robertson_section: robertson_section.clone(),
+            acts_section: acts_section.clone(),
+            atlas_section: atlas_section.clone(),
+            kjv_superscription: kjv_superscription.clone(),
+            ref_note: ref_note.clone(),
+        },
+        NodePayload::Narrative { label, color } => DtoPayload::Narrative { label: label.clone(), color: color.clone() },
         NodePayload::Place { canonical, lat, lon, aliases } => DtoPayload::Place { canonical: canonical.clone(), lat: *lat, lon: *lon, aliases: aliases.clone() },
         NodePayload::Person { label } => DtoPayload::Person { label: label.clone() },
         NodePayload::Anchor { at, citation } => DtoPayload::Anchor { year: at.year.get(), month: at.month, day: at.day, citation: citation.clone() },
@@ -236,8 +283,21 @@ fn payload_from_dto(d: DtoPayload) -> Result<NodePayload, ArtifactError> {
             NodePayload::TextUnit { corpus, renderings: renderings.into_iter().map(|(k, v)| (TranslationId(k), v)).collect() }
         }
         DtoPayload::Container { title } => NodePayload::Container { title },
-        DtoPayload::Event { label } => NodePayload::Event { label },
-        DtoPayload::Narrative { label } => NodePayload::Narrative { label },
+        DtoPayload::Event { label, kind, from_year, to_year, order_key, verses, witnesses, robertson_section, acts_section, atlas_section, kjv_superscription, ref_note } => NodePayload::Event {
+            label,
+            kind,
+            from_year,
+            to_year,
+            order_key,
+            verses,
+            witnesses: witnesses.into_iter().map(Into::into).collect(),
+            robertson_section,
+            acts_section,
+            atlas_section,
+            kjv_superscription,
+            ref_note,
+        },
+        DtoPayload::Narrative { label, color } => NodePayload::Narrative { label, color },
         DtoPayload::Place { canonical, lat, lon, aliases } => NodePayload::Place { canonical, lat, lon, aliases },
         DtoPayload::Person { label } => NodePayload::Person { label },
         DtoPayload::Anchor { year, month, day, citation } => {
@@ -467,10 +527,14 @@ struct DtoMentions {
     provenance: String,
 }
 
+/// M-C2: mirrors `graph_types::edge::CrossRef`'s own `to_last`/
+/// `target_display` widening -- see that type's own doc comment.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DtoCrossRef {
     from: DtoTextLocus,
     to: DtoTextLocus,
+    to_last: Option<DtoTextLocus>,
+    target_display: String,
     votes: u32,
     provenance: String,
 }
@@ -611,7 +675,18 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         })
         .collect();
 
-    let cross_refs = g.cross_refs.iter().map(|r: &CrossRef| DtoCrossRef { from: (&r.from).into(), to: (&r.to).into(), votes: r.votes, provenance: r.provenance.clone() }).collect();
+    let cross_refs = g
+        .cross_refs
+        .iter()
+        .map(|r: &CrossRef| DtoCrossRef {
+            from: (&r.from).into(),
+            to: (&r.to).into(),
+            to_last: r.to_last.as_ref().map(DtoTextLocus::from),
+            target_display: r.target_display.clone(),
+            votes: r.votes,
+            provenance: r.provenance.clone(),
+        })
+        .collect();
 
     // Iterates `chronology.chrono.order` (a deterministic `Vec<String>`),
     // NOT `.placements` (a `HashMap`) directly -- the SAME discipline
@@ -749,7 +824,14 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
     }
 
     for r in d.cross_refs {
-        g.cross_refs.push(CrossRef { from: r.from.try_into()?, to: r.to.try_into()?, votes: r.votes, provenance: r.provenance });
+        g.cross_refs.push(CrossRef {
+            from: r.from.try_into()?,
+            to: r.to.try_into()?,
+            to_last: r.to_last.map(TextLocus::try_from).transpose()?,
+            target_display: r.target_display,
+            votes: r.votes,
+            provenance: r.provenance,
+        });
     }
 
     // The chronology companion (this module's own `ArtifactDump.chrono_*`
