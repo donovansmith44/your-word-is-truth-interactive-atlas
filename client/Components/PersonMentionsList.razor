@@ -1,0 +1,122 @@
+@* Batch P (the extensibility proof): a Person's own "mentioned-in"
+   frontier -- every verse mentioning them, canon order (guaranteed
+   server-side: atlas-etl/src/people.rs explicitly canon-sorts each
+   person's own verse_links before the graph adapter ever sees them, and
+   the generic port's own BiIndex preserves row-insertion order end to
+   end -- see EdgeSectionRegistry.MentionedIn's own doc comment). Mirrors
+   PlaceEventsList.razor's own cap/reveal AFFORDANCE (same down-arrow
+   glyph/CSS class) with ONE real difference, disclosed: a person's own
+   true mention count can be far larger than any single page the generic
+   port will ever return (server-side MAX_EDGE_LIMIT=200; "David" alone
+   real-carries 896, "God" 8,587) -- so "reveal" here is a genuine SECOND
+   network fetch (IExplorableClient.Edges, following the FIRST page's own
+   cursor), never a client-side reveal over an already-fully-held list the
+   way PlaceEventsList's is. Repeatable (each click fetches the NEXT page
+   and appends, same "windows over a lawful whole" shape design doc §6
+   already names for the reader's own lazy loading) -- stops offering
+   Reveal the moment the port itself reports no further page
+   (EdgePageDto.Next is null), never an artificial wall this component
+   invents on its own. The always-visible heading count
+   (<c>TotalCount</c>, read off Card's own EdgeSummary) is design doc §7's
+   own "+N more" law satisfied at every step: the reader always sees the
+   TRUE total next to however many rows are currently shown, never a
+   silently-truncated list with no signal. *@
+@using BibleAtlas.Client.Explore
+@inject IExplorableClient Explorable
+
+<div class="popover-person-mentions">
+    @if (!string.IsNullOrEmpty(Provenance))
+    {
+        <p class="popover-meta" data-testid="popover-person-provenance">Source: @Provenance</p>
+    }
+
+    <p class="catechism-section-heading" data-testid="person-mentions-heading">MENTIONED IN SCRIPTURE (@TotalCount)</p>
+
+    @if (_entries.Count == 0)
+    {
+        <p class="popover-meta">No recorded mentions.</p>
+    }
+    else
+    {
+        @foreach (var e in _entries)
+        {
+            var vref = e.Node.Label; // describe_node's own TextUnit branch: the citation string (e.g. "GEN.1.1"), exactly what VerseNode's own constructor wants
+            <button type="button" class="popover-event-row popover-event-row-button explorable" data-testid="@($"person-mention-{vref}")"
+                    @onclick="() => OnExplore.InvokeAsync(new VerseNode(vref))">
+                @vref
+            </button>
+        }
+    }
+
+    @if (_next is not null)
+    {
+        <button type="button" class="popover-passage-reveal" data-testid="person-mentions-more" aria-label="Show more mentions"
+                disabled="@_loading" @onclick="RevealMore">
+            @(_loading ? "…" : "▾")
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string PersonId { get; set; } = default!;
+    [Parameter] public string? Provenance { get; set; }
+    [Parameter, EditorRequired] public List<EdgeEntryDto> InitialEntries { get; set; } = new();
+    [Parameter] public int? InitialNext { get; set; }
+    [Parameter] public int TotalCount { get; set; }
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    // Real per-instance state a static section-provider closure cannot own
+    // (VerseTextSectionProvider's own doc comment, "a provider instance is
+    // shared/static and cannot own per-popover expand state; a component
+    // can" -- PlaceEventsList's own precedent one layer further in).
+    private List<EdgeEntryDto> _entries = new();
+    private int? _next;
+    private bool _loading;
+    private bool _initialized;
+
+    // Initializes ONCE from the parent's own already-fetched first page --
+    // never again on a later, unrelated re-render (ExplorerPopover's own
+    // @key="body:{Title}" already tears the whole subtree down when the
+    // popover navigates to a DIFFERENT node, so a fresh instance -- with
+    // _initialized reset to false -- is what runs this branch for a new
+    // person; this guard exists only to protect against Blazor's own
+    // ordinary re-render passes on the SAME instance).
+    protected override void OnParametersSet()
+    {
+        if (_initialized)
+        {
+            return;
+        }
+        _initialized = true;
+        _entries = InitialEntries;
+        _next = InitialNext;
+    }
+
+    private const int RevealPageSize = 50;
+
+    private async Task RevealMore()
+    {
+        if (_next is not int cursor || _loading)
+        {
+            return;
+        }
+        _loading = true;
+        try
+        {
+            var page = await Explorable.Edges(PersonId, "mentioned-in", cursor, limit: RevealPageSize);
+            _entries = _entries.Concat(page.Entries).ToList();
+            _next = page.Next;
+        }
+        catch (Exception)
+        {
+            // fail soft -- leave `_next` as-is (still the OLD cursor) so
+            // Reveal stays offered and the user can simply retry the same
+            // click, matching every other lazy fetch in this app's own
+            // graceful-degradation stance.
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

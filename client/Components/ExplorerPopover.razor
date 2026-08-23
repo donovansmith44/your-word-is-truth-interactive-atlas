@@ -58,6 +58,7 @@
    base. *@
 @using System.Globalization
 @inject AtlasClient Atlas
+@inject IExplorableClient GraphClient
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @implements IPopoverSectionContext
@@ -440,6 +441,10 @@
     // that class's own doc comment, so the emphasis correctly does not
     // propagate past the one hop that opened it).
     public bool XrefEntryPoint => Current is VerseNode { XrefEntryPoint: true };
+
+    // Batch P: IPopoverSectionContext.Graph's own concrete backing --
+    // the injected singleton (Program.cs, M-D2), never a new instance.
+    public IExplorableClient Graph => GraphClient;
 
     private async Task Activate(Exploration ex)
     {

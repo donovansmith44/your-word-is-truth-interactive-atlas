@@ -58,6 +58,20 @@ public interface IPopoverSectionContext
     /// two inputs <c>CrossRefsSection</c>'s own cap decision reads.
     /// </summary>
     bool XrefEntryPoint { get; }
+
+    /// <summary>
+    /// Batch P (M-D2 ruling: "the verse popover's PERSONS section... the
+    /// FIRST IExplorableClient consumer"): the generic graph client, handed
+    /// to every provider through this SAME back-channel <see cref="PushAsync"/>
+    /// already uses -- so a section reads the generic contract without
+    /// <c>ExplorerPopover.razor</c> growing a bespoke per-provider
+    /// dependency, and without widening every OTHER provider's own
+    /// <c>ResolveAsync(node, api, ctx)</c> signature (which would touch
+    /// ~20 unrelated providers for one new consumer). Implemented by
+    /// <c>ExplorerPopover</c> itself, backed by its own <c>@inject
+    /// IExplorableClient</c>.
+    /// </summary>
+    IExplorableClient Graph { get; }
 }
 
 /// <summary>
@@ -193,5 +207,18 @@ public static class PopoverSectionRegistry
         new PolityDeltaEventSection(),
         new PolityDeltaScripturesSection(),
         new PolityDeltaGroundingSection(),
+        // Batch P (the extensibility proof): appended at the end, same
+        // "later batches append below, never disturb" convention every
+        // prior batch's own new provider already followed (Batch T's
+        // VerseEventMembershipSection, Batch M's three PolityDelta
+        // providers immediately above) -- registration order here is
+        // BATCH-chronological, not grouped by node kind (VerseEventMembershipSection,
+        // a VERSE-only provider, already sits far from the other
+        // Verse/Passage providers above for the identical reason).
+        // VersePersonsSection first (the verse's own entry point INTO
+        // persons), PersonCardAndMentionsSection second (the destination
+        // node's own popover) -- matching the brief's own framing order.
+        new VersePersonsSection(),
+        new PersonCardAndMentionsSection(),
     };
 }

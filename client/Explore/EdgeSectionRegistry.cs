@@ -57,6 +57,23 @@ public enum SectionOrder
     /// `generic_cites_edges_are_already_votes_descending_...` test pins
     /// this as a tested fact, not an assumed one).
     VotesRanked,
+
+    /// Batch P: the design types doc's own §7 vocabulary
+    /// (<c>votes-ranked | chain | canonical | resolved-date</c>) --
+    /// "canonical" realized for the first time. `mentioned-in` (a Person's
+    /// own frontier of every verse mentioning them) is canon-ordered BY
+    /// CONSTRUCTION, not by client-side sorting: `atlas_etl::people::
+    /// parse_people` explicitly canon-sorts each person's own resolved
+    /// verse_links before the graph adapter ever sees them, and the
+    /// generic port's own BiIndex preserves row-insertion order end to
+    /// end -- no re-sort exists anywhere on this path, server or client
+    /// (server_atlas_graph's own person_adapter tests pin the row order as
+    /// a tested fact). `mentions` (a verse's own forward frontier of
+    /// places+persons) shares this label too: a single locus has no
+    /// canon-ORDER distinction to violate among its own entries (there is
+    /// only one locus), so "canonical" is vacuously true there, not a
+    /// second, different ranking scheme.
+    Canonical,
 }
 
 /// One edge kind's own display policy -- style/initial-clamp/order, per the
@@ -85,5 +102,26 @@ public static class EdgeSectionRegistry
     /// <see cref="SectionOrder.VotesRanked"/>'s own doc comment).
     public static readonly EdgeSectionSpec Cites = new("cites", SectionStyle.Quiet, InitialClamp: 3, SectionOrder.VotesRanked);
 
-    public static readonly IReadOnlyDictionary<string, EdgeSectionSpec> ByKind = new Dictionary<string, EdgeSectionSpec> { [Cites.EdgeKind] = Cites };
+    /// Batch P: the verse/passage popover's own PERSONS section
+    /// (<c>VersePersonsSection</c>) reads this for its ONE fetch's `limit`
+    /// -- a real verse's own total mentions (places+persons combined) is
+    /// always small (spot-checked against the real compiled data: no
+    /// verse comes remotely close to this), so a single generous page
+    /// safely captures the complete set for virtually every real verse;
+    /// see that provider's own doc comment for the honest, disclosed
+    /// fallback on the rare chance it somehow doesn't.
+    public static readonly EdgeSectionSpec Mentions = new("mentions", SectionStyle.Standard, InitialClamp: 50, SectionOrder.Canonical);
+
+    /// Batch P: a Person's own "mentioned-in" frontier
+    /// (<c>PersonCardAndMentionsSection</c>/<c>PersonMentionsList</c>) --
+    /// FIRST page size only (a busy person, e.g. real committed data's own
+    /// "David" at 896 mentions, needs genuine server-side pagination, not
+    /// a client-side reveal over an already-fully-fetched list -- see
+    /// <c>PersonMentionsList.razor</c>'s own header comment for why this
+    /// is the one section in this app that fetches a SECOND real page on
+    /// reveal instead of just un-hiding already-held rows).
+    public static readonly EdgeSectionSpec MentionedIn = new("mentioned-in", SectionStyle.Standard, InitialClamp: 12, SectionOrder.Canonical);
+
+    public static readonly IReadOnlyDictionary<string, EdgeSectionSpec> ByKind =
+        new Dictionary<string, EdgeSectionSpec> { [Cites.EdgeKind] = Cites, [Mentions.EdgeKind] = Mentions, [MentionedIn.EdgeKind] = MentionedIn };
 }

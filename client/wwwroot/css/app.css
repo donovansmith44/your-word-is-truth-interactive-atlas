@@ -3864,6 +3864,16 @@ input:focus-visible,
     gap: .4rem;
 }
 
+/* Batch P: PersonMentionsList's own wrapper -- same "column of rows, small
+   gap" shape .popover-place-dates already establishes one section type
+   over. .catechism-section-heading/.popover-event-row/.popover-meta/
+   .popover-passage-reveal inside it are all pre-existing, reused as-is. */
+.popover-person-mentions {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+}
+
 /* Batch F2 requirement 6b: no longer a <button> (the "click to reveal
    verses" gate is retired -- see PlaceDatesSection's own doc comment) --
    a plain instrument-face label/value row, same visual treatment, just

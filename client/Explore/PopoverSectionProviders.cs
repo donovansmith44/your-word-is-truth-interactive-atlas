@@ -1629,3 +1629,190 @@ public sealed class PolityDeltaGroundingSection : IPopoverSectionProvider
         return Task.FromResult<PopoverSection?>(new PopoverSection("polity-delta-grounding", body));
     }
 }
+
+/// <summary>
+/// Batch P (the extensibility proof; M-D2 ruling): the VERSE/PASSAGE
+/// popover's own PERSONS section -- mentioned persons, conditional
+/// presence. THE FIRST <see cref="IExplorableClient"/> CONSUMER: reads the
+/// generic <c>mentions</c> edge (<see cref="IPopoverSectionContext.Graph"/>)
+/// directly, never <c>AtlasClient</c>/<c>VerseDetail</c> -- "NO parallel
+/// client data path," the brief's own words, verbatim. A verse's own
+/// `mentions` frontier carries BOTH Place and Person entities under the
+/// SAME edge kind (server-side: one `mentions` relation, `PlaceOrPerson`-
+/// typed rows -- `graph_types::edge::Mentions`); this section filters to
+/// <c>Kind == "Person"</c> client-side (design doc §7's own CHAIN
+/// HOMOGENEITY law: "a frontier SECTION renders entries of ONE kind-shape"
+/// -- a mixed Place+Person list would violate it, so filtering here, not
+/// interleaving, is what the law itself requires).
+///
+/// Fetch scope, disclosed: ONE page at <see cref="EdgeSectionRegistry.Mentions"/>'s
+/// own <c>InitialClamp</c> (50) -- a real verse's own total mentions
+/// (places+persons combined) is always small in the real compiled data;
+/// spot-checked, no verse comes remotely close. If the true total somehow
+/// exceeds this one page (<c>page.Next is not null</c>), a plain,
+/// non-interactive "+ more mentions" line discloses it honestly (design
+/// doc §7's own "+N more" law: a visible signal with the true count) --
+/// no second fetch is wired for this direction, since the realistic case
+/// this would ever fire is effectively zero and a person's own SEPARATE
+/// "mentioned-in" direction (<see cref="PersonCardAndMentionsSection"/>
+/// below) is where genuine large-count pagination actually matters.
+/// </summary>
+public sealed class VersePersonsSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        string wireId;
+        switch (node)
+        {
+            case VerseNode v:
+                wireId = $"text-unit:{v.Title}"; // v.Title IS the vref (VerseNode's own doc comment)
+                break;
+            case PassageNode p:
+                // A passage's own mentions render at its FIRST verse -- the
+                // same "first verse anchors the locus" convention this
+                // file's own CrossRefsSection/PassageList.ExploreAsVerse
+                // already establish for a passage's own onward identity.
+                wireId = $"text-unit:{CanonRef.FirstVerseOf(p.Title)}";
+                break;
+            default:
+                return null;
+        }
+
+        EdgePageDto page;
+        try
+        {
+            page = await ctx.Graph.Edges(wireId, EdgeSectionRegistry.Mentions.EdgeKind, cursor: null, limit: EdgeSectionRegistry.Mentions.InitialClamp);
+        }
+        catch (Exception)
+        {
+            return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+        }
+
+        var persons = page.Entries.Where(e => e.Node.Kind == "Person").ToList();
+        if (persons.Count == 0)
+        {
+            return null; // conditional presence -- most verses mention no person at all
+        }
+
+        var mayHaveMore = page.Next is not null; // see this class's own doc comment
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "catechism-section-heading");
+            builder.AddAttribute(seq++, "data-testid", "persons-section-heading");
+            builder.AddContent(seq++, "PERSONS");
+            builder.CloseElement();
+
+            foreach (var entry in persons)
+            {
+                var id = entry.Node.Id; // local copies -- captured per-row by the onclick closure below
+                var label = entry.Node.Label;
+                builder.OpenElement(seq++, "button");
+                builder.AddAttribute(seq++, "type", "button");
+                builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
+                builder.AddAttribute(seq++, "data-testid", $"verse-person-{Slug(label)}");
+                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PersonNode(id, label))));
+                builder.AddContent(seq++, label);
+                builder.CloseElement();
+            }
+
+            if (mayHaveMore)
+            {
+                builder.OpenElement(seq++, "p");
+                builder.AddAttribute(seq++, "class", "popover-meta");
+                builder.AddAttribute(seq++, "data-testid", "persons-section-more");
+                builder.AddContent(seq++, "+ more mentions in this verse");
+                builder.CloseElement();
+            }
+        };
+        return new PopoverSection("persons", body);
+    }
+
+    // A stable, DOM-safe testid fragment from a person's own display name
+    // ("Simon Peter" -> "simon-peter") -- names are never guaranteed
+    // ASCII-simple (this app's own broader KJV-name vocabulary isn't), so
+    // this narrows to the same safe alphanumeric-plus-dash shape
+    // `EventNode`/`PlaceNode` ids already are, rather than assuming Theographic's
+    // own personLookup-derived label is always dash-safe.
+    private static string Slug(string label)
+    {
+        var chars = label.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
+        var slug = new string(chars);
+        while (slug.Contains("--"))
+        {
+            slug = slug.Replace("--", "-");
+        }
+        return slug.Trim('-');
+    }
+}
+
+/// <summary>
+/// Batch P (the extensibility proof): the PERSON popover's own card +
+/// "mentioned-in" frontier -- BOTH via <see cref="IExplorableClient"/>
+/// (<see cref="IPopoverSectionContext.Graph"/>), the generic contract, zero
+/// bespoke endpoints (the batch's own thesis). "Card" here means exactly
+/// what the generic <c>GET /api/node/{id}</c> wire shape carries -- label
+/// (already the popover's own title, via <see cref="PersonNode.Title"/>)
+/// and <c>Provenance</c> (a genuinely new field this batch is the first to
+/// render anywhere in this app, disclosed) -- richer payload facts
+/// (gender/birth_year/death_year/also_called) ride the SERVER-side graph
+/// payload but are NOT projected onto the generic card wire this batch
+/// (<c>NodeCardOut.Label</c> is one string, matching every OTHER kind's
+/// own card label precedent exactly -- Place's canonical name carries no
+/// lat/lon, Event's label carries no date -- see graph_types::node::card's
+/// own match arms); a future batch's own decision to widen the generic
+/// card wire is real, disclosed follow-up, not attempted here.
+/// "Mentioned in Scripture" (every mention, canon order) is
+/// <c>mentioned-in</c>'s own edges page, handed to
+/// <see cref="Components.PersonMentionsList"/> (the one component in this
+/// batch that owns real per-popover fetch state, for the SAME
+/// "a provider instance is shared/static, a component can hold state"
+/// reason <c>VerseTextSectionProvider</c>/<c>PlaceEventsList</c> already
+/// establish).
+/// </summary>
+public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Person";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not PersonNode person)
+        {
+            return null;
+        }
+
+        var spec = EdgeSectionRegistry.MentionedIn;
+        NodeCardDto card;
+        EdgePageDto page;
+        try
+        {
+            var cardTask = ctx.Graph.Card(person.PersonId);
+            var pageTask = ctx.Graph.Edges(person.PersonId, spec.EdgeKind, cursor: null, limit: spec.InitialClamp);
+            await Task.WhenAll(cardTask, pageTask);
+            card = cardTask.Result;
+            page = pageTask.Result;
+        }
+        catch (Exception)
+        {
+            return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+        }
+
+        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == spec.EdgeKind)?.Count ?? page.Entries.Count;
+
+        RenderFragment body = builder =>
+        {
+            builder.OpenComponent<Components.PersonMentionsList>(0);
+            builder.AddAttribute(1, "PersonId", person.PersonId);
+            builder.AddAttribute(2, "Provenance", card.Provenance);
+            builder.AddAttribute(3, "InitialEntries", page.Entries);
+            builder.AddAttribute(4, "InitialNext", page.Next);
+            builder.AddAttribute(5, "TotalCount", total);
+            builder.AddAttribute(6, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.CloseComponent();
+        };
+        return new PopoverSection("person-mentions", body);
+    }
+}
