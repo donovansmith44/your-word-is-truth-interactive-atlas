@@ -309,16 +309,17 @@ pub struct HeadingOut {
     pub is_continuation: bool,
 }
 
-impl From<&atlas_core::data::HeadingEntry> for HeadingOut {
-    fn from(h: &atlas_core::data::HeadingEntry) -> Self {
-        // atlas_core's own HeadingEntry carries no continuation concept
-        // (this module's own doc comment on `atlas_graph::heading::
-        // HeadingEntry` discloses why -- graph-side only) -- always false
-        // here, correctly: nothing on this dead reference-oracle path ever
-        // produces a continuation heading.
-        HeadingOut { event_id: h.event_id.clone(), title: h.title.clone(), kind: h.kind.clone(), is_continuation: false }
-    }
-}
+// M-D3 (owner ruling R5): `impl From<&atlas_core::data::HeadingEntry> for
+// HeadingOut` retired -- genuinely orphaned (grep-proven: no call site
+// anywhere in this workspace). `chapter` (below) has built `HeadingOut`
+// directly from `graph.heading_index`'s own `atlas_graph::heading::
+// HeadingEntry` since M-C2; this conversion's OWN source type
+// (`atlas_core::data::HeadingEntry`, fed by `AtlasData::heading_for_verse`)
+// has had no live reader since, and carried no lockstep test of its own
+// (unlike `heading_for_verse` itself, which stays -- see that method's own
+// doc comment / heading.rs's own module doc comment for the "dead, tested
+// reference oracle" it remains). Recoverable from git history at the
+// commit immediately preceding this one.
 
 #[derive(Debug, Serialize)]
 pub struct VerseOut {
@@ -630,11 +631,9 @@ impl From<atlas_core::narrative::NarrativeAdjacentEvent> for NarrativeAdjacentEv
 /// touches -- `prior`/`following` omitted (not null) exactly at a
 /// narrative's own first/last leg, same conditional-presence wire
 /// convention `HistoryOut.blurb`/`CatechismRefOut.question` etc. already
-/// use throughout this file. See
-/// `atlas_core::narrative::NarrativePosition`'s own doc comment for why
-/// `event_id`/`event_label` are carried (map-focus-sync + disambiguating
-/// two positions sharing one `narrative_id`) even though they restate
-/// something the CALLER usually already knows.
+/// use throughout this file. `event_id`/`event_label` are carried (map-
+/// focus-sync + disambiguating two positions sharing one `narrative_id`)
+/// even though they restate something the CALLER usually already knows.
 #[derive(Debug, Serialize)]
 pub struct NarrativePositionOut {
     pub narrative_id: String,
@@ -647,18 +646,15 @@ pub struct NarrativePositionOut {
     pub following: Option<NarrativeAdjacentEventOut>,
 }
 
-impl From<atlas_core::narrative::NarrativePosition> for NarrativePositionOut {
-    fn from(p: atlas_core::narrative::NarrativePosition) -> Self {
-        NarrativePositionOut {
-            narrative_id: p.narrative_id,
-            narrative_name: p.narrative_name,
-            event_id: p.event_id,
-            event_label: p.event_label,
-            prior: p.prior.map(Into::into),
-            following: p.following.map(Into::into),
-        }
-    }
-}
+// M-D3 (owner ruling R5): `impl From<atlas_core::narrative::NarrativePosition>
+// for NarrativePositionOut` retired -- genuinely orphaned (grep-proven: no
+// call site). `narrative_event_positions` (below) has built
+// `NarrativePositionOut` directly, from the graph's own succession-edge
+// topology, since M-B; this conversion's OWN source type
+// (`atlas_core::narrative::NarrativePosition`, produced only by the
+// now-retired `positions_for_events`) has had no live producer since.
+// Recoverable from git history at the commit immediately preceding this
+// one.
 
 /// Batch HOTFIX-4 requirement 1: the GLOBAL chronological PRIOR/FOLLOWING
 /// for one event id, independent of narrative membership -- see

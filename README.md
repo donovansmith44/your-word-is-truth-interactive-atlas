@@ -57,6 +57,14 @@ Every artifact under `data/compiled/` is labeled with its source license in
 [`LICENSES.md`](LICENSES.md) — start there for what's redistributed here and
 under what terms.
 
+Server-side legacy machinery gets the same treatment: M-D3 retired a few
+genuinely-unreached `atlas_core`/`atlas_server` functions (a narrative-
+position resolver superseded by the graph's own succession edges, plus two
+orphaned wire-DTO conversions) rather than leaving them in the live binary
+— not behind a runtime flag, just gone from HEAD; `git log`/the batch
+report (`.superpowers/sdd/2026-08-17-bible-atlas-m1/batch-md3-report.md`)
+has the exact commit if you ever want them back.
+
 ### Regenerating (only if you change `data/raw/` or `data/curated/`)
 
 `data/compiled/` is generated from `data/raw/` (fetched, gitignored) +

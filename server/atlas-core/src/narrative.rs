@@ -1,10 +1,24 @@
-//! Batch N ("narratives as first-class graph structure"): resolves a
-//! verse's or an event's own position(s) within the narrative graph --
-//! which narrative(s), which event, and the PRIOR/FOLLOWING events in leg
-//! order -- for the reader popover's own PRIOR EVENT / FOLLOWING EVENT
-//! sections. Pure, no HTTP/handler concerns (mirrors `crate::xrefs`/
-//! `crate::catechism`'s own "business logic lives in atlas-core, the
-//! handler is a thin wrapper" shape).
+//! Batch N ("narratives as first-class graph structure"): originally
+//! resolved a verse's or an event's own position(s) within the narrative
+//! graph for the reader popover's own PRIOR EVENT / FOLLOWING EVENT
+//! sections via this module's own `positions_for_events`/
+//! `NarrativePosition`. M-D3 (owner ruling R5, "get [legacy machinery] out
+//! of the app"): that resolver retired -- Batch M-B/M-C re-implemented the
+//! live `GET /api/narrative/event/{id}` handler as a view over the GRAPH's
+//! own succession edges (`atlas_server::handlers::narrative_event_positions`,
+//! `EdgeMeta::Narrative`-tagged `follows-in`/`precedes-in` pages), and
+//! nothing has called `positions_for_events` from a live server response
+//! since. `adjacent_event` below (the shared PRESENTATION builder, id ->
+//! label/places/verse_groups) survives and is now called DIRECTLY by that
+//! handler, unchanged. `global_timeline_position` (below) also survives --
+//! not because it is live-reached either, but because
+//! `server/atlas-graph/tests/timeline_equivalence.rs` keeps it as a real,
+//! proven LOCKSTEP ORACLE against the graph's own reconstructed timeline
+//! order (the same class of exemption `AtlasData::heading_for_verse`
+//! earns, per that module's own doc comment) -- `positions_for_events` had
+//! no such cross-checked test, only its own in-isolation unit tests
+//! (deleted alongside it; recoverable from git history at the commit
+//! immediately preceding this one).
 //!
 //! ONE-GRAPH property (the user's own words: "we have one graph
 //! representing narratives"): the ONLY input this module reads is
@@ -17,8 +31,9 @@
 //! section and a map arrow's own endpoint therefore always show the
 //! IDENTICAL verse content for the same event id -- not by convention, but
 //! because both are the same function call over the same data (see
-//! `positions_for_events`'s own tests for a direct, asserted proof of this,
-//! not just an argument).
+//! `adjacent_event_verse_groups_equal_the_map_arrows_own_scene_event`'s own
+//! test, below, for a direct, asserted proof of this, not just an
+//! argument).
 
 use crate::data::AtlasData;
 use crate::wire::VerseGroup;
@@ -41,38 +56,9 @@ pub struct NarrativeAdjacentEvent {
     pub verse_groups: Vec<VerseGroup>,
 }
 
-/// One (narrative, event) position a queried verse or event touches. A
-/// verse cited by >1 event, or an event that is itself a leg of >1
-/// narrative (both real, not hypothetical -- see this module's own tests
-/// and, in the real compiled data, `EXO.12.37`, cited by BOTH the exodus
-/// narrative's `ex_rameses` AND `ex_succoth` legs) yields one
-/// `NarrativePosition` per distinct (narrative, event) pair touched --
-/// "a verse in multiple narratives returns all positions," generalized to
-/// "and an event in multiple narratives, or a verse in multiple events,
-/// too" -- never silently collapsed to one.
-///
-/// `prior`/`following` are `None` exactly at the narrative's own first/last
-/// leg (conditional presence -- no disabled stub) -- see
-/// `positions_for_events`'s own doc comment for the walk itself.
-#[derive(Debug, Clone, PartialEq)]
-pub struct NarrativePosition {
-    pub narrative_id: String,
-    pub narrative_name: String,
-    /// The event id `event_ids` matched IN THIS narrative's own leg chain --
-    /// not necessarily the only event a queried verse touches (see
-    /// `NarrativePosition`'s own doc comment), and not a duplicate of the
-    /// verse's/event's OWN text (already on screen as the popover's
-    /// subject) -- present for two reasons: (1) the map-focus-sync
-    /// mechanism needs to know exactly which arrow endpoints are "the
-    /// current leg" (client: `ExplorerPopover`'s own `INarrativeAware`
-    /// hook), and (2) disambiguating two positions that share a
-    /// `narrative_id` (the `EXO.12.37` case above) needs `event_label` to
-    /// tell them apart in a section heading.
-    pub event_id: String,
-    pub event_label: String,
-    pub prior: Option<NarrativeAdjacentEvent>,
-    pub following: Option<NarrativeAdjacentEvent>,
-}
+// M-D3 (owner ruling R5): `NarrativePosition` retired alongside
+// `positions_for_events` (below `adjacent_event`) -- see this module's own
+// top doc comment for the full retirement.
 
 /// Builds one event's own `NarrativeAdjacentEvent` -- `None` only if `id`
 /// names no real event (should never happen: ETL's own
@@ -99,49 +85,13 @@ pub fn adjacent_event(d: &AtlasData, event_id: &str) -> Option<NarrativeAdjacent
     Some(NarrativeAdjacentEvent { id: se.id, label: se.label, places: e.places.clone(), verse_groups: se.verse_groups })
 }
 
-/// The core resolver, shared by BOTH the verse-keyed and the event-id-keyed
-/// lookup (requirement 1's own "endpoint/payload also supports event-id
-/// lookup" -- traversal steps resolve by event, not by re-searching
-/// verses): `event_ids` is `AtlasData::events_for_verse(vref)` for the
-/// verse-keyed caller, a single-element slice for the event-id-keyed one --
-/// ONE walk, so the two lookup paths can never drift apart.
-///
-/// For every narrative, for every leg (event id) that appears in
-/// `event_ids`, the PRIOR position is `legs[idx-1]` and the FOLLOWING is
-/// `legs[idx+1]` -- a plain adjacent-array-index walk over
-/// `Narrative::legs`, the EXACT ordered chain `scene::build_arrows` walks
-/// to build arrows (that function's own `kept.windows(2)` is the identical
-/// "look at this leg and its immediate neighbor" idea, just already
-/// filtered to a time/scripture window there; this module deliberately
-/// ignores window filtering entirely -- a narrative position is asked "by
-/// verse" or "by event," never "by window," so EVERY leg is a candidate,
-/// unlike a scene's own filtered arrow list). `idx == 0` (the narrative's
-/// own first leg) has no prior; `idx == legs.len() - 1` (the last) has no
-/// following -- conditional presence, never a disabled stub, matching
-/// requirement 2 verbatim ("ending naturally at the narrative's first/last
-/// event").
-pub fn positions_for_events(d: &AtlasData, event_ids: &[String]) -> Vec<NarrativePosition> {
-    let mut out = Vec::new();
-    for n in &d.narratives {
-        for (idx, eid) in n.legs.iter().enumerate() {
-            if !event_ids.iter().any(|e| e == eid) {
-                continue;
-            }
-            let Some(current) = d.event_by_id(eid) else { continue }; // dangling leg -- ETL-validated not to happen; skip rather than panic
-            let prior = idx.checked_sub(1).and_then(|i| n.legs.get(i)).and_then(|id| adjacent_event(d, id));
-            let following = n.legs.get(idx + 1).and_then(|id| adjacent_event(d, id));
-            out.push(NarrativePosition {
-                narrative_id: n.id.clone(),
-                narrative_name: n.name.clone(),
-                event_id: eid.clone(),
-                event_label: current.label.clone(),
-                prior,
-                following,
-            });
-        }
-    }
-    out
-}
+// M-D3 (owner ruling R5, "why not just hash the legacy stuff... and get it
+// out of the app"): `positions_for_events` retired -- the resolver it was
+// ("the core resolver, shared by BOTH the verse-keyed and the event-id-
+// keyed lookup") is genuinely unreached by any live server response (see
+// this module's own top doc comment), and carried no cross-checked
+// lockstep test the way `global_timeline_position` below does. Recoverable
+// from git history at the commit immediately preceding this one.
 
 /// Batch HOTFIX-4 requirement 1 ("generalize the ONE resolver -- traversal
 /// by time for every dated event"): the GLOBAL chronological PRIOR/
@@ -150,8 +100,8 @@ pub fn positions_for_events(d: &AtlasData, event_ids: &[String]) -> Vec<Narrativ
 /// owner's own law, applied to the FULL set of dated events rather than one
 /// narrative's own leg chain. `prior`/`following` reuse the SAME
 /// `NarrativeAdjacentEvent` shape and the SAME `adjacent_event` builder
-/// `positions_for_events` above already uses (one graph, seen a second way
-/// -- never a parallel verse-groups derivation).
+/// this module's own narrative-scoped lookups use too (one graph, seen a
+/// second way -- never a parallel verse-groups derivation).
 #[derive(Debug, Clone, PartialEq)]
 pub struct TimelinePosition {
     pub prior: Option<NarrativeAdjacentEvent>,
@@ -188,132 +138,19 @@ mod tests {
     // fixture already carries, not one this batch invented). e5 (Sarah
     // buried at Machpelah) is a leg of NEITHER narrative.
 
-    #[test]
-    fn mid_chain_event_has_both_neighbors() {
-        let d = crate::data::demo_fixture();
-        let positions = positions_for_events(&d, &["e2".to_string()]);
-        let conquest = positions.iter().find(|p| p.narrative_id == "conquest").expect("e2 is a conquest leg");
-        assert_eq!(conquest.event_id, "e2");
-        assert_eq!(conquest.event_label, "Jericho besieged");
-        let prior = conquest.prior.as_ref().expect("e2 is not conquest's first leg");
-        assert_eq!(prior.id, "e1");
-        assert_eq!(prior.label, "Camp at Gilgal");
-        assert_eq!(prior.places, vec!["gilgal".to_string()]);
-        let following = conquest.following.as_ref().expect("e2 is not conquest's last leg");
-        assert_eq!(following.id, "e3");
-        assert_eq!(following.label, "Jericho falls");
-    }
-
-    #[test]
-    fn first_leg_has_no_prior() {
-        let d = crate::data::demo_fixture();
-        let positions = positions_for_events(&d, &["e1".to_string()]);
-        let conquest = positions.iter().find(|p| p.narrative_id == "conquest").unwrap();
-        assert!(conquest.prior.is_none(), "e1 is conquest's first leg -- no prior, not a disabled stub");
-        assert_eq!(conquest.following.as_ref().unwrap().id, "e2");
-    }
-
-    #[test]
-    fn last_leg_has_no_following() {
-        let d = crate::data::demo_fixture();
-        let positions = positions_for_events(&d, &["e4".to_string()]);
-        let conquest = positions.iter().find(|p| p.narrative_id == "conquest").unwrap();
-        assert_eq!(conquest.prior.as_ref().unwrap().id, "e3");
-        assert!(conquest.following.is_none(), "e4 is conquest's last leg -- no following, not a disabled stub");
-    }
-
-    /// The multi-narrative case, verbatim per the brief ("a verse in
-    /// multiple narratives returns all positions"): e2 is a leg of BOTH
-    /// conquest (mid-chain, both neighbors present) AND patriarchs-demo (its
-    /// own ONLY leg -- neither neighbor present). Both positions must come
-    /// back from the SAME call, neither one silently dropping the other.
-    #[test]
-    fn event_in_two_narratives_returns_both_positions_independently() {
-        let d = crate::data::demo_fixture();
-        let positions = positions_for_events(&d, &["e2".to_string()]);
-        assert_eq!(positions.len(), 2, "e2 belongs to two narratives: {positions:?}");
-
-        let conquest = positions.iter().find(|p| p.narrative_id == "conquest").unwrap();
-        assert!(conquest.prior.is_some() && conquest.following.is_some());
-
-        let patriarchs = positions.iter().find(|p| p.narrative_id == "patriarchs-demo").unwrap();
-        assert_eq!(patriarchs.narrative_name, "Patriarchs (demo)");
-        assert!(patriarchs.prior.is_none(), "patriarchs-demo's only leg has no prior");
-        assert!(patriarchs.following.is_none(), "patriarchs-demo's only leg has no following");
-    }
-
-    /// An event with ZERO curated verses (a real, if currently only
-    /// theoretical, shape -- no event in the real compiled data has an
-    /// empty `verses` list today, but nothing in `Narrative.legs`/`Event`
-    /// forbids it, and `scene::build_arrows`'s own arrows never depend on
-    /// an event having verses either) still resolves a real position with
-    /// an empty `verse_groups` -- never panics, never fabricates a
-    /// placeholder verse. Standalone fixture (not `demo_fixture`): every
-    /// real event there has >=1 verse, so this case needs its own tiny,
-    /// purpose-built dataset.
-    #[test]
-    fn adjacent_event_with_zero_verses_resolves_with_empty_verse_groups() {
-        use crate::data::{Canon, Event, Narrative, Place};
-        use std::collections::HashMap;
-
-        let places = vec![Place { id: "p1".into(), name: "P1".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
-        let events = vec![
-            Event {
-                id: "silent-1".into(),
-                label: "An undocumented moment".into(),
-                when: crate::time::TimeRange::new(-1000, -1000).unwrap(),
-                places: vec!["p1".into()],
-                verses: vec![], // the case under test
-                ..Default::default()
-            },
-            Event {
-                id: "silent-2".into(),
-                label: "The next moment".into(),
-                when: crate::time::TimeRange::new(-999, -999).unwrap(),
-                places: vec!["p1".into()],
-                verses: vec![],
-                ..Default::default()
-            },
-        ];
-        let narratives = vec![Narrative {
-            id: "silent".into(),
-            name: "A Silent Narrative".into(),
-            color: "#000000".into(),
-            legs: vec!["silent-1".into(), "silent-2".into()],
-        }];
-        let d = AtlasData::new(Canon { books: vec![] }, places, events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
-
-        let positions = positions_for_events(&d, &["silent-1".to_string()]);
-        let position = positions.iter().find(|p| p.narrative_id == "silent").unwrap();
-        assert!(position.prior.is_none());
-        let following = position.following.as_ref().expect("silent-1 -> silent-2 is a real leg");
-        assert_eq!(following.id, "silent-2");
-        assert!(following.verse_groups.is_empty(), "zero curated verses -> empty verse_groups, not a panic or a placeholder");
-    }
-
-    /// A verse touched by an event that is a leg of NO narrative at all
-    /// (e5 -- Sarah buried at Machpelah, a bare event, per data.rs's own
-    /// fixture doc comment) returns an empty position list -- the
-    /// "non-narrative verse shows neither section" case, resolved purely by
-    /// an empty Vec, no special-cased sentinel.
-    #[test]
-    fn event_in_no_narrative_returns_no_positions() {
-        let d = crate::data::demo_fixture();
-        let positions = positions_for_events(&d, &["e5".to_string()]);
-        assert!(positions.is_empty(), "e5 is not a leg of any narrative: {positions:?}");
-    }
-
-    /// A verse-keyed call (multiple candidate event ids, mirroring
-    /// `AtlasData::events_for_verse`'s own return shape) that matches
-    /// nothing in any narrative's legs -- same empty-Vec outcome as the
-    /// single-event case above, proving the verse-keyed path doesn't need
-    /// its own special casing.
-    #[test]
-    fn unknown_or_narrative_less_event_ids_yield_no_positions() {
-        let d = crate::data::demo_fixture();
-        let positions = positions_for_events(&d, &["e5".to_string(), "no-such-event".to_string()]);
-        assert!(positions.is_empty());
-    }
+    // M-D3 (owner ruling R5): the seven `positions_for_events`-exercising
+    // tests formerly here (mid_chain_event_has_both_neighbors,
+    // first_leg_has_no_prior, last_leg_has_no_following,
+    // event_in_two_narratives_returns_both_positions_independently,
+    // adjacent_event_with_zero_verses_resolves_with_empty_verse_groups,
+    // event_in_no_narrative_returns_no_positions,
+    // unknown_or_narrative_less_event_ids_yield_no_positions) are deleted
+    // alongside the function itself -- see this module's own top doc
+    // comment for the full retirement. `adjacent_event`'s own coverage
+    // (the presentation builder these tests exercised only indirectly, via
+    // `positions_for_events`' wrapping) continues below via
+    // `global_timeline_position`'s own tests and the ONE-GRAPH EQUALITY
+    // PROOF, both of which call `adjacent_event` directly.
 
     // --- global_timeline_position (Batch HOTFIX-4 requirement 1) -----------
     //
@@ -336,9 +173,9 @@ mod tests {
     fn global_timeline_true_first_of_the_whole_atlas_has_no_prior() {
         let d = crate::data::demo_fixture();
         // e5 (-2000) is the earliest event in the fixture AND a leg of no
-        // narrative at all (positions_for_events returns [] for it, see
-        // `event_in_no_narrative_returns_no_positions` above) -- exactly
-        // the "narrative-less dated event" case requirement 1 exists for.
+        // narrative at all (per data.rs's own fixture doc comment) --
+        // exactly the "narrative-less dated event" case requirement 1
+        // exists for.
         let pos = global_timeline_position(&d, "e5").expect("e5 is a dated event");
         assert!(pos.prior.is_none(), "e5 is the fixture's true first dated event -- no prior, not a disabled stub");
         assert_eq!(pos.following.as_ref().unwrap().id, "e1", "chronologically next regardless of narrative membership");
@@ -355,17 +192,16 @@ mod tests {
     #[test]
     fn global_timeline_position_is_independent_of_narrative_membership() {
         let d = crate::data::demo_fixture();
-        // e2 is a leg of two narratives (conquest AND patriarchs-demo,
-        // see `event_in_two_narratives_returns_both_positions_independently`
-        // above) -- its OWN global timeline position must be the SAME
-        // single answer regardless, not one per narrative.
+        // e2 is a leg of two narratives (conquest AND patriarchs-demo, per
+        // data.rs's own fixture doc comment) -- its OWN global timeline
+        // position must be the SAME single answer regardless, not one per
+        // narrative.
         let via_e1 = global_timeline_position(&d, "e2").unwrap();
         assert_eq!(via_e1.prior.as_ref().unwrap().id, "e1");
         // And a narrative-less event (e5) still gets a real position --
         // requirement 1's own "generalize the ONE resolver... for EVERY
         // dated event, not just narrative members."
         assert!(global_timeline_position(&d, "e5").is_some());
-        assert!(positions_for_events(&d, &["e5".to_string()]).is_empty(), "e5 has no NARRATIVE position");
     }
 
     #[test]
@@ -447,24 +283,29 @@ mod tests {
 
     /// THE ONE-GRAPH EQUALITY PROOF (not merely an argument): the SAME
     /// event's `verse_groups`, reached two completely independent ways --
-    /// (a) THIS module's own `positions_for_events`, the reader popover's
-    /// wire source, and (b) `scene::compose_time_scene`, the MAP's own wire
-    /// source (a lit place's `events[].verse_groups`, exactly what an arrow
-    /// endpoint's own place card would show) -- must be byte-for-byte
-    /// `assert_eq!`, not just "look similar." e3 (Jericho falls, JOS.6.20/
-    /// .21/.24) is chosen because its own window (-1405) is disjoint from
-    /// e1/e2's (-1406), so a narrow time-mode window isolates it cleanly on
-    /// the map side.
+    /// (a) `adjacent_event`, called DIRECTLY the way the LIVE reader-
+    /// popover handler calls it today (M-D3: `atlas_server::handlers::
+    /// narrative_event_positions` reads succession topology off the GRAPH's
+    /// own `follows-in`/`precedes-in` edges and calls `adjacent_event`
+    /// straight from there -- this module's own retired `positions_for_events`
+    /// used to be the wrapper in between, but was never more than a
+    /// presentation pass-through around this exact call, and is gone; see
+    /// this module's own top doc comment), and (b) `scene::
+    /// compose_time_scene`, the MAP's own wire source (a lit place's
+    /// `events[].verse_groups`, exactly what an arrow endpoint's own place
+    /// card would show) -- must be byte-for-byte `assert_eq!`, not just
+    /// "look similar." e3 (Jericho falls, JOS.6.20/.21/.24) is chosen
+    /// because its own window (-1405) is disjoint from e1/e2's (-1406), so
+    /// a narrow time-mode window isolates it cleanly on the map side.
     #[test]
     fn adjacent_event_verse_groups_equal_the_map_arrows_own_scene_event() {
         let d = crate::data::demo_fixture();
 
-        // (a) the reader popover's own source: ask for e2 (Jericho
-        // besieged)'s position in conquest, and read its own FOLLOWING
-        // event's (e3's) verse_groups.
-        let positions = positions_for_events(&d, &["e2".to_string()]);
-        let conquest = positions.iter().find(|p| p.narrative_id == "conquest").unwrap();
-        let e3_via_narrative = &conquest.following.as_ref().expect("e2 -> e3 in conquest").verse_groups;
+        // (a) the reader popover's own source, called the SAME direct way
+        // the live handler does: e3 is conquest's own leg immediately
+        // following e2 (Jericho besieged) -- its own verse_groups via
+        // `adjacent_event` directly, no narrative-position wrapper.
+        let e3_via_narrative = &adjacent_event(&d, "e3").expect("e3 is a real event").verse_groups;
 
         // (b) the map's own source: e3's window is -1405 alone; the
         // resulting scene's own "jericho" place carries e3 among its
