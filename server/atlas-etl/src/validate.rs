@@ -606,7 +606,12 @@ pub fn run_place_history(history: &[PlaceHistory], place_ids: &HashSet<&str>, ve
 
     for h in history {
         if !place_ids.contains(h.id.as_str()) {
-            errors.push(format!("place-history '{}': unknown place id (not in compiled places.json)", h.id));
+            // Fix round 1, M-2: "not in compiled places.json" was stale --
+            // places.json retired at M-C2 (graph-only now); this checks
+            // `place_ids`, the in-memory roster `compile()` builds from
+            // `AtlasData.places` before any writer runs, unaffected by
+            // that retirement.
+            errors.push(format!("place-history '{}': unknown place id (not compiled -- no matching place)", h.id));
         }
 
         let mut name_ranges: Vec<(&str, atlas_core::time::TimeRange)> = Vec::new();
@@ -696,7 +701,10 @@ pub fn run_place_names_kjv(aliases: &[PlaceNameAlias], places: &[Place], verses:
     for a in aliases {
         let ctx = format!("place-names-kjv alias '{}'", a.id);
         let Some(place) = places_by_id.get(a.id.as_str()) else {
-            errors.push(format!("{ctx}: unknown place id (not in compiled places.json)"));
+            // Fix round 1, M-2: same stale-wording fix as place-history's
+            // own check above -- `places_by_id` is an in-memory map, not a
+            // file read.
+            errors.push(format!("{ctx}: unknown place id (not compiled -- no matching place)"));
             continue;
         };
 

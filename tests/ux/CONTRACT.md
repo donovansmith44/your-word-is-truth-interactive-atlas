@@ -843,7 +843,11 @@ Notes:
   what Reader.razor reads to place a `pericope-heading-{eventId}` directly
   in the reading flow.
 
-  HEADING-WORTHY RULE (server: `AtlasData::finish`). An event anchors a
+  HEADING-WORTHY RULE (server: `atlas_graph::heading::build_heading_index`,
+  the live production path as of M-C2's decisive-title-law migration --
+  kept in lockstep with `AtlasData::finish`'s own original implementation,
+  which stays the tested reference oracle for surfaces that haven't
+  migrated; fix round 1, M-1). An event anchors a
   reader heading -- one per WITNESS, at that witness's own first verse, in
   THAT witness's own book -- exactly when it is a leg of one of the 13
   curated narratives (OT included; every existing narrative event already
