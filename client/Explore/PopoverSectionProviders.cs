@@ -206,6 +206,7 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
             builder.AddAttribute(3, "FocalFromVerse", focalFrom);
             builder.AddAttribute(4, "FocalToVerse", focalTo);
             builder.AddAttribute(5, "CompactText", compactText);
+            builder.AddAttribute(6, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
         };
         return new PopoverSection("verse-text", fragment);

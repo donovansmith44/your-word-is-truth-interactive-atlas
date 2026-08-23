@@ -21,7 +21,7 @@
 @using BibleAtlas.Client.Explore
 
 <div class="popover-verse-section">
-    <MiniReaderExpand Book="@Book" Chapter="@Chapter" FocalFromVerse="@FocalFromVerse" FocalToVerse="@FocalToVerse">
+    <MiniReaderExpand Book="@Book" Chapter="@Chapter" FocalFromVerse="@FocalFromVerse" FocalToVerse="@FocalToVerse" OnExplore="OnExplore">
         <CompactContent>
             <p class="popover-verse-text">@CompactText</p>
         </CompactContent>
@@ -34,4 +34,9 @@
     [Parameter] public int FocalFromVerse { get; set; }
     [Parameter] public int FocalToVerse { get; set; }
     [Parameter, EditorRequired] public string CompactText { get; set; } = default!;
+
+    // M-D3/U5: forwarded straight through to MiniReaderExpand -- this
+    // component has no popover-stack access of its own (VerseTextSectionProvider,
+    // PopoverSectionProviders.cs, is the one place a real ctx.PushAsync exists).
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 }

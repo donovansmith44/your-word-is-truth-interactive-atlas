@@ -48,6 +48,20 @@ test('REGISTRY-1: a verse with real cross-references shows them inline, no butto
   await page.goto(`/read/${v.book}/${v.chapter}`);
   await page.getByTestId(`verse-line-${v.verse}`).click();
   await expect(page.getByTestId('popover-title')).toHaveText(vref);
+  // Settle-wait: `popover-title` binds to Current.Title, set SYNCHRONOUSLY
+  // (the click handler itself) the instant a node is pushed -- BEFORE
+  // LoadCurrent's own async section-provider fetches even start
+  // (ExplorerPopover.razor's own LoadCurrent doc comment: every section
+  // provider resolves together, one Task.WhenAll batch, ONE _sections
+  // assignment at the end). A real, live-caught race (found by this exact
+  // fix's own first draft failing on JDG.2.8-9's real cross-references,
+  // reader-map.spec.ts's READ-6): querying popover-section-* right after
+  // popover-title can read the DOM before that batch has landed.
+  // popover-section-verse-text is UNCONDITIONALLY present for any
+  // Verse/Passage node (the "two firm anchors" reasoning right below) and
+  // renders in the SAME batch -- waiting for it is a direct, retrying
+  // proxy for "the whole batch landed," not a fixed sleep.
+  await expect(page.getByTestId('popover-section-verse-text')).toBeVisible();
 
   // M-D3/U6, owner verbatim order: "Header / Verse (focus) / Event /
   // Parallels / Small Catechism / cross references LAST." Verse-text
@@ -60,10 +74,22 @@ test('REGISTRY-1: a verse with real cross-references shows them inline, no butto
   expect(sectionIds[0]).toBe('popover-section-verse-text');
   expect(sectionIds[sectionIds.length - 1]).toBe('popover-section-xrefs');
 
-  // Batch F2 requirement 6 (XREF-1): capped at 3 (xrefs-only) or 2 (THE
-  // SMALL CATECHISM also present) on initial render.
-  const hasCatechism = sectionIds.includes('popover-section-catechism');
-  const cap = hasCatechism ? 2 : 3;
+  // Batch F2 requirement 6 (XREF-1): capped at 3 (xrefs-only) or 2 (ANY
+  // other context section also present -- ExplorerPopover.razor's own
+  // OtherContextSectionCount, `_sections.Count(s => s.Testid is not
+  // ("verse-text" or "xrefs"))`, generically counts every OTHER resolved
+  // section, catechism/persons/event/parallels alike, "any future provider
+  // automatically" per CrossRefsSection's own doc comment).
+  // M-D3/U5 fix (real, consistently-reproducing failure, not the rare
+  // sampling-luck flake this comment used to describe): this test's own
+  // cap formula only ever checked for catechism specifically, hand-
+  // enumerated -- going stale the moment U6 added a sibling PERSONS
+  // section that resolves for a large, not rare, fraction of real verses.
+  // Rewritten to mirror OtherContextSectionCount's own generic rule
+  // exactly (any section besides the two firm anchors), so a FUTURE new
+  // section type can never repeat this exact drift again.
+  const hasOtherContext = sectionIds.some(id => id !== 'popover-section-verse-text' && id !== 'popover-section-xrefs');
+  const cap = hasOtherContext ? 2 : 3;
   const expectedInitial = Math.min(detail.cross_refs.length, cap);
   await expect(page.getByTestId(/^xref-item-/)).toHaveCount(expectedInitial);
   await expect(page.getByTestId(`xref-item-${detail.cross_refs[0].target}`)).toBeVisible();
@@ -105,7 +131,18 @@ test('CATECH-1: a verse with zero catechism citations shows no catechism section
   const v = parseVerse(vref);
 
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  // M-D3/U5, a real, live-caught regression: a plain coordinate .click() on
+  // the verse-line now risks landing on one of ITS OWN in-text mentions
+  // (Reader.razor's new @onclick:stopPropagation spans, PlaceMentions.Scan)
+  // instead of the line itself -- Playwright clicks an element's own
+  // geometric center, and a sampled verse's attested mention can happen to
+  // sit right there (caught live: DEU.5.26's own "God" mention opened a
+  // PersonNode instead of this test's own expected VerseNode). Keyboard
+  // activation (.focus() + Enter, OnVerseLineKeyDown) sidesteps coordinates
+  // entirely -- already this codebase's own established alternative to a
+  // coordinate click (world-border-morph.spec.ts's own precedent).
+  await page.getByTestId(`verse-line-${v.verse}`).focus();
+  await page.keyboard.press('Enter');
   await expect(page.getByTestId('popover-title')).toHaveText(vref);
   await expect(page.getByTestId('popover-section-catechism')).toHaveCount(0);
   await expect(page.getByTestId(/^catechism-item-/)).toHaveCount(0);
@@ -391,6 +428,92 @@ test('BLINK-1: prefers-reduced-motion disables the pulse animation on .atlas-bli
   await marker.evaluate(el => el.classList.add('atlas-blink'));
   const animationName = await marker.evaluate(el => getComputedStyle(el).animationName);
   expect(animationName).toBe('none');
+});
+
+// ---------------------------------------------------------------------
+// MENTION (M-D3/U5, "in-text mentions-attested links"): PlaceMentions.Scan
+// widened to a second entity kind (Explore/PlaceMentions.cs) and wired into
+// Reader.razor's own PRIMARY verse text (previously plain @v.Text, no
+// scanning at all -- only the nested mini-reader, BLINK-1 above, ever did
+// this) -- see CONTRACT.md's own MENTION note for the full behavior.
+// ---------------------------------------------------------------------
+
+test('MENTION-1: clicking a place mention in the reader\'s own verse text opens that place, not the verse underneath it', async ({ page }) => {
+  // GEN.28.1's real text ("...a wife of the daughters of Canaan") carries
+  // one clean, punctuation-free "Canaan" -- attested as BOTH a Place and a
+  // (unrelated, Genesis 9-10) Person for this same verse; PlaceMentions'
+  // own stable-sort tie-break resolves the ambiguity to the Place, which is
+  // also the linguistically correct reading here (see that class's own doc
+  // comment for the full disclosed story).
+  await page.goto('/read/GEN/28');
+  const mention = page.getByTestId('verse-mention-1-canaan');
+  await expect(mention).toBeVisible();
+  await expect(mention).toHaveText('Canaan');
+
+  await mention.click();
+  // @onclick:stopPropagation on the mention span is what's under test here
+  // -- without it, this click would ALSO bubble into the verse-line's own
+  // handler and open a VerseNode (popover-title "GEN.28.1") instead.
+  await expect(page.getByTestId('popover-title')).toHaveText('Canaan');
+});
+
+test('MENTION-2: clicking a person mention in the reader\'s own verse text opens that person', async ({ page }) => {
+  // EXO.4.14's real text names Aaron and Moses both cleanly (this file's
+  // own graph_api.rs sibling, chapter_verse_persons_is_always_present_and_
+  // matches_the_generic_mentions_frontier, pins the same verse server-side).
+  await page.goto('/read/EXO/4');
+  const aaron = page.getByTestId('verse-mention-person-14-aaron_1');
+  await expect(aaron).toBeVisible();
+  await expect(aaron).toHaveText('Aaron');
+
+  await aaron.click();
+  await expect(page.getByTestId('popover-title')).toHaveText('Aaron');
+});
+
+test('MENTION-3: a common word is never linked just because it collides with an attested place name under a different case', async ({ page }) => {
+  // The positive half of the guard: EXO.16.1 genuinely attests the place
+  // "Sin" (a real wilderness name, capitalized, standing alone in real KJV
+  // prose) -- confirmed linked.
+  await page.goto('/read/EXO/16');
+  const placeMention = page.getByTestId('verse-mention-1-sin');
+  await expect(placeMention).toBeVisible();
+  await expect(placeMention).toHaveText('Sin');
+
+  // The negative half: GEN.4.7 ("...sin lieth at the door...") uses the
+  // common noun, lowercase, and attests NEITHER the place Sin NOR any
+  // person for this verse (VerseOut.Places/Persons both empty, confirmed
+  // against the real compiled data) -- were the old case-INSENSITIVE
+  // search still in place, "sin" here would have matched "Sin" and wrongly
+  // linked. No mention span of any kind renders in this verse's text.
+  await page.goto('/read/GEN/4');
+  const verseLine = page.getByTestId('verse-line-7');
+  await expect(verseLine).toContainText('sin lieth at the door');
+  await expect(verseLine.locator('.verse-mention')).toHaveCount(0);
+});
+
+test('MENTION-4: clicking a place mention INSIDE the mini-reader pushes a new popover level, alongside its existing hover-blink', async ({ page }) => {
+  // Same real, live-verified navigation BLINK-1 above already establishes
+  // (GEN.12.8 -> GEN.28.19's own cross-reference, opened, expanded to its
+  // whole chapter) -- reaching the identical "Canaan" mention rendered a
+  // SECOND time, this time inside MiniReaderExpand rather than Reader.razor's
+  // own primary text, proving OnExplore's own new plumbing (MiniReaderExpand
+  // -> VerseTextSection/PassageList -> ctx.PushAsync) independently of the
+  // Reader.razor-level MENTION-1 test above.
+  await page.goto('/read/GEN/12?split=1');
+  await page.getByTestId('verse-line-8').click();
+  const more = page.getByTestId('xrefs-more');
+  await expect(more).toBeVisible();
+  await more.click({ modifiers: ['Shift'] });
+  await page.getByTestId('xref-item-GEN.28.19').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('GEN.28.19');
+
+  await page.getByTestId('popover-verse-expand').click();
+  await expect(page.getByTestId('popover-verse-reader')).toBeVisible();
+
+  const mention = page.getByTestId('popover-reader-mention-1-canaan');
+  await expect(mention).toBeVisible();
+  await mention.click();
+  await expect(page.getByTestId('popover-title')).toHaveText('Canaan');
 });
 
 // ---------------------------------------------------------------------

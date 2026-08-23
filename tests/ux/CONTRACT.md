@@ -183,7 +183,10 @@ Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   `xref_count` (batch-md2-brief.md; the verse's own `cites` edge-summary
   count, THE PORT) is `> 0` -- see XSCRIPT-1 below for the full lettering
   scheme; entry point into the SAME `ExplorerPopover`, xrefs section
-  leading -- see XSCRIPT-1/CAP-RECONCILE-1)
+  leading -- see XSCRIPT-1/CAP-RECONCILE-1), `verse-mention-{n}-{placeId}`
+  / `verse-mention-person-{n}-{personId}` (M-D3/U5; zero or more per verse,
+  inside `verse-line-{n}`'s own verse text -- see MENTION-1 below for the
+  full scan/click/blink behavior)
 Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
   FOLLOW-1/VIEWSTATE-1 below for the full behavior these wire up):
   `split-open-reader` (button, reader only, absent once split is open;
@@ -301,10 +304,13 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   of the lazily-fetched chapter, `n` = verse number within it; attr
   `data-focal` = `"true"` for every verse in that entry's own focal
   verse/passage range, `"false"` otherwise -- see READER-1),
-  `popover-reader-mention-{n}-{placeId}{-ENTRY-ID}` (batch-r-brief.md
-  requirement 5, same generalization; one per detected place-name mention
-  inside verse `n`'s own text -- see BLINK-1 below; hovering or
-  keyboard-focusing it blinks `placeId`'s own map marker),
+  `popover-reader-mention-{n}-{placeId}{-ENTRY-ID}` / `popover-reader-
+  mention-person-{n}-{personId}{-ENTRY-ID}` (batch-r-brief.md requirement
+  5, same generalization; widened M-D3/U5 to a second entity kind -- one
+  per detected place-/person-name mention inside verse `n`'s own text --
+  see BLINK-1/MENTION-1 below; hovering or keyboard-focusing a PLACE one
+  blinks `placeId`'s own map marker; either kind opens that entity's own
+  node on click/Enter),
   `popover-place-date-established` / `popover-place-date-destroyed`
   (batch-r-brief.md requirement 3, REBUILT batch-f2-brief.md requirement 6b;
   no longer a button -- the "click to reveal supporting verses" gate is
@@ -1112,25 +1118,83 @@ Notes:
   location... should blink and be noticeable"): every verse rendered inside
   `popover-verse-reader` is scanned (`GET /api/chapter/{cref}`'s own,
   per-verse `places` array -- server: `AtlasData.places_for_verse`, the
-  reverse of a place's curated `verse_links`) for a plain, case-insensitive
-  substring match of each linked place's own name; the FIRST (longest-name-
-  wins on overlap) match per place becomes `popover-reader-mention-{n}-
-  {placeId}`, hoverable and keyboard-focusable. Hovering/focusing one
-  toggles `.atlas-blink` (`app.css`) on `placeId`'s own marker CORE
-  (`.atlas-marker`/`.quiet-marker`) across EVERY currently-live, non-mini
-  map instance at once (map.js's own `blinkPlace`, looping its
-  module-level `instances` registry) -- so this works identically whether
-  the live map is the full `/world` page's own (a popover opened over it)
-  or a split view's embedded atlas pane's own, with no page-specific
-  wiring. A few beats of an ember-glow pulse (~1.7s, 3 cycles), then a
-  steady, amplified glow for as long as the hover/focus holds;
-  `prefers-reduced-motion: reduce` skips the pulse and shows the steady
-  amplified glow immediately instead, never a moving animation. A mention
-  is a plain, best-effort text match, not a claim of exhaustive recall --
-  a place named only by a pronoun, or under a curated name the verse's own
-  KJV wording doesn't literally use, is simply not detected. Reader-wide
-  (outside a popover's own mini-reader) place-name hovers are explicitly
-  OUT of this batch's scope (Batch P).
+  reverse of a place's curated `verse_links`) for a mention of each linked
+  place's own name (see MENTION-1 below for the exact scan rule, shared with
+  every other in-text mention surface this batch); the accepted match per
+  place becomes `popover-reader-mention-{n}-{placeId}`, hoverable and
+  keyboard-focusable. Hovering/focusing one toggles `.atlas-blink`
+  (`app.css`) on `placeId`'s own marker CORE (`.atlas-marker`/
+  `.quiet-marker`) across EVERY currently-live, non-mini map instance at
+  once (map.js's own `blinkPlace`, looping its module-level `instances`
+  registry) -- so this works identically whether the live map is the full
+  `/world` page's own (a popover opened over it) or a split view's embedded
+  atlas pane's own, with no page-specific wiring. A few beats of an
+  ember-glow pulse (~1.7s, 3 cycles), then a steady, amplified glow for as
+  long as the hover/focus holds; `prefers-reduced-motion: reduce` skips the
+  pulse and shows the steady amplified glow immediately instead, never a
+  moving animation. M-D3/U5: the SAME mention span is now ALSO explorable
+  (click/Enter opens `PlaceNode`) -- see MENTION-1 -- alongside this
+  pre-existing hover-blink, not instead of it.
+- MENTION-1 (M-D3/U5, "in-text mentions-attested links"): `Explore/
+  PlaceMentions.cs`'s `PlaceMentions.Scan(text, places, persons)` -- ONE
+  shared mechanism (widened from BLINK-1's own place-only, hover-only
+  original) -- splits a verse's rendered text into plain prose and
+  entity-mention spans, now covering BOTH `GET /api/chapter/{cref}`'s
+  per-verse `places` array AND its new `persons` array (server:
+  `GraphService.persons_by_verse`, a startup-assembled index over the
+  graph's own `mentions` table, mirroring `places`' "always present,
+  possibly empty" shape). Matching is CASE-SENSITIVE
+  (`StringComparison.Ordinal`, corrected from BLINK-1's original
+  case-insensitive search -- case-insensitive matching made the place "Sin"
+  indistinguishable from the common word "sin") AND WHOLE-WORD (the
+  character immediately before/after a candidate match, if any, must not
+  itself be a letter -- a real, live-caught bug: a bare substring search,
+  even case-sensitive, finds "Sin" not only as its own genuine mention but
+  also as the first three letters of an unrelated "Sinai" a few words
+  later). Longest-match-wins on overlap; ties between a Place and a Person
+  candidate at the identical span (a real, confirmed case: GEN.28.1 attests
+  BOTH a Place "Canaan" and an unrelated Person "Canaan" for the same
+  "...daughters of Canaan" span) resolve to the Place, deterministically
+  (a stable sort, places enqueued before persons -- see that file's own doc
+  comment for the full disclosure). Still a plain, best-effort text match,
+  not a claim of exhaustive recall -- an entity named only by a pronoun, or
+  under a curated name the verse's own KJV wording doesn't literally use
+  (e.g. GEN.28.19's own "Beth&ndash;el" vs. the curated "Bethel"), is
+  simply not detected.
+  Rendered in TWO places, the SAME mechanism both times: `popover-reader-
+  mention-{n}-{placeId}{-ENTRY-ID}` inside a mini-reader (BLINK-1, above,
+  unchanged) AND, new this batch, Reader.razor's own PRIMARY verse text
+  (previously plain, unscanned) -- `verse-mention-{n}-{placeId}` (place) /
+  `verse-mention-person-{n}-{personId}` (person; mini-reader's own person
+  variant is `popover-reader-mention-person-{n}-{personId}{-ENTRY-ID}`).
+  Every mention span (both surfaces, both kinds) is now explorable: click,
+  or Enter while keyboard-focused, opens that entity's own node
+  (`PlaceNode`/`PersonNode`) via `@onclick:stopPropagation`/
+  `@onkeydown:stopPropagation` -- the same "more specific target always
+  wins" rule `.verse-num`/the xref superscript already establish, so a
+  mention click never ALSO opens the verse/passage popover underneath it.
+  `PersonNode`'s id carries the graph's wire prefix (`"Person:{id}"`,
+  added at the mention-click site -- `VerseOut.Persons`' own id is bare,
+  unlike the generic edges page's own already-prefixed ids); `PlaceNode`'s
+  stays bare, matching every other `PlaceNode` construction site in this
+  app. Place mentions keep BLINK-1's own hover/focus blink alongside the
+  new click (independent, both always available); Person mentions have no
+  map affordance to blink (`PersonNode` carries no lat/lon) -- click/Enter
+  only.
+  A real, live-caught TEST hazard, not a product bug (disclosed here since
+  it affects how future tests must be written): a plain coordinate
+  `.click()` on a `verse-line-{n}` locator clicks that element's own
+  geometric center, which can now coincidentally land on one of ITS OWN
+  mention spans (stopPropagation) instead of the line itself, opening the
+  mention's own node instead of the verse's -- caught live on DEU.5.26's
+  own "God" mention. A test that specifically wants "open THIS verse's own
+  popover, not a mention within it" should activate via keyboard
+  (`.focus()` + `Enter`, `OnVerseLineKeyDown`) rather than a coordinate
+  click, sidestepping the geometry entirely; not every pre-existing
+  `verse-line` coordinate-click call site in this suite has been converted
+  (only the one this batch's own new tests caused to actually fail),
+  disclosed as known follow-up risk rather than silently left
+  undocumented.
 - CATECH-1 (batch-f-brief.md, "the small catechism" -- user direction, asked
   three separate times: verses should surface catechism refs/relevance
   alongside cross-references): Luther's Small Catechism (the 1921

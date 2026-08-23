@@ -47,14 +47,23 @@ else
                      id="@(v.Verse == FocalFromVerse ? _focalDomId : null)">
                     <span class="popover-reader-verse-num">@v.Verse</span>
                     <span class="popover-reader-verse-text">
-                        @foreach (var seg in PlaceMentions.Scan(v.Text, v.Places))
+                        @foreach (var seg in PlaceMentions.Scan(v.Text, v.Places, v.Persons))
                         {
                             @if (seg.PlaceId is { } placeId)
                             {
                                 <span class="popover-reader-mention" data-testid="@($"popover-reader-mention-{v.Verse}-{placeId}{TestIdSuffix}")"
-                                      tabindex="0" role="button" aria-label="@($"{seg.PlaceName} on the map")"
+                                      tabindex="0" role="button" aria-label="@($"Explore {seg.PlaceName}")"
                                       @onpointerenter="() => Blink(placeId, true)" @onpointerleave="() => Blink(placeId, false)"
-                                      @onfocus="() => Blink(placeId, true)" @onblur="() => Blink(placeId, false)">@seg.Text</span>
+                                      @onfocus="() => Blink(placeId, true)" @onblur="() => Blink(placeId, false)"
+                                      @onclick="() => OpenPlace(placeId, seg.PlaceName!)" @onclick:stopPropagation="true"
+                                      @onkeydown="@(e => OnPlaceMentionKeyDown(e, placeId, seg.PlaceName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
+                            }
+                            else if (seg.PersonId is { } personId)
+                            {
+                                <span class="popover-reader-mention popover-reader-mention-person" data-testid="@($"popover-reader-mention-person-{v.Verse}-{personId}{TestIdSuffix}")"
+                                      tabindex="0" role="button" aria-label="@($"Explore {seg.PersonName}")"
+                                      @onclick="() => OpenPerson(personId, seg.PersonName!)" @onclick:stopPropagation="true"
+                                      @onkeydown="@(e => OnPersonMentionKeyDown(e, personId, seg.PersonName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
                             }
                             else
                             {
@@ -95,6 +104,17 @@ else
     [Parameter] public int FocalToVerse { get; set; }
     [Parameter, EditorRequired] public RenderFragment CompactContent { get; set; } = default!;
     [Parameter] public string TestIdSuffix { get; set; } = "";
+
+    // M-D3/U5 (in-text mentions-attested links): the SAME "a provider/caller
+    // supplies ctx.PushAsync, this component only ever calls OnExplore"
+    // contract PassageList.razor's own OnExplore already establishes --
+    // required, not optional, matching that precedent (both of this
+    // component's two real callers, PassageList.razor and
+    // VerseTextSection.razor, always have a real ctx.PushAsync in hand to
+    // supply). Threads a mention click (place OR person, see OpenPlace/
+    // OpenPerson below) up to whichever popover this mini-reader instance
+    // is currently rendering inside.
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
     // M-D3/U6: read fresh at RENDER time (a computed property, not cached
     // state) -- ViewState.MountedReaderChapter can change out from under an
@@ -180,4 +200,31 @@ else
     // MapInterop.BlinkPlace's own doc comment for why this needs no
     // reference to any specific map/component at all.
     private Task Blink(string placeId, bool active) => MapInterop.BlinkPlace(JS, placeId, active);
+
+    // M-D3/U5: a mention click pushes the SAME node kind its own popover
+    // section would, onto the SAME popover stack (OnExplore, above) -- click
+    // and hover-blink are independent, both always available on a place
+    // mention (a click doesn't cancel/replace the blink the pointer/focus
+    // handlers above already own). PlaceNode's own id stays bare (the
+    // LEGACY AtlasData-backed convention every other PlaceNode construction
+    // site in this app already uses -- World.razor's OpenPlaceFromCard,
+    // PopoverSectionProviders' own place-row buttons).
+    private Task OpenPlace(string placeId, string placeName) => OnExplore.InvokeAsync(new PlaceNode(placeId, placeName));
+
+    // PersonRefDto.Id (VerseOut.Persons, the chapter-view's own attested-
+    // mentions index) is the graph's RAW node id ("aaron_1") -- UNLIKE the
+    // generic edges page's own NodeRefDto.Id, which already carries the
+    // "Person:" wire prefix (see PersonCardAndMentionsSection's own persons-
+    // list buttons, PopoverSectionProviders.cs). PersonNode always stores
+    // (and later threads verbatim into ctx.Graph.Card/.Edges) the WIRE
+    // form, so this is the one place that prefix gets added, matching
+    // PersonNode's own doc comment example ("Person:aaron_1") exactly.
+    private Task OpenPerson(string personId, string personName) => OnExplore.InvokeAsync(new PersonNode($"Person:{personId}", personName));
+
+    // "Enter opens" -- the same scope, and the same bespoke-named-method-
+    // per-target shape, every other explorable element in this app uses
+    // (PassageList.razor's own OnKeyDown, Reader.razor's OnVerseLineKeyDown/
+    // OnHeadingKeyDown, PlaceCard's OnVerseKeyDown/OnPassageKeyDown).
+    private Task OnPlaceMentionKeyDown(KeyboardEventArgs e, string placeId, string placeName) => e.Key == "Enter" ? OpenPlace(placeId, placeName) : Task.CompletedTask;
+    private Task OnPersonMentionKeyDown(KeyboardEventArgs e, string personId, string personName) => e.Key == "Enter" ? OpenPerson(personId, personName) : Task.CompletedTask;
 }

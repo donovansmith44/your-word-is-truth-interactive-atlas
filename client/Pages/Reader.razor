@@ -225,7 +225,44 @@
                            marks the SAME popover persistent, exactly like
                            every other popover in this app, the instant
                            either fires). *@
-                        <span class="verse-text">@v.Text@if (FeatureFlags.XrefSuperscripts && v.XrefCount > 0)
+                        @* M-D3/U5 (in-text mentions-attested links): every place/
+                           person name PlaceMentions.Scan finds attested for THIS
+                           verse (VerseOut.Places/Persons) becomes its own
+                           explorable span -- same "more specific target always
+                           wins" @onclick:stopPropagation/@onkeydown:stopPropagation
+                           rule verse-num/the xref superscript below already use,
+                           so a mention click opens THAT entity, never the whole
+                           verse's own popover underneath it. Place mentions keep
+                           MiniReaderExpand's own established hover/focus -> map-
+                           blink behavior (MapInterop.BlinkPlace silently no-ops
+                           with no live map instance -- see that method's own
+                           doc comment -- so this costs nothing when the reader
+                           isn't split beside /world); Person mentions have no
+                           map affordance to blink (PersonNode's own doc comment
+                           -- no lat/lon), click/Enter only. *@
+                        <span class="verse-text">@foreach (var seg in PlaceMentions.Scan(v.Text, v.Places, v.Persons))
+                                                  {
+                                                      @if (seg.PlaceId is { } placeId)
+                                                      {
+                                                          <span class="verse-mention" data-testid="@($"verse-mention-{v.Verse}-{placeId}")"
+                                                                tabindex="0" role="button" aria-label="@($"Explore {seg.PlaceName}")"
+                                                                @onpointerenter="() => Blink(placeId, true)" @onpointerleave="() => Blink(placeId, false)"
+                                                                @onfocus="() => Blink(placeId, true)" @onblur="() => Blink(placeId, false)"
+                                                                @onclick="() => OpenPlaceMention(placeId, seg.PlaceName!)" @onclick:stopPropagation="true"
+                                                                @onkeydown="@(e => OnPlaceMentionKeyDown(e, placeId, seg.PlaceName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
+                                                      }
+                                                      else if (seg.PersonId is { } personId)
+                                                      {
+                                                          <span class="verse-mention verse-mention-person" data-testid="@($"verse-mention-person-{v.Verse}-{personId}")"
+                                                                tabindex="0" role="button" aria-label="@($"Explore {seg.PersonName}")"
+                                                                @onclick="() => OpenPersonMention(personId, seg.PersonName!)" @onclick:stopPropagation="true"
+                                                                @onkeydown="@(e => OnPersonMentionKeyDown(e, personId, seg.PersonName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
+                                                      }
+                                                      else
+                                                      {
+                                                          @seg.Text
+                                                      }
+                                                  }@if (FeatureFlags.XrefSuperscripts && v.XrefCount > 0)
                                                          {
                                                              <sup class="verse-xref-marker" data-testid="@($"verse-xref-marker-{v.Verse}")"
                                                                   tabindex="0" role="button" aria-label="@XrefMarkerAriaLabel(v)"
@@ -899,6 +936,54 @@
             OpenEvent(eventId, title);
         }
     }
+
+    // M-D3/U5 (in-text mentions-attested links): a verse-text mention's own
+    // explore target -- same ResetXrefEntryState()-then-_activeNode shape as
+    // OpenVerse/OpenEvent above (a mention click is not a superscript entry
+    // point either). PlaceNode's id stays bare (the legacy AtlasData-backed
+    // convention every other PlaceNode construction site in this app uses --
+    // World.razor's OpenPlaceFromCard, MiniReaderExpand's own sibling
+    // OpenPlace); PersonNode's needs the "Person:" wire prefix VerseOut.Persons'
+    // own bare id doesn't carry (see MiniReaderExpand.razor's OpenPerson, the
+    // identical mechanism, for the fuller id-format story).
+    private void OpenPlaceMention(string placeId, string placeName)
+    {
+        ResetXrefEntryState();
+        _activeNode = new PlaceNode(placeId, placeName);
+    }
+
+    private void OpenPersonMention(string personId, string personName)
+    {
+        ResetXrefEntryState();
+        _activeNode = new PersonNode($"Person:{personId}", personName);
+    }
+
+    private void OnPlaceMentionKeyDown(KeyboardEventArgs e, string placeId, string placeName)
+    {
+        if (e.Key == "Enter")
+        {
+            OpenPlaceMention(placeId, placeName);
+        }
+    }
+
+    private void OnPersonMentionKeyDown(KeyboardEventArgs e, string personId, string personName)
+    {
+        if (e.Key == "Enter")
+        {
+            OpenPersonMention(personId, personName);
+        }
+    }
+
+    // Toggles the SAME map.js blinkPlace every currently-live map instance
+    // responds to -- see MapInterop.BlinkPlace's own doc comment for why
+    // this needs no reference to any specific map/component at all (a no-op
+    // when this Reader instance isn't currently split beside /world).
+    // MiniReaderExpand.razor's own Blink is the identical one-liner; kept as
+    // two copies rather than a shared static helper only because each side
+    // already owns its own @inject IJSRuntime JS field to close over --
+    // introducing a THIRD shared file for one line each felt like the wrong
+    // trade.
+    private Task Blink(string placeId, bool active) => MapInterop.BlinkPlace(JS, placeId, active);
 
     // Batch G1 requirement 1: the chapter header's own explore target
     // (chapter-head-button's @onclick/@onmouseenter -- M-D3 U4/B3 added the

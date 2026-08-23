@@ -106,12 +106,40 @@ test('READ-6: passage cross-references render inline, conditional on the endpoin
     await page.keyboard.up('Shift');
     await page.getByTestId('passage-chip').click();
     await expect(page.getByTestId('popover-title')).toHaveText(pref);
+    // Settle-wait, a real live-caught race (this exact fix's own first
+    // draft failed on JDG.2.8-9's real cross-references): popover-title
+    // binds SYNCHRONOUSLY the instant a node is pushed, before LoadCurrent's
+    // own async section-provider fetches even start (ExplorerPopover.razor's
+    // own LoadCurrent -- every provider resolves together, one Task.WhenAll
+    // batch, ONE _sections assignment at the end) -- querying
+    // popover-section-* right after popover-title alone can read the DOM
+    // before that batch has landed. popover-section-verse-text (unlike
+    // popover-section-xrefs, conditional on this passage actually having
+    // cross-references -- the very thing this test's own title says it
+    // varies) is UNCONDITIONALLY present for any Verse/Passage node
+    // (REGISTRY-1's own "two firm anchors" note, popover-sections.spec.ts)
+    // and renders in the SAME batch -- waiting for it is a direct,
+    // retrying proxy for "the whole batch landed," correct whichever
+    // branch (xrefs present or absent) this sampled passage falls into.
+    await expect(page.getByTestId('popover-section-verse-text')).toBeVisible();
 
     // Batch F2 requirement 6 (XREF-1): capped at 3 (xrefs-only context) or
-    // 2 (THE SMALL CATECHISM also present) on initial render -- see
-    // world-hover-text.spec.ts's own equivalent fix for the same reasoning.
-    const hasCatechism = await page.getByTestId('popover-section-catechism').count() > 0;
-    const cap = hasCatechism ? 2 : 3;
+    // 2 (any OTHER context section also present -- ExplorerPopover.razor's
+    // own OtherContextSectionCount is generic, not catechism-specific; see
+    // world-hover-text.spec.ts's own equivalent fix for the full reasoning).
+    // M-D3/U5: a bare catechism-only check here reproduced the exact same
+    // staleness world-hover-text.spec.ts already fixed once for
+    // event-membership -- U6's own PERSONS section is the new sibling that
+    // tripped it THIS time; mirroring the product's own generalized rule
+    // (every popover-section-* except verse-text/xrefs) instead of hand-
+    // enumerating section names again.
+    const otherContextSectionCount = await page.getByTestId(/^popover-section-/).evaluateAll(
+      els => els.filter(el => {
+        const id = el.getAttribute('data-testid');
+        return id !== 'popover-section-verse-text' && id !== 'popover-section-xrefs';
+      }).length
+    );
+    const cap = otherContextSectionCount > 0 ? 2 : 3;
     const expectedInitial = Math.min(xrefs.length, cap);
     const items = page.getByTestId(/^xref-item-/);
     await expect(items).toHaveCount(expectedInitial);

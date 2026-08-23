@@ -93,7 +93,7 @@
                     <span class="popover-passage-caption">@caption</span>
                 }
                 <MiniReaderExpand Book="@BookOf(entry.Block)" Chapter="@ChapterOf(entry.Block)" FocalFromVerse="@FocalFromOf(entry.Block)" FocalToVerse="@FocalToOf(entry.Block)"
-                                   TestIdSuffix="@($"-{entry.TestId}")" TruncatedBy="@entry.Block.TruncatedBy">
+                                   TestIdSuffix="@($"-{entry.TestId}")" TruncatedBy="@entry.Block.TruncatedBy" OnExplore="OnExplore">
                     <CompactContent>
                         @* M-D1 requirement 3 (owner live report #4, verbatim:
                            "it also is completely redundant to just show the

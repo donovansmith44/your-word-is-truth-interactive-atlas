@@ -127,9 +127,22 @@ public sealed record HeadingDto(string EventId, string Title, string Kind, bool 
 /// omitted) -- Reader.razor's own superscript decision is a pure function of
 /// this one integer (see <c>Pages.Reader.XrefMarkerText</c>): 0 -> no
 /// marker, 1-3 -> that many lettered superscripts, &gt;3 -> the many-marker.
-public sealed record VerseOut(int Verse, string Text, List<PlaceRefDto> Places, HeadingDto? Heading = null, int XrefCount = 0);
+/// U5 (in-text mentions-attested links): <see cref="Persons"/> is
+/// <see cref="Places"/>'s own sibling reverse-index -- every Person entity
+/// the graph's own <c>mentions</c> table attests for this verse (server:
+/// <c>GraphService.persons_by_verse</c>), same "always present, possibly
+/// empty" shape. <see cref="PlaceMentions"/> (Explore/PlaceMentions.cs) is
+/// what turns this list, together with <see cref="Places"/>, into in-text
+/// hoverable/clickable spans over <see cref="Text"/>.
+public sealed record VerseOut(int Verse, string Text, List<PlaceRefDto> Places, List<PersonRefDto> Persons, HeadingDto? Heading = null, int XrefCount = 0);
 
 public sealed record PlaceRefDto(string Id, string Name);
+
+/// U5's own Person sibling of <see cref="PlaceRefDto"/> -- an id + curated
+/// label, nothing more (no `Kind` field: unlike a place mention, which can
+/// resolve to a place OR a period-scoped polity name, a person mention only
+/// ever names exactly one node kind).
+public sealed record PersonRefDto(string Id, string Name);
 
 /// <summary>
 /// The verse-detail endpoint's own event shape -- <see cref="SceneEvent"/>'s

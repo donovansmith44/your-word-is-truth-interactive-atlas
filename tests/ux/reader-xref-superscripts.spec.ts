@@ -288,23 +288,39 @@ test.describe('M-D2: cross-reference superscripts', () => {
     test.skip(!found, 'no sampled verse had >2 cross-references');
     if (!found) return;
     const { book, chapter, verse: v } = found;
-    const detail = await api.verse(`${book}.${chapter}.${v.verse}`);
-    // OtherContextSectionCount (client, ExplorerPopover.razor) counts EVERY
-    // resolved section except verse-text/xrefs -- for a Verse node the ONLY
-    // two OTHER providers PopoverSectionRegistry registers are
-    // CatechismSeamSection and VerseEventMembershipSection (confirmed by
-    // reading that registry's own Providers list), so EITHER catechism OR
-    // event-membership presence makes the general popover cap at 2. A real,
-    // live-caught test bug in an earlier draft checked catechism alone and
-    // failed on a real verse that had zero catechism citations but DID
-    // touch a titled event (the far more common case, since most narrative-
-    // covered verses have no catechism link at all).
-    const hasOtherContext = detail.catechism.length > 0 || detail.events.length > 0;
-    const generalExpected = Math.min(v.xref_count, hasOtherContext ? 2 : 3);
 
     await page.goto(`/read/${book}/${chapter}`);
     await page.getByTestId(`verse-line-${v.verse}`).click();
     await expect(page.getByTestId('popover-title')).toHaveText(`${book}.${chapter}.${v.verse}`);
+    // OtherContextSectionCount (client, ExplorerPopover.razor) counts EVERY
+    // resolved section except verse-text/xrefs -- the SET of "other"
+    // providers a Verse node can resolve has grown over time (catechism,
+    // then event-membership, then U6's own persons/parallels) and WILL grow
+    // again, so this reads the live DOM's own popover-section-* set
+    // directly (mirroring world-hover-text.spec.ts's own equivalent fix)
+    // rather than hand-enumerating provider names/API-response fields a
+    // second time here. TWO earlier drafts of this exact test each checked
+    // one hand-picked signal (catechism alone, then catechism-or-events)
+    // and each went stale the next time a new context-section provider
+    // shipped.
+    //
+    // Settle-wait first: `popover-title` binds SYNCHRONOUSLY the instant a
+    // node is pushed, BEFORE LoadCurrent's own async section-provider
+    // fetches even start -- querying popover-section-* right after
+    // popover-title alone can read the DOM before that batch has landed (a
+    // real, live-caught race, reader-map.spec.ts's own READ-6). popover-
+    // section-verse-text is UNCONDITIONALLY present for any Verse/Passage
+    // node and renders in the SAME Task.WhenAll batch as every other
+    // section (ExplorerPopover.razor's own LoadCurrent) -- waiting for it
+    // is a direct, retrying proxy for "the whole batch landed."
+    await expect(page.getByTestId('popover-section-verse-text')).toBeVisible();
+    const otherContextSectionCount = await page.getByTestId(/^popover-section-/).evaluateAll(
+      els => els.filter(el => {
+        const id = el.getAttribute('data-testid');
+        return id !== 'popover-section-verse-text' && id !== 'popover-section-xrefs';
+      }).length
+    );
+    const generalExpected = Math.min(v.xref_count, otherContextSectionCount > 0 ? 2 : 3);
     await expect(page.getByTestId(/^xref-item-/)).toHaveCount(generalExpected);
     await page.getByTestId('popover-close').click();
     // Wait for the GENERAL popover to fully close (RequestClose is async --
