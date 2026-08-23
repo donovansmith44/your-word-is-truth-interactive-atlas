@@ -1,10 +1,10 @@
 //! `GET /api/xrefs/{sref}`'s aggregation core (batch-g1-brief.md requirement
 //! 2, "passage context... passages give xrefs, not just geo"). Pure, no
 //! `AtlasData` dependency (mirrors `crate::history`'s own narrow-slice-in,
-//! narrow-value-out shape) -- `atlas_server::handlers::xrefs` is the thin
-//! wrapper that parses the path param and hands this module `&data.cross_refs`/
-//! `&data.verses` directly, per this crate's own "no business logic in
-//! handlers.rs" rule.
+//! narrow-value-out shape) -- since M-C2, `atlas_server::handlers::xrefs`
+//! is the thin wrapper that parses the path param and hands this module
+//! graph-derived slices (the overlay's cross-ref and verse-text views),
+//! per this crate's own "no business logic in handlers.rs" rule.
 //!
 //! Reuses the loaded cross-ref data verbatim -- no new data source, no ETL
 //! change. A cross-ref TARGET string is always one of the three canonical
