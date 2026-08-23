@@ -115,11 +115,29 @@
                            .explorable (never both) so it never looks like a
                            dated heading, which DOES traverse after req 1.
                            Same class, same rule, as VerseEventMembershipSection's
-                           own row -- "one rule, no per-surface variant." *@
-                        <h2 class="pericope-heading @(heading.Kind == "general" ? "explorable-quiet" : "explorable")" data-testid="@($"pericope-heading-{heading.EventId}")"
-                            tabindex="0" role="button" aria-label="@($"Explore {heading.Title}")"
+                           own row -- "one rule, no per-surface variant."
+                           M-D1 requirement 1 (CHAPTER-BOUNDARY CONTINUATION):
+                           IsContinuation adds .pericope-heading-continuation
+                           (app.css's own "quiet via SCALE, distinct via
+                           WORDING" precedent -- the SAME two-axis distinction
+                           the PRIOR/FOLLOWING-IN-TIME rows already establish,
+                           never conflated with the traversability axis above,
+                           which stays orthogonal: a continuation heading can
+                           be either kind, styled identically either way).
+                           SAME click/keydown handler as a primary heading --
+                           a continuation opens the identical EventNode, no
+                           second affordance to wire (requirement 2's own
+                           "heading click -> container node" law, reused, not
+                           duplicated). *@
+                        <h2 class="pericope-heading @(heading.IsContinuation ? "pericope-heading-continuation" : "") @(heading.Kind == "general" ? "explorable-quiet" : "explorable")"
+                            data-testid="@($"pericope-heading-{heading.EventId}")" data-continuation="@(heading.IsContinuation ? "true" : "false")"
+                            tabindex="0" role="button" aria-label="@(heading.IsContinuation ? $"Explore {heading.Title} (continued)" : $"Explore {heading.Title}")"
                             @onclick="() => OpenEvent(heading.EventId, heading.Title)"
                             @onkeydown="@(e => OnHeadingKeyDown(e, heading.EventId, heading.Title))">
+                            @if (heading.IsContinuation)
+                            {
+                                <span class="pericope-heading-continuation-marker" data-testid="@($"pericope-heading-continuation-marker-{heading.EventId}")">continued</span>
+                            }
                             @heading.Title
                         </h2>
                     }

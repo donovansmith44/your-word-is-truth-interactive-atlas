@@ -296,11 +296,27 @@ pub struct HeadingOut {
     /// comment -- lets the reader's own heading rendering apply the quiet,
     /// non-traversable styling BEFORE a click, for a general-kind heading.
     pub kind: String,
+    /// M-D1 requirement 1 (CHAPTER-BOUNDARY CONTINUATION): true iff this
+    /// verse is NOT the container's own true first-covered verse but a
+    /// later chapter its own coverage continues into -- lets the reader
+    /// render a quiet continuation marker BEFORE a click, the same
+    /// "affordance honesty travels as data, not inferred client-side"
+    /// discipline `kind` above already establishes. Always present
+    /// (`false` for every ordinary, PRIMARY heading -- the overwhelming
+    /// majority), never omitted: unlike `heading` itself (conditional
+    /// presence on `VerseOut`), once a heading exists at all its own
+    /// continuation-ness is never in doubt.
+    pub is_continuation: bool,
 }
 
 impl From<&atlas_core::data::HeadingEntry> for HeadingOut {
     fn from(h: &atlas_core::data::HeadingEntry) -> Self {
-        HeadingOut { event_id: h.event_id.clone(), title: h.title.clone(), kind: h.kind.clone() }
+        // atlas_core's own HeadingEntry carries no continuation concept
+        // (this module's own doc comment on `atlas_graph::heading::
+        // HeadingEntry` discloses why -- graph-side only) -- always false
+        // here, correctly: nothing on this dead reference-oracle path ever
+        // produces a continuation heading.
+        HeadingOut { event_id: h.event_id.clone(), title: h.title.clone(), kind: h.kind.clone(), is_continuation: false }
     }
 }
 
@@ -437,7 +453,10 @@ pub async fn chapter(
             // `data.heading_for_verse` -- see that module's own doc
             // comment for the full re-homing (kept in lockstep with
             // CONTRACT.md and the atlas-core original).
-            let heading = graph.heading_index.get(&key).map(|h| HeadingOut { event_id: h.event_id.clone(), title: h.title.clone(), kind: h.kind.clone() });
+            let heading = graph
+                .heading_index
+                .get(&key)
+                .map(|h| HeadingOut { event_id: h.event_id.clone(), title: h.title.clone(), kind: h.kind.clone(), is_continuation: h.continuation });
             verses.push(VerseOut { verse: v, text: text.to_string(), places, heading });
         }
     }

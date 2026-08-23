@@ -39,42 +39,148 @@ use atlas_graph_types::node::{EventWitnessPayload, NodePayload};
 
 use crate::kjv_adapter::KJV_TRANSLATION;
 
-/// Mirrors `atlas_core::data::HeadingEntry` exactly (event id + title +
-/// kind) -- the resolved pericope heading anchored at one verse.
+/// Mirrors `atlas_core::data::HeadingEntry` (event id + title + kind) plus
+/// ONE field it does not carry -- `continuation` (M-D1 requirement 1,
+/// CHAPTER-BOUNDARY CONTINUATION, below): the resolved pericope heading
+/// anchored at one verse, `continuation` true iff this verse is NOT the
+/// container's own true first-covered verse, but a LATER chapter this same
+/// container's coverage continues into. The atlas-core original has no
+/// counterpart field (this module's own doc comment already discloses why
+/// continuation headings are graph-side only: the atlas-core path is a
+/// dead, tested reference oracle for the base anchor law, never a live
+/// consumer this new law needs to reach).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HeadingEntry {
     pub event_id: String,
     pub title: String,
     pub kind: String,
+    pub continuation: bool,
 }
 
 type Precedence = (u8, u8, Reverse<i32>, Reverse<i32>, Reverse<String>);
 
-/// Mirrors `atlas_core::data::heading_anchors_for` exactly: if explicit
-/// witnesses exist, one anchor per witness (its own first parseable KJV
-/// verse); else one anchor per book actually touched by the container's
-/// own top-level `verses`, first-seen-book order.
+/// M-D1 requirement 1 (owner live report #2, GEN.6 class, verbatim:
+/// "genesis 6 the first verses have no container label... i'm assuming
+/// this isn't an isolated case"): the CANONICALLY FIRST verse in `verses`
+/// -- minimum by (book, chapter, verse), i.e. reading-spine order -- never
+/// merely the first one encountered in CURATED/IMPORTED array order.
+/// `VerseId` carries no `Ord` of its own (a deliberate, narrow choice --
+/// widening a shared type's derive list is a bigger blast radius than this
+/// one law needs), so the tuple key is built by hand here, the same
+/// "compare by content, not position" fix in both branches below.
+fn canonically_first(verses: &[String]) -> Option<String> {
+    verses
+        .iter()
+        .filter_map(|v| atlas_core::refs::VerseId::parse_canonical(v).ok().map(|vid| ((vid.book.0, vid.chapter, vid.verse), v)))
+        .min_by_key(|(key, _)| *key)
+        .map(|(_, v)| v.clone())
+}
+
+/// Mirrors `atlas_core::data::heading_anchors_for`'s own SHAPE (one anchor
+/// per witness when explicit witnesses exist; else one anchor per book
+/// touched by the container's own top-level `verses`) but fixes the
+/// ROOT-CAUSE bug both branches shared: each anchor is now the book's own
+/// CANONICALLY FIRST covered verse (`canonically_first` above), not merely
+/// the first one this container's own curated/imported data happened to
+/// list first. Concretely: `theo-32` ("God decides to destroy every living
+/// thing") covers GEN.6.1-7, but its original Theographic verse link was
+/// GEN.6.7 and W1's own enrichment pass APPENDED 6.1-6 afterward -- the OLD
+/// code anchored at GEN.6.7 (first in the array), leaving GEN.6.1-6 read
+/// unlabeled; this fix anchors at GEN.6.1 (first in reading order), the
+/// SAME defect class the brief's own root-cause note names as systemic
+/// ("any enriched event whose original link was not the passage's first
+/// verse is mis-anchored"), fixed for BOTH branches (the witness branch had
+/// the identical defect via `.find(first parseable)`).
 fn heading_anchors_for(verses: &[String], witnesses: &[EventWitnessPayload]) -> Vec<String> {
     if !witnesses.is_empty() {
         return witnesses
             .iter()
             .filter_map(|w| w.translations.get(KJV_TRANSLATION))
-            .filter_map(|vs| vs.iter().find(|v| atlas_core::refs::VerseId::parse_canonical(v).is_ok()))
-            .cloned()
+            .filter_map(|vs| canonically_first(vs))
             .collect();
     }
 
+    // No explicit witnesses -- one anchor per book actually touched by
+    // `verses`: that book's own canonically first verse, not merely the
+    // first one encountered in curated/imported array order. Two passes
+    // (group by book, then take each book's own minimum) rather than one --
+    // `seen_books` still preserves first-SEEN-book order for the returned
+    // Vec's own iteration order (harmless: each book's anchor lands at a
+    // DIFFERENT verse, so inter-book ordering here never decides a
+    // collision -- only intra-book anchor CHOICE does, which is what this
+    // fix corrects).
     let mut seen_books: Vec<String> = Vec::new();
-    let mut anchors: Vec<String> = Vec::new();
+    let mut best: std::collections::HashMap<String, (u16, u16, String)> = std::collections::HashMap::new();
     for v in verses {
         let Ok(vid) = atlas_core::refs::VerseId::parse_canonical(v) else { continue };
         let book = vid.book.code().to_string();
-        if !seen_books.contains(&book) {
-            seen_books.push(book);
-            anchors.push(v.clone());
+        match best.get(&book) {
+            None => {
+                seen_books.push(book.clone());
+                best.insert(book, (vid.chapter, vid.verse, v.clone()));
+            }
+            Some((c, ve, _)) if (vid.chapter, vid.verse) < (*c, *ve) => {
+                best.insert(book, (vid.chapter, vid.verse, v.clone()));
+            }
+            Some(_) => {}
         }
     }
-    anchors
+    seen_books.into_iter().filter_map(|b| best.remove(&b).map(|(_, _, v)| v)).collect()
+}
+
+/// M-D1 requirement 1 ("CHAPTER-BOUNDARY CONTINUATION": "when a chapter's
+/// first verse sits mid-container (container anchored in a previous
+/// chapter), render the container's heading at the chapter top with a
+/// quiet continuation marker... No covered chapter may open with unlabeled
+/// verses"): for the SAME per-witness/per-book groups `heading_anchors_for`
+/// anchors, every chapter STRICTLY AFTER that group's own anchor chapter
+/// (the minimum chapter present, since a group's own primary anchor is
+/// always its canonically-first verse) that the group's own coverage
+/// includes AT the chapter's own opening verse (verse 1, always the
+/// chapter boundary in KJV versification -- no canon lookup needed) is a
+/// CONTINUATION candidate: this same container's heading continues there.
+/// A gap chapter the group does NOT cover at its own verse 1 (coverage
+/// resumes mid-chapter, or not at all) is correctly NOT a continuation
+/// point for this container -- whichever OTHER heading-worthy container
+/// truly opens that chapter (whole-Bible coverage, Batch W5, guarantees
+/// one exists) supplies its own primary anchor or continuation there
+/// instead; this function only ever answers for ITS OWN container.
+fn continuation_candidates_for(verses: &[String], witnesses: &[EventWitnessPayload]) -> Vec<String> {
+    let groups: Vec<Vec<atlas_core::refs::VerseId>> = if !witnesses.is_empty() {
+        witnesses
+            .iter()
+            .filter_map(|w| w.translations.get(KJV_TRANSLATION))
+            .map(|vs| vs.iter().filter_map(|v| atlas_core::refs::VerseId::parse_canonical(v).ok()).collect())
+            .collect()
+    } else {
+        let mut order: Vec<u8> = Vec::new();
+        let mut by_book: std::collections::HashMap<u8, Vec<atlas_core::refs::VerseId>> = std::collections::HashMap::new();
+        for v in verses {
+            if let Ok(vid) = atlas_core::refs::VerseId::parse_canonical(v) {
+                if !by_book.contains_key(&vid.book.0) {
+                    order.push(vid.book.0);
+                }
+                by_book.entry(vid.book.0).or_default().push(vid);
+            }
+        }
+        order.into_iter().filter_map(|b| by_book.remove(&b)).collect()
+    };
+
+    let mut out = Vec::new();
+    for group in groups {
+        let Some(anchor_chapter) = group.iter().map(|v| v.chapter).min() else { continue };
+        let book = group[0].book;
+        let covered_chapters: BTreeSet<u16> = group.iter().map(|v| v.chapter).collect();
+        for chapter in covered_chapters {
+            if chapter <= anchor_chapter {
+                continue; // the anchor's own chapter is a PRIMARY anchor, never a continuation
+            }
+            if group.iter().any(|v| v.chapter == chapter && v.verse == 1) {
+                out.push(format!("{}.{}.1", book.code(), chapter));
+            }
+        }
+    }
+    out
 }
 
 /// Mirrors `atlas_core::data::heading_precedence`'s own 3-tier rule (layer,
@@ -98,14 +204,25 @@ pub fn narrative_leg_event_ids(graph: &Graph) -> BTreeSet<String> {
 
 /// The full verse -> heading map, exactly mirroring `AtlasData::finish()`'s
 /// own `verse_heading` construction (this module's own doc comment has the
-/// one deliberate improvement). Order-independent over `graph.nodes`'s own
-/// iteration (a `BTreeMap`, so already deterministic either way): the
-/// winner at each anchor is the objective MAXIMUM precedence among every
-/// heading-worthy event claiming it, never a first-wins accident of scan
-/// order.
+/// one deliberate improvement) PLUS M-D1 requirement 1's own continuation
+/// pass (below). Order-independent over `graph.nodes`'s own iteration (a
+/// `BTreeMap`, so already deterministic either way): the winner at each
+/// anchor is the objective MAXIMUM precedence among every heading-worthy
+/// event claiming it, never a first-wins accident of scan order.
+///
+/// TWO PASSES, deliberately sequential, never interleaved: pass 1 resolves
+/// every PRIMARY anchor exactly as before this batch (unchanged collision
+/// rule); pass 2 resolves CONTINUATION candidates only at verses pass 1
+/// left unclaimed -- a primary anchor is always the stronger claim (a
+/// container's own true first-covered verse beats any other container's
+/// mid-coverage continuation, unconditionally, never arbitrated by the
+/// precedence tuple), so continuations can only ever FILL gaps, never
+/// contest an already-decided verse. This is what keeps "decisive rule
+/// still yields exactly one label" true even with continuations in play.
 pub fn build_heading_index(graph: &Graph) -> BTreeMap<String, HeadingEntry> {
     let narrative_legs = narrative_leg_event_ids(graph);
     let mut winners: BTreeMap<String, (Precedence, HeadingEntry)> = BTreeMap::new();
+    let mut continuation_candidates: Vec<(String, Precedence, HeadingEntry)> = Vec::new();
 
     for (id, node) in &graph.nodes {
         if id.kind != NodeKind::Event {
@@ -144,9 +261,33 @@ pub fn build_heading_index(graph: &Graph) -> BTreeMap<String, HeadingEntry> {
                 Some((incumbent, _)) => prec > *incumbent,
             };
             if should_replace {
-                let entry = HeadingEntry { event_id: id.raw.clone(), title: label.clone(), kind: kind.clone() };
+                let entry = HeadingEntry { event_id: id.raw.clone(), title: label.clone(), kind: kind.clone(), continuation: false };
                 winners.insert(anchor, (prec.clone(), entry));
             }
+        }
+
+        for cont in continuation_candidates_for(verses, witnesses) {
+            let entry = HeadingEntry { event_id: id.raw.clone(), title: label.clone(), kind: kind.clone(), continuation: true };
+            continuation_candidates.push((cont, prec.clone(), entry));
+        }
+    }
+
+    // Pass 2: fill gaps only. A PRIMARY anchor already at this verse is an
+    // ABSOLUTE, unconditional win (never arbitrated by precedence -- a
+    // container's own true first-covered verse always beats any other
+    // container's mid-coverage continuation); competing CONTINUATION
+    // candidates at the same still-open verse (two different containers
+    // both continuing through it) resolve by the identical precedence
+    // tuple pass 1 uses -- the same layer/kind/chronology/id law, just
+    // applied to the smaller "who continues here" question.
+    for (verse, prec, entry) in continuation_candidates {
+        let should_replace = match winners.get(&verse) {
+            None => true,
+            Some((_, existing)) if !existing.continuation => false,
+            Some((incumbent, _)) => prec > *incumbent,
+        };
+        if should_replace {
+            winners.insert(verse, (prec, entry));
         }
     }
 

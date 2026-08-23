@@ -627,6 +627,39 @@ input:focus-visible,
     color: var(--ink);
 }
 
+/* M-D1 requirement 1 (CHAPTER-BOUNDARY CONTINUATION, owner live report #2's
+   own "no covered chapter may open with unlabeled verses" law): a
+   container's own heading rendering AGAIN at a LATER chapter boundary,
+   when its own coverage crosses into that chapter but the chapter opens
+   mid-container -- never a second, competing PRIMARY heading (the
+   decisive-container law still yields exactly one label per verse; a
+   continuation only ever fills a verse no primary anchor already claims,
+   see atlas-graph::heading's own two-pass doc comment). "Quiet via SCALE,
+   distinct via WORDING" -- this file's own established two-axis precedent
+   (.event-timeline-heading's own comment, above, has the fuller rationale)
+   -- applied here identically: a step smaller than an ordinary pericope
+   heading, plus the explicit word "continued" as its own marker line,
+   never a color-only cue (this sits on real, must-stay-readable content,
+   the same reasoning .pericope-heading's own comment gives for avoiding a
+   --ink-soft treatment here too -- the contrast floor stays untouched,
+   identical --ink). Orthogonal to, and combinable with,
+   .explorable/.explorable-quiet above (a continuation can anchor either a
+   dated or a general-kind container; the traversability axis is unchanged). */
+.pericope-heading-continuation {
+    font-size: .78rem;
+    padding-top: .5rem;
+}
+
+.pericope-heading-continuation-marker {
+    display: block;
+    font-variant-caps: small-caps;
+    font-style: italic;
+    font-size: .68rem;
+    letter-spacing: .1em;
+    font-weight: 500;
+    margin-bottom: .15rem;
+}
+
 .verse-num {
     flex: none;
     width: 2.25rem;

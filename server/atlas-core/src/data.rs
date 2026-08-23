@@ -954,32 +954,56 @@ pub struct HeadingEntry {
 /// crash the whole ETL binary -- `atlas_etl::validate` is what turns a bad
 /// witness verse into a loud, aggregated, curator-facing error; this
 /// function's only job is to not stand in its way by panicking first.
+/// M-D1 requirement 1 (owner live report #2, GEN.6 class, verbatim: "genesis
+/// 6 the first verses have no container label... i'm assuming this isn't an
+/// isolated case"): fixed IN LOCKSTEP with `atlas_graph::heading`'s own
+/// identical fix (this module's own doc comment on that crate has the full
+/// root-cause derivation) -- each anchor is now the CANONICALLY FIRST
+/// covered verse (minimum by book/chapter/verse, i.e. reading-spine order),
+/// never merely the first one this container's own curated/imported data
+/// happened to list first. Both branches had the identical defect (the
+/// witness branch via `.find(first parseable)`, the no-witness branch via
+/// `seen_books`'s own first-occurrence capture) -- both fixed here, the
+/// SAME "compare by content, not position" correction.
 fn heading_anchors_for(e: &Event) -> Vec<String> {
     if !e.witnesses.is_empty() {
         return e
             .witnesses
             .iter()
             .filter_map(|w| w.translations.get(crate::translation::DEFAULT_TRANSLATION))
-            .filter_map(|verses| verses.iter().find(|v| crate::refs::VerseId::parse_canonical(v).is_ok()))
-            .cloned()
+            .filter_map(|verses| {
+                verses
+                    .iter()
+                    .filter_map(|v| crate::refs::VerseId::parse_canonical(v).ok().map(|vid| ((vid.book.0, vid.chapter, vid.verse), v)))
+                    .min_by_key(|(key, _)| *key)
+                    .map(|(_, v)| v.clone())
+            })
             .collect();
     }
 
     // No explicit witnesses -- one anchor per book actually touched by
-    // `e.verses`, first-seen-book order (mirrors `scene::witnesses_for`'s
-    // own synthesis, minus the grouping/sorting this narrower need doesn't
-    // require -- just each book's own FIRST verse in curated/imported order).
+    // `e.verses`: that book's own CANONICALLY FIRST verse, not merely the
+    // first one encountered in curated/imported array order. `seen_books`
+    // still preserves first-SEEN-book order for the returned Vec's own
+    // iteration order (harmless -- see the graph-native mirror's own doc
+    // comment for why inter-book order never decides a collision).
     let mut seen_books: Vec<String> = Vec::new();
-    let mut anchors: Vec<String> = Vec::new();
+    let mut best: std::collections::HashMap<String, (u16, u16, String)> = std::collections::HashMap::new();
     for v in &e.verses {
         let Ok(vid) = crate::refs::VerseId::parse_canonical(v) else { continue };
         let book = vid.book.code().to_string();
-        if !seen_books.contains(&book) {
-            seen_books.push(book);
-            anchors.push(v.clone());
+        match best.get(&book) {
+            None => {
+                seen_books.push(book.clone());
+                best.insert(book, (vid.chapter, vid.verse, v.clone()));
+            }
+            Some((c, ve, _)) if (vid.chapter, vid.verse) < (*c, *ve) => {
+                best.insert(book, (vid.chapter, vid.verse, v.clone()));
+            }
+            Some(_) => {}
         }
     }
-    anchors
+    seen_books.into_iter().filter_map(|b| best.remove(&b).map(|(_, _, v)| v)).collect()
 }
 
 /// Batch T fix-round-1 (Important-1, batch-t-review.md), amended by the
@@ -2098,6 +2122,44 @@ mod heading_collision_tests {
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
         let heading = data.heading_for_verse("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
         assert_eq!(heading.event_id, "earlier_rich", "between two real containers of equal layer/kind, the chronologically earlier one must win");
+    }
+
+    // --- M-D1 requirement 1: canonically-first anchoring (lockstep with
+    // atlas_graph::heading's own identical fix + real-data proof) ---------
+
+    #[test]
+    fn heading_anchor_canonically_first_not_curated_import_order_no_witnesses() {
+        // Mirrors theo-32's own real shape exactly (owner live report #2,
+        // GEN.6 class): the original Theographic verse link (GEN.6.7)
+        // appears FIRST in the array; W1's own enrichment pass APPENDED the
+        // earlier verses (6.1-6) afterward. No witnesses -- exercises the
+        // top-level `verses` branch.
+        let mut e = bare_leg();
+        e.id = "theo_32_mirror".into();
+        e.verses = vec!["GEN.6.7".into(), "GEN.6.1".into(), "GEN.6.2".into(), "GEN.6.3".into(), "GEN.6.4".into(), "GEN.6.5".into(), "GEN.6.6".into()];
+        let narratives = vec![narrative_for("theo_32_mirror")];
+        let data = AtlasData::new(Canon { books: vec![] }, vec![], vec![e], narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        let heading = data.heading_for_verse("GEN.6.1").expect("GEN.6.1 -- the canonically first covered verse -- must anchor the heading, not GEN.6.7 (curated/import order)");
+        assert_eq!(heading.event_id, "theo_32_mirror");
+        assert!(data.heading_for_verse("GEN.6.7").is_none(), "the pre-fix anchor, GEN.6.7, must no longer claim the heading");
+    }
+
+    #[test]
+    fn heading_anchor_canonically_first_not_curated_import_order_with_witnesses() {
+        // The witness branch had the identical defect (`.find(first
+        // parseable)` instead of the canonical minimum).
+        let mut e = rich_leg();
+        e.id = "witness_import_order_mirror".into();
+        e.verses = vec![];
+        e.witnesses = vec![EventWitness {
+            book: "GEN".into(),
+            translations: HashMap::from([("kjv".to_string(), vec!["GEN.6.7".to_string(), "GEN.6.1".to_string(), "GEN.6.2".to_string()])]),
+            ref_note: None,
+            robertson_section: Some("fixture".into()),
+        }];
+        let data = AtlasData::new(Canon { books: vec![] }, vec![], vec![e], vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        let heading = data.heading_for_verse("GEN.6.1").expect("GEN.6.1 must anchor the heading via the witness branch too");
+        assert_eq!(heading.event_id, "witness_import_order_mirror");
     }
 
     #[test]

@@ -7,6 +7,75 @@ import { api } from './lib/api';
 // node"). See CONTRACT.md's own EVENT-1 note and the reader testid-
 // inventory's own `pericope-heading-{eventId}` entry.
 
+// -----------------------------------------------------------------------
+// M-D1 requirement 1 (owner live report #2, 2026-08-21, verbatim: "genesis
+// 6 the first verses have no container label... i'm assuming this isn't an
+// isolated case"): canonically-first anchoring + chapter-boundary
+// continuation headings. RED before this batch: theo-32's own heading
+// rendered at GEN.6.7 (curated/import order), leaving GEN.6.1-6 unlabeled;
+// chapter-boundary continuation headings did not exist at all.
+// -----------------------------------------------------------------------
+
+test('GEN.6.1 (not GEN.6.7) anchors theo-32\'s heading -- canonically first, not curated import order', async ({ page }) => {
+  const chapterOut = await api.chapter('GEN.6');
+  const v1 = chapterOut.verses.find((v: any) => v.verse === 1);
+  expect(v1.heading, 'GEN.6.1 must anchor theo-32\'s own heading -- its canonically first covered verse').toBeTruthy();
+  expect(v1.heading.event_id).toBe('theo-32');
+  expect(v1.heading.is_continuation, 'GEN.6.1 is theo-32\'s own TRUE first verse -- a PRIMARY anchor').toBeFalsy();
+
+  const v7 = chapterOut.verses.find((v: any) => v.verse === 7);
+  if (v7.heading) {
+    expect(v7.heading.event_id, 'theo-32 must no longer claim GEN.6.7 -- its own anchor moved to GEN.6.1').not.toBe('theo-32');
+  }
+
+  await page.goto('/read/GEN/6');
+  const heading = page.getByTestId('pericope-heading-theo-32');
+  await expect(heading).toBeVisible();
+  await expect(heading).toHaveText(v1.heading.title);
+  // Renders immediately above GEN.6.1's own line -- the fixed anchor, not
+  // the pre-fix GEN.6.7.
+  const headingBox = await heading.boundingBox();
+  const v1Box = await page.getByTestId('verse-line-1').boundingBox();
+  expect(headingBox && v1Box && headingBox.y).toBeLessThan(v1Box!.y);
+
+  // Explorable, same ONE-RULE treatment -- opens theo-32's own EventNode
+  // popover (M-D1 requirement 2), never a bare verse popover.
+  await heading.click();
+  await expect(page.getByTestId('popover-title')).toHaveText(v1.heading.title);
+  await expect(page.getByTestId('popover-section-event-date-places')).toBeVisible();
+});
+
+test('chapter-boundary continuation: a container spanning chapters renders a QUIET continuation heading at the later chapter\'s own opening verse', async ({ page }) => {
+  // ezr_temple_completed spans Ezra 5 and 6 (data/curated/passages/ezra.toml);
+  // EZR.5.1 is its own true anchor, EZR.6.1 -- a covered chapter's own
+  // opening verse, mid-container -- rendered NO heading at all before this
+  // batch ("no covered chapter may open with unlabeled verses").
+  const ch5 = await api.chapter('EZR.5');
+  const primary = ch5.verses.find((v: any) => v.verse === 1).heading;
+  expect(primary.event_id).toBe('ezr_temple_completed');
+  expect(primary.is_continuation).toBeFalsy();
+
+  const ch6 = await api.chapter('EZR.6');
+  const continuation = ch6.verses.find((v: any) => v.verse === 1).heading;
+  expect(continuation, 'EZR.6.1 must render SOME heading -- no covered chapter may open unlabeled').toBeTruthy();
+  expect(continuation.event_id).toBe('ezr_temple_completed');
+  expect(continuation.title).toBe(primary.title);
+  expect(continuation.is_continuation, 'EZR.6.1 is NOT the container\'s own true first verse -- it must be a CONTINUATION').toBeTruthy();
+
+  await page.goto('/read/EZR/6');
+  const heading = page.getByTestId('pericope-heading-ezr_temple_completed');
+  await expect(heading).toBeVisible();
+  await expect(heading).toHaveAttribute('data-continuation', 'true');
+  // Quiet WORDING marker, distinct from an ordinary primary heading.
+  await expect(page.getByTestId('pericope-heading-continuation-marker-ezr_temple_completed')).toHaveText('continued');
+  await expect(heading).toContainText(primary.title);
+
+  // SAME click affordance as a primary heading (M-D1 requirement 2) --
+  // opens the identical EventNode, no second/parallel mechanism.
+  await heading.click();
+  await expect(page.getByTestId('popover-title')).toHaveText(primary.title);
+});
+
 test('a covered book renders a pericope heading above its anchor verse, explorable, opens the EventNode', async ({ page }) => {
   // pw_golgotha's own Matthew witness anchors at MAT.27.33 (event-witnesses.toml).
   const detail = await api.event('pw_golgotha');

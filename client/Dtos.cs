@@ -111,7 +111,13 @@ public sealed record ChapterOut(string Ref, string Book, int Chapter, List<Verse
 /// styling to a general-kind heading BEFORE the click -- "if something
 /// isn't traversable it shouldn't look like other things that are actually
 /// traversable," the owner's own law.
-public sealed record HeadingDto(string EventId, string Title, string Kind);
+/// M-D1 requirement 1 (CHAPTER-BOUNDARY CONTINUATION): <see cref="IsContinuation"/>
+/// -- true when this verse is NOT the container's own true first-covered
+/// verse but a later chapter its own coverage continues into -- lets
+/// Reader.razor render a quiet continuation marker, distinct from an
+/// ordinary primary heading, BEFORE the click (same affordance-honesty-as-
+/// data discipline <see cref="Kind"/> above already establishes).
+public sealed record HeadingDto(string EventId, string Title, string Kind, bool IsContinuation = false);
 
 public sealed record VerseOut(int Verse, string Text, List<PlaceRefDto> Places, HeadingDto? Heading = null);
 

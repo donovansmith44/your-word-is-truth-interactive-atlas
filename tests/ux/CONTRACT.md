@@ -943,6 +943,88 @@ Notes:
   correctly to the partial coverage that existed when they were written,
   and apply identically now that coverage is total.
 
+  M-D1 CANONICALLY-FIRST ANCHORING + CHAPTER-BOUNDARY CONTINUATION (owner
+  live report #2, 2026-08-21, verbatim: "genesis 6 the first verses have
+  no container label... i'm assuming this isn't an isolated case"). ROOT
+  CAUSE (controller-verified live, both before and after the graph
+  migration -- `atlas_graph::heading::heading_anchors_for` mirrored the
+  identical bug): `heading_anchors_for` anchored each container at the
+  FIRST verse in CURATED/IMPORTED ARRAY order, never the canonically first
+  (reading-spine) verse -- `theo-32` ("God decides to destroy every living
+  thing") covers GEN.6.1-7, but its original Theographic verse link was
+  GEN.6.7 and W1's own enrichment pass APPENDED 6.1-6 afterward, so the
+  heading rendered at verse 7 and GEN.6.1-6 read unlabeled. Systemic for
+  any enriched container whose original link was not the passage's own
+  first verse -- the witness branch (`.find(first parseable)`) carried the
+  identical defect. FIX (both `atlas_graph::heading` -- the live production
+  path -- and `atlas_core::data`, kept in lockstep per that module's own
+  doc comment): the anchor is now the group's own CANONICALLY FIRST
+  covered verse -- minimum by (book, chapter, verse) -- computed by hand
+  (VerseId carries no derived `Ord` of its own; widening a shared type's
+  derive list for one law is a bigger blast radius than a local comparator
+  key), never merely positional. Named case, real data:
+  `server/atlas-graph/tests/heading_precedence.rs`'s own
+  `named_case_gen_6_1_anchors_canonically_first_not_curated_import_order`
+  (RED pre-fix: anchored GEN.6.7; GREEN post-fix: GEN.6.1) +
+  `tests/ux/reader-headings.spec.ts`'s own matching UI-facing case.
+
+  CHAPTER-BOUNDARY CONTINUATION (same report, "no covered chapter may open
+  with unlabeled verses"): when a container spans multiple chapters (first-
+  class, container-algebra-legal), its own coverage crossing into a LATER
+  chapter at exactly that chapter's own opening verse (verse 1, always the
+  chapter boundary in KJV versification -- no canon lookup needed) now
+  renders a CONTINUATION heading there -- same title, same click-through
+  (M-D1 requirement 2), styled with a quiet WORDING marker ("continued")
+  and a step-smaller type size (app.css's own established "quiet via
+  SCALE, distinct via WORDING" precedent, never a color-only cue on
+  must-stay-readable content). TWO-PASS, never contested:
+  `atlas_graph::heading::build_heading_index` resolves every PRIMARY
+  anchor first (unchanged collision rule); a SECOND pass then fills
+  CONTINUATION candidates only at verses the first pass left unclaimed --
+  a primary anchor is an ABSOLUTE, unconditional win over any continuation,
+  so "exactly one label per verse" (the decisive-container law) holds
+  identically with continuations in play. Competing continuation
+  candidates at one still-open verse resolve by the SAME layer/kind/
+  chronology/id precedence tuple primary anchors use. Named case, real
+  data (`ezr_temple_completed`, EZR.5.1-17 + EZR.6.1-22 -- two chapters,
+  one container): `heading_precedence.rs`'s own
+  `named_case_ezr_temple_completed_spans_chapters_5_and_6_with_a_continuation_heading_at_6_1`
+  (RED pre-fix: EZR.6.1 rendered no heading at all; GREEN post-fix: a
+  continuation, same title as EZR.5.1's own primary) +
+  `reader-headings.spec.ts`'s own matching UI-facing case (`.pericope-
+  heading-continuation`, `data-continuation="true"`, the `continued`
+  marker span). Wire: `HeadingOut.is_continuation` (always present once a
+  heading exists at all, `false` for every ordinary primary heading);
+  `atlas_core::data::HeadingEntry` carries no continuation field at all --
+  this law is graph-side only (that struct's own doc comment discloses
+  why: a dead, tested reference oracle for the base anchor law, never a
+  live consumer this new law needs to reach).
+
+  EVERY-COVERED-CHAPTER ASSERTION (the owner's own brief-level acceptance,
+  "an every-covered-chapter assertion over the graph, all 66 books now"):
+  `heading_precedence.rs`'s own
+  `m_d1_every_chapter_with_heading_worthy_coverage_opens_with_a_real_heading`
+  walks the REAL compiled graph's own `Event` nodes -- never a hardcoded
+  book/chapter list -- derives every chapter touched, AT ITS OWN OPENING
+  VERSE, by >=1 HEADING-WORTHY container (a narrative leg, or a real
+  curated container -- the SAME predicate `build_heading_index` itself
+  applies), and asserts each one resolves to a real heading (primary or
+  continuation) in the built index. SCOPE, precisely, matching the
+  HEADING-WORTHY RULE above: a bare Theographic freebie that is a leg of
+  no narrative and carries no curated witnesses/section is, correctly,
+  "anchor[ing] NO heading anywhere" (the pre-existing rule, unchanged) --
+  its own chapters are a SEPARATE, disclosed curation-coverage question
+  (W-series book-by-book authoring), not this requirement's own defect
+  class. Real, live-caught during this test's own authoring (not a
+  hypothetical): `theo-162`'s TOP-LEVEL `verses` field still carries its
+  full raw Theographic import span (1 Kings 5:1-7:51) even though its own
+  CURATED `witnesses` were deliberately narrowed to chapter 6 alone (that
+  event's own `ref_note` -- avoiding a within-layer anchor collision with
+  the finer `1ki_hiram_temple_prep`/`1ki_temple_furnishings` siblings) --
+  the production law correctly reads ONLY the witness branch once real
+  witnesses exist (never both), and this test's own independent
+  derivation had to mirror that exact branching to avoid a false claim.
+
   WITHIN-LAYER ANCHOR COLLISIONS (Batch T2, owner's own ruling: "Robertson
   sections within one Gospel should partition, not collide with each
   other -- a within-layer anchor collision is a curation error your
