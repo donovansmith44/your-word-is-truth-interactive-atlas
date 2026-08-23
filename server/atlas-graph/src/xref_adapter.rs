@@ -237,6 +237,43 @@ Rev.22.21\tRom.16.23\t-2\n";
             .find(|r| r.from == text_locus(VerseId::parse_canonical("COL.1.16").unwrap()))
             .expect("Col.1.16 -> Col.1.16-Col.1.19 must survive");
         assert_eq!(col_row.to, text_locus(VerseId::parse_canonical("COL.1.16").unwrap()));
+        // Fix round 1 (I-1): the row's own to_last/target_display, not just
+        // `to` -- a same-chapter range. atlas_etl::xrefs::parse_to_span's own
+        // canonical form for this shape is the COMPRESSED "BOOK.CHAP.V1-V2"
+        // (never the two-full-refs form the raw TSV happens to be typed in
+        // above), matching the real wire shape live-verified against
+        // /api/verse/JHN.3.16 in the M-C2 report ("1JN.4.9-10").
+        assert_eq!(
+            col_row.to_last,
+            Some(text_locus(VerseId::parse_canonical("COL.1.19").unwrap())),
+            "a same-chapter range target's own to_last must be its real LAST verse, not absent"
+        );
+        assert_eq!(
+            col_row.target_display, "COL.1.16-19",
+            "target_display must be the compressed canonical citation string, never re-synthesized from to/to_last"
+        );
+    }
+
+    #[test]
+    fn cross_chapter_range_target_carries_its_own_full_to_last_and_display_string() {
+        // Fix round 1 (I-1): the THIRD of the three openbible.info citation
+        // shapes (single verse / same-chapter range / cross-chapter-or-book
+        // range) -- Matt.5.3 -> Matt.5.3-Matt.6.2, already present in
+        // SAMPLE_TSV but never asserted on before this round. Canonical form
+        // for a cross-chapter range is the FULL "canon1-canon2" (never
+        // compressed, since compression only applies within one chapter).
+        let (rows, _stats) = read_xrefs_ordered(SAMPLE_TSV, &sample_verses()).unwrap();
+        let matt_row = rows
+            .iter()
+            .find(|r| r.from == text_locus(VerseId::parse_canonical("MAT.5.3").unwrap()))
+            .expect("Matt.5.3 -> Matt.5.3-Matt.6.2 must survive");
+        assert_eq!(matt_row.to, text_locus(VerseId::parse_canonical("MAT.5.3").unwrap()));
+        assert_eq!(
+            matt_row.to_last,
+            Some(text_locus(VerseId::parse_canonical("MAT.6.2").unwrap())),
+            "a cross-chapter range target's own to_last must be its real LAST verse"
+        );
+        assert_eq!(matt_row.target_display, "MAT.5.3-MAT.6.2", "cross-chapter form never compresses");
     }
 
     #[test]
@@ -257,5 +294,11 @@ Rev.22.21\tRom.16.23\t-2\n";
             .find(|r| r.to == text_locus(VerseId::parse_canonical("JOB.26.13").unwrap()))
             .expect("Gen.1.1 -> Job.26.13 must survive");
         assert_eq!(job_row.votes, 20);
+        // Fix round 1 (I-1): the FIRST of the three citation shapes -- a bare
+        // single-verse target carries no to_last at all (None, not an
+        // accidental Some(itself)), and target_display is its own plain
+        // canonical form.
+        assert_eq!(job_row.to_last, None, "a single-verse target has no LAST verse distinct from its own to");
+        assert_eq!(job_row.target_display, "JOB.26.13");
     }
 }

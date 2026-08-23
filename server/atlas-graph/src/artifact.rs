@@ -587,7 +587,21 @@ pub struct ArtifactDump {
     event_world_stats: EventWorldStats,
 }
 
-const FORMAT_VERSION: u32 = 1;
+/// Fix round 1 (I-2): bumped 1 -> 2. CONVENTION (closing the gap this
+/// review round found -- FORMAT_VERSION had never once been bumped since
+/// its M-C introduction, through two separate DTO wire-shape widenings):
+/// bump this whenever ANY `Dto*` struct's own shape changes (a field
+/// added/removed/retyped/renamed on any of the `Dto*` types above, or a
+/// new relation table added to `ArtifactDump` itself) -- bincode is
+/// non-self-describing (no field tags, confirmed at this file's own
+/// `encode`/`decode`), so a stale artifact paired with new server code has
+/// NOTHING ELSE catching a shape mismatch; `to_service_parts`'s own check
+/// below is the entire safety net. This bump's own trigger: M-C2's
+/// `DtoPayload::Event`/`Narrative` widening and `DtoCrossRef`'s
+/// `to_last`/`target_display` addition (commit `5e07e8f`) -- both already
+/// shipped as of `f1a27ab`'s own graph.bin regeneration, so this bump
+/// itself is a housekeeping catch-up, not a new shape change of its own.
+const FORMAT_VERSION: u32 = 2;
 
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
@@ -894,7 +908,13 @@ mod tests {
         ] }
       ]
     }"#;
-    const XREFS_FIXTURE: &str = "From Verse\tTo Verse\tVotes\t#comment\nGen.1.1\tGen.1.2\t9\n";
+    // Fix round 1 (I-1): a SECOND row, a genuine range target (Gen.1.2 ->
+    // Gen.1.1-Gen.1.2, both endpoints already inside KJV_FIXTURE below --
+    // filter_missing_first_verse only requires the target's own FIRST verse
+    // to exist, so no KJV_FIXTURE widening is needed) -- the single-verse
+    // row above never constructs `to_last: Some(...)` at all, so this round-
+    // trip test previously never proved that branch survives bincode.
+    const XREFS_FIXTURE: &str = "From Verse\tTo Verse\tVotes\t#comment\nGen.1.1\tGen.1.2\t9\nGen.1.2\tGen.1.1-Gen.1.2\t4\n";
 
     fn small_atlas() -> atlas_core::data::AtlasData {
         use atlas_core::data::{AtlasData, Canon, ChronologyAnchor, Event, Place};
@@ -936,6 +956,63 @@ mod tests {
         // (which only ever sees the graph/port side).
         assert_eq!(chronology2.chrono.order, chronology.chrono.order);
         assert_eq!(chronology2.temporal_neighbors.len(), chronology.temporal_neighbors.len());
+
+        // Fix round 1 (I-1): to_last/target_display are NOT visible through
+        // the GraphQuery port at all (EdgeEntry carries only the target's
+        // first verse + vote count -- this struct's own `cross_refs_by_from`
+        // doc comment in service.rs explains why), so assert_answers_match
+        // above cannot catch a `to_last`/`target_display` round-trip bug by
+        // construction. Read the raw `cross_refs` Vec directly instead --
+        // the one field on this struct genuinely un-reachable through the
+        // generic port.
+        let find_from_gen_1_2 = |g: &Graph| {
+            g.cross_refs
+                .iter()
+                .find(|r| r.from == TextLocus::from(BibleLocus::whole(VerseRef { book: 0, chapter: 1, verse: 2 })))
+                .cloned()
+                .expect("Gen.1.2 -> Gen.1.1-Gen.1.2 must survive the pipeline")
+        };
+        let before = find_from_gen_1_2(&original_indexed);
+        let after = find_from_gen_1_2(&reconstructed);
+        assert_eq!(before.to, TextLocus::from(BibleLocus::whole(VerseRef { book: 0, chapter: 1, verse: 1 })), "fixture sanity: to is the range's own FIRST verse, Gen.1.1");
+        assert_eq!(before.to_last, Some(TextLocus::from(BibleLocus::whole(VerseRef { book: 0, chapter: 1, verse: 2 }))), "fixture sanity: to_last is the range's own LAST verse, Gen.1.2");
+        assert_eq!(after.to_last, before.to_last, "to_last must round-trip through bincode, not silently become None");
+        assert_eq!(after.target_display, before.target_display, "target_display must round-trip losslessly");
+        assert_eq!(after.target_display, "GEN.1.1-2", "sanity: the compressed same-chapter canonical form");
+    }
+
+    #[test]
+    fn to_service_parts_rejects_a_mismatched_format_version_cleanly() {
+        // Fix round 1 (I-2): FORMAT_VERSION had never been bumped despite
+        // two consecutive DTO wire-shape widenings this crate's own history
+        // carries (Event/Narrative payload widening; CrossRef to_last/
+        // target_display) -- bincode is non-self-describing (no field tags),
+        // so a stale artifact paired with new server code previously had
+        // NOTHING catching the shape mismatch except this one already-
+        // written check, which had ZERO test coverage of its own. A real
+        // ArtifactDump (not a hand-built stub -- every private field stays
+        // real and valid except the one under test) with its format_version
+        // mutated to a value this build does not understand must fail loud,
+        // with the named, purpose-built error -- never a raw bincode decode
+        // panic/garbage struct.
+        let (graph, chronology, stats, ews) = built_graph();
+        let mut dumped = dump(&graph, &chronology, &stats, &ews).unwrap();
+        assert_eq!(dumped.format_version, FORMAT_VERSION, "fixture sanity: dump() must stamp the CURRENT constant");
+        dumped.format_version = FORMAT_VERSION + 1;
+
+        // Not `.expect_err(...)`/`.unwrap_err()`: both require the Ok side
+        // (`(Graph, BuildStats, EventWorldStats, Chronology)`) to implement
+        // `Debug`, which `Chronology` does not (unrelated to this fix
+        // round, not changed here) -- a manual match sidesteps that
+        // entirely without adding a derive this test doesn't otherwise need.
+        let err = match to_service_parts(dumped) {
+            Ok(_) => panic!("a future/mismatched format_version must be rejected, not silently accepted"),
+            Err(e) => e,
+        };
+        let msg = err.to_string();
+        assert!(msg.contains("format_version"), "error must name the field: {msg}");
+        assert!(msg.contains(&(FORMAT_VERSION + 1).to_string()), "error must name the artifact's OWN (rejected) version: {msg}");
+        assert!(msg.contains(&FORMAT_VERSION.to_string()), "error must name what this build DOES understand: {msg}");
     }
 
     #[test]
