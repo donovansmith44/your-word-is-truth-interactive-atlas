@@ -202,7 +202,10 @@
                            button already establishes one line up -- keeps
                            this from ALSO triggering the verse-line's own
                            click-opens-a-plain-popover handler. *@
-                        <span class="verse-text">@v.Text@if (v.XrefCount > 0)
+                        @* GATED: FeatureFlags.XrefSuperscripts (owner
+                           disable order 2026-08-23; M-D3's rework
+                           re-enables -- see FeatureFlags.cs). *@
+                        <span class="verse-text">@v.Text@if (FeatureFlags.XrefSuperscripts && v.XrefCount > 0)
                                                          {
                                                              <sup class="verse-xref-marker" data-testid="@($"verse-xref-marker-{v.Verse}")"
                                                                   tabindex="0" role="button" aria-label="@XrefMarkerAriaLabel(v)"

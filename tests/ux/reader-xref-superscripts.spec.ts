@@ -58,6 +58,16 @@ async function findVerseByXrefCount(
 }
 
 test.describe('M-D2: cross-reference superscripts', () => {
+  // GATED OFF (2026-08-23, owner order, ledgered): "just disable
+  // superscripts until the rework is released." The rendering is gated
+  // by FeatureFlags.XrefSuperscripts = false (client/FeatureFlags.cs);
+  // these 8 tests skip on the same gate rather than red-fail against a
+  // deliberately absent feature. M-D3's rework (click AND hover entry,
+  // anchored over the verse, always visible, no auto-modal) flips the
+  // flag ON and DELETES this skip -- the suite below remains the binding
+  // contract for the re-enabled state (CONTRACT.md XSCRIPT-GATE).
+  test.skip(true, 'superscripts gated off by owner order until the M-D3 rework (FeatureFlags.XrefSuperscripts)');
+
   test('XSCRIPT-1: superscript presence/count is wire-driven, letters for 1-3, many-marker for >3 -- a sample sweep, not hardcoded verses', async ({ page }) => {
     const toc = await loadToc();
     const found = await findVerseByXrefCount(toc, c => c > 0);

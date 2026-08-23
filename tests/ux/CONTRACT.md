@@ -597,6 +597,16 @@ Notes:
   distinguish there the way there is for xrefs. See
   `popover-place-date-established-verse-{SPAN}`/`-destroyed-verse-{SPAN}`
   and their own `-more`/`-collapse` pair in the testid inventory above.
+- XSCRIPT-GATE (2026-08-23, owner order, ledgered): the ENTIRE
+  superscript feature below is currently GATED OFF by
+  `FeatureFlags.XrefSuperscripts = false` (`client/FeatureFlags.cs`) --
+  owner verbatim: "just disable superscripts until the rework is
+  released." The 8 XSCRIPT tests skip-with-reason on the same gate.
+  M-D3's rework (click AND hover entry, popover anchored OVER the verse,
+  always visible, never cut off, no auto-modal requiring an X) flips the
+  flag ON and un-skips them. XSCRIPT-1 below remains the binding
+  contract for the re-enabled state -- the gate suspends it, never
+  rewrites it.
 - XSCRIPT-1 (batch-md2-brief.md; the owner's cross-reference superscript
   directive, batch-x-brief.md verbatim, 2026-08-21: "little superscripts
   visible near verses/passages to which cross references apply... `i,j,k`
