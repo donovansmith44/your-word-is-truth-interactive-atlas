@@ -31,7 +31,13 @@ async function openEventPopover(page: any, eventId: string) {
   const vref = detail.witnesses[0].verse_groups[0].verses[0];
   const v = parseVerse(vref);
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  // M-D3/U5, a real, live-caught regression (this shared helper's own
+  // verse-line click hung indefinitely on a real witness verse whose
+  // attested mentions happened to sit at the click's own geometric
+  // center -- the SAME class of hazard CONTRACT.md's own MENTION-1 note
+  // documents): keyboard activation sidesteps the coordinates entirely.
+  await page.getByTestId(`verse-line-${v.verse}`).focus();
+  await page.keyboard.press('Enter');
   await page.getByTestId(`verse-event-${eventId}`).click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
 }
@@ -206,7 +212,10 @@ test('HOTFIX-4 req 3: map coherence -- traversing the global timeline from a map
   const vref = gethsemaneDetail.witnesses[0].verse_groups[0].verses[0];
   const v = parseVerse(vref);
   await page.goto(`/read/${v.book}/${v.chapter}?split=1`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  // Keyboard activation -- see openEventPopover's own comment above for
+  // why a plain coordinate click on a verse-line is unsafe now.
+  await page.getByTestId(`verse-line-${v.verse}`).focus();
+  await page.keyboard.press('Enter');
   await page.getByTestId('verse-event-pw_gethsemane').click();
   await expect(page.getByTestId('popover-title')).toHaveText(gethsemaneDetail.title);
   await expect(page.locator('[data-narrative-focus]').first()).toBeAttached();
@@ -235,7 +244,8 @@ test('HOTFIX-4 req 3: map coherence -- traversing the global timeline from a map
   const isaacVref = isaacDetail.witnesses[0].verse_groups[0].verses[0];
   const iv = parseVerse(isaacVref);
   await page.goto(`/read/${iv.book}/${iv.chapter}?split=1`);
-  await page.getByTestId(`verse-line-${iv.verse}`).click();
+  await page.getByTestId(`verse-line-${iv.verse}`).focus();
+  await page.keyboard.press('Enter');
   await page.getByTestId('verse-event-gen_binding_isaac').click();
   await expect(page.getByTestId('popover-title')).toHaveText(isaacDetail.title);
 
@@ -289,7 +299,9 @@ test('AFFORDANCE-1: a dated event\'s own reader heading and verse EVENT-membersh
 
   // The SAME event's own verse-membership row also keeps .explorable --
   // checked directly against the verse popover's own EVENT section.
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  // Keyboard activation -- see openEventPopover's own comment above.
+  await page.getByTestId(`verse-line-${v.verse}`).focus();
+  await page.keyboard.press('Enter');
   const row = page.getByTestId('verse-event-jm_egypt');
   expect(await hasClass(row, 'explorable')).toBe(true);
   expect(await hasClass(row, 'explorable-quiet')).toBe(false);
@@ -333,7 +345,9 @@ test('TRUNC-1: the temple-dedication popover\'s 1KI.8 witness shows the +46-more
   // Pass 1: reader on 2 Chronicles -- 1 Kings 8's own witness entry is a
   // DIFFERENT chapter, so its own truncation affordance is fully testable.
   await page.goto(`/read/${chroniclesV.book}/${chroniclesV.chapter}`);
-  await page.getByTestId(`verse-line-${chroniclesV.verse}`).click();
+  // Keyboard activation -- see openEventPopover's own comment above.
+  await page.getByTestId(`verse-line-${chroniclesV.verse}`).focus();
+  await page.keyboard.press('Enter');
   await page.getByTestId('verse-event-1ki_temple_dedication').click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
   await expect(page.getByTestId('popover-section-event-witnesses')).toBeVisible();
@@ -363,7 +377,8 @@ test('TRUNC-1: the temple-dedication popover\'s 1KI.8 witness shows the +46-more
   expect(chroniclesCh5.count).toBe(chroniclesCh5.verses.length);
 
   await page.goto(`/read/${kingsV.book}/${kingsV.chapter}`);
-  await page.getByTestId(`verse-line-${kingsV.verse}`).click();
+  await page.getByTestId(`verse-line-${kingsV.verse}`).focus();
+  await page.keyboard.press('Enter');
   await page.getByTestId('verse-event-1ki_temple_dedication').click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
   const chroniclesExpand = page.getByTestId('popover-verse-expand-event-witness-2CH.5.2-14');

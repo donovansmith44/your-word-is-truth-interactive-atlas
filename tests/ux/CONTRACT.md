@@ -475,11 +475,15 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   {eventId}` button per DISTINCT heading container anchored in this
   chapter -- a multi-witness container anchoring more than one verse here
   still contributes exactly one row, deduplicated by `EventId`; opens a
-  fresh `EventNode`), `chapter-card-places-heading` (small-caps eyebrow,
+  fresh `EventNode`; M-D3 fix round: capped at 8 rows -- see B3-CARD's
+  own note below -- `chapter-card-headings-more` (plain "+N more
+  containers in this chapter." line, conditional presence, only when the
+  chapter's own real total exceeds 8) discloses the truncation), `chapter-card-places-heading` (small-caps eyebrow,
   "PLACES MENTIONED", present only when >=1 place is mentioned somewhere
   in this chapter), `chapter-card-places` (wraps one `chapter-card-place-
   {placeId}` button per distinct place mentioned in this chapter,
-  deduplicated by place id; opens a fresh `PlaceNode`),
+  deduplicated by place id; opens a fresh `PlaceNode`; same 8-row cap,
+  `chapter-card-places-more` its own "+N more places..." sibling),
   `chapter-card-xref-total` (plain "N cross-references in this chapter."
   line, present only when the chapter's own verses carry at least one
   cross-reference between them -- a non-explorable aggregate total, not a
@@ -821,6 +825,18 @@ Notes:
   `_hoverOnlyOpen` alone rather than an xref-specific node-kind check), a
   genuine click (or Enter -- native `<button>` semantics) upgrades the SAME
   popover to persistent in place.
+  M-D3 fix round, a SECOND real bug found alongside the one above: even
+  with the backdrop fixed, the popover PANEL itself can still cover
+  `chapter-head` if its own content is tall enough -- `chapter-card-headings`/
+  `chapter-card-places` were originally fully unbounded, and a long
+  acrostic psalm (PSA.119, 22 Hebrew-letter sections) made the card tall
+  enough to self-overlap `chapter-head` regardless. Both lists are now
+  capped at 8 rows (`chapter-card-headings-more`/`chapter-card-places-more`,
+  the testid-inventory note above), a plain, honest "+N more" disclosure
+  -- NOT yet the full `RevealControls` interactive reveal mechanic U2
+  already gives cross-refs/catechism elsewhere in this same popover
+  platform; widening this to match is real, disclosed follow-up, not
+  pretended-finished.
 - XSCRIPT-GATE (2026-08-23, owner order, ledgered; RESOLVED M-D3/R3): the
   superscript feature was briefly GATED OFF by
   `FeatureFlags.XrefSuperscripts = false` (`client/FeatureFlags.cs`) --
