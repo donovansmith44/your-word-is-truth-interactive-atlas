@@ -810,7 +810,7 @@ Notes:
   |---|---|---|
   | Superscript xref COUNT (`VerseOut.xref_count`) | Server-side: computed via `GraphQuery::edge_summary` (THE PORT), inline on the existing `/api/chapter` response | MIGRATED -- genuinely NEW capability, generic-native from day one (no bespoke predecessor existed) |
   | Xrefs section display POLICY (cap/order) | Client-side: `EdgeSectionRegistry.Cites` consulted by `CrossRefsSection` | MIGRATED -- a real registry lookup replaces what were two bare integer literals |
-  | `IExplorableClient`/`GraphExplorableClient` | Built, DI-wired, unit-tested | SHIPPED, but ZERO live in-app UI call sites this batch -- disclosed, not silently hidden; see this batch's own report/concerns |
+  | `IExplorableClient`/`GraphExplorableClient` | Built, DI-wired, unit-tested | SHIPPED, but ZERO live in-app UI call sites THIS batch (M-D2) -- disclosed, not silently hidden; see this batch's own report/concerns. FIRST live call sites land at Batch P (PERSONS-1 below: `VersePersonsSection`/`PersonCardAndMentionsSection`) |
   | Xrefs section DATA FETCH (`CrossRefsSection`'s own preview text) | Unchanged | STAYS BESPOKE (`VerseDetail.CrossRefs`/`PassageNode.XrefsAsync`) -- the generic `cites` edge stores only a target's FIRST verse (design doc §4: "verse-level today, loci by design"); `to_last`/`target_display` (F2's own same-chapter-range full-text enrichment, ~25% of real targets) live on the AUTHORED `CrossRef` row, never lowered into the generic edge index's `EdgeMeta` (only `Votes` is). Migrating this fetch would either silently truncate that ~25% down to one verse (a real regression against F2's own shipped, tested behavior) or require widening `EdgeMeta` -- a relation-shape change "reviewed like any relation change" (graph-types' own law), correctly bigger than this batch's own scope |
   | Every OTHER popover data path (catechism, place, events, PARALLEL ACCOUNTS, traversal) | Untouched | STAYS BESPOKE -- not touched by the superscript work at all, per the brief's own explicit scope |
 
@@ -2745,3 +2745,105 @@ Notes:
   already subtracts, just from the pane instead), so an expanded mini-reader
   (READER-1/PASSAGE-1) inside it is automatically confined the same way,
   with no separate rule needed.
+- PERSONS-1 (batch-p-brief.md, the extensibility proof: "a new node kind is
+  a new fact file plus a compiler rule -- the UI machinery picks it up
+  through the same generic contract"). Theographic PERSONS enter as a new
+  `Person` node kind + `mentions`/`mentioned-in` rows, served through the
+  EXISTING two generic endpoints (`GET /api/node/{id}`, `GET
+  /api/node/{id}/edges`) with zero new bespoke endpoints, and consumed
+  client-side through `IExplorableClient` -- the FIRST live UI call site for
+  that interface (M-D2 shipped it DI-wired with none; CLIENT-ACCESS-1's own
+  "zero live in-app UI call sites" concern is what this batch closes).
+
+  VERSE/PASSAGE POPOVER, PERSONS SECTION: `persons-section-heading` (text
+  "PERSONS"; present iff the locus's own generic `mentions` edge page
+  carries >=1 Person-kind entry -- conditional presence, the same "a
+  section renders iff count > 0" law every other section already follows).
+  One `verse-person-{slug}` button per mentioned person (slug = the
+  person's own display name, lowercased, non-alphanumeric runs collapsed to
+  a single `-`, leading/trailing `-` trimmed -- `PopoverSectionProviders.cs`'s
+  own `VersePersonsSection.Slug`); text is the person's own name; click
+  pushes a `PersonNode`. A verse's own `mentions` frontier carries BOTH
+  Place and Person entities under ONE edge kind (`graph_types::edge::
+  Mentions`, `PlaceOrPerson`-typed rows) -- this section filters to
+  `Kind == "Person"` client-side (design doc §7's own CHAIN HOMOGENEITY
+  law: one section renders entries of ONE kind-shape only; a mixed list
+  would violate it). Fetched at `EdgeSectionRegistry.Mentions.InitialClamp`
+  (50) in one page -- a real verse's own total mentions (places+persons
+  combined) never comes remotely close to that in the real compiled data;
+  if the true total somehow exceeds it (`page.next` non-null), a quiet,
+  non-interactive `persons-section-more` line ("+ more mentions in this
+  verse") discloses it honestly rather than silently under-reporting.
+
+  PERSON POPOVER: title is the person's own name (`PersonNode.Title`, the
+  label carried on the SAME `EdgeEntryDto` the triggering verse's own
+  PERSONS row already had in hand -- no extra fetch to learn it).
+  `popover-person-provenance` (present iff `Card.Provenance` is non-empty;
+  text "Source: {provenance}") is this batch's own genuinely new use of the
+  generic Card wire's `Provenance` field -- no prior consumer in this app
+  rendered it anywhere. `person-mentions-heading` -- text
+  "MENTIONED IN SCRIPTURE ({N})", N = `Card.EdgeSummary`'s own true
+  `mentioned-in` count, shown up front regardless of how many rows are
+  actually paged in (design doc §7's own "honest count up front" law). One
+  `person-mention-{VREF}` button per mentioned verse, VREF = its own
+  canonical dot-ref (e.g. `GEN.14.18`) -- click pushes a fresh `VerseNode`
+  for that exact ref, closing the loop: VERSE -> PERSON -> a mentioned
+  VERSE. CANON ORDER (the brief's own explicit "mentioned-in: every mention
+  in Scripture, canon order"): guaranteed by construction, not by any
+  client-side sort -- `atlas_etl::people::parse_people` explicitly
+  canon-sorts (book index, then chapter, then verse) each person's own
+  resolved verse links BEFORE the graph adapter ever sees them (spot-checked
+  against real data: Theographic's own upstream list order is NOT reliably
+  canon-order already), and the generic port's own `BiIndex` preserves row-
+  insertion order end to end with no re-sort anywhere on the path (server or
+  client) -- proven at the wire by `tests/ux/reader-persons.spec.ts`'s own
+  PERSONS-3.
+
+  HONEST CLAMPS: initial page = `EdgeSectionRegistry.MentionedIn.InitialClamp`
+  (12) mentioned-verse rows. A person whose true total exceeds that shows
+  `person-mentions-more` (a down-arrow reveal button, the SAME
+  `.popover-passage-reveal` affordance/glyph every other capped list in this
+  app already uses) -- clicking it is a GENUINE second network fetch
+  (`IExplorableClient.Edges`, following the first page's own cursor),
+  appended to the shown list, REPEATABLE (each further click walks one more
+  page) until the port itself reports no further page (`next` null) -- never
+  an artificial wall this component invents; a real busy person (e.g. real
+  committed data's own "David" at 896 mentions) needs genuine server-side
+  pagination, unlike every OTHER capped list in this app (which caps an
+  ALREADY-fully-fetched array client-side only) -- disclosed as the one
+  section in this app whose own reveal step is a real fetch, not a client-
+  side unhide.
+
+  PERSON PAYLOAD, kept vs. dropped (requirement 1's own "disclose what you
+  kept/dropped"): `NodePayload::Person` carries label/gender/birth_year/
+  death_year/also_called (real fields, not a stub -- the SAME "widen the
+  payload" precedent M-C's own Place/Polity widening established) -- NONE
+  of gender/birth_year/death_year/also_called are projected onto the
+  generic Card WIRE this batch (`NodeCardOut.label` stays one plain string,
+  matching every OTHER kind's own card-label precedent exactly: Place's
+  canonical name carries no lat/lon, Event's label carries no date); a
+  future batch's own decision to widen the generic card wire for richer
+  rendering is real, disclosed follow-up, not attempted here. Dropped
+  entirely: Easton's Bible Dictionary prose (19th-century external
+  commentary, out of scope the same way the place adapter never carried
+  Theographic's own richer place fields either) and Theographic's own
+  `status` field (verified NOT a notability signal -- it is Theographic's
+  own "has a prose bio been finished" authoring-workflow flag; filtering to
+  its `"publish"` value would have silently dropped Saul, Elijah, Jeremiah,
+  Daniel, Job, and dozens of other unmistakably major figures, so every
+  person record ships regardless of it). DISCLOSED DATA-SHAPE NOTE:
+  Theographic's own People table is not exclusively individuated humans --
+  it also carries "God", "Holy Spirit", and eponyms doubling as tribe/nation
+  names ("Israel", "Judah") among the 3,067 real records; this batch imports
+  the source as-is (doctrine: "imported confidence class"), with no
+  editorial re-classification attempted or needed for anything this batch
+  actually renders (gender/years never reach the UI, per the paragraph
+  above).
+
+  WIRE GRAMMAR (M-B/M-C's own established one-line-per-kind pattern,
+  continued unchanged): `graph_wire::decode_node_id` gains exactly one new
+  match arm, `"Person" => ...` -- `encode_node_id`'s own pre-existing
+  generic fallback already produced `"Person:{raw}"` with zero changes.
+  Nothing else in `graph_handlers.rs`/`store.rs`/`explore.rs` needed a
+  change for the two generic endpoints to serve Person nodes -- the
+  thesis's own most direct evidence.
