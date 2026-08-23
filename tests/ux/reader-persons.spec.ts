@@ -125,6 +125,17 @@ test.describe('Batch P: PERSONS section + the person popover', () => {
     for (const person of found.persons) {
       await expect(page.getByTestId(`verse-person-${slug(person.label)}`)).toHaveText(person.label);
     }
+    // Fix round 1 (R-P6): the cheap NEGATIVE half of the "persons-section-more"
+    // overflow affordance (VersePersonsSection, PopoverSectionProviders.cs) --
+    // rendered only when a verse's own combined place+person mentions exceed
+    // the 50-entry initial clamp (EdgeSectionRegistry.Mentions.InitialClamp).
+    // The POSITIVE case is genuinely unreachable with real data under this
+    // suite's own "sample real data, never fabricate a fixture" discipline:
+    // no compiled verse comes remotely close to 50 combined mentions (the
+    // busiest real verses carry a small handful) -- there is no verse to
+    // sample that would ever show this affordance, so only the negative
+    // (absent-on-a-normal-verse) half is assertable here.
+    await expect(page.getByTestId('persons-section-more')).toHaveCount(0);
     await page.getByTestId('popover-close').click();
 
     // Negative case, same test: pick a verse the wire itself says carries
@@ -196,8 +207,20 @@ test.describe('Batch P: PERSONS section + the person popover', () => {
     await page.getByTestId(`verse-person-${slug(busy.label)}`).click();
     await expect(page.getByTestId('popover-title')).toHaveText(busy.label);
 
-    const rowsBefore = await page.locator('[data-testid^="person-mention-"]').count();
-    expect(rowsBefore).toBe(12);
+    // Fix round 1, self-caught (a real async-timing bug, the SAME class
+    // M-D2's own fix round already named elsewhere in this app: "an async
+    // race asserting section order immediately after popover-title, which
+    // renders synchronously, without waiting for the section list's own
+    // async population"): `popover-title` resolves off `Current.Title`
+    // the instant the node is pushed, BEFORE PersonCardAndMentionsSection's
+    // own concurrent Card()+Edges() fetch (Task.WhenAll) has necessarily
+    // finished and rendered. A bare, non-retrying `.count()` snapshot taken
+    // right after the title assertion can genuinely read 0 -- `toHaveCount`
+    // (auto-retrying) is what the ExplorerPopover's own async render
+    // lifecycle actually requires here, not a plain snapshot.
+    const personMentionRows = page.locator('[data-testid^="person-mention-"]');
+    await expect(personMentionRows).toHaveCount(12);
+    const rowsBefore = 12;
     const reveal = page.getByTestId('person-mentions-more');
     await expect(reveal).toBeVisible();
 

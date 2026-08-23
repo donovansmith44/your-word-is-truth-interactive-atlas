@@ -17,6 +17,23 @@
 //! border data already use (see `graph_types::node::NodePayload::Person`'s
 //! own doc comment).
 //!
+//! ALSO NO GENEALOGY/PLACE EDGES, disclosed (fix round 1, R-P2 -- a real
+//! disclosure gap the first draft of this module left silent): the raw
+//! source (`people.json`) carries `father`/`mother`/`children`/`siblings`/
+//! `partners` (foreign-key ids resolving to other Person records in the
+//! same file -- the identical shape `verses` uses for mentions) plus
+//! `birthPlace`/`deathPlace`/`memberOf`/`timeline`. None of it is read by
+//! `atlas_etl::people::parse_people`, so none of it reaches this adapter.
+//! Not an oversight -- a genealogy/family relation, or a Person-to-Place
+//! `birthplace`/`deathplace` edge mirroring `located-at`'s own shape, is a
+//! NEW RELATION KIND (design types doc §3's own relation-manifest law:
+//! "adding a relation = one manifest row + its Row type + a compiler rule
+//! + a display-policy row" -- a `graph-types` change needing owner
+//! approval, not an adapter-only decision), correctly outside this
+//! batch's own card+mentions scope. Ledgered for the owner: this is the
+//! SAME extensibility-proof shape `mentions` already demonstrates --
+//! zero new sourcing needed, only an adapter, whenever it is wanted.
+//!
 //! SOURCE: `AtlasData.people` (`atlas_etl::people::parse_people`, reading
 //! Theographic's own `people.json`+`verses.json`) -- populated by
 //! `atlas_etl::compile::compile` as a `#[serde(skip)]` sidecar field, the

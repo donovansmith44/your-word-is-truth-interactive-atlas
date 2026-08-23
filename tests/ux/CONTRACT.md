@@ -2831,14 +2831,29 @@ Notes:
   own "has a prose bio been finished" authoring-workflow flag; filtering to
   its `"publish"` value would have silently dropped Saul, Elijah, Jeremiah,
   Daniel, Job, and dozens of other unmistakably major figures, so every
-  person record ships regardless of it). DISCLOSED DATA-SHAPE NOTE:
-  Theographic's own People table is not exclusively individuated humans --
-  it also carries "God", "Holy Spirit", and eponyms doubling as tribe/nation
-  names ("Israel", "Judah") among the 3,067 real records; this batch imports
-  the source as-is (doctrine: "imported confidence class"), with no
-  editorial re-classification attempted or needed for anything this batch
-  actually renders (gender/years never reach the UI, per the paragraph
-  above).
+  person record ships regardless of it). ALSO DROPPED, CORRECTED fix round
+  1 (R-P2 -- a real gap the first draft of this note left silent): the
+  source also carries `father`/`mother`/`children`/`siblings`/`partners`
+  (foreign-key ids resolving to OTHER Person records in the SAME file --
+  the identical shape `verses` uses for mentions) and
+  `birthPlace`/`deathPlace`/`memberOf`/`timeline`. None of it is read this
+  batch -- turning it into edges (genealogy/family; a Person-to-Place
+  `birthplace`/`deathplace` edge mirroring `located-at`) is a NEW RELATION
+  KIND, a types-first + owner-approved decision (design types doc §3's own
+  relation-manifest law), correctly outside this batch's own card+mentions
+  scope -- ledgered for the owner, not silently built. DISCLOSED
+  DATA-SHAPE NOTE: Theographic's own People table is not exclusively
+  individuated humans -- it also carries "God", "Holy Spirit", and eponyms
+  doubling as tribe/nation names ("Judah": four separate, genuinely bare
+  records, `name == displayTitle == "Judah"`, no disambiguation --
+  CORRECTED fix round 1, R-P4: an earlier draft named "Israel" here too,
+  but the only Israel-named record, `israel_682`, has `displayTitle:
+  "Jacob (Israel)"`, already individuated in the exact label that ships to
+  the client, so it was an imprecise example, not a real gap) among the
+  3,067 real records; this batch imports the source as-is (doctrine:
+  "imported confidence class"), with no editorial re-classification
+  attempted or needed for anything this batch actually renders
+  (gender/years never reach the UI, per the paragraph above).
 
   WIRE GRAMMAR (M-B/M-C's own established one-line-per-kind pattern,
   continued unchanged): `graph_wire::decode_node_id` gains exactly one new

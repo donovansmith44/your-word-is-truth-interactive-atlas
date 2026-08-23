@@ -54,6 +54,24 @@ pub struct Place {
 /// other unmistakably major figures, so every person ships regardless of
 /// this field), `isProperName`/`ambiguous`/`surname`/`personID` (thin
 /// Theographic bookkeeping with no rendering surface this batch built).
+///
+/// CORRECTED, fix round 1 (R-P2): the dropped list above was itself
+/// incomplete -- also present in the raw source and also dropped:
+/// `father`/`mother`/`children`/`siblings`/`partners` (each an array of
+/// foreign-key record ids resolving to OTHER real Person records in the
+/// SAME `people.json`, the identical "array of foreign-key ids" shape
+/// `verses` uses for mentions) and `birthPlace`/`deathPlace` (resolving to
+/// place-like records) plus `memberOf`/`timeline`. This is real,
+/// already-vendored relational data, not an absence -- the adapter that
+/// reads `verses` already knows how to turn that exact shape into typed
+/// edges. NOT built this batch: a genealogy/family edge, or a
+/// Person-to-Place `birthplace`/`deathplace` edge (`located-at`'s own
+/// shape, Person-sourced), is a NEW RELATION KIND -- design types doc §3's
+/// own relation-manifest law ("adding a relation = one manifest row + its
+/// Row type + a compiler rule + a display-policy row") makes this a
+/// types-first, owner-approved decision, not an adapter-only one, and it
+/// is correctly outside batch-p-brief.md's own scope (card + mentions,
+/// requirement 2, verbatim). Ledgered for the owner, not silently built.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Person {
     pub id: String,

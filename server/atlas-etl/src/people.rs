@@ -37,12 +37,33 @@
 //! adapter's own "import the source as-is, no editorial re-curation"
 //! precedent. A further, disclosed consequence: Theographic's own People
 //! table is not exclusively individuated humans -- it also carries "God",
-//! "Holy Spirit", eponymous eponyms doubling as tribe/nation names
-//! ("Israel", "Judah", "Ephraim"), and at least one false god ("Baal"),
-//! among the 3,067. This batch does not attempt to editorially
+//! "Holy Spirit", eponyms doubling as tribe/nation names ("Judah": four
+//! separate, genuinely bare records, `name == displayTitle == "Judah"`,
+//! no disambiguation -- CORRECTED, fix round 1, R-P4: an earlier draft of
+//! this note cited "Israel" here too, but the only Israel-named record,
+//! `israel_682`, has `displayTitle: "Jacob (Israel)"` -- already
+//! individuated and disambiguated in the exact label this adapter ships,
+//! `people.rs`'s own `display_title`-first resolution below, so it was an
+//! imprecise example, not a real gap), and at least one false god
+//! ("Baal"), among the 3,067. This batch does not attempt to editorially
 //! re-classify any of it (doctrine: "imported confidence class,"
 //! `Confidence::Imported` -- carried, not curated); flagged here plainly
 //! for the batch report rather than silently shipped.
+//!
+//! RELATIONAL DATA, ALSO PRESENT, ALSO NOT MODELED (fix round 1, R-P2 --
+//! a real gap the first draft of this disclosure missed): each real
+//! person record ALSO carries `father`/`mother`/`children`/`siblings`/
+//! `partners` (arrays of foreign-key record ids resolving to OTHER real
+//! Person records in this SAME file -- the identical "array of
+//! foreign-key ids" shape `verses` uses for mentions) plus
+//! `birthPlace`/`deathPlace` (resolving to place-like records) and
+//! `memberOf`/`timeline`. This parser reads none of it. Not an oversight
+//! this round -- turning it into typed edges (a genealogy/family
+//! relation; a Person-to-Place `birthplace`/`deathplace` edge mirroring
+//! `located-at`) is a NEW RELATION KIND, a types-first + owner-approved
+//! decision (design types doc §3's own relation-manifest law), correctly
+//! outside this batch's own card+mentions scope -- ledgered for the
+//! owner, since the data needs zero new sourcing, only an adapter.
 
 use std::collections::HashMap;
 
