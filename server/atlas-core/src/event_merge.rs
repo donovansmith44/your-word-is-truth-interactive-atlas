@@ -80,11 +80,15 @@ use std::collections::HashSet;
 
 use crate::data::{Event, Narrative};
 
-/// One curated same-event pair: `absorbed` (always the bare Theographic
-/// freebie) is removed entirely; `survivor` (always the real, Robertson-
-/// grounded, AD-33-anchored curated container) keeps every one of its own
-/// fields completely unmodified -- see this module's own doc comment for
-/// why (container-algebra compliance, rule B compliance).
+/// One curated same-event pair: `absorbed` is removed entirely;
+/// `survivor` keeps every one of its own fields completely unmodified --
+/// see this module's own doc comment for why (container-algebra
+/// compliance, rule B compliance). USUALLY absorbed = the bare
+/// Theographic freebie and survivor = the real, Robertson-grounded,
+/// AD-33-anchored curated container -- but see the M-D1 entries' own
+/// reason strings for two LAYER-0-vs-LAYER-0 exceptions
+/// (pr_rome/theo-384 on the AD-60 scale; theo-338/theo-337
+/// freebie-over-freebie), where the blanket claim does not hold.
 pub struct EventMerge {
     pub survivor: &'static str,
     pub absorbed: &'static str,

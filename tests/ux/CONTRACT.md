@@ -166,7 +166,7 @@ Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   `<h2>`, explorable (ONE-RULE) -- a quiet small-caps title rendered
   immediately above its own first verse's `verse-line-{n}`, present
   whenever `GET /api/chapter/{cref}`'s own per-verse `heading` field is
-  present (server: `AtlasData::heading_for_verse`) -- conditional presence,
+  present (server: `atlas_graph::heading::build_heading_index`, the live production path; `AtlasData::heading_for_verse` remains only as the tested lockstep oracle) -- conditional presence,
   absent entirely for an uncovered book/chapter (no verse there is ever a
   heading anchor); clicking opens a fresh `EventNode` for that heading's own
   `event_id` -- see EVENT-1. Shares this SAME code path for the split-view
