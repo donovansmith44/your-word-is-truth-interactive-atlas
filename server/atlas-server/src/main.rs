@@ -17,12 +17,22 @@ struct Args {
     data_dir: PathBuf,
     static_dir: Option<PathBuf>,
     port: u16,
+    /// M-C (controller decision 4): the startup build retires -- the
+    /// DEFAULT path loads the serialized graph artifact
+    /// (`<data_dir>/graph.bin`, disclosed convention: same directory
+    /// every other compiled file already lives in). `--build-from-raw`
+    /// is the dev fallback flag the brief's own wording calls for
+    /// (disclosed): rebuilds in memory from `data/raw/` + curated eras,
+    /// exactly the M-A/M-B startup path, for iterating on curated data
+    /// without re-running the compile step.
+    build_from_raw: bool,
 }
 
 fn parse_args(args: &[String]) -> Result<Args> {
     let mut data_dir: Option<PathBuf> = None;
     let mut static_dir: Option<PathBuf> = None;
     let mut port: u16 = 8000;
+    let mut build_from_raw = false;
 
     let mut i = 0;
     while i < args.len() {
@@ -42,13 +52,16 @@ fn parse_args(args: &[String]) -> Result<Args> {
                 let v = args.get(i).context("--port requires a value")?;
                 port = v.parse().with_context(|| format!("--port value '{v}' is not a valid port number"))?;
             }
+            "--build-from-raw" => {
+                build_from_raw = true;
+            }
             other => bail!("unrecognized argument: {other}"),
         }
         i += 1;
     }
 
     let data_dir = data_dir.context("--data-dir is required, e.g. --data-dir ../data/compiled")?;
-    Ok(Args { data_dir, static_dir, port })
+    Ok(Args { data_dir, static_dir, port, build_from_raw })
 }
 
 #[tokio::main]
@@ -72,24 +85,45 @@ async fn main() -> Result<()> {
     // deriving it this way avoids a second CLI flag for M-A's own pragmatic
     // scope). 31,102 KJV verses plus ~344k raw cross-reference rows is
     // trivial startup work.
-    let raw_dir = args.data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| PathBuf::from("../data/raw"));
-    // FAIL-LOUD FIDELITY GATE (design doc P3): `GraphService::build` runs
-    // the KJV adapter's own bijection + reconstruction boundary law
-    // unconditionally as part of construction (see `atlas_graph::service`'s
-    // own doc comment) -- a violation refuses construction entirely, so
-    // reaching the `println!` below already proves the gate passed. This
-    // graph is published to the owner-approved `atlas_graph_types::store`
-    // port (`GraphPublisher::publish`) before being wrapped here; every
-    // downstream consumer (app::build, every handler, the window/text
-    // path) queries it as `atlas_graph_types::store::GraphQuery`, never a
-    // raw `Graph` field (fix round 1, C1).
-    // Batch M-B: the event world (events/attestations/narratives/anchors/
-    // chronology) is built from the SAME already-loaded `data` -- see
-    // `atlas_graph::event_world`'s own module doc comment for why this
-    // adapter reads `AtlasData` rather than re-parsing `data/curated/`.
-    let graph = GraphService::build(&raw_dir, &data)
-        .with_context(|| format!("building the explorable graph from {} (kjv.json + xrefs/cross_references.txt)", raw_dir.display()))?;
+    // Batch M-C (controller decision 4): the startup BUILD retires -- the
+    // default path LOADS the serialized graph artifact
+    // (`<data_dir>/graph.bin`, produced by the `atlas-graph-compile` bin,
+    // see `bin/compile_graph.rs`'s own doc comment), start-to-listening
+    // <=3s release, a committed law (`tests/artifact_conformance.rs`
+    // proves it in CI). `--build-from-raw` is the disclosed dev fallback:
+    // rebuilds in memory from `data/raw/` + curated eras, the M-A/M-B
+    // startup path, unconditionally still enforcing the KJV fidelity law
+    // (design doc P3) since raw bytes are actually in hand on this path.
+    let load_start = std::time::Instant::now();
+    let graph = if args.build_from_raw {
+        let raw_dir = args.data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| PathBuf::from("../data/raw"));
+        println!("atlas-graph: --build-from-raw -- building in memory from {} (dev fallback, disclosed)", raw_dir.display());
+        // FAIL-LOUD FIDELITY GATE (design doc P3): `GraphService::build`
+        // runs the KJV adapter's own bijection + reconstruction boundary
+        // law unconditionally as part of construction (see
+        // `atlas_graph::service`'s own doc comment) -- a violation
+        // refuses construction entirely, so reaching the `println!` below
+        // already proves the gate passed.
+        // Batch M-B: the event world (events/attestations/narratives/
+        // anchors/chronology) is built from the SAME already-loaded
+        // `data` -- see `atlas_graph::event_world`'s own module doc
+        // comment for why this adapter reads `AtlasData` rather than
+        // re-parsing `data/curated/`.
+        GraphService::build(&raw_dir, &data)
+            .with_context(|| format!("building the explorable graph from {} (kjv.json + xrefs/cross_references.txt)", raw_dir.display()))?
+    } else {
+        let artifact_path = args.data_dir.join("graph.bin");
+        GraphService::from_artifact(&artifact_path)
+            .with_context(|| format!("loading the serialized graph artifact from {} (run atlas-graph-compile first, or pass --build-from-raw for the dev fallback)", artifact_path.display()))?
+    };
+    let load_elapsed = load_start.elapsed();
+    println!("atlas-graph: {} load complete in {load_elapsed:?}", if args.build_from_raw { "from-raw build" } else { "artifact load" });
 
+    // Published to the owner-approved `atlas_graph_types::store` port
+    // (`GraphPublisher::publish`) before being wrapped here, on either
+    // path; every downstream consumer (app::build, every handler, the
+    // window/text path) queries it as `atlas_graph_types::store::
+    // GraphQuery`, never a raw `Graph` field (fix round 1, C1).
     println!(
         "atlas-graph: {} KJV text units, {} cites edges ({} negative-vote rows dropped, disclosed), graph version {}",
         graph.stats.kjv_verses,

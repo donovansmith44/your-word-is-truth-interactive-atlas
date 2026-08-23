@@ -28,6 +28,7 @@
 //! then this crate and `atlas-etl` both derive from the same `data/raw/`,
 //! disclosed as a strangler deviation, not a quiet one.
 
+pub mod artifact;
 pub mod build;
 pub mod catechism_adapter;
 pub mod era_adapter;

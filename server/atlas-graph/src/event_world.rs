@@ -336,8 +336,20 @@ pub struct Chronology {
 
 impl Chronology {
     pub fn build(atlas: &AtlasData) -> Chronology {
-        let chrono = derive_chronology(atlas);
+        Self::from_derivation(derive_chronology(atlas))
+    }
 
+    /// M-C: builds the `temporal_neighbors` companion from an
+    /// ALREADY-COMPUTED `ChronologyDerivation` -- factored out of `build`
+    /// so the artifact-load path (`GraphService::from_artifact`, which has
+    /// no `AtlasData` to re-derive from) can reconstruct the SAME
+    /// `Chronology` from the serialized artifact's own chronology fields,
+    /// and so the compile step (`bin/compile_graph.rs`) can reuse the
+    /// SAME `ChronologyDerivation` the pipeline's own RESOLVE stage already
+    /// computed instead of recomputing `derive_chronology(atlas)` a
+    /// second time (a pre-existing, disclosed minor redundancy in
+    /// `GraphService::assemble`'s own from-sources path, unaffected here).
+    pub fn from_derivation(chrono: ChronologyDerivation) -> Chronology {
         let mut temporal_neighbors: HashMap<String, (Option<String>, Option<String>)> = HashMap::new();
         for (i, id) in chrono.order.iter().enumerate() {
             let prior = i.checked_sub(1).and_then(|j| chrono.order.get(j)).cloned();
@@ -372,7 +384,7 @@ impl Chronology {
 
 /// Startup-log-friendly counts, mirrors `build::BuildStats`'s own role for
 /// the KJV/xrefs half.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct EventWorldStats {
     pub places: usize,
     pub events: usize,

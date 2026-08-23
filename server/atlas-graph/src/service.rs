@@ -42,6 +42,7 @@ use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::AnyNodeId;
 use atlas_graph_types::store::{GraphPublisher, GraphQuery, GraphStore, GraphVersion, MemSnapshot, MemStore};
 
+use crate::artifact;
 use crate::build::{self, BuildStats};
 use crate::event_world::{Chronology, EventWorldStats};
 
@@ -84,8 +85,8 @@ impl GraphService {
     /// use -- `eras` is `era_adapter.rs`'s own pre-parsed source. See
     /// `build::build_graph_from_sources_with_eras`'s own doc comment.
     pub fn from_sources_with_eras(kjv_json: &str, xrefs_tsv: &str, atlas: &AtlasData, eras: &[atlas_core::data::Era]) -> anyhow::Result<Self> {
-        let (graph, stats, event_world_stats, _chrono) = build::build_graph_from_sources_with_eras(kjv_json, xrefs_tsv, atlas, eras)?;
-        Ok(Self::assemble(graph, stats, event_world_stats, atlas))
+        let (graph, stats, event_world_stats, chrono) = build::build_graph_from_sources_with_eras(kjv_json, xrefs_tsv, atlas, eras)?;
+        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono)))
     }
 
     /// Test-fixture path: builds from an already-parsed `(Canon, verses)`
@@ -94,8 +95,28 @@ impl GraphService {
     /// so the fidelity law is not applicable here (there is nothing
     /// independent to check the already-typed input against).
     pub fn from_canon_and_verses(canon: &Canon, verses: &HashMap<String, String>, xrefs_tsv: &str, atlas: &AtlasData) -> anyhow::Result<Self> {
-        let (graph, stats, event_world_stats, _chrono) = build::build_graph_from_canon_and_verses(canon, verses, xrefs_tsv, atlas)?;
-        Ok(Self::assemble(graph, stats, event_world_stats, atlas))
+        let (graph, stats, event_world_stats, chrono) = build::build_graph_from_canon_and_verses(canon, verses, xrefs_tsv, atlas)?;
+        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono)))
+    }
+
+    /// M-C (controller decision 4): loads from a SERIALIZED ARTIFACT --
+    /// GraphStore implementation #2 -- instead of building from raw
+    /// sources. No `AtlasData`/raw KJV bytes touched at all: the artifact
+    /// carries every row/node table plus the chronology companion's own
+    /// fields (`artifact.rs`'s own module doc comment for exactly what
+    /// "logical artifact" means here). The KJV fidelity law does not run
+    /// here (there are no raw bytes on this path to independently re-check
+    /// against -- fidelity was already proven once, at COMPILE time, by
+    /// the compile step that produced this file, via the SAME
+    /// `assert_answers_match` admission `tests/artifact_conformance.rs`
+    /// exercises); this is the "proof at the boundary, once" the whole
+    /// design insists on (P3), not a weakening of it.
+    pub fn from_artifact(path: &Path) -> anyhow::Result<Self> {
+        let dump = artifact::read_file(path).map_err(|e| anyhow::anyhow!("{e}"))?;
+        let (mut graph, stats, event_world_stats, chronology) = artifact::to_service_parts(dump).map_err(|e| anyhow::anyhow!("{e}"))?;
+        graph.build_indexes();
+        crate::event_world::add_justified_by(&mut graph);
+        Ok(Self::assemble(graph, stats, event_world_stats, chronology))
     }
 
     /// Reads `raw_dir/kjv.json` and `raw_dir/xrefs/cross_references.txt`
@@ -115,16 +136,19 @@ impl GraphService {
         Self::from_sources_with_eras(&kjv_json, &xrefs_tsv, atlas, &eras)
     }
 
-    fn assemble(graph: Graph, stats: BuildStats, event_world_stats: EventWorldStats, atlas: &AtlasData) -> Self {
+    /// M-C: takes an ALREADY-BUILT `Chronology` rather than `&AtlasData` --
+    /// the artifact-load path (`from_artifact`) has no `AtlasData` at all
+    /// (the whole point of loading from bytes instead of rebuilding), so
+    /// every caller now builds its own `Chronology` however it can (from
+    /// `AtlasData`, via `Chronology::build`, on the from-sources paths; from
+    /// the artifact's own serialized fields, via `artifact::to_service_parts`,
+    /// on the from-artifact path) and hands the finished value in here.
+    fn assemble(graph: Graph, stats: BuildStats, event_world_stats: EventWorldStats, chronology: Chronology) -> Self {
         let bible_position = graph
             .reading
             .get(crate::kjv_adapter::BIBLE_CORPUS)
             .map(|spine| spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect())
             .unwrap_or_default();
-        // Batch M-B (renamed at M-C): the chronology companion index, built
-        // from the SAME `atlas` the graph's own Event/Narrative/Anchor rows
-        // were just populated from -- see `Chronology`'s own doc comment.
-        let chronology = Chronology::build(atlas);
         // GraphPublisher::publish (design doc §9a): the compiler
         // publishes; serving never writes. One publish, at startup; M-A
         // never calls it again (no hot-reload exists yet) -- MemStore's

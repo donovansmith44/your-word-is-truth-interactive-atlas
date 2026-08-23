@@ -23,7 +23,7 @@ use crate::event_world::{ChronologyDerivation, EventWorldStats};
 /// FIDELITY LAW's own bijection count and the xref adapter's disclosed
 /// negative-vote drop are both externally observable here, not just log
 /// noise).
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct BuildStats {
     pub kjv_verses: usize,
     pub cites_rows: usize,

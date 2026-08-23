@@ -4,6 +4,20 @@ version = "0.1.0"
 edition = "2021"
 description = "Batch M-A: storage/adapters/build over atlas-graph-types -- builds the Explorable Graph in memory at server startup from the same raw sources atlas-etl reads. The types crate (graph-types/) stays pure types+laws; this crate is the pragmatic, disclosed M-A materialization (converges on the serialized one-artifact form at M-C)."
 
+[[bin]]
+# M-C, controller decision 4 (the compile step): named explicitly, at a
+# path OUTSIDE `src/bin/` -- this repo's own root `.gitignore` carries a
+# broad `**/bin/` rule (meant for the Blazor client's own .NET build-output
+# `bin/` directories), which would silently exclude a real SOURCE file
+# living at Cargo's own auto-discovered `src/bin/*.rs` convention. Rather
+# than fight that rule (editing the shared root .gitignore for a single
+# crate's own layout choice), this binary's source lives at
+# `src/bins/compile_graph.rs` (note the "s" -- outside the ignored
+# pattern) and is declared here explicitly instead of relying on
+# auto-discovery.
+name = "atlas-graph-compile"
+path = "src/bins/compile_graph.rs"
+
 [dependencies]
 atlas-graph-types = { path = "../../graph-types" }
 atlas-core = { path = "../atlas-core" }
@@ -22,6 +36,16 @@ anyhow = "1"
 # so the fidelity law's "expected" side shares no parsing code with the
 # adapter path it's checking. See fidelity.rs's own module doc comment.
 serde_json = "1"
+# M-C: the serialized-artifact DTO layer (artifact.rs) -- a hand-written
+# mirror of the Graph's own row/node tables, entirely local to this crate
+# (graph-types itself is untouched by the artifact's own on-disk form; see
+# artifact.rs's own module doc comment for why). bincode is a compact,
+# fast binary codec -- chosen over reusing serde_json a second time here
+# because the artifact's own load-time ceiling (<=3s) is a committed law,
+# and a binary format avoids JSON's per-byte text-parsing cost over the
+# dominant ~344k-row cites table.
+serde = { version = "1", features = ["derive"] }
+bincode = "1"
 
 [dev-dependencies]
 proptest = "1"
