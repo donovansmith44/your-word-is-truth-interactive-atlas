@@ -103,7 +103,13 @@
         _loading = true;
         try
         {
-            var page = await Explorable.Edges(PersonId, "mentioned-in", cursor, limit: RevealPageSize);
+            // Batch P fix round 1 (R-P5, subsumed by R-P1): the registry's
+            // own typed constant, not a re-typed literal -- the FIRST fetch
+            // of this same relation (PersonCardAndMentionsSection.ResolveAsync)
+            // already reads EdgeSectionRegistry.MentionedIn.EdgeKind; this
+            // second fetch now shares the identical value, not a second,
+            // independently-typed "mentioned-in" that could drift from it.
+            var page = await Explorable.Edges(PersonId, EdgeSectionRegistry.MentionedIn.EdgeKind, cursor, limit: RevealPageSize);
             _entries = _entries.Concat(page.Entries).ToList();
             _next = page.Next;
         }

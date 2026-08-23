@@ -35,9 +35,12 @@ public sealed class GraphExplorableClient : IExplorableClient
         return result ?? throw new InvalidOperationException($"empty response body from {url}");
     }
 
-    public async Task<EdgePageDto> Edges(string id, string kind, int? cursor = null, int limit = 20)
+    public async Task<EdgePageDto> Edges(string id, EdgeKindId kind, int? cursor = null, int limit = 20)
     {
-        var url = $"api/node/{Uri.EscapeDataString(id)}/edges?kind={Uri.EscapeDataString(kind)}&limit={limit}";
+        // Batch P fix round 1 (R-P1): kind.Value, never kind.ToString() --
+        // EdgeKindId's own auto-generated record ToString() would print
+        // "EdgeKindId { Value = mentions }", not the bare wire label.
+        var url = $"api/node/{Uri.EscapeDataString(id)}/edges?kind={Uri.EscapeDataString(kind.Value)}&limit={limit}";
         if (cursor is int c)
         {
             url += $"&cursor={c}";

@@ -1800,7 +1800,10 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
         }
 
-        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == spec.EdgeKind)?.Count ?? page.Entries.Count;
+        // spec.EdgeKind is EdgeKindId (Batch P fix round 1, R-P1); card.EdgeSummary[].Kind
+        // is a plain string straight off the wire (EdgeSummaryEntryDto, unvalidated JSON) --
+        // .Value is the one, explicit, disclosed crossing point between the two.
+        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == spec.EdgeKind.Value)?.Count ?? page.Entries.Count;
 
         RenderFragment body = builder =>
         {

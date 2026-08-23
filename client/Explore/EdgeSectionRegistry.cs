@@ -85,7 +85,14 @@ public enum SectionOrder
 /// client-side so far) -- adding a field with only ever one value would be
 /// ceremony, not a real seam; a second renderer kind, when one is actually
 /// needed, is the moment to add it.
-public sealed record EdgeSectionSpec(string EdgeKind, SectionStyle Style, int InitialClamp, SectionOrder Order);
+/// Batch P fix round 1 (R-P1): <c>EdgeKind</c> is <see cref="EdgeKindId"/>
+/// (`BibleAtlas.Client`, the root namespace -- visible here with no extra
+/// `using`, the same free child-sees-parent lookup this file already
+/// relies on for `IExplorableClient`/`NodeCardDto`/etc.), not a bare
+/// <c>string</c> -- see that struct's own doc comment for the full
+/// reasoning (closes M-D2 Minor-2's own named id/kind-transposition risk
+/// at compile time).
+public sealed record EdgeSectionSpec(EdgeKindId EdgeKind, SectionStyle Style, int InitialClamp, SectionOrder Order);
 
 /// The registry itself: a flat map, edge-kind label -> its own display
 /// policy. Registering a new kind here is the whole of teaching a NEW
@@ -100,7 +107,7 @@ public static class EdgeSectionRegistry
     /// BOTH the entry-point case and the unchanged general case), votes-
     /// ranked order (already the wire's own order -- see
     /// <see cref="SectionOrder.VotesRanked"/>'s own doc comment).
-    public static readonly EdgeSectionSpec Cites = new("cites", SectionStyle.Quiet, InitialClamp: 3, SectionOrder.VotesRanked);
+    public static readonly EdgeSectionSpec Cites = new(new EdgeKindId("cites"), SectionStyle.Quiet, InitialClamp: 3, SectionOrder.VotesRanked);
 
     /// Batch P: the verse/passage popover's own PERSONS section
     /// (<c>VersePersonsSection</c>) reads this for its ONE fetch's `limit`
@@ -110,7 +117,7 @@ public static class EdgeSectionRegistry
     /// safely captures the complete set for virtually every real verse;
     /// see that provider's own doc comment for the honest, disclosed
     /// fallback on the rare chance it somehow doesn't.
-    public static readonly EdgeSectionSpec Mentions = new("mentions", SectionStyle.Standard, InitialClamp: 50, SectionOrder.Canonical);
+    public static readonly EdgeSectionSpec Mentions = new(new EdgeKindId("mentions"), SectionStyle.Standard, InitialClamp: 50, SectionOrder.Canonical);
 
     /// Batch P: a Person's own "mentioned-in" frontier
     /// (<c>PersonCardAndMentionsSection</c>/<c>PersonMentionsList</c>) --
@@ -120,8 +127,12 @@ public static class EdgeSectionRegistry
     /// <c>PersonMentionsList.razor</c>'s own header comment for why this
     /// is the one section in this app that fetches a SECOND real page on
     /// reveal instead of just un-hiding already-held rows).
-    public static readonly EdgeSectionSpec MentionedIn = new("mentioned-in", SectionStyle.Standard, InitialClamp: 12, SectionOrder.Canonical);
+    public static readonly EdgeSectionSpec MentionedIn = new(new EdgeKindId("mentioned-in"), SectionStyle.Standard, InitialClamp: 12, SectionOrder.Canonical);
 
-    public static readonly IReadOnlyDictionary<string, EdgeSectionSpec> ByKind =
-        new Dictionary<string, EdgeSectionSpec> { [Cites.EdgeKind] = Cites, [Mentions.EdgeKind] = Mentions, [MentionedIn.EdgeKind] = MentionedIn };
+    // Batch P fix round 1: keyed by EdgeKindId now (a record struct --
+    // value equality/GetHashCode come free, a fully valid Dictionary key),
+    // not a bare string, for the same reason EdgeSectionSpec.EdgeKind
+    // itself is typed.
+    public static readonly IReadOnlyDictionary<EdgeKindId, EdgeSectionSpec> ByKind =
+        new Dictionary<EdgeKindId, EdgeSectionSpec> { [Cites.EdgeKind] = Cites, [Mentions.EdgeKind] = Mentions, [MentionedIn.EdgeKind] = MentionedIn };
 }

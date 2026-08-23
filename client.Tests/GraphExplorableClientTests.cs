@@ -78,7 +78,7 @@ public class GraphExplorableClientTests
             {"kind":"cites","entries":[{"edge":"e1","node":{"id":"text-unit:ROM.3.23","kind":"TextUnit","label":"ROM.3.23"}}],"next":null,"version":"abc123"}
             """;
 
-        var page = await client.Edges("text-unit:JHN.3.16", "cites", cursor: null, limit: 5);
+        var page = await client.Edges("text-unit:JHN.3.16", new EdgeKindId("cites"), cursor: null, limit: 5);
 
         Assert.Equal("/api/node/text-unit:JHN.3.16/edges", Uri.UnescapeDataString(handler.LastRequestUri!.AbsolutePath));
         Assert.Contains("kind=cites", handler.LastRequestUri.Query);
@@ -98,7 +98,7 @@ public class GraphExplorableClientTests
         var (client, handler) = MakeClient();
         handler.ResponseBody = """{"kind":"cites","entries":[],"next":7,"version":"abc123"}""";
 
-        var page = await client.Edges("text-unit:JHN.3.16", "cites", cursor: 3, limit: 1);
+        var page = await client.Edges("text-unit:JHN.3.16", new EdgeKindId("cites"), cursor: 3, limit: 1);
 
         Assert.Contains("cursor=3", handler.LastRequestUri!.Query);
         Assert.Equal(7, page.Next);
