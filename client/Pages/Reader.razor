@@ -550,6 +550,12 @@
 
         _book = book;
         _chapterNum = chapterNum;
+        // M-D3/U6: this Reader.razor instance is now actively showing
+        // exactly this chapter -- see ViewStateService.MountedReaderChapter's
+        // own doc comment for why this is deliberately separate from
+        // ViewState.Reader (below, a couple hundred lines down) and cleared
+        // in DisposeAsync.
+        ViewState.MountedReaderChapter = (_book, _chapterNum);
         ResetXrefEntryState();
         _activeNode = null;
         _scrolledFragment = null;
@@ -1164,6 +1170,20 @@
         // component is disposed (a real navigation-away-while-hovering
         // case) and call StateHasChanged on a torn-down component.
         CancelHoverCloseTimer();
+
+        // M-D3/U6: this instance is no longer actively showing anything --
+        // clear the "currently mounted" signal (UNLIKE ViewState.Reader,
+        // which deliberately stays set as a persistent "last known
+        // position" record). Guarded on OUR OWN book/chapter still being
+        // the current value, not unconditionally null'd -- a genuinely
+        // concurrent dispose+mount (e.g. a split-view instance tearing down
+        // while a fresh standalone one is already mounting) must never let
+        // the OLD instance's own teardown clobber the NEW instance's
+        // already-current value.
+        if (ViewState.MountedReaderChapter is { } cur && cur.Book == _book && cur.Chapter == _chapterNum)
+        {
+            ViewState.MountedReaderChapter = null;
+        }
 
         if (_readerJs is not null)
         {

@@ -273,7 +273,28 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   same reason the entries themselves do; so several entries can each be
   expanded independently in the same popover; text "Read the whole chapter"
   collapsed / "Show just this verse" expanded, attr `aria-expanded`; toggles
-  the compact passage text vs. that entry's own scrollable mini-reader),
+  the compact passage text vs. that entry's own scrollable mini-reader.
+  M-D3/U6, owner verbatim: "'read the whole chapter' affordance REMOVED
+  when already reading that chapter -- a chapter-aware policy, not a new
+  data path." CONDITIONAL PRESENCE, applying to every instance of this
+  button regardless of which section renders it (verse-text, xrefs, THE
+  SCRIPTURES, place est/dest, event witnesses, narrative/timeline
+  PRIOR/FOLLOWING -- MiniReaderExpand.razor is the ONE shared mechanism,
+  so this is one check in one place, not a per-caller flag): absent
+  entirely, not merely disabled, whenever the Book+Chapter it would open
+  is the SAME Book+Chapter a Reader.razor instance is ACTIVELY showing
+  right now (`ViewStateService.MountedReaderChapter` -- deliberately
+  separate from the pre-existing, PERSISTENT `ViewState.Reader` "last
+  known position" record, which stays set even after Reader.razor
+  unmounts and would wrongly suppress the affordance on a plain `/world`
+  visit too; this field is null unless a Reader.razor instance -- standalone
+  or split view's own embedded pane, SPLIT-1 -- is mounted on that exact
+  chapter at this exact moment). A verse popover reached by clicking a
+  verse-line in the reader is, by construction, always FROM the chapter on
+  screen, so its own `popover-verse-expand` is now unconditionally absent
+  every time; exploring onward (a cross-reference, a catechism proof
+  verse, a witness, ...) to a DIFFERENT book/chapter keeps that entry's
+  own expand button fully present and functional, unaffected),
   `popover-verse-reader{-ENTRY-ID}` (same generalization; the mini-reader's
   own scrollable container; present only while that entry is expanded),
   `popover-reader-verse-{n}{-ENTRY-ID}` (same generalization; one per verse
@@ -341,14 +362,18 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   section-registry heading in this popover platform uses --
   `catechism-section-heading`'s own class, reused directly, not a fourth
   copy under a fourth name (Batch T retires the pixel-identical
-  `narrative-section-heading`) -- rendered on THREE section bodies today
-  (was four; M-D3/U1 retires the narrative PRIOR EVENT/FOLLOWING EVENT
-  headings below, folding that traversal into a headingless nav row -- see
-  EVENT-1's own U1 note): "EVENT" (a VERSE node's own event-membership
-  list, see EVENT-1), "PARALLEL ACCOUNTS" (an EVENT node's own witness
-  list, conditional -- absent for a single-witness event, see EVENT-1),
-  and "PRIOR IN TIME"/"FOLLOWING IN TIME" (the GLOBAL-timeline adjacency,
-  UNCHANGED by M-D3/U1 -- see the GLOBAL TIMELINE note under EVENT-1),
+  `narrative-section-heading`) -- rendered on FOUR section bodies today
+  (M-D3/U1 retires the narrative PRIOR EVENT/FOLLOWING EVENT headings,
+  folding that traversal into a headingless nav row -- see EVENT-1's own
+  U1 note -- M-D3/U6 adds "PARALLELS" in their place, a net-even count):
+  "EVENT" (a VERSE node's own event-membership list, see EVENT-1),
+  "PARALLELS" (a VERSE/PASSAGE node's own OTHER-witness preview, NEW this
+  batch, conditional -- see EVENT-1's own U6 note and
+  `verse-parallel{-slug}-{SPAN}` in the testid inventory above),
+  "PARALLEL ACCOUNTS" (an EVENT node's own witness list, conditional --
+  absent for a single-witness event, see EVENT-1), and "PRIOR IN TIME"/
+  "FOLLOWING IN TIME" (the GLOBAL-timeline adjacency, UNCHANGED by M-D3/U1
+  -- see the GLOBAL TIMELINE note under EVENT-1),
   `verse-event-{eventId}` (batch-t-brief.md; button; one per EVENT-kind
   PASSAGE citing the current VERSE, inside `popover-section-event-membership`
   -- REPLACES batch-n-brief.md's own verse-level PRIOR/FOLLOWING (retired,
@@ -365,6 +390,19 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   entry among an EVENT node's own PARALLEL ACCOUNTS/single-passage list, via
   the shared passage-list component, clamped per PASSAGE-1's own
   `ClampVerses` extension -- see EVENT-1),
+  `verse-parallel{-slug}-{SPAN}` (M-D3/U6, NEW this batch; a VERSE/PASSAGE
+  node's own "PARALLELS" section -- one passage entry per OTHER witness
+  (excluding the one the current verse itself belongs to) of an event the
+  verse cites, via the SAME shared passage-list component EVENT-1's own
+  PARALLEL ACCOUNTS uses (`WitnessUnitsResolver`, `ClampVerses=2`); `-slug`
+  is the event's own label, slugified, present ONLY when the verse
+  qualifies through more than one event at once (rare) -- a single
+  qualifying event needs no slug at all, same "single entry needs no name"
+  rule EventDateAndPlacesSection's own narrative nav (U1) already
+  establishes. Conditional presence, doubly: absent when the verse cites
+  no titled event at all, and absent per-event when that event turns out
+  to have no OTHER witness once the current one is excluded -- see
+  VerseParallelsSection's own doc comment),
   `event-nav` (M-D3/U1; wraps the WHOLE narrative prior/following nav --
   one or more `event-nav-row-{idSuffix}` rows, each holding one
   `event-nav-arrows` pair; present iff the event belongs to >=1 narrative
@@ -446,22 +484,36 @@ Notes:
   `Kind`s it applies to and independently answers "does THIS node have
   content for me" (conditional presence: no content -> no
   `popover-section-{id}` at all, not an empty placeholder). VERSE node
-  sections, in this order: the verse's own text with its own expand
-  affordance (`popover-section-verse-text`, see READER-1), cross-references
-  inline (`popover-section-xrefs`, conditional -- absent for a verse with
-  zero recorded cross-references, truncated per XREF-1), "THE SMALL
-  CATECHISM" (`popover-section-catechism`, batch-f-brief.md, conditional --
-  absent for a verse citing zero catechism items -- see CATECH-1), "EVENT"
+  sections, in this order (M-D3/U6, owner verbatim: "Header / Verse
+  (focus) / Event / Parallels / Small Catechism / cross references LAST"
+  -- REPLACES the pre-M-D3 order this note used to describe: cross-refs
+  2nd, catechism 3rd, EVENT membership appended at the very end):
+  the verse's own text with its own expand affordance
+  (`popover-section-verse-text`, "focus," see READER-1), "EVENT"
   (`popover-section-event-membership`, batch-t-brief.md, conditional --
   absent for a verse citing zero EVENT-kind PASSAGEs -- see EVENT-1;
   REPLACES batch-n-brief.md's own verse-level "PRIOR EVENT"/"FOLLOWING
   EVENT" sections, retired by batch-t-brief.md requirement 3: "rather than
   putting the next/previous event on every verse, add titles of events...
-  traversal lives on event nodes," the owner verbatim). PASSAGE nodes get
-  the same verse-text/cross-references/catechism sections (aggregating as
-  before) -- NOT the EVENT section either (unchanged Batch N scope: a
-  shift-click passage span's own per-verse narrative/event membership is
-  genuinely ambiguous in a way a single verse never is). EVENT node
+  traversal lives on event nodes," the owner verbatim), "PARALLELS"
+  (`popover-section-parallels`, M-D3/U6, NEW this batch, conditional --
+  see EVENT-1's own U6 note), "PERSONS" (`popover-section-persons`, Batch
+  P, conditional -- moved here from its own former position much later in
+  this list, U6's own "Persons then Places" reconciliation; no VERSE-scoped
+  "Places" section exists anywhere in this codebase to also reposition --
+  see the testid-inventory note above), "THE SMALL CATECHISM"
+  (`popover-section-catechism`, batch-f-brief.md, conditional -- absent
+  for a verse citing zero catechism items, now capped to 2 shown + U2's
+  shared reveal mechanic -- see CATECH-1), and cross-references LAST
+  (`popover-section-xrefs`, conditional -- absent for a verse with zero
+  recorded cross-references, truncated per XREF-1). PASSAGE nodes get the
+  same verse-text/PARALLELS/PERSONS/catechism/cross-references sections
+  (aggregating as before) -- NOT the EVENT section (unchanged Batch N
+  scope: a shift-click passage span's own per-verse narrative/event
+  membership is genuinely ambiguous in a way a single verse never is;
+  PARALLELS stays available for a PASSAGE regardless, first-verse-anchored,
+  the same convention PERSONS's own mentions already establish for one).
+  EVENT node
   sections (batch-t-brief.md; an `EventNode`, reached by a verse's own
   "EVENT" row above, a reader heading, or a narrative-nav arrow, below,
   recursively), in this order: date + place(s) + narrative nav
@@ -1951,6 +2003,36 @@ Notes:
   bracket a map window with, same "conditional presence extends to
   affordances too" principle CATECH-1 already establishes for a
   CatechismNode's own geography-less chips.
+
+  U6 -- PARALLELS (M-D3, owner verbatim order, progress.md: "Header /
+  Verse (focus) / Event / Parallels / Small Catechism / cross references
+  LAST"): a VERSE (or PASSAGE, first-verse-anchored -- the SAME convention
+  VersePersonsSection below already establishes) node's own quick peek at
+  OTHER witnesses of an event it belongs to, `VerseParallelsSection`,
+  registered directly after `VerseEventMembershipSection` (so it renders
+  immediately below "EVENT" -- see the REGISTRY-1/U6 note above for the
+  full VERSE/PASSAGE section order). Reuses `WitnessUnitsResolver`
+  (extracted from `EventWitnessesSection`'s own former inline body, no
+  behavior change there) fed a FILTERED witness list -- every witness
+  EXCEPT the one the current verse itself belongs to (a real per-event
+  `EventDetail` fetch, concurrent across every candidate event, since a
+  verse's own slim `.Events` membership list carries no sibling-witness
+  information). Doubly conditional: absent when the verse cites no titled
+  event at all, and absent PER-EVENT when that event has no OTHER witness
+  once the current one is excluded (the overwhelming majority of titled
+  events, which are single-witness) -- a verse citing >1 QUALIFYING event
+  at once (genuinely rare) renders one block per event, each named by that
+  event's own label when there is more than one, the identical "single
+  entry needs no name" rule U1's own narrative nav already establishes.
+  Each block's own passage entries (`verse-parallel{-slug}-{SPAN}`) render
+  via the SAME shared passage-list component every other verse list in
+  this app uses -- `ClampVerses=2`, never `SpanOnly` (unlike a
+  single-witness EVENT node's own PARALLEL ACCOUNTS case, this section
+  only ever renders when there genuinely IS an other witness to preview,
+  so the compact text is the whole point, never redundant with anything
+  already on screen) -- independently explorable, opening a fresh
+  `VerseNode`/`PassageNode` for that specific witness verse/span, same
+  PASSAGE-1 default click contract every other passage-list entry follows.
 
   CHRONOLOGICAL-VS-READING-ORDER (requirement 6/7's own worked example, the
   owner's own "the Gospel of John doesn't have everything in order"): the

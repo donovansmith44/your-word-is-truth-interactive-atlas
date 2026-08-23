@@ -25,6 +25,24 @@ public sealed class ViewStateService
 {
     public MapViewState Map { get; } = new();
     public ReaderViewState Reader { get; } = new();
+
+    // M-D3/U6 (owner: "'read the whole chapter' affordance REMOVED when
+    // already reading that chapter -- a chapter-aware policy, not a new
+    // data path"): DELIBERATELY separate from Reader (above) -- Reader
+    // is a PERSISTENT "last known position" record, kept even after
+    // Reader.razor unmounts (that class's own doc comment: "never
+    // captured at dispose"), so it stays true on /world after navigating
+    // away and would wrongly suppress the affordance there too. This
+    // field is the opposite: null unless a Reader.razor instance is
+    // ACTIVELY mounted right now, showing exactly this chapter --
+    // Reader.razor sets it alongside _book/_chapterNum in
+    // OnParametersSetAsync and clears it in DisposeAsync, so
+    // MiniReaderExpand.razor's own read of it is always "is the reader
+    // genuinely on screen, on this exact chapter, at this exact moment"
+    // -- true for a standalone /read/{book}/{chapter} visit AND for
+    // split view's own embedded reader pane (Reader.razor is reused,
+    // not copied, for both -- SPLIT-1), never merely "was it there once."
+    public (string Book, int Chapter)? MountedReaderChapter { get; set; }
 }
 
 /// <summary>

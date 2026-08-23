@@ -21,6 +21,7 @@
 @using BibleAtlas.Client.Explore
 @inject AtlasClient Atlas
 @inject IJSRuntime JS
+@inject ViewStateService ViewState
 
 @if (!_expanded)
 {
@@ -67,11 +68,25 @@ else
     </div>
 }
 
-<button type="button" class="popover-verse-expand" data-testid="@($"popover-verse-expand{TestIdSuffix}")"
-        aria-expanded="@(_expanded ? "true" : "false")" data-truncated="@(!_expanded && TruncatedBy > 0 ? "true" : "false")"
-        @onclick="ToggleExpand" @onclick:stopPropagation="true">
-    @(_expanded ? "Show just this verse" : TruncatedBy > 0 ? $"+{TruncatedBy} more — read the chapter" : "Read the whole chapter")
-</button>
+@* M-D3/U6, owner verbatim: "'read the whole chapter' affordance REMOVED
+   when already reading that chapter" -- conditional presence, not a
+   disabled stub: when the reader is ACTIVELY showing this exact
+   Book/Chapter right now (ViewStateService.MountedReaderChapter's own doc
+   comment has the full "why not the persistent ViewState.Reader" story),
+   the whole button is absent, never merely inert -- reading the SAME
+   content the button would open is already on screen, so there is nothing
+   left for it to honestly offer (the compact preview above still renders
+   exactly as before; only this one affordance disappears). _expanded can
+   never become true in this state, by construction -- this button is the
+   only thing that ever sets it. *@
+@if (!AlreadyInCurrentReaderChapter)
+{
+    <button type="button" class="popover-verse-expand" data-testid="@($"popover-verse-expand{TestIdSuffix}")"
+            aria-expanded="@(_expanded ? "true" : "false")" data-truncated="@(!_expanded && TruncatedBy > 0 ? "true" : "false")"
+            @onclick="ToggleExpand" @onclick:stopPropagation="true">
+        @(_expanded ? "Show just this verse" : TruncatedBy > 0 ? $"+{TruncatedBy} more — read the chapter" : "Read the whole chapter")
+    </button>
+}
 
 @code {
     [Parameter, EditorRequired] public string Book { get; set; } = default!;
@@ -80,6 +95,16 @@ else
     [Parameter] public int FocalToVerse { get; set; }
     [Parameter, EditorRequired] public RenderFragment CompactContent { get; set; } = default!;
     [Parameter] public string TestIdSuffix { get; set; } = "";
+
+    // M-D3/U6: read fresh at RENDER time (a computed property, not cached
+    // state) -- ViewState.MountedReaderChapter can change out from under an
+    // already-open popover (e.g. chapter navigation while a split-view
+    // popover sits open on the atlas pane), and this must always reflect
+    // the CURRENT truth, the same "read live context at render time, never
+    // captured once" discipline CAP-RECONCILE-1's own OtherContextSectionCount/
+    // XrefEntryPoint already establish elsewhere in this popover platform.
+    private bool AlreadyInCurrentReaderChapter =>
+        ViewState.MountedReaderChapter is { } cur && cur.Book == Book && cur.Chapter == Chapter;
 
     // Batch HOTFIX-4 requirement 7 (honest truncation signal, W2 review
     // Important-1: "VerseGroup.Count ships on the wire but the client

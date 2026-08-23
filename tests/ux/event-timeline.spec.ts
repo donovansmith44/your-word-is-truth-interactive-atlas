@@ -314,10 +314,26 @@ test('TRUNC-1: the temple-dedication popover\'s 1KI.8 witness shows the +46-more
   const missing = kingsGroup.count - kingsGroup.verses.length;
   expect(missing).toBe(46);
 
-  const vref = kingsWitness.verse_groups[0].verses[0];
-  const v = parseVerse(vref);
-  await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  // M-D3/U6, owner verbatim: "'read the whole chapter' affordance REMOVED
+  // when already reading that chapter" -- correctly true here of a WITNESS
+  // entry's own expand button, same as any other: opening this event via a
+  // 1KI.8 verse-line click means popover-verse-expand-event-witness-1KI.8.1-20
+  // is now the chapter the reader is already showing (nothing left for it
+  // to honestly offer -- the FULL, real chapter is already the page behind
+  // it), so it is correctly absent, not merely inert. Verified from TWO
+  // separate navigations instead of one -- this event has exactly two
+  // witnesses (1KI.8, 2CH.5-7), each needs to NOT be the reader's own
+  // displayed chapter to stay expand-testable, and no third witness exists
+  // to anchor a single neutral navigation for both at once.
+  const kingsVref = kingsWitness.verse_groups[0].verses[0];
+  const kingsV = parseVerse(kingsVref);
+  const chroniclesVref = chroniclesWitness.verse_groups[0].verses[0];
+  const chroniclesV = parseVerse(chroniclesVref);
+
+  // Pass 1: reader on 2 Chronicles -- 1 Kings 8's own witness entry is a
+  // DIFFERENT chapter, so its own truncation affordance is fully testable.
+  await page.goto(`/read/${chroniclesV.book}/${chroniclesV.chapter}`);
+  await page.getByTestId(`verse-line-${chroniclesV.verse}`).click();
   await page.getByTestId('verse-event-1ki_temple_dedication').click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
   await expect(page.getByTestId('popover-section-event-witnesses')).toBeVisible();
@@ -336,14 +352,20 @@ test('TRUNC-1: the temple-dedication popover\'s 1KI.8 witness shows the +46-more
   await expect(page.getByTestId(/^popover-reader-verse-/).first()).toBeVisible();
   await expect(page.getByTestId(/^popover-reader-verse-/)).toHaveCount(chapter.verses.length);
 
-  // An UNDER-cap group in the SAME popover (2 Chronicles 5, only 13 of the
-  // witness's own verses in that chapter -- well under 20) shows the
-  // ordinary wording, no affordance at all (conditional presence) -- its
-  // own deterministic span is 2CH.5.2-14 (13 verses from the witness's
-  // own start, none capped).
+  // Pass 2: reader on 1 Kings -- 2 Chronicles 5's own witness entry is now
+  // the DIFFERENT chapter, so ITS OWN affordance is testable instead (an
+  // UNDER-cap group, only 13 of the witness's own verses in that chapter --
+  // well under 20 -- shows the ordinary wording, no truncation affordance
+  // at all, conditional presence -- its own deterministic span is
+  // 2CH.5.2-14, 13 verses from the witness's own start, none capped).
   const chroniclesCh5 = chroniclesWitness.verse_groups.find((g: any) => g.chapter === 5);
   expect(chroniclesCh5.count, '2 Chronicles 5 (within this witness) is under the cap').toBeLessThan(20);
   expect(chroniclesCh5.count).toBe(chroniclesCh5.verses.length);
+
+  await page.goto(`/read/${kingsV.book}/${kingsV.chapter}`);
+  await page.getByTestId(`verse-line-${kingsV.verse}`).click();
+  await page.getByTestId('verse-event-1ki_temple_dedication').click();
+  await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
   const chroniclesExpand = page.getByTestId('popover-verse-expand-event-witness-2CH.5.2-14');
   await expect(chroniclesExpand).toHaveAttribute('data-truncated', 'false');
   await expect(chroniclesExpand).toHaveText('Read the whole chapter');

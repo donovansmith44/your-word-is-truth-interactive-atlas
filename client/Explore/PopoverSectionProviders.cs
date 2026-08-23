@@ -1322,6 +1322,64 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
 }
 
 /// <summary>
+/// M-D3/U6 (extracted from the former inline body of
+/// <see cref="EventWitnessesSection"/>, unchanged logic): resolves a
+/// (possibly FILTERED) witness list into <see cref="PassageSourceUnit"/>s
+/// with real KJV text, one unit per witness, book-display-named captions --
+/// the shared step BOTH an EVENT node's own "PARALLEL ACCOUNTS"
+/// (<see cref="EventWitnessesSection"/>, every witness) and a VERSE node's
+/// own "PARALLELS" (<see cref="VerseParallelsSection"/>, EVERY OTHER
+/// witness -- excluding the one the current verse itself belongs to) need
+/// identically -- "one component/behavior, parameterized -- never two
+/// implementations," the SAME discipline U2's own RevealControls.razor
+/// follows for the reveal mechanic, applied here to witness-resolution.
+/// </summary>
+file static class WitnessUnitsResolver
+{
+    public static async Task<List<PassageSourceUnit>> ResolveAsync(AtlasClient api, IReadOnlyList<EventWitnessDto> witnesses)
+    {
+        var books = await api.Books(); // fetched once, cached forever -- see AtlasClient's own doc comment
+        var units = witnesses.Select(w =>
+        {
+            var bookName = books.FirstOrDefault(b => b.Code == w.Book)?.Name ?? w.Book;
+            // Batch HOTFIX-4 requirement 7: GroupCount carries each
+            // VerseGroup's own TRUE total (server-side `take(20)` cap,
+            // scene::verse_groups_for) so a truncated witness group shows
+            // the "+N more" signal instead of silently ending at 20.
+            var verses = w.VerseGroups.SelectMany(g => g.Verses.Select(v => new PassageListVerse(v, "", g.Count))).ToList();
+            return new PassageSourceUnit(verses, bookName);
+        }).ToList();
+
+        // The witnesses' own verse TEXT isn't on VerseGroup (ids only, same
+        // as every other VerseGroup on this wire) -- resolve it the SAME way
+        // every other section in this file resolves a curated verse list
+        // (VerseTextResolver, the existing chapter fetch + LRU cache), then
+        // re-pair it back onto each unit's own PassageListVerse list.
+        List<PassageListVerse> resolvedFlat;
+        try
+        {
+            var allVrefs = witnesses.SelectMany(w => w.VerseGroups.SelectMany(g => g.Verses)).ToList();
+            resolvedFlat = await VerseTextResolver.ResolveAsync(api, allVrefs);
+        }
+        catch (Exception)
+        {
+            resolvedFlat = new List<PassageListVerse>();
+        }
+        // GroupBy + first-wins (not a raw ToDictionary) -- defensive against a
+        // duplicate Vref across two witnesses, which server-side validation
+        // (validate::run's own overlap check) already prevents for real
+        // compiled data, but this is client code reading a network response,
+        // not something to assume well-formed a second time.
+        var textByVref = resolvedFlat.GroupBy(v => v.Vref).ToDictionary(g => g.Key, g => g.First().Text);
+        return units.Select(u => new PassageSourceUnit(
+            // v.GroupCount carried through from the FIRST construction
+            // above -- resolving text must never silently drop it.
+            u.Verses.Select(v => new PassageListVerse(v.Vref, textByVref.GetValueOrDefault(v.Vref, ""), v.GroupCount)).ToList(),
+            u.Caption)).ToList();
+    }
+}
+
+/// <summary>
 /// Batch T requirement 4: "PARALLEL ACCOUNTS -- one short passage per
 /// witness (Gospel name + passage ref), each clamped to 2 verses with
 /// per-passage expand/collapse... Single-witness events show the one
@@ -1349,11 +1407,9 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
         }
 
         EventDetail detail;
-        List<BookTocEntry> books;
         try
         {
             detail = await ev.DetailAsync(api);
-            books = await api.Books(); // fetched once, cached forever -- see AtlasClient's own doc comment
         }
         catch (Exception)
         {
@@ -1365,43 +1421,15 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             return null; // defensive -- scene::witnesses_for always synthesizes >=1 server-side, but never assume a network response is well-formed
         }
 
-        var units = detail.Witnesses.Select(w =>
-        {
-            var bookName = books.FirstOrDefault(b => b.Code == w.Book)?.Name ?? w.Book;
-            // Batch HOTFIX-4 requirement 7: GroupCount carries each
-            // VerseGroup's own TRUE total (server-side `take(20)` cap,
-            // scene::verse_groups_for) so a truncated witness group shows
-            // the "+N more" signal instead of silently ending at 20.
-            var verses = w.VerseGroups.SelectMany(g => g.Verses.Select(v => new PassageListVerse(v, "", g.Count))).ToList();
-            return new PassageSourceUnit(verses, bookName);
-        }).ToList();
-
-        // The witnesses' own verse TEXT isn't on VerseGroup (ids only, same
-        // as every other VerseGroup on this wire) -- resolve it the SAME way
-        // every other section in this file resolves a curated verse list
-        // (VerseTextResolver, the existing chapter fetch + LRU cache), then
-        // re-pair it back onto each unit's own PassageListVerse list.
-        List<PassageListVerse> resolvedFlat;
+        List<PassageSourceUnit> units;
         try
         {
-            var allVrefs = detail.Witnesses.SelectMany(w => w.VerseGroups.SelectMany(g => g.Verses)).ToList();
-            resolvedFlat = await VerseTextResolver.ResolveAsync(api, allVrefs);
+            units = await WitnessUnitsResolver.ResolveAsync(api, detail.Witnesses);
         }
         catch (Exception)
         {
-            resolvedFlat = new List<PassageListVerse>();
+            return null;
         }
-        // GroupBy + first-wins (not a raw ToDictionary) -- defensive against a
-        // duplicate Vref across two witnesses, which server-side validation
-        // (validate::run's own overlap check) already prevents for real
-        // compiled data, but this is client code reading a network response,
-        // not something to assume well-formed a second time.
-        var textByVref = resolvedFlat.GroupBy(v => v.Vref).ToDictionary(g => g.Key, g => g.First().Text);
-        units = units.Select(u => new PassageSourceUnit(
-            // v.GroupCount carried through from the FIRST construction
-            // above -- resolving text must never silently drop it.
-            u.Verses.Select(v => new PassageListVerse(v.Vref, textByVref.GetValueOrDefault(v.Vref, ""), v.GroupCount)).ToList(),
-            u.Caption)).ToList();
 
         var multi = units.Count > 1;
 
@@ -1441,6 +1469,173 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             builder.CloseComponent();
         };
         return new PopoverSection(multi ? "event-witnesses" : "event-witness", body);
+    }
+}
+
+/// <summary>
+/// M-D3/U6, owner verbatim order (progress.md): "Header / Verse (focus) /
+/// Event / Parallels / Small Catechism / cross references LAST." A VERSE
+/// (or PASSAGE) node's own quick peek at OTHER witnesses of an event it
+/// belongs to -- "reading John 12, glance and see Matthew/Mark/Luke also
+/// witnessed this," without a click into the EVENT node first. Reuses
+/// <see cref="WitnessUnitsResolver"/> (the SAME resolve step
+/// <see cref="EventWitnessesSection"/> uses), just fed a FILTERED witness
+/// list -- every witness EXCEPT the one the current verse itself already
+/// belongs to (there is no reason to preview a verse's own text back to
+/// itself; the verse-text section above already shows it). Conditional
+/// presence, doubly: absent when the verse cites no titled event at all
+/// (the SAME `.Events` VerseEventMembershipSection already reads, memoized,
+/// zero extra fetch), and absent per-event when that event turns out to
+/// have no OTHER witness once the current one is excluded (a real
+/// EventDetail fetch is still needed per event to know its own full
+/// witness list -- VerseEventDto's own membership-list shape carries no
+/// sibling-witness information). A verse touching >1 QUALIFYING event
+/// (genuinely rare, but not impossible) renders one block per event, named
+/// by that event's own label when there is more than one -- the SAME
+/// "single entry needs no name, multiple entries each get named" rule
+/// EventDateAndPlacesSection's own narrative nav (U1) already establishes.
+/// </summary>
+public sealed class VerseParallelsSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        List<VerseEventDto> events;
+        string ownVref;
+        switch (node)
+        {
+            case VerseNode v:
+                events = (await v.DetailAsync(api)).Events; // memoized -- shares VerseTextSectionProvider's/CrossRefsSection's own fetch
+                ownVref = v.Title; // VerseNode's own doc comment: Title IS the vref
+                break;
+            case PassageNode p:
+                // A passage's own event membership is read at its FIRST
+                // verse -- the same "first verse anchors the locus"
+                // convention CrossRefsSection/VersePersonsSection already
+                // establish for a passage's own onward identity.
+                ownVref = CanonRef.FirstVerseOf(p.Title);
+                try
+                {
+                    events = (await api.Verse(ownVref)).Events;
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+                break;
+            default:
+                return null;
+        }
+
+        if (events.Count == 0)
+        {
+            return null; // conditional presence -- most verses cite no titled event at all
+        }
+
+        // One real fetch per candidate event (EventDetail carries the FULL
+        // witness list; VerseEventDto's own slim membership shape does not)
+        // -- run concurrently, same "don't serialize independent fetches"
+        // discipline NarrativeDirectionSection's own retired resolver and
+        // EventDateAndPlacesSection's own one-verse-focus resolve already
+        // followed.
+        EventDetail?[] details;
+        try
+        {
+            details = await Task.WhenAll(events.Select(async e =>
+            {
+                try
+                {
+                    return await new EventNode(e.Id, e.Label).DetailAsync(api);
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }));
+        }
+        catch (Exception)
+        {
+            return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+        }
+
+        var qualifying = new List<(string Label, List<EventWitnessDto> OtherWitnesses)>();
+        foreach (var (e, detail) in events.Zip(details))
+        {
+            if (detail is null)
+            {
+                continue;
+            }
+            var others = detail.Witnesses.Where(w => !w.VerseGroups.Any(g => g.Verses.Contains(ownVref))).ToList();
+            if (others.Count > 0)
+            {
+                qualifying.Add((e.Label, others));
+            }
+        }
+
+        if (qualifying.Count == 0)
+        {
+            return null; // conditional presence -- no cited event has any OTHER witness once this verse's own is excluded
+        }
+
+        List<List<PassageSourceUnit>> unitsPerEvent;
+        try
+        {
+            unitsPerEvent = new List<List<PassageSourceUnit>>();
+            foreach (var (_, others) in qualifying)
+            {
+                unitsPerEvent.Add(await WitnessUnitsResolver.ResolveAsync(api, others));
+            }
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        var multiEvent = qualifying.Count > 1;
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            for (var i = 0; i < qualifying.Count; i++)
+            {
+                var (label, _) = qualifying[i];
+                var units = unitsPerEvent[i];
+
+                builder.OpenElement(seq++, "p");
+                builder.AddAttribute(seq++, "class", "catechism-section-heading");
+                builder.AddAttribute(seq++, "data-testid", "event-section-heading");
+                builder.AddContent(seq++, multiEvent ? $"PARALLELS — {label}" : "PARALLELS");
+                builder.CloseElement();
+
+                builder.OpenComponent<Components.PassageList>(seq++);
+                builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
+                builder.AddAttribute(seq++, "RefTestIdPrefix", multiEvent ? $"verse-parallel-{Slugify(label)}" : "verse-parallel");
+                builder.AddAttribute(seq++, "ClampVerses", 2);
+                // Always the full clamped preview (never SpanOnly) -- unlike
+                // EventWitnessesSection's own single-witness case, THIS
+                // section only ever renders when there genuinely IS an
+                // other witness to preview; "just the span, no text" would
+                // defeat the section's own purpose (a quick peek at what
+                // the parallel account actually says).
+                builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+                builder.CloseComponent();
+            }
+        };
+        return new PopoverSection("parallels", body);
+    }
+
+    // Same slug shape VersePersonsSection's own Slug helper already
+    // establishes for a display label -> stable DOM-safe testid fragment.
+    private static string Slugify(string label)
+    {
+        var chars = label.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
+        var slug = new string(chars);
+        while (slug.Contains("--"))
+        {
+            slug = slug.Replace("--", "-");
+        }
+        return slug.Trim('-');
     }
 }
 
