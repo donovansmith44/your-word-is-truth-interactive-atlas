@@ -63,6 +63,41 @@ P6. STANDING PRODUCT LAWS CARRY FORWARD, re-homed as graph laws:
     single-feed chronology (dates resolve from the canonical anchor
     table), typed exemptions with reasons (never silent).
 
+P7. REVERSIBILITY BY INTERFACE (owner, 2026-08-22: "everything needs
+    to have an interface to which we're loosely coupled so we can back
+    out of bad decisions"). Every subsystem is consumed only through a
+    contract it does not own; implementations are swappable; concrete
+    types are named only at wiring sites. Backing out of a decision is
+    swapping an implementation, never surgery on consumers. Where two
+    implementations exist, they keep the interface honest; where only
+    one exists, the interface is still the only consumption path.
+    Reviews treat concrete coupling outside wiring sites as findings.
+
+    Seam inventory (status as of M-B close):
+    - Store/query: GraphQuery / GraphSnapshot / GraphStore — DONE (the
+      pattern's model; conformance law enforces substitutability).
+    - Ingestion: SourceAdapter + BoundaryLaw — DONE (TOML/JSON/anything).
+    - Exploration: Explorable + Holdings — DONE.
+    - Presentation: focusable/display policies + Presentable — DONE
+      (client impls pending the client's own generic turn, below).
+    - Node data: NodeData; Card as view function — DONE.
+    - Corpora/layers: Corpus trait + TranslationId — DONE. Tokenization
+      contract — RESERVED by design.
+    - Versioning: owned entirely by GraphPublisher::publish — DONE
+      (changing the version derivation is a publish-impl change).
+    - COMPILER PIPELINE — GAP: passes are concrete functions today.
+      CLOSES AT M-C: normalize → merge → resolve → derive → index →
+      law-check formalized as an ordered contract (passes become data;
+      backing one out = removing it from the list), landing with the
+      serialized-artifact work where the pipeline formalizes anyway.
+    - CLIENT ACCESS — GAP: the Blazor client still calls bespoke
+      endpoints via a concrete AtlasClient. CLOSES AT M-D: the client
+      consumes the generic IExplorableClient contract as surfaces
+      migrate (also the tablet-shell seam).
+    - Wire DTOs: deliberately NOT a further seam — HTTP itself is the
+      interface; the DTOs are its schema (a codec layer would be
+      ceremony).
+
 ## 3. Node kinds
 
 All nodes implement the Explorable contract (§5); none is special-cased
