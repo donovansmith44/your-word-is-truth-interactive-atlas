@@ -18,6 +18,13 @@
 //! the shared `data/` parent, exactly the derivation `atlas-server`'s own
 //! `main.rs` and `GraphService::build` already use.)
 //!
+//! M-C2: this binary's own INPUT `AtlasData` now comes from
+//! `atlas_etl::compile::compile(raw_dir, curated_dir)` (a real raw+curated
+//! compile, the same orchestration `atlas-etl`'s own binary runs) rather
+//! than `AtlasData::load(&data_dir)` reading `data/compiled/*.json` --
+//! five of those files (places/events/narratives/verses-kjv/cross-refs)
+//! are the M-C2 deletion event's own target and no longer exist.
+//!
 //! ADMISSION (design §9a: "implementation #2 passes the same law as #1"):
 //! before writing anything, this binary independently re-builds the SAME
 //! graph a second time from the identical sources and runs
@@ -65,12 +72,20 @@ fn main() -> Result<()> {
     let raw_dir = data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| Path::new("../data/raw").to_path_buf());
     let curated_dir = data_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| Path::new("../data/curated").to_path_buf());
 
-    let atlas = atlas_core::data::AtlasData::load(&data_dir).with_context(|| format!("loading compiled data from {}", data_dir.display()))?.finish();
+    // M-C2: `AtlasData::load(&data_dir)` retired as this binary's own
+    // source -- the five files it read (places/events/narratives/
+    // verses-kjv/cross-refs.json) are the deletion event's own target
+    // (batch-mc2-report.md). `atlas_etl::compile::compile` is the SAME
+    // raw+curated orchestration `atlas-etl`'s own binary runs, called here
+    // directly instead of round-tripping through `data/compiled/*.json` --
+    // it also already carries `data.eras` (compiled once, validated),
+    // so the separate `eras.toml` re-parse this binary used to do on its
+    // own retires too: one parse, one source, for both.
+    let atlas = atlas_etl::compile::compile(&raw_dir, &curated_dir).with_context(|| format!("compiling {} + {}", raw_dir.display(), curated_dir.display()))?.data;
     let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json")).with_context(|| format!("reading {}", raw_dir.join("kjv.json").display()))?;
     let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt"))
         .with_context(|| format!("reading {}", raw_dir.join("xrefs/cross_references.txt").display()))?;
-    let eras_toml = std::fs::read_to_string(curated_dir.join("eras.toml")).with_context(|| format!("reading {}", curated_dir.join("eras.toml").display()))?;
-    let eras = atlas_etl::curated::parse_eras(&eras_toml).with_context(|| format!("parsing {}", curated_dir.join("eras.toml").display()))?;
+    let eras = atlas.eras.clone();
 
     println!("atlas-graph-compile: building implementation #1 (from raw sources)...");
     let build_start = Instant::now();

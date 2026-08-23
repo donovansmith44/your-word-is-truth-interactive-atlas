@@ -54,6 +54,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "atlas-core",
+ "atlas-etl",
  "atlas-graph",
  "atlas-graph-types",
  "axum",

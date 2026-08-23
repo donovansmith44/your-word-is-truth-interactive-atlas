@@ -72,11 +72,6 @@ async fn main() -> Result<()> {
     let raw: Vec<String> = env::args().skip(1).collect();
     let args = parse_args(&raw)?;
 
-    let data = AtlasData::load(&args.data_dir)
-        .with_context(|| format!("loading compiled data from {}", args.data_dir.display()))?
-        .finish();
-    let data = Arc::new(data);
-
     // Batch M-A (controller ruling 2): the Explorable Graph is built IN
     // MEMORY at startup from the same raw sources atlas-etl reads --
     // `data/raw/`, always the sibling of `--data-dir`'s own `data/compiled`
@@ -94,10 +89,37 @@ async fn main() -> Result<()> {
     // rebuilds in memory from `data/raw/` + curated eras, the M-A/M-B
     // startup path, unconditionally still enforcing the KJV fidelity law
     // (design doc P3) since raw bytes are actually in hand on this path.
+    //
+    // M-C2: `AtlasData` construction now depends on WHICH graph path ran,
+    // reordered so the graph loads/builds FIRST:
+    // - `--build-from-raw`: needs a real, validated `AtlasData` as its own
+    //   event-world/place/polity/catechism adapter source (unchanged
+    //   reasoning from M-A/M-B/M-C) -- built via `atlas_etl::compile::
+    //   compile` (a real raw+curated compile; the SAME orchestration
+    //   `atlas-etl`'s own binary runs), since `AtlasData::load`'s own five
+    //   retiring-file reads (places/events/narratives/verses-kjv/
+    //   cross-refs.json, this batch's own deletion target) return empty.
+    // - default (artifact load): stays fast -- `AtlasData::load` still
+    //   reads the TEN surviving compiled files (canon/books-meta/
+    //   chronology-anchors/book-narration-windows/polities/landmarks/
+    //   place-history/place-names-kjv/land-mask/catechism, all untouched
+    //   by this batch), then `atlas_graph::legacy::atlas_data_overlay`
+    //   reconstructs the five retiring fields DIRECTLY FROM THE
+    //   ALREADY-LOADED GRAPH (no raw/curated re-parsing at all) -- fast,
+    //   in-memory, which is what keeps the artifact LOAD-TIME ceiling
+    //   (<=3s, a committed law) meaningful for this server's own real
+    //   total startup, not just the graph's own isolated load step. Every
+    //   surface not yet migrated onto the graph this batch (scene.rs's map
+    //   composition, `handlers::chapter`'s place-mention half,
+    //   `handlers::catechism_item`'s proof-verse text, `narrative_event_
+    //   positions`'s residual `adjacent_event` calls) keeps working on
+    //   this reconstructed `AtlasData`, unchanged.
     let load_start = std::time::Instant::now();
-    let graph = if args.build_from_raw {
+    let (graph, data) = if args.build_from_raw {
         let raw_dir = args.data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| PathBuf::from("../data/raw"));
+        let curated_dir = args.data_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| PathBuf::from("../data/curated"));
         println!("atlas-graph: --build-from-raw -- building in memory from {} (dev fallback, disclosed)", raw_dir.display());
+        let data = atlas_etl::compile::compile(&raw_dir, &curated_dir).with_context(|| format!("compiling {} + {}", raw_dir.display(), curated_dir.display()))?.data;
         // FAIL-LOUD FIDELITY GATE (design doc P3): `GraphService::build`
         // runs the KJV adapter's own bijection + reconstruction boundary
         // law unconditionally as part of construction (see
@@ -109,15 +131,32 @@ async fn main() -> Result<()> {
         // `data` -- see `atlas_graph::event_world`'s own module doc
         // comment for why this adapter reads `AtlasData` rather than
         // re-parsing `data/curated/`.
-        GraphService::build(&raw_dir, &data)
-            .with_context(|| format!("building the explorable graph from {} (kjv.json + xrefs/cross_references.txt)", raw_dir.display()))?
+        let graph = GraphService::build(&raw_dir, &data)
+            .with_context(|| format!("building the explorable graph from {} (kjv.json + xrefs/cross_references.txt)", raw_dir.display()))?;
+        (graph, data)
     } else {
         let artifact_path = args.data_dir.join("graph.bin");
-        GraphService::from_artifact(&artifact_path)
-            .with_context(|| format!("loading the serialized graph artifact from {} (run atlas-graph-compile first, or pass --build-from-raw for the dev fallback)", artifact_path.display()))?
+        let graph = GraphService::from_artifact(&artifact_path)
+            .with_context(|| format!("loading the serialized graph artifact from {} (run atlas-graph-compile first, or pass --build-from-raw for the dev fallback)", artifact_path.display()))?;
+        let mut data = AtlasData::load(&args.data_dir)
+            .with_context(|| format!("loading compiled data from {}", args.data_dir.display()))?;
+        let overlay = atlas_graph::legacy::atlas_data_overlay(&graph);
+        data.events = overlay.events;
+        data.places = overlay.places;
+        data.narratives = overlay.narratives;
+        data.verses = overlay.verses;
+        let data = data.finish();
+        (graph, data)
     };
+    let data = Arc::new(data);
     let load_elapsed = load_start.elapsed();
-    println!("atlas-graph: {} load complete in {load_elapsed:?}", if args.build_from_raw { "from-raw build" } else { "artifact load" });
+    // M-C2 (folded M-C review M-2): was "{} load complete" with the
+    // artifact-path branch string ALREADY ending in "load" ("artifact
+    // load"), producing "artifact load load complete" -- a doubled word.
+    // Dropping "load" from the format string (not the branch strings)
+    // reads correctly for both: "artifact load complete" / "from-raw build
+    // complete".
+    println!("atlas-graph: {} complete in {load_elapsed:?}", if args.build_from_raw { "from-raw build" } else { "artifact load" });
 
     // Published to the owner-approved `atlas_graph_types::store` port
     // (`GraphPublisher::publish`) before being wrapped here, on either

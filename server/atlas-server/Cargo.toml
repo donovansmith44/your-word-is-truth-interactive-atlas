@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 atlas-core = { path = "../atlas-core" }
+atlas-etl = { path = "../atlas-etl" }
 atlas-graph = { path = "../atlas-graph" }
 atlas-graph-types = { path = "../../graph-types" }
 axum = "0.8"
