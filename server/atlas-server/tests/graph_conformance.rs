@@ -146,8 +146,6 @@ fn the_full_real_graph_is_admitted_the_in_memory_store_answers_match_the_model_e
     let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
     let atlas = AtlasData::load(&compiled).expect("data/compiled/*.json must exist -- run `cargo run -p atlas-etl` from server/ first").finish();
 
-    let start = std::time::Instant::now();
-
     let (model, model_stats, model_ew_stats, _) = build_graph_from_sources(&kjv_json, &xrefs_tsv, &atlas).expect("the real KJV source must parse");
     assert_eq!(model_stats.kjv_verses, 31_102, "the real KJV text is 31,102 verses");
     assert!(model_ew_stats.dated_events >= 450, "expected the real compiled event set to carry well over 450 dated events, got {}", model_ew_stats.dated_events);
@@ -157,11 +155,28 @@ fn the_full_real_graph_is_admitted_the_in_memory_store_answers_match_the_model_e
     let version = store.publish(for_store);
     let snapshot = store.open(version).expect("the just-published version must be open-able");
 
+    // THE COMMITTED CONFORMANCE-TIME LAW (controller decision 6): "full-
+    // graph conformance stays under a ceiling you justify from
+    // measurement." Timed around ONLY assert_answers_match itself (not
+    // the two builds above, which are this TEST's own setup cost, not a
+    // property of the conformance check) -- measured directly, repeatedly,
+    // across this batch's own work: 2.85s-14.27s depending on machine
+    // load/cache state (both this exact test AND the equivalent check in
+    // tests/artifact_conformance.rs, run many times over the same real
+    // full graph during this batch). 60s is a generously wide, disclosed
+    // ceiling over that observed range -- wide enough to absorb a
+    // meaningfully slower CI machine without becoming a flaky trip-wire,
+    // while still catching the class of regression this law exists for
+    // (e.g. a future change accidentally reintroducing an O(n) scan
+    // somewhere on the query path, exactly the M-A-era `derive` regression
+    // this test's own doc comment already once diagnosed).
+    const CONFORMANCE_CEILING: std::time::Duration = std::time::Duration::from_secs(60);
+    let match_start = std::time::Instant::now();
     assert_answers_match(&snapshot, &model);
+    let elapsed = match_start.elapsed();
 
-    let elapsed = start.elapsed();
     eprintln!(
-        "M-B FULL-SCALE CONFORMANCE: {} text units, {} cites edges, {} events ({} dated), {} narratives, {} anchors, {} attests, {} succession rows, {} located-at rows, {} dated-by rows -- assert_answers_match wall time: {:?}",
+        "M-B/M-C FULL-SCALE CONFORMANCE: {} text units, {} cites edges, {} events ({} dated), {} narratives, {} anchors, {} attests, {} succession rows, {} located-at rows, {} dated-by rows -- assert_answers_match wall time: {:?} (ceiling {:?})",
         model_stats.kjv_verses,
         model_stats.cites_rows,
         model_ew_stats.events,
@@ -172,6 +187,11 @@ fn the_full_real_graph_is_admitted_the_in_memory_store_answers_match_the_model_e
         model_ew_stats.succession_rows,
         model_ew_stats.located_at_rows,
         model_ew_stats.dated_by_rows,
-        elapsed
+        elapsed,
+        CONFORMANCE_CEILING,
+    );
+    assert!(
+        elapsed <= CONFORMANCE_CEILING,
+        "full-graph assert_answers_match took {elapsed:?}, exceeding the committed {CONFORMANCE_CEILING:?} ceiling (controller decision 6) -- this is a red build, not a hope"
     );
 }
