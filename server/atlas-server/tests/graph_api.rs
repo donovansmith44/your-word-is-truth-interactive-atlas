@@ -312,6 +312,47 @@ async fn a_verses_mentions_frontier_carries_person_entities_alongside_place() {
     assert!(person_labels.contains(&"Moses".to_string()), "{person_labels:?}");
 }
 
+/// U5: the chapter view's own precomputed `persons` field (`VerseOut.persons`,
+/// backed by `GraphService::persons_by_verse`) must agree with the generic
+/// mentions-frontier query for the SAME verse -- the same
+/// precomputed-index-agrees-with-live-query law `chapter_verse_xref_count_
+/// is_always_present_and_matches_the_generic_edges_page` above already
+/// proves for `xref_count`/`cites`. EXO.4.14 is this file's own established
+/// Aaron+Moses exemplar (see the mentions-frontier test above); a Person id
+/// only ever carries a bare id + curated label on the wire (no `kind`, unlike
+/// `PlaceRefOut`, since there is exactly one node kind this field can name).
+#[tokio::test]
+async fn chapter_verse_persons_is_always_present_and_matches_the_generic_mentions_frontier() {
+    let app = real_app();
+
+    let (st, chapter, _) = get(&app, "/api/chapter/EXO.4").await;
+    assert_eq!(st, 200);
+    let v14 = chapter["verses"].as_array().unwrap().iter().find(|v| v["verse"] == 14).expect("EXO.4.14 must be in the chapter");
+    let persons = v14["persons"].as_array().expect("persons must always be present, even at 0, never an omitted key");
+    let chapter_names: std::collections::BTreeSet<String> = persons.iter().map(|p| p["name"].as_str().unwrap().to_string()).collect();
+    assert_eq!(chapter_names, std::collections::BTreeSet::from(["Aaron".to_string(), "God".to_string(), "Moses".to_string()]), "{persons:?}");
+
+    let (st2, edges, _) = get(&app, "/api/node/text-unit:EXO.4.14/edges?kind=mentions").await;
+    assert_eq!(st2, 200);
+    let frontier_names: std::collections::BTreeSet<String> = edges["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["node"]["kind"] == "Person")
+        .map(|e| e["node"]["label"].as_str().unwrap().to_string())
+        .collect();
+    assert_eq!(chapter_names, frontier_names, "the chapter view's own persons list must equal the generic mentions frontier's own Person entries for the SAME verse");
+
+    // And a verse with no person mentions at all still carries the key,
+    // empty -- the same "always present, never omitted" shape `places`
+    // already establishes in `tests/api.rs`'s own `verse_chapter_place_and_404`.
+    // EXO.4.7 ("And he said, Put thine hand into thy bosom again...") names
+    // no one -- confirmed against the real compiled data (every OTHER verse
+    // in this chapter carries at least one attested person).
+    let v7 = chapter["verses"].as_array().unwrap().iter().find(|v| v["verse"] == 7).expect("EXO.4.7 must be in the chapter");
+    assert_eq!(v7["persons"], serde_json::json!([]), "{v7:?}");
+}
+
 /// A bogus Person id resolves 404 (not_found), not a 500 or a bespoke
 /// error shape -- the SAME honest-not-found convention every other kind's
 /// own unknown-id case already gets (node_card_unknown_id_is_404...

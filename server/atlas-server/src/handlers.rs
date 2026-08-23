@@ -279,6 +279,30 @@ pub struct PlaceRefOut {
     pub name: String,
 }
 
+/// M-D3 (owner ruling U5, "in-text person and place name links,
+/// mentions-attested ONLY -- no free-text matching ever"): one person the
+/// graph's own `mentions` relation attests at a verse's own locus
+/// (`GraphService::persons_by_verse`, precomputed off `Graph.mentions`,
+/// NEVER a free-text/dictionary lookup against the verse's own rendered
+/// words -- the exact "Sin"-the-city vs "sin"-the-noun hazard this
+/// wording guards against: a name is only ever offered as a link because
+/// a CURATED edge attests that specific entity at that specific verse,
+/// not because some word in the text happens to match a name string
+/// somewhere in the graph). Deliberately lean, mirroring `PlaceRefOut`'s
+/// own "no more than the consumer needs" wire philosophy -- id (to open
+/// the entity's own node popover) and display label (for the client's
+/// own plain-text search locating WHERE in the verse's already-attested
+/// text this entity's own name appears, the SAME PlaceMentions.cs
+/// mechanism this batch generalizes rather than replaces -- attestation
+/// is what THIS field guards; locating the substring within an ALREADY-
+/// attested verse is a separate, later step, not a second matching
+/// hazard).
+#[derive(Debug, Serialize)]
+pub struct PersonRefOut {
+    pub id: String,
+    pub name: String,
+}
+
 /// Batch T requirement 5: one resolved pericope heading, folded onto its own
 /// anchor verse (`VerseOut.heading`) -- the SAME "fold onto the already-
 /// shared fetch" precedent `VerseDetailOut.catechism`/`.events` already
@@ -334,6 +358,14 @@ pub struct VerseOut {
     /// other "always an array" field in this app's own wire (e.g.
     /// `Scene.quiet_places`).
     pub places: Vec<PlaceRefOut>,
+    /// M-D3 (owner ruling U5): every person the graph's own `mentions`
+    /// relation attests at this verse's own locus, in wire (row-insertion)
+    /// order -- see `PersonRefOut`'s own doc comment for the full
+    /// mentions-attested-only reasoning. Always present, possibly empty
+    /// (most verses mention zero persons by name) -- SAME conditional-
+    /// presence-lives-client-side convention `places` immediately above
+    /// already establishes for this exact shape of field.
+    pub persons: Vec<PersonRefOut>,
     /// Batch T requirement 5: this verse's own pericope heading, when it is
     /// a heading ANCHOR (`AtlasData::heading_for_verse`) -- omitted (not
     /// null), matching `PolityOut.transition`/`.fall`'s own conditional-
@@ -467,6 +499,15 @@ pub async fn chapter(
                     name: resolve_display_name(&p.name, data.place_history_for(&p.id), None, data.place_name_alias_for(&p.id)),
                 })
                 .collect();
+            // M-D3 (owner ruling U5): the SAME O(1) per-verse lookup
+            // treatment as `heading`/`xref_count` below, off the
+            // precomputed `graph.persons_by_verse` companion -- see that
+            // field's own doc comment.
+            let persons = graph
+                .persons_by_verse
+                .get(&key)
+                .map(|rows| rows.iter().map(|(id, name)| PersonRefOut { id: id.clone(), name: name.clone() }).collect())
+                .unwrap_or_default();
             // M-C2 (requirement 1, decisive-title law re-homed as a graph
             // query): `graph.heading_index` (precomputed at `GraphService::
             // assemble` time by `heading::build_heading_index`), not
@@ -489,7 +530,7 @@ pub async fn chapter(
             let verse_pos = Position::Node(atlas_graph::kjv_adapter::verse_node_id(book.0, chapter, v));
             let xref_count =
                 snap.edge_summary(&verse_pos).get(&EdgeKind::Directed(RelationId::Cites, Direction::Forward)).copied().unwrap_or(0);
-            verses.push(VerseOut { verse: v, text: text.to_string(), places, heading, xref_count });
+            verses.push(VerseOut { verse: v, text: text.to_string(), places, persons, heading, xref_count });
         }
     }
 

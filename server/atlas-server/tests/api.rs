@@ -254,6 +254,13 @@ async fn verse_chapter_place_and_404() {
     // verbatim by health_books_eras_narratives_shapes above) just to reach a
     // chapter 13 the chapter handler can serve at all.
     assert_eq!(verses[0]["places"], serde_json::json!([]));
+    // U5: `persons` gets the exact same "always present, never omitted"
+    // treatment -- same reasoning, same demo_fixture() limitation (no
+    // curated `graph.mentions` rows for this tiny fixture graph). Real
+    // resolution (a verse that DOES carry an attested person) is covered by
+    // graph_api.rs's own `chapter_verse_persons_is_always_present_and_
+    // matches_the_generic_mentions_frontier`, against the real compiled data.
+    assert_eq!(verses[0]["persons"], serde_json::json!([]));
 
     // Structurally invalid cref -> 400 bad_ref.
     let (st, body) = call(&app, "/api/chapter/NOPE.1").await;

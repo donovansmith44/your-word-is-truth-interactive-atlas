@@ -135,6 +135,30 @@ pub struct GraphService {
     /// `.get()`'d by key, never iterated or serialized, so iteration order
     /// carries no determinism concern.
     pub verse_text: HashMap<String, String>,
+    /// M-D3 (owner ruling U5, "in-text person and place name links,
+    /// mentions-attested ONLY"): FROM-verse dot-ref -> every PERSON the
+    /// graph's own `mentions` relation attests at that locus, `(id,
+    /// display label)` pairs in row-insertion order (the SAME "no
+    /// re-sort, wire order is canon order" discipline `EdgeSectionRegistry.
+    /// Mentions`'s own client-side doc comment already establishes for
+    /// this exact relation). Precomputed once here, the SAME "O(1)
+    /// per-verse lookup for a whole-chapter fetch" treatment
+    /// `heading_index`/`cross_refs_by_from` above already get, rather than
+    /// a per-verse graph query inside the `chapter` handler's own hot
+    /// loop. Read straight off `Graph.mentions` (the SAME raw table
+    /// `cross_refs_by_from` above reads `Graph.cross_refs` from, BEFORE
+    /// publish, since this is built in `assemble` alongside those
+    /// companions) filtered to `PlaceOrPerson::Person` -- `PlaceOrPerson::
+    /// Place` rows are deliberately NOT folded in here: `VerseOut.places`
+    /// already has its own, separate, EARLIER-established source
+    /// (`AtlasData::places_for_verse`, alias-resolved via
+    /// `resolve_display_name` in the handler) that this field does not
+    /// replace or duplicate -- EXTEND-ONLY discipline, a place mention's
+    /// own existing path is untouched. `HashMap`, not `BTreeMap`, for the
+    /// same reason as `cross_refs_by_from`/`verse_text`: only ever
+    /// `.get()`'d by key inside the `chapter` handler, never iterated or
+    /// serialized as a whole.
+    pub persons_by_verse: HashMap<String, Vec<(String, String)>>,
 }
 
 /// The longest KJV chapter (Psalm 119) has 176 verses; this probe width is
@@ -286,6 +310,28 @@ impl GraphService {
             let Some(key) = crate::legacy::locus_dot_ref(&row.from) else { continue };
             cross_refs_by_from.entry(key).or_default().push(atlas_core::data::CrossRef { target: row.target_display.clone(), votes: row.votes as i32 });
         }
+        // M-D3 (owner ruling U5): the SAME treatment for the mentions
+        // relation's own PERSON rows -- see this struct's own
+        // `persons_by_verse` doc comment. `AnyNodeId::erase` (PersonId ->
+        // AnyNodeId) is the standard "look this typed id up in the raw
+        // node map" step every other id-carrying row in this crate already
+        // uses; a mentions row naming a person id absent from `graph.nodes`
+        // is a data-integrity impossibility the law-check stage already
+        // guards elsewhere in this pipeline, but this loop still skips it
+        // defensively (`?`) rather than panicking on a network handler's
+        // own eventual caller.
+        let mut persons_by_verse: HashMap<String, Vec<(String, String)>> = HashMap::new();
+        for row in &graph.mentions {
+            let atlas_graph_types::edge::PlaceOrPerson::Person(person_id) = &row.entity else { continue };
+            let Some(key) = crate::legacy::locus_dot_ref(&row.locus) else { continue };
+            let Some(label) = graph.nodes.get(&person_id.erase()).and_then(|n| match &n.payload {
+                atlas_graph_types::node::NodePayload::Person { label, .. } => Some(label.clone()),
+                _ => None,
+            }) else {
+                continue;
+            };
+            persons_by_verse.entry(key).or_default().push((person_id.0.clone(), label));
+        }
         // GraphPublisher::publish (design doc §9a): the compiler
         // publishes; serving never writes. One publish, at startup; M-A
         // never calls it again (no hot-reload exists yet) -- MemStore's
@@ -316,6 +362,7 @@ impl GraphService {
             heading_index,
             cross_refs_by_from,
             verse_text,
+            persons_by_verse,
         }
     }
 
