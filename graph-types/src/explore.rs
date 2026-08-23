@@ -116,6 +116,16 @@ impl Explorable for PositionRef {
                 }
             }
         }
+        // M-C review I-1: symmetric kinds MUST appear too — a summary
+        // that omits real connections breaks affordance honesty (the
+        // section-renders-iff-count>0 policy would hide them).
+        for rel in crate::edge::SymRelationId::ALL {
+            let k = EdgeKind::Symmetric(*rel);
+            let n = raw_neighbors(g, &self.0, k).len();
+            if n > 0 {
+                out.insert(k, n);
+            }
+        }
         out
     }
 

@@ -178,6 +178,31 @@ fn pooled_two_hop_what_happened_where_this_happened() {
 }
 
 #[test]
+fn edge_summary_includes_symmetric_kinds() {
+    // M-C review I-1 pin: a node with real symmetric-relation edges
+    // must report them in its summary — omitting them would let the
+    // honesty policy (render iff count > 0) hide real connections.
+    use crate::edge::{CatechismLink, Justification};
+    use crate::text::{TextLocus, TextRef};
+
+    let mut g = toy();
+    g.catechism.push(CatechismLink {
+        locus: TextLocus { at: TextRef::Bible(vr(40, 3, 13)), span: None },
+        item: crate::id::CatechismItemId::new("baptism-part"),
+        provenance: "curated".into(),
+        justification: Justification::default(),
+    });
+    g.build_indexes();
+
+    let item = Position::Node(crate::id::CatechismItemId::new("baptism-part").erase());
+    let summary = crate::explore::PositionRef(item.clone()).edge_summary(&g);
+    let sym = EdgeKind::Symmetric(SymRelationId::CatechismLink);
+    assert_eq!(summary.get(&sym), Some(&1), "symmetric kinds appear in summaries");
+    let total = Holdings::focus(item).step(&g, sym);
+    assert_eq!(total.0.len(), 1, "and the summary agrees with the frontier");
+}
+
+#[test]
 fn edge_summary_counts_match_frontiers() {
     let g = toy();
     let n = pos(&ev("baptism"));
