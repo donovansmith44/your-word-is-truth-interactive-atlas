@@ -124,7 +124,18 @@ test.describe('M-D2: cross-reference superscripts', () => {
     await expect(page.getByTestId('popover-title')).toHaveText(`${book}.${chapter}.${v.verse}`);
 
     // Xrefs section leads (BEFORE verse-text, the registry's own normal
-    // first slot) -- the entry-point reorder, live.
+    // first slot) -- the entry-point reorder, live. A real, live-caught
+    // test-timing bug in an earlier draft: `popover-title` renders
+    // SYNCHRONOUSLY (straight off Current.Title) the instant the node is
+    // pushed, but the section LIST itself only populates once
+    // ExplorerPopover.LoadCurrent's own async section-resolution completes
+    // (cleared to empty during the fetch, per that method's own comment) --
+    // asserting section order right after the title, with no wait of its
+    // own, could snapshot the sections list mid-empty. Waiting for the
+    // xrefs section specifically to be VISIBLE (an auto-retrying
+    // assertion) guarantees resolution has finished before the order
+    // snapshot below.
+    await expect(page.getByTestId('popover-section-xrefs')).toBeVisible();
     const sectionIds = await page.getByTestId(/^popover-section-/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
     expect(sectionIds[0]).toBe('popover-section-xrefs');
 
@@ -214,24 +225,39 @@ test.describe('M-D2: cross-reference superscripts', () => {
   test('XSCRIPT-1: entry-point parameter vs F2\'s general popover -- the SAME verse, two different initial caps, one abstraction', async ({ page }) => {
     // The owner's own CAP RECONCILIATION law, proven directly: opening the
     // SAME verse via its ordinary verse-line click still obeys F2's
-    // xrefs-only-vs-mixed-context rule (2 when catechism is also present);
-    // opening the identical verse via its OWN superscript instead shows 3,
-    // unconditionally -- one component, one provider, a parameter read at
-    // render time, never two implementations.
+    // xrefs-only-vs-mixed-context rule (2 when ANY other context section is
+    // also present); opening the identical verse via its OWN superscript
+    // instead shows 3, unconditionally -- one component, one provider, a
+    // parameter read at render time, never two implementations.
     const toc = await loadToc();
     const found = await findVerseByXrefCount(toc, c => c > 2);
     test.skip(!found, 'no sampled verse had >2 cross-references');
     if (!found) return;
     const { book, chapter, verse: v } = found;
     const detail = await api.verse(`${book}.${chapter}.${v.verse}`);
-    const hasCatechism = detail.catechism.length > 0;
-    const generalExpected = Math.min(v.xref_count, hasCatechism ? 2 : 3);
+    // OtherContextSectionCount (client, ExplorerPopover.razor) counts EVERY
+    // resolved section except verse-text/xrefs -- for a Verse node the ONLY
+    // two OTHER providers PopoverSectionRegistry registers are
+    // CatechismSeamSection and VerseEventMembershipSection (confirmed by
+    // reading that registry's own Providers list), so EITHER catechism OR
+    // event-membership presence makes the general popover cap at 2. A real,
+    // live-caught test bug in an earlier draft checked catechism alone and
+    // failed on a real verse that had zero catechism citations but DID
+    // touch a titled event (the far more common case, since most narrative-
+    // covered verses have no catechism link at all).
+    const hasOtherContext = detail.catechism.length > 0 || detail.events.length > 0;
+    const generalExpected = Math.min(v.xref_count, hasOtherContext ? 2 : 3);
 
     await page.goto(`/read/${book}/${chapter}`);
     await page.getByTestId(`verse-line-${v.verse}`).click();
     await expect(page.getByTestId('popover-title')).toHaveText(`${book}.${chapter}.${v.verse}`);
     await expect(page.getByTestId(/^xref-item-/)).toHaveCount(generalExpected);
     await page.getByTestId('popover-close').click();
+    // Wait for the GENERAL popover to fully close (RequestClose is async --
+    // a JS interop call precedes _activeNode=null) before opening the
+    // entry-point one -- a real, live-caught race: re-hovering immediately
+    // could fire while the prior popover's own close is still in flight.
+    await expect(page.getByTestId('popover')).toHaveCount(0);
 
     // { force: true }: see "hover opens the SAME composable popover" above.
     await page.getByTestId(`verse-xref-marker-${v.verse}`).hover({ force: true });
