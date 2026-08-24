@@ -300,6 +300,21 @@ pub struct Mentions {
     pub provenance: ProvenanceId,
 }
 
+/// TRAV-1: one adjacent pair in the chronology's total order, DERIVED
+/// at compile time from `temporal_order` (the ETL emits each
+/// consecutive pair once). The RELATION is symmetric --
+/// "adjacent-in-time" -- and lowers through the symmetric index,
+/// closing the gap `build_indexes` documented since M-A; the ROW
+/// still names its ends honestly (`earlier`/`later`, from the order
+/// itself) so a consumer serving a Chronology block never re-derives
+/// direction.
+#[derive(Clone, Debug)]
+pub struct TemporalAdjacency {
+    pub earlier: EventId,
+    pub later: EventId,
+    pub provenance: ProvenanceId,
+}
+
 /// M-C2 (requirement 2: "extend the cites relation to range-level
 /// (span-capable per the types)"): `to` remains the graph's own edge
 /// endpoint (the target's FIRST verse -- unchanged index shape, unchanged

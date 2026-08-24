@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use crate::edge::{
     at, Attests, BiIndex, CatechismLink, Confesses, Contains, Corresponds, CrossRef, Fulfills,
     LocatedAt, MentionedEntity, Mentions, NamedAfter, Namesake, Quotes, RelationId,
-    Succession, Typology,
+    Succession, TemporalAdjacency, Typology,
 };
 use crate::chrono::DatedBy;
 use crate::id::{AnyNodeId, NodeKind, Position};
@@ -41,6 +41,10 @@ pub struct Graph {
     pub quotes: Vec<Quotes>,
     pub confesses: Vec<Confesses>,
     pub corresponds_bible: Vec<Corresponds<BibleTag>>,
+    /// TRAV-1: machine-DERIVED at compile from `temporal_order`
+    /// (consecutive pairs) -- lives with imported rows because the ETL
+    /// authors it, not a human.
+    pub temporal_adjacency: Vec<TemporalAdjacency>,
 
     // -------- spines & indexes (built, never authored) --------
     pub reading: BTreeMap<&'static str, ReadingSpine>,
@@ -51,8 +55,8 @@ pub struct Graph {
     /// not a law; M-B's own report named it explicitly for
     /// `temporal-adjacency`). Built the SAME way (one `BiIndex::
     /// build_symmetric` pass per inhabited `SymRelationId`, from the row
-    /// tables below) -- `catechism-link` is the first relation to actually
-    /// populate it.
+    /// tables below) -- `catechism-link` populated it first, and TRAV-1's
+    /// own `temporal-adjacency` rows CLOSED the M-B gap by joining it.
     pub symmetric_indexes: BTreeMap<crate::edge::SymRelationId, BiIndex>,
     /// pid -> node id, built alongside the other indexes: derive() is a
     /// lookup, not a scan (same derived-state class as `indexes`;
@@ -211,6 +215,19 @@ impl Graph {
             let locus = at(&text_node(&row.locus));
             let item = at(&row.item.erase());
             sym_pairs.entry(S::CatechismLink).or_default().push((locus, item, M::None));
+        }
+        // TRAV-1: the second inhabited symmetric relation -- the exact
+        // `temporal-adjacency` gap the doc comment above carried since
+        // M-B, now closed. Rows are compile-derived (see the struct's
+        // own doc); the symmetric index serves "adjacent-in-time"
+        // traversal both ways, and the honest `earlier`/`later` row
+        // ends carry direction for the Chronology block's display.
+        for row in &self.temporal_adjacency {
+            sym_pairs.entry(S::TemporalAdjacency).or_default().push((
+                at(&row.earlier.erase()),
+                at(&row.later.erase()),
+                M::None,
+            ));
         }
         self.symmetric_indexes = sym_pairs
             .into_iter()
