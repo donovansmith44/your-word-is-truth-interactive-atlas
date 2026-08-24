@@ -275,3 +275,24 @@ fn e4_dated_events_agree_with_era_boundary_anchors_under_the_graphs_own_temporal
 
     assert!(violations.is_empty(), "E4 (graph) era-partition violated for {} event(s):\n{}", violations.len(), violations.join("\n"));
 }
+
+/// Batch GAZ-1+CHRON-FIX (2026-08-24), real-data spot check: `theo-87`
+/// ("Nimrod's kingdom begins," GEN.10.8-12) is corrected via
+/// `atlas_core::chronology::THEO_DATE_OVERRIDES` from the raw Theographic
+/// import's anachronistic -1822 to -2242 (Genesis 10:10 "the beginning of
+/// his kingdom was Babel"; this atlas's own declared traditional scale
+/// dates Babel/the dispersion to 2242 BC, Ussher's Annals of the World).
+/// Asserted against the REAL compiled graph's own `dated_by` row (via the
+/// SAME `resolve_timepoint` walk `build_real()` already performs for
+/// E1-E4 above), not `Event.when` directly, so this fails loud if a future
+/// change to the override table or the ETL wiring silently reverts it.
+#[test]
+fn theo_87_nimrods_kingdom_resolves_to_the_corrected_traditional_year() {
+    let rg = build_real();
+    let resolved = rg.resolved.get("theo-87").expect("theo-87 is a real, dated compiled event");
+    assert_eq!(
+        resolved.date.from.year.get(),
+        -2242,
+        "theo-87 ('Nimrod's kingdom begins') must resolve to -2242 (THEO_DATE_OVERRIDES) -- the raw Theographic import's anachronistic -1822 must not resurface"
+    );
+}

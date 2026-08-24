@@ -49,19 +49,28 @@
 //!
 //! `THEO_DATE_OVERRIDES` is a DIFFERENT, narrower mechanism: not a
 //! systematic scale offset (that shape is `nt_calibration`'s own, and the
-//! full-audit sample check below found NO such systematic OT offset) but a
-//! single, isolated, genuinely-corrupt raw Theographic import row
-//! (`theo-67` "Judgeship of Jair," which the source data dated -1992 --
-//! squarely mid-patriarchal-genealogy, its OWN id-neighbors' own era --
-//! instead of the Judges era its label/book claim) found by this batch's own
-//! full audit, re-derived from Judges 10:1-3's own stated reign lengths
-//! (Tola 23 years from `theo-143`'s own -1215, so Jair begins ~-1192;
-//! Jair's own 22 years then lands within one year of the very next entry,
-//! `theo-144`'s own already-correct -1170 "next oppression begins" value --
-//! independent corroboration, not just arithmetic). Applied ETL-side, once,
-//! on the raw pre-`finish()` Theographic event set (the SAME timing
-//! `nt_calibration::apply_nt_calibration` already established, for the same
-//! reason: idempotency across `finish()`'s own two real call sites).
+//! full-audit sample check below found NO such systematic OT offset) but
+//! isolated, genuinely-corrupt raw Theographic import rows, each corrected
+//! one at a time as found -- `theo-67` ("Judgeship of Jair," which the
+//! source data dated -1992 -- squarely mid-patriarchal-genealogy, its OWN
+//! id-neighbors' own era -- instead of the Judges era its label/book claim)
+//! found by HOTFIX-6's own full audit, re-derived from Judges 10:1-3's own
+//! stated reign lengths (Tola 23 years from `theo-143`'s own -1215, so Jair
+//! begins ~-1192; Jair's own 22 years then lands within one year of the very
+//! next entry, `theo-144`'s own already-correct -1170 "next oppression
+//! begins" value -- independent corroboration, not just arithmetic).
+//! Applied ETL-side, once, on the raw pre-`finish()` Theographic event set
+//! (the SAME timing `nt_calibration::apply_nt_calibration` already
+//! established, for the same reason: idempotency across `finish()`'s own two
+//! real call sites).
+//!
+//! Batch GAZ-1+CHRON-FIX (2026-08-24) added a second row: `theo-87`
+//! ("Nimrod's kingdom begins," GEN.10.8-12) shipped the raw Theographic
+//! `yearNum` value -1822, anachronistic on any traditional scheme --
+//! Genesis 10:10 states plainly "the beginning of his kingdom was Babel,"
+//! and this atlas's own declared Ussher/traditional scale dates the
+//! Babel/dispersion event to 2242 BC. See that entry's own reason string
+//! for the full citation; not repeated here.
 //!
 //! `ANCHOR_DEFERRALS` is a THIRD, still-DIFFERENT exemption kind from the
 //! two above -- and the two must never be confused (fix round 1, controller
@@ -336,13 +345,21 @@ pub fn anchor_equality_check(anchors: &[ChronologyAnchor], events: &[Event]) -> 
 
 /// `(id, corrected_from_year, corrected_to_year, reason)` -- see this
 /// module's own doc comment for why this is a DIFFERENT mechanism from
-/// `nt_calibration` (a single corrupt row, not a systematic scale offset).
-pub const THEO_DATE_OVERRIDES: &[(&str, i32, i32, &str)] = &[(
-    "theo-67",
-    -1192,
-    -1192,
-    "\"Judgeship of Jair\" (JDG witness): the raw Theographic import dated this -1992 -- squarely mid-patriarchal-genealogy (between theo-66 'Lifetime of Abraham' -1997 and theo-68 'Death of Reu' -1978, its own numeric id-neighbors), an isolated import-row corruption, not a graph-wide pattern (the surrounding theo-133..theo-154 Judges cluster is otherwise internally consistent and correctly dated). Re-derived from Judges 10:1-3: Tola judges 23 years from theo-143's own -1215, so Jair begins ~-1192; Jair's own stated 22-year judgeship then ends within a year of theo-144's own already-correct -1170 'next oppression (Ammon/Philistines) begins' value -- independent corroboration from an untouched neighboring entry, not bare arithmetic.",
-)];
+/// `nt_calibration` (isolated corrupt rows, not a systematic scale offset).
+pub const THEO_DATE_OVERRIDES: &[(&str, i32, i32, &str)] = &[
+    (
+        "theo-67",
+        -1192,
+        -1192,
+        "\"Judgeship of Jair\" (JDG witness): the raw Theographic import dated this -1992 -- squarely mid-patriarchal-genealogy (between theo-66 'Lifetime of Abraham' -1997 and theo-68 'Death of Reu' -1978, its own numeric id-neighbors), an isolated import-row corruption, not a graph-wide pattern (the surrounding theo-133..theo-154 Judges cluster is otherwise internally consistent and correctly dated). Re-derived from Judges 10:1-3: Tola judges 23 years from theo-143's own -1215, so Jair begins ~-1192; Jair's own stated 22-year judgeship then ends within a year of theo-144's own already-correct -1170 'next oppression (Ammon/Philistines) begins' value -- independent corroboration from an untouched neighboring entry, not bare arithmetic.",
+    ),
+    (
+        "theo-87",
+        -2242,
+        -2242,
+        "\"Nimrod's kingdom begins\" (GEN witness, GEN.10.8-12): the raw Theographic import (yearNum) dated this -1822 -- anachronistic on any traditional scheme, since Genesis 10:10 states plainly 'the beginning of his kingdom was Babel' and this atlas's own declared traditional scale dates the Babel/dispersion event to 2242 BC. GROUND: James Ussher, The Annals of the World (1658) -- Babel/the dispersion, 2242 BC, the same public-domain primary source this table's chronology-anchors.toml sibling already cites throughout (bare year value, not a prose quotation; no LICENSES.md row needed, same convention as chronology-anchors.toml's own header note). Batch GAZ-1+CHRON-FIX, 2026-08-24, per the owner's standing traditional-dates ruling (confessional-Lutheran consensus hierarchy). Kretzmann concurrence (KRETZ-1, Popular Commentary of the Bible, 1921-1924, scouted but not yet ingested) to be verified once that corpus lands -- not blocking this correction, which stands on Ussher/Genesis 10:10 alone.",
+    ),
+];
 
 /// One row of `apply_theo_date_overrides`'s own audit trail -- mirrors
 /// `nt_calibration::CalibrationLogEntry`'s own shape.

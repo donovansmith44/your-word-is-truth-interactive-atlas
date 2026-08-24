@@ -287,8 +287,8 @@
     ],
     "established": {
       "when": {
-        "from_year": -1822,
-        "to_year": -1822
+        "from_year": -2242,
+        "to_year": -2242
       },
       "verses": [
         "GEN.10.11"

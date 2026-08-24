@@ -264,11 +264,16 @@ id = "bethany-1"
 id = "nineveh"
 
   [place.established]
-  year = -1822
+  year = -2242
   # GEN.10.11: "Out of that land went forth Asshur, and builded Nineveh."
   # Year matches the compiled theo-87 event ("Nimrod's kingdom begins"),
   # which cites the same GEN.10.8-12 passage -- kept aligned so the
-  # established-date node and the lit map event agree exactly.
+  # established-date node and the lit map event agree exactly. Batch
+  # GAZ-1+CHRON-FIX (2026-08-24): moved from -1822 to -2242 alongside
+  # theo-87's own correction (atlas_core::chronology::THEO_DATE_OVERRIDES)
+  # -- -1822 was the raw Theographic import's anachronistic value; 2242 BC
+  # is this atlas's own declared traditional (Ussher) date for Babel/the
+  # dispersion, GEN.10.10 "the beginning of his kingdom was Babel".
   verses = ["GEN.10.11"]
   note = "traditional"
 

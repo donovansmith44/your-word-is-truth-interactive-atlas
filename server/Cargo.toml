@@ -17,3 +17,16 @@
 # `-p atlas-graph-types` works) is unaffected.
 members = ["atlas-core", "atlas-etl", "atlas-server", "atlas-graph"]
 resolver = "2"
+
+# STANDING COUNTING PROCEDURE (established by review at f988f1b, restated by
+# every batch that reports a full-suite total): a full-suite count is TWO
+# commands, both run from server/, summed together --
+#   cargo test --workspace
+#   cargo test -p atlas-graph-types
+# `-p atlas-graph-types` is required separately because of the non-member
+# status explained above: `--workspace` alone never reaches it. Sum every
+# "test result: ok. N passed" line printed by BOTH commands (one line per
+# test binary/section) to get the canonical total; report the per-command
+# split (workspace N + atlas-graph-types N) alongside the grand total and
+# the section count, not the grand total alone. Canonical ground truth at
+# f988f1b: 747 passed (727 + 20) across 37 sections.
