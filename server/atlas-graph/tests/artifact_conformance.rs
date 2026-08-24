@@ -103,6 +103,18 @@ fn serialized_artifact_is_admitted_and_loads_under_the_committed_ceiling() {
 /// A GraphService can be constructed directly from a written artifact file
 /// -- the real server-facing path (`GraphService::from_artifact`), not
 /// just the lower-level `artifact::to_graph`.
+///
+/// CORP-1a fix round 1 (F1/F2): threaded with real brain-fuel data, same
+/// reasoning as `serialized_artifact_is_admitted_and_loads_under_the_
+/// committed_ceiling` above -- otherwise this test would only ever prove
+/// `from_artifact`/`from_sources` agreement for a KJV-only graph, not the
+/// multilingual one `atlas-graph-compile` actually ships. Cheap here
+/// (unlike `determinism.rs`'s own two-independent-ETL-compile test): `atlas`
+/// is the file's own cached `real_atlas_data()`, so this only pays for two
+/// GRAPH builds (not two full ETL compiles) plus dump/encode/write/read --
+/// measured directly: this file's own two tests combined run in 78.59s
+/// (both well under any real per-file budget), comfortably cheaper than
+/// `determinism.rs`'s own two-independent-ETL-compile shape.
 #[test]
 fn graph_service_from_artifact_serves_the_same_answers_as_from_sources() {
     let raw_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
@@ -110,10 +122,11 @@ fn graph_service_from_artifact_serves_the_same_answers_as_from_sources() {
     let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt")).unwrap();
     let atlas = real_atlas_data();
     let eras = real_eras();
+    let brainfuel = atlas_etl::brainfuel::read_all(&raw_dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first");
 
-    let from_sources = GraphService::from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &eras).unwrap();
+    let from_sources = GraphService::from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel)).unwrap();
 
-    let (model_graph, stats, event_world_stats, chrono) = atlas_graph::build::build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &eras).unwrap();
+    let (model_graph, stats, event_world_stats, chrono) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel)).unwrap();
     let chronology = atlas_graph::Chronology::from_derivation(chrono);
     let dump = atlas_graph::artifact::dump(&model_graph, &chronology, &stats, &event_world_stats).unwrap();
     let tmp = std::env::temp_dir().join(format!("atlas-graph-service-from-artifact-{}.bin", std::process::id()));
