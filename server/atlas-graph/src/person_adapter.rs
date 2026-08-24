@@ -90,6 +90,7 @@ fn person_node(p: &atlas_core::data::Person) -> Node {
             birth_year: p.birth_year,
             death_year: p.death_year,
             also_called: p.also_called.clone(),
+            description: None,
         },
         provenance: ProvenanceId::from(PROVENANCE),
     }
@@ -254,8 +255,9 @@ mod tests {
         let node = ctx.graph.nodes.get(&id).expect("Aaron's own node must exist");
         assert_eq!(node.provenance, PROVENANCE);
         match &node.payload {
-            NodePayload::Person { label, gender, birth_year, death_year, also_called } => {
+            NodePayload::Person { label, gender, birth_year, death_year, also_called, description } => {
                 assert_eq!(label, "Aaron");
+                assert_eq!(*description, None, "description stays None until the Easton's adapter fills it");
                 assert_eq!(gender.as_deref(), Some("Male"));
                 assert_eq!(*birth_year, Some(-1575));
                 assert_eq!(*death_year, Some(-1452));

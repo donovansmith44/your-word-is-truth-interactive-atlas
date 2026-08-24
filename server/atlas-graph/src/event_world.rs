@@ -496,7 +496,7 @@ fn place_node(p: &atlas_core::data::Place, atlas: &AtlasData) -> Node {
         .collect();
     Node {
         id: PlaceId::new(p.id.clone()).erase(),
-        payload: NodePayload::Place { canonical: p.name.clone(), lat: p.lat, lon: p.lon, aliases },
+        payload: NodePayload::Place { canonical: p.name.clone(), lat: p.lat, lon: p.lon, aliases, description: None },
         provenance: "curated-places".to_string(),
     }
 }

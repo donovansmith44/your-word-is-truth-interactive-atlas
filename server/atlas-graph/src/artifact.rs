@@ -232,17 +232,17 @@ enum DtoPayload {
         ref_note: Option<String>,
     },
     Narrative { label: String, color: String },
-    Place { canonical: String, lat: f64, lon: f64, aliases: Vec<String> },
+    Place { canonical: String, lat: f64, lon: f64, aliases: Vec<String>, description: Option<String> },
     /// Batch P: mirrors `NodePayload::Person`'s own widening -- see that
     /// variant's own doc comment.
-    Person { label: String, gender: Option<String>, birth_year: Option<i32>, death_year: Option<i32>, also_called: Vec<String> },
+    Person { label: String, gender: Option<String>, birth_year: Option<i32>, death_year: Option<i32>, also_called: Vec<String>, description: Option<String> },
     Anchor { year: i32, month: Option<u8>, day: Option<u8>, citation: String },
     Era { label: String, from_year: i32, to_year: i32 },
     Polity { label: String, color_key: u8, eras: Vec<DtoPolityEra> },
     CatechismItem { label: String },
     Source { label: String },
     Translation { label: String },
-    PeopleGroup { label: String },
+    PeopleGroup { label: String, description: Option<String> },
 }
 
 fn payload_to_dto(p: &NodePayload) -> DtoPayload {
@@ -264,13 +264,14 @@ fn payload_to_dto(p: &NodePayload) -> DtoPayload {
             ref_note: ref_note.clone(),
         },
         NodePayload::Narrative { label, color } => DtoPayload::Narrative { label: label.clone(), color: color.clone() },
-        NodePayload::Place { canonical, lat, lon, aliases } => DtoPayload::Place { canonical: canonical.clone(), lat: *lat, lon: *lon, aliases: aliases.clone() },
-        NodePayload::Person { label, gender, birth_year, death_year, also_called } => DtoPayload::Person {
+        NodePayload::Place { canonical, lat, lon, aliases, description } => DtoPayload::Place { canonical: canonical.clone(), lat: *lat, lon: *lon, aliases: aliases.clone(), description: description.clone() },
+        NodePayload::Person { label, gender, birth_year, death_year, also_called, description } => DtoPayload::Person {
             label: label.clone(),
             gender: gender.clone(),
             birth_year: *birth_year,
             death_year: *death_year,
             also_called: also_called.clone(),
+            description: description.clone(),
         },
         NodePayload::Anchor { at, citation } => DtoPayload::Anchor { year: at.year.get(), month: at.month, day: at.day, citation: citation.clone() },
         NodePayload::Era { label, from_year, to_year } => DtoPayload::Era { label: label.clone(), from_year: *from_year, to_year: *to_year },
@@ -278,7 +279,7 @@ fn payload_to_dto(p: &NodePayload) -> DtoPayload {
         NodePayload::CatechismItem { label } => DtoPayload::CatechismItem { label: label.clone() },
         NodePayload::Source { label } => DtoPayload::Source { label: label.clone() },
         NodePayload::Translation { label } => DtoPayload::Translation { label: label.clone() },
-        NodePayload::PeopleGroup { label } => DtoPayload::PeopleGroup { label: label.clone() },
+        NodePayload::PeopleGroup { label, description } => DtoPayload::PeopleGroup { label: label.clone(), description: description.clone() },
     }
 }
 
@@ -305,9 +306,9 @@ fn payload_from_dto(d: DtoPayload) -> Result<NodePayload, ArtifactError> {
             ref_note,
         },
         DtoPayload::Narrative { label, color } => NodePayload::Narrative { label, color },
-        DtoPayload::Place { canonical, lat, lon, aliases } => NodePayload::Place { canonical, lat, lon, aliases },
-        DtoPayload::Person { label, gender, birth_year, death_year, also_called } => {
-            NodePayload::Person { label, gender, birth_year, death_year, also_called }
+        DtoPayload::Place { canonical, lat, lon, aliases, description } => NodePayload::Place { canonical, lat, lon, aliases, description },
+        DtoPayload::Person { label, gender, birth_year, death_year, also_called, description } => {
+            NodePayload::Person { label, gender, birth_year, death_year, also_called, description }
         }
         DtoPayload::Anchor { year, month, day, citation } => {
             let at = atlas_graph_types::chrono::TimePoint::new(
@@ -323,7 +324,7 @@ fn payload_from_dto(d: DtoPayload) -> Result<NodePayload, ArtifactError> {
         DtoPayload::CatechismItem { label } => NodePayload::CatechismItem { label },
         DtoPayload::Source { label } => NodePayload::Source { label },
         DtoPayload::Translation { label } => NodePayload::Translation { label },
-        DtoPayload::PeopleGroup { label } => NodePayload::PeopleGroup { label },
+        DtoPayload::PeopleGroup { label, description } => NodePayload::PeopleGroup { label, description },
     })
 }
 
@@ -642,19 +643,35 @@ pub struct ArtifactDump {
 /// `.resolved`/genuine `to_year` must now survive the artifact round trip,
 /// see that field's own doc comment). `data/compiled/graph.bin` rebuilt in
 /// this same commit (the suites-green-every-commit law).
-const FORMAT_VERSION: u32 = 3;
+///
+/// Writer window 2026-08-24 (PG-1 + ENT-1): bumped 3 -> 4. Triggers:
+/// PG-1 APPENDED enum variants (`DtoMentionedEntity::PeopleGroup`,
+/// `DtoNodeKind::PeopleGroup`, `DtoPayload::PeopleGroup`) -- benign for
+/// READING an old artifact (bincode decodes by index; appended variants
+/// never collide) but a version-3 reader handed a version-4 artifact
+/// carrying the new variants would not be; ENT-1 ADDED FIELDS to
+/// existing variants (`description` on Place/Person/PeopleGroup in
+/// `DtoPayload`) -- a genuine wire-shape break both directions.
+/// `data/compiled/graph.bin` rebuilt in this same commit.
+const FORMAT_VERSION: u32 = 4;
 
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
 /// startup stats. Errors loudly if any of the currently-always-empty
 /// tables (`contains_bible`/`contains_concord`/`quotes`/`confesses`/
-/// `corresponds_bible`) is non-empty -- this format does not yet carry
+/// `corresponds_bible` -- and, since the 2026-08-24 writer window, the
+/// four new row tables `fulfills`/`typology`/`named_after`/
+/// `temporal_adjacency`) is non-empty -- this format does not yet carry
 /// them; extending it is a real, deliberate future act, not something
-/// this batch silently punts by dropping rows.
+/// this batch silently punts by dropping rows. The EDGE-1/PG-1/TRAV-1
+/// data batches hit this guard ON PURPOSE: serializing their rows is
+/// part of each batch's own scope.
 pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_stats: &EventWorldStats) -> Result<ArtifactDump, ArtifactError> {
-    if !g.contains_bible.is_empty() || !g.contains_concord.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty() {
+    if !g.contains_bible.is_empty() || !g.contains_concord.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty()
+        || !g.fulfills.is_empty() || !g.typology.is_empty() || !g.named_after.is_empty() || !g.temporal_adjacency.is_empty()
+    {
         return Err(ArtifactError(
-            "the graph carries rows in a relation this artifact format does not yet serialize (contains/quotes/confesses/corresponds) -- extend artifact.rs before shipping this content".into(),
+            "the graph carries rows in a relation this artifact format does not yet serialize (contains/quotes/confesses/corresponds/fulfills/typology/named-after/temporal-adjacency) -- extend artifact.rs before shipping this content".into(),
         ));
     }
 

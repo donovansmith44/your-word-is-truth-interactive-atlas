@@ -137,4 +137,8 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // SAME alias content, and Place node hashes are unaffected). Real,
 // deliberate content changes to node payloads and a retired relation, not
 // a bug. New captured value: "b668c9886baff013".
-const EXPECTED_VERSION_HEX: &str = "b668c9886baff013";
+// MOVED (deliberately -- ENT-1 writer window, 2026-08-24): every Place/
+// Person payload gained `description: Option<String>` (None until the
+// Easton's adapter fills it), which changes each node's canonical
+// bytes -- the root moving IS the widening being real.
+const EXPECTED_VERSION_HEX: &str = "6ec526d87dec845f";

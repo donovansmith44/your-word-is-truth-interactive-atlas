@@ -211,7 +211,7 @@ mod tests {
         let place_id = PlaceId::new("hebron").erase();
         graph.nodes.insert(
             place_id.clone(),
-            Node { id: place_id.clone(), payload: NodePayload::Place { canonical: "Hebron".into(), lat: 0.0, lon: 0.0, aliases: vec![] }, provenance: "test".into() },
+            Node { id: place_id.clone(), payload: NodePayload::Place { canonical: "Hebron".into(), lat: 0.0, lon: 0.0, aliases: vec![], description: None }, provenance: "test".into() },
         );
         graph.mentions.push(atlas_graph_types::edge::Mentions { locus: locus(), entity: MentionedEntity::Place(PlaceId::new("hebron")), provenance: "test".into() });
 

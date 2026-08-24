@@ -111,7 +111,15 @@ pub enum NodePayload {
     /// `graph.named` table -- was RETIRED outright; this payload field
     /// was already the sole serving path, so the parallel authored rows
     /// were exactly the "second, weaker path" the discipline forbids.)
-    Place { canonical: String, lat: f64, lon: f64, aliases: Vec<String> },
+    /// ENT-1 (owner order 2026-08-23: "we actually want meaningful
+    /// information about who or what someone is, having that be backed
+    /// by scripture"): `description` is Easton's PD prose ABOUT the
+    /// entity -- a payload FACT (the aliases/border-data precedent);
+    /// key-passage SELECTION stays a law-computed query (P4:
+    /// presentation = selection), never stored. `None` until the
+    /// Easton's adapter fills a source-attested match -- NO fabricated
+    /// prose, ever.
+    Place { canonical: String, lat: f64, lon: f64, aliases: Vec<String>, description: Option<String> },
     /// Batch P (the extensibility proof): widened the SAME way M-C widened
     /// Place/Polity (controller decision 2) -- real payload, not a stub.
     /// `label` is the display name; `gender`/`birth_year`/`death_year` ride
@@ -121,17 +129,17 @@ pub enum NodePayload {
     /// alternate-name list -- the SAME "payload, not a new relation kind"
     /// shape Place's own KJV aliases and Polity's own border data already
     /// use (a fact ABOUT the person, not a further explorable thing).
-    Person { label: String, gender: Option<String>, birth_year: Option<i32>, death_year: Option<i32>, also_called: Vec<String> },
+    Person { label: String, gender: Option<String>, birth_year: Option<i32>, death_year: Option<i32>, also_called: Vec<String>, description: Option<String> },
     /// PG-1 (owner order 2026-08-23: "we need a way to distinguish
     /// between the names of the twelve tribes and the people theyre
     /// named after"; "pull in Peoples or Nations info so I can find
     /// out who the ammonites are"). A people group (tribe/nation/
     /// clan) is its OWN kind of thing -- not a Person, not a Place --
     /// so a mention can attest WHICH sense a name carries, and "who
-    /// are the Ammonites?" has a node to answer from. Minimal on
-    /// purpose: description arrives with ENT-1's widening for every
-    /// entity kind at once.
-    PeopleGroup { label: String },
+    /// are the Ammonites?" has a node to answer from. ENT-1 widened
+    /// `description` here the same hour it widened Place/Person -- see
+    /// their shared doc note above.
+    PeopleGroup { label: String, description: Option<String> },
     /// Explorable "why this date?" — day-capable (sweep F4).
     Anchor { at: TimePoint, citation: String },
     /// M-C: a time-range boundary node for the map/era selector — payload
@@ -213,7 +221,7 @@ pub fn card(n: &dyn NodeData) -> Card {
         | NodePayload::CatechismItem { label }
         | NodePayload::Source { label }
         | NodePayload::Translation { label }
-        | NodePayload::PeopleGroup { label } => label.clone(),
+        | NodePayload::PeopleGroup { label, .. } => label.clone(),
         NodePayload::Place { canonical, .. } => canonical.clone(),
         NodePayload::Anchor { citation, .. } => citation.clone(),
     };
