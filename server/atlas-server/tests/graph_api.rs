@@ -295,6 +295,53 @@ async fn person_card_and_mentioned_in_frontier_are_served_by_the_generic_endpoin
     assert_eq!(page["next"], 3, "a 331-entry frontier at limit=3 must page, not silently truncate");
 }
 
+/// ENT-1a: the generic node card's own additive `description` field, over
+/// HTTP, over REAL data -- `aaron_1` is this file's own established
+/// exemplar (the test above) and carries a real, tier-(a) Theographic-
+/// pre-joined Easton's description (`description_adapter.rs`'s own unit
+/// tests already prove the MATCHING logic in isolation; this proves the
+/// wire actually carries it end to end, additively, through the SAME
+/// generic `GET /api/node/{id}` this file's other Person tests already
+/// exercise -- no new endpoint).
+#[tokio::test]
+async fn person_card_carries_a_real_easton_description_when_a_match_exists() {
+    let app = real_app();
+    let (st, body, _) = get(&app, "/api/node/Person:aaron_1").await;
+    assert_eq!(st, 200, "{body}");
+    let description = body["description"].as_str().expect("Aaron must carry a real description over the real compiled data");
+    assert!(description.starts_with("The eldest son of Amram"), "must be Easton's own verbatim prose, got: {description}");
+}
+
+/// ENT-1a: the SAME additive field, on the OTHER wire surface it was added
+/// to (`handlers::PlaceDetailOut`, the legacy `/api/place/{id}` endpoint,
+/// distinct code from the generic node card above) -- `hebron` is a real
+/// compiled geo place with a real tier-(b) Easton's match.
+#[tokio::test]
+async fn place_detail_carries_a_real_easton_description_when_a_match_exists() {
+    let app = real_app();
+    let (st, body, _) = get(&app, "/api/place/hebron").await;
+    assert_eq!(st, 200, "{body}");
+    let description = body["description"].as_str().expect("Hebron must carry a real description over the real compiled data");
+    assert!(!description.trim().is_empty());
+    assert!(description.contains("Eshcol") || description.contains("Jerusalem"), "must be Easton's own real Hebron prose, got: {description}");
+}
+
+/// ENT-1a (additive-only, batch-ent1a-brief.md controller decision 3): when
+/// no description match exists, the JSON key is OMITTED entirely (never a
+/// present `null`) -- the SAME `skip_serializing_if` discipline every other
+/// optional field on this wire already uses (`PlaceDetailOut::history`,
+/// `::canonical_name`), proven here rather than merely claimed. An Era node
+/// carries no `description` field on its `NodePayload` variant at all, so
+/// this also proves the OTHER kinds sharing the generic card never gain a
+/// stray key.
+#[tokio::test]
+async fn node_card_omits_description_for_a_kind_that_never_carries_one() {
+    let app = real_app();
+    let (st, body, _) = get(&app, "/api/node/Era:primeval").await;
+    assert_eq!(st, 200, "{body}");
+    assert!(body.get("description").is_none(), "an Era card must never carry a description key at all, got: {body}");
+}
+
 /// The inverse direction of the same relation: a VERSE's own `mentions`
 /// frontier carries BOTH Place and Person entities under one edge kind
 /// (design doc §4: `mentions` locus -> `Place | Person`) -- EXO.4.14 (the

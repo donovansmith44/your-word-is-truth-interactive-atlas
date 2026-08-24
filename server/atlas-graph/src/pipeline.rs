@@ -119,11 +119,17 @@ pub struct BuildCtx<'a> {
     pub justified_by_count: usize,
     /// ENT-1a: `description_adapter::fill_descriptions`'s own return value,
     /// captured here (not just returned-and-discarded, unlike the other
-    /// MERGE/ALIAS adapter calls' own Stats structs) so a caller building a
-    /// full graph -- the real-data spot check test, `compile_graph.rs`'s
-    /// own diagnostic printouts -- can read the fill-rate breakdown after
-    /// `run_pipeline` returns, without a second, redundant pass over the
-    /// graph. Stays `Default` (all zero) until `MergeAliasPass` runs.
+    /// MERGE/ALIAS adapter calls' own Stats structs) so a caller that
+    /// constructs a `BuildCtx` directly and drives `run_pipeline` itself --
+    /// `description_real_data.rs`'s own real-data fill-rate report test is
+    /// the one real caller today -- can read the fill-rate breakdown
+    /// afterward, without a second, redundant pass over the graph.
+    /// DISCLOSED, not silently narrower than it sounds: `build::
+    /// build_graph_from_sources_with_eras` (and so `bins/compile_graph.rs`,
+    /// which only calls that wrapper) does NOT surface this field -- its
+    /// own return tuple is a fixed, widely-depended-on shape this batch
+    /// deliberately did not widen. Stays `Default` (all zero) until
+    /// `MergeAliasPass` runs.
     pub description_stats: crate::description_adapter::DescriptionStats,
 }
 
