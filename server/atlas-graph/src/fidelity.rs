@@ -18,6 +18,28 @@
 //! CALLS `atlas_etl::kjv::parse` (or any of its types/helpers) -- see that
 //! module's own doc comment for exactly what is and isn't shared with the
 //! adapter path, and why.
+//!
+//! BATCH KJV-CASE: `check_kjv_fidelity` gained a third parameter,
+//! `brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>`. The
+//! adapter path (`atlas_graph::build::build_graph_from_sources_with_eras_
+//! and_brainfuel`) now case-restores the KJV text it builds TextUnit nodes
+//! from (`atlas_etl::brainfuel::restore_kjv_case`) whenever a real
+//! `brainfuel` corpus is supplied -- so "the graph's own text" and "the
+//! raw bytes of `source_kjv_json`" honestly diverge by exactly the
+//! restored positions' casing. Passing the SAME corpus through here lets
+//! this law apply the IDENTICAL, separately law-tested
+//! `atlas_etl::brainfuel::restore_verse_case` transform to its own
+//! independently-derived `expected` text before comparing -- keeping I2's
+//! independence boundary intact (this still shares NO parsing/book-
+//! resolution code with the adapter path; `restore_verse_case` is a pure,
+//! generic byte transform, not a parser, and is proven correct on its own
+//! terms by its own unit + real-data tests) while keeping the law
+//! MEANINGFUL: it now proves the graph matches "kjv.json, case-restored,"
+//! which is what "the declared source" honestly means post-restoration,
+//! rather than falsely reporting drift at every one of the restored
+//! positions. `None` (no real brainfuel) leaves `expected` untouched,
+//! exactly the pre-batch behavior -- every existing caller that never
+//! threads real brainfuel data through is unaffected.
 
 use std::collections::BTreeSet;
 
@@ -175,8 +197,25 @@ mod independent_reader {
 /// from source on every check (rather than trusting whatever the builder
 /// happened to record) is the point: this is the proof that source and
 /// built graph agree, not a self-consistency check of the builder alone.
-pub fn check_kjv_fidelity(source_kjv_json: &str, built: &Graph) -> Result<(), FidelityViolation> {
-    let expected = independent_reader::read(source_kjv_json).map_err(|e| FidelityViolation(format!("source failed to parse: {e}")))?;
+///
+/// `brainfuel`: Batch KJV-CASE (module doc comment above) -- when real,
+/// applies the SAME case-restoration transform the adapter path applies,
+/// to this law's OWN independently-derived `expected` text, before the
+/// comparison below runs.
+pub fn check_kjv_fidelity(source_kjv_json: &str, built: &Graph, brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>) -> Result<(), FidelityViolation> {
+    let mut expected = independent_reader::read(source_kjv_json).map_err(|e| FidelityViolation(format!("source failed to parse: {e}")))?;
+
+    if let Some(corpus) = brainfuel {
+        let kjv_by_dot_ref = atlas_etl::brainfuel::king_james_by_dot_ref(corpus);
+        for v in &mut expected {
+            let dot_ref = kjv_adapter::dot_ref(v.book_index, v.chapter, v.verse);
+            if let Some(theirs) = kjv_by_dot_ref.get(&dot_ref) {
+                if let Some(restored) = atlas_etl::brainfuel::restore_verse_case(&v.text, theirs) {
+                    v.text = restored;
+                }
+            }
+        }
+    }
 
     // BIJECTION: every source verse <-> exactly one TextUnit node, and its
     // rendering matches the source text verbatim.
@@ -260,7 +299,10 @@ impl atlas_graph_types::ingest::BoundaryLaw for KjvBoundaryLaw {
     fn check(&self, source: &atlas_graph_types::ingest::SourceBytes, built: &Graph) -> Result<(), atlas_graph_types::ingest::LawViolation> {
         let text = std::str::from_utf8(&source.0)
             .map_err(|e| atlas_graph_types::ingest::LawViolation(format!("source is not valid utf-8: {e}")))?;
-        check_kjv_fidelity(text, built).map_err(|e| atlas_graph_types::ingest::LawViolation(e.0))
+        // Symbolic conformance only (this struct's own doc comment: "not
+        // load-bearing machinery") -- no real caller here has a brainfuel
+        // corpus to thread through, so `None` (a true no-op) is honest.
+        check_kjv_fidelity(text, built, None).map_err(|e| atlas_graph_types::ingest::LawViolation(e.0))
     }
 }
 
@@ -289,7 +331,7 @@ mod tests {
     #[test]
     fn green_on_a_clean_fixture() {
         let (graph, ..) = build_graph_from_sources(GOOD_KJV, NO_XREFS, &crate::event_world::empty_atlas()).unwrap();
-        assert_eq!(check_kjv_fidelity(GOOD_KJV, &graph), Ok(()));
+        assert_eq!(check_kjv_fidelity(GOOD_KJV, &graph, None), Ok(()));
     }
 
     #[test]
@@ -314,7 +356,7 @@ mod tests {
         if let Some(spine) = graph.reading.get_mut(kjv_adapter::BIBLE_CORPUS) {
             spine.order.retain(|id| *id != dropped_id);
         }
-        let result = check_kjv_fidelity(GOOD_KJV, &graph);
+        let result = check_kjv_fidelity(GOOD_KJV, &graph, None);
         assert!(result.is_err(), "a graph missing a source verse must fail the bijection check");
     }
 
@@ -328,7 +370,7 @@ mod tests {
                 text.replace_range(0..1, "X"); // "In the..." -> "Xn the..."
             }
         }
-        let result = check_kjv_fidelity(GOOD_KJV, &graph);
+        let result = check_kjv_fidelity(GOOD_KJV, &graph, None);
         assert!(result.is_err(), "a mutated byte must fail the bijection/reconstruction check");
     }
 
@@ -340,6 +382,51 @@ mod tests {
             .expect("data/raw/xrefs/cross_references.txt must exist (committed real data)");
         let (graph, stats, ..) = build_graph_from_sources(&kjv_json, &xrefs_tsv, &crate::event_world::empty_atlas()).expect("the real KJV source must parse");
         assert_eq!(stats.kjv_verses, 31_102, "the real KJV text is 31,102 verses");
-        assert_eq!(check_kjv_fidelity(&kjv_json, &graph), Ok(()), "the real KJV source must satisfy its own bijection + reconstruction law");
+        assert_eq!(check_kjv_fidelity(&kjv_json, &graph, None), Ok(()), "the real KJV source must satisfy its own bijection + reconstruction law");
+    }
+
+    // -------------------------------------------------------------------
+    // Batch KJV-CASE: the boundary law survives (and stays MEANINGFUL)
+    // once real case restoration is in play.
+    // -------------------------------------------------------------------
+
+    fn real_brainfuel() -> atlas_etl::brainfuel::BrainFuelCorpus {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
+        atlas_etl::brainfuel::read_all(&dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first")
+    }
+
+    #[test]
+    fn green_over_real_data_with_case_restoration_threaded_through_both_sides() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
+        let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist (committed real data)");
+        let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt"))
+            .expect("data/raw/xrefs/cross_references.txt must exist (committed real data)");
+        let brainfuel = real_brainfuel();
+        let (graph, ..) = crate::build::build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &crate::event_world::empty_atlas(), &[], Some(&brainfuel))
+            .expect("the real KJV + brainfuel sources must build");
+        assert_eq!(
+            check_kjv_fidelity(&kjv_json, &graph, Some(&brainfuel)),
+            Ok(()),
+            "a case-restored graph must satisfy the boundary law when the SAME brainfuel corpus is threaded through the check -- \
+             the law now proves 'matches kjv.json, case-restored', which is what the declared source honestly means post-restoration"
+        );
+    }
+
+    #[test]
+    fn red_when_the_graph_is_case_restored_but_the_check_is_not_told() {
+        // Proves the check above is not vacuously true: a graph built WITH
+        // restoration, checked WITHOUT it, must genuinely disagree at the
+        // restored positions (the checker's own "expected" stays
+        // unrestored while the graph's own text does not) -- the law still
+        // has teeth, it isn't just "always green once you pass a corpus."
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
+        let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist (committed real data)");
+        let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt"))
+            .expect("data/raw/xrefs/cross_references.txt must exist (committed real data)");
+        let brainfuel = real_brainfuel();
+        let (graph, ..) = crate::build::build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &crate::event_world::empty_atlas(), &[], Some(&brainfuel))
+            .expect("the real KJV + brainfuel sources must build");
+        let result = check_kjv_fidelity(&kjv_json, &graph, None);
+        assert!(result.is_err(), "a case-restored graph checked against an UNRESTORED expectation must fail -- the law must not be trivially green");
     }
 }

@@ -24,6 +24,17 @@ fn corpus() -> atlas_etl::brainfuel::BrainFuelCorpus {
     )
 }
 
+/// Batch KJV-CASE: our own canonical `"BOOK.CH.V" -> text` map, parsed
+/// fresh from the real committed `data/raw/kjv.json` -- the SAME source
+/// `kjv_column_cross_check_mismatch_count_is_pinned` below already reads,
+/// factored out so the restoration-pass tests below can share it without
+/// each re-deriving its own path.
+fn our_kjv_verses() -> HashMap<String, String> {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
+    let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
+    atlas_etl::kjv::parse(&kjv_json).expect("our own kjv.json must parse").1
+}
+
 #[test]
 fn chapter_file_counts_match_the_real_kjv_skeleton() {
     let c = corpus();
@@ -128,32 +139,191 @@ fn real_absent_marker_example_1_chronicles_11_47() {
 
 /// The owner-ordered KJV column cross-check (batch brief requirement 5):
 /// brain-fuel's own `king_james` column against this app's own canonical
-/// KJV text, at every aligned position. RAW byte equality, no
-/// normalization -- the honest, literal number, pinned as a regression
-/// value. See this batch's own report for the full categorized breakdown;
-/// every one of these mismatches was manually verified to be a
-/// typographic/transcription-convention difference (whitespace; the
-/// traditional `LORD`/`Lord` Tetragrammaton-case convention that this
-/// app's OWN scrollmapper-sourced `data/raw/kjv.json` does not preserve;
-/// Psalm-superscription-into-verse-1 and Psalm 119 acrostic
-/// Hebrew-letter-header folding, present in our own source but not
-/// brain-fuel's; a handful of epistle postscripts and genuine spelling
-/// variants e.g. "Judea"/"Judaea") -- NEVER a case of a position holding a
-/// genuinely different verse (zero "missing from our side" positions;
-/// alignment itself is fully sound). Mismatches are disclosed, never
-/// imported -- our KJV base stays authoritative.
+/// KJV text, at every aligned position, RAW byte equality, no
+/// normalization. PRE-restoration pin (Batch CORP-1a's own original
+/// finding, kept here as the historical fact it is: `data/raw/kjv.json`
+/// on disk is never edited by this batch -- gitignored/fetched, per the
+/// KJV-CASE brief's own controller decision 1 -- so the RAW byte-equality
+/// count against the UNRESTORED text never changes). See
+/// `kjv_column_cross_check_mismatch_count_after_case_restoration_is_pinned`
+/// below for the batch KJV-CASE update: the SAME comparison, run against
+/// the case-restored verse map instead, which is what actually reaches
+/// the compiled graph.
 #[test]
 fn kjv_column_cross_check_mismatch_count_is_pinned() {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-    let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-    let (_canon, our_verses) = atlas_etl::kjv::parse(&kjv_json).expect("our own kjv.json must parse");
-
+    let our_verses = our_kjv_verses();
     let c = corpus();
     let report = atlas_etl::brainfuel::kjv_cross_check(&c, &our_verses, 20);
 
     assert_eq!(report.compared, 31_102, "every brain-fuel king_james position must be found on our own canonical side -- alignment is sound");
     assert_eq!(
         report.raw_mismatches, 9_274,
-        "the pinned RAW mismatch count -- see this test's own doc comment and the batch report for the full categorized breakdown"
+        "the pinned RAW mismatch count against UNRESTORED text -- see this test's own doc comment; \
+         CORP-1a categorized this as ~2,878 whitespace + ~5,809 LORD/Lord Tetragrammaton-case + ~136+ \
+         superscription/postscript folding + a small spelling-variant residue, zero content substitution"
+    );
+}
+
+// ---------------------------------------------------------------------
+// Batch KJV-CASE (owner ruling, "KJV-CASE-1 APPROVED... 3. yes" --
+// .superpowers/sdd/2026-08-17-bible-atlas-m1/batch-kjv-case-brief.md): the
+// Tetragrammaton LORD/Lord case-restoration pass, verified over the real
+// committed data. KJV INERRANCY DIRECTIVE: restoration, never revision --
+// every test below either proves a genuine restoration (case-fold-equal
+// positions) or proves a position was left PROVABLY untouched (folded
+// texts disagree).
+// ---------------------------------------------------------------------
+
+/// Batch brief controller decision 4: "total positions case-restored
+/// (expect the ~5,809 class, exact number from the run), positions
+/// skipped due to folded mismatch (expect ~3,465 class, exact), positions
+/// already agreeing (untouched)." Independently verified against the real
+/// vendored corpus + the real committed `data/raw/kjv.json` before being
+/// pinned here, the SAME methodology this file's own module doc comment
+/// describes for every other pinned count in it.
+#[test]
+fn kjv_case_restoration_counts_are_pinned() {
+    let our_verses = our_kjv_verses();
+    let c = corpus();
+    let (_restored, report) = atlas_etl::brainfuel::restore_kjv_case(&c, &our_verses);
+
+    assert_eq!(report.compared, 31_102, "matches kjv_cross_check's own compared count exactly -- same alignment, same two inputs");
+    assert_eq!(report.compared, report.restored + report.already_agreeing + report.skipped_mismatch, "every compared position falls into exactly one bucket");
+    // CORP-1a's own manual categorization (progress.md, "~5,809 LORD/Lord
+    // Tetragrammaton-case; ~136+ superscription/postscript folding") was an
+    // approximation by design (its own "~" prefix) -- this batch's
+    // mechanical, byte-exact case-fold sweep is the authoritative count,
+    // independently verified against the real committed sources before
+    // being pinned here (this file's own module doc comment methodology).
+    // 5,473 + 3,801 = 9,274 -- reconciles EXACTLY with the pre-restoration
+    // raw mismatch count `kjv_column_cross_check_mismatch_count_is_pinned`
+    // above pins, confirming no position was miscounted either direction.
+    assert_eq!(report.restored, 5_473, "the case-class mismatches: positions where our text and brain-fuel's disagreed ONLY in casing");
+    assert_eq!(report.skipped_mismatch, 3_801, "the non-case mismatches: whitespace/superscription-folding/spelling residue, left untouched");
+    assert_eq!(report.already_agreeing, 21_828, "31,102 - 9,274 raw mismatches -- positions that were already byte-identical");
+}
+
+/// The cross-check RE-RUN against the case-restored verse map (batch
+/// brief controller decision 4: "the CORP-1a cross-check test's raw-
+/// mismatch assertion UPDATES same-commit... case-class mismatches
+/// collapse to ~0; the residual number is the new asserted value,
+/// categorized"). Restoration adopts brain-fuel's own casing verbatim at
+/// every position it touches (byte-for-byte, by `restore_verse_case`'s
+/// own construction), so comparing the RESTORED map against brain-fuel's
+/// own column again must show those exact positions now byte-EQUAL: the
+/// residual raw-mismatch count after restoration is precisely the
+/// `skipped_mismatch` count `kjv_case_restoration_counts_are_pinned`
+/// above already pins -- the non-case residue (whitespace conventions,
+/// Psalm-superscription/Ps119-acrostic folding, spelling residue), never
+/// touched because it was never safe to touch.
+#[test]
+fn kjv_column_cross_check_mismatch_count_after_case_restoration_is_pinned() {
+    let our_verses = our_kjv_verses();
+    let c = corpus();
+    let (restored_verses, restoration_report) = atlas_etl::brainfuel::restore_kjv_case(&c, &our_verses);
+
+    let report = atlas_etl::brainfuel::kjv_cross_check(&c, &restored_verses, 20);
+
+    assert_eq!(report.compared, 31_102);
+    assert_eq!(
+        report.raw_mismatches, restoration_report.skipped_mismatch,
+        "post-restoration, every remaining raw mismatch must be exactly a skipped (folded-mismatch) position -- \
+         the case class has collapsed to zero by construction"
+    );
+    assert_eq!(report.raw_mismatches, 3_801, "the residual, categorized non-case mismatch count -- the new pinned value this batch's own report discloses");
+}
+
+/// Batch brief controller decision 2, THE CASE-ONLY LAW, proved over
+/// every one of the real 31,102 aligned positions (not sampled): (1) for
+/// every position the pass TOUCHED (case-fold-equal to brain-fuel's own
+/// column), before/after are IDENTICAL under case-folding -- any byte
+/// difference that is not purely a case difference would fail this
+/// assertion; (2) for every position the pass SKIPPED (folded texts
+/// mismatch), before/after are BYTE-IDENTICAL -- the pass provably never
+/// touches them. Both assertions run inside the SAME sweep so a single
+/// real-data pass witnesses the whole law, not two independently-sampled
+/// claims.
+#[test]
+fn case_restoration_satisfies_the_case_only_law_over_every_real_position() {
+    let our_verses = our_kjv_verses();
+    let c = corpus();
+    let (restored_verses, report) = atlas_etl::brainfuel::restore_kjv_case(&c, &our_verses);
+
+    let mut law1_touched = 0usize; // case-fold-equal positions: before/after must stay case-fold-equal.
+    let mut law2_skipped = 0usize; // folded-mismatch positions: before/after must be byte-identical.
+    for row in &c.rows {
+        let Some(theirs) = &row.king_james else { continue };
+        let dot_ref = format!("{}.{}.{}", row.book.code(), row.chapter, row.verse);
+        let Some(before) = our_verses.get(&dot_ref) else { continue };
+        let after = restored_verses.get(&dot_ref).expect("restore_kjv_case must never drop a key that was present before");
+
+        if before.eq_ignore_ascii_case(theirs) {
+            assert!(before.eq_ignore_ascii_case(after), "CASE-ONLY LAW VIOLATED at {dot_ref}: before {before:?}, after {after:?} are not even case-fold-equal");
+            law1_touched += 1;
+        } else {
+            assert_eq!(after, before, "SKIP LAW VIOLATED at {dot_ref}: folded texts disagree with brain-fuel, but the pass changed a byte anyway");
+            law2_skipped += 1;
+        }
+    }
+
+    assert_eq!(law1_touched + law2_skipped, 31_102, "every compared position was swept by exactly one of the two law checks above");
+    assert_eq!(law1_touched, report.restored + report.already_agreeing, "law-1-eligible positions are exactly restored + already_agreeing");
+    assert_eq!(law2_skipped, report.skipped_mismatch);
+}
+
+/// Batch brief controller decision 3, the four spot laws, read back from
+/// the ACTUAL restoration output over real data (never from intent).
+///
+/// PSA 110:1 is this batch's own "load-bearing example" IN NAME -- but a
+/// superscription-folded position IN FACT, verified byte-for-byte against
+/// both real sources: our own `data/raw/kjv.json` folds the Psalm's own
+/// superscription into verse 1's text ("A Psalm of David. The Lord said
+/// unto my Lord..."), while brain-fuel's `king_james` column does not
+/// carry that superscription at all ("The LORD said unto my Lord...").
+/// The two are NOT case-fold-equal (different length), so this exact
+/// position is a `skipped_mismatch` -- disclosed here rather than forced,
+/// per controller decision 1's own literal "for each verse position"
+/// (whole-verse) comparison unit, and per this batch's own instruction
+/// that superscription-folding positions are among the folded-text
+/// mismatches this pass must provably skip. This is the case-only law's
+/// own second assertion, witnessed concretely on the batch's own
+/// flagship verse: restoration is honest about what it can and cannot
+/// touch, never forcing a result past what "characters unchanged, case
+/// only" allows.
+#[test]
+fn case_restoration_spot_verses_match_the_batch_briefs_own_four_examples() {
+    let our_verses = our_kjv_verses();
+    let c = corpus();
+    let (restored_verses, _report) = atlas_etl::brainfuel::restore_kjv_case(&c, &our_verses);
+
+    // PSA 110:1 -- skipped (superscription-folded), UNTOUCHED, verbatim.
+    assert_eq!(
+        restored_verses.get("PSA.110.1").map(String::as_str),
+        our_verses.get("PSA.110.1").map(String::as_str),
+        "PSA 110:1 is a superscription-folded mismatch position -- must be byte-identical before/after, never touched"
+    );
+    assert_eq!(
+        restored_verses.get("PSA.110.1").map(String::as_str),
+        Some("A Psalm of David. The Lord said unto my Lord, Sit thou at my right hand, until I make thine enemies thy footstool.")
+    );
+
+    // GEN 2:4-class: "LORD God" (YHWH Elohim) -- a genuine restoration.
+    assert_eq!(
+        restored_verses.get("GEN.2.4").map(String::as_str),
+        Some(
+            "These are the generations of the heavens and of the earth when they were created, in the day that the LORD God made the earth and the heavens,"
+        )
+    );
+
+    // EZK 2:4 -- "Lord GOD" (Adonai YHWH), the Ezekiel-class convention.
+    assert_eq!(
+        restored_verses.get("EZK.2.4").map(String::as_str),
+        Some("For they are impudent children and stiffhearted. I do send thee unto them; and thou shalt say unto them, Thus saith the Lord GOD.")
+    );
+
+    // PSA 68:4 -- JAH.
+    assert_eq!(
+        restored_verses.get("PSA.68.4").map(String::as_str),
+        Some("Sing unto God, sing praises to his name: extol him that rideth upon the heavens by his name JAH, and rejoice before him.")
     );
 }

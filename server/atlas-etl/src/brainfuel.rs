@@ -439,6 +439,130 @@ pub fn kjv_cross_check(corpus: &BrainFuelCorpus, our_kjv_verses: &HashMap<String
     KjvCrossCheckReport { compared, raw_mismatches, examples }
 }
 
+// ---------------------------------------------------------------------
+// Batch KJV-CASE (owner ruling, "KJV-CASE-1 APPROVED... 3. yes" --
+// .superpowers/sdd/2026-08-17-bible-atlas-m1/batch-kjv-case-brief.md): the
+// Tetragrammaton case-restoration pass. Built BESIDE `kjv_cross_check`
+// above -- the SAME per-row loop, walking the SAME already-parsed
+// `corpus.rows`/`our_kjv_verses`, at the SAME dot-ref-aligned positions
+// that function's own report already proved line up 31,102/31,102 -- not
+// a second parser, a sibling pass over identical already-parsed data.
+//
+// KJV INERRANCY DIRECTIVE: restoration, never revision. The law this pass
+// exists to satisfy (batch brief controller decision 2): for any position
+// this pass TOUCHES, before/after must be identical under ASCII
+// case-folding (a byte difference that is not purely a case difference is
+// a bug, not a restoration); for any position this pass SKIPS (the folded
+// texts themselves disagree -- whitespace conventions, Psalm-superscription/
+// Ps119-acrostic-header folding, spelling residue -- `kjv_cross_check`'s
+// own doc comment has the full catalog `kjv_column_cross_check_mismatch_
+// count_is_pinned` categorizes), before/after must be BYTE-IDENTICAL: this
+// pass provably never touches them.
+// ---------------------------------------------------------------------
+
+/// Transfers brain-fuel's own CASE onto `ours`, byte-for-byte, wherever
+/// the two are equal under ASCII case-folding -- `None` when they are
+/// NOT (a caller MUST treat `None` as "touch nothing at this position";
+/// this is the case-only law's own enforcement point).
+///
+/// Deliberately NOT "return `theirs.to_string()` when case-fold-equal":
+/// even though case-fold equality already proves `ours`/`theirs` share
+/// the identical character sequence up to ASCII case, this walks `ours`'s
+/// OWN bytes and flips only the ones brain-fuel's own corresponding byte
+/// says should change -- "characters unchanged, case only" (batch brief
+/// controller decision 1) provable byte-by-byte, not merely true by a
+/// construction a reader would have to re-derive.
+///
+/// `str::eq_ignore_ascii_case` compares byte-for-byte and requires equal
+/// length, so a `Some` result implies `ours.len() == theirs.len()` and the
+/// two zipped byte streams stay aligned throughout. The output is
+/// guaranteed valid UTF-8: every byte this loop CHANGES is a single-byte
+/// ASCII alphabetic character on BOTH sides (a non-ASCII UTF-8
+/// continuation byte, always `>= 0x80`, can never be
+/// `is_ascii_uppercase`/`is_ascii_lowercase`, so this transform never
+/// touches one), and every byte it leaves alone was already valid UTF-8
+/// in `ours`.
+pub fn restore_verse_case(ours: &str, theirs: &str) -> Option<String> {
+    if !ours.eq_ignore_ascii_case(theirs) {
+        return None;
+    }
+    let restored: Vec<u8> = ours
+        .bytes()
+        .zip(theirs.bytes())
+        .map(|(o, t)| if t.is_ascii_uppercase() { o.to_ascii_uppercase() } else if t.is_ascii_lowercase() { o.to_ascii_lowercase() } else { o })
+        .collect();
+    Some(String::from_utf8(restored).expect("ASCII-case-only transform of valid UTF-8 stays valid UTF-8 (fn doc comment)"))
+}
+
+/// Per-class tallies (batch brief controller decision 4). `restored`:
+/// positions where `restore_verse_case` produced a genuinely different
+/// string (brain-fuel's own casing disagreed with ours). `already_agreeing`:
+/// positions where the folded texts matched AND the bytes were ALREADY
+/// identical -- no case drift to restore, the bulk of the KJV.
+/// `skipped_mismatch`: positions where the folded texts themselves
+/// differ -- NEVER touched, count and disclose only. `restored +
+/// already_agreeing + skipped_mismatch == compared` always (every
+/// compared position falls into exactly one bucket) -- and `compared`
+/// itself matches `KjvCrossCheckReport.compared` exactly, over the same
+/// two inputs (both walk the identical `corpus.rows`/`our_kjv_verses`
+/// alignment).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct CaseRestorationReport {
+    pub compared: usize,
+    pub restored: usize,
+    pub already_agreeing: usize,
+    pub skipped_mismatch: usize,
+}
+
+/// The owner-ordered case-restoration pass (batch brief controller
+/// decision 1). Returns a NEW `"BOOK.CH.V" -> text` map: a full clone of
+/// `our_kjv_verses` with ONLY the `restored` positions' values replaced.
+/// Every other entry -- including any position brain-fuel doesn't cover at
+/// all -- passes through byte-identical by construction (this starts from
+/// `our_kjv_verses.clone()` and only ever `.insert()`s at a position this
+/// loop actually visits and restores), which is exactly the case-only
+/// law's second half: a skipped/uncovered position is untouched, not
+/// merely "close."
+///
+/// Same per-row loop shape as `kjv_cross_check` above (the batch brief's
+/// own instruction: "build the restoration pass beside it"). Iteration
+/// order over `corpus.rows` cannot change the result: every write lands
+/// at a distinct `dot_ref` key.
+pub fn restore_kjv_case(corpus: &BrainFuelCorpus, our_kjv_verses: &HashMap<String, String>) -> (HashMap<String, String>, CaseRestorationReport) {
+    let mut restored_verses = our_kjv_verses.clone();
+    let mut report = CaseRestorationReport::default();
+    for row in &corpus.rows {
+        let Some(theirs) = &row.king_james else { continue };
+        let dot_ref = format!("{}.{}.{}", row.book.code(), row.chapter, row.verse);
+        let Some(ours) = our_kjv_verses.get(&dot_ref) else { continue };
+        report.compared += 1;
+        match restore_verse_case(ours, theirs) {
+            Some(new_text) => {
+                if &new_text == ours {
+                    report.already_agreeing += 1;
+                } else {
+                    report.restored += 1;
+                    restored_verses.insert(dot_ref, new_text);
+                }
+            }
+            None => report.skipped_mismatch += 1,
+        }
+    }
+    (restored_verses, report)
+}
+
+/// dot-ref (`"BOOK.CH.V"`) -> brain-fuel's own `king_james` column text,
+/// for every row that carries one. The one lookup `atlas_graph::fidelity`
+/// needs cross-crate: its own independent re-derivation of "expected" KJV
+/// text must apply the IDENTICAL `restore_verse_case` transform this pass
+/// does (see that module's own doc comment for why), reached from typed
+/// book-index/chapter/verse fields rather than a `BrainFuelCorpus` row --
+/// `kjv_cross_check`/`restore_kjv_case` above need no such map themselves
+/// (they already iterate `corpus.rows` directly, one row at a time).
+pub fn king_james_by_dot_ref(corpus: &BrainFuelCorpus) -> HashMap<String, &str> {
+    corpus.rows.iter().filter_map(|r| r.king_james.as_deref().map(|kjv| (format!("{}.{}.{}", r.book.code(), r.chapter, r.verse), kjv))).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -575,5 +699,85 @@ mod tests {
         let report = kjv_cross_check(&corpus, &ours_map, 10);
         assert_eq!(report.compared, 0, "a position absent from OUR side is skipped, never counted as a mismatch");
         assert_eq!(report.raw_mismatches, 0);
+    }
+
+    // -------------------------------------------------------------------
+    // Batch KJV-CASE: restore_verse_case / restore_kjv_case.
+    // -------------------------------------------------------------------
+
+    #[test]
+    fn restore_verse_case_none_when_lengths_differ() {
+        // The real PSA 110:1 shape (this batch's own report): our source
+        // folds the Psalm superscription into verse 1 ("A Psalm of
+        // David. The Lord said..."), brain-fuel's king_james column does
+        // not -- longer string, never case-fold-equal, must be a hard
+        // `None`, not a best-effort partial match.
+        assert_eq!(restore_verse_case("A Psalm of David. The Lord said unto my Lord.", "The LORD said unto my Lord."), None);
+    }
+
+    #[test]
+    fn restore_verse_case_none_when_a_non_case_byte_differs() {
+        assert_eq!(restore_verse_case("hello world", "hello there"), None, "same length, but a real content difference, not case");
+        assert_eq!(restore_verse_case("don't stop", "dont stop"), None, "punctuation difference is not a case difference");
+    }
+
+    #[test]
+    fn restore_verse_case_is_a_true_no_op_when_already_byte_identical() {
+        assert_eq!(restore_verse_case("In the beginning", "In the beginning").as_deref(), Some("In the beginning"));
+    }
+
+    #[test]
+    fn restore_verse_case_transfers_theirs_case_pattern_onto_ours_own_characters() {
+        // Ours starts capitalized ("The"), theirs does not; ours' own
+        // "lord" is lowercase, theirs' is upper -- the output must follow
+        // BRAIN-FUEL's own case at every position, not just fill gaps.
+        assert_eq!(restore_verse_case("The lord said", "the LORD said").as_deref(), Some("the LORD said"));
+    }
+
+    #[test]
+    fn restore_kjv_case_buckets_every_compared_position_exactly_once() {
+        let rows = vec![
+            // already_agreeing: byte-identical already.
+            VerseRow { book: resolve_alias("Genesis").unwrap(), chapter: 1, verse: 1, king_james: Some("In the beginning".into()), renderings: vec![] },
+            // restored: a genuine LORD/Lord case difference.
+            VerseRow { book: resolve_alias("Genesis").unwrap(), chapter: 2, verse: 4, king_james: Some("the LORD God made".into()), renderings: vec![] },
+            // skipped_mismatch: folded texts disagree (extra word).
+            VerseRow { book: resolve_alias("Genesis").unwrap(), chapter: 3, verse: 1, king_james: Some("Now the serpent was subtil indeed".into()), renderings: vec![] },
+            // not compared: absent from our own side.
+            VerseRow { book: resolve_alias("Genesis").unwrap(), chapter: 4, verse: 1, king_james: Some("x".into()), renderings: vec![] },
+        ];
+        let corpus = BrainFuelCorpus { rows, stats: ParseStats::default() };
+        let mut ours = HashMap::new();
+        ours.insert("GEN.1.1".to_string(), "In the beginning".to_string());
+        ours.insert("GEN.2.4".to_string(), "the Lord God made".to_string());
+        ours.insert("GEN.3.1".to_string(), "Now the serpent was subtil".to_string());
+        // GEN.4.1 deliberately absent from `ours`.
+
+        let (restored, report) = restore_kjv_case(&corpus, &ours);
+
+        assert_eq!(report.compared, 3, "GEN.4.1 (absent from our side) is not compared");
+        assert_eq!(report.already_agreeing, 1);
+        assert_eq!(report.restored, 1);
+        assert_eq!(report.skipped_mismatch, 1);
+        assert_eq!(report.compared, report.restored + report.already_agreeing + report.skipped_mismatch, "every compared position falls into exactly one bucket");
+
+        assert_eq!(restored.get("GEN.1.1").map(String::as_str), Some("In the beginning"), "already-agreeing position is untouched");
+        assert_eq!(restored.get("GEN.2.4").map(String::as_str), Some("the LORD God made"), "case genuinely restored");
+        assert_eq!(restored.get("GEN.3.1").map(String::as_str), Some("Now the serpent was subtil"), "skipped position is BYTE-IDENTICAL to before -- never touched");
+        assert_eq!(restored.len(), ours.len(), "no keys added or removed, only values at restored positions");
+    }
+
+    #[test]
+    fn king_james_by_dot_ref_maps_every_row_that_carries_a_column() {
+        let corpus = BrainFuelCorpus {
+            rows: vec![
+                VerseRow { book: resolve_alias("Genesis").unwrap(), chapter: 1, verse: 1, king_james: Some("kjv text".into()), renderings: vec![] },
+                VerseRow { book: resolve_alias("Genesis").unwrap(), chapter: 1, verse: 2, king_james: None, renderings: vec![] },
+            ],
+            stats: ParseStats::default(),
+        };
+        let map = king_james_by_dot_ref(&corpus);
+        assert_eq!(map.get("GEN.1.1").copied(), Some("kjv text"));
+        assert!(!map.contains_key("GEN.1.2"), "a row with no king_james column contributes no entry");
     }
 }

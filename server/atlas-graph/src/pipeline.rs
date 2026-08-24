@@ -326,7 +326,13 @@ impl Pass for LawCheckPass {
         // test-fixture path skips this the same way it always has (see
         // `BuildCtx::kjv_json_source`'s own doc comment).
         if let Some(source) = ctx.kjv_json_source {
-            crate::fidelity::check_kjv_fidelity(source, &ctx.graph)
+            // Batch KJV-CASE: `ctx.brainfuel` threads through so the law's
+            // own independent "expected" re-derivation applies the SAME
+            // case restoration the NORMALIZE stage already applied to the
+            // graph's own TextUnit renderings (see `fidelity.rs`'s own
+            // module doc comment) -- `None` on every caller with no real
+            // brainfuel data is an honest no-op, unchanged from before.
+            crate::fidelity::check_kjv_fidelity(source, &ctx.graph, ctx.brainfuel)
                 .map_err(|e| anyhow::anyhow!("{e}"))
                 .context("KJV adapter fidelity law (bijection + reconstruction)")?;
         }

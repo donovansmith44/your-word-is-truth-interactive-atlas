@@ -186,4 +186,22 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // would keep proving a DIFFERENT, KJV-only graph than the one
 // `atlas-graph-compile` actually produces. New captured value:
 // "5753f377e4bbcfe9".
-const EXPECTED_VERSION_HEX: &str = "5753f377e4bbcfe9";
+//
+// MOVED AGAIN (deliberately -- Batch KJV-CASE, owner ruling "KJV-CASE-1
+// APPROVED... 3. yes", 2026-08-24): the Tetragrammaton LORD/Lord
+// case-restoration pass (`atlas_etl::brainfuel::restore_kjv_case`, wired
+// into `build::build_graph_from_sources_with_eras_and_brainfuel`) changes
+// 5,473 KJV `TextUnit` nodes' own canonical bytes -- every position where
+// our source's casing disagreed with brain-fuel's own `king_james` column
+// under ASCII case-folding (`the LORD`/`Lord`/`GOD`/`JAH` Tetragrammaton
+// convention our own `data/raw/kjv.json` had lost) adopts brain-fuel's
+// casing, characters otherwise byte-identical (the case-only law,
+// verified over all 31,102 real positions in `atlas-etl`'s own
+// `brainfuel_real_data.rs`). This is real, deliberate, KJV-INERRANCY-
+// DIRECTIVE-compliant restoration content, not a bug -- the root moving
+// IS the restoration being real. New captured value (this test's own
+// eras-less `GraphService::from_sources_with_eras_and_brainfuel(..., &[],
+// ...)` build, NOT `atlas-graph-compile`'s own with-eras root -- those two
+// have always differed, per this file's own historical note above):
+// "d6779aa183ec6ea7".
+const EXPECTED_VERSION_HEX: &str = "d6779aa183ec6ea7";

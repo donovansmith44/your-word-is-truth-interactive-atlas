@@ -37,6 +37,14 @@ fn data_dir() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data")
 }
 
+/// Batch KJV-CASE: the real vendored brain-fuel corpus, needed to
+/// reproduce the SAME case-restoration `build::build_graph_from_sources_
+/// with_eras_and_brainfuel` applied when it built the real committed
+/// `graph.bin` this file's own `real_overlay()` loads.
+fn real_brainfuel() -> atlas_etl::brainfuel::BrainFuelCorpus {
+    atlas_etl::brainfuel::read_all(&data_dir().join("raw/brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first")
+}
+
 /// The independent reference -- cached (`OnceLock`) since a real compile
 /// is expensive and this file's own several assertions would otherwise
 /// each pay for it again.
@@ -94,13 +102,31 @@ fn every_reconstructed_narrative_equals_compiles_own_real_narrative_field_for_fi
     assert_eq!(got, want, "every ID must reconstruct to a Narrative equal in EVERY field to compile()'s own real Narrative, including its own succession-derived `legs` order");
 }
 
+/// Batch KJV-CASE (owner ruling; batch-kjv-case-brief.md) moved this
+/// test's own "want": `expected().verses` is `atlas_etl::compile::
+/// compile`'s own output, which is (by design -- see `atlas_graph::build`'s
+/// own module doc comment) NEVER case-restored; the graph `real_overlay()`
+/// reads FROM (the real committed `data/compiled/graph.bin`) IS -- that
+/// restoration happens once, at graph-compile time
+/// (`build::build_graph_from_sources_with_eras_and_brainfuel`), and
+/// `AtlasData.verses` deliberately stays outside its scope (it is a
+/// validation-only sidecar in the ETL step -- no display surface ever
+/// reads its string VALUES, only key existence; see that module's own doc
+/// comment for the full reasoning). So "the real compiled KJV text" this
+/// test's own name promises is now, honestly, "compile()'s own verses,
+/// case-restored the SAME way the graph was" -- applying
+/// `atlas_etl::brainfuel::restore_kjv_case` to `want` here is not
+/// weakening this test, it is keeping its OWN stated promise (bijection +
+/// content fidelity between the overlay and the true compiled source) once
+/// that source is honestly two-staged (raw-compile, then case-restore).
 #[test]
 fn every_reconstructed_verse_text_equals_the_real_compiled_kjv_text_exactly() {
-    let want = &expected().verses;
+    let brainfuel = real_brainfuel();
+    let (want, _report) = atlas_etl::brainfuel::restore_kjv_case(&brainfuel, &expected().verses);
     let got = real_overlay().verses;
     assert_eq!(got.len(), want.len(), "verse count must match exactly (real data: 31,102)");
     let mut mismatches: Vec<String> = Vec::new();
-    for (k, want_text) in want {
+    for (k, want_text) in &want {
         match got.get(k) {
             Some(got_text) if got_text == want_text => {}
             Some(got_text) => mismatches.push(format!("{k}: text differs (want {want_text:?}, got {got_text:?})")),

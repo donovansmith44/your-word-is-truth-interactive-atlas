@@ -78,7 +78,30 @@ pub fn build_graph_from_sources_with_eras_and_brainfuel(
     brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
     let (canon, verses) = atlas_etl::kjv::parse(kjv_json).context("parsing the KJV source (kjv.json)")?;
-    run_pipeline_build_with_brainfuel(&canon, &verses, Some(kjv_json), xrefs_tsv, atlas, eras, brainfuel)
+    // Batch KJV-CASE (owner ruling; batch-kjv-case-brief.md): restore the
+    // Tetragrammaton LORD/Lord case distinction our canonical kjv.json
+    // lost -- this is the ONE spot both `verses` (just parsed above) and a
+    // real `brainfuel` corpus are jointly in scope on every real-source
+    // caller (this function's own richest form; `compile_graph.rs`/
+    // `GraphService::build` both funnel through here). See
+    // `atlas_etl::brainfuel::restore_kjv_case`'s own doc comment for the
+    // case-only law it enforces. `fidelity::check_kjv_fidelity`'s own
+    // independent re-derivation applies the IDENTICAL transform to its own
+    // independently-parsed "expected" text (see that module's own doc
+    // comment) -- so the KJV boundary law still proves what it always
+    // proved: this build matches ITS OWN declared source, source now
+    // honestly meaning "kjv.json, case-restored" rather than "kjv.json,
+    // verbatim." `None` (no real brainfuel, e.g. most test fixtures) is a
+    // true no-op: `verses` passes through unchanged, byte-for-byte.
+    let restored_verses;
+    let verses: &HashMap<String, String> = match brainfuel {
+        Some(corpus) => {
+            restored_verses = atlas_etl::brainfuel::restore_kjv_case(corpus, &verses).0;
+            &restored_verses
+        }
+        None => &verses,
+    };
+    run_pipeline_build_with_brainfuel(&canon, verses, Some(kjv_json), xrefs_tsv, atlas, eras, brainfuel)
 }
 
 /// The same build, starting from an already-parsed `(Canon, verses)` pair

@@ -111,6 +111,20 @@ fn main() -> Result<()> {
         brainfuel.stats.anomalies,
     );
 
+    // Batch KJV-CASE: the Tetragrammaton LORD/Lord case-restoration pass
+    // (owner ruling; batch-kjv-case-brief.md) actually runs INSIDE
+    // `build_graph_from_sources_with_eras_and_brainfuel` below (see that
+    // function's own doc comment) -- this is a SEPARATE, disclosed
+    // recomputation purely for this startup log, reusing `atlas.verses`
+    // (already in scope, unrestored, from the SAME `data/raw/kjv.json`
+    // `kjv_json` above reads) so the operator sees the exact counts
+    // without a third parse of that file.
+    let (_, case_restoration) = atlas_etl::brainfuel::restore_kjv_case(&brainfuel, &atlas.verses);
+    println!(
+        "atlas-graph-compile: KJV-CASE restoration -- {} compared, {} case-restored, {} already agreeing, {} skipped (folded-text mismatch, untouched)",
+        case_restoration.compared, case_restoration.restored, case_restoration.already_agreeing, case_restoration.skipped_mismatch,
+    );
+
     println!("atlas-graph-compile: building implementation #1 (from raw sources)...");
     let build_start = Instant::now();
     let (graph_a, stats, event_world_stats, chrono) =
