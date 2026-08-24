@@ -87,10 +87,28 @@ fn main() -> Result<()> {
         .with_context(|| format!("reading {}", raw_dir.join("xrefs/cross_references.txt").display()))?;
     let eras = atlas.eras.clone();
 
+    // CORP-1a: the real compile step HARD-REQUIRES the vendored brain-fuel
+    // data (unlike GraphService::build's own dev-fallback, which degrades
+    // gracefully for a fixture raw_dir) -- a graph.bin compiled without it
+    // would silently ship KJV-only text, defeating this batch's own
+    // purpose. `data/raw/brain-fuel-bible/` (see data/raw/README.md).
+    let brainfuel_root = raw_dir.join("brain-fuel-bible");
+    println!("atlas-graph-compile: reading vendored brain-fuel editions from {}...", brainfuel_root.display());
+    let brainfuel = atlas_etl::brainfuel::read_all(&brainfuel_root).with_context(|| format!("reading {}", brainfuel_root.display()))?;
+    println!(
+        "atlas-graph-compile: brain-fuel {} OT + {} NT chapters, {} verse rows, present renderings {:?}, absent markers {:?}, anomalies {}",
+        brainfuel.stats.ot_chapters,
+        brainfuel.stats.nt_chapters,
+        brainfuel.rows.len(),
+        brainfuel.stats.per_edition_present,
+        brainfuel.stats.per_edition_absent,
+        brainfuel.stats.anomalies,
+    );
+
     println!("atlas-graph-compile: building implementation #1 (from raw sources)...");
     let build_start = Instant::now();
     let (graph_a, stats, event_world_stats, chrono) =
-        atlas_graph::build::build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &eras).context("building the graph from raw sources")?;
+        atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel)).context("building the graph from raw sources")?;
     println!(
         "atlas-graph-compile: {} text units, {} cites edges, {} events ({} dated), {} places, {} narratives, {} anchors -- build time {:?}",
         stats.kjv_verses, stats.cites_rows, event_world_stats.events, event_world_stats.dated_events, event_world_stats.places, event_world_stats.narratives, event_world_stats.anchors,
@@ -102,7 +120,7 @@ fn main() -> Result<()> {
     let dump = atlas_graph::artifact::dump(&graph_a, &chronology, &stats, &event_world_stats).map_err(|e| anyhow::anyhow!("{e}")).context("dumping the built graph")?;
 
     println!("atlas-graph-compile: ADMISSION -- rebuilding implementation #1 a second time (independent model)...");
-    let (mut graph_b, ..) = atlas_graph::build::build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &eras).context("building the independent model graph")?;
+    let (mut graph_b, ..) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel)).context("building the independent model graph")?;
     graph_b.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut graph_b);
 

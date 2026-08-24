@@ -88,6 +88,16 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
         // else in `graph_handlers.rs`/`store.rs`/`explore.rs` needed a
         // change for the two generic endpoints to serve Person nodes.
         "Person" => Some(AnyNodeId { kind: NodeKind::Person, raw: rest.to_string() }),
+        // Batch CORP-1a: same one-arm round-trip completion for the six
+        // Translation nodes this batch newly authors (`brainfuel_adapter.rs`)
+        // -- `encode_node_id`'s own pre-existing generic fallback already
+        // produces "Translation:latin_vulgate" etc.; this is what makes a
+        // rendering's own TranslationId resolve to something actually
+        // reachable through the existing generic `/api/node/{id}` endpoint
+        // (controller decision 6), not just internally present. NOT a new
+        // endpoint, NOT a client change -- the identical pattern every
+        // prior node-kind batch (M-B/M-C/P) added here.
+        "Translation" => Some(AnyNodeId { kind: NodeKind::Translation, raw: rest.to_string() }),
         _ => None,
     }
 }
@@ -173,6 +183,8 @@ mod tests {
             (NodeKind::CatechismItem, "first-commandment", "CatechismItem:first-commandment"),
             // Batch P.
             (NodeKind::Person, "aaron_1", "Person:aaron_1"),
+            // Batch CORP-1a.
+            (NodeKind::Translation, "latin_vulgate", "Translation:latin_vulgate"),
         ] {
             let id = AnyNodeId { kind, raw: raw.to_string() };
             let wire = encode_node_id(&id);

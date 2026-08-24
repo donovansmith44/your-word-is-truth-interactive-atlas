@@ -117,6 +117,16 @@ pub struct BuildCtx<'a> {
     pub event_world_stats: EventWorldStats,
     pub chrono: ChronologyDerivation,
     pub justified_by_count: usize,
+    /// CORP-1a: `atlas_etl::brainfuel::read_all`'s own pre-parsed corpus
+    /// (the six ingested editions' renderings + the `king_james` column
+    /// carried only for the cross-check) -- `None` for every caller that
+    /// doesn't supply real brain-fuel data (every OTHER adapter's own test
+    /// fixtures, via `BuildCtx::new`/`with_eras`), the SAME "absent ==
+    /// honestly empty, not a placeholder" treatment `eras` above already
+    /// gets. Reference, not owned: the corpus can be large (31,102 rows
+    /// over the real vendored data) and every real caller already has one
+    /// living for the duration of the build (mirrors `eras: &'a [Era]`).
+    pub brainfuel: Option<&'a atlas_etl::brainfuel::BrainFuelCorpus>,
     /// ENT-1a: `description_adapter::fill_descriptions`'s own return value,
     /// captured here (not just returned-and-discarded, unlike the other
     /// MERGE/ALIAS adapter calls' own Stats structs) so a caller that
@@ -152,6 +162,25 @@ impl<'a> BuildCtx<'a> {
         atlas: &'a AtlasData,
         eras: &'a [atlas_core::data::Era],
     ) -> Self {
+        Self::with_eras_and_brainfuel(kjv_canon, kjv_verses, kjv_json_source, xrefs_tsv, atlas, eras, None)
+    }
+
+    /// CORP-1a: the richest form -- real startup (via `GraphService::build`)
+    /// and the artifact compile step (`bins/compile_graph.rs`) use this
+    /// directly, with real brain-fuel data; every other caller keeps
+    /// calling `new`/`with_eras` unchanged, getting an honestly absent
+    /// (`None`) `brainfuel` -- see this struct's own `brainfuel` field doc
+    /// comment.
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_eras_and_brainfuel(
+        kjv_canon: &'a Canon,
+        kjv_verses: &'a std::collections::HashMap<String, String>,
+        kjv_json_source: Option<&'a str>,
+        xrefs_tsv: &'a str,
+        atlas: &'a AtlasData,
+        eras: &'a [atlas_core::data::Era],
+        brainfuel: Option<&'a atlas_etl::brainfuel::BrainFuelCorpus>,
+    ) -> Self {
         BuildCtx {
             kjv_canon,
             kjv_verses,
@@ -159,6 +188,7 @@ impl<'a> BuildCtx<'a> {
             xrefs_tsv,
             atlas,
             eras,
+            brainfuel,
             graph: Graph::default(),
             stats: BuildStats::default(),
             event_world_stats: EventWorldStats::default(),
@@ -185,6 +215,11 @@ impl Pass for NormalizePass {
     }
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
         crate::kjv_adapter::normalize(ctx).context("normalizing the KJV canon/verses into TextUnit nodes")?;
+        // CORP-1a: MUST run immediately after kjv_adapter::normalize --
+        // this call mutates the very TextUnit nodes the line above just
+        // inserted (module doc comment on brainfuel_adapter.rs), a real,
+        // disclosed in-stage ordering dependency.
+        crate::brainfuel_adapter::normalize(ctx);
         crate::xref_adapter::normalize(ctx).context("normalizing the raw cross-references TSV into cites rows")?;
         crate::event_world::normalize(ctx);
         crate::era_adapter::normalize(ctx);

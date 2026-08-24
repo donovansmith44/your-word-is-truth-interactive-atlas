@@ -56,8 +56,14 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
     let xrefs_tsv =
         std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
     let atlas = real_atlas_data();
+    // CORP-1a: real vendored brain-fuel data joins the root computation --
+    // this test's own real_atlas_data()/kjv_json/xrefs_tsv reads are
+    // already "over the real committed sources"; leaving brainfuel out
+    // here would test a DIFFERENT (KJV-only) graph than the one
+    // atlas-graph-compile actually produces.
+    let brainfuel = atlas_etl::brainfuel::read_all(&dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first");
 
-    let svc = GraphService::from_sources(&kjv_json, &xrefs_tsv, &atlas).expect("the real committed sources must build");
+    let svc = GraphService::from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &[], Some(&brainfuel)).expect("the real committed sources must build");
     let hex = atlas_graph::version_hex(svc.snapshot().version());
 
     // Captured once, before the M-C pipeline restructuring (controller
@@ -163,4 +169,21 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // filled description as a Person; both numbers are real, honest
 // consequences of the same reclassification). New captured value:
 // "8855af2b0742cc31".
-const EXPECTED_VERSION_HEX: &str = "8855af2b0742cc31";
+//
+// MOVED AGAIN (deliberately -- Batch CORP-1a, "brain-fuel editions: the
+// ingestion half", 2026-08-24): every existing KJV TextUnit node's own
+// `renderings` LayerMap gains up to five new non-KJV entries (Clementine
+// Vulgate/Westminster Leningrad Codex/Douay-Rheims/Biblia 1776/Karl XII:s
+// Bibel, whichever apply to that verse's own testament -- 31,092/23,145/
+// 23,132/31,102/31,099 verses respectively, `brainfuel_adapter.rs`'s own
+// module doc comment), changing every one of those TextUnit nodes' own
+// canonical bytes; 6 new `Translation` nodes are authored (one per
+// ingested edition -- NOT for KJV itself, no pre-existing pattern was
+// found to follow, disclosed in this batch's own report). This test's own
+// real-data source now threads the real vendored `data/raw/brain-fuel-
+// bible/` corpus through `GraphService::from_sources_with_eras_and_
+// brainfuel` (previously plain `from_sources`) -- otherwise this harness
+// would keep proving a DIFFERENT, KJV-only graph than the one
+// `atlas-graph-compile` actually produces. New captured value:
+// "5753f377e4bbcfe9".
+const EXPECTED_VERSION_HEX: &str = "5753f377e4bbcfe9";

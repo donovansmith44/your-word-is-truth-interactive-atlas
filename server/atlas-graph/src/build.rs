@@ -58,8 +58,27 @@ pub fn build_graph_from_sources_with_eras(
     atlas: &AtlasData,
     eras: &[atlas_core::data::Era],
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
+    build_graph_from_sources_with_eras_and_brainfuel(kjv_json, xrefs_tsv, atlas, eras, None)
+}
+
+/// CORP-1a: the richest raw-source form -- `bins/compile_graph.rs` (the
+/// real compile step) and `GraphService::build`'s own `--build-from-raw`
+/// dev fallback both use this directly, with a real, pre-parsed
+/// `atlas_etl::brainfuel::BrainFuelCorpus` (`atlas_etl::brainfuel::
+/// read_all`'s own return value -- the ONE filesystem-touching call, made
+/// by each of those two real callers, never by this pure function).
+/// `build_graph_from_sources_with_eras` above delegates here with `None`,
+/// so every existing caller's own behavior is byte-identical to before
+/// this batch.
+pub fn build_graph_from_sources_with_eras_and_brainfuel(
+    kjv_json: &str,
+    xrefs_tsv: &str,
+    atlas: &AtlasData,
+    eras: &[atlas_core::data::Era],
+    brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
+) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
     let (canon, verses) = atlas_etl::kjv::parse(kjv_json).context("parsing the KJV source (kjv.json)")?;
-    run_pipeline_build(&canon, &verses, Some(kjv_json), xrefs_tsv, atlas, eras)
+    run_pipeline_build_with_brainfuel(&canon, &verses, Some(kjv_json), xrefs_tsv, atlas, eras, brainfuel)
 }
 
 /// The same build, starting from an already-parsed `(Canon, verses)` pair
@@ -103,7 +122,20 @@ fn run_pipeline_build(
     atlas: &AtlasData,
     eras: &[atlas_core::data::Era],
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
-    let mut ctx = crate::pipeline::BuildCtx::with_eras(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras);
+    run_pipeline_build_with_brainfuel(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, None)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_pipeline_build_with_brainfuel(
+    canon: &Canon,
+    verses: &HashMap<String, String>,
+    kjv_json_source: Option<&str>,
+    xrefs_tsv: &str,
+    atlas: &AtlasData,
+    eras: &[atlas_core::data::Era],
+    brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
+) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
+    let mut ctx = crate::pipeline::BuildCtx::with_eras_and_brainfuel(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel);
     crate::pipeline::run_pipeline(&mut ctx, &crate::pipeline::pipeline())?;
     Ok((ctx.graph, ctx.stats, ctx.event_world_stats, ctx.chrono))
 }

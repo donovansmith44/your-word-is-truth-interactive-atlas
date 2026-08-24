@@ -49,7 +49,7 @@
 use std::collections::HashSet;
 use std::path::Path;
 
-use atlas_graph::build::build_graph_from_sources;
+use atlas_graph::build::{build_graph_from_sources, build_graph_from_sources_with_eras_and_brainfuel};
 use atlas_graph_types::store::{assert_answers_match, GraphPublisher, GraphStore, MemStore};
 
 /// Slices the REAL committed `kjv.json` down to just the named books
@@ -147,12 +147,18 @@ fn the_full_real_graph_is_admitted_the_in_memory_store_answers_match_the_model_e
     // crate's own real-data source from here on.
     let curated = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/curated");
     let atlas = atlas_etl::compile::compile(&dir, &curated).expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify").data;
+    // CORP-1a: real vendored brain-fuel data joins the admission proof --
+    // otherwise this test would only ever admit a KJV-only graph, not the
+    // one `atlas-graph-compile` actually writes to `graph.bin`.
+    let brainfuel = atlas_etl::brainfuel::read_all(&dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first");
 
-    let (model, model_stats, model_ew_stats, _) = build_graph_from_sources(&kjv_json, &xrefs_tsv, &atlas).expect("the real KJV source must parse");
+    let (model, model_stats, model_ew_stats, _) =
+        build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &[], Some(&brainfuel)).expect("the real KJV source must parse");
     assert_eq!(model_stats.kjv_verses, 31_102, "the real KJV text is 31,102 verses");
     assert!(model_ew_stats.dated_events >= 450, "expected the real compiled event set to carry well over 450 dated events, got {}", model_ew_stats.dated_events);
 
-    let (for_store, ..) = build_graph_from_sources(&kjv_json, &xrefs_tsv, &atlas).expect("the real KJV source must parse a second time identically");
+    let (for_store, ..) =
+        build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &[], Some(&brainfuel)).expect("the real KJV source must parse a second time identically");
     let mut store = MemStore::default();
     let version = store.publish(for_store);
     let snapshot = store.open(version).expect("the just-published version must be open-able");

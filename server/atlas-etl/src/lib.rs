@@ -15,6 +15,7 @@
 //! surviving files, reading every value straight off the returned
 //! `AtlasData`/`Report`.
 
+pub mod brainfuel;
 pub mod catechism_map;
 pub mod compile;
 pub mod curated;

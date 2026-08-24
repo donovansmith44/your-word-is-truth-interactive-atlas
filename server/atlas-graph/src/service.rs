@@ -200,7 +200,21 @@ impl GraphService {
     /// use -- `eras` is `era_adapter.rs`'s own pre-parsed source. See
     /// `build::build_graph_from_sources_with_eras`'s own doc comment.
     pub fn from_sources_with_eras(kjv_json: &str, xrefs_tsv: &str, atlas: &AtlasData, eras: &[atlas_core::data::Era]) -> anyhow::Result<Self> {
-        let (graph, stats, event_world_stats, chrono) = build::build_graph_from_sources_with_eras(kjv_json, xrefs_tsv, atlas, eras)?;
+        Self::from_sources_with_eras_and_brainfuel(kjv_json, xrefs_tsv, atlas, eras, None)
+    }
+
+    /// CORP-1a: the richest raw-source constructor -- see
+    /// `build::build_graph_from_sources_with_eras_and_brainfuel`'s own doc
+    /// comment. `from_sources_with_eras` above delegates here with `None`,
+    /// unchanged behavior for every existing caller.
+    pub fn from_sources_with_eras_and_brainfuel(
+        kjv_json: &str,
+        xrefs_tsv: &str,
+        atlas: &AtlasData,
+        eras: &[atlas_core::data::Era],
+        brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
+    ) -> anyhow::Result<Self> {
+        let (graph, stats, event_world_stats, chrono) = build::build_graph_from_sources_with_eras_and_brainfuel(kjv_json, xrefs_tsv, atlas, eras, brainfuel)?;
         Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono)))
     }
 
@@ -257,7 +271,15 @@ impl GraphService {
         let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt"))
             .with_context(|| format!("reading {}", raw_dir.join("xrefs/cross_references.txt").display()))?;
         let eras = load_eras(raw_dir)?;
-        Self::from_sources_with_eras(&kjv_json, &xrefs_tsv, atlas, &eras)
+        // CORP-1a: `data/raw/brain-fuel-bible/` (vendored, gitignored --
+        // see data/raw/README.md) is read here too, GRACEFULLY: a caller
+        // passing a synthetic/fixture `raw_dir` with no such subdirectory
+        // (several existing tests do exactly this) gets an honestly empty
+        // corpus, not an error -- only a REAL, present vendored tree is
+        // ever parsed, and parsing IT is still fail-loud (a malformed
+        // vendored file is a real bug, never silently skipped).
+        let brainfuel = load_brainfuel(raw_dir)?;
+        Self::from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, atlas, &eras, brainfuel.as_ref())
     }
 
     /// M-C: takes an ALREADY-BUILT `Chronology` rather than `&AtlasData` --
@@ -474,6 +496,18 @@ fn load_eras(raw_dir: &Path) -> anyhow::Result<Vec<atlas_core::data::Era>> {
     let path = curated_dir.join("eras.toml");
     let text = std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
     atlas_etl::curated::parse_eras(&text).with_context(|| format!("parsing {}", path.display()))
+}
+
+/// CORP-1a: `raw_dir/brain-fuel-bible/` -- `None` (not an error) when that
+/// directory simply doesn't exist (see `GraphService::build`'s own doc
+/// comment); `Some(Err(..))` propagated fail-loud when it exists but is
+/// malformed.
+fn load_brainfuel(raw_dir: &Path) -> anyhow::Result<Option<atlas_etl::brainfuel::BrainFuelCorpus>> {
+    let root = raw_dir.join("brain-fuel-bible");
+    if !root.is_dir() {
+        return Ok(None);
+    }
+    atlas_etl::brainfuel::read_all(&root).map(Some).with_context(|| format!("reading vendored brain-fuel data from {}", root.display()))
 }
 
 #[cfg(test)]

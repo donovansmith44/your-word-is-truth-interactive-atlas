@@ -50,10 +50,14 @@ fn serialized_artifact_is_admitted_and_loads_under_the_committed_ceiling() {
     let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
     let atlas = real_atlas_data();
     let eras = real_eras();
+    // CORP-1a: real vendored brain-fuel data joins the admission proof --
+    // otherwise this test would only ever admit a KJV-only graph, not the
+    // one `atlas-graph-compile` actually writes to `graph.bin`.
+    let brainfuel = atlas_etl::brainfuel::read_all(&raw_dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first");
 
     // Implementation #1: build from raw, as `GraphService::build` does at
     // real startup (before this batch's artifact path exists).
-    let built = atlas_graph::build::build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &eras).expect("the real committed sources must build");
+    let built = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel)).expect("the real committed sources must build");
     let (model_graph, stats, event_world_stats, chrono) = built;
     let chronology = atlas_graph::Chronology::from_derivation(chrono);
     println!(

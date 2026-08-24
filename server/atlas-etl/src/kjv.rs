@@ -45,7 +45,13 @@ struct RawVerse {
 /// `"Revelation of John"` -> `"Revelation"`. Everything else passes through
 /// unchanged (it already matches a canonical name, e.g. `"Genesis"`,
 /// `"Song of Solomon"`).
-fn normalize_book_name(raw: &str) -> String {
+/// `pub(crate)`, not private: Batch CORP-1a's `brainfuel` module reuses this
+/// EXACT normalization for `data/raw/brain-fuel-bible/data/books.json`'s own
+/// `kjv_name` field, which uses the IDENTICAL old-style convention this
+/// dataset does ("I Samuel", "Revelation of John", ...) -- verified against
+/// the real vendored file (see `brainfuel.rs`'s own module doc comment). One
+/// normalizer, not two independently-authored copies that could drift.
+pub(crate) fn normalize_book_name(raw: &str) -> String {
     let s = raw.trim();
     let s = s.strip_suffix(" of John").unwrap_or(s);
     if let Some(rest) = s.strip_prefix("III ") {
