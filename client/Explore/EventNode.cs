@@ -122,10 +122,9 @@ public sealed class EventNode : IExplorable, INarrativeAware
     /// keeps working unmodified, no ExplorerPopover change needed. Batch
     /// HOTFIX-4 requirement 1: the SAME single memoized fetch now also
     /// carries the global-timeline half (`.Timeline`) -- one network call,
-    /// three consumers (map-focus-sync reads `.Narrative`;
-    /// EventPriorSection/EventFollowingSection read `.Narrative`;
-    /// EventTimelinePriorSection/EventTimelineFollowingSection read
-    /// `.Timeline`).
+    /// two consumers today (map-focus-sync reads `.Narrative`;
+    /// EventDateAndPlacesSection reads `.Narrative`, EventChronologySection
+    /// reads `.Timeline` -- TRAV-1, PopoverSectionProviders.cs).
     public async Task<NarrativeEventPositionsResult> NarrativePositionsAsync(AtlasClient api) =>
         _cachedPositions ??= await api.NarrativeEventPositions(EventId);
 }

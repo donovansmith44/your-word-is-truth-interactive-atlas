@@ -554,18 +554,19 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `event-{prior,following}-event-{narrativeId}` button is present; absent
   only alongside that button, on an empty/no-adjacent-event side), and
   carrying the SAME `--2`/`--3` disambiguation suffix as that sibling when
-  one applies -- see EVENT-1. The arrow-pair component/markup stays
-  cleanly reusable (a later batch, TRAV-1, will render it a second time
-  for a parallel CHRONOLOGY ordering -- explicitly not built this round),
-  `event-prior-event-timeline` / `event-following-event-timeline`
-  (batch-hotfix4-brief.md requirement 1; button; the GLOBAL-timeline
-  adjacent event's own label -- present once per direction, independent of
-  narrative membership; conditional presence only at the atlas's own true
-  first/last dated event -- see the GLOBAL TIMELINE note under EVENT-1),
-  `event-prior-verse-timeline-{SPAN}` / `event-following-verse-timeline-{SPAN}`
-  (same requirement; one per passage entry among the timeline-adjacent
-  event's own verses, via the shared passage-list component, identically
-  to the narrative-scoped verse rows immediately above),
+  one applies -- see EVENT-1. The arrow-pair component/markup's own
+  "cleanly reusable... a later batch, TRAV-1, will render it a second time
+  for a parallel CHRONOLOGY ordering" forward-reference is now FULFILLED --
+  see CHRONO-1 for the Chronology block this became, `event-chrono-prior-
+  event-global`/`event-chrono-following-event-global`/`event-chrono-prior-
+  label-global`/`event-chrono-following-label-global` for its own testids,
+  and PEEK-1 for the dwell-hover verse peek BOTH this narrative nav's own
+  arrows and the Chronology block's now carry (`{event-testid}-peek`).
+  `event-prior-event-timeline`/`event-following-event-timeline`/
+  `event-prior-verse-timeline-{SPAN}`/`event-following-verse-timeline-{SPAN}`
+  (batch-hotfix4-brief.md requirement 1's own GLOBAL-timeline testids,
+  documented here historically) are RETIRED WHOLE by TRAV-1/CHRONO-3 --
+  grep-proven gone, see that note.
   `polity-delta-verse-{SPAN}` (batch-m-brief.md requirement 4; one per
   passage entry among a `PolityDelta` node's own curated verses, same
   shared-component (PASSAGE-1) treatment as every list above -- nested
@@ -1034,6 +1035,56 @@ Notes:
   already gives cross-refs/catechism elsewhere in this same popover
   platform; widening this to match is real, disclosed follow-up, not
   pretended-finished.
+
+  RESPEC'D (TRAV-1, CHAP-HOVER-1, below): this note's own "`chapter-head`
+  opens on hover OR click, identically... INCLUDING `_hoverOnlyOpen`/
+  `ShowBackdrop`/auto-dismiss" paragraph, immediately above, describes the
+  PRE-TRAV-1 shape only. `chapter-head`'s own hover trigger no longer opens
+  THIS card (`ChapterCardSection`'s own `ExplorerPopover`/`_activeNode`
+  path) at all -- see CHAP-HOVER-1 for the current, binding hover contract.
+  CLICK (`OpenChapter`, now parameter-less -- `Pages/Reader.razor`) is
+  UNCHANGED: still opens this exact card, still the sticky/x-dismissable
+  popover with `ShowBackdrop=true`, still the same content this note
+  documents above (position/verse-count/headings/places, the 8-row cap, the
+  never-verse-text law) byte-for-byte.
+- CHAP-HOVER-1 (TRAV-1/batch-trav1-brief.md, owner defect report,
+  2026-08-24 ~03:30, verbatim: "there's one terrible thing: chapter headers
+  in the reader give a hover box that i have to x out of if i so much as
+  tickle the chapter button. that is awful."): RESPECS B3-CARD's own hover
+  entry point (immediately above) to the SAME dwell grammar this batch
+  gives the Narrative/Chronology traversal arrows (PEEK-1, EVENT-1's own
+  GLOBAL TIMELINE note) -- "bare hover reveals nothing; a sustained DWELL
+  reveals a transient, dismissable-by-leaving peek; only a genuine CLICK
+  commits to the real, sticky card." Concretely (`Pages/Reader.razor`):
+  - Bare/short hover over `chapter-head`: NOTHING happens -- no popover, no
+    peek, no backdrop, no state change of any kind (the "tickle test").
+  - A dwell past `DwellTiming.PeekDelayMs` (`client/DwellTiming.cs`, the
+    SAME shared constant PEEK-1's own arrow peek uses -- ONE definition
+    site, per the owner's own "not super sensitive" delay applied
+    house-wide) reveals `chapter-head-peek` (`data-testid`): a small,
+    parchment, NON-interactive card (no `ExplorerPopover`, no backdrop, no
+    chips, no breadcrumb, no close button -- nothing inside it is
+    explorable) showing `chapter-head-peek-position` (the SAME "Chapter N
+    of M" wording `chapter-card-position` uses) and, when this chapter
+    carries any, up to 8 deduplicated heading TITLES
+    (`chapter-head-peek-heading-{eventId}`, plain text, computed from the
+    SAME already-loaded `ChapterOut` the reader itself is displaying -- no
+    extra network fetch). Pointer-leave (at any point, mid-dwell or once
+    shown) dismisses/cancels outright, immediately, no grace period, no `x`
+    to click -- unlike the pre-existing xref-superscript hover's own
+    marker-to-panel transit grace period (`ScheduleHoverClose`/
+    `DelayedHoverClose`, UNCHANGED, XSCRIPT-1's own concern, untouched by
+    this batch), this peek is a passive glance a user is never meant to
+    travel INTO.
+  - CLICK (or Enter -- native `<button>` semantics, unchanged) commits: the
+    real, sticky, x-dismissable `ChapterCardSection` card, B3-CARD's own
+    content, byte-for-byte unchanged -- "today's behavior moves here
+    exclusively." A click while the peek happens to be showing/mid-dwell
+    supersedes it (the peek is cleared/cancelled, never left showing
+    alongside the real card).
+  - Keyboard path = commit path, unchanged: `chapter-head` carries no
+    `@onfocus`/dwell handler of its own (tabbing to it does nothing extra;
+    only Enter/Space, native `<button>` semantics, ever opens anything).
 - XSCRIPT-GATE (2026-08-23, owner order, ledgered; RESOLVED M-D3/R3): the
   superscript feature was briefly GATED OFF by
   `FeatureFlags.XrefSuperscripts = false` (`client/FeatureFlags.cs`) --
@@ -2616,6 +2667,28 @@ Notes:
   event with NO narrative membership at all, the timeline pair is the
   ONLY traversal shown -- exactly the owner's own report's own case
   (`gen_binding_isaac`, a real W1 container event, previously a dead end).
+
+  RESPEC'D WHOLE (TRAV-1/CHRONO-1, below): this PRESENTATION paragraph
+  documents the shape that shipped at HOTFIX-4 and is HISTORICAL only --
+  `EventTimelinePriorSection`/`EventTimelineFollowingSection` (their own
+  two separate "PRIOR IN TIME"/"FOLLOWING IN TIME" sections, each with an
+  inline verse-text preview) are RETIRED WHOLE. See CHRONO-1 for the
+  CURRENT, binding shape: ONE "Chronology" block (`EventChronologySection`),
+  the SAME arrow-traversal component (`Components.ArrowNav`) the narrative
+  nav above uses, name-only arrows (no inline verse text -- that moved to
+  PEEK-1's own dwell-hover peek, which now also covers this note's own
+  narrative nav arrows, not just the retired timeline rows). The `.Timeline`
+  WIRE SHAPE this note documents above (`GET /api/narrative/event/{id}`'s
+  own `{narrative, timeline}` object; `timeline.prior`/`.following`,
+  independently omitted only at the atlas's own true first/last dated
+  event; the whole key omitted for a general-kind/unknown event) is
+  UNCHANGED -- TRAV-1 only changed HOW `timeline` gets computed
+  server-side (temporal-adjacency is now a real, materialized graph
+  relation, not index arithmetic over an internal order -- see CHRONO-1's
+  own SERVING note) and how the client renders it, never the wire contract
+  itself; `narrative_event_positions_endpoint` (`atlas-server/tests/api.rs`)
+  is the SAME byte-for-byte regression test proving this, unmodified by
+  TRAV-1.
   MAP COHERENCE (requirement 3, "the same code path, no special case"):
   traversing via a timeline row pushes a fresh `EventNode` exactly like a
   narrative row does (ONE-RULE, unmodified) -- `EventNode` is
@@ -2689,6 +2762,148 @@ Notes:
   `data-narrative-focus` to baseline, the SAME "starts fresh every scene"
   treatment `setArrows` already gives the legend-isolate `data-faded`
   attribute -- the popover's own next navigation restores it.
+- CHRONO-1 (TRAV-1/batch-trav1-brief.md, owner verbatim, 2026-08-23: "we
+  want that same functionality that you put for things within a narrative
+  for things within a chronology... we containerize their subsets somewhat
+  differently" / "the prior and time and following in time basically get
+  condensed into one Chronological block with the arrow traversal that is
+  separate from the narrative block"): RETIRES EVENT-1's own GLOBAL
+  TIMELINE presentation whole (see that note's own "RESPEC'D WHOLE"
+  paragraph, above) -- ONE new EVENT-node section, `EventChronologySection`
+  (`PopoverSectionProviders.cs`), registered in the SAME slot the two
+  retired `EventTimelinePriorSection`/`EventTimelineFollowingSection`
+  providers used to occupy (directly after `EventWitnessesSection` --
+  narrative primacy preserved, the narrative nav always renders first).
+
+  SERVING (controller decision 2, "the graph serves it"): `temporal-
+  adjacency` is now a REAL, materialized graph relation, not a disclosed
+  gap -- `TemporalAdjacency { earlier, later, provenance }`
+  (`graph-types/src/edge.rs`, TRAV-1's own crate patch, `ab1765e`) rows
+  COMPILE-DERIVED one per consecutive pair of the chronology's own global
+  order (`event_world::populate_temporal_adjacency`, the pipeline's own
+  DERIVE stage -- `pipeline.rs`), lowered into the symmetric index
+  (`SymRelationId::TemporalAdjacency`, label `"temporal-adjacency"`) by the
+  SAME `Graph::build_indexes()` every other relation already uses, and
+  independently queryable through the generic port
+  (`atlas-graph/src/catechism_adapter.rs`'s own
+  `catechism_link_is_queryable_symmetrically_through_the_generic_port` test
+  established this exact "prove it via `PositionRef::edges`" pattern first;
+  `event_world.rs`'s own `temporal_adjacency_rows_are_one_per_consecutive_
+  timeline_pair_earlier_to_later` proves the ROW shape). `GET /api/narrative/
+  event/{id}`'s own `timeline` field (WIRE SHAPE unchanged, see EVENT-1's
+  own note) is now built from `GraphService.temporal_neighbors`
+  (`service.rs`): DIRECTION read directly off each row's own honest
+  `earlier`/`later` ends (never re-derived from a position index -- the ONE
+  surviving path, dead-code law); DOMAIN (which ids are genuinely dated at
+  all, so a dated event with no neighbor on EITHER side -- the atlas's own
+  true first-AND-last event, or a single-dated-event atlas -- still gets a
+  real `Some((None, None))` `timeline`, never an outright-missing key)
+  seeded from the chronology's own already-computed order, not a second
+  derivation of it. `event_world::Chronology`'s own former
+  `temporal_neighbors` field (built by walking `chrono.order` with `i-1`/
+  `i+1` INDEX ARITHMETIC -- a second, independently-computed representation
+  of the identical fact) is RETIRED WHOLE alongside it.
+  `data/compiled/graph.bin`'s own FORMAT_VERSION bumped 4 -> 5
+  (`artifact.rs`): `ArtifactDump.temporal_adjacency` ADDED (a new,
+  genuinely serialized row table -- `dump()`'s own guard, extended at the
+  2026-08-24 writer window specifically so THIS batch would hit it on
+  schedule, no longer treats a non-empty `temporal_adjacency` as an error);
+  `ArtifactDump.temporal_neighbors` REMOVED (the field it mirrored is gone
+  -- `GraphService::assemble` cheaply refolds the real rows into an
+  equivalent lookup at load time instead, on every path, so serializing a
+  second copy would itself be "two representations of one fact").
+
+  DISPLAY (controller decision 3, owner verbatim, live example: "we
+  straight up should not have [the verse text]. you get that when you
+  traverse."): name-only arrows, identical shape/wording/glyphs to the
+  narrative nav's own P4 spec -- `← <prior event name>` with the small-caps
+  label `PRIOR EVENT` beneath, `<following event name> →` with `FOLLOWING
+  EVENT` beneath, best-effort one line each (ellipsis-truncated, `title`
+  carries the untruncated name) -- because BOTH now render through the
+  exact same `Components.ArrowNav` component (`RenderArrowNav`,
+  `PopoverSectionProviders.cs`), not a second, parallel implementation.
+  Two differences from the narrative nav, both deliberate: (1) exactly ONE
+  row always (the global timeline has one prior/following pair, never "one
+  block per qualifying narrative" -- no name-collision disambiguation
+  needed, so every Chronology arrow's own testid suffix is the fixed
+  literal `global`, never a real narrative id); (2) a quiet `CHRONOLOGY`
+  eyebrow heading names the block (`event-chronology-heading`, the SAME
+  `.catechism-section-heading.event-timeline-heading` CSS the retired "IN
+  TIME" headings established) -- the narrative nav itself stays headerless,
+  unchanged, by M-D3/U1's own established design; this is a brand-new,
+  separate block, so it announces its own identity, matching the owner's
+  own "we have two sections: Narrative and Chronology."
+
+  TESTIDS: `popover-section-event-chronology` (the section wrapper, Batch
+  R's own `data-testid="popover-section-{id}"` convention);
+  `event-chronology` (the inner `.popover-event-nav-list`, always exactly
+  one `event-chronology-row` inside it); `event-chrono-prior-event-global`/
+  `event-chrono-following-event-global` (the two arrow buttons -- REAL,
+  clickable/`.explorable`, and dwell-hoverable, see PEEK-1); `event-chrono-
+  prior-label-global`/`event-chrono-following-label-global` (the static
+  "PRIOR EVENT"/"FOLLOWING EVENT" role captions beneath each). A qualifying
+  side absent (the atlas's own true first/last dated event) still renders
+  its own empty-placeholder side (`.popover-event-nav-arrow-empty`, no
+  testid -- exactly the narrative nav's own established "the row's own
+  space-between stays honest whether one or both sides are present" rule,
+  P4).
+
+  CHRONO-2 (round-trip traversal): clicking either arrow pushes a fresh
+  `EventNode` for that event (the SAME `IPopoverSectionContext.PushAsync`
+  ONE-RULE every other explorable row in this popover platform uses) --
+  the popover's own focus changes to the traversed event, whose OWN
+  Chronology block (recursion falls out of the identical `AppliesTo`
+  clause matching the new Current node too) now shows the ORIGINAL event
+  back the opposite direction -- walking FOLLOWING then PRIOR (or vice
+  versa) from the same starting event returns to it, exactly as the
+  narrative nav's own pre-existing traversal already guarantees.
+
+  CHRONO-3 (retirement, grep-proven): `EventTimelinePriorSection`,
+  `EventTimelineFollowingSection`, `EventTimelineDirectionSection`, and
+  every one of their own testids (`event-prior-timeline`/`event-following-
+  timeline` sections; `event-prior-event-timeline`/`event-following-event-
+  timeline` rows; `event-prior-verse-timeline-{SPAN}`/`event-following-
+  verse-timeline-{SPAN}` passage-list entries) are GONE from
+  `PopoverSectionProviders.cs`/`PopoverSections.cs` -- confirmed absent by
+  grep, not merely unregistered. An EVENT node's own popover carries no
+  "PRIOR IN TIME"/"FOLLOWING IN TIME" heading text anywhere, at all, ever
+  again; CHRONOLOGY (this note) is the ONE surviving chronological-
+  traversal surface.
+- PEEK-1 (TRAV-1/batch-trav1-brief.md, owner verbatim, 2026-08-23: "also
+  over the narrative/event arrows, you'll get a quick hover box of the
+  verses if you hover over the arrows (not super sensitive, so some delay
+  so that you're not accidentally getting hover boxes all the time)"):
+  dwell-hover verse PEEK on EVERY traversal arrow this popover platform
+  renders -- BOTH the narrative nav (`EventDateAndPlacesSection`) AND the
+  Chronology block (CHRONO-1) -- the SAME component
+  (`Components.ArrowNav.razor`), so the grammar can never drift between the
+  two families. Completes the affordance triad P4 already named: "glance =
+  name, dwell = peek text, click = traverse."
+  - Bare/quick pointer pass over an arrow: NOTHING happens -- no peek box,
+    no state change (`ArrowNav`'s own dwell timer is cancelled the instant
+    `pointerleave` fires, before `DwellTiming.PeekDelayMs` elapses).
+  - A dwell PAST `DwellTiming.PeekDelayMs` (`client/DwellTiming.cs` -- the
+    ONE shared constant this batch names for every dwell surface in the
+    app, CHAP-HOVER-1's own chapter-head peek included) reveals a small
+    floating card (`.popover-arrow-peek`, `data-testid="{event-testid}-
+    peek"`, e.g. `event-prior-event-passion-week-peek` or
+    `event-chrono-following-event-global-peek`) anchored just below the
+    arrow, showing the TARGET event's own verse text -- resolved via the
+    SAME `VerseTextResolver.ResolveGroupsAsync`/`Components.PassageList`
+    machinery the retired timeline sections used to render inline (never a
+    fetch until the dwell actually fires -- a quick pass-over costs zero
+    network calls). Never commits: dwelling never traverses, only clicking
+    the arrow itself does.
+  - Pointer-leave dismisses/cancels immediately, at any point (mid-dwell or
+    once shown) -- no grace period (unlike the pre-existing xref-
+    superscript hover's own marker-to-panel transit concern, UNCHANGED,
+    untouched by this batch): this peek is a self-contained glance, never
+    something a user is meant to travel INTO.
+  - Click still commits exactly as before -- wired completely
+    independently of dwell state (`ArrowNav`'s own `Commit`, called
+    directly by `@onclick`, never gated on or reset by the peek).
+  - Keyboard/commit paths unaffected: no new keyboard handler, no change
+    to how an arrow's own click/Enter behavior works.
 - ONE-RULE (batch-g1-brief.md, user direction 2026-08-19: "the little trinity button
   isn't clear... explorable elements display slightly darker on hover; click opens the
   pop-up menu" -- REPLACES the retired `verse-explore-{n}` ∴ button, which offered no
@@ -2734,11 +2949,14 @@ Notes:
   is the ONE exception to that PASSAGE-1 rule: a plain non-explorable
   quiet line, not a passage-list entry at all, precisely because it
   REPLACES what used to be one -- see EVENT-1's own U1 note for why) --
-  see EVENT-1. batch-hotfix4-brief.md requirement 1
-  adds the GLOBAL-timeline counterparts, same rule: `event-prior-event-timeline`/
-  `event-following-event-timeline` and `event-prior-verse-timeline-{SPAN}`/
-  `event-following-verse-timeline-{SPAN}` -- see the GLOBAL TIMELINE note
-  under EVENT-1. `pericope-heading-{eventId}`
+  see EVENT-1. batch-hotfix4-brief.md requirement 1's own GLOBAL-timeline
+  counterparts (`event-prior-event-timeline`/`event-following-event-timeline`/
+  `event-prior-verse-timeline-{SPAN}`/`event-following-verse-timeline-{SPAN}`)
+  are RETIRED WHOLE by TRAV-1/CHRONO-3 -- `event-chrono-prior-event-global`/
+  `event-chrono-following-event-global` (CHRONO-1) are their own
+  explorable replacements, same rule, same underlying `Components.ArrowNav`
+  button both this narrative-scoped pair AND the Chronology pair now share
+  -- see CHRONO-1. `pericope-heading-{eventId}`
   (Reader.razor's own reader-flow heading, batch-t-brief.md requirement 5)
   is ALSO explorable under this same rule -- see EVENT-1; `verse-event-{eventId}`
   and `pericope-heading-{eventId}` carry `.explorable-quiet` INSTEAD of

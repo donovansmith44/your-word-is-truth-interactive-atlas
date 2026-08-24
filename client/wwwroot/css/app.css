@@ -589,6 +589,7 @@ input:focus-visible,
    "Reader"). A real <h1> -- App.razor's <FocusOnNavigate Selector="h1" />
    focuses it on every chapter navigation for free. */
 .chapter-head {
+    position: relative; /* CHAP-HOVER-1: anchors .chapter-head-peek below */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -636,6 +637,56 @@ input:focus-visible,
     background: none;
     border: none;
     font: inherit;
+}
+
+/* CHAP-HOVER-1 (owner defect report, 2026-08-24: "chapter headers in the
+   reader give a hover box that i have to x out of if i so much as tickle
+   the chapter button. that is awful."): the RESPEC'D dwell-hover grammar's
+   own transient peek (Reader.razor's own `_showChapterPeek`) -- SAME visual
+   family as the arrow peek (.popover-arrow-peek above: parchment-raised
+   card, bronze hairline, soft shadow), reused here rather than re-invented,
+   even though this peek is a completely separate, lighter-weight,
+   non-interactive rendering (no ExplorerPopover, no chips, no close
+   button -- decision 5: "NO x needed on the peek"). Centered under the
+   whole chapter head (book + numeral), never squeezed inside the button
+   itself, matching that element's own centered text-align. */
+.chapter-head-peek {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 6;
+    margin-top: .25rem;
+    width: max(260px, 60%);
+    max-width: 380px;
+    padding: .6rem .8rem;
+    background: var(--parchment-raised);
+    border: 1px solid rgba(138, 107, 61, .38);
+    border-radius: 5px;
+    box-shadow: 0 6px 16px rgba(50, 34, 14, .24);
+    font-size: .82rem;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.chapter-head-peek-position {
+    margin: 0 0 .3rem;
+    font-family: var(--font-mono);
+    font-size: .74rem;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--bronze-ink);
+}
+
+.chapter-head-peek-headings {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+    font-family: var(--font-serif);
+    color: var(--ink);
 }
 
 /* Verse rows: gutter number (instrument mono, bronze, small) + serif verse
@@ -3756,20 +3807,25 @@ input:focus-visible,
    rule directly (PopoverSectionProviders.cs's own NarrativeDirectionSection),
    same as "EVENT"/"PARALLEL ACCOUNTS" below it. */
 
-/* Batch HOTFIX-4 requirement 1: "PRIOR IN TIME"/"FOLLOWING IN TIME" -- the
-   global-timeline sections' own eyebrow (EventTimelineDirectionSection)
-   carries the SAME .catechism-section-heading class (color, letterspacing,
-   caps, margin all inherited, unchanged) PLUS this self-contained modifier
-   -- a size step down only (never a color change: --bronze-ink's own
-   7.85:1 contrast on --parchment-raised is this popover's own established
-   floor for eyebrow text; a de-emphasized color here would risk falling
-   under it, the same reason .quiet-label uses a SIZE step, not merely a
-   dimmer color, as its own primary "subordinate" signal). "Quiet" via
-   scale, "clearly distinct" via wording ("IN TIME," never "EVENT") --
-   requirement 1 verbatim, never conflated with req 6's own SEPARATE
-   non-traversable-node distinction (.explorable-quiet below), which is
-   about a different node's own traversability, not this section's own
-   relative emphasis. */
+/* Batch HOTFIX-4 requirement 1 (originally): "PRIOR IN TIME"/"FOLLOWING IN
+   TIME" -- the retired global-timeline sections' own eyebrow
+   (EventTimelineDirectionSection) carried the SAME .catechism-section-heading
+   class (color, letterspacing, caps, margin all inherited, unchanged) PLUS
+   this self-contained modifier -- a size step down only (never a color
+   change: --bronze-ink's own 7.85:1 contrast on --parchment-raised is this
+   popover's own established floor for eyebrow text; a de-emphasized color
+   here would risk falling under it, the same reason .quiet-label uses a
+   SIZE step, not merely a dimmer color, as its own primary "subordinate"
+   signal). "Quiet" via scale, "clearly distinct" via wording -- never
+   conflated with req 6's own SEPARATE non-traversable-node distinction
+   (.explorable-quiet below), which is about a different node's own
+   traversability, not a section's own relative emphasis.
+   TRAV-1: reused verbatim, unchanged, for the Chronology block's own
+   "CHRONOLOGY" eyebrow (EventChronologySection) -- the "IN TIME"/"EVENT"
+   wording distinction this comment used to name is moot now (there is no
+   sibling "EVENT" heading on the Narrative nav to distinguish FROM; see
+   EventChronologySection's own doc comment for why it alone gets a
+   heading), but the class itself needed no change at all. */
 .event-timeline-heading {
     font-size: .72rem;
 }
@@ -3989,6 +4045,7 @@ input:focus-visible,
    wrapper, never as a loose sibling the outer row would also try to
    space-between. */
 .popover-event-nav-side {
+    position: relative; /* TRAV-1: anchors .popover-arrow-peek below, absolutely-positioned so it never fights this column's own 47% width */
     display: flex;
     flex-direction: column;
     gap: .15rem;
@@ -4069,6 +4126,45 @@ input:focus-visible,
     text-overflow: ellipsis;
     color: var(--ink);
     font-weight: 600;
+}
+
+/* TRAV-1 (controller decision 4, "a quick hover box of the verses"): the
+   dwell-hover peek (Components/ArrowNav.razor's own `_showPeek`) -- a
+   small, self-contained floating card, deliberately NOT part of the
+   .popover-event-nav-side column's own 47%-capped flow (it would either
+   force that column wider, breaking the row's own space-between balance,
+   or clip the verse text down to nothing) -- absolute, anchored off the
+   side wrapper's own `position:relative` immediately above. Never a modal:
+   no backdrop, no close button (decision 4/5: "pointer-leave dismisses it
+   ... NO x needed on the peek") -- ArrowNav's own pointer-leave handler is
+   the entire dismiss mechanism. `word-break` (not `white-space:nowrap`
+   the way .popover-event-nav-label needs): unlike a bare event NAME, real
+   KJV verse text is meant to wrap onto multiple lines here. */
+.popover-arrow-peek {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 6;
+    margin-top: .4rem;
+    width: max(240px, 100%);
+    max-width: 320px;
+    padding: .55rem .7rem;
+    background: var(--parchment-raised);
+    border: 1px solid rgba(138, 107, 61, .38);
+    border-radius: 5px;
+    box-shadow: 0 6px 16px rgba(50, 34, 14, .24);
+    font-size: .82rem;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+/* The "following" side is itself right-aligned (.popover-event-nav-side-following's
+   own text-align:end, above) -- its own peek anchors from the RIGHT edge
+   instead, so it grows back toward the row's own center rather than
+   risking an overflow past the popover panel's own right edge. */
+.popover-event-nav-side-following .popover-arrow-peek {
+    left: auto;
+    right: 0;
 }
 
 /* Batch R requirement 3: one section's own wrapper -- a stable hook

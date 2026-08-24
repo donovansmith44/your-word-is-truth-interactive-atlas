@@ -361,7 +361,7 @@ test('REGISTRY-1/XREF-1: a PLACE popover\'s established/destroyed verses render 
 // the card's own data plumbing, not a tautology.
 // ---------------------------------------------------------------------
 
-test('CHAPTER-CARD-1: hovering chapter-head opens the metadata-and-context card -- real position/verse-count/headings/places, never the chapter\'s own first verse or its text', async ({ page }) => {
+test('CHAP-HOVER-1: quick pass over chapter-head produces nothing (the tickle test); dwell produces a transient, non-interactive peek with real position/heading content and no close button; pointer-leave dismisses it; click opens the real, sticky card -- real position/verse-count/headings/places, never the chapter\'s own first verse or its text', async ({ page }) => {
   const toc = await loadToc();
   const jos = toc.find((b: any) => b.code === 'JOS');
   const totalChapters = jos.chapters.length;
@@ -369,9 +369,42 @@ test('CHAPTER-CARD-1: hovering chapter-head opens the metadata-and-context card 
   const verse1Text = chapterOut.verses.find((v: any) => v.verse === 1).text;
 
   await page.goto('/read/JOS/6');
-  await page.getByTestId('chapter-head').hover();
+  const head = page.getByTestId('chapter-head');
+  const peek = page.getByTestId('chapter-head-peek');
+
+  // The tickle test (owner defect report, 2026-08-24, verbatim: "if i so
+  // much as tickle the chapter button. that is awful."): a quick,
+  // un-lingering hover must produce NOTHING -- no popover, no peek, no
+  // backdrop, no state change of any kind.
+  await head.hover({ force: true });
+  await expect(peek).toHaveCount(0);
+  await expect(page.getByTestId('popover')).toHaveCount(0);
+  await page.mouse.move(2, 2);
+  await expect(peek).toHaveCount(0);
+
+  // A genuine DWELL: hover again and wait comfortably past
+  // DwellTiming.PeekDelayMs (375ms, client/DwellTiming.cs) -- a transient,
+  // real-content peek appears, WITHOUT a backdrop and WITHOUT the real
+  // ExplorerPopover/ChapterCardSection card at all.
+  await head.hover({ force: true });
+  await expect(peek).toBeVisible({ timeout: 2000 });
+  await expect(page.getByTestId('popover')).toHaveCount(0); // never the real card, even mid-dwell
+  await expect(page.getByTestId('chapter-head-peek-position')).toHaveText(`Chapter 6 of ${totalChapters}`);
+  await expect(page.getByTestId('chapter-head-peek-heading-cq_jericho')).toHaveText('The walls of Jericho fall');
+  await expect(peek.getByTestId('popover-close')).toHaveCount(0); // NO x needed on the peek
+  const peekText = (await peek.textContent()) ?? '';
+  expect(peekText, 'never the chapter\'s own verse text, even in the peek').not.toContain(verse1Text);
+
+  // Pointer-leave dismisses it immediately, no grace period, no x needed.
+  await page.mouse.move(2, 2);
+  await expect(peek).toHaveCount(0);
+
+  // CLICK commits: the real, sticky, x-dismissable card -- unchanged
+  // content from B3-CARD's own original spec.
+  await head.click();
   await expect(page.getByTestId('popover')).toBeVisible();
   await expect(page.getByTestId('popover-title')).toHaveText('JOS.6');
+  await expect(peek).toHaveCount(0); // the click supersedes any lingering peek -- never both at once
 
   // Real content, read straight off the wire -- not just "a popover opened."
   await expect(page.getByTestId('chapter-card-position')).toHaveText(`Chapter 6 of ${totalChapters}`);
@@ -395,7 +428,7 @@ test('CHAPTER-CARD-1: hovering chapter-head opens the metadata-and-context card 
   await expect(page.getByTestId('popover-title')).toHaveText('The walls of Jericho fall');
 });
 
-test('CHAPTER-CARD-1: clicking chapter-head opens the identical card (hover and click are the same open, XSCRIPT-1\'s own entry-point rule applied here too)', async ({ page }) => {
+test('CHAPTER-CARD-1: clicking chapter-head opens the real card directly -- CHAP-HOVER-1 respec\'s "click is the only entry point" (hover no longer opens it at all, even quietly -- see that note)', async ({ page }) => {
   await page.goto('/read/JOS/6');
   await page.getByTestId('chapter-head').click();
   await expect(page.getByTestId('popover-title')).toHaveText('JOS.6');
@@ -404,9 +437,10 @@ test('CHAPTER-CARD-1: clicking chapter-head opens the identical card (hover and 
   await expect(page.getByTestId('chapter-card-place-jericho-1')).toHaveText('Jericho');
   await expect(page.getByTestId(/^popover-reader-verse-/)).toHaveCount(0);
 
-  // A genuine click persists (does not auto-dismiss the way a hover-only
-  // open would) -- confirms OpenChapter(persistent: true) actually ran,
-  // not merely that SOME popover happened to be on screen at click time.
+  // A genuine click persists (no auto-dismiss at all, ever, for this
+  // card -- CHAP-HOVER-1: there is no more hover-opened/upgraded-to-
+  // persistent state for chapter-head; clicking always means the real,
+  // backdrop-shown, sticky popover from the start).
   await page.mouse.move(2, 2);
   await page.waitForTimeout(1200);
   await expect(page.getByTestId('popover')).toBeVisible();

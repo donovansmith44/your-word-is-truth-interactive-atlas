@@ -1,0 +1,181 @@
+@* TRAV-1 (controller decisions 3+4): the ONE arrow-traversal component both
+   the Narrative block (EventDateAndPlacesSection) and the new Chronology
+   block (EventChronologySection, PopoverSectionProviders.cs) render --
+   "you can traverse them in essentially the same way," the owner's own
+   words, realized as literally the same component rather than two
+   near-identical renderings. Extracted from EventDateAndPlacesSection's own
+   former `RenderNavArrow` static helper (a RenderTreeBuilder-only method,
+   with no state of its own that could survive across renders) into a real
+   component for exactly one reason: decision 4's dwell-hover verse peek
+   needs a timer that OUTLIVES a single render (started on pointer-enter,
+   fired ~350-400ms later unless cancelled first) -- a RenderFragment
+   closure is rebuilt fresh every render (see EventDateAndPlacesSection's
+   own "Fresh every render... a dictionary declared outside this closure
+   would keep accumulating" doc comment for why that discipline exists),
+   but a genuine Blazor component instance persists across them, which is
+   what a live CancellationTokenSource needs. Both callers open this via
+   `builder.OpenComponent<ArrowNav>(...)` from their own RenderTreeBuilder
+   bodies -- EventTimelineDirectionSection (now retired) already
+   established that exact "open a real component from imperative
+   RenderTreeBuilder code" pattern in this same file, for PassageList.
+
+   DWELL GRAMMAR (decision 4, "quick pass-over -> nothing; dwell -> a small
+   hover box with the target event's verse text; click still traverses"):
+   pointer-enter starts a fresh timer (DwellTiming.PeekDelayMs, the ONE
+   constant CHAP-HOVER-1's own chapter-head peek also uses -- see that
+   file's own doc comment); pointer-leave before it fires cancels outright
+   (no peek ever shown -- "not super sensitive, so some delay so that
+   you're not accidentally getting hover boxes all the time," the owner's
+   own words); pointer-leave AFTER it fires dismisses immediately (no grace
+   period -- unlike the xref superscript's own marker-to-panel transit
+   concern, Reader.razor's `ScheduleHoverClose`, this peek is a passive,
+   self-contained glance, never something a user needs to travel INTO).
+   CLICK is wired completely independently (`Commit`, below) -- it never
+   reads or waits on dwell state at all, so a genuine click always commits
+   immediately regardless of whether the peek happened to be mid-dwell,
+   already showing, or never touched at all. *@
+@inject AtlasClient Atlas
+@implements IDisposable
+
+<div class="popover-event-nav-side popover-event-nav-side-@Direction"
+     @onpointerenter="OnPointerEnter" @onpointerleave="OnPointerLeave">
+@if (Adjacent is null)
+{
+    <span class="popover-event-nav-arrow popover-event-nav-arrow-@Direction popover-event-nav-arrow-empty"></span>
+}
+else
+{
+    <button type="button" class="popover-event-nav-arrow popover-event-nav-arrow-@Direction explorable"
+            data-testid="@($"{EventTestIdPrefix}-{IdSuffix}")"
+            aria-label="@($"{(Direction == "prior" ? "Prior" : "Following")} event: {Adjacent.Label}")"
+            @onclick="Commit">
+        @if (Direction == "prior")
+        {
+            <span class="popover-event-nav-glyph">@Glyph</span>
+        }
+        <span class="popover-event-nav-label" title="@Adjacent.Label">@Adjacent.Label</span>
+        @if (Direction == "following")
+        {
+            <span class="popover-event-nav-glyph">@Glyph</span>
+        }
+    </button>
+
+    <p class="popover-event-nav-role" data-testid="@($"{RoleTestIdPrefix}-{IdSuffix}")">@RoleText</p>
+
+    @if (_showPeek)
+    {
+        <div class="popover-arrow-peek" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek")">
+            @if (_peekVerses.Count > 0)
+            {
+                <PassageList Units="@_peekUnits" RefTestIdPrefix="@($"{EventTestIdPrefix}-{IdSuffix}-peek")" OnExplore="OnExplore" />
+            }
+        </div>
+    }
+}
+</div>
+
+@code {
+    // "prior" | "following" -- the ONE distinction every glyph/role/class
+    // decision below reads off (never a bool: a third direction is not
+    // conceivable here, but the string reads the same as the marker
+    // testid/aria-label prefixes it feeds, one fewer translation to keep
+    // in sync).
+    [Parameter, EditorRequired] public string Direction { get; set; } = default!;
+
+    // Base testid PREFIXES -- this instance's own `IdSuffix` (below) is
+    // appended by every render site (`{prefix}-{suffix}`), the SAME
+    // disambiguation convention the retired RenderNavArrow established
+    // (a real narrative id for Narrative rows; "global" for the one
+    // Chronology row -- see EventChronologySection's own call site).
+    [Parameter, EditorRequired] public string EventTestIdPrefix { get; set; } = default!;
+    [Parameter, EditorRequired] public string RoleTestIdPrefix { get; set; } = default!;
+    [Parameter, EditorRequired] public string IdSuffix { get; set; } = default!;
+
+    [Parameter] public NarrativeAdjacentEventDto? Adjacent { get; set; }
+    [Parameter, EditorRequired] public string Glyph { get; set; } = default!;
+
+    // The SAME "a caller/provider supplies the real push, this component
+    // only ever proposes a node" contract MentionText/PericopeHeading
+    // already follow -- reused for BOTH the arrow's own commit (click) and
+    // a mention link resolved INSIDE the dwell peek's own verse text (a
+    // peek is read-only in the sense that dwelling never itself commits,
+    // but a place/person name within the peeked verse stays explorable
+    // like it is everywhere else text renders -- decision 4 never asked
+    // for THAT to be disabled, only for the ARROW's own hover to stop
+    // short of traversing).
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    private string RoleText => Direction == "prior" ? "PRIOR EVENT" : "FOLLOWING EVENT";
+
+    private Task Commit() => Adjacent is null ? Task.CompletedTask : OnExplore.InvokeAsync(new EventNode(Adjacent.Id, Adjacent.Label));
+
+    private bool _showPeek;
+    private List<PassageListVerse> _peekVerses = new();
+    private PassageSourceUnit[] _peekUnits = Array.Empty<PassageSourceUnit>();
+    private CancellationTokenSource? _dwellCts;
+
+    private void OnPointerEnter()
+    {
+        if (Adjacent is null)
+        {
+            return; // the empty-placeholder side (this narrative/direction has no neighbor) -- nothing to peek at
+        }
+        CancelDwell();
+        var cts = new CancellationTokenSource();
+        _dwellCts = cts;
+        _ = DwellThenPeek(cts);
+    }
+
+    private void OnPointerLeave()
+    {
+        CancelDwell();
+        if (_showPeek)
+        {
+            _showPeek = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelDwell()
+    {
+        _dwellCts?.Cancel();
+        _dwellCts = null;
+    }
+
+    private async Task DwellThenPeek(CancellationTokenSource cts)
+    {
+        try
+        {
+            await Task.Delay(DwellTiming.PeekDelayMs, cts.Token);
+        }
+        catch (TaskCanceledException)
+        {
+            return; // left before the dwell delay elapsed -- exactly "quick pass-over -> nothing"
+        }
+
+        if (cts.IsCancellationRequested || Adjacent is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _peekVerses = await VerseTextResolver.ResolveGroupsAsync(Atlas, Adjacent.VerseGroups);
+        }
+        catch (Exception)
+        {
+            _peekVerses = new List<PassageListVerse>(); // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+        }
+
+        if (cts.IsCancellationRequested)
+        {
+            return; // the pointer left WHILE the verse text was in flight -- never flip a dismissed peek back on
+        }
+
+        _peekUnits = new PassageSourceUnit[] { new(_peekVerses) };
+        _showPeek = true;
+        StateHasChanged();
+    }
+
+    public void Dispose() => CancelDwell();
+}

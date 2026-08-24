@@ -96,20 +96,47 @@
                        unmodified heading -- App.razor's FocusOnNavigate
                        still finds and focuses IT, not this button, so
                        document-outline semantics are untouched. *@
-                    @* M-D3 (U4/B3, owner: "heading hover/click -> the
-                       metadata-and-context card"): @onmouseenter added
-                       alongside the pre-existing @onclick -- OpenChapter
-                       itself now guards against a redundant remount the
-                       same way OpenVerseXrefEntry already does (re-entering
-                       a chapter whose popover is already open no-ops
-                       instead of tearing down and rebuilding ExplorerPopover,
-                       which is keyed by _activeNode's own reference). *@
+                    @* CHAP-HOVER-1 (owner defect report, 2026-08-24,
+                       verbatim: "chapter headers in the reader give a hover
+                       box that i have to x out of if i so much as tickle
+                       the chapter button. that is awful."): M-D3/U4's own
+                       @onmouseenter -> OpenChapter(persistent:false) (a
+                       hover that opened the FULL ExplorerPopover card
+                       instantly, backdrop-less but still title/chips/close-
+                       button and all -- see git history for the retired
+                       shape) is GONE. Respec'd to the SAME dwell grammar
+                       decision 4 gives the traversal arrows: a bare/short
+                       hover does NOTHING; a dwell past DwellTiming.PeekDelayMs
+                       reveals a TRANSIENT, non-interactive peek
+                       (_showChapterPeek below) with no close button at all;
+                       pointer-leave dismisses it outright, no grace period
+                       (this peek is a passive glance, never something a user
+                       needs to travel INTO, unlike the xref marker's own
+                       marker-to-panel transit concern). CLICK is now the
+                       ONLY path into the real card (OpenChapter, simplified
+                       below -- no more `persistent` parameter, since a
+                       hover-opened-then-upgraded case no longer exists). *@
                     <button type="button" class="chapter-head-button explorable" data-testid="chapter-head"
                             aria-label="@($"Explore {_book}.{_chapterNum}")"
-                            @onclick="() => OpenChapter(persistent: true)" @onmouseenter="() => OpenChapter(persistent: false)" @onmouseleave="ScheduleHoverClose">
+                            @onclick="OpenChapter" @onmouseenter="OnChapterHeadPointerEnter" @onmouseleave="OnChapterHeadPointerLeave">
                         <span class="chapter-head-book">@BookName</span>
                         <span class="chapter-head-num">@_chapterNum</span>
                     </button>
+                    @if (_showChapterPeek)
+                    {
+                        <div class="chapter-head-peek" data-testid="chapter-head-peek">
+                            <p class="chapter-head-peek-position" data-testid="chapter-head-peek-position">@ChapterPeekPositionText</p>
+                            @if (ChapterPeekHeadings.Count > 0)
+                            {
+                                <ul class="chapter-head-peek-headings">
+                                    @foreach (var heading in ChapterPeekHeadings)
+                                    {
+                                        <li data-testid="@($"chapter-head-peek-heading-{heading.EventId}")">@heading.Title</li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    }
                 </h1>
 
                 @* Batch M-D4 ("the recursive reader"): every verse of this
@@ -797,17 +824,18 @@
         }
 
         // M-D3 fix round: widened from the original xref-only `_activeNode is
-        // not VerseNode { XrefEntryPoint: true }` to plain `!_hoverOnlyOpen`
-        // now that OpenChapter's own hover case (above) sets it too --
-        // _hoverOnlyOpen is ALREADY the general "opened via hover, not a
-        // real click/focus" signal (ScheduleHoverClose's own guard, right
-        // above, already relies on it alone), and every OTHER Open* method
-        // resets it to false via ResetXrefEntryState before assigning a
-        // DIFFERENT node, so by construction it can only still be true here
-        // if _activeNode is still the SAME hover-opened node this timer was
-        // scheduled for -- the extra node-kind check was never load-bearing
-        // beyond that, just no longer accurate once a second hover-open
-        // case existed.
+        // not VerseNode { XrefEntryPoint: true }` to plain `!_hoverOnlyOpen`.
+        // CHAP-HOVER-1: `_hoverOnlyOpen` is set by exactly ONE caller again
+        // now (OpenVerseXrefEntry) -- OpenChapter's own former hover case,
+        // which used to set it too, is retired whole (that surface's own
+        // dwell peek, above, never touches ExplorerPopover/_activeNode at
+        // all, see OnChapterHeadPointerEnter's own doc comment), but the
+        // plain `!_hoverOnlyOpen` check here stays exactly correct
+        // regardless: every OTHER Open* method still resets it to false via
+        // ResetXrefEntryState before assigning a DIFFERENT node, so by
+        // construction it can only still be true here if _activeNode is
+        // still the SAME xref-hover-opened node this timer was scheduled
+        // for.
         if (cts.IsCancellationRequested || !_hoverOnlyOpen)
         {
             return;
@@ -842,46 +870,121 @@
     // M-D3 (R3): ResetXrefEntryState, same reasoning as OnLineExplore
     // above.
     //
-    // M-D3 fix round (a real, live-caught bug -- found by this batch's own
-    // full Playwright suite, not guessed): U4/B3's own @onmouseenter hover
-    // trigger was originally wired straight to this SAME no-parameter
-    // method, which -- unlike OpenVerseXrefEntry's own hover case -- never
-    // set _hoverOnlyOpen, so ShowBackdrop stayed permanently true even for
-    // a hover-triggered open. Every mouse click is PRECEDED by its own
-    // hover (the pointer moves onto the element before the click fires) --
-    // so clicking chapter-head opened the full-viewport backdrop on the
-    // hover half of that SAME gesture, and the click half then landed on
-    // the now-covering backdrop instead of the button, closing the popover
-    // it had just opened (reader.spec.ts's own READ-2c property test caught
-    // this as a multi-minute stall: Playwright's own click retries against
-    // an element that kept re-appearing-then-vanishing under it). Now takes
-    // the SAME `persistent` parameter/_hoverOnlyOpen wiring
-    // OpenVerseXrefEntry already established -- hover opens quietly (no
-    // backdrop, auto-dismisses via ScheduleHoverClose below on
-    // mouseleave/DelayedHoverClose, mirroring the marker-to-panel grace
-    // period), a genuine click (or Enter -- native <button> semantics
-    // dispatch @onclick, no separate keydown handler needed) upgrades the
-    // SAME popover to persistent in place, matching OpenVerseXrefEntry's
-    // own re-entry guard exactly.
-    private void OpenChapter(bool persistent)
+    // CHAP-HOVER-1: simplified from the former `OpenChapter(bool persistent)`
+    // -- CLICK is now the ONLY entry point (decision 5: "today's [sticky,
+    // x-dismissable] behavior moves here exclusively"), so the
+    // `persistent`/`_hoverOnlyOpen` upgrade dance M-D3/U4's own hover-opens-
+    // quietly design needed is gone with it; opening this card always means
+    // the real, backdrop-shown, persistent popover (ShowBackdrop="!_hoverOnlyOpen"
+    // below reads `false` here via ResetXrefEntryState's own reset, exactly
+    // like every OTHER non-xref explore in this app). Still guards a
+    // redundant remount the same way OpenVerseXrefEntry does (re-entering a
+    // chapter whose popover is already open no-ops rather than tearing down
+    // and rebuilding ExplorerPopover, which is keyed by _activeNode's own
+    // reference).
+    private void OpenChapter()
     {
         var title = $"{_book}.{_chapterNum}";
         if (_activeNode is ChapterNode current && current.Title == title)
         {
-            if (persistent)
-            {
-                _hoverOnlyOpen = false;
-                CancelHoverCloseTimer();
-            }
-            return; // already open on this exact chapter -- no-op, matches OpenVerseXrefEntry's own guard
+            return; // already open on this exact chapter -- no-op
         }
 
+        CancelChapterPeekTimer();
+        _showChapterPeek = false; // a click always supersedes any peek still showing/mid-dwell -- never both at once
         ResetXrefEntryState();
         var totalChapters = _toc?.FirstOrDefault(b => b.Code == _book)?.Chapters.Count;
         _activeNode = new ChapterNode(_book, _chapterNum, totalChapters) { AlreadyLoaded = _chapter };
-        _hoverOnlyOpen = !persistent;
-        CancelHoverCloseTimer();
     }
+
+    // CHAP-HOVER-1's own dwell timer -- deliberately NOT ExplorerPopover/
+    // _activeNode at all (unlike the retired hover-opens-the-real-card
+    // design): the peek is a separate, lightweight, read-only rendering
+    // (the <div class="chapter-head-peek"> sibling in the markup above),
+    // computed directly from data this page ALREADY holds in memory
+    // (_chapter/_toc -- the chapter being read IS the chapter chapter-head
+    // names, so no network fetch is needed just to peek at it). Same
+    // CancellationTokenSource/Task.Delay shape as this page's own
+    // pre-existing xref-hover-close timer (ScheduleHoverClose/
+    // DelayedHoverClose below) -- for the OPEN side instead of the close
+    // side, sharing only the ONE numeric constant (DwellTiming.PeekDelayMs)
+    // decision 5 requires, not the mechanism itself (the two dwell
+    // directions have genuinely different cancellation shapes: this one
+    // fires ONCE and stays until pointer-leave; that one re-arms on every
+    // leave and can be cancelled by a re-enter).
+    private bool _showChapterPeek;
+    private CancellationTokenSource? _chapterPeekCts;
+
+    private void OnChapterHeadPointerEnter()
+    {
+        CancelChapterPeekTimer();
+        var cts = new CancellationTokenSource();
+        _chapterPeekCts = cts;
+        _ = DelayedChapterPeekShow(cts);
+    }
+
+    private void OnChapterHeadPointerLeave()
+    {
+        CancelChapterPeekTimer();
+        if (_showChapterPeek)
+        {
+            _showChapterPeek = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelChapterPeekTimer()
+    {
+        _chapterPeekCts?.Cancel();
+        _chapterPeekCts = null;
+    }
+
+    private async Task DelayedChapterPeekShow(CancellationTokenSource cts)
+    {
+        try
+        {
+            await Task.Delay(DwellTiming.PeekDelayMs, cts.Token);
+        }
+        catch (TaskCanceledException)
+        {
+            return; // left before the dwell delay elapsed -- the tickle test's own "nothing happens" case
+        }
+
+        if (cts.IsCancellationRequested)
+        {
+            return;
+        }
+
+        _showChapterPeek = true;
+        StateHasChanged();
+    }
+
+    // The peek's own content -- plain data reads off _chapter/_toc (no
+    // fetch, no IPopoverSectionContext, nothing explorable inside it: a
+    // peek is a glance, never a second way to drill in -- clicking THROUGH
+    // it does nothing, only clicking chapter-head itself commits). Position
+    // text mirrors ChapterCardSection's own "Chapter N of M" wording
+    // (chapter-card-position, the STICKY card's own testid) so the two
+    // don't read as two different facts, just two different affordances
+    // for the identical one.
+    private string ChapterPeekPositionText
+    {
+        get
+        {
+            var total = _toc?.FirstOrDefault(b => b.Code == _book)?.Chapters.Count;
+            return total is int t ? $"Chapter {_chapterNum} of {t}" : $"Chapter {_chapterNum}";
+        }
+    }
+
+    // Same dedupe-by-event-id rule ChapterCardSection's own headings list
+    // uses (a titled container can anchor more than one verse in this
+    // chapter; each must appear once, not once per anchoring verse) --
+    // capped at 8 for the same reason that card's own list is (a long
+    // acrostic psalm's own many sections), never fetched: `_chapter` is
+    // already this exact chapter's own already-loaded ChapterOut.
+    private List<HeadingDto> ChapterPeekHeadings =>
+        _chapter?.Verses.Where(v => v.Heading is not null).Select(v => v.Heading!).GroupBy(h => h.EventId).Select(g => g.First()).Take(8).ToList()
+        ?? new List<HeadingDto>();
 
     private Task ClosePopover()
     {

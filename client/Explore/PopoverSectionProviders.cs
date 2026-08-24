@@ -1217,12 +1217,15 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
 /// group). LEFT/RIGHT, never "prior in time" -- this is strictly
 /// NARRATIVE (succession-relation) order, the doubly-linked-list the owner
 /// named; the GLOBAL CHRONOLOGICAL adjacency
-/// (<see cref="EventTimelinePriorSection"/>/<see cref="EventTimelineFollowingSection"/>,
-/// below, deliberately UNCHANGED, its own separate, quiet "IN TIME"
-/// section) is out of U1's own stated scope ("never chronological").
-/// "hover = normal focus+frontier": no bespoke hover interaction --
-/// `.explorable`, the SAME ink-wash ONE-RULE gives every other explorable
-/// element in this popover platform, is the whole of it.
+/// (<see cref="EventChronologySection"/>, below, its own separate,
+/// headed "CHRONOLOGY" block) is out of U1's own stated scope ("never
+/// chronological").
+/// "hover = normal focus+frontier": true of the ARROW ROW itself (the
+/// ink-wash `.explorable` state every explorable element in this popover
+/// platform gets) -- TRAV-1 (controller decision 4) layers a bespoke
+/// DWELL-hover on top, entirely inside <see cref="Components.ArrowNav"/>
+/// (a sustained hover reveals a transient verse-text peek; a quick pass
+/// stays exactly this "normal focus+frontier" ink-wash and nothing more).
 /// </summary>
 /// <summary>
 /// M-D4 fix round 1/P4 (owner, live off demo36, verbatim: "we straight up
@@ -1234,7 +1237,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
 /// role caption beneath it -- "PRIOR EVENT"/"FOLLOWING EVENT" -- naming
 /// the DIRECTION only, never the destination's own content. The event
 /// NAME (inside the button, unchanged) is the only per-event text left;
-/// <see cref="RenderNavArrow"/>'s own doc comment has the rest.
+/// <see cref="Components.ArrowNav"/>'s own doc comment has the rest.
 /// </summary>
 public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
 {
@@ -1260,7 +1263,7 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         IReadOnlyList<NarrativePositionDto> positions = Array.Empty<NarrativePositionDto>();
         try
         {
-            // .Narrative only -- .Timeline is EventTimelineDirectionSection's own, separate concern (see this class's own doc comment).
+            // .Narrative only -- .Timeline is EventChronologySection's own, separate concern (see this class's own doc comment).
             positions = (await ev.NarrativePositionsAsync(api)).Narrative;
         }
         catch (Exception)
@@ -1325,8 +1328,8 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
                     // two arrows it is naming.
                     builder.OpenElement(seq++, "div");
                     builder.AddAttribute(seq++, "class", "popover-event-nav-arrows");
-                    RenderNavArrow(builder, ref seq, ctx, "prior", "event-prior-event", "event-prior-label", idSuffix, position.Prior, "◂");
-                    RenderNavArrow(builder, ref seq, ctx, "following", "event-following-event", "event-following-label", idSuffix, position.Following, "▸");
+                    RenderArrowNav(builder, ref seq, ctx, "prior", "event-prior-event", "event-prior-label", idSuffix, position.Prior, "◂");
+                    RenderArrowNav(builder, ref seq, ctx, "following", "event-following-event", "event-following-label", idSuffix, position.Following, "▸");
                     builder.CloseElement(); // .popover-event-nav-arrows
 
                     builder.CloseElement(); // .popover-event-nav-row
@@ -1371,87 +1374,29 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         return new PopoverSection("event-date-places", body);
     }
 
-    // Shared by both directions (called twice per row, above) -- one glyph
-    // placement rule (leading for prior, trailing for following, so the
-    // arrows visually point outward/away from the row's own center) is the
-    // only difference; everything else (testid shape, explorable click) is
-    // identical. `adjacent is null` (that side has no qualifying event --
-    // e.g. a narrative's own first leg has no prior) still emits an empty
-    // placeholder side, never nothing at all -- the ROW's own flex
-    // (space-between) stays honest whether one or both sides are present.
-    //
-    // M-D4 fix round 1/P4 (owner, verbatim: "we straight up should not have
-    // [the verse text]. you get that when you traverse."): the one-verse
-    // caption this method used to resolve and render below the button (a
-    // whole separate VerseTextResolver pass over both directions' own
-    // first-verse refs -- see ResolveAsync's own git history for the
-    // retired oneVerseRefs/oneVerseResolved/textByVref computation) is
-    // gone, with NO count or content signal left in its place. Instead:
-    // a static small-caps role caption ("PRIOR EVENT"/"FOLLOWING EVENT")
-    // naming the DIRECTION only, wrapped together with its own button in
-    // one .popover-event-nav-side column so the outer row's own
-    // space-between still sees exactly two (or one-plus-empty-placeholder)
-    // top-level items. The event NAME is the only per-event text left;
-    // long names truncate to one line with an ellipsis (never wrap) via
-    // .popover-event-nav-label's own CSS, with `title` carrying the
-    // untruncated name for a native hover tooltip.
-    //
-    // Kept cleanly reusable for TRAV-1 (a later batch, explicitly OUT of
-    // this fix round's own scope): a parallel CHRONOLOGY traversal section
-    // will call this same helper a second time with a different ordering,
-    // per the owner's own note.
-    private static void RenderNavArrow(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, string direction, string eventTestIdPrefix, string roleTestIdPrefix, string idSuffix, NarrativeAdjacentEventDto? adjacent, string glyph)
+    // Shared by both directions (called twice per row, above) AND by
+    // EventChronologySection's own single row, below -- opens a real
+    // <see cref="Components.ArrowNav"/> component instance (never raw
+    // elements built by hand here anymore) from this RenderTreeBuilder
+    // body, the SAME "open a real component from imperative
+    // RenderTreeBuilder code" pattern this file already established for
+    // <see cref="Components.PassageList"/>. TRAV-1 (controller decision 3,
+    // "same arrow-traversal component"): this is that reuse, realized --
+    // see ArrowNav.razor's own doc comment for why the rendering moved out
+    // of a static helper into a genuine component (decision 4's dwell-hover
+    // peek needs per-arrow state that survives across renders, which a
+    // RenderFragment closure cannot hold).
+    internal static void RenderArrowNav(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, string direction, string eventTestIdPrefix, string roleTestIdPrefix, string idSuffix, NarrativeAdjacentEventDto? adjacent, string glyph)
     {
-        builder.OpenElement(seq++, "div");
-        builder.AddAttribute(seq++, "class", $"popover-event-nav-side popover-event-nav-side-{direction}");
-
-        if (adjacent is null)
-        {
-            builder.OpenElement(seq++, "span");
-            builder.AddAttribute(seq++, "class", $"popover-event-nav-arrow popover-event-nav-arrow-{direction} popover-event-nav-arrow-empty");
-            builder.CloseElement();
-            builder.CloseElement(); // .popover-event-nav-side
-            return;
-        }
-
-        var eventId = adjacent.Id; // local copies -- captured by the onclick closure below
-        var eventLabel = adjacent.Label;
-        var roleText = direction == "prior" ? "PRIOR EVENT" : "FOLLOWING EVENT";
-
-        builder.OpenElement(seq++, "button");
-        builder.AddAttribute(seq++, "type", "button");
-        builder.AddAttribute(seq++, "class", $"popover-event-nav-arrow popover-event-nav-arrow-{direction} explorable");
-        builder.AddAttribute(seq++, "data-testid", $"{eventTestIdPrefix}-{idSuffix}");
-        builder.AddAttribute(seq++, "aria-label", $"{(direction == "prior" ? "Prior" : "Following")} event: {eventLabel}");
-        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(eventId, eventLabel))));
-        if (direction == "prior")
-        {
-            builder.OpenElement(seq++, "span");
-            builder.AddAttribute(seq++, "class", "popover-event-nav-glyph");
-            builder.AddContent(seq++, glyph);
-            builder.CloseElement();
-        }
-        builder.OpenElement(seq++, "span");
-        builder.AddAttribute(seq++, "class", "popover-event-nav-label");
-        builder.AddAttribute(seq++, "title", eventLabel);
-        builder.AddContent(seq++, eventLabel);
-        builder.CloseElement();
-        if (direction == "following")
-        {
-            builder.OpenElement(seq++, "span");
-            builder.AddAttribute(seq++, "class", "popover-event-nav-glyph");
-            builder.AddContent(seq++, glyph);
-            builder.CloseElement();
-        }
-        builder.CloseElement(); // button
-
-        builder.OpenElement(seq++, "p");
-        builder.AddAttribute(seq++, "class", "popover-event-nav-role");
-        builder.AddAttribute(seq++, "data-testid", $"{roleTestIdPrefix}-{idSuffix}");
-        builder.AddContent(seq++, roleText);
-        builder.CloseElement();
-
-        builder.CloseElement(); // .popover-event-nav-side
+        builder.OpenComponent<Components.ArrowNav>(seq++);
+        builder.AddAttribute(seq++, "Direction", direction);
+        builder.AddAttribute(seq++, "EventTestIdPrefix", eventTestIdPrefix);
+        builder.AddAttribute(seq++, "RoleTestIdPrefix", roleTestIdPrefix);
+        builder.AddAttribute(seq++, "IdSuffix", idSuffix);
+        builder.AddAttribute(seq++, "Adjacent", adjacent);
+        builder.AddAttribute(seq++, "Glyph", glyph);
+        builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+        builder.CloseComponent();
     }
 }
 
@@ -1823,38 +1768,57 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
 }
 
 /// <summary>
-/// Batch HOTFIX-4 requirement 1 ("generalize the ONE resolver -- traversal
-/// by time for every dated event"): shared rendering for the new "PRIOR IN
-/// TIME" / "FOLLOWING IN TIME" sections (<see cref="EventTimelinePriorSection"/>/
-/// <see cref="EventTimelineFollowingSection"/> below) -- the GLOBAL
-/// chronological adjacency, independent of narrative membership, alongside
-/// (never instead of) the narrative-scoped rows <see cref="NarrativeDirectionSection"/>
-/// already renders. Structurally simpler than that sibling resolver: the
-/// global timeline has exactly ONE row in each direction (never "one block
-/// per qualifying narrative"), so there is no name-collision/disambiguation
-/// logic to duplicate -- reuses the SAME underlying mechanism
-/// (<see cref="Components.PassageList"/>, the event-traversal row shape,
-/// PASSAGE-1's own click contract) without forcing an ill-fitting
-/// multi-entry abstraction onto a single-entry case. "Quiet, clearly
-/// distinct" (requirement 1 verbatim) from the narrative rows: the SAME
-/// shared `catechism-section-heading`/`event-section-heading` eyebrow
-/// class/testid every section heading in this popover platform already
-/// uses, PLUS a second, self-contained modifier class
-/// (`event-timeline-heading`, app.css) that softens the text to `--ink-soft`
-/// -- and "IN TIME" wording, never "EVENT", so the two are never
-/// mistakable for each other even at a glance.
+/// TRAV-1 (controller decisions 2+3, owner verbatim, progress.md: "the
+/// prior and time and following in time basically get condensed into one
+/// Chronological block with the arrow traversal that is separate from the
+/// narrative block"). RETIRES Batch HOTFIX-4's own
+/// EventTimelineDirectionSection/EventTimelinePriorSection/
+/// EventTimelineFollowingSection whole (the former "PRIOR IN TIME"/
+/// "FOLLOWING IN TIME" sections -- two separate headed rows, each with a
+/// full verse-text preview inline via <see cref="Components.PassageList"/>,
+/// per HOTFIX-4 requirement 1): this ONE section replaces both. "Traverse
+/// them in essentially the same way" (the owner's own words) is realized
+/// structurally, not just in spirit -- the SAME arrow-traversal component
+/// the Narrative nav uses (<see cref="Components.ArrowNav"/>, opened via
+/// <see cref="EventDateAndPlacesSection.RenderArrowNav"/>), reused here for
+/// the GLOBAL chronological adjacency instead of narrative-leg adjacency.
+/// P4's own "name only, no verse text in the arrow itself" rule is
+/// satisfied by <c>ArrowNav</c> itself now (unchanged, not re-proven here)
+/// -- the verse text this section's own predecessor used to show inline is
+/// now decision 4's dwell-hover PEEK instead, never inline.
+///
+/// Two differences from the Narrative rows this reuses the SAME rendering
+/// for: (1) exactly ONE row, always (the global timeline has one
+/// prior/following pair, never "one block per qualifying narrative" --
+/// no name-collision disambiguation needed, so `IdSuffix` is the fixed
+/// literal `"global"`, never a real narrative id); (2) a quiet
+/// "CHRONOLOGY" eyebrow heading names the block (the SAME shared
+/// `catechism-section-heading`/`event-timeline-heading` classes the
+/// retired "IN TIME" sections already used for their own headings) -- the
+/// Narrative nav itself renders headerless, immediately below focus, by
+/// M-D3/U1's own established design (unchanged by this batch); this
+/// section is a brand-new, separate block, so it announces its own
+/// identity, matching the owner's own "we have two sections: Narrative and
+/// Chronology."
+///
+/// Conditional presence: renders whenever this event genuinely has a
+/// `Timeline` position at all (i.e. it is dated -- `Timeline` is the wire
+/// key OMITTED, not null, for a general-kind/unknown event, HOTFIX-4
+/// requirement 2, unchanged) -- INCLUDING the degenerate case where BOTH
+/// `Prior` and `Following` are independently absent (the atlas's own true
+/// first-AND-last dated event, or the rare single-dated-event atlas):
+/// `GraphService.temporal_neighbors` (service.rs) still returns `Some`
+/// there (seeded from the chronology's own order, not merely from row
+/// presence -- see that field's own doc comment), so this section
+/// honestly renders a real Chronology position with two empty-placeholder
+/// arrows, never silently omitting the block just because this one event
+/// happens to have no neighbor on either side.
 /// </summary>
-file static class EventTimelineDirectionSection
+public sealed class EventChronologySection : IPopoverSectionProvider
 {
-    public static async Task<PopoverSection?> ResolveAsync(
-        IExplorable node,
-        AtlasClient api,
-        IPopoverSectionContext ctx,
-        Func<TimelinePositionDto, NarrativeAdjacentEventDto?> pick,
-        string testid,
-        string sectionLabel,
-        string rowTestId,
-        string verseTestIdPrefix)
+    public bool AppliesTo(IExplorable node) => node.Kind == "Event";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
     {
         if (node is not INarrativeAware aware)
         {
@@ -1871,34 +1835,9 @@ file static class EventTimelineDirectionSection
             return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
         }
 
-        // Requirement 2: `Timeline` is null (the wire key OMITTED) for a
-        // general-kind or unknown event -- "NOT part of time traversal,"
-        // resolved here by simple absence, never a disabled stub.
         if (timeline is null)
         {
-            return null;
-        }
-
-        var adjacent = pick(timeline);
-        if (adjacent is null)
-        {
-            // Conditional presence at the atlas's own TRUE first/last dated
-            // event only (requirement 1 verbatim) -- everywhere else, a
-            // dated event always has both directions, so a user can always
-            // keep walking.
-            return null;
-        }
-
-        List<PassageListVerse> verses;
-        try
-        {
-            // Batch HOTFIX-4 requirement 7: same reason as
-            // NarrativeDirectionSection's own identical call, above.
-            verses = await VerseTextResolver.ResolveGroupsAsync(api, adjacent.VerseGroups);
-        }
-        catch (Exception)
-        {
-            verses = new List<PassageListVerse>();
+            return null; // general-kind or unknown event -- NOT part of time traversal, this class's own doc comment
         }
 
         RenderFragment body = builder =>
@@ -1906,71 +1845,33 @@ file static class EventTimelineDirectionSection
             var seq = 0;
             builder.OpenElement(seq++, "p");
             builder.AddAttribute(seq++, "class", "catechism-section-heading event-timeline-heading");
-            builder.AddAttribute(seq++, "data-testid", "event-section-heading");
-            builder.AddContent(seq++, sectionLabel);
+            builder.AddAttribute(seq++, "data-testid", "event-chronology-heading");
+            builder.AddContent(seq++, "CHRONOLOGY");
             builder.CloseElement();
 
-            var eventId = adjacent.Id; // local copies -- captured by the onclick closure below
-            var eventLabel = adjacent.Label;
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "popover-event-nav-list");
+            builder.AddAttribute(seq++, "data-testid", "event-chronology");
 
-            builder.OpenElement(seq++, "button");
-            builder.AddAttribute(seq++, "type", "button");
-            builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
-            builder.AddAttribute(seq++, "data-testid", rowTestId);
-            builder.AddAttribute(seq++, "aria-label", $"{sectionLabel}: {eventLabel}");
-            // Same ONE-RULE traversal as the narrative rows: pushes a fresh
-            // EventNode, re-anchoring the popover -- recursion falls out of
-            // THIS SAME AppliesTo clause matching the traversed node too.
-            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(eventId, eventLabel))));
-            builder.OpenElement(seq++, "span");
-            builder.AddAttribute(seq++, "class", "popover-event-label");
-            builder.AddContent(seq++, eventLabel);
-            builder.CloseElement();
-            builder.CloseElement();
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "popover-event-nav-row");
+            builder.AddAttribute(seq++, "data-testid", "event-chronology-row");
 
-            if (verses.Count > 0)
-            {
-                var units = new PassageSourceUnit[] { new(verses) };
-                builder.OpenComponent<Components.PassageList>(seq++);
-                builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
-                builder.AddAttribute(seq++, "RefTestIdPrefix", verseTestIdPrefix);
-                builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
-                builder.CloseComponent();
-            }
+            // Arrows live in their OWN inner flex row -- same reason
+            // EventDateAndPlacesSection's own narrative rows keep this one
+            // level of nesting (space-between across exactly these two
+            // items, nothing else sharing that flex line).
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "popover-event-nav-arrows");
+            EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, "prior", "event-chrono-prior-event", "event-chrono-prior-label", "global", timeline.Prior, "◂");
+            EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, "following", "event-chrono-following-event", "event-chrono-following-label", "global", timeline.Following, "▸");
+            builder.CloseElement(); // .popover-event-nav-arrows
+
+            builder.CloseElement(); // .popover-event-nav-row
+            builder.CloseElement(); // .popover-event-nav-list
         };
-        return new PopoverSection(testid, body);
+        return new PopoverSection("event-chronology", body);
     }
-}
-
-/// <summary>
-/// Batch HOTFIX-4 requirement 1: "PRIOR IN TIME" -- the global-timeline
-/// counterpart to <see cref="EventPriorSection"/>, present whenever THIS
-/// event has a chronologically-prior dated event ANYWHERE in the atlas
-/// (independent of narrative membership -- the whole point of this
-/// requirement: "every DATED event traverses," not just narrative
-/// members). Absent only at the atlas's own true first dated event.
-/// </summary>
-public sealed class EventTimelinePriorSection : IPopoverSectionProvider
-{
-    public bool AppliesTo(IExplorable node) => node.Kind == "Event";
-
-    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
-        EventTimelineDirectionSection.ResolveAsync(node, api, ctx, t => t.Prior, "event-prior-timeline", "PRIOR IN TIME", "event-prior-event-timeline", "event-prior-verse-timeline");
-}
-
-/// <summary>
-/// Batch HOTFIX-4 requirement 1: "FOLLOWING IN TIME" -- the mirror image of
-/// <see cref="EventTimelinePriorSection"/>. Registered immediately after it
-/// (PopoverSections.cs), and both after EventFollowingSection, so the
-/// narrative rows always render above the timeline rows -- narrative
-/// primacy preserved, requirement 1 verbatim.
-/// </summary>
-public sealed class EventTimelineFollowingSection : IPopoverSectionProvider
-{
-    public bool AppliesTo(IExplorable node) => node.Kind == "Event";
-
-    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
-        EventTimelineDirectionSection.ResolveAsync(node, api, ctx, t => t.Following, "event-following-timeline", "FOLLOWING IN TIME", "event-following-event-timeline", "event-following-verse-timeline");
 }
 
 /// <summary>

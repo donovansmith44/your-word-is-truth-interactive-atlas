@@ -257,16 +257,20 @@ public static class PopoverSectionRegistry
         // own doc comment), then PARALLEL ACCOUNTS.
         new EventDateAndPlacesSection(),
         new EventWitnessesSection(),
-        // Batch HOTFIX-4 requirement 1 ("whole-DAG chronological traversal"):
-        // the GLOBAL-timeline counterparts to the narrative nav folded into
+        // TRAV-1 (controller decisions 2+3): the GLOBAL-chronology
+        // counterpart to the narrative nav folded into
         // EventDateAndPlacesSection above -- registered directly after the
-        // sections above (narrative primacy: the narrative-scoped nav
-        // always renders first, requirement 1 verbatim, unaffected by
-        // M-D3/U1's own reshuffle of ITS rendering), independent of
-        // narrative membership, so a narrative-less dated event gets these
-        // two instead, and a narrative member gets BOTH.
-        new EventTimelinePriorSection(),
-        new EventTimelineFollowingSection(),
+        // sections above (narrative primacy preserved: the narrative-scoped
+        // nav always renders first, same registration-order-is-render-order
+        // rule HOTFIX-4 originally established here, unaffected by this
+        // batch's own consolidation of what used to be its own TWO
+        // providers), independent of narrative membership, so a
+        // narrative-less dated event gets this ONE Chronology block
+        // instead, and a narrative member gets BOTH blocks. RETIRES
+        // HOTFIX-4's own EventTimelinePriorSection/EventTimelineFollowingSection
+        // (this single line used to be two) -- see EventChronologySection's
+        // own doc comment for the full "one Chronological block" story.
+        new EventChronologySection(),
         // Batch M ("the DAG grows a node type"): PolityDelta's own three
         // sections, in order -- event text, THE SCRIPTURES, grounding note
         // -- appended at the end, same "later batches append below, never
