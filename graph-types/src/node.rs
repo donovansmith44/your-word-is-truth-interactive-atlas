@@ -122,6 +122,16 @@ pub enum NodePayload {
     /// shape Place's own KJV aliases and Polity's own border data already
     /// use (a fact ABOUT the person, not a further explorable thing).
     Person { label: String, gender: Option<String>, birth_year: Option<i32>, death_year: Option<i32>, also_called: Vec<String> },
+    /// PG-1 (owner order 2026-08-23: "we need a way to distinguish
+    /// between the names of the twelve tribes and the people theyre
+    /// named after"; "pull in Peoples or Nations info so I can find
+    /// out who the ammonites are"). A people group (tribe/nation/
+    /// clan) is its OWN kind of thing -- not a Person, not a Place --
+    /// so a mention can attest WHICH sense a name carries, and "who
+    /// are the Ammonites?" has a node to answer from. Minimal on
+    /// purpose: description arrives with ENT-1's widening for every
+    /// entity kind at once.
+    PeopleGroup { label: String },
     /// Explorable "why this date?" — day-capable (sweep F4).
     Anchor { at: TimePoint, citation: String },
     /// M-C: a time-range boundary node for the map/era selector — payload
@@ -202,7 +212,8 @@ pub fn card(n: &dyn NodeData) -> Card {
         | NodePayload::Polity { label, .. }
         | NodePayload::CatechismItem { label }
         | NodePayload::Source { label }
-        | NodePayload::Translation { label } => label.clone(),
+        | NodePayload::Translation { label }
+        | NodePayload::PeopleGroup { label } => label.clone(),
         NodePayload::Place { canonical, .. } => canonical.clone(),
         NodePayload::Anchor { citation, .. } => citation.clone(),
     };

@@ -5,7 +5,7 @@
 //! Scope, disclosed: checks every NODE-TYPED endpoint of every authored
 //! row -- Event/Narrative/Anchor/Place ids on `attests`/`succession`/
 //! `dated_by`/`located_at`, and (M-C2, folding M-C review M-1)
-//! `mentions.entity` (`PlaceOrPerson`) and `catechism.item`
+//! `mentions.entity` (`MentionedEntity`) and `catechism.item`
 //! (`CatechismItemId`) -- resolves to a real node in the built graph. This
 //! is now every node-typed endpoint this crate's own adapters emit; the
 //! previous omission of the latter two was a genuine scope-disclosure gap
@@ -28,7 +28,7 @@
 //! guarantee).
 use std::collections::BTreeSet;
 
-use atlas_graph_types::edge::PlaceOrPerson;
+use atlas_graph_types::edge::MentionedEntity;
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::AnyNodeId;
 
@@ -112,8 +112,9 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
     // now real checks, not just a documented coincidence.
     for row in &graph.mentions {
         let id = match &row.entity {
-            PlaceOrPerson::Place(p) => p.erase(),
-            PlaceOrPerson::Person(p) => p.erase(),
+            MentionedEntity::Place(p) => p.erase(),
+            MentionedEntity::Person(p) => p.erase(),
+            MentionedEntity::PeopleGroup(g) => g.erase(),
         };
         check("mentions", "entity", id)?;
     }
@@ -179,7 +180,7 @@ mod tests {
         let mut graph = Graph::default();
         graph.mentions.push(atlas_graph_types::edge::Mentions {
             locus: locus(),
-            entity: PlaceOrPerson::Place(atlas_graph_types::id::PlaceId::new("nowhere")),
+            entity: MentionedEntity::Place(atlas_graph_types::id::PlaceId::new("nowhere")),
             provenance: "test".into(),
         });
         let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling mentions.entity reference");
@@ -212,7 +213,7 @@ mod tests {
             place_id.clone(),
             Node { id: place_id.clone(), payload: NodePayload::Place { canonical: "Hebron".into(), lat: 0.0, lon: 0.0, aliases: vec![] }, provenance: "test".into() },
         );
-        graph.mentions.push(atlas_graph_types::edge::Mentions { locus: locus(), entity: PlaceOrPerson::Place(PlaceId::new("hebron")), provenance: "test".into() });
+        graph.mentions.push(atlas_graph_types::edge::Mentions { locus: locus(), entity: MentionedEntity::Place(PlaceId::new("hebron")), provenance: "test".into() });
 
         let item_id = atlas_graph_types::id::CatechismItemId::new("commandment-1").erase();
         assert_eq!(item_id.kind, NodeKind::CatechismItem);

@@ -148,7 +148,7 @@ pub struct GraphService {
     /// loop. Read straight off `Graph.mentions` (the SAME raw table
     /// `cross_refs_by_from` above reads `Graph.cross_refs` from, BEFORE
     /// publish, since this is built in `assemble` alongside those
-    /// companions) filtered to `PlaceOrPerson::Person` -- `PlaceOrPerson::
+    /// companions) filtered to `MentionedEntity::Person` -- `MentionedEntity::
     /// Place` rows are deliberately NOT folded in here: `VerseOut.places`
     /// already has its own, separate, EARLIER-established source
     /// (`AtlasData::places_for_verse`, alias-resolved via
@@ -322,7 +322,7 @@ impl GraphService {
         // own eventual caller.
         let mut persons_by_verse: HashMap<String, Vec<(String, String)>> = HashMap::new();
         for row in &graph.mentions {
-            let atlas_graph_types::edge::PlaceOrPerson::Person(person_id) = &row.entity else { continue };
+            let atlas_graph_types::edge::MentionedEntity::Person(person_id) = &row.entity else { continue };
             let Some(key) = crate::legacy::locus_dot_ref(&row.locus) else { continue };
             let Some(label) = graph.nodes.get(&person_id.erase()).and_then(|n| match &n.payload {
                 atlas_graph_types::node::NodePayload::Person { label, .. } => Some(label.clone()),

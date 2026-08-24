@@ -42,7 +42,7 @@
 //! "Theographic verse ref" table distinct from what geocoding already
 //! resolved onto `Place.verse_links`.
 
-use atlas_graph_types::edge::{Mentions, PlaceOrPerson};
+use atlas_graph_types::edge::{Mentions, MentionedEntity};
 use atlas_graph_types::id::PlaceId;
 use atlas_graph_types::ingest::ProvenanceId;
 use atlas_graph_types::text::{BibleLocus, TextLocus, VerseRef};
@@ -71,7 +71,7 @@ pub fn merge_alias(ctx: &mut BuildCtx) -> PlaceAdapterStats {
             let Some(locus) = verse_locus(vref) else { continue };
             ctx.graph.mentions.push(Mentions {
                 locus,
-                entity: PlaceOrPerson::Place(place_id.clone()),
+                entity: MentionedEntity::Place(place_id.clone()),
                 provenance: ProvenanceId::from("theographic-geocoding"),
             });
             stats.mentions_rows += 1;
@@ -115,7 +115,7 @@ mod tests {
         let stats = merge_alias(&mut ctx);
         assert_eq!(stats.mentions_rows, 2);
         for row in &ctx.graph.mentions {
-            assert!(matches!(&row.entity, PlaceOrPerson::Place(p) if p.0 == "hebron"));
+            assert!(matches!(&row.entity, MentionedEntity::Place(p) if p.0 == "hebron"));
         }
     }
 

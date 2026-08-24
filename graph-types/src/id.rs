@@ -25,6 +25,7 @@ pub enum NodeKind {
     CatechismItem,
     Source,
     Translation,
+    PeopleGroup,
 }
 
 /// Kind tag for phantom-typed ids: a cross-kind reference is a type
@@ -54,6 +55,7 @@ kind_tags! {
     CatechismItemTag => CatechismItem,
     SourceTag => Source,
     TranslationTag => Translation,
+    PeopleGroupTag => PeopleGroup,
 }
 
 /// Typed in-memory handle; renders to its Pid at the boundary.
@@ -109,6 +111,7 @@ pub type PolityId = NodeId<PolityTag>;
 pub type CatechismItemId = NodeId<CatechismItemTag>;
 pub type SourceId = NodeId<SourceTag>;
 pub type TranslationNodeId = NodeId<TranslationTag>;
+pub type PeopleGroupId = NodeId<PeopleGroupTag>;
 
 /// Erased form for the wire/UI boundary and heterogeneous holdings.
 /// Narrowing back to a typed id is a checked parse.

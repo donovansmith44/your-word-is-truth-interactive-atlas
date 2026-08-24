@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::id::{
     AnchorId, AnyNodeId, CatechismItemId, ContainerNodeId, ContentAddressed, EventId, Interned,
-    NarrativeId, PersonId, PlaceId, Position, PositionKind, SourceId,
+    NarrativeId, PeopleGroupId, PersonId, PlaceId, PolityId, Position, PositionKind, SourceId,
 };
 use crate::ingest::ProvenanceId;
 use crate::text::{BibleLocusRange, ConcordLocus, Corpus, LocusSet, TextLocus};
@@ -74,6 +74,7 @@ relations! {
         Confesses   => "confesses" / "confessed-in",
         Fulfillment => "fulfilled-in" / "fulfills",
         Typology    => "prefigures" / "prefigured-by",
+        NamedAfter  => "named-after" / "namesake-of",
         JustifiedBy => "justified-by" / "justifies",
         DerivedFrom => "derived-from" / "derives"
     }
@@ -243,6 +244,31 @@ pub struct Typology {
     pub justification: Justification,
 }
 
+/// PG-1: eponymy, curated. The SUBJECT is the named thing; the OBJECT
+/// is the person it is named for: tribe-of-Judah --named-after-->
+/// Judah the man, and from the man's end, Judah --namesake-of-->
+/// tribe-of-Judah (the edge direction follows the LABELS, so both
+/// read as sentences). Grounds are the naming passages themselves
+/// (the GEN 29-30 etymologies; GEN 32:28 for Israel; GEN 19:37-38
+/// for Moab and Ammon) -- the distinction the owner ordered becomes
+/// EXPLORABLE, not just labeled.
+#[derive(Clone, Debug)]
+pub struct NamedAfter {
+    pub namesake: Namesake,
+    pub eponym: PersonId,
+    pub provenance: ProvenanceId,
+    pub justification: Justification,
+}
+
+/// The named thing in an eponymy row -- the kinds Scripture actually
+/// names after persons (tribe/nation, place, kingdom).
+#[derive(Clone, Debug)]
+pub enum Namesake {
+    PeopleGroup(PeopleGroupId),
+    Place(PlaceId),
+    Polity(PolityId),
+}
+
 #[derive(Clone, Debug)]
 pub struct CatechismLink {
     pub locus: TextLocus,
@@ -255,16 +281,22 @@ pub struct CatechismLink {
 // Imported rows.
 // ---------------------------------------------------------------------
 
+/// PG-1: the attested sense of an in-text mention -- Place, Person,
+/// or PeopleGroup. JDG 1:2 "Judah shall go up" mentions the TRIBE,
+/// not the man; the link points where the data says, never where a
+/// string guesses. (Widened from the retired two-way `PlaceOrPerson`
+/// name -- with three variants the old name stopped being true.)
 #[derive(Clone, Debug)]
-pub enum PlaceOrPerson {
+pub enum MentionedEntity {
     Place(PlaceId),
     Person(PersonId),
+    PeopleGroup(PeopleGroupId),
 }
 
 #[derive(Clone, Debug)]
 pub struct Mentions {
     pub locus: TextLocus,
-    pub entity: PlaceOrPerson,
+    pub entity: MentionedEntity,
     pub provenance: ProvenanceId,
 }
 

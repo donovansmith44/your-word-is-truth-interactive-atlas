@@ -5,7 +5,8 @@ use std::collections::BTreeMap;
 
 use crate::edge::{
     at, Attests, BiIndex, CatechismLink, Confesses, Contains, Corresponds, CrossRef, Fulfills,
-    LocatedAt, Mentions, PlaceOrPerson, Quotes, RelationId, Succession, Typology,
+    LocatedAt, MentionedEntity, Mentions, NamedAfter, Namesake, Quotes, RelationId,
+    Succession, Typology,
 };
 use crate::chrono::DatedBy;
 use crate::id::{AnyNodeId, NodeKind, Position};
@@ -32,6 +33,7 @@ pub struct Graph {
     pub located_at: Vec<LocatedAt>,
     pub fulfills: Vec<Fulfills>,
     pub typology: Vec<Typology>,
+    pub named_after: Vec<NamedAfter>,
     pub catechism: Vec<CatechismLink>,
     // -------- imported --------
     pub mentions: Vec<Mentions>,
@@ -121,11 +123,20 @@ impl Graph {
                 M::None,
             ));
         }
+        for row in &self.named_after {
+            let s = match &row.namesake {
+                Namesake::PeopleGroup(g) => at(&g.erase()),
+                Namesake::Place(p) => at(&p.erase()),
+                Namesake::Polity(p) => at(&p.erase()),
+            };
+            pairs.entry(R::NamedAfter).or_default().push((s, at(&row.eponym.erase()), M::None));
+        }
         for row in &self.mentions {
             let s = at(&text_node(&row.locus));
             let o = match &row.entity {
-                PlaceOrPerson::Place(p) => at(&p.erase()),
-                PlaceOrPerson::Person(p) => at(&p.erase()),
+                MentionedEntity::Place(p) => at(&p.erase()),
+                MentionedEntity::Person(p) => at(&p.erase()),
+                MentionedEntity::PeopleGroup(g) => at(&g.erase()),
             };
             pairs.entry(R::Mentions).or_default().push((s, o, M::None));
         }

@@ -55,13 +55,13 @@
 //! becomes exactly that many `mentions` rows, no silent drop. REFERENTIAL
 //! INTEGRITY is deliberately NOT re-implemented here -- `law_check::
 //! every_authored_edge_resolves` already checks `mentions.entity` for BOTH
-//! `PlaceOrPerson` variants (confirmed reading that function fresh, M-C2
+//! `MentionedEntity` variants (confirmed reading that function fresh, M-C2
 //! vintage, entirely unaware this batch was coming), so this adapter's own
 //! referential integrity comes free from the EXISTING generic law -- a real
 //! thesis data point, disclosed rather than duplicated.
 
 use atlas_core::data::AtlasData;
-use atlas_graph_types::edge::{Mentions, PlaceOrPerson};
+use atlas_graph_types::edge::{Mentions, MentionedEntity};
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{NodeKind, PersonId};
 use atlas_graph_types::ingest::ProvenanceId;
@@ -116,7 +116,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> PersonAdapterStats {
 
 /// MERGE/ALIAS: `Person.verse_links` -> `mentions` rows -- mirrors
 /// `place_adapter::merge_alias`'s own mentions half exactly, substituting
-/// `PlaceOrPerson::Person` for `PlaceOrPerson::Place`. `verse_links` is
+/// `MentionedEntity::Person` for `MentionedEntity::Place`. `verse_links` is
 /// already resolved AND canon-sorted at ETL time (`atlas_etl::people::
 /// parse_people`'s own doc comment) -- this loop preserves that order row
 /// for row, which is what makes the graph's own `mentioned-in` inverse
@@ -130,7 +130,7 @@ pub fn merge_alias(ctx: &mut BuildCtx) -> PersonAdapterStats {
             let Some(locus) = verse_locus(vref) else { continue };
             ctx.graph.mentions.push(Mentions {
                 locus,
-                entity: PlaceOrPerson::Person(person_id.clone()),
+                entity: MentionedEntity::Person(person_id.clone()),
                 provenance: ProvenanceId::from(PROVENANCE),
             });
             stats.mentions_rows += 1;
@@ -192,7 +192,7 @@ pub fn check_person_fidelity(atlas: &AtlasData, graph: &Graph) -> Result<(), Per
         let actual = graph
             .mentions
             .iter()
-            .filter(|row| matches!(&row.entity, PlaceOrPerson::Person(pid) if pid.0 == p.id))
+            .filter(|row| matches!(&row.entity, MentionedEntity::Person(pid) if pid.0 == p.id))
             .count();
         if actual != expected {
             return Err(PersonFidelityViolation(format!(
@@ -277,7 +277,7 @@ mod tests {
             .graph
             .mentions
             .iter()
-            .filter(|r| matches!(&r.entity, PlaceOrPerson::Person(p) if p.0 == "moses_1"))
+            .filter(|r| matches!(&r.entity, MentionedEntity::Person(p) if p.0 == "moses_1"))
             .map(|r| crate::legacy::locus_dot_ref(&r.locus).unwrap())
             .collect();
         // Row order preserves the SOURCE verse_links order (already
@@ -344,7 +344,7 @@ mod tests {
         // never calling the real merge_alias().
         ctx.graph.mentions.push(Mentions {
             locus: verse_locus("EXO.2.10").unwrap(),
-            entity: PlaceOrPerson::Person(PersonId::new("moses_1")),
+            entity: MentionedEntity::Person(PersonId::new("moses_1")),
             provenance: ProvenanceId::from(PROVENANCE),
         });
         let err = check_person_fidelity(&atlas, &ctx.graph).expect_err("must catch the incomplete mentions rows");
@@ -361,7 +361,7 @@ mod tests {
         let mut graph = Graph::default();
         graph.mentions.push(Mentions {
             locus: verse_locus("GEN.1.1").unwrap(),
-            entity: PlaceOrPerson::Person(PersonId::new("nowhere")),
+            entity: MentionedEntity::Person(PersonId::new("nowhere")),
             provenance: ProvenanceId::from(PROVENANCE),
         });
         let err = crate::law_check::every_authored_edge_resolves(&graph).expect_err("the EXISTING generic law must catch this -- no new code needed");

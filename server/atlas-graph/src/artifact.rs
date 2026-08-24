@@ -41,10 +41,10 @@ use std::collections::BTreeMap;
 
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis, ResolvedDate, ResolvedPlacement, SeqKey, TimePoint, Year};
 use atlas_graph_types::edge::{
-    Attests, CatechismLink, CrossRef, Ground, Justification, LocatedAt, Mentions, PlaceOrPerson, Succession,
+    Attests, CatechismLink, CrossRef, Ground, Justification, LocatedAt, Mentions, MentionedEntity, Succession,
 };
 use atlas_graph_types::graph::{Graph, ReadingSpine};
-use atlas_graph_types::id::{AnchorId, AnyNodeId, CatechismItemId, EraId, EventId, NarrativeId, NodeKind, PersonId, PlaceId, SourceId};
+use atlas_graph_types::id::{AnchorId, AnyNodeId, CatechismItemId, EraId, EventId, NarrativeId, NodeKind, PeopleGroupId, PersonId, PlaceId, SourceId};
 use atlas_graph_types::node::{Node, NodePayload, PolityEraPayload};
 use atlas_graph_types::text::{BibleLocus, BibleLocusRange, ConcordRef, LocusRange, TextLocus, TextRef, TokenSpan, TranslationId, VerseRef};
 
@@ -80,6 +80,7 @@ enum DtoNodeKind {
     CatechismItem,
     Source,
     Translation,
+    PeopleGroup,
 }
 
 impl From<NodeKind> for DtoNodeKind {
@@ -97,6 +98,7 @@ impl From<NodeKind> for DtoNodeKind {
             NodeKind::CatechismItem => DtoNodeKind::CatechismItem,
             NodeKind::Source => DtoNodeKind::Source,
             NodeKind::Translation => DtoNodeKind::Translation,
+            NodeKind::PeopleGroup => DtoNodeKind::PeopleGroup,
         }
     }
 }
@@ -115,6 +117,7 @@ impl From<DtoNodeKind> for NodeKind {
             DtoNodeKind::CatechismItem => NodeKind::CatechismItem,
             DtoNodeKind::Source => NodeKind::Source,
             DtoNodeKind::Translation => NodeKind::Translation,
+            DtoNodeKind::PeopleGroup => NodeKind::PeopleGroup,
         }
     }
 }
@@ -239,6 +242,7 @@ enum DtoPayload {
     CatechismItem { label: String },
     Source { label: String },
     Translation { label: String },
+    PeopleGroup { label: String },
 }
 
 fn payload_to_dto(p: &NodePayload) -> DtoPayload {
@@ -274,6 +278,7 @@ fn payload_to_dto(p: &NodePayload) -> DtoPayload {
         NodePayload::CatechismItem { label } => DtoPayload::CatechismItem { label: label.clone() },
         NodePayload::Source { label } => DtoPayload::Source { label: label.clone() },
         NodePayload::Translation { label } => DtoPayload::Translation { label: label.clone() },
+        NodePayload::PeopleGroup { label } => DtoPayload::PeopleGroup { label: label.clone() },
     }
 }
 
@@ -318,6 +323,7 @@ fn payload_from_dto(d: DtoPayload) -> Result<NodePayload, ArtifactError> {
         DtoPayload::CatechismItem { label } => NodePayload::CatechismItem { label },
         DtoPayload::Source { label } => NodePayload::Source { label },
         DtoPayload::Translation { label } => NodePayload::Translation { label },
+        DtoPayload::PeopleGroup { label } => NodePayload::PeopleGroup { label },
     })
 }
 
@@ -515,15 +521,16 @@ struct DtoCatechismLink {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-enum DtoPlaceOrPerson {
+enum DtoMentionedEntity {
     Place(String),
     Person(String),
+    PeopleGroup(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DtoMentions {
     locus: DtoTextLocus,
-    entity: DtoPlaceOrPerson,
+    entity: DtoMentionedEntity,
     provenance: String,
 }
 
@@ -710,8 +717,9 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         .iter()
         .map(|r: &Mentions| {
             let entity = match &r.entity {
-                PlaceOrPerson::Place(p) => DtoPlaceOrPerson::Place(p.0.clone()),
-                PlaceOrPerson::Person(p) => DtoPlaceOrPerson::Person(p.0.clone()),
+                MentionedEntity::Place(p) => DtoMentionedEntity::Place(p.0.clone()),
+                MentionedEntity::Person(p) => DtoMentionedEntity::Person(p.0.clone()),
+                MentionedEntity::PeopleGroup(g) => DtoMentionedEntity::PeopleGroup(g.0.clone()),
             };
             DtoMentions { locus: (&r.locus).into(), entity, provenance: r.provenance.clone() }
         })
@@ -871,8 +879,9 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
 
     for r in d.mentions {
         let entity = match r.entity {
-            DtoPlaceOrPerson::Place(p) => PlaceOrPerson::Place(PlaceId::new(p)),
-            DtoPlaceOrPerson::Person(p) => PlaceOrPerson::Person(PersonId::new(p)),
+            DtoMentionedEntity::Place(p) => MentionedEntity::Place(PlaceId::new(p)),
+            DtoMentionedEntity::Person(p) => MentionedEntity::Person(PersonId::new(p)),
+            DtoMentionedEntity::PeopleGroup(g) => MentionedEntity::PeopleGroup(PeopleGroupId::new(g)),
         };
         g.mentions.push(Mentions { locus: r.locus.try_into()?, entity, provenance: r.provenance });
     }
