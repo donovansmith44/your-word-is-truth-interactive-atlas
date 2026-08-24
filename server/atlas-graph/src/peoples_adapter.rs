@@ -107,7 +107,16 @@ fn verse_locus(vref: &str) -> Option<TextLocus> {
     Some(TextLocus::from(BibleLocus::whole(vr)))
 }
 
-fn ground_locus(vref: &str) -> Option<BibleLocus> {
+/// `pub(crate)`: EDGE-1a's own `fulfillment_adapter.rs` reuses this exact
+/// verse-ref-string -> `BibleLocus` parser for `FulfillmentSeed`/
+/// `TypologySeed`'s own `ScriptureGroundSeed`-shaped endpoints, rather than
+/// duplicating the `VerseId::parse_canonical` call a third time -- unlike
+/// `people.rs`/`people_groups.rs`'s own deliberately-independent
+/// `verse_osis_by_id` copies (different reason: those two run at different
+/// ETL pipeline points over different raw sources), this is the exact same
+/// small, pure, source-agnostic string parser both adapters need, with
+/// nothing to keep independent.
+pub(crate) fn ground_locus(vref: &str) -> Option<BibleLocus> {
     let vid = atlas_core::refs::VerseId::parse_canonical(vref).ok()?;
     Some(BibleLocus::whole(VerseRef { book: vid.book.0, chapter: vid.chapter, verse: vid.verse }))
 }
@@ -116,8 +125,9 @@ fn ground_locus(vref: &str) -> Option<BibleLocus> {
 /// `BibleLocusRange` -- `to` defaults to `from` (a single-verse ground);
 /// `None` on an unparseable verse ref or an inverted range (`to < from`),
 /// letting the caller fold that into its own omission/skip accounting
-/// rather than panicking on a curated-data typo.
-fn ground_range(g: &ScriptureGroundSeed) -> Option<BibleLocusRange> {
+/// rather than panicking on a curated-data typo. `pub(crate)`: see
+/// `ground_locus`'s own doc comment immediately above.
+pub(crate) fn ground_range(g: &ScriptureGroundSeed) -> Option<BibleLocusRange> {
     let from = ground_locus(&g.from)?;
     let to = match &g.to {
         Some(t) => ground_locus(t)?,

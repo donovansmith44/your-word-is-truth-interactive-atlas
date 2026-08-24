@@ -252,6 +252,40 @@ pub struct NamedAfterSeed {
     pub grounds: Vec<ScriptureGroundSeed>,
 }
 
+/// EDGE-1a ("Prophecy & typology: the seed data" -- batch-edge1a-brief.md
+/// controller decision 1a): one CURATED explicit-formula fulfillment row --
+/// `data/curated/fulfillments.toml`'s own `[[fulfillment]]` rows. `prophecy`/
+/// `fulfillment` reuse `ScriptureGroundSeed`'s own `{from, to?}` shape
+/// (`to` defaults to `from`) for BOTH ends -- the same "curated data is
+/// plain strings; the adapter is where typed graph values get built"
+/// discipline `NamedAfterSeed.grounds` already establishes, one field wider
+/// (two locus pairs, not one). `text` is the KJV fulfillment-formula quote
+/// itself (required, never optional -- decision 1a's own "explicit-formula
+/// first" scope means every seeded row carries one), hand-verified against
+/// the real compiled KJV text; it becomes this row's own `Justification.text`
+/// AND the fulfillment passage self-attests as the row's `Ground::Scripture`
+/// (the adapter's own job, `atlas_graph::fulfillment_adapter`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FulfillmentSeed {
+    pub prophecy: ScriptureGroundSeed,
+    pub fulfillment: ScriptureGroundSeed,
+    pub text: String,
+}
+
+/// EDGE-1a (controller decision 1b): one CURATED Scripture-argued typology
+/// row -- `data/curated/typology.toml`'s own `[[typology]]` rows. Mirrors
+/// `FulfillmentSeed` above (`type_passage`/`antitype_passage` as
+/// `ScriptureGroundSeed` pairs, `text` required) plus `note`, the figure's
+/// own display name (`atlas_graph_types::edge::Typology.note`'s own doc
+/// comment: "the brasen serpent").
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TypologySeed {
+    pub type_passage: ScriptureGroundSeed,
+    pub antitype_passage: ScriptureGroundSeed,
+    pub note: String,
+    pub text: String,
+}
+
 /// A datable happening. `places[0]` is the anchor place used for arrow
 /// endpoints; `places` may list more than one place (e.g. a campaign
 /// touching several locations), all of which light up in time mode.
@@ -1090,6 +1124,18 @@ pub struct AtlasData {
     /// populate-in-`compile()` treatment as `people_groups` above.
     #[serde(skip)]
     pub named_after_seeds: Vec<NamedAfterSeed>,
+    /// EDGE-1a: curated explicit-formula fulfillment seed rows
+    /// (`data/curated/fulfillments.toml`'s own `[[fulfillment]]` rows,
+    /// decision 1a). Same `#[serde(skip)]`-plus-populate-in-`compile()`
+    /// treatment as `people_groups` above -- no compiled JSON sidecar file
+    /// exists or will. `atlas_graph::fulfillment_adapter` is its only reader.
+    #[serde(skip)]
+    pub fulfillment_seeds: Vec<FulfillmentSeed>,
+    /// EDGE-1a: curated Scripture-argued typology seed rows
+    /// (`data/curated/typology.toml`'s own `[[typology]]` rows, decision
+    /// 1b). Same treatment as `fulfillment_seeds` immediately above.
+    #[serde(skip)]
+    pub typology_seeds: Vec<TypologySeed>,
 
     /// Derived: place id -> index into `places`. Built by `finish()`.
     #[serde(skip)]

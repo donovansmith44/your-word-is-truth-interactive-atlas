@@ -1,0 +1,144 @@
+# EDGE-1a ("Prophecy & typology: the seed data" -- batch-edge1a-brief.md):
+# owner order (2026-08-23, verbatim): "we also need a couple more edges:
+# one for Christological types, and one for prophecy/fulfillment." This
+# file is the typology half (decision 1b): ONLY cases Scripture ITSELF
+# draws (never a type this curator merely finds plausible) -- the brief's
+# own closed seed list, each verified against the real committed KJV text.
+#
+# ONE array-of-tables (parsed by `atlas_etl::curated::parse_typology`;
+# loaded by `atlas_etl::compile::compile`):
+#
+# [[typology]]
+#   type_passage      { from, to? } -- the OT passage prefiguring.
+#   antitype_passage  { from, to? } -- the NT passage where Scripture
+#                      ITSELF argues the type (never a bare citation --
+#                      the argued-from passage). SELF-ATTESTS as the row's
+#                      own Ground::Scripture (mirrors `Fulfills`'s own
+#                      "self-attesting" convention -- `atlas_graph_types::
+#                      edge::Typology`'s own doc comment: "the classic
+#                      cases are ARGUED FROM passages").
+#   note               names the figure for display (`Typology.note`'s own
+#                      doc comment: "the brasen serpent").
+#   text               the KJV quote grounding the type (required; FACT
+#                      register, never hedged).
+#
+# NON-CONTIGUOUS SOURCES, split into multiple rows (the SAME "BibleLocusRange
+# is a single contiguous range" discipline the brief's own "SKIP any where
+# you cannot anchor both ends cleanly" instruction protects): the passover
+# lamb (EXO 12:3-13 selecting/killing/eating the lamb, PLUS the separate
+# EXO 12:46 "not a bone broken" ordinance -- a 32-verse gap of UNRELATED
+# regulations between them) and the manna (JHN 6:31-35 then 6:48-51, a
+# 12-verse gap) each become TWO rows rather than one row spanning -- and so
+# falsely including -- the intervening unrelated verses. The tabernacle
+# pattern (EXO 25:8-9's general charge, EXO 25:40's specific repeat, a
+# 30-verse gap) likewise splits, paired by verbal echo (HEB 8:5's own
+# "shewed thee in the mount" echoes EXO 25:40 more closely than 25:9 --
+# batch report has the full reasoning). Sarah/Hagar splits by OT episode
+# (GEN 16 Hagar's conceiving; GEN 21:1-12 Isaac's birth/Ishmael's
+# expulsion), both grounded in the SAME Galatians 4 passage. No row here
+# was SKIPPED outright -- every brief-named case anchored cleanly once
+# split; the batch report discloses this decision explicitly (a split, not
+# a drop, is the more faithful representation of a genuinely two-sided
+# Scripture argument).
+#
+# BOTH TABLES, ON PURPOSE (brief decision 1b, verbatim: "Where a case is
+# BOTH an explicit fulfillment formula and a type, it may appear in both
+# tables -- they are different claims"): the passover lamb's own
+# EXO.12.46 -> JHN.19.36 pairing, and David's betrayed friend's own
+# PSA.41.9 -> JHN.13.18 pairing, EACH also appear in fulfillments.toml.
+
+[[typology]]
+type_passage = { from = "GEN.14.18", to = "GEN.14.20" }
+antitype_passage = { from = "HEB.7.1", to = "HEB.7.17" }
+note = "Melchizedek"
+text = "For this Melchisedec, king of Salem, priest of the most high God, who met Abraham returning from the slaughter of the kings, and blessed him... made like unto the Son of God; abideth a priest continually."
+
+[[typology]]
+type_passage = { from = "NUM.21.8", to = "NUM.21.9" }
+antitype_passage = { from = "JHN.3.14", to = "JHN.3.15" }
+note = "the brasen serpent"
+text = "And as Moses lifted up the serpent in the wilderness, even so must the Son of man be lifted up: That whosoever believeth in him should not perish, but have eternal life."
+
+[[typology]]
+type_passage = { from = "JON.1.17" }
+antitype_passage = { from = "MAT.12.40" }
+note = "Jonah"
+text = "For as Jonas was three days and three nights in the whale's belly; so shall the Son of man be three days and three nights in the heart of the earth."
+
+[[typology]]
+type_passage = { from = "GEN.5.1", to = "GEN.5.5" }
+antitype_passage = { from = "ROM.5.14" }
+note = "Adam, the figure of him that was to come"
+text = "Nevertheless death reigned from Adam to Moses, even over them that had not sinned after the similitude of Adam's transgression, who is the figure of him that was to come."
+
+[[typology]]
+type_passage = { from = "EXO.12.3", to = "EXO.12.13" }
+antitype_passage = { from = "1CO.5.7" }
+note = "the passover lamb"
+text = "Purge out therefore the old leaven, that ye may be a new lump, as ye are unleavened. For even Christ our passover is sacrificed for us."
+
+[[typology]]
+type_passage = { from = "EXO.12.46" }
+antitype_passage = { from = "JHN.19.36" }
+note = "the passover lamb"
+text = "For these things were done, that the scripture should be fulfilled, A bone of him shall not be broken."
+
+[[typology]]
+type_passage = { from = "EXO.16.14", to = "EXO.16.15" }
+antitype_passage = { from = "JHN.6.31", to = "JHN.6.35" }
+note = "the manna"
+text = "Our fathers did eat manna in the desert; as it is written, He gave them bread from heaven to eat... I am the bread of life: he that cometh to me shall never hunger."
+
+[[typology]]
+type_passage = { from = "EXO.16.14", to = "EXO.16.15" }
+antitype_passage = { from = "JHN.6.48", to = "JHN.6.51" }
+note = "the manna"
+text = "I am that bread of life. Your fathers did eat manna in the wilderness, and are dead... I am the living bread which came down from heaven: if any man eat of this bread, he shall live for ever."
+
+[[typology]]
+type_passage = { from = "EXO.17.6" }
+antitype_passage = { from = "1CO.10.4" }
+note = "the rock"
+text = "And did all drink the same spiritual drink: for they drank of that spiritual Rock that followed them: and that Rock was Christ."
+
+[[typology]]
+type_passage = { from = "GEN.22.1", to = "GEN.22.14" }
+antitype_passage = { from = "HEB.11.17", to = "HEB.11.19" }
+note = "the offering of Isaac"
+text = "By faith Abraham, when he was tried, offered up Isaac: and he that had received the promises offered up his only begotten son... accounting that God was able to raise him up, even from the dead; from whence also he received him in a figure."
+
+[[typology]]
+type_passage = { from = "EXO.25.40" }
+antitype_passage = { from = "HEB.8.5" }
+note = "the tabernacle pattern"
+text = "Who serve unto the example and shadow of heavenly things, as Moses was admonished of God when he was about to make the tabernacle: for, See, saith he, that thou make all things according to the pattern shewed to thee in the mount."
+
+[[typology]]
+type_passage = { from = "EXO.25.8", to = "EXO.25.9" }
+antitype_passage = { from = "HEB.9.23", to = "HEB.9.24" }
+note = "the tabernacle pattern"
+text = "It was therefore necessary that the patterns of things in the heavens should be purified with these; but the heavenly things themselves with better sacrifices than these. For Christ is not entered into the holy places made with hands, which are the figures of the true; but into heaven itself."
+
+[[typology]]
+type_passage = { from = "GEN.16.1", to = "GEN.16.16" }
+antitype_passage = { from = "GAL.4.22", to = "GAL.4.31" }
+note = "Hagar and Sarah"
+text = "For it is written, that Abraham had two sons, the one by a bondmaid, the other by a freewoman... Which things are an allegory: for these are the two covenants."
+
+[[typology]]
+type_passage = { from = "GEN.21.1", to = "GEN.21.12" }
+antitype_passage = { from = "GAL.4.22", to = "GAL.4.31" }
+note = "Hagar and Sarah"
+text = "Now we, brethren, as Isaac was, are the children of promise. But as then he that was born after the flesh persecuted him that was born after the Spirit, even so it is now."
+
+[[typology]]
+type_passage = { from = "GEN.7.1", to = "GEN.7.24" }
+antitype_passage = { from = "1PE.3.20", to = "1PE.3.21" }
+note = "Noah's flood"
+text = "When once the longsuffering of God waited in the days of Noah, while the ark was a preparing, wherein few, that is, eight souls were saved by water. The like figure whereunto even baptism doth also now save us."
+
+[[typology]]
+type_passage = { from = "PSA.41.9" }
+antitype_passage = { from = "JHN.13.18" }
+note = "David's betrayed friend"
+text = "I speak not of you all: I know whom I have chosen: but that the scripture may be fulfilled, He that eateth bread with me hath lifted up his heel against me."

@@ -695,3 +695,121 @@ async fn generic_cites_edges_are_already_votes_descending_matching_the_bespoke_v
         "the generic `cites` edge page must already be votes-descending, position for position matching the bespoke, provably-votes-sorted /api/verse endpoint -- no client-side re-sort should ever be needed"
     );
 }
+
+// ---------------------------------------------------------------------
+// EDGE-1a ("Prophecy & typology: the seed data" -- batch-edge1a-brief.md
+// controller decision 4: "the generic edge/explore endpoints will
+// naturally serve the new relations through the existing typed-edge
+// machinery -- verify with an HTTP-level test that a fulfillment edge is
+// reachable via the generic frontier for MAT 1:22's own verse node (and
+// one typology case)"). NO new bespoke endpoints, NO client changes --
+// these two relations ride the SAME generic `/api/node/{id}` and
+// `/api/node/{id}/edges?kind=...` surface every other relation already
+// uses. `Fulfillment => "fulfilled-in" / "fulfills"` and
+// `Typology => "prefigures" / "prefigured-by"` (graph-types' own relation
+// manifest): querying from the PROPHECY/TYPE side yields the forward
+// label; from the FULFILLMENT/ANTITYPE side, the inverse -- the SAME
+// forward-from-subject/inverse-from-object convention this file's own
+// `located-at`/`site-of` tests (`event_card_and_frontiers_...`/
+// `narrative_card_and_place_stub_card_...`) already establish.
+// ---------------------------------------------------------------------
+
+/// ISA 7:14 -> MAT 1:22-23 ("that it might be fulfilled which was spoken
+/// of the Lord by the prophet, saying, Behold, a virgin shall be with
+/// child") -- the brief's own worked example. The fulfillment edge's own
+/// endpoint is the range's FIRST verse (graph-types/src/graph.rs's own
+/// "edge endpoint = a range's first verse" lowering), so MAT.1.22 (not
+/// .23) is the real wire node.
+#[tokio::test]
+async fn a_fulfillment_edge_is_reachable_via_the_generic_frontier_for_mat_1_22() {
+    let app = real_app();
+
+    let (st, body, _) = get(&app, "/api/node/text-unit:MAT.1.22").await;
+    assert_eq!(st, 200, "{body}");
+    let summary: Vec<String> = body["edge_summary"].as_array().unwrap().iter().map(|e| e["kind"].as_str().unwrap().to_string()).collect();
+    assert!(summary.contains(&"fulfills".to_string()), "MAT.1.22 must carry a real fulfills (inverse) frontier: {summary:?}");
+
+    let (st2, edges, _) = get(&app, "/api/node/text-unit:MAT.1.22/edges?kind=fulfills").await;
+    assert_eq!(st2, 200, "{edges}");
+    let entries = edges["entries"].as_array().unwrap();
+    assert!(entries.iter().any(|e| e["node"]["id"] == "text-unit:ISA.7.14"), "MAT.1.22 must fulfill ISA.7.14: {entries:?}");
+
+    // And the inverse direction, from the prophecy's own node: forward
+    // label "fulfilled-in".
+    let (st3, prophecy_body, _) = get(&app, "/api/node/text-unit:ISA.7.14").await;
+    assert_eq!(st3, 200, "{prophecy_body}");
+    let prophecy_summary: Vec<String> = prophecy_body["edge_summary"].as_array().unwrap().iter().map(|e| e["kind"].as_str().unwrap().to_string()).collect();
+    assert!(prophecy_summary.contains(&"fulfilled-in".to_string()), "ISA.7.14 must carry a real fulfilled-in (forward) frontier: {prophecy_summary:?}");
+
+    let (st4, prophecy_edges, _) = get(&app, "/api/node/text-unit:ISA.7.14/edges?kind=fulfilled-in").await;
+    assert_eq!(st4, 200, "{prophecy_edges}");
+    let prophecy_entries = prophecy_edges["entries"].as_array().unwrap();
+    assert!(prophecy_entries.iter().any(|e| e["node"]["id"] == "text-unit:MAT.1.22"), "ISA.7.14 must be fulfilled-in MAT.1.22: {prophecy_entries:?}");
+}
+
+/// One typology case (decision 4's own "and one typology case"):
+/// Melchizedek, GEN 14:18-20 -> HEB 7:1-17.
+#[tokio::test]
+async fn a_typology_edge_is_reachable_via_the_generic_frontier_for_the_melchizedek_case() {
+    let app = real_app();
+
+    let (st, body, _) = get(&app, "/api/node/text-unit:HEB.7.1").await;
+    assert_eq!(st, 200, "{body}");
+    let summary: Vec<String> = body["edge_summary"].as_array().unwrap().iter().map(|e| e["kind"].as_str().unwrap().to_string()).collect();
+    assert!(summary.contains(&"prefigured-by".to_string()), "HEB.7.1 must carry a real prefigured-by (inverse) frontier: {summary:?}");
+
+    let (st2, edges, _) = get(&app, "/api/node/text-unit:HEB.7.1/edges?kind=prefigured-by").await;
+    assert_eq!(st2, 200, "{edges}");
+    let entries = edges["entries"].as_array().unwrap();
+    assert!(entries.iter().any(|e| e["node"]["id"] == "text-unit:GEN.14.18"), "HEB.7.1 must be prefigured-by GEN.14.18: {entries:?}");
+
+    let (st3, type_body, _) = get(&app, "/api/node/text-unit:GEN.14.18").await;
+    assert_eq!(st3, 200, "{type_body}");
+    let type_summary: Vec<String> = type_body["edge_summary"].as_array().unwrap().iter().map(|e| e["kind"].as_str().unwrap().to_string()).collect();
+    assert!(type_summary.contains(&"prefigures".to_string()), "GEN.14.18 must carry a real prefigures (forward) frontier: {type_summary:?}");
+
+    let (st4, type_edges, _) = get(&app, "/api/node/text-unit:GEN.14.18/edges?kind=prefigures").await;
+    assert_eq!(st4, 200, "{type_edges}");
+    let type_entries = type_edges["entries"].as_array().unwrap();
+    assert!(type_entries.iter().any(|e| e["node"]["id"] == "text-unit:HEB.7.1"), "GEN.14.18 must prefigure HEB.7.1: {type_entries:?}");
+}
+
+/// JB-1 rider (batch-edge1a-brief.md controller decision 3): the SAME
+/// `justified-by`/`justifies` wiring `anchor_card_carries_its_citation_and_
+/// dates_frontier` already proves for DatedBy rows, now generalized onto
+/// Fulfills/Typology rows too -- each row's own self-attesting
+/// `Ground::Scripture` (the fulfillment/antitype passage itself) must
+/// carry a real `justifies` frontier back to the claim it grounds, over
+/// HTTP, through the SAME generic endpoint, no new bespoke wiring.
+#[tokio::test]
+async fn a_fulfillment_and_a_typology_rows_own_ground_carries_a_real_justifies_frontier() {
+    let app = real_app();
+
+    // MAT.1.22 is the fulfillment passage AND (fulfillment_adapter's own
+    // "self-attesting" convention) its own row's Ground::Scripture.
+    let (st, justifies, _) = get(&app, "/api/node/text-unit:MAT.1.22/edges?kind=justifies").await;
+    assert_eq!(st, 200, "{justifies}");
+    assert!(!justifies["entries"].as_array().unwrap().is_empty(), "MAT.1.22 must justify its own fulfills row (JB-1 rider)");
+
+    // HEB.7.1 is the antitype passage AND its own row's Ground::Scripture
+    // (the Melchizedek case).
+    let (st2, typology_justifies, _) = get(&app, "/api/node/text-unit:HEB.7.1/edges?kind=justifies").await;
+    assert_eq!(st2, 200, "{typology_justifies}");
+    assert!(!typology_justifies["entries"].as_array().unwrap().is_empty(), "HEB.7.1 must justify its own typology row (JB-1 rider)");
+}
+
+/// Decision 4's own "and that the CURRENT client surface is otherwise
+/// unchanged": a node with NEITHER relation (a plain, previously-untouched
+/// verse) must carry no fulfills/fulfilled-in/prefigures/prefigured-by
+/// entry at all -- these two relations are additive, never a default
+/// entry every node now carries.
+#[tokio::test]
+async fn nodes_uninvolved_in_fulfillment_or_typology_carry_no_such_edge_summary_entries() {
+    let app = real_app();
+    let (st, body, _) = get(&app, "/api/node/text-unit:GEN.1.1").await;
+    assert_eq!(st, 200, "{body}");
+    let summary: Vec<String> = body["edge_summary"].as_array().unwrap().iter().map(|e| e["kind"].as_str().unwrap().to_string()).collect();
+    for kind in ["fulfilled-in", "fulfills", "prefigures", "prefigured-by"] {
+        assert!(!summary.contains(&kind.to_string()), "GEN.1.1 must carry no '{kind}' entry (uninvolved in either new relation): {summary:?}");
+    }
+}

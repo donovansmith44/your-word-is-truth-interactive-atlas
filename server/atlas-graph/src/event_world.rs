@@ -816,10 +816,24 @@ fn bible_locus_node_id(v: &VerseRef) -> atlas_graph_types::id::AnyNodeId {
 /// graph-types' own relation manifest since before this batch; unused
 /// until now -- confirmed by reading `Graph::build_indexes` fresh, which
 /// never populates it) for rows carrying a non-empty
-/// `Justification.grounds` -- today, only `DatedBy` rows (this adapter's
-/// `Attests`/`LocatedAt`/`Succession` rows all carry empty grounds; nothing
-/// to wire for them yet, disclosed rather than silently padded with
-/// meaningless entries).
+/// `Justification.grounds` -- originally only `DatedBy` rows (this
+/// adapter's `Attests`/`LocatedAt`/`Succession` rows all carry empty
+/// grounds; nothing to wire for them yet, disclosed rather than silently
+/// padded with meaningless entries).
+///
+/// EDGE-1a (JB-1 rider, batch-edge1a-brief.md controller decision 3,
+/// verbatim: "a uniform pass wiring row justifications into justified-by
+/// edges currently exists only for DatedBy... extending it to
+/// fulfills/typology/named_after rows is a clean, small generalization --
+/// DO IT"): the SAME generalization, over `graph.fulfills`/`graph.typology`/
+/// `graph.named_after` -- each computes its own edge_id the SAME WAY
+/// `Graph::build_indexes` computes it internally for THAT relation (the
+/// exact (subject, object) pairing that function's own Fulfillment/
+/// Typology/NamedAfter arms build, mirrored here one for one), then folds
+/// into the SAME `pairs` accumulator the DatedBy loop already builds --
+/// every new claim's own "why" becomes explorable via a `justifies`
+/// frontier from its own grounding verse/anchor/source node, the platform's
+/// whole point (module doc comment's own framing).
 ///
 /// A REAL POST-PROCESSING STEP over the already-built graph, NOT a
 /// graph-types change: computes each qualifying row's own `EdgeId` THE
@@ -827,11 +841,11 @@ fn bible_locus_node_id(v: &VerseRef) -> atlas_graph_types::id::AnyNodeId {
 /// relation (mirrored here -- that pairing logic is private, so it cannot
 /// be called directly), then merges a NEW `RelationId::JustifiedBy` index
 /// into `graph.indexes` using graph-types' own public `entry_id`/`BiIndex`
-/// primitives. Must run AFTER `graph.build_indexes()` (the DatedBy index it
+/// primitives. Must run AFTER `graph.build_indexes()` (the indexes it
 /// mirrors must already exist for the two to agree on the SAME edge ids).
 pub fn add_justified_by(graph: &mut Graph) -> usize {
     use atlas_graph_types::chrono::ChronoTarget;
-    use atlas_graph_types::edge::{at, entry_id, BiIndex, Ground, RelationId};
+    use atlas_graph_types::edge::{at, entry_id, BiIndex, EdgeId, Namesake, RelationId};
     use atlas_graph_types::explore::EdgeMeta;
     use atlas_graph_types::id::Position;
 
@@ -842,6 +856,21 @@ pub fn add_justified_by(graph: &mut Graph) -> usize {
     // `EdgeMeta::None` honestly (there is nothing else to say about a
     // justification pointer beyond which node it targets).
     let mut pairs: Vec<(Position, Position, EdgeMeta)> = Vec::new();
+
+    // Shared by every row loop below -- one ground -> one (edge, target)
+    // pair, the SAME per-ground fan-out the pre-EDGE-1a DatedBy-only body
+    // already did inline.
+    fn push_grounds(pairs: &mut Vec<(Position, Position, EdgeMeta)>, edge_id: EdgeId, grounds: &BTreeSet<Ground>) {
+        for ground in grounds {
+            let target = match ground {
+                Ground::Scripture(range) => Position::Node(bible_locus_node_id(&range.from.unit)),
+                Ground::Anchor(a) => at(&a.erase()),
+                Ground::Source(s) => at(&s.erase()),
+            };
+            pairs.push((Position::Edge(edge_id.clone()), target, EdgeMeta::None));
+        }
+    }
+
     for row in &graph.dated_by {
         if row.justification.grounds.is_empty() {
             continue;
@@ -857,15 +886,48 @@ pub fn add_justified_by(graph: &mut Graph) -> usize {
             ChronoTarget::Era(er) => at(&er.erase()),
         };
         let edge_id = entry_id(RelationId::DatedBy, &subject, &object);
+        push_grounds(&mut pairs, edge_id, &row.justification.grounds);
+    }
 
-        for ground in &row.justification.grounds {
-            let target = match ground {
-                Ground::Scripture(range) => Position::Node(bible_locus_node_id(&range.from.unit)),
-                Ground::Anchor(a) => at(&a.erase()),
-                Ground::Source(s) => at(&s.erase()),
-            };
-            pairs.push((Position::Edge(edge_id.clone()), target, EdgeMeta::None));
+    // EDGE-1a (JB-1 rider): mirrors Graph::build_indexes's own Fulfillment
+    // (subject, object) construction exactly -- prophecy's/fulfillment's
+    // own FIRST verse (graph-types/src/graph.rs's own "edge endpoint = a
+    // range's first verse" comment).
+    for row in &graph.fulfills {
+        if row.justification.grounds.is_empty() {
+            continue;
         }
+        let subject = Position::Node(bible_locus_node_id(&row.prophecy.from.unit));
+        let object = Position::Node(bible_locus_node_id(&row.fulfillment.from.unit));
+        let edge_id = entry_id(RelationId::Fulfillment, &subject, &object);
+        push_grounds(&mut pairs, edge_id, &row.justification.grounds);
+    }
+
+    // EDGE-1a (JB-1 rider): the Typology sibling -- same shape.
+    for row in &graph.typology {
+        if row.justification.grounds.is_empty() {
+            continue;
+        }
+        let subject = Position::Node(bible_locus_node_id(&row.type_passage.from.unit));
+        let object = Position::Node(bible_locus_node_id(&row.antitype_passage.from.unit));
+        let edge_id = entry_id(RelationId::Typology, &subject, &object);
+        push_grounds(&mut pairs, edge_id, &row.justification.grounds);
+    }
+
+    // EDGE-1a (JB-1 rider): mirrors Graph::build_indexes's own NamedAfter
+    // (subject, object) construction exactly (the namesake -> eponym pair).
+    for row in &graph.named_after {
+        if row.justification.grounds.is_empty() {
+            continue;
+        }
+        let subject = match &row.namesake {
+            Namesake::PeopleGroup(g) => at(&g.erase()),
+            Namesake::Place(p) => at(&p.erase()),
+            Namesake::Polity(p) => at(&p.erase()),
+        };
+        let object = at(&row.eponym.erase());
+        let edge_id = entry_id(RelationId::NamedAfter, &subject, &object);
+        push_grounds(&mut pairs, edge_id, &row.justification.grounds);
     }
 
     let count = pairs.len();
@@ -1122,5 +1184,73 @@ mod tests {
         let n = add_justified_by(&mut graph);
         assert_eq!(n, 0);
         assert!(!graph.indexes.contains_key(&atlas_graph_types::edge::RelationId::JustifiedBy));
+    }
+
+    /// EDGE-1a (JB-1 rider): the SAME `justified-by` wiring, generalized
+    /// onto `graph.fulfills`/`graph.typology`/`graph.named_after` -- proven
+    /// here directly over a hand-built `Graph` (no pipeline/AtlasData
+    /// involved), mirroring `justified_by_wires_an_anchor_bound_dated_by_
+    /// rows_own_ground`'s own shape one relation at a time.
+    #[test]
+    fn justified_by_wires_fulfills_typology_and_named_after_rows_own_grounds() {
+        use atlas_graph_types::edge::{at, entry_id, Direction, EdgeKind, Fulfills, Namesake, NamedAfter, RelationId, Typology};
+        use atlas_graph_types::explore::{EdgeQuery, Explorable, PositionRef};
+        use atlas_graph_types::id::{PeopleGroupId, Position};
+        use std::collections::BTreeSet;
+
+        fn locus(book: u8, chapter: u16, verse: u16) -> BibleLocus {
+            BibleLocus::whole(VerseRef { book, chapter, verse })
+        }
+        fn range(from: BibleLocus, to: BibleLocus) -> BibleLocusRange {
+            BibleLocusRange::new(from, to).unwrap()
+        }
+
+        let mut graph = Graph::default();
+
+        let prophecy = range(locus(0, 7, 14), locus(0, 7, 14)); // ISA is not book 0 in a real canon, but this test never touches TextUnit nodes -- book/chapter/verse are opaque ids here.
+        let fulfillment = range(locus(1, 1, 22), locus(1, 1, 23));
+        graph.fulfills.push(Fulfills {
+            prophecy: prophecy.clone(),
+            fulfillment: fulfillment.clone(),
+            provenance: "test".into(),
+            justification: Justification { text: None, grounds: BTreeSet::from([Ground::Scripture(fulfillment.clone())]) },
+        });
+
+        let type_passage = range(locus(0, 14, 18), locus(0, 14, 20));
+        let antitype_passage = range(locus(2, 7, 1), locus(2, 7, 17));
+        graph.typology.push(Typology {
+            type_passage: type_passage.clone(),
+            antitype_passage: antitype_passage.clone(),
+            note: Some("test figure".into()),
+            provenance: "test".into(),
+            justification: Justification { text: None, grounds: BTreeSet::from([Ground::Scripture(antitype_passage.clone())]) },
+        });
+
+        let named_after_ground = range(locus(0, 29, 32), locus(0, 29, 32));
+        graph.named_after.push(NamedAfter {
+            namesake: Namesake::PeopleGroup(PeopleGroupId::new("some-group")),
+            eponym: atlas_graph_types::id::PersonId::new("some-person"),
+            provenance: "test".into(),
+            justification: Justification { text: None, grounds: BTreeSet::from([Ground::Scripture(named_after_ground.clone())]) },
+        });
+
+        graph.build_indexes();
+        let n = add_justified_by(&mut graph);
+        assert_eq!(n, 3, "one ground each, across the three new tables");
+
+        let fulfills_edge_id = entry_id(RelationId::Fulfillment, &Position::Node(bible_locus_node_id(&prophecy.from.unit)), &Position::Node(bible_locus_node_id(&fulfillment.from.unit)));
+        let page = PositionRef(Position::Edge(fulfills_edge_id)).edges(&graph, &EdgeQuery { kind: EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: None, limit: 10 });
+        assert_eq!(page.entries.len(), 1);
+        assert_eq!(page.entries[0].node, Position::Node(bible_locus_node_id(&fulfillment.from.unit)), "the fulfills row's own justified-by target must be the fulfillment passage it self-attests as ground");
+
+        let typology_edge_id = entry_id(RelationId::Typology, &Position::Node(bible_locus_node_id(&type_passage.from.unit)), &Position::Node(bible_locus_node_id(&antitype_passage.from.unit)));
+        let page2 = PositionRef(Position::Edge(typology_edge_id)).edges(&graph, &EdgeQuery { kind: EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: None, limit: 10 });
+        assert_eq!(page2.entries.len(), 1);
+        assert_eq!(page2.entries[0].node, Position::Node(bible_locus_node_id(&antitype_passage.from.unit)), "the typology row's own justified-by target must be the antitype passage it self-attests as ground");
+
+        let named_after_edge_id = entry_id(RelationId::NamedAfter, &at(&PeopleGroupId::new("some-group").erase()), &at(&atlas_graph_types::id::PersonId::new("some-person").erase()));
+        let page3 = PositionRef(Position::Edge(named_after_edge_id)).edges(&graph, &EdgeQuery { kind: EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: None, limit: 10 });
+        assert_eq!(page3.entries.len(), 1);
+        assert_eq!(page3.entries[0].node, Position::Node(bible_locus_node_id(&named_after_ground.from.unit)));
     }
 }

@@ -19,7 +19,7 @@
 //! trust class scene composition relies on).
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
+use atlas_core::data::{BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra, TypologySeed};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -961,6 +961,40 @@ pub fn parse_people_group_seeds(input: &str) -> Result<(Vec<PeopleGroupSeed>, Ve
     let f: PeopleGroupsFile =
         toml::from_str(input).context("people-groups.toml: invalid TOML or does not match the [[group]]/[[reclassify]]/[[named_after]] schema")?;
     Ok((f.group, f.reclassify, f.named_after))
+}
+
+#[derive(Deserialize)]
+struct FulfillmentsFile {
+    #[serde(default)]
+    fulfillment: Vec<FulfillmentSeed>,
+}
+
+/// EDGE-1a (controller decision 1a): parses `fulfillments.toml` (one
+/// array-of-tables, `[[fulfillment]]`). Reuses `atlas_core::data::
+/// FulfillmentSeed` directly for deserialization -- the same "reuse the
+/// atlas-core struct" shape `parse_people_group_seeds` above already
+/// establishes -- pure and STRUCTURAL only: locus parsing/validation
+/// against the real compiled KJV text is `fulfillment_adapter::normalize`'s
+/// own job (needs the fuller, already-built picture), matching every
+/// other curated schema in this module's own split between "parses" and
+/// "validates against the wider compile."
+pub fn parse_fulfillments(input: &str) -> Result<Vec<FulfillmentSeed>> {
+    let f: FulfillmentsFile = toml::from_str(input).context("fulfillments.toml: invalid TOML or does not match the [[fulfillment]] schema")?;
+    Ok(f.fulfillment)
+}
+
+#[derive(Deserialize)]
+struct TypologyFile {
+    #[serde(default)]
+    typology: Vec<TypologySeed>,
+}
+
+/// EDGE-1a (controller decision 1b): parses `typology.toml` (one
+/// array-of-tables, `[[typology]]`). Same shape/split as `parse_fulfillments`
+/// above.
+pub fn parse_typology(input: &str) -> Result<Vec<TypologySeed>> {
+    let f: TypologyFile = toml::from_str(input).context("typology.toml: invalid TOML or does not match the [[typology]] schema")?;
+    Ok(f.typology)
 }
 
 #[cfg(test)]

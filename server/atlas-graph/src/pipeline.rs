@@ -203,6 +203,10 @@ impl Pass for NormalizePass {
         // must already be in effect for the reclassified-node/no-Person-
         // node invariant to hold by construction.
         crate::peoples_adapter::normalize(ctx);
+        // EDGE-1a: Fulfills/Typology rows need no OTHER pass's output first
+        // (pure Scripture text-to-text rows -- module doc comment's own
+        // "NORMALIZE-eligible" reasoning).
+        crate::fulfillment_adapter::normalize(ctx);
         Ok(())
     }
 }
@@ -319,6 +323,16 @@ impl Pass for LawCheckPass {
         crate::peoples_adapter::every_named_after_row_has_a_scripture_ground(&ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("PG-1a named-after grounding law (every row must carry >=1 Ground::Scripture)")?;
+        // EDGE-1a: same "every row must carry >=1 Ground::Scripture" law,
+        // over the two new relation tables (referential integrity of their
+        // endpoints is ALREADY covered by every_authored_edge_resolves
+        // above -- these are the adapter-specific grounding laws only).
+        crate::fulfillment_adapter::every_fulfillment_row_has_a_scripture_ground(&ctx.graph)
+            .map_err(|e| anyhow::anyhow!("{e}"))
+            .context("EDGE-1a fulfillment grounding law (every row must carry >=1 Ground::Scripture)")?;
+        crate::fulfillment_adapter::every_typology_row_has_a_scripture_ground(&ctx.graph)
+            .map_err(|e| anyhow::anyhow!("{e}"))
+            .context("EDGE-1a typology grounding law (every row must carry >=1 Ground::Scripture)")?;
         Ok(())
     }
 }

@@ -147,6 +147,12 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     let (people_group_seeds, people_group_reclassify, named_after_seeds) =
         curated::parse_people_group_seeds(&read(&curated_dir.join("people-groups.toml"))?)?;
 
+    // EDGE-1a: curated explicit-formula fulfillments + Scripture-argued
+    // typology seed rows (decisions 1a/1b) -- `atlas_graph::
+    // fulfillment_adapter`'s own graph-side source.
+    let fulfillment_seeds = curated::parse_fulfillments(&read(&curated_dir.join("fulfillments.toml"))?)?;
+    let typology_seeds = curated::parse_typology(&read(&curated_dir.join("typology.toml"))?)?;
+
     // --- merge -------------------------------------------------------------
     let mut all_events = theo_events;
     let mut seen_event_ids: HashSet<String> = all_events.iter().map(|e| e.id.clone()).collect();
@@ -257,6 +263,11 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         "PG-1B PEOPLE GROUPS VERSES: {} of {} group(s) carry >=1 resolved verse link ({} of {} raw verse refs unresolved, dropped)",
         people_groups_stats.with_verses, people_groups_stats.total, people_groups_stats.verse_refs_unresolved, people_groups_stats.verse_refs_total
     );
+    eprintln!(
+        "EDGE-1a PROPHECY/TYPOLOGY: {} curated explicit-formula fulfillment row(s) + {} curated Scripture-argued typology row(s)",
+        fulfillment_seeds.len(),
+        typology_seeds.len()
+    );
     let narrative_leg_counts: Vec<(String, usize)> = narratives.iter().map(|n| (n.id.clone(), n.legs.len())).collect();
 
     let mut geocoded_verses: HashSet<&str> = HashSet::new();
@@ -332,6 +343,13 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     data.people_group_seeds = people_group_seeds;
     data.people_group_reclassify = people_group_reclassify;
     data.named_after_seeds = named_after_seeds;
+    // EDGE-1a: same "no validate::run-style check of its own" status --
+    // this pair's own fail-loud boundary law (every row carries
+    // >=1 Ground::Scripture) lives at the GRAPH adapter
+    // (`atlas_graph::fulfillment_adapter`, run unconditionally at pipeline
+    // LAW-CHECK time), not here.
+    data.fulfillment_seeds = fulfillment_seeds;
+    data.typology_seeds = typology_seeds;
 
     // --- chronology anchor table + era-window validator ---
     data.chronology_anchors = chronology_anchors;

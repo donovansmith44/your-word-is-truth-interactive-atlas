@@ -41,7 +41,7 @@ use std::collections::BTreeMap;
 
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis, ResolvedDate, ResolvedPlacement, SeqKey, TimePoint, Year};
 use atlas_graph_types::edge::{
-    Attests, CatechismLink, CrossRef, Ground, Justification, LocatedAt, Mentions, MentionedEntity, NamedAfter, Namesake, Succession,
+    Attests, CatechismLink, CrossRef, Fulfills, Ground, Justification, LocatedAt, Mentions, MentionedEntity, NamedAfter, Namesake, Succession, Typology,
 };
 use atlas_graph_types::graph::{Graph, ReadingSpine};
 use atlas_graph_types::id::{AnchorId, AnyNodeId, CatechismItemId, EraId, EventId, NarrativeId, NodeKind, PeopleGroupId, PersonId, PlaceId, PolityId, SourceId};
@@ -538,6 +538,37 @@ struct DtoNamedAfter {
     justification: DtoJustification,
 }
 
+/// EDGE-1a: mirrors `graph_types::edge::Fulfills` -- the SAME `{from, to}`
+/// pair-of-`DtoTextLocus` shape `DtoAttests.attestation_{from,to}` already
+/// establishes, one relation wider (two ranges, not one). `dump`'s own
+/// guard fired on this table (and `typology` below) the moment
+/// `fulfillment_adapter` started emitting real rows -- exactly the EDGE-1/
+/// PG-1/TRAV-1/PG-1a precedent this module's own `dump` doc comment names
+/// as the expected trigger class.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoFulfills {
+    prophecy_from: DtoTextLocus,
+    prophecy_to: DtoTextLocus,
+    fulfillment_from: DtoTextLocus,
+    fulfillment_to: DtoTextLocus,
+    provenance: String,
+    justification: DtoJustification,
+}
+
+/// EDGE-1a: mirrors `graph_types::edge::Typology` -- same shape as
+/// `DtoFulfills` above, plus the optional `note` (the figure's own display
+/// name, e.g. "the brasen serpent").
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoTypology {
+    type_from: DtoTextLocus,
+    type_to: DtoTextLocus,
+    antitype_from: DtoTextLocus,
+    antitype_to: DtoTextLocus,
+    note: Option<String>,
+    provenance: String,
+    justification: DtoJustification,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DtoCatechismLink {
     locus: DtoTextLocus,
@@ -611,6 +642,12 @@ pub struct ArtifactDump {
     /// PG-1a: `graph.named_after`'s own row table -- see `DtoNamedAfter`'s
     /// own doc comment.
     named_after: Vec<DtoNamedAfter>,
+    /// EDGE-1a: `graph.fulfills`'s own row table -- see `DtoFulfills`'s own
+    /// doc comment.
+    fulfills: Vec<DtoFulfills>,
+    /// EDGE-1a: `graph.typology`'s own row table -- see `DtoTypology`'s own
+    /// doc comment.
+    typology: Vec<DtoTypology>,
     catechism: Vec<DtoCatechismLink>,
     mentions: Vec<DtoMentions>,
     cross_refs: Vec<DtoCrossRef>,
@@ -727,28 +764,36 @@ pub struct ArtifactDump {
 /// this guard ON PURPOSE"). A genuine wire-shape break both directions --
 /// bincode field COUNT changed. `data/compiled/graph.bin` rebuilt in this
 /// same commit.
-const FORMAT_VERSION: u32 = 6;
+///
+/// EDGE-1a (2026-08-24): bumped 6 -> 7. Trigger: `ArtifactDump.fulfills:
+/// Vec<DtoFulfills>` and `ArtifactDump.typology: Vec<DtoTypology>` ADDED
+/// (two new relation tables -- `dump`'s own guard forced this the moment
+/// `fulfillment_adapter` started emitting real `fulfills`/`typology` rows,
+/// the SIXTH and SEVENTH members of the original guarded set to close,
+/// same schedule as every prior data batch: "the EDGE-1/PG-1 data batches
+/// hit this guard ON PURPOSE"). A genuine wire-shape break both
+/// directions -- bincode field COUNT changed (two fields, one commit).
+/// `data/compiled/graph.bin` rebuilt in this same commit.
+const FORMAT_VERSION: u32 = 7;
 
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
 /// startup stats. Errors loudly if any of the currently-always-empty
 /// tables (`contains_bible`/`contains_concord`/`quotes`/`confesses`/
-/// `corresponds_bible`, plus the two remaining EDGE-1 tables `fulfills`/
-/// `typology`, still unpopulated as of this batch) is non-empty -- this
-/// format does not yet carry them; extending it is a real, deliberate
-/// future act, not something this batch silently punts by dropping rows.
-/// The EDGE-1/PG-1 data batches hit this guard ON PURPOSE: serializing
-/// their rows is part of each batch's own scope. TRAV-1 (2026-08-24)
-/// closed the FOURTH member of the original set (`temporal_adjacency`);
-/// PG-1a (2026-08-24) closes the FIFTH (`named_after`) the same way, on
-/// schedule, the moment `peoples_adapter` started emitting real rows --
-/// `named_after` is REAL SERIALIZED CONTENT below now, no longer guarded.
+/// `corresponds_bible`) is non-empty -- this format does not yet carry
+/// them; extending it is a real, deliberate future act, not something
+/// this batch silently punts by dropping rows. The EDGE-1/PG-1 data
+/// batches hit this guard ON PURPOSE: serializing their rows is part of
+/// each batch's own scope. TRAV-1 (2026-08-24) closed the FOURTH member
+/// of the original set (`temporal_adjacency`); PG-1a (2026-08-24) closed
+/// the FIFTH (`named_after`); EDGE-1a (2026-08-24) closes the SIXTH and
+/// SEVENTH (`fulfills`/`typology`) the same way, on schedule, the moment
+/// `fulfillment_adapter` started emitting real rows -- both are REAL
+/// SERIALIZED CONTENT below now, no longer guarded.
 pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_stats: &EventWorldStats) -> Result<ArtifactDump, ArtifactError> {
-    if !g.contains_bible.is_empty() || !g.contains_concord.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty()
-        || !g.fulfills.is_empty() || !g.typology.is_empty()
-    {
+    if !g.contains_bible.is_empty() || !g.contains_concord.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty() {
         return Err(ArtifactError(
-            "the graph carries rows in a relation this artifact format does not yet serialize (contains/quotes/confesses/corresponds/fulfills/typology) -- extend artifact.rs before shipping this content".into(),
+            "the graph carries rows in a relation this artifact format does not yet serialize (contains/quotes/confesses/corresponds) -- extend artifact.rs before shipping this content".into(),
         ));
     }
 
@@ -814,6 +859,29 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
                 Namesake::Polity(p) => DtoNamesake::Polity(p.0.clone()),
             };
             DtoNamedAfter { namesake, eponym: r.eponym.0.clone(), provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) }
+        })
+        .collect();
+
+    // EDGE-1a: `graph.fulfills`/`graph.typology`'s own row tables -- the
+    // SAME `{from, to}`-pair-of-loci shape `attests` above already uses,
+    // one relation wider each.
+    let fulfills = g
+        .fulfills
+        .iter()
+        .map(|r: &Fulfills| {
+            let (prophecy_from, prophecy_to) = bible_range_to_dto(&r.prophecy);
+            let (fulfillment_from, fulfillment_to) = bible_range_to_dto(&r.fulfillment);
+            DtoFulfills { prophecy_from, prophecy_to, fulfillment_from, fulfillment_to, provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) }
+        })
+        .collect();
+
+    let typology = g
+        .typology
+        .iter()
+        .map(|r: &Typology| {
+            let (type_from, type_to) = bible_range_to_dto(&r.type_passage);
+            let (antitype_from, antitype_to) = bible_range_to_dto(&r.antitype_passage);
+            DtoTypology { type_from, type_to, antitype_from, antitype_to, note: r.note.clone(), provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) }
         })
         .collect();
 
@@ -911,6 +979,8 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         dated_by,
         located_at,
         named_after,
+        fulfills,
+        typology,
         catechism,
         mentions,
         cross_refs,
@@ -1003,6 +1073,25 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
             DtoNamesake::Polity(p) => Namesake::Polity(PolityId::new(p)),
         };
         g.named_after.push(NamedAfter { namesake, eponym: PersonId::new(r.eponym), provenance: r.provenance, justification: dto_to_justification(r.justification)? });
+    }
+
+    // EDGE-1a: plain row tables, like `attests`/`located_at` above.
+    for r in d.fulfills {
+        g.fulfills.push(Fulfills {
+            prophecy: dto_to_bible_range(r.prophecy_from, r.prophecy_to)?,
+            fulfillment: dto_to_bible_range(r.fulfillment_from, r.fulfillment_to)?,
+            provenance: r.provenance,
+            justification: dto_to_justification(r.justification)?,
+        });
+    }
+    for r in d.typology {
+        g.typology.push(Typology {
+            type_passage: dto_to_bible_range(r.type_from, r.type_to)?,
+            antitype_passage: dto_to_bible_range(r.antitype_from, r.antitype_to)?,
+            note: r.note,
+            provenance: r.provenance,
+            justification: dto_to_justification(r.justification)?,
+        });
     }
 
     for r in d.catechism {
@@ -1310,6 +1399,91 @@ mod tests {
         }
         assert_eq!(row.justification.text.as_deref(), Some("She called his name Ben-ammi."));
         assert_eq!(row.justification.grounds.len(), 1, "the Ground::Scripture(GEN.19.38) ground must round-trip");
+        assert!(matches!(row.justification.grounds.iter().next().unwrap(), Ground::Scripture(_)));
+    }
+
+    /// EDGE-1a: the SAME "real row, through the real production adapter,
+    /// not a hand-built stub" discipline `named_after_round_trips_losslessly_
+    /// with_a_real_row` immediately above already establishes, for
+    /// `graph.fulfills`. `KJV_FIXTURE`'s own Gen 1:1-2 is reused as BOTH
+    /// endpoints (a real, if theologically arbitrary, text-to-text pair --
+    /// this test proves the WIRE ROUND TRIP, not the content's own
+    /// truth, which the curated `data/curated/fulfillments.toml` real-data
+    /// tests own separately).
+    #[test]
+    fn fulfills_round_trips_losslessly_with_a_real_row() {
+        use atlas_core::data::{AtlasData, Canon, FulfillmentSeed, ScriptureGroundSeed};
+        use std::collections::HashMap;
+
+        let mut atlas = AtlasData::new(Canon { books: vec![] }, vec![], vec![], vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        atlas.fulfillment_seeds = vec![FulfillmentSeed {
+            prophecy: ScriptureGroundSeed { from: "GEN.1.1".into(), to: None },
+            fulfillment: ScriptureGroundSeed { from: "GEN.1.2".into(), to: None },
+            text: "a real fulfillment-formula quote".into(),
+        }];
+
+        let (graph, stats, event_world_stats, chrono) = crate::build::build_graph_from_sources(KJV_FIXTURE, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas).unwrap();
+        assert_eq!(graph.fulfills.len(), 1, "fixture sanity: the real fulfillment_adapter::normalize path must have built exactly one row");
+
+        let chronology = Chronology::from_derivation(chrono);
+        let dumped = dump(&graph, &chronology, &stats, &event_world_stats).expect("dump must succeed with a real fulfills row -- the guard's whole point was to force this extension, not to forbid the content forever");
+        assert_eq!(dumped.fulfills.len(), 1);
+        assert_eq!(dumped.fulfills[0].justification.text.as_deref(), Some("a real fulfillment-formula quote"));
+        assert_eq!(dumped.fulfills[0].justification.grounds.len(), 1, "the fulfillment passage self-attests as its own ground");
+
+        let bytes = encode(&dumped).expect("encode must succeed");
+        let decoded = decode(&bytes).expect("decode must succeed");
+        let (reconstructed, _stats2, _ews2, _chronology2) = to_service_parts(decoded).expect("to_service_parts must succeed");
+
+        assert_eq!(reconstructed.fulfills.len(), 1, "the row must survive the full round trip, not silently drop");
+        let row = &reconstructed.fulfills[0];
+        let gen_1_1 = BibleLocus::whole(VerseRef { book: 0, chapter: 1, verse: 1 });
+        let gen_1_2 = BibleLocus::whole(VerseRef { book: 0, chapter: 1, verse: 2 });
+        assert_eq!(row.prophecy, BibleLocusRange::new(gen_1_1.clone(), gen_1_1.clone()).unwrap());
+        assert_eq!(row.fulfillment, BibleLocusRange::new(gen_1_2.clone(), gen_1_2.clone()).unwrap());
+        assert_eq!(row.justification.text.as_deref(), Some("a real fulfillment-formula quote"));
+        assert_eq!(row.justification.grounds.len(), 1);
+        assert!(matches!(row.justification.grounds.iter().next().unwrap(), Ground::Scripture(_)));
+    }
+
+    /// EDGE-1a: the Typology sibling of `fulfills_round_trips_losslessly_
+    /// with_a_real_row` immediately above -- same discipline, `graph.
+    /// typology`'s own table, plus the `note` field neither `DtoFulfills`
+    /// nor `DtoNamedAfter` carries.
+    #[test]
+    fn typology_round_trips_losslessly_with_a_real_row() {
+        use atlas_core::data::{AtlasData, Canon, ScriptureGroundSeed, TypologySeed};
+        use std::collections::HashMap;
+
+        let mut atlas = AtlasData::new(Canon { books: vec![] }, vec![], vec![], vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        atlas.typology_seeds = vec![TypologySeed {
+            type_passage: ScriptureGroundSeed { from: "GEN.1.1".into(), to: None },
+            antitype_passage: ScriptureGroundSeed { from: "GEN.1.2".into(), to: None },
+            note: "a real figure".into(),
+            text: "a real typology quote".into(),
+        }];
+
+        let (graph, stats, event_world_stats, chrono) = crate::build::build_graph_from_sources(KJV_FIXTURE, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas).unwrap();
+        assert_eq!(graph.typology.len(), 1, "fixture sanity: the real fulfillment_adapter::normalize path must have built exactly one row");
+
+        let chronology = Chronology::from_derivation(chrono);
+        let dumped = dump(&graph, &chronology, &stats, &event_world_stats).expect("dump must succeed with a real typology row");
+        assert_eq!(dumped.typology.len(), 1);
+        assert_eq!(dumped.typology[0].note.as_deref(), Some("a real figure"));
+
+        let bytes = encode(&dumped).expect("encode must succeed");
+        let decoded = decode(&bytes).expect("decode must succeed");
+        let (reconstructed, _stats2, _ews2, _chronology2) = to_service_parts(decoded).expect("to_service_parts must succeed");
+
+        assert_eq!(reconstructed.typology.len(), 1, "the row must survive the full round trip, not silently drop");
+        let row = &reconstructed.typology[0];
+        let gen_1_1 = BibleLocus::whole(VerseRef { book: 0, chapter: 1, verse: 1 });
+        let gen_1_2 = BibleLocus::whole(VerseRef { book: 0, chapter: 1, verse: 2 });
+        assert_eq!(row.type_passage, BibleLocusRange::new(gen_1_1.clone(), gen_1_1.clone()).unwrap());
+        assert_eq!(row.antitype_passage, BibleLocusRange::new(gen_1_2.clone(), gen_1_2.clone()).unwrap());
+        assert_eq!(row.note.as_deref(), Some("a real figure"));
+        assert_eq!(row.justification.text.as_deref(), Some("a real typology quote"));
+        assert_eq!(row.justification.grounds.len(), 1);
         assert!(matches!(row.justification.grounds.iter().next().unwrap(), Ground::Scripture(_)));
     }
 

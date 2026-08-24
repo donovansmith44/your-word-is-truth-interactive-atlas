@@ -1,0 +1,204 @@
+# EDGE-1a ("Prophecy & typology: the seed data" -- batch-edge1a-brief.md):
+# owner order (2026-08-23, verbatim): "we also need a couple more edges:
+# one for Christological types, and one for prophecy/fulfillment." This
+# file is the fulfillment half (decision 1a): explicit-formula rows only --
+# the NT ITSELF states fulfillment with a formula ("that it might be
+# fulfilled which was spoken by the prophet...", "this day is this
+# scripture fulfilled", "then was fulfilled", or the twin identity-formula
+# "he that was spoken of by the prophet... saying"). Every row below was
+# hand-verified against the real committed KJV text (data/raw/kjv.json) at
+# authoring time -- both the fulfillment passage's own formula wording AND
+# the prophecy passage's own wording -- never assumed from memory. KJV
+# INERRANCY DIRECTIVE: fulfillment is stated as FACT throughout ("fulfilled
+# in", never "Matthew applies...").
+#
+# ONE array-of-tables (parsed by `atlas_etl::curated::parse_fulfillments`;
+# loaded by `atlas_etl::compile::compile`):
+#
+# [[fulfillment]]
+#   prophecy      { from, to? } -- the OT passage (canonical dot-form verse
+#                  refs, `to` optional, defaulting to `from`), the
+#                  TIGHTEST range the fulfillment passage's own quoted
+#                  words span.
+#   fulfillment    { from, to? } -- the NT passage: the verse(s) carrying
+#                  the fulfillment formula itself, extended to include the
+#                  quoted words when the quote continues past the formula
+#                  verse. This passage SELF-ATTESTS as the row's own
+#                  Ground::Scripture (`atlas_graph::fulfillment_adapter`'s
+#                  own job) -- the same "the NT fulfillment formulas... make
+#                  the fulfillment passage itself the natural Ground"
+#                  `atlas_graph_types::edge::Fulfills`'s own doc comment
+#                  states.
+#   text           the KJV formula quote itself (required -- every row this
+#                  batch ships carries one; register is FACT, never hedged).
+#
+# MULTI-SOURCE SPLITS, disclosed: several NT passages the brief's own
+# illustrative list names as ONE locus actually invoke TWO distinct OT
+# sources in immediate sequence (JHN 12:38 then 12:39-40; JHN 19:36 then
+# 19:37; ACT 1:16's own formula resolved by its own quote at 1:20, itself
+# citing two different psalms). `Fulfills` is a strict one-prophecy-to-
+# one-fulfillment text-to-text edge (graph-types is EXTEND-ONLY this
+# batch), so each such case became TWO (or more) rows rather than one row
+# straining to hold two OT sources, or a dropped half. The batch report has
+# the full pair-by-pair reasoning for every judgment call (JHN 12:39-40's
+# own "said again" vs. literal "fulfilled"; JHN 19:28-29's narrated-action
+# anchor; PSA.69.4 vs. PSA.35.19 for JHN 15:25; ACT 1:16-20's own
+# formula-then-quote span).
+#
+# HAND-VERIFIED SKIPS (brief: "verify... not this list; SKIP... report
+# skips with reasons" -- typology's own instruction, applied here on the
+# same Sin-guard principle): MAT 2:23 ("spoken by the prophetS", plural, no
+# single quotable verse -- a genuinely contested referent, never a NT
+# quotation of one OT text); MAT 5:18/24:34/26:54/26:56 (generic
+# "the scripture(s)"/"all things", no specific OT citation at all); JHN
+# 17:12 (the formula appears with NO OT text quoted anywhere in reach --
+# unlike every other row here, there are no "quoted words" to anchor a
+# prophecy locus to); LUK 24:44 (the referent is "the law of Moses, and...
+# the prophets, and... the psalms" -- the WHOLE OT canon, not a locatable
+# passage; not representable as a single BibleLocusRange without either
+# spanning the entire canon or picking an arbitrary illustrative subset the
+# text itself does not specify).
+
+[[fulfillment]]
+prophecy = { from = "ISA.7.14" }
+fulfillment = { from = "MAT.1.22", to = "MAT.1.23" }
+text = "Now all this was done, that it might be fulfilled which was spoken of the Lord by the prophet, saying, Behold, a virgin shall be with child, and shall bring forth a son, and they shall call his name Emmanuel, which being interpreted is, God with us."
+
+[[fulfillment]]
+prophecy = { from = "HOS.11.1" }
+fulfillment = { from = "MAT.2.15" }
+text = "And was there until the death of Herod: that it might be fulfilled which was spoken of the Lord by the prophet, saying, Out of Egypt have I called my son."
+
+[[fulfillment]]
+prophecy = { from = "JER.31.15" }
+fulfillment = { from = "MAT.2.17", to = "MAT.2.18" }
+text = "Then was fulfilled that which was spoken by Jeremy the prophet, saying, In Rama was there a voice heard, lamentation, and weeping, and great mourning, Rachel weeping for her children, and would not be comforted, because they are not."
+
+[[fulfillment]]
+prophecy = { from = "ISA.40.3" }
+fulfillment = { from = "MAT.3.3" }
+text = "For this is he that was spoken of by the prophet Esaias, saying, The voice of one crying in the wilderness, Prepare ye the way of the Lord, make his paths straight."
+
+[[fulfillment]]
+prophecy = { from = "ISA.9.1", to = "ISA.9.2" }
+fulfillment = { from = "MAT.4.14", to = "MAT.4.16" }
+text = "That it might be fulfilled which was spoken by Esaias the prophet, saying, The land of Zabulon, and the land of Nephthalim, by the way of the sea, beyond Jordan, Galilee of the Gentiles; The people which sat in darkness saw great light."
+
+[[fulfillment]]
+prophecy = { from = "ISA.53.4" }
+fulfillment = { from = "MAT.8.17" }
+text = "That it might be fulfilled which was spoken by Esaias the prophet, saying, Himself took our infirmities, and bare our sicknesses."
+
+[[fulfillment]]
+prophecy = { from = "ISA.42.1", to = "ISA.42.4" }
+fulfillment = { from = "MAT.12.17", to = "MAT.12.21" }
+text = "That it might be fulfilled which was spoken by Esaias the prophet, saying, Behold my servant, whom I have chosen; my beloved, in whom my soul is well pleased: I will put my spirit upon him, and he shall shew judgment to the Gentiles."
+
+[[fulfillment]]
+prophecy = { from = "ISA.6.9", to = "ISA.6.10" }
+fulfillment = { from = "MAT.13.14", to = "MAT.13.15" }
+text = "And in them is fulfilled the prophecy of Esaias, which saith, By hearing ye shall hear, and shall not understand; and seeing ye shall see, and shall not perceive."
+
+[[fulfillment]]
+prophecy = { from = "PSA.78.2" }
+fulfillment = { from = "MAT.13.35" }
+text = "That it might be fulfilled which was spoken by the prophet, saying, I will open my mouth in parables; I will utter things which have been kept secret from the foundation of the world."
+
+[[fulfillment]]
+prophecy = { from = "ZEC.9.9" }
+fulfillment = { from = "MAT.21.4", to = "MAT.21.5" }
+text = "All this was done, that it might be fulfilled which was spoken by the prophet, saying, Tell ye the daughter of Sion, Behold, thy King cometh unto thee, meek, and sitting upon an ass, and a colt the foal of an ass."
+
+[[fulfillment]]
+prophecy = { from = "ZEC.11.12", to = "ZEC.11.13" }
+fulfillment = { from = "MAT.27.9", to = "MAT.27.10" }
+text = "Then was fulfilled that which was spoken by Jeremy the prophet, saying, And they took the thirty pieces of silver, the price of him that was valued, whom they of the children of Israel did value, and gave them for the potter's field, as the Lord appointed me."
+
+[[fulfillment]]
+prophecy = { from = "PSA.22.18" }
+fulfillment = { from = "MAT.27.35" }
+text = "And they crucified him, and parted his garments, casting lots: that it might be fulfilled which was spoken by the prophet, They parted my garments among them, and upon my vesture did they cast lots."
+
+# --- John -----------------------------------------------------------------
+
+[[fulfillment]]
+prophecy = { from = "ISA.53.1" }
+fulfillment = { from = "JHN.12.38" }
+text = "That the saying of Esaias the prophet might be fulfilled, which he spake, Lord, who hath believed our report? and to whom hath the arm of the Lord been revealed?"
+
+# Second OT source in the SAME pericope (JHN 12:38-41): v39-40 continues
+# with a second quotation ("Esaias said again"), and v41 seals BOTH
+# quotations as one fulfillment claim -- "These things said Esaias, when he
+# saw his glory, and spake of him."
+[[fulfillment]]
+prophecy = { from = "ISA.6.10" }
+fulfillment = { from = "JHN.12.39", to = "JHN.12.40" }
+text = "Therefore they could not believe, because that Esaias said again, He hath blinded their eyes, and hardened their heart; that they should not see with their eyes, nor understand with their heart, and be converted, and I should heal them -- \"these things said Esaias, when he saw his glory, and spake of him\" (JHN 12:41)."
+
+[[fulfillment]]
+prophecy = { from = "PSA.41.9" }
+fulfillment = { from = "JHN.13.18" }
+text = "I speak not of you all: I know whom I have chosen: but that the scripture may be fulfilled, He that eateth bread with me hath lifted up his heel against me."
+
+# PSA.35.19 carries the identical clause ("hate me without a cause") and is
+# a disclosed alternative candidate (batch report has the full reasoning);
+# PSA.69.4 is chosen as the ground text here -- Psalm 69 is otherwise the
+# dominant psalm this same Passion narrative draws on (vv. 21/25 below).
+[[fulfillment]]
+prophecy = { from = "PSA.69.4" }
+fulfillment = { from = "JHN.15.25" }
+text = "But this cometh to pass, that the word might be fulfilled that is written in their law, They hated me without a cause."
+
+[[fulfillment]]
+prophecy = { from = "PSA.22.18" }
+fulfillment = { from = "JHN.19.24" }
+text = "They said therefore among themselves, Let us not rend it, but cast lots for it, whose it shall be: that the scripture might be fulfilled, which saith, They parted my raiment among them, and for my vesture they did cast lots."
+
+# The formula verse (19:28) names no quotation directly -- the fulfilling
+# ACTION is narrated in the very next verse (the vinegar given for his
+# thirst), which is what fulfills PSA.69.21 ("in my thirst they gave me
+# vinegar to drink").
+[[fulfillment]]
+prophecy = { from = "PSA.69.21" }
+fulfillment = { from = "JHN.19.28", to = "JHN.19.29" }
+text = "Jesus knowing that all things were now accomplished, that the scripture might be fulfilled, saith, I thirst. Now there was set a vessel full of vinegar: and they filled a spunge with vinegar, and put it upon hyssop, and put it to his mouth."
+
+[[fulfillment]]
+prophecy = { from = "EXO.12.46" }
+fulfillment = { from = "JHN.19.36" }
+text = "For these things were done, that the scripture should be fulfilled, A bone of him shall not be broken."
+
+[[fulfillment]]
+prophecy = { from = "ZEC.12.10" }
+fulfillment = { from = "JHN.19.37" }
+text = "And again another scripture saith, They shall look on him whom they pierced."
+
+# --- Luke -------------------------------------------------------------
+
+# "This scripture" = the Isaiah passage Jesus had JUST read aloud
+# (LUK 4:18-19, quoting ISA 61:1-2 -- "the acceptable year of the Lord" is
+# the tightest whole-verse extent the quoted words span, into v2).
+[[fulfillment]]
+prophecy = { from = "ISA.61.1", to = "ISA.61.2" }
+fulfillment = { from = "LUK.4.21" }
+text = "And he began to say unto them, This day is this scripture fulfilled in your ears."
+
+# --- Acts ---------------------------------------------------------------
+
+# The formula (1:16) is answered by the quotation four verses later
+# (1:20), which itself draws on TWO psalms -- one row per source, both
+# sharing the SAME fulfillment span (the formula-through-quote unit).
+[[fulfillment]]
+prophecy = { from = "PSA.69.25" }
+fulfillment = { from = "ACT.1.16", to = "ACT.1.20" }
+text = "Men and brethren, this scripture must needs have been fulfilled, which the Holy Ghost by the mouth of David spake before concerning Judas... For it is written in the book of Psalms, Let his habitation be desolate, and let no man dwell therein."
+
+[[fulfillment]]
+prophecy = { from = "PSA.109.8" }
+fulfillment = { from = "ACT.1.16", to = "ACT.1.20" }
+text = "Men and brethren, this scripture must needs have been fulfilled, which the Holy Ghost by the mouth of David spake before concerning Judas... For it is written in the book of Psalms... and his bishoprick let another take."
+
+[[fulfillment]]
+prophecy = { from = "JOL.2.28", to = "JOL.2.32" }
+fulfillment = { from = "ACT.2.16", to = "ACT.2.21" }
+text = "But this is that which was spoken by the prophet Joel; And it shall come to pass in the last days, saith God, I will pour out of my Spirit upon all flesh: and your sons and your daughters shall prophesy."
