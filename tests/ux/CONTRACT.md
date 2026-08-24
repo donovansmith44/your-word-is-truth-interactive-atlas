@@ -535,6 +535,12 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   line rather than wrapped for a long name, with a `title` attribute on
   the name span carrying the FULL untruncated text for a native hover
   tooltip. `aria-label` is unchanged ("Prior/Following event: {name}").
+  RESPEC'D (PEEK-TRUNC-1/TITLE-WRAP-1, below): this paragraph's own
+  "ellipsis-truncated to that one line rather than wrapped" clause
+  describes the PRE-TITLE-WRAP-1 shape only -- see TITLE-WRAP-1 for the
+  current, binding two-line-clamp contract; the glyph/name/one-line-vs-
+  two-line ordering, the `title` attribute, and `aria-label` are otherwise
+  unchanged.
   Each button is now wrapped in its own `.popover-event-nav-side{-prior,
   -following}` container together with its own role caption immediately
   below it -- see `event-prior-label-{narrativeId}` next,
@@ -2904,6 +2910,187 @@ Notes:
     directly by `@onclick`, never gated on or reset by the peek).
   - Keyboard/commit paths unaffected: no new keyboard handler, no change
     to how an arrow's own click/Enter behavior works.
+  RESPEC'D (PEEK-TRUNC-1, below): this note's own "showing the TARGET
+  event's own verse text... via VerseTextResolver.ResolveGroupsAsync/
+  Components.PassageList" and "Pointer-leave dismisses/cancels
+  immediately... no grace period... this peek is a self-contained glance,
+  never something a user is meant to travel INTO" describe the
+  PRE-PEEK-TRUNC-1 shape only -- see PEEK-TRUNC-1 for the current, binding
+  content/dismiss/placement contract (the dwell-in side above -- the
+  bare-hover-does-nothing tickle test, `DwellTiming.PeekDelayMs`, "never
+  commits," keyboard/commit paths -- is unchanged and stays binding as
+  written here).
+
+- PEEK-TRUNC-1 (owner defect report, 2026-08-24, verbatim: "oh and menus
+  appearing on hover from arrow hover are getting cut off. needs to be
+  truncated to an expandable menu limit one verse."): RESPECS PEEK-1's own
+  peek CONTENT and DISMISS grammar (immediately above), and adds
+  viewport-aware PLACEMENT neither PEEK-1 nor CHAP-HOVER-1 ever needed
+  (both were previously anchored by plain CSS alone, `top:100%`, with no
+  flip). The dwell-IN side (bare hover does nothing; a dwell past
+  `DwellTiming.PeekDelayMs` reveals the peek; click always commits,
+  independent of dwell state; keyboard/commit paths unaffected) is
+  UNCHANGED, still exactly PEEK-1's own contract.
+  - CONTENT: the peek's own header is now the target event's FULL,
+    untruncated title (`.popover-arrow-peek-title`,
+    `data-testid="{event-testid}-peek-title"`) -- TITLE-WRAP-1's own "the
+    complete name is one dwell away, always," true even when the arrow's
+    own button label is itself two-line-clamped or (in the essentially-
+    never case) ellipsized. Below it, exactly ONE resolved verse by
+    default (`.popover-arrow-peek-verse`, `data-testid="{event-testid}-
+    peek-verse-{VREF}"`, e.g. `event-chrono-following-event-global-peek-
+    verse-GEN.22.1`) -- still resolved via the SAME
+    `VerseTextResolver.ResolveGroupsAsync` fetch as before (never a fetch
+    until the dwell actually fires), just no longer rendered through
+    `Components.PassageList` (that component's own truncation axes --
+    Cap, whole PASSAGE ENTRIES; ClampVerses, a static per-entry clamp
+    whose only further reveal is the WHOLE CHAPTER -- both cut at the
+    wrong granularity for "exactly one verse, more/all/less by ONE VERSE
+    at a time"). Each shown verse renders a small mono superscript verse
+    number (`.popover-arrow-peek-verse-num`) before its own KJV text,
+    in-text place/person mentions explorable exactly as everywhere else
+    verse text renders (`Components.MentionText`, `ClassPrefix="popover-
+    arrow-peek-mention"` -- a mention click still opens THAT node, same as
+    always; dwelling itself still never commits the ARROW's own
+    traversal). When more than one verse resolved, the house quiet reveal
+    affordance follows immediately (`Components.RevealControls`, reused
+    DIRECTLY -- not through PassageList -- since it is already its own
+    generic, standalone component with nothing about WHAT is being shown
+    baked in; `data-testid="{event-testid}-peek-more"`/`"{event-testid}-
+    peek-collapse"`/`"{event-testid}-peek-more-all"`, `Default="1"`,
+    `RevealNoun="verses"`): collapsed reads "more (n) &middot; all (N)",
+    "less" appears once expanded past the one-verse floor, ALL is a
+    one-op undo back to exactly one verse -- the SAME `more (n) . all
+    (N) . less` mechanic RevealControls established for cross-references/
+    THE SCRIPTURES/place est-dest/catechism, a fourth direct-or-indirect
+    consumer, never a second implementation. A target event with zero
+    resolved verses renders the title header only (graceful degrade,
+    unchanged from PEEK-1's own "verses below simply resolve to nothing
+    found" policy one layer in).
+  - DISMISS (the grace corridor): pointer-leave no longer dismisses the
+    peek on the same tick -- now that `more`/`all`/`less` live INSIDE the
+    box, the pointer must be able to travel from the arrow, across the
+    small visual gap (`margin: .4rem`), into the box, without the peek
+    disappearing out from under it first. `ArrowNav`'s own
+    `@onpointerenter`/`@onpointerleave` (unchanged, still on the ONE
+    outer wrapper -- the peek box is a DOM descendant of it, not a
+    sibling) now gate a short GRACE-PERIOD timer (1000ms, the SAME tuned
+    figure Reader.razor's own xref marker-to-panel
+    `ScheduleHoverClose`/`DelayedHoverClose` already proved out) rather
+    than an instant hide: leaving schedules the close, re-entering
+    (whether back onto the arrow, into the gap-then-box, or anywhere
+    inside the box) cancels it. The peek still dismisses fully on its own
+    once the pointer is genuinely gone and stays gone past that grace
+    window -- "pointer-leave (of arrow+box combined) dismisses" remains
+    true, just not necessarily on the exact tick a transient gap-crossing
+    leave event first fires. Mid-dwell pointer-leave (the peek not shown
+    yet) is UNCHANGED from PEEK-1: still cancels outright, no grace.
+    FIX ROUND (real, live-caught bug, isolated and root-caused via a
+    four-case repro, not guessed): clicking `less` can remove the EXACT
+    DOM element the pointer is resting on (Shown returns to Default,
+    `less` itself -- and, moving back under Step, one or more verses --
+    disappear in the same render). That breaks the BROWSER's own
+    pointerenter/pointerleave transition tracking for the wrapper (it
+    computes a leave by comparing the transition's old hit-test target
+    against each listening ancestor; once that old target is detached,
+    every such comparison silently reads "never contained," so no
+    ancestor is ever found to have been left) -- the NEXT genuine
+    departure then never fires `OnPointerLeave` at all, leaving the peek
+    stuck open indefinitely (confirmed: one MORE, unrelated hover
+    transition over a still-live element anywhere in the subtree "un-
+    sticks" it, consistent with this mechanism). Fix: `ArrowNav`'s own
+    `OnWrapperPointerDown` (a NEW `@onpointerdown` on the same wrapper,
+    unaffected by RevealControls' own `@onclick:stopPropagation` since
+    that only scopes the `click` event) captures the pointer's own
+    position for whatever gesture is in flight; `RevealControls`' own
+    `ShownChanged` (`OnPeekShownChanged`) independently re-verifies --
+    via a real geometric query, `reader.js`'s new `isPointInsideEither`,
+    never the browser's own possibly-corrupted tracking -- whether that
+    position still falls inside the wrapper or the peek box, and
+    schedules the SAME ordinary grace-period dismiss (never an immediate
+    hide) when it does not, so a content-shrink landing a stationary
+    pointer just outside the box's new, smaller bounds reads as an
+    ordinary "you moved away," not an abrupt snap-shut the instant the
+    user's own click resizes the box. Gated to `_recentPointerDown`
+    (consumed once, set only by a genuine bubbled pointerdown) so a
+    KEYBOARD-driven Shown change (Enter/Space on a focused reveal-control
+    button dispatches no pointer event at all) never runs this check
+    against a stale, unrelated mouse position -- "keyboard/commit paths
+    unaffected" (decision 3) extends to this fallback too.
+  - PLACEMENT: never clipped by the viewport. Measured once per peek open
+    (`reader.js`'s new `getElementRect`, keyed off a real
+    `ElementReference` rather than a CSS selector -- up to four `ArrowNav`
+    instances can be mounted on one popover at once, prior/following x
+    narrative/chronology, so a shared-class selector would only ever
+    resolve the FIRST one), the box flips to grow ABOVE the arrow instead
+    of below (`.popover-arrow-peek-above`) whenever that side has more
+    real room; whichever side is chosen gets a `max-height` capped to
+    the room actually available there (`--peek-max-height`, app.css),
+    with `overflow-y: auto` as the backstop for genuine overflow (an
+    expanded, many-verse peek) -- an internal scroll, never an
+    off-screen spill. The horizontal (left- vs. right-anchored, by
+    prior/following side) placement this note's own predecessor already
+    established is completely unchanged and composes with this
+    unaffected.
+  - REDUCED MOTION: satisfied by construction, unchanged -- no rule ever
+    declared a transition/animation on `.popover-arrow-peek` or its own
+    flip/content, before or after this note (the SAME "no rule, no
+    animation to suppress" reasoning `.pericope-heading`'s own precedent
+    already established elsewhere in this file).
+  - PEEK-2 (`tests/ux/event-timeline.spec.ts`): dwelling an arrow whose
+    target event resolves MULTIPLE verses shows exactly one by default
+    plus `more (n)`; clicking `more` inside the box reveals more (without
+    dismissing the peek -- the corridor holds for a click, not just a
+    hover); `less` steps back; pointer-leave (away from both the arrow
+    and the box, past the grace window) dismisses the whole peek.
+  - PEEK-3 (`tests/ux/event-timeline.spec.ts`): dwelling an arrow whose
+    own wrapper sits near the bottom viewport edge never clips the peek --
+    its own rendered bounding rect is fully inside the viewport (asserted
+    directly, not merely "visible").
+  - PEEK-4 (`tests/ux/event-timeline.spec.ts`): the corridor itself --
+    moving the pointer from the arrow, across the gap, into the box (a
+    multi-step synthetic move, not a teleport) never dismisses the peek
+    along the way.
+
+- TITLE-WRAP-1 (owner report, 2026-08-24, verbatim: "i don't like that
+  arrow titles are getting cut off with elipses... we need to find a way
+  to have a nice presentation while showing a relatively full title."):
+  RESPECS P4's own "best-effort, ellipsis-truncated to that one line
+  rather than wrapped" rule (`EVENT-1`'s own testid-inventory note,
+  above) for the arrow's own button label (`.popover-event-nav-label`) --
+  the peek's own header (PEEK-TRUNC-1, above) already carries the FULL
+  name unconditionally, so this note is about the button itself only.
+  - A SHORT name (`ArrowNav`'s own `LabelIsLong`, a plain character-count
+    threshold -- see that property's own C# doc comment for the corpus
+    measurement behind the number, 24) still renders exactly as P4
+    specified: one line, standard size, ellipsis-truncated in the
+    (essentially never reached, for a name this short) event it still
+    doesn't fit.
+  - A LONGER name renders instead via `.popover-event-nav-label-long`:
+    wraps up to a TWO-LINE clamp at a slightly smaller size, ellipsis
+    only past those two lines (`-webkit-line-clamp: 2`) -- reached by
+    essentially no real event label (see the same corpus measurement).
+    The `title` attribute (native hover tooltip, full untruncated name)
+    and `aria-label` ("Prior/Following event: {name}") are unchanged and
+    present in both cases.
+  - FIXED GRID: `.popover-event-nav-label`'s own `min-height` reserves the
+    two-line-at-smaller-size case on EVERY arrow, short-named or long --
+    `.popover-event-nav-role` (the PRIOR EVENT/FOLLOWING EVENT caption
+    directly beneath each button) sits at the identical Y offset
+    regardless of which arrow, on either side, happens to carry the
+    longer name.
+  - The peek header (PEEK-TRUNC-1, above) always carries the event's FULL
+    title, unconditionally -- "the complete name is one dwell away,
+    always," true for every name, short or long, clamped or not.
+  - REDUCED MOTION/KEYBOARD: unaffected -- a length-driven CSS class
+    swap, no animation on either variant, no new keyboard surface; Enter/
+    click still commit exactly as before.
+  - TITLE-2 (`tests/ux/event-timeline.spec.ts`): a long event name renders
+    via the two-line clamp (never a single-line ellipsis) and the fixed
+    grid holds -- the PRIOR/FOLLOWING role-caption position for a row
+    carrying a long name doesn't shift (beyond a small pixel tolerance)
+    from a row carrying a short one; the peek header (dwelling the same
+    arrow) shows the event's full, untruncated name regardless.
 - ONE-RULE (batch-g1-brief.md, user direction 2026-08-19: "the little trinity button
   isn't clear... explorable elements display slightly darker on hover; click opens the
   pop-up menu" -- REPLACES the retired `verse-explore-{n}` ∴ button, which offered no

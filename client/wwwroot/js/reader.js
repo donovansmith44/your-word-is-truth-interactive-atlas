@@ -327,6 +327,80 @@ export function getVerseAnchorRect(selector) {
     };
 }
 
+// PEEK-TRUNC-1 (arrow-peek clipping defect, owner report 2026-08-24: "menus
+// appearing on hover from arrow hover are getting cut off. needs to be
+// truncated to an expandable menu limit one verse."): the SAME
+// left/top/width/height + viewport-dimensions shape getVerseAnchorRect above
+// already returns -- ArrowNav.razor's own flip-above/below math reuses the
+// identical "measure, then pick whichever side has more room" arithmetic
+// ExplorerPopover.razor's own ANCHORING already established. Deliberately
+// keyed off a real ElementReference, not a CSS selector, unlike
+// getVerseAnchorRect: ArrowNav can have up to FOUR simultaneous instances
+// mounted on one popover (prior/following x narrative/chronology), and none
+// of their own wrapping elements carries a unique id -- a selector naming
+// their shared CSS class would only ever resolve document.querySelector's
+// own FIRST match, silently measuring the wrong instance's anchor for every
+// side but one. Same "pass the real element, not a selector" fix
+// capturePointer (below) already established for SplitDivider's own
+// analogous multi-instance concern -- this function is the read-side
+// equivalent of that write-side precedent.
+export function getElementRect(el) {
+    if (!el) {
+        return null;
+    }
+
+    const r = el.getBoundingClientRect();
+    return {
+        left: r.left, top: r.top, width: r.width, height: r.height,
+        viewportWidth: window.innerWidth, viewportHeight: window.innerHeight,
+    };
+}
+
+// PEEK-TRUNC-1 fix round (real, live-caught bug -- Playwright-reproduced
+// AND root-caused, not guessed): clicking RevealControls' own `less`
+// inside ArrowNav's peek can remove the EXACT element the pointer is
+// resting on (Shown returns to Default, `less` itself -- and, moving back
+// under Step, one or more verses -- disappear from the DOM in the same
+// render that handled the click). Confirmed via an isolated repro
+// (DIAG-A/B/C/D, batch report has the full matrix): a bare hover-then-
+// leave dismisses correctly every time; hover-then-`more`(adds content,
+// nothing removed)-then-leave ALSO dismisses correctly; hover-then-`more`-
+// then-`less` (removes content under the pointer) leaves the peek stuck
+// open through a subsequent, genuinely-away `pointermove` -- UNTIL one
+// more, unrelated hover transition over a still-live element happens
+// somewhere in the subtree, after which leaving works again. Root cause:
+// the browser computes pointerenter/pointerleave for a listening ancestor
+// by comparing the transition's own OLD hit-test target against that
+// ancestor -- once that OLD target is DETACHED (removed, no parent chain
+// left to walk), the comparison silently reads "was never contained" for
+// every ancestor, so no leave is ever computed relative to it; the very
+// next VALID transition (a live element re-entered) gives the browser a
+// non-detached "old" reference again, which is why that one fix works.
+// ArrowNav.razor's own OnWrapperPointerDown/OnPeekShownChanged use this
+// function to independently re-verify, via a real geometric query (never
+// trusting the browser's own possibly-corrupted tracking) whether the
+// pointer's last known position is still inside the wrapper OR the peek
+// box -- x/y are viewport (clientX/clientY) coordinates, matching
+// PointerEventArgs' own ClientX/ClientY. Checks the peek box SEPARATELY
+// from the wrapper's own rect (not just the wrapper's) because the peek
+// is `position:absolute` and renders OUTSIDE the wrapper's own normal-flow
+// box (app.css's own comment on .popover-event-nav-side has the fuller
+// story) -- getBoundingClientRect() on the wrapper alone would never
+// include it.
+export function isPointInsideEither(el, x, y) {
+    if (!el) {
+        return false;
+    }
+
+    const within = (r) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    if (within(el.getBoundingClientRect())) {
+        return true;
+    }
+
+    const peek = el.querySelector('.popover-arrow-peek');
+    return peek ? within(peek.getBoundingClientRect()) : false;
+}
+
 // M-D3/U5+B2 (split-view drag-resize divider, Components/SplitDivider.razor):
 // setPointerCapture is a real DOM element method with no Blazor-side
 // equivalent (PointerEventArgs carries PointerId as plain data, not a

@@ -3678,8 +3678,17 @@ input:focus-visible,
    text -- same small-mono-superscript treatment PlaceCard's own
    .place-card-verse-num already established for the map hover card's
    identical passage shape (6-ARCH: same underlying structure, same
-   reading). */
-.popover-passage-verse-num {
+   reading).
+   PEEK-TRUNC-1: .popover-arrow-peek-verse-num joins this rule via a plain
+   compound selector, no re-derived values -- ArrowNav.razor's own peek
+   renders the identical <sup>N</sup> marker shape immediately before each
+   peeked verse's own text, and sits on the same --parchment-raised
+   background family this rule's own existing consumer (PassageList) does,
+   so this is a second reuse of the SAME popover-scoped visual treatment,
+   not a re-derivation (PlaceCard's own equivalent, cited above, stays its
+   own separate rule -- a different background/container entirely). */
+.popover-passage-verse-num,
+.popover-arrow-peek-verse-num {
     font-family: var(--font-mono);
     font-size: .7rem;
     color: var(--bronze-ink);
@@ -4083,10 +4092,19 @@ input:focus-visible,
    sit side by side on ONE line ("◂ <name>" / "<name> ▸", the owner's own
    spec, verbatim) -- the vertical (glyph-over-name) stack this rule used
    to set retires in favor of .popover-event-nav-side stacking the WHOLE
-   button over its own role caption instead. */
+   button over its own role caption instead.
+   TITLE-WRAP-1: align-items was `baseline` -- fine for a single line of
+   text, but a two-line-clamped .popover-event-nav-label-long (below) has
+   no single spec-guaranteed baseline for flex cross-axis purposes (the
+   -webkit-box display line-clamp needs predates the flex baseline-
+   alignment algorithm). `flex-start` reads correctly for BOTH the
+   one-line and wrapped case alike -- the glyph sits flush with the
+   label's own first line either way -- and nothing here ever depended on
+   true text-baseline alignment (a bare glyph character, not a
+   descender-sensitive design). */
 .popover-event-nav-arrow {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     gap: .3rem;
     width: 100%;
     min-width: 0;
@@ -4112,20 +4130,64 @@ input:focus-visible,
     color: var(--bronze-ink);
 }
 
-/* P4: best-effort ONE LINE, ellipsis-truncated rather than wrapped --
-   `title` (set alongside this in the C#) carries the untruncated name for
-   a native hover tooltip once a long name actually clips. flex-shrink
-   (the default, 1) plus min-width:0 is what lets this actually shrink
-   below its own text's natural width once the BUTTON above gives it a
-   real, bounded width to shrink within -- see .popover-event-nav-side's
-   own comment for the fuller story. */
+/* P4/TITLE-WRAP-1: best-effort ONE LINE, ellipsis-truncated rather than
+   wrapped -- `title` (set alongside this in the C#) carries the
+   untruncated name for a native hover tooltip regardless of which variant
+   below is showing. flex-shrink (the default, 1) plus min-width:0 is what
+   lets this actually shrink below its own text's natural width once the
+   BUTTON above gives it a real, bounded width to shrink within -- see
+   .popover-event-nav-side's own comment for the fuller story.
+   TITLE-WRAP-1 (owner report, 2026-08-24, verbatim: "i don't like that
+   arrow titles are getting cut off with elipses... we need to find a way
+   to have a nice presentation while showing a relatively full title."):
+   this base rule now renders ONLY when ArrowNav's own LabelIsLong is
+   false (a short name, reliably one line at this standard size) --
+   .popover-event-nav-label-long below takes over for everything else,
+   wrapping up to two lines at a slightly smaller size instead of
+   ellipsizing on one. min-height reserves the WORST case (two lines at
+   that rule's own smaller size) on EVERY arrow, short-named or long, so
+   .popover-event-nav-role (the PRIOR/FOLLOWING caption immediately below
+   this button) always sits at the identical Y offset regardless of which
+   arrow, on either side, happens to carry the longer name -- decision 2's
+   own "fixed grid... stay aligned whether the name is one line or two"
+   would otherwise only hold on the rare popover where every visible name
+   happened to wrap the same way. font-size/line-height are explicit
+   (rather than left to inherit) so this figure -- and
+   .popover-event-nav-label-long's own contrasting, smaller figure -- are
+   both self-documenting reference points, not implicit browser defaults. */
 .popover-event-nav-label {
     min-width: 0;
+    min-height: 2.1rem;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
     color: var(--ink);
     font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+/* TITLE-WRAP-1: the long-name variant -- wraps up to TWO lines at a
+   slightly smaller size instead of ellipsizing on one (the base rule
+   above, unchanged for a short name). -webkit-line-clamp (with its own
+   required -webkit-box display) is the ellipsis-PAST-two-lines backstop
+   for the rare name that still doesn't fit at this size -- event labels
+   essentially never reach it; see LongLabelThreshold's own C# doc comment
+   for the corpus measurement behind that claim. overflow:hidden and
+   text-overflow:ellipsis both still apply from the base rule above (this
+   is an ADDITIONAL class alongside it, never a replacement) -- only
+   white-space needs an explicit override here (nowrap -> normal) to let
+   wrapping happen at all; text-overflow:ellipsis is simply inert once
+   line-clamp is doing the truncating, kept only because removing it would
+   need its own now-single-purpose selector for no visible difference. */
+.popover-event-nav-label-long {
+    white-space: normal;
+    overflow-wrap: break-word;
+    font-size: .85rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 
 /* TRAV-1 (controller decision 4, "a quick hover box of the verses"): the
@@ -4135,11 +4197,26 @@ input:focus-visible,
    force that column wider, breaking the row's own space-between balance,
    or clip the verse text down to nothing) -- absolute, anchored off the
    side wrapper's own `position:relative` immediately above. Never a modal:
-   no backdrop, no close button (decision 4/5: "pointer-leave dismisses it
-   ... NO x needed on the peek") -- ArrowNav's own pointer-leave handler is
-   the entire dismiss mechanism. `word-break` (not `white-space:nowrap`
-   the way .popover-event-nav-label needs): unlike a bare event NAME, real
-   KJV verse text is meant to wrap onto multiple lines here. */
+   no backdrop, no close button -- ArrowNav's own pointer-leave handler
+   (now a short grace-period timer rather than an instant hide, PEEK-TRUNC-1,
+   ArrowNav.razor's own header comment has the full corridor story) is the
+   entire dismiss mechanism, still with no `x` anywhere. `word-break` (not
+   `white-space:nowrap` the way .popover-event-nav-label needs): unlike a
+   bare event NAME, real KJV verse text is meant to wrap onto multiple
+   lines here.
+   PEEK-TRUNC-1: display:flex/flex-direction:column/gap replace what used
+   to be plain block flow -- this box now stacks THREE independently-
+   present pieces (title, verse list, RevealControls), not one PassageList
+   child. max-height/overflow-y turn "never clipped by the viewport" from
+   a wish into a guarantee: --peek-max-height (ArrowNav.razor's own
+   OnAfterRenderAsync, computed from a real reader.js measurement) caps
+   this box to exactly the room available on whichever side it opened, and
+   `none` (the fallback, before that measurement lands for the one instant
+   after a fresh peek first renders -- ArrowNav.razor's own header comment)
+   simply leaves it unconstrained, matching the pre-PEEK-TRUNC-1 rendering
+   for that one frame. Real overflow (an expanded, many-verse peek that
+   still exceeds even the larger side's own room) degrades to an ordinary
+   internal scrollbar, never an off-screen spill. */
 .popover-arrow-peek {
     position: absolute;
     top: 100%;
@@ -4148,6 +4225,8 @@ input:focus-visible,
     margin-top: .4rem;
     width: max(240px, 100%);
     max-width: 320px;
+    max-height: var(--peek-max-height, none);
+    overflow-y: auto;
     padding: .55rem .7rem;
     background: var(--parchment-raised);
     border: 1px solid rgba(138, 107, 61, .38);
@@ -4156,6 +4235,9 @@ input:focus-visible,
     font-size: .82rem;
     line-height: 1.5;
     word-break: break-word;
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
 }
 
 /* The "following" side is itself right-aligned (.popover-event-nav-side-following's
@@ -4165,6 +4247,33 @@ input:focus-visible,
 .popover-event-nav-side-following .popover-arrow-peek {
     left: auto;
     right: 0;
+}
+
+/* PEEK-TRUNC-1 (owner defect report, 2026-08-24, verbatim: "menus appearing
+   on hover from arrow hover are getting cut off"): applied by ArrowNav.razor
+   (its own OnAfterRenderAsync) whenever there is more real room ABOVE the
+   arrow/role-caption stack than below it -- flips the peek to grow upward
+   instead of down, the vertical mirror of the rule above (which handles
+   the horizontal/left-right mirror for the "following" side). Only
+   top/bottom/margin invert; left/right positioning (base rule or the
+   following-side override immediately above) is completely orthogonal and
+   composes with this unchanged. */
+.popover-arrow-peek-above {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: .4rem;
+}
+
+.popover-arrow-peek-title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.popover-arrow-peek-verse {
+    margin: 0;
 }
 
 /* Batch R requirement 3: one section's own wrapper -- a stable hook
@@ -4263,10 +4372,16 @@ input:focus-visible,
    PassageList.razor's own compact preview text (cross-references, THE
    SCRIPTURES, place est/dest, event witnesses) sits on the SAME
    --parchment-raised popover background too, so this is the third reuse of
-   an identical rule, not a third re-derivation. */
+   an identical rule, not a third re-derivation.
+
+   PEEK-TRUNC-1: .popover-arrow-peek-mention joins the same rule -- the
+   arrow-peek's own verse text (ArrowNav.razor) renders through this SAME
+   MentionText.razor component too, on the identical --parchment-raised
+   background, a fourth reuse. */
 .popover-reader-mention,
 .popover-verse-mention,
-.popover-passage-mention {
+.popover-passage-mention,
+.popover-arrow-peek-mention {
     cursor: pointer;
     border-radius: 2px;
     background-color: rgba(44, 74, 112, 0);
@@ -4278,7 +4393,9 @@ input:focus-visible,
 .popover-verse-mention:hover,
 .popover-verse-mention:focus-visible,
 .popover-passage-mention:hover,
-.popover-passage-mention:focus-visible {
+.popover-passage-mention:focus-visible,
+.popover-arrow-peek-mention:hover,
+.popover-arrow-peek-mention:focus-visible {
     background-color: rgba(44, 74, 112, .14);
     color: var(--lapis);
 }
@@ -4286,7 +4403,8 @@ input:focus-visible,
 @media (prefers-reduced-motion: reduce) {
     .popover-reader-mention,
     .popover-verse-mention,
-    .popover-passage-mention {
+    .popover-passage-mention,
+    .popover-arrow-peek-mention {
         transition: none;
     }
 }

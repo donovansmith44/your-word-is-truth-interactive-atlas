@@ -26,19 +26,95 @@
    file's own doc comment); pointer-leave before it fires cancels outright
    (no peek ever shown -- "not super sensitive, so some delay so that
    you're not accidentally getting hover boxes all the time," the owner's
-   own words); pointer-leave AFTER it fires dismisses immediately (no grace
-   period -- unlike the xref superscript's own marker-to-panel transit
-   concern, Reader.razor's `ScheduleHoverClose`, this peek is a passive,
-   self-contained glance, never something a user needs to travel INTO).
-   CLICK is wired completely independently (`Commit`, below) -- it never
-   reads or waits on dwell state at all, so a genuine click always commits
-   immediately regardless of whether the peek happened to be mid-dwell,
-   already showing, or never touched at all. *@
+   own words). CLICK is wired completely independently (`Commit`, below) --
+   it never reads or waits on dwell state at all, so a genuine click always
+   commits immediately regardless of whether the peek happened to be
+   mid-dwell, already showing, or never touched at all.
+
+   PEEK-TRUNC-1 (owner defect report, 2026-08-24, verbatim: "menus appearing
+   on hover from arrow hover are getting cut off. needs to be truncated to
+   an expandable menu limit one verse."): the peek's own CONTENT, DISMISS
+   grammar, and PLACEMENT all change here; the OPEN side immediately above
+   is untouched.
+   - CONTENT: the target event's FULL title (Adjacent.Label -- TITLE-WRAP-1's
+     own "the complete name is one dwell away, always") as a header, plus
+     exactly ONE resolved verse by default, plus the house quiet reveal
+     affordance (RevealControls -- "more (n) . all (N) . less") once more
+     than one verse resolved. Used DIRECTLY here rather than through
+     PassageList/PassageBlockBuilder: that component's own two truncation
+     axes count/cut at the wrong granularity for this box -- Cap counts
+     whole PASSAGE ENTRIES (a single contiguous block can itself hold many
+     verses, so capping at one ENTRY is not "exactly one VERSE"), and
+     ClampVerses is a STATIC per-entry clamp whose only further reveal is
+     the WHOLE CHAPTER (MiniReaderExpand), never a graduated one-more-verse
+     step. RevealControls itself -- already its own generic, standalone
+     component (Total/Default/Shown/Step, nothing about WHAT is being
+     shown) -- IS the shared piece the owner's own spec asks to reuse, so
+     it is used directly, verse-by-verse, rather than contorting a caller
+     whose own grouping doesn't fit. Nothing is duplicated: RevealControls
+     is still the ONE implementation of "more/all/less," just with a
+     second direct consumer alongside PassageList's own internal one.
+   - DISMISS: pointer-leave used to dismiss the peek immediately, no grace
+     period, because a non-interactive box never needed the pointer to
+     travel INTO it. Now that `more`/`less` live INSIDE the box, the
+     pointer must cross the small visual gap between the arrow/role-caption
+     stack and the peek (margin .4rem, app.css) to reach them. The SAME
+     @onpointerenter/@onpointerleave pair on this component's own wrapping
+     element (unchanged below) already covers that whole subtree -- the
+     peek box is a DOM DESCENDANT of the wrapper, not a sibling, see the
+     markup below -- but the browser still fires a transient leave+enter
+     PAIR on the wrapper mid-transit (real pixels in that gap that the
+     wrapper's own un-padded box doesn't cover, so hit-testing there
+     resolves to something outside the wrapper's subtree for an instant).
+     ScheduleDismiss/CancelDismiss below give that transit a short GRACE
+     PERIOD before actually hiding -- the same shape Reader.razor's own
+     xref marker-to-panel transit already proved out
+     (ScheduleHoverClose/DelayedHoverClose there; that method's own doc
+     comment has the two real, tuned-the-hard-way timing failures at
+     250ms/500ms). PeekDismissGraceMs below reuses that exact, hard-won
+     1000ms figure rather than re-deriving a smaller number empirically
+     only to risk rediscovering the identical race -- this box's own
+     transit gap is smaller, but the same real-cursor-speed +
+     Playwright-synthetic-move-overhead reasoning applies regardless of
+     gap size. Once truly gone (no re-entry before the grace period
+     elapses), the peek still dismisses on its own -- "pointer-leave (of
+     arrow+box combined) dismisses," the owner's own spec, just not
+     necessarily on the exact tick a true departure is first detected.
+     Mid-dwell pointer-leave (the peek not shown YET) is UNCHANGED: still
+     cancels outright, no grace -- PEEK-1's own "quick pass-over -> nothing"
+     law never needed a grace period and still doesn't; a grace period only
+     ever makes sense for something that's already showing and might
+     legitimately be travelled INTO.
+   - PLACEMENT: viewport-aware, flips above/below so the peek is NEVER
+     clipped. OnAfterRenderAsync below measures this component's own
+     wrapper, once per peek OPEN (never re-measured while it stays open --
+     the SAME "measure once, on open" discipline ExplorerPopover's own
+     verse/pane anchoring already established, see that file's own header
+     comment), via reader.js's new getElementRect -- an ElementReference-
+     keyed sibling of that file's own selector-keyed getVerseAnchorRect. A
+     selector would only ever resolve document.querySelector's own FIRST
+     match: up to FOUR ArrowNav instances can be mounted at once (prior x
+     following, narrative x chronology), so a shared CSS-class selector
+     would silently measure the wrong instance's anchor for every side but
+     one -- the same "pass the real element, not a selector" reasoning
+     reader.js's own capturePointer already established for SplitDivider's
+     analogous multi-instance concern. Whichever side (above/below the
+     wrapper) has more real room wins, and that side's own max-height is
+     capped to exactly the room available -- "never clipped" without
+     needing to predict content height up front: genuine overflow (an
+     expanded, many-verse peek) degrades to app.css's own
+     `overflow-y: auto`, an internal scroll, never an off-screen spill. A
+     quick pass-over that never dwells long enough to show a peek never
+     measures anything (no JS interop call) -- matching this component's
+     own pre-existing "never a fetch until the dwell actually fires"
+     discipline one layer further out. *@
+@using System.Globalization
 @inject AtlasClient Atlas
+@inject IJSRuntime JS
 @implements IDisposable
 
-<div class="popover-event-nav-side popover-event-nav-side-@Direction"
-     @onpointerenter="OnPointerEnter" @onpointerleave="OnPointerLeave">
+<div class="popover-event-nav-side popover-event-nav-side-@Direction" @ref="_sideRef"
+     @onpointerenter="OnPointerEnter" @onpointerleave="OnPointerLeave" @onpointerdown="OnWrapperPointerDown">
 @if (Adjacent is null)
 {
     <span class="popover-event-nav-arrow popover-event-nav-arrow-@Direction popover-event-nav-arrow-empty"></span>
@@ -53,7 +129,12 @@ else
         {
             <span class="popover-event-nav-glyph">@Glyph</span>
         }
-        <span class="popover-event-nav-label" title="@Adjacent.Label">@Adjacent.Label</span>
+        @* TITLE-WRAP-1: LabelIsLong picks the two-line-clamp/smaller-size
+           treatment (app.css's own .popover-event-nav-label-long) instead
+           of the base one-line/ellipsis rule -- see that property's own
+           doc comment below for the threshold, and app.css's own comment
+           on the base rule for how the two stay grid-aligned regardless. *@
+        <span class="popover-event-nav-label @(LabelIsLong ? "popover-event-nav-label-long" : null)" title="@Adjacent.Label">@Adjacent.Label</span>
         @if (Direction == "following")
         {
             <span class="popover-event-nav-glyph">@Glyph</span>
@@ -64,10 +145,21 @@ else
 
     @if (_showPeek)
     {
-        <div class="popover-arrow-peek" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek")">
+        <div class="popover-arrow-peek @(_peekFlipAbove ? "popover-arrow-peek-above" : null)" style="@PeekStyle"
+             data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek")">
+            <p class="popover-arrow-peek-title" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-title")">@Adjacent.Label</p>
             @if (_peekVerses.Count > 0)
             {
-                <PassageList Units="@_peekUnits" RefTestIdPrefix="@($"{EventTestIdPrefix}-{IdSuffix}-peek")" OnExplore="OnExplore" />
+                @foreach (var v in _peekVerses.Take(_peekShown))
+                {
+                    <p class="popover-arrow-peek-verse" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-verse-{v.Vref}")">
+                        <sup class="popover-arrow-peek-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Places="@(v.Places ?? Array.Empty<PlaceRefDto>())" Persons="@(v.Persons ?? Array.Empty<PersonRefDto>())"
+                            Verse="@CanonRef.ParseVerse(v.Vref).Verse" ClassPrefix="popover-arrow-peek-mention" TestIdSuffix="@($"-{EventTestIdPrefix}-{IdSuffix}-peek")" OnExplore="OnExplore" />
+                    </p>
+                }
+                <RevealControls Total="@_peekVerses.Count" Default="1" Shown="@_peekShown" ShownChanged="OnPeekShownChanged"
+                                 MoreTestId="@($"{EventTestIdPrefix}-{IdSuffix}-peek-more")" CollapseTestId="@($"{EventTestIdPrefix}-{IdSuffix}-peek-collapse")"
+                                 RevealNoun="verses" />
             }
         </div>
     }
@@ -107,12 +199,153 @@ else
 
     private string RoleText => Direction == "prior" ? "PRIOR EVENT" : "FOLLOWING EVENT";
 
-    private Task Commit() => Adjacent is null ? Task.CompletedTask : OnExplore.InvokeAsync(new EventNode(Adjacent.Id, Adjacent.Label));
+    private Task Commit()
+    {
+        if (Adjacent is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        // CHAP-HOVER-1's own "a click always supersedes any peek still
+        // showing/mid-dwell -- never both at once" law, mirrored here: in
+        // the ordinary case this instance is about to be disposed anyway
+        // (the popover re-resolves its sections for the newly-pushed
+        // node), which would cancel these same timers via Dispose below,
+        // but there is no reason to leave a stale peek/timer alive for
+        // even one extra render on the way there.
+        CancelDwell();
+        CancelDismiss();
+        HidePeekState();
+        return OnExplore.InvokeAsync(new EventNode(Adjacent.Id, Adjacent.Label));
+    }
+
+    // TITLE-WRAP-1 (owner report, 2026-08-24, verbatim: "i don't like that
+    // arrow titles are getting cut off with elipses... we need to find a
+    // way to have a nice presentation while showing a relatively full
+    // title."): a character-count threshold, not a JS-measured pixel
+    // check -- this is a cosmetic layout decision, not something worth a
+    // round trip for. Measured against the real curated event-label corpus
+    // (data/curated/events-extra.toml, 265 labels): median length 39,
+    // only ~9% are <=24 characters, so 24 is picked as "reliably fits the
+    // button's own ~200px column on one line at standard size" -- the
+    // overwhelming majority of real names DO wrap, which matches the
+    // owner's own complaint (routine, not rare, truncation). The two-line
+    // clamp at the smaller size (app.css's own
+    // .popover-event-nav-label-long) comfortably holds labels up to
+    // ~60-65 characters at that size; only the longest ~4% of the same
+    // corpus would ever reach its own ellipsis-past-two-lines backstop.
+    private const int LongLabelThreshold = 24;
+    private bool LabelIsLong => Adjacent is not null && Adjacent.Label.Length > LongLabelThreshold;
 
     private bool _showPeek;
     private List<PassageListVerse> _peekVerses = new();
-    private PassageSourceUnit[] _peekUnits = Array.Empty<PassageSourceUnit>();
+
+    // PEEK-TRUNC-1: RevealControls' own two-way-bound Shown state -- the
+    // ONE-verse floor is Default="1" below (the markup), never re-derived
+    // here; this field is purely "how many of _peekVerses are currently
+    // revealed," reset to the floor every time a FRESH peek opens (never
+    // remembers a prior session's own expansion -- HidePeekState below).
+    private int _peekShown = 1;
+
     private CancellationTokenSource? _dwellCts;
+
+    // PEEK-TRUNC-1 corridor -- see this file's own header comment for the
+    // full "why a grace period, why 1000ms" story.
+    private CancellationTokenSource? _dismissCts;
+    private const int PeekDismissGraceMs = 1000;
+
+    // PEEK-TRUNC-1 placement -- see this file's own header comment.
+    // _peekMeasured guards OnAfterRenderAsync's own measurement to ONCE
+    // per peek OPEN (reset alongside _showPeek itself, both in
+    // DwellThenPeek -- a fresh open -- and HidePeekState -- a dismiss, so
+    // the NEXT open always re-measures rather than reusing a stale rect
+    // from wherever the page happened to be scrolled to last time).
+    private ElementReference _sideRef;
+    private bool _peekMeasured;
+    private bool _peekFlipAbove;
+    private double? _peekMaxHeightPx;
+
+    // Breathing room between the peek's own far edge and the viewport
+    // edge -- deliberately a little more generous than the CSS .4rem
+    // (6.4px) gap between the wrapper and the peek itself (app.css), so
+    // this estimate errs toward a SLIGHTLY smaller max-height than the
+    // theoretical maximum rather than risking a hairline clip; the only
+    // visible cost of erring small is that the internal scroll (app.css's
+    // own overflow-y:auto) engages a few px sooner than strictly
+    // necessary, never an actual overflow.
+    private const double PeekMarginPx = 12;
+
+    private string? PeekStyle => _peekMaxHeightPx is double h
+        ? $"--peek-max-height:{h.ToString(CultureInfo.InvariantCulture)}px;"
+        : null;
+
+    // PEEK-TRUNC-1 fix round -- a real, live-caught bug (reproduced and
+    // root-caused via an isolated repro, not guessed; reader.js's own
+    // isPointInsideEither has the full mechanism writeup): clicking
+    // RevealControls' own `less` can remove the EXACT element the pointer
+    // is resting on (Shown returns to Default, `less` itself -- and,
+    // moving back under Step, one or more verses -- disappear in the same
+    // render). That breaks the BROWSER's own pointerenter/pointerleave
+    // transition tracking for this component's wrapper: the next genuine
+    // departure silently never fires OnPointerLeave at all, leaving the
+    // peek stuck open. _pointerDownX/Y capture WHERE the pointer was for
+    // whatever gesture is currently in flight; _recentPointerDown gates
+    // OnPeekShownChanged's own re-verification to ONLY a genuine, JUST-
+    // happened MOUSE interaction (a keyboard activation -- Enter/Space on
+    // a focused reveal-control button -- dispatches no pointer event at
+    // all, so this never fires for one) -- "keyboard/commit paths
+    // unaffected" extends to this fallback too, not only the ordinary
+    // dwell/commit paths decision 3 already names; without this gate, a
+    // keyboard user's own unrelated, stationary mouse position could
+    // wrongly read as "moved away" and schedule a dismiss out from under
+    // them. Consumed exactly once per pointerdown (reset immediately in
+    // OnPeekShownChanged) so a LATER, unrelated render is never
+    // re-checked against a stale position.
+    private double? _pointerDownX;
+    private double? _pointerDownY;
+    private bool _recentPointerDown;
+
+    private void OnWrapperPointerDown(PointerEventArgs e)
+    {
+        _pointerDownX = e.ClientX;
+        _pointerDownY = e.ClientY;
+        _recentPointerDown = true;
+    }
+
+    // RevealControls' own ShownChanged target -- see this property's
+    // sibling fields immediately above for the full "why re-verify at
+    // all" story. Never dismisses immediately on its own finding: a
+    // content-shrink landing the STATIONARY pointer just outside the
+    // peek's own new, smaller bounds schedules the SAME ordinary grace-
+    // period dismiss a real pointerleave would (ScheduleDismiss, not
+    // HidePeekState directly) -- reads to the user as "you moved away,"
+    // never an abrupt snap-shut the instant their own click happens to
+    // shrink the box out from under a pointer that never actually moved.
+    private async Task OnPeekShownChanged(int shown)
+    {
+        _peekShown = shown;
+
+        if (!_recentPointerDown || _pointerDownX is not double x || _pointerDownY is not double y)
+        {
+            return;
+        }
+        _recentPointerDown = false; // consumed -- see the field's own doc comment
+
+        try
+        {
+            var readerJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
+            var stillInside = await readerJs.InvokeAsync<bool>("isPointInsideEither", _sideRef, x, y);
+            if (!stillInside && _showPeek)
+            {
+                ScheduleDismiss();
+            }
+        }
+        catch (Exception)
+        {
+            // Nicety, not load-bearing -- same graceful-degradation stance
+            // every other measurement in this component already takes.
+        }
+    }
 
     private void OnPointerEnter()
     {
@@ -120,6 +353,17 @@ else
         {
             return; // the empty-placeholder side (this narrative/direction has no neighbor) -- nothing to peek at
         }
+
+        // Corridor: re-entering the wrapper -- which fires for the arrow
+        // itself, the peek box (a DOM descendant, see this file's own
+        // header comment), or the transit gap's own leave+enter blip alike
+        // -- always cancels any pending grace-close first.
+        CancelDismiss();
+        if (_showPeek)
+        {
+            return; // already showing -- nothing else to (re-)start
+        }
+
         CancelDwell();
         var cts = new CancellationTokenSource();
         _dwellCts = cts;
@@ -128,12 +372,13 @@ else
 
     private void OnPointerLeave()
     {
-        CancelDwell();
         if (_showPeek)
         {
-            _showPeek = false;
-            StateHasChanged();
+            ScheduleDismiss(); // PEEK-TRUNC-1 corridor -- give a real transit into the box a moment to land before hiding it
+            return;
         }
+
+        CancelDwell(); // still just mid-dwell, never shown yet -- PEEK-1's own "quick pass-over -> nothing" law, unchanged, no grace needed here
     }
 
     private void CancelDwell()
@@ -172,10 +417,110 @@ else
             return; // the pointer left WHILE the verse text was in flight -- never flip a dismissed peek back on
         }
 
-        _peekUnits = new PassageSourceUnit[] { new(_peekVerses) };
+        _peekShown = 1; // PEEK-TRUNC-1: every fresh peek starts back at the one-verse floor
+        _peekMeasured = false; // a fresh measurement for THIS open -- see OnAfterRenderAsync
         _showPeek = true;
         StateHasChanged();
     }
 
-    public void Dispose() => CancelDwell();
+    private void ScheduleDismiss()
+    {
+        CancelDismiss();
+        var cts = new CancellationTokenSource();
+        _dismissCts = cts;
+        _ = DelayedDismiss(cts);
+    }
+
+    private void CancelDismiss()
+    {
+        _dismissCts?.Cancel();
+        _dismissCts = null;
+    }
+
+    private async Task DelayedDismiss(CancellationTokenSource cts)
+    {
+        try
+        {
+            await Task.Delay(PeekDismissGraceMs, cts.Token);
+        }
+        catch (TaskCanceledException)
+        {
+            return; // re-entered (arrow or box) before the grace period elapsed -- CancelDismiss already ran
+        }
+
+        if (cts.IsCancellationRequested)
+        {
+            return;
+        }
+
+        HidePeekState();
+        StateHasChanged();
+    }
+
+    private void HidePeekState()
+    {
+        _showPeek = false;
+        _peekShown = 1;
+        _peekMeasured = false;
+        _peekFlipAbove = false;
+        _peekMaxHeightPx = null;
+        _recentPointerDown = false; // a fresh peek session never re-verifies against a pointerdown from a PRIOR one
+    }
+
+    // PEEK-TRUNC-1 placement -- see this file's own header comment for the
+    // full "why getElementRect, why once per open" story. Runs after EVERY
+    // render (ordinary Blazor lifecycle), but the _peekMeasured guard makes
+    // it a real no-op except for the one render immediately after a fresh
+    // peek opens.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_showPeek || _peekMeasured || Adjacent is null)
+        {
+            return;
+        }
+
+        _peekMeasured = true;
+        try
+        {
+            var readerJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
+            var rect = await readerJs.InvokeAsync<ElementRectDto?>("getElementRect", _sideRef);
+            // Re-check _showPeek -- the pointer may already have left (and
+            // HidePeekState already run, see ScheduleDismiss/CancelDismiss
+            // above) while this measurement was in flight; never flip a
+            // dismissed peek back on just because a stale measurement
+            // landed late.
+            if (rect is { } r && _showPeek)
+            {
+                var spaceBelow = r.ViewportHeight - (r.Top + r.Height) - PeekMarginPx;
+                var spaceAbove = r.Top - PeekMarginPx;
+                _peekFlipAbove = spaceBelow < spaceAbove;
+                _peekMaxHeightPx = Math.Max(_peekFlipAbove ? spaceAbove : spaceBelow, 0);
+                StateHasChanged();
+            }
+        }
+        catch (Exception)
+        {
+            // Positioning is a nicety, not load-bearing -- same graceful-
+            // degradation stance ExplorerPopover's own verse/pane rect
+            // measurement takes (see that file's own comment): a failed
+            // measurement just leaves the peek at its default below/
+            // unbounded rendering for that one instant instead of flipping
+            // or capping it.
+        }
+    }
+
+    // Mirrors ExplorerPopover's own VerseAnchorRectDto/PaneRectDto -- a
+    // small, file-scoped, PRIVATE DTO per consumer rather than a shared
+    // type, the same "these overlap but stay separate" call SplitDivider's
+    // own PaneRectDto already makes (see that file's own comment) for the
+    // identical reasoning: nothing outside this file needs this shape, and
+    // a shared type would only couple two otherwise-independent
+    // measurement call sites for no real benefit.
+    private sealed record ElementRectDto(double Left, double Top, double Width, double Height, double ViewportWidth, double ViewportHeight);
+
+    public void Dispose()
+    {
+        CancelDwell();
+        CancelDismiss();
+    }
 }
