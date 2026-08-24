@@ -577,6 +577,27 @@ places (61.0%) carry a real description; 0 of 0 PeopleGroup nodes (none
 exist yet — PG-1a, a later batch, seeds real ones). Every DISPLAYED
 description is Easton's own words; no prose in this app's own voice is
 ever mixed into a `description` field.
+UPDATED (Batch PG-1a, 2026-08-24, same day): PeopleGroup nodes now exist
+(23 Theographic `peopleGroups.json` records + 6 curated nation seeds + 9
+Gen-10 gentilics reclassified from Person) — 8 of 38 (21.1%) carry a real
+description, tier c (exact `dict_lookup` match) only, per `description_
+adapter.rs`'s own trust order (no per-record dictText source, no
+Theographic id to key tier b on for a PeopleGroup): Arkite/Sinite/Zemarite
+(3 of the 9 reclassified, whose OWN singular Theographic name already
+matches an Easton headword of the same shape), Canaanites/Philistines (2
+of the 6 curated seeds), Pharisees/Sadducees/Scribes (3 of the 23
+Theographic groups) — the twelve tribes, Nation of Israel, and every
+other Theographic/curated group miss (no Easton headword shaped like
+"Tribe of Judah" exists, unsurprisingly). Disclosed miss pattern, per
+PG-1a's own brief (not silently patched): four of the six curated nation
+seeds (Ammonites/Moabites/Edomites/Amalekites) miss specifically because
+the curated label is PLURAL while Easton's own headword for that entity
+is SINGULAR ("Ammonite" not "Ammonites") — an exact-match miss tier c's
+own no-fuzzy-matching law correctly declines to bridge; batch-pg1a-report.md
+has the fuller breakdown. The person total also moved (2,337 of 3,058,
+still 76.4%) -- nine fewer source records (the reclassified gentilics are
+PeopleGroup now, not Person), a real, disclosed consequence of the
+reclassification, not a data loss.
 
 **Dedication of this project's own matching work.** The trust-order
 matcher itself (`description_adapter.rs`, `atlas_etl::easton.rs`) — which

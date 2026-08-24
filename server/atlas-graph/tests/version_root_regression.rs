@@ -149,4 +149,18 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // canonical bytes; this is the widening becoming real content, the exact
 // same class of move the ENT-1 crate commit's own note above already
 // named as expected once a data batch landed.
-const EXPECTED_VERSION_HEX: &str = "c4cf220f79beded4";
+// MOVED AGAIN (deliberately -- PG-1a, 2026-08-24): 38 new PeopleGroup
+// nodes (23 Theographic `peopleGroups.json` records + 6 curated nation
+// seeds + 9 reclassified Gen-10 gentilics), 27 new `Mentions(PeopleGroup)`
+// rows (the reclassified nine's own real `verse_links`), and 18 new
+// `named_after` rows all feed the content hash; the nine reclassified
+// slugs' own Person nodes/mentions are GONE (person_adapter's own
+// exclusion), so Person-side content shrinks by exactly that much too --
+// both are the expected effect of a real reclassification, not a bug.
+// `description_adapter::fill_descriptions` also newly fills 8/38 of the
+// new PeopleGroup nodes' own descriptions (tier c only) and 2,337/3,058
+// persons (down from 2,344/3,067 -- seven of the nine reclassified had a
+// filled description as a Person; both numbers are real, honest
+// consequences of the same reclassification). New captured value:
+// "8855af2b0742cc31".
+const EXPECTED_VERSION_HEX: &str = "8855af2b0742cc31";

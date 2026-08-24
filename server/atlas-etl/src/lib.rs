@@ -23,6 +23,7 @@ pub mod geo;
 pub mod kjv;
 pub mod osis;
 pub mod people;
+pub mod people_groups;
 pub mod polities;
 pub mod report;
 pub mod theographic;

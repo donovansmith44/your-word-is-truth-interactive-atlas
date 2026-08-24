@@ -195,6 +195,14 @@ impl Pass for NormalizePass {
         // every sibling call above) -- ctx.atlas.people is already fully
         // resolved by atlas_etl::people::parse_people before this ever runs.
         crate::person_adapter::normalize(ctx);
+        // PG-1a: PeopleGroup nodes (all three sources) + curated NamedAfter
+        // rows -- runs AFTER person_adapter::normalize, deliberately (its
+        // own module doc comment): the NamedAfter eponym-existence check
+        // asks the GRAPH itself whether a real Person node exists, and
+        // person_adapter's own exclusion of the nine reclassified slugs
+        // must already be in effect for the reclassified-node/no-Person-
+        // node invariant to hold by construction.
+        crate::peoples_adapter::normalize(ctx);
         Ok(())
     }
 }
@@ -211,6 +219,11 @@ impl Pass for MergeAliasPass {
         // "legacy-vocabulary boundary crossing" shape place_adapter's own
         // mentions half already is (this stage's own doc comment above).
         crate::person_adapter::merge_alias(ctx);
+        // PG-1a: the reclassified nine's own verse_links -> Mentions
+        // (PeopleGroup) rows -- the ONLY per-locus PeopleGroup attestations
+        // this batch's source data ships (decision 1c/2); the (a)/(b)
+        // PeopleGroup sources build no mentions rows at all.
+        crate::peoples_adapter::merge_alias(ctx);
         // ENT-1a: description-filling runs LAST in this stage -- it only
         // ever READS already-built nodes (never their mentions rows), so it
         // has no ordering dependency on the three calls above; last is
@@ -292,6 +305,20 @@ impl Pass for LawCheckPass {
         crate::person_adapter::check_person_fidelity(ctx.atlas, &ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("Theographic person adapter fidelity law (bijection + mentions completeness)")?;
+        // PG-1a: the peoples adapter's own boundary fidelity law (bijection
+        // across all three PeopleGroup sources + reclassified mentions
+        // completeness), plus the NamedAfter grounding law (every row
+        // carries >=1 Ground::Scripture) -- referential integrity of
+        // PeopleGroup mentions/named_after endpoints is ALREADY covered by
+        // every_authored_edge_resolves above (peoples_adapter.rs's own
+        // module doc comment / test), so these are the adapter-specific
+        // laws only, not a duplicate.
+        crate::peoples_adapter::check_peoples_fidelity(ctx.atlas, &ctx.graph)
+            .map_err(|e| anyhow::anyhow!("{e}"))
+            .context("PG-1a peoples adapter fidelity law (bijection + mentions completeness)")?;
+        crate::peoples_adapter::every_named_after_row_has_a_scripture_ground(&ctx.graph)
+            .map_err(|e| anyhow::anyhow!("{e}"))
+            .context("PG-1a named-after grounding law (every row must carry >=1 Ground::Scripture)")?;
         Ok(())
     }
 }

@@ -39,6 +39,7 @@ pub mod heading;
 pub mod kjv_adapter;
 pub mod law_check;
 pub mod legacy;
+pub mod peoples_adapter;
 pub mod person_adapter;
 pub mod pipeline;
 pub mod place_adapter;

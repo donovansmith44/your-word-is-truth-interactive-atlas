@@ -359,6 +359,67 @@ async fn a_verses_mentions_frontier_carries_person_entities_alongside_place() {
     assert!(person_labels.contains(&"Moses".to_string()), "{person_labels:?}");
 }
 
+/// PG-1a wire seam (batch-pg1a-brief.md decision 6): a PeopleGroup mentions
+/// row is REAL, present content in the built graph (the node card's own
+/// `edge_summary` proves it, unfiltered) -- but the generic entity-LIST
+/// page for that same relation must show none of it, the current client
+/// having no rendering surface for the new kind (`graph_handlers::
+/// node_edges`'s own filter, `graph_wire::decode_node_id`'s own missing
+/// "PeopleGroup" arm). GEN.10.16 ("And the Jebusite, and the Amorite, and
+/// the Girgasite,") is a real reclassified-gentilic locus (decision 1c).
+#[tokio::test]
+async fn peoplegroup_mentions_are_real_in_the_graph_but_filtered_from_the_generic_edges_page() {
+    let app = real_app();
+
+    let (st, card, _) = get(&app, "/api/node/text-unit:GEN.10.16").await;
+    assert_eq!(st, 200, "{card}");
+    let summary = card["edge_summary"].as_array().unwrap();
+    let mentions_count = summary.iter().find(|e| e["kind"] == "mentions").and_then(|e| e["count"].as_u64()).unwrap_or(0);
+    assert!(mentions_count >= 3, "GEN.10.16 must carry >=3 real mentions (Jebusite/Amorite/Girgasite) in the built graph, unfiltered: {summary:?}");
+
+    let (st2, page, _) = get(&app, "/api/node/text-unit:GEN.10.16/edges?kind=mentions").await;
+    assert_eq!(st2, 200, "{page}");
+    let entries = page["entries"].as_array().unwrap();
+    assert!(entries.iter().all(|e| e["node"]["kind"] != "PeopleGroup"), "no edge-page entry may carry kind=PeopleGroup -- the current client cannot render or re-fetch it: {entries:?}");
+}
+
+/// A PeopleGroup id cannot even be constructed on the wire today --
+/// `graph_wire::decode_node_id` has no "PeopleGroup" arm (deliberately;
+/// that round-trip completion is U5 rebinding's own job) -- so a direct
+/// fetch 400s `bad_ref`, the same convention any syntactically-unsupported
+/// kind prefix already gets. Reinforces the edges-page filter test above:
+/// even if a PeopleGroup entry DID leak onto a page, the current client
+/// could not follow it anywhere.
+#[tokio::test]
+async fn peoplegroup_node_id_cannot_be_fetched_directly_yet() {
+    let app = real_app();
+    let (st, body, _) = get(&app, "/api/node/PeopleGroup:jebusite_748").await;
+    assert_eq!(st, 400, "{body}");
+    assert_eq!(body["error"]["code"], "bad_ref");
+}
+
+/// PG-1a decision 7 ("wire filter test: a chapter response containing a
+/// gentilic locus has NO peoplegroup-kind span"): `VerseOut` carries only
+/// `places`/`persons` (no third, PeopleGroup-shaped field exists at all),
+/// so the only OBSERVABLE consequence is that the three gentilics named at
+/// this real locus no longer appear in `persons` -- verified directly
+/// rather than assumed, per decision 6's own "verify and disclose"
+/// instruction (they WOULD have appeared here before PG-1a's own
+/// reclassification, back when Jebusite/Amorite/Girgasite were still
+/// Theographic PERSON records).
+#[tokio::test]
+async fn chapter_response_for_a_gentilic_locus_carries_no_peoplegroup_kind_span() {
+    let app = real_app();
+    let (st, chapter, _) = get(&app, "/api/chapter/GEN.10").await;
+    assert_eq!(st, 200);
+    let v16 = chapter["verses"].as_array().unwrap().iter().find(|v| v["verse"] == 16).expect("GEN.10.16 must be in the chapter");
+    let persons = v16["persons"].as_array().expect("persons must always be present, even at 0, never an omitted key");
+    let names: Vec<&str> = persons.iter().map(|p| p["name"].as_str().unwrap()).collect();
+    for gone in ["Jebusite", "Amorite", "Girgasite"] {
+        assert!(!names.contains(&gone), "'{gone}' must NOT appear in GEN.10.16's own persons list any more -- it is a PeopleGroup now: {names:?}");
+    }
+}
+
 /// U5: the chapter view's own precomputed `persons` field (`VerseOut.persons`,
 /// backed by `GraphService::persons_by_verse`) must agree with the generic
 /// mentions-frontier query for the SAME verse -- the same

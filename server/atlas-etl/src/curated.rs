@@ -19,7 +19,7 @@
 //! trust class scene composition relies on).
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, Landmark, LandMaskRegion, Narrative, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
+use atlas_core::data::{BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -934,6 +934,35 @@ pub fn parse_catechism_deut5(input: &str) -> Result<Vec<Deut5Entry>> {
     Ok(f.entry.into_iter().map(|e| Deut5Entry { item: e.item, verses: e.verses, ref_note: e.ref_note }).collect())
 }
 
+#[derive(Deserialize)]
+struct PeopleGroupsFile {
+    #[serde(default)]
+    group: Vec<PeopleGroupSeed>,
+    #[serde(default)]
+    reclassify: Vec<PeopleGroupReclassify>,
+    #[serde(default)]
+    named_after: Vec<NamedAfterSeed>,
+}
+
+/// PG-1a: parses `people-groups.toml` (three independent array-of-tables:
+/// `[[group]]` curated nation seeds, `[[reclassify]]` the nine Gen-10
+/// gentilic reclassification rows, `[[named_after]]` eponymy seed rows --
+/// controller decisions 1b/1c/3). Reuses `atlas_core::data::
+/// PeopleGroupSeed`/`PeopleGroupReclassify`/`NamedAfterSeed` directly for
+/// deserialization (their field names already match the TOML schema
+/// exactly, the same "reuse the atlas-core struct" shape `parse_eras`/
+/// `parse_chronology_anchors` already establish) -- pure and STRUCTURAL
+/// only: cross-checking each `named_after` row's `eponym`/`namesake_id`
+/// against the real compiled person/group sets is
+/// `peoples_adapter::normalize`'s own job (needs the fuller, already-built
+/// picture), matching every other curated schema in this module's own
+/// split between "parses" and "validates against the wider compile."
+pub fn parse_people_group_seeds(input: &str) -> Result<(Vec<PeopleGroupSeed>, Vec<PeopleGroupReclassify>, Vec<NamedAfterSeed>)> {
+    let f: PeopleGroupsFile =
+        toml::from_str(input).context("people-groups.toml: invalid TOML or does not match the [[group]]/[[reclassify]]/[[named_after]] schema")?;
+    Ok((f.group, f.reclassify, f.named_after))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1291,5 +1320,77 @@ verses = ["GEN.2.14", "DAN.10.4"]
     fn parse_place_names_kjv_rejects_malformed_toml() {
         assert!(parse_place_names_kjv("not = [valid").is_err());
         assert!(parse_place_names_kjv("foo = 1").is_err(), "missing [[alias]] array entirely");
+    }
+
+    // --- PG-1a: parse_people_group_seeds -------------------------------------
+
+    #[test]
+    fn parse_people_group_seeds_reads_all_three_arrays() {
+        let toml = r#"
+[[group]]
+id = "ammonites"
+label = "Ammonites"
+
+[[group]]
+id = "moabites"
+label = "Moabites"
+
+[[reclassify]]
+person_slug = "jebusite_748"
+reason = "Gen-10 gentilic collective (GEN 10:16), misfiled as a person."
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "ammonites"
+eponym = "ben-ammi_451"
+text = "She called his name Ben-ammi: the same is the father of the children of Ammon."
+grounds = [{ from = "GEN.19.38" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "edomites"
+eponym = "esau_1216"
+grounds = [{ from = "GEN.36.8", to = "GEN.36.9" }, { from = "GEN.25.30" }]
+"#;
+        let (groups, reclassify, named_after) = parse_people_group_seeds(toml).unwrap();
+
+        assert_eq!(groups.len(), 2);
+        assert_eq!(groups[0].id, "ammonites");
+        assert_eq!(groups[0].label, "Ammonites");
+        assert_eq!(groups[1].id, "moabites");
+
+        assert_eq!(reclassify.len(), 1);
+        assert_eq!(reclassify[0].person_slug, "jebusite_748");
+        assert!(reclassify[0].reason.contains("Gen-10"));
+
+        assert_eq!(named_after.len(), 2);
+        assert_eq!(named_after[0].namesake_kind, "people_group");
+        assert_eq!(named_after[0].namesake_id, "ammonites");
+        assert_eq!(named_after[0].eponym, "ben-ammi_451");
+        assert!(named_after[0].text.as_deref().unwrap().contains("Ben-ammi"));
+        assert_eq!(named_after[0].grounds.len(), 1);
+        assert_eq!(named_after[0].grounds[0].from, "GEN.19.38");
+        assert_eq!(named_after[0].grounds[0].to, None, "single-verse ground: to defaults to absent, not a copy of from");
+
+        assert_eq!(named_after[1].namesake_id, "edomites");
+        assert_eq!(named_after[1].text, None, "text is optional");
+        assert_eq!(named_after[1].grounds.len(), 2, "Edomites carries TWO scripture grounds (GEN 36:8-9 and GEN 25:30)");
+        assert_eq!(named_after[1].grounds[0].from, "GEN.36.8");
+        assert_eq!(named_after[1].grounds[0].to.as_deref(), Some("GEN.36.9"));
+        assert_eq!(named_after[1].grounds[1].from, "GEN.25.30");
+        assert_eq!(named_after[1].grounds[1].to, None);
+    }
+
+    #[test]
+    fn parse_people_group_seeds_defaults_every_array_to_empty_when_absent() {
+        let (groups, reclassify, named_after) = parse_people_group_seeds("").unwrap();
+        assert!(groups.is_empty());
+        assert!(reclassify.is_empty());
+        assert!(named_after.is_empty());
+    }
+
+    #[test]
+    fn parse_people_group_seeds_rejects_malformed_toml() {
+        assert!(parse_people_group_seeds("not = [valid").is_err());
     }
 }

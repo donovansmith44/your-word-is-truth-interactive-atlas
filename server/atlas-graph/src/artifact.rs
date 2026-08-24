@@ -41,10 +41,10 @@ use std::collections::BTreeMap;
 
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis, ResolvedDate, ResolvedPlacement, SeqKey, TimePoint, Year};
 use atlas_graph_types::edge::{
-    Attests, CatechismLink, CrossRef, Ground, Justification, LocatedAt, Mentions, MentionedEntity, Succession,
+    Attests, CatechismLink, CrossRef, Ground, Justification, LocatedAt, Mentions, MentionedEntity, NamedAfter, Namesake, Succession,
 };
 use atlas_graph_types::graph::{Graph, ReadingSpine};
-use atlas_graph_types::id::{AnchorId, AnyNodeId, CatechismItemId, EraId, EventId, NarrativeId, NodeKind, PeopleGroupId, PersonId, PlaceId, SourceId};
+use atlas_graph_types::id::{AnchorId, AnyNodeId, CatechismItemId, EraId, EventId, NarrativeId, NodeKind, PeopleGroupId, PersonId, PlaceId, PolityId, SourceId};
 use atlas_graph_types::node::{Node, NodePayload, PolityEraPayload};
 use atlas_graph_types::text::{BibleLocus, BibleLocusRange, ConcordRef, LocusRange, TextLocus, TextRef, TokenSpan, TranslationId, VerseRef};
 
@@ -513,6 +513,31 @@ struct DtoLocatedAt {
 // relation whole -- see graph-types' own edge.rs/graph.rs doc comments and
 // this crate's place_adapter.rs for the full retirement.
 
+/// PG-1a: mirrors `graph_types::edge::Namesake` -- the three kinds
+/// Scripture actually names after persons. Every row this batch's own
+/// adapter (`peoples_adapter.rs`) builds is `PeopleGroup`; `Place`/`Polity`
+/// ride here for the SAME reason the typed enum carries all three
+/// (schema completeness, not speculative -- a future batch reaching for
+/// either needs no artifact-format change, only a row).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+enum DtoNamesake {
+    PeopleGroup(String),
+    Place(String),
+    Polity(String),
+}
+
+/// PG-1a: mirrors `graph_types::edge::NamedAfter` -- eponymy, curated.
+/// `dump`'s own guard fired on this table the moment `peoples_adapter`
+/// started emitting real rows (this module's own `dump` doc comment); it
+/// is real, serialized content now, no longer guarded.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoNamedAfter {
+    namesake: DtoNamesake,
+    eponym: String,
+    provenance: String,
+    justification: DtoJustification,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DtoCatechismLink {
     locus: DtoTextLocus,
@@ -583,6 +608,9 @@ pub struct ArtifactDump {
     // M-D3 (owner ruling R2): `named: Vec<DtoNamed>` field retired here --
     // the `named` relation is gone from the graph entirely (see graph-types'
     // own edge.rs/graph.rs).
+    /// PG-1a: `graph.named_after`'s own row table -- see `DtoNamedAfter`'s
+    /// own doc comment.
+    named_after: Vec<DtoNamedAfter>,
     catechism: Vec<DtoCatechismLink>,
     mentions: Vec<DtoMentions>,
     cross_refs: Vec<DtoCrossRef>,
@@ -690,29 +718,37 @@ pub struct ArtifactDump {
 /// representations of one fact). Both are genuine wire-shape breaks both
 /// directions -- bincode field COUNT changed, not just a value inside an
 /// existing field. `data/compiled/graph.bin` rebuilt in this same commit.
-const FORMAT_VERSION: u32 = 5;
+///
+/// PG-1a (2026-08-24): bumped 5 -> 6. Trigger: `ArtifactDump.named_after:
+/// Vec<DtoNamedAfter>` ADDED (a new relation table -- `dump`'s own guard
+/// forced this the moment `peoples_adapter` started emitting real
+/// `named_after` rows, exactly the TRAV-1 precedent immediately above
+/// named as the expected trigger class: "the EDGE-1/PG-1 data batches hit
+/// this guard ON PURPOSE"). A genuine wire-shape break both directions --
+/// bincode field COUNT changed. `data/compiled/graph.bin` rebuilt in this
+/// same commit.
+const FORMAT_VERSION: u32 = 6;
 
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
 /// startup stats. Errors loudly if any of the currently-always-empty
 /// tables (`contains_bible`/`contains_concord`/`quotes`/`confesses`/
-/// `corresponds_bible` -- and, since the 2026-08-24 writer window, the
-/// three remaining new row tables `fulfills`/`typology`/`named_after`) is
-/// non-empty -- this format does not yet carry them; extending it is a
-/// real, deliberate future act, not something this batch silently punts by
-/// dropping rows. The EDGE-1/PG-1 data batches hit this guard ON PURPOSE:
-/// serializing their rows is part of each batch's own scope. TRAV-1
-/// (2026-08-24) closed the FOURTH member of that same set -- the guard hit
-/// it too, on schedule, the moment the ETL started emitting real
-/// `temporal_adjacency` rows (`event_world::populate_temporal_adjacency`);
-/// `temporal_adjacency` is REAL SERIALIZED CONTENT below now, no longer
-/// guarded.
+/// `corresponds_bible`, plus the two remaining EDGE-1 tables `fulfills`/
+/// `typology`, still unpopulated as of this batch) is non-empty -- this
+/// format does not yet carry them; extending it is a real, deliberate
+/// future act, not something this batch silently punts by dropping rows.
+/// The EDGE-1/PG-1 data batches hit this guard ON PURPOSE: serializing
+/// their rows is part of each batch's own scope. TRAV-1 (2026-08-24)
+/// closed the FOURTH member of the original set (`temporal_adjacency`);
+/// PG-1a (2026-08-24) closes the FIFTH (`named_after`) the same way, on
+/// schedule, the moment `peoples_adapter` started emitting real rows --
+/// `named_after` is REAL SERIALIZED CONTENT below now, no longer guarded.
 pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_stats: &EventWorldStats) -> Result<ArtifactDump, ArtifactError> {
     if !g.contains_bible.is_empty() || !g.contains_concord.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty()
-        || !g.fulfills.is_empty() || !g.typology.is_empty() || !g.named_after.is_empty()
+        || !g.fulfills.is_empty() || !g.typology.is_empty()
     {
         return Err(ArtifactError(
-            "the graph carries rows in a relation this artifact format does not yet serialize (contains/quotes/confesses/corresponds/fulfills/typology/named-after) -- extend artifact.rs before shipping this content".into(),
+            "the graph carries rows in a relation this artifact format does not yet serialize (contains/quotes/confesses/corresponds/fulfills/typology) -- extend artifact.rs before shipping this content".into(),
         ));
     }
 
@@ -762,6 +798,23 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         .located_at
         .iter()
         .map(|r: &LocatedAt| DtoLocatedAt { event: r.event.0.clone(), place: r.place.0.clone(), provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) })
+        .collect();
+
+    // PG-1a: `graph.named_after`'s own row table -- a plain authored-row
+    // mapping, the SAME shape `located_at` above already is (endpoints +
+    // provenance + justification), one arm wider for the three-variant
+    // `Namesake` sum.
+    let named_after = g
+        .named_after
+        .iter()
+        .map(|r: &NamedAfter| {
+            let namesake = match &r.namesake {
+                Namesake::PeopleGroup(g) => DtoNamesake::PeopleGroup(g.0.clone()),
+                Namesake::Place(p) => DtoNamesake::Place(p.0.clone()),
+                Namesake::Polity(p) => DtoNamesake::Polity(p.0.clone()),
+            };
+            DtoNamedAfter { namesake, eponym: r.eponym.0.clone(), provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) }
+        })
         .collect();
 
     let catechism = g
@@ -857,6 +910,7 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         succession,
         dated_by,
         located_at,
+        named_after,
         catechism,
         mentions,
         cross_refs,
@@ -939,6 +993,16 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
 
     for r in d.located_at {
         g.located_at.push(LocatedAt { event: EventId::new(r.event), place: PlaceId::new(r.place), provenance: r.provenance, justification: dto_to_justification(r.justification)? });
+    }
+
+    // PG-1a: a plain row table, like `located_at` above.
+    for r in d.named_after {
+        let namesake = match r.namesake {
+            DtoNamesake::PeopleGroup(g) => Namesake::PeopleGroup(PeopleGroupId::new(g)),
+            DtoNamesake::Place(p) => Namesake::Place(PlaceId::new(p)),
+            DtoNamesake::Polity(p) => Namesake::Polity(PolityId::new(p)),
+        };
+        g.named_after.push(NamedAfter { namesake, eponym: PersonId::new(r.eponym), provenance: r.provenance, justification: dto_to_justification(r.justification)? });
     }
 
     for r in d.catechism {
@@ -1193,6 +1257,60 @@ mod tests {
         assert_eq!(reconstructed.temporal_adjacency[0].later.0, "second");
         assert_eq!(reconstructed.temporal_adjacency[0].provenance, "chronology-derivation");
         assert_eq!(chronology2.chrono.order, vec!["first".to_string(), "second".to_string()]);
+    }
+
+    // PG-1a: `small_atlas()`'s own fixture carries no `named_after_seeds`
+    // (and so, through the real `peoples_adapter::normalize` path, zero
+    // `named_after` rows) -- this is a fresh, dedicated fixture proving a
+    // REAL row, built through the actual production adapter (not a
+    // hand-built stub), survives dump -> encode -> decode ->
+    // to_service_parts losslessly, values included, the SAME
+    // "real rows, not just zero rows both sides" discipline
+    // `temporal_adjacency_round_trips_losslessly_with_real_rows` already
+    // establishes for its own relation.
+    #[test]
+    fn named_after_round_trips_losslessly_with_a_real_row() {
+        use atlas_core::data::{AtlasData, Canon, NamedAfterSeed, Person, PeopleGroupSeed, ScriptureGroundSeed};
+        use std::collections::HashMap;
+
+        let people = vec![Person { id: "ben-ammi_451".into(), name: "Ben-ammi".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], verse_links: vec![], dict_text: None }];
+        let mut atlas = AtlasData::new(Canon { books: vec![] }, vec![], vec![], vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        atlas.people = people;
+        atlas.people_group_seeds = vec![PeopleGroupSeed { id: "ammonites".into(), label: "Ammonites".into() }];
+        atlas.named_after_seeds = vec![NamedAfterSeed {
+            namesake_kind: "people_group".into(),
+            namesake_id: "ammonites".into(),
+            eponym: "ben-ammi_451".into(),
+            text: Some("She called his name Ben-ammi.".into()),
+            grounds: vec![ScriptureGroundSeed { from: "GEN.19.38".into(), to: None }],
+        }];
+
+        let (graph, stats, event_world_stats, chrono) = crate::build::build_graph_from_sources(KJV_FIXTURE, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas).unwrap();
+        assert_eq!(graph.named_after.len(), 1, "fixture sanity: the real peoples_adapter::normalize path must have built exactly one row");
+        assert_eq!(graph.named_after[0].eponym.0, "ben-ammi_451");
+
+        let chronology = Chronology::from_derivation(chrono);
+        let dumped = dump(&graph, &chronology, &stats, &event_world_stats).expect("dump must succeed with a real named_after row -- the guard's whole point was to force this extension, not to forbid the content forever");
+        assert_eq!(dumped.named_after.len(), 1);
+        assert_eq!(dumped.named_after[0].eponym, "ben-ammi_451");
+        assert!(matches!(&dumped.named_after[0].namesake, DtoNamesake::PeopleGroup(g) if g == "ammonites"));
+        assert_eq!(dumped.named_after[0].justification.text.as_deref(), Some("She called his name Ben-ammi."));
+        assert_eq!(dumped.named_after[0].justification.grounds.len(), 1);
+
+        let bytes = encode(&dumped).expect("encode must succeed");
+        let decoded = decode(&bytes).expect("decode must succeed");
+        let (reconstructed, _stats2, _ews2, _chronology2) = to_service_parts(decoded).expect("to_service_parts must succeed");
+
+        assert_eq!(reconstructed.named_after.len(), 1, "the row must survive the full round trip, not silently drop");
+        let row = &reconstructed.named_after[0];
+        assert_eq!(row.eponym.0, "ben-ammi_451");
+        match &row.namesake {
+            Namesake::PeopleGroup(g) => assert_eq!(g.0, "ammonites"),
+            other => panic!("expected Namesake::PeopleGroup, got {other:?}"),
+        }
+        assert_eq!(row.justification.text.as_deref(), Some("She called his name Ben-ammi."));
+        assert_eq!(row.justification.grounds.len(), 1, "the Ground::Scripture(GEN.19.38) ground must round-trip");
+        assert!(matches!(row.justification.grounds.iter().next().unwrap(), Ground::Scripture(_)));
     }
 
     #[test]

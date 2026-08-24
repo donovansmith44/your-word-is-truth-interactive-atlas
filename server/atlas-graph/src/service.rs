@@ -340,6 +340,19 @@ impl GraphService {
         // guards elsewhere in this pipeline, but this loop still skips it
         // defensively (`?`) rather than panicking on a network handler's
         // own eventual caller.
+        //
+        // PG-1a WIRE SEAM (batch-pg1a-brief.md decision 6): the `let-else`
+        // match against `MentionedEntity::Person` below ALREADY excludes
+        // `MentionedEntity::PeopleGroup` rows by construction (it was
+        // written for the two-variant `PlaceOrPerson` era and never
+        // widened) -- the nine reclassified Gen-10 gentilics (PG-1a) LOSE
+        // their in-text `VerseOut.persons` link here, verified and
+        // disclosed rather than silently true: this is the U5-rebinding
+        // seam for the READING surface specifically (`graph_handlers::
+        // node_edges`'s own filter is the seam for the GENERIC entity-list
+        // surface) -- a future PeopleGroup-aware client widens this arm
+        // (and adds its own `PeopleGroupRefOut`/`VerseOut.people_groups`),
+        // not this batch.
         let mut persons_by_verse: HashMap<String, Vec<(String, String)>> = HashMap::new();
         for row in &graph.mentions {
             let atlas_graph_types::edge::MentionedEntity::Person(person_id) = &row.entity else { continue };

@@ -36,7 +36,7 @@ use atlas_core::refs::ScriptureRef;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
 use atlas_graph_types::explore::EdgeQuery;
-use atlas_graph_types::id::Position;
+use atlas_graph_types::id::{NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
 
@@ -170,9 +170,27 @@ pub async fn node_edges(
 
     let page = snap.edges(&Position::Node(node_id), &EdgeQuery { kind, cursor, limit });
 
+    // PG-1a wire seam (batch-pg1a-brief.md decision 6, "the U5-rebinding
+    // seam"): the CURRENT client has no rendering surface for a
+    // PeopleGroup-kind neighbor -- `graph_wire::decode_node_id` carries no
+    // "PeopleGroup" arm at all (deliberately; that round-trip completion
+    // is U5 rebinding's own job, held for the frontend-elegance
+    // brainstorm), so a client that somehow received a PeopleGroup entry
+    // here could not even re-fetch its own card (`/api/node/{id}` would
+    // 400 `bad_ref` on the wire id this endpoint would otherwise hand
+    // back). Filtered HERE, the ONE place every entity-list page this
+    // generic endpoint can produce funnels through, rather than
+    // special-cased per relation kind (`mentions`/`mentioned-in`/
+    // `namesake-of`/`named-after` all matter equally -- this filter
+    // covers every one of them at once, and any future relation touching
+    // a PeopleGroup node too). Graph queries/indexes themselves still
+    // carry every PeopleGroup edge in full (`snap.edges` above is
+    // unfiltered) -- this is a serving-boundary projection only, one
+    // revert away (delete this `.filter` call) once U5 lands.
     let entries = page
         .entries
         .iter()
+        .filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup))
         .map(|e| {
             let (id, kind, label) = describe_position(&e.node, &snap);
             EdgeEntryOut { edge: e.edge.0.clone(), node: NodeRefOut { id, kind, label } }

@@ -1,0 +1,274 @@
+# PG-1a ("People groups & eponymy: the data half" -- batch-pg1a-brief.md):
+# owner orders (2026-08-23, verbatim): "we need a way to distinguish between
+# the names of the twelve tribes and the people theyre named after and other
+# sorts of cases." / "In the same way that we have a Person/Place info, we
+# need to pull in Peoples or Nations info so I can find out who the
+# ammonites are or whatever." This file is the curated half of that answer:
+# nation seeds Theographic does not ship, the nine Gen-10 gentilic person
+# records that are really collectives misfiled as individuals, and the
+# eponymy (NamedAfter) rows grounding "who is X named after?" in Scripture.
+#
+# THREE independent array-of-tables (parsed together by
+# `atlas_etl::curated::parse_people_group_seeds`; loaded by
+# `atlas_etl::compile::compile`):
+#
+# [[group]]        a curated PeopleGroup node with NO Theographic
+#                   counterpart (decision 1b).
+#   id              stable PeopleGroupId raw string, kebab-case, never
+#                   renumbered/repositioned.
+#   label           display label.
+#
+# [[reclassify]]    an EXISTING Theographic PERSON record that is actually a
+#                   Gen-10 gentilic collective, not an individual (decision
+#                   1c) -- the graph adapter (`atlas_graph::peoples_adapter`)
+#                   re-homes it to a PeopleGroup node under the SAME raw id;
+#                   `person_adapter.rs` excludes it from Person-node/mentions
+#                   construction. THE LIST IS CLOSED (nine slugs) --
+#                   deliberately NOT here: "Garmite" (1CH 4:19's "Keilah the
+#                   Garmite" is an individual's epithet, not a Gen-10 nation;
+#                   it stays a person).
+#   person_slug     the exact Theographic `Person.id` (e.g. "jebusite_748").
+#   reason          one-line curator justification (CURATED DATA, decision
+#                   1c: "not code constants").
+#
+# [[named_after]]   one eponymy row (decision 3): namesake (a PeopleGroup
+#                   this batch, always) --named-after--> eponym (a person).
+#   namesake_kind   "people_group" | "place" | "polity" (mirrors
+#                   `atlas_graph_types::edge::Namesake`; every row this
+#                   batch ships is "people_group").
+#   namesake_id     the PeopleGroupId this row's `namesake_kind` names --
+#                   for the 12 tribes + Nation of Israel, the id
+#                   `atlas_etl::people_groups::slugify` derives from the
+#                   Theographic `groupName` (e.g. "Tribe of Reuben" ->
+#                   "tribe-of-reuben"); for the five curated nation seeds
+#                   below, the `[[group]]` id above.
+#   eponym          the Theographic person slug (`Person.id`) this
+#                   namesake is named after. A row whose eponym resolves to
+#                   NO real compiled person is OMITTED by the adapter, never
+#                   a forced edge (decision 3's own Philistines/Amalekites/
+#                   Canaanites conditional) -- reported in the batch report.
+#   text            OPTIONAL short prose (KJV-inerrancy register: stated as
+#                   fact, never hedged).
+#   grounds         array of { from, to? } verse refs (canonical dot form,
+#                   `to` optional, defaulting to `from`) -- becomes this
+#                   row's `Justification.grounds` (>=1 `Ground::Scripture`
+#                   entry required; law-checked, `peoples_adapter::tests`).
+#
+# Eponym person slugs below were resolved against the REAL committed
+# `data/raw/theographic/.../people.json` (not guessed): every ambiguous
+# name (Benjamin/Gad/Issachar/Joseph/Judah/Levi/Simeon each have multiple
+# same-named Theographic records spanning later eras) was disambiguated by
+# its OWN patriarchal-era `birthYear` field, independently cross-checked
+# against that SAME record's own `memberOf` link back to the exact
+# `peopleGroups.json` tribe record it belongs to -- both signals agree for
+# all thirteen. "Jacob" needed the same care: the bare slug `jacob_683` is a
+# LATER, unrelated NT-era person -- the patriarch renamed Israel is
+# `israel_682` (`displayTitle: "Jacob (Israel)"`), confirmed via its own
+# `dictionaryText` ("the name conferred on Jacob after the great
+# prayer-struggle at Peniel, Genesis 32:28").
+
+[[group]]
+id = "ammonites"
+label = "Ammonites"
+
+[[group]]
+id = "moabites"
+label = "Moabites"
+
+[[group]]
+id = "edomites"
+label = "Edomites"
+
+[[group]]
+id = "philistines"
+label = "Philistines"
+
+[[group]]
+id = "amalekites"
+label = "Amalekites"
+
+[[group]]
+id = "canaanites"
+label = "Canaanites"
+
+# --- decision 1c: the nine Gen-10 gentilic collectives (GEN 10:16-18 /
+# 1CH 1:14-16), closed list --------------------------------------------
+
+[[reclassify]]
+person_slug = "jebusite_748"
+reason = "Gen-10 gentilic collective (\"And the Jebusite\", GEN 10:16; 1CH 1:14), misfiled as a Theographic person record."
+
+[[reclassify]]
+person_slug = "amorite_237"
+reason = "Gen-10 gentilic collective (\"and the Amorite\", GEN 10:16; 1CH 1:14; also AMO 2:9-10), misfiled as a Theographic person record."
+
+[[reclassify]]
+person_slug = "girgasite_1322"
+reason = "Gen-10 gentilic collective (\"and the Girgasite\", GEN 10:16; 1CH 1:14), misfiled as a Theographic person record."
+
+[[reclassify]]
+person_slug = "hivite_1534"
+reason = "Gen-10 gentilic collective (\"And the Hivite\", GEN 10:17; 1CH 1:15), also named across the standard 'nations of Canaan' lists (e.g. EXO 3:8, EXO 23:23, JOS 9:1, JOS 11:3); misfiled as a Theographic person record."
+
+[[reclassify]]
+person_slug = "arkite_308"
+reason = "Gen-10 gentilic collective (\"and the Arkite\", GEN 10:17; 1CH 1:15), misfiled as a Theographic person record."
+
+[[reclassify]]
+person_slug = "sinite_2755"
+reason = "Gen-10 gentilic collective (\"and the Sinite\", GEN 10:17; 1CH 1:15), misfiled as a Theographic person record."
+
+[[reclassify]]
+person_slug = "arvadite_316"
+reason = "Gen-10 gentilic collective (\"And the Arvadite\", GEN 10:18; 1CH 1:16), misfiled as a Theographic person record."
+
+[[reclassify]]
+person_slug = "zemarite_3036"
+reason = "Gen-10 gentilic collective (\"and the Zemarite\", GEN 10:18; 1CH 1:16), misfiled as a Theographic person record."
+
+[[reclassify]]
+person_slug = "hamathite_1361"
+reason = "Gen-10 gentilic collective (\"and the Hamathite\", GEN 10:18; 1CH 1:16), misfiled as a Theographic person record."
+
+# --- decision 3: the 12 tribes -> their eponym sons of Jacob
+# (GEN 29:31-30:24 etymologies) ------------------------------------------
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "tribe-of-reuben"
+eponym = "reuben_2429"
+text = "Leah's firstborn: \"she called his name Reuben\", for the LORD had looked upon her affliction."
+grounds = [{ from = "GEN.29.32" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "tribe-of-simeon"
+eponym = "simeon_2741"
+text = "Leah's second son: \"she called his name Simeon\", because the LORD heard that she was hated."
+grounds = [{ from = "GEN.29.33" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "tribe-of-levi"
+eponym = "levi_1820"
+text = "Leah's third son: \"his name called Levi\", for now, she said, would her husband be joined unto her."
+grounds = [{ from = "GEN.29.34" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "tribe-of-judah"
+eponym = "judah_1751"
+text = "Leah's fourth son: \"she called his name Judah\" -- \"Now will I praise the LORD.\""
+grounds = [{ from = "GEN.29.35" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "tribe-of-dan"
+eponym = "dan_973"
+text = "Bilhah's (Rachel's maid's) first son: \"therefore called she his name Dan\", for God had judged Rachel's cause."
+grounds = [{ from = "GEN.30.6" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "tribe-of-naphtali"
+eponym = "naphtali_2149"
+text = "Bilhah's second son: \"she called his name Naphtali\" -- \"with great wrestlings have I wrestled with my sister.\""
+grounds = [{ from = "GEN.30.8" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "tribe-of-gad"
+eponym = "gad_1262"
+text = "Zilpah's (Leah's maid's) first son: \"she called his name Gad\" -- \"A troop cometh.\""
+grounds = [{ from = "GEN.30.11" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "tribe-of-asher"
+eponym = "asher_337"
+text = "Zilpah's second son: \"she called his name Asher\" -- \"Happy am I, for the daughters will call me blessed.\""
+grounds = [{ from = "GEN.30.13" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "tribe-of-issachar"
+eponym = "issachar_645"
+text = "Leah's fifth son: \"she called his name Issachar\", for God had given her hire."
+grounds = [{ from = "GEN.30.18" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "tribe-of-zebulun"
+eponym = "zebulun_3002"
+text = "Leah's sixth son: \"she called his name Zebulun\", for God had endued her with a good dowry."
+grounds = [{ from = "GEN.30.20" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "tribe-of-joseph"
+eponym = "joseph_1710"
+text = "Rachel's firstborn: \"she called his name Joseph\", saying, The LORD shall add to me another son."
+grounds = [{ from = "GEN.30.24" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "tribe-of-benjamin"
+eponym = "benjamin_463"
+text = "Rachel's second son, born on the road to Ephrath as she died: she named him Ben-oni, \"but his father called him Benjamin.\""
+grounds = [{ from = "GEN.35.18" }]
+
+# --- Nation of Israel -> Jacob (renamed at Peniel) -----------------------
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "nation-of-israel"
+eponym = "israel_682"
+text = "\"Thy name shall be called no more Jacob, but Israel: for as a prince hast thou power with God and with men, and hast prevailed.\""
+grounds = [{ from = "GEN.32.28" }]
+
+# --- curated nation seeds -> their eponyms --------------------------------
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "ammonites"
+eponym = "ben-ammi_451"
+text = "Lot's younger daughter bare a son and called his name Ben-ammi: \"the same is the father of the children of Ammon unto this day.\""
+grounds = [{ from = "GEN.19.38" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "moabites"
+eponym = "moab_2103"
+text = "Lot's firstborn daughter bare a son and called his name Moab: \"the same is the father of the Moabites unto this day.\""
+grounds = [{ from = "GEN.19.37" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "edomites"
+eponym = "esau_1216"
+text = "Esau is Edom, \"the father of the Edomites\" in mount Seir -- named at his own birthright sale: \"therefore was his name called Edom.\""
+grounds = [{ from = "GEN.36.8", to = "GEN.36.9" }, { from = "GEN.25.30" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "amalekites"
+eponym = "amalek_197"
+text = "Amalek, son of Eliphaz by his concubine Timna, was Esau's own grandson."
+grounds = [{ from = "GEN.36.12" }]
+
+[[named_after]]
+namesake_kind = "people_group"
+namesake_id = "canaanites"
+eponym = "canaan_914"
+text = "Canaan begat Sidon his firstborn and Heth, and the peoples GEN 10:16-18 goes on to name: \"and afterward were the families of the Canaanites spread abroad.\""
+grounds = [{ from = "GEN.10.15" }]
+
+# Philistines: NO [[named_after]] row, deliberately (decision 3's own
+# conditional: "add NamedAfter ONLY where the eponym person exists as a
+# node and the text states the naming"). GEN 10:14 attributes the
+# Philistines to "Casluhim" ("out of whom came Philistim") -- itself a
+# PLURAL-shaped collective name, not a clean singular eponym in the
+# "she called his name X" mold every OTHER row above grounds on, and no
+# "casluhim" person record exists in the compiled Theographic set either.
+# The group node above still seeds -- only the eponymy row is withheld,
+# per the Sin-guard principle: never force an edge the graph can't ground.

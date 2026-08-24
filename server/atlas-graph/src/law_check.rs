@@ -4,10 +4,12 @@
 //!
 //! Scope, disclosed: checks every NODE-TYPED endpoint of every authored
 //! row -- Event/Narrative/Anchor/Place ids on `attests`/`succession`/
-//! `dated_by`/`located_at`, and (M-C2, folding M-C review M-1)
-//! `mentions.entity` (`MentionedEntity`) and `catechism.item`
-//! (`CatechismItemId`) -- resolves to a real node in the built graph. This
-//! is now every node-typed endpoint this crate's own adapters emit; the
+//! `dated_by`/`located_at`, (M-C2, folding M-C review M-1) `mentions.entity`
+//! (`MentionedEntity`) and `catechism.item` (`CatechismItemId`), and
+//! (PG-1a) `named_after`'s own `namesake` (`Namesake::{PeopleGroup, Place,
+//! Polity}`) and `eponym` (`PersonId`) -- resolves to a real node in the
+//! built graph. This is now every node-typed endpoint this crate's own
+//! adapters emit; the
 //! previous omission of the latter two was a genuine scope-disclosure gap
 //! (M-C review's own words: "safe today only because place_adapter/
 //! catechism_adapter build their rows and their corresponding nodes from
@@ -121,6 +123,20 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
     for row in &graph.catechism {
         check("catechism", "item", row.item.erase())?;
     }
+    // PG-1a: `named_after`'s two node-typed endpoints (`namesake`/`eponym`)
+    // -- newly authored this batch, closing the SAME class of gap M-C2's
+    // own `mentions`/`catechism` extension above closed first (this law's
+    // own scope grows with every new node-typed authored relation, per its
+    // own module doc comment).
+    for row in &graph.named_after {
+        let namesake_id = match &row.namesake {
+            atlas_graph_types::edge::Namesake::PeopleGroup(g) => g.erase(),
+            atlas_graph_types::edge::Namesake::Place(p) => p.erase(),
+            atlas_graph_types::edge::Namesake::Polity(p) => p.erase(),
+        };
+        check("named_after", "namesake", namesake_id)?;
+        check("named_after", "eponym", row.eponym.erase())?;
+    }
 
     Ok(())
 }
@@ -203,8 +219,44 @@ mod tests {
     }
 
     #[test]
-    fn green_when_mentions_and_catechism_rows_resolve_to_real_nodes() {
-        use atlas_graph_types::id::{NodeKind, PlaceId};
+    fn red_when_a_named_after_row_names_a_namesake_with_no_node() {
+        let mut graph = Graph::default();
+        graph.named_after.push(atlas_graph_types::edge::NamedAfter {
+            namesake: atlas_graph_types::edge::Namesake::PeopleGroup(atlas_graph_types::id::PeopleGroupId::new("nowhere")),
+            eponym: atlas_graph_types::id::PersonId::new("also-nowhere"),
+            provenance: "test".into(),
+            justification: Justification::default(),
+        });
+        // Both endpoints dangle; the first-checked field (`namesake`) is
+        // what the error names, the same "first field wins" convention
+        // `red_when_a_located_at_row_names_a_place_with_no_node` proves.
+        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling named_after.namesake reference");
+        assert_eq!(err.relation, "named_after");
+        assert_eq!(err.field, "namesake");
+    }
+
+    #[test]
+    fn red_when_a_named_after_row_names_an_eponym_with_no_node() {
+        use atlas_graph_types::id::PeopleGroupId;
+        use atlas_graph_types::node::{Node, NodePayload};
+
+        let mut graph = Graph::default();
+        let group_id = PeopleGroupId::new("ammonites").erase();
+        graph.nodes.insert(group_id.clone(), Node { id: group_id, payload: NodePayload::PeopleGroup { label: "Ammonites".into(), description: None }, provenance: "test".into() });
+        graph.named_after.push(atlas_graph_types::edge::NamedAfter {
+            namesake: atlas_graph_types::edge::Namesake::PeopleGroup(PeopleGroupId::new("ammonites")),
+            eponym: atlas_graph_types::id::PersonId::new("nowhere"),
+            provenance: "test".into(),
+            justification: Justification::default(),
+        });
+        let err = every_authored_edge_resolves(&graph).expect_err("the namesake resolves; the eponym must still be caught");
+        assert_eq!(err.relation, "named_after");
+        assert_eq!(err.field, "eponym");
+    }
+
+    #[test]
+    fn green_when_mentions_catechism_and_named_after_rows_resolve_to_real_nodes() {
+        use atlas_graph_types::id::{NodeKind, PeopleGroupId, PersonId, PlaceId};
         use atlas_graph_types::node::{Node, NodePayload};
 
         let mut graph = Graph::default();
@@ -221,6 +273,17 @@ mod tests {
         graph.catechism.push(atlas_graph_types::edge::CatechismLink {
             locus: locus(),
             item: atlas_graph_types::id::CatechismItemId::new("commandment-1"),
+            provenance: "test".into(),
+            justification: Justification::default(),
+        });
+
+        let group_id = PeopleGroupId::new("ammonites").erase();
+        graph.nodes.insert(group_id.clone(), Node { id: group_id, payload: NodePayload::PeopleGroup { label: "Ammonites".into(), description: None }, provenance: "test".into() });
+        let person_id = PersonId::new("ben-ammi_451").erase();
+        graph.nodes.insert(person_id.clone(), Node { id: person_id, payload: NodePayload::Person { label: "Ben-ammi".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None }, provenance: "test".into() });
+        graph.named_after.push(atlas_graph_types::edge::NamedAfter {
+            namesake: atlas_graph_types::edge::Namesake::PeopleGroup(PeopleGroupId::new("ammonites")),
+            eponym: PersonId::new("ben-ammi_451"),
             provenance: "test".into(),
             justification: Justification::default(),
         });

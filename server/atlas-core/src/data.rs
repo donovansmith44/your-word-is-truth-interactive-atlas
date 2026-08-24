@@ -145,6 +145,103 @@ pub struct EastonEntry {
     pub place_name: Option<String>,
 }
 
+/// PG-1a ("People groups & eponymy: the data half" -- batch-pg1a-brief.md
+/// controller decision 1a): one Theographic `peopleGroups.json` record (23
+/// real records -- 12 tribes + Nation of Israel + a handful of NT
+/// collectives: Apostles x3, Pharisees, Scribes, Sadducees, Chief Priests,
+/// Disciples of John, Genealogy of Jesus, Line of Cain). `atlas_etl::
+/// people_groups::parse_people_groups`'s own output, the PeopleGroup graph
+/// adapter's Theographic-sourced input (mirrors `Person`'s own role for
+/// `person_adapter.rs`).
+///
+/// NO `verse_links` FIELD, disclosed (the corrected data-scouting finding
+/// this batch's own brief ledgers): unlike `Person`/`Place`, the source
+/// genuinely ships no per-verse attestation for these 23 records -- only
+/// `members` (person-record ids) and `events_dev` (event ids), membership
+/// data, not mentions. Importing `members` is a noted, UNBUILT owner
+/// option this batch (a member-of relation); `id`/`label` are the only two
+/// facts the graph actually uses.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PeopleGroup {
+    pub id: String,
+    pub label: String,
+}
+
+/// PG-1a (decision 1b): one CURATED PeopleGroup seed --
+/// `data/curated/people-groups.toml`'s own `[[group]]` rows -- a nation
+/// Theographic's own `peopleGroups.json` does not carry at all (Ammonites,
+/// Moabites, Edomites, Philistines, Amalekites, Canaanites), hand-authored
+/// per the controller's own decision. Deliberately minimal (id + label
+/// only, the SAME shape as the Theographic-sourced `PeopleGroup` above) --
+/// description arrives for free via ENT-1a's own fill pass; no per-locus
+/// verse data (decision 2: "NO invented per-locus senses" -- no source
+/// attests which loci mean the nation vs. anything else).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PeopleGroupSeed {
+    pub id: String,
+    pub label: String,
+}
+
+/// PG-1a (decision 1c): one CURATED reclassification row --
+/// `data/curated/people-groups.toml`'s own `[[reclassify]]` rows -- naming
+/// a Theographic PERSON record that is actually a Gen-10 gentilic
+/// collective, not an individual (the controller's own closed nine-slug
+/// list: Amorite/Arkite/Arvadite/Girgasite/Hamathite/Hivite/Jebusite/
+/// Sinite/Zemarite). `person_slug` names the EXISTING `Person::id` to
+/// re-home as a PeopleGroup node (same raw id, PeopleGroup kind instead of
+/// Person -- graph-types' own `AnyNodeId{kind, raw}` shape makes the two a
+/// distinct node-store key even though the raw string is identical);
+/// `reason` is the curator's own one-line justification, CURATED DATA
+/// (decision 1c, verbatim: "not code constants") so it is disclosed in
+/// the batch report as data, never buried in a Rust const array.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PeopleGroupReclassify {
+    pub person_slug: String,
+    pub reason: String,
+}
+
+/// PG-1a: one CURATED scripture ground for a `NamedAfterSeed` row -- a
+/// single verse (`to` omitted, defaulting to `from`) or an inclusive
+/// range (e.g. Edomites' own GEN 36:8-9 ground). Plain strings, parsed
+/// into a real `atlas_graph_types::edge::Ground::Scripture` at the graph
+/// adapter (`peoples_adapter.rs`) -- curated TOML stays free of
+/// `graph-types` shapes, the same "curated data is plain strings; the
+/// adapter is where typed graph values get built" discipline every other
+/// curated schema in this crate already follows (`curated.rs`'s own
+/// `EventToml`/`WitnessToml`/etc.).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ScriptureGroundSeed {
+    pub from: String,
+    #[serde(default)]
+    pub to: Option<String>,
+}
+
+/// PG-1a (decision 3): one CURATED eponymy seed row --
+/// `data/curated/people-groups.toml`'s own `[[named_after]]` rows -- the
+/// controller's own decision-3 seed list (the 13 tribes-and-nation rows;
+/// Ammonites/Moabites/Edomites/Amalekites/Canaanites). Philistines
+/// deliberately has NO row here -- no crisp singular textual eponym
+/// parallel to Ammon/Moab/Esau/Amalek/Canaan exists in the source text
+/// (disclosed in the batch report). `namesake_kind` distinguishes which
+/// `atlas_graph_types::edge::Namesake` variant the graph adapter builds
+/// (`"people_group"` for every row this batch ships; `"place"`/`"polity"`
+/// accepted for schema completeness -- mirroring the crate's own
+/// three-variant enum -- unused today). `eponym` is the Theographic
+/// person slug (`Person::id`); a row whose `eponym` resolves to no real
+/// compiled person is OMITTED, never a forced edge (decision 3's own
+/// Philistines/Amalekites/Canaanites conditional), with the omission
+/// reason surfaced in `peoples_adapter::PeoplesAdapterStats::
+/// named_after_omitted`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NamedAfterSeed {
+    pub namesake_kind: String,
+    pub namesake_id: String,
+    pub eponym: String,
+    #[serde(default)]
+    pub text: Option<String>,
+    pub grounds: Vec<ScriptureGroundSeed>,
+}
+
 /// A datable happening. `places[0]` is the anchor place used for arrow
 /// endpoints; `places` may list more than one place (e.g. a campaign
 /// touching several locations), all of which light up in time mode.
@@ -951,6 +1048,38 @@ pub struct AtlasData {
     /// (same `Default` argument `people`'s own doc comment already makes).
     #[serde(skip)]
     pub easton: Vec<EastonEntry>,
+
+    /// PG-1a: the 23 Theographic `peopleGroups.json` records
+    /// (`atlas_etl::people_groups::parse_people_groups`). Same
+    /// `#[serde(skip)]`-plus-populate-in-`compile()` treatment as
+    /// `people`/`easton` immediately above, for the identical reason: no
+    /// compiled JSON sidecar file exists or will -- this rides straight
+    /// from raw source into the graph. `atlas_etl::compile::compile`
+    /// populates this field; the graph's own `peoples_adapter.rs` is its
+    /// only reader.
+    #[serde(skip)]
+    pub people_groups: Vec<PeopleGroup>,
+    /// PG-1a: curated nation seeds (`data/curated/people-groups.toml`'s
+    /// own `[[group]]` rows) -- Ammonites/Moabites/Edomites/Philistines/
+    /// Amalekites/Canaanites, decision 1b. Same `#[serde(skip)]`-plus-
+    /// populate-in-`compile()` treatment as `people_groups` above.
+    #[serde(skip)]
+    pub people_group_seeds: Vec<PeopleGroupSeed>,
+    /// PG-1a: the nine curated Gen-10-gentilic reclassification rows
+    /// (`data/curated/people-groups.toml`'s own `[[reclassify]]` rows,
+    /// decision 1c). Same `#[serde(skip)]`-plus-populate-in-`compile()`
+    /// treatment as `people_groups` above; read by BOTH `person_adapter.rs`
+    /// (to EXCLUDE these ids from Person-node/mentions construction) and
+    /// `peoples_adapter.rs` (to build their PeopleGroup nodes/mentions) --
+    /// `peoples_adapter::reclassified_person_slugs` is the one shared view
+    /// over this field both adapters call, so the partition can never drift.
+    #[serde(skip)]
+    pub people_group_reclassify: Vec<PeopleGroupReclassify>,
+    /// PG-1a: curated eponymy seed rows (`data/curated/people-groups.toml`'s
+    /// own `[[named_after]]` rows, decision 3). Same `#[serde(skip)]`-plus-
+    /// populate-in-`compile()` treatment as `people_groups` above.
+    #[serde(skip)]
+    pub named_after_seeds: Vec<NamedAfterSeed>,
 
     /// Derived: place id -> index into `places`. Built by `finish()`.
     #[serde(skip)]

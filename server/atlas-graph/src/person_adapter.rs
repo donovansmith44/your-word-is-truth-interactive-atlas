@@ -105,9 +105,24 @@ pub struct PersonAdapterStats {
 /// NORMALIZE: one Person node per source record -- called from
 /// `pipeline::NormalizePass`, mirrors `event_world::normalize`'s own node
 /// construction for Event/Narrative/Place/etc.
+///
+/// PG-1a EXCLUSION (decision 1c): a record whose id is curated as
+/// RECLASSIFIED (`ctx.atlas.people_group_reclassify`, the nine Gen-10
+/// gentilic collectives Theographic misfiled as persons) gets NO Person
+/// node here -- `peoples_adapter::normalize` builds a PeopleGroup node
+/// under the SAME raw id instead (that module's own doc comment has the
+/// full "why," and `reclassified_person_slugs` is the ONE shared view both
+/// adapters read, so this partition of `ctx.atlas.people` can never drift
+/// out of sync between the two call sites). A kind is a fact, not a choice
+/// a client makes at read time -- these nine records become EXACTLY one
+/// node each, never two.
 pub fn normalize(ctx: &mut BuildCtx) -> PersonAdapterStats {
     let mut stats = PersonAdapterStats::default();
+    let reclassified = crate::peoples_adapter::reclassified_person_slugs(ctx.atlas);
     for p in &ctx.atlas.people {
+        if reclassified.contains(&p.id) {
+            continue;
+        }
         let node = person_node(p);
         ctx.graph.nodes.insert(node.id.clone(), node);
         stats.person_nodes += 1;
@@ -123,9 +138,19 @@ pub fn normalize(ctx: &mut BuildCtx) -> PersonAdapterStats {
 /// for row, which is what makes the graph's own `mentioned-in` inverse
 /// frontier canon-ordered by construction (BiIndex's own inverse
 /// projection preserves row-insertion order; see `graph.rs::build_indexes`).
+///
+/// PG-1a EXCLUSION: the SAME reclassified nine are skipped here too --
+/// `peoples_adapter::merge_alias` builds their `verse_links` as
+/// `Mentions(PeopleGroup)` rows instead (`normalize`'s own doc comment
+/// above has the full reasoning). Never both: a verse that named
+/// "Jebusite" attests the GROUP now, not the (never-existed-as-such) man.
 pub fn merge_alias(ctx: &mut BuildCtx) -> PersonAdapterStats {
     let mut stats = PersonAdapterStats::default();
+    let reclassified = crate::peoples_adapter::reclassified_person_slugs(ctx.atlas);
     for p in &ctx.atlas.people {
+        if reclassified.contains(&p.id) {
+            continue;
+        }
         let person_id = PersonId::new(p.id.clone());
         for vref in &p.verse_links {
             let Some(locus) = verse_locus(vref) else { continue };
@@ -157,21 +182,42 @@ impl std::error::Error for PersonFidelityViolation {}
 /// graph, exactly). Fail-loud on the FIRST violation found, named
 /// precisely -- same convention `fidelity.rs`/`law_check.rs` already
 /// establish for every other boundary/cross-adapter law in this crate.
+///
+/// PG-1a: the bijection is now "every source person EXCEPT the curated
+/// reclassified nine" (`normalize`/`merge_alias`'s own doc comments above
+/// have the full "why") -- `peoples_adapter::check_peoples_fidelity` is
+/// the complementary law proving each reclassified slug carries EXACTLY
+/// one PeopleGroup node (and no Person node); this law stays honest about
+/// its OWN narrower scope rather than silently asserting a bijection that
+/// is no longer true of the whole `atlas.people` set.
 pub fn check_person_fidelity(atlas: &AtlasData, graph: &Graph) -> Result<(), PersonFidelityViolation> {
-    // BIJECTION: source count == graph Person-node count, AND every source
-    // id resolves to a real node of the right kind (catches a silent id
-    // COLLISION, not just a coarse count match -- two source records
-    // sharing one id would pass a bare-count check but fail this one).
+    let reclassified = crate::peoples_adapter::reclassified_person_slugs(atlas);
+
+    // BIJECTION: (source count - reclassified count) == graph Person-node
+    // count, AND every non-reclassified source id resolves to a real node
+    // of the right kind (catches a silent id COLLISION, not just a coarse
+    // count match -- two source records sharing one id would pass a bare-
+    // count check but fail this one).
     let person_node_count = graph.nodes.values().filter(|n| n.id.kind == NodeKind::Person).count();
-    if person_node_count != atlas.people.len() {
+    let expected_person_count = atlas.people.len() - reclassified.len();
+    if person_node_count != expected_person_count {
         return Err(PersonFidelityViolation(format!(
-            "bijection: {} source person record(s) but {} Person node(s) in the built graph",
+            "bijection: {} source person record(s) minus {} reclassified (PG-1a) = {expected_person_count} expected, but {} Person node(s) in the built graph",
             atlas.people.len(),
+            reclassified.len(),
             person_node_count
         )));
     }
 
     for p in &atlas.people {
+        if reclassified.contains(&p.id) {
+            // PG-1a: a reclassified slug carries NO Person node BY DESIGN
+            // -- `peoples_adapter::check_peoples_fidelity` is where that
+            // positive "PeopleGroup node exists, Person node does not"
+            // pair is actually checked; this law simply excludes it here
+            // rather than re-asserting the same fact twice.
+            continue;
+        }
         let node_id = PersonId::new(p.id.clone()).erase();
         let Some(node) = graph.nodes.get(&node_id) else {
             return Err(PersonFidelityViolation(format!("bijection: source person '{}' has no Person node in the built graph", p.id)));
@@ -188,7 +234,14 @@ pub fn check_person_fidelity(atlas: &AtlasData, graph: &Graph) -> Result<(), Per
     // just be checking `merge_alias` against itself) -- a fresh count over
     // `graph.mentions`'s own row table, the same "count what actually got
     // built" discipline the bijection check above already follows.
+    // PG-1a: reclassified persons are excluded here too -- their own
+    // verse_links now surface as `Mentions(PeopleGroup)` rows, checked by
+    // `peoples_adapter::check_peoples_fidelity`'s own mentions-completeness
+    // half instead.
     for p in &atlas.people {
+        if reclassified.contains(&p.id) {
+            continue;
+        }
         let expected = p.verse_links.len();
         let actual = graph
             .mentions
@@ -371,5 +424,49 @@ mod tests {
         let err = crate::law_check::every_authored_edge_resolves(&graph).expect_err("the EXISTING generic law must catch this -- no new code needed");
         assert_eq!(err.relation, "mentions");
         assert_eq!(err.field, "entity");
+    }
+
+    // --- PG-1a: reclassified-slug exclusion ----------------------------------
+
+    #[test]
+    fn normalize_excludes_a_reclassified_slug_from_person_node_construction() {
+        let mut atlas = atlas_with_people(vec![person("jebusite_748", "Jebusite", &["GEN.10.16"]), person("aaron_1", "Aaron", &[])]);
+        atlas.people_group_reclassify = vec![atlas_core::data::PeopleGroupReclassify { person_slug: "jebusite_748".into(), reason: "test".into() }];
+        let canon = Canon { books: vec![] };
+        let verses: HashMap<String, String> = HashMap::new();
+        let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
+        let stats = normalize(&mut ctx);
+        assert_eq!(stats.person_nodes, 1, "only Aaron -- Jebusite is excluded");
+        assert!(ctx.graph.nodes.get(&PersonId::new("jebusite_748").erase()).is_none(), "a reclassified slug must get NO Person node");
+        assert!(ctx.graph.nodes.get(&PersonId::new("aaron_1").erase()).is_some(), "a non-reclassified person is unaffected");
+    }
+
+    #[test]
+    fn merge_alias_excludes_a_reclassified_slugs_verse_links_from_person_mentions() {
+        let mut atlas = atlas_with_people(vec![person("jebusite_748", "Jebusite", &["GEN.10.16", "1CH.1.14"]), person("aaron_1", "Aaron", &["EXO.4.14"])]);
+        atlas.people_group_reclassify = vec![atlas_core::data::PeopleGroupReclassify { person_slug: "jebusite_748".into(), reason: "test".into() }];
+        let canon = Canon { books: vec![] };
+        let verses: HashMap<String, String> = HashMap::new();
+        let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
+        let stats = merge_alias(&mut ctx);
+        assert_eq!(stats.mentions_rows, 1, "only Aaron's own verse -- Jebusite's two verse_links are excluded here");
+        for row in &ctx.graph.mentions {
+            match &row.entity {
+                MentionedEntity::Person(p) => assert_eq!(p.0, "aaron_1"),
+                other => panic!("unexpected entity {other:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn fidelity_bijection_accounts_for_reclassified_exclusions() {
+        let mut atlas = atlas_with_people(vec![person("jebusite_748", "Jebusite", &["GEN.10.16"]), person("aaron_1", "Aaron", &[])]);
+        atlas.people_group_reclassify = vec![atlas_core::data::PeopleGroupReclassify { person_slug: "jebusite_748".into(), reason: "test".into() }];
+        let canon = Canon { books: vec![] };
+        let verses: HashMap<String, String> = HashMap::new();
+        let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
+        normalize(&mut ctx);
+        merge_alias(&mut ctx);
+        assert!(check_person_fidelity(&atlas, &ctx.graph).is_ok(), "one Person node (Aaron) for two source records, one reclassified -- must be green, not a false bijection failure");
     }
 }

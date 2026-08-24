@@ -39,7 +39,7 @@ use anyhow::{bail, Context, Result};
 use atlas_core::data::{AtlasData, Polity};
 
 use crate::report::{Counts, PolityStats, Report};
-use crate::{catechism_map, curated, easton, geo, kjv, people, polities, theographic, validate, xrefs};
+use crate::{catechism_map, curated, easton, geo, kjv, people, people_groups, polities, theographic, validate, xrefs};
 
 /// Everything `main.rs`'s own report/write phase needs, alongside the
 /// fully-populated, validated `AtlasData` every graph-building caller
@@ -118,6 +118,13 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     let easton_json = read(&theo_dir.join("easton.json"))?;
     let (easton_list, easton_stats) = easton::parse_easton(&easton_json, &places_json)?;
 
+    // PG-1a: Theographic PEOPLE GROUPS -> the `AtlasData.people_groups`
+    // sidecar (`atlas_graph::peoples_adapter`'s own graph-side source).
+    // Reads the SAME `theo_dir` already in scope above -- one more sibling
+    // fact file, not a new source tree.
+    let people_groups_json = read(&theo_dir.join("peopleGroups.json"))?;
+    let (people_groups_list, people_groups_stats) = people_groups::parse_people_groups(&people_groups_json)?;
+
     let xrefs_raw = read(&raw_dir.join("xrefs/cross_references.txt"))?;
     let (xrefs_map, xref_stats) = xrefs::parse(&xrefs_raw)?;
     let (xrefs_map, xref_dropped_missing_first_verse) = xrefs::filter_missing_first_verse(xrefs_map, &verses);
@@ -131,6 +138,12 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     let mut books_meta = curated::parse_books(&read(&curated_dir.join("books.toml"))?)?;
     let events_extra = curated::parse_events_extra(&read(&curated_dir.join("events-extra.toml"))?)?;
     let narratives = read_narratives(&curated_dir.join("narratives"))?;
+
+    // PG-1a: curated nation seeds + Gen-10 reclassification rows + eponymy
+    // seed rows (decisions 1b/1c/3) -- `atlas_graph::peoples_adapter`'s own
+    // graph-side source, alongside `people_groups_list` above.
+    let (people_group_seeds, people_group_reclassify, named_after_seeds) =
+        curated::parse_people_group_seeds(&read(&curated_dir.join("people-groups.toml"))?)?;
 
     // --- merge -------------------------------------------------------------
     let mut all_events = theo_events;
@@ -230,6 +243,14 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         easton_stats.multi,
         easton_stats.unmatched
     );
+    eprintln!(
+        "PG-1a PEOPLE GROUPS: {} Theographic peopleGroups.json record(s) compiled ({} dropped, no usable groupName) + {} curated nation seed(s) + {} reclassified Gen-10 gentilic(s) + {} curated named_after seed row(s)",
+        people_groups_stats.total,
+        people_groups_stats.no_name,
+        people_group_seeds.len(),
+        people_group_reclassify.len(),
+        named_after_seeds.len()
+    );
     let narrative_leg_counts: Vec<(String, usize)> = narratives.iter().map(|n| (n.id.clone(), n.legs.len())).collect();
 
     let mut geocoded_verses: HashSet<&str> = HashSet::new();
@@ -293,6 +314,18 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     // never a graph-shape law (an unmatched/absent description is always a
     // lawful `None`, not a validation failure).
     data.easton = easton_list;
+    // PG-1a: same "no validate::run-style check of its own" status as
+    // `people`/`easton` above -- these four sidecars' own fail-loud
+    // boundary laws (node-count bijections, mentions completeness, the
+    // eponym-existence conditional, the >=1-Scripture-ground law) live at
+    // the GRAPH adapter (`atlas_graph::peoples_adapter::
+    // check_peoples_fidelity`, run unconditionally at pipeline LAW-CHECK
+    // time, mirroring `person_adapter::check_person_fidelity`'s own
+    // precedent), not here.
+    data.people_groups = people_groups_list;
+    data.people_group_seeds = people_group_seeds;
+    data.people_group_reclassify = people_group_reclassify;
+    data.named_after_seeds = named_after_seeds;
 
     // --- chronology anchor table + era-window validator ---
     data.chronology_anchors = chronology_anchors;
@@ -585,6 +618,10 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     let catechism_deut5_path = curated_dir.join("catechism-deut5.toml");
     if !catechism_deut5_path.is_file() {
         missing.push(format!("{}", catechism_deut5_path.display()));
+    }
+    let people_groups_path = curated_dir.join("people-groups.toml");
+    if !people_groups_path.is_file() {
+        missing.push(format!("{} (PG-1a)", people_groups_path.display()));
     }
     let polities_dir = curated_dir.join("polities");
     let has_polity_files = polities_dir.is_dir()

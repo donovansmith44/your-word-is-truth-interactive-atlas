@@ -123,13 +123,21 @@ fn description_fill_rates_over_the_real_compiled_data_are_reported_honestly() {
     // (the pass silently stops running, or a future refactor breaks the
     // matcher) would collapse these to zero; a genuine data-refresh
     // improving coverage should never make this test red.
-    assert_eq!(s.person_total, atlas.people.len(), "every compiled person must be counted exactly once");
+    assert_eq!(s.person_total, atlas.people.len() - atlas.people_group_reclassify.len(), "every compiled person must be counted exactly once -- MINUS PG-1a's own nine reclassified Gen-10 gentilics, which are PeopleGroup nodes now, not Person");
     assert!(s.person_filled() >= 2000, "person fill count regressed below a sane floor: {} of {}", s.person_filled(), s.person_total);
     assert!(s.place_filled() >= 600, "place fill count regressed below a sane floor: {} of {}", s.place_filled(), s.place_total);
-    // No PeopleGroup nodes exist yet as of ENT-1a (PG-1a, the group/eponymy
-    // data batch, has not landed) -- a lawful, honest zero, not a gap in
-    // this pass: `description_adapter`'s own unit tests
-    // (`people_group_fills_from_tier_c_only`) already prove the arm works
-    // once real PeopleGroup nodes exist.
-    assert_eq!(s.people_group_total, 0, "no PeopleGroup nodes exist yet (PG-1a not landed) -- update this once PG-1a ships real group nodes");
+    // PG-1a LANDED: 23 Theographic groups + 6 curated nation seeds + 9
+    // reclassified gentilics = 38 real PeopleGroup nodes now exist (the
+    // batch report has the exact, asserted total) -- tier (c) is Easton's
+    // ONLY route in for this kind (`description_adapter`'s own trust-order
+    // doc comment: no per-record dictText source, no Theographic id to key
+    // tier (b) on). Floor, not exact equality, matching `person_filled`/
+    // `place_filled` above -- a real data refresh improving coverage
+    // should never make this test red. `assert_eq!` on `people_group_total`
+    // itself: EXACT, not a floor -- unlike Easton's own coverage (which
+    // can only grow), the SET of PeopleGroup nodes is a fixed count this
+    // batch establishes (23 + 6 + 9 = 38); a future PG-batch changing it
+    // is real, deliberate content, updated here in that same commit.
+    assert_eq!(s.people_group_total, 38, "PG-1a's own three-source PeopleGroup node total (23 Theographic + 6 curated seeds + 9 reclassified) -- update this in the SAME commit as a future PG-batch that changes the group roster");
+    println!("PG-1a group fill rate (real compiled data): {}/{} filled ({:.1}%) -- tier c {}", s.people_group_filled(), s.people_group_total, 100.0 * s.people_group_filled() as f64 / s.people_group_total.max(1) as f64, s.people_group_tier_c);
 }
