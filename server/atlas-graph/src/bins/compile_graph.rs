@@ -41,6 +41,7 @@ use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 use anyhow::{Context, Result};
+use atlas_graph_types::store::{GraphPublisher, MemStore};
 
 fn parse_args(args: &[String]) -> Result<(PathBuf, PathBuf)> {
     let mut data_dir: Option<PathBuf> = None;
@@ -71,6 +72,11 @@ fn main() -> Result<()> {
 
     let raw_dir = data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| Path::new("../data/raw").to_path_buf());
     let curated_dir = data_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| Path::new("../data/curated").to_path_buf());
+    // C2C3-EXPORT: `data/exports/` is a NEW committed directory (unlike
+    // gitignored `data/raw`) -- the two cross-repo contract files
+    // (gazetteer.json/chronology.json) land here, derived from `--data-dir`
+    // the SAME way `raw_dir`/`curated_dir` already are.
+    let exports_dir = data_dir.parent().map(|p| p.join("exports")).unwrap_or_else(|| Path::new("../data/exports").to_path_buf());
 
     // M-C2: `AtlasData::load(&data_dir)` retired as this binary's own
     // source -- the five files it read (places/events/narratives/
@@ -146,6 +152,60 @@ fn main() -> Result<()> {
     std::fs::create_dir_all(out_path.parent().unwrap_or_else(|| Path::new("."))).ok();
     std::fs::write(&out_path, &bytes).with_context(|| format!("writing {}", out_path.display()))?;
     println!("atlas-graph-compile: wrote {} ({} bytes)", out_path.display(), bytes.len());
+
+    // C2C3-EXPORT (map-system contracts C2/C3, .superpowers/sdd/
+    // 2026-08-17-bible-atlas-m1/c2c3-export-design.md): a NEW TERMINAL PASS
+    // in this SAME binary, after admission -- built from `graph_a_indexed`,
+    // the same admitted graph `dump`/`bytes`/graph.bin just came from, so
+    // `atlas_version_root` embeds the identical `GraphVersion` the artifact
+    // reports (drift is impossible by construction). Row-building borrows
+    // `graph_a_indexed`; only the FINAL version-stamp step below consumes
+    // it by value (nothing downstream needs the graph itself afterward).
+    println!("atlas-graph-compile: building C2/C3 map-system exports (gazetteer + chronology)...");
+    let gazetteer_places = atlas_graph::exports::gazetteer_places(&graph_a_indexed);
+    let chronology_events = atlas_graph::exports::chronology_events(&graph_a_indexed, &chronology);
+    let chronology_spans = atlas_graph::exports::chronology_spans(&graph_a_indexed);
+    let chronology_anchor_rows = atlas_graph::exports::chronology_anchors(&graph_a_indexed, &atlas.chronology_anchors);
+
+    // The SAME version derivation `GraphService`'s own constructors use
+    // (service.rs: `MemStore::default(); store.publish(graph)`) -- the only
+    // public path to a `GraphVersion` from an owned `Graph` (`store::
+    // version_of` is a graph-types-private fn; graph-types stays untouched,
+    // per the EXTEND-ONLY rule). Consumes `graph_a_indexed`: its last use.
+    let mut version_store = MemStore::default();
+    let graph_version = version_store.publish(graph_a_indexed);
+    let version_hex = atlas_graph::version_hex(graph_version);
+
+    let gazetteer_export = atlas_graph::exports::GazetteerExport {
+        format_version: atlas_graph::exports::GAZETTEER_FORMAT_VERSION,
+        atlas_version_root: version_hex.clone(),
+        places: gazetteer_places,
+    };
+    let chronology_export = atlas_graph::exports::ChronologyExport {
+        format_version: atlas_graph::exports::CHRONOLOGY_FORMAT_VERSION,
+        atlas_version_root: version_hex.clone(),
+        events: chronology_events,
+        spans: chronology_spans,
+        anchors: chronology_anchor_rows,
+    };
+
+    std::fs::create_dir_all(&exports_dir).with_context(|| format!("creating {}", exports_dir.display()))?;
+    let gazetteer_json = serde_json::to_string_pretty(&gazetteer_export).map_err(|e| anyhow::anyhow!("{e}")).context("serializing gazetteer.json")?;
+    let chronology_json = serde_json::to_string_pretty(&chronology_export).map_err(|e| anyhow::anyhow!("{e}")).context("serializing chronology.json")?;
+    let gazetteer_path = exports_dir.join("gazetteer.json");
+    let chronology_path = exports_dir.join("chronology.json");
+    std::fs::write(&gazetteer_path, format!("{gazetteer_json}\n")).with_context(|| format!("writing {}", gazetteer_path.display()))?;
+    std::fs::write(&chronology_path, format!("{chronology_json}\n")).with_context(|| format!("writing {}", chronology_path.display()))?;
+    println!(
+        "atlas-graph-compile: wrote {} ({} places) and {} ({} events, {} spans, {} anchors) -- atlas_version_root={}",
+        gazetteer_path.display(),
+        gazetteer_export.places.len(),
+        chronology_path.display(),
+        chronology_export.events.len(),
+        chronology_export.spans.len(),
+        chronology_export.anchors.len(),
+        version_hex
+    );
 
     Ok(())
 }

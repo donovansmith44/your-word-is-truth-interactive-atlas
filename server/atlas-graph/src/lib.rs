@@ -35,6 +35,7 @@ pub mod catechism_adapter;
 pub mod description_adapter;
 pub mod era_adapter;
 pub mod event_world;
+pub mod exports;
 pub mod fidelity;
 pub mod fulfillment_adapter;
 pub mod heading;
