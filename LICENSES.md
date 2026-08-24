@@ -27,6 +27,7 @@ file is the detailed version of record.
 | William Day Crockett, *A Harmony of the Books of Samuel, Kings and Chronicles* (1897) | Public domain (published 1897, USA; title page reads "Copyright, 1897, William Day Crockett") | Not redistributed as text — section numbers/titles and parallel-account groupings (Samuel/Kings/Chronicles, plus the book's own Appendix of cross-references to Genesis, Joshua, Ruth, Ezra, Nehemiah, Psalms, Isaiah, Jeremiah, Matthew, and Luke) consulted as PROVENANCE for our own curated `event-witnesses.toml` witness rows (Batch W2); every displayed event title/date/verse citation is independently authored (CC0), Theographic-credited, or the compiled KJV text itself, per "Crockett's Harmony of Samuel, Kings, and Chronicles" below |
 | James Ussher, *The Annals of the World* (1658) | Public domain (published 1658; this project's own reading is the Larry & Marion Pierce paragraph-numbered English text) | Not redistributed as text — two specific paragraph-numbered entries (¶1202, ¶1227/¶1234) consulted directly as PROVENANCE for two `chronology-anchors.toml` `year` values (`ezra-returns`, `nehemiah-wall`), HOTFIX-6 fix round 2; every displayed event title/verse citation is independently authored (CC0) or Theographic-credited, per "Ussher's Annals of the World" below |
 | M. G. Easton, *Easton's Bible Dictionary* (1897) | Public domain (published 1897, USA) | Redistributed — compiled into the graph artifact (`graph.bin`) as `description` on Place/Person/PeopleGroup nodes; delivered via the already-vendored Theographic bundle's own `easton.json` + `people.json` `dictText`/`dictionaryText` fields (CC BY-SA 4.0, see "Theographic — controller ruling" above); see "Easton's Bible Dictionary" below |
+| brain-fuel/bible parallel editions ([brain-fuel/bible](https://github.com/brain-fuel/bible)) — Clementine Vulgate, Westminster Leningrad Codex, Douay-Rheims (Challoner), Biblia 1776, Karl XII:s Bibel (1703), Greek Textus Receptus | Public domain (every text; see "brain-fuel/bible parallel editions" below for the verbatim per-edition sourcing this project verified against) | Redistributed — six edition RENDERINGS compiled into the graph artifact (`graph.bin`) as additional `TranslationId` layers on the existing TextUnit `renderings` LayerMap, alongside (never replacing) this app's own canonical KJV text; the app's own code (the brain-fuel repo's data-vs-code separation) is never used |
 
 ## Theographic CC BY-SA 4.0 — controller ruling
 
@@ -609,6 +610,112 @@ The QUOTED TEXT itself (Easton's own words, however Theographic re-flowed
 its markdown) is public domain by its own 1897 publication, carried here
 under the SAME CC BY-SA 4.0 delivery-vehicle disposition "Theographic —
 controller ruling" above already covers for the whole Theographic bundle.
+
+## brain-fuel/bible parallel editions — public domain (Batch CORP-1a)
+
+Batch CORP-1a ("brain-fuel editions: the ingestion half") required the
+owner's own named source for editions beyond the KJV — owner order
+(verbatim, via the controller): "3 - take all. no apocrypha for now." This
+section follows the SAME Source/Verification/What-was-used shape as
+"Easton's Bible Dictionary"/"Robertson's Harmony of the Gospels" above.
+
+**Source and provenance.** [brain-fuel/bible](https://github.com/brain-fuel/bible),
+pinned at commit `94d44842cb242e8aa840330748e03d2803f2a7c1`. Fetched
+2026-08-24 as a GitHub commit-archive zip (`data/fetch-raw.ps1`) — ONLY
+`data/books.json` and every `bible/ot/*/*.json` + `bible/nt/*/*.json`
+chapter file (929 + 260 = 1,189 files) are vendored into `data/raw/
+brain-fuel-bible/` (see that directory's own section in `data/raw/README.md`
+for the full, verified JSON shape); `bible/apo/`, `bible/lxx/`, the
+morphology/lexicon/relation-graph directories, and all Go/Python tooling
+are NOT vendored — data, never code, same separation this project's
+catechism-mapping fetch above already establishes.
+
+**Six editions ingested, each independently confirmed public domain by
+brain-fuel/bible's own metadata, verbatim (not merely trusted from one
+summary):**
+
+- **Clementine Vulgate** (Latin, 1592). brain-fuel's own `README.md`:
+  "Sourced from Scrollmapper's bible_databases datasets... Ten OT verses
+  are merged into the preceding verse in the Vulgate tradition." Also
+  named explicitly in brain-fuel's own `docs/LICENSING.md`, under its own
+  "Content — CC0-1.0 (default)" section, as public domain by age. `data/
+  editions.json` manifest row: `"license":"PD"`.
+- **Westminster Leningrad Codex** (Hebrew Masoretic Text, full pointing).
+  brain-fuel's own `README.md`: "Sourced via the Sefaria API. Includes
+  full Masoretic pointing with vowels and cantillation marks." Also named
+  explicitly in brain-fuel's own `docs/LICENSING.md` CC0-1.0 section.
+  `data/editions.json`: `"license":"PD"`.
+- **Douay-Rheims** (Challoner revision, English). brain-fuel's own
+  `README.md`: "Sourced from Scrollmapper's `DRC` dataset. Follows Vulgate
+  versification... thirteen KJV verses are merged/absent in the Douay
+  tradition." `data/editions.json`: `"license":"PD"`. NOT separately named
+  in brain-fuel's own `docs/LICENSING.md` quick-map table (disclosed, not
+  glossed over — that table's own CC0 list names only three of brain-fuel's
+  eight editions by name; nothing in either of brain-fuel's own documents
+  asserts a DIFFERENT license for Douay-Rheims, and its `data/editions.json`
+  row is unambiguous). Verified DIRECTLY over the real vendored files
+  (`server/atlas-etl/tests/brainfuel_real_data.rs`): brain-fuel's own
+  Douay-Rheims coverage is OT-ONLY in this dataset (no `douay_rheims` key
+  ever appears in any `bible/nt/*.json` file) — the real, historical
+  Douay-Rheims Bible has an NT (Rheims, 1582) too, but brain-fuel's own
+  repo simply does not carry it; this app imports exactly what brain-fuel
+  ships, honestly disclosed as OT-only rather than assumed complete.
+- **Biblia 1776** (Finnish). brain-fuel's own `README.md`: "Sourced from
+  Scrollmapper's `FinBiblia` dataset. Already KJV-versified for the
+  protocanon and NT, so it is placed by identity with no versification
+  map." `data/editions.json`: `"license":"PD"`.
+- **Karl XII:s Bibel** (Swedish, 1703). brain-fuel's own `data/editions.json`
+  manifest row's own `note` field, quoted verbatim: "Text: www.kxii.se
+  transcription of the public-domain 1703 Karl XII Bible (Fraktur to
+  Antiqua, mechanical corrections only, per the site's data/andringar.txt);
+  the site claims no license of its own; 1703 orthography kept as-is."
+  Also named explicitly in brain-fuel's own `docs/LICENSING.md` CC0-1.0
+  section, with the identical "site claims no license of its own"
+  disclosure. `data/editions.json`: `"license":"PD"`.
+- **Greek Textus Receptus** (New Testament). brain-fuel's own `README.md`:
+  "Sourced from the Logos Apostolic interlinear." `data/editions.json`:
+  `"license":"PD"`. Not separately named in brain-fuel's own `docs/
+  LICENSING.md` quick-map table (same disclosed gap as Douay-Rheims above
+  — nothing asserts otherwise, and the Greek Textus Receptus is itself a
+  16th-century critical text, uncontroversially public domain by age
+  regardless of this particular transcription's own license tag).
+
+**KJVA (`king_james_apocrypha`) is SKIPPED, ruled on rather than silently
+descoped:** its own 66-book canonical coverage exactly duplicates this
+app's own KJV base (brain-fuel's own `data/editions.json` marks it
+`"base": true`, `"versification":"kjv"`, `"testaments":["apo"]` — i.e. its
+ONLY unique content is the apocryphal books), and this batch imports no
+apocrypha at all (owner ruling, "no apocrypha for now") — so KJVA would
+add zero content this batch is scoped to use.
+
+**What was used, and how.** `server/atlas-etl/src/brainfuel.rs` (parsing)
+and `server/atlas-graph/src/brainfuel_adapter.rs` (graph merge) import
+each edition's own text VERBATIM (byte-for-byte, including source
+whitespace/typographic artifacts such as the Vulgate's own Johannine-
+Prologue bracket markers) as an additional `TranslationId` rendering
+alongside — never replacing or correcting — this app's own canonical KJV
+text, per the KJV INERRANCY DIRECTIVE. brain-fuel's own `king_james`
+column is read ONLY for an owner-ordered cross-check against this app's
+own canonical KJV text (raw byte-for-byte mismatch count: 9,274 of 31,102
+compared positions — manually verified, every single one a typographic/
+transcription-convention difference: trailing whitespace, the traditional
+`LORD`/`Lord` Tetragrammaton-case convention this app's own scrollmapper-
+sourced `data/raw/kjv.json` does not preserve, Psalm-superscription-into-
+verse-1 and Psalm 119 acrostic-header folding present in this app's own
+source but not brain-fuel's, and a small residue of genuine spelling
+variants — NEVER a case of verse-content substitution; alignment itself
+is fully sound, zero positions missing from either side) — brain-fuel's
+own KJV text is NEVER imported anywhere; this app's own KJV base stays
+the sole authoritative KJV rendering the graph carries.
+
+**Dedication of this project's own ingestion work.** The parser, the
+book-code resolution (reusing `kjv::normalize_book_name`), the graph-merge
+adapter, and the cross-check logic are original work of this project,
+dedicated to the public domain under
+[CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).
+The QUOTED TEXT itself (each edition's own words) is public domain by its
+own age/publication, per the per-edition sourcing above, not by this
+project's dedication.
 
 ## Per-artifact label (`data/compiled/*`)
 

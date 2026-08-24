@@ -350,6 +350,78 @@ for exactly which files are ingested vs. deliberately deferred (7 files +
 the `svebilius/` directory, a Finnish/English Svebilius Catechism
 explanation text, fetched but out of scope this batch).
 
+## `brain-fuel-bible/` (Batch CORP-1a -- the owner's own named source for parallel-edition text)
+
+Selectively vendored from `github.com/brain-fuel/bible`, pinned at commit
+`94d44842cb242e8aa840330748e03d2803f2a7c1` (see `data/fetch-raw.ps1` and
+`LICENSES.md`). The real, upstream repo is large (~29k files: apocrypha/
+Septuagint texts, per-word morphology, a lexicon, a semantic relation
+graph, Go/Python tooling) -- only what this app's parser
+(`server/atlas-etl/src/brainfuel.rs`) actually reads is vendored:
+`data/books.json` (the book-code/`kjv_name` manifest) and every
+`bible/ot/*/*.json` + `bible/nt/*/*.json` chapter file (929 + 260 = 1,189
+files) -- `bible/apo/`, `bible/lxx/`, and everything else in the upstream
+repo is NOT vendored (owner ruling: "no apocrypha for now"; the LXX/
+morphology/lexicon/relation-graph material is out of this batch's scope
+entirely).
+
+**Layout** (unchanged from upstream): `{ot,nt}/{CODE}/{NNN}.json`, `CODE`
+brain-fuel's OWN three-letter book code (verified DIFFERENT from this
+app's own `atlas_core::canon::BOOKS` codes in several places -- e.g. `JOH`
+not `JHN`, `MAR` not `MRK`, `SOS` not `SNG`, `JDE` not `JUD` -- resolved via
+`data/books.json`'s own `kjv_name` field instead, which uses the IDENTICAL
+old-style KJV naming convention `data/raw/kjv.json` already does: "I
+Samuel", "Revelation of John", etc.; one shared normalizer,
+`kjv::normalize_book_name`, reused rather than a second hand-maintained
+code table).
+
+**Verse schema** (verified against the real files, not the upstream
+README alone -- see `server/atlas-etl/src/brainfuel.rs`'s own module doc
+comment for the fully swept catalog): one JSON object per chapter,
+`verses: [{ verse, <edition-field>: "text", ..., refs: { <edition-id>: {
+src?, absent? } } }]`. `verse` is ALREADY the KJV skeleton position
+(pre-aligned by the upstream repo itself). An edition's own field key is
+present on EVERY verse of a chapter file or on NONE of them (a
+testament-level fact -- confirmed: `hebrew_masoretic`/`douay_rheims` never
+appear as keys anywhere in `nt/`; `greek_textus_receptus` never appears
+anywhere in `ot/`). A LOUD GOTCHA, verified directly (`bible/ot/1CH/011.json`
+verse 47, among 15 real OT + 3 real NT examples found): when
+`refs.<edition>.absent` is `true`, that edition's own text KEY IS STILL
+PRESENT, holding an EMPTY STRING (`""`) -- never simply omitted; this
+app's parser reads `absent` FIRST and imports NO rendering at all in that
+case (never the empty string). `refs.<edition>.src` is versification
+PROVENANCE only (e.g. Hebrew/Latin Psalm-title numbering, whose own local
+"chapter:verse" differs from the KJV position the text is already
+correctly placed at) -- disclosed (counted) by this app's parser, never
+stored or acted on (CORP-2's own future scope).
+
+**Six editions ingested** (KJV is already this app's own canonical layer,
+ingested since M-A): `latin_vulgate` (Clementine Vulgate), `hebrew_masoretic`
+(Westminster Leningrad Codex, OT only), `douay_rheims` (Douay-Rheims/
+Challoner -- OT only IN THIS DATASET, verified against both
+`data/editions.json`'s own manifest row and the real files: brain-fuel's
+own NT chapter files never carry a `douay_rheims` key at all), `finnish_biblia`
+(Biblia 1776), `swedish_karl_xii` (Karl XII:s Bibel, 1703 -- merged into
+the SAME chapter JSONs by the upstream repo's own separate Go tool, per
+its own `data/editions.json` note; reads identically to every other
+edition from this app's own parser), `greek_textus_receptus` (Greek
+Textus Receptus, NT only). `king_james_apocrypha` (KJVA) is SKIPPED
+outright (ruled on, not silently dropped): its 66-book canonical coverage
+would exactly duplicate this app's own KJV base, and its only unique
+content is the apocryphal books this batch already excludes.
+
+**Verified real counts** (full programmatic sweep of all 31,102 aligned
+verse positions, cross-checked independently in both Python and this
+app's own Rust parser -- see `server/atlas-etl/tests/brainfuel_real_data.rs`):
+929 OT + 260 NT chapter files; per-edition imported verse counts
+latin_vulgate 31,092, hebrew_masoretic 23,145, douay_rheims 23,132,
+finnish_biblia 31,102 (zero absences -- identity-placed), swedish_karl_xii
+31,099, greek_textus_receptus 7,957; absent-marker counts latin_vulgate 10
+(ten OT verses merged into the preceding verse in the Vulgate tradition,
+matching the upstream repo's own README), douay_rheims 13, swedish_karl_xii
+3; zero anomalies (an edition ever empty-and-unmarked) anywhere in the
+real data.
+
 ## Vendored Leaflet (`client/wwwroot/vendor/leaflet/`)
 
 `leaflet.js` (147,552 bytes) and `leaflet.css` (14,806 bytes), fetched from

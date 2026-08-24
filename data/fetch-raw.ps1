@@ -42,6 +42,34 @@ Fetch "https://github.com/brain-fuel/catechism/archive/$catechismSha.zip" 'catec
 if (-not (Test-Path (Join-Path $raw "catechism-mapping\catechism-$catechismSha"))) {
   Expand-Archive (Join-Path $raw 'catechism-mapping.zip') (Join-Path $raw 'catechism-mapping')
 }
+# Batch CORP-1a: brain-fuel/bible editions (Clementine Vulgate, Westminster
+# Leningrad Codex, Douay-Rheims, Biblia 1776, Karl XII:s Bibel, Greek Textus
+# Receptus) -- owner order (verbatim, via the controller): "3 - take all.
+# no apocrypha for now." Fetched as a GitHub commit-archive zip, PINNED at a
+# specific SHA (not a branch), same pattern as the catechism-mapping fetch
+# above -- except this repo is large (~29k files: apocrypha/Septuagint
+# texts, morphology, lexicon, relation-graph data, Go/Python tooling this
+# app never reads), so only `data/books.json` (the book-code/kjv_name
+# manifest this app's own parser needs -- see server/atlas-etl/src/
+# brainfuel.rs) and the `bible/ot/`+`bible/nt/` chapter JSONs (929+260
+# files) are copied into data/raw/brain-fuel-bible/; the rest of the
+# extracted zip is discarded. See LICENSES.md for the full provenance/
+# license disposition and data/raw/README.md for the verified JSON shape.
+$bibleSha = '94d44842cb242e8aa840330748e03d2803f2a7c1'
+$bibleVendored = Join-Path $raw 'brain-fuel-bible'
+if (-not (Test-Path $bibleVendored)) {
+  Fetch "https://github.com/brain-fuel/bible/archive/$bibleSha.zip" 'brain-fuel-bible-src.zip'
+  $bibleExtractTmp = Join-Path $raw 'brain-fuel-bible-src-extract'
+  Expand-Archive (Join-Path $raw 'brain-fuel-bible-src.zip') $bibleExtractTmp
+  $srcRoot = Join-Path $bibleExtractTmp "bible-$bibleSha"
+  New-Item -ItemType Directory -Force (Join-Path $bibleVendored 'data') | Out-Null
+  Copy-Item (Join-Path $srcRoot 'data\books.json') (Join-Path $bibleVendored 'data\books.json')
+  Copy-Item (Join-Path $srcRoot 'bible\ot') (Join-Path $bibleVendored 'ot') -Recurse
+  Copy-Item (Join-Path $srcRoot 'bible\nt') (Join-Path $bibleVendored 'nt') -Recurse
+  Remove-Item $bibleExtractTmp -Recurse -Force
+  Remove-Item (Join-Path $raw 'brain-fuel-bible-src.zip') -Force
+}
+
 # Historical border snapshots are NOT fetched -- Batch L (license
 # remediation) removed the aourednik/historical-basemaps (GPL-3.0) source
 # that used to be fetched here. Historical borders are now this project's
