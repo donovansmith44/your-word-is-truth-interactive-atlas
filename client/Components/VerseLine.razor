@@ -56,27 +56,44 @@
    literally mean i,j,k superscripts. i mean ordered alphabetical letters
    that modulate around a chapter (i.e., first letter is a)"): the
    marker's own GLYPH is now the verse's own ORDINAL among the CHAPTER's
-   xref-bearing verses, in reading order, "a" for the first, cycling
-   modulo 26 after "z" -- RETIRES the old per-verse-COUNT scheme (i/ij/ijk
-   + the "…" many-marker) whole; no count signal at the marker at all
-   (count already lives inside the popover once opened -- controller
-   default, ledgered). This is INHERENTLY a per-CHAPTER computation (verse
-   5's own letter depends on how many EARLIER verses in the SAME chapter
-   also had xrefs) -- VerseLine itself has no visibility into sibling
-   verses to derive that from on its own, so XrefMarkerGlyph is now a
-   CALLER-supplied parameter, not a property computed from Verse.XrefCount
-   alone. ComputeXrefLetters below is the shared, PURE function both
-   callers (Reader.razor, MiniReaderExpand.razor) call ONCE, before their
-   own verse loop starts, over the chapter's own already-in-hand verse
-   list -- a fresh local lookup per render, never a mutable counter
-   incremented across foreach iterations (the SAME "sidesteps the Batch N
-   closure-capture defect class by construction" discipline this
-   component's own original XrefMarkerText already established, just
-   scoped one level up now that the scheme itself needs chapter-wide
-   context). Chapter-scoped, not container-scoped -- a verse's own letter
-   is therefore IDENTICAL whether shown in the main reader or the
-   mini-reader for the same chapter, preserving decision 4's parity law by
-   construction, not by coincidence. *@
+   xref-bearing verses, in reading order, "a" for the first -- RETIRES the
+   old per-verse-COUNT scheme (i/ij/ijk + the "…" many-marker) whole; no
+   count signal at the marker at all (count already lives inside the
+   popover once opened -- controller default, ledgered). This is
+   INHERENTLY a per-CHAPTER computation (verse 5's own letter depends on
+   how many EARLIER verses in the SAME chapter also had xrefs) -- VerseLine
+   itself has no visibility into sibling verses to derive that from on its
+   own, so XrefMarkerGlyph is now a CALLER-supplied parameter, not a
+   property computed from Verse.XrefCount alone. ComputeXrefLetters below
+   is the shared, PURE function both callers (Reader.razor,
+   MiniReaderExpand.razor) call ONCE, before their own verse loop starts,
+   over the chapter's own already-in-hand verse list -- a fresh local
+   lookup per render, never a mutable counter incremented across foreach
+   iterations (the SAME "sidesteps the Batch N closure-capture defect
+   class by construction" discipline this component's own original
+   XrefMarkerText already established, just scoped one level up now that
+   the scheme itself needs chapter-wide context). Chapter-scoped, not
+   container-scoped -- a verse's own letter is therefore IDENTICAL whether
+   shown in the main reader or the mini-reader for the same chapter,
+   preserving decision 4's parity law by construction, not by coincidence.
+
+   M-D4 fix round 2, P1b (owner, verbatim: "well there might be more than
+   26. if there are then we still need to be in mod26 land but have a
+   system for new superscripts beyond a-z"): fix round 1's own bare
+   `ordinal % 26` wraparound is RETIRED -- it collided the 27th
+   xref-bearing verse's own letter back onto the 1st's ("a" again), a
+   real ambiguity a >26-xref-bearing chapter (a long acrostic psalm, e.g.
+   PSA.119) can actually hit. Replaced by BIJECTIVE base-26 numeration
+   (the same scheme spreadsheet column names use -- A, B, ..., Z, AA, AB,
+   ..., AZ, BA, ..., ZZ, AAA, ...): ordinal 1->"a", 26->"z", 27->"aa",
+   52->"az", 53->"ba", 702->"zz", 703->"aaa". `BijectiveBase26` below is
+   the pure, directly unit-tested (BibleAtlas.Client.Tests) integer-to-
+   letters conversion; ComputeXrefLetters itself is otherwise unchanged
+   -- same per-chapter ordinal tracking, just 1-based now and fed through
+   this new conversion instead of a raw `'a' + ordinal % 26` cast. No
+   count semantics return -- the letter is still a pure ordinal, "mod26
+   land" describing the DIGIT ALPHABET (26 symbols per position), not a
+   wraparound back to a shorter, ambiguous, already-used letter. *@
 @using BibleAtlas.Client.Explore
 
 <div class="@RowClass" data-testid="@RowTestId" data-focal="@(Focal ? "true" : "false")" id="@Id"
@@ -189,12 +206,15 @@
     // M-D4 fix round 1, P1 (owner correction, verbatim in this file's own
     // header comment): each xref-bearing verse's own ORDINAL among the
     // CHAPTER's xref-bearing verses, in reading order -- "a" for the
-    // first, cycling modulo 26 ("modulate" = modulo) after "z". A PURE
-    // function of the chapter's own already-in-hand verse list (never a
-    // mutable counter incremented across foreach iterations -- see this
-    // file's own header comment for the full house-pattern reasoning);
-    // callers compute this ONCE, before their own verse loop, and pass
-    // each verse's own letter in via XrefMarkerGlyph above.
+    // first. A PURE function of the chapter's own already-in-hand verse
+    // list (never a mutable counter incremented across foreach iterations
+    // -- see this file's own header comment for the full house-pattern
+    // reasoning); callers compute this ONCE, before their own verse loop,
+    // and pass each verse's own letter in via XrefMarkerGlyph above.
+    // M-D4 fix round 2, P1b: `ordinal` is now 1-based (incremented BEFORE
+    // use, not after) and fed through BijectiveBase26 below instead of a
+    // raw `'a' + ordinal % 26` cast -- see this file's own header comment
+    // for why bare modulo-26 wraparound was retired.
     public static Dictionary<int, string> ComputeXrefLetters(IReadOnlyList<VerseOut> verses)
     {
         var map = new Dictionary<int, string>();
@@ -203,11 +223,38 @@
         {
             if (v.XrefCount > 0)
             {
-                map[v.Verse] = ((char)('a' + ordinal % 26)).ToString();
                 ordinal++;
+                map[v.Verse] = BijectiveBase26(ordinal);
             }
         }
         return map;
+    }
+
+    // M-D4 fix round 2, P1b (owner, verbatim in this file's own header
+    // comment): BIJECTIVE base-26 numeration -- 1-based `n`, the digit
+    // alphabet is 'a'..'z' (26 symbols), but UNLIKE plain base-26 there is
+    // no digit for zero, so "aa" (27) is genuinely distinct from "a" (1)
+    // rather than colliding with it the way plain modulo/positional base-26
+    // would. Algorithm (standard bijective numeration, the same one
+    // spreadsheet column names use): peel off one LEAST-significant digit
+    // at a time (`n - 1`, so the digit range is 0..25 instead of 1..26,
+    // matching 'a'..'z'), prepend its letter, then move to the next digit
+    // (`n / 26`); repeat until `n` reaches 0. Boundary values (26->"z",
+    // 27->"aa", 52->"az", 53->"ba", 702->"zz", 703->"aaa") are unit-tested
+    // directly in BibleAtlas.Client.Tests -- see that project's own
+    // VerseLineTests. `n <= 0` returns "" (never reached by
+    // ComputeXrefLetters above, which only ever calls this with `n >= 1`,
+    // ordinal incremented before use).
+    public static string BijectiveBase26(int n)
+    {
+        var letters = "";
+        while (n > 0)
+        {
+            n -= 1;
+            letters = (char)('a' + n % 26) + letters;
+            n /= 26;
+        }
+        return letters;
     }
 
     private bool ShowXrefMarker => FeatureFlags.XrefSuperscripts && Verse.XrefCount > 0;

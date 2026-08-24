@@ -31,6 +31,26 @@ import { loadToc } from './lib/canon';
 
 type ChapterVerse = { verse: number; text: string; xref_count: number };
 
+// M-D4 fix round 2, P1b (owner, verbatim: "well there might be more than
+// 26. if there are then we still need to be in mod26 land but have a
+// system for new superscripts beyond a-z"): mirrors
+// VerseLine.BijectiveBase26 (client/Components/VerseLine.razor)
+// independently -- bijective base-26 numeration, the same scheme
+// spreadsheet column names use (A, B, ..., Z, AA, AB, ..., AZ, BA, ...,
+// ZZ, AAA, ...). 1-based `n`; NOT plain modulo-26, which fix round 1
+// used and which collides ordinal 27's own letter back onto ordinal 1's
+// ("a" again) -- bijective numeration never collides, since there is no
+// digit for zero.
+function bijectiveBase26(n: number): string {
+  let letters = '';
+  while (n > 0) {
+    n -= 1;
+    letters = String.fromCharCode('a'.charCodeAt(0) + (n % 26)) + letters;
+    n = Math.floor(n / 26);
+  }
+  return letters;
+}
+
 // Scans real chapters (never the demo fixture, never a hardcoded book/
 // chapter) for one whose own /api/chapter response carries a verse
 // satisfying `predicate` on its own xref_count -- same "read real data,
@@ -78,10 +98,13 @@ test.describe('M-D2: cross-reference superscripts', () => {
   // old per-verse-COUNT scheme (i/ij/ijk + the "…" many-marker) whole: the
   // marker's own glyph no longer depends on the VERSE's OWN xref_count at
   // all (beyond ">0, so a marker renders"), only on its ORDINAL among the
-  // chapter's xref-bearing verses, in reading order -- "a" for the first,
-  // cycling modulo 26 ("modulate" = modulo) after "z". No count signal at
-  // the marker at all (count lives inside the popover, already served).
-  test('XSCRIPT-1: superscript lettering is the verse\'s own ordinal among the chapter\'s xref-bearing verses -- "a" first, cycling modulo 26 -- a sample sweep, not hardcoded verses', async ({ page }) => {
+  // chapter's xref-bearing verses, in reading order -- "a" for the first.
+  // No count signal at the marker at all (count lives inside the popover,
+  // already served). M-D4 fix round 2, P1b (owner: "well there might be
+  // more than 26... have a system for new superscripts beyond a-z"):
+  // ordinals beyond 26 now use BIJECTIVE base-26 (bijectiveBase26 above),
+  // not a bare modulo-26 wraparound -- see that function's own comment.
+  test('XSCRIPT-1: superscript lettering is the verse\'s own ordinal among the chapter\'s xref-bearing verses -- "a" first, bijective base-26 beyond "z" -- a sample sweep, not hardcoded verses', async ({ page }) => {
     const toc = await loadToc();
     const found = await findVerseByXrefCount(toc, c => c > 0);
     test.skip(!found, 'no sampled chapter had any verse with cross-references');
@@ -96,7 +119,7 @@ test.describe('M-D2: cross-reference superscripts', () => {
     // so this test actually PROVES the scheme instead of just echoing
     // whatever the client happened to render.
     let ordinal = 0;
-    let sawZero = false, sawLettered = false, sawWraparound = false;
+    let sawZero = false, sawLettered = false, sawMultiLetter = false;
     for (const v of chapterOut.verses as ChapterVerse[]) {
       const marker = page.getByTestId(`verse-xref-marker-${v.verse}`);
       if (v.xref_count === 0) {
@@ -104,9 +127,9 @@ test.describe('M-D2: cross-reference superscripts', () => {
         sawZero = true;
         continue;
       }
-      const expectedLetter = String.fromCharCode('a'.charCodeAt(0) + (ordinal % 26));
-      if (ordinal >= 26) sawWraparound = true;
       ordinal++;
+      const expectedLetter = bijectiveBase26(ordinal);
+      if (expectedLetter.length > 1) sawMultiLetter = true;
       await expect(marker, `verse ${v.verse} is xref-bearing verse #${ordinal} in ${found.book}.${found.chapter} -- expected letter "${expectedLetter}"`).toHaveText(expectedLetter);
       // P1: no count signal at the marker at all -- the accessible name
       // drops it too (VerseLine.razor's own XrefMarkerAriaLabel), not just
@@ -118,24 +141,30 @@ test.describe('M-D2: cross-reference superscripts', () => {
     // and most chapters have far fewer than 26 xref-bearing verses) --
     // logged so a genuinely narrow sample is visible in output, never
     // silently declared "covered" when it wasn't.
-    test.info().annotations.push({ type: 'coverage', description: `zero=${sawZero} lettered=${sawLettered} totalXrefBearing=${ordinal} wraparoundObserved=${sawWraparound} in ${found.book}.${found.chapter}` });
+    test.info().annotations.push({ type: 'coverage', description: `zero=${sawZero} lettered=${sawLettered} totalXrefBearing=${ordinal} multiLetterObserved=${sawMultiLetter} in ${found.book}.${found.chapter}` });
   });
 
   // A dedicated, best-effort search for a chapter with enough xref-bearing
-  // verses to directly WITNESS the modulo-26 wraparound (a real "z"
-  // immediately followed by "a") -- the sweep test above only exercises
-  // this when it happens to sample a long enough chapter; this test proves
-  // the wraparound deterministically when the compiled dataset has one,
-  // and gracefully skips (never fails) when it doesn't.
-  test('XSCRIPT-1: lettering wraps from "z" back to "a" (modulo 26) in a chapter with >26 xref-bearing verses', async ({ page }) => {
+  // verses to directly WITNESS the single-letter -> two-letter transition
+  // (ordinal 26 -> "z", ordinal 27 -> "aa") -- the sweep test above only
+  // exercises this when it happens to sample a long enough chapter; this
+  // test proves the transition deterministically when the compiled
+  // dataset has one, and gracefully skips (never fails) when it doesn't.
+  // M-D4 fix round 2, P1b (owner: "well there might be more than 26...
+  // have a system for new superscripts beyond a-z"): REPLACES fix round
+  // 1's own "wraps from z back to a (modulo 26)" test -- that assertion
+  // is now the exact BUG P1b retires (a same-letter collision between
+  // ordinal 1 and ordinal 27); the 27th xref-bearing verse gets "aa" now,
+  // never "a" again.
+  test('XSCRIPT-1: lettering continues past "z" as "aa" (bijective base-26), never collides back onto "a", in a chapter with >26 xref-bearing verses', async ({ page }) => {
     const toc = await loadToc();
-    let target: { book: string; chapter: number; zVerse: number; aVerse: number } | null = null;
+    let target: { book: string; chapter: number; zVerse: number; aaVerse: number } | null = null;
     outer: for (const b of toc) {
       for (const ch of b.chapters) {
         const chapterOut = await api.chapter(`${b.code}.${ch}`);
         const xrefBearing = (chapterOut.verses as ChapterVerse[]).filter(v => v.xref_count > 0);
         if (xrefBearing.length > 26) {
-          target = { book: b.code, chapter: ch, zVerse: xrefBearing[25].verse, aVerse: xrefBearing[26].verse };
+          target = { book: b.code, chapter: ch, zVerse: xrefBearing[25].verse, aaVerse: xrefBearing[26].verse };
           break outer;
         }
       }
@@ -144,8 +173,11 @@ test.describe('M-D2: cross-reference superscripts', () => {
     if (!target) return;
 
     await page.goto(`/read/${target.book}/${target.chapter}`);
+    // Ordinal 26 -- the last single-letter value.
     await expect(page.getByTestId(`verse-xref-marker-${target.zVerse}`)).toHaveText('z');
-    await expect(page.getByTestId(`verse-xref-marker-${target.aVerse}`)).toHaveText('a');
+    // Ordinal 27 -- the first two-letter value, the EXACT point fix round
+    // 1's bare `ordinal % 26` collided back onto "a" instead.
+    await expect(page.getByTestId(`verse-xref-marker-${target.aaVerse}`)).toHaveText('aa');
   });
 
   test('XSCRIPT-1: hover opens the SAME composable popover, xrefs section leading, 3 initial entries', async ({ page }) => {
@@ -161,8 +193,13 @@ test.describe('M-D2: cross-reference superscripts', () => {
     // chapter's xref-bearing verses, not a function of ITS OWN count -- see
     // this file's own dedicated lettering test above for the full proof;
     // this test's own concern is the hover-opens-the-popover mechanism, so
-    // a light shape check (a single lowercase letter) is enough here.
-    await expect(marker).toHaveText(/^[a-z]$/);
+    // a light shape check (one or more lowercase letters) is enough here.
+    // P1b: `+` not a bare single-char match -- this sampled verse's own
+    // ordinal within its chapter is unconstrained by this test's own
+    // `c > 3` predicate, so a real ordinal past 26 (bijective base-26's
+    // own two-letter range, e.g. "aa") is a genuine, reachable value here,
+    // not a shape this assertion should reject.
+    await expect(marker).toHaveText(/^[a-z]+$/);
 
     // { force: true }: a REAL, live-caught Playwright/production interplay
     // (not a workaround for a real bug -- see this file's own header

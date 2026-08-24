@@ -62,9 +62,13 @@ test.describe('M-D4: the recursive reader', () => {
     // P1: the glyph is a per-chapter ORDINAL letter now (not a function of
     // this verse's own count) -- read the main reader's own rendered value
     // rather than predicting it, then assert the mini-reader matches it
-    // exactly below (the real parity claim, decision 4).
+    // exactly below (the real parity claim, decision 4). P1b: one-or-more
+    // lowercase letters, not exactly one -- this verse's own ORDINAL among
+    // 2CO.4's xref-bearing verses (the thing that actually determines
+    // letter count under bijective base-26, not its own xref_count=35) is
+    // not asserted here at all, only its SHAPE and cross-surface parity.
     const mainXref = page.getByTestId('verse-xref-marker-4');
-    await expect(mainXref, 'main reader: xref_count=35 (>0) must render a single ordinal letter').toHaveText(/^[a-z]$/);
+    await expect(mainXref, 'main reader: xref_count=35 (>0) must render a valid ordinal letter').toHaveText(/^[a-z]+$/);
     const mainGlyph = await mainXref.textContent();
 
     // Clickability -- opens THIS verse's own popover (keyboard activation,

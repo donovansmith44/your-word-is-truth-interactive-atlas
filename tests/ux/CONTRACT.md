@@ -1455,11 +1455,21 @@ Notes:
   {placeId}{-ENTRY-ID}` / `popover-passage-mention-person-{n}-{personId}
   {-ENTRY-ID}` (`ENTRY-ID` here is the passage entry's own full testid,
   PassageList's pre-existing per-entry disambiguation, mirroring the
-  mini-reader's identical convention one level up). A parity test extends
-  RECURSE-4's own pattern: a preview row's mentioned name links exactly the
-  way the same mention does in the main reader (same click/Enter-opens-
-  the-entity contract, same Place-blink/no-Person-blink split), asserted
-  directly rather than assumed from the shared component alone.
+  mini-reader's identical convention one level up). Tested directly (not
+  merely assumed from the shared component alone) by
+  `tests/ux/popover-sections.spec.ts`'s own "R-M1" test, against a real,
+  curl-confirmed fixture (GEN.24.3's own cross-reference to GEN.10.15-19,
+  whose first verse attests the clean PERSON mention "Canaan"/canaan_914):
+  opens the xref-item's own preview row inside the popover, asserts the
+  mention span's testid/text/click-opens-the-entity behavior there, then
+  separately confirms the IDENTICAL mention (same id, read straight off
+  GEN.10.15 in the main reader, no popover involved) links the same way
+  -- the parity claim proven by direct comparison across two real
+  surfaces, the same discipline RECURSE-4 already establishes for the
+  compact FOCUS preview. M-D4 fix round 2 correction (F1, re-review,
+  Important): fix round 1's own report and this row both claimed this
+  test already existed; it did not (this row over-claimed coverage --
+  disclosed in the fix round 2 report rather than silently corrected).
   Every mention span (both surfaces, both kinds) is now explorable: click,
   or Enter while keyboard-focused, opens that entity's own node
   (`PlaceNode`/`PersonNode`) via `@onclick:stopPropagation`/

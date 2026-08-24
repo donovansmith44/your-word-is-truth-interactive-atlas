@@ -4090,16 +4090,6 @@ input:focus-visible,
     border-top: none;
 }
 
-/* Batch R requirement 4 (expandable popover + in-context chapter reading).
-   O2 (owner live-preview correction, 2026-08-23) retired the toggle
-   BUTTON this rule used to style (small-caps text, "Read the whole
-   chapter"/etc.) -- MiniReaderExpand.razor's own trigger is now a
-   RevealControls-driven arrow pair, styled by .popover-reveal-arrow and
-   friends instead (see RevealControls.razor's own O2 comment).
-   `popover-verse-expand`/`popover-verse-collapse` (plus each one's own
-   TestIdSuffix) survive only as data-testid values now, no matching CSS
-   class of their own left to style. */
-
 /* The mini-reader itself: a bounded, independently-scrollable region (NOT
    relying solely on .popover's own outer overflow -- requirement 4: "the
    verse section becomes a SCROLLABLE mini-reader") so the popover's own

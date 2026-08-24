@@ -685,6 +685,79 @@ test('MENTION-4: clicking a place mention INSIDE the mini-reader pushes a new po
   await expect(page.getByTestId('popover-title')).toHaveText('Canaan');
 });
 
+test('R-M1: a preview row\'s mentioned name (PassageList\'s own compact text -- xref/THE SCRIPTURES/place-date/witness previews) links exactly the way the SAME mention links in the main reader', async ({ page }) => {
+  // M-D4 fix round 2/F1 (re-review, Important): fix round 1's own report
+  // and CONTRACT.md claimed a parity test for this existed; it did not
+  // (zero hits for `popover-passage-mention` anywhere under tests/ux
+  // before this test). This is that test, written for real against the
+  // R-M1 fix itself -- PassageList.razor's own compact preview text now
+  // routes through MentionText, the SAME component every other verse-text
+  // surface uses.
+  //
+  // Real, live-verified fixture (curl-confirmed against GET
+  // /api/verse/GEN.24.3 and GET /api/chapter/GEN.10): GEN.24.3's own
+  // cross-references include the multi-verse target GEN.10.15-19 (Table
+  // of Nations); that span's own FIRST verse, GEN.10.15 ("And Canaan
+  // begat Sidon his firstborn, and Heth,"), attests a clean, unambiguous
+  // PERSON mention -- "Canaan" (id canaan_914), the verse's own first
+  // word, no punctuation collision. Because it's the span's own first
+  // verse, it always renders in the xref-item's own compact preview text
+  // regardless of ClampVerses.
+  await page.goto('/read/GEN/24');
+  await page.getByTestId('verse-line-3').focus(); // keyboard activation -- MENTION-1's own documented coordinate-click hazard
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('popover-title')).toHaveText('GEN.24.3');
+
+  // GEN.24.3 carries far more than XREF-1's own 2/3-entry cap (37 real
+  // cross-references) -- reveal everything so the specific target this
+  // test needs is guaranteed visible, the SAME defensive reveal-then-
+  // fall-back-to-more pattern this file's own fix-round-1 tests already
+  // established for RevealControls' own conditional "all".
+  const more = page.getByTestId('xrefs-more');
+  await expect(more).toBeVisible();
+  const all = page.getByTestId('xrefs-more-all');
+  if (await all.count() > 0) {
+    await all.click();
+  } else {
+    await more.click();
+  }
+
+  const entry = page.getByTestId('xref-item-GEN.10.15-19');
+  await expect(entry).toBeVisible();
+  // Read the entry's own real testid rather than predicting the span
+  // string ourselves (this file's own established discipline, XREF-1/
+  // regression's own comment, verbatim reasoning) -- proves the mention
+  // testid's own ENTRY-ID suffix construction directly, not merely
+  // assumed to match CONTRACT.md's own documented shape.
+  const entryTestId = await entry.getAttribute('data-testid');
+  expect(entryTestId).toBe('xref-item-GEN.10.15-19');
+
+  const previewMention = entry.getByTestId(`popover-passage-mention-person-15-canaan_914-${entryTestId}`);
+  await expect(previewMention).toBeVisible();
+  await expect(previewMention).toHaveText('Canaan');
+
+  // The click contract itself -- @onclick:stopPropagation on the mention
+  // span (MentionText.razor) must win over the entry's own outer
+  // Explore(entry.Block) click, the SAME "more specific target always
+  // wins" rule ONE-RULE establishes everywhere else in this popover
+  // platform; without it this click would open a PassageNode for the
+  // whole GEN.10.15-19 span instead of the Person.
+  await previewMention.click();
+  await expect(page.getByTestId('popover-title')).toHaveText('Canaan');
+  await page.getByTestId('popover-close').click();
+
+  // Parity, proven directly rather than assumed from the shared
+  // component alone: the IDENTICAL mention, read straight in the main
+  // reader (GEN.10.15, no popover/preview involved at all), links the
+  // SAME way -- same text, same click-opens-Canaan behavior.
+  await page.goto('/read/GEN/10');
+  const mainMention = page.getByTestId('verse-mention-person-15-canaan_914');
+  await expect(mainMention).toBeVisible();
+  await expect(mainMention).toHaveText('Canaan');
+  await mainMention.click();
+  await expect(page.getByTestId('popover-title')).toHaveText('Canaan');
+});
+
 // ---------------------------------------------------------------------
 // CATECH-1 (batch-f-brief.md, "the small catechism" -- user direction,
 // asked three separate times): the verse->item->proof-verse hop, Luther's
@@ -989,6 +1062,20 @@ test('CATECH-1/U2/U6: THE SMALL CATECHISM defaults to 2 shown, "more"/"all"/"les
   await expect(items).toHaveCount(2);
   await expect(less).toHaveCount(0);
 
+  // M-D4 fix round 2/F2 (re-review): ALL clicked from a NON-DEFAULT
+  // partial state now, not straight from the default -- the earlier
+  // MORE/LESS round-trip above already returned to exactly 2 (== Default
+  // here), so an ALL click there could not discriminate "restore the
+  // EXACT pre-ALL view" from "floor to the default" -- both produce the
+  // identical count (2) when ALL is clicked FROM the default. Stepping
+  // to a genuinely partial, non-default count first (4) and recording it
+  // makes the two behaviors diverge, so the assertion below actually
+  // proves which one this component does.
+  await more.click();
+  await expect(items).toHaveCount(4);
+  const partialCount = await items.count();
+  expect(partialCount, 'this fixture only discriminates restore-vs-floor when the recorded partial differs from Default (2)').not.toBe(2);
+
   // ALL jumps straight to the true total -- fully expanded: less ONLY
   // (more/all both gone, nothing further to reveal).
   await all.click();
@@ -998,13 +1085,24 @@ test('CATECH-1/U2/U6: THE SMALL CATECHISM defaults to 2 shown, "more"/"all"/"les
   await expect(less).toBeVisible();
 
   // LESS's own ONE-OP UNDO: the immediately-preceding action was ALL, so
-  // this returns to the EXACT pre-ALL view (2, the default), not a slow
-  // walk-down -- "undo... with a click," the owner's own words.
+  // this returns to the EXACT pre-ALL view -- the recorded PARTIAL count
+  // (4), not the default (2) -- "undo... with a click," the owner's own
+  // words, taken literally: undo means restore what was there before,
+  // not reset to some other fixed state. A component that instead
+  // floored to Default here would show 2, failing this assertion.
+  await less.click();
+  await expect(items).toHaveCount(partialCount);
+  await expect(less).toBeVisible(); // still above Default -- more undo-able
+  await expect(more).toBeVisible();
+  await expect(all).toBeVisible();
+
+  // The one-deep memory is CONSUMED, not a full history stack (this
+  // file's own RevealControls doc comment, verbatim) -- a SECOND LESS
+  // click now steps back by Step (not a second "restore"), landing
+  // exactly on Default, "repeated LESS walks home."
   await less.click();
   await expect(items).toHaveCount(2);
   await expect(less).toHaveCount(0);
-  await expect(more).toBeVisible();
-  await expect(all).toBeVisible();
 });
 
 test('CATECH-1: a verse with 1-2 catechism citations shows no reveal arrow at all (at-or-under the default)', async ({ page }) => {
