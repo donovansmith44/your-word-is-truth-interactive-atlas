@@ -1087,21 +1087,36 @@ Notes:
   own order" reasoning depended on). Every xref-BEARING verse
   (`xref_count > 0`) now gets EXACTLY ONE letter: its own ORDINAL among
   the CHAPTER's xref-bearing verses, in reading order -- "a" for the first
-  such verse in the chapter, "b" the second, and so on, wrapping back to
-  "a" after "z" (modulo 26) on the rare chapter with >26 xref-bearing
-  verses (long acrostic chapters, e.g. PSA.119, are exactly the case this
-  guards -- covered by its own dedicated wraparound test, not merely
-  asserted in the abstract). RESTART BOUNDARY: PER CHAPTER now, not per
-  verse -- a deliberate change from the retired scheme's own per-verse
-  restart, since a single letter can no longer distinguish "which of THIS
-  verse's own several xrefs" (that distinction never needed the marker
-  anyway; it lives in the popover's own ordered list) -- it now answers a
-  different question, "roughly where in this chapter am I, among verses
-  that cite something." Computed ONCE per render as a chapter-scoped
-  `Dictionary<int, string>` (`VerseLine.ComputeXrefLetters`, a pure
-  function over the chapter's own verse list -- `((char)('a' + ordinal %
-  26)).ToString()`, `ordinal` incrementing only across xref-bearing
-  verses) called by each of Reader.razor/MiniReaderExpand.razor once,
+  such verse in the chapter, "b" the second, and so on. M-D4 fix round 2
+  (P1b, owner correction, verbatim: "well there might be more than 26. if
+  there are then we still need to be in mod26 land but have a system for
+  new superscripts beyond a-z") renders that ordinal as ORDINAL BIJECTIVE
+  BASE-26 PER CHAPTER, retiring fix round 1's own original bare modulo-26
+  wraparound (which collided the 27th xref-bearing verse's own letter
+  back onto the 1st's, "a" again -- a real ambiguity a >26-xref-bearing
+  chapter, e.g. a long acrostic psalm, can genuinely hit): the same
+  scheme spreadsheet column names use (A, B, ..., Z, AA, AB, ..., AZ,
+  BA, ..., ZZ, AAA, ...) -- 1->"a", 26->"z", 27->"aa", 52->"az", 53->"ba",
+  702->"zz", 703->"aaa" (the exact boundary values
+  `client.Tests/VerseLineTests.cs` asserts directly against
+  `VerseLine.BijectiveBase26(int n)`; `tests/ux/reader-xref-
+  superscripts.spec.ts`'s own dedicated test proves the live 26th/27th
+  transition against a real >26-xref-bearing chapter when the compiled
+  dataset has one, graceful skip otherwise). Unlike plain base-26 there
+  is no digit for zero, so a two-letter value never collides with a
+  shorter one -- ordinal 27 is genuinely DISTINCT from ordinal 1, never a
+  wraparound back to it. Still a PURE ordinal throughout -- no count
+  semantics return at the marker, this round or the last. RESTART
+  BOUNDARY: PER CHAPTER, not per verse -- a deliberate change from the
+  count-tiered scheme's own per-verse restart, since a single letter can
+  no longer distinguish "which of THIS verse's own several xrefs" (that
+  distinction never needed the marker anyway; it lives in the popover's
+  own ordered list) -- it now answers a different question, "roughly
+  where in this chapter am I, among verses that cite something."
+  Computed ONCE per render as a chapter-scoped `Dictionary<int, string>`
+  (`VerseLine.ComputeXrefLetters`, a pure function over the chapter's own
+  verse list, feeding a 1-based ordinal through `VerseLine.BijectiveBase26`
+  above) called by each of Reader.razor/MiniReaderExpand.razor once,
   before their own verse loop, and passed down to every `VerseLine` as its
   `XrefMarkerGlyph` parameter -- NOT computed inside VerseLine itself,
   since a single VerseLine instance has no visibility into its own sibling
