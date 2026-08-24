@@ -39,7 +39,12 @@
 //!   Matches the ingestion contract's own parenthetical almost exactly
 //!   ("event and place merge tables become assertion-level rules") --
 //!   this batch's place/catechism/person adapters are that instruction
-//!   realized.
+//!   realized. (ENT-1a) `description_adapter::fill_descriptions` joins
+//!   this stage too -- Easton's Bible Dictionary (1897) is exactly the
+//!   same "legacy-vocabulary boundary crossing" shape, just onto an
+//!   already-NORMALIZED node's own PAYLOAD field rather than a new
+//!   relation row (see that module's own doc comment for the full "why
+//!   MERGE/ALIAS, not a new stage" reasoning).
 //! - RESOLVE: `DatePlacement` resolution -- `derive_chronology` chooses
 //!   each dated event's placement and the `dated_by` rows it grounds,
 //!   exactly `resolve(DatePlacement)` per the ingestion contract's own
@@ -112,6 +117,14 @@ pub struct BuildCtx<'a> {
     pub event_world_stats: EventWorldStats,
     pub chrono: ChronologyDerivation,
     pub justified_by_count: usize,
+    /// ENT-1a: `description_adapter::fill_descriptions`'s own return value,
+    /// captured here (not just returned-and-discarded, unlike the other
+    /// MERGE/ALIAS adapter calls' own Stats structs) so a caller building a
+    /// full graph -- the real-data spot check test, `compile_graph.rs`'s
+    /// own diagnostic printouts -- can read the fill-rate breakdown after
+    /// `run_pipeline` returns, without a second, redundant pass over the
+    /// graph. Stays `Default` (all zero) until `MergeAliasPass` runs.
+    pub description_stats: crate::description_adapter::DescriptionStats,
 }
 
 impl<'a> BuildCtx<'a> {
@@ -145,6 +158,7 @@ impl<'a> BuildCtx<'a> {
             event_world_stats: EventWorldStats::default(),
             chrono: ChronologyDerivation::default(),
             justified_by_count: 0,
+            description_stats: crate::description_adapter::DescriptionStats::default(),
         }
     }
 }
@@ -191,6 +205,14 @@ impl Pass for MergeAliasPass {
         // "legacy-vocabulary boundary crossing" shape place_adapter's own
         // mentions half already is (this stage's own doc comment above).
         crate::person_adapter::merge_alias(ctx);
+        // ENT-1a: description-filling runs LAST in this stage -- it only
+        // ever READS already-built nodes (never their mentions rows), so it
+        // has no ordering dependency on the three calls above; last is
+        // simply where a payload-only widening reads most naturally,
+        // after every row-building call. (Two statements, not `ctx.x =
+        // f(ctx)`, deliberately -- the latter borrows `ctx` twice at once.)
+        let description_stats = crate::description_adapter::fill_descriptions(ctx);
+        ctx.description_stats = description_stats;
         Ok(())
     }
 }

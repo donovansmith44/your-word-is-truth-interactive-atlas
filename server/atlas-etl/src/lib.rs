@@ -18,6 +18,7 @@
 pub mod catechism_map;
 pub mod compile;
 pub mod curated;
+pub mod easton;
 pub mod geo;
 pub mod kjv;
 pub mod osis;

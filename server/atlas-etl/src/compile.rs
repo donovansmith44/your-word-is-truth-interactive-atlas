@@ -39,7 +39,7 @@ use anyhow::{bail, Context, Result};
 use atlas_core::data::{AtlasData, Polity};
 
 use crate::report::{Counts, PolityStats, Report};
-use crate::{catechism_map, curated, geo, kjv, people, polities, theographic, validate, xrefs};
+use crate::{catechism_map, curated, easton, geo, kjv, people, polities, theographic, validate, xrefs};
 
 /// Everything `main.rs`'s own report/write phase needs, alongside the
 /// fully-populated, validated `AtlasData` every graph-building caller
@@ -107,6 +107,16 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     // above -- one more sibling fact file, not a new source tree.
     let people_json = read(&theo_dir.join("people.json"))?;
     let (people_list, people_stats) = people::parse_people(&people_json, &verses_json)?;
+
+    // ENT-1a: Easton's Bible Dictionary (1897, PD) -- the `AtlasData.easton`
+    // sidecar (`description_adapter.rs`'s own graph-side source). Reuses the
+    // SAME already-in-scope `places_json` bytes `theographic::parse_events`
+    // read above (no second disk read) -- `easton::parse_easton`'s own
+    // module doc comment explains why its OWN in-memory parse of that
+    // string is still independent (a second, minimal typed struct), not
+    // shared parsing code.
+    let easton_json = read(&theo_dir.join("easton.json"))?;
+    let (easton_list, easton_stats) = easton::parse_easton(&easton_json, &places_json)?;
 
     let xrefs_raw = read(&raw_dir.join("xrefs/cross_references.txt"))?;
     let (xrefs_map, xref_stats) = xrefs::parse(&xrefs_raw)?;
@@ -210,6 +220,16 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         "THEOGRAPHIC PEOPLE: {} person record(s) compiled ({} with >=1 resolved verse link; {} of {} raw verse refs unresolved, dropped)",
         people_stats.total, people_stats.with_verses, people_stats.verse_refs_unresolved, people_stats.verse_refs_total
     );
+    eprintln!(
+        "EASTON'S DICTIONARY: {} entr(y/ies) parsed ({} dropped, no usable dictText) -- {} person-matched, {} place-matched ({} place slug(s) unresolved against places.json), {} multi, {} unmatched",
+        easton_stats.total,
+        easton_stats.no_text,
+        easton_stats.person_matches,
+        easton_stats.place_matches,
+        easton_stats.place_slug_unresolved,
+        easton_stats.multi,
+        easton_stats.unmatched
+    );
     let narrative_leg_counts: Vec<(String, usize)> = narratives.iter().map(|n| (n.id.clone(), n.legs.len())).collect();
 
     let mut geocoded_verses: HashSet<&str> = HashSet::new();
@@ -267,6 +287,12 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     // check_person_fidelity`, run unconditionally at pipeline LAW-CHECK
     // time), not here -- see that function's own doc comment for why.
     data.people = people_list;
+    // ENT-1a: same "no validate::run-style check of its own" status as
+    // `people` immediately above -- `easton`'s own consumer
+    // (`atlas_graph::description_adapter`) is a pure best-effort matcher,
+    // never a graph-shape law (an unmatched/absent description is always a
+    // lawful `None`, not a validation failure).
+    data.easton = easton_list;
 
     // --- chronology anchor table + era-window validator ---
     data.chronology_anchors = chronology_anchors;

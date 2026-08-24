@@ -31,6 +31,7 @@
 pub mod artifact;
 pub mod build;
 pub mod catechism_adapter;
+pub mod description_adapter;
 pub mod era_adapter;
 pub mod event_world;
 pub mod fidelity;

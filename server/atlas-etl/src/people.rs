@@ -106,6 +106,19 @@ struct PersonFields {
     also_called: Option<String>,
     #[serde(default)]
     verses: Vec<String>,
+    /// ENT-1a: Theographic's newer, markdown-linked Easton's extraction --
+    /// always either absent or a ONE-element array in the real committed
+    /// data (verified: 1,816 records carry it, every one length exactly 1;
+    /// zero records carry 2+) -- never trusted as a fixed-shape tuple
+    /// though, `#[serde(default)]` + `Vec` reads either shape honestly.
+    #[serde(default)]
+    dict_text: Vec<String>,
+    /// ENT-1a: the OLDER plain-text sibling of `dict_text` above (no
+    /// markdown links) -- only 1 of 3,067 real records carries this without
+    /// also carrying `dict_text` (Judas -> "the Graecized form of Judah.");
+    /// see `parse_people`'s own resolution below.
+    #[serde(default)]
+    dictionary_text: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -147,6 +160,21 @@ pub fn parse_people(people_json: &str, verses_json: &str) -> Result<(Vec<Person>
             .map(|s| s.split(',').map(|p| p.trim().to_string()).filter(|p| !p.is_empty()).collect())
             .unwrap_or_default();
 
+        // ENT-1a: `dict_text` wins over its older `dictionary_text` sibling
+        // when both are present (module doc comment above has the real
+        // counts) -- resolved ONCE here, the same "one ambiguity, resolved
+        // at parse time" discipline `name` itself already uses just above.
+        // Empty-string entries never occur in the real data (verified), but
+        // `.filter(|s| !s.trim().is_empty())` keeps this honest regardless
+        // of upstream happenstance: an empty string is not a source-attested
+        // description any more than a missing field is.
+        let dict_text: Option<String> = f
+            .dict_text
+            .first()
+            .cloned()
+            .or_else(|| f.dictionary_text.clone())
+            .filter(|s| !s.trim().is_empty());
+
         // Resolve, dedup, and canon-sort -- see this module's own "CANON
         // ORDER" doc comment for why the sort is never skipped.
         let mut resolved: Vec<(u8, u16, u16, String)> = Vec::new();
@@ -179,6 +207,7 @@ pub fn parse_people(people_json: &str, verses_json: &str) -> Result<(Vec<Person>
             death_year: f.death_year.as_deref().and_then(parse_theo_year),
             also_called,
             verse_links,
+            dict_text,
         });
     }
 
@@ -265,6 +294,49 @@ mod tests {
         let (people, _) = parse_people(people_json, VERSES_FIXTURE).unwrap();
         assert_eq!(people[0].birth_year, None);
         assert_eq!(people[0].death_year, None);
+    }
+
+    // ENT-1a: dict_text resolution (module doc comment above has the exact
+    // real-data field-shape verification this test set mirrors).
+
+    #[test]
+    fn dict_text_prefers_the_newer_array_field_over_the_legacy_string_field() {
+        let people_json = r#"[
+            {"id": "p1", "fields": {"personLookup": "aaron_1", "name": "Aaron",
+              "dictText": ["The eldest son of Amram."],
+              "dictionaryText": " the eldest son of Amram (old form)."}}
+        ]"#;
+        let (people, _) = parse_people(people_json, VERSES_FIXTURE).unwrap();
+        assert_eq!(people[0].dict_text.as_deref(), Some("The eldest son of Amram."));
+    }
+
+    #[test]
+    fn dict_text_falls_back_to_dictionary_text_when_the_array_field_is_absent() {
+        // The real committed data's own one exception (Judas -> "the
+        // Graecized form of Judah.") -- see module doc comment.
+        let people_json = r#"[
+            {"id": "p1", "fields": {"personLookup": "judas_1757", "name": "Judas",
+              "dictionaryText": " the Graecized form of Judah."}}
+        ]"#;
+        let (people, _) = parse_people(people_json, VERSES_FIXTURE).unwrap();
+        assert_eq!(people[0].dict_text.as_deref(), Some(" the Graecized form of Judah."));
+    }
+
+    #[test]
+    fn dict_text_stays_none_when_both_fields_are_absent() {
+        let people_json = r#"[{"id": "p1", "fields": {"personLookup": "x_1", "name": "X"}}]"#;
+        let (people, _) = parse_people(people_json, VERSES_FIXTURE).unwrap();
+        assert_eq!(people[0].dict_text, None);
+    }
+
+    #[test]
+    fn dict_text_stays_none_rather_than_some_empty_string() {
+        let people_json = r#"[
+            {"id": "p1", "fields": {"personLookup": "x_1", "name": "X",
+              "dictText": [""], "dictionaryText": "   "}}
+        ]"#;
+        let (people, _) = parse_people(people_json, VERSES_FIXTURE).unwrap();
+        assert_eq!(people[0].dict_text, None);
     }
 
     #[test]

@@ -138,6 +138,22 @@ pub fn place_from_node(id: &AnyNodeId, q: &impl GraphQuery) -> Option<Place> {
     Some(Place { id: id.raw.clone(), name: canonical, lat, lon, verse_links })
 }
 
+/// ENT-1a: a place's own Easton's `description`, straight off the graph
+/// payload -- deliberately NOT threaded through `atlas_core::data::Place`
+/// the way `place_from_node`'s other fields are: that struct is shared by
+/// every OTHER caller this batch does not otherwise touch (scene
+/// composition, event witnessing, ...), so widening its own shape would
+/// ripple far beyond this batch's own additive-only serving requirement. A
+/// second, tiny, single-field reconstruction keeps this addition minimal
+/// and exactly as wide as what actually changed.
+pub fn place_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
+    let node = q.node(id)?;
+    match node.payload {
+        NodePayload::Place { description, .. } => description,
+        _ => None,
+    }
+}
+
 /// Reconstructs one `atlas_core::data::Narrative` from its graph node --
 /// `legs` is handed in (the `succession` relation's own row `chain`,
 /// order-preserved) rather than duplicated onto the payload (`NodePayload::

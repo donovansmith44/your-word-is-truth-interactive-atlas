@@ -55,6 +55,20 @@ pub struct Place {
 /// this field), `isProperName`/`ambiguous`/`surname`/`personID` (thin
 /// Theographic bookkeeping with no rendering surface this batch built).
 ///
+/// ENT-1a: Easton's prose RETURNS, as `dict_text` -- the exact field the
+/// paragraph above once dropped. `atlas_etl::people::parse_people` resolves
+/// it at parse time (the SAME "resolve one ambiguity once, at parse time"
+/// discipline `name` itself already uses for `display_title.or(name)`):
+/// the source's own `dictText` (an array, Theographic's newer markdown-
+/// linked extraction, e.g. `[Ex. 6:20](/exod#Exod.6.20)`) wins when
+/// present, else its older plain-text sibling `dictionaryText` (only 1 of
+/// 3,067 real records has the latter without the former); empty/absent on
+/// both sides stays `None`, never `Some("")`. This is Batch P's own tier
+/// (a) source for the graph's `description_adapter` (batch-ent1a-brief.md's
+/// trust order) -- a per-person, source-attested match Theographic already
+/// resolved for us, kept RAW here (Easton's own inline scripture-ref
+/// markdown survives verbatim; linkifying it is a held client concern).
+///
 /// CORRECTED, fix round 1 (R-P2): the dropped list above was itself
 /// incomplete -- also present in the raw source and also dropped:
 /// `father`/`mother`/`children`/`siblings`/`partners` (each an array of
@@ -81,6 +95,54 @@ pub struct Person {
     pub death_year: Option<i32>,
     pub also_called: Vec<String>,
     pub verse_links: Vec<String>,
+    /// ENT-1a: see this struct's own doc comment above. `None` for the
+    /// 1,250 of 3,067 real persons Easton's never covered (or attested with
+    /// only empty text) -- never a fabricated placeholder.
+    pub dict_text: Option<String>,
+}
+
+/// ENT-1a: one Easton's Bible Dictionary (1897, public domain) entry --
+/// `atlas_etl::easton::parse_easton`'s own output, reading `easton.json`
+/// (6,519 entries). This is the description adapter's tier (b)/(c) source
+/// (batch-ent1a-brief.md's own trust order; tier (a) is `Person::dict_text`
+/// above, resolved independently). `dict_lookup` is the entry's own
+/// headword; `dict_text` is its prose, KEPT VERBATIM (Easton's inline
+/// scripture-ref markdown survives as text -- linkification is a held
+/// client concern, per the KJV-inerrancy-adjacent "no fabricated/rewritten
+/// prose" law this batch is under).
+///
+/// `person_slug`/`place_name` are resolved ONCE, at parse time (the same
+/// "resolve at parse time" discipline `Person::name`/`dict_text` already
+/// use), from Theographic's OWN attested `matchType`/`matchSlugs` pair
+/// (kept too, for disclosure) -- tier (b)'s whole premise is that
+/// Theographic did this matching, not us:
+/// - `matchType == "person"`: `matchSlugs` IS a Theographic person-lookup
+///   slug already (e.g. "aaron_1") -- the EXACT SAME id space a compiled
+///   `PersonId` uses, so `person_slug` is directly comparable, no further
+///   resolution needed.
+/// - `matchType == "place"`: `matchSlugs` is a DIFFERENT id space (a
+///   Theographic-internal place slug, e.g. "ammon_58") than a compiled
+///   `PlaceId` (which is geo-derived, e.g. "ammon" or "hebron" with no
+///   numeric suffix) -- so `place_name` resolves the slug through
+///   `places.json`'s own `slug` field to that record's `displayTitle`
+///   (falling back to `kjvName`, the SAME preference order
+///   `atlas_etl::theographic::parse_events` already uses), lowercased, a
+///   NAME to join against a node's own canonical, never an id.
+/// - anything else (`"multi"`/`"unmatched"`): both stay `None` -- tier (b)
+///   only trusts a SINGLE-entity Theographic attestation; a `"multi"` entry
+///   (matching more than one entity) is exactly the "multi-candidate"
+///   ambiguity batch-ent1a-brief.md rules out ("no multi-candidate
+///   guessing -- ambiguity means None"). Such an entry's OWN `dict_lookup`
+///   remains eligible for tier (c) (a plain literal-name fallback,
+///   independent of Theographic's own match-type judgment).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EastonEntry {
+    pub dict_lookup: String,
+    pub dict_text: String,
+    pub match_type: String,
+    pub match_slugs: String,
+    pub person_slug: Option<String>,
+    pub place_name: Option<String>,
 }
 
 /// A datable happening. `places[0]` is the anchor place used for arrow
@@ -876,6 +938,19 @@ pub struct AtlasData {
     /// this exact same empty value with zero changes to any of them).
     #[serde(skip)]
     pub people: Vec<Person>,
+
+    /// ENT-1a: parsed Easton's Bible Dictionary entries (`atlas_etl::
+    /// easton::parse_easton`, reading `easton.json` + `places.json`'s own
+    /// `slug` field for tier-(b) place-name resolution). Same
+    /// `#[serde(skip)]`-plus-populate-in-`compile()` treatment as `people`
+    /// immediately above, for the identical reason: no compiled JSON
+    /// sidecar file exists or will -- this rides straight from raw source
+    /// into the graph. `atlas_etl::compile::compile` populates this field;
+    /// the graph's own `description_adapter.rs` is its only reader.
+    /// `demo_fixture()`/every other test fixture leaves this empty for free
+    /// (same `Default` argument `people`'s own doc comment already makes).
+    #[serde(skip)]
+    pub easton: Vec<EastonEntry>,
 
     /// Derived: place id -> index into `places`. Built by `finish()`.
     #[serde(skip)]

@@ -37,6 +37,7 @@ use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
 use atlas_graph_types::explore::EdgeQuery;
 use atlas_graph_types::id::Position;
+use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
 
 use crate::error::ApiError;
@@ -60,6 +61,16 @@ pub struct NodeCardOut {
     pub provenance: String,
     pub edge_summary: Vec<EdgeSummaryEntryOut>,
     pub version: String,
+    /// ENT-1a: Easton's Bible Dictionary (1897, PD) prose, source-attested,
+    /// `None` until a match exists -- same additive-JSON, same held-client
+    /// disclosure as `handlers::PlaceDetailOut::description`. This is the
+    /// ONLY "detail" surface a Person or PeopleGroup node has at all
+    /// (`graph_wire.rs`'s own doc comment: no dedicated per-kind endpoint
+    /// exists for either), so widening the generic card here is what
+    /// actually reaches them; it reaches Place/PeopleGroup for free too
+    /// (the same payload fact, whichever kind carries it).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 /// `GET /api/node/{id}` (design doc §5): card (id/kind/label/provenance) +
@@ -83,6 +94,15 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<St
 
     let edge_summary = summary.into_iter().map(|(kind, count)| EdgeSummaryEntryOut { kind: kind.label().to_string(), count }).collect();
 
+    // ENT-1a: whichever of the three described kinds this node is (or
+    // `None` for every other kind, and `None` until a match exists even for
+    // those three) -- straight off the already-fetched node's own payload,
+    // no second query.
+    let description = match &node.payload {
+        NodePayload::Place { description, .. } | NodePayload::Person { description, .. } | NodePayload::PeopleGroup { description, .. } => description.clone(),
+        _ => None,
+    };
+
     Ok(Json(NodeCardOut {
         id: encode_node_id(&node_id),
         kind: format!("{:?}", node_id.kind),
@@ -90,6 +110,7 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<St
         provenance: node.provenance.clone(),
         edge_summary,
         version: atlas_graph::version_hex(graph.version()),
+        description,
     }))
 }
 

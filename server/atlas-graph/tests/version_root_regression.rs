@@ -141,4 +141,12 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // Person payload gained `description: Option<String>` (None until the
 // Easton's adapter fills it), which changes each node's canonical
 // bytes -- the root moving IS the widening being real.
-const EXPECTED_VERSION_HEX: &str = "6ec526d87dec845f";
+// MOVED AGAIN (deliberately -- ENT-1a, 2026-08-24): `description_adapter::
+// fill_descriptions` (new MERGE/ALIAS call) now actually FILLS that field
+// with real Easton's Bible Dictionary (1897, PD) prose over the real
+// committed data -- 2,344/3,067 persons (76.4%) and 837/1,373 places
+// (61.0%) go from `None` to `Some(text)`, changing those nodes' own
+// canonical bytes; this is the widening becoming real content, the exact
+// same class of move the ENT-1 crate commit's own note above already
+// named as expected once a data batch landed.
+const EXPECTED_VERSION_HEX: &str = "c4cf220f79beded4";

@@ -26,6 +26,7 @@ file is the detailed version of record.
 | A.T. Robertson, *A Harmony of the Gospels for Students of the Life of Christ* (1922) | Public domain (published 1922, USA; copyright notice reads "COPYRIGHT, 1922, BY HARPER & BROTHERS") | Not redistributed as text — section titles/numbers and parallel-account groupings consulted as PROVENANCE for our own curated `event-witnesses.toml`/`events-extra.toml` fields (`robertson_section`, `ref_note`); every displayed event title/date/verse citation is independently authored (CC0) or Theographic-credited, per the mapping below |
 | William Day Crockett, *A Harmony of the Books of Samuel, Kings and Chronicles* (1897) | Public domain (published 1897, USA; title page reads "Copyright, 1897, William Day Crockett") | Not redistributed as text — section numbers/titles and parallel-account groupings (Samuel/Kings/Chronicles, plus the book's own Appendix of cross-references to Genesis, Joshua, Ruth, Ezra, Nehemiah, Psalms, Isaiah, Jeremiah, Matthew, and Luke) consulted as PROVENANCE for our own curated `event-witnesses.toml` witness rows (Batch W2); every displayed event title/date/verse citation is independently authored (CC0), Theographic-credited, or the compiled KJV text itself, per "Crockett's Harmony of Samuel, Kings, and Chronicles" below |
 | James Ussher, *The Annals of the World* (1658) | Public domain (published 1658; this project's own reading is the Larry & Marion Pierce paragraph-numbered English text) | Not redistributed as text — two specific paragraph-numbered entries (¶1202, ¶1227/¶1234) consulted directly as PROVENANCE for two `chronology-anchors.toml` `year` values (`ezra-returns`, `nehemiah-wall`), HOTFIX-6 fix round 2; every displayed event title/verse citation is independently authored (CC0) or Theographic-credited, per "Ussher's Annals of the World" below |
+| M. G. Easton, *Easton's Bible Dictionary* (1897) | Public domain (published 1897, USA) | Redistributed — compiled into the graph artifact (`graph.bin`) as `description` on Place/Person/PeopleGroup nodes; delivered via the already-vendored Theographic bundle's own `easton.json` + `people.json` `dictText`/`dictionaryText` fields (CC BY-SA 4.0, see "Theographic — controller ruling" above); see "Easton's Bible Dictionary" below |
 
 ## Theographic CC BY-SA 4.0 — controller ruling
 
@@ -514,6 +515,79 @@ internal arithmetic (Ezra 7:7-8's "seventh year of Artaxerxes" + Nehemiah
 2:1's explicit "the same twentieth year," a 13-year textual gap,
 uncontested across chronological schools) — both paths agree exactly,
 disclosed together in `chronology-anchors.toml`'s own `nehemiah-wall` row.
+
+## Easton's Bible Dictionary — public domain (1897; Batch ENT-1a)
+
+Batch ENT-1a ("Easton's descriptions: the data half") required the owner's
+own order (2026-08-23, verbatim): "it doesn't make sense to just show a
+whole bunch of verses when you click on a person or place... we actually
+want meaningful information about who or what someone is, having that be
+backed by scripture." This section follows the SAME Source/Verification/
+What-was-used shape as "Robertson's Harmony of the Gospels"/"Crockett's
+Harmony of Samuel, Kings, and Chronicles"/"Ussher's Annals of the World"
+above.
+
+**Source and provenance.** M. G. Easton, *Easton's Bible Dictionary*
+(also published as *An Illustrated Bible Dictionary*), 3rd edition, 1897.
+Public domain (published 1897, USA). NOT independently fetched this
+batch — the text rides the ALREADY-VENDORED Theographic Bible Metadata
+bundle (`data/raw/theographic/theographic-bible-metadata-master/json/`,
+present since this project's own initial data vendoring): `easton.json`
+(6,519 standalone dictionary entries, each carrying `dictLookup`/
+`dictText`/`matchType`/`matchSlugs`) and, per-person, `people.json`'s own
+`dictText` (a Theographic-pre-joined array) / `dictionaryText` (an older
+plain-text sibling) fields — the exact fields an earlier batch (Batch P,
+"the extensibility proof") imported, found out of its own scope, and
+DISCLOSED as dropped (`atlas_core::data::Person`'s own doc comment, prior
+to this batch). This batch reads them, adds no new fetch, and disclaims
+no textual criticism of the underlying Bible text — Easton's OWN prose,
+where it touches on a place/person/people's identity, is carried
+verbatim, per this project's standing KJV-inerrancy-adjacent discipline
+of never editorializing a source's own words.
+
+**Verification (per this file's own established "verify it IS the named
+source, spot-check a real entry" bar).** The "Aaron" entry was fetched
+live from an independent, unrelated mirror,
+[biblestudytools.com/dictionaries/eastons-bible-dictionary/aaron.html](https://www.biblestudytools.com/dictionaries/eastons-bible-dictionary/aaron.html)
+(2026-08-24), which explicitly attributes its text to "Easton's Bible
+Dictionary": its own opening sentences —"the eldest son of Amram and
+Jochebed, a daughter of Levi (Exodus 6:20). Some explain the name as
+meaning mountaineer, others mountain of strength, illuminator." — match
+the vendored `people.json` `dictionaryText` field for `aaron_1` WORD FOR
+WORD (modulo the vendored copy's own verse-citation spacing). The SAME
+entry's `dictText` field (and the standalone `easton.json` entry
+`matchSlugs: "aaron_1"`) carries the identical prose, re-flowed with
+markdown scripture-ref links (Theographic's own newer extraction) —
+confirmed a re-formatting of the SAME underlying text, not a different
+source.
+
+**What was used, and how.** `atlas_etl::easton::parse_easton` (reading
+`easton.json` + `places.json`'s own `slug` field for place-name
+resolution) and `atlas_etl::people::parse_people`'s widened `dict_text`
+resolution (reading `people.json`) feed `atlas_graph::description_adapter
+::fill_descriptions`, a trust-ordered matcher (person's own source
+record, THEN Theographic's own attested `matchType`/`matchSlugs` join,
+THEN a conservative exact-name fallback — batch-ent1a-brief.md's full
+order) that fills `NodePayload::{Place,Person,PeopleGroup}.description`
+with ONE WHOLE, VERBATIM `dictText` string per matched node, never
+concatenated, trimmed-and-rebuilt, or synthesized from parts — proven by
+`description_adapter.rs`'s own tests. Over the real committed data (this
+batch, 2026-08-24): 2,344 of 3,067 persons (76.4%) and 837 of 1,373
+places (61.0%) carry a real description; 0 of 0 PeopleGroup nodes (none
+exist yet — PG-1a, a later batch, seeds real ones). Every DISPLAYED
+description is Easton's own words; no prose in this app's own voice is
+ever mixed into a `description` field.
+
+**Dedication of this project's own matching work.** The trust-order
+matcher itself (`description_adapter.rs`, `atlas_etl::easton.rs`) — which
+source wins when, the ambiguity-collision rule, the place-name-vs-id-space
+resolution — is original work of this project, dedicated to the public
+domain under
+[CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).
+The QUOTED TEXT itself (Easton's own words, however Theographic re-flowed
+its markdown) is public domain by its own 1897 publication, carried here
+under the SAME CC BY-SA 4.0 delivery-vehicle disposition "Theographic —
+controller ruling" above already covers for the whole Theographic bundle.
 
 ## Per-artifact label (`data/compiled/*`)
 

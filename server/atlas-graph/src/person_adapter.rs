@@ -227,6 +227,7 @@ mod tests {
             death_year: None,
             also_called: vec![],
             verse_links: verses.iter().map(|s| s.to_string()).collect(),
+            dict_text: None,
         }
     }
 
@@ -244,6 +245,7 @@ mod tests {
             death_year: Some(-1452),
             also_called: vec!["Ahron".into()],
             verse_links: vec![],
+            dict_text: None,
         }]);
         let canon = Canon { books: vec![] };
         let verses: HashMap<String, String> = HashMap::new();

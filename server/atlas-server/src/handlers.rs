@@ -1441,6 +1441,15 @@ pub struct PlaceDetailOut {
     /// than a vacuous "known elsewhere as X" that just repeats the title.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub canonical_name: Option<String>,
+    /// ENT-1a (owner order: "we actually want meaningful information about
+    /// who or what someone is, having that be backed by scripture"):
+    /// Easton's Bible Dictionary (1897, public domain) prose, source-
+    /// attested, `None` until a match exists -- never fabricated. ADDITIVE
+    /// JSON (batch-ent1a-brief.md controller decision 3): the current
+    /// client ignores unknown/absent fields; the EntityProfile presentation
+    /// half that renders this is HELD for the frontend-elegance brainstorm.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 /// `GET /api/place/{id}?from=&to=`. Unknown id -> 404 `not_found` (a place
@@ -1502,5 +1511,10 @@ pub async fn place(
         destroyed: h.destroyed.as_ref().map(|c| DateClaimOut { when: c.when, verses: c.verses.clone(), note: c.note.clone() }),
     });
 
-    Ok(Json(PlaceDetailOut { id: place.id.clone(), name: place.name.clone(), lat: place.lat, lon: place.lon, events, history, canonical_name }))
+    // ENT-1a: a separate, tiny lookup (not threaded through `place`, the
+    // legacy `atlas_core::data::Place` reconstruction above) -- see
+    // `atlas_graph::legacy::place_description`'s own doc comment.
+    let description = atlas_graph::legacy::place_description(&place_id, &snap);
+
+    Ok(Json(PlaceDetailOut { id: place.id.clone(), name: place.name.clone(), lat: place.lat, lon: place.lon, events, history, canonical_name, description }))
 }
