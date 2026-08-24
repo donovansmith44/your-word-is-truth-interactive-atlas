@@ -31,6 +31,13 @@ impl Direction {
 /// The relation manifest: ONE definition site. The macro generates the
 /// id enums and the label tables; an unpaired kind or label drift is
 /// unrepresentable because there is no second list.
+/// C1 (map-system contract, 2026-08-24): exported so a sibling system
+/// can declare ITS OWN relation manifest with the same one-definition-
+/// site algebra (paired labels, unrepresentable drift). The macro body
+/// is self-contained -- it generates fresh enums in the caller's crate
+/// and references nothing of ours, so exporting it shares the SHAPE,
+/// never our vocabulary.
+#[macro_export]
 macro_rules! relations {
     (
         directed { $($dr:ident => $fwd:literal / $inv:literal),+ $(,)? }

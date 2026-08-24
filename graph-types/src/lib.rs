@@ -31,5 +31,33 @@ pub use store::{GraphPublisher, GraphSnapshot, GraphStore, GraphVersion, MemStor
 pub use id::{AnyNodeId, NodeKind, Pid, Position, PositionKind};
 pub use text::{BibleLocus, Locus, TextLocus, TextRef, VerseRef};
 
+/// C1 -- the COVENANT surface (map-system contract set, 2026-08-24):
+/// the one import path a sibling system binds to. Everything here is a
+/// PROMISE -- names are stable, semantics are stable, and additions are
+/// deliberate acts; nothing else in this crate is covenanted. Explicit
+/// list on purpose: a wildcard would grow the promise silently.
+pub mod covenant {
+    /// Chronology authority (contract C2): placements resolve dates;
+    /// there is no second dating path.
+    pub use crate::chrono::{
+        ChronoTarget, DatePlacement, DatedBy, Duration, PlacementBasis, ResolvedDate,
+        ResolvedPlacement, SeqKey, TimePoint, Year,
+    };
+    /// Justification everywhere (covenant rule): a claim carries its why.
+    pub use crate::edge::{Ground, GroundTarget, Justification};
+    /// Content addressing + typed positions.
+    pub use crate::id::{AnyNodeId, ContentAddressed, NodeId, Pid, Position, PositionKind};
+    /// Provenance vocabulary.
+    pub use crate::ingest::{Confidence, Provenance, ProvenanceId};
+    /// Loci: where in the text a claim stands.
+    pub use crate::text::{
+        BibleLocus, BibleLocusRange, BibleTag, Corpus, Locus, LocusRange, LocusSet,
+        TextLocus, TextRef, VerseRef,
+    };
+    // The `relations!` macro is covenanted too -- `#[macro_export]`
+    // hoists it to the crate root (`atlas_graph_types::relations!`);
+    // see its own C1 doc comment in edge.rs.
+}
+
 #[cfg(test)]
 mod tests;
