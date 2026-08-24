@@ -2967,6 +2967,27 @@ Notes:
     resolved verses renders the title header only (graceful degrade,
     unchanged from PEEK-1's own "verses below simply resolve to nothing
     found" policy one layer in).
+    FIX ROUND (F2, reviewer finding): RevealControls' own `Total` above is
+    always honest about what THIS peek actually holds (`_peekVerses.Count`
+    -- "all (N)" never claims a count more/all can't really reveal), but
+    that alone silently dropped the server's own 20-verse-per-chapter cap
+    disclosure (HOTFIX-4's `GroupCount`, the same field
+    `PassageBlockBuilder`'s own `TruncatedBy` already turns into a "+N
+    more -- read the chapter" signal for PassageList consumers -- see
+    TRUNC-1) once the peek stopped routing through that component. Restored
+    directly: `ArrowNav`'s own `ComputeTruncatedBy` reads `GroupCount`
+    (already flowing through every `_peekVerses` entry, nothing new to
+    fetch) and, whenever the server's own true count for a represented
+    (book,chapter) group exceeds how many of that group's own verses
+    actually resolved, renders a small, quiet, NON-interactive note
+    (`.popover-arrow-peek-truncated`, `data-testid="{event-testid}-
+    peek-truncated"`, e.g. "+19 more (this chapter's own display cap)") --
+    present as a standing fact about the chapter regardless of `_peekShown`,
+    never gated on how much of the delivered verses is currently revealed.
+    Unlike PassageList's own "+N more — read the chapter," this note
+    offers no action (the peek has no MiniReaderExpand/whole-chapter
+    reader of its own to open) -- purely honest disclosure, not a
+    control.
   - DISMISS (the grace corridor): pointer-leave no longer dismisses the
     peek on the same tick -- now that `more`/`all`/`less` live INSIDE the
     box, the pointer must be able to travel from the arrow, across the
@@ -3017,21 +3038,48 @@ Notes:
     button dispatches no pointer event at all) never runs this check
     against a stale, unrelated mouse position -- "keyboard/commit paths
     unaffected" (decision 3) extends to this fallback too.
-  - PLACEMENT: never clipped by the viewport. Measured once per peek open
-    (`reader.js`'s new `getElementRect`, keyed off a real
+  - PLACEMENT: never clipped by the popover -- its own real clipping
+    boundary, NOT the viewport (FIX ROUND F1, below, RESPECS this bullet's
+    own original "never clipped by the viewport" claim, which was wrong in
+    exactly the case that matters: an EXPANDED peek). Measured once per
+    peek open (`reader.js`'s new `getElementRect`, keyed off a real
     `ElementReference` rather than a CSS selector -- up to four `ArrowNav`
     instances can be mounted on one popover at once, prior/following x
     narrative/chronology, so a shared-class selector would only ever
     resolve the FIRST one), the box flips to grow ABOVE the arrow instead
     of below (`.popover-arrow-peek-above`) whenever that side has more
-    real room; whichever side is chosen gets a `max-height` capped to
-    the room actually available there (`--peek-max-height`, app.css),
+    real room WITHIN THE POPOVER; whichever side is chosen gets a
+    `max-height` capped to the room actually available there, bounded by
+    the enclosing `.popover`'s own edge (`--peek-max-height`, app.css),
     with `overflow-y: auto` as the backstop for genuine overflow (an
-    expanded, many-verse peek) -- an internal scroll, never an
-    off-screen spill. The horizontal (left- vs. right-anchored, by
-    prior/following side) placement this note's own predecessor already
-    established is completely unchanged and composes with this
-    unaffected.
+    expanded, many-verse peek) -- an internal scroll, contained WITHIN THE
+    POPOVER, never a spill past its own edge. The horizontal (left- vs.
+    right-anchored, by prior/following side) placement this note's own
+    predecessor already established is completely unchanged and composes
+    with this unaffected.
+    FIX ROUND (F1, Important, reviewer live-repro -- a real regression of
+    the owner's own original defect, not a hypothetical): the first cut of
+    this measurement budgeted `spaceBelow`/`spaceAbove` (and therefore
+    `max-height`) against `window.innerHeight` -- but the peek's own TRUE
+    clipping boundary is the enclosing `.popover` (`position:fixed`, its
+    own `max-height:calc(100vh - 4rem)`, routinely SHORTER than the
+    viewport even at an ordinary window size, and clips every descendant
+    -- including a `position:absolute` one like this peek -- once it
+    extends past that box, since overflow clipping is a paint-time
+    ancestor relationship independent of a descendant's own positioning
+    scheme). Confirmed live by the reviewer: the default one-verse peek
+    fit fine, but clicking `all` on a many-verse peek (after the initial
+    flip/cap decision, computed against the wrong frame, had already
+    landed) spilled the peek's own bottom ~269px past the popover's own
+    bottom edge, its internal `overflow-y:auto` scrollbar never engaging
+    because it never thought it was out of room. Fixed at the source:
+    `reader.js`'s own `getElementRect` now ALSO returns the nearest
+    `.popover` ancestor's own top/bottom (found via `el.closest('.popover')`,
+    falling back to the viewport's own bounds only if no `.popover`
+    ancestor exists at all -- never true in practice, this component's
+    only rendering context IS inside one), and `ArrowNav.razor`'s own
+    `OnAfterRenderAsync` budgets both the flip decision AND the
+    `max-height` against THAT boundary, never the viewport.
   - REDUCED MOTION: satisfied by construction, unchanged -- no rule ever
     declared a transition/animation on `.popover-arrow-peek` or its own
     flip/content, before or after this note (the SAME "no rule, no
@@ -3046,11 +3094,28 @@ Notes:
   - PEEK-3 (`tests/ux/event-timeline.spec.ts`): dwelling an arrow whose
     own wrapper sits near the bottom viewport edge never clips the peek --
     its own rendered bounding rect is fully inside the viewport (asserted
-    directly, not merely "visible").
+    directly, not merely "visible"). Only ever exercises the one-verse
+    default; see PEEK-3b for the expanded case F1's own fix round adds.
   - PEEK-4 (`tests/ux/event-timeline.spec.ts`): the corridor itself --
     moving the pointer from the arrow, across the gap, into the box (a
     multi-step synthetic move, not a teleport) never dismisses the peek
     along the way.
+  - PEEK-3b (`tests/ux/event-timeline.spec.ts`, fix round 1/F1): expanding
+    a many-verse peek via `all` stays fully contained within the
+    POPOVER's own bounding rect (not just the viewport, which PEEK-3
+    alone would never distinguish), and the peek's own internal scrollbar
+    genuinely engages (`scrollHeight > clientHeight`) rather than merely
+    happening to fit -- the test that actually reaches the reviewer's own
+    live-repro path (PEEK-3's one-verse default was never tall enough to
+    expose it).
+  - PEEK-5 (`tests/ux/event-timeline.spec.ts`, fix round 1/F2): a peek
+    target whose own verse group is server-capped (a real live example --
+    `1ki_temple_furnishings`, 1KI.7.13-32 delivered, 20 of a true 39, is
+    `1ki_temple_dedication`'s own real PRIOR neighbor on the global
+    timeline) renders the honest `+N more` disclosure alongside a
+    RevealControls "all" that stays truthful about the delivered 20 --
+    the disclosure is present before AND after expanding, never replaced
+    by or conflated with the reveal mechanic's own count.
 
 - TITLE-WRAP-1 (owner report, 2026-08-24, verbatim: "i don't like that
   arrow titles are getting cut off with elipses... we need to find a way

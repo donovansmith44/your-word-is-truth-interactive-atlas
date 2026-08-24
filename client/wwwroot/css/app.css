@@ -4276,6 +4276,20 @@ input:focus-visible,
     margin: 0;
 }
 
+/* F2 fix round: the honest disclosure for verses the SERVER itself never
+   sent at all (the 20-verse-per-chapter cap, HOTFIX-4's GroupCount --
+   ArrowNav.razor's own ComputeTruncatedBy doc comment has the full
+   mechanism) -- a quiet, non-interactive note, never styled like a
+   button/control (no cursor:pointer, nothing here is clickable), same
+   italic ink-soft register .popover-passage-caption already uses for a
+   similar quiet meta-note beside real content. */
+.popover-arrow-peek-truncated {
+    margin: 0;
+    font-style: italic;
+    font-size: .75rem;
+    color: var(--ink-soft);
+}
+
 /* Batch R requirement 3: one section's own wrapper -- a stable hook
    (data-testid="popover-section-{id}") independent of whatever a provider
    renders inside it; visually just a vertical rhythm/divider between

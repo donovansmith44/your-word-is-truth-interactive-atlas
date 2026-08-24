@@ -85,29 +85,62 @@
      law never needed a grace period and still doesn't; a grace period only
      ever makes sense for something that's already showing and might
      legitimately be travelled INTO.
-   - PLACEMENT: viewport-aware, flips above/below so the peek is NEVER
-     clipped. OnAfterRenderAsync below measures this component's own
-     wrapper, once per peek OPEN (never re-measured while it stays open --
-     the SAME "measure once, on open" discipline ExplorerPopover's own
-     verse/pane anchoring already established, see that file's own header
-     comment), via reader.js's new getElementRect -- an ElementReference-
-     keyed sibling of that file's own selector-keyed getVerseAnchorRect. A
-     selector would only ever resolve document.querySelector's own FIRST
-     match: up to FOUR ArrowNav instances can be mounted at once (prior x
-     following, narrative x chronology), so a shared CSS-class selector
-     would silently measure the wrong instance's anchor for every side but
-     one -- the same "pass the real element, not a selector" reasoning
-     reader.js's own capturePointer already established for SplitDivider's
-     analogous multi-instance concern. Whichever side (above/below the
-     wrapper) has more real room wins, and that side's own max-height is
-     capped to exactly the room available -- "never clipped" without
-     needing to predict content height up front: genuine overflow (an
-     expanded, many-verse peek) degrades to app.css's own
-     `overflow-y: auto`, an internal scroll, never an off-screen spill. A
-     quick pass-over that never dwells long enough to show a peek never
-     measures anything (no JS interop call) -- matching this component's
-     own pre-existing "never a fetch until the dwell actually fires"
-     discipline one layer further out. *@
+   - PLACEMENT: never clipped by its own real clipping boundary -- the
+     enclosing `.popover` (F1 fix round below has the full "why not the
+     viewport" story). OnAfterRenderAsync below measures this component's
+     own wrapper, once per peek OPEN (never re-measured while it stays
+     open -- the SAME "measure once, on open" discipline ExplorerPopover's
+     own verse/pane anchoring already established, see that file's own
+     header comment), via reader.js's new getElementRect -- an
+     ElementReference-keyed sibling of that file's own selector-keyed
+     getVerseAnchorRect. A selector would only ever resolve
+     document.querySelector's own FIRST match: up to FOUR ArrowNav
+     instances can be mounted at once (prior x following, narrative x
+     chronology), so a shared CSS-class selector would silently measure
+     the wrong instance's anchor for every side but one -- the same "pass
+     the real element, not a selector" reasoning reader.js's own
+     capturePointer already established for SplitDivider's analogous
+     multi-instance concern. Whichever side (above/below the wrapper) has
+     more real room wins, and that side's own max-height is capped to
+     exactly the room available -- "never clipped" without needing to
+     predict content height up front: genuine overflow (an expanded,
+     many-verse peek) degrades to app.css's own `overflow-y: auto`, an
+     internal scroll, never an off-screen spill. A quick pass-over that
+     never dwells long enough to show a peek never measures anything (no
+     JS interop call) -- matching this component's own pre-existing
+     "never a fetch until the dwell actually fires" discipline one layer
+     further out.
+
+   FIX ROUND 1 (controller review, PASS/PASS, one Important + two Minors):
+   - F1 (Important, reviewer live-repro): the original placement math
+     budgeted against window.innerHeight. The peek's own real clipping
+     boundary is the enclosing `.popover` (position:fixed, its own
+     max-height:calc(100vh - 4rem), routinely SHORTER than the viewport,
+     clips every descendant including a position:absolute one like this
+     peek) -- reader.js's own getElementRect now measures THAT ancestor
+     directly (PopoverTop/PopoverBottom, ElementRectDto below) and
+     OnAfterRenderAsync's own flip/max-height math budgets against it,
+     never the viewport. The owner's own original defect ("cut off...
+     needs to be truncated") could otherwise resurface once expanded --
+     confirmed live by the reviewer: the default one-verse peek fit fine,
+     but clicking `all` on a many-verse peek spilled ~269px past the
+     popover's own bottom edge, its internal overflow-y:auto scrollbar
+     never engaging because its budget had come from the wrong frame.
+     PEEK-3b (tests/ux/event-timeline.spec.ts) pins this permanently.
+   - F2 (Minor, reviewer finding): the server's own 20-verse-per-chapter
+     cap (HOTFIX-4's GroupCount) is disclosed again -- ComputeTruncatedBy
+     below computes it directly from _peekVerses' own already-flowing
+     GroupCount field (VerseTextResolver.ResolveGroupsAsync always
+     attaches it; nothing new to fetch), rendered as a small, honest,
+     non-interactive `.popover-arrow-peek-truncated` note whenever it's
+     nonzero -- RevealControls' own Total/"all (N)" stays honest about
+     what THIS peek actually holds (never inflated to a count it can't
+     really reveal); the separate note is what tells the truth about
+     verses the wire never sent at all.
+   - F3 (Minor): Dispose() now also calls HidePeekState(), matching
+     Commit()'s own symmetry -- every disposal path leaves this instance's
+     fields fully reset, not just its two cancellation tokens (verified
+     harmless before this fix; correct regardless). *@
 @using System.Globalization
 @inject AtlasClient Atlas
 @inject IJSRuntime JS
@@ -160,6 +193,20 @@ else
                 <RevealControls Total="@_peekVerses.Count" Default="1" Shown="@_peekShown" ShownChanged="OnPeekShownChanged"
                                  MoreTestId="@($"{EventTestIdPrefix}-{IdSuffix}-peek-more")" CollapseTestId="@($"{EventTestIdPrefix}-{IdSuffix}-peek-collapse")"
                                  RevealNoun="verses" />
+                @* F2 fix round: RevealControls' own Total above is honest
+                   about what this peek actually HOLDS (_peekVerses.Count)
+                   -- "all (N)" never overclaims something more/all can't
+                   actually reveal. This separate, non-interactive note is
+                   the disclosure for verses the SERVER itself never sent
+                   at all (ComputeTruncatedBy's own doc comment has the
+                   full mechanism) -- present regardless of _peekShown, a
+                   standing fact about this chapter, not something tied to
+                   the current reveal state. *@
+                @if (_peekTruncatedBy > 0)
+                {
+                    <p class="popover-arrow-peek-truncated" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-truncated")"
+                       title="This chapter has more verses than this peek can show">+@_peekTruncatedBy more (this chapter's own display cap)</p>
+                }
             }
         </div>
     }
@@ -240,6 +287,14 @@ else
     private bool _showPeek;
     private List<PassageListVerse> _peekVerses = new();
 
+    // F2 fix round -- how many MORE verses the server's own true count
+    // says exist beyond what actually resolved into _peekVerses (the
+    // server's own 20-verse-per-chapter cap, HOTFIX-4), computed once per
+    // dwell session by ComputeTruncatedBy below. 0 (the overwhelming
+    // majority of real events) renders nothing extra; >0 renders the
+    // honest disclosure paragraph in the markup above.
+    private int _peekTruncatedBy;
+
     // PEEK-TRUNC-1: RevealControls' own two-way-bound Shown state -- the
     // ONE-verse floor is Default="1" below (the markup), never re-derived
     // here; this field is purely "how many of _peekVerses are currently
@@ -265,14 +320,21 @@ else
     private bool _peekFlipAbove;
     private double? _peekMaxHeightPx;
 
-    // Breathing room between the peek's own far edge and the viewport
-    // edge -- deliberately a little more generous than the CSS .4rem
-    // (6.4px) gap between the wrapper and the peek itself (app.css), so
-    // this estimate errs toward a SLIGHTLY smaller max-height than the
-    // theoretical maximum rather than risking a hairline clip; the only
-    // visible cost of erring small is that the internal scroll (app.css's
-    // own overflow-y:auto) engages a few px sooner than strictly
-    // necessary, never an actual overflow.
+    // Breathing room between the peek's own far edge and the CLIPPING
+    // boundary -- F1 fix round (reviewer live-repro): that boundary is the
+    // enclosing `.popover`'s own edge, never the viewport (see
+    // reader.js's own getElementRect doc comment for the full "why" --
+    // .popover is routinely shorter than the viewport, vertically
+    // centered with its own max-height:calc(100vh - 4rem), so budgeting
+    // against window.innerHeight silently OVER-estimates real room and
+    // lets an expanded peek spill past the popover's own bottom edge with
+    // its internal scrollbar never engaging). Deliberately a little more
+    // generous than the CSS .4rem (6.4px) gap between the wrapper and the
+    // peek itself (app.css), so this estimate errs toward a SLIGHTLY
+    // smaller max-height than the theoretical maximum rather than risking
+    // a hairline clip; the only visible cost of erring small is that the
+    // internal scroll (app.css's own overflow-y:auto) engages a few px
+    // sooner than strictly necessary, never an actual overflow.
     private const double PeekMarginPx = 12;
 
     private string? PeekStyle => _peekMaxHeightPx is double h
@@ -418,6 +480,7 @@ else
         }
 
         _peekShown = 1; // PEEK-TRUNC-1: every fresh peek starts back at the one-verse floor
+        _peekTruncatedBy = ComputeTruncatedBy(_peekVerses); // F2 fix round -- see that method's own doc comment
         _peekMeasured = false; // a fresh measurement for THIS open -- see OnAfterRenderAsync
         _showPeek = true;
         StateHasChanged();
@@ -461,6 +524,7 @@ else
     {
         _showPeek = false;
         _peekShown = 1;
+        _peekTruncatedBy = 0;
         _peekMeasured = false;
         _peekFlipAbove = false;
         _peekMaxHeightPx = null;
@@ -472,6 +536,22 @@ else
     // render (ordinary Blazor lifecycle), but the _peekMeasured guard makes
     // it a real no-op except for the one render immediately after a fresh
     // peek opens.
+    //
+    // F1 fix round (reviewer live-repro, real bug -- default one-verse peek
+    // was fine, but clicking `all` on a many-verse peek spilled the peek
+    // ~269px past the enclosing .popover's own bottom edge, its internal
+    // scrollbar never engaging because its budget had come from
+    // window.innerHeight instead): spaceBelow/spaceAbove now budget
+    // against r.PopoverBottom/r.PopoverTop (reader.js's own getElementRect,
+    // measured off the .popover ancestor -- see that function's own doc
+    // comment for why THAT, not the viewport, is the real clipping
+    // boundary), never r.ViewportHeight. Both the FLIP decision and the
+    // max-height budget read off the SAME corrected boundary, so a
+    // subsequently-expanded peek (more/all clicked after the initial
+    // flip/cap decision already landed) still fits: max-height is set to
+    // the FULL room available on the chosen side up front, not derived
+    // from the one-verse default's own smaller natural height, so
+    // expanding never needs a second measurement.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!_showPeek || _peekMeasured || Adjacent is null)
@@ -491,8 +571,8 @@ else
             // landed late.
             if (rect is { } r && _showPeek)
             {
-                var spaceBelow = r.ViewportHeight - (r.Top + r.Height) - PeekMarginPx;
-                var spaceAbove = r.Top - PeekMarginPx;
+                var spaceBelow = r.PopoverBottom - (r.Top + r.Height) - PeekMarginPx;
+                var spaceAbove = r.Top - r.PopoverTop - PeekMarginPx;
                 _peekFlipAbove = spaceBelow < spaceAbove;
                 _peekMaxHeightPx = Math.Max(_peekFlipAbove ? spaceAbove : spaceBelow, 0);
                 StateHasChanged();
@@ -509,6 +589,51 @@ else
         }
     }
 
+    // F2 fix round (reviewer finding: the server's own 20-verse-per-chapter
+    // cap -- HOTFIX-4's GroupCount field, already flowing through every
+    // _peekVerses entry via VerseTextResolver.ResolveGroupsAsync, just
+    // never READ here -- was silently dropped once the peek stopped
+    // rendering through PassageList/PassageBlockBuilder, which is the ONLY
+    // other place in this app that turns GroupCount into an honest
+    // disclosure). Mirrors PassageBlockBuilder's OWN computation
+    // (Explore/PassageBlock.cs: "find, per distinct (book,chapter)
+    // GroupCount actually present... the block reaching that group's own
+    // HIGHEST verse number"), applied FLATLY here since the peek has no
+    // block grouping of its own to hang a per-block TruncatedBy off --
+    // for each distinct (book,chapter) origin actually represented among
+    // _peekVerses, the server's own true count (GroupCount -- identical on
+    // every verse from that one group, VerseTextResolver's own doc comment
+    // has the full "attached from whichever VerseGroup it came from"
+    // story) minus how many of that group's own verses actually made it
+    // into this list is real, permanently missing text this peek can never
+    // reveal via more/all -- the WIRE itself never sent it
+    // (scene::verse_groups_for's own take(20) truncates server-side,
+    // before this component ever asks). Summed across every distinct
+    // group actually present, in case an event's own verse groups ever
+    // span more than one chapter (rare, but this must stay honest either
+    // way, not just for the single-group common case).
+    private static int ComputeTruncatedBy(IReadOnlyList<PassageListVerse> verses)
+    {
+        var byGroup = new Dictionary<(string Book, int Chapter), (int Delivered, int? TrueCount)>();
+        foreach (var v in verses)
+        {
+            var (book, chapter, _) = CanonRef.ParseVerse(v.Vref);
+            var key = (book, chapter);
+            var existing = byGroup.GetValueOrDefault(key, (0, null));
+            byGroup[key] = (existing.Delivered + 1, v.GroupCount ?? existing.TrueCount);
+        }
+
+        var missing = 0;
+        foreach (var (_, entry) in byGroup)
+        {
+            if (entry.TrueCount is int trueCount && trueCount > entry.Delivered)
+            {
+                missing += trueCount - entry.Delivered;
+            }
+        }
+        return missing;
+    }
+
     // Mirrors ExplorerPopover's own VerseAnchorRectDto/PaneRectDto -- a
     // small, file-scoped, PRIVATE DTO per consumer rather than a shared
     // type, the same "these overlap but stay separate" call SplitDivider's
@@ -516,11 +641,29 @@ else
     // identical reasoning: nothing outside this file needs this shape, and
     // a shared type would only couple two otherwise-independent
     // measurement call sites for no real benefit.
-    private sealed record ElementRectDto(double Left, double Top, double Width, double Height, double ViewportWidth, double ViewportHeight);
+    //
+    // F1 fix round: PopoverTop/PopoverBottom replace the original
+    // ViewportWidth/ViewportHeight -- see reader.js's own getElementRect
+    // doc comment for why the enclosing .popover, not the viewport, is
+    // this box's real clipping boundary. ViewportWidth was never actually
+    // read anywhere in this file (this peek is left/right-anchored by CSS
+    // off the arrow's own side, never viewport-centered, unlike
+    // ExplorerPopover's own verse-anchoring) -- dropped rather than kept
+    // unused.
+    private sealed record ElementRectDto(double Left, double Top, double Width, double Height, double PopoverTop, double PopoverBottom);
 
+    // F3 fix round (reviewer, verified harmless today, fixed for symmetry
+    // anyway): Commit() already calls HidePeekState() before tearing down
+    // via navigation; Dispose() -- the OTHER path this component's own
+    // state can end on (the popover re-resolving its sections for a
+    // DIFFERENT reason, e.g. a mention click elsewhere pushing a new node)
+    // -- now does too, so every disposal path leaves this instance's own
+    // fields in the identical, fully-reset shape, not just its two
+    // cancellation tokens.
     public void Dispose()
     {
         CancelDwell();
         CancelDismiss();
+        HidePeekState();
     }
 }

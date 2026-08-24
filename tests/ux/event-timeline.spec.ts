@@ -632,6 +632,69 @@ test('PEEK-3: dwelling an arrow near the bottom viewport edge never clips the pe
   expect(box!.y + box!.height, 'the peek\'s own bottom edge must never be clipped below the viewport').toBeLessThanOrEqual(480);
 });
 
+test('PEEK-3b (fix round 1, F1): expanding a many-verse peek via `all` stays fully contained within the POPOVER, not just the viewport -- the internal scrollbar engages instead of spilling past the popover\'s own edge', async ({ page }) => {
+  // F1's own real bug (reviewer live-repro): the default one-verse peek
+  // was fine, but the peek's true clipping boundary is the enclosing
+  // .popover (position:fixed, its own max-height:calc(100vh - 4rem) --
+  // routinely SHORTER than the viewport even at a perfectly ordinary
+  // window size), not the viewport itself -- budgeting against
+  // window.innerHeight silently over-estimated real room, so an EXPANDED
+  // peek (more/all clicked after the initial flip/cap decision already
+  // landed) could spill past the popover's own bottom edge with its own
+  // internal overflow-y:auto scrollbar never engaging (its budget had
+  // come from the wrong frame). PEEK-3 above only ever exercises the
+  // one-verse default, which was never tall enough to expose this -- this
+  // test is the one that actually reaches the reviewer's own repro path.
+  const positions = await api.narrativeEventPositions('rob_crippled_woman_sabbath');
+  const narrativePos = positions.narrative.find((p: any) => p.narrative_id === 'jesus-ministry');
+  expect(narrativePos?.following?.id, 'rob_crippled_woman_sabbath must have a real FOLLOWING jesus-ministry leg for this test to mean anything').toBe('rob_dedication_feast');
+  const total: number = narrativePos.following.verse_groups.reduce((n: number, g: any) => n + g.verses.length, 0);
+
+  // Same short-viewport-plus-scroll-to-bottom technique PEEK-3 already
+  // establishes -- deterministically minimizes the room available below
+  // the arrow, regardless of exactly how tall this event's own popover
+  // content happens to be.
+  await page.setViewportSize({ width: 1280, height: 480 });
+
+  await openEventPopover(page, 'rob_crippled_woman_sabbath');
+  const popover = page.getByTestId('popover');
+  const arrow = page.getByTestId('event-following-event-jesus-ministry');
+  await arrow.evaluate((el: HTMLElement) => el.scrollIntoView({ block: 'end' }));
+  await expect(arrow).toBeVisible();
+  const peek = page.getByTestId('event-following-event-jesus-ministry-peek');
+
+  await arrow.hover({ force: true });
+  await expect(peek).toBeVisible({ timeout: 2000 });
+
+  const allLink = page.getByTestId('event-following-event-jesus-ministry-peek-more-all');
+  await allLink.click({ force: true });
+  await expect(peek.locator('.popover-arrow-peek-verse')).toHaveCount(total);
+
+  // Poll rather than assert once -- PEEK-3's own comment on why a fresh
+  // measurement is a real async round trip applies identically here.
+  await expect.poll(async () => {
+    const peekBox = await peek.boundingBox();
+    const popoverBox = await popover.boundingBox();
+    if (!peekBox || !popoverBox) {
+      return null;
+    }
+    return peekBox.y >= popoverBox.y && peekBox.y + peekBox.height <= popoverBox.y + popoverBox.height;
+  }, { timeout: 2000 }).toBe(true);
+
+  const peekBox = await peek.boundingBox();
+  const popoverBox = await popover.boundingBox();
+  expect(peekBox, 'the peek must have a real, measurable box').not.toBeNull();
+  expect(popoverBox, 'the popover must have a real, measurable box').not.toBeNull();
+  expect(peekBox!.y, 'the peek\'s own top edge must never be clipped above the popover').toBeGreaterThanOrEqual(popoverBox!.y);
+  expect(peekBox!.y + peekBox!.height, 'the peek\'s own bottom edge must never spill past the popover\'s own bottom edge').toBeLessThanOrEqual(popoverBox!.y + popoverBox!.height);
+
+  // "Never an off-screen spill" degrades to a REAL internal scroll, not
+  // merely "happened to fit" -- the expanded content must have actually
+  // needed it.
+  const scrollEngaged = await peek.evaluate((el) => el.scrollHeight > el.clientHeight);
+  expect(scrollEngaged, `expanding to all ${total} verses must overflow the available room and engage the peek's own internal scrollbar`).toBe(true);
+});
+
 test('PEEK-4: moving the pointer from the arrow, across the gap, into the box does not dismiss the peek -- the reveal control inside remains genuinely clickable', async ({ page }) => {
   await openEventPopover(page, 'rob_crippled_woman_sabbath');
   const arrow = page.getByTestId('event-following-event-jesus-ministry');
@@ -732,4 +795,54 @@ test('TITLE-2: a long event name renders via the two-line clamp (never a single-
   const peekTitle = page.getByTestId('event-following-event-jesus-ministry-peek-title');
   await expect(peekTitle).toBeVisible({ timeout: 2000 });
   await expect(peekTitle).toHaveText(longLabel);
+});
+
+// ---------------------------------------------------------------------
+// PEEK-5 (fix round 1, F2 -- reviewer finding: the server's own 20-verse-
+// per-chapter cap, HOTFIX-4's own GroupCount honesty mechanism, was
+// silently dropped once the peek stopped rendering through PassageList/
+// PassageBlockBuilder, the only other place in this app that turns
+// GroupCount into a disclosure). CONTRACT.md's own PEEK-TRUNC-1 note has
+// the full, current, binding contract for this note.
+// ---------------------------------------------------------------------
+
+test('PEEK-5 (fix round 1, F2): a peek target whose own verse group is server-capped honestly discloses the truth -- "+N more" the peek can never reveal via more/all, RevealControls\' own count staying honest about what it actually holds', async ({ page }) => {
+  // 1ki_temple_furnishings (1KI.7.13-32 delivered, 20 of a true 39) is
+  // 1ki_temple_dedication's own real PRIOR neighbor on the global
+  // timeline -- ground truth confirmed live against the wire, never
+  // hardcoded: this is the SAME server-side 20-verse-per-chapter cap
+  // (scene::verse_groups_for's own take(20)) TRUNC-1 (above) already
+  // proves for 1ki_temple_dedication's own WITNESS list; this test proves
+  // the identical cap also reaches this event when it is instead
+  // resolved as someone else's ADJACENT peek target.
+  const positions = await api.narrativeEventPositions('1ki_temple_dedication');
+  expect(positions.timeline.prior?.id, '1ki_temple_dedication must have 1ki_temple_furnishings as its real PRIOR neighbor for this test to mean anything').toBe('1ki_temple_furnishings');
+  const group = positions.timeline.prior.verse_groups[0];
+  const missing = group.count - group.verses.length;
+  expect(missing, 'this test needs a genuinely server-capped group').toBeGreaterThan(0);
+
+  await openEventPopover(page, '1ki_temple_dedication');
+  const arrow = page.getByTestId('event-chrono-prior-event-global');
+  const peek = page.getByTestId('event-chrono-prior-event-global-peek');
+
+  await arrow.hover({ force: true });
+  await expect(peek).toBeVisible({ timeout: 2000 });
+
+  // The disclosure itself -- present as a standing fact about this
+  // chapter, not gated on how much of the delivered 20 is currently
+  // revealed.
+  const truncatedNote = page.getByTestId('event-chrono-prior-event-global-peek-truncated');
+  await expect(truncatedNote).toBeVisible();
+  await expect(truncatedNote).toHaveText(`+${missing} more (this chapter's own display cap)`);
+
+  // RevealControls' own "all" stays honest about what THIS peek actually
+  // holds (the delivered 20, never inflated to the true 39 it can never
+  // actually reveal) -- clicking it surfaces every delivered verse, no
+  // more, and the disclosure survives alongside it, not replaced by it.
+  const allLink = page.getByTestId('event-chrono-prior-event-global-peek-more-all');
+  await expect(allLink).toHaveText(`all (${group.verses.length})`);
+  await allLink.click({ force: true });
+  await expect(peek.locator('.popover-arrow-peek-verse')).toHaveCount(group.verses.length);
+  await expect(page.getByTestId(`event-chrono-prior-event-global-peek-verse-${group.verses[group.verses.length - 1]}`)).toBeVisible();
+  await expect(truncatedNote).toBeVisible();
 });

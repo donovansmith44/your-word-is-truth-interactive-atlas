@@ -329,30 +329,54 @@ export function getVerseAnchorRect(selector) {
 
 // PEEK-TRUNC-1 (arrow-peek clipping defect, owner report 2026-08-24: "menus
 // appearing on hover from arrow hover are getting cut off. needs to be
-// truncated to an expandable menu limit one verse."): the SAME
-// left/top/width/height + viewport-dimensions shape getVerseAnchorRect above
-// already returns -- ArrowNav.razor's own flip-above/below math reuses the
-// identical "measure, then pick whichever side has more room" arithmetic
-// ExplorerPopover.razor's own ANCHORING already established. Deliberately
-// keyed off a real ElementReference, not a CSS selector, unlike
-// getVerseAnchorRect: ArrowNav can have up to FOUR simultaneous instances
-// mounted on one popover (prior/following x narrative/chronology), and none
-// of their own wrapping elements carries a unique id -- a selector naming
-// their shared CSS class would only ever resolve document.querySelector's
-// own FIRST match, silently measuring the wrong instance's anchor for every
-// side but one. Same "pass the real element, not a selector" fix
-// capturePointer (below) already established for SplitDivider's own
-// analogous multi-instance concern -- this function is the read-side
-// equivalent of that write-side precedent.
+// truncated to an expandable menu limit one verse."): keyed off a real
+// ElementReference, not a CSS selector -- ArrowNav can have up to FOUR
+// simultaneous instances mounted on one popover (prior/following x
+// narrative/chronology), and none of their own wrapping elements carries a
+// unique id -- a selector naming their shared CSS class would only ever
+// resolve document.querySelector's own FIRST match, silently measuring the
+// wrong instance's anchor for every side but one. Same "pass the real
+// element, not a selector" fix capturePointer (below) already established
+// for SplitDivider's own analogous multi-instance concern -- this function
+// is the read-side equivalent of that write-side precedent.
+//
+// F1 fix round (reviewer live-repro, real bug -- not a hypothetical): the
+// first cut of this function returned window.innerWidth/innerHeight
+// alongside the wrapper's own rect, and ArrowNav.razor budgeted its own
+// flip/max-height math against THAT -- but the peek's own true clipping
+// boundary is never the viewport; it is the nearest `.popover` ancestor
+// (app.css: position:fixed, max-height:calc(100vh - 4rem), overflow-y:
+// auto), which is routinely SHORTER than the viewport (vertically centered,
+// never taller than 100vh-4rem) and clips every descendant once it exceeds
+// that box -- including a position:absolute one like the peek, since
+// overflow clipping is a PAINT-time ancestor relationship, independent of a
+// descendant's own positioning scheme. Measuring the viewport instead of
+// this real boundary is exactly why the owner's own original defect
+// ("cut off... needs to be truncated") could resurface once expanded: the
+// reviewer's own live repro clicked `all` on a many-verse peek and watched
+// it spill ~269px past the popover's own bottom edge while the peek's own
+// internal scrollbar (app.css's own overflow-y:auto) never engaged --
+// its budget had come from the wrong frame entirely, so it never thought
+// it was out of room. Now returns the wrapper's own rect PLUS the
+// enclosing .popover's own top/bottom (viewport-relative coordinates,
+// the SAME space getBoundingClientRect already uses, so ArrowNav.razor's
+// own arithmetic needs no unit conversion) -- falling back to the
+// viewport's own bounds only if no .popover ancestor is found at all
+// (never true in practice, this component's only rendering context IS
+// inside one, but a safe, honest degrade rather than a crash if that
+// assumption is ever wrong).
 export function getElementRect(el) {
     if (!el) {
         return null;
     }
 
     const r = el.getBoundingClientRect();
+    const popover = el.closest('.popover');
+    const clip = popover ? popover.getBoundingClientRect() : null;
     return {
         left: r.left, top: r.top, width: r.width, height: r.height,
-        viewportWidth: window.innerWidth, viewportHeight: window.innerHeight,
+        popoverTop: clip ? clip.top : 0,
+        popoverBottom: clip ? clip.bottom : window.innerHeight,
     };
 }
 
