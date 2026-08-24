@@ -154,17 +154,27 @@ pub struct EastonEntry {
 /// adapter's Theographic-sourced input (mirrors `Person`'s own role for
 /// `person_adapter.rs`).
 ///
-/// NO `verse_links` FIELD, disclosed (the corrected data-scouting finding
-/// this batch's own brief ledgers): unlike `Person`/`Place`, the source
-/// genuinely ships no per-verse attestation for these 23 records -- only
-/// `members` (person-record ids) and `events_dev` (event ids), membership
-/// data, not mentions. Importing `members` is a noted, UNBUILT owner
-/// option this batch (a member-of relation); `id`/`label` are the only two
-/// facts the graph actually uses.
+/// `verse_links` CORRECTED, disclosed (PG-1B rider, batch-edge1a-brief.md
+/// controller decision 0: "the PG-1a review discovered the controller's
+/// scouting was wrong"): the PG-1a doc comment this replaces claimed the
+/// source ships NO per-verse attestation at all -- FALSE for 2 of the 23
+/// records. Tribe of Judah (1 verse, PRO.25.1) and Nation of Israel (12
+/// verses, the Ps 14/53/76/78/81/89/105/147 set) DO carry a real `verses`
+/// field, reciprocally back-referenced by `verses.json`'s own
+/// `peopleGroups` field on each of those 13 records (the Sin-guard's own
+/// "source-attested" bar) -- `atlas_etl::people_groups::parse_people_groups`
+/// resolves them the SAME way `Person.verse_links`/`people.rs` already
+/// does (join through `verses.json`, dedup, canon-sort). The OTHER 21
+/// records genuinely carry no `verses` field at all, so `verse_links` is
+/// empty for them, honestly -- `members` (person-record ids) and
+/// `events_dev` (event ids) remain unimported (still a noted, unbuilt
+/// owner option: a member-of relation); `id`/`label`/`verse_links` are the
+/// three facts the graph actually uses.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PeopleGroup {
     pub id: String,
     pub label: String,
+    pub verse_links: Vec<String>,
 }
 
 /// PG-1a (decision 1b): one CURATED PeopleGroup seed --

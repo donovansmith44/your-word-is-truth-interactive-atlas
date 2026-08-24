@@ -121,9 +121,11 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     // PG-1a: Theographic PEOPLE GROUPS -> the `AtlasData.people_groups`
     // sidecar (`atlas_graph::peoples_adapter`'s own graph-side source).
     // Reads the SAME `theo_dir` already in scope above -- one more sibling
-    // fact file, not a new source tree.
+    // fact file, not a new source tree. PG-1B rider: also reads the SAME
+    // `verses_json` already in scope above (locus resolution for the 2 of
+    // 23 records that carry a real `verses` field).
     let people_groups_json = read(&theo_dir.join("peopleGroups.json"))?;
-    let (people_groups_list, people_groups_stats) = people_groups::parse_people_groups(&people_groups_json)?;
+    let (people_groups_list, people_groups_stats) = people_groups::parse_people_groups(&people_groups_json, &verses_json)?;
 
     let xrefs_raw = read(&raw_dir.join("xrefs/cross_references.txt"))?;
     let (xrefs_map, xref_stats) = xrefs::parse(&xrefs_raw)?;
@@ -250,6 +252,10 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         people_group_seeds.len(),
         people_group_reclassify.len(),
         named_after_seeds.len()
+    );
+    eprintln!(
+        "PG-1B PEOPLE GROUPS VERSES: {} of {} group(s) carry >=1 resolved verse link ({} of {} raw verse refs unresolved, dropped)",
+        people_groups_stats.with_verses, people_groups_stats.total, people_groups_stats.verse_refs_unresolved, people_groups_stats.verse_refs_total
     );
     let narrative_leg_counts: Vec<(String, usize)> = narratives.iter().map(|n| (n.id.clone(), n.legs.len())).collect();
 

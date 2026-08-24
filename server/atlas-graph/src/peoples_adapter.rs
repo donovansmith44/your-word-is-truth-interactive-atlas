@@ -31,12 +31,25 @@
 //!     record is ever built as BOTH (a kind is a fact, not a choice a
 //!     client makes at read time).
 //!
-//! NO INVENTED PER-LOCUS SENSES (decision 2): (a)/(b) above get NODES
-//! ONLY, never mentions rows -- no source attests which loci mean the
-//! tribe/nation vs. the man/land (the JDG 1:2 problem is an OPEN OWNER
-//! QUESTION, ledgered in progress.md, not shipped by default). The
-//! Sin-guard principle: links point where data attests, never where a
-//! string guesses.
+//! NO INVENTED PER-LOCUS SENSES (decision 2), QUALIFIED by the PG-1B rider
+//! (batch-edge1a-brief.md decision 0): (a)/(b) above get NODES ONLY by
+//! DEFAULT -- no source attests which loci mean the tribe/nation vs. the
+//! man/land for most of (a)'s own 23 records, and NONE of (b)'s six
+//! curated seeds carry any per-locus data at all (the JDG 1:2 problem
+//! stays an OPEN OWNER QUESTION for those, ledgered in progress.md, not
+//! shipped by default). The PG-1a review CORRECTED that premise for a
+//! real subset of (a): 2 of the 23 Theographic `peopleGroups.json` records
+//! (Tribe of Judah, Nation of Israel) DO carry a genuine, reciprocally-
+//! linked `verses` field (`atlas_etl::people_groups::parse_people_groups`
+//! now resolves it into `PeopleGroup.verse_links`) -- these 13 loci ARE
+//! source-attested, so `merge_alias` below builds real Mentions rows for
+//! them, general code over ANY (a)-source group carrying a non-empty
+//! `verse_links` (not a hardcoded two-row special case: a future
+//! Theographic data refresh adding a `verses` field to a THIRD group would
+//! be picked up automatically, no code change). (b)'s curated seeds still
+//! carry zero per-locus data and so still build NO mentions rows -- that
+//! half of decision 2 is unchanged. The Sin-guard principle stands: links
+//! point where data attests, never where a string guesses.
 //!
 //! NAMEDAFTER (decision 3): curated `ctx.atlas.named_after_seeds` rows,
 //! each naming a namesake (PeopleGroup this batch, always) + an eponym
@@ -119,6 +132,11 @@ pub struct PeoplesAdapterStats {
     pub curated_seed_nodes: usize,
     pub reclassified_nodes: usize,
     pub reclassified_mentions_rows: usize,
+    /// PG-1B rider: Mentions rows built from source (a) Theographic
+    /// groups' own `verse_links` (general code -- any group with verses;
+    /// 13 in the real committed data, across the 2 of 23 groups that carry
+    /// any).
+    pub theographic_mentions_rows: usize,
     pub named_after_rows: usize,
     /// `(namesake_id, reason)` -- every curated `[[named_after]]` row this
     /// adapter declined to build, with why (decision 3's own "report which
@@ -234,8 +252,13 @@ pub fn normalize(ctx: &mut BuildCtx) -> PeoplesAdapterStats {
 /// rows -- mirrors `person_adapter::merge_alias` almost line for line,
 /// substituting `MentionedEntity::PeopleGroup` for `MentionedEntity::
 /// Person` and reading only the reclassified subset of `ctx.atlas.people`.
-/// The (a)/(b) PeopleGroup sources build NO mentions rows here at all
-/// (decision 2).
+/// PG-1B rider: source (a) Theographic groups carrying a non-empty
+/// `verse_links` ALSO build real Mentions rows now (module doc comment's
+/// own "QUALIFIED by the PG-1B rider" paragraph has the full reasoning) --
+/// general code over the WHOLE `ctx.atlas.people_groups` list, not a
+/// hardcoded Tribe-of-Judah/Nation-of-Israel special case. Source (b)
+/// (curated nation seeds) still builds NO mentions rows at all (decision
+/// 2's other half, unchanged -- those carry no per-locus data of any kind).
 pub fn merge_alias(ctx: &mut BuildCtx) -> PeoplesAdapterStats {
     let mut stats = PeoplesAdapterStats::default();
     let reclass = reclassified_person_slugs(ctx.atlas);
@@ -250,6 +273,23 @@ pub fn merge_alias(ctx: &mut BuildCtx) -> PeoplesAdapterStats {
             stats.reclassified_mentions_rows += 1;
         }
     }
+
+    // PG-1B rider (decision 0): source (a) groups, general code -- ANY
+    // Theographic peopleGroups.json record whose OWN `verse_links` is
+    // non-empty (today: Tribe of Judah, 1; Nation of Israel, 12 -- see
+    // `atlas_etl::people_groups::parse_people_groups`'s own resolution).
+    for g in &ctx.atlas.people_groups {
+        if g.verse_links.is_empty() {
+            continue;
+        }
+        let group_id = PeopleGroupId::new(g.id.clone());
+        for vref in &g.verse_links {
+            let Some(locus) = verse_locus(vref) else { continue };
+            ctx.graph.mentions.push(Mentions { locus, entity: MentionedEntity::PeopleGroup(group_id.clone()), provenance: ProvenanceId::from(PROVENANCE_THEOGRAPHIC) });
+            stats.theographic_mentions_rows += 1;
+        }
+    }
+
     stats
 }
 
@@ -341,6 +381,22 @@ pub fn check_peoples_fidelity(atlas: &atlas_core::data::AtlasData, graph: &Graph
         }
     }
 
+    // PG-1B rider: the SAME mentions-completeness discipline, over source
+    // (a) Theographic groups' own `verse_links` -- general code (every
+    // `atlas.people_groups` record, not just the two known verse-bearing
+    // ones today), so a future Theographic refresh adding a `verses` field
+    // to a THIRD group is caught here too, not silently under-served.
+    for g in &atlas.people_groups {
+        let expected = g.verse_links.len();
+        let actual = graph.mentions.iter().filter(|row| matches!(&row.entity, MentionedEntity::PeopleGroup(pg) if pg.0 == g.id)).count();
+        if actual != expected {
+            return Err(PeoplesFidelityViolation(format!(
+                "mentions completeness: Theographic group '{}' ({}) has {} resolved verse_link(s) but {} PeopleGroup mentions row(s) in the built graph",
+                g.id, g.label, expected, actual
+            )));
+        }
+    }
+
     Ok(())
 }
 
@@ -419,7 +475,7 @@ mod tests {
     fn normalize_builds_one_node_per_theographic_group_and_curated_seed() {
         let atlas = atlas_with(
             vec![],
-            vec![PeopleGroup { id: "tribe-of-judah".into(), label: "Tribe of Judah".into() }],
+            vec![PeopleGroup { id: "tribe-of-judah".into(), label: "Tribe of Judah".into(), verse_links: vec![] }],
             vec![PeopleGroupSeed { id: "ammonites".into(), label: "Ammonites".into() }],
             vec![],
             vec![],
@@ -512,18 +568,75 @@ mod tests {
     }
 
     #[test]
-    fn merge_alias_never_builds_mentions_for_theographic_groups_or_curated_seeds() {
-        // Decision 2 ("NO invented per-locus senses"): sources (a)/(b) get
-        // NODES ONLY. This is proven vacuously by construction (merge_alias
-        // only ever iterates ctx.atlas.people, never people_groups/
-        // people_group_seeds), but a direct assertion documents the law.
-        let atlas = atlas_with(vec![], vec![PeopleGroup { id: "tribe-of-judah".into(), label: "Tribe of Judah".into() }], vec![PeopleGroupSeed { id: "ammonites".into(), label: "Ammonites".into() }], vec![], vec![]);
+    fn merge_alias_builds_no_mentions_for_a_verseless_theographic_group_or_any_curated_seed() {
+        // Decision 2 ("NO invented per-locus senses"), as QUALIFIED by the
+        // PG-1B rider (module doc comment above): source (a) groups with
+        // an EMPTY verse_links (the overwhelming majority -- 21 of 23 real
+        // records) still build NO mentions rows, and source (b) curated
+        // seeds NEVER carry verse_links at all (no such field on
+        // `PeopleGroupSeed`) -- so this remains true for both, just no
+        // longer vacuously-by-construction for (a) the way it was pre-rider.
+        let atlas = atlas_with(vec![], vec![PeopleGroup { id: "tribe-of-judah".into(), label: "Tribe of Judah".into(), verse_links: vec![] }], vec![PeopleGroupSeed { id: "ammonites".into(), label: "Ammonites".into() }], vec![], vec![]);
         let canon = Canon { books: vec![] };
         let verses = HashMap::new();
         let mut ctx = ctx_with(&canon, &verses, &atlas);
         let stats = merge_alias(&mut ctx);
         assert_eq!(stats.reclassified_mentions_rows, 0);
+        assert_eq!(stats.theographic_mentions_rows, 0);
         assert!(ctx.graph.mentions.is_empty());
+    }
+
+    /// PG-1B rider (batch-edge1a-brief.md decision 0): "own test (count +
+    /// a spot locus)". Synthetic fixture proving the GENERAL code path
+    /// (any source-(a) group with a non-empty `verse_links`, not a
+    /// hardcoded Tribe-of-Judah/Nation-of-Israel special case) -- uses a
+    /// DIFFERENT group id/label than the real data on purpose, so this
+    /// test cannot pass by accident if the adapter secretly hardcoded the
+    /// two real names. `real_committed_data_resolves_exactly_the_two_verse_bearing_groups`
+    /// (`atlas_etl::people_groups`'s own test) plus
+    /// `pg1b_real_data_yields_exactly_13_mentions_rows_at_the_reported_loci`
+    /// (`tests/peoples_real_data.rs`) cover the REAL 13-loci claim end to
+    /// end; this one proves the mechanism in isolation.
+    #[test]
+    fn merge_alias_builds_mentions_for_any_theographic_group_carrying_verse_links() {
+        let atlas = atlas_with(
+            vec![],
+            vec![
+                PeopleGroup { id: "tribe-of-judah".into(), label: "Tribe of Judah".into(), verse_links: vec!["PRO.25.1".into()] },
+                PeopleGroup { id: "some-other-group".into(), label: "Some Other Group".into(), verse_links: vec!["GEN.1.1".into(), "GEN.1.2".into()] },
+                PeopleGroup { id: "no-verses-group".into(), label: "No Verses Group".into(), verse_links: vec![] },
+            ],
+            vec![],
+            vec![],
+            vec![],
+        );
+        let canon = Canon { books: vec![] };
+        let verses = HashMap::new();
+        let mut ctx = ctx_with(&canon, &verses, &atlas);
+        let stats = merge_alias(&mut ctx);
+        assert_eq!(stats.theographic_mentions_rows, 3, "1 (tribe-of-judah) + 2 (some-other-group) + 0 (no-verses-group)");
+        assert_eq!(stats.reclassified_mentions_rows, 0);
+        assert_eq!(ctx.graph.mentions.len(), 3);
+
+        for row in &ctx.graph.mentions {
+            assert_eq!(row.provenance, PROVENANCE_THEOGRAPHIC);
+            match &row.entity {
+                MentionedEntity::PeopleGroup(g) => assert!(g.0 == "tribe-of-judah" || g.0 == "some-other-group", "unexpected entity: {}", g.0),
+                other => panic!("expected only PeopleGroup mentions from this adapter, got {other:?}"),
+            }
+        }
+
+        // Spot locus: Tribe of Judah -> PRO.25.1, the exact real-data
+        // pairing (module doc comment: "if Tribe of Judah's one verse is
+        // JDG 1:2, say so loudly" -- it is NOT).
+        let judah_locus = ctx
+            .graph
+            .mentions
+            .iter()
+            .find(|row| matches!(&row.entity, MentionedEntity::PeopleGroup(g) if g.0 == "tribe-of-judah"))
+            .map(|row| row.locus.clone())
+            .expect("a tribe-of-judah mention must exist");
+        assert_eq!(judah_locus, verse_locus("PRO.25.1").unwrap());
     }
 
     // --- normalize: NamedAfter --------------------------------------------
@@ -687,7 +800,7 @@ mod tests {
     fn fidelity_is_green_over_a_clean_three_source_build() {
         let atlas = atlas_with(
             vec![person("jebusite_748", "Jebusite", &["GEN.10.16"])],
-            vec![PeopleGroup { id: "tribe-of-judah".into(), label: "Tribe of Judah".into() }],
+            vec![PeopleGroup { id: "tribe-of-judah".into(), label: "Tribe of Judah".into(), verse_links: vec![] }],
             vec![PeopleGroupSeed { id: "ammonites".into(), label: "Ammonites".into() }],
             vec![PeopleGroupReclassify { person_slug: "jebusite_748".into(), reason: "test".into() }],
             vec![],
@@ -702,7 +815,7 @@ mod tests {
 
     #[test]
     fn fidelity_catches_a_missing_theographic_group_node() {
-        let atlas = atlas_with(vec![], vec![PeopleGroup { id: "tribe-of-judah".into(), label: "Tribe of Judah".into() }], vec![], vec![], vec![]);
+        let atlas = atlas_with(vec![], vec![PeopleGroup { id: "tribe-of-judah".into(), label: "Tribe of Judah".into(), verse_links: vec![] }], vec![], vec![], vec![]);
         let canon = Canon { books: vec![] };
         let verses = HashMap::new();
         let ctx = ctx_with(&canon, &verses, &atlas); // normalize() never called
@@ -747,6 +860,28 @@ mod tests {
         // merge_alias deliberately NOT called -- simulates a silent drop.
         let err = check_peoples_fidelity(&atlas, &ctx.graph).expect_err("must catch the incomplete mentions rows");
         assert!(err.0.contains("mentions completeness"), "{}", err.0);
+    }
+
+    /// PG-1B rider: the SAME mentions-completeness law, over source (a)'s
+    /// own `verse_links` -- proves the new fidelity loop actually fires,
+    /// not just the pre-existing reclassified-subset one.
+    #[test]
+    fn fidelity_catches_a_theographic_group_mentions_completeness_violation() {
+        let atlas = atlas_with(
+            vec![],
+            vec![PeopleGroup { id: "tribe-of-judah".into(), label: "Tribe of Judah".into(), verse_links: vec!["PRO.25.1".into()] }],
+            vec![],
+            vec![],
+            vec![],
+        );
+        let canon = Canon { books: vec![] };
+        let verses = HashMap::new();
+        let mut ctx = ctx_with(&canon, &verses, &atlas);
+        normalize(&mut ctx);
+        // merge_alias deliberately NOT called -- simulates a silent drop.
+        let err = check_peoples_fidelity(&atlas, &ctx.graph).expect_err("must catch the incomplete mentions rows");
+        assert!(err.0.contains("mentions completeness"), "{}", err.0);
+        assert!(err.0.contains("tribe-of-judah"), "{}", err.0);
     }
 
     #[test]

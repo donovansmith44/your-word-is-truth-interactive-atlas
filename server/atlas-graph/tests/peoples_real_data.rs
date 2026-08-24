@@ -246,6 +246,61 @@ fn group_description_fill_matches_the_exact_disclosed_roster() {
     assert_eq!((filled.len(), total), (8, 38), "8/38 (21.1%) -- the PG-1a group description fill rate this batch reports");
 }
 
+/// PG-1B rider (batch-edge1a-brief.md decision 0, verbatim: "REPORT WHICH
+/// 13 LOCI these are verbatim (if Tribe of Judah's one verse is JDG 1:2,
+/// say so loudly -- it is the owner's own motivating example)"). Read
+/// against the REAL committed data: it is NOT JDG 1:2 -- Tribe of Judah's
+/// one real, reciprocally-linked verse is PRO.25.1 ("These are also
+/// proverbs of Solomon, which the men of Hezekiah king of Judah copied
+/// out"). Nation of Israel supplies the other 12, all in the Psalms.
+/// General code proven end to end here: `merge_alias` iterates the WHOLE
+/// `atlas.people_groups` list, not a hardcoded two-id special case (the
+/// adapter-level `merge_alias_builds_mentions_for_any_theographic_group_
+/// carrying_verse_links` unit test in `peoples_adapter.rs` proves the
+/// mechanism itself with a synthetic third group; this test proves the
+/// real data lands exactly where expected).
+#[test]
+fn pg1b_real_data_yields_exactly_13_mentions_rows_at_the_reported_loci() {
+    let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
+    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, &atlas, &canon, &verses);
+
+    let judah = atlas.people_groups.iter().find(|g| g.id == "tribe-of-judah").expect("Tribe of Judah must exist in the real compiled data");
+    assert_eq!(judah.verse_links, vec!["PRO.25.1"], "Tribe of Judah's own one real verse -- NOT JDG.1.2");
+
+    let israel = atlas.people_groups.iter().find(|g| g.id == "nation-of-israel").expect("Nation of Israel must exist in the real compiled data");
+    assert_eq!(
+        israel.verse_links,
+        vec!["PSA.14.7", "PSA.53.6", "PSA.76.1", "PSA.78.21", "PSA.78.31", "PSA.78.41", "PSA.81.8", "PSA.81.11", "PSA.81.13", "PSA.89.18", "PSA.105.10", "PSA.147.19"]
+    );
+
+    let mut hits: Vec<(String, String)> = ctx
+        .graph
+        .mentions
+        .iter()
+        .filter_map(|row| match &row.entity {
+            MentionedEntity::PeopleGroup(g) if g.0 == "tribe-of-judah" || g.0 == "nation-of-israel" => {
+                atlas_graph::legacy::locus_dot_ref(&row.locus).map(|r| (g.0.clone(), r))
+            }
+            _ => None,
+        })
+        .collect();
+    hits.sort();
+    assert_eq!(hits.len(), 13, "exactly 13 PeopleGroup mentions rows across the two verse-bearing groups: {hits:?}");
+
+    let mut expected: Vec<(String, String)> = vec![("tribe-of-judah".into(), "PRO.25.1".into())];
+    for v in ["PSA.105.10", "PSA.14.7", "PSA.147.19", "PSA.53.6", "PSA.76.1", "PSA.78.21", "PSA.78.31", "PSA.78.41", "PSA.81.11", "PSA.81.13", "PSA.81.8", "PSA.89.18"] {
+        expected.push(("nation-of-israel".into(), v.into()));
+    }
+    expected.sort();
+    assert_eq!(hits, expected, "the exact 13 loci -- verbatim in the batch report");
+
+    // No OTHER PeopleGroup id carries a mention row via this path -- the
+    // 13 are exhaustive over the real committed data, not a floor.
+    let total_theographic_source_mentions =
+        ctx.graph.mentions.iter().filter(|row| matches!(&row.entity, MentionedEntity::PeopleGroup(_)) && row.provenance == atlas_graph::peoples_adapter::PROVENANCE_THEOGRAPHIC).count();
+    assert_eq!(total_theographic_source_mentions, 13);
+}
+
 /// The exact, per-slug PeopleGroup mentions breakdown -- 27 rows total
 /// across the nine reclassified slugs (batch-pg1a-report.md has this same
 /// table): Amorite carries 4 (the Gen-10/1-Chronicles-1 pair PLUS AMO 2:9-
@@ -255,12 +310,27 @@ fn group_description_fill_matches_the_exact_disclosed_roster() {
 /// pair only) -- confirming decision 1c's own "the only per-locus group
 /// attestations the source actually ships" is real, verified content, not
 /// an assumption.
+///
+/// PG-1B rider (2026-08-24): filtered by `PROVENANCE_RECLASSIFIED`
+/// explicitly now, not just entity-kind -- a bare `MentionedEntity::
+/// PeopleGroup(_)` filter would ALSO catch the 13 new source-(a) rows
+/// `pg1b_real_data_yields_exactly_13_mentions_rows_at_the_reported_loci`
+/// above covers (27 + 13 = 40), which would make this test's own
+/// "27... across the nine reclassified slugs" claim silently depend on an
+/// unrelated source. Provenance-scoping keeps this test's own subject
+/// exactly what its name and doc comment say.
 #[test]
 fn reclassified_mentions_total_and_per_slug_counts_match_the_disclosed_table() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
     let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, &atlas, &canon, &verses);
-    let total = ctx.graph.mentions.iter().filter(|r| matches!(&r.entity, MentionedEntity::PeopleGroup(_))).count();
+    let total = ctx.graph.mentions.iter().filter(|r| matches!(&r.entity, MentionedEntity::PeopleGroup(_)) && r.provenance == atlas_graph::peoples_adapter::PROVENANCE_RECLASSIFIED).count();
     assert_eq!(total, 27, "total PeopleGroup mentions rows across all nine reclassified slugs");
+
+    // Companion sanity: the GRAND total (both sources together) is now 40
+    // -- 27 reclassified + 13 PG-1B source-(a) -- the number the bare,
+    // provenance-blind filter this test used to use would report.
+    let grand_total = ctx.graph.mentions.iter().filter(|r| matches!(&r.entity, MentionedEntity::PeopleGroup(_))).count();
+    assert_eq!(grand_total, 40, "27 reclassified + 13 PG-1B source-(a) verse-bearing groups");
 
     let expected: &[(&str, usize)] =
         &[("jebusite_748", 2), ("amorite_237", 4), ("girgasite_1322", 2), ("hivite_1534", 9), ("arkite_308", 2), ("sinite_2755", 2), ("arvadite_316", 2), ("zemarite_3036", 2), ("hamathite_1361", 2)];
