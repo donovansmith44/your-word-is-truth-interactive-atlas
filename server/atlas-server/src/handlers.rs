@@ -1016,15 +1016,19 @@ pub async fn narrative_event_positions(
         .collect();
 
     // Batch HOTFIX-4 requirement 1's own "global chronological PRIOR/
-    // FOLLOWING" half, still graph-sourced via the chronology companion
-    // (temporal-adjacency is not a materialized graph edge -- see
-    // `Chronology`'s own doc comment): `None` (field omitted) for a
+    // FOLLOWING" half. TRAV-1 (controller decision 2, "the graph serves
+    // it"): temporal-adjacency IS a materialized graph edge now
+    // (`RelationId`'s symmetric sibling `SymRelationId::TemporalAdjacency`,
+    // TRAV-1's crate patch) -- this reads `GraphService::temporal_neighbors`,
+    // built once from the real `temporal_adjacency` rows' own honest
+    // `earlier`/`later` ends (service.rs's own doc comment), never
+    // re-derived from a position index. `None` (field omitted) for a
     // general-kind passage, by construction -- a general-kind event never
     // gets a `ChronologyDerivation` entry at all (`derive_chronology`
-    // filters to `kind == "event"`), so it is absent from
-    // `temporal_neighbors` exactly like it was absent from the old
-    // `timeline_index`.
-    let timeline = graph.chronology.temporal_neighbors.get(&id).map(|(prior, following)| TimelinePositionOut {
+    // filters to `kind == "event"`), so it never gets a `temporal_adjacency`
+    // row either, hence absent from `temporal_neighbors` exactly like it
+    // was absent from the old `timeline_index`.
+    let timeline = graph.temporal_neighbors.get(&id).map(|(prior, following)| TimelinePositionOut {
         prior: prior.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(&data, pid)).map(Into::into),
         following: following.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(&data, pid)).map(Into::into),
     });

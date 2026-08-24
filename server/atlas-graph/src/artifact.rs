@@ -547,6 +547,18 @@ struct DtoCrossRef {
     provenance: String,
 }
 
+/// TRAV-1: mirrors `graph_types::edge::TemporalAdjacency` -- `earlier`/
+/// `later` are event ids, carried honestly (never re-derived by a
+/// consumer) exactly like the typed row's own doc comment names. No
+/// `DtoJustification` field: the row itself carries none (it is
+/// compile-derived, not authored -- see that type's own doc comment).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoTemporalAdjacency {
+    earlier: String,
+    later: String,
+    provenance: String,
+}
+
 // ---------------------------------------------------------------------
 // The whole dump.
 // ---------------------------------------------------------------------
@@ -574,14 +586,28 @@ pub struct ArtifactDump {
     catechism: Vec<DtoCatechismLink>,
     mentions: Vec<DtoMentions>,
     cross_refs: Vec<DtoCrossRef>,
+    /// TRAV-1: the real `temporal_adjacency` row table (controller decision
+    /// 1) -- a plain row table like `succession`/`located_at` above, not
+    /// part of the chronology-companion group below (it lives on `Graph`
+    /// itself, not on `Chronology`). `GraphService::assemble` (service.rs)
+    /// folds these rows into its own `temporal_neighbors` lookup at load
+    /// time on EVERY path (from-sources and from-artifact alike), so
+    /// nothing else needs to ride the artifact for that -- see this
+    /// struct's own former `temporal_neighbors` field, retired below.
+    temporal_adjacency: Vec<DtoTemporalAdjacency>,
     /// The chronology companion (`event_world::Chronology`) -- NOT
     /// re-derivable from the row tables alone at load time without
     /// `AtlasData` (see `event_world::Chronology::from_derivation`'s own
     /// doc comment), so it rides in the artifact as its own fields:
     /// `chrono_order` mirrors `ChronologyDerivation.order` exactly;
-    /// `chrono_placements` mirrors `.placements`; `temporal_neighbors`
-    /// mirrors `Chronology.temporal_neighbors` directly (already exactly
-    /// the pairs the field holds, so no further reconstruction needed).
+    /// `chrono_placements` mirrors `.placements`.
+    ///
+    /// TRAV-1: this group's own former `temporal_neighbors` field (mirroring
+    /// `Chronology.temporal_neighbors`, itself retired -- see that struct's
+    /// own doc comment) is GONE: that fact is now cheaply refoldable from
+    /// `temporal_adjacency` above at `GraphService::assemble` time, so
+    /// serializing a second, redundant copy of it here would be exactly the
+    /// "two representations of one fact" shape dead-code law forbids.
     ///
     /// M-D3 (owner ruling R1, CORRECTING the note this field used to carry):
     /// `.resolved` was "NOT serialized -- confirmed unread by any production
@@ -610,7 +636,6 @@ pub struct ArtifactDump {
     chrono_order: Vec<String>,
     chrono_placements: Vec<DtoPlacedChronology>,
     chrono_years: Vec<(String, i32, i32, i32)>,
-    temporal_neighbors: Vec<(String, Option<String>, Option<String>)>,
     /// Startup-log-friendly counts (`build::BuildStats`/
     /// `event_world::EventWorldStats`) -- carried verbatim so
     /// `GraphService::from_artifact`'s own startup log is the SAME real
@@ -653,25 +678,41 @@ pub struct ArtifactDump {
 /// existing variants (`description` on Place/Person/PeopleGroup in
 /// `DtoPayload`) -- a genuine wire-shape break both directions.
 /// `data/compiled/graph.bin` rebuilt in this same commit.
-const FORMAT_VERSION: u32 = 4;
+///
+/// TRAV-1 (2026-08-24): bumped 4 -> 5. Two triggers, landed together:
+/// `ArtifactDump.temporal_adjacency: Vec<DtoTemporalAdjacency>` ADDED (a
+/// new relation table -- `dump`'s own guard forced this the moment the ETL
+/// started emitting real `temporal_adjacency` rows, per this module's own
+/// doc comment); `ArtifactDump.temporal_neighbors` REMOVED (the
+/// `Chronology.temporal_neighbors` field it mirrored is retired whole --
+/// `GraphService::assemble` now folds `temporal_adjacency` into an
+/// equivalent lookup at load time instead, so serializing both was two
+/// representations of one fact). Both are genuine wire-shape breaks both
+/// directions -- bincode field COUNT changed, not just a value inside an
+/// existing field. `data/compiled/graph.bin` rebuilt in this same commit.
+const FORMAT_VERSION: u32 = 5;
 
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
 /// startup stats. Errors loudly if any of the currently-always-empty
 /// tables (`contains_bible`/`contains_concord`/`quotes`/`confesses`/
 /// `corresponds_bible` -- and, since the 2026-08-24 writer window, the
-/// four new row tables `fulfills`/`typology`/`named_after`/
-/// `temporal_adjacency`) is non-empty -- this format does not yet carry
-/// them; extending it is a real, deliberate future act, not something
-/// this batch silently punts by dropping rows. The EDGE-1/PG-1/TRAV-1
-/// data batches hit this guard ON PURPOSE: serializing their rows is
-/// part of each batch's own scope.
+/// three remaining new row tables `fulfills`/`typology`/`named_after`) is
+/// non-empty -- this format does not yet carry them; extending it is a
+/// real, deliberate future act, not something this batch silently punts by
+/// dropping rows. The EDGE-1/PG-1 data batches hit this guard ON PURPOSE:
+/// serializing their rows is part of each batch's own scope. TRAV-1
+/// (2026-08-24) closed the FOURTH member of that same set -- the guard hit
+/// it too, on schedule, the moment the ETL started emitting real
+/// `temporal_adjacency` rows (`event_world::populate_temporal_adjacency`);
+/// `temporal_adjacency` is REAL SERIALIZED CONTENT below now, no longer
+/// guarded.
 pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_stats: &EventWorldStats) -> Result<ArtifactDump, ArtifactError> {
     if !g.contains_bible.is_empty() || !g.contains_concord.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty()
-        || !g.fulfills.is_empty() || !g.typology.is_empty() || !g.named_after.is_empty() || !g.temporal_adjacency.is_empty()
+        || !g.fulfills.is_empty() || !g.typology.is_empty() || !g.named_after.is_empty()
     {
         return Err(ArtifactError(
-            "the graph carries rows in a relation this artifact format does not yet serialize (contains/quotes/confesses/corresponds/fulfills/typology/named-after/temporal-adjacency) -- extend artifact.rs before shipping this content".into(),
+            "the graph carries rows in a relation this artifact format does not yet serialize (contains/quotes/confesses/corresponds/fulfills/typology/named-after) -- extend artifact.rs before shipping this content".into(),
         ));
     }
 
@@ -755,6 +796,17 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         })
         .collect();
 
+    // TRAV-1: a plain row table straight off `g` (like `cross_refs` above),
+    // NOT the chronology companion below -- `graph.temporal_adjacency`'s
+    // own insertion order is already a pure function of `chrono.order`
+    // (`event_world::populate_temporal_adjacency`'s own `windows(2)` walk),
+    // so no extra determinism care is needed here beyond preserving it.
+    let temporal_adjacency = g
+        .temporal_adjacency
+        .iter()
+        .map(|r| DtoTemporalAdjacency { earlier: r.earlier.0.clone(), later: r.later.0.clone(), provenance: r.provenance.clone() })
+        .collect();
+
     // Iterates `chronology.chrono.order` (a deterministic `Vec<String>`),
     // NOT `.placements` (a `HashMap`) directly -- the SAME discipline
     // `event_world::populate_dated_by` already established (a HashMap's
@@ -780,7 +832,6 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
             Some(DtoPlacedChronology { event: id.clone(), placement, basis, justification: justification_to_dto(&placed.justification) })
         })
         .collect();
-    let temporal_neighbors = chronology.chrono.order.iter().filter_map(|id| chronology.temporal_neighbors.get(id).map(|(p, f)| (id.clone(), p.clone(), f.clone()))).collect();
     // M-D3 (R1 propagation, ArtifactDump.chrono_years's own doc comment):
     // the genuine (from_year, to_year, order_key) triple -- `resolved.
     // date.from.year` is the resolved anchor; `chrono.source_meta`'s own
@@ -809,10 +860,10 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         catechism,
         mentions,
         cross_refs,
+        temporal_adjacency,
         chrono_order,
         chrono_placements,
         chrono_years,
-        temporal_neighbors,
         stats: stats.clone(),
         event_world_stats: event_world_stats.clone(),
     })
@@ -914,6 +965,12 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
         });
     }
 
+    // TRAV-1: a plain row table, like `cross_refs` above -- NOT part of
+    // the chronology companion reconstruction below.
+    for r in d.temporal_adjacency {
+        g.temporal_adjacency.push(atlas_graph_types::edge::TemporalAdjacency { earlier: EventId::new(r.earlier), later: EventId::new(r.later), provenance: r.provenance });
+    }
+
     // The chronology companion (this module's own `ArtifactDump.chrono_*`
     // doc comment) -- reconstructed directly from the serialized fields,
     // no AtlasData involved.
@@ -952,8 +1009,11 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
         source_meta.insert(event_id, crate::event_world::SourceEventMeta { to_year, order_key });
     }
     let chrono = ChronologyDerivation { order: d.chrono_order, placements, resolved, source_meta };
-    let temporal_neighbors = d.temporal_neighbors.into_iter().map(|(id, prior, following)| (id, (prior, following))).collect();
-    let chronology = Chronology { chrono, temporal_neighbors };
+    // TRAV-1: no `temporal_neighbors` field left to reconstruct here --
+    // `GraphService::assemble` folds `g.temporal_adjacency` (populated
+    // above) into its own equivalent lookup at load time instead (service.rs's
+    // own doc comment), on EVERY path, this one included.
+    let chronology = Chronology { chrono };
 
     Ok((g, d.stats, d.event_world_stats, chronology))
 }
@@ -1043,11 +1103,19 @@ mod tests {
         // identically to the original.
         atlas_graph_types::store::assert_answers_match(&reconstructed, &original_indexed);
 
-        // The chronology companion round-trips too (order + placements +
-        // temporal_neighbors) -- not covered by assert_answers_match
-        // (which only ever sees the graph/port side).
+        // The chronology companion round-trips too (order + placements) --
+        // not covered by assert_answers_match (which only ever sees the
+        // graph/port side). TRAV-1: `temporal_adjacency` itself IS a graph
+        // row table now (not part of `Chronology`), so it rides inside
+        // `assert_answers_match` above via the symmetric index/port --
+        // `small_atlas()`'s own single dated event ("creation") produces
+        // zero rows either side of the round trip (`windows(2)` on a
+        // length-1 order), which this equality still honestly proves
+        // (0 == 0, not skipped); see
+        // `temporal_adjacency_round_trips_losslessly_with_real_rows` below
+        // for the >=2-event case that actually exercises non-empty rows.
         assert_eq!(chronology2.chrono.order, chronology.chrono.order);
-        assert_eq!(chronology2.temporal_neighbors.len(), chronology.temporal_neighbors.len());
+        assert_eq!(reconstructed.temporal_adjacency.len(), original_indexed.temporal_adjacency.len());
 
         // M-D3 (R1 propagation): `.resolved`/`.to_year` must ALSO survive
         // the round trip now -- `legacy::event_from_node`/`heading::
@@ -1086,6 +1154,45 @@ mod tests {
         assert_eq!(after.to_last, before.to_last, "to_last must round-trip through bincode, not silently become None");
         assert_eq!(after.target_display, before.target_display, "target_display must round-trip losslessly");
         assert_eq!(after.target_display, "GEN.1.1-2", "sanity: the compressed same-chapter canonical form");
+    }
+
+    // TRAV-1: `small_atlas()`'s own single dated event ("creation") can
+    // never exercise a NON-EMPTY `temporal_adjacency` round trip (`windows(2)`
+    // on a length-1 order is empty) -- this fixture is a fresh, dedicated
+    // two-event atlas specifically so this test proves real rows (not just
+    // zero rows both sides) survive dump -> encode -> decode ->
+    // to_service_parts losslessly, values included, not merely a count.
+    #[test]
+    fn temporal_adjacency_round_trips_losslessly_with_real_rows() {
+        use atlas_core::data::{AtlasData, Canon, Event};
+        use std::collections::HashMap;
+
+        let events = vec![
+            Event { id: "first".into(), label: "First".into(), when: atlas_core::time::TimeRange::new(-2000, -2000).unwrap(), ..Default::default() },
+            Event { id: "second".into(), label: "Second".into(), when: atlas_core::time::TimeRange::new(-1000, -1000).unwrap(), ..Default::default() },
+        ];
+        let atlas = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        let (graph, stats, event_world_stats, chrono) = crate::build::build_graph_from_sources(KJV_FIXTURE, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas).unwrap();
+        assert_eq!(graph.temporal_adjacency.len(), 1, "fixture sanity: two dated events -> windows(2) -> exactly one consecutive pair");
+        assert_eq!(graph.temporal_adjacency[0].earlier.0, "first");
+        assert_eq!(graph.temporal_adjacency[0].later.0, "second");
+
+        let chronology = Chronology::from_derivation(chrono);
+        let dumped = dump(&graph, &chronology, &stats, &event_world_stats).expect("dump must succeed with real temporal_adjacency rows -- the guard's whole point was to force this extension, not to forbid the content forever");
+        assert_eq!(dumped.temporal_adjacency.len(), 1);
+        assert_eq!(dumped.temporal_adjacency[0].earlier, "first");
+        assert_eq!(dumped.temporal_adjacency[0].later, "second");
+        assert_eq!(dumped.temporal_adjacency[0].provenance, "chronology-derivation");
+
+        let bytes = encode(&dumped).expect("encode must succeed");
+        let decoded = decode(&bytes).expect("decode must succeed");
+        let (reconstructed, _stats2, _ews2, chronology2) = to_service_parts(decoded).expect("to_service_parts must succeed");
+
+        assert_eq!(reconstructed.temporal_adjacency.len(), 1, "the row must survive the full round trip, not silently drop");
+        assert_eq!(reconstructed.temporal_adjacency[0].earlier.0, "first");
+        assert_eq!(reconstructed.temporal_adjacency[0].later.0, "second");
+        assert_eq!(reconstructed.temporal_adjacency[0].provenance, "chronology-derivation");
+        assert_eq!(chronology2.chrono.order, vec!["first".to_string(), "second".to_string()]);
     }
 
     #[test]

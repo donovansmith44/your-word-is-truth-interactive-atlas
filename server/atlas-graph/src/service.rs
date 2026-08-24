@@ -159,6 +159,26 @@ pub struct GraphService {
     /// `.get()`'d by key inside the `chapter` handler, never iterated or
     /// serialized as a whole.
     pub persons_by_verse: HashMap<String, Vec<(String, String)>>,
+    /// TRAV-1 (controller decision 2, "the graph serves it... one path"):
+    /// prior/following-in-time -- DIRECTION read directly off the honest
+    /// `earlier`/`later` ends of the graph's own `temporal_adjacency` rows,
+    /// never re-derived from a position index; DOMAIN (which ids are dated
+    /// at all) seeded from `chronology.chrono.order` so a dated id with no
+    /// real neighbor on either side (the atlas's own true first/last event,
+    /// or the degenerate single-dated-event case) still gets a `Some((None,
+    /// None))` entry rather than going missing outright (`assemble`'s own
+    /// comment has the fuller "two different questions" argument). The SAME
+    /// "companion the generic port doesn't model" class as
+    /// `narrative_legs`/`cross_refs_by_from` above, built once here from
+    /// the raw, pre-store `graph` the same way they are. RETIRES
+    /// `event_world::Chronology`'s own former `temporal_neighbors` field
+    /// (index-arithmetic-derived, over `chrono.order`, a second
+    /// representation of this identical fact -- see that struct's own
+    /// retirement doc comment): this field is the ONE surviving path.
+    /// `HashMap`, not `BTreeMap` -- same "only ever `.get()`'d by key,
+    /// never iterated/serialized" reasoning as `cross_refs_by_from`/
+    /// `verse_text`/`persons_by_verse` above.
+    pub temporal_neighbors: HashMap<String, (Option<String>, Option<String>)>,
 }
 
 /// The longest KJV chapter (Psalm 119) has 176 verses; this probe width is
@@ -332,6 +352,31 @@ impl GraphService {
             };
             persons_by_verse.entry(key).or_default().push((person_id.0.clone(), label));
         }
+        // TRAV-1: the SAME one-time, pre-store `graph` scan as the
+        // companions above. Two DIFFERENT questions, deliberately kept
+        // separate: WHICH ids are genuinely part of the timeline at all
+        // (a plain DOMAIN/membership fact -- seeded from `chronology.chrono.
+        // order`, the same `Vec<String>` `populate_temporal_adjacency`
+        // itself was built from, so this is not a second derivation of
+        // ORDER, just a re-read of the one that already exists) vs. WHICH
+        // direction each neighbor sits in (read directly off
+        // `graph.temporal_adjacency`'s own honest `earlier`/`later` row
+        // ends, never re-derived from a position index -- see
+        // `event_world::Chronology`'s own doc comment). Seeding first
+        // matters at the atlas's own true first/last dated event AND at
+        // the (rare, but real -- a live-caught HOTFIX-4 regression fixture)
+        // single-dated-event case: `windows(2)` on that id's own
+        // neighborhood yields no ROW at all, but the id is still honestly
+        // DATED, so `timeline` must still be `Some` (both directions
+        // `None`), never omitted outright the way a truly general-kind/
+        // undated/unknown id is -- `handlers::narrative_event_positions`'s
+        // own `.get(id)` presence check is what draws that line.
+        let mut temporal_neighbors: HashMap<String, (Option<String>, Option<String>)> =
+            chronology.chrono.order.iter().map(|id| (id.clone(), (None, None))).collect();
+        for row in &graph.temporal_adjacency {
+            temporal_neighbors.entry(row.earlier.0.clone()).or_insert((None, None)).1 = Some(row.later.0.clone());
+            temporal_neighbors.entry(row.later.0.clone()).or_insert((None, None)).0 = Some(row.earlier.0.clone());
+        }
         // GraphPublisher::publish (design doc §9a): the compiler
         // publishes; serving never writes. One publish, at startup; M-A
         // never calls it again (no hot-reload exists yet) -- MemStore's
@@ -363,6 +408,7 @@ impl GraphService {
             cross_refs_by_from,
             verse_text,
             persons_by_verse,
+            temporal_neighbors,
         }
     }
 

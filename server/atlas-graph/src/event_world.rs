@@ -371,23 +371,30 @@ pub fn derive_chronology(atlas: &AtlasData) -> ChronologyDerivation {
 /// there is now only one representation of "which narrative is this leg
 /// in," not two.
 ///
-/// KEPT (chronology half, renamed honestly): `temporal-adjacency` is STILL
-/// a derived SYMMETRIC relation `Graph::build_indexes` does not populate
-/// (`explore.rs`'s own `raw_neighbors` comment: "Symmetric relations:
-/// skeleton serves none yet") -- out of this batch's own named scope
-/// (design §8 M-C: cross-refs/catechism/places/eras/mentions; M-C does
-/// close the symmetric-index gap for `catechism-link`, see
-/// `graph.rs`/`explore.rs`, but `temporal-adjacency` specifically is not
-/// among this batch's new relations and stays a disclosed, standing gap --
-/// see Concerns). `Chronology` (renamed from `EventWorld`, since
-/// `narrative_positions` was the other half of that name's own "world")
-/// is now PURELY the chronology companion: the derivation
-/// (`ChronologyDerivation`, still needed to BUILD `dated_by` rows) plus
-/// `temporal_neighbors` (global chronological prior/following, answering
-/// the SAME functional need `EventWorld::temporal_neighbors` always did).
+/// RETIRED (TRAV-1, controller decision 2 -- "the graph serves it... one
+/// path"): `temporal-adjacency` is no longer merely a symmetric relation
+/// `Graph::build_indexes` skips -- TRAV-1's crate patch (`ab1765e`) gave it
+/// a real row table (`Graph.temporal_adjacency: Vec<TemporalAdjacency>`),
+/// this module's own `populate_temporal_adjacency` (below) fills it from
+/// `chrono.order.windows(2)`, and `build_indexes` lowers those rows into
+/// the symmetric index the SAME way it already does for `catechism-link`.
+/// `Chronology` used to carry a SECOND, independently-computed
+/// `temporal_neighbors: HashMap<String, (Option<String>, Option<String>)>`
+/// companion (built by re-walking `chrono.order` with `i-1`/`i+1` index
+/// arithmetic) purely to answer "what's prior/following in time" -- now
+/// dead weight: that fact is answerable straight off the real rows this
+/// module just started authoring (`GraphService::temporal_neighbors`,
+/// service.rs, built once from `graph.temporal_adjacency`'s own honest
+/// `earlier`/`later` ends, the SAME "companion the generic port doesn't
+/// model" treatment `narrative_legs`/`cross_refs_by_from` already get) --
+/// keeping BOTH would be two representations of one fact, able to silently
+/// diverge; dead-code law retires the index-arithmetic one. `Chronology`
+/// (renamed from `EventWorld`, since `narrative_positions` was the other
+/// half of that name's own "world") is now PURELY the derivation
+/// (`ChronologyDerivation`, still needed to BUILD `dated_by` AND
+/// `temporal_adjacency` rows) -- no companion of its own left to carry.
 pub struct Chronology {
     pub chrono: ChronologyDerivation,
-    pub temporal_neighbors: HashMap<String, (Option<String>, Option<String>)>,
 }
 
 impl Chronology {
@@ -395,36 +402,19 @@ impl Chronology {
         Self::from_derivation(derive_chronology(atlas))
     }
 
-    /// M-C: builds the `temporal_neighbors` companion from an
-    /// ALREADY-COMPUTED `ChronologyDerivation` -- factored out of `build`
-    /// so the artifact-load path (`GraphService::from_artifact`, which has
-    /// no `AtlasData` to re-derive from) can reconstruct the SAME
+    /// Wraps an ALREADY-COMPUTED `ChronologyDerivation` -- factored out of
+    /// `build` so the artifact-load path (`GraphService::from_artifact`,
+    /// which has no `AtlasData` to re-derive from) can reconstruct the SAME
     /// `Chronology` from the serialized artifact's own chronology fields,
     /// and so the compile step (`bin/compile_graph.rs`) can reuse the
     /// SAME `ChronologyDerivation` the pipeline's own RESOLVE stage already
     /// computed instead of recomputing `derive_chronology(atlas)` a second
-    /// time. M-C2 (definitive surface list, requirement 5 cleanup):
-    /// verified, not fixed here -- `GraphService::from_sources_with_eras`/
-    /// `from_canon_and_verses_with_eras` were ALREADY calling this
-    /// function with the pipeline's own `ctx.chrono` (the tuple
-    /// `build_graph_from_sources_with_eras`/`build_graph_from_canon_and_
-    /// verses_with_eras` return) by the time this batch started at
-    /// `76e10f2` -- the redundancy M-C's own report flagged as a standing
-    /// concern was already gone at base; this doc comment's own former
-    /// claim that it still existed was the only thing left stale, now
-    /// corrected. `Chronology::build(atlas)` (above) still exists and
-    /// still does its own single fresh `derive_chronology` call, but its
-    /// only caller left is this module's own test suite, not any
-    /// production from-sources path.
+    /// time. `Chronology::build(atlas)` (above) still exists and still does
+    /// its own single fresh `derive_chronology` call, but its only caller
+    /// left is this module's own test suite, not any production
+    /// from-sources path.
     pub fn from_derivation(chrono: ChronologyDerivation) -> Chronology {
-        let mut temporal_neighbors: HashMap<String, (Option<String>, Option<String>)> = HashMap::new();
-        for (i, id) in chrono.order.iter().enumerate() {
-            let prior = i.checked_sub(1).and_then(|j| chrono.order.get(j)).cloned();
-            let following = chrono.order.get(i + 1).cloned();
-            temporal_neighbors.insert(id.clone(), (prior, following));
-        }
-
-        Chronology { chrono, temporal_neighbors }
+        Chronology { chrono }
     }
 
     /// `AnchorId.0 -> TimePoint`, for law tests / the resolver -- built
@@ -745,6 +735,39 @@ pub fn populate_dated_by(graph: &mut Graph, chrono: &ChronologyDerivation) -> us
     dated_by_rows
 }
 
+/// DERIVE-shaped half (pipeline.rs's own stage mapping; TRAV-1, controller
+/// decision 1): "prior/following in time" as one `TemporalAdjacency` row
+/// per consecutive pair of `chrono.order` -- the SAME global timeline
+/// `populate_dated_by` above already trusts as the one true dated-event
+/// sequence, so pairing it needs no re-derivation of its own, only a
+/// `windows(2)` walk. Each row names its own `earlier`/`later` end
+/// honestly, straight from the order itself (`w[0]` sorts before `w[1]` by
+/// construction), so a consumer serving a Chronology block never has to
+/// re-derive direction from a position index (`event_world::Chronology`'s
+/// own doc comment has the fuller "why a real row table, not a second
+/// side-table" argument). `provenance` is the SAME `"chronology-
+/// derivation"` string `populate_dated_by` already stamps -- both tables
+/// are authored by the identical derivation pass, over the identical
+/// order. This is pipeline.rs's own DERIVE stage doc comment's "future
+/// batch's own derivation" landing: `chrono.order` is already fully built
+/// by the time DERIVE runs (RESOLVE, immediately prior, is what builds
+/// it), so nothing here recomputes order, only relates adjacent members of
+/// it. Returns the row count (an atlas with 0 or 1 dated events yields 0
+/// rows -- `windows(2)` on a slice shorter than 2 is empty, honestly, not
+/// a special case).
+pub fn populate_temporal_adjacency(graph: &mut Graph, chrono: &ChronologyDerivation) -> usize {
+    let mut rows = 0;
+    for w in chrono.order.windows(2) {
+        graph.temporal_adjacency.push(atlas_graph_types::edge::TemporalAdjacency {
+            earlier: EventId::new(w[0].clone()),
+            later: EventId::new(w[1].clone()),
+            provenance: "chronology-derivation".to_string(),
+        });
+        rows += 1;
+    }
+    rows
+}
+
 /// Pipeline-facing NORMALIZE entry point (`pipeline::NormalizePass`):
 /// event-world nodes + direct rows, from `ctx.atlas` -- mirrors
 /// `populate_nodes_and_direct_rows` exactly (that function's own doc
@@ -761,6 +784,15 @@ pub fn normalize(ctx: &mut crate::pipeline::BuildCtx) {
 pub fn resolve(ctx: &mut crate::pipeline::BuildCtx) {
     ctx.chrono = derive_chronology(ctx.atlas);
     ctx.event_world_stats.dated_by_rows = populate_dated_by(&mut ctx.graph, &ctx.chrono);
+}
+
+/// Pipeline-facing DERIVE entry point (`pipeline::DerivePass`; TRAV-1):
+/// `ctx.chrono` is already complete (RESOLVE, immediately prior in the
+/// six-stage contract, built it) -- this stage only relates it into
+/// `temporal_adjacency` rows, per `populate_temporal_adjacency`'s own doc
+/// comment.
+pub fn derive(ctx: &mut crate::pipeline::BuildCtx) {
+    populate_temporal_adjacency(&mut ctx.graph, &ctx.chrono);
 }
 
 /// The SAME node-id shape `graph_types::graph::Graph::build_indexes`'s own
@@ -975,17 +1007,47 @@ mod tests {
     // since `Chronology` no longer computes this at all (see this module's
     // own `Chronology` doc comment).
 
+    // `temporal_neighbors_follow_the_global_timeline_not_narrative_membership`
+    // RETIRED (TRAV-1, controller decision 2): the subject it proved --
+    // "prior/following in time follows the GLOBAL timeline, not narrative
+    // membership" -- is now a fact about the graph's own real
+    // `temporal_adjacency` ROWS (below, same e5/e1/e2 fixture, same
+    // asserted order) plus `GraphService::temporal_neighbors`'s own
+    // row-to-lookup fold (service.rs, covered end to end over real HTTP by
+    // `atlas-server/tests/api.rs::narrative_event_positions_endpoint`'s own
+    // `timeline` assertions), not a fact about `Chronology.temporal_neighbors`
+    // (RETIRED WHOLE this batch, see that struct's own doc comment) built
+    // by re-walking `chrono.order` with index arithmetic a second time.
+
     #[test]
-    fn temporal_neighbors_follow_the_global_timeline_not_narrative_membership() {
+    fn temporal_adjacency_rows_are_one_per_consecutive_timeline_pair_earlier_to_later() {
         let atlas = atlas_with(
             vec![event("e5", -2000, 0), event("e1", -1406, 0), event("e2", -1406, 0)],
             vec![],
             vec![],
         );
-        let world = Chronology::build(&atlas);
-        assert_eq!(world.temporal_neighbors["e5"], (None, Some("e1".to_string())));
-        assert_eq!(world.temporal_neighbors["e1"], (Some("e5".to_string()), Some("e2".to_string())));
-        assert_eq!(world.temporal_neighbors["e2"], (Some("e1".to_string()), None));
+        let chrono = derive_chronology(&atlas);
+        assert_eq!(chrono.order, vec!["e5", "e1", "e2"], "fixture sanity: this is the exact global-timeline order populate_temporal_adjacency must pair");
+
+        let mut graph = Graph::default();
+        let rows = populate_temporal_adjacency(&mut graph, &chrono);
+
+        assert_eq!(rows, 2, "3 dated events -> windows(2) -> 2 consecutive pairs");
+        assert_eq!(graph.temporal_adjacency.len(), 2, "the returned count must match what actually landed on the graph");
+        assert_eq!((graph.temporal_adjacency[0].earlier.0.as_str(), graph.temporal_adjacency[0].later.0.as_str()), ("e5", "e1"));
+        assert_eq!((graph.temporal_adjacency[1].earlier.0.as_str(), graph.temporal_adjacency[1].later.0.as_str()), ("e1", "e2"));
+        assert!(graph.temporal_adjacency.iter().all(|r| r.provenance == "chronology-derivation"), "same derivation pass as populate_dated_by's own rows");
+    }
+
+    #[test]
+    fn zero_or_one_dated_events_yield_zero_temporal_adjacency_rows() {
+        let none = atlas_with(vec![], vec![], vec![]);
+        let mut g = Graph::default();
+        assert_eq!(populate_temporal_adjacency(&mut g, &derive_chronology(&none)), 0, "windows(2) on an empty order is honestly empty, not a panic");
+
+        let one = atlas_with(vec![event("e1", -1406, 0)], vec![], vec![]);
+        let mut g2 = Graph::default();
+        assert_eq!(populate_temporal_adjacency(&mut g2, &derive_chronology(&one)), 0, "a single dated event has no consecutive PAIR to relate");
     }
 
     #[test]

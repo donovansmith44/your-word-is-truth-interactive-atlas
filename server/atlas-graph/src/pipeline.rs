@@ -46,14 +46,15 @@
 //!   naming.
 //! - DERIVE: computed relations with no authored-row counterpart --
 //!   reading-order (already complete as the spine NORMALIZE built; this
-//!   stage asserts it, rather than rebuilding it a second time) and
-//!   member-of (free: the inverse projection of `contains`/`attests`,
-//!   nothing to compute). `temporal-adjacency`/`parallel` stay
-//!   UNMATERIALIZED this batch (a real, disclosed, standing gap carried
-//!   forward from M-B's own report, not new to this commit) -- this
-//!   stage is where a future batch's own derivation would land; it is
-//!   present in the list now (satisfying "passes as data") even though
-//!   its current body has nothing new to compute.
+//!   stage asserts it, rather than rebuilding it a second time), member-of
+//!   (free: the inverse projection of `contains`/`attests`, nothing to
+//!   compute), and (TRAV-1) `temporal-adjacency`: one `TemporalAdjacency`
+//!   row per consecutive pair of the chronology's own global order
+//!   (`event_world::populate_temporal_adjacency`, called from
+//!   `event_world::derive` below) -- this is the "future batch's own
+//!   derivation" this stage's doc comment named a landing spot for since
+//!   M-C; `parallel` stays UNMATERIALIZED (a real, disclosed, standing gap,
+//!   out of TRAV-1's own named scope).
 //! - INDEX: `Graph::build_indexes()` (unmodified graph-types primitive;
 //!   one BiIndex pass per relation, directed AND -- new this batch --
 //!   symmetric) plus `add_justified_by` (a post-processing step that must
@@ -213,11 +214,11 @@ impl Pass for DerivePass {
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
         // Reading-order is already complete (NORMALIZE built the spine);
         // member-of is free (the inverse projection of contains/attests).
-        // temporal-adjacency/parallel stay unmaterialized (disclosed,
-        // standing gap -- see this module's own doc comment); nothing for
-        // THIS batch to compute here. Present in the list, not skipped,
-        // so a future materialization is a body edit, not a new pass.
-        let _ = ctx;
+        // TRAV-1: temporal-adjacency now materializes here -- see this
+        // module's own DERIVE doc comment and event_world::derive. parallel
+        // stays unmaterialized (disclosed, standing gap, out of TRAV-1's
+        // own named scope).
+        crate::event_world::derive(ctx);
         Ok(())
     }
 }
