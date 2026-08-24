@@ -771,6 +771,15 @@ input:focus-visible,
    motion safe" both satisfied by construction (.pericope-heading's own
    established precedent for the identical reasoning), not a media-query
    special case. */
+/* Batch M-D4: VerseLine.razor also renders this SAME class inside the
+   popover's own mini-reader now (decision 4's parity law -- "same
+   superscript behavior... per current flag state"), unmodified -- its own
+   --bronze-ink-on---parchment ~7.27:1 floor (this comment's own figure,
+   above) is the TIGHTER of the two real backgrounds this marker ever sits
+   on: the popover's own --parchment-raised gives --bronze-ink 7.85:1
+   (already proven elsewhere in this file -- .popover-breadcrumb-back/
+   .popover-reader-verse-num), so reuse here clears the SAME floor with
+   more margin, never less; no new rule needed. */
 .verse-xref-marker {
     display: inline;
     vertical-align: super;
@@ -4055,6 +4064,20 @@ input:focus-visible,
     padding-right: .3rem;
 }
 
+/* Batch M-D4 ("the recursive reader," decision 2 -- "verses clickable
+   everywhere"): VerseLine.razor now renders this row with .explorable ALSO
+   in its class list (markup only, this rule itself unchanged -- the SAME
+   .explorable ink-wash Reader.razor's own verse-line already used, reused
+   rather than a second hover rule re-derived for this container). Disclosed
+   nuance: .popover-reader-verse[data-focal="true"] below has higher
+   selector specificity than .explorable and sets `background` (a shorthand,
+   which always wins over .explorable's own `background-color` once both
+   apply), so a FOCAL row's own warm highlight visually masks the hover
+   wash -- accepted rather than engineered around: the row stays fully
+   clickable (cursor:pointer, real hover/focus still land, `:focus-visible`
+   keyboard styling is unaffected) and a focal row is already visually
+   distinguished as "special," so an ADDITIONAL hover cue there specifically
+   is not load-bearing. */
 .popover-reader-verse {
     display: flex;
     align-items: baseline;
@@ -4091,7 +4114,17 @@ input:focus-visible,
    the map," never "open a popover," so it is deliberately NOT one of the
    ONE-RULE's own covered elements (CONTRACT.md's own note on what
    .explorable means). */
-.popover-reader-mention {
+/* Batch M-D4 ("the recursive reader," decision 3): .popover-verse-mention
+   joins this rule via a plain compound selector, no re-derived values --
+   VerseTextSection.razor's own one-verse/passage FOCUS preview (previously
+   bare, unscanned text) now ALSO renders in-text mentions, through the SAME
+   MentionText.razor component this mini-reader's own rows use, just its own
+   distinct class/testid root (a compact FOCUS preview is not a mini-reader
+   row -- see that file's own comment). Both classes sit on the identical
+   --parchment-raised popover background, so reuse is exact, not merely
+   close. */
+.popover-reader-mention,
+.popover-verse-mention {
     cursor: pointer;
     border-radius: 2px;
     background-color: rgba(44, 74, 112, 0);
@@ -4099,13 +4132,16 @@ input:focus-visible,
 }
 
 .popover-reader-mention:hover,
-.popover-reader-mention:focus-visible {
+.popover-reader-mention:focus-visible,
+.popover-verse-mention:hover,
+.popover-verse-mention:focus-visible {
     background-color: rgba(44, 74, 112, .14);
     color: var(--lapis);
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .popover-reader-mention {
+    .popover-reader-mention,
+    .popover-verse-mention {
         transition: none;
     }
 }

@@ -45,7 +45,35 @@
    NOT a bare span; fix-round-1 correction, this comment previously said
    "each block's own span" -- see CONTRACT.md's own popover-verse-expand
    note) scopes a NEW instance's own controls uniquely, and carries that
-   entry's own repeated-span disambiguation (--2/--3) along with it. *@
+   entry's own repeated-span disambiguation (--2/--3) along with it.
+
+   Batch M-D4 ("the recursive reader", the owner's own defect report:
+   "the Bible I get when I click read the whole chapter is of a
+   fundamentally different kind - location hovering works. verses are
+   not clickable [...] no-go"): the EXPANDED body below (every verse of
+   the lazily-fetched chapter) now renders through VerseLine.razor +
+   PericopeHeading.razor -- the SAME two components Reader.razor's own
+   chapter body uses, never a second implementation. Three affordances
+   this mini-reader never had before this batch, all now universal with
+   the main reader: (1) a verse LINE itself is clickable/Enter-able,
+   pushing a fresh VerseNode via OnExplore (the SAME ctx.PushAsync this
+   component's own mention clicks already used -- "reuse the popover's
+   EXISTING push stack," decision 2's own words, not a new mechanism);
+   (2) the xref superscript cluster renders here too, gated by the SAME
+   FeatureFlags.XrefSuperscripts/XrefCount>0 rule Reader.razor's own
+   verse line uses (decision 4's own parity law) -- click/Enter/focus
+   push a VerseNode with XrefEntryPoint=true, same as the main reader's
+   own commit path; the HOVER-preview micro-behavior deliberately stays
+   Reader-page-only (VerseLine.razor's own header comment has the full
+   disclosed reasoning -- a bare mouseover jumping THIS popover's own
+   stack around, one level already deep, would be a real UX regression
+   decision 6's scope discipline rules out); (3) pericope headings
+   interleave here too (PericopeHeading.razor), a real, disclosed
+   asymmetry decision 1 names directly ("heading interleaving where
+   applicable") -- a chapter-body reading flow missing headings the SAME
+   chapter's own main-reader rendering shows is another dead-end-by-
+   omission, the identical defect class this batch cures for verse
+   clickability and mention links. *@
 @using BibleAtlas.Client.Explore
 @inject AtlasClient Atlas
 @inject IJSRuntime JS
@@ -68,38 +96,32 @@ else
         }
         else
         {
+            @* Batch M-D4 ("the recursive reader"): every verse now renders
+               through VerseLine.razor, the SAME canonical component
+               Reader.razor's own chapter body uses (see that file's own
+               call site) -- REPLACES this block's own prior hand-built
+               verse-num/mention markup, which never made a verse LINE
+               clickable at all (the owner's own defect report: "verses are
+               not clickable [...] no-go"). PericopeHeading.razor
+               (interleaved the SAME way Reader.razor's own loop does)
+               brings the mini-reader's own pericope headings, absent
+               before this batch entirely -- see each shared component's
+               own header comment for the full "why" behind every
+               container-specific parameter below. *@
             @foreach (var v in _chapter.Verses)
             {
                 var isFocal = v.Verse >= FocalFromVerse && v.Verse <= FocalToVerse;
-                <div class="popover-reader-verse" data-testid="@($"popover-reader-verse-{v.Verse}{TestIdSuffix}")" data-focal="@(isFocal ? "true" : "false")"
-                     id="@(v.Verse == FocalFromVerse ? _focalDomId : null)">
-                    <span class="popover-reader-verse-num">@v.Verse</span>
-                    <span class="popover-reader-verse-text">
-                        @foreach (var seg in PlaceMentions.Scan(v.Text, v.Places, v.Persons))
-                        {
-                            @if (seg.PlaceId is { } placeId)
-                            {
-                                <span class="popover-reader-mention" data-testid="@($"popover-reader-mention-{v.Verse}-{placeId}{TestIdSuffix}")"
-                                      tabindex="0" role="button" aria-label="@($"Explore {seg.PlaceName}")"
-                                      @onpointerenter="() => Blink(placeId, true)" @onpointerleave="() => Blink(placeId, false)"
-                                      @onfocus="() => Blink(placeId, true)" @onblur="() => Blink(placeId, false)"
-                                      @onclick="() => OpenPlace(placeId, seg.PlaceName!)" @onclick:stopPropagation="true"
-                                      @onkeydown="@(e => OnPlaceMentionKeyDown(e, placeId, seg.PlaceName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
-                            }
-                            else if (seg.PersonId is { } personId)
-                            {
-                                <span class="popover-reader-mention popover-reader-mention-person" data-testid="@($"popover-reader-mention-person-{v.Verse}-{personId}{TestIdSuffix}")"
-                                      tabindex="0" role="button" aria-label="@($"Explore {seg.PersonName}")"
-                                      @onclick="() => OpenPerson(personId, seg.PersonName!)" @onclick:stopPropagation="true"
-                                      @onkeydown="@(e => OnPersonMentionKeyDown(e, personId, seg.PersonName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
-                            }
-                            else
-                            {
-                                @seg.Text
-                            }
-                        }
-                    </span>
-                </div>
+                @if (v.Heading is { } heading)
+                {
+                    <PericopeHeading Heading="@heading" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" />
+                }
+                <VerseLine Verse="@v" Book="@Book" Chapter="@Chapter" OnExplore="OnExplore"
+                           Focal="@isFocal" Id="@(v.Verse == FocalFromVerse ? _focalDomId : null)"
+                           RowClass="popover-reader-verse explorable" RowTestIdPrefix="popover-reader-verse" TestIdSuffix="@TestIdSuffix"
+                           VerseNumClass="popover-reader-verse-num" ShowVerseNumButton="false"
+                           TextClass="popover-reader-verse-text" MentionClass="popover-reader-mention"
+                           XrefMarkerTestIdPrefix="popover-reader-xref-marker"
+                           OnXrefClick="@(vn => OnExplore.InvokeAsync(new VerseNode($"{Book}.{Chapter}.{vn}", xrefEntryPoint: true)))" />
             }
         }
     </div>
@@ -139,9 +161,14 @@ else
     // required, not optional, matching that precedent (both of this
     // component's two real callers, PassageList.razor and
     // VerseTextSection.razor, always have a real ctx.PushAsync in hand to
-    // supply). Threads a mention click (place OR person, see OpenPlace/
-    // OpenPerson below) up to whichever popover this mini-reader instance
-    // is currently rendering inside.
+    // supply). Batch M-D4: widened from "a mention click only" to EVERY
+    // explorable target the chapter body below renders -- VerseLine's own
+    // row click/mention clicks (via MentionText, forwarded through) AND
+    // PericopeHeading's own click -- decision 2's own "verses clickable
+    // everywhere... reuse the popover's EXISTING push stack": there is no
+    // second push mechanism to build, this SAME parameter (already wired
+    // straight to ctx.PushAsync by VerseTextSectionProvider/PassageList's
+    // own callers) is the reuse.
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
     // M-D3/U6: read fresh at RENDER time (a computed property, not cached
@@ -231,36 +258,12 @@ else
         }
     }
 
-    // Toggles the SAME map.js blinkPlace every currently-live map instance
-    // (full /world, or a split view's own embedded pane) responds to -- see
-    // MapInterop.BlinkPlace's own doc comment for why this needs no
-    // reference to any specific map/component at all.
-    private Task Blink(string placeId, bool active) => MapInterop.BlinkPlace(JS, placeId, active);
-
-    // M-D3/U5: a mention click pushes the SAME node kind its own popover
-    // section would, onto the SAME popover stack (OnExplore, above) -- click
-    // and hover-blink are independent, both always available on a place
-    // mention (a click doesn't cancel/replace the blink the pointer/focus
-    // handlers above already own). PlaceNode's own id stays bare (the
-    // LEGACY AtlasData-backed convention every other PlaceNode construction
-    // site in this app already uses -- World.razor's OpenPlaceFromCard,
-    // PopoverSectionProviders' own place-row buttons).
-    private Task OpenPlace(string placeId, string placeName) => OnExplore.InvokeAsync(new PlaceNode(placeId, placeName));
-
-    // PersonRefDto.Id (VerseOut.Persons, the chapter-view's own attested-
-    // mentions index) is the graph's RAW node id ("aaron_1") -- UNLIKE the
-    // generic edges page's own NodeRefDto.Id, which already carries the
-    // "Person:" wire prefix (see PersonCardAndMentionsSection's own persons-
-    // list buttons, PopoverSectionProviders.cs). PersonNode always stores
-    // (and later threads verbatim into ctx.Graph.Card/.Edges) the WIRE
-    // form, so this is the one place that prefix gets added, matching
-    // PersonNode's own doc comment example ("Person:aaron_1") exactly.
-    private Task OpenPerson(string personId, string personName) => OnExplore.InvokeAsync(new PersonNode($"Person:{personId}", personName));
-
-    // "Enter opens" -- the same scope, and the same bespoke-named-method-
-    // per-target shape, every other explorable element in this app uses
-    // (PassageList.razor's own OnKeyDown, Reader.razor's OnVerseLineKeyDown/
-    // OnHeadingKeyDown, PlaceCard's OnVerseKeyDown/OnPassageKeyDown).
-    private Task OnPlaceMentionKeyDown(KeyboardEventArgs e, string placeId, string placeName) => e.Key == "Enter" ? OpenPlace(placeId, placeName) : Task.CompletedTask;
-    private Task OnPersonMentionKeyDown(KeyboardEventArgs e, string personId, string personName) => e.Key == "Enter" ? OpenPerson(personId, personName) : Task.CompletedTask;
+    // Batch M-D4: Blink/OpenPlace/OpenPerson/OnPlaceMentionKeyDown/
+    // OnPersonMentionKeyDown all deleted from this component -- MentionText.razor
+    // (used by VerseLine.razor's own verse-text span above) is now the ONE
+    // place BLINK-1/MENTION-1's mention markup, click, and blink wiring
+    // lives, replacing this file's own prior copy exactly the way
+    // Reader.razor's near-identical prior copy was also replaced. Grep-
+    // proven dead: no remaining reference to any of these five names in
+    // this file.
 }

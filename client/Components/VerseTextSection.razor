@@ -17,13 +17,53 @@
    section's own pre-existing testids (popover-verse-expand/-reader/
    -reader-verse-{n}) byte for byte. VerseTextSectionProvider (Explore/
    PopoverSectionProviders.cs) is still the ONLY thing that constructs this
-   component. *@
+   component.
+
+   Batch M-D4 ("the recursive reader," decision 3 "name links everywhere...
+   render wherever verse text renders"): this compact preview was, before
+   this batch, the ONE place verse text rendered with NO in-text mention
+   links at all -- CompactText a bare, unscanned string (VerseNode.Detail's
+   own plain .Text, or PassageNode's own pre-known concatenation), neither
+   of which carries the Places/Persons PlaceMentions.Scan needs. FocalVerses
+   (new) is VerseTextSectionProvider's own fail-soft ENHANCEMENT: the SAME
+   focal verse range, resolved instead via `GET /api/chapter/{cref}` (the
+   wire data need decision 3 anticipates -- "if any surface's data path
+   lacks spans, EXTEND that fetch's DTO... never a parallel path" -- no
+   server change, no graph-types touch: the chapter endpoint already carries
+   Places/Persons per verse, VerseTextSectionProvider was simply the one
+   caller that never asked for it), rendered per-verse through
+   MentionText.razor -- the SAME component VerseLine.razor uses, no third
+   copy of the scan-and-render loop. CompactText survives as the FALLBACK:
+   whenever the chapter fetch fails (fail-soft try/catch at section resolve,
+   the house pattern), FocalVerses is empty and this falls straight back to
+   the exact plain-text rendering this section always had -- a genuine
+   network-reliability regression (PassageNode's own text used to be
+   zero-fetch, always-available; now it depends on a fetch that COULD fail)
+   is deliberately never introduced. No verse-num, no xref superscript here
+   -- "bare text, no ref label" is unchanged (the popover's own title
+   already IS the ref); a superscript would also be pure noise immediately
+   above the unconditional, inline cross-references section one hop below
+   it -- see this batch's own report for the fuller "where applicable"
+   scoping call. *@
 @using BibleAtlas.Client.Explore
 
 <div class="popover-verse-section">
     <MiniReaderExpand Book="@Book" Chapter="@Chapter" FocalFromVerse="@FocalFromVerse" FocalToVerse="@FocalToVerse" OnExplore="OnExplore">
         <CompactContent>
-            <p class="popover-verse-text">@CompactText</p>
+            <p class="popover-verse-text">
+                @if (FocalVerses.Count > 0)
+                {
+                    @foreach (var v in FocalVerses)
+                    {
+                        <MentionText Text="@v.Text" Places="@v.Places" Persons="@v.Persons" Verse="@v.Verse"
+                                     ClassPrefix="popover-verse-mention" OnExplore="OnExplore" /><text> </text>
+                    }
+                }
+                else
+                {
+                    @CompactText
+                }
+            </p>
         </CompactContent>
     </MiniReaderExpand>
 </div>
@@ -34,6 +74,12 @@
     [Parameter] public int FocalFromVerse { get; set; }
     [Parameter] public int FocalToVerse { get; set; }
     [Parameter, EditorRequired] public string CompactText { get; set; } = default!;
+
+    // Batch M-D4: the SAME focal range as CompactText, with real per-verse
+    // Places/Persons -- empty (never null) whenever VerseTextSectionProvider's
+    // own chapter fetch failed, in which case the markup above falls back
+    // to CompactText's plain string. See this file's own header comment.
+    [Parameter] public IReadOnlyList<VerseOut> FocalVerses { get; set; } = Array.Empty<VerseOut>();
 
     // M-D3/U5: forwarded straight through to MiniReaderExpand -- this
     // component has no popover-stack access of its own (VerseTextSectionProvider,

@@ -1,0 +1,179 @@
+@* Batch M-D4 ("the recursive reader") -- the owner's defect report,
+   near-verbatim: "the hovering over place names is not universal... the
+   Bible I get when I click read the whole chapter is of a fundamentally
+   different kind - location hovering works. verses are not clickable
+   (therefore explorations hit deadends)." Diagnosis: the popover's own
+   mini-reader was a SECOND, WEAKER implementation of "render a verse line"
+   -- Reader.razor's chapter body and MiniReaderExpand.razor's expanded
+   chapter body rendered near-identical markup (verse number + text +
+   in-text mention links + xref superscript) through two independent
+   `@foreach` loops, forked just enough that affordances drifted: a verse
+   LINE opened its own popover in the main reader but did nothing at all
+   when clicked inside the mini-reader.
+
+   THIS is the one canonical verse-line renderer, decision 1's own words:
+   "verse number + text + in-text mention links + superscript marker...
+   parameterized by container context (page vs popover; density/
+   compactness), NEVER forked." Reader.razor and MiniReaderExpand.razor's
+   own expanded body both render every verse of a chapter through THIS
+   component now -- see each file's own comment at its call site. Heading
+   interleaving (decision 1's own "where applicable") is the CALLER's own
+   job (PericopeHeading.razor, rendered immediately before this component
+   whenever a verse is a heading anchor) -- a verse LINE's own identity
+   doesn't include the heading that happens to sit above it.
+
+   CLICKABILITY (decision 2, "verses clickable everywhere... reuse the
+   popover's EXISTING push stack"): every container's own row click/Enter
+   calls the SAME `OnExplore.InvokeAsync(new VerseNode(vref))` -- Reader.razor
+   wires this to a plain "reset xref-entry state, replace _activeNode"
+   handler (opens a FRESH top-level popover, unchanged from the pre-M-D4
+   OpenVerse shape); MiniReaderExpand wires the identical parameter straight
+   to `ctx.PushAsync` (via VerseTextSectionProvider's own pre-existing
+   OnExplore wiring -- the push machinery ALREADY existed, per the brief's
+   own instruction: "reuse it, don't build a second one"). Mention clicks
+   (MentionText.razor, embedded below) go through the SAME OnExplore --
+   never a second callback shape.
+
+   XREF SUPERSCRIPT (decision 4's own parity law, "same superscript
+   behavior, per current flag state"): `ShowXrefMarker` reads
+   `FeatureFlags.XrefSuperscripts`/`Verse.XrefCount` directly -- a pure
+   function of data already on hand, no per-render mutable accumulator
+   ANYWHERE (the exact shape the house pattern/Batch N lesson warns
+   against; XrefMarkerGlyph is unchanged from Reader.razor's own prior
+   `XrefMarkerText`, just relocated) -- so the marker renders identically,
+   universally, regardless of container. CLICK/Enter/focus always commit
+   (OnXrefClick); the HOVER-preview micro-behavior (OpenVerseXrefEntryHover's
+   own debounced auto-dismiss, tuned across several M-D3 fix rounds
+   specifically for a TOP-LEVEL popover's own pane-anchored open/dismiss
+   dance) is a disclosed, Reader-page-only enhancement, not part of the
+   tested parity law -- MiniReaderExpand leaves OnXrefHoverEnter/
+   OnXrefHoverLeave unbound (a harmless no-op EventCallback): pushing a
+   NEW popover-stack entry on a bare mouseover, already nested one popover
+   deep, would make hovering across chapter text unpredictably jump the
+   stack around -- a UX regression this batch's own scope discipline
+   (decision 6: no new exploration features) rules out inventing. *@
+@using BibleAtlas.Client.Explore
+
+<div class="@RowClass" data-testid="@RowTestId" data-focal="@(Focal ? "true" : "false")" id="@Id"
+     tabindex="0" role="button" aria-label="@($"Explore {Vref}")"
+     @onclick="() => OnExplore.InvokeAsync(new VerseNode(Vref))" @onkeydown="@(e => OnLineKeyDown(e))">
+    @if (ShowVerseNumButton)
+    {
+        <button type="button" class="@VerseNumClass" data-testid="@VerseNumTestId"
+                @onclick="@(e => OnVerseNumClick.InvokeAsync(e))" @onclick:stopPropagation="true"
+                @onkeydown:stopPropagation="true">@Verse.Verse</button>
+    }
+    else
+    {
+        <span class="@VerseNumClass">@Verse.Verse</span>
+    }
+    <span class="@TextClass">
+        <MentionText Text="@Verse.Text" Places="@Verse.Places" Persons="@Verse.Persons" Verse="@Verse.Verse"
+                     ClassPrefix="@MentionClass" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" />
+        @if (ShowXrefMarker)
+        {
+            <sup class="verse-xref-marker" data-testid="@XrefMarkerTestId"
+                 tabindex="0" role="button" aria-label="@XrefMarkerAriaLabel"
+                 @onclick="() => OnXrefClick.InvokeAsync(Verse.Verse)" @onclick:stopPropagation="true"
+                 @onmouseenter="() => OnXrefHoverEnter.InvokeAsync(Verse.Verse)" @onmouseleave="() => OnXrefHoverLeave.InvokeAsync()"
+                 @onfocus="() => OnXrefClick.InvokeAsync(Verse.Verse)"
+                 @onkeydown="@(e => OnXrefKeyDown(e))" @onkeydown:stopPropagation="true">@XrefMarkerGlyph</sup>
+        }
+    </span>
+</div>
+
+@code {
+    // The verse's own full row data -- Verse/Text/Places/Persons/XrefCount,
+    // exactly the `ChapterOut.Verses[i]` shape both Reader.razor and
+    // MiniReaderExpand already iterate (Heading is read by the CALLER, not
+    // here -- see this file's own header comment).
+    [Parameter, EditorRequired] public VerseOut Verse { get; set; } = default!;
+    [Parameter, EditorRequired] public string Book { get; set; } = default!;
+    [Parameter, EditorRequired] public int Chapter { get; set; }
+
+    // Row click, mention clicks (via MentionText, forwarded straight
+    // through) -- see this file's own header comment for the two
+    // containers' own different wiring.
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    // MiniReaderExpand only: is this verse inside the popover's own focal
+    // range (`data-focal`, READER-1's calm static highlight)? Reader.razor
+    // never sets this (default false on every row -- the main reader has no
+    // "focal verse" concept of its own; a harmless, uniform attribute
+    // rather than a container-conditional one, simpler to reason about).
+    [Parameter] public bool Focal { get; set; }
+
+    // DOM id -- Reader.razor sets "v{n}" on EVERY row (reader.js's
+    // scrollToVerse/#v{n} deep links, ExplorerPopover's own
+    // VerseAnchorSelector="#v{n}"); MiniReaderExpand sets its own
+    // collision-safe GUID ONLY on the focal row (scrollFocalRowIntoView) --
+    // null omits the attribute entirely (standard Blazor null-attribute
+    // behavior), matching MiniReaderExpand's own pre-existing conditional.
+    [Parameter] public string? Id { get; set; }
+
+    [Parameter, EditorRequired] public string RowClass { get; set; } = default!;
+    [Parameter, EditorRequired] public string RowTestIdPrefix { get; set; } = default!;
+
+    // MiniReaderExpand's own established multi-instance disambiguation --
+    // see MentionText.razor's own comment on this identical parameter.
+    [Parameter] public string TestIdSuffix { get; set; } = "";
+
+    [Parameter, EditorRequired] public string VerseNumClass { get; set; } = default!;
+
+    // True (Reader.razor) renders a REAL <button> -- the anchor+extend
+    // passage-range mechanic (shift-click, READ-5), a selection gesture
+    // deliberately excluded from ONE-RULE, own target/own testid, unaffected
+    // by this batch (scope discipline: no new exploration features). False
+    // (MiniReaderExpand, the default) renders a plain, non-interactive
+    // <span> -- the popover mini-reader never had passage-range selection
+    // and this batch does not add it there.
+    [Parameter] public bool ShowVerseNumButton { get; set; }
+    [Parameter] public string? VerseNumTestIdPrefix { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> OnVerseNumClick { get; set; }
+
+    [Parameter, EditorRequired] public string TextClass { get; set; } = default!;
+    [Parameter, EditorRequired] public string MentionClass { get; set; } = default!;
+
+    // "verse-xref-marker" (default) reproduces Reader.razor's own
+    // pre-existing bare `verse-xref-marker-{n}` testid byte for byte (no
+    // caller override needed there); MiniReaderExpand passes
+    // "popover-reader-xref-marker" -- a NEW testid (this marker never
+    // rendered in the popover before this batch), named to match its own
+    // sibling family (`popover-reader-verse-*`/`popover-reader-mention-*`),
+    // not the reader's own unrelated "verse-*" family -- see CONTRACT.md.
+    [Parameter] public string XrefMarkerTestIdPrefix { get; set; } = "verse-xref-marker";
+    [Parameter, EditorRequired] public EventCallback<int> OnXrefClick { get; set; }
+
+    // Optional -- see this file's own header comment for why MiniReaderExpand
+    // deliberately leaves these two unbound (a no-op EventCallback; Blazor's
+    // own safe default for an unwired callback).
+    [Parameter] public EventCallback<int> OnXrefHoverEnter { get; set; }
+    [Parameter] public EventCallback OnXrefHoverLeave { get; set; }
+
+    private string Vref => $"{Book}.{Chapter}.{Verse.Verse}";
+    private string RowTestId => $"{RowTestIdPrefix}-{Verse.Verse}{TestIdSuffix}";
+    private string? VerseNumTestId => VerseNumTestIdPrefix is { } prefix ? $"{prefix}-{Verse.Verse}" : null;
+
+    // Batch M-D2's own owner-specified lettering scheme (i/j/k, >3 -> "…"),
+    // relocated verbatim from Reader.razor's own now-deleted
+    // XrefLetters/XrefManyMarker/XrefMarkerText/XrefMarkerAriaLabel -- a
+    // PURE function of Verse.XrefCount alone, same "sidesteps the Batch N
+    // closure-capture defect class by construction" reasoning that code's
+    // own prior comment already established, now shared by both containers
+    // instead of being Reader.razor's own private copy.
+    private static readonly string[] XrefLetters = { "i", "j", "k" };
+    private const string XrefManyMarker = "…";
+
+    private bool ShowXrefMarker => FeatureFlags.XrefSuperscripts && Verse.XrefCount > 0;
+    private string XrefMarkerGlyph => Verse.XrefCount > 3 ? XrefManyMarker : string.Concat(XrefLetters.Take(Verse.XrefCount));
+    private string XrefMarkerAriaLabel => Verse.XrefCount > 3
+        ? $"Many cross-references for verse {Verse.Verse}"
+        : $"{Verse.XrefCount} cross-reference{(Verse.XrefCount == 1 ? "" : "s")} for verse {Verse.Verse}";
+    private string XrefMarkerTestId => $"{XrefMarkerTestIdPrefix}-{Verse.Verse}{TestIdSuffix}";
+
+    // Enter only, not Space -- design-direction.md's own "Enter opens" (see
+    // Reader.razor's own prior OnVerseLineKeyDown comment for the full
+    // Space-vs-Tab reasoning, preserved verbatim in spirit).
+    private Task OnLineKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? OnExplore.InvokeAsync(new VerseNode(Vref)) : Task.CompletedTask;
+    private Task OnXrefKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? OnXrefClick.InvokeAsync(Verse.Verse) : Task.CompletedTask;
+}

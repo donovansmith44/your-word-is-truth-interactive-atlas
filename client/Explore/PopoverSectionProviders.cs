@@ -190,6 +190,29 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
 /// OTHER section here, this one owns real interactive STATE (expanded/
 /// collapsed, a lazily-fetched chapter, a scroll target) that a closure-based
 /// fragment has no clean way to hold.
+///
+/// Batch M-D4 ("the recursive reader," decision 3, "name links everywhere...
+/// wire data needs: if any surface's data path lacks spans, EXTEND that
+/// fetch's DTO, disclosed, never a parallel path"): NEITHER VerseNode's own
+/// <c>GET /api/verse/{vref}</c> (<see cref="VerseDetail"/> carries no
+/// Places/Persons at all) NOR PassageNode's own pre-known <c>Text</c> (a
+/// flat, already-concatenated string, no per-verse breakdown) can feed
+/// <see cref="PlaceMentions"/> -- so this provider ALSO fetches the focal
+/// range's own chapter (<c>GET /api/chapter/{cref}</c>, the SAME
+/// LRU-cached, already-carries-Places/Persons/XrefCount endpoint
+/// MiniReaderExpand itself fetches on expand -- no server change, no
+/// graph-types touch, the client-side DTO extension the brief's own words
+/// anticipate) and slices out the focal verses, WITH their real mention
+/// data, as <see cref="Components.VerseTextSection.FocalVerses"/>. Fail-soft
+/// (house pattern): wrapped in its own try/catch, independent of the
+/// pre-existing compactText fetch immediately below, which stays exactly as
+/// it was -- a genuinely CHEAP safety net (VerseNode.DetailAsync is
+/// memoized, already re-fetched by CrossRefsSection/CatechismSeamSection/
+/// VerseEventMembershipSection/VerseParallelsSection on the SAME node this
+/// batch open, so calling it again here is a cache hit, never a second
+/// round trip; PassageNode.Text is a zero-cost property read) -- so a
+/// failed chapter fetch degrades to VerseTextSection's own pre-M-D4 plain
+/// text, never a broken or blank focal section.
 /// </summary>
 public sealed class VerseTextSectionProvider : IPopoverSectionProvider
 {
@@ -236,6 +259,20 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
                 return null;
         }
 
+        // See this class's own doc comment -- fail-soft, independent of the
+        // compactText fetch above; empty (never thrown past this point)
+        // just means VerseTextSection's own markup falls back to compactText.
+        List<VerseOut> focalVerses;
+        try
+        {
+            var chapterOut = await api.Chapter(book, chapter);
+            focalVerses = chapterOut.Verses.Where(cv => cv.Verse >= focalFrom && cv.Verse <= focalTo).ToList();
+        }
+        catch (Exception)
+        {
+            focalVerses = new List<VerseOut>();
+        }
+
         RenderFragment fragment = builder =>
         {
             builder.OpenComponent<Components.VerseTextSection>(0);
@@ -244,7 +281,8 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
             builder.AddAttribute(3, "FocalFromVerse", focalFrom);
             builder.AddAttribute(4, "FocalToVerse", focalTo);
             builder.AddAttribute(5, "CompactText", compactText);
-            builder.AddAttribute(6, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(6, "FocalVerses", (IReadOnlyList<VerseOut>)focalVerses);
+            builder.AddAttribute(7, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
         };
         return new PopoverSection("verse-text", fragment);

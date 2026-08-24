@@ -1,0 +1,48 @@
+@* Batch M-D4 ("the recursive reader"): the pericope heading's own markup
+   (batch-t-brief.md requirement 5, M-D1's own chapter-boundary continuation),
+   extracted so it can render identically in EVERY chapter-body reading flow,
+   not just Reader.razor's own. Before this batch, MiniReaderExpand.razor's
+   "read the whole chapter" view -- itself a full chapter reading flow, the
+   SAME (focus, frontier) the main reader is -- rendered NO headings at all,
+   a real, disclosed asymmetry decision 1 names directly ("heading
+   interleaving where applicable"): a mini-reader missing a heading the main
+   reader shows for the identical chapter is another dead-end-by-omission,
+   the same defect class this batch cures for verse clickability and
+   mention links. Byte-for-byte the SAME markup/behavior Reader.razor always
+   had -- see CONTRACT.md's own `pericope-heading-{eventId}` note and
+   AFFORDANCE-1 (general-kind containers get `.explorable-quiet`, never
+   `.explorable`, same non-traversable-look law every other container
+   identity in this app already follows). *@
+@using BibleAtlas.Client.Explore
+
+<h2 class="pericope-heading @(Heading.IsContinuation ? "pericope-heading-continuation" : "") @(Heading.Kind == "general" ? "explorable-quiet" : "explorable")"
+    data-testid="@($"pericope-heading-{Heading.EventId}{TestIdSuffix}")" data-continuation="@(Heading.IsContinuation ? "true" : "false")"
+    tabindex="0" role="button" aria-label="@(Heading.IsContinuation ? $"Explore {Heading.Title} (continued)" : $"Explore {Heading.Title}")"
+    @onclick="Open" @onkeydown="@(e => OnKeyDown(e))">
+    @if (Heading.IsContinuation)
+    {
+        <span class="pericope-heading-continuation-marker" data-testid="@($"pericope-heading-continuation-marker-{Heading.EventId}{TestIdSuffix}")">continued</span>
+    }
+    @Heading.Title
+</h2>
+
+@code {
+    [Parameter, EditorRequired] public HeadingDto Heading { get; set; } = default!;
+
+    // MiniReaderExpand's own established multi-instance disambiguation
+    // (see MentionText.razor's own comment on this same parameter) --
+    // Reader.razor leaves this at its default "" (there is only ever ONE
+    // chapter body on screen there, no collision risk); MiniReaderExpand
+    // forwards its own per-instance TestIdSuffix, since two DIFFERENT
+    // PassageList entries can legitimately expand into mini-readers over
+    // the SAME chapter at once, and each one's own heading row (if that
+    // chapter has one) must stay uniquely addressable exactly like every
+    // other testid this popover platform already scopes this way.
+    [Parameter] public string TestIdSuffix { get; set; } = "";
+
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    private Task Open() => OnExplore.InvokeAsync(new EventNode(Heading.EventId, Heading.Title));
+
+    private Task OnKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? Open() : Task.CompletedTask;
+}

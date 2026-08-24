@@ -140,7 +140,29 @@ World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief
 Picker (ScripturePicker, shared by world and reader):
   `picker-book` (select of 66 books), `picker-chapter` (select sized from TOC),
   `picker-verse-from`, `picker-verse-to` (numeric inputs bounded by TOC),
-  `picker-apply` (button; composes the canonical ref)
+  `picker-apply` (button; composes the canonical ref).
+  B4 (batch-md4-brief.md, owner bug, verbatim: "the chapter nav box in the
+  top right of the reader is always stuck on genesis and doesn't follow the
+  focus chapter"): ScripturePicker.razor gained two OPTIONAL parameters,
+  `CurrentBook`/`CurrentChapter` -- World.razor's own mount leaves both
+  null (unsynced, byte-for-byte the pre-existing behavior); Reader.razor's
+  own mount supplies its own `_book`/`_chapterNum`, so `picker-book`/
+  `picker-chapter` always reflect the chapter CURRENTLY on screen there --
+  a direct route change, prev/next chapter nav, and a picker-applied jump
+  (itself just another route change from the picker's own perspective) are
+  ALL reflected the same way, one mechanism, no per-trigger special case.
+  Guarded by a `_synced` field (the last (book, chapter) actually synced
+  TO) so an unrelated Reader.razor re-render (e.g. a popover opening) never
+  clobbers the user's own in-progress verse-from/-to typing. A real,
+  live-caught RACE (not guessed, found by this batch's own new Playwright
+  coverage): `OnInitializedAsync`'s own `GET /api/books` fetch and a
+  routed `OnParametersSet` sync can resolve in EITHER order (Blazor invokes
+  `OnParametersSet` on a later `SetParametersAsync` call without waiting
+  for a still-in-flight `OnInitializedAsync` to finish) -- the fix reads
+  `CurrentBook`/`CurrentChapter` fresh inside `OnInitializedAsync`'s own
+  continuation too, deferring to them over the "default to the first book"
+  fallback, so whichever of the two resolves LAST only ever confirms the
+  same already-correct sync, never clobbers it.
 Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   book-name/chapter-numeral spans; opens the ExplorerPopover with a
   ChapterNode -- M-D3/U4/B3: that popover's own content is now the
@@ -342,7 +364,27 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `popover-reader-verse-{n}{-ENTRY-ID}` (same generalization; one per verse
   of the lazily-fetched chapter, `n` = verse number within it; attr
   `data-focal` = `"true"` for every verse in that entry's own focal
-  verse/passage range, `"false"` otherwise -- see READER-1),
+  verse/passage range, `"false"` otherwise -- see READER-1). Batch M-D4
+  ("the recursive reader"): this row is now ALSO explorable (ONE-RULE --
+  `.explorable` joins its existing class list) -- click, or Enter while
+  keyboard-focused, PUSHES a fresh `VerseNode` for that verse onto this
+  SAME popover's own stack (`ctx.PushAsync`, the pre-existing mechanism
+  every mention click already used -- never a second one); before this
+  batch the row did nothing at all on click, the owner's own named defect
+  ("verses are not clickable... no-go"). `popover-reader-xref-marker-{n}
+  {-ENTRY-ID}` (M-D4, new -- the SAME `verse_count`/`FeatureFlags.
+  XrefSuperscripts` rule as the main reader's own `verse-xref-marker-{n}`,
+  see XSCRIPT-1, now rendering here too, per RECURSE-1's own parity law
+  below; click/Enter/focus push a fresh `VerseNode` with
+  `XrefEntryPoint=true` -- the SAME entry-point behavior
+  `verse-xref-marker-{n}`'s own click gives, just reached via
+  `ctx.PushAsync` instead of a fresh top-level popover mount; the HOVER-
+  only preview micro-behavior `verse-xref-marker-{n}` also offers is
+  DELIBERATELY not reproduced here -- see RECURSE-1's own disclosed scoping
+  note), `pericope-heading-{eventId}{-ENTRY-ID}` (M-D4, new -- the SAME
+  markup/behavior as the main reader's own `pericope-heading-{eventId}`,
+  interleaved immediately above its own anchor verse's row exactly the same
+  way; absent from the mini-reader entirely before this batch),
   `popover-reader-mention-{n}-{placeId}{-ENTRY-ID}` / `popover-reader-
   mention-person-{n}-{personId}{-ENTRY-ID}` (batch-r-brief.md requirement
   5, same generalization; widened M-D3/U5 to a second entity kind -- one
@@ -1253,6 +1295,21 @@ Notes:
   and a calm, static highlight (no flash/animation). Clicking
   `popover-verse-collapse` restores the exact compact view; a later
   re-expand reuses the already-fetched chapter (no second fetch).
+
+  Batch M-D4 ("the recursive reader," decision 3): the COLLAPSED (compact)
+  view above -- previously bare, unscanned text, the ONE place verse text
+  rendered with NO in-text mention link at all -- now ALSO carries them:
+  `popover-verse-mention-{n}-{placeId}` / `popover-verse-mention-person-{n}-
+  {personId}` (one per detected mention inside the focal range's own text,
+  `n` = that verse's own number; see MENTION-1 below for the shared scan
+  rule). Sourced from `VerseTextSectionProvider`'s OWN new, fail-soft
+  `GET /api/chapter/{cref}` fetch for the focal range (the SAME endpoint
+  `popover-verse-reader` above already fetches on expand -- an LRU cache
+  hit whenever they're the SAME chapter, which the overwhelming majority of
+  real opens are) -- a failed fetch degrades to the ORIGINAL plain-text
+  rendering, never a broken or blank compact view (fail-soft at section
+  resolve, the house pattern). No verse-num, no xref superscript in THIS
+  view -- see RECURSE-1's own disclosed "where applicable" scoping note.
 - BLINK-1 (batch-r-brief.md requirement 5, user 2026-08-19: "if i hover
   over a place within that verse, then the glowy dot associated with that
   location... should blink and be noticeable"): every verse rendered inside
@@ -1329,12 +1386,76 @@ Notes:
   mention's own node instead of the verse's -- caught live on DEU.5.26's
   own "God" mention. A test that specifically wants "open THIS verse's own
   popover, not a mention within it" should activate via keyboard
-  (`.focus()` + `Enter`, `OnVerseLineKeyDown`) rather than a coordinate
-  click, sidestepping the geometry entirely; not every pre-existing
-  `verse-line` coordinate-click call site in this suite has been converted
-  (only the one this batch's own new tests caused to actually fail),
-  disclosed as known follow-up risk rather than silently left
-  undocumented.
+  (`.focus()` + `Enter`, `VerseLine.razor`'s own `OnLineKeyDown` -- M-D4
+  relocated this from Reader.razor's own now-deleted `OnVerseLineKeyDown`,
+  see RECURSE-1) rather than a coordinate click, sidestepping the geometry
+  entirely; not every pre-existing `verse-line`/`popover-reader-verse`
+  coordinate-click call site in this suite has been converted (only the
+  ones each batch's own new tests caused to actually fail), disclosed as
+  known follow-up risk rather than silently left undocumented.
+- RECURSE-1 (batch-md4-brief.md, "the recursive reader" -- the owner's own
+  defect report, near-verbatim, 2026-08-23: "the hovering over place names
+  is not universal... the Bible I get when I click read the whole chapter
+  is of a fundamentally different kind - location hovering works. verses
+  are not clickable [...] no-go"). DIAGNOSIS: the popover's own mini-reader
+  (`popover-verse-reader`) was a SECOND, WEAKER implementation of "render a
+  verse line" -- `Reader.razor`'s chapter body and `MiniReaderExpand.razor`'s
+  own expanded body rendered near-identical markup through two independent
+  loops, forked just enough that affordances drifted (mention links present
+  in one, absent in the other before M-D3/U5; a verse LINE clickable in one,
+  inert in the other, always). THE LAW: every surface that renders a
+  chapter's own verses -- the main reader page, the popover's own
+  mini-reader ("read the whole chapter"), and (Batch M-D4) BOTH call sites
+  that mount it (`VerseTextSection.razor`'s own focal-verse expand,
+  `PassageList.razor`'s own per-entry expand) -- renders through ONE
+  canonical component, `client/Components/VerseLine.razor` (verse number +
+  text + in-text mention links + xref superscript), parameterized by
+  container context, NEVER forked; heading interleaving is the CALLER's own
+  job, via the equally-shared `PericopeHeading.razor`; the mention-scan-and-
+  render loop itself is `MentionText.razor`, used by both VerseLine.razor
+  AND `VerseTextSection.razor`'s own one-verse/passage compact FOCUS
+  preview (see READER-1's own M-D4 paragraph). Dead-code law: the
+  pre-M-D4 mini-reader's own hand-built verse-num/mention/Blink markup and
+  Reader.razor's own near-identical copy (OpenVerse/OpenEvent/
+  OpenPlaceMention/OpenPersonMention/OnVerseLineKeyDown/OnHeadingKeyDown/
+  OnPlaceMentionKeyDown/OnPersonMentionKeyDown/its own Blink one-liner, all
+  eight -- grep-proven gone) are deleted the SAME commit their replacement
+  lands -- one verse-line implementation remains.
+
+  THE TESTED PARITY LAW (`tests/ux/reader-recursion.spec.ts`, "assert by
+  behavior, not by implementation details"): for a real, sampled verse
+  rendered (a) in the main reader and (b) inside the popover's own
+  mini-reader, the affordance SET is identical -- same clickability (a
+  click, or Enter while keyboard-focused, on the verse LINE opens/pushes a
+  fresh `VerseNode`; in the mini-reader this is a genuine `ctx.PushAsync`
+  onto the SAME popover's own stack -- decision 2's own "reuse the popover's
+  EXISTING push stack," never a second mechanism -- so exploring a verse
+  found while reading recursively NEVER dead-ends), same in-text mention
+  links present (MENTION-1, unchanged rule, now rendering identically
+  either surface), same xref-superscript presence/glyph (XSCRIPT-1's own
+  `verse_count`/`FeatureFlags.XrefSuperscripts` rule, a pure function of
+  data already on hand -- no per-render mutable accumulator ANYWHERE, the
+  house pattern the Batch N lettering bug already established and this
+  batch's own shared `VerseLine.razor` inherits by construction).
+  DISCLOSED, DELIBERATE non-parity (a scoping call, not an oversight): the
+  main reader's own HOVER-only xref-marker preview (a debounced, auto-
+  dismissing, non-committing peek, tuned across several M-D3 fix rounds
+  specifically for a fresh, pane-anchored top-level popover mount) is NOT
+  reproduced inside the mini-reader -- `MiniReaderExpand.razor` deliberately
+  leaves `VerseLine.razor`'s own `OnXrefHoverEnter`/`OnXrefHoverLeave`
+  parameters unbound; a bare mouseover jumping an ALREADY-open popover's own
+  stack around, one level already deep, would be a real UX regression
+  decision 6's own scope discipline (no new exploration features) rules
+  out. CLICK/Enter/focus on the mini-reader's own marker still COMMITS the
+  identical entry-point view the main reader's own click does (see the
+  testid-inventory's own `popover-reader-xref-marker-{n}{-ENTRY-ID}` note).
+  Heading interleaving (decision 1's own "where applicable") extends to the
+  mini-reader too (`pericope-heading-{eventId}{-ENTRY-ID}`, absent there
+  entirely before this batch) but deliberately NOT to VerseTextSection's own
+  compact one-verse/passage FOCUS preview -- a snippet, not a chapter
+  reading flow, "where applicable" excludes it by the same reasoning it
+  excludes a verse-num/xref-marker there (see READER-1's own M-D4
+  paragraph).
 - CATECH-1 (batch-f-brief.md, "the small catechism" -- user direction, asked
   three separate times: verses should surface catechism refs/relevance
   alongside cross-references): Luther's Small Catechism (the 1921
@@ -2479,7 +2600,11 @@ Notes:
   own comment on why plain `.explorable` itself doesn't reach an SVG path)
   and `polity-delta-verse-{SPAN}` (THE SCRIPTURES section's own passage-list
   entries, PASSAGE-1's existing rule covering these generically too) -- see
-  DELTA-1. Two kinds of
+  DELTA-1. Batch M-D4 ("the recursive reader") adds
+  `popover-reader-verse-{n}{-ENTRY-ID}` (the popover's own mini-reader row,
+  previously NOT one of these -- see RECURSE-1 for the parity law this
+  closes) and `pericope-heading-{eventId}{-ENTRY-ID}` (the SAME heading
+  markup, now ALSO rendered inside the mini-reader). Two kinds of
   element are deliberately
   EXCLUDED, never explorable, and keep whatever hover treatment (if any) they already
   had: SELECTION controls (`verse-num-{n}` -- drives the anchor+extend passage-range

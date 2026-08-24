@@ -89,6 +89,56 @@ test('READ-2d: a plain verse-num click never opens a popover, but still sets a u
   }), RUNS_UI);
 });
 
+// Batch M-D4, owner bug B4 (verbatim, 2026-08-23): "the chapter nav box in
+// the top right of the reader is always stuck on genesis and doesn't
+// follow the focus chapter." ScripturePicker.razor's own CurrentBook/
+// CurrentChapter sync (see that file's own header comment) is the fix.
+test('B4: the reader\'s own chapter-nav picker follows the focus chapter on a direct route change', async ({ page }) => {
+  const toc = await loadToc();
+  await fcAssert(fc.asyncProperty(arbChapterRef(toc), async c => {
+    await page.goto(`/read/${c.book}/${c.chapter}`);
+    await expect(page.getByTestId('picker-book')).toHaveValue(c.book);
+    await expect(page.getByTestId('picker-chapter')).toHaveValue(String(c.chapter));
+  }), RUNS_UI);
+});
+
+test('B4: the picker follows prev/next chapter navigation and a picker-applied jump, without losing sync on an unrelated re-render', async ({ page }) => {
+  // EXO.3 -- not Genesis, the owner's own literal complaint ("always stuck
+  // on genesis"), with a real next chapter to navigate to.
+  await page.goto('/read/EXO/3');
+  await expect(page.getByTestId('picker-book')).toHaveValue('EXO');
+  await expect(page.getByTestId('picker-chapter')).toHaveValue('3');
+
+  await page.getByTestId('reader-next').click();
+  await expect(page).toHaveURL(/\/read\/EXO\/4/);
+  await expect(page.getByTestId('picker-book')).toHaveValue('EXO');
+  await expect(page.getByTestId('picker-chapter')).toHaveValue('4');
+
+  await page.getByTestId('reader-prev').click();
+  await expect(page).toHaveURL(/\/read\/EXO\/3/);
+  await expect(page.getByTestId('picker-book')).toHaveValue('EXO');
+  await expect(page.getByTestId('picker-chapter')).toHaveValue('3');
+
+  // A picker-APPLIED jump: pick a different book/chapter via the picker
+  // itself and click Go -- the picker must still correctly reflect the NEW
+  // chapter afterward (never fight its own just-applied navigation).
+  await page.getByTestId('picker-book').selectOption('LEV');
+  await page.getByTestId('picker-chapter').selectOption('1');
+  await page.getByTestId('picker-apply').click();
+  await expect(page).toHaveURL(/\/read\/LEV\/1/);
+  await expect(page.getByTestId('picker-book')).toHaveValue('LEV');
+  await expect(page.getByTestId('picker-chapter')).toHaveValue('1');
+
+  // An UNRELATED re-render (opening an ordinary verse popover) must never
+  // clobber the picker's own already-synced state -- the "_synced" guard
+  // ScripturePicker.razor's own OnParametersSet comment documents.
+  await page.getByTestId('verse-line-1').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('popover-title')).toHaveText('LEV.1.1');
+  await expect(page.getByTestId('picker-book')).toHaveValue('LEV');
+  await expect(page.getByTestId('picker-chapter')).toHaveValue('1');
+});
+
 // Batch R requirement 3(b): the old popover-chip-xrefs TOGGLE is gone --
 // cross-references render INLINE, immediately, no button press -- so each
 // loop iteration below reads xref-item-* directly rather than clicking a

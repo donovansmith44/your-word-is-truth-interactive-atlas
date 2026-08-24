@@ -12,7 +12,24 @@
    the SAME in both contexts, reading the material/color/position specifics
    from custom properties the theme class sets (the same --header-fg-style
    inheritance .app-header + .header-parchment/.header-dusk already use),
-   so no selector ever combines two classes. *@
+   so no selector ever combines two classes.
+
+   Batch M-D4, owner bug B4 (verbatim): "the chapter nav box in the top
+   right of the reader is always stuck on genesis and doesn't follow the
+   focus chapter." CurrentBook/CurrentChapter (both optional, default null)
+   are the fix: Reader.razor is the ONLY mounting page that supplies them
+   (its own _book/_chapterNum), so this component still "knows nothing
+   about /world" -- World.razor's own mount leaves both null and this stays
+   a plain, unsynced emitter there, byte-for-byte the pre-existing
+   behavior. OnParametersSet (see below) only re-syncs the book/chapter
+   dropdowns when CurrentBook/CurrentChapter actually CHANGE from what was
+   last synced -- Reader.razor re-renders this component on every one of
+   its OWN re-renders (a popover opening, a hover, ...), most of which
+   never touch _book/_chapterNum at all, and clobbering the user's own
+   in-progress verse-from/-to typing (or a book/chapter they're mid-browsing
+   toward a DIFFERENT jump target) on every one of those unrelated
+   re-renders would be a real, avoidable regression this guard exists to
+   prevent. *@
 @inject AtlasClient Atlas
 
 <div class="picker @ThemeClass" data-testid="picker">
@@ -53,19 +70,102 @@
     [Parameter, EditorRequired] public EventCallback<string> OnApply { get; set; }
     [Parameter, EditorRequired] public string ThemeClass { get; set; } = "";
 
+    // B4 -- see this file's own header comment. Null (World.razor's own
+    // mount) means "don't sync at all," the pre-existing behavior.
+    [Parameter] public string? CurrentBook { get; set; }
+    [Parameter] public int? CurrentChapter { get; set; }
+
     private List<BookTocEntry>? _toc;
     private string _bookCode = "";
     private string _chapterText = "";
     private string _verseFromText = "";
     private string _verseToText = "";
 
+    // B4's own "already reflects this" guard -- the LAST (book, chapter)
+    // this component actually synced the dropdowns TO, distinct from
+    // _bookCode/_chapterText (the user's own live selection, which OnApply
+    // reads and which a book/chapter dropdown CHANGE handler mutates
+    // independently of this field). Null until the first real sync.
+    private (string Book, int Chapter)? _synced;
+
+    // B4: a real, live-caught race, not a theoretical one -- found by this
+    // batch's own new Playwright coverage, not guessed. Reader.razor's own
+    // FIRST-ever render (mid its own OnInitializedAsync, before route
+    // params have been applied) still carries _book/_chapterNum's plain
+    // field-initializer defaults ("GEN"/1) -- this component's OWN first
+    // SetParametersAsync call sees CurrentBook="GEN" for that one instant.
+    // Blazor does NOT wait for THIS method's own in-flight Atlas.Books()
+    // fetch before invoking a LATER SetParametersAsync call on the SAME
+    // instance (the `_initialized` guard in ComponentBase.SetParametersAsync
+    // is set synchronously, before OnInitializedAsync's await even starts,
+    // so a second call always takes the "already initialized" branch
+    // straight into OnParametersSet, regardless of whether this method's
+    // own continuation has resolved yet) -- so Reader's OWN real, routed
+    // CurrentBook/CurrentChapter ("EXO"/3) can arrive and correctly sync
+    // (OnParametersSet below) WHILE this fetch is still pending. Without
+    // reading CurrentBook/CurrentChapter HERE too, the unconditional
+    // `_bookCode = _toc[0].Code` fallback below would then fire AFTER that
+    // correct sync and silently clobber it back to "GEN" the instant this
+    // await finally resolves -- confirmed live: the picker settled on "GEN"
+    // even though OnParametersSet's own _synced bookkeeping believed it was
+    // already showing "EXO" (CurrentBook, a shared mutable property on this
+    // SAME instance, already read "EXO" by the time this continuation ran,
+    // so _synced was never wrong -- only _bookCode/_chapterText were,
+    // clobbered by this method AFTER OnParametersSet's own correct write).
+    // Reading CurrentBook/CurrentChapter fresh here (never a value
+    // captured before the await) closes the race in both possible
+    // orderings: whichever of this fetch or Reader's own route-driven
+    // update resolves LAST simply confirms the same already-correct sync.
     protected override async Task OnInitializedAsync()
     {
         _toc = await Atlas.Books();
-        if (_toc.Count > 0)
+        if (_toc.Count == 0)
+        {
+            return;
+        }
+
+        if (CurrentBook is { } book && CurrentChapter is { } chapter)
+        {
+            _synced = (book, chapter);
+            _bookCode = book;
+            _chapterText = chapter.ToString();
+        }
+        else
         {
             _bookCode = _toc[0].Code;
         }
+    }
+
+    // B4: runs on EVERY Reader.razor re-render (this component is an
+    // unconditional child of its own mounting page), by design -- see this
+    // file's own header comment for why _synced (not a bare "did the
+    // parameter change" Blazor doesn't track for you) is what keeps this a
+    // no-op on the overwhelming majority of those. CAN fire while _toc is
+    // still null/loading (a genuine re-render of an ALREADY-initialized
+    // instance never re-runs OnInitializedAsync, and can arrive before this
+    // component's own FIRST OnInitializedAsync call has resolved at all --
+    // see that method's own header comment for the real race this app once
+    // hit) -- harmless here, since this method never reads _toc; the
+    // dropdown's own options simply populate once OnInitializedAsync's
+    // fetch eventually does resolve, correctly showing whatever _bookCode/
+    // _chapterText already hold by then.
+    protected override void OnParametersSet()
+    {
+        if (CurrentBook is not { } book || CurrentChapter is not { } chapter)
+        {
+            return; // World.razor's own mount -- stays unsynced, unchanged
+        }
+
+        if (_synced is { } prior && prior.Book == book && prior.Chapter == chapter)
+        {
+            return; // already reflects this exact chapter -- don't clobber in-progress typing
+        }
+
+        _synced = (book, chapter);
+        _bookCode = book;
+        _chapterText = chapter.ToString();
+        _verseFromText = "";
+        _verseToText = "";
     }
 
     private BookTocEntry? SelectedBookEntry => _toc?.FirstOrDefault(b => b.Code == _bookCode);

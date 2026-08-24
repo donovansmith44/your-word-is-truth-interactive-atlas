@@ -1,0 +1,115 @@
+@* Batch M-D4 ("the recursive reader"): the ONE in-text mention-scan-and-
+   render primitive -- before this batch, Reader.razor's own verse text and
+   MiniReaderExpand.razor's own verse text each ran an IDENTICAL
+   `@foreach (var seg in PlaceMentions.Scan(...))` loop with near-identical
+   markup (differing only in CSS class/testid prefixes and each file's own
+   copy of the `Blink`/mention-open one-liners) -- two hand-copies of the
+   exact same rendering, the "forbidden parallel-path disease" the batch
+   brief names, one layer further in than the verse LINE itself. This
+   component is that loop, extracted once: given a verse's text plus its own
+   attested places/persons (`GET /api/chapter/{cref}`'s per-verse `places`/
+   `persons` arrays, `VerseOut`), it renders the SAME plain-prose/place-span/
+   person-span sequence `Explore/PlaceMentions.cs`'s `PlaceMentions.Scan`
+   already computes -- see that file's own doc comment for the full
+   scan/overlap/Sin-guard rule (case-sensitive, whole-word, longest-match-
+   wins, Place-before-Person tie-break); nothing about THAT rule changes
+   here, only where the rendering loop over its result lives.
+
+   VerseLine.razor (the canonical verse-ROW renderer) uses this for its own
+   verse-text span; VerseTextSection.razor's own one-verse/passage FOCUS
+   preview (previously bare, unscanned text -- decision 3, "name links...
+   render wherever verse text renders") now ALSO uses this directly, with no
+   verse-num/xref-marker/row wrapper of its own to bring along -- this
+   component renders ONLY the text-and-mentions sequence, never a wrapping
+   element, so either caller supplies whatever container (a `<span>` inside
+   a clickable row, or a bare `<p>`) fits its own context.
+
+   ClassPrefix doubles as BOTH the CSS class root and the data-testid root
+   (true in both pre-existing implementations: "verse-mention"/"verse-
+   mention-person" restyled onto ONE token, "popover-reader-mention"/
+   "popover-reader-mention-person" the same way) -- callers keep their own
+   PRE-EXISTING prefix (testids follow existing conventions; house pattern)
+   so no existing Playwright locator changes: Reader.razor passes
+   "verse-mention", MiniReaderExpand.razor passes "popover-reader-mention"
+   (plus its own established TestIdSuffix, unchanged), VerseTextSection's
+   new compact-view usage passes the new "popover-verse-mention" (its own
+   distinct identity -- a compact FOCUS preview is not a mini-reader row,
+   see that file's own comment -- reusing `.popover-reader-mention`'s exact
+   CSS via a compound selector in app.css, not a re-derived rule).
+
+   Blink (BLINK-1) is consolidated here too -- both pre-existing copies were
+   the identical one-liner (`MapInterop.BlinkPlace(JS, placeId, active)`),
+   kept as two copies only because neither file wanted a THIRD shared file
+   for one line each (Reader.razor's own prior comment, verbatim) -- now
+   moot, since this component already exists for the mention markup itself. *@
+@using BibleAtlas.Client.Explore
+@inject IJSRuntime JS
+
+@foreach (var seg in PlaceMentions.Scan(Text, Places, Persons))
+{
+    @if (seg.PlaceId is { } placeId)
+    {
+        <span class="@ClassPrefix" data-testid="@($"{ClassPrefix}-{Verse}-{placeId}{TestIdSuffix}")"
+              tabindex="0" role="button" aria-label="@($"Explore {seg.PlaceName}")"
+              @onpointerenter="() => Blink(placeId, true)" @onpointerleave="() => Blink(placeId, false)"
+              @onfocus="() => Blink(placeId, true)" @onblur="() => Blink(placeId, false)"
+              @onclick="() => OpenPlace(placeId, seg.PlaceName!)" @onclick:stopPropagation="true"
+              @onkeydown="@(e => OnPlaceKeyDown(e, placeId, seg.PlaceName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
+    }
+    else if (seg.PersonId is { } personId)
+    {
+        <span class="@ClassPrefix @($"{ClassPrefix}-person")" data-testid="@($"{ClassPrefix}-person-{Verse}-{personId}{TestIdSuffix}")"
+              tabindex="0" role="button" aria-label="@($"Explore {seg.PersonName}")"
+              @onclick="() => OpenPerson(personId, seg.PersonName!)" @onclick:stopPropagation="true"
+              @onkeydown="@(e => OnPersonKeyDown(e, personId, seg.PersonName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
+    }
+    else
+    {
+        @seg.Text
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<PlaceRefDto> Places { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<PersonRefDto> Persons { get; set; } = default!;
+
+    // The verse number this text belongs to -- testid interpolation only
+    // (`{ClassPrefix}-{Verse}-{id}`); this component itself is otherwise
+    // verse-number-agnostic (VerseTextSection's own multi-verse passage
+    // compact view calls this once PER VERSE in a loop, each with ITS OWN
+    // Verse -- see that file's own comment).
+    [Parameter, EditorRequired] public int Verse { get; set; }
+
+    [Parameter, EditorRequired] public string ClassPrefix { get; set; } = default!;
+
+    // MiniReaderExpand's own established multi-instance disambiguation
+    // (PassageList.razor can host several simultaneously-expanded mini-
+    // readers in one popover) -- forwarded straight through, unchanged
+    // shape, default "" (every other caller: Reader.razor, VerseTextSection).
+    [Parameter] public string TestIdSuffix { get; set; } = "";
+
+    // Threaded straight to whichever popover-stack/active-node mechanism
+    // the caller owns (ctx.PushAsync inside a popover; Reader.razor's own
+    // OnLineExplore at the top level) -- this component never decides HOW a
+    // node opens, only WHICH node a mention click means, same "a
+    // caller/provider supplies the real push, this component only ever
+    // proposes a node" contract every other explorable row in this popover
+    // platform already follows (MiniReaderExpand.razor's own prior doc
+    // comment on OnExplore, verbatim precedent).
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    private Task Blink(string placeId, bool active) => MapInterop.BlinkPlace(JS, placeId, active);
+
+    // PlaceNode's id stays bare; PersonNode needs the "Person:" wire prefix
+    // VerseOut.Persons' own bare id doesn't carry -- the identical
+    // id-format story both pre-existing copies of this logic already
+    // documented (Reader.razor's own OpenPlaceMention/OpenPersonMention,
+    // MiniReaderExpand's own OpenPlace/OpenPerson), preserved verbatim here,
+    // now in the one place it actually needs to live.
+    private Task OpenPlace(string placeId, string placeName) => OnExplore.InvokeAsync(new PlaceNode(placeId, placeName));
+    private Task OpenPerson(string personId, string personName) => OnExplore.InvokeAsync(new PersonNode($"Person:{personId}", personName));
+
+    private Task OnPlaceKeyDown(KeyboardEventArgs e, string placeId, string placeName) => e.Key == "Enter" ? OpenPlace(placeId, placeName) : Task.CompletedTask;
+    private Task OnPersonKeyDown(KeyboardEventArgs e, string personId, string personName) => e.Key == "Enter" ? OpenPerson(personId, personName) : Task.CompletedTask;
+}

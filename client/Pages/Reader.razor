@@ -71,7 +71,16 @@
             </button>
         }
 
-        <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" />
+        @* Owner bug B4, verbatim: "the chapter nav box in the top right of
+           the reader is always stuck on genesis and doesn't follow the
+           focus chapter." CurrentBook/CurrentChapter feed ScripturePicker's
+           own new sync parameters (null on World's OWN mount -- unaffected,
+           see that component's own doc comment) -- Blazor's ordinary
+           parameter diffing pushes the new values down on every Reader.razor
+           re-render, so route changes, prev/next nav, AND a picker-applied
+           jump (which itself lands here as a route change) are all reflected
+           the SAME way, no per-trigger special case. *@
+        <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" CurrentBook="@_book" CurrentChapter="@_chapterNum" />
 
         @if (ChapterMatchesRoute)
         {
@@ -103,177 +112,51 @@
                     </button>
                 </h1>
 
+                @* Batch M-D4 ("the recursive reader"): every verse of this
+                   chapter now renders through VerseLine.razor -- the ONE
+                   canonical verse-line component decision 1 asks for,
+                   shared with MiniReaderExpand.razor's own expanded body
+                   (see that file's own call site) -- rather than this loop
+                   hand-building verse-num/mention/xref-marker markup of its
+                   own. Heading interleaving (PericopeHeading.razor,
+                   likewise shared) stays the CALLER's own job -- a verse
+                   line's identity doesn't include whatever heading happens
+                   to sit above it (see VerseLine.razor's own header
+                   comment). Shares this SAME code path for the split-view
+                   reader pane (Reader.razor is reused, not copied, for
+                   both -- SPLIT-1). *@
                 @foreach (var v in _chapter!.Verses)
                 {
-                    @* Batch T requirement 5 ("event titles throughout the
-                       reader"): a quiet, small-caps pericope heading renders
-                       immediately above this verse's own line whenever the
-                       chapter fetch marked it a heading ANCHOR (server:
-                       AtlasData::heading_for_verse) -- present ONLY for
-                       covered books/narrative-event passages (conditional
-                       presence: absent entirely for an uncovered book,
-                       since no verse there is ever an anchor). Explorable,
-                       same ONE-RULE treatment as chapter-head/verse-line --
-                       opens a fresh EventNode. Shares this SAME code path
-                       for the split-view reader pane (Reader.razor is
-                       reused, not copied, for both -- SPLIT-1). *@
                     @if (v.Heading is { } heading)
                     {
-                        @* Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY):
-                           a general-kind heading is NOT part of time
-                           traversal (req 2) -- .explorable-quiet REPLACES
-                           .explorable (never both) so it never looks like a
-                           dated heading, which DOES traverse after req 1.
-                           Same class, same rule, as VerseEventMembershipSection's
-                           own row -- "one rule, no per-surface variant."
-                           M-D1 requirement 1 (CHAPTER-BOUNDARY CONTINUATION):
-                           IsContinuation adds .pericope-heading-continuation
-                           (app.css's own "quiet via SCALE, distinct via
-                           WORDING" precedent -- the SAME two-axis distinction
-                           the PRIOR/FOLLOWING-IN-TIME rows already establish,
-                           never conflated with the traversability axis above,
-                           which stays orthogonal: a continuation heading can
-                           be either kind, styled identically either way).
-                           SAME click/keydown handler as a primary heading --
-                           a continuation opens the identical EventNode, no
-                           second affordance to wire (requirement 2's own
-                           "heading click -> container node" law, reused, not
-                           duplicated). *@
-                        <h2 class="pericope-heading @(heading.IsContinuation ? "pericope-heading-continuation" : "") @(heading.Kind == "general" ? "explorable-quiet" : "explorable")"
-                            data-testid="@($"pericope-heading-{heading.EventId}")" data-continuation="@(heading.IsContinuation ? "true" : "false")"
-                            tabindex="0" role="button" aria-label="@(heading.IsContinuation ? $"Explore {heading.Title} (continued)" : $"Explore {heading.Title}")"
-                            @onclick="() => OpenEvent(heading.EventId, heading.Title)"
-                            @onkeydown="@(e => OnHeadingKeyDown(e, heading.EventId, heading.Title))">
-                            @if (heading.IsContinuation)
-                            {
-                                <span class="pericope-heading-continuation-marker" data-testid="@($"pericope-heading-continuation-marker-{heading.EventId}")">continued</span>
-                            }
-                            @heading.Title
-                        </h2>
+                        <PericopeHeading Heading="@heading" OnExplore="OnLineExplore" />
                     }
                     @* Batch G1 requirement 1 (design-direction.md's REVISED
                        interaction rule): the ∴ button DIES. THE VERSE LINE
                        is the explorable element -- hover/focus darkens it
                        (.explorable) with cursor:pointer, click (anywhere on
-                       the line) opens the verse's ExplorerPopover, same
-                       behavior the ∴ had. Real interactive-element
-                       semantics via role/tabindex/keydown (OnVerseLineKeyDown
-                       below) since a wrapping <button> can't be used here
-                       the way chapter-head's own button above can -- it
-                       would illegally nest .verse-num's own real <button>
-                       inside it. Verse-NUMBER clicks stay a SEPARATE gesture
-                       on a SEPARATE target (.verse-num, not .explorable --
-                       anchor+extend passage-range mechanics only, no popover
-                       -- see OnVerseNumClick/SetAnchor below); its own click
-                       AND keydown both stop propagation so activating it
-                       (mouse or keyboard) never also bubbles into this row's
-                       own click-opens-popover handler. *@
-                    <div class="verse-line explorable" data-testid="verse-line-@v.Verse" id="v@(v.Verse)"
-                         tabindex="0" role="button" aria-label="@($"Explore {_book}.{_chapterNum}.{v.Verse}")"
-                         @onclick="() => OpenVerse(v.Verse)" @onkeydown="@(e => OnVerseLineKeyDown(e, v.Verse))">
-                        <button type="button" class="verse-num" data-testid="verse-num-@v.Verse"
-                                @onclick="@(e => OnVerseNumClick(e, v.Verse))" @onclick:stopPropagation="true"
-                                @onkeydown:stopPropagation="true">@v.Verse</button>
-                        @* Batch M-D2 (owner's cross-reference superscript
-                           directive, 2026-08-21, verbatim: "little
-                           superscripts visible near verses/passages to
-                           which cross references apply... i,j,k to
-                           represent multiple cross references to a single
-                           element if there are > 3 xrefs, the superscript
-                           should be `...`"). ONE cluster per verse (never
-                           per-letter targets -- "hovering... the superscript
-                           CLUSTER... opens the SAME composable popover,"
-                           the controller brief's own words), driven purely
-                           by the wire's own XrefCount (this verse's own
-                           `cites` edge-summary count, ChapterOut.Verses[].XrefCount)
-                           -- a PURE function of that one integer
-                           (XrefMarkerText below), no per-render mutable
-                           accumulator anywhere: the exact shape the house
-                           pattern warns against (per-chapter superscript
-                           lettering closures, "the shape that bit Batch N")
-                           is sidestepped by construction, not guarded
-                           against after the fact -- there is no shared
-                           state to leak between verses OR between renders
-                           in the first place. Entry point into THE ONE
-                           composable popover (owner decree: never a
-                           parallel interface) -- hover, keyboard focus, AND
-                           click all open the identical ExplorerPopover,
-                           xrefs section leading, 3 initial entries
-                           (VerseNode.XrefEntryPoint; see
-                           PopoverSectionProviders.CrossRefsSection's own
-                           entry-point cap doc comment). Closing follows the
-                           SAME mechanism every other popover already uses
-                           (backdrop click / Escape / close button) --
-                           deliberately NOT mouseleave, which would make a
-                           hover-opened popover impossible to reach with the
-                           mouse at all (see this batch's own CONTRACT note).
-                           @onclick:stopPropagation -- the SAME "more
-                           specific target always wins" rule verse-num's own
-                           button already establishes one line up -- keeps
-                           this from ALSO triggering the verse-line's own
-                           click-opens-a-plain-popover handler. *@
-                        @* M-D3 (R3): FeatureFlags.XrefSuperscripts flipped
-                           back ON -- the rework itself. Click/focus vs
-                           hover are now two DELIBERATELY DIFFERENT
-                           handlers (OpenVerseXrefEntryPersistent vs
-                           OpenVerseXrefEntryHover), not the same method
-                           bound four ways -- "click AND hover both open
-                           it" stays true, but only a HOVER-only open is
-                           eligible for the auto-dismiss grace period
-                           OnXrefMarkerPointerLeave schedules below (see
-                           that method's own comment, and _hoverOnlyOpen's,
-                           for the full "no auto-modal that must be X'd
-                           out" mechanism -- a click or keyboard focus
-                           marks the SAME popover persistent, exactly like
-                           every other popover in this app, the instant
-                           either fires). *@
-                        @* M-D3/U5 (in-text mentions-attested links): every place/
-                           person name PlaceMentions.Scan finds attested for THIS
-                           verse (VerseOut.Places/Persons) becomes its own
-                           explorable span -- same "more specific target always
-                           wins" @onclick:stopPropagation/@onkeydown:stopPropagation
-                           rule verse-num/the xref superscript below already use,
-                           so a mention click opens THAT entity, never the whole
-                           verse's own popover underneath it. Place mentions keep
-                           MiniReaderExpand's own established hover/focus -> map-
-                           blink behavior (MapInterop.BlinkPlace silently no-ops
-                           with no live map instance -- see that method's own
-                           doc comment -- so this costs nothing when the reader
-                           isn't split beside /world); Person mentions have no
-                           map affordance to blink (PersonNode's own doc comment
-                           -- no lat/lon), click/Enter only. *@
-                        <span class="verse-text">@foreach (var seg in PlaceMentions.Scan(v.Text, v.Places, v.Persons))
-                                                  {
-                                                      @if (seg.PlaceId is { } placeId)
-                                                      {
-                                                          <span class="verse-mention" data-testid="@($"verse-mention-{v.Verse}-{placeId}")"
-                                                                tabindex="0" role="button" aria-label="@($"Explore {seg.PlaceName}")"
-                                                                @onpointerenter="() => Blink(placeId, true)" @onpointerleave="() => Blink(placeId, false)"
-                                                                @onfocus="() => Blink(placeId, true)" @onblur="() => Blink(placeId, false)"
-                                                                @onclick="() => OpenPlaceMention(placeId, seg.PlaceName!)" @onclick:stopPropagation="true"
-                                                                @onkeydown="@(e => OnPlaceMentionKeyDown(e, placeId, seg.PlaceName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
-                                                      }
-                                                      else if (seg.PersonId is { } personId)
-                                                      {
-                                                          <span class="verse-mention verse-mention-person" data-testid="@($"verse-mention-person-{v.Verse}-{personId}")"
-                                                                tabindex="0" role="button" aria-label="@($"Explore {seg.PersonName}")"
-                                                                @onclick="() => OpenPersonMention(personId, seg.PersonName!)" @onclick:stopPropagation="true"
-                                                                @onkeydown="@(e => OnPersonMentionKeyDown(e, personId, seg.PersonName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
-                                                      }
-                                                      else
-                                                      {
-                                                          @seg.Text
-                                                      }
-                                                  }@if (FeatureFlags.XrefSuperscripts && v.XrefCount > 0)
-                                                         {
-                                                             <sup class="verse-xref-marker" data-testid="@($"verse-xref-marker-{v.Verse}")"
-                                                                  tabindex="0" role="button" aria-label="@XrefMarkerAriaLabel(v)"
-                                                                  @onclick="() => OpenVerseXrefEntryPersistent(v.Verse)" @onclick:stopPropagation="true"
-                                                                  @onmouseenter="() => OpenVerseXrefEntryHover(v.Verse)" @onmouseleave="OnXrefMarkerPointerLeave"
-                                                                  @onfocus="() => OpenVerseXrefEntryPersistent(v.Verse)"
-                                                                  @onkeydown="@(e => OnXrefMarkerKeyDown(e, v.Verse))" @onkeydown:stopPropagation="true">@XrefMarkerText(v.XrefCount)</sup>
-                                                         }</span>
-                    </div>
+                       the line) opens the verse's ExplorerPopover.
+                       Verse-NUMBER clicks stay a SEPARATE gesture on a
+                       SEPARATE target (.verse-num, not .explorable --
+                       anchor+extend passage-range mechanics only, no
+                       popover -- see OnVerseNumClick/SetAnchor below).
+                       M-D3 (R3)/Batch M-D2: the xref superscript's own
+                       click/focus (commit, OpenVerseXrefEntryPersistent)
+                       vs. hover (preview, OpenVerseXrefEntryHover, eligible
+                       for OnXrefMarkerPointerLeave's own debounced
+                       auto-dismiss) stay two deliberately different
+                       callbacks, unchanged -- VerseLine.razor's own header
+                       comment has the full "why hover stays Reader-page-only"
+                       story now that the SAME component also renders inside
+                       the popover's own mini-reader, which deliberately
+                       leaves OnXrefHoverEnter/OnXrefHoverLeave unbound. *@
+                    <VerseLine Verse="@v" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore" Id="@($"v{v.Verse}")"
+                               RowClass="verse-line explorable" RowTestIdPrefix="verse-line"
+                               VerseNumClass="verse-num" ShowVerseNumButton="true" VerseNumTestIdPrefix="verse-num"
+                               OnVerseNumClick="@(e => OnVerseNumClick(e, v.Verse))"
+                               TextClass="verse-text" MentionClass="verse-mention"
+                               OnXrefClick="OpenVerseXrefEntryPersistent" OnXrefHoverEnter="OpenVerseXrefEntryHover"
+                               OnXrefHoverLeave="OnXrefMarkerPointerLeave" />
                 }
             </article>
         }
@@ -721,21 +604,31 @@
         }
     }
 
-    // M-D3 (R3): clears _xrefEntryVerse/_hoverOnlyOpen/any pending hover-
-    // close timer -- an ordinary verse-line open is never verse-anchored or
+    // Batch M-D4: the ONE handler every VerseLine/MentionText/
+    // PericopeHeading instance in this page's own chapter body calls via
+    // its shared OnExplore parameter -- REPLACES the pre-M-D4 OpenVerse/
+    // OpenEvent/OpenPlaceMention/OpenPersonMention quartet, which were four
+    // near-identical bodies (reset xref-entry state, then assign a
+    // differently-typed node to _activeNode) differing only in WHICH
+    // IExplorable each one constructed; that construction now lives in the
+    // component that already owns the data to build its own node
+    // (VerseLine's own VerseNode, MentionText's own PlaceNode/PersonNode,
+    // PericopeHeading's own EventNode), so this page only needs the ONE
+    // shape every one of them shares. M-D3 (R3)'s own reasoning for the
+    // reset is unchanged: an ordinary explore is never verse-anchored or
     // hover-dismissible (see the <ExplorerPopover> tag's own comment); a
     // stale value here would otherwise wrongly verse-anchor (or auto-close)
     // a DIFFERENT, unrelated popover opened right after a superscript one.
-    private void OpenVerse(int verseNum)
+    private void OnLineExplore(IExplorable node)
     {
         ResetXrefEntryState();
-        _activeNode = new VerseNode($"{_book}.{_chapterNum}.{verseNum}");
+        _activeNode = node;
     }
 
     // Shared by every popover-opening method that is NOT a superscript
-    // entry point (OpenVerse/OpenEvent/OpenChapter/OpenPassage/
-    // ClosePopover) -- one place, so a future new entry point can't forget
-    // this the way a hand-copied three-line reset at each call site risks.
+    // entry point (OnLineExplore/OpenChapter/OpenPassage/ClosePopover) --
+    // one place, so a future new entry point can't forget this the way a
+    // hand-copied three-line reset at each call site risks.
     private void ResetXrefEntryState()
     {
         _xrefEntryVerse = null;
@@ -743,36 +636,16 @@
         CancelHoverCloseTimer();
     }
 
-    // Batch M-D2 (owner's cross-reference superscript directive): the
-    // owner's own literal letters ("i,j,k") -- taken at face value as the
-    // scheme itself (not merely an illustrative example of "some sequential
-    // letters"), since a verse only ever needs 1-3 of them (>3 is always the
-    // many-marker instead, never a 4th letter) -- CONTRACT-documented, see
-    // this batch's own CONTRACT.md note. RESTART BOUNDARY: per VERSE, not
-    // per chapter or globally -- "i,j,k to represent multiple cross
-    // references to a SINGLE ELEMENT," the owner's own words; every verse
-    // with 1-3 xrefs independently starts its own lettering at "i". A PURE
-    // array index, never a mutable counter -- see the markup's own comment
-    // above for why this sidesteps the Batch N closure-capture defect class
-    // by construction.
-    private static readonly string[] XrefLetters = { "i", "j", "k" };
-
-    // The owner's own suggested many-marker ("...", or "something else that
-    // would make sense") -- realized as the single Unicode HORIZONTAL
-    // ELLIPSIS character (U+2026), not three ASCII periods, for typographic
-    // correctness (the same glyph any serif font's own "..." ligature would
-    // render, without depending on the font to supply that ligature).
-    private const string XrefManyMarker = "…";
-
-    private static string XrefMarkerText(int count) => count > 3 ? XrefManyMarker : string.Concat(XrefLetters.Take(count));
-
-    private static string XrefMarkerAriaLabel(VerseOut v) =>
-        v.XrefCount > 3 ? $"Many cross-references for verse {v.Verse}" : $"{v.XrefCount} cross-reference{(v.XrefCount == 1 ? "" : "s")} for verse {v.Verse}";
+    // Batch M-D2's own owner-specified lettering scheme (i/j/k, >3 -> the
+    // many-marker) now lives in VerseLine.razor -- shared by both containers
+    // instead of this page's own private copy; see that component's own
+    // header comment.
 
     // Batch M-D2: the superscript's own entry point into THE composable
     // popover (owner decree, never a parallel interface) -- constructs the
-    // SAME VerseNode OpenVerse does, just with XrefEntryPoint=true (a
-    // parameter on the one abstraction; see that class's own doc comment).
+    // SAME VerseNode a plain verse-line click does (OnLineExplore/
+    // VerseLine.razor), just with XrefEntryPoint=true (a parameter on the
+    // one abstraction; see that class's own doc comment).
     // Guarded against a redundant remount: ExplorerPopover is keyed by
     // `_activeNode` itself (Reader.razor's own <ExplorerPopover @key=...>),
     // and VerseNode has no value equality (a plain class), so reassigning
@@ -944,82 +817,16 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    // Enter is a deliberate activation, the SAME persistence contract as a
-    // click (OpenVerseXrefEntryPersistent, not the hover variant).
-    private void OnXrefMarkerKeyDown(KeyboardEventArgs e, int verseNum)
-    {
-        if (e.Key == "Enter")
-        {
-            OpenVerseXrefEntryPersistent(verseNum);
-        }
-    }
-
-    // Batch T requirement 5: a pericope heading's own explore target --
-    // mirrors OpenVerse/OpenChapter's own "construct the node directly,
-    // no fetch needed just to open the popover" shape exactly (EventNode's
-    // own DetailAsync fetches the rest lazily, once the popover is open).
-    // M-D3 (R3): ResetXrefEntryState -- see OpenVerse's own comment.
-    private void OpenEvent(string eventId, string title)
-    {
-        ResetXrefEntryState();
-        _activeNode = new EventNode(eventId, title);
-    }
-
-    private void OnHeadingKeyDown(KeyboardEventArgs e, string eventId, string title)
-    {
-        if (e.Key == "Enter")
-        {
-            OpenEvent(eventId, title);
-        }
-    }
-
-    // M-D3/U5 (in-text mentions-attested links): a verse-text mention's own
-    // explore target -- same ResetXrefEntryState()-then-_activeNode shape as
-    // OpenVerse/OpenEvent above (a mention click is not a superscript entry
-    // point either). PlaceNode's id stays bare (the legacy AtlasData-backed
-    // convention every other PlaceNode construction site in this app uses --
-    // World.razor's OpenPlaceFromCard, MiniReaderExpand's own sibling
-    // OpenPlace); PersonNode's needs the "Person:" wire prefix VerseOut.Persons'
-    // own bare id doesn't carry (see MiniReaderExpand.razor's OpenPerson, the
-    // identical mechanism, for the fuller id-format story).
-    private void OpenPlaceMention(string placeId, string placeName)
-    {
-        ResetXrefEntryState();
-        _activeNode = new PlaceNode(placeId, placeName);
-    }
-
-    private void OpenPersonMention(string personId, string personName)
-    {
-        ResetXrefEntryState();
-        _activeNode = new PersonNode($"Person:{personId}", personName);
-    }
-
-    private void OnPlaceMentionKeyDown(KeyboardEventArgs e, string placeId, string placeName)
-    {
-        if (e.Key == "Enter")
-        {
-            OpenPlaceMention(placeId, placeName);
-        }
-    }
-
-    private void OnPersonMentionKeyDown(KeyboardEventArgs e, string personId, string personName)
-    {
-        if (e.Key == "Enter")
-        {
-            OpenPersonMention(personId, personName);
-        }
-    }
-
-    // Toggles the SAME map.js blinkPlace every currently-live map instance
-    // responds to -- see MapInterop.BlinkPlace's own doc comment for why
-    // this needs no reference to any specific map/component at all (a no-op
-    // when this Reader instance isn't currently split beside /world).
-    // MiniReaderExpand.razor's own Blink is the identical one-liner; kept as
-    // two copies rather than a shared static helper only because each side
-    // already owns its own @inject IJSRuntime JS field to close over --
-    // introducing a THIRD shared file for one line each felt like the wrong
-    // trade.
-    private Task Blink(string placeId, bool active) => MapInterop.BlinkPlace(JS, placeId, active);
+    // Batch M-D4: OnXrefMarkerKeyDown/OpenEvent/OnHeadingKeyDown/
+    // OpenPlaceMention/OpenPersonMention/OnPlaceMentionKeyDown/
+    // OnPersonMentionKeyDown/Blink all deleted from this page -- each was
+    // either a keydown-checks-Enter wrapper VerseLine.razor/
+    // PericopeHeading.razor/MentionText.razor now owns internally, or (for
+    // OpenEvent/OpenPlaceMention/OpenPersonMention) a reset-then-assign body
+    // OnLineExplore above already generalizes, or (Blink) the one-liner
+    // MentionText.razor now owns as the single copy instead of two. Grep-
+    // proven dead: no remaining reference to any of these seven names in
+    // this file.
 
     // Batch G1 requirement 1: the chapter header's own explore target
     // (chapter-head-button's @onclick/@onmouseenter -- M-D3 U4/B3 added the
@@ -1030,7 +837,7 @@
     // and AlreadyLoaded (this page's own already-fetched _chapter, so
     // opening the heading of the chapter you're CURRENTLY reading costs no
     // extra round trip) both come straight off this page's own state.
-    // M-D3 (R3): ResetXrefEntryState, same reasoning as OpenVerse/OpenEvent
+    // M-D3 (R3): ResetXrefEntryState, same reasoning as OnLineExplore
     // above.
     //
     // M-D3 fix round (a real, live-caught bug -- found by this batch's own
@@ -1165,8 +972,8 @@
     // READ-2/READ-5 interplay -- REVISED, Batch G1 requirement 1
     // ("selection and exploration are separate gestures on separate
     // targets"): a plain verse-num click ONLY sets the anchor now (no
-    // popover -- that's the verse LINE's job, see OnVerseLineKeyDown/the
-    // line's own @onclick); shift-click still suppresses any anchor update
+    // popover -- that's the verse LINE's job, see VerseLine.razor's own
+    // OnLineKeyDown/@onclick); shift-click still suppresses any anchor update
     // and shows the passage-chip, unchanged. A shift-click with no anchor
     // yet (the user shift-clicked before ever plain-clicking a verse this
     // visit) has nothing to form a range against -- falls through to the
@@ -1190,7 +997,8 @@
 
     // The shared "plain click" behavior: sets the anchor only, per this
     // batch's own separation of selection (verse-num) from exploration
-    // (the verse line, OpenVerse) -- deliberately does NOT open a popover
+    // (the verse line, VerseLine.razor's own OnExplore) -- deliberately does
+    // NOT open a popover
     // (that was the pre-Batch-G1 behavior, shared with the now-dead ∴
     // button; see this method's own git history for the prior version).
     // Does not touch _activeNode either way, so an already-open popover
@@ -1204,22 +1012,9 @@
         _passageRange = null;
     }
 
-    // The verse LINE's own keyboard equivalent (design-direction.md: "if
-    // the line stays a div, role/tabindex/keydown must make it a genuine
-    // button equivalent... Enter opens"). Deliberately Enter only, not
-    // Space: Blazor's @onkeydown:preventDefault modifier is a static,
-    // whole-element toggle, not conditional per key, so unconditionally
-    // suppressing Space's native "scroll the page" default here would also
-    // have to suppress Tab's own default focus-move -- a real regression a
-    // Space-only omission avoids entirely. The brief's own text asks for
-    // "Enter opens", not "Enter/Space".
-    private void OnVerseLineKeyDown(KeyboardEventArgs e, int verseNum)
-    {
-        if (e.Key == "Enter")
-        {
-            OpenVerse(verseNum);
-        }
-    }
+    // Batch M-D4: OnVerseLineKeyDown deleted -- VerseLine.razor's own
+    // OnLineKeyDown is the identical Enter-only check, now shared by both
+    // containers instead of this page's own private copy.
 
     private string PassageRef((int From, int To) range) => $"{_book}.{_chapterNum}.{range.From}-{range.To}";
 
