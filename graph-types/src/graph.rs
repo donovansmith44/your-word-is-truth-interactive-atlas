@@ -4,8 +4,8 @@
 use std::collections::BTreeMap;
 
 use crate::edge::{
-    at, Attests, BiIndex, CatechismLink, Confesses, Contains, Corresponds, CrossRef, LocatedAt,
-    Mentions, PlaceOrPerson, Quotes, RelationId, Succession,
+    at, Attests, BiIndex, CatechismLink, Confesses, Contains, Corresponds, CrossRef, Fulfills,
+    LocatedAt, Mentions, PlaceOrPerson, Quotes, RelationId, Succession, Typology,
 };
 use crate::chrono::DatedBy;
 use crate::id::{AnyNodeId, NodeKind, Position};
@@ -30,6 +30,8 @@ pub struct Graph {
     pub succession: Vec<Succession>,
     pub dated_by: Vec<DatedBy>,
     pub located_at: Vec<LocatedAt>,
+    pub fulfills: Vec<Fulfills>,
+    pub typology: Vec<Typology>,
     pub catechism: Vec<CatechismLink>,
     // -------- imported --------
     pub mentions: Vec<Mentions>,
@@ -143,6 +145,28 @@ impl Graph {
             let s: TextLocus = row.confessing.clone().into();
             let o: TextLocus = row.confessed.from.clone().into();
             pairs.entry(R::Confesses).or_default().push((
+                at(&text_node(&s)),
+                at(&text_node(&o)),
+                M::None,
+            ));
+        }
+        // EDGE-1: prophecy/fulfillment and typology lower exactly like
+        // the other text-to-text relations -- edge endpoint is each
+        // range's FIRST verse (the cites/quotes/confesses precedent);
+        // the full ranges stay on the rows for display.
+        for row in &self.fulfills {
+            let s: TextLocus = row.prophecy.from.clone().into();
+            let o: TextLocus = row.fulfillment.from.clone().into();
+            pairs.entry(R::Fulfillment).or_default().push((
+                at(&text_node(&s)),
+                at(&text_node(&o)),
+                M::None,
+            ));
+        }
+        for row in &self.typology {
+            let s: TextLocus = row.type_passage.from.clone().into();
+            let o: TextLocus = row.antitype_passage.from.clone().into();
+            pairs.entry(R::Typology).or_default().push((
                 at(&text_node(&s)),
                 at(&text_node(&o)),
                 M::None,

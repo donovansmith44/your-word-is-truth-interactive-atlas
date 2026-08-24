@@ -72,6 +72,8 @@ relations! {
         Cites       => "cites" / "cited-by",
         Quotes      => "quotes" / "quoted-by",
         Confesses   => "confesses" / "confessed-in",
+        Fulfillment => "fulfilled-in" / "fulfills",
+        Typology    => "prefigures" / "prefigured-by",
         JustifiedBy => "justified-by" / "justifies",
         DerivedFrom => "derived-from" / "derives"
     }
@@ -204,6 +206,42 @@ pub struct LocatedAt {
 // M-D3 (owner ruling R2): the `Named` row struct was retired with the
 // `named` manifest row -- a place's aliases are `NodePayload::Place`'s
 // own `aliases` payload field, the sole path since M-C.
+
+/// EDGE-1 (owner order 2026-08-23: "we also need a couple more edges:
+/// one for Christological types, and one for prophecy/fulfillment").
+/// A prophecy's fulfillment -- Scripture-only, text-to-text, DIRECTED
+/// (prophecy -> fulfillment; forward reads "fulfilled-in", inverse
+/// "fulfills"). Scripture frequently SELF-ATTESTS these rows: the NT
+/// fulfillment formulas ("that it might be fulfilled which was spoken
+/// by the prophet") make the fulfillment passage itself the natural
+/// `Ground::Scripture` of the justification. Positive register per
+/// the KJV inerrancy directive: fulfillment is stated as fact, never
+/// hedged.
+#[derive(Clone, Debug)]
+pub struct Fulfills {
+    pub prophecy: BibleLocusRange,
+    pub fulfillment: BibleLocusRange,
+    pub provenance: ProvenanceId,
+    pub justification: Justification,
+}
+
+/// EDGE-1: a Christological type -- an OT passage prefiguring its NT
+/// antitype (ROM 5:14's own "figure of him that was to come").
+/// Scripture-only, text-to-text, DIRECTED (type -> antitype; forward
+/// "prefigures", inverse "prefigured-by"). v1 is deliberately
+/// text-to-text because the classic cases are ARGUED FROM passages
+/// (GEN 14 -> HEB 7 Melchizedek; NUM 21:8-9 -> JHN 3:14 the serpent;
+/// JON 1:17 -> MAT 12:40); a node-typed subject (the Person/Event
+/// that IS the type) is a later EXTEND, not a v1 field. `note` names
+/// the figure for display ("the brasen serpent").
+#[derive(Clone, Debug)]
+pub struct Typology {
+    pub type_passage: BibleLocusRange,
+    pub antitype_passage: BibleLocusRange,
+    pub note: Option<String>,
+    pub provenance: ProvenanceId,
+    pub justification: Justification,
+}
 
 #[derive(Clone, Debug)]
 pub struct CatechismLink {
