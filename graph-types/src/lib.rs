@@ -45,8 +45,17 @@ pub mod covenant {
     };
     /// Justification everywhere (covenant rule): a claim carries its why.
     pub use crate::edge::{Ground, GroundTarget, Justification};
-    /// Content addressing + typed positions.
-    pub use crate::id::{AnyNodeId, ContentAddressed, NodeId, Pid, Position, PositionKind};
+    /// Content addressing + typed positions -- the identity discipline
+    /// trio (ContentAddressed / Pid / ContentHash) covenanted whole
+    /// (C1-ADDENDUM: ContentHash was an oversight vs the handoff's own
+    /// list; every map-side RegionId/BoundaryId/StyleId wraps it).
+    pub use crate::id::{AnyNodeId, ContentAddressed, ContentHash, NodeId, Pid, Position, PositionKind};
+    /// The typed id aliases the contracts speak in (C1-ADDENDUM):
+    /// EventId (C2/C4 drivers), PlaceId (C3 gazetteer waypoints),
+    /// SourceId (attribution). Aliases, deliberately NOT the kind
+    /// tags -- the smaller promise (each alias carries its tag
+    /// without covenanting the tag system).
+    pub use crate::id::{EventId, PlaceId, SourceId};
     /// Provenance vocabulary.
     pub use crate::ingest::{Confidence, Provenance, ProvenanceId};
     /// Loci: where in the text a claim stands.
