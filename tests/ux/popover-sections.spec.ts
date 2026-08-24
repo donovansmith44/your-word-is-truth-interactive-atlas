@@ -542,10 +542,17 @@ test('BLINK-1: hovering a place mention in the mini-reader blinks its map marker
   await expect(page.getByTestId('popover-verse-expand')).toHaveCount(0); // chapter-aware suppression, verified above
   const more = page.getByTestId('xrefs-more');
   await expect(more).toBeVisible();
-  // M-D3 fix round 3 (R-D3): "reveal all" is now a separate, always-paired
-  // double-arrow button, not a Shift-click on the single arrow -- see
-  // RevealControls.razor's own doc comment for the full story.
-  await page.getByTestId('xrefs-more-all').click(); // reveal all -- GEN.28.19 is not among the initial cap
+  // M-D4 fix round 1/P2: "all" is conditionally omitted whenever a single
+  // MORE click already reaches the true total (RevealControls.razor's own
+  // ShowAll rule) -- reveal-all-or-fall-back-to-more, same defensive
+  // pattern this file's own CATECH-1 tests already use, so this stays
+  // correct regardless of GEN.12.8's own exact real xref count.
+  const xrefsAll1 = page.getByTestId('xrefs-more-all');
+  if (await xrefsAll1.count() > 0) {
+    await xrefsAll1.click();
+  } else {
+    await more.click();
+  }
   const xrefItem = page.getByTestId('xref-item-GEN.28.19');
   await expect(xrefItem).toBeVisible();
   await xrefItem.click();
@@ -658,7 +665,14 @@ test('MENTION-4: clicking a place mention INSIDE the mini-reader pushes a new po
   await page.getByTestId('verse-line-8').click();
   const more = page.getByTestId('xrefs-more');
   await expect(more).toBeVisible();
-  await page.getByTestId('xrefs-more-all').click();
+  // M-D4 fix round 1/P2: same conditional-"all" fallback as this file's
+  // own BLINK-1 test just above.
+  const xrefsAll2 = page.getByTestId('xrefs-more-all');
+  if (await xrefsAll2.count() > 0) {
+    await xrefsAll2.click();
+  } else {
+    await more.click();
+  }
   await page.getByTestId('xref-item-GEN.28.19').click();
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.28.19');
 
@@ -695,7 +709,16 @@ test('CATECH-1: the Baptism institution verse keeps its item-level citation, now
   // not the reveal mechanic itself).
   const catechismMoreBaptism = page.getByTestId('catechism-more');
   if (await catechismMoreBaptism.count() > 0) {
-    await page.getByTestId('catechism-more-all').click();
+    // M-D4 fix round 1/P2: "all" is conditionally omitted whenever a
+    // single MORE click already reaches the true total (RevealControls.
+    // razor's own ShowAll rule) -- fall back to MORE in that case, which
+    // by the SAME rule already reveals everything when "all" is absent.
+    const catechismAllBaptism = page.getByTestId('catechism-more-all');
+    if (await catechismAllBaptism.count() > 0) {
+      await catechismAllBaptism.click();
+    } else {
+      await catechismMoreBaptism.click();
+    }
   }
 
   // Luther's OWN item-level embedded citation (Batch F, unchanged) -- the
@@ -756,7 +779,15 @@ test('CATECH-1: verse -> catechism item -> proof verse hop, with Luther\'s own v
   await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
   const catechismMore = page.getByTestId('catechism-more');
   if (await catechismMore.count() > 0) {
-    await page.getByTestId('catechism-more-all').click();
+    // M-D4 fix round 1/P2: see the identical fallback comment earlier in
+    // this file (CATECH-1's own Baptism-institution test, just above) --
+    // "all" is conditionally omitted, MORE already reveals everything then.
+    const catechismAll = page.getByTestId('catechism-more-all');
+    if (await catechismAll.count() > 0) {
+      await catechismAll.click();
+    } else {
+      await catechismMore.click();
+    }
   }
   await page.getByTestId('catechism-item-baptism-1').click();
 
@@ -833,7 +864,13 @@ test('CATECH-1: a same-chapter passage selection aggregates catechism citations 
   // reveal mechanic itself (XREF-1/U2's own dedicated test covers that).
   const catechismMore = page.getByTestId('catechism-more');
   if (await catechismMore.count() > 0) {
-    await page.getByTestId('catechism-more-all').click();
+    // M-D4 fix round 1/P2: same conditional-"all" fallback as above.
+    const catechismAll = page.getByTestId('catechism-more-all');
+    if (await catechismAll.count() > 0) {
+      await catechismAll.click();
+    } else {
+      await catechismMore.click();
+    }
   }
   // The bare (item-level, no question) altar-1 row -- first occurrence,
   // unsuffixed testid -- appears exactly once despite being cited by all
@@ -871,7 +908,13 @@ test('CATECH-1/6-ARCH: a verse reachable only via the repo mapping shows a quest
   // (position among the citing items isn't guaranteed).
   const catechismMore = page.getByTestId('catechism-more');
   if (await catechismMore.count() > 0) {
-    await page.getByTestId('catechism-more-all').click();
+    // M-D4 fix round 1/P2: same conditional-"all" fallback as above.
+    const catechismAll = page.getByTestId('catechism-more-all');
+    if (await catechismAll.count() > 0) {
+      await catechismAll.click();
+    } else {
+      await catechismMore.click();
+    }
   }
 
   const items = page.getByTestId(/^catechism-item-/);
@@ -896,10 +939,23 @@ test('CATECH-1/6-ARCH: a verse reachable only via the repo mapping shows a quest
   await expect(godAloneEntry).toContainText('God Alone as Judge');
 });
 
-test('CATECH-1/U2/U6: THE SMALL CATECHISM defaults to 2 shown, +2 per down-arrow click, the double-arrow buttons jump straight to the ends', async ({ page }) => {
+// M-D4 fix round 1, P2 (owner order, verbatim: "the down/double down thing
+// is really ugly and needs work... the ability to show a little more with
+// one click; the ability to show everything with another click, and the
+// ability to undo either of those operations with a click"). The
+// four-glyph arrow-button cluster (more/more-all/collapse/collapse-all)
+// retires whole -- replaced by RevealControls.razor's own quiet text row
+// (more (n) / all (N) / less), state-adaptive, with LESS a ONE-OP UNDO
+// (after ALL: exact pre-ALL view; after MORE: steps back one Step) rather
+// than a separate always-paired "collapse-all" button. See that
+// component's own header comment for the full design.
+test('CATECH-1/U2/U6: THE SMALL CATECHISM defaults to 2 shown, "more"/"all"/"less" are state-adaptive, LESS undoes ALL in one op', async ({ page }) => {
   const toc = await loadToc();
-  const found = await findVerseWithCounts(toc, d => d.catechism.length > 2);
-  test.skip(!found, 'no sampled verse had >2 catechism citations');
+  // >4 (not merely >2): guarantees Total-Default > Step, so "all" is a
+  // genuinely different action from "more" (RevealControls.razor's own
+  // ShowAll rule) and actually renders for this test to exercise.
+  const found = await findVerseWithCounts(toc, d => d.catechism.length > 4);
+  test.skip(!found, 'no sampled verse had >4 catechism citations');
   if (!found) return;
   const v = parseVerse(found.vref);
   const total = found.detail.catechism.length;
@@ -910,36 +966,45 @@ test('CATECH-1/U2/U6: THE SMALL CATECHISM defaults to 2 shown, +2 per down-arrow
 
   const items = page.getByTestId(/^catechism-item-/);
   const more = page.getByTestId('catechism-more');
-  const moreAll = page.getByTestId('catechism-more-all');
-  const collapse = page.getByTestId('catechism-collapse');
-  const collapseAll = page.getByTestId('catechism-collapse-all');
+  const all = page.getByTestId('catechism-more-all');
+  const less = page.getByTestId('catechism-collapse');
 
-  // U6, owner verbatim: "Catechism defaults to 2 shown."
+  // U6, owner verbatim: "Catechism defaults to 2 shown." Collapsed state:
+  // more+all visible, less absent (nothing to undo AT the default).
   await expect(items).toHaveCount(2);
-  await expect(more).toBeVisible();
-  await expect(moreAll).toBeVisible();
-  await expect(collapse).toHaveCount(0);
-  await expect(collapseAll).toHaveCount(0);
+  await expect(more).toHaveText('more (2)');
+  await expect(all).toHaveText(`all (${total})`);
+  await expect(less).toHaveCount(0);
 
-  // The SAME shared mechanic RevealControls.razor gives cross-references
-  // (XREF-1/U2 above) -- +2 per single-arrow click, all-at-once on the
-  // double-arrow button (M-D3 fix round 3, R-D3: a separate, always-paired
-  // BUTTON now, not a Shift-click gesture on the single arrow -- see
-  // RevealControls.razor's own doc comment), never below the default
-  // either direction.
-  await moreAll.click();
+  // MORE steps by exactly +2 -- now a PARTIAL state: more/all/less all
+  // three visible together (the owner's own middle row).
+  await more.click();
+  await expect(items).toHaveCount(4);
+  await expect(more).toBeVisible();
+  await expect(all).toBeVisible();
+  await expect(less).toBeVisible();
+
+  // LESS after MORE steps back exactly one Step (not a jump to default).
+  await less.click();
+  await expect(items).toHaveCount(2);
+  await expect(less).toHaveCount(0);
+
+  // ALL jumps straight to the true total -- fully expanded: less ONLY
+  // (more/all both gone, nothing further to reveal).
+  await all.click();
   await expect(items).toHaveCount(total);
   await expect(more).toHaveCount(0);
-  await expect(moreAll).toHaveCount(0);
-  await expect(collapse).toBeVisible();
-  await expect(collapseAll).toBeVisible();
+  await expect(all).toHaveCount(0);
+  await expect(less).toBeVisible();
 
-  await collapseAll.click();
+  // LESS's own ONE-OP UNDO: the immediately-preceding action was ALL, so
+  // this returns to the EXACT pre-ALL view (2, the default), not a slow
+  // walk-down -- "undo... with a click," the owner's own words.
+  await less.click();
   await expect(items).toHaveCount(2);
-  await expect(collapse).toHaveCount(0);
-  await expect(collapseAll).toHaveCount(0);
+  await expect(less).toHaveCount(0);
   await expect(more).toBeVisible();
-  await expect(moreAll).toBeVisible();
+  await expect(all).toBeVisible();
 });
 
 test('CATECH-1: a verse with 1-2 catechism citations shows no reveal arrow at all (at-or-under the default)', async ({ page }) => {
@@ -985,17 +1050,19 @@ async function findVerseWithCounts(toc: any, predicate: (d: any) => boolean, max
   return null;
 }
 
-test('XREF-1/U2: +2 per down-arrow click, -2 per up-arrow click, never below the default, the double-arrow buttons jump to the far end', async ({ page }) => {
+// M-D4 fix round 1, P2 -- see CATECH-1/U2/U6's own updated header comment
+// immediately above (this file) for the full "why" behind the redesign.
+test('XREF-1/U2: "more"/"all" are state-adaptive text links, "less" is a one-op undo (steps back after MORE, exact-restore after ALL)', async ({ page }) => {
   const toc = await loadToc();
-  // >5 (not merely >3): guarantees at least one genuine MIDDLE state where
-  // both arrows show together, regardless of whether this sampled verse's
+  // >5 (not merely >3): guarantees at least one genuine PARTIAL state where
+  // more/all/less show together, regardless of whether this sampled verse's
   // own initial cap turns out to be F2's 3 (xrefs-only) or 2 (mixed
   // context, e.g. a real Persons/Places mention alongside -- a live
   // possibility this predicate doesn't control for, deliberately: this
-  // test's own subject is the +2/-2/all/default MECHANIC, not the cap
-  // VALUE, which REGISTRY-1/XREF-1's own dedicated tests already pin --
-  // reading the actual initial count off the page rather than assuming 3
-  // keeps this test meaningful either way).
+  // test's own subject is the more/all/less MECHANIC, not the cap VALUE,
+  // which REGISTRY-1/XREF-1's own dedicated tests already pin -- reading
+  // the actual initial count off the page rather than assuming 3 keeps
+  // this test meaningful either way).
   const found = await findVerseWithCounts(toc, d => d.cross_refs.length > 5);
   test.skip(!found, 'no sampled verse had >5 xrefs');
   if (!found) return;
@@ -1008,62 +1075,61 @@ test('XREF-1/U2: +2 per down-arrow click, -2 per up-arrow click, never below the
 
   const items = page.getByTestId(/^xref-item-/);
   const more = page.getByTestId('xrefs-more');
-  const collapse = page.getByTestId('xrefs-collapse');
+  const all = page.getByTestId('xrefs-more-all');
+  const less = page.getByTestId('xrefs-collapse');
 
   await expect(more).toBeVisible();
   const defaultShown = await items.count();
   expect(defaultShown, 'the default cap must be F2\'s own 2 (mixed context) or 3 (xrefs-only)').toBeGreaterThanOrEqual(2);
   expect(defaultShown).toBeLessThanOrEqual(3);
-  await expect(collapse).toHaveCount(0); // "never below the default" -- nothing to collapse AT the default
+  await expect(less).toHaveCount(0); // "never below the default" -- nothing to undo AT the default
 
-  // Step up by exactly +2 per click until the true total is reached --
+  // Step up by exactly +2 per MORE click until the true total is reached --
   // hop count read from the wire (never hardcoded), so this test keeps
   // proving itself regardless of which real verse it happens to sample.
+  // Each MORE click also invalidates any earlier ALL-undo memory (see
+  // RevealControls.razor's own header comment), so LESS from here on
+  // always means "step back one Step," verified below.
   let shown = defaultShown;
   let hops = 0;
   while (shown < total) {
-    await expect(more, `expected a MORE arrow with ${total - shown} left to reveal`).toBeVisible();
+    await expect(more, `expected a MORE link with ${total - shown} left to reveal`).toBeVisible();
+    await expect(more).toHaveText(`more (${Math.min(2, total - shown)})`);
     await more.click();
     shown = Math.min(shown + 2, total);
     await expect(items).toHaveCount(shown);
-    await expect(collapse, 'once past the default, the collapse arrow must also be available').toBeVisible();
+    await expect(less, 'once past the default, LESS must also be available').toBeVisible();
     hops++;
     expect(hops, 'XREF-1 +2 reveal walk did not terminate within a sane number of hops').toBeLessThan(total);
   }
   await expect(more).toHaveCount(0); // fully revealed -- no more to show
 
-  // Step back down by exactly -2 per click, never below the default.
+  // LESS after a run of MORE clicks steps back exactly -2 per click, never
+  // below the default (the "after MORE it steps back the increment...
+  // repeated LESS walks home" half of the owner's own one-op-undo spec).
   while (shown > defaultShown) {
-    await collapse.click();
+    await less.click();
     shown = Math.max(shown - 2, defaultShown);
     await expect(items).toHaveCount(shown);
   }
-  await expect(collapse).toHaveCount(0); // back at the default -- nothing left to collapse
+  await expect(less).toHaveCount(0); // back at the default -- nothing left to undo
   await expect(more).toBeVisible();
 
-  // The double-arrow "more-all" button: jumps straight to ALL, skipping
-  // every intermediate step (M-D3 fix round 3, R-D3 -- a separate, always-
-  // paired BUTTON, not a Shift-click/dblclick gesture on the single arrow;
-  // RevealControls.razor's own doc comment has the full, live-caught story
-  // on why a real dblclick proved structurally unsafe against this app's
-  // own re-centering popovers, and why the controller's own re-reading of
-  // "double down arrow" as a second button sidesteps that hazard entirely).
-  const moreAll = page.getByTestId('xrefs-more-all');
-  await expect(moreAll).toBeVisible();
-  await moreAll.click();
+  // ALL jumps straight to the true total, skipping every intermediate step.
+  await expect(all).toBeVisible();
+  await expect(all).toHaveText(`all (${total})`);
+  await all.click();
   await expect(items).toHaveCount(total);
   await expect(more).toHaveCount(0);
-  await expect(moreAll).toHaveCount(0);
-  await expect(collapse).toBeVisible();
+  await expect(all).toHaveCount(0);
+  await expect(less).toBeVisible();
 
-  // The double-arrow "collapse-all" button: jumps straight back to the
-  // default, never below it.
-  const collapseAll = page.getByTestId('xrefs-collapse-all');
-  await expect(collapseAll).toBeVisible();
-  await collapseAll.click();
+  // LESS's own ONE-OP UNDO ("undo... with a click," the owner's own
+  // words): the immediately-preceding action was ALL, so THIS click
+  // returns to the EXACT pre-ALL view (the default), not a slow -2 walk.
+  await less.click();
   await expect(items).toHaveCount(defaultShown);
-  await expect(collapse).toHaveCount(0);
-  await expect(collapseAll).toHaveCount(0);
+  await expect(less).toHaveCount(0);
   await expect(more).toBeVisible();
 });
 
@@ -1092,7 +1158,16 @@ test('XREF-1: a verse with at-or-under-cap cross-references shows no reveal arro
   const v = parseVerse(found.vref);
 
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  // Keyboard activation, not a coordinate click -- MENTION-1's own
+  // documented hazard (CONTRACT.md): a plain .click() targets this
+  // element's geometric center, which can land on one of its OWN nested
+  // in-text mention spans instead (a real, live-caught case here: this
+  // predicate's own unique match in a real sampled chapter, 1CO.16.23,
+  // is a short verse whose own "Jesus Christ" mention spans much of the
+  // line -- opening that PersonNode instead of this test's own intended
+  // VerseNode). Sidesteps the coordinate geometry entirely.
+  await page.getByTestId(`verse-line-${v.verse}`).focus();
+  await page.keyboard.press('Enter');
   await expect(page.getByTestId('popover-section-xrefs')).toBeVisible();
 
   const items = page.getByTestId(/^xref-item-/);
@@ -1213,7 +1288,16 @@ test('EVENT-1: a verse with no titled event shows no EVENT section at all (condi
   const v = parseVerse(vref);
 
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  // Keyboard activation, not a coordinate .click() -- CONTRACT.md's own
+  // documented MENTION-1 test hazard, live-caught here for real: a
+  // zero-titled-event verse is no guarantee of a mention-sparse one, and
+  // this sampler landed on RUT.4.21 ("Now Boaz begat Obed, and Obed begat
+  // Jesse, and Jesse begat David"), whose text is almost entirely person
+  // mentions -- a coordinate click there reliably lands on "Boaz" (or
+  // another mentioned name) instead of the plain verse line, opening that
+  // PERSON's own popover instead of this VERSE's.
+  await page.getByTestId(`verse-line-${v.verse}`).focus();
+  await page.keyboard.press('Enter');
   await expect(page.getByTestId('popover-title')).toHaveText(vref);
   await expect(page.getByTestId('popover-section-event-membership')).toHaveCount(0);
 });
@@ -1264,25 +1348,27 @@ test('EVENT-1: clicking a verse\'s EVENT row opens the EventNode, whose PRIOR/FO
   // .popover-event-nav-label -- the button's own full text also includes
   // its decorative directional glyph (a sibling span).
   await expect(priorBtn.locator('.popover-event-nav-label')).toHaveText('Israel departs Rameses');
-  // "those foci truncated to ONE VERSE" (owner, verbatim, progress.md) --
-  // the adjacent event's own FIRST vref only, a plain quiet caption, never
-  // the shared passage-list component's own multi-verse rendering the
-  // retired PRIOR/FOLLOWING sections used.
-  await expect(eventSection.getByTestId('event-prior-verse-exodus')).toBeVisible();
-  const chapter12 = await api.chapter('EXO.12');
-  const v37Text = chapter12.verses.find((v: any) => v.verse === 37).text;
-  await expect(eventSection.getByTestId('event-prior-verse-exodus')).toHaveText(v37Text);
+  // M-D4 fix round 1/P4 (owner, verbatim: "we straight up should not have
+  // [the verse text]. you get that when you traverse."): the one-verse
+  // caption this arrow used to show (EXO.12.37's own text) is RETIRED
+  // outright -- no verse content, no attestation text in the affordance at
+  // all, the click is what YIELDS the event, not what the button previews.
+  // In its place: a static small-caps role caption naming the DIRECTION
+  // only, plus a `title` on the (possibly ellipsis-truncated) name itself
+  // carrying the untruncated event name for a native hover tooltip.
+  await expect(eventSection.getByTestId('event-prior-verse-exodus')).toHaveCount(0);
+  await expect(eventSection.getByTestId('event-prior-label-exodus')).toHaveText('PRIOR EVENT');
+  await expect(priorBtn.locator('.popover-event-nav-label')).toHaveAttribute('title', 'Israel departs Rameses');
 
   const followingBtn = eventSection.getByTestId('event-following-event-exodus');
   await expect(followingBtn.locator('.popover-event-nav-label')).toHaveText('Crossing the Red Sea');
-  // The FOLLOWING event's own real verse groups span EXO.14.21-31 (asserted
-  // above the live-app section, at the wire level) -- one-verse-foci means
-  // only its OWN FIRST vref (EXO.14.21) is ever shown here, not the range.
-  const followingVerse = eventSection.getByTestId('event-following-verse-exodus');
-  await expect(followingVerse).toBeVisible();
-  const chapter14 = await api.chapter('EXO.14');
-  const v21Text = chapter14.verses.find((v: any) => v.verse === 21).text;
-  await expect(followingVerse).toHaveText(v21Text);
+  // The FOLLOWING event's own real verse groups span EXO.14.21-31 -- already
+  // proven at the wire level above (position.following.verse_groups ==
+  // redSeaSceneEvent.verse_groups, the test's own "one-graph" assertion);
+  // P4 means that span is never echoed into the UI arrow itself anymore.
+  await expect(eventSection.getByTestId('event-following-verse-exodus')).toHaveCount(0);
+  await expect(eventSection.getByTestId('event-following-label-exodus')).toHaveText('FOLLOWING EVENT');
+  await expect(followingBtn.locator('.popover-event-nav-label')).toHaveAttribute('title', 'Crossing the Red Sea');
 });
 
 test('EVENT-1: MULTI-NARRATIVE nav -- an event touching >1 narrative shows one flanking nav row per narrative, each named', async ({ page }) => {
@@ -1324,9 +1410,15 @@ test('EVENT-1: MULTI-NARRATIVE nav -- an event touching >1 narrative shows one f
     await expect(narrativeLabels.filter({ hasText: position.narrative_name })).toHaveCount(1);
     if (position.prior) {
       await expect(eventSection.getByTestId(`event-prior-event-${position.narrative_id}`).locator('.popover-event-nav-label')).toHaveText(position.prior.label);
+      // P4: the role caption's own idSuffix disambiguation (the SAME
+      // `--N` suffix the button testid itself carries on a same-name
+      // multi-narrative collision) survives the retired-verse-text
+      // rebuild -- one caption per row, not one shared across all of them.
+      await expect(eventSection.getByTestId(`event-prior-label-${position.narrative_id}`)).toHaveText('PRIOR EVENT');
     }
     if (position.following) {
       await expect(eventSection.getByTestId(`event-following-event-${position.narrative_id}`).locator('.popover-event-nav-label')).toHaveText(position.following.label);
+      await expect(eventSection.getByTestId(`event-following-label-${position.narrative_id}`)).toHaveText('FOLLOWING EVENT');
     }
   }
 });
@@ -1486,6 +1578,16 @@ test('EVENT-1/PASSAGE-1: the Crucifixion event shows 4 witness passages under "P
   const entries = witnessesSection.locator('[data-testid^="event-witness-"]');
   await expect(entries).toHaveCount(4);
 
+  // M-D4 fix round 1/P5 (owner, verbatim: "we're wasting real estate...
+  // it's obvious where they're coming from already"): NO standalone
+  // book-name caption renders under any of these four entries' own
+  // reference headers anymore -- exactly the 4-Gospel, book-disambiguation
+  // scenario WitnessUnitsResolver's own retired doc comment used to call
+  // "genuinely load-bearing," now proven unnecessary: PassageList's own
+  // ref-label (e.g. "MRK...") already names the book. One header per
+  // account entry, the reference -- never a second line duplicating it.
+  await expect(witnessesSection.locator('.popover-passage-caption')).toHaveCount(0);
+
   // O2 (owner live-preview correction, 2026-08-23) retired the per-entry
   // popover-passage-clamp-expand/-collapse toggle this test used to
   // exercise (see PassageList.razor's own O2 comment) -- "each clamped to 2
@@ -1608,7 +1710,28 @@ test('M-D1 req 3: a single-witness event\'s popover shows its SPAN, never an enu
   // showing.
   await page.goto('/read/GEN/12');
   await page.getByTestId('verse-line-8').click();
-  await page.getByTestId('xrefs-more-all').click();
+  // A real, live-caught race (not guessed): `.count()` is a plain snapshot,
+  // it does NOT auto-retry the way `expect().toBeVisible()` does -- reading
+  // it immediately after the click above can land BEFORE ExplorerPopover's
+  // own async section-resolution has populated the DOM at all yet, wrongly
+  // conclude "all" is absent (this file's own established "settle-wait
+  // first" discipline, e.g. the entry-point-vs-general test below), and
+  // fall back to a single MORE click that reveals only +2 -- not enough to
+  // reach GEN.28.19 (this verse's own 6th-ranked xref). Waiting for `more`
+  // to be VISIBLE first (an auto-retrying assertion) guarantees the WHOLE
+  // reveal-controls row -- including "all," rendered in the SAME pass --
+  // has actually landed before the count check below reads it. M-D4 fix
+  // round 1/P2: same conditional-"all" fallback as popover-sections' own
+  // BLINK-1/OnExplore tests above, now with the SAME settle-wait those two
+  // already had (this was the one call site missing it).
+  const more3 = page.getByTestId('xrefs-more');
+  await expect(more3).toBeVisible();
+  const xrefsAll3 = page.getByTestId('xrefs-more-all');
+  if (await xrefsAll3.count() > 0) {
+    await xrefsAll3.click();
+  } else {
+    await more3.click();
+  }
   await page.getByTestId('xref-item-GEN.28.19').click();
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.28.19');
   await page.getByTestId('verse-event-jj_bethel_dream').click();

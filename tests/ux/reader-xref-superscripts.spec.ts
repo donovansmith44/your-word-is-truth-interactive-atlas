@@ -72,7 +72,16 @@ test.describe('M-D2: cross-reference superscripts', () => {
   // remains the binding contract for click/keyboard-focus entry, the
   // lettering scheme, expansion, and the cap reconciliation.
 
-  test('XSCRIPT-1: superscript presence/count is wire-driven, letters for 1-3, many-marker for >3 -- a sample sweep, not hardcoded verses', async ({ page }) => {
+  // M-D4 fix round 1, P1 (owner CORRECTION, 2026-08-23, verbatim: "i didnt
+  // literally mean i,j,k superscripts. i mean ordered alphabetical letters
+  // that modulate around a chapter (i.e., first letter is a)"). RETIRES the
+  // old per-verse-COUNT scheme (i/ij/ijk + the "…" many-marker) whole: the
+  // marker's own glyph no longer depends on the VERSE's OWN xref_count at
+  // all (beyond ">0, so a marker renders"), only on its ORDINAL among the
+  // chapter's xref-bearing verses, in reading order -- "a" for the first,
+  // cycling modulo 26 ("modulate" = modulo) after "z". No count signal at
+  // the marker at all (count lives inside the popover, already served).
+  test('XSCRIPT-1: superscript lettering is the verse\'s own ordinal among the chapter\'s xref-bearing verses -- "a" first, cycling modulo 26 -- a sample sweep, not hardcoded verses', async ({ page }) => {
     const toc = await loadToc();
     const found = await findVerseByXrefCount(toc, c => c > 0);
     test.skip(!found, 'no sampled chapter had any verse with cross-references');
@@ -81,10 +90,13 @@ test.describe('M-D2: cross-reference superscripts', () => {
     const chapterOut = await api.chapter(`${found.book}.${found.chapter}`);
     await page.goto(`/read/${found.book}/${found.chapter}`);
 
-    // Sweep EVERY verse of the discovered chapter (not just the one that
-    // matched the predicate) -- a real chapter naturally mixes 0/1-3/>3
-    // counts, so one page load exercises every branch of the scheme.
-    let sawZero = false, sawLettered = false, sawMany = false;
+    // Mirrors VerseLine.ComputeXrefLetters exactly (client/Components/
+    // VerseLine.razor) -- computed independently here, in reading order
+    // over the SAME chapter response, rather than read back off the DOM,
+    // so this test actually PROVES the scheme instead of just echoing
+    // whatever the client happened to render.
+    let ordinal = 0;
+    let sawZero = false, sawLettered = false, sawWraparound = false;
     for (const v of chapterOut.verses as ChapterVerse[]) {
       const marker = page.getByTestId(`verse-xref-marker-${v.verse}`);
       if (v.xref_count === 0) {
@@ -92,32 +104,65 @@ test.describe('M-D2: cross-reference superscripts', () => {
         sawZero = true;
         continue;
       }
-      await expect(marker).toBeVisible();
-      const text = await marker.textContent();
-      if (v.xref_count <= 3) {
-        expect(text, `verse ${v.verse} has ${v.xref_count} xrefs -- expected the first ${v.xref_count} of i,j,k`).toBe(['i', 'j', 'k'].slice(0, v.xref_count).join(''));
-        sawLettered = true;
-      } else {
-        expect(text, `verse ${v.verse} has ${v.xref_count} (>3) xrefs -- expected the many-marker`).toBe('…');
-        sawMany = true;
+      const expectedLetter = String.fromCharCode('a'.charCodeAt(0) + (ordinal % 26));
+      if (ordinal >= 26) sawWraparound = true;
+      ordinal++;
+      await expect(marker, `verse ${v.verse} is xref-bearing verse #${ordinal} in ${found.book}.${found.chapter} -- expected letter "${expectedLetter}"`).toHaveText(expectedLetter);
+      // P1: no count signal at the marker at all -- the accessible name
+      // drops it too (VerseLine.razor's own XrefMarkerAriaLabel), not just
+      // the visible glyph.
+      await expect(marker).toHaveAttribute('aria-label', `Cross-references for verse ${v.verse}`);
+      sawLettered = true;
+    }
+    // Not a hard requirement (a real chapter might not carry every shape,
+    // and most chapters have far fewer than 26 xref-bearing verses) --
+    // logged so a genuinely narrow sample is visible in output, never
+    // silently declared "covered" when it wasn't.
+    test.info().annotations.push({ type: 'coverage', description: `zero=${sawZero} lettered=${sawLettered} totalXrefBearing=${ordinal} wraparoundObserved=${sawWraparound} in ${found.book}.${found.chapter}` });
+  });
+
+  // A dedicated, best-effort search for a chapter with enough xref-bearing
+  // verses to directly WITNESS the modulo-26 wraparound (a real "z"
+  // immediately followed by "a") -- the sweep test above only exercises
+  // this when it happens to sample a long enough chapter; this test proves
+  // the wraparound deterministically when the compiled dataset has one,
+  // and gracefully skips (never fails) when it doesn't.
+  test('XSCRIPT-1: lettering wraps from "z" back to "a" (modulo 26) in a chapter with >26 xref-bearing verses', async ({ page }) => {
+    const toc = await loadToc();
+    let target: { book: string; chapter: number; zVerse: number; aVerse: number } | null = null;
+    outer: for (const b of toc) {
+      for (const ch of b.chapters) {
+        const chapterOut = await api.chapter(`${b.code}.${ch}`);
+        const xrefBearing = (chapterOut.verses as ChapterVerse[]).filter(v => v.xref_count > 0);
+        if (xrefBearing.length > 26) {
+          target = { book: b.code, chapter: ch, zVerse: xrefBearing[25].verse, aVerse: xrefBearing[26].verse };
+          break outer;
+        }
       }
     }
-    // Not a hard requirement (a real chapter might not carry all three
-    // shapes) -- logged so a genuinely narrow sample is visible in output,
-    // never silently declared "covered" when it wasn't.
-    test.info().annotations.push({ type: 'coverage', description: `zero=${sawZero} lettered=${sawLettered} many=${sawMany} in ${found.book}.${found.chapter}` });
+    test.skip(!target, 'no chapter in this compiled dataset has more than 26 xref-bearing verses');
+    if (!target) return;
+
+    await page.goto(`/read/${target.book}/${target.chapter}`);
+    await expect(page.getByTestId(`verse-xref-marker-${target.zVerse}`)).toHaveText('z');
+    await expect(page.getByTestId(`verse-xref-marker-${target.aVerse}`)).toHaveText('a');
   });
 
   test('XSCRIPT-1: hover opens the SAME composable popover, xrefs section leading, 3 initial entries', async ({ page }) => {
     const toc = await loadToc();
     const found = await findVerseByXrefCount(toc, c => c > 3);
-    test.skip(!found, 'no sampled verse had >3 cross-references (the many-marker case)');
+    test.skip(!found, 'no sampled verse had >3 cross-references');
     if (!found) return;
     const { book, chapter, verse: v } = found;
 
     await page.goto(`/read/${book}/${chapter}`);
     const marker = page.getByTestId(`verse-xref-marker-${v.verse}`);
-    await expect(marker).toHaveText('…');
+    // P1: the marker's own glyph is now this verse's own ORDINAL among the
+    // chapter's xref-bearing verses, not a function of ITS OWN count -- see
+    // this file's own dedicated lettering test above for the full proof;
+    // this test's own concern is the hover-opens-the-popover mechanism, so
+    // a light shape check (a single lowercase letter) is enough here.
+    await expect(marker).toHaveText(/^[a-z]$/);
 
     // { force: true }: a REAL, live-caught Playwright/production interplay
     // (not a workaround for a real bug -- see this file's own header
@@ -162,6 +207,14 @@ test.describe('M-D2: cross-reference superscripts', () => {
 
   test('XSCRIPT-1: keyboard focus opens the popover identically to hover', async ({ page }) => {
     const toc = await loadToc();
+    // <=3, still load-bearing after P1 (a real mistake caught live: an
+    // earlier draft of this fix round widened this to plain `c > 0`,
+    // reasoning the bound only existed for the NOW-retired letters-vs-
+    // many-marker boundary -- it did NOT: the entry-point popover's own
+    // cap is UNCONDITIONALLY 3 (XSCRIPT-1's own rule, unrelated to P1),
+    // so `toHaveCount(v.xref_count)` below only holds when xref_count
+    // itself is <=3 -- otherwise only the first 3 render and this test
+    // fails against its own sampled data, which is exactly what happened).
     const found = await findVerseByXrefCount(toc, c => c > 0 && c <= 3);
     test.skip(!found, 'no sampled verse had 1-3 cross-references');
     if (!found) return;
@@ -197,8 +250,13 @@ test.describe('M-D2: cross-reference superscripts', () => {
 
   test('XSCRIPT-1: expansion reveals the rest, an entry is explorable one hop, collapse restores', async ({ page }) => {
     const toc = await loadToc();
-    const found = await findVerseByXrefCount(toc, c => c > 3);
-    test.skip(!found, 'no sampled verse had >3 cross-references');
+    // >5, not merely >3: the entry-point cap here is 3 (unconditional,
+    // XSCRIPT-1's own rule) and RevealControls.razor's own Step is 2, so
+    // this test's own "all" link only renders (as meaningfully different
+    // from "more") once Total-3 > 2, i.e. xref_count > 5 -- M-D4 fix round
+    // 1/P2's own ShowAll rule.
+    const found = await findVerseByXrefCount(toc, c => c > 5);
+    test.skip(!found, 'no sampled verse had >5 cross-references');
     if (!found) return;
     const { book, chapter, verse: v } = found;
 
@@ -209,13 +267,12 @@ test.describe('M-D2: cross-reference superscripts', () => {
     const items = page.getByTestId(/^xref-item-/);
     await expect(items).toHaveCount(3);
 
-    // M-D3/U2: "reveals the REST" (not merely "some more") -- the
-    // "more-all" double-arrow button is the shared mechanic's own
-    // all-at-once control (M-D3 fix round 3, R-D3: a separate, always-
-    // paired BUTTON, not a Shift-click/dblclick gesture on the single
-    // arrow -- RevealControls.razor's own doc comment has the full story);
-    // a single click would only reveal +2, which the wire's own count here
-    // (only known to be >3, not bounded) can't guarantee reaches the end.
+    // M-D3/U2: "reveals the REST" (not merely "some more") -- the "all"
+    // link is the shared mechanic's own all-at-once control (M-D4 fix
+    // round 1, P2: RevealControls.razor's own quiet text row -- see that
+    // file's own doc comment); a single "more" click would only reveal
+    // +2, which the wire's own count here (only known to be >3, not
+    // bounded) can't guarantee reaches the end.
     await page.getByTestId('xrefs-more-all').click();
     await expect(items).toHaveCount(v.xref_count);
     await expect(page.getByTestId('xrefs-collapse')).toBeVisible();
@@ -269,11 +326,15 @@ test.describe('M-D2: cross-reference superscripts', () => {
     // latency there. Mirrored here for the same reason (not a product
     // change -- Reader.razor's own hover-close grace period is unchanged).
     await expect(items).toHaveCount(3);
-    // Same double-arrow buttons as above -- "reveals the rest"/"collapse
-    // restores" mean all-the-way, not a single +2/-2 step.
+    // Same "all" link as above -- "reveals the rest" means all-the-way,
+    // not a single +2 step. P2: "collapse restores" is now LESS's own
+    // one-deep UNDO (the SAME bare `xrefs-collapse` testid, not a separate
+    // "-all" sibling -- that concept retired with the arrow-glyph design):
+    // the immediately-preceding action was "all", so a single LESS click
+    // returns to the exact pre-all view (3), not a slow step-down.
     await page.getByTestId('xrefs-more-all').click();
     await expect(items).toHaveCount(v.xref_count);
-    await page.getByTestId('xrefs-collapse-all').click();
+    await page.getByTestId('xrefs-collapse').click();
     await expect(page.getByTestId(/^xref-item-/)).toHaveCount(3);
   });
 
@@ -291,7 +352,15 @@ test.describe('M-D2: cross-reference superscripts', () => {
     const { book, chapter, verse: v } = found;
 
     await page.goto(`/read/${book}/${chapter}`);
-    await page.getByTestId(`verse-line-${v.verse}`).click();
+    // Keyboard activation, not a coordinate .click() -- CONTRACT.md's own
+    // documented MENTION-1 test hazard: a >2-xref verse is no guarantee of
+    // a mention-sparse one (a real, live-caught case: 1CH.24.1's own text,
+    // "Now these are the divisions of the sons of Aaron. The sons of
+    // Aaron; Nadab, and Abihu, Eleazar, and Ithamar," is almost entirely
+    // person mentions), so a coordinate click can land on a mentioned name
+    // instead of the plain verse line and open THAT person's own popover.
+    await page.getByTestId(`verse-line-${v.verse}`).focus();
+    await page.keyboard.press('Enter');
     await expect(page.getByTestId('popover-title')).toHaveText(`${book}.${chapter}.${v.verse}`);
     // OtherContextSectionCount (client, ExplorerPopover.razor) counts EVERY
     // resolved section except verse-text/xrefs -- the SET of "other"

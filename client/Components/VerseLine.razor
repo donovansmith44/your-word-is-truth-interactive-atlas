@@ -39,19 +39,44 @@
    `FeatureFlags.XrefSuperscripts`/`Verse.XrefCount` directly -- a pure
    function of data already on hand, no per-render mutable accumulator
    ANYWHERE (the exact shape the house pattern/Batch N lesson warns
-   against; XrefMarkerGlyph is unchanged from Reader.razor's own prior
-   `XrefMarkerText`, just relocated) -- so the marker renders identically,
-   universally, regardless of container. CLICK/Enter/focus always commit
-   (OnXrefClick); the HOVER-preview micro-behavior (OpenVerseXrefEntryHover's
-   own debounced auto-dismiss, tuned across several M-D3 fix rounds
-   specifically for a TOP-LEVEL popover's own pane-anchored open/dismiss
-   dance) is a disclosed, Reader-page-only enhancement, not part of the
-   tested parity law -- MiniReaderExpand leaves OnXrefHoverEnter/
-   OnXrefHoverLeave unbound (a harmless no-op EventCallback): pushing a
-   NEW popover-stack entry on a bare mouseover, already nested one popover
-   deep, would make hovering across chapter text unpredictably jump the
-   stack around -- a UX regression this batch's own scope discipline
-   (decision 6: no new exploration features) rules out inventing. *@
+   against) -- so the marker renders identically, universally, regardless
+   of container. CLICK/Enter/focus always commit (OnXrefClick); the
+   HOVER-preview micro-behavior (OpenVerseXrefEntryHover's own debounced
+   auto-dismiss, tuned across several M-D3 fix rounds specifically for a
+   TOP-LEVEL popover's own pane-anchored open/dismiss dance) is a
+   disclosed, Reader-page-only enhancement, not part of the tested parity
+   law -- MiniReaderExpand leaves OnXrefHoverEnter/OnXrefHoverLeave
+   unbound (a harmless no-op EventCallback): pushing a NEW popover-stack
+   entry on a bare mouseover, already nested one popover deep, would make
+   hovering across chapter text unpredictably jump the stack around -- a
+   UX regression this batch's own scope discipline (decision 6: no new
+   exploration features) rules out inventing.
+
+   M-D4 fix round 1, P1 (owner CORRECTION, 2026-08-23, verbatim: "i didnt
+   literally mean i,j,k superscripts. i mean ordered alphabetical letters
+   that modulate around a chapter (i.e., first letter is a)"): the
+   marker's own GLYPH is now the verse's own ORDINAL among the CHAPTER's
+   xref-bearing verses, in reading order, "a" for the first, cycling
+   modulo 26 after "z" -- RETIRES the old per-verse-COUNT scheme (i/ij/ijk
+   + the "…" many-marker) whole; no count signal at the marker at all
+   (count already lives inside the popover once opened -- controller
+   default, ledgered). This is INHERENTLY a per-CHAPTER computation (verse
+   5's own letter depends on how many EARLIER verses in the SAME chapter
+   also had xrefs) -- VerseLine itself has no visibility into sibling
+   verses to derive that from on its own, so XrefMarkerGlyph is now a
+   CALLER-supplied parameter, not a property computed from Verse.XrefCount
+   alone. ComputeXrefLetters below is the shared, PURE function both
+   callers (Reader.razor, MiniReaderExpand.razor) call ONCE, before their
+   own verse loop starts, over the chapter's own already-in-hand verse
+   list -- a fresh local lookup per render, never a mutable counter
+   incremented across foreach iterations (the SAME "sidesteps the Batch N
+   closure-capture defect class by construction" discipline this
+   component's own original XrefMarkerText already established, just
+   scoped one level up now that the scheme itself needs chapter-wide
+   context). Chapter-scoped, not container-scoped -- a verse's own letter
+   is therefore IDENTICAL whether shown in the main reader or the
+   mini-reader for the same chapter, preserving decision 4's parity law by
+   construction, not by coincidence. *@
 @using BibleAtlas.Client.Explore
 
 <div class="@RowClass" data-testid="@RowTestId" data-focal="@(Focal ? "true" : "false")" id="@Id"
@@ -142,6 +167,13 @@
     // sibling family (`popover-reader-verse-*`/`popover-reader-mention-*`),
     // not the reader's own unrelated "verse-*" family -- see CONTRACT.md.
     [Parameter] public string XrefMarkerTestIdPrefix { get; set; } = "verse-xref-marker";
+
+    // M-D4 fix round 1, P1: this verse's own PRE-COMPUTED letter (see
+    // ComputeXrefLetters below) -- "" for a verse with no xrefs (never
+    // read, since ShowXrefMarker is false there). Required, not defaulted:
+    // both real callers always compute and supply it.
+    [Parameter, EditorRequired] public string XrefMarkerGlyph { get; set; } = default!;
+
     [Parameter, EditorRequired] public EventCallback<int> OnXrefClick { get; set; }
 
     // Optional -- see this file's own header comment for why MiniReaderExpand
@@ -154,21 +186,38 @@
     private string RowTestId => $"{RowTestIdPrefix}-{Verse.Verse}{TestIdSuffix}";
     private string? VerseNumTestId => VerseNumTestIdPrefix is { } prefix ? $"{prefix}-{Verse.Verse}" : null;
 
-    // Batch M-D2's own owner-specified lettering scheme (i/j/k, >3 -> "…"),
-    // relocated verbatim from Reader.razor's own now-deleted
-    // XrefLetters/XrefManyMarker/XrefMarkerText/XrefMarkerAriaLabel -- a
-    // PURE function of Verse.XrefCount alone, same "sidesteps the Batch N
-    // closure-capture defect class by construction" reasoning that code's
-    // own prior comment already established, now shared by both containers
-    // instead of being Reader.razor's own private copy.
-    private static readonly string[] XrefLetters = { "i", "j", "k" };
-    private const string XrefManyMarker = "…";
+    // M-D4 fix round 1, P1 (owner correction, verbatim in this file's own
+    // header comment): each xref-bearing verse's own ORDINAL among the
+    // CHAPTER's xref-bearing verses, in reading order -- "a" for the
+    // first, cycling modulo 26 ("modulate" = modulo) after "z". A PURE
+    // function of the chapter's own already-in-hand verse list (never a
+    // mutable counter incremented across foreach iterations -- see this
+    // file's own header comment for the full house-pattern reasoning);
+    // callers compute this ONCE, before their own verse loop, and pass
+    // each verse's own letter in via XrefMarkerGlyph above.
+    public static Dictionary<int, string> ComputeXrefLetters(IReadOnlyList<VerseOut> verses)
+    {
+        var map = new Dictionary<int, string>();
+        var ordinal = 0;
+        foreach (var v in verses)
+        {
+            if (v.XrefCount > 0)
+            {
+                map[v.Verse] = ((char)('a' + ordinal % 26)).ToString();
+                ordinal++;
+            }
+        }
+        return map;
+    }
 
     private bool ShowXrefMarker => FeatureFlags.XrefSuperscripts && Verse.XrefCount > 0;
-    private string XrefMarkerGlyph => Verse.XrefCount > 3 ? XrefManyMarker : string.Concat(XrefLetters.Take(Verse.XrefCount));
-    private string XrefMarkerAriaLabel => Verse.XrefCount > 3
-        ? $"Many cross-references for verse {Verse.Verse}"
-        : $"{Verse.XrefCount} cross-reference{(Verse.XrefCount == 1 ? "" : "s")} for verse {Verse.Verse}";
+
+    // P1: no count language at all -- the owner's own "no count signal at
+    // the marker" extends to the accessible name too, not just the visual
+    // glyph (a sighted user and a screen-reader user should learn the SAME
+    // thing from this control; count already lives inside the popover once
+    // opened, same as the visual marker itself no longer showing it).
+    private string XrefMarkerAriaLabel => $"Cross-references for verse {Verse.Verse}";
     private string XrefMarkerTestId => $"{XrefMarkerTestIdPrefix}-{Verse.Verse}{TestIdSuffix}";
 
     // Enter only, not Space -- design-direction.md's own "Enter opens" (see

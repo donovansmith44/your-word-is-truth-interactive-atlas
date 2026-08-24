@@ -386,10 +386,13 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
                 var verses = new List<PassageListVerse>();
                 for (var v = s.FromVerse; v <= s.ToVerse; v++)
                 {
-                    var text = chapter.Verses.FirstOrDefault(cv => cv.Verse == v)?.Text;
-                    if (text is not null)
+                    // M-D4 fix round 1 (R-M1): the whole VerseOut row, not
+                    // just its own .Text -- Places/Persons were already
+                    // sitting in this SAME already-fetched chapter, unread.
+                    var cv = chapter.Verses.FirstOrDefault(cv => cv.Verse == v);
+                    if (cv is not null)
                     {
-                        verses.Add(new PassageListVerse($"{s.Book}.{s.Chapter}.{v}", text));
+                        verses.Add(new PassageListVerse($"{s.Book}.{s.Chapter}.{v}", cv.Text, Places: cv.Places, Persons: cv.Persons));
                     }
                 }
                 if (verses.Count > 0)
@@ -403,21 +406,34 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
 
         RenderFragment body = builder =>
         {
-            builder.OpenComponent<Components.PassageList>(0);
-            builder.AddAttribute(1, "Units", (IReadOnlyList<PassageSourceUnit>)units);
-            builder.AddAttribute(2, "RefTestIdPrefix", "xref-item");
-            builder.AddAttribute(3, "Cap", ctx.XrefEntryPoint ? EdgeSectionRegistry.Cites.InitialClamp : (ctx.OtherContextSectionCount > 0 ? 2 : EdgeSectionRegistry.Cites.InitialClamp));
-            builder.AddAttribute(4, "MoreTestId", "xrefs-more");
-            builder.AddAttribute(5, "CollapseTestId", "xrefs-collapse");
-            builder.AddAttribute(6, "RevealNoun", "cross-references");
+            var seq = 0;
+
+            // P3 (owner, verbatim, 2026-08-23: "Also the xrefs block has no
+            // title. just give it a generic Cross References title") -- the
+            // SAME shared small-caps eyebrow every other section title in
+            // this popover platform uses (THE SMALL CATECHISM/EVENT/
+            // PARALLEL ACCOUNTS/PARALLELS precedent), not a new one.
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "catechism-section-heading");
+            builder.AddAttribute(seq++, "data-testid", "xrefs-section-heading");
+            builder.AddContent(seq++, "Cross References");
+            builder.CloseElement();
+
+            builder.OpenComponent<Components.PassageList>(seq++);
+            builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
+            builder.AddAttribute(seq++, "RefTestIdPrefix", "xref-item");
+            builder.AddAttribute(seq++, "Cap", ctx.XrefEntryPoint ? EdgeSectionRegistry.Cites.InitialClamp : (ctx.OtherContextSectionCount > 0 ? 2 : EdgeSectionRegistry.Cites.InitialClamp));
+            builder.AddAttribute(seq++, "MoreTestId", "xrefs-more");
+            builder.AddAttribute(seq++, "CollapseTestId", "xrefs-collapse");
+            builder.AddAttribute(seq++, "RevealNoun", "cross-references");
             // A real, live-caught regression (reader.spec.ts READ-3, found by
             // the full pre-existing suite): restores the pre-Batch-F2 click
             // contract -- every xref-item pushes a VerseNode at the target's
             // own FIRST verse, regardless of whether its preview text spans
             // more than one verse (~25% of real targets do). See
             // PassageList.razor's own ExploreAsVerse doc comment.
-            builder.AddAttribute(7, "ExploreAsVerse", true);
-            builder.AddAttribute(8, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(seq++, "ExploreAsVerse", true);
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
         };
         return new PopoverSection("xrefs", body);
@@ -726,6 +742,37 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
             return null;
         }
 
+        // M-D4 fix round 1 (R-M1, review Important-1): unlike CrossRefsSection/
+        // VerseTextResolver, this provider's own source (CatechismProofVerseDto,
+        // curated citation data) never carried Places/Persons at all -- it is
+        // not ChapterOut-sourced the way every OTHER PassageListVerse producer
+        // already is. Fail-soft, own try/catch (independent of the DetailAsync
+        // fetch above, the house pattern): fetches each proof verse's own
+        // chapter (GET /api/chapter/{cref}, LRU-cached -- the SAME endpoint
+        // VerseTextSectionProvider's own compact-focus extension already
+        // established this exact pattern for) and reads Places/Persons off
+        // the matching VerseOut row. A failed/missing lookup just leaves that
+        // verse's own mention data absent -- MentionText.razor already treats
+        // an empty pair as "resolved, attests nothing," the same honest
+        // degrade every other mention-aware surface in this app has.
+        var mentionData = new Dictionary<string, VerseOut>();
+        try
+        {
+            var chapterKeys = detail.Verses.Select(v => CanonRef.ParseVerse(v.Vref)).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
+            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.Chapter(k.Book, k.Chapter)));
+            foreach (var (key, chapterOut) in chapterKeys.Zip(fetched))
+            {
+                foreach (var cv in chapterOut.Verses)
+                {
+                    mentionData[$"{key.Book}.{key.Chapter}.{cv.Verse}"] = cv;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // fail soft -- proof verses still render, just without mention links this time
+        }
+
         var units = new List<PassageSourceUnit>();
         List<PassageListVerse>? currentGroup = null;
         string? currentQuestion = null;
@@ -740,7 +787,8 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
                 currentGroup = new List<PassageListVerse>();
                 currentQuestion = v.Question;
             }
-            currentGroup.Add(new PassageListVerse(v.Vref, v.Text));
+            var mention = mentionData.GetValueOrDefault(v.Vref);
+            currentGroup.Add(new PassageListVerse(v.Vref, v.Text, Places: mention?.Places, Persons: mention?.Persons));
         }
         if (currentGroup is not null)
         {
@@ -1176,6 +1224,18 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
 /// `.explorable`, the SAME ink-wash ONE-RULE gives every other explorable
 /// element in this popover platform, is the whole of it.
 /// </summary>
+/// <summary>
+/// M-D4 fix round 1/P4 (owner, live off demo36, verbatim: "we straight up
+/// should not have [the verse text]. you get that when you traverse.") --
+/// retires U1's own "those foci truncated to ONE VERSE" caption entirely
+/// (no count, no content preview of ANY kind in the arrow affordance
+/// itself; the click is what YIELDS the event, not what the affordance
+/// previews). In its place, each arrow now carries a static small-caps
+/// role caption beneath it -- "PRIOR EVENT"/"FOLLOWING EVENT" -- naming
+/// the DIRECTION only, never the destination's own content. The event
+/// NAME (inside the button, unchanged) is the only per-event text left;
+/// <see cref="RenderNavArrow"/>'s own doc comment has the rest.
+/// </summary>
 public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
@@ -1214,32 +1274,6 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         {
             return null; // conditional presence: nothing this section can honestly show
         }
-
-        // "those foci truncated to ONE VERSE" (owner, verbatim above): the
-        // FIRST vref across each adjacent event's own VerseGroups, in wire
-        // order -- never the full multi-verse-group list the retired
-        // PRIOR/FOLLOWING sections showed. Resolved once, up front, for
-        // every arrow this row will render (both directions, every
-        // qualifying narrative), same "resolve verse text via the shared
-        // chapter-fetch LRU cache" pattern every other section here uses.
-        var oneVerseRefs = navEntries
-            .SelectMany(p => new[] { p.Prior, p.Following })
-            .Where(a => a is not null)
-            .Select(a => a!.VerseGroups.SelectMany(g => g.Verses).FirstOrDefault())
-            .Where(v => v is not null)
-            .Select(v => v!)
-            .Distinct()
-            .ToList();
-        List<PassageListVerse> oneVerseResolved;
-        try
-        {
-            oneVerseResolved = await VerseTextResolver.ResolveAsync(api, oneVerseRefs);
-        }
-        catch (Exception)
-        {
-            oneVerseResolved = new List<PassageListVerse>();
-        }
-        var textByVref = oneVerseResolved.ToDictionary(v => v.Vref, v => v.Text);
 
         RenderFragment body = builder =>
         {
@@ -1291,8 +1325,8 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
                     // two arrows it is naming.
                     builder.OpenElement(seq++, "div");
                     builder.AddAttribute(seq++, "class", "popover-event-nav-arrows");
-                    RenderNavArrow(builder, ref seq, ctx, textByVref, "prior", "event-prior-event", "event-prior-verse", idSuffix, position.Prior, "◂");
-                    RenderNavArrow(builder, ref seq, ctx, textByVref, "following", "event-following-event", "event-following-verse", idSuffix, position.Following, "▸");
+                    RenderNavArrow(builder, ref seq, ctx, "prior", "event-prior-event", "event-prior-label", idSuffix, position.Prior, "◂");
+                    RenderNavArrow(builder, ref seq, ctx, "following", "event-following-event", "event-following-label", idSuffix, position.Following, "▸");
                     builder.CloseElement(); // .popover-event-nav-arrows
 
                     builder.CloseElement(); // .popover-event-nav-row
@@ -1340,26 +1374,49 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
     // Shared by both directions (called twice per row, above) -- one glyph
     // placement rule (leading for prior, trailing for following, so the
     // arrows visually point outward/away from the row's own center) is the
-    // only difference; everything else (testid shape, explorable click,
-    // one-verse caption) is identical. `adjacent is null` (that side has no
-    // qualifying event -- e.g. a narrative's own first leg has no prior)
-    // still emits an empty placeholder span, never nothing at all -- the
-    // ROW's own flex (space-between) stays honest whether one or both
-    // sides are present.
-    private static void RenderNavArrow(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, Dictionary<string, string> textByVref, string direction, string eventTestIdPrefix, string verseTestIdPrefix, string idSuffix, NarrativeAdjacentEventDto? adjacent, string glyph)
+    // only difference; everything else (testid shape, explorable click) is
+    // identical. `adjacent is null` (that side has no qualifying event --
+    // e.g. a narrative's own first leg has no prior) still emits an empty
+    // placeholder side, never nothing at all -- the ROW's own flex
+    // (space-between) stays honest whether one or both sides are present.
+    //
+    // M-D4 fix round 1/P4 (owner, verbatim: "we straight up should not have
+    // [the verse text]. you get that when you traverse."): the one-verse
+    // caption this method used to resolve and render below the button (a
+    // whole separate VerseTextResolver pass over both directions' own
+    // first-verse refs -- see ResolveAsync's own git history for the
+    // retired oneVerseRefs/oneVerseResolved/textByVref computation) is
+    // gone, with NO count or content signal left in its place. Instead:
+    // a static small-caps role caption ("PRIOR EVENT"/"FOLLOWING EVENT")
+    // naming the DIRECTION only, wrapped together with its own button in
+    // one .popover-event-nav-side column so the outer row's own
+    // space-between still sees exactly two (or one-plus-empty-placeholder)
+    // top-level items. The event NAME is the only per-event text left;
+    // long names truncate to one line with an ellipsis (never wrap) via
+    // .popover-event-nav-label's own CSS, with `title` carrying the
+    // untruncated name for a native hover tooltip.
+    //
+    // Kept cleanly reusable for TRAV-1 (a later batch, explicitly OUT of
+    // this fix round's own scope): a parallel CHRONOLOGY traversal section
+    // will call this same helper a second time with a different ordering,
+    // per the owner's own note.
+    private static void RenderNavArrow(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, string direction, string eventTestIdPrefix, string roleTestIdPrefix, string idSuffix, NarrativeAdjacentEventDto? adjacent, string glyph)
     {
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", $"popover-event-nav-side popover-event-nav-side-{direction}");
+
         if (adjacent is null)
         {
             builder.OpenElement(seq++, "span");
             builder.AddAttribute(seq++, "class", $"popover-event-nav-arrow popover-event-nav-arrow-{direction} popover-event-nav-arrow-empty");
             builder.CloseElement();
+            builder.CloseElement(); // .popover-event-nav-side
             return;
         }
 
         var eventId = adjacent.Id; // local copies -- captured by the onclick closure below
         var eventLabel = adjacent.Label;
-        var firstVref = adjacent.VerseGroups.SelectMany(g => g.Verses).FirstOrDefault();
-        var verseText = firstVref is not null ? textByVref.GetValueOrDefault(firstVref) : null;
+        var roleText = direction == "prior" ? "PRIOR EVENT" : "FOLLOWING EVENT";
 
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "type", "button");
@@ -1376,6 +1433,7 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         }
         builder.OpenElement(seq++, "span");
         builder.AddAttribute(seq++, "class", "popover-event-nav-label");
+        builder.AddAttribute(seq++, "title", eventLabel);
         builder.AddContent(seq++, eventLabel);
         builder.CloseElement();
         if (direction == "following")
@@ -1387,14 +1445,13 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         }
         builder.CloseElement(); // button
 
-        if (verseText is not null && firstVref is not null)
-        {
-            builder.OpenElement(seq++, "p");
-            builder.AddAttribute(seq++, "class", "popover-event-nav-verse");
-            builder.AddAttribute(seq++, "data-testid", $"{verseTestIdPrefix}-{idSuffix}");
-            builder.AddContent(seq++, verseText);
-            builder.CloseElement();
-        }
+        builder.OpenElement(seq++, "p");
+        builder.AddAttribute(seq++, "class", "popover-event-nav-role");
+        builder.AddAttribute(seq++, "data-testid", $"{roleTestIdPrefix}-{idSuffix}");
+        builder.AddContent(seq++, roleText);
+        builder.CloseElement();
+
+        builder.CloseElement(); // .popover-event-nav-side
     }
 }
 
@@ -1402,29 +1459,42 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
 /// M-D3/U6 (extracted from the former inline body of
 /// <see cref="EventWitnessesSection"/>, unchanged logic): resolves a
 /// (possibly FILTERED) witness list into <see cref="PassageSourceUnit"/>s
-/// with real KJV text, one unit per witness, book-display-named captions --
-/// the shared step BOTH an EVENT node's own "PARALLEL ACCOUNTS"
-/// (<see cref="EventWitnessesSection"/>, every witness) and a VERSE node's
-/// own "PARALLELS" (<see cref="VerseParallelsSection"/>, EVERY OTHER
-/// witness -- excluding the one the current verse itself belongs to) need
-/// identically -- "one component/behavior, parameterized -- never two
-/// implementations," the SAME discipline U2's own RevealControls.razor
-/// follows for the reveal mechanic, applied here to witness-resolution.
+/// with real KJV text, one unit per witness -- the shared step BOTH an
+/// EVENT node's own "PARALLEL ACCOUNTS" (<see cref="EventWitnessesSection"/>,
+/// every witness) and a VERSE node's own "PARALLELS"
+/// (<see cref="VerseParallelsSection"/>, EVERY OTHER witness -- excluding
+/// the one the current verse itself belongs to) need identically -- "one
+/// component/behavior, parameterized -- never two implementations," the
+/// SAME discipline U2's own RevealControls.razor follows for the reveal
+/// mechanic, applied here to witness-resolution.
+///
+/// M-D4 fix round 1/P5 (owner, verbatim, of EventWitnessesSection's own
+/// "PARALLEL ACCOUNTS": "we're wasting real estate... it's obvious where
+/// they're coming from already"): units carry NO caption now. This
+/// resolver used to book-display-name every unit (an extra
+/// <see cref="AtlasClient.Books"/> read) on the reasoning that the
+/// caption was "genuinely load-bearing" for EventWitnessesSection
+/// specifically -- retired outright, since PassageList.razor's own
+/// ref-label (e.g. "MRK.6.1-6") already names the book; a caption line
+/// under it was always a second header for the same one fact.
+/// <see cref="VerseParallelsSection"/>'s own O5 ruling (below) had
+/// already reached the identical conclusion for "PARALLELS" one fix
+/// round earlier via a per-call-site null-out -- this makes it true at
+/// the SOURCE instead, so both consumers agree by construction, not by
+/// two separate call sites each remembering to null a field.
 /// </summary>
 file static class WitnessUnitsResolver
 {
     public static async Task<List<PassageSourceUnit>> ResolveAsync(AtlasClient api, IReadOnlyList<EventWitnessDto> witnesses)
     {
-        var books = await api.Books(); // fetched once, cached forever -- see AtlasClient's own doc comment
         var units = witnesses.Select(w =>
         {
-            var bookName = books.FirstOrDefault(b => b.Code == w.Book)?.Name ?? w.Book;
             // Batch HOTFIX-4 requirement 7: GroupCount carries each
             // VerseGroup's own TRUE total (server-side `take(20)` cap,
             // scene::verse_groups_for) so a truncated witness group shows
             // the "+N more" signal instead of silently ending at 20.
             var verses = w.VerseGroups.SelectMany(g => g.Verses.Select(v => new PassageListVerse(v, "", g.Count))).ToList();
-            return new PassageSourceUnit(verses, bookName);
+            return new PassageSourceUnit(verses);
         }).ToList();
 
         // The witnesses' own verse TEXT isn't on VerseGroup (ids only, same
@@ -1447,12 +1517,21 @@ file static class WitnessUnitsResolver
         // (validate::run's own overlap check) already prevents for real
         // compiled data, but this is client code reading a network response,
         // not something to assume well-formed a second time.
-        var textByVref = resolvedFlat.GroupBy(v => v.Vref).ToDictionary(g => g.Key, g => g.First().Text);
+        //
+        // M-D4 fix round 1 (R-M1): keyed by the WHOLE resolved PassageListVerse
+        // now, not just its own .Text -- VerseTextResolver.ResolveAsync
+        // already carries Places/Persons (the same already-fetched ChapterOut
+        // row), so re-pairing below must not silently re-drop them the way a
+        // text-only dictionary would.
+        var resolvedByVref = resolvedFlat.GroupBy(v => v.Vref).ToDictionary(g => g.Key, g => g.First());
         return units.Select(u => new PassageSourceUnit(
             // v.GroupCount carried through from the FIRST construction
             // above -- resolving text must never silently drop it.
-            u.Verses.Select(v => new PassageListVerse(v.Vref, textByVref.GetValueOrDefault(v.Vref, ""), v.GroupCount)).ToList(),
-            u.Caption)).ToList();
+            u.Verses.Select(v =>
+            {
+                var resolved = resolvedByVref.GetValueOrDefault(v.Vref);
+                return new PassageListVerse(v.Vref, resolved?.Text ?? "", v.GroupCount, resolved?.Places, resolved?.Persons);
+            }).ToList())).ToList(); // no Caption -- P5, see this class's own doc comment
     }
 }
 
@@ -1463,11 +1542,12 @@ file static class WitnessUnitsResolver
 /// passage (no 'parallel' framing when n=1 -- conditional presence)." One
 /// <see cref="Components.PassageList"/> unit per witness (never merged --
 /// PASSAGE-1's own "a source unit never blurs into its neighbor's," applied
-/// here across Gospels), each captioned with its own book's display name
-/// (resolved via the already-cached <see cref="AtlasClient.Books"/> roster,
-/// no extra fetch beyond the first page load) -- "Gospel name + passage
-/// ref" falls out of PassageList's own existing Caption + auto-rendered
-/// Span, no new rendering needed. <see cref="Components.PassageList.ClampVerses"/>
+/// here across Gospels). "Gospel name + passage ref" falls out of
+/// PassageList's own ref-label ALONE (e.g. "MRK.6.1-6" already names the
+/// book) -- <see cref="WitnessUnitsResolver"/>'s own doc comment has the
+/// M-D4 fix round 1/P5 history of why a separate book-name Caption
+/// retired instead of spelling the same book out a second time
+/// underneath it. <see cref="Components.PassageList.ClampVerses"/>
 /// (batch-n2 req 2, generalized here to every consumer of the shared
 /// component) is what realizes "clamped to 2 verses... per-passage
 /// expand/collapse."
@@ -1674,22 +1754,20 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
                 // O5 (owner live-preview correction, 2026-08-23, verbatim:
                 // "parallels has double headers. for instance we have
                 // 1Ki.3.1-15 and 1 kings right below it when focused on
-                // 2ch.1.2. Get rid of the second header"): WitnessUnitsResolver
-                // captions every unit with its own book's display name --
-                // exactly right for EventWitnessesSection's own "PARALLEL
-                // ACCOUNTS" (EventNode's own multi-Gospel comparison, where
-                // the caption is the ONLY thing telling MAT.27/MRK.15/LUK.23/
-                // JHN.19 apart at a glance, unchanged by this ruling), but
-                // genuinely redundant here: PassageList.razor's own ref-label
-                // ("1Ki.3.1-15") already carries the book CODE, so spelling
+                // 2ch.1.2. Get rid of the second header"): originally fixed
+                // here with a per-call-site null-out of WitnessUnitsResolver's
+                // own book-name Caption (PassageList.razor's own ref-label,
+                // "1Ki.3.1-15," already carries the book CODE, so spelling
                 // the same book out a second time right below it read as two
-                // headers on one entry, not one. Stripped to null (a plain
-                // per-entry projection, not a WitnessUnitsResolver parameter
-                // -- the shared resolver itself, and EventWitnessesSection's
-                // own caption, are both otherwise untouched) so PassageList
-                // renders ref-label ONLY, matching every other single-header
-                // PassageList consumer in this app.
-                unitsPerEvent.Add(units.Select(u => u with { Caption = null }).ToList());
+                // headers on one entry, not one). M-D4 fix round 1/P5
+                // (owner: "we're wasting real estate... it's obvious where
+                // they're coming from already") reached the SAME conclusion
+                // for EventWitnessesSection's own "PARALLEL ACCOUNTS" -- once
+                // BOTH consumers agreed no caption belongs on screen, the
+                // null-out moved to the SOURCE (WitnessUnitsResolver's own
+                // doc comment has that history); units arrive already
+                // caption-free here, no per-call-site projection needed.
+                unitsPerEvent.Add(units);
             }
         }
         catch (Exception)

@@ -37,6 +37,15 @@
    see that file's own comment -- reusing `.popover-reader-mention`'s exact
    CSS via a compound selector in app.css, not a re-derived rule).
 
+   M-D4 fix round 1 (R-M1, review Important-1): PassageList.razor's own
+   compact preview text -- cross-refs, THE SCRIPTURES, place est/dest,
+   event witnesses, every consumer of that shared component -- was the one
+   remaining bare/unscanned rendering of verse text left client-wide once
+   this batch's own unification otherwise finished; it now calls this
+   component too, passing "popover-passage-mention" plus its own
+   pre-existing per-entry TestIdSuffix (the SAME disambiguation
+   MiniReaderExpand passes one level up, reused rather than re-derived).
+
    Blink (BLINK-1) is consolidated here too -- both pre-existing copies were
    the identical one-liner (`MapInterop.BlinkPlace(JS, placeId, active)`),
    kept as two copies only because neither file wanted a THIRD shared file

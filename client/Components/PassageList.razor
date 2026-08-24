@@ -122,17 +122,39 @@
                             // already at or under it, is never clamped.
                             var clamps = entry.Block.IsPassage && ClampVerses is int clamp && entry.Block.Verses.Count > clamp;
                             var shown = clamps ? entry.Block.Verses.Take(ClampVerses!.Value) : entry.Block.Verses;
+                            @* M-D4 fix round 1 (R-M1, review Important-1 --
+                               decision 3, "name links everywhere... render
+                               wherever verse text renders"): every entry's
+                               own compact preview text now scans for in-text
+                               place/person mentions too, through the SAME
+                               MentionText.razor component VerseLine.razor/
+                               VerseTextSection.razor already use -- this was
+                               the one remaining bare, unscanned rendering of
+                               verse text client-wide (grep-confirmed by
+                               review). TestIdSuffix mirrors MiniReaderExpand's
+                               own established multi-instance disambiguation
+                               one line below it (this entry's own FULL
+                               testid), so two different entries citing the
+                               SAME verse number never collide. OnExplore is
+                               the SAME callback this entry's own outer click
+                               already uses -- a mention click stops
+                               propagation (MentionText's own contract) so it
+                               opens THAT entity, never ALSO this whole
+                               entry's own Explore(entry.Block). *@
                             <p class="popover-passage-text">
                                 @if (entry.Block.IsPassage)
                                 {
                                     @foreach (var v in shown)
                                     {
-                                        <sup class="popover-passage-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup>@v.Text<text> </text>
+                                        <sup class="popover-passage-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Places="@(v.Places ?? Array.Empty<PlaceRefDto>())" Persons="@(v.Persons ?? Array.Empty<PersonRefDto>())"
+                                                     Verse="@CanonRef.ParseVerse(v.Vref).Verse" ClassPrefix="popover-passage-mention" TestIdSuffix="@($"-{entry.TestId}")" OnExplore="OnExplore" /><text> </text>
                                     }
                                 }
                                 else
                                 {
-                                    @entry.Block.Verses[0].Text
+                                    var lone = entry.Block.Verses[0];
+                                    <MentionText Text="@lone.Text" Places="@(lone.Places ?? Array.Empty<PlaceRefDto>())" Persons="@(lone.Persons ?? Array.Empty<PersonRefDto>())"
+                                                 Verse="@CanonRef.ParseVerse(lone.Vref).Verse" ClassPrefix="popover-passage-mention" TestIdSuffix="@($"-{entry.TestId}")" OnExplore="OnExplore" />
                                 }
                             </p>
                         }

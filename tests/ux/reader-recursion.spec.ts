@@ -25,9 +25,16 @@ import { api } from './lib/api';
 //     chapter) is real, curated data confirmed (via a direct /api/chapter
 //     query while drafting this file) to carry BOTH a literal, case-correct
 //     "God" person mention (persons: [{id: "god_1324", name: "God"}], text
-//     "...who is the image of God, should shine...") and xref_count=35 (>3,
-//     the many-marker "..."), giving one real verse that exercises every
-//     affordance the parity law names at once.
+//     "...who is the image of God, should shine...") and xref_count=35
+//     (>0, so a superscript renders), giving one real verse that exercises
+//     every affordance the parity law names at once. M-D4 fix round 1, P1
+//     (owner correction): the marker's own glyph is now an ORDINAL letter
+//     among 2CO.4's own xref-bearing verses, not a function of THIS
+//     verse's own count -- RECURSE-1 below asserts the main reader and the
+//     mini-reader render the SAME letter for verse 4 (reading it back off
+//     the main reader rather than hardcoding a predicted ordinal), which is
+//     both simpler and a more direct proof of decision 4's own parity law
+//     than independently recomputing the expected letter here would be.
 //   - JHN.1.1 -> GEN.1.1 (votes=337, the TOP-voted entry for JHN.1.1 --
 //     "In the beginning was the Word"/"In the beginning God created") lands
 //     in GEN.1, whose own verse 1 anchors a real pericope heading
@@ -52,8 +59,13 @@ test.describe('M-D4: the recursive reader', () => {
     await expect(mainMention, 'main reader: the literal "God" mention must render as a clickable span').toBeVisible();
     await expect(mainMention).toHaveText('God');
 
+    // P1: the glyph is a per-chapter ORDINAL letter now (not a function of
+    // this verse's own count) -- read the main reader's own rendered value
+    // rather than predicting it, then assert the mini-reader matches it
+    // exactly below (the real parity claim, decision 4).
     const mainXref = page.getByTestId('verse-xref-marker-4');
-    await expect(mainXref, 'main reader: xref_count=35 (>3) must render the many-marker').toHaveText('…');
+    await expect(mainXref, 'main reader: xref_count=35 (>0) must render a single ordinal letter').toHaveText(/^[a-z]$/);
+    const mainGlyph = await mainXref.textContent();
 
     // Clickability -- opens THIS verse's own popover (keyboard activation,
     // MENTION-1's own documented hazard: a coordinate click on the line can
@@ -90,8 +102,12 @@ test.describe('M-D4: the recursive reader', () => {
     await expect(miniMention, 'mini-reader: the SAME "God" mention must render as a clickable span').toBeVisible();
     await expect(miniMention).toHaveText('God');
 
+    // P1/decision 4: chapter-scoped, not container-scoped -- the SAME
+    // letter the main reader rendered above for this exact verse, proven
+    // by direct comparison rather than each surface merely matching its
+    // OWN independently-plausible-looking glyph.
     const miniXref = page.getByTestId('popover-reader-xref-marker-4');
-    await expect(miniXref, 'mini-reader: the SAME many-marker, same flag/count rule').toHaveText('…');
+    await expect(miniXref, 'mini-reader: the SAME ordinal letter as the main reader').toHaveText(mainGlyph!);
 
     // Clickability parity -- the row itself pushes a fresh VerseNode onto
     // the SAME popover's own stack (decision 2: "reuse the popover's

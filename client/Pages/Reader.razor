@@ -125,6 +125,7 @@
                    comment). Shares this SAME code path for the split-view
                    reader pane (Reader.razor is reused, not copied, for
                    both -- SPLIT-1). *@
+                @{ var xrefLetters = VerseLine.ComputeXrefLetters(_chapter!.Verses); }
                 @foreach (var v in _chapter!.Verses)
                 {
                     @if (v.Heading is { } heading)
@@ -155,6 +156,7 @@
                                VerseNumClass="verse-num" ShowVerseNumButton="true" VerseNumTestIdPrefix="verse-num"
                                OnVerseNumClick="@(e => OnVerseNumClick(e, v.Verse))"
                                TextClass="verse-text" MentionClass="verse-mention"
+                               XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(v.Verse, "")"
                                OnXrefClick="OpenVerseXrefEntryPersistent" OnXrefHoverEnter="OpenVerseXrefEntryHover"
                                OnXrefHoverLeave="OnXrefMarkerPointerLeave" />
                 }

@@ -18,7 +18,24 @@ namespace BibleAtlas.Client.Explore;
 /// and can silently truncate at the server's own 20-verse-per-chapter cap
 /// (`scene::verse_groups_for`'s own <c>take(20)</c>).
 /// </param>
-public sealed record PassageListVerse(string Vref, string Text, int? GroupCount = null);
+/// <param name="Places">
+/// M-D4 fix round 1 (R-M1, review Important-1 -- decision 3, "name links
+/// everywhere... render wherever verse text renders"): this verse's own
+/// attested place mentions, when the producer had them on hand from a real
+/// <c>ChapterOut.Verses</c> row (<see cref="CrossRefsSection"/>,
+/// <see cref="VerseTextResolver"/> -- the SAME chapter fetch those already
+/// make for the verse's own TEXT, just no longer dropping this field too).
+/// Null (never an empty array standing in for "none found") when the
+/// producer's own source genuinely has no such row to read from
+/// (<see cref="CrossRefOut.Preview"/>'s own cross-chapter-target fallback
+/// text, which was never chapter-sourced even for <c>Text</c>) -- distinct
+/// from an empty array, which means "resolved, attests nothing," matching
+/// <see cref="Components.MentionText"/>'s own "empty is a valid, honest
+/// answer" contract. <c>PassageList.razor</c> coalesces null to empty at
+/// the render site (never surfaces the distinction to the component).
+/// </param>
+/// <param name="Persons">The <see cref="Places"/> sibling -- same rule.</param>
+public sealed record PassageListVerse(string Vref, string Text, int? GroupCount = null, IReadOnlyList<PlaceRefDto>? Places = null, IReadOnlyList<PersonRefDto>? Persons = null);
 
 /// <summary>
 /// One INDEPENDENT source of verses to group into passage blocks -- e.g.
@@ -105,10 +122,16 @@ public static class VerseTextResolver
             {
                 continue;
             }
-            var text = c.Verses.FirstOrDefault(v => v.Verse == verse)?.Text;
-            if (text is not null)
+            // M-D4 fix round 1 (R-M1): the SAME VerseOut row already fetched
+            // for .Text -- Places/Persons were always sitting right there,
+            // just never read. Threading them through costs nothing extra
+            // (no new fetch) and is what lets PassageList.razor's own
+            // preview text carry in-text mention links, same as every other
+            // surface this batch already unified.
+            var cv = c.Verses.FirstOrDefault(v => v.Verse == verse);
+            if (cv is not null)
             {
-                result.Add(new PassageListVerse(vref, text));
+                result.Add(new PassageListVerse(vref, cv.Text, Places: cv.Places, Persons: cv.Persons));
             }
         }
         return result;

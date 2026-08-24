@@ -3656,18 +3656,19 @@ input:focus-visible,
     color: var(--lapis);
 }
 
-/* M-D3/U2 (RevealControls.razor, the shared incremental +2/-2/all/default
-   reveal mechanic -- cross-references, THE SMALL CATECHISM): a flex row so
-   BOTH the collapse and more arrows can sit side by side in a genuine
-   "middle" state (the retired all-or-nothing toggle never had one). Same
-   "no border/background, ink-soft resting / lapis hover" control language
-   .popover-passage-reveal/place-card-more/-collapse already established,
-   reused verbatim rather than inventing a second interaction language for
-   this closely-related gesture. */
+/* M-D3/U2 (RevealControls.razor, the shared incremental more/all/less
+   reveal mechanic -- cross-references, THE SMALL CATECHISM, the verse-text
+   mini-reader toggle): a flex row so more/all/less can sit side by side.
+   M-D4 fix round 1, P2 (owner order: "the down/double down thing is
+   really ugly"): the four-glyph arrow-button cluster this rule used to
+   size/color (`.popover-reveal-arrow`/`.popover-reveal-slot`, both RETIRED
+   -- dead-code law, no remaining reference client-wide) is gone -- see
+   `.popover-reveal-link`/`.popover-reveal-sep` immediately below for the
+   new quiet-text-row rule. */
 .popover-reveal-controls {
     display: flex;
     align-items: center;
-    gap: .5rem;
+    gap: .3rem;
     /* O3 (owner live-preview correction, 2026-08-23): TOP margin, not
        bottom -- these controls now TRAIL the list they govern (see
        PassageList.razor's/CatechismList.razor's own matching O3 comment
@@ -3678,49 +3679,40 @@ input:focus-visible,
     margin: .3rem 0 0 .65rem;
 }
 
-.popover-reveal-arrow {
-    display: block;
-    width: 1rem;
+/* P2: "house .explorable-quiet register" (the owner's/controller's own
+   words, progress.md) supplies cursor:pointer (this control is a plain
+   utility, never a popover-opening explorable target, so it deliberately
+   does NOT carry .explorable's own ink-wash) -- this rule is the row's own
+   TYPOGRAPHIC identity: the SAME quiet-instrument-face register
+   .verse-num/.verse-xref-marker already establish (small, letterspaced,
+   --bronze-ink resting), --lapis on hover/focus matching every other
+   interactive control in this popover platform. No border/background of
+   its own, so it reads as plain text with a click affordance, not a
+   button chrome -- "ONE quiet inline text row," the owner's own words. */
+.popover-reveal-link {
     margin: 0;
     padding: 0;
     font-family: var(--font-serif);
-    font-size: .95rem;
-    line-height: 1;
-    text-align: center;
-    color: var(--ink-soft);
+    font-variant-caps: small-caps;
+    letter-spacing: .03em;
+    font-size: .82rem;
+    color: var(--bronze-ink);
     background: none;
     border: none;
-    cursor: pointer;
 }
 
-.popover-reveal-arrow:hover {
+.popover-reveal-link:hover,
+.popover-reveal-link:focus-visible {
     color: var(--lapis);
 }
 
-/* A real, live-caught bug: the collapse pair's own CONDITIONAL presence
-   (absent exactly at the default view) let the more pair's own on-screen
-   position shift sideways the instant collapse first appeared -- originally
-   fatal for a genuine rapid DOUBLE-click (RevealControls.razor's own header
-   comment has the full, now-superseded story: a real dblclick's two
-   sub-clicks target ONE fixed screen coordinate, so a target that moved
-   between them could have its second click land on whatever slid into its
-   place instead). M-D3 fix round 3 (R-D3): "double-down"/"double-up" are
-   now separate, always-paired-with-their-single-sibling BUTTONS
-   (`.popover-reveal-collapse-all`/`.popover-reveal-more-all`, two
-   stationary targets, never one moving one hit twice) rather than a
-   dblclick/Shift-click gesture on the single arrow -- the position-shift
-   HAZARD this placeholder guards against no longer applies to a click
-   gesture at all, but the underlying "don't let unrelated conditional
-   presence shift a sibling control's own position" principle is still
-   worth keeping: TWO placeholders now (one per collapse-pair button), each
-   still `width: 1rem` matching `.popover-reveal-arrow` exactly, so the
-   more pair's own position never moves regardless of the collapse pair's
-   own conditional presence (the collapse pair itself, always the FIRST
-   children, needs no equivalent placeholder of its own: nothing ever
-   renders before it that could shift it). */
-.popover-reveal-slot {
-    display: block;
-    width: 1rem;
+/* A quiet Unicode instrument glyph (this file's own established register --
+   ChipGlyph's own comment names the precedent), never a plain hyphen --
+   separates more/all/less within the SAME row without implying any of the
+   three is itself a list item. */
+.popover-reveal-sep {
+    color: var(--ink-soft);
+    font-size: .75rem;
 }
 
 /* O2 (owner live-preview correction, 2026-08-23): the per-entry passage
@@ -3955,17 +3947,32 @@ input:focus-visible,
     border-top: 1px solid rgba(138, 107, 61, .18);
 }
 
-/* Present only when this event belongs to >1 narrative (see the C# side's
-   own "a single qualifying entry needs no name" rule) -- a quiet label
-   sitting ABOVE its own row's arrows, never squeezed into their own flex
-   space. */
-.popover-event-nav-narrative {
-    margin: 0 0 .25rem;
+/* .popover-event-nav-narrative: present only when this event belongs to
+   >1 narrative (see the C# side's own "a single qualifying entry needs no
+   name" rule) -- a quiet label sitting ABOVE its own row's arrows, never
+   squeezed into their own flex space.
+   M-D4 fix round 1/P4 adds .popover-event-nav-role alongside it: the SAME
+   quiet-eyebrow visual DNA (mono, tracked caps, bronze-ink), reused for a
+   new static role caption BELOW each arrow -- two different things named
+   (a data-driven narrative NAME vs. this row's own static direction
+   label), one shared look. Margins differ per role (see each selector's
+   own rule below) since one sits above its row, the other below its own
+   button. */
+.popover-event-nav-narrative,
+.popover-event-nav-role {
     font-family: var(--font-mono);
     font-size: .78rem;
     letter-spacing: .03em;
     text-transform: uppercase;
     color: var(--bronze-ink);
+}
+
+.popover-event-nav-narrative {
+    margin: 0 0 .25rem;
+}
+
+.popover-event-nav-role {
+    margin: .1rem 0 0;
 }
 
 .popover-event-nav-arrows {
@@ -3975,16 +3982,57 @@ input:focus-visible,
     gap: .75rem;
 }
 
-/* Both the real (button) and empty-placeholder (span, an absent side --
-   e.g. a narrative's own first leg has no prior) variants share this base
-   layout -- .explorable (added only on the real button) is what supplies
-   the actual hover/focus ink-wash ("hover = normal focus+frontier," the
-   owner's own words: no bespoke interaction here). */
-.popover-event-nav-arrow {
+/* P4: one wrapper per side, stacking the arrow button above its own role
+   caption -- .popover-event-nav-arrows above is the ONE flex row that
+   space-betweens these two (or one-plus-an-empty-placeholder) side
+   wrappers; everything belonging to a side now lives inside its own
+   wrapper, never as a loose sibling the outer row would also try to
+   space-between. */
+.popover-event-nav-side {
     display: flex;
     flex-direction: column;
     gap: .15rem;
     max-width: 47%;
+    min-width: 0;
+}
+
+/* Real, live-caught (not guessed): an EARLIER version of this rule used
+   align-items:flex-start/flex-end (shrink-to-content) here. That let a
+   long event name's OWN `white-space:nowrap` (below) overflow straight
+   past this wrapper's own max-width:47% edge -- flex-start/flex-end only
+   POSITION a naturally-sized box, they never CONSTRAIN its width the way
+   max-width alone implies, so nothing ever gave .popover-event-nav-label
+   an actual pixel ceiling to ellipsis against. The "following" side's own
+   overflow then visually overlapped the "prior" side's button and
+   silently intercepted its clicks (Playwright: "subtree intercepts
+   pointer events"), hanging the three-narrative full-walk test on a real
+   long name. Fix: stretch (the flex default -- no align-items override
+   needed on either side) forces the button to the wrapper's OWN bounded
+   width, giving the label a real width to shrink against; each side's
+   own RIGHT-alignment (where wanted) now happens INSIDE that bounded
+   width instead (the button's own justify-content, below, and the
+   .popover-event-nav-side-following descendant rule beneath it) rather
+   than by leaving the wrapper free to grow past 47% in the first place. */
+
+.popover-event-nav-side-following .popover-event-nav-role {
+    text-align: end;
+}
+
+/* Both the real (button) and empty-placeholder (span, an absent side --
+   e.g. a narrative's own first leg has no prior) variants share this base
+   layout -- .explorable (added only on the real button) is what supplies
+   the actual hover/focus ink-wash ("hover = normal focus+frontier," the
+   owner's own words: no bespoke interaction here). P4: glyph and name now
+   sit side by side on ONE line ("◂ <name>" / "<name> ▸", the owner's own
+   spec, verbatim) -- the vertical (glyph-over-name) stack this rule used
+   to set retires in favor of .popover-event-nav-side stacking the WHOLE
+   button over its own role caption instead. */
+.popover-event-nav-arrow {
+    display: flex;
+    align-items: baseline;
+    gap: .3rem;
+    width: 100%;
+    min-width: 0;
     padding: .2rem .35rem;
     border: none;
     background: none;
@@ -3998,8 +4046,8 @@ input:focus-visible,
 }
 
 .popover-event-nav-arrow-following {
+    justify-content: flex-end;
     text-align: end;
-    align-items: flex-end;
 }
 
 .popover-event-nav-glyph {
@@ -4007,19 +4055,20 @@ input:focus-visible,
     color: var(--bronze-ink);
 }
 
+/* P4: best-effort ONE LINE, ellipsis-truncated rather than wrapped --
+   `title` (set alongside this in the C#) carries the untruncated name for
+   a native hover tooltip once a long name actually clips. flex-shrink
+   (the default, 1) plus min-width:0 is what lets this actually shrink
+   below its own text's natural width once the BUTTON above gives it a
+   real, bounded width to shrink within -- see .popover-event-nav-side's
+   own comment for the fuller story. */
 .popover-event-nav-label {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     color: var(--ink);
     font-weight: 600;
-}
-
-/* The one-verse focus (owner: "those foci truncated to ONE VERSE") -- a
-   quiet caption under the event's own name, never the full multi-verse
-   passage-list preview the retired PRIOR/FOLLOWING sections showed. */
-.popover-event-nav-verse {
-    margin: 0;
-    font-size: .82rem;
-    color: var(--ink-soft);
-    line-height: 1.35;
 }
 
 /* Batch R requirement 3: one section's own wrapper -- a stable hook
@@ -4122,9 +4171,16 @@ input:focus-visible,
    distinct class/testid root (a compact FOCUS preview is not a mini-reader
    row -- see that file's own comment). Both classes sit on the identical
    --parchment-raised popover background, so reuse is exact, not merely
-   close. */
+   close.
+
+   M-D4 fix round 1 (R-M1): .popover-passage-mention joins the same rule --
+   PassageList.razor's own compact preview text (cross-references, THE
+   SCRIPTURES, place est/dest, event witnesses) sits on the SAME
+   --parchment-raised popover background too, so this is the third reuse of
+   an identical rule, not a third re-derivation. */
 .popover-reader-mention,
-.popover-verse-mention {
+.popover-verse-mention,
+.popover-passage-mention {
     cursor: pointer;
     border-radius: 2px;
     background-color: rgba(44, 74, 112, 0);
@@ -4134,14 +4190,17 @@ input:focus-visible,
 .popover-reader-mention:hover,
 .popover-reader-mention:focus-visible,
 .popover-verse-mention:hover,
-.popover-verse-mention:focus-visible {
+.popover-verse-mention:focus-visible,
+.popover-passage-mention:hover,
+.popover-passage-mention:focus-visible {
     background-color: rgba(44, 74, 112, .14);
     color: var(--lapis);
 }
 
 @media (prefers-reduced-motion: reduce) {
     .popover-reader-mention,
-    .popover-verse-mention {
+    .popover-verse-mention,
+    .popover-passage-mention {
         transition: none;
     }
 }

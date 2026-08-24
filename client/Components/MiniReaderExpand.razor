@@ -108,6 +108,7 @@ else
                before this batch entirely -- see each shared component's
                own header comment for the full "why" behind every
                container-specific parameter below. *@
+            var xrefLetters = VerseLine.ComputeXrefLetters(_chapter.Verses);
             @foreach (var v in _chapter.Verses)
             {
                 var isFocal = v.Verse >= FocalFromVerse && v.Verse <= FocalToVerse;
@@ -121,6 +122,7 @@ else
                            VerseNumClass="popover-reader-verse-num" ShowVerseNumButton="false"
                            TextClass="popover-reader-verse-text" MentionClass="popover-reader-mention"
                            XrefMarkerTestIdPrefix="popover-reader-xref-marker"
+                           XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(v.Verse, "")"
                            OnXrefClick="@(vn => OnExplore.InvokeAsync(new VerseNode($"{Book}.{Chapter}.{vn}", xrefEntryPoint: true)))" />
             }
         }

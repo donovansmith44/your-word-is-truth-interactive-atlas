@@ -393,14 +393,19 @@ test('TRUNC-1: the temple-dedication popover\'s 1KI.8 witness shows the +46-more
   // 1 Kings case. O2: no more `data-truncated` marker to count directly --
   // a truncated entry's own title CONTAINS "more — read the chapter"
   // (untruncated ones read exactly "Read the whole chapter", no "more"
-  // substring), the same distinguishing signal one layer over.
-  // .popover-reveal-more (the single-arrow class, an exact token match)
-  // deliberately excludes its own always-paired .popover-reveal-more-all
-  // sibling, which carries the IDENTICAL title (MiniReaderExpand's binary
-  // case shares one MoreLabel across both -- see RevealControls.razor's own
-  // O2 comment) and would otherwise double this count.
+  // substring), the same distinguishing signal one layer over. M-D4 fix
+  // round 1, P2: `.popover-reveal-link` is the new shared class every
+  // more/all/less button in the redesigned RevealControls.razor carries
+  // (the old `.popover-reveal-more` arrow-glyph class, and its own
+  // always-paired `.popover-reveal-more-all` sibling this comment used to
+  // have to deliberately exclude, are both gone) -- no double-counting
+  // risk to guard against here anymore, since MiniReaderExpand's own
+  // binary Default=0/Total=1/Step=1 case never renders a same-titled
+  // "all" sibling at all (RevealControls.razor's own ShowAll rule omits
+  // "all" whenever it would coincide with "more" -- see that file's own
+  // header comment), so a single class selector is now sufficient.
   const chroniclesCh6 = chroniclesWitness.verse_groups.find((g: any) => g.chapter === 6);
   const chroniclesCh6Missing = chroniclesCh6.count - chroniclesCh6.verses.length;
   expect(chroniclesCh6Missing).toBeGreaterThan(0);
-  await expect(page.locator('.popover-reveal-more[title*="more — read the chapter"]')).toHaveCount(2);
+  await expect(page.locator('.popover-reveal-link[title*="more — read the chapter"]')).toHaveCount(2);
 });
