@@ -1239,6 +1239,23 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
 /// NAME (inside the button, unchanged) is the only per-event text left;
 /// <see cref="Components.ArrowNav"/>'s own doc comment has the rest.
 /// </summary>
+/// <summary>
+/// CHRONO-MERGE-1 (owner NOD 2026-08-24: "put chronology up top... nix the
+/// narrative thing from hover menu"; POPOVER-LAW-1's own first
+/// application): RETIRES the narrative prior/following nav this section
+/// used to fold in (M-D3/U1, immediately above) WHOLE -- controller
+/// measurement found 72% of narrative rows byte-identical to the SAME
+/// event's own global-timeline row (<see cref="EventChronologySection"/>),
+/// so a dedicated per-narrative nav duplicated the Chronology block's own
+/// arrows for the overwhelming majority of events; the 28% that genuinely
+/// differ now surface as <see cref="EventChronologySection"/>'s own
+/// divergence-only story-thread line instead (that class's own doc
+/// comment has the full rule) -- ONE traversal block survives, not two.
+/// This section is left holding exactly what its own name always said:
+/// an EVENT's date + place(s), nothing else. `RenderArrowNav` below stays
+/// -- <see cref="EventChronologySection"/>'s own arrows (block AND, new
+/// this batch, inline story-thread legs) are its one remaining caller.
+/// </summary>
 public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
@@ -1250,30 +1267,17 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
             return null;
         }
 
-        EventDetail? detail = null;
+        EventDetail detail;
         try
         {
-            detail = await ev.DetailAsync(api); // memoized -- shared with EventWitnessesSection and the timeline providers' own map-focus-sync read
+            detail = await ev.DetailAsync(api); // memoized -- shared with EventWitnessesSection and EventChronologySection's own map-focus-sync read
         }
         catch (Exception)
         {
-            // fail soft on the date/places half -- the narrative nav below is independently fetched and can still stand alone
+            return null; // CHRONO-MERGE-1: date/places is this section's ONLY content now -- a failed fetch leaves nothing to fail soft INTO
         }
 
-        IReadOnlyList<NarrativePositionDto> positions = Array.Empty<NarrativePositionDto>();
-        try
-        {
-            // .Narrative only -- .Timeline is EventChronologySection's own, separate concern (see this class's own doc comment).
-            positions = (await ev.NarrativePositionsAsync(api)).Narrative;
-        }
-        catch (Exception)
-        {
-            // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
-        }
-
-        var navEntries = positions.Where(p => p.Prior is not null || p.Following is not null).ToList();
-
-        if ((detail is null || (detail.When is null && detail.Places.Count == 0)) && navEntries.Count == 0)
+        if (detail.When is null && detail.Places.Count == 0)
         {
             return null; // conditional presence: nothing this section can honestly show
         }
@@ -1282,62 +1286,7 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         {
             var seq = 0;
 
-            if (navEntries.Count > 0)
-            {
-                builder.OpenElement(seq++, "div");
-                builder.AddAttribute(seq++, "class", "popover-event-nav-list");
-                builder.AddAttribute(seq++, "data-testid", "event-nav");
-                // Fresh every render, never captured by reference from an
-                // outer scope -- NarrativeDirectionSection's own retired
-                // doc comment (git history) has the full, real, live-caught
-                // story: a RenderFragment delegate is not guaranteed to run
-                // exactly once, so a dictionary declared outside this
-                // closure would keep accumulating counts across unrelated
-                // re-renders.
-                var occurrences = new Dictionary<string, int>();
-                foreach (var position in navEntries)
-                {
-                    // Same-NAME disambiguation, not same-id -- two DISTINCT
-                    // narratives can share a display name; each position's
-                    // own NarrativeId is already unique per this event by
-                    // construction (an event occupies at most one position
-                    // within any single narrative's own sequence), so this
-                    // guards a real-but-rare edge case, not the common one.
-                    var count = occurrences[position.NarrativeId] = occurrences.GetValueOrDefault(position.NarrativeId) + 1;
-                    var idSuffix = count == 1 ? position.NarrativeId : $"{position.NarrativeId}--{count}";
-
-                    builder.OpenElement(seq++, "div");
-                    builder.AddAttribute(seq++, "class", "popover-event-nav-row");
-                    builder.AddAttribute(seq++, "data-testid", $"event-nav-row-{idSuffix}");
-                    // Multi-narrative membership: name the narrative so >1
-                    // row is never mistaken for one -- a SINGLE qualifying
-                    // entry needs no name (matches the retired sections'
-                    // own "a single qualifying entry needs no name" rule).
-                    if (navEntries.Count > 1)
-                    {
-                        builder.OpenElement(seq++, "p");
-                        builder.AddAttribute(seq++, "class", "popover-event-nav-narrative");
-                        builder.AddContent(seq++, position.NarrativeName);
-                        builder.CloseElement();
-                    }
-
-                    // Arrows live in their OWN inner flex row -- kept
-                    // separate from the (optional) narrative-name line
-                    // above so a multi-narrative event's own label never
-                    // has to share flex space (and get squeezed) with the
-                    // two arrows it is naming.
-                    builder.OpenElement(seq++, "div");
-                    builder.AddAttribute(seq++, "class", "popover-event-nav-arrows");
-                    RenderArrowNav(builder, ref seq, ctx, "prior", "event-prior-event", "event-prior-label", idSuffix, position.Prior, "◂");
-                    RenderArrowNav(builder, ref seq, ctx, "following", "event-following-event", "event-following-label", idSuffix, position.Following, "▸");
-                    builder.CloseElement(); // .popover-event-nav-arrows
-
-                    builder.CloseElement(); // .popover-event-nav-row
-                }
-                builder.CloseElement(); // .popover-event-nav-list
-            }
-
-            if (detail?.When is { } when)
+            if (detail.When is { } when)
             {
                 var dateText = YearText.FormatRange(when.FromYear, when.ToYear);
                 builder.OpenElement(seq++, "p");
@@ -1351,7 +1300,7 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
                 builder.CloseElement();
             }
 
-            if (detail is not null && detail.Places.Count > 0)
+            if (detail.Places.Count > 0)
             {
                 builder.OpenElement(seq++, "div");
                 builder.AddAttribute(seq++, "class", "popover-event-places");
@@ -1374,19 +1323,29 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         return new PopoverSection("event-date-places", body);
     }
 
-    // Shared by both directions (called twice per row, above) AND by
-    // EventChronologySection's own single row, below -- opens a real
-    // <see cref="Components.ArrowNav"/> component instance (never raw
-    // elements built by hand here anymore) from this RenderTreeBuilder
-    // body, the SAME "open a real component from imperative
-    // RenderTreeBuilder code" pattern this file already established for
-    // <see cref="Components.PassageList"/>. TRAV-1 (controller decision 3,
-    // "same arrow-traversal component"): this is that reuse, realized --
-    // see ArrowNav.razor's own doc comment for why the rendering moved out
-    // of a static helper into a genuine component (decision 4's dwell-hover
-    // peek needs per-arrow state that survives across renders, which a
-    // RenderFragment closure cannot hold).
-    internal static void RenderArrowNav(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, string direction, string eventTestIdPrefix, string roleTestIdPrefix, string idSuffix, NarrativeAdjacentEventDto? adjacent, string glyph)
+    // Opens a real <see cref="Components.ArrowNav"/> component instance
+    // (never raw elements built by hand here anymore) from this
+    // RenderTreeBuilder body, the SAME "open a real component from
+    // imperative RenderTreeBuilder code" pattern this file already
+    // established for <see cref="Components.PassageList"/>. TRAV-1
+    // (controller decision 3, "same arrow-traversal component"): this is
+    // that reuse, realized -- see ArrowNav.razor's own doc comment for why
+    // the rendering moved out of a static helper into a genuine component
+    // (decision 4's dwell-hover peek needs per-arrow state that survives
+    // across renders, which a RenderFragment closure cannot hold).
+    //
+    // CHRONO-MERGE-1: this section's own former narrative-nav loop (the
+    // "called twice per row" caller this comment used to name) is retired
+    // -- <see cref="EventChronologySection"/> is now the ONLY caller,
+    // twice for its own single GLOBAL block row (block mode, unchanged)
+    // and again, up to twice per diverging narrative, for the story-thread
+    // line's own inline leg affordances (<paramref name="inline"/> true,
+    // <paramref name="inlinePrefixText"/> the sentence-level word a
+    // following-direction leg needs -- see ArrowNav.razor's own doc
+    // comment for the full Inline-mode story). Both trailing parameters
+    // default to the block-mode shape so neither existing call site needed
+    // to change.
+    internal static void RenderArrowNav(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, string direction, string eventTestIdPrefix, string roleTestIdPrefix, string idSuffix, NarrativeAdjacentEventDto? adjacent, string glyph, bool inline = false, string? inlinePrefixText = null)
     {
         builder.OpenComponent<Components.ArrowNav>(seq++);
         builder.AddAttribute(seq++, "Direction", direction);
@@ -1395,6 +1354,8 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         builder.AddAttribute(seq++, "IdSuffix", idSuffix);
         builder.AddAttribute(seq++, "Adjacent", adjacent);
         builder.AddAttribute(seq++, "Glyph", glyph);
+        builder.AddAttribute(seq++, "Inline", inline);
+        builder.AddAttribute(seq++, "InlinePrefixText", inlinePrefixText);
         builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
         builder.CloseComponent();
     }
@@ -1813,6 +1774,63 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
 /// honestly renders a real Chronology position with two empty-placeholder
 /// arrows, never silently omitting the block just because this one event
 /// happens to have no neighbor on either side.
+///
+/// CHRONO-MERGE-1 (owner NOD 2026-08-24 -- the design question: "is there
+/// a meaningful disjunction between chronology and narrative order? It's
+/// looking like they're basically the same and we can nix the narrative
+/// thing from hover menu and put chronology up top"; the nod, verbatim:
+/// "yes I agree but just don't clutter with story line where story
+/// doesn't exist"; POPOVER-LAW-1's own first application -- "we only pull
+/// in anything if there's something non-redundant to pull"): this block
+/// is now Batch T's ENTIRE surviving traversal surface -- the narrative
+/// nav <see cref="EventDateAndPlacesSection"/> used to fold in (M-D3/U1)
+/// is retired whole (that class's own doc comment), and this section
+/// MOVES UP to occupy the vacated top position (<see cref="PopoverSectionRegistry"/>'s
+/// own doc comment has the registration-order change) -- "Chronology,
+/// always on top," the owner's own words.
+///
+/// A controller sweep of all 255 real narrative events found 72% of rows
+/// byte-identical to this SAME event's own global-timeline row (a
+/// dedicated per-narrative nav was pure duplication for those), 28%
+/// genuinely diverging (always because a DIFFERENT narrative's own event
+/// interleaves chronologically between two of THIS narrative's legs --
+/// df_adullam's own following is a real, worked example: `david-flight`'s
+/// next leg is df_keilah, but the global-timeline next event is
+/// 1ch_ziklag_warriors, a Chronicles genealogy entry that happens to fall
+/// between them in time). The STORY-THREAD line below is what survives of
+/// the narrative nav -- ONLY for that 28%, "just don't clutter with story
+/// line where story doesn't exist."
+///
+/// THE DIVERGENCE TEST (<see cref="Diverges"/>): a client-side id
+/// comparison, per direction, of a `<see cref="NarrativePositionDto"/>`
+/// row's own Prior/Following against THIS SAME event's `Timeline`
+/// Prior/Following (both halves of the identical, already-memoized
+/// `NarrativePositionsAsync` fetch -- one network call, zero new cost). A
+/// null/absent narrative-side leg is the narrative's own first/last leg
+/// -- a chain END, never a divergence (nothing to show for that
+/// direction, the brief's own words) -- so `Diverges` short-circuits
+/// false there regardless of what the timeline says. An event belonging
+/// to >1 narrative (a real but, per the controller's own live sweep,
+/// currently EMPTY case -- zero of the 255) renders one line per
+/// DIVERGING narrative, stacked, the same "guard the rare case, common
+/// case stays simple" discipline <see cref="EventDateAndPlacesSection"/>'s
+/// own retired multi-narrative handling already established.
+///
+/// DISPLAY: one `.popover-meta` line per diverging narrative (the SAME
+/// quiet-provenance register <see cref="PlaceDescriptionSection"/>'s own
+/// "Known in modern atlases as..." line already established) reading
+/// "in &lt;narrative&gt;: " followed by ONLY the diverging direction(s) --
+/// `&lt;- &lt;prior leg&gt;` alone, `next -&gt; &lt;leg&gt;` alone, or both
+/// joined by " &middot; " when BOTH directions diverge (pw_jerusalem_entry
+/// is a real, worked example of the dual case: passion-week's own prior
+/// AND following both differ from the global timeline's). The leg name(s)
+/// are <see cref="Components.ArrowNav"/>'s own new `Inline` rendering mode
+/// (<see cref="EventDateAndPlacesSection.RenderArrowNav"/>) -- the SAME
+/// click-commits/dwell-peeks affordance the block arrows above give,
+/// reusing the identical dwell timer/peek-fetch/placement-measurement
+/// machinery (never re-derived) -- so a diverging leg is exactly as
+/// traversable as a chronological one, just named inline rather than in
+/// its own arrow button.
 /// </summary>
 public sealed class EventChronologySection : IPopoverSectionProvider
 {
@@ -1825,20 +1843,32 @@ public sealed class EventChronologySection : IPopoverSectionProvider
             return null;
         }
 
-        TimelinePositionDto? timeline;
+        NarrativeEventPositionsResult positions;
         try
         {
-            timeline = (await aware.NarrativePositionsAsync(api)).Timeline;
+            positions = await aware.NarrativePositionsAsync(api); // ONE fetch -- .Narrative feeds the story-thread line below, .Timeline the block arrows, memoized on the node instance either way
         }
         catch (Exception)
         {
             return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
         }
 
+        var timeline = positions.Timeline;
         if (timeline is null)
         {
             return null; // general-kind or unknown event -- NOT part of time traversal, this class's own doc comment
         }
+
+        // CHRONO-MERGE-1: which of this event's own narrative membership(s),
+        // if any, genuinely diverge from the SAME event's global-timeline
+        // row -- see this class's own "THE DIVERGENCE TEST" doc paragraph.
+        // A non-narrative event (positions.Narrative empty) or a
+        // fully-agreeing one filters down to zero rows here, same as each
+        // other -- both correctly render NO story-thread line at all,
+        // never a hollow wrapper.
+        var storyThreadRows = positions.Narrative
+            .Where(p => Diverges(p.Prior, timeline.Prior) || Diverges(p.Following, timeline.Following))
+            .ToList();
 
         RenderFragment body = builder =>
         {
@@ -1858,9 +1888,9 @@ public sealed class EventChronologySection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "data-testid", "event-chronology-row");
 
             // Arrows live in their OWN inner flex row -- same reason
-            // EventDateAndPlacesSection's own narrative rows keep this one
-            // level of nesting (space-between across exactly these two
-            // items, nothing else sharing that flex line).
+            // EventDateAndPlacesSection's own (now-retired) narrative rows
+            // kept this one level of nesting (space-between across exactly
+            // these two items, nothing else sharing that flex line).
             builder.OpenElement(seq++, "div");
             builder.AddAttribute(seq++, "class", "popover-event-nav-arrows");
             EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, "prior", "event-chrono-prior-event", "event-chrono-prior-label", "global", timeline.Prior, "◂");
@@ -1869,9 +1899,55 @@ public sealed class EventChronologySection : IPopoverSectionProvider
 
             builder.CloseElement(); // .popover-event-nav-row
             builder.CloseElement(); // .popover-event-nav-list
+
+            if (storyThreadRows.Count > 0)
+            {
+                builder.OpenElement(seq++, "div");
+                builder.AddAttribute(seq++, "class", "popover-story-thread");
+                builder.AddAttribute(seq++, "data-testid", "event-story-thread");
+                foreach (var row in storyThreadRows)
+                {
+                    var priorDiverges = Diverges(row.Prior, timeline.Prior);
+                    var followingDiverges = Diverges(row.Following, timeline.Following);
+
+                    builder.OpenElement(seq++, "p");
+                    builder.AddAttribute(seq++, "class", "popover-meta");
+                    builder.AddAttribute(seq++, "data-testid", $"event-story-thread-{row.NarrativeId}");
+                    builder.AddContent(seq++, $"in {row.NarrativeName}: ");
+
+                    if (priorDiverges)
+                    {
+                        EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, "prior", "event-story-thread-prior-event", "event-story-thread-prior-label", row.NarrativeId, row.Prior, "←", inline: true);
+                    }
+                    if (priorDiverges && followingDiverges)
+                    {
+                        builder.AddContent(seq++, " · ");
+                    }
+                    if (followingDiverges)
+                    {
+                        EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, "following", "event-story-thread-following-event", "event-story-thread-following-label", row.NarrativeId, row.Following, "→", inline: true, inlinePrefixText: "next ");
+                    }
+
+                    builder.CloseElement(); // p.popover-meta (event-story-thread-{narrativeId})
+                }
+                builder.CloseElement(); // .popover-story-thread
+            }
         };
         return new PopoverSection("event-chronology", body);
     }
+
+    // A narrative-side leg that is null is that narrative's OWN first/last
+    // leg -- a chain end there, never a divergence (the brief's own words:
+    // "nothing to show for that direction") -- so this short-circuits
+    // false before ever comparing ids. Otherwise a plain id comparison:
+    // the SAME event both sides name is agreement (false); a different id,
+    // OR the timeline having no leg at all in that direction while the
+    // narrative genuinely does (the atlas's own true first/last dated
+    // event, vanishingly rare in practice), both read as divergence (true)
+    // -- "the divergence test is an id comparison client-side," the
+    // brief's own words, generalized to both of its null-handling edges.
+    private static bool Diverges(NarrativeAdjacentEventDto? narrativeLeg, NarrativeAdjacentEventDto? timelineLeg)
+        => narrativeLeg is not null && narrativeLeg.Id != timelineLeg?.Id;
 }
 
 /// <summary>

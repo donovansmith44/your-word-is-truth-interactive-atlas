@@ -169,16 +169,21 @@ public interface IPopoverSectionProvider
 /// own "Persons then Places" reconciliation; O4, 2026-08-23, owner
 /// live-preview correction, unregistered it -- "remove persons from hover
 /// menus for now," machinery retained, not deleted -- see the registry's
-/// own comment below for the fuller story.) EVENT node sections, in order: date + place(s) +
-/// narrative prior/following nav (<see cref="EventDateAndPlacesSection"/>
-/// -- M-D3/U1 folds the narrative traversal arrows, formerly their own two
-/// Batch N/T sections, directly into this one, "immediately below focus"
-/// the owner's own words; see that class's own doc comment for the full
-/// story), PARALLEL ACCOUNTS (<see cref="EventWitnessesSection"/>,
-/// conditional presence: no "PARALLEL ACCOUNTS" framing at all when the
-/// event has exactly one witness) -- recursion falls out of an EventNode's
-/// own traversal arrow pushing ANOTHER EventNode, the SAME `AppliesTo`
-/// clause matching it too, not a second mechanism.
+/// own comment below for the fuller story.) EVENT node sections, in order
+/// (CHRONO-MERGE-1, 2026-08-24, "put chronology up top" -- RESPEC'D from
+/// the M-D3/U1 order this paragraph used to describe, see the registry
+/// list's own comment below for the reordering itself): Chronology FIRST
+/// (<see cref="EventChronologySection"/> -- the SAME global arrow row
+/// TRAV-1/HOTFIX-4 built, now the atlas's ENTIRE traversal surface for an
+/// EVENT node, occupying the top position the narrative nav used to hold
+/// before this batch retired it whole), THEN date + place(s)
+/// (<see cref="EventDateAndPlacesSection"/>, narrative-nav-free now --
+/// that class's own doc comment has the retirement story), THEN PARALLEL
+/// ACCOUNTS (<see cref="EventWitnessesSection"/>, conditional presence: no
+/// "PARALLEL ACCOUNTS" framing at all when the event has exactly one
+/// witness) -- recursion falls out of an EventNode's own traversal arrow
+/// pushing ANOTHER EventNode, the SAME `AppliesTo` clause matching it too,
+/// not a second mechanism.
 /// </summary>
 public static class PopoverSectionRegistry
 {
@@ -252,25 +257,22 @@ public static class PopoverSectionRegistry
         new CatechismExplanationSection(),
         new CatechismWhereWrittenSection(),
         new CatechismScripturesSection(),
-        // Batch T, M-D3/U1: EVENT node sections, in order -- date+places+
-        // narrative-nav (one merged section now, see EventDateAndPlacesSection's
-        // own doc comment), then PARALLEL ACCOUNTS.
+        // CHRONO-MERGE-1 (owner: "put chronology up top"): EVENT node
+        // sections, in order -- Chronology (traversal: the SAME global
+        // arrow row TRAV-1/HOTFIX-4 built, now ALSO carrying the
+        // divergence-only story-thread line that survives of the retired
+        // narrative nav -- EventChronologySection's own doc comment has
+        // the full story) FIRST, occupying the top position the narrative
+        // nav used to hold when it rendered inside
+        // EventDateAndPlacesSection (M-D3/U1); THEN date+place(s)
+        // (EventDateAndPlacesSection, now narrative-nav-free -- that
+        // class's own CHRONO-MERGE-1 doc paragraph); THEN PARALLEL
+        // ACCOUNTS. Registration order IS render order for same-kind
+        // providers (REGISTRY-1's own standing rule) -- this single
+        // reordering is the WHOLE of "Chronology, always on top."
+        new EventChronologySection(),
         new EventDateAndPlacesSection(),
         new EventWitnessesSection(),
-        // TRAV-1 (controller decisions 2+3): the GLOBAL-chronology
-        // counterpart to the narrative nav folded into
-        // EventDateAndPlacesSection above -- registered directly after the
-        // sections above (narrative primacy preserved: the narrative-scoped
-        // nav always renders first, same registration-order-is-render-order
-        // rule HOTFIX-4 originally established here, unaffected by this
-        // batch's own consolidation of what used to be its own TWO
-        // providers), independent of narrative membership, so a
-        // narrative-less dated event gets this ONE Chronology block
-        // instead, and a narrative member gets BOTH blocks. RETIRES
-        // HOTFIX-4's own EventTimelinePriorSection/EventTimelineFollowingSection
-        // (this single line used to be two) -- see EventChronologySection's
-        // own doc comment for the full "one Chronological block" story.
-        new EventChronologySection(),
         // Batch M ("the DAG grows a node type"): PolityDelta's own three
         // sections, in order -- event text, THE SCRIPTURES, grounding note
         // -- appended at the end, same "later batches append below, never

@@ -313,8 +313,16 @@ test('TRAVERSAL-3: the place card\'s next-event traversal agrees with the popove
   await expect(page.getByTestId('popover-title')).toHaveText('NUM.13.26');
   await page.getByTestId('verse-event-ex_kadesh').click();
   await expect(page.getByTestId('popover-title')).toHaveText('Spies return to Kadesh-barnea');
-  const followingSection = page.getByTestId('popover-section-event-date-places');
-  await expect(followingSection).toBeVisible();
-  const followingBtn = followingSection.getByTestId('event-following-event-exodus');
-  await expect(followingBtn.locator('.popover-event-nav-label')).toHaveText(followingLabel);
+  // CHRONO-MERGE-1: ex_kadesh's own narrative-following genuinely
+  // DIVERGES from its global-timeline following (confirmed live: the
+  // narrative's own next leg is ex_moab, but the next event chronologically
+  // is a completely different thread's own jos_calebs_inheritance) -- the
+  // per-narrative nav this test used to click (`event-following-event-exodus`)
+  // is retired whole; the SAME "next -> Camp on the plains of Moab" fact
+  // this test's own header comment names now surfaces via the story-thread
+  // line instead (CONTRACT.md's own CHRONO-MERGE-1 note).
+  const chronoSection = page.getByTestId('popover-section-event-chronology');
+  await expect(chronoSection).toBeVisible();
+  const followingLeg = page.getByTestId('event-story-thread-following-event-exodus');
+  await expect(followingLeg).toHaveText(`next → ${followingLabel}`);
 });

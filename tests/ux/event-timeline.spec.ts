@@ -17,6 +17,20 @@ import { api } from './lib/api';
 // (under EVENT-1, now RESPEC'D -- see its own "RESPEC'D WHOLE" paragraph)
 // and CHRONO-1/PEEK-1 (below EVENT-1) for the full, CURRENT, binding
 // ordering/wire-shape/presentation/dwell-hover rules these tests pin.
+//
+// CHRONO-MERGE-1 (batch-chrono-merge-brief.md, owner NOD 2026-08-24: "put
+// chronology up top... nix the narrative thing from hover menu... just
+// don't clutter with story line where story doesn't exist"): the
+// NARRATIVE nav (`event-nav`, `event-{prior,following}-event-{narrativeId}`)
+// this file's own tests used to assert alongside the Chronology block is
+// now RETIRED WHOLE -- CONTRACT.md's own CHRONO-MERGE-1 note (after
+// TITLE-WRAP-1) has the full divergence rule, the retired testid list, and
+// the per-test disposition (rewritten in place vs. retired) for every test
+// in this file and `popover-sections.spec.ts`/`world-narrative-focus.spec.ts`/
+// `world-pin.spec.ts` that used to reach a narrative-nav testid. Tests
+// below that only ever used `event-chrono-*`/`popover-section-event-*`
+// testids are untouched by that retirement and are not individually
+// re-flagged.
 
 // Exact-membership class check (never a regex against the whole attribute
 // string, which can't cleanly distinguish "explorable" from "explorable-quiet"
@@ -64,13 +78,15 @@ test('HOTFIX-4 req 1/4, TRAV-1/CHRONO-1: gen_binding_isaac (a real W1 container 
   await openEventPopover(page, 'gen_binding_isaac');
 
   // No NARRATIVE nav at all (conditional presence -- there is no narrative
-  // to show; M-D3/U1 folded it into event-date-places, no more separate
-  // section -- `event-nav` is the presence signal now); the Chronology
-  // block is what carries traversal here (CHRONO-1: ONE section now,
-  // never two separate "IN TIME" ones).
-  await expect(page.getByTestId('event-nav')).toHaveCount(0);
+  // to show; CHRONO-MERGE-1 retires that nav whole regardless -- see this
+  // file's own header comment); the Chronology block is what carries
+  // traversal here (CHRONO-1: ONE section now, never two separate
+  // "IN TIME" ones).
   await expect(page.getByTestId('popover-section-event-chronology')).toBeVisible();
   await expect(page.getByTestId('event-chronology-heading')).toHaveText('CHRONOLOGY');
+  // CHRONO-MERGE-1/MERGE-3: a narrative-less event never has a story
+  // line -- nothing non-redundant to show, and nothing TO show either.
+  await expect(page.getByTestId('event-story-thread')).toHaveCount(0);
 
   // Walk FOLLOWING >=5 hops -- hop targets read from the wire (whatever
   // `event-chrono-following-event-global` actually links to next), never
@@ -94,48 +110,35 @@ test('HOTFIX-4 req 1/4, TRAV-1/CHRONO-1: gen_binding_isaac (a real W1 container 
   }
 });
 
-test('HOTFIX-4 req 1/req 5, TRAV-1/CHRONO-1: a narrative-member event shows BOTH its narrative rows and the Chronology block, correctly and independently', async ({ page }) => {
-  // pw_gethsemane is a passion-week narrative leg AND a dated, real event --
-  // narrative primacy preserved (requirement 1 verbatim): both families of
-  // sections must render, neither replacing the other.
+test('CHRONO-MERGE-1/MERGE-1: pw_gethsemane (a passion-week leg whose own narrative order AGREES with the global timeline on BOTH directions) shows exactly the ONE Chronology block, no story-thread line at all', async ({ page }) => {
+  // RESPEC'D from the pre-CHRONO-MERGE-1 "shows BOTH its narrative rows
+  // and the Chronology block" test this replaces (CONTRACT.md's own
+  // CHRONO-MERGE-1 note, after TITLE-WRAP-1, has the full retirement
+  // story) -- pw_gethsemane's own narrative and timeline positions are
+  // byte-identical on BOTH prior and following, ground-truthed live, so
+  // this is now a clean MERGE-1 fixture: a real narrative member whose
+  // order carries nothing non-redundant to show (POPOVER-LAW-1).
   const positions = await api.narrativeEventPositions('pw_gethsemane');
   const narrativePos = positions.narrative.find((p: any) => p.narrative_id === 'passion-week');
   expect(narrativePos, 'pw_gethsemane must be a passion-week leg').toBeTruthy();
   expect(positions.timeline, 'pw_gethsemane must ALSO have a global-timeline position').toBeTruthy();
+  expect(narrativePos.prior?.id, 'this fixture needs a genuinely AGREEING prior').toBe(positions.timeline.prior?.id);
+  expect(narrativePos.following?.id, 'this fixture needs a genuinely AGREEING following').toBe(positions.timeline.following?.id);
 
   await openEventPopover(page, 'pw_gethsemane');
 
-  // M-D3/U1: the narrative row is a compact flanking-arrow nav folded into
-  // event-date-places (`event-nav`), not its own headed section -- the
-  // Chronology block (CHRONO-1) is UNCHANGED in that respect from the
-  // retired "IN TIME" rows it replaces: still its own separate, headed
-  // section.
-  await expect(page.getByTestId('event-nav')).toBeVisible();
+  // ONE traversal block -- the narrative nav this event used to ALSO show
+  // is retired whole (`event-nav` structurally cannot exist anywhere in
+  // the DOM now, not merely absent for this particular event).
+  await expect(page.getByTestId('event-nav')).toHaveCount(0);
   await expect(page.getByTestId('popover-section-event-chronology')).toBeVisible();
-
-  // "quiet, clearly distinct," structurally, not just by wording: the
-  // narrative row carries NO heading at all (M-D3/U1's own established
-  // design, unchanged), while the Chronology block's own heading
-  // (`event-chronology-heading`) is a DIFFERENT testid from the generic
-  // `event-section-heading` OTHER headed sections in this popover platform
-  // share (e.g. PARALLEL ACCOUNTS, present here too since pw_gethsemane
-  // has real witnesses -- that generic testid is not unique to the retired
-  // "IN TIME" sections, so this only asserts the wording itself is gone,
-  // never that the shared testid has zero uses).
   await expect(page.getByTestId('event-chronology-heading')).toHaveText('CHRONOLOGY');
-  const otherHeadings = await page.getByTestId('event-section-heading').allTextContents();
-  expect(otherHeadings.some((h: string) => h.includes('IN TIME'))).toBeFalsy();
 
-  // The narrative row's own target and the Chronology row's own target
-  // need not be the same event (different questions -- "next in this
-  // narrative's own leg chain" vs "next chronologically at all") -- both
-  // are independently explorable and correct per their own semantics.
-  // .popover-event-nav-label specifically -- the button's own FULL text
-  // also includes its decorative directional glyph (a sibling span, never
-  // meant to be part of an exact-text comparison).
-  if (narrativePos.following) {
-    await expect(page.getByTestId('event-following-event-passion-week').locator('.popover-event-nav-label')).toHaveText(narrativePos.following.label);
-  }
+  // No story-thread line: agreement (both directions) is NOT a divergence.
+  await expect(page.getByTestId('event-story-thread')).toHaveCount(0);
+
+  // The Chronology block's own arrows still correctly carry this event's
+  // real global-timeline neighbor (unaffected by any of this).
   await expect(page.getByTestId('event-chrono-following-event-global').locator('.popover-event-nav-label')).toHaveText(positions.timeline.following.label);
 });
 
@@ -177,7 +180,7 @@ test('HOTFIX-4 req 1/5, TRAV-1/CHRONO-1: chain-end conditional presence at the a
   await expect(page.getByTestId('event-chrono-prior-event-global')).toBeVisible();
 });
 
-test('HOTFIX-4 req 2/5, TRAV-1/CHRONO-3: a general-kind container shows no traversal section at all -- neither narrative nor Chronology (conditional presence, "NOT part of time traversal")', async ({ page }) => {
+test('HOTFIX-4 req 2/5, TRAV-1/CHRONO-3: a general-kind container shows no traversal section at all -- no Chronology block (conditional presence, "NOT part of time traversal")', async ({ page }) => {
   const detail = await api.event('rob_luke_preface');
   expect(detail.kind, 'rob_luke_preface must be general-kind for this test to mean anything').toBe('general');
 
@@ -189,8 +192,99 @@ test('HOTFIX-4 req 2/5, TRAV-1/CHRONO-3: a general-kind container shows no trave
   await page.getByTestId('verse-event-rob_luke_preface').click();
   await expect(page.getByTestId('popover-title')).toHaveText('Luke\'s preface to Theophilus');
 
-  await expect(page.getByTestId('event-nav')).toHaveCount(0);
+  // CHRONO-MERGE-1: the narrative nav this used to also check is retired
+  // whole (structurally absent everywhere, not merely for this event) --
+  // see CONTRACT.md's own CHRONO-MERGE-1 note.
   await expect(page.getByTestId('popover-section-event-chronology')).toHaveCount(0);
+});
+
+// ---------------------------------------------------------------------
+// CHRONO-MERGE-1 (batch-chrono-merge-brief.md, owner NOD 2026-08-24): the
+// divergence-only story-thread line. MERGE-1/2/3/4, the brief's own
+// acceptance checklist, verbatim. Every fixture's own narrative-vs-timeline
+// agreement/divergence is confirmed live against the wire in each test
+// below, never assumed from the brief's own illustrative names alone.
+// ---------------------------------------------------------------------
+
+test('CHRONO-MERGE-1/MERGE-1: ab_hebron (abraham-migration -- prior AGREES, following is the narrative\'s own chain end) shows exactly ONE traversal block, no story line', async ({ page }) => {
+  const positions = await api.narrativeEventPositions('ab_hebron');
+  const narrativePos = positions.narrative.find((p: any) => p.narrative_id === 'abraham-migration');
+  expect(narrativePos, 'ab_hebron must be an abraham-migration leg').toBeTruthy();
+  expect(narrativePos.prior?.id, 'this fixture needs a genuinely AGREEING prior').toBe(positions.timeline.prior?.id);
+  expect(narrativePos.following, 'this fixture needs ab_hebron to be the narrative\'s own LAST leg (a chain end, not a divergence)').toBeFalsy();
+
+  await openEventPopover(page, 'ab_hebron');
+  await expect(page.getByTestId('popover-section-event-chronology')).toBeVisible();
+  await expect(page.getByTestId('event-story-thread')).toHaveCount(0);
+});
+
+test('CHRONO-MERGE-1/MERGE-2: df_adullam (David\'s Flight from Saul -- FOLLOWING only diverges) shows the Chronology block PLUS the story line naming the narrative and the diverging leg; clicking the leg commits traversal to it', async ({ page }) => {
+  // Ground truth, live: David's Flight from Saul's own next leg is
+  // df_keilah, but the GLOBAL next event is a different thread's own
+  // Chronicles entry -- the owner's own worked example (progress.md,
+  // batch-chrono-merge-brief.md), confirmed against the real wire, never
+  // hardcoded from the brief's own illustrative text.
+  const positions = await api.narrativeEventPositions('df_adullam');
+  const narrativePos = positions.narrative.find((p: any) => p.narrative_id === 'david-flight');
+  expect(narrativePos, 'df_adullam must be a david-flight leg').toBeTruthy();
+  expect(narrativePos.prior?.id, 'this fixture needs an AGREEING prior (single-clause line)').toBe(positions.timeline.prior?.id);
+  expect(narrativePos.following?.id).toBe('df_keilah');
+  expect(narrativePos.following.id, 'this fixture needs a genuinely DIVERGING following').not.toBe(positions.timeline.following?.id);
+  const keilahDetail = await api.event('df_keilah');
+
+  await openEventPopover(page, 'df_adullam');
+  await expect(page.getByTestId('popover-section-event-chronology')).toBeVisible();
+
+  const line = page.getByTestId(`event-story-thread-${narrativePos.narrative_id}`);
+  await expect(line).toBeVisible();
+  await expect(line).toContainText(narrativePos.narrative_name);
+  await expect(line).toContainText(narrativePos.following.label);
+  // Single-clause: prior agrees, so no prior leg affordance on this line.
+  await expect(page.getByTestId(`event-story-thread-prior-event-${narrativePos.narrative_id}`)).toHaveCount(0);
+
+  // MERGE-4 (retirement), live: df_adullam is exactly the class of event
+  // that WOULD have rendered the old per-narrative nav -- confirms every
+  // one of its own retired testids is genuinely gone, not merely absent
+  // because this particular fixture never exercised them.
+  await expect(page.getByTestId('event-nav')).toHaveCount(0);
+  await expect(page.getByTestId(`event-prior-event-${narrativePos.narrative_id}`)).toHaveCount(0);
+  await expect(page.getByTestId(`event-following-event-${narrativePos.narrative_id}`)).toHaveCount(0);
+  await expect(page.getByTestId(`event-prior-label-${narrativePos.narrative_id}`)).toHaveCount(0);
+  await expect(page.getByTestId(`event-following-label-${narrativePos.narrative_id}`)).toHaveCount(0);
+
+  // Click commits: the SAME traversal affordance the block arrows give.
+  const leg = page.getByTestId(`event-story-thread-following-event-${narrativePos.narrative_id}`);
+  await expect(leg).toHaveText(`next → ${narrativePos.following.label}`);
+  await leg.click();
+  await expect(page.getByTestId('popover-title')).toHaveText(keilahDetail.title);
+});
+
+test('CHRONO-MERGE-1/MERGE-2 (dual divergence): pw_jerusalem_entry (Passion Week -- BOTH directions diverge) joins both clauses on the one line with the middle dot', async ({ page }) => {
+  const positions = await api.narrativeEventPositions('pw_jerusalem_entry');
+  const narrativePos = positions.narrative.find((p: any) => p.narrative_id === 'passion-week');
+  expect(narrativePos, 'pw_jerusalem_entry must be a passion-week leg').toBeTruthy();
+  expect(narrativePos.prior?.id, 'this fixture needs a genuinely DIVERGING prior').not.toBe(positions.timeline.prior?.id);
+  expect(narrativePos.following?.id, 'this fixture needs a genuinely DIVERGING following').not.toBe(positions.timeline.following?.id);
+
+  await openEventPopover(page, 'pw_jerusalem_entry');
+  const line = page.getByTestId(`event-story-thread-${narrativePos.narrative_id}`);
+  await expect(line).toBeVisible();
+  await expect(line).toContainText(narrativePos.narrative_name);
+
+  const priorLeg = page.getByTestId(`event-story-thread-prior-event-${narrativePos.narrative_id}`);
+  const followingLeg = page.getByTestId(`event-story-thread-following-event-${narrativePos.narrative_id}`);
+  await expect(priorLeg).toHaveText(`← ${narrativePos.prior.label}`);
+  await expect(followingLeg).toHaveText(`next → ${narrativePos.following.label}`);
+  await expect(line).toContainText('·'); // the one line joins both clauses, never two separate lines
+});
+
+test('CHRONO-MERGE-1/MERGE-3: gen_binding_isaac (a narrative-less dated event, the theo-* class) shows the Chronology block and NO story line', async ({ page }) => {
+  const positions = await api.narrativeEventPositions('gen_binding_isaac');
+  expect(positions.narrative, 'gen_binding_isaac is a leg of no narrative').toEqual([]);
+
+  await openEventPopover(page, 'gen_binding_isaac');
+  await expect(page.getByTestId('popover-section-event-chronology')).toBeVisible();
+  await expect(page.getByTestId('event-story-thread')).toHaveCount(0);
 });
 
 test('AMENDMENT C: exactly one Baptism and one Temptation event exist; Baptism is chronologically PRIOR to Temptation; walking FOLLOWING from Baptism reaches Temptation directly via the Chronology block (red-then-green: RED against the pre-merge theo-267/theo-268 shape)', async ({ page }) => {
@@ -292,7 +386,6 @@ test('AFFORDANCE-1: a general-kind container\'s own reader heading renders visib
   // LOOK like a chain link beforehand.
   await heading.click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
-  await expect(page.getByTestId('event-nav')).toHaveCount(0);
   await expect(page.getByTestId('popover-section-event-chronology')).toHaveCount(0);
 });
 
@@ -512,15 +605,22 @@ test('PEEK-1: a quick pointer pass over a Chronology arrow produces NO peek; a d
   await expect(page.getByTestId('popover-title')).toHaveText(followingDetail.title);
 });
 
-test('PEEK-1: the SAME dwell-hover peek works identically on a narrative-nav arrow (pw_gethsemane, passion-week) -- one shared component, not a parallel implementation', async ({ page }) => {
-  const positions = await api.narrativeEventPositions('pw_gethsemane');
-  const narrativePos = positions.narrative.find((p: any) => p.narrative_id === 'passion-week');
-  expect(narrativePos?.following, 'pw_gethsemane must have a real FOLLOWING passion-week leg for this test to mean anything').toBeTruthy();
+test('PEEK-1/CHRONO-MERGE-1: the SAME dwell-hover peek works identically on the story-thread line\'s own INLINE leg (df_adullam, David\'s Flight from Saul) -- one shared component, not a parallel implementation', async ({ page }) => {
+  // RESPEC'D from the pre-CHRONO-MERGE-1 "narrative-nav arrow" fixture
+  // this test used (pw_gethsemane/passion-week) -- that whole affordance
+  // is retired; the SAME "second consumer of the shared peek" proof this
+  // test always existed for now targets the surviving second consumer,
+  // the story-thread line's own inline leg (CONTRACT.md's own
+  // CHRONO-MERGE-1 note has the retirement story).
+  const positions = await api.narrativeEventPositions('df_adullam');
+  const narrativePos = positions.narrative.find((p: any) => p.narrative_id === 'david-flight');
+  expect(narrativePos?.following?.id, 'df_adullam must have a real, genuinely DIVERGING following leg for this test to mean anything').toBe('df_keilah');
+  expect(narrativePos.following.id).not.toBe(positions.timeline.following?.id);
 
-  await openEventPopover(page, 'pw_gethsemane');
-  const arrow = page.getByTestId('event-following-event-passion-week');
+  await openEventPopover(page, 'df_adullam');
+  const arrow = page.getByTestId(`event-story-thread-following-event-${narrativePos.narrative_id}`);
   await expect(arrow).toBeVisible();
-  const peek = page.getByTestId('event-following-event-passion-week-peek');
+  const peek = page.getByTestId(`event-story-thread-following-event-${narrativePos.narrative_id}-peek`);
 
   await expect(peek).toHaveCount(0); // nothing before any hover at all
 
@@ -548,28 +648,32 @@ test('PEEK-1: the SAME dwell-hover peek works identically on a narrative-nav arr
 // ---------------------------------------------------------------------
 
 test('PEEK-2: dwelling an arrow whose target resolves multiple verses shows exactly one by default plus more(n)/all(N); more/less operate inside the box; a real departure still dismisses the whole peek', async ({ page }) => {
-  // rob_dedication_feast (JHN.10.22-39) is a real, many-verse single-group
-  // event -- FOLLOWING of rob_crippled_woman_sabbath in jesus-ministry.
-  // Total is derived from the LIVE wire (never hardcoded), the SAME
-  // `verse_groups` shape PEEK-1's own test above reads its ground truth
-  // from.
-  const positions = await api.narrativeEventPositions('rob_crippled_woman_sabbath');
-  const narrativePos = positions.narrative.find((p: any) => p.narrative_id === 'jesus-ministry');
-  expect(narrativePos?.following?.id, 'rob_crippled_woman_sabbath must have a real FOLLOWING jesus-ministry leg for this test to mean anything').toBe('rob_dedication_feast');
-  const total: number = narrativePos.following.verse_groups.reduce((n: number, g: any) => n + g.verses.length, 0);
+  // gen_death_of_sarah (GEN.23, 20 verses, short-titled) -- gen_binding_isaac's
+  // own GLOBAL-timeline FOLLOWING. CHRONO-MERGE-1: PEEK-4's own header
+  // comment (below) has the full "why this fixture, not rob_dedication_feast"
+  // story -- that former fixture's 77-character title left its own peek
+  // content taller than the room the Chronology block's new (registration-
+  // order-moved) position gives a "following" arrow here, a real,
+  // live-caught fragility this test inherited from a shared root cause,
+  // not two unrelated coincidences. Total is derived from the LIVE wire
+  // (never hardcoded), the SAME `verse_groups` shape PEEK-1's own test
+  // above reads its ground truth from.
+  const positions = await api.narrativeEventPositions('gen_binding_isaac');
+  expect(positions.timeline.following?.id, 'gen_binding_isaac must have a real global-timeline FOLLOWING for this test to mean anything').toBe('gen_death_of_sarah');
+  const total: number = positions.timeline.following.verse_groups.reduce((n: number, g: any) => n + g.verses.length, 0);
   expect(total, 'this test needs a target with enough verses for more/all/less to mean anything').toBeGreaterThan(3);
 
-  await openEventPopover(page, 'rob_crippled_woman_sabbath');
-  const arrow = page.getByTestId('event-following-event-jesus-ministry');
-  const peek = page.getByTestId('event-following-event-jesus-ministry-peek');
+  await openEventPopover(page, 'gen_binding_isaac');
+  const arrow = page.getByTestId('event-chrono-following-event-global');
+  const peek = page.getByTestId('event-chrono-following-event-global-peek');
 
   await arrow.hover({ force: true });
   await expect(peek).toBeVisible({ timeout: 2000 });
 
   // Exactly ONE verse by default -- never the old unbounded list.
   await expect(peek.locator('.popover-arrow-peek-verse')).toHaveCount(1);
-  const moreLink = page.getByTestId('event-following-event-jesus-ministry-peek-more');
-  const allLink = page.getByTestId('event-following-event-jesus-ministry-peek-more-all');
+  const moreLink = page.getByTestId('event-chrono-following-event-global-peek-more');
+  const allLink = page.getByTestId('event-chrono-following-event-global-peek-more-all');
   await expect(moreLink).toHaveText('more (2)');
   await expect(allLink).toHaveText(`all (${total})`);
 
@@ -584,7 +688,7 @@ test('PEEK-2: dwelling an arrow whose target resolves multiple verses shows exac
   // `less` is the SAME house one-op-undo mechanic every other
   // RevealControls consumer gets -- steps back toward (never below) the
   // one-verse floor.
-  const lessLink = page.getByTestId('event-following-event-jesus-ministry-peek-collapse');
+  const lessLink = page.getByTestId('event-chrono-following-event-global-peek-collapse');
   await lessLink.click({ force: true });
   await expect(peek.locator('.popover-arrow-peek-verse')).toHaveCount(1);
 
@@ -645,10 +749,12 @@ test('PEEK-3b (fix round 1, F1): expanding a many-verse peek via `all` stays ful
   // come from the wrong frame). PEEK-3 above only ever exercises the
   // one-verse default, which was never tall enough to expose this -- this
   // test is the one that actually reaches the reviewer's own repro path.
+  // CHRONO-MERGE-1: this fixture's own narrative and timeline positions
+  // are byte-identical live -- the Chronology block's own global arrow
+  // reaches the identical target the retired narrative-nav arrow used to.
   const positions = await api.narrativeEventPositions('rob_crippled_woman_sabbath');
-  const narrativePos = positions.narrative.find((p: any) => p.narrative_id === 'jesus-ministry');
-  expect(narrativePos?.following?.id, 'rob_crippled_woman_sabbath must have a real FOLLOWING jesus-ministry leg for this test to mean anything').toBe('rob_dedication_feast');
-  const total: number = narrativePos.following.verse_groups.reduce((n: number, g: any) => n + g.verses.length, 0);
+  expect(positions.timeline.following?.id, 'rob_crippled_woman_sabbath must have a real global-timeline FOLLOWING for this test to mean anything').toBe('rob_dedication_feast');
+  const total: number = positions.timeline.following.verse_groups.reduce((n: number, g: any) => n + g.verses.length, 0);
 
   // Same short-viewport-plus-scroll-to-bottom technique PEEK-3 already
   // establishes -- deterministically minimizes the room available below
@@ -658,15 +764,15 @@ test('PEEK-3b (fix round 1, F1): expanding a many-verse peek via `all` stays ful
 
   await openEventPopover(page, 'rob_crippled_woman_sabbath');
   const popover = page.getByTestId('popover');
-  const arrow = page.getByTestId('event-following-event-jesus-ministry');
+  const arrow = page.getByTestId('event-chrono-following-event-global');
   await arrow.evaluate((el: HTMLElement) => el.scrollIntoView({ block: 'end' }));
   await expect(arrow).toBeVisible();
-  const peek = page.getByTestId('event-following-event-jesus-ministry-peek');
+  const peek = page.getByTestId('event-chrono-following-event-global-peek');
 
   await arrow.hover({ force: true });
   await expect(peek).toBeVisible({ timeout: 2000 });
 
-  const allLink = page.getByTestId('event-following-event-jesus-ministry-peek-more-all');
+  const allLink = page.getByTestId('event-chrono-following-event-global-peek-more-all');
   await allLink.click({ force: true });
   await expect(peek.locator('.popover-arrow-peek-verse')).toHaveCount(total);
 
@@ -696,16 +802,35 @@ test('PEEK-3b (fix round 1, F1): expanding a many-verse peek via `all` stays ful
 });
 
 test('PEEK-4: moving the pointer from the arrow, across the gap, into the box does not dismiss the peek -- the reveal control inside remains genuinely clickable', async ({ page }) => {
-  await openEventPopover(page, 'rob_crippled_woman_sabbath');
-  const arrow = page.getByTestId('event-following-event-jesus-ministry');
-  const peek = page.getByTestId('event-following-event-jesus-ministry-peek');
-  const moreBtn = page.getByTestId('event-following-event-jesus-ministry-peek-more');
+  // gen_binding_isaac (CHRONO-MERGE-1: this fixture's own registration-order
+  // move -- Chronology is now the FIRST section, EVENT-1's own doc comment
+  // has the story -- shortens the room available below a "following" arrow
+  // for events with a long-titled target and/or heavy preceding-section
+  // content; rob_crippled_woman_sabbath -> rob_dedication_feast, this
+  // test's own former fixture, has BOTH a 77-character title AND real
+  // witnesses ahead of it in the popover, which together left the peek's
+  // own default one-verse content taller than the room this specific
+  // event now gets, so its own `more` control fell below the peek's own
+  // internal-scroll fold -- genuinely correct per F1's own "never spill,
+  // degrade to internal scroll" contract, just not what THIS test, whose
+  // own raw mouse gestures never scroll (unlike `.click()`, PEEK-2's own
+  // technique), can reach without first scrolling. gen_binding_isaac's own
+  // FOLLOWING (gen_death_of_sarah, short-titled, no preceding witnesses)
+  // comfortably fits instead -- confirmed live, not merely asserted.
+  const positions = await api.narrativeEventPositions('gen_binding_isaac');
+  const total: number = positions.timeline.following.verse_groups.reduce((n: number, g: any) => n + g.verses.length, 0);
+  expect(total, 'this test needs a target with enough verses for more/all/less to mean anything').toBeGreaterThan(3);
+
+  await openEventPopover(page, 'gen_binding_isaac');
+  const arrow = page.getByTestId('event-chrono-following-event-global');
+  const peek = page.getByTestId('event-chrono-following-event-global-peek');
+  const moreBtn = page.getByTestId('event-chrono-following-event-global-peek-more');
 
   const arrowBox = await arrow.boundingBox();
   expect(arrowBox, 'the arrow must have a real box for this gesture to mean anything').not.toBeNull();
   await page.mouse.move(arrowBox!.x + arrowBox!.width / 2, arrowBox!.y + arrowBox!.height / 2);
   await expect(peek).toBeVisible({ timeout: 2000 });
-  await expect(moreBtn, 'rob_dedication_feast resolves well over one verse -- more must be offered').toBeVisible();
+  await expect(moreBtn, 'the target resolves well over one verse -- more must be offered').toBeVisible();
 
   const moreBox = await moreBtn.boundingBox();
   expect(moreBox).not.toBeNull();
@@ -739,23 +864,28 @@ test('PEEK-4: moving the pointer from the arrow, across the gap, into the box do
 test('TITLE-2: a long event name renders via the two-line clamp (never a single-line ellipsis) and the fixed grid holds; the peek header always carries the full name', async ({ page }) => {
   // rob_elijah_puzzle's own PRIOR (rob_transfiguration, "The
   // Transfiguration", 19 chars) and FOLLOWING (rob_demoniac_boy, "Jesus
-  // heals a demoniac boy the disciples could not heal", 57 chars) are
-  // real neighbors on the SAME jesus-ministry narrative leg, one clearly
-  // short and one clearly long -- opening ITS popover renders both arrows
+  // heals a demoniac boy the disciples could not heal", 57 chars) are real
+  // neighbors on this event's own GLOBAL TIMELINE, one clearly short and
+  // one clearly long -- opening ITS popover renders both Chronology arrows
   // side by side in one row, so the grid-alignment comparison below is
   // between two REAL rows on the SAME live page, not a synthetic fixture.
+  // CHRONO-MERGE-1: RESPEC'D from the narrative-nav fixture this test used
+  // (jesus-ministry) -- this fixture's own narrative and timeline
+  // positions are byte-identical live, so retargeting onto the Chronology
+  // block's own testids changes nothing about what TITLE-WRAP-1 itself is
+  // proving (that contract lives entirely in `Components.ArrowNav`'s
+  // BLOCK-mode rendering, shared by both families).
   const positions = await api.narrativeEventPositions('rob_elijah_puzzle');
-  const narrativePos = positions.narrative.find((p: any) => p.narrative_id === 'jesus-ministry');
-  expect(narrativePos?.prior?.id).toBe('rob_transfiguration');
-  expect(narrativePos?.following?.id).toBe('rob_demoniac_boy');
-  const shortLabel: string = narrativePos.prior.label;
-  const longLabel: string = narrativePos.following.label;
+  expect(positions.timeline.prior?.id).toBe('rob_transfiguration');
+  expect(positions.timeline.following?.id).toBe('rob_demoniac_boy');
+  const shortLabel: string = positions.timeline.prior.label;
+  const longLabel: string = positions.timeline.following.label;
   expect(shortLabel.length, 'this test needs a genuinely short neighbor label').toBeLessThanOrEqual(24);
   expect(longLabel.length, 'this test needs a genuinely long neighbor label').toBeGreaterThan(50);
 
   await openEventPopover(page, 'rob_elijah_puzzle');
-  const shortNameLabel = page.getByTestId('event-prior-event-jesus-ministry').locator('.popover-event-nav-label');
-  const longNameLabel = page.getByTestId('event-following-event-jesus-ministry').locator('.popover-event-nav-label');
+  const shortNameLabel = page.getByTestId('event-chrono-prior-event-global').locator('.popover-event-nav-label');
+  const longNameLabel = page.getByTestId('event-chrono-following-event-global').locator('.popover-event-nav-label');
   await expect(shortNameLabel).toHaveText(shortLabel);
   await expect(longNameLabel).toHaveText(longLabel);
 
@@ -779,8 +909,8 @@ test('TITLE-2: a long event name renders via the two-line clamp (never a single-
   // though one side's own name is two lines and the other is one --
   // compare the two `.popover-event-nav-role` positions directly, a
   // small pixel tolerance for sub-pixel/font-metric rounding only.
-  const shortRole = page.getByTestId('event-prior-label-jesus-ministry');
-  const longRole = page.getByTestId('event-following-label-jesus-ministry');
+  const shortRole = page.getByTestId('event-chrono-prior-label-global');
+  const longRole = page.getByTestId('event-chrono-following-label-global');
   const shortRoleBox = await shortRole.boundingBox();
   const longRoleBox = await longRole.boundingBox();
   expect(shortRoleBox).not.toBeNull();
@@ -790,9 +920,9 @@ test('TITLE-2: a long event name renders via the two-line clamp (never a single-
   // The peek header always carries the FULL name -- "the complete name is
   // one dwell away, always" -- dwelling the LONG-named arrow specifically,
   // since that is the case a bare button label could never fully show.
-  const longArrow = page.getByTestId('event-following-event-jesus-ministry');
+  const longArrow = page.getByTestId('event-chrono-following-event-global');
   await longArrow.hover({ force: true });
-  const peekTitle = page.getByTestId('event-following-event-jesus-ministry-peek-title');
+  const peekTitle = page.getByTestId('event-chrono-following-event-global-peek-title');
   await expect(peekTitle).toBeVisible({ timeout: 2000 });
   await expect(peekTitle).toHaveText(longLabel);
 });

@@ -140,17 +140,60 @@
    - F3 (Minor): Dispose() now also calls HidePeekState(), matching
      Commit()'s own symmetry -- every disposal path leaves this instance's
      fields fully reset, not just its two cancellation tokens (verified
-     harmless before this fix; correct regardless). *@
+     harmless before this fix; correct regardless).
+
+   CHRONO-MERGE-1 (owner NOD 2026-08-24, "put chronology up top... don't
+   clutter with story line where story doesn't exist"): a SECOND rendering
+   MODE, `Inline` -- the divergence-only story-thread line's own leg
+   affordance ("in <narrative>: next -> <leg>", EventChronologySection's
+   own doc comment has the full divergence rule) needs the identical
+   click-commits/dwell-peeks contract this component already gives the
+   block-mode arrows, living instead as ONE clickable run inside a running
+   sentence, never a second arrow-button+role-caption grid. Rather than a
+   parallel component (this file's own header above already explains why
+   the dwell timer/peek machinery needs a real component instance, not a
+   closure) or a second peek implementation, `Inline` branches ONLY the
+   "what does the clickable content look like" fragment of the markup
+   below -- every timer, the F1/F2 placement/truncation math, and the
+   PEEK-TRUNC-1 corridor all stay the untouched, single implementation
+   they already were ("do not re-derive placement math," the batch
+   brief's own words). `InlinePrefixText` carries the sentence-level word
+   a leg needs ("next ", following only -- the same asymmetry the brief's
+   own worked example uses: "<-" alone for a diverging prior, "next ->"
+   for a diverging following), so the CALLER (EventChronologySection)
+   never has to reach into this component's own markup to compose it.
+   `Glyph` for an inline leg is the ordinary prose arrow (&lt;-/-&gt;),
+   never the block mode's own triangle glyphs (the same deliberately
+   different register a sentence needs versus a button). The role caption
+   (`RoleTestIdPrefix`) and TITLE-WRAP-1's own two-line clamp are both
+   BLOCK-mode-only -- a story-thread leg shows its full name unclamped,
+   never truncated: it is not squeezed into a 47%-width column the way a
+   block arrow is, so there is nothing here for that clamp to solve. *@
 @using System.Globalization
 @inject AtlasClient Atlas
 @inject IJSRuntime JS
 @implements IDisposable
 
-<div class="popover-event-nav-side popover-event-nav-side-@Direction" @ref="_sideRef"
+<div class="@WrapperClass" @ref="_sideRef"
      @onpointerenter="OnPointerEnter" @onpointerleave="OnPointerLeave" @onpointerdown="OnWrapperPointerDown">
 @if (Adjacent is null)
 {
-    <span class="popover-event-nav-arrow popover-event-nav-arrow-@Direction popover-event-nav-arrow-empty"></span>
+    @* CHRONO-MERGE-1: the inline story-thread leg is only ever rendered by
+       its caller when Adjacent is genuinely present (a diverging narrative
+       leg is never null by construction -- see EventChronologySection's
+       own Diverges doc comment) -- no empty-placeholder markup for a case
+       this mode never reaches. *@
+    @if (!Inline)
+    {
+        <span class="popover-event-nav-arrow popover-event-nav-arrow-@Direction popover-event-nav-arrow-empty"></span>
+    }
+}
+else if (Inline)
+{
+    <button type="button" class="popover-story-thread-leg explorable-quiet"
+            data-testid="@($"{EventTestIdPrefix}-{IdSuffix}")"
+            aria-label="@($"{(Direction == "prior" ? "Prior" : "Following")} event: {Adjacent.Label}")"
+            @onclick="Commit">@InlinePrefixText<span class="popover-event-nav-glyph">@Glyph</span> @Adjacent.Label</button>
 }
 else
 {
@@ -175,41 +218,49 @@ else
     </button>
 
     <p class="popover-event-nav-role" data-testid="@($"{RoleTestIdPrefix}-{IdSuffix}")">@RoleText</p>
+}
 
-    @if (_showPeek)
-    {
-        <div class="popover-arrow-peek @(_peekFlipAbove ? "popover-arrow-peek-above" : null)" style="@PeekStyle"
-             data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek")">
-            <p class="popover-arrow-peek-title" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-title")">@Adjacent.Label</p>
-            @if (_peekVerses.Count > 0)
+@* CHRONO-MERGE-1: hoisted out of the block-only `else` above -- the peek
+   itself is IDENTICAL regardless of which mode opened it (the whole point
+   of reusing this component rather than re-deriving a second one), so it
+   is written ONCE and shared by both. `_showPeek` is never true while
+   `Adjacent` is null (OnPointerEnter returns early in that case), but the
+   guard is repeated here defensively now that this fragment no longer
+   sits inside the `else` branch C#'s own flow analysis used to narrow it
+   through. *@
+@if (_showPeek && Adjacent is not null)
+{
+    <div class="popover-arrow-peek @(_peekFlipAbove ? "popover-arrow-peek-above" : null)" style="@PeekStyle"
+         data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek")">
+        <p class="popover-arrow-peek-title" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-title")">@Adjacent.Label</p>
+        @if (_peekVerses.Count > 0)
+        {
+            @foreach (var v in _peekVerses.Take(_peekShown))
             {
-                @foreach (var v in _peekVerses.Take(_peekShown))
-                {
-                    <p class="popover-arrow-peek-verse" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-verse-{v.Vref}")">
-                        <sup class="popover-arrow-peek-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Places="@(v.Places ?? Array.Empty<PlaceRefDto>())" Persons="@(v.Persons ?? Array.Empty<PersonRefDto>())"
-                            Verse="@CanonRef.ParseVerse(v.Vref).Verse" ClassPrefix="popover-arrow-peek-mention" TestIdSuffix="@($"-{EventTestIdPrefix}-{IdSuffix}-peek")" OnExplore="OnExplore" />
-                    </p>
-                }
-                <RevealControls Total="@_peekVerses.Count" Default="1" Shown="@_peekShown" ShownChanged="OnPeekShownChanged"
-                                 MoreTestId="@($"{EventTestIdPrefix}-{IdSuffix}-peek-more")" CollapseTestId="@($"{EventTestIdPrefix}-{IdSuffix}-peek-collapse")"
-                                 RevealNoun="verses" />
-                @* F2 fix round: RevealControls' own Total above is honest
-                   about what this peek actually HOLDS (_peekVerses.Count)
-                   -- "all (N)" never overclaims something more/all can't
-                   actually reveal. This separate, non-interactive note is
-                   the disclosure for verses the SERVER itself never sent
-                   at all (ComputeTruncatedBy's own doc comment has the
-                   full mechanism) -- present regardless of _peekShown, a
-                   standing fact about this chapter, not something tied to
-                   the current reveal state. *@
-                @if (_peekTruncatedBy > 0)
-                {
-                    <p class="popover-arrow-peek-truncated" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-truncated")"
-                       title="This chapter has more verses than this peek can show">+@_peekTruncatedBy more (this chapter's own display cap)</p>
-                }
+                <p class="popover-arrow-peek-verse" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-verse-{v.Vref}")">
+                    <sup class="popover-arrow-peek-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Places="@(v.Places ?? Array.Empty<PlaceRefDto>())" Persons="@(v.Persons ?? Array.Empty<PersonRefDto>())"
+                        Verse="@CanonRef.ParseVerse(v.Vref).Verse" ClassPrefix="popover-arrow-peek-mention" TestIdSuffix="@($"-{EventTestIdPrefix}-{IdSuffix}-peek")" OnExplore="OnExplore" />
+                </p>
             }
-        </div>
-    }
+            <RevealControls Total="@_peekVerses.Count" Default="1" Shown="@_peekShown" ShownChanged="OnPeekShownChanged"
+                             MoreTestId="@($"{EventTestIdPrefix}-{IdSuffix}-peek-more")" CollapseTestId="@($"{EventTestIdPrefix}-{IdSuffix}-peek-collapse")"
+                             RevealNoun="verses" />
+            @* F2 fix round: RevealControls' own Total above is honest
+               about what this peek actually HOLDS (_peekVerses.Count)
+               -- "all (N)" never overclaims something more/all can't
+               actually reveal. This separate, non-interactive note is
+               the disclosure for verses the SERVER itself never sent
+               at all (ComputeTruncatedBy's own doc comment has the
+               full mechanism) -- present regardless of _peekShown, a
+               standing fact about this chapter, not something tied to
+               the current reveal state. *@
+            @if (_peekTruncatedBy > 0)
+            {
+                <p class="popover-arrow-peek-truncated" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-truncated")"
+                   title="This chapter has more verses than this peek can show">+@_peekTruncatedBy more (this chapter's own display cap)</p>
+            }
+        }
+    </div>
 }
 </div>
 
@@ -233,6 +284,14 @@ else
     [Parameter] public NarrativeAdjacentEventDto? Adjacent { get; set; }
     [Parameter, EditorRequired] public string Glyph { get; set; } = default!;
 
+    // CHRONO-MERGE-1: see this file's own header comment (the paragraph
+    // immediately above the markup) for the full "why a mode, not a
+    // second component" story. Both default false/null -- every
+    // pre-existing call site (the block-mode narrative/Chronology arrows)
+    // is unaffected without needing to pass either.
+    [Parameter] public bool Inline { get; set; }
+    [Parameter] public string? InlinePrefixText { get; set; }
+
     // The SAME "a caller/provider supplies the real push, this component
     // only ever proposes a node" contract MentionText/PericopeHeading
     // already follow -- reused for BOTH the arrow's own commit (click) and
@@ -245,6 +304,16 @@ else
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
     private string RoleText => Direction == "prior" ? "PRIOR EVENT" : "FOLLOWING EVENT";
+
+    // CHRONO-MERGE-1: the ONE thing that actually differs about the
+    // wrapper element between the two modes -- Inline drops the block
+    // grid's own 47%-capped, direction-suffixed column class in favor of
+    // a plain relatively-positioned inline-block (app.css's own
+    // .popover-story-thread-leg-wrap), just enough to anchor the SAME
+    // .popover-arrow-peek below it (position:relative is all the peek's
+    // own absolute positioning ever needed from this wrapper, block or
+    // inline alike).
+    private string WrapperClass => Inline ? "popover-story-thread-leg-wrap" : $"popover-event-nav-side popover-event-nav-side-{Direction}";
 
     private Task Commit()
     {

@@ -1383,6 +1383,30 @@ test('XREF-1/regression: a cross-reference to a same-chapter multi-verse target 
 // ex_rameses/EXO.12.37; following: ex_red_sea/EXO.14.21-31) is
 // independently readable straight off data/curated/narratives/exodus.toml
 // + events-extra.toml, letting these tests assert EXACT text.
+//
+// CHRONO-MERGE-1 (batch-chrono-merge-brief.md, owner NOD 2026-08-24):
+// retires the per-narrative traversal nav these tests originally proved
+// (`event-nav`, `event-{prior,following}-event-{narrativeId}`) whole --
+// CONTRACT.md's own CHRONO-MERGE-1 note has the full divergence rule and
+// per-test disposition. `ex_succoth`'s own narrative and timeline
+// positions are byte-identical live (ground-truthed below), so the
+// "clicking a verse's EVENT row..." test's own UI-rendering half
+// retargets onto the Chronology block's testids with its assertions
+// otherwise unchanged; its wire-level "one-graph property" half is
+// untouched. The MULTI-NARRATIVE nav test, the "recursive traversal
+// reaches both narrative ends" test, and the "three-narrative full walk"
+// test are RETIRED (not rewritten) -- all three exercised the retired
+// per-narrative UI walk specifically (a "walk this ONE narrative,
+// arbitrarily far" affordance POPOVER-LAW-1's own non-redundancy
+// admission deliberately removes; the MULTI-NARRATIVE test was already
+// permanently `test.skip`-vacuous even before this batch -- the
+// controller's own live sweep found zero of 255 real events belong to >1
+// narrative). The underlying graph property they exercised (a
+// narrative's own `.legs` form a real, walkable chain, conditional
+// presence at genuine chain ends) stays covered server-side
+// (`server/atlas-graph/tests/narrative_real_data.rs`) and, for the
+// SURVIVING global-timeline walk, by `event-timeline.spec.ts`'s own
+// CHRONO-1 chain-end test (theo-1/theo-385).
 // ---------------------------------------------------------------------
 
 test('EVENT-1: a verse popover shows EVENT membership (not PRIOR/FOLLOWING) -- traversal lives on the EVENT node', async ({ page }) => {
@@ -1467,206 +1491,55 @@ test('EVENT-1: clicking a verse\'s EVENT row opens the EventNode, whose PRIOR/FO
   await expect(page.getByTestId('popover-title')).toHaveText('First camp at Succoth');
   await expect(page.getByTestId('popover-section-event-date-places')).toBeVisible();
 
-  // M-D3/U1: the narrative nav is now MERGED into event-date-places (no
-  // more separate PRIOR EVENT/FOLLOWING EVENT sections) -- exactly one
-  // qualifying narrative -> no narrative-name label at all (that only
-  // renders for a multi-narrative event, see the MULTI-NARRATIVE test
-  // below), just the two flanking arrows.
-  const eventSection = page.getByTestId('popover-section-event-date-places');
-  await expect(eventSection).toBeVisible();
-  await expect(eventSection.getByTestId('popover-event-nav-narrative')).toHaveCount(0);
+  // CHRONO-MERGE-1: ex_succoth's own narrative and timeline positions are
+  // byte-identical (confirmed above, live) -- there is nothing
+  // non-redundant for a story-thread line to add, so the Chronology
+  // block's own GLOBAL arrows are what carries this traversal now (the
+  // narrative-scoped nav this paragraph used to check -- `event-nav`,
+  // `event-prior-event-exodus`, etc. -- is retired whole).
+  await expect(page.getByTestId('event-nav')).toHaveCount(0);
+  await expect(page.getByTestId('event-story-thread')).toHaveCount(0);
+  const chronoSection = page.getByTestId('popover-section-event-chronology');
+  await expect(chronoSection).toBeVisible();
 
-  const priorBtn = eventSection.getByTestId('event-prior-event-exodus');
+  const priorBtn = page.getByTestId('event-chrono-prior-event-global');
   // .popover-event-nav-label -- the button's own full text also includes
   // its decorative directional glyph (a sibling span).
   await expect(priorBtn.locator('.popover-event-nav-label')).toHaveText('Israel departs Rameses');
   // M-D4 fix round 1/P4 (owner, verbatim: "we straight up should not have
-  // [the verse text]. you get that when you traverse."): the one-verse
-  // caption this arrow used to show (EXO.12.37's own text) is RETIRED
-  // outright -- no verse content, no attestation text in the affordance at
-  // all, the click is what YIELDS the event, not what the button previews.
-  // In its place: a static small-caps role caption naming the DIRECTION
-  // only, plus a `title` on the (possibly ellipsis-truncated) name itself
-  // carrying the untruncated event name for a native hover tooltip.
-  await expect(eventSection.getByTestId('event-prior-verse-exodus')).toHaveCount(0);
-  await expect(eventSection.getByTestId('event-prior-label-exodus')).toHaveText('PRIOR EVENT');
+  // [the verse text]. you get that when you traverse."): no verse content,
+  // no attestation text in the affordance at all, the click is what
+  // YIELDS the event, not what the button previews. In its place: a
+  // static small-caps role caption naming the DIRECTION only, plus a
+  // `title` on the (possibly ellipsis-truncated) name itself carrying the
+  // untruncated event name for a native hover tooltip.
+  await expect(page.getByTestId('event-chrono-prior-label-global')).toHaveText('PRIOR EVENT');
   await expect(priorBtn.locator('.popover-event-nav-label')).toHaveAttribute('title', 'Israel departs Rameses');
 
-  const followingBtn = eventSection.getByTestId('event-following-event-exodus');
+  const followingBtn = page.getByTestId('event-chrono-following-event-global');
   await expect(followingBtn.locator('.popover-event-nav-label')).toHaveText('Crossing the Red Sea');
   // The FOLLOWING event's own real verse groups span EXO.14.21-31 -- already
   // proven at the wire level above (position.following.verse_groups ==
   // redSeaSceneEvent.verse_groups, the test's own "one-graph" assertion);
   // P4 means that span is never echoed into the UI arrow itself anymore.
-  await expect(eventSection.getByTestId('event-following-verse-exodus')).toHaveCount(0);
-  await expect(eventSection.getByTestId('event-following-label-exodus')).toHaveText('FOLLOWING EVENT');
+  await expect(page.getByTestId('event-chrono-following-label-global')).toHaveText('FOLLOWING EVENT');
   await expect(followingBtn.locator('.popover-event-nav-label')).toHaveAttribute('title', 'Crossing the Red Sea');
 });
 
-test('EVENT-1: MULTI-NARRATIVE nav -- an event touching >1 narrative shows one flanking nav row per narrative, each named', async ({ page }) => {
-  // Find a real compiled event whose own narrative_positions span >1
-  // narrative (most events belong to exactly one -- the single-narrative
-  // case is already the norm asserted above; this isolates the real,
-  // rarer multi-membership case the code's own occurrences/idSuffix
-  // disambiguation exists for).
-  const narratives = await api.narratives();
-  let target: { eventId: string; positions: any[] } | null = null;
-  outer: for (const n of narratives) {
-    for (const legId of n.legs) {
-      const positions = (await api.narrativeEventPositions(legId)).narrative;
-      if (positions.length > 1) {
-        target = { eventId: legId, positions };
-        break outer;
-      }
-    }
-  }
-  test.skip(!target, 'no sampled narrative leg belongs to >1 narrative');
-  if (!target) return;
-
-  const detail = await api.event(target.eventId);
-  await page.goto('/'); // any page -- reached directly by event id below, no reader navigation needed
-  // Open the EventNode directly the same way every recursive traversal
-  // test in this file does: via its own first witness verse.
-  const wv = detail.witnesses[0].verse_groups[0].verses[0];
-  const [book, chapter, verse] = wv.split('.');
-  await page.goto(`/read/${book}/${chapter}`);
-  await page.getByTestId(`verse-line-${verse}`).click();
-  await page.getByTestId(`verse-event-${target.eventId}`).click();
-  await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
-
-  const eventSection = page.getByTestId('popover-section-event-date-places');
-  await expect(eventSection).toBeVisible();
-  const narrativeLabels = eventSection.getByTestId('popover-event-nav-narrative');
-  await expect(narrativeLabels).toHaveCount(target.positions.length);
-  for (const position of target.positions) {
-    await expect(narrativeLabels.filter({ hasText: position.narrative_name })).toHaveCount(1);
-    if (position.prior) {
-      await expect(eventSection.getByTestId(`event-prior-event-${position.narrative_id}`).locator('.popover-event-nav-label')).toHaveText(position.prior.label);
-      // P4: the role caption's own idSuffix disambiguation (the SAME
-      // `--N` suffix the button testid itself carries on a same-name
-      // multi-narrative collision) survives the retired-verse-text
-      // rebuild -- one caption per row, not one shared across all of them.
-      await expect(eventSection.getByTestId(`event-prior-label-${position.narrative_id}`)).toHaveText('PRIOR EVENT');
-    }
-    if (position.following) {
-      await expect(eventSection.getByTestId(`event-following-event-${position.narrative_id}`).locator('.popover-event-nav-label')).toHaveText(position.following.label);
-      await expect(eventSection.getByTestId(`event-following-label-${position.narrative_id}`)).toHaveText('FOLLOWING EVENT');
-    }
-  }
-});
-
-test('EVENT-1: recursive traversal reaches both narrative ends -- no PRIOR at the first event, no FOLLOWING at the last', async ({ page }) => {
-  const narratives = await api.narratives();
-  const exodus = narratives.find((n: any) => n.id === 'exodus');
-  test.skip(!exodus || exodus.legs.length < 2, 'exodus narrative not present or too short to walk');
-  const firstLegId = exodus.legs[0];
-  const lastLegId = exodus.legs[exodus.legs.length - 1];
-  const firstLegLabel = (await api.narrativeEventPositions(firstLegId)).narrative.find((p: any) => p.narrative_id === 'exodus').event_label;
-  const lastLegLabel = (await api.narrativeEventPositions(lastLegId)).narrative.find((p: any) => p.narrative_id === 'exodus').event_label;
-
-  await page.goto('/read/EXO/13');
-  await page.getByTestId('verse-line-20').click(); // ex_succoth (index 1)
-  await page.getByTestId('verse-event-ex_succoth').click(); // land on the EventNode -- one prior-hop reaches the first leg (index 0)
-
-  // Walk PRIOR once: ex_succoth -> ex_rameses, exodus.legs[0] itself.
-  await page.getByTestId('event-prior-event-exodus').click();
-  await expect(page.getByTestId('popover-title')).toHaveText(firstLegLabel);
-  // The narrative's own FIRST leg -- no PRIOR arrow at all (conditional
-  // presence, never a disabled stub), but it DOES have a FOLLOWING one
-  // (back toward ex_succoth), proving this is the genuine start, not a
-  // dead end. M-D3/U1: no more separate section to check -- the arrows
-  // themselves (unchanged testids) are the presence signal now.
-  await expect(page.getByTestId('event-prior-event-exodus')).toHaveCount(0);
-  await expect(page.getByTestId('event-following-event-exodus')).toBeVisible();
-
-  // Walk FOLLOWING back to ex_succoth, then keep walking forward
-  // (discovering the chain's own real length rather than hardcoding a hop
-  // count) until the narrative's own LAST leg -- following disappears.
-  //
-  // A bare `.count()` read has NO auto-retry (unlike `expect(...)`), so
-  // checking it immediately after a click can catch LoadCurrent's own
-  // documented "cleared, then filled" intermediate frame (ExplorerPopover.razor's
-  // own comment: sections are wiped SYNCHRONOUSLY before the new node's
-  // async fetch resolves) and misread a genuinely-present following button
-  // as absent, exiting the loop early -- the exact class of bug
-  // batch-r-report.md's own "third real bug" writeup already documents for
-  // a different section. Waiting for `popover-section-event-date-places`
-  // (ALWAYS present, unconditionally, once ANY EventNode's own LoadCurrent
-  // has actually settled) after each click before re-checking the count is
-  // the fix -- the same "wait for a real settled signal, never a raw
-  // one-shot read" discipline READER-1/BLINK-1's own tests already apply
-  // elsewhere in this file.
-  let guard = 0;
-  while (await page.getByTestId('event-following-event-exodus').count() > 0) {
-    await page.getByTestId('event-following-event-exodus').click();
-    await expect(page.getByTestId('popover-section-event-date-places')).toBeVisible();
-    guard++;
-    expect(guard, 'exodus narrative traversal did not terminate within a sane number of hops').toBeLessThan(exodus.legs.length + 2);
-  }
-
-  await expect(page.getByTestId('popover-title')).toHaveText(lastLegLabel);
-  // The narrative's own LAST leg -- no FOLLOWING arrow, but a PRIOR one IS
-  // present (this is genuinely the end, not merely a node missing one leg).
-  await expect(page.getByTestId('event-following-event-exodus')).toHaveCount(0);
-  await expect(page.getByTestId('event-prior-event-exodus')).toBeVisible();
-});
-
-test('EVENT-1: the three-narrative full walk -- FOLLOWING hop by hop to the last event, then PRIOR back to the first (requirement 6, verbatim acceptance)', async ({ page }) => {
-  // "we can fully walk the graph for three independent narratives" -- three
-  // narratives with >=3 legs each, chosen from the 13 compiled (named in
-  // the report): exodus, jesus-ministry, passion-week. Hop count is read
-  // from the wire (narratives[].legs.length), never hardcoded, so this test
-  // keeps walking the FULL graph if a narrative grows.
-  const narratives = await api.narratives();
-  const chosen = ['exodus', 'jesus-ministry', 'passion-week'];
-  for (const narrativeId of chosen) {
-    const narrative = narratives.find((n: any) => n.id === narrativeId);
-    expect(narrative, `${narrativeId} must be a real compiled narrative`).toBeTruthy();
-    expect(narrative.legs.length, `${narrativeId} must have >=3 legs`).toBeGreaterThanOrEqual(3);
-
-    const firstId = narrative.legs[0];
-    const lastId = narrative.legs[narrative.legs.length - 1];
-    const firstLabel = (await api.narrativeEventPositions(firstId)).narrative.find((p: any) => p.narrative_id === narrativeId).event_label;
-
-    // Open the FIRST event's own popover via its OWN first witness verse
-    // (Reader.razor's own reader-heading click path is exercised separately
-    // by the reader-headings spec; this test isolates the traversal-walk
-    // acceptance itself, independent of where the popover was opened from).
-    const firstDetail = await api.event(firstId);
-    const firstWitnessVref = firstDetail.witnesses[0].verse_groups[0].verses[0];
-    const fv = parseVerse(firstWitnessVref);
-    await page.goto(`/read/${fv.book}/${fv.chapter}`);
-    await page.getByTestId(`verse-line-${fv.verse}`).click();
-    await page.getByTestId(`verse-event-${firstId}`).click();
-    await expect(page.getByTestId('popover-title')).toHaveText(firstLabel);
-    await expect(page.getByTestId(`event-prior-event-${narrativeId}`)).toHaveCount(0); // first event: no PRIOR (conditional presence)
-
-    // Walk FOLLOWING hop by hop; hop count must equal legs.length - 1.
-    let hops = 0;
-    while (await page.getByTestId(`event-following-event-${narrativeId}`).count() > 0) {
-      await page.getByTestId(`event-following-event-${narrativeId}`).click();
-      await expect(page.getByTestId('popover-section-event-date-places')).toBeVisible(); // destination popover renders
-      hops++;
-      expect(hops, `${narrativeId} FOLLOWING walk exceeded its own leg count`).toBeLessThanOrEqual(narrative.legs.length - 1);
-    }
-    expect(hops, `${narrativeId} FOLLOWING walk must visit every leg exactly once`).toBe(narrative.legs.length - 1);
-    const lastLabel = (await api.narrativeEventPositions(lastId)).narrative.find((p: any) => p.narrative_id === narrativeId).event_label;
-    await expect(page.getByTestId('popover-title')).toHaveText(lastLabel);
-    await expect(page.getByTestId(`event-following-event-${narrativeId}`)).toHaveCount(0); // last event: no FOLLOWING (conditional presence)
-
-    // Walk PRIOR all the way back -- same hop count, ending at the first event again.
-    let backHops = 0;
-    while (await page.getByTestId(`event-prior-event-${narrativeId}`).count() > 0) {
-      await page.getByTestId(`event-prior-event-${narrativeId}`).click();
-      await expect(page.getByTestId('popover-section-event-date-places')).toBeVisible();
-      backHops++;
-      expect(backHops).toBeLessThanOrEqual(narrative.legs.length - 1);
-    }
-    expect(backHops, `${narrativeId} PRIOR walk must retrace every leg exactly once`).toBe(narrative.legs.length - 1);
-    await expect(page.getByTestId('popover-title')).toHaveText(firstLabel); // back at the start, same event
-    await expect(page.getByTestId(`event-prior-event-${narrativeId}`)).toHaveCount(0);
-  }
-});
+// CHRONO-MERGE-1 RETIREMENT (not a rewrite -- this file's own header
+// comment, above, has the full reasoning): three tests used to live here --
+// "EVENT-1: MULTI-NARRATIVE nav" (already permanently `test.skip`-vacuous,
+// zero of 255 real events belong to >1 narrative), "EVENT-1: recursive
+// traversal reaches both narrative ends" (exodus, walked hop-by-hop via
+// `event-{prior,following}-event-exodus`), and "EVENT-1: the
+// three-narrative full walk" (exodus/jesus-ministry/passion-week,
+// identical mechanism). All three exercised the retired per-narrative UI
+// walk specifically; none has a CHRONO-MERGE-1-era replacement to rewrite
+// onto, because "walk this ONE narrative, arbitrarily far" is exactly the
+// affordance this batch removes (POPOVER-LAW-1's own non-redundancy
+// admission -- a diverging story-thread line shows at most one hop per
+// direction, never a multi-hop per-narrative walk). Recoverable from git
+// history if this UI affordance is ever reinstated.
 
 // ---------------------------------------------------------------------
 // EVENT-1: PARALLEL WITNESSES (requirement 4/7 -- "Crucifixion event shows
@@ -1934,9 +1807,15 @@ test('EVENT-1: chronological-vs-reading-order -- a JHN-witnessed event\'s FOLLOW
   const johnWitness = entryDetail.witnesses.find((w: any) => w.book === 'JHN');
   expect(johnWitness, 'pw_jerusalem_entry must have a real John witness').toBeTruthy();
 
-  const positions = (await api.narrativeEventPositions('pw_jerusalem_entry')).narrative;
-  const passionWeek = positions.find((p: any) => p.narrative_id === 'passion-week');
+  const positions = await api.narrativeEventPositions('pw_jerusalem_entry');
+  const passionWeek = positions.narrative.find((p: any) => p.narrative_id === 'passion-week');
   expect(passionWeek.following.id).toBe('pw_temple_cleansing');
+  // CHRONO-MERGE-1: this event's own narrative-following genuinely
+  // DIVERGES from its global-timeline following -- the "John doesn't have
+  // everything in order" fact this test is named for IS a divergence, so
+  // it now surfaces via the story-thread line rather than a dedicated
+  // per-narrative arrow (CONTRACT.md's own CHRONO-MERGE-1 note).
+  expect(passionWeek.following.id, 'this test needs a GENUINELY diverging following for the story-thread line to render at all').not.toBe(positions.timeline.following?.id);
 
   const cleansingDetail = await api.event('pw_temple_cleansing');
   expect(cleansingDetail.witnesses.some((w: any) => w.book === 'JHN'), 'pw_temple_cleansing must have NO John witness -- the whole point of this test').toBeFalsy();
@@ -1952,9 +1831,9 @@ test('EVENT-1: chronological-vs-reading-order -- a JHN-witnessed event\'s FOLLOW
   await page.getByTestId('verse-event-pw_jerusalem_entry').click();
   await expect(page.getByTestId('popover-title')).toHaveText('The triumphal entry into Jerusalem');
 
-  const followingBtn = page.getByTestId('popover-section-event-date-places').getByTestId('event-following-event-passion-week');
-  await expect(followingBtn.locator('.popover-event-nav-label')).toHaveText('Jesus cleanses the temple a second time');
-  await followingBtn.click();
+  const followingLeg = page.getByTestId('event-story-thread-following-event-passion-week');
+  await expect(followingLeg).toHaveText('next → Jesus cleanses the temple a second time');
+  await followingLeg.click();
   await expect(page.getByTestId('popover-title')).toHaveText('Jesus cleanses the temple a second time');
 
   // This destination event's own PARALLEL ACCOUNTS never include John --

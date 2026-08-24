@@ -107,7 +107,15 @@ test('EVENT-1: map focus classes flip on EventNode open, follow traversal, and c
   // live. The leg that was "current" a moment ago (ex_rameses -> ex_succoth)
   // is now merely "active" (still amplified, no longer the strongest); the
   // leg(s) touching ex_red_sea become "current" instead.
-  await page.getByTestId('event-following-event-exodus').click();
+  // CHRONO-MERGE-1: the per-narrative nav this used to click
+  // (`event-following-event-exodus`) is retired whole -- the Chronology
+  // block's own GLOBAL arrow reaches the identical target here (ex_succoth's
+  // own narrative and timeline positions are byte-identical, confirmed
+  // live in event-timeline.spec.ts's own CHRONO-MERGE-1 tests), and map
+  // focus sync is unconditional on narrative membership regardless of
+  // which traversal affordance triggered it (`EventNode` is always
+  // `INarrativeAware`, CONTRACT.md's own EVENT-1 note).
+  await page.getByTestId('event-chrono-following-event-global').click();
   await expect(page.getByTestId('popover-title')).toHaveText('Crossing the Red Sea');
 
   const ramesesToSuccoth = scene.arrows.find((a: any) => a.narrative === 'exodus' && a.from_event === 'ex_rameses' && a.to_event === 'ex_succoth');

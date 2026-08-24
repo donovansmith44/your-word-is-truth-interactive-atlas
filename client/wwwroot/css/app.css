@@ -3993,13 +3993,14 @@ input:focus-visible,
     color: var(--bronze-ink);
 }
 
-/* M-D3/U1: an EVENT node's own narrative prior/following traversal, folded
-   INSIDE the date+places section (EventDateAndPlacesSection's own doc
-   comment has the full story) -- "immediately below focus," so this list
-   sits at the TOP of that section, above the date line. One row per
-   qualifying narrative; almost always exactly one (a single-narrative
-   event, the overwhelming majority), stacked vertically on the rare
-   multi-narrative event. */
+/* M-D3/U1 (RESPEC'D CHRONO-MERGE-1): originally an EVENT node's own
+   narrative prior/following traversal, folded inside the date+places
+   section, one row per qualifying narrative, stacked on a multi-narrative
+   event -- see EventDateAndPlacesSection's own doc comment for that
+   retirement. This list's own SURVIVING use is EventChronologySection's
+   `event-chronology` wrapper: always exactly ONE row now (the global
+   pair), never stacked -- the flex-column/gap shape still applies
+   (harmless on a single child), just never exercised past one row. */
 .popover-event-nav-list {
     display: flex;
     flex-direction: column;
@@ -4007,36 +4008,21 @@ input:focus-visible,
     margin-bottom: .5rem;
 }
 
-.popover-event-nav-row + .popover-event-nav-row {
-    padding-top: .5rem;
-    border-top: 1px solid rgba(138, 107, 61, .18);
-}
-
-/* .popover-event-nav-narrative: present only when this event belongs to
-   >1 narrative (see the C# side's own "a single qualifying entry needs no
-   name" rule) -- a quiet label sitting ABOVE its own row's arrows, never
-   squeezed into their own flex space.
-   M-D4 fix round 1/P4 adds .popover-event-nav-role alongside it: the SAME
-   quiet-eyebrow visual DNA (mono, tracked caps, bronze-ink), reused for a
-   new static role caption BELOW each arrow -- two different things named
-   (a data-driven narrative NAME vs. this row's own static direction
-   label), one shared look. Margins differ per role (see each selector's
-   own rule below) since one sits above its row, the other below its own
-   button. */
-.popover-event-nav-narrative,
+/* .popover-event-nav-role: the static "PRIOR EVENT"/"FOLLOWING EVENT"
+   caption beneath each block-mode arrow (M-D4 fix round 1/P4) -- a quiet,
+   tracked-caps, bronze-ink eyebrow. CHRONO-MERGE-1: this rule used to
+   share its own typography with `.popover-event-nav-narrative` (the
+   retired narrative-nav's own multi-membership name label, RETIRED WHOLE
+   alongside the rest of that nav -- no element carries that class
+   anymore, grep-confirmed against every `.cs` file in this app) -- kept
+   as the sole surviving selector rather than two coincidentally-identical
+   rules under one now-single name. */
 .popover-event-nav-role {
     font-family: var(--font-mono);
     font-size: .78rem;
     letter-spacing: .03em;
     text-transform: uppercase;
     color: var(--bronze-ink);
-}
-
-.popover-event-nav-narrative {
-    margin: 0 0 .25rem;
-}
-
-.popover-event-nav-role {
     margin: .1rem 0 0;
 }
 
@@ -4288,6 +4274,54 @@ input:focus-visible,
     font-style: italic;
     font-size: .75rem;
     color: var(--ink-soft);
+}
+
+/* CHRONO-MERGE-1 (owner NOD 2026-08-24, POPOVER-LAW-1's own first
+   application): the divergence-only story-thread line -- one
+   `.popover-meta` row per narrative whose own order genuinely differs
+   from the Chronology block's global arrows immediately above (the
+   SAME quiet-provenance register PlaceDescriptionSection's own "Known in
+   modern atlases as..." line already established -- supplementary,
+   never a second navigation surface). */
+.popover-story-thread {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+    margin-top: .5rem;
+}
+
+/* The leg affordance -- ArrowNav's own Inline rendering mode (SAME
+   component, SAME dwell peek, SAME click-commits; see that file's own
+   header comment). position:relative anchors .popover-arrow-peek below
+   it, the identical role .popover-event-nav-side's own position:relative
+   already plays for the block-mode arrows -- display:inline-block is the
+   one difference that matters, letting this wrapper size to its own
+   button rather than claim a 47%-capped column meant for a two-side row. */
+.popover-story-thread-leg-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+/* .explorable-quiet (house app.css rule, above) supplies cursor:pointer
+   without .explorable's own hover-wash -- exactly right for a click
+   target living INSIDE a sentence: that class's own doc comment ("a
+   heading a reader is meant to read... touching color at all would risk
+   this popover's own established contrast floor") applies here too, this
+   is real, must-stay-readable prose, never button chrome. bronze-ink
+   resting, lapis on hover/focus -- the same interactive-text convention
+   every other click target in this popover platform already uses. */
+.popover-story-thread-leg {
+    margin: 0;
+    padding: 0;
+    font: inherit;
+    color: var(--bronze-ink);
+    background: none;
+    border: none;
+}
+
+.popover-story-thread-leg:hover,
+.popover-story-thread-leg:focus-visible {
+    color: var(--lapis);
 }
 
 /* Batch R requirement 3: one section's own wrapper -- a stable hook

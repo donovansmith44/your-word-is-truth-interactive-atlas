@@ -507,6 +507,11 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   UNCONDITIONALLY absent here -- one header per entry, the ref-label only;
   see this file's own U6 -- PARALLELS note below, and PARALLELS-1,
   `tests/ux/popover-sections.spec.ts`),
+  `event-nav` through `event-following-label-{narrativeId}` (the whole
+  narrative prior/following nav documented in this paragraph) is RETIRED
+  WHOLE by CHRONO-MERGE-1 (below, after TITLE-WRAP-1) -- this paragraph
+  describes the PRE-CHRONO-MERGE-1 shape only; kept as historical record,
+  same convention CHRONO-3's own retirement note already follows.
   `event-nav` (M-D3/U1; wraps the WHOLE narrative prior/following nav --
   one or more `event-nav-row-{idSuffix}` rows, each holding one
   `event-nav-arrows` pair; present iff the event belongs to >=1 narrative
@@ -2780,6 +2785,13 @@ Notes:
   retired `EventTimelinePriorSection`/`EventTimelineFollowingSection`
   providers used to occupy (directly after `EventWitnessesSection` --
   narrative primacy preserved, the narrative nav always renders first).
+  RESPEC'D (CHRONO-MERGE-1, below, after TITLE-WRAP-1): this registration
+  position is the PRE-CHRONO-MERGE-1 shape only -- that batch retires the
+  narrative nav whole and moves THIS section up to the vacated top slot
+  instead (`EventChronologySection` now registers BEFORE
+  `EventDateAndPlacesSection`, not after `EventWitnessesSection`). Every
+  OTHER paragraph in this CHRONO-1 note (SERVING, DISPLAY, TESTIDS,
+  CHRONO-2, CHRONO-3) is unaffected and stays binding as written.
 
   SERVING (controller decision 2, "the graph serves it"): `temporal-
   adjacency` is now a REAL, materialized graph relation, not a disclosed
@@ -2884,7 +2896,14 @@ Notes:
   Chronology block (CHRONO-1) -- the SAME component
   (`Components.ArrowNav.razor`), so the grammar can never drift between the
   two families. Completes the affordance triad P4 already named: "glance =
-  name, dwell = peek text, click = traverse."
+  name, dwell = peek text, click = traverse." RESPEC'D (CHRONO-MERGE-1,
+  below, after TITLE-WRAP-1): the narrative nav named here is retired
+  whole -- `ArrowNav`'s own SECOND consumer is now the story-thread
+  line's own `Inline` leg affordance, the identical dwell-hover contract
+  this paragraph describes, unchanged in substance ("the grammar can
+  never drift between the two families" now reads block-arrow-vs-inline-leg,
+  not block-arrow-vs-narrative-arrow, but it is the SAME sentence's own
+  point either way: one component, one grammar, two render sites).
   - Bare/quick pointer pass over an arrow: NOTHING happens -- no peek box,
     no state change (`ArrowNav`'s own dwell timer is cancelled the instant
     `pointerleave` fires, before `DwellTiming.PeekDelayMs` elapses).
@@ -3155,7 +3174,166 @@ Notes:
     grid holds -- the PRIOR/FOLLOWING role-caption position for a row
     carrying a long name doesn't shift (beyond a small pixel tolerance)
     from a row carrying a short one; the peek header (dwelling the same
-    arrow) shows the event's full, untruncated name regardless.
+    arrow) shows the event's full, untruncated name regardless. RESPEC'D
+    (CHRONO-MERGE-1, below): this test's own fixture moved from a
+    narrative-nav row (retired) to the Chronology block's own global
+    arrows -- the CONTRACT this bullet describes (clamp, grid, peek
+    header) is otherwise unchanged, block-mode arrows being exactly what
+    it was always about.
+- CHRONO-MERGE-1 (batch-chrono-merge-brief.md; the design question, owner
+  verbatim, 2026-08-24: "is there a meaningful disjunction betwen
+  chronology and narrative order? It's looking like they're basically the
+  same and we can nix the narrative thing from hover menu and put
+  chronology up top"; the nod, verbatim: "yes I agree but just don't
+  clutter with story line where story doesn't exist"; POPOVER-LAW-1's own
+  first application, the owner's own standing rule, verbatim: "we set an
+  allowable set of things that we can pull into a given hover menu that is
+  associated with a given type of node/edge. we only pull in anything if
+  there's something non-redundant to pull"):
+
+  MEASURED (controller, live sweep of all 255 real narrative events, one
+  `/api/narrative/event/{id}` call each): 183/255 (72%) narrative rows
+  byte-identical to that SAME event's own global-timeline row; 72/255
+  (28%) genuinely diverge, every divergence a DIFFERENT narrative's own
+  event interleaving chronologically between two of the first narrative's
+  legs (never a data error) -- e.g. `df_adullam` (David's Flight from
+  Saul): its own narrative-next is `df_keilah`, but the global-timeline
+  next is `1ch_ziklag_warriors`, a Chronicles genealogy entry landing
+  between them in time.
+
+  DECISIONS:
+  1. The Narrative traversal section (`EVENT-1`'s own U1 nav, folded into
+     `EventDateAndPlacesSection`) DIES WHOLE. ONE Chronology block
+     survives (`CHRONO-1`, above, unchanged in its own right -- same
+     `Components.ArrowNav`, same P4 name-only display, same PEEK-TRUNC-1
+     dwell peek) and MOVES UP to occupy the vacated top position:
+     `PopoverSectionRegistry`'s own EVENT-kind registration order is now
+     `EventChronologySection` THEN `EventDateAndPlacesSection` THEN
+     `EventWitnessesSection` (was date-places, witnesses, ..., chronology
+     last) -- "Chronology, always on top," the owner's own words, realized
+     as this one reordering. `EventDateAndPlacesSection` keeps exactly what
+     its own name says (date + place(s)) and nothing else.
+  2. The STORY-THREAD LINE -- what survives of the narrative nav -- renders
+     inside the SAME Chronology section (`popover-section-event-chronology`,
+     no second section) ONLY when BOTH hold: (a) the focused event belongs
+     to a narrative, AND (b) that narrative's own prior and/or following
+     genuinely differs (a client-side id comparison, `EventChronologySection.Diverges`)
+     from the SAME event's global-timeline prior/following. A null/absent
+     narrative-side leg is that narrative's own chain END there -- NEVER a
+     divergence (nothing to show for that direction), regardless of what
+     the timeline says. Non-narrative events (the majority): never any
+     line. Narrative events whose order agrees (72%): never any line.
+     Showing ONLY the diverging direction(s) -- a prior-only divergence
+     renders no following clause and vice versa; both diverging join on
+     ONE line with " · " (U+00B7 middle dot).
+  3. DATA: `GET /api/narrative/event/{id}`'s own existing `{narrative,
+     timeline}` object (CHRONO-1's own WIRE paragraph, above) is
+     sufficient as-is -- no new endpoint, no DTO change. One fetch (already
+     memoized on the `EventNode` instance) feeds both the block arrows
+     (`.timeline`) and the story-thread test (`.narrative`).
+  4. DEAD-CODE LAW: `EventDateAndPlacesSection`'s own former narrative-nav
+     rendering (the `occurrences`-keyed per-narrative loop, `event-nav`'s
+     own wrapper) is DELETED whole, not merely unregistered -- confirmed
+     absent by grep against `PopoverSectionProviders.cs`/`PopoverSections.cs`,
+     the SAME retirement discipline `CHRONO-3` (above) already established
+     for the sections THIS narrative nav itself once replaced.
+
+  DISPLAY: `Components.ArrowNav` gains a SECOND rendering mode, `Inline`
+  (that component's own header comment has the full story) -- the
+  identical click-commits/dwell-peeks/placement-measurement machinery the
+  block arrows already use, just rendering as one clickable run inside a
+  sentence instead of a button+role-caption stack. A story-thread line
+  reads "in `<narrative name>`: " followed by:
+  - prior-only divergence: `← <prior leg name>` (ArrowNav's own inline
+    Glyph, U+2190 -- deliberately the PROSE arrow, distinct from the block
+    button's own ◂/▸ triangles);
+  - following-only divergence: `next → <following leg name>` (Glyph
+    U+2192, `InlinePrefixText="next "` supplying the leading word --
+    matches the owner's own worked example verbatim: "in David's Flight:
+    next → David delivers Keilah");
+  - both diverging: `← <prior leg name> · next → <following leg name>`,
+    one line (pw_jerusalem_entry, Passion Week, is a real, worked example
+    of this dual case -- its own prior AND following both differ from the
+    global timeline's).
+  An event belonging to >1 narrative (a real but, per the controller's own
+  live sweep, currently EMPTY case) would render one such line per
+  DIVERGING narrative, stacked -- untested against real data (none
+  exists), but the same `Where(...).ToList()` filter that produces zero
+  or one rows already produces N with no special-casing.
+
+  TESTIDS: `event-story-thread` (wraps 1+ lines, present iff >=1 narrative
+  qualifies); `event-story-thread-{narrativeId}` (one `.popover-meta` line
+  per qualifying narrative); `event-story-thread-prior-event-{narrativeId}`
+  / `event-story-thread-following-event-{narrativeId}` (the inline leg
+  affordance -- REAL, clickable/`.explorable-quiet`, dwell-hoverable,
+  same `{testid}-peek`/`-peek-title`/`-peek-verse-{VREF}`/`-peek-more`/
+  `-peek-more-all`/`-peek-collapse`/`-peek-truncated` peek sub-testids
+  PEEK-1/PEEK-TRUNC-1 already established for the block arrows -- one
+  shared component, one shared testid grammar); present ONLY for the
+  direction(s) that genuinely diverge (a prior-agreeing row has no
+  `-prior-event-` testid at all, same conditional-presence idiom as an
+  empty-placeholder block-arrow side).
+
+  RETIRED WHOLE (grep-proven against `PopoverSectionProviders.cs`/
+  `PopoverSections.cs`/`app.css`): `event-nav` (the narrative-nav wrapper);
+  `event-nav-row-{idSuffix}`; `popover-event-nav-narrative` (the >1-narrative
+  name label); `event-prior-event-{narrativeId}` / `event-following-event-{narrativeId}`;
+  `event-prior-label-{narrativeId}` / `event-following-label-{narrativeId}`;
+  every one of their own `-peek`/`-peek-*` sub-testids. `EVENT-1`'s own
+  testid-inventory paragraphs above documenting these (the `event-nav`/
+  `event-prior-event-{narrativeId}`/etc. rows) describe the PRE-CHRONO-MERGE-1
+  shape only.
+
+  TESTS (`tests/ux/event-timeline.spec.ts` unless noted): MERGE-1 (an
+  agreeing narrative member -- `ab_hebron`, abraham-migration, prior agrees
+  and following is the narrative's own chain end; `pw_gethsemane`,
+  passion-week, agrees on BOTH directions -- and a non-member,
+  `gen_binding_isaac`, MERGE-3 below) shows exactly the ONE Chronology
+  block, no story-thread line at all. MERGE-2 (`df_adullam`, David's
+  Flight from Saul, following-only divergence) shows the block PLUS the
+  story line naming the narrative and the diverging leg; clicking the leg
+  commits traversal to `df_keilah`, and dwelling it peeks its own verse
+  text via the identical shared peek PEEK-1 already proved for the block
+  arrows. A dual-divergence line (`pw_jerusalem_entry`, both directions)
+  is additionally covered, joined on the one line by " · ". MERGE-3
+  (`gen_binding_isaac`, a real narrative-less dated event, the `theo-*`
+  class) shows the block and NO story line. MERGE-4 (retirement): a LIVE
+  DOM check against `df_adullam` -- an event that WOULD have rendered a
+  narrative nav under the pre-CHRONO-MERGE-1 shape -- confirms every
+  retired testid above is absent, not merely that a narrative-less event
+  never had one to begin with; the RETIRED-WHOLE paragraph above is the
+  source-level (grep) half of the same proof.
+
+  `tests/ux/popover-sections.spec.ts`'s own former `EVENT-1: MULTI-NARRATIVE
+  nav` / `EVENT-1: recursive traversal reaches both narrative ends` /
+  `EVENT-1: the three-narrative full walk` tests are RETIRED (not
+  rewritten): all three exercised the retired per-narrative UI walk
+  specifically (`event-prior-event-{narrativeId}`/`event-following-event-{narrativeId}`
+  hop-by-hop); the MULTI-NARRATIVE test was already permanently
+  `test.skip`-vacuous even before this batch (the controller's own live
+  sweep: zero of 255 real events belong to >1 narrative), and the other
+  two tested a "walk this ONE narrative, arbitrarily far" UI affordance
+  this batch deliberately removes (POPOVER-LAW-1's own non-redundancy
+  admission -- the story-thread line intentionally shows at most one hop
+  per diverging direction, never a multi-hop per-narrative walk); the
+  UNDERLYING graph property they exercised (a narrative's own `.legs` form
+  a real, walkable chain, conditional presence at genuine chain ends) is
+  still covered server-side (`server/atlas-graph/tests/narrative_real_data.rs`)
+  and, for the SURVIVING global-timeline walk, by `CHRONO-1`'s own chain-end
+  test above (`theo-1`/`theo-385`). The SAME file's own `EVENT-1: clicking
+  a verse's EVENT row opens the EventNode...` test (the `ex_succoth`
+  one-graph property) keeps its wire-level assertions unchanged and
+  retargets its UI-rendering half onto the Chronology block's own testids
+  (`ex_succoth`'s own narrative and timeline positions are byte-identical,
+  so the same label/title assertions hold under the new testids
+  unchanged); `EVENT-1: chronological-vs-reading-order` (`pw_jerusalem_entry`)
+  retargets onto the story-thread line instead (this event's own
+  divergence IS the chronological-vs-reading-order fact the test's own
+  name names). `tests/ux/world-narrative-focus.spec.ts` and
+  `tests/ux/world-pin.spec.ts` retarget their own single narrative-nav
+  click each onto the Chronology block (`ex_succoth`, agreeing) or the
+  story-thread line (`ex_kadesh`, diverging on both directions)
+  respectively -- both fixtures' own real wire data decided which.
 - ONE-RULE (batch-g1-brief.md, user direction 2026-08-19: "the little trinity button
   isn't clear... explorable elements display slightly darker on hover; click opens the
   pop-up menu" -- REPLACES the retired `verse-explore-{n}` ∴ button, which offered no
