@@ -77,7 +77,7 @@ fn median_of<F: FnMut()>(iters: usize, mut f: F) -> Duration {
 /// most expensive window measured this batch, ~8ms via real HTTP/loopback
 /// on this machine, sub-ms to a few ms pure-compute) and the documented
 /// "NT window" (~205KB, ~4-5ms via HTTP). 75ms is >9x the HTTP-measured
-/// worst case and >20x pure-compute -- the TARGET this batch's brief set
+/// worst case and ~15.6x the pure-compute worst case (4.80ms) -- the TARGET this batch's brief set
 /// was <25ms; this gate is deliberately looser than the target itself
 /// (a target is an engineering goal, not a noise-immune CI gate).
 #[test]

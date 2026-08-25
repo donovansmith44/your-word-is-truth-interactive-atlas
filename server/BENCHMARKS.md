@@ -49,7 +49,8 @@ repeated-run evidence, is in the batch report. `atlas-core::scene.rs` was
 left untouched (every lookup it makes -- `event_by_id`/`place_by_id`/
 `place_history_for`/`place_name_alias_for`/`event_bearing_place_ids`/
 `total_events_for` -- is already O(1) HashMap/HashSet-backed; there is no
-O(n) linear scan in the compose path to index away). `scene_byte_identity.rs`
+O(n)-scan bottleneck in the compose path to index away -- one cheap
+n=1,735 event filter exists and measured immaterial). `scene_byte_identity.rs`
 proves the response shape is unchanged.
 
 ## Query surface (`cargo bench -p atlas-server`, from `server/`)
