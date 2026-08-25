@@ -1100,21 +1100,37 @@
         }
     }
 
-    // Debounced (150ms), latest-wins: a burst of window changes (fast
+    // Debounced (60ms), latest-wins: a burst of window changes (fast
     // dragging, rapid era clicks) cancels any fetch still in its debounce
     // wait, and a fetch that was already in flight when superseded has its
     // result discarded on return rather than clobbering newer state -- there
     // is no way to cancel the HTTP call itself (AtlasClient.SceneTime takes
     // no CancellationToken), only to ignore a stale response.
+    //
+    // Batch PERF-2a: was 150ms. Server-side re-measurement (127.0.0.1,
+    // bypassing this machine's own slow "localhost" hostname resolution --
+    // see batch-perf2a-report.md) found compose_time_scene + JSON + loopback
+    // transfer already at ~4-8ms for real windows (up to the 456KB full-span
+    // payload), not the ~220ms the controller's own probe had attributed to
+    // it -- that reading was the SAME hostname-resolution artifact, not
+    // server cost (a live release-mode server has always measured ~5ms avg/
+    // ~8ms worst case over loopback -- see this repo's own playwright.config.ts
+    // comment, unchanged by this batch). With the fetch itself effectively
+    // free, 150ms of the felt lag was pure debounce wait for no benefit;
+    // 60ms -- the low end of the brief's 50-75ms range -- still comfortably
+    // coalesces a fast drag's own per-frame window changes (each still lands
+    // well under 60ms apart) into one fetch, same coalescing behavior as
+    // before, just a shorter wait before it fires.
     private async Task DebouncedLoadScene(int from, int to)
     {
+        await JS.InvokeVoidAsync("performance.mark", "atlas:scene-start");
         _fetchCts?.Cancel();
         var cts = new CancellationTokenSource();
         _fetchCts = cts;
 
         try
         {
-            await Task.Delay(150, cts.Token);
+            await Task.Delay(60, cts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -1136,6 +1152,17 @@
             if (_mapInterop is not null)
             {
                 await _mapInterop.SetScene(scene);
+                // Batch PERF-2a: additive-only browser perf mark -- the "scene
+                // rendered" end of the end-to-end slider-adjustment timing
+                // measured against "atlas:scene-start" above (see
+                // batch-perf2a-report.md). Placed here (not after the
+                // FitScene branch below) because an ordinary same-mode window
+                // change -- the only case a real slider tick ever hits --
+                // never runs FitScene at all (see that branch's own doc
+                // comment), so this is already the last map-affecting step of
+                // a normal adjustment. Never read by any CONTRACT test; pure
+                // Performance-API bookkeeping, invisible to the DOM.
+                await JS.InvokeVoidAsync("performance.mark", "atlas:scene-rendered");
 
                 // Fix round 1: re-fit whenever the LAST fit was a different
                 // mode -- covers both "first scene ever" (_lastFitMode is

@@ -70,4 +70,29 @@ resolver = "2"
 # has the full categorized breakdown). `atlas-graph-types` +1 (graph.rs's
 # own new `comments_on` indexing test, the pre-authorized mechanical-mirror
 # exception this batch's own report names, standing since CORP-2a).
-# CURRENT CANONICAL: 828 (806 + 22) across 41 sections.
+#
+# KRETZ-1's own two fix rounds (aec8727, dcd7c97) moved the workspace total
+# further, to 813 (+7, the over-excision guard's own tests plus MAT 26:60/61
+# inline-verse-marker regression coverage) across 40 sections, but neither
+# fix round's own commit updated this paragraph -- 835 (813 + 22) across 42
+# sections was the real, commit-message-recorded total this repo carried
+# into Batch PERF-2a (independently re-confirmed, quiet machine, before this
+# batch touched anything, per that batch's own dispatch requirement).
+# Recorded here now for continuity.
+#
+# Batch PERF-2a (2026-08-25, the timeline-slider perf investigation +
+# permanent criterion/smoke-tier benchmark harness): moved to 843 (821 + 22)
+# across 44 sections. Workspace +8 across +2 sections, both new
+# `atlas-server` integration-test files: `tests/perf_smoke.rs` (6 tests, the
+# smoke-tier regression gate over the real committed graph -- generous >=3x
+# thresholds, immune to machine noise by design) and `tests/
+# scene_byte_identity.rs` (2 tests, one of which pins 25 FNV-1a-hashed
+# `/api/scene`/`/api/scene/scripture` responses -- the zero-behavior-change
+# proof this batch's own investigation required, and a permanent regression
+# harness going forward). `atlas-graph-types` unchanged (+0) -- this batch
+# never touched that crate. The much larger `benches/queries.rs` criterion
+# suite (own `[[bench]]` target, `cargo bench`, NOT `cargo test`) is
+# deliberately NOT part of this count, per this file's own established
+# convention above and the batch's own dispatch instructions -- see
+# `server/BENCHMARKS.md` for its real numbers.
+# CURRENT CANONICAL: 843 (821 + 22) across 44 sections.

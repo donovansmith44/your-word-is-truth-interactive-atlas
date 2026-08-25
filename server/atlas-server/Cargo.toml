@@ -18,3 +18,12 @@ anyhow = "1"
 
 [dev-dependencies]
 http-body-util = "0.1"
+# Batch PERF-2a Phase 1: the permanent criterion regression harness (own
+# bench target, deliberately NOT part of `cargo test`'s own count -- see
+# server/Cargo.toml's own STANDING COUNTING PROCEDURE comment and this
+# crate's `benches/queries.rs`).
+criterion = "0.5"
+
+[[bench]]
+name = "queries"
+harness = false
