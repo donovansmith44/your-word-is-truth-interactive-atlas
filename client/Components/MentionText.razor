@@ -21,8 +21,10 @@
    render wherever verse text renders") now ALSO uses this directly, with no
    verse-num/xref-marker/row wrapper of its own to bring along -- this
    component renders ONLY the text-and-mentions sequence, never a wrapping
-   element, so either caller supplies whatever container (a `<span>` inside
-   a clickable row, or a bare `<p>`) fits its own context.
+   element OF THE WHOLE (Batch RED-1 below is the one narrow exception, over
+   a red-letter SUB-RANGE only, never the whole output), so either caller
+   supplies whatever container (a `<span>` inside a clickable row, or a bare
+   `<p>`) fits its own context.
 
    ClassPrefix doubles as BOTH the CSS class root and the data-testid root
    (true in both pre-existing implementations: "verse-mention"/"verse-
@@ -50,31 +52,40 @@
    the identical one-liner (`MapInterop.BlinkPlace(JS, placeId, active)`),
    kept as two copies only because neither file wanted a THIRD shared file
    for one line each (Reader.razor's own prior comment, verbatim) -- now
-   moot, since this component already exists for the mention markup itself. *@
-@using BibleAtlas.Client.Explore
-@inject IJSRuntime JS
+   moot, since this component already exists for the mention markup itself.
 
-@foreach (var seg in PlaceMentions.Scan(Text, Places, Persons))
+   BATCH RED-1 ("Red letters on Jesus' words in every translation," owner
+   order 2026-08-25): the actual place/person scan-and-render loop moved to
+   MentionScan.razor (see that file's own doc comment) so THIS component
+   could wrap a red-letter sub-RANGE in a `.words-of-christ` span without
+   duplicating that markup. `ComputeRuns` below splits `Text` at the
+   (already sorted, non-overlapping -- `red_letter_spans.rs`'s own
+   alignment law) `WordsOfChrist` char-offset boundaries into an ordered
+   list of RUNS, each either red or not; each run is scanned for mentions
+   INDEPENDENTLY (`MentionScan` over just that run's own substring) and, if
+   red, wrapped in one `.words-of-christ` span. The overwhelmingly common
+   case (`WordsOfChrist` empty -- most verses, and every non-KJV
+   corpus/edition) returns exactly ONE non-red run covering the whole text,
+   so NO extra wrapper element is ever added for a verse that carries no
+   red-letter span at all -- byte-identical rendering to before this batch.
+   A mention name that happens to straddle a red/narration boundary (never
+   observed in the real committed data) would not be detected as one whole
+   span in the affected half -- a disclosed, accepted approximation, the
+   same class `PlaceMentions.cs`'s own header comment already establishes
+   for pronouns/en-dashes. *@
+@using BibleAtlas.Client.Explore
+
+@foreach (var run in ComputeRuns(Text, WordsOfChrist))
 {
-    @if (seg.PlaceId is { } placeId)
+    @if (run.IsRed)
     {
-        <span class="@ClassPrefix" data-testid="@($"{ClassPrefix}-{Verse}-{placeId}{TestIdSuffix}")"
-              tabindex="0" role="button" aria-label="@($"Explore {seg.PlaceName}")"
-              @onpointerenter="() => Blink(placeId, true)" @onpointerleave="() => Blink(placeId, false)"
-              @onfocus="() => Blink(placeId, true)" @onblur="() => Blink(placeId, false)"
-              @onclick="() => OpenPlace(placeId, seg.PlaceName!)" @onclick:stopPropagation="true"
-              @onkeydown="@(e => OnPlaceKeyDown(e, placeId, seg.PlaceName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
-    }
-    else if (seg.PersonId is { } personId)
-    {
-        <span class="@ClassPrefix @($"{ClassPrefix}-person")" data-testid="@($"{ClassPrefix}-person-{Verse}-{personId}{TestIdSuffix}")"
-              tabindex="0" role="button" aria-label="@($"Explore {seg.PersonName}")"
-              @onclick="() => OpenPerson(personId, seg.PersonName!)" @onclick:stopPropagation="true"
-              @onkeydown="@(e => OnPersonKeyDown(e, personId, seg.PersonName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
+        <span class="words-of-christ">
+            <MentionScan Text="@run.Text" Places="@Places" Persons="@Persons" Verse="@Verse" ClassPrefix="@ClassPrefix" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" />
+        </span>
     }
     else
     {
-        @seg.Text
+        <MentionScan Text="@run.Text" Places="@Places" Persons="@Persons" Verse="@Verse" ClassPrefix="@ClassPrefix" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" />
     }
 }
 
@@ -82,6 +93,14 @@
     [Parameter, EditorRequired] public string Text { get; set; } = default!;
     [Parameter, EditorRequired] public IReadOnlyList<PlaceRefDto> Places { get; set; } = default!;
     [Parameter, EditorRequired] public IReadOnlyList<PersonRefDto> Persons { get; set; } = default!;
+
+    // Batch RED-1: optional (default empty) so every PRE-EXISTING caller
+    // this batch does not touch (none, as of this batch -- every real
+    // caller is updated in the same commit -- but a future one) still
+    // compiles and renders exactly as before: zero spans means
+    // ComputeRuns returns one whole-text, non-red run, identical to this
+    // component's own pre-RED-1 behavior.
+    [Parameter] public IReadOnlyList<WordsOfChristSpanDto> WordsOfChrist { get; set; } = Array.Empty<WordsOfChristSpanDto>();
 
     // The verse number this text belongs to -- testid interpolation only
     // (`{ClassPrefix}-{Verse}-{id}`); this component itself is otherwise
@@ -92,10 +111,8 @@
 
     [Parameter, EditorRequired] public string ClassPrefix { get; set; } = default!;
 
-    // MiniReaderExpand's own established multi-instance disambiguation
-    // (PassageList.razor can host several simultaneously-expanded mini-
-    // readers in one popover) -- forwarded straight through, unchanged
-    // shape, default "" (every other caller: Reader.razor, VerseTextSection).
+    // MiniReaderExpand's own established multi-instance disambiguation --
+    // see MentionText.razor's own comment on this identical parameter.
     [Parameter] public string TestIdSuffix { get; set; } = "";
 
     // Threaded straight to whichever popover-stack/active-node mechanism
@@ -108,17 +125,43 @@
     // comment on OnExplore, verbatim precedent).
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    private Task Blink(string placeId, bool active) => MapInterop.BlinkPlace(JS, placeId, active);
+    /// Batch RED-1: one contiguous slice of `text`, either wholly INSIDE a
+    /// red-letter span or wholly outside every one -- module doc comment
+    /// has the full "why" and the one disclosed approximation.
+    public readonly record struct TextRun(string Text, bool IsRed);
 
-    // PlaceNode's id stays bare; PersonNode needs the "Person:" wire prefix
-    // VerseOut.Persons' own bare id doesn't carry -- the identical
-    // id-format story both pre-existing copies of this logic already
-    // documented (Reader.razor's own OpenPlaceMention/OpenPersonMention,
-    // MiniReaderExpand's own OpenPlace/OpenPerson), preserved verbatim here,
-    // now in the one place it actually needs to live.
-    private Task OpenPlace(string placeId, string placeName) => OnExplore.InvokeAsync(new PlaceNode(placeId, placeName));
-    private Task OpenPerson(string personId, string personName) => OnExplore.InvokeAsync(new PersonNode($"Person:{personId}", personName));
-
-    private Task OnPlaceKeyDown(KeyboardEventArgs e, string placeId, string placeName) => e.Key == "Enter" ? OpenPlace(placeId, placeName) : Task.CompletedTask;
-    private Task OnPersonKeyDown(KeyboardEventArgs e, string personId, string personName) => e.Key == "Enter" ? OpenPerson(personId, personName) : Task.CompletedTask;
+    /// Pure, directly unit-tested (`BibleAtlas.Client.Tests`). `spans` is
+    /// trusted sorted/non-overlapping (the server's own alignment walk
+    /// guarantees this -- `red_letter.rs`'s `align_verse`: "a cursor that
+    /// advances past each successful match"), but this function still
+    /// defends against a malformed/out-of-range span (a clamp, never a
+    /// throw) rather than trusting the wire blindly.
+    public static List<TextRun> ComputeRuns(string text, IReadOnlyList<WordsOfChristSpanDto> spans)
+    {
+        if (spans.Count == 0)
+        {
+            return new List<TextRun> { new(text, false) };
+        }
+        var runs = new List<TextRun>();
+        var cursor = 0;
+        foreach (var s in spans)
+        {
+            var start = Math.Clamp(s.Start, 0, text.Length);
+            var end = Math.Clamp(s.End, start, text.Length);
+            if (start > cursor)
+            {
+                runs.Add(new TextRun(text[cursor..start], false));
+            }
+            if (end > start)
+            {
+                runs.Add(new TextRun(text[start..end], true));
+            }
+            cursor = Math.Max(cursor, end);
+        }
+        if (cursor < text.Length || runs.Count == 0)
+        {
+            runs.Add(new TextRun(text[cursor..], false));
+        }
+        return runs;
+    }
 }

@@ -238,7 +238,7 @@ else
             @foreach (var v in _peekVerses.Take(_peekShown))
             {
                 <p class="popover-arrow-peek-verse" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-verse-{v.Vref}")">
-                    <sup class="popover-arrow-peek-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Places="@(v.Places ?? Array.Empty<PlaceRefDto>())" Persons="@(v.Persons ?? Array.Empty<PersonRefDto>())"
+                    <sup class="popover-arrow-peek-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Places="@(v.Places ?? Array.Empty<PlaceRefDto>())" Persons="@(v.Persons ?? Array.Empty<PersonRefDto>())" WordsOfChrist="@(v.WordsOfChrist ?? Array.Empty<WordsOfChristSpanDto>())"
                         Verse="@CanonRef.ParseVerse(v.Vref).Verse" ClassPrefix="popover-arrow-peek-mention" TestIdSuffix="@($"-{EventTestIdPrefix}-{IdSuffix}-peek")" OnExplore="OnExplore" />
                 </p>
             }

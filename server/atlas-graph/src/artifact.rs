@@ -47,7 +47,7 @@ use std::collections::BTreeMap;
 
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis, ResolvedDate, ResolvedPlacement, SeqKey, TimePoint, Year};
 use atlas_graph_types::edge::{
-    Attests, CatechismLink, CommentsOn, CrossRef, Fulfills, Ground, Justification, LocatedAt, Mentions, MentionedEntity, NamedAfter, Namesake, Succession, Typology,
+    Attests, CatechismLink, CommentsOn, CrossRef, Fulfills, Ground, Justification, LocatedAt, Mentions, MentionedEntity, NamedAfter, Namesake, SpokenAt, SpokenBy, Succession, Typology,
 };
 use atlas_graph_types::graph::{Graph, ReadingSpine};
 use atlas_graph_types::id::{AnchorId, AnyNodeId, CatechismItemId, CommentaryItemId, EraId, EventId, NarrativeId, NodeKind, PeopleGroupId, PersonId, PlaceId, PolityId, SourceId};
@@ -636,6 +636,31 @@ struct DtoCommentsOn {
     justification: DtoJustification,
 }
 
+/// RED-1: mirrors `graph_types::edge::SpokenBy` -- the SAME `{node id,
+/// range-as-a-{from,to}-pair-of-DtoTextLocus, provenance, justification}`
+/// shape `DtoCommentsOn` already establishes (`item`/`on` there,
+/// `speaker`/`locus` here).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoSpokenBy {
+    locus_from: DtoTextLocus,
+    locus_to: DtoTextLocus,
+    speaker: String,
+    provenance: String,
+    justification: DtoJustification,
+}
+
+/// RED-1: mirrors `graph_types::edge::SpokenAt` -- the SAME shape as
+/// `DtoSpokenBy` immediately above, one relation wider (place instead of
+/// person).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoSpokenAt {
+    locus_from: DtoTextLocus,
+    locus_to: DtoTextLocus,
+    place: String,
+    provenance: String,
+    justification: DtoJustification,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 enum DtoMentionedEntity {
     Place(String),
@@ -718,6 +743,13 @@ pub struct ArtifactDump {
     /// (`dump`'s own doc comment) to close, on the same schedule as every
     /// prior data batch.
     comments_on: Vec<DtoCommentsOn>,
+    /// RED-1: `graph.spoken_by`/`graph.spoken_at`'s own row tables -- see
+    /// `DtoSpokenBy`/`DtoSpokenAt`'s own doc comments. The TENTH and
+    /// ELEVENTH members of the original guarded set (`dump`'s own doc
+    /// comment) to close, on the same schedule as every prior data batch
+    /// (`comments_on` immediately above was the ninth).
+    spoken_by: Vec<DtoSpokenBy>,
+    spoken_at: Vec<DtoSpokenAt>,
     mentions: Vec<DtoMentions>,
     cross_refs: Vec<DtoCrossRef>,
     /// TRAV-1: the real `temporal_adjacency` row table (controller decision
@@ -864,7 +896,22 @@ pub struct ArtifactDump {
 /// close, same schedule as every prior data batch). A genuine wire-shape
 /// break both directions -- bincode field COUNT changed. `data/compiled/
 /// graph.bin` rebuilt in this same commit.
-const FORMAT_VERSION: u32 = 9;
+///
+/// RED-1 (2026-08-25): bumped 9 -> 10. Trigger: `ArtifactDump.spoken_by:
+/// Vec<DtoSpokenBy>` and `ArtifactDump.spoken_at: Vec<DtoSpokenAt>` ADDED
+/// (two new relation tables -- `dump`'s own guard forced this the moment
+/// `red_letter_adapter` started emitting real `spoken_by`/`spoken_at` rows,
+/// the TENTH and ELEVENTH members of the original guarded set to close,
+/// same schedule as every prior data batch). A genuine wire-shape break
+/// both directions -- bincode field COUNT changed (two fields, one
+/// commit). VERSION ROOT DOES NOT MOVE (verified, not assumed): the
+/// content-addressed root hashes every node's own id+payload only (design
+/// doc §9b) -- this batch adds no node kind and changes no node payload,
+/// only two new EDGE tables and a compiled-data-side span table, neither
+/// of which the root's own hash touches; `tests/version_root_regression.rs`
+/// proves this for the real committed data in the same commit. `data/
+/// compiled/graph.bin` rebuilt in this same commit.
+const FORMAT_VERSION: u32 = 10;
 
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
@@ -878,16 +925,17 @@ const FORMAT_VERSION: u32 = 9;
 /// (`temporal_adjacency`); PG-1a (2026-08-24) closed the FIFTH
 /// (`named_after`); EDGE-1a (2026-08-24) closed the SIXTH and SEVENTH
 /// (`fulfills`/`typology`); CORP-2a (2026-08-24) closed the EIGHTH
-/// (`contains_concord`); KRETZ-1 (2026-08-25) closes the NINTH
+/// (`contains_concord`); KRETZ-1 (2026-08-25) closed the NINTH
 /// (`comments_on`, alongside CommentaryItem nodes) the same way, on
-/// schedule, the moment `kretzmann_adapter` started emitting real rows --
-/// all are REAL SERIALIZED CONTENT below now, no longer guarded.
+/// schedule, the moment `kretzmann_adapter` started emitting real rows;
+/// RED-1 (2026-08-25) closes the TENTH and ELEVENTH (`spoken_by`/
+/// `spoken_at`) the same way, the moment `red_letter_adapter` started
+/// emitting real rows -- all are REAL SERIALIZED CONTENT below now, no
+/// longer guarded.
 pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_stats: &EventWorldStats) -> Result<ArtifactDump, ArtifactError> {
-    if !g.contains_bible.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty()
-        || !g.spoken_by.is_empty() || !g.spoken_at.is_empty()
-    {
+    if !g.contains_bible.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty() {
         return Err(ArtifactError(
-            "the graph carries rows in a relation this artifact format does not yet serialize (contains_bible/quotes/confesses/corresponds/spoken_by/spoken_at -- the last two are RED-1's trigger class) -- extend artifact.rs before shipping this content".into(),
+            "the graph carries rows in a relation this artifact format does not yet serialize (contains_bible/quotes/confesses/corresponds) -- extend artifact.rs before shipping this content".into(),
         ));
     }
 
@@ -1009,6 +1057,27 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         })
         .collect();
 
+    // RED-1: `graph.spoken_by`/`graph.spoken_at`'s own row tables -- the
+    // SAME `{from, to}` range shape `attests`/`comments_on` above already
+    // use, one relation wider each (a node-typed field alongside the
+    // range, like `comments_on`'s own `item`).
+    let spoken_by = g
+        .spoken_by
+        .iter()
+        .map(|r: &SpokenBy| {
+            let (locus_from, locus_to) = bible_range_to_dto(&r.locus);
+            DtoSpokenBy { locus_from, locus_to, speaker: r.speaker.0.clone(), provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) }
+        })
+        .collect();
+    let spoken_at = g
+        .spoken_at
+        .iter()
+        .map(|r: &SpokenAt| {
+            let (locus_from, locus_to) = bible_range_to_dto(&r.locus);
+            DtoSpokenAt { locus_from, locus_to, place: r.place.0.clone(), provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) }
+        })
+        .collect();
+
     let mentions = g
         .mentions
         .iter()
@@ -1102,6 +1171,8 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         contains_concord,
         catechism,
         comments_on,
+        spoken_by,
+        spoken_at,
         mentions,
         cross_refs,
         temporal_adjacency,
@@ -1237,6 +1308,25 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
         g.comments_on.push(CommentsOn {
             item: CommentaryItemId::new(r.item),
             on: dto_to_bible_range(r.on_from, r.on_to)?,
+            provenance: r.provenance,
+            justification: dto_to_justification(r.justification)?,
+        });
+    }
+
+    // RED-1: plain row tables, like `attests`/`fulfills`/`comments_on`
+    // above.
+    for r in d.spoken_by {
+        g.spoken_by.push(SpokenBy {
+            locus: dto_to_bible_range(r.locus_from, r.locus_to)?,
+            speaker: PersonId::new(r.speaker),
+            provenance: r.provenance,
+            justification: dto_to_justification(r.justification)?,
+        });
+    }
+    for r in d.spoken_at {
+        g.spoken_at.push(SpokenAt {
+            locus: dto_to_bible_range(r.locus_from, r.locus_to)?,
+            place: PlaceId::new(r.place),
             provenance: r.provenance,
             justification: dto_to_justification(r.justification)?,
         });
@@ -1799,5 +1889,51 @@ mod tests {
         let before_place = original.node(&place_node_id).unwrap();
         let after_place = reconstructed.node(&place_node_id).unwrap();
         assert_eq!(format!("{:?}", before_place.payload), format!("{:?}", after_place.payload), "Place payload (lat/lon/aliases) must survive");
+    }
+
+    /// RED-1: `spoken_by`/`spoken_at` round-trip losslessly, VALUES
+    /// included (not just counts) -- the SAME "real values, not just
+    /// shape" discipline `temporal_adjacency_round_trips_losslessly_with_
+    /// real_rows` (below) already establishes for its own relation.
+    /// Hand-built rows over a small fixture graph (mirrors `red_letter_
+    /// adapter.rs`'s own bijection test) rather than the full pipeline --
+    /// `built_graph()`'s own fixture never supplies a real `red_letter`
+    /// corpus, so this is the dedicated coverage this table's own wire
+    /// shape needs.
+    #[test]
+    fn spoken_by_and_spoken_at_round_trip_losslessly_with_real_values() {
+        use atlas_graph_types::edge::{Ground, Justification, SpokenAt, SpokenBy};
+        use atlas_graph_types::id::{PersonId, PlaceId};
+        use std::collections::BTreeSet;
+
+        let (mut original, chronology, stats, ews) = built_graph();
+        let range = BibleLocusRange::new(BibleLocus::whole(VerseRef { book: 39, chapter: 4, verse: 19 }), BibleLocus::whole(VerseRef { book: 39, chapter: 4, verse: 19 })).unwrap();
+        let mut grounds = BTreeSet::new();
+        grounds.insert(Ground::Scripture(range.clone()));
+        original.spoken_by.push(SpokenBy { locus: range.clone(), speaker: PersonId::new("jesus_905"), provenance: "red-letter".into(), justification: Justification { text: None, grounds: grounds.clone() } });
+        original.spoken_at.push(SpokenAt {
+            locus: range.clone(),
+            place: PlaceId::new("capernaum"),
+            provenance: "event-witnesses".into(),
+            justification: Justification { text: Some("derived: falls within calling-of-the-first-disciples's own attested range".into()), grounds },
+        });
+
+        let dumped = dump(&original, &chronology, &stats, &ews).expect("dump must succeed with real spoken_by/spoken_at rows");
+        let bytes = encode(&dumped).unwrap();
+        let decoded = decode(&bytes).unwrap();
+        let reconstructed = to_graph(decoded).unwrap();
+
+        assert_eq!(reconstructed.spoken_by.len(), 1);
+        let by = &reconstructed.spoken_by[0];
+        assert_eq!(by.speaker.0, "jesus_905");
+        assert_eq!(by.locus.from.unit, VerseRef { book: 39, chapter: 4, verse: 19 });
+        assert_eq!(by.provenance, "red-letter");
+        assert!(by.justification.grounds.contains(&Ground::Scripture(range.clone())));
+
+        assert_eq!(reconstructed.spoken_at.len(), 1);
+        let at = &reconstructed.spoken_at[0];
+        assert_eq!(at.place.0, "capernaum");
+        assert_eq!(at.provenance, "event-witnesses");
+        assert_eq!(at.justification.text.as_deref(), Some("derived: falls within calling-of-the-first-disciples's own attested range"));
     }
 }

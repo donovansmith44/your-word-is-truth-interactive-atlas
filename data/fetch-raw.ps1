@@ -207,6 +207,27 @@ foreach ($book in $kretzmannBooks) {
 }
 Write-Output "kretzmann fetch: $kretzmannFetched fetched, $kretzmannHad already cached, $($kretzmannMissing.Count) missing of $kretzmannTotal total pages"
 
+# Batch RED-1 (owner order 2026-08-25, "Red letters on Jesus' words in every
+# translation"): the KJV OSIS red-letter source. PRIMARY candidate
+# (red1-scouting.md) was CrossWire's own KJV Sword module -- its CURRENT
+# (3.1+) module-level license is GPL (bundling copyrighted Strong's-numbers/
+# morphology apparatus), which fails the everything-public-domain gate for
+# direct use; the underlying KJV text and the Klopsch-1901 red-letter
+# designation it encodes are themselves PD, but the packaged module itself
+# is not. Used INSTEAD (batch-time investigation, LICENSES.md's own "KJV
+# red-letter markup" section has the full verification): eBible.org's own
+# KJV OSIS distribution, via the `seven1m/open-bibles` curated PD-bibles
+# collection (repo README's own table states "eng-kjv.osis.xml ... Public
+# Domain" plainly, independently of CrossWire's own module) -- the SAME
+# `<q who="Jesus">` sub-verse convention, on the SAME 1769-class KJV text
+# family, with an unambiguous PD rights block embedded in the file's own
+# OSIS header. Pinned to a commit SHA (not `master`) for reproducibility,
+# the same discipline `catechism-mapping`/`brain-fuel-bible` above already
+# follow.
+$redLetterDir = Join-Path $raw 'red-letter'
+New-Item -ItemType Directory -Force $redLetterDir | Out-Null
+Fetch 'https://raw.githubusercontent.com/seven1m/open-bibles/f257a3559025c3f873b48a75019f53a9354ed7de/eng-kjv.osis.xml' 'red-letter\eng-kjv.osis.xml'
+
 # Vendor Leaflet 1.9.4 into the client (deterministic, offline-friendly)
 $vendor = Join-Path $PSScriptRoot '..\client\wwwroot\vendor\leaflet'
 New-Item -ItemType Directory -Force $vendor | Out-Null

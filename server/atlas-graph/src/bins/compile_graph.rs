@@ -121,7 +121,13 @@ fn main() -> Result<()> {
     // without a third parse of that file. Batch KJV-CASE-2 (batch-kjv-
     // case2-brief.md) extended `restore_kjv_case` itself in place -- the
     // SAME call here now also reports the superscription-tail class.
-    let (_, case_restoration) = atlas_etl::brainfuel::restore_kjv_case(&brainfuel, &atlas.verses);
+    // RED-1: the FIRST return value (the actual restored verse map) is now
+    // CAPTURED, not discarded (`_` before this batch) -- the red-letter
+    // alignment below needs it directly (the span-alignment law runs
+    // against OUR restored casing, never the raw parse, `red_letter.rs`'s
+    // own module doc comment), so this recomputation now serves both the
+    // startup log AND the real alignment input, one call, not two.
+    let (restored_verses, case_restoration) = atlas_etl::brainfuel::restore_kjv_case(&brainfuel, &atlas.verses);
     println!(
         "atlas-graph-compile: KJV-CASE restoration -- {} compared, {} case-restored (whole-verse), {} already agreeing, \
          {} superscription-tail-restored, {} excluded (brain-fuel artifacts), {} mirror-case (disclosed, untouched), \
@@ -173,9 +179,30 @@ fn main() -> Result<()> {
         kretzmann_corpus.stats.pages, kretzmann_corpus.stats.units, kretzmann_corpus.stats.fragments, kretzmann_corpus.stats.footnotes, kretzmann_corpus.stats.disclosures.len(),
     );
 
+    // RED-1: the real compile step HARD-REQUIRES the vendored red-letter
+    // OSIS source (the SAME "graph.bin compiled without it would silently
+    // ship an incomplete corpus" reasoning every prior vendored-data
+    // requirement above already established) -- unlike `GraphService::
+    // build`'s own dev fallback, which degrades gracefully for a fixture
+    // `raw_dir` (`data/raw/red-letter/`, see `data/raw/README.md`). Aligned
+    // against `restored_verses` (RESTORED KJV-CASE/KJV-CASE-2 text, just
+    // captured above), never the raw parse -- the span-alignment law runs
+    // against the graph's own restored casing.
+    let red_letter_root = raw_dir.join("red-letter");
+    println!("atlas-graph-compile: reading vendored red-letter (KJV OSIS, words of Christ) data from {}...", red_letter_root.display());
+    let red_letter_corpus = atlas_etl::red_letter::read_all(&red_letter_root, &restored_verses).with_context(|| format!("reading {}", red_letter_root.display()))?;
+    println!(
+        "atlas-graph-compile: red-letter {} verse-set, {} source spans ({} exact, {} case-insensitive, {} not-found, disclosed)",
+        red_letter_corpus.stats.verses_with_source_markup,
+        red_letter_corpus.stats.source_spans_total,
+        red_letter_corpus.stats.exact,
+        red_letter_corpus.stats.case_insensitive,
+        red_letter_corpus.stats.not_found,
+    );
+
     println!("atlas-graph-compile: building implementation #1 (from raw sources)...");
     let build_start = Instant::now();
-    let (graph_a, stats, event_world_stats, chrono) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(
+    let (graph_a, stats, event_world_stats, chrono) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(
         &kjv_json,
         &xrefs_tsv,
         &atlas,
@@ -183,6 +210,7 @@ fn main() -> Result<()> {
         Some(&brainfuel),
         Some(&concord_bundle),
         Some(&kretzmann_corpus),
+        Some(&red_letter_corpus),
     )
     .context("building the graph from raw sources")?;
     println!(
@@ -196,7 +224,7 @@ fn main() -> Result<()> {
     let dump = atlas_graph::artifact::dump(&graph_a, &chronology, &stats, &event_world_stats).map_err(|e| anyhow::anyhow!("{e}")).context("dumping the built graph")?;
 
     println!("atlas-graph-compile: ADMISSION -- rebuilding implementation #1 a second time (independent model)...");
-    let (mut graph_b, ..) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(
+    let (mut graph_b, ..) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(
         &kjv_json,
         &xrefs_tsv,
         &atlas,
@@ -204,6 +232,7 @@ fn main() -> Result<()> {
         Some(&brainfuel),
         Some(&concord_bundle),
         Some(&kretzmann_corpus),
+        Some(&red_letter_corpus),
     )
     .context("building the independent model graph")?;
     graph_b.build_indexes();
@@ -231,6 +260,17 @@ fn main() -> Result<()> {
     std::fs::create_dir_all(out_path.parent().unwrap_or_else(|| Path::new("."))).ok();
     std::fs::write(&out_path, &bytes).with_context(|| format!("writing {}", out_path.display()))?;
     println!("atlas-graph-compile: wrote {} ({} bytes)", out_path.display(), bytes.len());
+
+    // RED-1 (decision 4, "Compiled data (NOT graph)"): the KJV sub-verse
+    // span table -- `data/compiled/red-letter-spans.json`, the SAME
+    // directory `graph.bin` itself just landed in (disclosed convention,
+    // `atlas-server/src/main.rs`'s own doc comment). Built from
+    // `red_letter_corpus` against `restored_verses` (the SAME restored
+    // text this whole compile step aligned against), not re-derived.
+    let red_letter_spans = atlas_graph::red_letter_spans::spans_by_dot_ref(&red_letter_corpus, &restored_verses);
+    let spans_path = out_path.parent().map(|p| p.join("red-letter-spans.json")).unwrap_or_else(|| Path::new("red-letter-spans.json").to_path_buf());
+    atlas_graph::red_letter_spans::write_file(&spans_path, &red_letter_spans)?;
+    println!("atlas-graph-compile: wrote {} ({} verses carrying a sub-verse span)", spans_path.display(), red_letter_spans.len());
 
     // C2C3-EXPORT (map-system contracts C2/C3, .superpowers/sdd/
     // 2026-08-17-bible-atlas-m1/c2c3-export-design.md): a NEW TERMINAL PASS

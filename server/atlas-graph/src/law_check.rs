@@ -135,6 +135,19 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
     for row in &graph.comments_on {
         check("comments_on", "item", row.item.erase())?;
     }
+    // RED-1: `spoken_by`'s own node-typed endpoint (`speaker`) and
+    // `spoken_at`'s own (`place`) -- the SAME class of check `comments_on`'s
+    // own `item` gets immediately above. `locus` (a `BibleLocusRange`) is
+    // NOT checked here, matching this law's own disclosed scope (module
+    // doc comment): `red_letter_adapter::normalize` derives every locus
+    // directly from real, just-built TextUnit positions, the same
+    // discipline `kretzmann_adapter::normalize` already follows.
+    for row in &graph.spoken_by {
+        check("spoken_by", "speaker", row.speaker.erase())?;
+    }
+    for row in &graph.spoken_at {
+        check("spoken_at", "place", row.place.erase())?;
+    }
     // PG-1a: `named_after`'s two node-typed endpoints (`namesake`/`eponym`)
     // -- newly authored this batch, closing the SAME class of gap M-C2's
     // own `mentions`/`catechism` extension above closed first (this law's
@@ -260,6 +273,73 @@ mod tests {
         graph.nodes.insert(item_id.clone(), Node { id: item_id.clone(), payload: NodePayload::CommentaryItem { work: SourceId::new("kretzmann-popular-commentary"), heading: None, text: "prose".into() }, provenance: "test".into() });
         let range = BibleLocusRange::new(atlas_graph_types::text::Locus::whole(VerseRef { book: 0, chapter: 1, verse: 1 }), atlas_graph_types::text::Locus::whole(VerseRef { book: 0, chapter: 1, verse: 1 })).unwrap();
         graph.comments_on.push(atlas_graph_types::edge::CommentsOn { item: CommentaryItemId::new("kretzmann/0.1.0"), on: range, provenance: "test".into(), justification: Justification::default() });
+
+        assert!(every_authored_edge_resolves(&graph).is_ok());
+    }
+
+    /// RED-1: the SAME red-then-green shape as `comments_on` above, for
+    /// `spoken_by`'s own node-typed `speaker` endpoint.
+    #[test]
+    fn red_when_a_spoken_by_row_names_a_speaker_with_no_node() {
+        use atlas_graph_types::text::{BibleLocusRange, VerseRef};
+        let mut graph = Graph::default();
+        let range = BibleLocusRange::new(atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 }), atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 })).unwrap();
+        graph.spoken_by.push(atlas_graph_types::edge::SpokenBy {
+            locus: range,
+            speaker: atlas_graph_types::id::PersonId::new("nowhere"),
+            provenance: "test".into(),
+            justification: Justification::default(),
+        });
+        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling spoken_by.speaker reference");
+        assert_eq!(err.relation, "spoken_by");
+        assert_eq!(err.field, "speaker");
+    }
+
+    #[test]
+    fn green_when_a_spoken_by_row_resolves_to_a_real_person_node() {
+        use atlas_graph_types::id::{NodeKind, PersonId};
+        use atlas_graph_types::node::{Node, NodePayload};
+        use atlas_graph_types::text::{BibleLocusRange, VerseRef};
+
+        let mut graph = Graph::default();
+        let person_id = PersonId::new("jesus_905").erase();
+        assert_eq!(person_id.kind, NodeKind::Person);
+        graph.nodes.insert(person_id.clone(), Node { id: person_id, payload: NodePayload::Person { label: "Jesus".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None }, provenance: "test".into() });
+        let range = BibleLocusRange::new(atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 }), atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 })).unwrap();
+        graph.spoken_by.push(atlas_graph_types::edge::SpokenBy { locus: range, speaker: PersonId::new("jesus_905"), provenance: "test".into(), justification: Justification::default() });
+
+        assert!(every_authored_edge_resolves(&graph).is_ok());
+    }
+
+    /// RED-1: the SAME red-then-green shape, for `spoken_at`'s own
+    /// node-typed `place` endpoint.
+    #[test]
+    fn red_when_a_spoken_at_row_names_a_place_with_no_node() {
+        use atlas_graph_types::text::{BibleLocusRange, VerseRef};
+        let mut graph = Graph::default();
+        let range = BibleLocusRange::new(atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 }), atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 })).unwrap();
+        graph.spoken_at.push(atlas_graph_types::edge::SpokenAt {
+            locus: range,
+            place: atlas_graph_types::id::PlaceId::new("nowhere"),
+            provenance: "test".into(),
+            justification: Justification::default(),
+        });
+        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling spoken_at.place reference");
+        assert_eq!(err.relation, "spoken_at");
+        assert_eq!(err.field, "place");
+    }
+
+    #[test]
+    fn green_when_a_spoken_at_row_resolves_to_a_real_place_node() {
+        use atlas_graph_types::id::PlaceId;
+        use atlas_graph_types::node::{Node, NodePayload};
+        use atlas_graph_types::text::{BibleLocusRange, VerseRef};
+
+        let mut graph = Graph::default();
+        let place_id = PlaceId::new("capernaum").erase();
+        graph.nodes.insert(place_id.clone(), Node { id: place_id, payload: NodePayload::Place { canonical: "Capernaum".into(), lat: 0.0, lon: 0.0, aliases: vec![], description: None }, provenance: "test".into() });
+        let range = BibleLocusRange::new(atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 }), atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 })).unwrap();
+        graph.spoken_at.push(atlas_graph_types::edge::SpokenAt { locus: range, place: PlaceId::new("capernaum"), provenance: "test".into(), justification: Justification::default() });
 
         assert!(every_authored_edge_resolves(&graph).is_ok());
     }

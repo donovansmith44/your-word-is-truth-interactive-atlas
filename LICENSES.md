@@ -30,6 +30,7 @@ file is the detailed version of record.
 | M. G. Easton, *Easton's Bible Dictionary* (1897) | Public domain (published 1897, USA) | Redistributed — compiled into the graph artifact (`graph.bin`) as `description` on Place/Person/PeopleGroup nodes; delivered via the already-vendored Theographic bundle's own `easton.json` + `people.json` `dictText`/`dictionaryText` fields (CC BY-SA 4.0, see "Theographic — controller ruling" above); see "Easton's Bible Dictionary" below |
 | brain-fuel/bible parallel editions ([brain-fuel/bible](https://github.com/brain-fuel/bible)) — Clementine Vulgate, Westminster Leningrad Codex, Douay-Rheims (Challoner), Biblia 1776, Karl XII:s Bibel (1703), Greek Textus Receptus | Public domain (every text; see "brain-fuel/bible parallel editions" below for the verbatim per-edition sourcing this project verified against) | Redistributed — six edition RENDERINGS compiled into the graph artifact (`graph.bin`) as additional `TranslationId` layers on the existing TextUnit `renderings` LayerMap, alongside (never replacing) this app's own canonical KJV text; the app's own code (the brain-fuel repo's data-vs-code separation) is never used |
 | Paul E. Kretzmann, *Popular Commentary of the Bible* (Concordia Publishing House, 1921-1924), via [kretzmanncommentary.org](https://kretzmanncommentary.org) | Public domain (published 1921-1924, USA; doubly grounded — see "Kretzmann's Popular Commentary of the Bible" below) | Redistributed — Kretzmann's own commentary PROSE (never the excised KJV lemma/quote text itself, per LEMMA-EXCISION) compiled into the graph artifact (`graph.bin`) as `CommentaryItem` nodes, verse-anchored via `comments-on` edges; provenance and verification below |
+| KJV red-letter (words-of-Christ) markup, via [seven1m/open-bibles](https://github.com/seven1m/open-bibles) (eBible.org's own KJV OSIS distribution) | Public domain (the file's own embedded OSIS header states it plainly; see "KJV red-letter markup" below for the full CrossWire-substitution reasoning) | Redistributed — the SOURCE FILE itself is not shipped, but the FACT it encodes (which verses/sub-verse spans are Christ's own words) is: compiled into `graph.bin` as `spoken_by`/`spoken_at` edges (verse-granular) and into `data/compiled/red-letter-spans.json` (KJV sub-verse char-offset spans, compiled-data-side); provenance and verification below |
 
 ## Theographic CC BY-SA 4.0 — controller ruling
 
@@ -945,6 +946,130 @@ under [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).
 The QUOTED PROSE itself (Kretzmann's own words) is public domain by its own
 1921-1924 publication, not by this project's dedication.
 
+## KJV red-letter markup — public domain (Batch RED-1)
+
+Batch RED-1 ("Red letters on Jesus' words in every translation," owner
+order 2026-08-25, verbatim, ledgered: "Red letters on Jesus' words in every
+translation."; "SpokenAt is another edge") required a SOURCED annotation
+layer marking Christ's own words in the reader — red-letter marking is an
+1899 editorial convention (Louis Klopsch), never part of the underlying
+KJV text itself, so this is an annotation over loci, never a text mutation
+(byte-verbatim rendering stays intact; the KJV inerrancy directive is
+untouched — ink color is presentation, not text).
+
+**Source and provenance — the CrossWire-substitution disclosure.** The
+controller's own PRIMARY candidate was CrossWire Bible Society's own
+current KJV Sword module — the standard digital KJV, marking Christ's
+speech with `<q who="Jesus">` at sub-verse precision, on the same
+1769-class text family this project already uses. Investigated directly
+(CrossWire's own wiki, `wiki.crosswire.org/CrossWire_KJV`, fetched at batch
+time): the module's red-letter designations derive from Louis Klopsch's own
+1901 red-letter edition (itself long public domain), and the underlying KJV
+text is public domain outside the UK (Crown Copyright has no effect
+outside Britain) — but the MODULE ITSELF, as CrossWire currently packages
+and distributes it (version 3.1+), carries a module-level `GPL`
+`DistributionLicense`, because it bundles genuinely copyrighted third-party
+components alongside the markup (The Bible Foundation's Strong's numbers
+for the Old Testament, Dr. Maurice Robinson's Greek data for the New
+Testament). This FAILS the everything-public-domain gate for direct use of
+CrossWire's own file (decision 1's own explicit gate) — not because the red
+-letter FACT itself is tainted (Klopsch 1901 is PD; the fact of "which
+words Klopsch marked red, mechanically re-encoded in XML" is not an
+independently copyrightable creative addition, the same "mere transcription
+of a PD source creates no new copyright" principle this file's own "Book of
+Concord" section above already establishes for bookofconcord.org's
+transcription), but because CrossWire's own CURRENT distribution vehicle
+bundles it with unrelated, genuinely copyrighted apparatus this project has
+no use for and cannot cleanly separate from an unambiguously-PD download.
+
+**Used instead**, satisfying the SAME sub-verse-precision goal cleanly:
+eBible.org's own KJV OSIS distribution, obtained via
+[seven1m/open-bibles](https://github.com/seven1m/open-bibles) (a curated
+collection of public-domain/freely-licensed Bible translations in standard
+XML formats — the collection's own README table states `eng-kjv.osis.xml`
+"Public Domain" plainly, one row among many, entirely independent of
+CrossWire's own module). Pinned to commit
+`f257a3559025c3f873b48a75019f53a9354ed7de`, fetched 2026-08-25
+(`data/fetch-raw.ps1`). The file's own embedded OSIS header states its own
+rights unambiguously: `<rights type="x-copyright">public domain</rights>`,
+with the full text `<rights type="x-license">`: "This work is in the Public
+Domain... A United Kingdom Crown Copyright with no expiration date means
+that to print this translation in the United Kingdom, you need letters
+patent... This Crown Copyright has no effect outside of the UK, where this
+work is firmly in the Public Domain." — the SAME UK-Crown-Copyright/PD-
+everywhere-else disposition this project's own existing KJV source already
+carries (per-source table above). The header also discloses the file's own
+generation lineage: "This Modified OSIS file was generated from a USFX
+source as part of the process to convert to a SWORD module using Haiola" —
+i.e. this file sits UPSTREAM of a Sword-module build, an independent
+production pipeline from CrossWire's own currently-distributed module, not
+a copy of it.
+
+**Verification (two independent checks, both required before vendoring).**
+(1) The file's own embedded header, quoted verbatim above — an unambiguous,
+self-contained PD declaration, not inferred. (2) A cross-check of the
+resulting VERSE SET (which verses the source marks as containing Christ's
+words) against a SECOND, fully independent PD source: the World English
+Bible (`eng-web.usfx.xml`, also via `seven1m/open-bibles`, USFX format,
+its own `<wj>`/`</wj>` words-of-Jesus tags — a different translation
+entirely, tagged by a different editorial process). Over the whole New
+Testament: KJV OSIS marks 2,066 verses, WEB USFX marks 2,043; the two sets
+agree on 2,001 verses (Jaccard ≈0.949, WEB covering ≈96.9% of the KJV
+OSIS set) — strong, independent agreement confirming the verse set is a
+real, broadly-recognized editorial consensus, not an idiosyncratic
+artifact of one source or one markup convention. (Disagreements are
+concentrated in a handful of predictable classes — e.g. whether a
+narrator's brief interjection mid-quotation breaks a `<q>` run — exactly
+the kind of boundary judgment call two independent taggers would be
+expected to differ on occasionally; neither source was treated as more
+authoritative than the other for this sanity check, and only the KJV
+OSIS source's own spans are ever used for real data.)
+
+**What was used, and how.** `server/atlas-etl/src/red_letter.rs` parses
+the vendored file into (a) the VERSE SET (every verse the source marks,
+edition-independent by construction) and (b) KJV SUB-VERSE SPANS
+(byte-offset ranges into OUR OWN canonical, RESTORED KJV verse text,
+never the source's own bytes) via the GAZ-1 alias-law pattern (`atlas-etl/
+src/validate.rs`'s own `run_place_names_kjv`): every span is aligned as a
+case-sensitive verbatim substring of our own text first; failing that, a
+case-insensitive retry (the disclosed KJV-CASE class — our restored
+LORD/Lord casing vs. this source's own normalization), offsets still
+emitted against OUR bytes; failing both, the span is counted and
+categorized, never guessed. Real committed-data outcome (`server/
+atlas-etl/tests/red_letter_real_data.rs` pins these as a regression
+harness): 2,066 verses in the SET; 2,081 total source spans, of which
+2,059 align exactly, 4 align only case-insensitively, and 18 (0.87%) are a
+fully-categorized residual — never bridged by guessing — 14 spelling
+variants this source spells differently than our own canon (`Caesar`/our
+`Cesar` ×4, `Judaea`/our `Judea` ×6, `Galilaeans`/our `Galileans`,
+`Zacchaeus`/our `Zaccheus`, `Nicolaitanes`/our `Nicolaitans` ×2,
+`Barjona`/our `Bar–jona`), two dropped possessive apostrophes, one dropped
+comma, and one source-side literal typo (MAT.5.30 "cut **if** off" for
+"cut **it** off", the digital edition's own transcription slip). The
+VERSE SET (edition-independent) feeds `SpokenBy` graph edges (one row per
+maximal contiguous verse range, speaker = the Jesus person node); the
+SUB-VERSE SPANS (KJV-specific) feed `data/compiled/red-letter-spans.json`,
+served alongside verse payloads and rendered as a `.words-of-christ` CSS
+span wherever verse text renders in the reader. `SpokenAt` (place) edges
+are DERIVED, never separately sourced: a `SpokenBy` range whose verses
+fall inside a located event's own attested range inherits that event's
+place, honestly disclosed as partial coverage (the gospels are
+well-evented; epistle-quoted sayings mostly are not) — zero curated
+guesses.
+
+**Dedication of this project's own ingestion work.** The parser
+(`red_letter.rs`), the alignment law's own implementation, the SpokenBy/
+SpokenAt derivation logic, and the `.words-of-christ` rendering rule are
+original work of this project, dedicated to the public domain under
+[CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).
+The FACT itself — which words are Christ's own, per Klopsch's 1901
+red-letter edition as encoded by eBible.org's own OSIS markup — is public
+domain by the 1901 edition's own age and the KJV text's own public-domain
+status outside the UK, not by this project's dedication; the SOURCE FILE
+itself is never redistributed by this repo (`data/raw/red-letter/` is
+gitignored, fetched fresh by `data/fetch-raw.ps1`), only the FACT it
+encodes, re-derived against our own independently-sourced canonical text.
+
 ## Per-artifact label (`data/compiled/*`)
 
 Compiled outputs are derived works: an artifact built from a
@@ -968,6 +1093,7 @@ even though the file itself is generated, not hand-authored.
 | `chronology-anchors.json` | CC0 (ours) + Public domain (Ussher's Annals of the World, 1658, for two `note` values only) | Compiled from `data/curated/chronology-anchors.toml`; every `year`/`label`/`note` is CC0 curated authorship, with two `note` values (`ezra-returns`, `nehemiah-wall`) GROUNDED IN (two short quoted sentences from, not copied wholesale from) Ussher's own public-domain text — see "Ussher's Annals of the World" above, added Batch HOTFIX-6 fix round 2 |
 | `book-narration-windows.json` | CC0 (ours) | Compiled from `data/curated/book-narration-windows.toml`, derived arithmetically from `chronology-anchors.toml`'s own values, added Batch HOTFIX-6 |
 | `report.txt` | Not a licensed dataset | Generated ETL build report (counts/warnings), not app content |
+| `red-letter-spans.json` | Public domain | Batch RED-1, added 2026-08-25 — see "KJV red-letter markup" above. (This table predates the graph-artifact-centric model and does not otherwise cover `graph.bin`'s own per-corpus license mix, a pre-existing gap outside this batch's own scope; `graph.bin`'s `spoken_by`/`spoken_at` edges carry the SAME public-domain disposition as this row.) |
 
 ## Everything not listed here
 

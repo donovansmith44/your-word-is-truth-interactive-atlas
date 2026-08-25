@@ -392,7 +392,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
                     var cv = chapter.Verses.FirstOrDefault(cv => cv.Verse == v);
                     if (cv is not null)
                     {
-                        verses.Add(new PassageListVerse($"{s.Book}.{s.Chapter}.{v}", cv.Text, Places: cv.Places, Persons: cv.Persons));
+                        verses.Add(new PassageListVerse($"{s.Book}.{s.Chapter}.{v}", cv.Text, Places: cv.Places, Persons: cv.Persons, WordsOfChrist: cv.WordsOfChrist));
                     }
                 }
                 if (verses.Count > 0)
@@ -788,7 +788,7 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
                 currentQuestion = v.Question;
             }
             var mention = mentionData.GetValueOrDefault(v.Vref);
-            currentGroup.Add(new PassageListVerse(v.Vref, v.Text, Places: mention?.Places, Persons: mention?.Persons));
+            currentGroup.Add(new PassageListVerse(v.Vref, v.Text, Places: mention?.Places, Persons: mention?.Persons, WordsOfChrist: mention?.WordsOfChrist));
         }
         if (currentGroup is not null)
         {
@@ -1436,7 +1436,7 @@ file static class WitnessUnitsResolver
             u.Verses.Select(v =>
             {
                 var resolved = resolvedByVref.GetValueOrDefault(v.Vref);
-                return new PassageListVerse(v.Vref, resolved?.Text ?? "", v.GroupCount, resolved?.Places, resolved?.Persons);
+                return new PassageListVerse(v.Vref, resolved?.Text ?? "", v.GroupCount, resolved?.Places, resolved?.Persons, resolved?.WordsOfChrist);
             }).ToList())).ToList(); // no Caption -- P5, see this class's own doc comment
     }
 }

@@ -134,7 +134,7 @@ public sealed record HeadingDto(string EventId, string Title, string Kind, bool 
 /// empty" shape. <see cref="PlaceMentions"/> (Explore/PlaceMentions.cs) is
 /// what turns this list, together with <see cref="Places"/>, into in-text
 /// hoverable/clickable spans over <see cref="Text"/>.
-public sealed record VerseOut(int Verse, string Text, List<PlaceRefDto> Places, List<PersonRefDto> Persons, HeadingDto? Heading = null, int XrefCount = 0);
+public sealed record VerseOut(int Verse, string Text, List<PlaceRefDto> Places, List<PersonRefDto> Persons, List<WordsOfChristSpanDto> WordsOfChrist, HeadingDto? Heading = null, int XrefCount = 0);
 
 public sealed record PlaceRefDto(string Id, string Name);
 
@@ -143,6 +143,15 @@ public sealed record PlaceRefDto(string Id, string Name);
 /// resolve to a place OR a period-scoped polity name, a person mention only
 /// ever names exactly one node kind).
 public sealed record PersonRefDto(string Id, string Name);
+
+/// Batch RED-1 (owner order 2026-08-25, "Red letters on Jesus' words in
+/// every translation"): one sub-verse red-letter span, CHAR offsets into
+/// the owning verse's own <see cref="VerseOut.Text"/>/<see cref="VerseDetail.Text"/>/
+/// <see cref="TextUnitDto.Text"/> -- server: <c>WordsOfChristSpanOut</c>'s
+/// own doc comment has the full "char offsets, not byte offsets, so
+/// <c>string.Substring</c> stays correct" reasoning. Half-open:
+/// <c>text[Start..End]</c> (<c>text.Substring(Start, End - Start)</c>).
+public sealed record WordsOfChristSpanDto(int Start, int End);
 
 /// <summary>
 /// The verse-detail endpoint's own event shape -- <see cref="SceneEvent"/>'s
@@ -177,6 +186,9 @@ public sealed record VerseEventDto(string Id, string Label, TimeRangeDto? When, 
 public sealed record VerseDetail(
     string Ref,
     string Text,
+    // Batch RED-1: this verse's own aligned sub-verse red-letter spans --
+    // see VerseOut.WordsOfChrist's own doc comment (identical shape).
+    List<WordsOfChristSpanDto> WordsOfChrist,
     BookMetaDto BookMeta,
     List<VerseEventDto> Events,
     List<CrossRefOut> CrossRefs,
@@ -484,6 +496,10 @@ public sealed record TextUnitDto(
     // so `Wire.Options`'s naming policy alone already resolves it) -- no
     // attribute needed, consistent with those two existing records.
     string Ref,
-    string Text);
+    string Text,
+    // Batch RED-1: this unit's own aligned sub-verse red-letter spans --
+    // see VerseOut.WordsOfChrist's own doc comment (identical shape;
+    // always empty for a Concord unit, never the KJV).
+    List<WordsOfChristSpanDto> WordsOfChrist);
 
 public sealed record TextWindowDto(List<TextUnitDto> Units, string? Next, string Version);

@@ -1,0 +1,59 @@
+@* Batch RED-1 ("Red letters on Jesus' words in every translation"): the
+   place/person mention-scan-and-render loop, extracted OUT of
+   MentionText.razor so that component can wrap it in a `.words-of-christ`
+   span for a red-letter sub-range without duplicating this markup (the
+   SAME "forbidden parallel-path disease" MentionText.razor's own header
+   comment already names) -- this is now the ONE place `PlaceMentions.Scan`
+   actually renders; MentionText.razor calls it once per red/non-red RUN of
+   one verse's own text, never copies its own body.
+
+   Byte-for-byte the SAME markup MentionText.razor rendered directly before
+   this batch (component boundaries add no DOM of their own in Blazor), so
+   moving the loop here changes nothing for the overwhelming majority of
+   verses (no red-letter span at all -- MentionText's own ComputeRuns
+   returns exactly one non-red run, calling this component once over the
+   verse's own FULL text, identical output to before). *@
+@using BibleAtlas.Client.Explore
+@inject IJSRuntime JS
+
+@foreach (var seg in PlaceMentions.Scan(Text, Places, Persons))
+{
+    @if (seg.PlaceId is { } placeId)
+    {
+        <span class="@ClassPrefix" data-testid="@($"{ClassPrefix}-{Verse}-{placeId}{TestIdSuffix}")"
+              tabindex="0" role="button" aria-label="@($"Explore {seg.PlaceName}")"
+              @onpointerenter="() => Blink(placeId, true)" @onpointerleave="() => Blink(placeId, false)"
+              @onfocus="() => Blink(placeId, true)" @onblur="() => Blink(placeId, false)"
+              @onclick="() => OpenPlace(placeId, seg.PlaceName!)" @onclick:stopPropagation="true"
+              @onkeydown="@(e => OnPlaceKeyDown(e, placeId, seg.PlaceName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
+    }
+    else if (seg.PersonId is { } personId)
+    {
+        <span class="@ClassPrefix @($"{ClassPrefix}-person")" data-testid="@($"{ClassPrefix}-person-{Verse}-{personId}{TestIdSuffix}")"
+              tabindex="0" role="button" aria-label="@($"Explore {seg.PersonName}")"
+              @onclick="() => OpenPerson(personId, seg.PersonName!)" @onclick:stopPropagation="true"
+              @onkeydown="@(e => OnPersonKeyDown(e, personId, seg.PersonName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
+    }
+    else
+    {
+        @seg.Text
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<PlaceRefDto> Places { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<PersonRefDto> Persons { get; set; } = default!;
+    [Parameter, EditorRequired] public int Verse { get; set; }
+    [Parameter, EditorRequired] public string ClassPrefix { get; set; } = default!;
+    [Parameter] public string TestIdSuffix { get; set; } = "";
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    private Task Blink(string placeId, bool active) => MapInterop.BlinkPlace(JS, placeId, active);
+
+    private Task OpenPlace(string placeId, string placeName) => OnExplore.InvokeAsync(new PlaceNode(placeId, placeName));
+    private Task OpenPerson(string personId, string personName) => OnExplore.InvokeAsync(new PersonNode($"Person:{personId}", personName));
+
+    private Task OnPlaceKeyDown(KeyboardEventArgs e, string placeId, string placeName) => e.Key == "Enter" ? OpenPlace(placeId, placeName) : Task.CompletedTask;
+    private Task OnPersonKeyDown(KeyboardEventArgs e, string personId, string personName) => e.Key == "Enter" ? OpenPerson(personId, personName) : Task.CompletedTask;
+}

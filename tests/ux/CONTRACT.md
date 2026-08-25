@@ -208,7 +208,10 @@ Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   leading -- see XSCRIPT-1/CAP-RECONCILE-1), `verse-mention-{n}-{placeId}`
   / `verse-mention-person-{n}-{personId}` (M-D3/U5; zero or more per verse,
   inside `verse-line-{n}`'s own verse text -- see MENTION-1 below for the
-  full scan/click/blink behavior)
+  full scan/click/blink behavior), a `.words-of-christ` CSS span (batch-
+  red1-brief.md, owner order 2026-08-25: "Red letters on Jesus' words in
+  every translation" -- NOT a `data-testid`, a plain styling class; see
+  RED-1 below)
 Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
   FOLLOW-1/VIEWSTATE-1 below for the full behavior these wire up):
   `split-open-reader` (button, reader only, absent once split is open;
@@ -1576,6 +1579,53 @@ Notes:
   coordinate-click call site in this suite has been converted (only the
   ones each batch's own new tests caused to actually fail), disclosed as
   known follow-up risk rather than silently left undocumented.
+- RED-1 (batch-red1-brief.md, owner order 2026-08-25, verbatim: "Red
+  letters on Jesus' words in every translation"; "SpokenAt is another
+  edge"): a `.words-of-christ` CSS span (plain styling class, NOT a
+  `data-testid` -- no new locator vocabulary) wrapping the ALIGNED
+  sub-verse red-letter span(s) of a verse's own rendered text, KJV-only
+  (sub-verse precision is edition-specific by construction -- decision 5;
+  no non-KJV surface exists in this app today, ruling 5, "M1 is KJV-only",
+  so the verse-level SET the graph carries for every OTHER edition ships
+  as data only, unrendered, honestly disclosed rather than a dead
+  client-side branch). Rendered through the SAME shared component every
+  in-text mention already renders through -- `MentionText.razor` (server:
+  `VerseOut.words_of_christ`/`VerseDetail.words_of_christ`/
+  `TextUnitOut.words_of_christ`, CHAR -- not byte -- offsets, always
+  present, possibly empty, the same "always an array" convention
+  `places`/`persons` already establish) -- splits a verse's text at the
+  (already sorted, non-overlapping) red-letter boundaries BEFORE the
+  existing place/person mention scan runs, independently, on each
+  resulting run; a run inside a red-letter span is wrapped in one
+  `.words-of-christ` span, scanned for mentions same as ever inside it (a
+  mention nested in red-letter text renders red at REST, per ordinary CSS
+  inheritance -- `.verse-mention`/its own popover-context siblings carry
+  no explicit rest-state `color` of their own by design -- and still
+  switches to the mention hover/focus color on interaction, unchanged).
+  Zero extra DOM for the overwhelming majority of verses (no red-letter
+  span at all): `MentionText`'s own run-splitting returns exactly one
+  non-red run covering the whole text in that case, byte-identical
+  rendering to before this batch. Present on EVERY surface `MENTION-1`
+  above already lists (one shared component, one shared rule, no
+  surface-by-surface opt-in): Reader.razor's own primary verse text, the
+  mini-reader, the verse popover's own compact FOCUS preview, and
+  PassageList.razor's/ArrowNav.razor's own compact passage previews
+  (cross-references, THE SCRIPTURES, place est/dest, event witnesses, the
+  arrow-peek) -- each already threading `VerseOut`/`PassageListVerse`'s
+  own `WordsOfChrist` field the identical "null vs. empty, coalesced at
+  the render site" way `Places`/`Persons` already are. Traditional red
+  ink color only (`--red-letter: #A00000`, `:root`, app.css) -- no
+  background/weight/decoration -- verified to clear the established 7:1
+  contrast floor on BOTH real backgrounds verse text ever renders against
+  in this app (`--parchment`, the reader column itself, 7.47:1; and
+  `--parchment-raised`, every popover AND the World map's own hover
+  place-card, 8.07:1; WCAG relative-luminance method, this file's own
+  established method) -- DISCLOSED: this app carries no dark/night theme
+  anywhere for verse text (grep-confirmed zero matches for
+  `prefers-color-scheme`/`data-theme` across the whole client), so "the
+  established dusk floor... on both themes" is satisfied as "both REAL
+  backgrounds," not a light/dark pair this content class does not
+  actually have.
 - RECURSE-1 (batch-md4-brief.md, "the recursive reader" -- the owner's own
   defect report, near-verbatim, 2026-08-23: "the hovering over place names
   is not universal... the Bible I get when I click read the whole chapter

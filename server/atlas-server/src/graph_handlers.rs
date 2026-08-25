@@ -215,6 +215,12 @@ pub struct TextUnitOut {
     #[serde(rename = "ref")]
     pub sref: String,
     pub text: String,
+    /// Batch RED-1: this unit's own aligned sub-verse red-letter spans --
+    /// see `handlers::VerseOut.words_of_christ`'s own doc comment
+    /// (identical shape/convention). Always empty for `corpus=concord`
+    /// (a wholly different corpus, never the KJV -- decision 5's own
+    /// sub-verse precision is KJV-specific by construction).
+    pub words_of_christ: Vec<crate::handlers::WordsOfChristSpanOut>,
 }
 
 #[derive(Debug, Serialize)]
@@ -352,7 +358,7 @@ pub async fn text_window(
             .filter_map(|id| {
                 let (p, a, para) = atlas_graph::concord_adapter::decode_text_unit(id)?;
                 let text = window::render_layer(&snap, id, atlas_graph::concord_adapter::CONCORD_TRANSLATION)?;
-                Some(TextUnitOut { sref: format!("BoC {p}.{a}.{para}"), text })
+                Some(TextUnitOut { sref: format!("BoC {p}.{a}.{para}"), text, words_of_christ: Vec::new() })
             })
             .collect();
 
@@ -396,7 +402,12 @@ pub async fn text_window(
         .filter_map(|id| {
             let (b, c, v) = atlas_graph::kjv_adapter::decode_text_unit(id)?;
             let text = window::render(&snap, id)?;
-            Some(TextUnitOut { sref: atlas_graph::kjv_adapter::dot_ref(b, c, v), text })
+            let sref = atlas_graph::kjv_adapter::dot_ref(b, c, v);
+            // Batch RED-1: the SAME per-verse lookup `handlers::chapter`/
+            // `handlers::verse` use, off the precomputed `graph.
+            // red_letter_spans` companion.
+            let words_of_christ = graph.red_letter_spans.get(&sref).map(|spans| spans.iter().map(|&(start, end)| crate::handlers::WordsOfChristSpanOut { start, end }).collect()).unwrap_or_default();
+            Some(TextUnitOut { sref, text, words_of_christ })
         })
         .collect();
 

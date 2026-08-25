@@ -28,6 +28,7 @@ pub mod osis;
 pub mod people;
 pub mod people_groups;
 pub mod polities;
+pub mod red_letter;
 pub mod report;
 pub mod theographic;
 pub mod validate;

@@ -551,6 +551,54 @@ B.C., 41 A.D., 0 Anno Mundi — disclosed absent, not assumed) — parsing
 only, emitted to `data/exports/kretzmann-chronology.json`
 (`status: "tentative-extraction"`).
 
+## `red-letter/eng-kjv.osis.xml` (Batch RED-1 — red letters, words of Christ)
+
+One file, ~10.1 MB, fetched from `seven1m/open-bibles`'s own curated
+public-domain-bibles collection (pinned commit
+`f257a3559025c3f873b48a75019f53a9354ed7de`; `data/fetch-raw.ps1`'s own
+comment has the full CrossWire-substitution reasoning — the PRIMARY
+candidate named by red1-scouting.md, CrossWire's own current KJV Sword
+module, carries a module-level GPL license bundling copyrighted Strong's-
+numbers/morphology apparatus, failing the everything-public-domain gate for
+direct use; this file instead, LICENSES.md's own "KJV red-letter markup"
+section has the full verification). OSIS XML, the King James Version
+"using the standardized text of 1769" (the file's own embedded header,
+`<rights type="x-copyright">public domain</rights>`), Apocrypha/
+Deuterocanon included (never touched — `atlas_core::canon::resolve_alias`
+returns `None` for every non-canonical `osisID`, so those verses simply
+never open during parsing, `server/atlas-etl/src/red_letter.rs`'s own
+module doc comment).
+
+**Shape** (verified directly, not assumed): milestone-style verse/chapter
+tags (`<verse osisID="Matt.4.19" sID="..." n="19" />TEXT<verse eID="..." />`);
+Christ's own words marked `<q who="Jesus" sID="..." marker="" />TEXT
+<q eID="..." />`, nested inside one verse's own text region, never crossing
+a verse boundary (the file's own revisionDesc header discloses this
+explicitly). 2,021 `who="Jesus"` occurrences in the raw file; the parser's
+own real-data run resolves this to a verse SET of 2,066 verses (a `<q>` run
+can close and reopen within one verse — narration between two sayings — so
+verse-set size and raw occurrence count are not the same number by
+construction) and 2,081 total source spans.
+
+**Alignment against OUR canonical (RESTORED, KJV-CASE + KJV-CASE-2) KJV
+text** (`server/atlas-etl/tests/red_letter_real_data.rs` pins these exact
+counts as a regression harness, the SAME discipline `kretzmann_real_data.rs`
+already establishes): 2,059 exact case-sensitive verbatim-substring matches;
+4 more resolve only case-insensitively (the disclosed KJV-CASE class — our
+restored casing vs. this source's own normalization); 18 (0.87% of source
+spans) are a real, fully-categorized residual, NEVER bridged by guessing
+(the alignment law's own "case-insensitive is the one authorized second
+tier" — batch-red1-report.md has the full per-verse list): 14 spelling
+variants this source spells differently than our own canon (`Caesar`/our
+`Cesar` ×4, `Judaea`/our `Judea` ×6, `Galilaeans`/our `Galileans`,
+`Zacchaeus`/our `Zaccheus`, `Nicolaitanes`/our `Nicolaitans` ×2,
+`Barjona`/our `Bar–jona`), two dropped possessive apostrophes, one dropped
+comma, and one source-side literal typo (MAT.5.30 "cut **if** off" for "cut
+**it** off"). A verse whose only span lands in this residual carries no
+sub-verse row in `data/compiled/red-letter-spans.json` but STAYS in the
+graph's own SpokenBy verse set regardless (the verse set is edition-
+independent by construction — decision 2a).
+
 ## Vendored Leaflet (`client/wwwroot/vendor/leaflet/`)
 
 `leaflet.js` (147,552 bytes) and `leaflet.css` (14,806 bytes), fetched from

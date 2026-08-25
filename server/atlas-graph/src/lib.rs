@@ -49,6 +49,8 @@ pub mod person_adapter;
 pub mod pipeline;
 pub mod place_adapter;
 pub mod polity_adapter;
+pub mod red_letter_adapter;
+pub mod red_letter_spans;
 pub mod service;
 pub mod window;
 pub mod xref_adapter;

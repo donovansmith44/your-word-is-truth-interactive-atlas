@@ -114,6 +114,30 @@ pub fn build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzman
     concord: Option<&crate::concord_adapter::ConcordBundle>,
     kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
+    build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, None)
+}
+
+/// RED-1: the richest raw-source form yet -- `bins/compile_graph.rs` and
+/// `GraphService::build`'s own dev fallback both use this directly, with a
+/// real, pre-parsed + pre-aligned `atlas_etl::red_letter::RedLetterCorpus`
+/// (aligned against the SAME RESTORED verses this function computes below
+/// -- callers must align their own `red_letter` corpus against RESTORED
+/// text, never the raw `kjv_json` parse, since the span-alignment law runs
+/// against the graph's own restored casing; `red_letter.rs`'s own module
+/// doc comment). `build_graph_from_sources_with_eras_and_brainfuel_and_
+/// concord_and_kretzmann` above delegates here with `None`, so every
+/// existing caller's own behavior is byte-identical to before this batch.
+#[allow(clippy::too_many_arguments)]
+pub fn build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(
+    kjv_json: &str,
+    xrefs_tsv: &str,
+    atlas: &AtlasData,
+    eras: &[atlas_core::data::Era],
+    brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
+    concord: Option<&crate::concord_adapter::ConcordBundle>,
+    kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
+    red_letter: Option<&atlas_etl::red_letter::RedLetterCorpus>,
+) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
     let (canon, verses) = atlas_etl::kjv::parse(kjv_json).context("parsing the KJV source (kjv.json)")?;
     // Batch KJV-CASE (owner ruling; batch-kjv-case-brief.md): restore the
     // Tetragrammaton LORD/Lord case distinction our canonical kjv.json
@@ -138,7 +162,7 @@ pub fn build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzman
         }
         None => &verses,
     };
-    run_pipeline_build_with_brainfuel(&canon, verses, Some(kjv_json), xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann)
+    run_pipeline_build_with_brainfuel(&canon, verses, Some(kjv_json), xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter)
 }
 
 /// The same build, starting from an already-parsed `(Canon, verses)` pair
@@ -182,7 +206,7 @@ fn run_pipeline_build(
     atlas: &AtlasData,
     eras: &[atlas_core::data::Era],
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
-    run_pipeline_build_with_brainfuel(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, None, None, None)
+    run_pipeline_build_with_brainfuel(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, None, None, None, None)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -196,8 +220,9 @@ fn run_pipeline_build_with_brainfuel(
     brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
     concord: Option<&crate::concord_adapter::ConcordBundle>,
     kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
+    red_letter: Option<&atlas_etl::red_letter::RedLetterCorpus>,
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
-    let mut ctx = crate::pipeline::BuildCtx::with_eras_and_brainfuel_and_concord_and_kretzmann(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann);
+    let mut ctx = crate::pipeline::BuildCtx::with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter);
     crate::pipeline::run_pipeline(&mut ctx, &crate::pipeline::pipeline())?;
     Ok((ctx.graph, ctx.stats, ctx.event_world_stats, ctx.chrono))
 }

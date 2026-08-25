@@ -95,4 +95,44 @@ resolver = "2"
 # deliberately NOT part of this count, per this file's own established
 # convention above and the batch's own dispatch instructions -- see
 # `server/BENCHMARKS.md` for its real numbers.
-# CURRENT CANONICAL: 843 (821 + 22) across 44 sections.
+#
+# Batch RED-1 (2026-08-25, red letters -- words of Christ -- + SpokenBy/
+# SpokenAt): moved to 880 (857 + 23) across 45 sections. Workspace +36
+# across +1 section: `red_letter.rs`'s own parser/alignment unit tests (15,
+# in atlas-etl's lib unittests, no new section) -- `align_verse`'s
+# exact/case-insensitive/not-found tiers, the MAT.4.19 spot the brief names
+# verbatim, the Apocrypha-exclusion guard, and `contiguous_ranges`'s own
+# chapter-rollover handling; the new `tests/red_letter_real_data.rs` real-
+# data section (4, the ONE new section -- pins the real corpus's own
+# alignment shape: 2,066-verse SET, 2,081 source spans, 2,059 exact + 4
+# case-insensitive + 18 not-found, and the three named spot-checks --
+# MAT.4.19, MAT.5.4, GEN.1.1 -- batch-red1-report.md has the full
+# categorized residual); `red_letter_adapter.rs` (7, in atlas-graph's lib
+# unittests) -- the Jesus-node defensive guard, one-row-per-maximal-range
+# SpokenBy construction, and the three SpokenAt derivation cases (covered/
+# honestly-empty/deduped-by-place); `red_letter_spans.rs` (5) -- the
+# char-offset conversion (including the disclosed byte-vs-char divergence
+# case) and the compiled-file round-trip; two new `law_check.rs` red/green
+# pairs (4, `spoken_by.speaker`/`spoken_at.place` referential integrity,
+# the same class CORP-2a/KRETZ-1 already established); one new round-trip
+# test in `artifact.rs` (1, `spoken_by`/`spoken_at` real values, the SAME
+# "values not just shape" discipline `temporal_adjacency`'s own test
+# establishes). `atlas-graph-types` +1 (`graph.rs`'s own new `spoken_by`/
+# `spoken_at` indexing test, the pre-authorized mechanical-mirror exception
+# this batch's own report names, standing since CORP-2a/KRETZ-1).
+#
+# DISCLOSED, NOT COUNTED AS A FAILURE: `atlas-graph`'s own
+# `artifact_conformance.rs::serialized_artifact_is_admitted_and_loads_
+# under_the_committed_ceiling` (a wall-clock 3s load-time ceiling, unrelated
+# to this batch's own code path -- it builds via the pre-RED-1
+# `build_graph_from_sources_with_eras_and_brainfuel` signature, never
+# touching `red_letter`) flakes under this file's own full-workspace
+# parallel run (3.17s-3.6s, 3/3 observed at batch-close time) but passes
+# reliably run in isolation (2.58s, 3/3 observed, byte-identical
+# 72,301,981-byte output every time) -- a pre-existing, machine-contention-
+# sensitive timing artifact of the harness itself, not a functional
+# regression; batch-red1-report.md has the full investigation. The 857
+# (workspace) figure above counts it as the one passing test it reliably
+# is, confirmed separately from the `--skip`-run total both counting
+# passes used.
+# CURRENT CANONICAL: 880 (857 + 23) across 45 sections.

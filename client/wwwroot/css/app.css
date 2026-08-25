@@ -52,6 +52,27 @@
        background isn't a legibility concern the way a number or label's
        own text color is. */
     --bronze-ink: #654A2A;
+    /* Batch RED-1 (owner order 2026-08-25, "Red letters on Jesus' words in
+       every translation"): the traditional red-letter ink. Both real
+       surfaces this app ever renders verse text against are LIGHT
+       (--parchment, the reader column itself; --parchment-raised, every
+       popover AND the World map's own hover place-card -- confirmed: this
+       app carries no dark/night theme anywhere, grep-verified zero matches
+       for prefers-color-scheme/data-theme across the whole client), so
+       there is only ONE real background family to clear, not a light/dark
+       pair -- the batch's own dispatch language ("the established dusk
+       contrast floor is 7:1... a lighter red on dark is expected")
+       presupposed a second, darker background this app does not actually
+       have for this content class; treated here as "clear 7:1 on both REAL
+       backgrounds instead," the closest faithful reading, disclosed in the
+       batch report rather than silently reinterpreted. WCAG relative-
+       luminance method (this file's own established method, .verse-xref-
+       marker's own comment above): #B00000, the naive "B00 class" starting
+       point, measures only 6.55:1 on --parchment -- UNDER the 7:1 floor.
+       This darker value measures 7.47:1 on --parchment / 8.07:1 on
+       --parchment-raised -- clears the floor on both with real margin,
+       still unmistakably a traditional red-letter red, not brown. */
+    --red-letter: #A00000;
     --lapis: #2C4A70;
     --ochre-alert: #9A3B2E;
     /* Fix round 1 (M2): a protective backing for BRONZE-BRIGHT text sitting
@@ -879,6 +900,32 @@ input:focus-visible,
     .verse-mention {
         transition: none;
     }
+}
+
+/* Batch RED-1 (owner order 2026-08-25, "Red letters on Jesus' words in
+   every translation"): the ONE red-letter rule -- `MentionText.razor` wraps
+   a verse's own red-letter sub-range (KJV, sub-verse precision) in this
+   span, never a second copy per container (reader/mini-reader/verse-
+   popover preview all render it identically, by construction -- one
+   component, one rule). `color` ONLY: no background/weight/decoration --
+   traditional red-letter Bibles change ink color alone, and `.verse-
+   mention`/`.verse-mention-person` (and their own popover-context
+   siblings below) intentionally carry NO explicit rest-state `color` of
+   their own (inherit from whatever ancestor they sit in), so a place/
+   person mention NESTED inside red-letter text correctly inherits this
+   red at rest -- printed exactly like a red-letter Bible's own cross-
+   referenced names -- and still switches to `--lapis` on hover/focus
+   (that rule's own explicit `color` wins there, same as it always did on
+   plain --ink text). --red-letter's own :root comment has the full
+   contrast derivation (7.47:1 on --parchment / 8.07:1 on
+   --parchment-raised, both real backgrounds this app ever renders verse
+   text against -- clears the established 7:1 floor on both, disclosed
+   margin). No hover/focus color change of its own: unlike `.verse-
+   mention`, this is prose color, not an interactive affordance -- a
+   red-letter span is not itself clickable (only the mentions nested
+   inside it are, unaffected). */
+.words-of-christ {
+    color: var(--red-letter);
 }
 
 /* reader-prev/reader-next -- Batch R requirement 6 (user 2026-08-19: "the

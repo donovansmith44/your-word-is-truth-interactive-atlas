@@ -185,6 +185,19 @@ pub struct GraphService {
     /// never iterated/serialized" reasoning as `cross_refs_by_from`/
     /// `verse_text`/`persons_by_verse` above.
     pub temporal_neighbors: HashMap<String, (Option<String>, Option<String>)>,
+    /// RED-1 (decision 4, "the heading-index precedent"): dot-ref -> the
+    /// KJV sub-verse span table's own char-offset ranges for that verse --
+    /// the SAME "precomputed once here, O(1) per-verse lookup" treatment
+    /// `heading_index`/`persons_by_verse` above already get, EXCEPT this
+    /// one companion is NOT derivable from the graph at all (it needs the
+    /// original OSIS alignment, which the graph itself never carries --
+    /// `red_letter_spans.rs`'s own module doc comment: "compiled-data-side,
+    /// never the graph artifact") -- `assemble` below takes it as an
+    /// ALREADY-RESOLVED parameter instead of computing it from `&graph`,
+    /// the one companion field with that shape. `HashMap`, not `BTreeMap`
+    /// -- same "only ever `.get()`'d by key" reasoning as `cross_refs_by_
+    /// from`/`verse_text`/`persons_by_verse` above.
+    pub red_letter_spans: HashMap<String, Vec<(usize, usize)>>,
 }
 
 /// The longest KJV chapter (Psalm 119) has 176 verses; this probe width is
@@ -254,8 +267,52 @@ impl GraphService {
         concord: Option<&crate::concord_adapter::ConcordBundle>,
         kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
     ) -> anyhow::Result<Self> {
-        let (graph, stats, event_world_stats, chrono) = build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann)?;
-        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono)))
+        Self::from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, None)
+    }
+
+    /// RED-1: the richest raw-source constructor yet -- see `build::
+    /// build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_
+    /// kretzmann_and_red_letter`'s own doc comment.
+    /// `from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann`
+    /// above delegates here with `None`, unchanged behavior for every
+    /// existing caller. `red_letter_spans` (the `GraphService` companion,
+    /// this struct's own field doc comment) is derived here, straight off
+    /// the SAME `red_letter` corpus, against the SAME restored verses
+    /// `build::...` computes internally for the graph itself -- recomputed
+    /// once more here rather than threaded out of that call (a small,
+    /// disclosed, one-time-at-startup duplication, the SAME "recompute a
+    /// cheap pure derivation a second time for a second purpose" class
+    /// `bins/compile_graph.rs`'s own `case_restoration`-for-the-startup-log
+    /// recompute already establishes).
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(
+        kjv_json: &str,
+        xrefs_tsv: &str,
+        atlas: &AtlasData,
+        eras: &[atlas_core::data::Era],
+        brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
+        concord: Option<&crate::concord_adapter::ConcordBundle>,
+        kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
+        red_letter: Option<&atlas_etl::red_letter::RedLetterCorpus>,
+    ) -> anyhow::Result<Self> {
+        let (graph, stats, event_world_stats, chrono) =
+            build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter)?;
+        let red_letter_spans: HashMap<String, Vec<(usize, usize)>> = match red_letter {
+            Some(corpus) => {
+                let (_, verses) = atlas_etl::kjv::parse(kjv_json).context("parsing the KJV source (kjv.json) for the red-letter span table")?;
+                let restored_verses;
+                let verses_ref: &HashMap<String, String> = match brainfuel {
+                    Some(bf) => {
+                        restored_verses = atlas_etl::brainfuel::restore_kjv_case(bf, &verses).0;
+                        &restored_verses
+                    }
+                    None => &verses,
+                };
+                crate::red_letter_spans::spans_by_dot_ref(corpus, verses_ref).into_iter().collect()
+            }
+            None => HashMap::new(),
+        };
+        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono), red_letter_spans))
     }
 
     /// Test-fixture path: builds from an already-parsed `(Canon, verses)`
@@ -274,7 +331,11 @@ impl GraphService {
     /// JSON text just to reach the eras-carrying constructor.
     pub fn from_canon_and_verses_with_eras(canon: &Canon, verses: &HashMap<String, String>, xrefs_tsv: &str, atlas: &AtlasData, eras: &[atlas_core::data::Era]) -> anyhow::Result<Self> {
         let (graph, stats, event_world_stats, chrono) = build::build_graph_from_canon_and_verses_with_eras(canon, verses, xrefs_tsv, atlas, eras)?;
-        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono)))
+        // RED-1: this path never carries a real red-letter corpus (no raw
+        // source bytes at all on this test-fixture path) -- an honestly
+        // empty span table, the SAME "absent == empty" treatment every
+        // other companion here gets.
+        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono), HashMap::new()))
     }
 
     /// M-C (controller decision 4): loads from a SERIALIZED ARTIFACT --
@@ -294,7 +355,17 @@ impl GraphService {
         let (mut graph, stats, event_world_stats, chronology) = artifact::to_service_parts(dump).map_err(|e| anyhow::anyhow!("{e}"))?;
         graph.build_indexes();
         crate::event_world::add_justified_by(&mut graph);
-        Ok(Self::assemble(graph, stats, event_world_stats, chronology))
+        // RED-1: the KJV sub-verse span table's own sibling file --
+        // `<data_dir>/red-letter-spans.json`, the SAME "disclosed
+        // convention: same directory every other compiled file already
+        // lives in" `main.rs`'s own `--build-from-raw` doc comment already
+        // establishes for `graph.bin` itself. `None` (the file doesn't
+        // exist -- an older `data/compiled/` snapshot, or a test fixture
+        // directory) is an honestly empty span table, never an error on
+        // this path (`red_letter_spans::read_file`'s own doc comment).
+        let spans_path = path.parent().map(|p| p.join("red-letter-spans.json")).unwrap_or_else(|| std::path::PathBuf::from("red-letter-spans.json"));
+        let red_letter_spans: HashMap<String, Vec<(usize, usize)>> = crate::red_letter_spans::read_file(&spans_path)?.unwrap_or_default().into_iter().collect();
+        Ok(Self::assemble(graph, stats, event_world_stats, chronology, red_letter_spans))
     }
 
     /// Reads `raw_dir/kjv.json` and `raw_dir/xrefs/cross_references.txt`
@@ -331,7 +402,14 @@ impl GraphService {
         // in scope above) -- the OVER-EXCISION GUARD's own real canonical
         // source (`kretzmann::read_all`'s own doc comment).
         let kretzmann = load_kretzmann(raw_dir, &kjv_json)?;
-        Self::from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(&kjv_json, &xrefs_tsv, atlas, &eras, brainfuel.as_ref(), concord.as_ref(), kretzmann.as_ref())
+        // RED-1: `data/raw/red-letter/eng-kjv.osis.xml` -- the SAME
+        // graceful-absence treatment `load_kretzmann`/`load_concord`/
+        // `load_brainfuel` above already get. Aligned against RESTORED
+        // text (`load_red_letter`'s own doc comment) -- the span-alignment
+        // law runs against the graph's own restored casing, never the raw
+        // parse.
+        let red_letter = load_red_letter(raw_dir, &kjv_json, brainfuel.as_ref())?;
+        Self::from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(&kjv_json, &xrefs_tsv, atlas, &eras, brainfuel.as_ref(), concord.as_ref(), kretzmann.as_ref(), red_letter.as_ref())
     }
 
     /// M-C: takes an ALREADY-BUILT `Chronology` rather than `&AtlasData` --
@@ -341,7 +419,7 @@ impl GraphService {
     /// `AtlasData`, via `Chronology::build`, on the from-sources paths; from
     /// the artifact's own serialized fields, via `artifact::to_service_parts`,
     /// on the from-artifact path) and hands the finished value in here.
-    fn assemble(graph: Graph, stats: BuildStats, event_world_stats: EventWorldStats, chronology: Chronology) -> Self {
+    fn assemble(graph: Graph, stats: BuildStats, event_world_stats: EventWorldStats, chronology: Chronology, red_letter_spans: HashMap<String, Vec<(usize, usize)>>) -> Self {
         let bible_position = graph
             .reading
             .get(crate::kjv_adapter::BIBLE_CORPUS)
@@ -504,6 +582,7 @@ impl GraphService {
             verse_text,
             persons_by_verse,
             temporal_neighbors,
+            red_letter_spans,
         }
     }
 
@@ -616,6 +695,34 @@ fn load_kretzmann(raw_dir: &Path, kjv_json: &str) -> anyhow::Result<Option<atlas
     }
     let (_, kjv_verses) = atlas_etl::kjv::parse(kjv_json).context("parsing kjv.json for the Kretzmann over-excision guard")?;
     atlas_etl::kretzmann::read_all(&root, &kjv_verses).map(Some).with_context(|| format!("reading vendored Kretzmann data from {}", root.display()))
+}
+
+/// RED-1: `raw_dir/red-letter/` -- `None` (not an error) when that
+/// directory simply doesn't exist (`load_kretzmann`'s own doc comment,
+/// same treatment); `Some(Err(..))` propagated fail-loud when it exists
+/// but is malformed. UNLIKE `load_kretzmann` (word-content comparison
+/// only), this alignment is CASE-SENSITIVE-FIRST (the GAZ-1 law), so it
+/// reads against RESTORED text -- `brainfuel`, when present, applies the
+/// SAME KJV-CASE/KJV-CASE-2 restoration `build.rs` itself applies before
+/// building the graph's own TextUnit nodes; a caller with no real
+/// brainfuel data (most test fixtures) gets the raw, unrestored parse
+/// instead -- an honest, if less precise, alignment target on that path,
+/// never a panic.
+fn load_red_letter(raw_dir: &Path, kjv_json: &str, brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>) -> anyhow::Result<Option<atlas_etl::red_letter::RedLetterCorpus>> {
+    let root = raw_dir.join("red-letter");
+    if !root.is_dir() {
+        return Ok(None);
+    }
+    let (_, verses) = atlas_etl::kjv::parse(kjv_json).context("parsing kjv.json for the red-letter alignment")?;
+    let restored_verses;
+    let verses_ref: &std::collections::HashMap<String, String> = match brainfuel {
+        Some(bf) => {
+            restored_verses = atlas_etl::brainfuel::restore_kjv_case(bf, &verses).0;
+            &restored_verses
+        }
+        None => &verses,
+    };
+    atlas_etl::red_letter::read_all(&root, verses_ref).map(Some).with_context(|| format!("reading vendored red-letter data from {}", root.display()))
 }
 
 #[cfg(test)]

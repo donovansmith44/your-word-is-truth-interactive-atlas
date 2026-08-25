@@ -35,7 +35,16 @@ namespace BibleAtlas.Client.Explore;
 /// the render site (never surfaces the distinction to the component).
 /// </param>
 /// <param name="Persons">The <see cref="Places"/> sibling -- same rule.</param>
-public sealed record PassageListVerse(string Vref, string Text, int? GroupCount = null, IReadOnlyList<PlaceRefDto>? Places = null, IReadOnlyList<PersonRefDto>? Persons = null);
+/// <param name="WordsOfChrist">
+/// Batch RED-1 (owner order 2026-08-25, "Red letters on Jesus' words in
+/// every translation"): the <see cref="Places"/>/<see cref="Persons"/>
+/// sibling for red-letter spans -- same null-vs-empty rule (null when the
+/// producer had no <c>ChapterOut.Verses</c> row to read from; an empty
+/// array when it did and the verse simply carries no red-letter span).
+/// <c>PassageList.razor</c>/<c>ArrowNav.razor</c> coalesce null to empty at
+/// the render site, same as the other two.
+/// </param>
+public sealed record PassageListVerse(string Vref, string Text, int? GroupCount = null, IReadOnlyList<PlaceRefDto>? Places = null, IReadOnlyList<PersonRefDto>? Persons = null, IReadOnlyList<WordsOfChristSpanDto>? WordsOfChrist = null);
 
 /// <summary>
 /// One INDEPENDENT source of verses to group into passage blocks -- e.g.
@@ -131,7 +140,7 @@ public static class VerseTextResolver
             var cv = c.Verses.FirstOrDefault(v => v.Verse == verse);
             if (cv is not null)
             {
-                result.Add(new PassageListVerse(vref, cv.Text, Places: cv.Places, Persons: cv.Persons));
+                result.Add(new PassageListVerse(vref, cv.Text, Places: cv.Places, Persons: cv.Persons, WordsOfChrist: cv.WordsOfChrist));
             }
         }
         return result;

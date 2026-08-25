@@ -303,6 +303,21 @@ pub struct PersonRefOut {
     pub name: String,
 }
 
+/// Batch RED-1 (owner order 2026-08-25, "Red letters on Jesus' words in
+/// every translation"): one sub-verse red-letter span, CHAR (not byte)
+/// offsets into this verse's own `text` field -- `graph.red_letter_spans`'s
+/// own doc comment has the full "why char offsets" (C# `string` indexing is
+/// UTF-16 code units; every character in this app's own KJV text is within
+/// the Basic Multilingual Plane, so char count == UTF-16 code unit count
+/// here, always). `start`/`end` are a half-open range (`text[start..end]`
+/// in C# `Substring(start, end-start)` terms) -- KJV display renders this
+/// EXACT sub-verse span; decision 5's own "ONE render rule."
+#[derive(Debug, Serialize)]
+pub struct WordsOfChristSpanOut {
+    pub start: usize,
+    pub end: usize,
+}
+
 /// Batch T requirement 5: one resolved pericope heading, folded onto its own
 /// anchor verse (`VerseOut.heading`) -- the SAME "fold onto the already-
 /// shared fetch" precedent `VerseDetailOut.catechism`/`.events` already
@@ -392,6 +407,16 @@ pub struct VerseOut {
     /// the client's own superscript decision is `count == 0` -> nothing,
     /// never a missing-field special case).
     pub xref_count: usize,
+    /// Batch RED-1: this verse's own aligned sub-verse red-letter spans
+    /// (`GraphService.red_letter_spans`, precomputed once -- see that
+    /// field's own doc comment for why this ONE companion is not
+    /// graph-derivable), in ascending order. Always present, possibly
+    /// empty -- SAME "always an array" convention `places`/`persons`
+    /// above already establish (most verses carry none). KJV-ONLY by
+    /// construction (decision 5: sub-verse precision is KJV-specific;
+    /// this endpoint has never served any other translation -- ruling 5,
+    /// "M1 is KJV-only").
+    pub words_of_christ: Vec<WordsOfChristSpanOut>,
 }
 
 #[derive(Debug, Serialize)]
@@ -530,7 +555,11 @@ pub async fn chapter(
             let verse_pos = Position::Node(atlas_graph::kjv_adapter::verse_node_id(book.0, chapter, v));
             let xref_count =
                 snap.edge_summary(&verse_pos).get(&EdgeKind::Directed(RelationId::Cites, Direction::Forward)).copied().unwrap_or(0);
-            verses.push(VerseOut { verse: v, text: text.to_string(), places, persons, heading, xref_count });
+            // Batch RED-1: the SAME O(1) per-verse lookup treatment
+            // `heading`/`xref_count`/`persons` above already get, off the
+            // precomputed `graph.red_letter_spans` companion.
+            let words_of_christ = graph.red_letter_spans.get(&key).map(|spans| spans.iter().map(|&(start, end)| WordsOfChristSpanOut { start, end }).collect()).unwrap_or_default();
+            verses.push(VerseOut { verse: v, text: text.to_string(), places, persons, heading, xref_count, words_of_christ });
         }
     }
 
@@ -615,6 +644,10 @@ pub struct VerseDetailOut {
     #[serde(rename = "ref")]
     pub sref: String,
     pub text: String,
+    /// Batch RED-1: this verse's own aligned sub-verse red-letter spans --
+    /// see `VerseOut.words_of_christ`'s own doc comment (identical shape/
+    /// convention, this endpoint's own single-verse sibling).
+    pub words_of_christ: Vec<WordsOfChristSpanOut>,
     pub book_meta: BookMetaOut,
     pub events: Vec<VerseEventOut>,
     pub cross_refs: Vec<CrossRefOut>,
@@ -854,9 +887,14 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     let catechism: Vec<CatechismRefOut> =
         data.catechism_items_for_span(&ScriptureRef::Verse(vid)).into_iter().map(CatechismRefOut::from).collect();
 
+    // Batch RED-1: the SAME per-verse lookup `handlers::chapter` uses, off
+    // the precomputed `graph.red_letter_spans` companion.
+    let words_of_christ: Vec<WordsOfChristSpanOut> = graph.red_letter_spans.get(&canonical).map(|spans| spans.iter().map(|&(start, end)| WordsOfChristSpanOut { start, end }).collect()).unwrap_or_default();
+
     Ok(Json(VerseDetailOut {
         sref: canonical,
         text,
+        words_of_christ,
         book_meta: BookMetaOut {
             author: book_meta.author,
             write_place: book_meta.write_place,

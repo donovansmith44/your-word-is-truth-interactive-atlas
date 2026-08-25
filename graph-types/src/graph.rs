@@ -164,6 +164,28 @@ impl Graph {
             let tl: TextLocus = row.on.from.clone().into();
             pairs.entry(R::CommentsOn).or_default().push((item, at(&text_node(&tl)), M::None));
         }
+        // RED-1 (the pre-authorized exception, standing since KRETZ-1's own
+        // `comments_on` precedent immediately above): `spoken_by`/
+        // `spoken_at` were declared on this struct at BASE but never
+        // lowered into `pairs` until this batch. Both mirror `attests`'s
+        // own shape (one `BibleLocusRange` field + one node-typed field),
+        // but with the OPPOSITE polarity: `attests` puts the NODE (event)
+        // first and the TEXT second; here the TEXT (this range's own FIRST
+        // verse -- the SAME "full range stays on the row, first verse is
+        // the edge endpoint" precedent `comments_on`/`attests` already
+        // establish) is the SUBJECT and the node (speaker/place) is the
+        // OBJECT -- the polarity each relation's own FORWARD LABEL decides
+        // (this function's own comments_on doc comment note), never a
+        // fixed node-type-first rule: "spoken-by"/"spoken-at" both read
+        // naturally as "[this verse] spoken-by/-at [X]".
+        for row in &self.spoken_by {
+            let tl: TextLocus = row.locus.from.clone().into();
+            pairs.entry(R::SpokenBy).or_default().push((at(&text_node(&tl)), at(&row.speaker.erase()), M::None));
+        }
+        for row in &self.spoken_at {
+            let tl: TextLocus = row.locus.from.clone().into();
+            pairs.entry(R::SpokenAt).or_default().push((at(&text_node(&tl)), at(&row.place.erase()), M::None));
+        }
         for row in &self.located_at {
             pairs.entry(R::LocatedAt).or_default().push((
                 at(&row.event.erase()),
@@ -402,5 +424,60 @@ mod tests {
         let back = PositionRef(crate::id::Position::Node(verse_id)).edges(&g, &EdgeQuery { kind: inverse, cursor: None, limit: 10 });
         assert_eq!(back.entries.len(), 1, "the verse's own inverse 'commented-on-by' frontier lists the CommentaryItem back");
         assert_eq!(back.entries[0].edge, page.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
+    }
+
+    /// RED-1: the SAME pre-authorized-exception shape as `comments_on`
+    /// immediately above -- `spoken_by`/`spoken_at` were declared on this
+    /// struct at BASE but never lowered into `pairs` until this batch.
+    /// OPPOSITE polarity from `comments_on`/`attests` (this function's own
+    /// RED-1 doc comment): the TEXT is the subject here, the node
+    /// (speaker/place) is the object -- "[verse] spoken-by/-at [X]" reads
+    /// naturally either way.
+    #[test]
+    fn spoken_by_and_spoken_at_rows_lower_into_the_directed_index_both_ways() {
+        use crate::edge::{SpokenAt, SpokenBy};
+        use crate::id::{PersonId, PlaceId};
+        use crate::text::{BibleLocusRange, VerseRef};
+
+        let mut g = Graph::default();
+        let verse_id = crate::id::AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/39.4.19".into() };
+        g.nodes.insert(
+            verse_id.clone(),
+            Node {
+                id: verse_id.clone(),
+                payload: NodePayload::TextUnit { corpus: "bible", renderings: [(TranslationId("kjv".into()), "Follow me".into())].into_iter().collect() },
+                provenance: "test".into(),
+            },
+        );
+        let jesus_id = PersonId::new("jesus_905");
+        g.nodes.insert(jesus_id.erase(), Node { id: jesus_id.erase(), payload: NodePayload::Person { label: "Jesus".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None }, provenance: "test".into() });
+        let place_id = PlaceId::new("sea-of-galilee");
+        g.nodes.insert(place_id.erase(), Node { id: place_id.erase(), payload: NodePayload::Place { canonical: "Sea of Galilee".into(), lat: 0.0, lon: 0.0, aliases: vec![], description: None }, provenance: "test".into() });
+
+        let range = BibleLocusRange::new(Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 }), Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 })).unwrap();
+        g.spoken_by.push(SpokenBy { locus: range.clone(), speaker: jesus_id.clone(), provenance: ProvenanceId::from("test"), justification: Default::default() });
+        g.spoken_at.push(SpokenAt { locus: range, place: place_id.clone(), provenance: ProvenanceId::from("test"), justification: Default::default() });
+
+        g.build_indexes();
+
+        let forward_by = EdgeKind::Directed(RelationId::SpokenBy, Direction::Forward);
+        let page = PositionRef(crate::id::Position::Node(verse_id.clone())).edges(&g, &EdgeQuery { kind: forward_by, cursor: None, limit: 10 });
+        assert_eq!(page.entries.len(), 1, "the verse's own forward 'spoken-by' frontier reaches Jesus");
+        assert_eq!(page.entries[0].node, crate::id::Position::Node(jesus_id.erase()));
+
+        let inverse_by = EdgeKind::Directed(RelationId::SpokenBy, Direction::Inverse);
+        let back = PositionRef(crate::id::Position::Node(jesus_id.erase())).edges(&g, &EdgeQuery { kind: inverse_by, cursor: None, limit: 10 });
+        assert_eq!(back.entries.len(), 1, "Jesus's own inverse 'speech-of' frontier lists the verse back");
+        assert_eq!(back.entries[0].edge, page.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
+
+        let forward_at = EdgeKind::Directed(RelationId::SpokenAt, Direction::Forward);
+        let at_page = PositionRef(crate::id::Position::Node(verse_id.clone())).edges(&g, &EdgeQuery { kind: forward_at, cursor: None, limit: 10 });
+        assert_eq!(at_page.entries.len(), 1, "the verse's own forward 'spoken-at' frontier reaches the place");
+        assert_eq!(at_page.entries[0].node, crate::id::Position::Node(place_id.erase()));
+
+        let inverse_at = EdgeKind::Directed(RelationId::SpokenAt, Direction::Inverse);
+        let at_back = PositionRef(crate::id::Position::Node(place_id.erase())).edges(&g, &EdgeQuery { kind: inverse_at, cursor: None, limit: 10 });
+        assert_eq!(at_back.entries.len(), 1, "the place's own inverse 'site-of-speech' frontier lists the verse back");
+        assert_eq!(at_back.entries[0].edge, at_page.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
     }
 }

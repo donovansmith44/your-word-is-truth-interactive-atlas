@@ -146,6 +146,14 @@ pub struct BuildCtx<'a> {
     /// pinned count), and every real caller
     /// already has one living for the duration of the build.
     pub kretzmann: Option<&'a atlas_etl::kretzmann::KretzmannCorpus>,
+    /// RED-1: `atlas_etl::red_letter::read_all`'s own pre-parsed + aligned
+    /// corpus -- the SAME "absent == an honestly empty build, not a
+    /// placeholder" treatment `kretzmann`/`concord`/`brainfuel` above
+    /// already get (every test fixture that doesn't supply real red-letter
+    /// data, via `BuildCtx::new`/`with_eras`/..., gets `None`, unchanged
+    /// from before this batch). Reference, not owned: every real caller
+    /// already has one living for the duration of the build.
+    pub red_letter: Option<&'a atlas_etl::red_letter::RedLetterCorpus>,
     /// ENT-1a: `description_adapter::fill_descriptions`'s own return value,
     /// captured here (not just returned-and-discarded, unlike the other
     /// MERGE/ALIAS adapter calls' own Stats structs) so a caller that
@@ -242,6 +250,29 @@ impl<'a> BuildCtx<'a> {
         concord: Option<&'a crate::concord_adapter::ConcordBundle>,
         kretzmann: Option<&'a atlas_etl::kretzmann::KretzmannCorpus>,
     ) -> Self {
+        Self::with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(kjv_canon, kjv_verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, None)
+    }
+
+    /// RED-1: the richest form yet -- real startup and the artifact
+    /// compile step use this directly, with a real, pre-parsed +
+    /// pre-aligned `atlas_etl::red_letter::RedLetterCorpus`; every other
+    /// caller keeps calling `new`/`with_eras`/.../`with_eras_and_brainfuel_
+    /// and_concord_and_kretzmann` unchanged, getting an honestly absent
+    /// (`None`) `red_letter` -- see this struct's own `red_letter` field
+    /// doc comment.
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(
+        kjv_canon: &'a Canon,
+        kjv_verses: &'a std::collections::HashMap<String, String>,
+        kjv_json_source: Option<&'a str>,
+        xrefs_tsv: &'a str,
+        atlas: &'a AtlasData,
+        eras: &'a [atlas_core::data::Era],
+        brainfuel: Option<&'a atlas_etl::brainfuel::BrainFuelCorpus>,
+        concord: Option<&'a crate::concord_adapter::ConcordBundle>,
+        kretzmann: Option<&'a atlas_etl::kretzmann::KretzmannCorpus>,
+        red_letter: Option<&'a atlas_etl::red_letter::RedLetterCorpus>,
+    ) -> Self {
         BuildCtx {
             kjv_canon,
             kjv_verses,
@@ -252,6 +283,7 @@ impl<'a> BuildCtx<'a> {
             brainfuel,
             concord,
             kretzmann,
+            red_letter,
             graph: Graph::default(),
             stats: BuildStats::default(),
             event_world_stats: EventWorldStats::default(),
@@ -305,6 +337,16 @@ impl Pass for NormalizePass {
         // every sibling call above) -- ctx.atlas.people is already fully
         // resolved by atlas_etl::people::parse_people before this ever runs.
         crate::person_adapter::normalize(ctx);
+        // RED-1: SpokenBy (verse-set -> maximal contiguous ranges) +
+        // DERIVED SpokenAt rows -- runs AFTER `event_world::normalize`
+        // (above) and `person_adapter::normalize` (immediately above),
+        // deliberately: SpokenAt derivation reads `ctx.graph.attests`/
+        // `ctx.graph.located_at` (event_world's own output), and ordering
+        // after person_adapter mirrors peoples_adapter's own "the Jesus
+        // Person node should already exist" discipline, even though this
+        // adapter's own row construction only NAMES the Jesus PersonId
+        // (referential integrity is checked at LAW-CHECK time, not here).
+        crate::red_letter_adapter::normalize(ctx);
         // PG-1a: PeopleGroup nodes (all three sources) + curated NamedAfter
         // rows -- runs AFTER person_adapter::normalize, deliberately (its
         // own module doc comment): the NamedAfter eponym-existence check
