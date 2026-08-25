@@ -235,6 +235,12 @@ pub struct ChapterStats {
     /// silently destroyed. Counted per OCCURRENCE (one fragment can only
     /// ever trigger this once), never per-word.
     pub over_excisions: usize,
+    /// Fix round 2 (re-review NEW FINDING): a mid-sentence verse boundary
+    /// recognized from Kretzmann's own inline "v. N" citation text (no
+    /// `<sup>` tag) rather than a real marker tag -- `find_inline_verse_
+    /// marker`'s own doc comment has the full derivation. Counted per
+    /// OCCURRENCE (one recognized boundary), never per-word.
+    pub inline_verse_markers: usize,
     /// One line per disclosed structural anomaly (an orphaned/malformed
     /// marker, a leading-unnumbered lemma with no following numbered lemma
     /// to fold into, a pericope-intro unit whose own section carries zero
@@ -263,6 +269,8 @@ pub struct CorpusStats {
     pub footnotes_in_lemma: usize,
     /// Fix round 1: corpus-wide sum of `ChapterStats.over_excisions`.
     pub over_excisions: usize,
+    /// Fix round 2: corpus-wide sum of `ChapterStats.inline_verse_markers`.
+    pub inline_verse_markers: usize,
     pub disclosures: Vec<String>,
 }
 
@@ -314,6 +322,7 @@ pub fn read_all(root: &Path, kjv_verses: &HashMap<String, String>) -> Result<Kre
             stats.footnotes += parsed.stats.footnotes;
             stats.footnotes_in_lemma += parsed.stats.footnotes_in_lemma;
             stats.over_excisions += parsed.stats.over_excisions;
+            stats.inline_verse_markers += parsed.stats.inline_verse_markers;
             for d in &parsed.stats.disclosures {
                 stats.disclosures.push(format!("{}/{}: {}", book.slug, chapter, d));
             }
@@ -549,25 +558,95 @@ fn segment(body: &str) -> Vec<Segment<'_>> {
     out
 }
 
-/// Splits a Lemma/Quote span's own raw inner HTML at each bare verse-number
-/// `<sup>` marker (`<sup>N</sup>` Type A or `<sup id="vN">N</sup>` Type B --
-/// footnote sups are already gone by this point, replaced by
-/// `inline_footnote_refs` before segmentation ever runs) into consecutive
-/// `(verse, text)` fragments. The FIRST fragment carries `None` when the
-/// span does not open with a marker (a continuation fragment, or a leading-
-/// unnumbered lemma -- disambiguated by the caller's own `current_verse`
-/// state, module doc comment's own "Type A" section).
-fn split_by_verse_markers(raw: &str) -> (Vec<(Option<u16>, String)>, usize) {
+/// Fix round 2 (re-review NEW FINDING, MEDIUM): finds the first INLINE
+/// (non-`<sup>`) verse-boundary marker in `text` matching Kretzmann's own
+/// "v. N" mid-sentence citation shape -- a real, corpus-confirmed
+/// transcription convention: a verse boundary that falls mid-sentence is
+/// occasionally rendered by the digital edition as literal text ("v. 61",
+/// "v. 21", ...) instead of a proper `<sup id="vNN">` tag. Returns
+/// `(match_start, match_end, verse)` for the FIRST occurrence whose own
+/// number is EXACTLY `expected_next` -- a candidate is checked ONLY when
+/// `cur_verse` is known (`expected_next` is `None` otherwise, so an inline
+/// "v. N" before any real verse has been established is never treated as a
+/// boundary -- conservative by construction) and REQUIRED to be the verse
+/// immediately following the one currently open. That sequential-adjacency
+/// requirement is what tells a genuine verse boundary apart from an
+/// ordinary BACKWARD cross-reference mechanically, without guessing --
+/// LEV 21:14's own lemma genuinely contains the literal text "v. 7"
+/// mid-quote (Kretzmann citing back to verse 7's own similar restriction),
+/// a real corpus instance found sweeping for this exact pattern; since
+/// verse 14 is already open when it appears, `expected_next` there is 15,
+/// not 7, so this function correctly never matches it. A "v. N" whose own
+/// N does not equal `expected_next` is skipped, not treated as a match --
+/// the scan continues past it looking for a real one later in `text`.
+/// Requires a non-alphabetic byte (or start-of-string) immediately before
+/// the "v": "Lev. 1" / "Rev. 5" / "Prov. 5" style book abbreviations end in
+/// the SAME two characters and must never trigger (verified corpus-wide:
+/// zero false positives from this class over all 1,189 pages).
+fn find_inline_verse_marker(text: &str, expected_next: Option<u16>) -> Option<(usize, usize, u16)> {
+    let expected = expected_next?;
+    let mut search_from = 0usize;
+    while let Some(rel) = text[search_from..].find("v. ") {
+        let pos = search_from + rel;
+        let preceded_by_letter = text[..pos].chars().last().is_some_and(|c| c.is_alphabetic());
+        if !preceded_by_letter {
+            let after = &text[pos + "v. ".len()..];
+            let digit_run: String = after.chars().take_while(|c| c.is_ascii_digit()).collect();
+            if let Ok(v) = digit_run.parse::<u16>() {
+                if v == expected {
+                    return Some((pos, pos + "v. ".len() + digit_run.len(), v));
+                }
+            }
+        }
+        search_from = pos + "v. ".len();
+    }
+    None
+}
+
+/// Splits a Lemma/Quote span's own raw inner HTML at each verse-number
+/// marker -- a bare `<sup>` (`<sup>N</sup>` Type A or `<sup id="vN">N</sup>`
+/// Type B -- footnote sups are already gone by this point, replaced by
+/// `inline_footnote_refs` before segmentation ever runs) OR (fix round 2)
+/// an inline "v. N" citation-shaped marker recognized by
+/// `find_inline_verse_marker` above -- into consecutive `(verse, text)`
+/// fragments. Whichever candidate starts FIRST in document order is
+/// processed first each iteration (`<sup` byte offset vs. the inline
+/// marker's own, when both are present ahead). The FIRST fragment carries
+/// `None` when the span does not open with a marker (a continuation
+/// fragment, or a leading-unnumbered lemma -- disambiguated by the
+/// caller's own `current_verse` state, module doc comment's own "Type A"
+/// section).
+fn split_by_verse_markers(raw: &str) -> (Vec<(Option<u16>, String)>, usize, usize) {
     let mut fragments: Vec<(Option<u16>, String)> = Vec::new();
     let mut anomalies = 0usize;
+    let mut inline_markers = 0usize;
     let mut cur_verse: Option<u16> = None;
     let mut cur_text = String::new();
     let mut rest = raw;
     loop {
-        let Some(rel) = rest.find("<sup") else {
-            cur_text.push_str(rest);
-            break;
+        let sup_rel = rest.find("<sup");
+        let inline_hit = find_inline_verse_marker(rest, cur_verse.map(|v| v + 1));
+        let use_inline = match (sup_rel, inline_hit) {
+            (None, None) => {
+                cur_text.push_str(rest);
+                break;
+            }
+            (None, Some(_)) => true,
+            (Some(_), None) => false,
+            (Some(sr), Some((ir, ..))) => ir < sr,
         };
+
+        if use_inline {
+            let (ir, iend, v) = inline_hit.unwrap();
+            cur_text.push_str(&rest[..ir]);
+            fragments.push((cur_verse, std::mem::take(&mut cur_text)));
+            cur_verse = Some(v);
+            inline_markers += 1;
+            rest = &rest[iend..];
+            continue;
+        }
+
+        let rel = sup_rel.unwrap();
         cur_text.push_str(&rest[..rel]);
         let Some(gt) = rest[rel..].find('>').map(|p| rel + p + 1) else {
             cur_text.push_str(&rest[rel..]);
@@ -609,7 +688,7 @@ fn split_by_verse_markers(raw: &str) -> (Vec<(Option<u16>, String)>, usize) {
     // than a silently vanished span).
     let len_is_one = fragments.len() == 1;
     fragments.retain(|(_, t)| !t.trim().is_empty() || len_is_one);
-    (fragments, anomalies)
+    (fragments, anomalies, inline_markers)
 }
 
 /// If `gap`'s own raw HTML ends with a COMPLETE, bare verse-number `<sup>`
@@ -701,6 +780,7 @@ pub fn parse_chapter(html: &str, book_index: u8, chapter: u16, chapter_verse_cou
     let mut disclosures: Vec<String> = Vec::new();
     let mut footnotes_in_lemma = 0usize;
     let mut over_excisions = 0usize;
+    let mut inline_verse_markers = 0usize;
     // Fix round 1: per-verse byte cursor into that verse's OWN canonical
     // text (`apply_over_excision_guard`'s own doc comment) -- a verse
     // split across several fragments (GEN 1:2's own class) must reconcile
@@ -770,9 +850,13 @@ pub fn parse_chapter(html: &str, book_index: u8, chapter: u16, chapter_verse_cou
             }
             Segment::Lemma(raw) => {
                 flush_prose(&mut pending_prose, open_unit, &mut raw_units, &compose_heading(&h3, &h4), section);
-                let (parts, anomalies) = split_by_verse_markers(raw);
+                let (parts, anomalies, inline_hits) = split_by_verse_markers(raw);
                 if anomalies > 0 {
                     disclosures.push(format!("chapter {chapter}: {anomalies} non-digit <sup> marker(s) inside a lemma span, kept as text"));
+                }
+                if inline_hits > 0 {
+                    inline_verse_markers += inline_hits;
+                    disclosures.push(format!("chapter {chapter}: {inline_hits} inline \"v. N\" verse-boundary marker(s) recognized inside a lemma span (fix round 2)"));
                 }
                 for (i, (verse_opt, text_raw)) in parts.into_iter().enumerate() {
                     let (text, fl) = clean_lemma(&text_raw);
@@ -841,9 +925,13 @@ pub fn parse_chapter(html: &str, book_index: u8, chapter: u16, chapter_verse_cou
             }
             Segment::Quote(raw) => {
                 flush_prose(&mut pending_prose, open_unit, &mut raw_units, &compose_heading(&h3, &h4), section);
-                let (parts, anomalies) = split_by_verse_markers(raw);
+                let (parts, anomalies, inline_hits) = split_by_verse_markers(raw);
                 if anomalies > 0 {
                     disclosures.push(format!("chapter {chapter}: {anomalies} non-digit <sup> marker(s) inside a quote block, kept as text"));
+                }
+                if inline_hits > 0 {
+                    inline_verse_markers += inline_hits;
+                    disclosures.push(format!("chapter {chapter}: {inline_hits} inline \"v. N\" verse-boundary marker(s) recognized inside a quote block (fix round 2)"));
                 }
                 let heading = compose_heading(&h3, &h4);
                 let unit_idx = raw_units.len();
@@ -952,7 +1040,7 @@ pub fn parse_chapter(html: &str, book_index: u8, chapter: u16, chapter_verse_cou
         chapter,
         units,
         fragments,
-        stats: ChapterStats { footnotes: footnote_count, footnotes_in_lemma, over_excisions, disclosures },
+        stats: ChapterStats { footnotes: footnote_count, footnotes_in_lemma, over_excisions, inline_verse_markers, disclosures },
     })
 }
 

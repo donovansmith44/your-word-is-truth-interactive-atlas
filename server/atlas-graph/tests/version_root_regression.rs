@@ -296,4 +296,20 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // deliberate content changes to `CommentaryItem` node payloads and the
 // `comments_on` row table, not a bug -- the root moving IS the recovered
 // prose being real. New captured value: "7ab6b1c72b5f76f9".
-const EXPECTED_VERSION_HEX: &str = "7ab6b1c72b5f76f9";
+//
+// MOVED AGAIN (deliberately -- Batch KRETZ-1 fix round 2, re-review NEW
+// FINDING, 2026-08-26): `find_inline_verse_marker` (`kretzmann.rs`) now
+// recognizes Kretzmann's own inline "v. N" mid-sentence verse-boundary
+// citation on Type-B pages (8 real corpus instances) -- each one's own
+// PRECEDING verse's `CommentaryItem.text` payload changes (the swallowed
+// FOLLOWING verse's own genuine KJV text, previously mis-attributed as
+// prose by fix round 1's own over-excision guard, is gone from it), and
+// each swallowed verse now carries its own genuine excised fragment
+// (never a graph payload -- LEMMA-EXCISION -- but the `comments_on` row
+// COUNT stays 50,602 unchanged, since no new `CommentaryItem` node is
+// created; the newly-split verse joins the SAME Type-B pericope unit's
+// own existing range). Real, deliberate content changes to 8
+// `CommentaryItem` nodes' own `text` payloads, not a bug -- the root
+// moving IS the mis-attribution being corrected. New captured value:
+// "35778a6d6855cf35".
+const EXPECTED_VERSION_HEX: &str = "35778a6d6855cf35";

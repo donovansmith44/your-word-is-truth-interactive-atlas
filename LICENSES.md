@@ -882,18 +882,35 @@ The OVER-EXCISION GUARD (`server/atlas-etl/src/kretzmann.rs`'s own
 "OVER-EXCISION GUARD" section has the full algorithm — recursive
 longest-common-block reconciliation against the verse's own canonical
 text, never a plain prefix scan, needed to correctly recover BOTH real
-shapes above) now recovers this prose mechanically, corpus-wide: 1,054
-real instances found and disclosed (`corpus.stats.over_excisions`), not
-merely the 2 the reviewer's own narrower sample found. This moved
-KRETZ-ACCEPT-1's own pinned numbers (above) from 2,498/22,933/1,853/3,748
-to the current 2,525/23,606/1,903/2,998 — the four deltas sum to zero, so
-no verse silently changed classification bucket count without a matching
-debit elsewhere. Both named verses were verified to recover their prose
-VERBATIM against the real source HTML (byte-for-byte reconstruction of the
-original `<strong>` span), and a machine guard now asserts stored prose
-never contains its own excised fragment text
+shapes above) now recovers this prose mechanically, corpus-wide: 1,046
+real instances found and disclosed (`corpus.stats.over_excisions`; fix
+round 2 moved this from 1,054 — see below), not merely the 2 the
+reviewer's own narrower sample found. This moved KRETZ-ACCEPT-1's own
+pinned numbers (above) from 2,498/22,933/1,853/3,748 to 2,525/23,614/
+1,903/2,998 (`checked`/`uncovered` also move, fix round 2's own doing —
+see below) — the class deltas sum to zero. Both named verses were verified
+to recover their prose VERBATIM against the real source HTML (byte-for-byte
+reconstruction of the original `<strong>` span), and a machine guard now
+asserts stored prose never contains its own excised fragment text
 (`stored_prose_never_contains_its_own_excised_fragment_text` in
 `kretzmann_real_data.rs`).
+
+**Fix round 2** (2026-08-26, re-review NEW FINDING, MEDIUM): a mid-sentence
+Type-B verse boundary occasionally rendered as literal inline text ("v. N")
+instead of a `<sup>` tag defeated verse-marker splitting, swallowing the
+FOLLOWING verse's own genuine KJV text into the PRECEDING verse's own
+fragment — which fix round 1's own over-excision guard then recovered as
+if it were Kretzmann's prose (content never lost, but mislabeled).
+`find_inline_verse_marker` (`kretzmann.rs`) now recognizes this shape
+mechanically: literal "v. N" not preceded by a letter (so "Lev. 1"/
+"Rev. 5" book-citation abbreviations never trigger) where N is EXACTLY the
+verse immediately following the one open — the sequential-adjacency
+requirement that tells a genuine forward boundary apart from an ordinary
+backward cross-reference (a real corpus counter-example, LEV 21:14's own
+"v. 7" citing back to verse 7, is correctly never matched). **8 real
+instances found corpus-wide** (MAT 26:61, MAT 27:40, LUK 2:35, LUK 17:21,
+LUK 19:42, LUK 19:46, LUK 20:2, LUK 20:36), each verified against the real
+source HTML and independently reconciled against its own canonical text.
 
 **KRETZ-ACCEPT-2** (new law, owner ruling 2026-08-25, verbatim:
 "commentary-comments===bible"): a SEPARATE identity from KRETZ-ACCEPT-1

@@ -57,6 +57,38 @@
 //! header comment establishes) rather than asserting zero mismatches --
 //! that would be dishonest over data this size; scale honesty (batch brief
 //! decision 9) means disclosing the real shape, not forcing a fake pass.
+//!
+//! FIX ROUND 2 (re-review NEW FINDING, MEDIUM): on Type-B (quote-block)
+//! pages, a mid-sentence verse boundary is occasionally rendered by the
+//! digital edition as literal inline text ("v. 61", "v. 21", ...) instead
+//! of a proper `<sup id="vNN">` tag -- `split_by_verse_markers` had no way
+//! to recognize this, so the WHOLE following verse's own genuine KJV text
+//! got silently swallowed into the PRECEDING verse's own fragment, where
+//! fix round 1's own OVER-EXCISION GUARD then recovered it as if it were
+//! Kretzmann's own prose (real content, correctly excised text, wrongly
+//! ATTRIBUTED -- never lost, but mislabeled). `find_inline_verse_marker`
+//! (`kretzmann.rs`) now recognizes this shape mechanically: a literal
+//! "v. N" not preceded by a letter (so "Lev. 1"/"Rev. 5"/"Prov. 5" style
+//! book abbreviations never trigger) where N is EXACTLY the verse
+//! immediately following the one currently open -- that sequential-
+//! adjacency requirement is what tells a genuine boundary apart from an
+//! ordinary BACKWARD cross-reference (LEV 21:14's own lemma genuinely
+//! contains "v. 7" mid-quote, citing back to verse 7's own similar
+//! restriction -- confirmed a real corpus instance, confirmed correctly
+//! NOT matched, since verse 14 is already open when it appears). A
+//! corpus-wide mechanical sweep (`corpus.stats.inline_verse_markers`,
+//! pinned below) found **exactly 8** real instances, matching the
+//! re-review's own independently-confirmed count precisely: MAT 26:61,
+//! MAT 27:40, LUK 2:35, LUK 17:21, LUK 19:42, LUK 19:46, LUK 20:2, LUK
+//! 20:36 (each named as "the verse whose own text was swallowed"). All 8
+//! resisted no mechanical classification (none needed disclosure-only
+//! treatment). This moved several OTHER pinned numbers too, all disclosed
+//! at their own assertion site below: `over_excisions` (1,054->1,046 --
+//! each of the 8 instances used to ALSO trip the over-excision guard as an
+//! accidental side effect, which now correctly never fires for them);
+//! `checked`/`uncovered` in KRETZ-ACCEPT-1 (31,032->31,040 /
+//! 70->62 -- each swallowed verse used to count as UNCOVERED, a real
+//! coverage gap this fix closes, not merely a reclassification).
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -123,7 +155,15 @@ fn real_corpus_covers_all_1189_pages_with_the_pinned_unit_and_fragment_totals() 
     // all (fragments DOWN). This test's own module doc comment has the
     // full derivation.
     assert_eq!(corpus.stats.units, 50602);
-    assert_eq!(corpus.stats.fragments, 61366);
+    // Fix round 2 (re-review NEW FINDING): +8 (61,366->61,374) -- the 8
+    // instances of Kretzmann's own inline "v. N" verse-boundary citation
+    // (`find_inline_verse_marker`'s own doc comment) each split what used
+    // to be one fragment into two, correctly re-attributing the swallowed
+    // FOLLOWING verse's own genuine KJV text to its own verse instead of
+    // the preceding one -- one new fragment per instance, `units` UNCHANGED
+    // (the split verse joins the SAME Type-B pericope unit's own existing
+    // range; it was already inside verse_from..verse_to for that unit).
+    assert_eq!(corpus.stats.fragments, 61374);
     assert_eq!(corpus.stats.footnotes, 257);
     assert_eq!(corpus.stats.footnotes_in_lemma, 0, "a footnote landing inside an excised lemma/quote span was never observed in the real corpus");
     // The true, disclosed over-excision instance count (review finding 2's
@@ -131,9 +171,31 @@ fn real_corpus_covers_all_1189_pages_with_the_pinned_unit_and_fragment_totals() 
     // fragment where the guard found and recovered real non-KJV content,
     // corpus-wide, found by SWEEPING every fragment mechanically, not by
     // sampling (the reviewer's own narrower "2 confirmed of 61,490" figure
-    // was from a targeted sample sweep, not an exhaustive one).
-    assert_eq!(corpus.stats.over_excisions, 1054);
-    assert_eq!(corpus.stats.disclosures.len(), 1069, "15 original structural anomalies + 1,054 over-excision recovery disclosures -- see the batch report for the full, named original-15 list");
+    // was from a targeted sample sweep, not an exhaustive one). Fix round 2
+    // moved this from 1,054 to 1,046 (-8): each of the 8 inline-marker
+    // instances (below) used to ALSO trip the OVER-EXCISION GUARD as an
+    // accidental side effect -- with no real verse boundary to split at,
+    // the swallowed following-verse text read as "extra content past the
+    // end of the preceding verse's own canonical text" and got recovered
+    // as if it were prose (MAT 26:60's own case, byte-for-byte, is the
+    // re-review's own named example). Fixing the ROOT CAUSE (the boundary
+    // itself) removes the SYMPTOM (these 8 stop being over-excisions at
+    // all, because the fragment now correctly ends exactly where its own
+    // real verse ends, leaving nothing "extra" for the guard to recover).
+    assert_eq!(corpus.stats.over_excisions, 1046);
+    // Fix round 2 (re-review NEW FINDING): the 8 inline-marker recognitions,
+    // corpus-wide, disclosed and pinned separately from `over_excisions` --
+    // a DIFFERENT mechanism (`split_by_verse_markers` recognizing a real
+    // verse boundary from inline text, never the OVER-EXCISION GUARD
+    // recovering prose after the fact).
+    assert_eq!(corpus.stats.inline_verse_markers, 8);
+    // 15 original + 1,046 over-excision (was 1,054) + 8 fix-round-2
+    // inline-verse-marker disclosures = 1,069 -- the SAME total as before
+    // fix round 2 (also 1,069), a real coincidence, not a sign nothing
+    // changed: each of the 8 instances swapped from ONE over-excision
+    // disclosure line to ONE inline-verse-marker disclosure line, a 1:1
+    // recomposition, confirmed via the real corpus.stats fields above.
+    assert_eq!(corpus.stats.disclosures.len(), 1069);
 }
 
 #[test]
@@ -201,7 +263,11 @@ fn kretz_accept_1_conservation_law_over_the_whole_real_corpus_has_the_pinned_sha
     assert_eq!(canonical.len(), 31102, "the whole KJV, restored");
 
     let all_fragments: Vec<kretzmann::ExcisedFragment> = corpus.chapters.iter().flat_map(|c| c.fragments.iter().cloned()).collect();
-    assert_eq!(all_fragments.len(), 61366);
+    // Fix round 2: +8 (61,366->61,374) -- `real_corpus_covers_all_1189_
+    // pages_with_the_pinned_unit_and_fragment_totals`'s own doc comment has
+    // the full derivation (one new fragment per inline-verse-marker
+    // instance, the swallowed following verse's own genuine KJV text).
+    assert_eq!(all_fragments.len(), 61374);
 
     let report = kretzmann::check_conservation(&all_fragments, &canonical);
 
@@ -213,13 +279,29 @@ fn kretz_accept_1_conservation_law_over_the_whole_real_corpus_has_the_pinned_sha
     // regression.rs`'s own established convention. Fix round 1 (review
     // finding 2, the OVER-EXCISION GUARD): moved from 2,498/22,933/1,853/
     // 3,748 -- this test's own module doc comment has the full "why" and
-    // the delta-sums-to-zero cross-check.
-    assert_eq!(report.checked, 31032);
+    // the delta-sums-to-zero cross-check. Fix round 2 (re-review NEW
+    // FINDING, the inline verse-marker fix): `checked` itself moves for the
+    // FIRST time (31,032->31,040, +8) and `uncovered` moves the opposite
+    // way (70->62, -8) -- each of the 8 swallowed following verses (MAT
+    // 26:61, MAT 27:40, LUK 2:35, LUK 17:21, LUK 19:42, LUK 19:46, LUK
+    // 20:2, LUK 20:36) previously had ZERO fragments of its own (its text
+    // was glued into the PRECEDING verse's fragment), so it counted as
+    // `uncovered` -- lawful under decision 3, but a real coverage gap this
+    // fix closes, not merely a reclassification. All 8 newly-created
+    // fragments land in `mechanical` (23,606->23,614, +8; case/punctuation
+    // only, e.g. MAT 26:61's own lowercase "and said," vs. canonical's
+    // capitalized "And said,"). `exact`/`mechanical_spelling`/`mismatches`
+    // are UNCHANGED -- the 8 PRECEDING verses' own fragment text was
+    // already correct pre-fix (fix round 1's own OVER-EXCISION GUARD had
+    // already trimmed the swallowed text back out as "recovered prose",
+    // just mis-attributed; fix round 2 changes WHERE that text lands, not
+    // the preceding verse's own already-correct fragment content).
+    assert_eq!(report.checked, 31040);
     assert_eq!(report.exact, 2525);
-    assert_eq!(report.mechanical, 23606);
+    assert_eq!(report.mechanical, 23614);
     assert_eq!(report.mechanical_spelling, 1903);
     assert_eq!(report.mismatches.len(), 2998);
-    assert_eq!(report.uncovered.len(), 70, "verses Kretzmann summarizes without a lemma of their own -- lawful (decision 3), not an error");
+    assert_eq!(report.uncovered.len(), 62, "verses Kretzmann summarizes without a lemma of their own -- lawful (decision 3), not an error");
 
     // The conservation identity itself: every checked verse falls into
     // EXACTLY one class, and checked + uncovered == the whole canonical
@@ -295,6 +377,96 @@ fn strong_span_starting_with(html: &str, anchor_prefix: &str) -> String {
     let inner_start = start + "<strong>".len();
     let end = html[inner_start..].find("</strong>").unwrap_or_else(|| panic!("no closing </strong> after {anchor_prefix:?}"));
     html[inner_start..inner_start + end].to_string()
+}
+
+/// Fix round 2 (re-review NEW FINDING): the 8 real, corpus-confirmed
+/// instances of Kretzmann's own inline "v. N" verse-boundary citation on
+/// Type-B pages -- `(book_index, chapter, swallowed_verse, host_verse)`,
+/// where `swallowed_verse` is the verse whose own genuine KJV text used to
+/// be glued into `host_verse`'s own fragment before this fix. Named here
+/// once, shared by both tests below, so a future refactor cannot silently
+/// narrow the general sweep without also breaking an explicitly-named list.
+const INLINE_VERSE_MARKER_INSTANCES: &[(u8, u16, u16, u16, &str)] = &[
+    (39, 26, 61, 60, "and said, This fellow said, I am able to destroy the Temple of God"),
+    (39, 27, 40, 39, "and saying, Thou that destroyest the Temple"),
+    (41, 2, 35, 34, "(yea, a sword shall pierce through thy own soul also)"),
+    (41, 17, 21, 20, "neither shall they say, Lo here"),
+    (41, 19, 42, 41, "saying, If thou hadst known"),
+    (41, 19, 46, 45, "saying unto them, It is written"),
+    (41, 20, 2, 1, "and spake unto Him, saying, Tell us, by what authority"),
+    (41, 20, 36, 35, "neither can they die any more"),
+];
+
+/// Fix round 2 (re-review NEW FINDING, MEDIUM): mechanical, corpus-wide
+/// verification of all 8 real instances -- for each, the swallowed verse
+/// now carries its own real, non-trivial excised fragment (joining that
+/// verse's own fragment set, per the fix's own design), AND no unit
+/// covering the HOST verse still contains that fragment's text (the
+/// end-to-end "lands as lemma of its own verse, not prose of the
+/// preceding one" proof `stored_prose_never_contains_its_own_excised_
+/// fragment_text`'s own general sweep cannot give, since that test is
+/// deliberately scoped to a unit's OWN same-verse fragments only).
+#[test]
+fn inline_verse_marker_instances_reclassify_to_their_own_verse_not_the_preceding_ones_prose() {
+    let corpus = real_corpus();
+    for &(book_index, chapter, swallowed_verse, host_verse, distinctive_phrase) in INLINE_VERSE_MARKER_INSTANCES {
+        let ch = corpus.chapters.iter().find(|c| c.book_index == book_index && c.chapter == chapter).unwrap_or_else(|| panic!("book_index {book_index} chapter {chapter} must be in the corpus"));
+        let frag = ch
+            .fragments
+            .iter()
+            .find(|f| f.verse == swallowed_verse && f.text.contains(distinctive_phrase))
+            .unwrap_or_else(|| panic!("verse {swallowed_verse} (book_index {book_index}, chapter {chapter}) must carry its own real excised fragment containing {distinctive_phrase:?}"));
+        assert!(frag.text.len() > 10, "the swallowed verse's own fragment must be real, non-trivial content, got {:?}", frag.text);
+        for u in ch.units.iter().filter(|u| u.verse_from <= host_verse && u.verse_to >= host_verse) {
+            assert!(
+                !u.text.contains(distinctive_phrase),
+                "book_index {book_index} chapter {chapter}: host verse {host_verse}'s own unit {} must NOT still carry verse {swallowed_verse}'s own text {distinctive_phrase:?} as if it were Kretzmann's prose -- unit text {:?}",
+                u.id,
+                u.text
+            );
+        }
+    }
+}
+
+/// Fix round 2 (re-review NEW FINDING): the required end-to-end pin,
+/// MAT 26:60->61, verified against the REAL source HTML directly (not a
+/// second hand-transcribed copy) AND against KRETZ-ACCEPT-1's own
+/// conservation check for both verses independently.
+#[test]
+fn mat_26_60_to_61_inline_verse_marker_lands_as_v61_lemma_not_v60_prose_end_to_end() {
+    let html = std::fs::read_to_string(data_dir().join("raw/kretzmann/matthew/26.html")).expect("data/raw/kretzmann/matthew/26.html must exist");
+    // The real source: verse 61's own boundary is literal "v. 61" text, NOT
+    // a `<sup id="v61">` tag -- confirmed absent, so this test's own
+    // premise (the source itself carries the defeating shape) stays true.
+    assert!(html.contains(" v. 61 and said, This fellow said, I am able to destroy the Temple of God, and to build it in three days. "), "the real source's own inline marker text must still read as originally traced");
+    assert!(!html.contains(r#"<sup id="v61">"#), "MAT 26:61 must still lack a real <sup> marker in the source -- otherwise this test's own premise no longer holds");
+
+    let corpus = real_corpus();
+    let canonical = real_canonical();
+    let mat26 = corpus.chapters.iter().find(|c| c.book_index == 39 && c.chapter == 26).expect("Matthew 26 must be in the corpus");
+
+    // Verse 60's own fragment: genuine, ends exactly at its own true
+    // boundary, no longer running on into verse 61's own text.
+    let v60_frag = mat26.fragments.iter().find(|f| f.verse == 60).expect("MAT 26:60 must have its own excised fragment");
+    assert!(!v60_frag.text.contains("This fellow said"), "verse 60's own fragment must not run on into verse 61's own text: {:?}", v60_frag.text);
+    let canon_60 = canonical.get(&(39u8, 26u16, 60u16)).expect("MAT.26.60 must be in the real canonical map");
+    let report_60 = kretzmann::check_conservation(&[v60_frag.clone()], &BTreeMap::from([((39u8, 26u16, 60u16), canon_60.clone())]));
+    assert_eq!(report_60.mismatches.len(), 0, "MAT 26:60 must reconcile cleanly against its own canonical text: {:#?}", report_60.mismatches);
+
+    // Verse 61's own fragment: newly split out, genuine KJV, reconciles
+    // against ITS OWN canonical text (not verse 60's).
+    let v61_frag = mat26.fragments.iter().find(|f| f.verse == 61).expect("MAT 26:61 must now have its own excised fragment (fix round 2)");
+    assert!(v61_frag.text.to_lowercase().starts_with("and said"), "verse 61's own fragment must open with its own real text, got {:?}", v61_frag.text);
+    let canon_61 = canonical.get(&(39u8, 26u16, 61u16)).expect("MAT.26.61 must be in the real canonical map");
+    let report_61 = kretzmann::check_conservation(&[v61_frag.clone()], &BTreeMap::from([((39u8, 26u16, 61u16), canon_61.clone())]));
+    assert_eq!(report_61.mismatches.len(), 0, "MAT 26:61 must reconcile cleanly against ITS OWN canonical text, not verse 60's: {:#?}", report_61.mismatches);
+
+    // The unit that used to store verse 61's text as if it were verse 60's
+    // own prose no longer does -- the mis-attribution is gone, not merely
+    // duplicated.
+    for u in mat26.units.iter().filter(|u| u.verse_from <= 60 && u.verse_to >= 60) {
+        assert!(!u.text.contains("This fellow said"), "MAT 26:60's own stored prose must no longer carry verse 61's own swallowed KJV text: {:?}", u.text);
+    }
 }
 
 /// Fix round 1 (review finding 2): verifies the two reviewer-named,

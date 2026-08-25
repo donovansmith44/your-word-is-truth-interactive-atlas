@@ -141,8 +141,8 @@ pub struct BuildCtx<'a> {
     /// treatment `concord`/`brainfuel` above already get (every test
     /// fixture that doesn't supply real Kretzmann data, via `BuildCtx::
     /// new`/`with_eras`/..., gets `None`, unchanged from before this
-    /// batch). Reference, not owned: the corpus is large (61,366 excised
-    /// fragments alone over the real vendored data, fix round 1's own
+    /// batch). Reference, not owned: the corpus is large (61,374 excised
+    /// fragments alone over the real vendored data, fix round 2's own
     /// pinned count), and every real caller
     /// already has one living for the duration of the build.
     pub kretzmann: Option<&'a atlas_etl::kretzmann::KretzmannCorpus>,

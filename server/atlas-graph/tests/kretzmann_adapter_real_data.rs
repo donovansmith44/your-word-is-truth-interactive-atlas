@@ -70,7 +70,13 @@ fn real_graph() -> &'static atlas_graph_types::graph::Graph {
 /// filter -- one `CommentsOn` row per surviving `CommentaryItem`, one for
 /// one, `kretzmann_adapter::normalize`'s own construction; no unit's own
 /// range was ever observed inverted in the real corpus, so this equals
-/// `corpus.stats.units` exactly, not merely approximately).
+/// `corpus.stats.units` exactly, not merely approximately). Re-verified,
+/// unchanged, in fix round 2 (the inline-verse-marker fix): that fix adds
+/// FRAGMENTS (one per swallowed verse, now correctly its own), never new
+/// UNITS -- the newly-split-out verse joins the SAME Type-B pericope
+/// unit's own existing range, so `comments_on`/`CommentaryItem` counts
+/// stay exactly 50,602, empirically confirmed, not assumed from "units
+/// didn't move" alone.
 #[test]
 fn kretzmann_comments_on_rows_have_the_pinned_real_count() {
     let graph = real_graph();
