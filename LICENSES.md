@@ -842,9 +842,9 @@ linked to its own Bible locus range via a `comments-on` edge. KRETZ-ACCEPT-1
 (the owner's own acceptance test, verbatim: "(initial commentary+verses)
 -(initial commentary)===(whole Bible) / should be exact match") was run as
 an ETL-time law over the WHOLE corpus, checked against this app's own
-RESTORED (KJV-CASE + KJV-CASE-2) canonical text: 31,032 verses checked (70
+RESTORED (KJV-CASE + KJV-CASE-2) canonical text: 31,040 verses checked (62
 verses Kretzmann summarizes with no lemma of their own — lawful, disclosed,
-never guessed); 2,525 exact byte matches; 23,606 pass under a disclosed
+never guessed); 2,525 exact byte matches; 23,614 pass under a disclosed
 MECHANICAL case+punctuation equivalence (the Tetragrammaton/reverential-
 pronoun case convention, and the digital edition's own fragment/quote-
 boundary punctuation style — never a word/content difference); 1,903 more
