@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 
 use crate::edge::{
     at, Attests, BiIndex, CatechismLink, CommentsOn, Confesses, Contains, Corresponds, CrossRef,
+    SpokenAt, SpokenBy,
     Fulfills,
     LocatedAt, MentionedEntity, Mentions, NamedAfter, Namesake, Quotes, RelationId,
     Succession, TemporalAdjacency, Typology,
@@ -39,6 +40,9 @@ pub struct Graph {
     /// KRETZ-1: verse-anchored commentary targets (annotation shape;
     /// the units themselves are CommentaryItem nodes).
     pub comments_on: Vec<CommentsOn>,
+    /// RED-1: direct speech — speaker + site (annotation edges over loci).
+    pub spoken_by: Vec<SpokenBy>,
+    pub spoken_at: Vec<SpokenAt>,
     // -------- imported --------
     pub mentions: Vec<Mentions>,
     pub cross_refs: Vec<CrossRef>,

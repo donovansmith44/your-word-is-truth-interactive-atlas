@@ -85,6 +85,8 @@ relations! {
         NamedAfter  => "named-after" / "namesake-of",
         JustifiedBy => "justified-by" / "justifies",
         CommentsOn  => "comments-on" / "commented-on-by",
+        SpokenBy    => "spoken-by" / "speech-of",
+        SpokenAt    => "spoken-at" / "site-of-speech",
         DerivedFrom => "derived-from" / "derives"
     }
     symmetric {
@@ -295,6 +297,32 @@ pub struct CatechismLink {
 pub struct CommentsOn {
     pub item: CommentaryItemId,
     pub on: BibleLocusRange,
+    pub provenance: ProvenanceId,
+    pub justification: Justification,
+}
+
+/// RED-1 (owner orders 2026-08-25: "Red letters on Jesus' words in
+/// every translation"; "SpokenAt is another edge"): direct speech as
+/// graph fact. SpokenBy is the GENERAL relation (red letters are its
+/// Jesus-speaker rendering; any speaker's words become queryable);
+/// verse-granular — edition-specific sub-verse display offsets are a
+/// RENDERING concern and live in compiled data, never in this
+/// vocabulary.
+#[derive(Clone, Debug)]
+pub struct SpokenBy {
+    pub locus: BibleLocusRange,
+    pub speaker: PersonId,
+    pub provenance: ProvenanceId,
+    pub justification: Justification,
+}
+
+/// RED-1: where the words were spoken — the place edge, parallel to
+/// LocatedAt's naming. v1 rows derive from located events whose
+/// attested range contains the speech locus (Confidence::Derived).
+#[derive(Clone, Debug)]
+pub struct SpokenAt {
+    pub locus: BibleLocusRange,
+    pub place: PlaceId,
     pub provenance: ProvenanceId,
     pub justification: Justification,
 }

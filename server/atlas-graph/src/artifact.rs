@@ -883,9 +883,11 @@ const FORMAT_VERSION: u32 = 9;
 /// schedule, the moment `kretzmann_adapter` started emitting real rows --
 /// all are REAL SERIALIZED CONTENT below now, no longer guarded.
 pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_stats: &EventWorldStats) -> Result<ArtifactDump, ArtifactError> {
-    if !g.contains_bible.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty() {
+    if !g.contains_bible.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty()
+        || !g.spoken_by.is_empty() || !g.spoken_at.is_empty()
+    {
         return Err(ArtifactError(
-            "the graph carries rows in a relation this artifact format does not yet serialize (contains_bible/quotes/confesses/corresponds) -- extend artifact.rs before shipping this content".into(),
+            "the graph carries rows in a relation this artifact format does not yet serialize (contains_bible/quotes/confesses/corresponds/spoken_by/spoken_at -- the last two are RED-1's trigger class) -- extend artifact.rs before shipping this content".into(),
         ));
     }
 
