@@ -41,3 +41,12 @@ resolver = "2"
 # section -- 3); `atlas-graph-types` +1 (graph.rs's own new
 # `contains_concord` indexing test, the disclosed minimal crate wiring
 # this batch's own report names).
+#
+# Batch KJV-CASE-2 (2026-08-25, superscription-aware case restoration):
+# moved to 796 passed (775 + 21) across 39 sections (+8 workspace tests,
+# no new sections).
+#
+# Batch POLISH-1 (2026-08-25, parked-minor retirement): moved to 800
+# passed (779 + 21) across 40 sections (+4 workspace tests; +1 section,
+# the new `tests/justified_by_real_data.rs`). CURRENT CANONICAL: 800
+# (779 + 21) across 40 sections at b52634b.
