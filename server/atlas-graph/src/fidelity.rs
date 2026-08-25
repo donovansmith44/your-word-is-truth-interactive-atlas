@@ -288,24 +288,6 @@ pub fn check_kjv_fidelity(source_kjv_json: &str, built: &Graph, brainfuel: Optio
     Ok(())
 }
 
-/// Symbolic conformance to the types doc's own `BoundaryLaw` trait shape
-/// (§5 of the ingestion contract) -- not load-bearing machinery (nothing in
-/// graph-types consumes `dyn BoundaryLaw` today), but documents that this
-/// adapter DOES ship the boundary law the contract calls for, in the exact
-/// shape the contract names.
-pub struct KjvBoundaryLaw;
-
-impl atlas_graph_types::ingest::BoundaryLaw for KjvBoundaryLaw {
-    fn check(&self, source: &atlas_graph_types::ingest::SourceBytes, built: &Graph) -> Result<(), atlas_graph_types::ingest::LawViolation> {
-        let text = std::str::from_utf8(&source.0)
-            .map_err(|e| atlas_graph_types::ingest::LawViolation(format!("source is not valid utf-8: {e}")))?;
-        // Symbolic conformance only (this struct's own doc comment: "not
-        // load-bearing machinery") -- no real caller here has a brainfuel
-        // corpus to thread through, so `None` (a true no-op) is honest.
-        check_kjv_fidelity(text, built, None).map_err(|e| atlas_graph_types::ingest::LawViolation(e.0))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
