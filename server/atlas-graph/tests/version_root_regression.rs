@@ -75,7 +75,14 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
     // precedent, immediately above) -- otherwise this harness would keep
     // proving a graph MISSING the corpus atlas-graph-compile actually
     // ships.
-    let kretzmann_corpus = atlas_etl::kretzmann::read_all(&dir.join("kretzmann")).expect("data/raw/kretzmann must exist -- run data/fetch-raw.ps1 first");
+    // Fix round 1: `read_all` now also takes the dot-ref KJV verse map (the
+    // OVER-EXCISION GUARD's own real canonical source) -- UN-restored text
+    // parsed straight from the SAME `kjv_json` string already in scope
+    // above (word-content comparison only, no KJV-CASE dependency,
+    // `kretzmann::read_all`'s own doc comment).
+    let (_, kjv_verses_for_kretzmann) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
+    let kretzmann_corpus =
+        atlas_etl::kretzmann::read_all(&dir.join("kretzmann"), &kjv_verses_for_kretzmann).expect("data/raw/kretzmann must exist -- run data/fetch-raw.ps1 first");
 
     let svc = GraphService::from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(&kjv_json, &xrefs_tsv, &atlas, &[], Some(&brainfuel), Some(&concord_bundle), Some(&kretzmann_corpus))
         .expect("the real committed sources must build");
@@ -272,4 +279,21 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // Place, Person, ...) is byte-identical (Kretzmann is purely additive --
 // no existing node's own canonical bytes change). New captured value:
 // "7b4e851142a7a0c5".
-const EXPECTED_VERSION_HEX: &str = "7b4e851142a7a0c5";
+//
+// MOVED AGAIN (deliberately -- Batch KRETZ-1 fix round 1, review finding 2,
+// 2026-08-25): the OVER-EXCISION GUARD (`kretzmann.rs`'s own "OVER-EXCISION
+// GUARD" section has the full algorithm) now correctly recovers Kretzmann's
+// OWN prose that used to be silently excised alongside genuine KJV text in
+// the same bold span (1,054 real instances, corpus-wide) -- every one of
+// those `CommentaryItem` nodes' own `text` payload changes (real content
+// gained), and which raw units survive the parser's own "drop empty units"
+// filter also changes (50,439 -> 50,602 `CommentaryItem` nodes + `comments_on`
+// rows: a previously-empty-shell unit gaining real recovered text now
+// survives). The real_verse_count bug fix (self-caught while threading real
+// canonical data through for the guard -- `read_all` used to pass a book's
+// own total CHAPTER count into every chapter's own `chapter_verse_count`)
+// also changes some `ChapterIntro` units' own verse range payload. Real,
+// deliberate content changes to `CommentaryItem` node payloads and the
+// `comments_on` row table, not a bug -- the root moving IS the recovered
+// prose being real. New captured value: "7ab6b1c72b5f76f9".
+const EXPECTED_VERSION_HEX: &str = "7ab6b1c72b5f76f9";

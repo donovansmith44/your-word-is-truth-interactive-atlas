@@ -327,8 +327,10 @@ impl GraphService {
         let concord = load_concord(raw_dir)?;
         // KRETZ-1: `data/raw/kretzmann/{slug}/{chapter}.html` -- the SAME
         // graceful-absence treatment `load_concord`/`load_brainfuel` above
-        // already get.
-        let kretzmann = load_kretzmann(raw_dir)?;
+        // already get. Fix round 1: also threads `kjv_json` through (already
+        // in scope above) -- the OVER-EXCISION GUARD's own real canonical
+        // source (`kretzmann::read_all`'s own doc comment).
+        let kretzmann = load_kretzmann(raw_dir, &kjv_json)?;
         Self::from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(&kjv_json, &xrefs_tsv, atlas, &eras, brainfuel.as_ref(), concord.as_ref(), kretzmann.as_ref())
     }
 
@@ -602,13 +604,18 @@ fn load_concord(raw_dir: &Path) -> anyhow::Result<Option<crate::concord_adapter:
 /// directory simply doesn't exist (`load_concord`'s own doc comment, same
 /// treatment); `Some(Err(..))` propagated fail-loud when it exists but is
 /// malformed (e.g. a missing page -- `atlas_etl::kretzmann::read_all`'s own
-/// per-file `Result`).
-fn load_kretzmann(raw_dir: &Path) -> anyhow::Result<Option<atlas_etl::kretzmann::KretzmannCorpus>> {
+/// per-file `Result`). Fix round 1: `kjv_json` (the SAME raw string
+/// `GraphService::build` already reads) is parsed here into the dot-ref
+/// verse map `read_all`'s own OVER-EXCISION GUARD requires -- UN-restored
+/// text is sufficient (word-content comparison only, no KJV-CASE dependency,
+/// `read_all`'s own doc comment), so no brainfuel coupling is needed here.
+fn load_kretzmann(raw_dir: &Path, kjv_json: &str) -> anyhow::Result<Option<atlas_etl::kretzmann::KretzmannCorpus>> {
     let root = raw_dir.join("kretzmann");
     if !root.is_dir() {
         return Ok(None);
     }
-    atlas_etl::kretzmann::read_all(&root).map(Some).with_context(|| format!("reading vendored Kretzmann data from {}", root.display()))
+    let (_, kjv_verses) = atlas_etl::kjv::parse(kjv_json).context("parsing kjv.json for the Kretzmann over-excision guard")?;
+    atlas_etl::kretzmann::read_all(&root, &kjv_verses).map(Some).with_context(|| format!("reading vendored Kretzmann data from {}", root.display()))
 }
 
 #[cfg(test)]

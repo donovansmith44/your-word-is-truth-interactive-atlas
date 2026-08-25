@@ -1,10 +1,10 @@
 {
   "format_version": 1,
-  "atlas_version_root": "9999aa4791f3622e",
+  "atlas_version_root": "ef7a1a8db1c90ddf",
   "status": "tentative-extraction",
   "rows": [
     {
-      "unit": "kretzmann/12.5.28",
+      "unit": "kretzmann/12.5.30",
       "target": "1CH.5.17",
       "verbatim": "783 B. C.",
       "parsed": {
@@ -20,6 +20,16 @@
       "parsed": {
         "calendar": "BC",
         "year": 587,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/14.1.0",
+      "target": "EZR.1.1",
+      "verbatim": "536 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 536,
         "approx": false
       }
     },
@@ -44,7 +54,7 @@
       }
     },
     {
-      "unit": "kretzmann/14.6.32",
+      "unit": "kretzmann/14.6.34",
       "target": "EZR.6.15",
       "verbatim": "536 B. C.",
       "parsed": {
@@ -54,7 +64,7 @@
       }
     },
     {
-      "unit": "kretzmann/14.6.32",
+      "unit": "kretzmann/14.6.34",
       "target": "EZR.6.15",
       "verbatim": "515 B. C.",
       "parsed": {
@@ -244,7 +254,7 @@
       }
     },
     {
-      "unit": "kretzmann/23.44.53",
+      "unit": "kretzmann/23.44.54",
       "target": "JER.44.30",
       "verbatim": "about 570 B. C.",
       "parsed": {

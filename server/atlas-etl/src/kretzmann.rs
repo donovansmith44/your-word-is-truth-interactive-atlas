@@ -23,8 +23,9 @@
 //!   a chapter's very first lemma, before ANY numbered marker has appeared
 //!   -- an unnumbered Psalm-superscription-class lemma that folds into the
 //!   FIRST numbered verse that follows it, matching this app's own
-//!   canonical layer's fold convention, see `fold_leading_unnumbered_lemma`
-//!   below).
+//!   canonical layer's fold convention -- inlined into `parse_chapter`'s
+//!   own `pending_unnumbered` accumulator below, not a separately named
+//!   function).
 //! - **Type B ("block quote + flowing commentary"), the NT shape**: `<p
 //!   class="bible"><sup id="vN">N</sup>FULL VERSE TEXT<sup id="vM">M</sup>
 //!   FULL VERSE TEXT...</p><p>commentary prose discussing the whole
@@ -73,7 +74,7 @@
 //! across all 260 Type-B pages); no `<h5>`/`<h6>` and no nested
 //! `<strong><strong>` anywhere in the real corpus.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 use anyhow::{Context, Result};
@@ -227,6 +228,13 @@ pub struct ChapterStats {
     /// text is excised from the comparison target either way, this just
     /// counts how often that excision fired).
     pub footnotes_in_lemma: usize,
+    /// Fix round 1 (review finding 2): a fragment where the OVER-EXCISION
+    /// GUARD found a SHORTER reconciling prefix than the whole candidate
+    /// text -- i.e. real, non-KJV content (Kretzmann's own prose, bolded
+    /// in the same span) was recovered to stored prose instead of being
+    /// silently destroyed. Counted per OCCURRENCE (one fragment can only
+    /// ever trigger this once), never per-word.
+    pub over_excisions: usize,
     /// One line per disclosed structural anomaly (an orphaned/malformed
     /// marker, a leading-unnumbered lemma with no following numbered lemma
     /// to fold into, a pericope-intro unit whose own section carries zero
@@ -253,6 +261,8 @@ pub struct CorpusStats {
     pub fragments: usize,
     pub footnotes: usize,
     pub footnotes_in_lemma: usize,
+    /// Fix round 1: corpus-wide sum of `ChapterStats.over_excisions`.
+    pub over_excisions: usize,
     pub disclosures: Vec<String>,
 }
 
@@ -261,23 +271,49 @@ pub struct KretzmannCorpus {
     pub stats: CorpusStats,
 }
 
+/// The real verse count of one (book, chapter) -- scanned directly off
+/// `kjv_verses` (v=1,2,3... until the first miss; a real, complete KJV
+/// source has no internal gaps) rather than a second hand-maintained
+/// table. Fix round 1 (review finding, self-caught while threading real
+/// canonical data through for the OVER-EXCISION GUARD): `read_all` used to
+/// pass `book.chapters` (the BOOK's own total CHAPTER count) into every
+/// one of that book's own chapters' `chapter_verse_count` -- a name/value
+/// mismatch that only ever mis-sized a `ChapterIntro` unit's own range
+/// (rare: a chapter whose commentary opens with prose before ANY heading
+/// at all), never checked against real per-chapter counts before now.
+fn real_verse_count(kjv_verses: &HashMap<String, String>, book_code: &str, chapter: u16) -> u16 {
+    let mut v = 1u16;
+    while kjv_verses.contains_key(&format!("{book_code}.{chapter}.{}", v + 1)) {
+        v += 1;
+    }
+    v
+}
+
 /// The one filesystem-touching entry point (mirrors `concord::read_all`'s
 /// own "reads `root`'s own vendored files, parses each" shape) -- every
-/// OTHER function in this module is pure `&str`-in/data-out.
-pub fn read_all(root: &Path) -> Result<KretzmannCorpus> {
+/// OTHER function in this module is pure `&str`-in/data-out. `kjv_verses`
+/// (dot-ref keyed, `atlas_etl::kjv::parse`'s own verse-map shape) is the
+/// OVER-EXCISION GUARD's own real canonical source (fix round 1) -- word-
+/// content comparison only, so the UN-restored `kjv.json` text (no
+/// brainfuel/KJV-CASE dependency needed here) is sufficient; it ALSO now
+/// grounds each chapter's own real verse count (see `real_verse_count`).
+pub fn read_all(root: &Path, kjv_verses: &HashMap<String, String>) -> Result<KretzmannCorpus> {
     let mut chapters = Vec::with_capacity(1189);
     let mut stats = CorpusStats::default();
     for book in BOOKS {
+        let code = atlas_core::canon::BOOKS[book.book_index as usize].code;
         for chapter in 1..=book.chapters {
             let path = root.join(book.slug).join(format!("{chapter}.html"));
             let html = std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
-            let parsed = parse_chapter(&html, book.book_index, chapter, book.chapters)
+            let chapter_verse_count = real_verse_count(kjv_verses, code, chapter);
+            let parsed = parse_chapter(&html, book.book_index, chapter, chapter_verse_count, kjv_verses)
                 .with_context(|| format!("parsing {} (book_index {}, chapter {chapter})", path.display(), book.book_index))?;
             stats.pages += 1;
             stats.units += parsed.units.len();
             stats.fragments += parsed.fragments.len();
             stats.footnotes += parsed.stats.footnotes;
             stats.footnotes_in_lemma += parsed.stats.footnotes_in_lemma;
+            stats.over_excisions += parsed.stats.over_excisions;
             for d in &parsed.stats.disclosures {
                 stats.disclosures.push(format!("{}/{}: {}", book.slug, chapter, d));
             }
@@ -634,8 +670,15 @@ fn compose_heading(h3: &Option<String>, h4: &Option<String>) -> Option<String> {
 /// SAME real chapter-verse-count the caller's own canonical KJV source
 /// knows (passed in, never re-derived from what Kretzmann happens to
 /// cover -- decision 2's own "chapter intros to the chapter's full range"
-/// needs the TRUE range, not an approximation).
-pub fn parse_chapter(html: &str, book_index: u8, chapter: u16, chapter_verse_count: u16) -> Result<ParsedChapter> {
+/// needs the TRUE range, not an approximation). `kjv_verses` (fix round 1)
+/// is the OVER-EXCISION GUARD's own real canonical source (this section's
+/// own header comment) -- dot-ref keyed (`"GEN.1.1"`), the SAME shape
+/// `atlas_etl::kjv::parse` returns; an empty map is a graceful, total
+/// no-op (every fragment stays lemma in full, byte-identical to pre-fix
+/// behavior), so a test fixture that doesn't care about the guard can pass
+/// `&HashMap::new()` unchanged.
+pub fn parse_chapter(html: &str, book_index: u8, chapter: u16, chapter_verse_count: u16, kjv_verses: &HashMap<String, String>) -> Result<ParsedChapter> {
+    let book_code = atlas_core::canon::BOOKS[book_index as usize].code;
     let article = article_slice(html)?;
     let (main, footnote_section) = split_off_footnotes(article);
     let defs = footnote_section.map(parse_footnote_definitions).unwrap_or_default();
@@ -657,6 +700,13 @@ pub fn parse_chapter(html: &str, book_index: u8, chapter: u16, chapter_verse_cou
     let mut fragments: Vec<ExcisedFragment> = Vec::new();
     let mut disclosures: Vec<String> = Vec::new();
     let mut footnotes_in_lemma = 0usize;
+    let mut over_excisions = 0usize;
+    // Fix round 1: per-verse byte cursor into that verse's OWN canonical
+    // text (`apply_over_excision_guard`'s own doc comment) -- a verse
+    // split across several fragments (GEN 1:2's own class) must reconcile
+    // each one against wherever the PRIOR fragment left off, never from
+    // the verse's own start again.
+    let mut verse_cursor: BTreeMap<u16, usize> = BTreeMap::new();
 
     let mut h3: Option<String> = None;
     let mut h4: Option<String> = None;
@@ -740,11 +790,13 @@ pub fn parse_chapter(html: &str, book_index: u8, chapter: u16, chapter_verse_cou
                     };
                     let heading = compose_heading(&h3, &h4);
                     let unit_idx = raw_units.len();
-                    // `text` (this string) IS the excised lemma -- it feeds
-                    // `fragments` ONLY below, per LEMMA-EXCISION; the unit's
-                    // own `.text` starts (and, for a Verse-kind unit, stays)
-                    // empty here, filled ONLY by a later `flush_prose` call
-                    // reading the COMMENTARY that follows this span.
+                    // `text` (this string) IS the excised lemma candidate --
+                    // it feeds `fragments` ONLY below, per LEMMA-EXCISION;
+                    // the unit's own `.text` starts empty here (Verse-kind),
+                    // filled by a later `flush_prose` call reading the
+                    // COMMENTARY that follows this span, and (fix round 1)
+                    // by the OVER-EXCISION GUARD's own recovered tail below
+                    // when this fragment resolves to a real verse.
                     raw_units.push(RawUnit { kind: UnitKind::Verse, heading, verse_from: resolved_verse, verse_to: resolved_verse, text: String::new(), section });
                     open_unit = Some(unit_idx);
                     match resolved_verse {
@@ -762,11 +814,27 @@ pub fn parse_chapter(html: &str, book_index: u8, chapter: u16, chapter_verse_cou
                             for (p_idx, p_text) in pending_unnumbered.drain(..) {
                                 raw_units[p_idx].verse_from = Some(v);
                                 raw_units[p_idx].verse_to = Some(v);
-                                fragments.push(ExcisedFragment { book_index, chapter, verse: v, order: frag_order, text: p_text });
+                                let (lemma_text, prose_tail) = apply_over_excision_guard(book_code, chapter, v, &p_text, kjv_verses, &mut verse_cursor);
+                                if !prose_tail.is_empty() {
+                                    over_excisions += 1;
+                                    disclosures.push(format!("chapter {chapter} verse {v}: over-excision guard recovered {} prose byte(s) from a leading (superscription-class) lemma", prose_tail.len()));
+                                    raw_units[p_idx].text = prose_tail;
+                                }
+                                if !lemma_text.is_empty() {
+                                    fragments.push(ExcisedFragment { book_index, chapter, verse: v, order: frag_order, text: lemma_text });
+                                    frag_order += 1;
+                                }
+                            }
+                            let (lemma_text, prose_tail) = apply_over_excision_guard(book_code, chapter, v, &text, kjv_verses, &mut verse_cursor);
+                            if !prose_tail.is_empty() {
+                                over_excisions += 1;
+                                disclosures.push(format!("chapter {chapter} verse {v}: over-excision guard recovered {} prose byte(s) from a lemma span", prose_tail.len()));
+                                raw_units[unit_idx].text = prose_tail;
+                            }
+                            if !lemma_text.is_empty() {
+                                fragments.push(ExcisedFragment { book_index, chapter, verse: v, order: frag_order, text: lemma_text });
                                 frag_order += 1;
                             }
-                            fragments.push(ExcisedFragment { book_index, chapter, verse: v, order: frag_order, text });
-                            frag_order += 1;
                         }
                     }
                 }
@@ -797,8 +865,19 @@ pub fn parse_chapter(html: &str, book_index: u8, chapter: u16, chapter_verse_cou
                     current_verse = Some(v);
                     min_v = Some(min_v.map_or(v, |m| m.min(v)));
                     max_v = Some(max_v.map_or(v, |m| m.max(v)));
-                    fragments.push(ExcisedFragment { book_index, chapter, verse: v, order: frag_order, text });
-                    frag_order += 1;
+                    let (lemma_text, prose_tail) = apply_over_excision_guard(book_code, chapter, v, &text, kjv_verses, &mut verse_cursor);
+                    if !prose_tail.is_empty() {
+                        over_excisions += 1;
+                        disclosures.push(format!("chapter {chapter} verse {v}: over-excision guard recovered {} prose byte(s) from a quote-block fragment", prose_tail.len()));
+                        if !raw_units[unit_idx].text.is_empty() {
+                            raw_units[unit_idx].text.push(' ');
+                        }
+                        raw_units[unit_idx].text.push_str(&prose_tail);
+                    }
+                    if !lemma_text.is_empty() {
+                        fragments.push(ExcisedFragment { book_index, chapter, verse: v, order: frag_order, text: lemma_text });
+                        frag_order += 1;
+                    }
                 }
                 if let (Some(a), Some(b)) = (min_v, max_v) {
                     raw_units[unit_idx].verse_from = Some(a);
@@ -873,7 +952,7 @@ pub fn parse_chapter(html: &str, book_index: u8, chapter: u16, chapter_verse_cou
         chapter,
         units,
         fragments,
-        stats: ChapterStats { footnotes: footnote_count, footnotes_in_lemma, disclosures },
+        stats: ChapterStats { footnotes: footnote_count, footnotes_in_lemma, over_excisions, disclosures },
     })
 }
 
@@ -1045,17 +1124,18 @@ pub struct ConservationReport {
 /// sides, so a genuine word/content difference still fails this
 /// comparison too (only case/punctuation are ever ignored).
 fn mechanical_key(s: &str) -> String {
-    let spaced: String = s
-        .chars()
-        .map(|c| {
-            if c.is_ascii_punctuation() || matches!(c, '\u{2013}' | '\u{2014}' | '\u{2018}' | '\u{2019}' | '\u{201A}' | '\u{201C}' | '\u{201D}' | '\u{201E}' | '\u{2026}') {
-                ' '
-            } else {
-                c
-            }
-        })
-        .collect();
+    let spaced: String = s.chars().map(|c| if is_word_separator(c) { ' ' } else { c }).collect();
     collapse_ws(&spaced.to_lowercase())
+}
+
+/// Shared word-boundary predicate: whitespace, ASCII punctuation, or the
+/// common Unicode punctuation/quote/dash set `mechanical_key`'s own doc
+/// comment names. ONE definition, used by `mechanical_key` above AND by
+/// `normalized_words_with_end_offsets` below (the OVER-EXCISION GUARD's
+/// own tokenizer, fix round 1) -- so the two can never silently drift
+/// apart on what counts as a "word."
+fn is_word_separator(c: char) -> bool {
+    c.is_whitespace() || c.is_ascii_punctuation() || matches!(c, '\u{2013}' | '\u{2014}' | '\u{2018}' | '\u{2019}' | '\u{201A}' | '\u{201C}' | '\u{201D}' | '\u{201E}' | '\u{2026}')
 }
 
 /// Curated (digital-edition American spelling -> our KJV/archaic-British
@@ -1100,7 +1180,6 @@ const SPELLING_VARIANTS: &[(&str, &str)] = &[
     ("jubilee", "jubile"),
     ("marvelous", "marvellous"), ("marveled", "marvelled"), ("marvelously", "marvellously"),
     ("counselors", "counsellors"), ("counselor", "counsellor"), ("counseled", "counselled"),
-    ("caesarea", "cesarea"),
     ("nethinim", "nethinims"),
     ("recompense", "recompence"), ("recompenses", "recompences"),
     ("offense", "offence"), ("offenses", "offences"),
@@ -1177,11 +1256,275 @@ const SPELLING_VARIANTS: &[(&str, &str)] = &[
 /// own case+punctuation normalization -- `DeviationClass::
 /// MechanicalCaseSpellingAndPunct`'s own doc comment.
 fn spelling_key(s: &str) -> String {
-    mechanical_key(s)
-        .split(' ')
-        .map(|w| SPELLING_VARIANTS.iter().find(|&&(american, _)| american == w).map(|&(_, british)| british).unwrap_or(w))
-        .collect::<Vec<_>>()
-        .join(" ")
+    mechanical_key(s).split(' ').map(spelling_normalize_word).collect::<Vec<_>>().join(" ")
+}
+
+/// One word (already lowercased) through `SPELLING_VARIANTS`, unchanged if
+/// absent -- factored out of `spelling_key` so `normalized_words_with_end_
+/// offsets` below (fix round 1's own OVER-EXCISION GUARD tokenizer) uses
+/// the IDENTICAL per-word normalization, never a second, driftable copy.
+fn spelling_normalize_word(w: &str) -> &str {
+    SPELLING_VARIANTS.iter().find(|&&(american, _)| american == w).map(|&(_, british)| british).unwrap_or(w)
+}
+
+// -----------------------------------------------------------------------
+// OVER-EXCISION GUARD (review finding 2, fix round 1): a bolded run
+// occasionally carries Kretzmann's OWN prose in the SAME `<strong>`/quote
+// span as genuine KJV text -- 2 real, confirmed instances, and NEITHER is
+// a simple "quote then trailing prose" shape (the first design tried here
+// assumed that shape; both real instances refuted it, kept below as the
+// honest derivation, not smoothed over):
+//   - EXO 20:12's second span: ~68 words of Kretzmann's own homiletic
+//     exposition FIRST, then a genuine trailing KJV clause ("that thy days
+//     may be long...") LAST -- prose-PREFIX, KJV-SUFFIX.
+//   - RUT 4:11's third span: genuine KJV ("The Lord make the woman... into
+//     thine house,"), then a 6-word translator's aside ("literally, that
+//     is about to come,"), then genuine KJV again ("like Rachel and like
+//     Leah... house of Israel,") -- KJV-prefix, prose-INFIX, KJV-suffix.
+// A prefix-only (or suffix-only) split cannot recover either real case, so
+// the guard reconciles the fragment's own words against the verse's own
+// remaining canonical words by RECURSIVE LONGEST-COMMON-BLOCK matching
+// (`align_recursive`/`longest_common_block` below): find the single
+// LONGEST contiguous run of words the two share ANYWHERE, mark it matched,
+// then recurse independently on the piece strictly before it and the
+// piece strictly after it. Every fragment word that ends up matched by
+// SOME block is genuine (if possibly reordered-around) KJV content and
+// stays excised; every run left unmatched returns to stored prose.
+//
+// NOT a plain longest-common-SUBSEQUENCE (LCS) -- two earlier cuts of this
+// guard tried LCS and both were empirically refuted running over the real
+// corpus before pinning any number (kept here as the honest derivation,
+// per this project's own "disclose honestly, verify before pinning"
+// discipline -- `kretzmann_real_data.rs`'s own module doc comment has the
+// full history and post-fix counts):
+//   - A plain backward-backtracking LCS wrongly tore apart LEV 1:5's own
+//     genuine, cleanly-bolded third span ("and sprinkle the blood round
+//     about upon the altar,") because "blood" ALSO occurs earlier in the
+//     same remaining canonical text ("...shall bring the blood,"): the
+//     backtrack matched the fragment's own "blood" to canonical's LATER
+//     occurrence, silently skipping "and sprinkle the" and shoving it out
+//     as if it were prose.
+//   - Re-biasing that same LCS to prefer the EARLIEST canonical match
+//     fixed LEV 1:5 but broke LEV 1:11's own genuine second span ("before
+//     the Lord. [~50-word prose paragraph, itself discussing the
+//     altar/priests] And the priests, Aaron's sons, shall sprinkle his
+//     blood round about upon the altar,"): the word "priests" ALSO
+//     appears, coincidentally, inside the prose paragraph itself ("...for
+//     the officiating priests."), and LCS -- which may match ANY
+//     subsequence, not just a contiguous run -- let that coincidental
+//     match "steal" canonical's one "priests" position, splitting the
+//     genuine trailing KJV clause in two around it.
+// Recursive longest-common-BLOCK sidesteps both failures by construction:
+// anchoring on the SINGLE LONGEST shared run first means a short
+// coincidental word repeat inside a long prose block is only ever
+// considered in a LEFTOVER slice, AFTER the true, much-longer block has
+// already consumed its own matching words on both sides -- there is
+// nothing left for the coincidental repeat to steal. This is also what
+// makes GEN 2:19's own named, confirmed single-dropped-word case ("the
+// Lord formed" vs. canonical "the LORD God formed") safe automatically:
+// the longest block is "formed [...the rest of the verse...]" (everything
+// after the drop), found and matched first; recursing left then finds
+// "the lord" as its own (shorter) block too -- EVERY fragment word ends up
+// matched, so the whole fragment counts as fully reconciled: no split,
+// byte-identical to pre-fix behavior, exactly as desired (KRETZ-ACCEPT-1's
+// own Mismatch class keeps disclosing it).
+//
+// MIN_PROSE_RUN_WORDS below exists because block-matching alone is still
+// NOT sufficient: a genuine single-word SUBSTITUTION (as opposed to
+// omission) -- e.g. a hypothetical "made" for canonical "created" -- would
+// show up as its own isolated 1-word UNMATCHED run sandwiched between two
+// long matched blocks, and splitting there would wrongly rip a real (if
+// mistranscribed) KJV word out into stored prose. An interior/boundary
+// unmatched run shorter than the threshold is therefore merged back into
+// the surrounding lemma (retained, not recovered) -- long enough to
+// comfortably clear both real, confirmed instances (RUT 4:11's 6-word
+// aside is the smaller of the two), short enough that a single dropped/
+// substituted word never qualifies.
+//
+// Also empirically necessary (same discovery process as above): comparing
+// WORD COUNTS, never raw byte lengths, for "did the whole fragment
+// reconcile" -- an earlier, byte-length-based version spuriously treated
+// a fragment's own trailing sentence-final period as "1 byte of
+// unreconciled prose" on nearly every fragment in the corpus (canonical's
+// own last matched WORD offset never includes trailing punctuation the
+// fragment's own text still carries).
+// -----------------------------------------------------------------------
+
+/// Below this many words, an unmatched run the block-matching alignment
+/// leaves behind is treated as RETAINED lemma content, never recovered
+/// prose -- this section's own header comment has the full derivation.
+const MIN_PROSE_RUN_WORDS: usize = 3;
+
+/// Tokenizes `s` into `(normalized word, start byte, end byte)` triples,
+/// under the identical `is_word_separator`/lowercase/`SPELLING_VARIANTS`
+/// normalization `mechanical_key`/`spelling_key` already establish -- but
+/// retaining each token's own byte SPAN into the ORIGINAL (unnormalized)
+/// string, which `spelling_key`'s own flattened return throws away. Those
+/// spans are what let `apply_over_excision_guard` below slice real,
+/// char-boundary-safe, VERBATIM runs back out of the unnormalized text
+/// once the alignment has classified each word as matched/unmatched.
+fn tokenize_words_with_spans(s: &str) -> Vec<(String, usize, usize)> {
+    let mut out = Vec::new();
+    let mut word_start: Option<usize> = None;
+    let mut word_end = 0usize;
+    for (i, c) in s.char_indices() {
+        let end = i + c.len_utf8();
+        if is_word_separator(c) {
+            if let Some(start) = word_start.take() {
+                out.push((spelling_normalize_word(&s[start..word_end].to_lowercase()).to_string(), start, word_end));
+            }
+        } else {
+            if word_start.is_none() {
+                word_start = Some(i);
+            }
+            word_end = end;
+        }
+    }
+    if let Some(start) = word_start {
+        out.push((spelling_normalize_word(&s[start..word_end].to_lowercase()).to_string(), start, word_end));
+    }
+    out
+}
+
+/// Finds the SINGLE LONGEST contiguous run of words common to `frag` and
+/// `canon` (a longest-common-SUBSTRING at the word level, not a
+/// subsequence) -- returns `(frag_start_index, canon_start_index, length)`
+/// of that run, or `None` if the two share no word at all. Standard O(n*m)
+/// DP (`same[i][j]` = length of the matching run ENDING at
+/// `frag[i-1]`/`canon[j-1]`); ties (more than one run of the same maximal
+/// length) resolve to whichever the scan reaches first -- immaterial to
+/// correctness here, since `align_recursive` below applies this function
+/// to strictly SHRINKING sub-ranges regardless of which maximal run is
+/// picked first.
+fn longest_common_block(frag: &[(String, usize, usize)], canon: &[(String, usize, usize)]) -> Option<(usize, usize, usize)> {
+    let n = frag.len();
+    let m = canon.len();
+    let mut same = vec![vec![0usize; m + 1]; n + 1];
+    let mut best: (usize, usize, usize) = (0, 0, 0);
+    for i in 1..=n {
+        for j in 1..=m {
+            if frag[i - 1].0 == canon[j - 1].0 {
+                same[i][j] = same[i - 1][j - 1] + 1;
+                if same[i][j] > best.2 {
+                    best = (i - same[i][j], j - same[i][j], same[i][j]);
+                }
+            }
+        }
+    }
+    if best.2 == 0 {
+        None
+    } else {
+        Some(best)
+    }
+}
+
+/// Recursively partitions `frag`/`canon` by always anchoring on the single
+/// longest common block first (`longest_common_block` above), then
+/// recursing independently on the piece strictly BEFORE it and the piece
+/// strictly AFTER it -- this section's own header comment has the full
+/// "why not plain LCS" derivation. `frag_base` offsets into the FULL
+/// original fragment word list for `is_matched`'s own absolute indexing
+/// (`frag`/`canon` here are sub-slices, shrinking with each recursive
+/// call). Returns the largest canonical byte-end-offset consumed by ANY
+/// block found in this call or its own recursive children (`0` if
+/// nothing matched anywhere) -- `apply_over_excision_guard`'s own cursor
+/// advancement; verse/fragment word counts are bounded (well under 100
+/// even for the longest real verses), so the recursion depth and total
+/// work here are cheap even run unconditionally over the whole corpus.
+fn align_recursive(frag: &[(String, usize, usize)], canon: &[(String, usize, usize)], frag_base: usize, is_matched: &mut [bool]) -> usize {
+    if frag.is_empty() || canon.is_empty() {
+        return 0;
+    }
+    let Some((fi, ci, len)) = longest_common_block(frag, canon) else {
+        return 0;
+    };
+    for k in 0..len {
+        is_matched[frag_base + fi + k] = true;
+    }
+    let left_end = align_recursive(&frag[..fi], &canon[..ci], frag_base, is_matched);
+    let this_end = canon[ci + len - 1].2;
+    let right_end = align_recursive(&frag[fi + len..], &canon[ci + len..], frag_base + fi + len, is_matched);
+    left_end.max(this_end).max(right_end)
+}
+
+/// Applies the OVER-EXCISION GUARD for one fragment now known to target
+/// verse `v` of the chapter being parsed: block-reconciles `raw_text`
+/// against `v`'s own remaining canonical text (`verse_cursor`'s own
+/// per-verse bookkeeping -- a verse split across several fragments, GEN
+/// 1:2's own class, must resume matching where the PRIOR fragment left
+/// off, never from the verse's own start again), and returns `(lemma_text,
+/// prose_text)` -- `prose_text` is empty in the overwhelmingly common
+/// (fully-matched) case. `kjv_verses` missing a real entry for `v` (never
+/// true of a real, complete build; a deliberately narrow test fixture can
+/// omit it) is a graceful no-op: the whole fragment stays lemma, exactly
+/// the pre-fix-round behavior, so this guard never REQUIRES canonical data
+/// to be present to keep functioning.
+fn apply_over_excision_guard(book_code: &str, chapter: u16, v: u16, raw_text: &str, kjv_verses: &HashMap<String, String>, verse_cursor: &mut BTreeMap<u16, usize>) -> (String, String) {
+    let Some(canonical) = kjv_verses.get(&format!("{book_code}.{chapter}.{v}")) else {
+        return (raw_text.to_string(), String::new());
+    };
+    let cursor = verse_cursor.get(&v).copied().unwrap_or(0).min(canonical.len());
+    let remaining = &canonical[cursor..];
+
+    let frag_words = tokenize_words_with_spans(raw_text);
+    if frag_words.is_empty() {
+        return (raw_text.to_string(), String::new());
+    }
+    let canon_words = tokenize_words_with_spans(remaining);
+    let mut is_matched = vec![false; frag_words.len()];
+    let last_canon_end = align_recursive(&frag_words, &canon_words, 0, &mut is_matched);
+    verse_cursor.insert(v, cursor + last_canon_end);
+
+    // Merge unmatched runs shorter than the threshold back into retained
+    // lemma content (this section's own header comment) -- one pass,
+    // flipping short `false` runs to `true`.
+    let mut i = 0;
+    while i < is_matched.len() {
+        if is_matched[i] {
+            i += 1;
+            continue;
+        }
+        let start = i;
+        while i < is_matched.len() && !is_matched[i] {
+            i += 1;
+        }
+        if i - start < MIN_PROSE_RUN_WORDS {
+            for slot in &mut is_matched[start..i] {
+                *slot = true;
+            }
+        }
+    }
+
+    if is_matched.iter().all(|&m| m) {
+        return (raw_text.to_string(), String::new());
+    }
+
+    let mut lemma_parts: Vec<&str> = Vec::new();
+    let mut prose_parts: Vec<&str> = Vec::new();
+    let mut i = 0;
+    while i < frag_words.len() {
+        let start = i;
+        let matched = is_matched[i];
+        while i < frag_words.len() && is_matched[i] == matched {
+            i += 1;
+        }
+        let run_start = frag_words[start].1;
+        // Extends forward to the NEXT run's own first-word START (or
+        // `raw_text`'s own end, for the last run) rather than stopping at
+        // this run's own last-word END -- so inter-run punctuation (EXO
+        // 20:12's own boundary colon: "...as the promise indicates:"
+        // immediately precedes the recovered KJV clause) stays attached to
+        // the word it follows, the natural English attachment, instead of
+        // silently vanishing into the gap between two runs.
+        let run_end = if i < frag_words.len() { frag_words[i].1 } else { raw_text.len() };
+        let piece = raw_text[run_start..run_end].trim();
+        if matched {
+            lemma_parts.push(piece);
+        } else {
+            prose_parts.push(piece);
+        }
+    }
+    (lemma_parts.join(" "), prose_parts.join(" "))
 }
 
 /// Runs KRETZ-ACCEPT-1 over the whole corpus: per verse, the excised
@@ -1225,6 +1568,82 @@ pub fn check_conservation(fragments: &[ExcisedFragment], canonical: &BTreeMap<(u
         }
     }
     report
+}
+
+// -----------------------------------------------------------------------
+// KRETZ-ACCEPT-2: the composed-PRODUCT identity (fix round 1, owner ruling
+// 2026-08-25: "commentary-comments===bible").
+// -----------------------------------------------------------------------
+
+/// One piece of the composed reading view -- kept as a TYPED segment
+/// (never a flat string with an embedded sentinel/marker) so "strip the
+/// comment blocks" is exact `matches!` filtering, never fragile string
+/// scanning that a stray byte in real prose could defeat. `Verse` carries
+/// one canonical verse's own text; `Comment` carries one covering unit's
+/// own stored prose (LEMMA-EXCISED, `KretzUnit.text`'s own doc comment).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReadingViewSegment {
+    Verse(String),
+    Comment(String),
+}
+
+/// KRETZ-ACCEPT-2's own composer: for every verse in `canonical`'s own
+/// iteration order (a `BTreeMap<(book_index, chapter, verse), String>`
+/// sorts by that tuple, which IS canonical spine order -- Genesis 1:1 ...
+/// Revelation 22:21, the SAME key shape `check_conservation` above already
+/// uses), emits that verse's own canonical text followed by the stored
+/// prose of every `KretzUnit` in the SAME (book, chapter) whose own
+/// `[verse_from, verse_to]` range covers it, in document order -- the
+/// EXACT "mapped comments" `kretzmann_adapter::normalize`'s own one-
+/// `CommentsOn`-row-per-unit-per-range construction already establishes
+/// (never a per-verse-expanded copy; this composer just asks the same
+/// range-covers-verse question `kretzmann_adapter.rs` implicitly encodes
+/// into each row's own `BibleLocusRange`).
+///
+/// A verse with zero covering units (one of the 70 disclosed `uncovered`
+/// verses `check_conservation`'s own report already names) contributes
+/// ONLY its own `Verse` segment -- lawful, not an error (this law's own
+/// "all 31,102 verses including the 70 uncovered" scope, owner ruling).
+///
+/// This composition is DELIBERATELY the same shape a future real reading
+/// view would use (verse spine + attached per-verse comments) -- not a
+/// test-only fixture invented just to pass a law -- so this test proves
+/// real logic, not a stand-in for it.
+pub fn compose_reading_view(canonical: &BTreeMap<(u8, u16, u16), String>, corpus: &KretzmannCorpus) -> Vec<ReadingViewSegment> {
+    let mut by_chapter: HashMap<(u8, u16), &ParsedChapter> = HashMap::new();
+    for chapter in &corpus.chapters {
+        by_chapter.insert((chapter.book_index, chapter.chapter), chapter);
+    }
+
+    let mut out = Vec::with_capacity(canonical.len() * 2);
+    for (&(book_index, chapter, verse), text) in canonical {
+        out.push(ReadingViewSegment::Verse(text.clone()));
+        if let Some(parsed) = by_chapter.get(&(book_index, chapter)) {
+            for unit in &parsed.units {
+                if unit.verse_from <= verse && verse <= unit.verse_to {
+                    out.push(ReadingViewSegment::Comment(unit.text.clone()));
+                }
+            }
+        }
+    }
+    out
+}
+
+/// KRETZ-ACCEPT-2 itself: strips every `Comment` segment from a composed
+/// reading view and byte-concatenates what remains -- EXACT, no
+/// equivalence tiers (unlike KRETZ-ACCEPT-1, which stays the parse-
+/// fidelity gate it is; this law instead guards the READING-VIEW
+/// CONSTRUCTION forever -- spine coverage, verse-text mutation, compose
+/// ordering -- trivially satisfiable today because verse text is single-
+/// sourced, per the owner ruling's own text).
+pub fn strip_comment_blocks(segments: &[ReadingViewSegment]) -> String {
+    segments
+        .iter()
+        .filter_map(|s| match s {
+            ReadingViewSegment::Verse(t) => Some(t.as_str()),
+            ReadingViewSegment::Comment(_) => None,
+        })
+        .collect()
 }
 
 // -----------------------------------------------------------------------
@@ -1341,7 +1760,7 @@ mod tests {
 
     #[test]
     fn gen_1_2_splits_into_three_fragments_and_the_prose_between_attaches_to_each() {
-        let parsed = parse_chapter(&wrap_article(GEN_1_EXCERPT), 0, 1, 31).unwrap();
+        let parsed = parse_chapter(&wrap_article(GEN_1_EXCERPT), 0, 1, 31, &HashMap::new()).unwrap();
         // Units: v1, v2(a), v2(b), v2(c), v3 -- five Verse-kind units.
         assert_eq!(parsed.units.len(), 5, "units: {:#?}", parsed.units.iter().map(|u| (u.verse_from, u.verse_to, &u.text)).collect::<Vec<_>>());
         assert_eq!((parsed.units[1].verse_from, parsed.units[1].verse_to), (2, 2));
@@ -1365,7 +1784,7 @@ mod tests {
 
     #[test]
     fn psa_110_1_leading_superscription_folds_into_verse_1_and_matches_canonical_under_the_mechanical_class() {
-        let parsed = parse_chapter(&wrap_article(PSA_110_EXCERPT), 18, 110, 7).unwrap();
+        let parsed = parse_chapter(&wrap_article(PSA_110_EXCERPT), 18, 110, 7, &HashMap::new()).unwrap();
         // The unnumbered superscription lemma folds into verse 1 -- ALL
         // four fragments target verse 1 (the same locus our own canonical
         // layer folds the superscription into).
@@ -1413,7 +1832,7 @@ mod tests {
 
     #[test]
     fn type_b_quote_block_becomes_one_unit_spanning_its_own_verse_range_with_prose_from_both_following_paragraphs() {
-        let parsed = parse_chapter(&wrap_article(JHN_3_TYPE_B_EXCERPT), 42, 3, 36).unwrap();
+        let parsed = parse_chapter(&wrap_article(JHN_3_TYPE_B_EXCERPT), 42, 3, 36, &HashMap::new()).unwrap();
         assert_eq!(parsed.units.len(), 1, "units: {:#?}", parsed.units.iter().map(|u| (u.verse_from, u.verse_to, &u.text)).collect::<Vec<_>>());
         assert_eq!((parsed.units[0].verse_from, parsed.units[0].verse_to), (1, 3));
         assert_eq!(parsed.units[0].text, "Here is an incident from the happenings of this Passover week. Note: the Holy Ghost does His work.");
@@ -1429,7 +1848,7 @@ mod tests {
 
     #[test]
     fn pericope_intro_prose_maps_to_the_sections_own_covered_verse_range() {
-        let parsed = parse_chapter(&wrap_article(PSA_1_INTRO_EXCERPT), 18, 1, 6).unwrap();
+        let parsed = parse_chapter(&wrap_article(PSA_1_INTRO_EXCERPT), 18, 1, 6, &HashMap::new()).unwrap();
         let intro = parsed.units.iter().find(|u| u.kind == UnitKind::PericopeIntro).expect("a pericope-intro unit must exist");
         assert_eq!(intro.text, "All men are sinners: all have sinned and come short of the glory of God.");
         assert_eq!((intro.verse_from, intro.verse_to), (1, 1), "the section's own real range (this fixture's lemmas only reach verse 1)");
@@ -1441,7 +1860,7 @@ mod tests {
 
     #[test]
     fn chapter_intro_prose_before_any_heading_maps_to_the_true_full_chapter_range() {
-        let parsed = parse_chapter(&wrap_article(CHAPTER_INTRO_EXCERPT), 0, 5, 27).unwrap();
+        let parsed = parse_chapter(&wrap_article(CHAPTER_INTRO_EXCERPT), 0, 5, 27, &HashMap::new()).unwrap();
         let intro = parsed.units.iter().find(|u| u.kind == UnitKind::ChapterIntro).expect("a chapter-intro unit must exist");
         assert_eq!(intro.text, "General orientation before any heading appears at all.");
         assert_eq!((intro.verse_from, intro.verse_to), (1, 27), "the TRUE chapter range (27), not merely what this fixture's own single lemma covers");
@@ -1456,7 +1875,7 @@ mod tests {
 <ol><li id="user-content-fn-1"><p>A real footnote body. <a href="#user-content-fnref-1" data-footnote-backref="" aria-label="Back to reference 1" class="data-footnote-backref">&#8617;</a></p></li></ol>
 </section>"##,
         );
-        let parsed = parse_chapter(&html, 0, 1, 1).unwrap();
+        let parsed = parse_chapter(&html, 0, 1, 1, &HashMap::new()).unwrap();
         assert_eq!(parsed.stats.footnotes, 1);
         assert_eq!(parsed.units[0].text, "Commentary with a note. [Footnote 1: A real footnote body.]");
     }
@@ -1487,6 +1906,50 @@ mod tests {
         for c in extract_date_clauses(text) {
             assert!(text.contains(&c.verbatim), "clause '{}' must be a literal substring of its source text", c.verbatim);
         }
+    }
+
+    #[test]
+    fn kretz_accept_2_strips_to_exactly_the_canonical_concatenation_on_a_synthetic_corpus() {
+        let mut canonical = BTreeMap::new();
+        canonical.insert((0u8, 1u16, 1u16), "In the beginning God created the heaven and the earth.".to_string());
+        canonical.insert((0u8, 1u16, 2u16), "And the earth was without form and void.".to_string());
+        canonical.insert((0u8, 2u16, 1u16), "Thus the heavens and the earth were finished.".to_string());
+
+        let corpus = KretzmannCorpus {
+            chapters: vec![ParsedChapter {
+                book_index: 0,
+                chapter: 1,
+                units: vec![
+                    KretzUnit { id: "kretzmann/0.1.0".to_string(), book_index: 0, chapter: 1, verse_from: 1, verse_to: 2, kind: UnitKind::Verse, heading: None, text: "A comment spanning both verses.".to_string() },
+                    KretzUnit { id: "kretzmann/0.1.1".to_string(), book_index: 0, chapter: 1, verse_from: 2, verse_to: 2, kind: UnitKind::Verse, heading: None, text: "A second comment on verse 2 alone.".to_string() },
+                ],
+                fragments: vec![],
+                stats: ChapterStats::default(),
+            }],
+            // Genesis 2 has NO parsed chapter at all here -- exercises the
+            // "verse with zero covering units" (uncovered) path: chapter 2
+            // verse 1 must still contribute its own bare Verse segment.
+            stats: CorpusStats::default(),
+        };
+
+        let segments = compose_reading_view(&canonical, &corpus);
+        // Verse 1 (comment A only), verse 2 (comments A then B, document
+        // order), verse 2:1 (no covering chapter parsed at all -- bare).
+        assert_eq!(
+            segments,
+            vec![
+                ReadingViewSegment::Verse("In the beginning God created the heaven and the earth.".to_string()),
+                ReadingViewSegment::Comment("A comment spanning both verses.".to_string()),
+                ReadingViewSegment::Verse("And the earth was without form and void.".to_string()),
+                ReadingViewSegment::Comment("A comment spanning both verses.".to_string()),
+                ReadingViewSegment::Comment("A second comment on verse 2 alone.".to_string()),
+                ReadingViewSegment::Verse("Thus the heavens and the earth were finished.".to_string()),
+            ]
+        );
+
+        let stripped = strip_comment_blocks(&segments);
+        let whole_bible: String = canonical.values().map(|s| s.as_str()).collect();
+        assert_eq!(stripped, whole_bible, "stripping every Comment segment must recover EXACTLY the canonical concatenation, no residual");
     }
 
     #[test]

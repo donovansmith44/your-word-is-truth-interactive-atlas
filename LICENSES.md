@@ -825,8 +825,11 @@ public domain by age alone, independent of the first ground. Obtained from
 edition, fetched 2026-08-25 (`data/fetch-raw.ps1`'s own `$kretzmannBooks`
 table; all 66 books, every KJV chapter page — see `data/raw/README.md`'s own
 "kretzmann/" section for the full fetch tally and page-template details).
-The site's own footer/about text states the work is public domain,
-consistent with the PD grounds above (a later digital transcription cannot
+The site's own text states, verbatim (fix round 1: quoted directly, not
+paraphrased — captured in `.superpowers/sdd/2026-08-17-bible-atlas-m1/
+kretzmann-scouting.md`): "Originally published by Concordia Publishing
+House, 1921–1924. This work is now in the public domain." — consistent
+with the PD grounds above (a later digital transcription cannot
 re-copyright an already-public-domain 1921-1924 work).
 
 **What was used, and how.** `server/atlas-etl/src/kretzmann.rs` (parsing)
@@ -841,21 +844,20 @@ linked to its own Bible locus range via a `comments-on` edge. KRETZ-ACCEPT-1
 an ETL-time law over the WHOLE corpus, checked against this app's own
 RESTORED (KJV-CASE + KJV-CASE-2) canonical text: 31,032 verses checked (70
 verses Kretzmann summarizes with no lemma of their own — lawful, disclosed,
-never guessed); 2,498 exact byte matches; 22,933 pass under a disclosed
+never guessed); 2,525 exact byte matches; 23,606 pass under a disclosed
 MECHANICAL case+punctuation equivalence (the Tetragrammaton/reverential-
 pronoun case convention, and the digital edition's own fragment/quote-
-boundary punctuation style — never a word/content difference); 1,853 more
+boundary punctuation style — never a word/content difference); 1,903 more
 pass under a curated (never fuzzy-matched) American/British spelling-variant
 table, mined and manually vetted from the real corpus's own recurring
 mismatches (`shew`/`show`, `honour`/`honor`, `sepulchre`/`sepulcher`, and
 ~130 further pairs — `server/atlas-etl/src/kretzmann.rs`'s own
 `SPELLING_VARIANTS` table has the full list and its own exclusion
-discipline). The remaining 3,748 (12.1%) are genuine, disclosed deviations,
+discipline). The remaining 2,998 (9.7%) are genuine, disclosed deviations,
 manually sampled across the whole corpus (both testaments, both page
 templates) and categorized — by far the largest class is Kretzmann quoting
 only a verse's own opening clause before moving to prose commentary
-(ordinary commentary-writing style); smaller classes are an occasional
-inline connective gloss bolded alongside the quote, this app's own
+(ordinary commentary-writing style); smaller classes are this app's own
 canonical source's en-dash compound-name convention for Hebrew proper names
 diverging from the digital edition's own hyphenation, and Psalm 119's own
 Hebrew-letter acrostic stanza headers (folded into each stanza's own first
@@ -868,14 +870,53 @@ single one a typographic/transcription-convention difference... NEVER a
 case of verse-content substitution"). `server/atlas-etl/tests/
 kretzmann_real_data.rs` pins the exact counts above as a regression harness.
 
+**Fix round 1** (2026-08-25, review finding 2, MEDIUM): a bolded run
+occasionally carried Kretzmann's OWN prose in the SAME `<strong>`/quote
+span as genuine KJV text — e.g. EXO 20:12's own second span bolded ~68
+words of homiletic exposition alongside the genuine trailing clause "that
+thy days may be long..."; RUT 4:11's own third span bolded a 6-word
+translator's aside, "literally, that is about to come,", inline between
+two genuine KJV phrases. LEMMA-EXCISION as originally implemented silently
+destroyed that prose (excised alongside the genuine lemma, then dropped).
+The OVER-EXCISION GUARD (`server/atlas-etl/src/kretzmann.rs`'s own
+"OVER-EXCISION GUARD" section has the full algorithm — recursive
+longest-common-block reconciliation against the verse's own canonical
+text, never a plain prefix scan, needed to correctly recover BOTH real
+shapes above) now recovers this prose mechanically, corpus-wide: 1,054
+real instances found and disclosed (`corpus.stats.over_excisions`), not
+merely the 2 the reviewer's own narrower sample found. This moved
+KRETZ-ACCEPT-1's own pinned numbers (above) from 2,498/22,933/1,853/3,748
+to the current 2,525/23,606/1,903/2,998 — the four deltas sum to zero, so
+no verse silently changed classification bucket count without a matching
+debit elsewhere. Both named verses were verified to recover their prose
+VERBATIM against the real source HTML (byte-for-byte reconstruction of the
+original `<strong>` span), and a machine guard now asserts stored prose
+never contains its own excised fragment text
+(`stored_prose_never_contains_its_own_excised_fragment_text` in
+`kretzmann_real_data.rs`).
+
+**KRETZ-ACCEPT-2** (new law, owner ruling 2026-08-25, verbatim:
+"commentary-comments===bible"): a SEPARATE identity from KRETZ-ACCEPT-1
+above, about the COMPOSED PRODUCT rather than the parse itself — for every
+verse in canonical order, canonical text followed by its own mapped
+comments, with every comment segment stripped back out, must reconstruct
+the whole canonical Bible EXACTLY, all 31,102 verses including the 70
+uncovered, no equivalence tiers. Verified over the real corpus
+(`kretz_accept_2_composed_reading_view_strips_to_exactly_the_whole_canonical_bible`)
+— exact, zero residual, confirming this app's own verse text stays
+single-sourced (never derived or mutated by the commentary layer) even
+after fix round 1's own prose-recovery changes.
+
 **The date mine** (owner order, verbatim: "extract the years from Kretzmann
 and throw them somewhere as our tentative source of truth that gets shared
 everywhere"): a parsing-only pass over the stored commentary prose for
 B.C./A.D./Anno-Mundi dating clauses, emitted to `data/exports/
 kretzmann-chronology.json` (`status: "tentative-extraction"` — a later,
 separate curatorial act adjudicates real chronology placements from it;
-this export carries no placement authority of its own). 83 real clauses
-found (42 B.C., 41 A.D., 0 Anno Mundi — disclosed absent, not assumed);
+this export carries no placement authority of its own). 84 real clauses
+found (43 B.C., 41 A.D., 0 Anno Mundi — disclosed absent, not assumed; fix
+round 1 moved this from 83/42/41/0 — a recovered-prose unit can gain a
+dating clause that used to be silently excised as if it were KJV text);
 every verbatim clause is asserted to be a literal substring of its own
 unit's stored prose.
 

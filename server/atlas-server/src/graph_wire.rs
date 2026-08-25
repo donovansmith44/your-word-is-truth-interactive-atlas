@@ -128,7 +128,8 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
         // prior node-kind batch (M-B/M-C/P) added here.
         "Translation" => Some(AnyNodeId { kind: NodeKind::Translation, raw: rest.to_string() }),
         // KRETZ-1: the identical one-arm round-trip completion for the
-        // 50,439 CommentaryItem nodes this batch newly authors
+        // 50,602 CommentaryItem nodes this batch newly authors (fix round
+        // 1's own pinned count)
         // (`kretzmann_adapter.rs`) -- `encode_node_id`'s own pre-existing
         // generic fallback already produces "CommentaryItem:kretzmann/
         // 0.1.0" etc.; this is what makes a unit's own id resolve through

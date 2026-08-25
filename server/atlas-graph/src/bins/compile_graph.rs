@@ -167,7 +167,7 @@ fn main() -> Result<()> {
     // (`data/raw/kretzmann/`, see `data/raw/README.md`).
     let kretzmann_root = raw_dir.join("kretzmann");
     println!("atlas-graph-compile: reading vendored Kretzmann (Popular Commentary of the Bible) data from {}...", kretzmann_root.display());
-    let kretzmann_corpus = atlas_etl::kretzmann::read_all(&kretzmann_root).with_context(|| format!("reading {}", kretzmann_root.display()))?;
+    let kretzmann_corpus = atlas_etl::kretzmann::read_all(&kretzmann_root, &atlas.verses).with_context(|| format!("reading {}", kretzmann_root.display()))?;
     println!(
         "atlas-graph-compile: kretzmann {} pages, {} units, {} excised fragments, {} footnotes ({} disclosed structural anomalies)",
         kretzmann_corpus.stats.pages, kretzmann_corpus.stats.units, kretzmann_corpus.stats.fragments, kretzmann_corpus.stats.footnotes, kretzmann_corpus.stats.disclosures.len(),
