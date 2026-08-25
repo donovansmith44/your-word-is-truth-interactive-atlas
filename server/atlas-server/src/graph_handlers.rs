@@ -37,7 +37,6 @@ use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
 use atlas_graph_types::explore::EdgeQuery;
 use atlas_graph_types::id::{NodeKind, Position};
-use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
 
 use crate::error::ApiError;
@@ -96,12 +95,19 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<St
 
     // ENT-1a: whichever of the three described kinds this node is (or
     // `None` for every other kind, and `None` until a match exists even for
-    // those three) -- straight off the already-fetched node's own payload,
-    // no second query.
-    let description = match &node.payload {
-        NodePayload::Place { description, .. } | NodePayload::Person { description, .. } | NodePayload::PeopleGroup { description, .. } => description.clone(),
-        _ => None,
-    };
+    // those three) -- via `atlas_graph::legacy::node_description`, the SAME
+    // shared accessor `handlers::place` calls (batch-polish1-brief.md
+    // ENT1A-m4: this used to hand-roll its own copy of that exact
+    // NodePayload match on the already-fetched `node` above; unified,
+    // observable behavior unchanged. `node_description` re-fetches by id
+    // internally rather than taking `node` directly, a small redundant
+    // lookup -- disclosed, accepted: `GraphQuery::node` is a cheap
+    // in-memory lookup, and matching `handlers::place`'s own existing
+    // call shape (which never had `node` fetched separately to begin
+    // with) keeps the shared fn's own signature uniform across both
+    // callers rather than growing a second, `Node`-taking overload for
+    // this one caller's own minor optimization).
+    let description = atlas_graph::legacy::node_description(&node_id, &snap);
 
     Ok(Json(NodeCardOut {
         id: encode_node_id(&node_id),

@@ -12,6 +12,18 @@
 //! 23:1 (a second superscription-class Psalm, controller decision 4), and
 //! changes PSA 110:1's own assertion from "disclosed as unrestored" to
 //! "restored" -- see that test's own doc comment for the full history.
+//!
+//! batch-polish1-brief.md KJVCASE2-m1 (read-back hardening) adds the
+//! mirror-image law: `brainfuel::SUPERSCRIPTION_EXCLUSIONS`' own three
+//! verses (PSA.70.1, PSA.92.1, ACT.9.29 -- brain-fuel transcription
+//! artifacts, never genuine superscriptions, per that const's own doc
+//! comment) must carry OUR OWN canonical casing, byte-for-byte UNTOUCHED,
+//! in the actual shipped artifact -- previously proven only INDIRECTLY,
+//! over the in-memory build (`atlas_etl::brainfuel`'s own
+//! `superscription_exclusions_are_provably_untouched` in
+//! `brainfuel_real_data.rs`). Same "build path vs shipped file"
+//! distinction this file's own header already draws for the five spot
+//! verses above.
 
 use std::path::Path;
 
@@ -81,4 +93,35 @@ fn spot_law_verses_read_back_from_the_real_committed_artifact() {
         verse_text(&svc, "PSA", 68, 4),
         "Sing unto God, sing praises to his name: extol him that rideth upon the heavens by his name JAH, and rejoice before him."
     );
+}
+
+/// batch-polish1-brief.md KJVCASE2-m1 (read-back hardening): the three
+/// `SUPERSCRIPTION_EXCLUSIONS` verses, read back from the real shipped
+/// artifact and compared against a FRESH, independent parse of our own
+/// `data/raw/kjv.json` -- never against a hardcoded literal, so this law
+/// stays true even if the KJV text itself is re-vendored. Equality here
+/// proves "untouched": `brainfuel::restore_kjv_case` only ever `.insert()`s
+/// a restored position into its output map (that fn's own doc comment),
+/// so an excluded position's value is, by construction, whatever
+/// `atlas_etl::kjv::parse` produced for it -- exactly what this test reads
+/// independently below. Were one of these three ever accidentally
+/// restored to brain-fuel's own spurious casing (the whole reason they are
+/// excluded -- `SUPERSCRIPTION_EXCLUSIONS`' own doc comment), this
+/// equality would break.
+#[test]
+fn superscription_exclusions_carry_our_canonical_casing_untouched_in_the_real_artifact() {
+    let svc = real_graph_bin();
+
+    let raw_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
+    let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
+    let (_canon, our_verses) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
+
+    for (dot_ref, book, chapter, verse) in [("PSA.70.1", "PSA", 70u16, 1u16), ("PSA.92.1", "PSA", 92, 1), ("ACT.9.29", "ACT", 9, 29)] {
+        let ours = our_verses.get(dot_ref).unwrap_or_else(|| panic!("{dot_ref} must exist in our own canonical kjv.json"));
+        let artifact_text = verse_text(&svc, book, chapter, verse);
+        assert_eq!(
+            &artifact_text, ours,
+            "{dot_ref} is a brainfuel::SUPERSCRIPTION_EXCLUSIONS entry -- must carry OUR OWN canonical casing, untouched, in the real shipped artifact"
+        );
+    }
 }

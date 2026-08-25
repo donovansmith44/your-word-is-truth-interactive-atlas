@@ -168,6 +168,22 @@ pub fn parse_people(people_json: &str, verses_json: &str) -> Result<(Vec<Person>
         // `.filter(|s| !s.trim().is_empty())` keeps this honest regardless
         // of upstream happenstance: an empty string is not a source-attested
         // description any more than a missing field is.
+        // batch-polish1-brief.md ENT1A-m2 (trim inconsistency, disclosed,
+        // not silently unified): `.filter(|s| !s.trim().is_empty())` below
+        // tests emptiness AFTER trimming, but the STORED value is the
+        // ORIGINAL `s`, untrimmed -- unlike `easton.rs`'s own sibling
+        // `dict_text` resolution (see that module's own doc comment at its
+        // trim call site), which stores the TRIMMED slice. NOT unified
+        // this batch: doing so would change compiled description bytes
+        // for real data either direction (easton.rs's own doc comment has
+        // the full count disclosure: 536 easton.json / 1 people.json real
+        // records affected) -- forbidden by batch-polish1-brief.md's own
+        // version-root law. Pinned as-is by
+        // `dict_text_falls_back_to_dictionary_text_when_the_array_field_
+        // is_absent` below (the real Judas record, its own leading space
+        // kept) and `dict_text_with_edge_whitespace_is_never_trimmed_on_
+        // the_primary_array_path_either` (synthetic, over the common
+        // path -- the real array field never carries edge whitespace).
         let dict_text: Option<String> = f
             .dict_text
             .first()
@@ -313,13 +329,38 @@ mod tests {
     #[test]
     fn dict_text_falls_back_to_dictionary_text_when_the_array_field_is_absent() {
         // The real committed data's own one exception (Judas -> "the
-        // Graecized form of Judah.") -- see module doc comment.
+        // Graecized form of Judah.") -- see module doc comment. ALSO the
+        // batch-polish1-brief.md ENT1A-m2 whitespace-edge pin: this real
+        // record's own leading space survives untrimmed below (see the
+        // doc comment at the `dict_text` resolution site above for the
+        // full disclosure).
         let people_json = r#"[
             {"id": "p1", "fields": {"personLookup": "judas_1757", "name": "Judas",
               "dictionaryText": " the Graecized form of Judah."}}
         ]"#;
         let (people, _) = parse_people(people_json, VERSES_FIXTURE).unwrap();
-        assert_eq!(people[0].dict_text.as_deref(), Some(" the Graecized form of Judah."));
+        assert_eq!(
+            people[0].dict_text.as_deref(), Some(" the Graecized form of Judah."),
+            "leading whitespace must survive untrimmed -- CURRENT behavior, pinned (batch-polish1-brief.md ENT1A-m2)"
+        );
+    }
+
+    #[test]
+    fn dict_text_with_edge_whitespace_is_never_trimmed_on_the_primary_array_path_either() {
+        // batch-polish1-brief.md ENT1A-m2: the sibling to the fallback
+        // pin above, over the PRIMARY `dictText` array field (the real
+        // data never carries edge whitespace there -- verified by direct
+        // inspection, 0 of 3,067 -- so this shape is synthetic, unlike the
+        // fallback test's real Judas record above).
+        let people_json = r#"[
+            {"id": "p1", "fields": {"personLookup": "x_1", "name": "X",
+              "dictText": ["\nA son. "]}}
+        ]"#;
+        let (people, _) = parse_people(people_json, VERSES_FIXTURE).unwrap();
+        assert_eq!(
+            people[0].dict_text.as_deref(), Some("\nA son. "),
+            "leading/trailing whitespace must survive untrimmed -- CURRENT behavior, pinned (batch-polish1-brief.md ENT1A-m2)"
+        );
     }
 
     #[test]

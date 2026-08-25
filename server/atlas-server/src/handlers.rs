@@ -1513,8 +1513,11 @@ pub async fn place(
 
     // ENT-1a: a separate, tiny lookup (not threaded through `place`, the
     // legacy `atlas_core::data::Place` reconstruction above) -- see
-    // `atlas_graph::legacy::place_description`'s own doc comment.
-    let description = atlas_graph::legacy::place_description(&place_id, &snap);
+    // `atlas_graph::legacy::node_description`'s own doc comment (batch-
+    // polish1-brief.md ENT1A-m4: generalized from the old Place-only
+    // `place_description`, unified with `graph_handlers::node_card`'s own
+    // near-twin accessor; this call site's own behavior is unchanged).
+    let description = atlas_graph::legacy::node_description(&place_id, &snap);
 
     Ok(Json(PlaceDetailOut { id: place.id.clone(), name: place.name.clone(), lat: place.lat, lon: place.lon, events, history, canonical_name, description }))
 }

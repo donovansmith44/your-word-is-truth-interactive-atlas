@@ -317,11 +317,31 @@ fn case_restoration_satisfies_the_case_only_law_over_every_real_position() {
         if before.eq_ignore_ascii_case(theirs) {
             assert!(before.eq_ignore_ascii_case(after), "CASE-ONLY LAW VIOLATED at {dot_ref}: before {before:?}, after {after:?} are not even case-fold-equal");
             law1_whole_verse += 1;
-        } else if before.len() > theirs.len() && before[before.len() - theirs.len()..].eq_ignore_ascii_case(theirs) {
+        } else if let atlas_etl::brainfuel::TailAlignment::OursSuffix { prefix_len } = atlas_etl::brainfuel::tail_align(before, theirs) {
             // Superscription-tail-aligned class (excluded positions ALSO
             // satisfy this shape by construction -- they still pass both
             // assertions below since `after == before` byte-identically).
-            let prefix_len = before.len() - theirs.len();
+            //
+            // batch-polish1-brief.md KJVCASE2-m1: calls the PRODUCTION
+            // `tail_align` directly (now `pub`, that fn's own doc comment
+            // has the disclosure) rather than maintaining a second,
+            // hand-rolled copy of the alignment check -- this sweep used
+            // to recompute `before.len() > theirs.len() && before[before.
+            // len() - theirs.len()..].eq_ignore_ascii_case(theirs)` by
+            // hand, WITHOUT `tail_align`'s own `is_char_boundary` guard: a
+            // latent panic on a future re-vendor (2,412 of the real 31,102
+            // verses genuinely contain multi-byte UTF-8), since a
+            // non-boundary split would have panicked this sweep instead of
+            // correctly falling through to the untouched-residue class
+            // below (`tail_align`'s own `NoAlignment` outcome, matched by
+            // the `else` arm here). "One alignment implementation beats
+            // two" -- the SAME discipline `classify_and_restore`'s own doc
+            // comment already establishes for `restore_verse_case` between
+            // ITS two real call sites; the underlying arithmetic
+            // (`ours.len() - theirs.len()`) was always identical between
+            // production and this sweep's own hand-rolled copy, so calling
+            // the real fn costs this law check no independence it
+            // genuinely had.
             assert!(before.eq_ignore_ascii_case(after), "CASE-ONLY LAW VIOLATED at {dot_ref}: whole-verse case-fold identity broken by a superscription-tail restoration");
             assert_eq!(
                 &before[..prefix_len],

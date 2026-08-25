@@ -558,8 +558,16 @@ pub const SUPERSCRIPTION_EXCLUSIONS: &[(&str, &str)] = &[
 /// `restore_verse_case`'s own `eq_ignore_ascii_case` uses, never a
 /// broader Unicode fold, keeping this pass's UTF-8 safety guarantee
 /// identical to pass 1's -- and checks for a SUFFIX alignment.
+///
+/// batch-polish1-brief.md KJVCASE2-m1: `pub`, alongside `tail_align`
+/// below, as a test-support export -- `tests/brainfuel_real_data.rs`'s own
+/// real-data law sweep calls this SAME fn directly now (rather than
+/// maintaining its own second copy of the alignment check), the same
+/// "one alignment implementation beats two" discipline `classify_and_
+/// restore`'s own doc comment already establishes for `restore_verse_
+/// case` between its two real call sites.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum TailAlignment {
+pub enum TailAlignment {
     /// `ours`'s own folded text ends with `theirs`'s folded text -- the
     /// expected shape (a folded-in superscription prefix ahead of the
     /// verse body). Carries the untouched prefix's own BYTE length.
@@ -581,7 +589,7 @@ enum TailAlignment {
 /// ASCII at every observed superscription boundary, but this never
 /// assumes it -- a non-boundary split is treated as no alignment, never a
 /// panic.
-fn tail_align(ours: &str, theirs: &str) -> TailAlignment {
+pub fn tail_align(ours: &str, theirs: &str) -> TailAlignment {
     if ours.len() > theirs.len() {
         let prefix_len = ours.len() - theirs.len();
         if ours.is_char_boundary(prefix_len) && ours[prefix_len..].eq_ignore_ascii_case(theirs) {

@@ -138,7 +138,7 @@ pub fn place_from_node(id: &AnyNodeId, q: &impl GraphQuery) -> Option<Place> {
     Some(Place { id: id.raw.clone(), name: canonical, lat, lon, verse_links })
 }
 
-/// ENT-1a: a place's own Easton's `description`, straight off the graph
+/// ENT-1a: a node's own Easton's `description`, straight off the graph
 /// payload -- deliberately NOT threaded through `atlas_core::data::Place`
 /// the way `place_from_node`'s other fields are: that struct is shared by
 /// every OTHER caller this batch does not otherwise touch (scene
@@ -146,10 +146,25 @@ pub fn place_from_node(id: &AnyNodeId, q: &impl GraphQuery) -> Option<Place> {
 /// ripple far beyond this batch's own additive-only serving requirement. A
 /// second, tiny, single-field reconstruction keeps this addition minimal
 /// and exactly as wide as what actually changed.
-pub fn place_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
+///
+/// batch-polish1-brief.md ENT1A-m4 (description-accessor unification, the
+/// ledger's own RECURSE-1 precedent the motivation: one shared fn, not two
+/// near-twins): this used to be `place_description`, Place-only, called
+/// ONLY by `handlers::place`. `atlas-server`'s own `graph_handlers::
+/// node_card` (the generic `GET /api/node/{id}` card) independently
+/// hand-wrote the SAME "pull `description` off whichever of Place/Person/
+/// PeopleGroup this node's payload is" match, just widened to all three
+/// kinds -- a real, disclosed duplicate of this exact accessor, not a
+/// different concern. Generalized here (Place's own case is unaffected --
+/// still `description` straight off that arm, zero behavior change for
+/// `handlers::place`'s own call) rather than kept narrow, so
+/// `graph_handlers::node_card` can call this SAME fn instead of
+/// re-matching on `NodePayload` itself; pure refactor, both call sites
+/// updated, no third copy anywhere in the workspace (grep-checked).
+pub fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
     let node = q.node(id)?;
     match node.payload {
-        NodePayload::Place { description, .. } => description,
+        NodePayload::Place { description, .. } | NodePayload::Person { description, .. } | NodePayload::PeopleGroup { description, .. } => description,
         _ => None,
     }
 }

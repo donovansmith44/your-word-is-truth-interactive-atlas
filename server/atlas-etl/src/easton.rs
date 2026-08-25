@@ -135,6 +135,30 @@ pub fn parse_easton(easton_json: &str, places_json: &str) -> Result<(Vec<EastonE
         stats.total += 1;
         let f = &rec.fields;
 
+        // batch-polish1-brief.md ENT1A-m2 (trim inconsistency, disclosed,
+        // not silently unified): `str::trim` here means the STORED
+        // `dict_text` is the TRIMMED slice, not the source's own raw
+        // bytes -- a real inconsistency against `people.rs`'s own sibling
+        // `dict_text` resolution (see that module's own doc comment at its
+        // trim call site), which keeps leading/trailing whitespace
+        // verbatim (proven by its own
+        // `dict_text_falls_back_to_dictionary_text_when_the_array_field_
+        // is_absent` test, over the real Judas record). NOT unified this
+        // batch: direct inspection of the real committed data shows 536 of
+        // 6,519 `easton.json` dictText entries carry edge whitespace (a
+        // leading "\n" is the common shape) -- switching THIS module to
+        // "keep verbatim" would change 536 real compiled descriptions'
+        // own bytes; switching `people.rs` to "trim" instead would change
+        // 1 (its own single dictionaryText-fallback record, Judas).
+        // EITHER direction moves description content already baked into
+        // the committed `graph.bin`, which batch-polish1-brief.md's own
+        // law forbids this batch from doing (no version-root move this
+        // batch). Shipped as-is, pinned by this module's own
+        // `dict_text_with_edge_whitespace_is_trimmed_before_storage` test
+        // below -- a future batch free to move the version root can pick
+        // the honest rule (verbatim-from-source is the natural default,
+        // per batch-polish1-brief.md item 1's own framing) and reconcile
+        // both files in one commit.
         let Some(dict_text) = f.dict_text.as_deref().map(str::trim).filter(|s| !s.is_empty()) else {
             stats.no_text += 1;
             continue;
@@ -279,5 +303,24 @@ mod tests {
         let (entries, _) = parse_easton(&easton_json, PLACES_FIXTURE).unwrap();
         assert_eq!(entries[0].dict_text, src_text);
         assert_eq!(entries[0].dict_lookup, "Aaron");
+    }
+
+    #[test]
+    fn dict_text_with_edge_whitespace_is_trimmed_before_storage() {
+        // batch-polish1-brief.md ENT1A-m2: pins CURRENT behavior (this
+        // module trims; `people.rs`'s own sibling resolution does NOT --
+        // see the doc comment at this module's own trim call site above
+        // for the full disclosure of why the inconsistency ships as-is
+        // this batch). Real easton.json has 536 dictText entries carrying
+        // exactly this shape (a leading "\n", from direct inspection).
+        let easton_json = r#"[
+            {"id": "rec1", "fields": {"dictLookup": "Ben", "dictText": "\nA son. ", "matchType": "unmatched", "matchSlugs": "unmatched"}}
+        ]"#;
+        let (entries, _) = parse_easton(easton_json, PLACES_FIXTURE).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(
+            entries[0].dict_text, "A son.",
+            "leading/trailing whitespace is trimmed before storage -- CURRENT behavior, pinned (not necessarily the honest rule; see the doc comment at this module's own trim call site)"
+        );
     }
 }
