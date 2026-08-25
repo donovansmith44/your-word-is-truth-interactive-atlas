@@ -204,4 +204,16 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // ...)` build, NOT `atlas-graph-compile`'s own with-eras root -- those two
 // have always differed, per this file's own historical note above):
 // "d6779aa183ec6ea7".
-const EXPECTED_VERSION_HEX: &str = "d6779aa183ec6ea7";
+//
+// MOVED AGAIN (deliberately -- Batch GAZ-1-R1, 2026-08-24): `lebo-hamath`
+// gains 6 curated KJV aliases (was 0) -- `event_world::place_node`'s own
+// `aliases: Vec<String>` payload field (part of `NodePayload::Place`,
+// hashed into the version root) changes for this one node, from `[]` to
+// the 6-element list -- real, deliberate content, not a bug. (The CHRON-FIX
+// commit immediately before this one, theo-87's date correction, did NOT
+// move this root: `NodePayload::Event` dropped from_year/to_year/order_key
+// from its own payload back at Batch M-D3, so a `THEO_DATE_OVERRIDES`
+// correction only ever touches a `DatedBy` EDGE, never a node payload --
+// confirmed by that commit's own report, not assumed here.) New captured
+// value: "d8d7d4acea171fd5".
+const EXPECTED_VERSION_HEX: &str = "d8d7d4acea171fd5";

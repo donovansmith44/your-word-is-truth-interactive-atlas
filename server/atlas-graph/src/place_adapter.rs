@@ -90,7 +90,8 @@ mod tests {
     fn atlas_with_place(place: Place, alias: Option<PlaceNameAlias>) -> AtlasData {
         let mut d = AtlasData::new(Canon { books: vec![] }, vec![place], vec![], vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
         if let Some(a) = alias {
-            d.place_name_aliases.insert(a.id.clone(), a);
+            // Batch GAZ-1-R1: `place_name_aliases` is now `Vec`-valued per id.
+            d.place_name_aliases.insert(a.id.clone(), vec![a]);
         }
         d
     }

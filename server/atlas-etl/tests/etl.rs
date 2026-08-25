@@ -1483,6 +1483,10 @@ fn some_verses() -> HashMap<String, String> {
     let mut v = HashMap::new();
     v.insert("GEN.28.19".to_string(), "And he called the name of that place Bethel...".to_string());
     v.insert("2SA.5.7".to_string(), "Nevertheless David took the strong hold of Zion...".to_string());
+    // Batch GAZ-1-R1: the real KJV text (GEN.2.13), not a placeholder --
+    // `run_place_names_kjv`'s own new verbatim-substring law needs a real
+    // match for `place_names_kjv_valid_data_passes_validation` below.
+    v.insert("GEN.2.13".to_string(), "And the name of the second river is Gihon: the same is it that compasseth the whole land of Ethiopia.".to_string());
     v
 }
 
@@ -1718,7 +1722,13 @@ fn place_names_kjv_verse_missing_from_compiled_kjv_text_fails_validation() {
 
 #[test]
 fn place_names_kjv_valid_data_passes_validation() {
-    let aliases = vec![alias_row("cush-2", "Ethiopia", &["GEN.28.19"])]; // reuses some_verses()'s own populated verse
+    // Batch GAZ-1-R1: GEN.2.13 (not GEN.28.19 -- an arbitrary "reuses
+    // some_verses()'s own populated verse" pick that predates the
+    // verbatim-substring law and never actually said "Ethiopia") --
+    // GEN.2.13 is this row's own REAL citation in the real committed
+    // data/curated/place-names-kjv.toml, and matches cush_place()'s own
+    // verse_links besides.
+    let aliases = vec![alias_row("cush-2", "Ethiopia", &["GEN.2.13"])];
     let places = vec![cush_place()];
     let result = atlas_etl::validate::run_place_names_kjv(&aliases, &places, &some_verses());
     assert!(result.is_ok(), "{:?}", result.err());

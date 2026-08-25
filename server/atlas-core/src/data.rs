@@ -1012,15 +1012,31 @@ pub struct AtlasData {
     #[serde(skip)]
     pub place_history: HashMap<String, PlaceHistory>,
 
-    /// Batch E3: curated KJV display-name aliases, keyed by place id. Same
-    /// `#[serde(skip)]`-plus-bespoke-`load()` treatment as `place_history`
-    /// immediately above -- loaded from its own `place-names-kjv.json` (a
-    /// plain `Vec<PlaceNameAlias>` on disk), indexed into a map here since
-    /// every lookup site (`scene`/`handlers`) wants it by place id, same
-    /// pattern. `demo_fixture()` leaves this empty too (no scene test
-    /// depends on it).
+    /// Batch E3: curated KJV display-name aliases, GROUPED by place id.
+    /// Same `#[serde(skip)]`-plus-bespoke-`load()` treatment as
+    /// `place_history` immediately above -- loaded from its own
+    /// `place-names-kjv.json` (a plain `Vec<PlaceNameAlias>` on disk),
+    /// indexed into a map here since every lookup site (`scene`/`handlers`/
+    /// `event_world`) wants it by place id, same pattern.
+    ///
+    /// Batch GAZ-1-R1: widened from `HashMap<String, PlaceNameAlias>`
+    /// (exactly one alias per id -- true of every place through Batch E3)
+    /// to `HashMap<String, Vec<PlaceNameAlias>>`, in insertion (curated
+    /// TOML file) order, because `lebo-hamath` is the first place needing
+    /// more than one distinct verbatim KJV wording (the "entrance of
+    /// Hamath" boundary idiom appears in several different forms across
+    /// its own 11 attested verses). `place_name_alias_for` (below) keeps
+    /// returning a SINGLE alias -- the first-authored one, for display
+    /// purposes (`scene`/`handlers`' own single-name use, unchanged
+    /// behavior for every one of the pre-existing 37 single-alias places,
+    /// since a one-element `Vec`'s own first element IS that element) --
+    /// `place_name_aliases_for` (new) returns the FULL list, for
+    /// `event_world::place_node`'s own gazetteer-facing `aliases: Vec<String>`
+    /// payload field (already list-shaped -- this widening finally feeds
+    /// it more than 0-or-1 entries for the first time). `demo_fixture()`
+    /// leaves this empty too (no scene test depends on it).
     #[serde(skip)]
-    pub place_name_aliases: HashMap<String, PlaceNameAlias>,
+    pub place_name_aliases: HashMap<String, Vec<PlaceNameAlias>>,
 
     /// Batch R requirement 1: the curated land mask (`data/curated/land-mask.toml`,
     /// compiled to `land-mask.json`) -- every region's own rings, flattened
@@ -1717,11 +1733,29 @@ impl AtlasData {
         self.place_history.get(id)
     }
 
-    /// Batch E3: this place's curated KJV display-name alias, if any (most
-    /// places have none -- `place_name_aliases` only covers the places a
-    /// curator hand-verified against the actual KJV text).
+    /// Batch E3: this place's PRIMARY curated KJV display-name alias, if
+    /// any (most places have none -- `place_name_aliases` only covers the
+    /// places a curator hand-verified against the actual KJV text). "Primary"
+    /// (Batch GAZ-1-R1): the first-authored row for this id in
+    /// `data/curated/place-names-kjv.toml` -- for the 37 pre-existing
+    /// single-alias places this is simply THE alias, unchanged; for a
+    /// multi-alias place (`lebo-hamath`, the first) this is the one
+    /// `scene`/`handlers`' single-name display callers show. See
+    /// `place_name_aliases_for` for the full curated list (what the
+    /// gazetteer export's own `aliases` array carries).
     pub fn place_name_alias_for(&self, id: &str) -> Option<&PlaceNameAlias> {
-        self.place_name_aliases.get(id)
+        self.place_name_aliases.get(id).and_then(|v| v.first())
+    }
+
+    /// Batch GAZ-1-R1: this place's FULL curated KJV alias list (0 or more),
+    /// in curated-file order -- the source `event_world::place_node` reads
+    /// to build the graph payload's own `aliases: Vec<String>` field (and,
+    /// through it, the gazetteer export's `aliases` array). Empty slice,
+    /// never absent, for a place with none (same "honest empty, not a
+    /// special case" shape `event_bearing_place_ids`-adjacent lookups
+    /// already use elsewhere in this file).
+    pub fn place_name_aliases_for(&self, id: &str) -> &[PlaceNameAlias] {
+        self.place_name_aliases.get(id).map(Vec::as_slice).unwrap_or(&[])
     }
 
     /// Batch E2: ids of every event-bearing place ("cities in our graph",
@@ -1879,8 +1913,16 @@ impl AtlasData {
         let place_history: HashMap<String, PlaceHistory> =
             place_history_list.into_iter().map(|h| (h.id.clone(), h)).collect();
         let place_name_alias_list: Vec<PlaceNameAlias> = read_json(dir, "place-names-kjv.json")?;
-        let place_name_aliases: HashMap<String, PlaceNameAlias> =
-            place_name_alias_list.into_iter().map(|a| (a.id.clone(), a)).collect();
+        // Batch GAZ-1-R1: GROUPED by id (was a plain 1:1 collect) -- the
+        // compiled file's own shape is unchanged (still a flat
+        // `Vec<PlaceNameAlias>`, multiple rows per id now legitimate), only
+        // the in-memory aggregation widened, same reasoning as
+        // `compile.rs`'s own identical fold immediately below its own
+        // `place_names_kjv` read.
+        let mut place_name_aliases: HashMap<String, Vec<PlaceNameAlias>> = HashMap::new();
+        for a in place_name_alias_list {
+            place_name_aliases.entry(a.id.clone()).or_default().push(a);
+        }
         // Batch R requirement 1: `land-mask.json` is already the flattened
         // `Vec<Vec<(f64, f64)>>` shape (see `curated::parse_land_mask`'s own
         // doc comment for why region names/ref_notes never leave the ETL

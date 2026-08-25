@@ -53,15 +53,23 @@
 //!   (`NodePayload::Place.canonical`), not KJV aliases (the E3 alias
 //!   sweep never touched either; their Theographic canonical name
 //!   already matches the KJV spelling exactly, hyphen included).
-//!   "entrance of Hamath" does NOT resolve to any distinct gazetteer
-//!   place -- it is Scripture's own border-survey phrase (Num 34:8 KJV:
-//!   "the entrance of Hamath"; 2KI 14:25/2CH 8:65 etc.: "the entering in
-//!   of Hamath") describing a boundary point relative to the city
-//!   Hamath (which DOES exist as several distinct Theographic places --
-//!   "Hamath 1"/"Hamath 2"/"Hamath-zobah" -- ambiguous, not one clean
-//!   id), never itself geocoded as its own place anywhere in this
-//!   workspace's data. Disclosed, not silently dropped: `tests/
-//!   exports_laws.rs` writes a law against the two that resolve only.
+//!   "entrance of Hamath" (Batch GAZ-1-R1) now ALSO resolves -- as a
+//!   curated KJV ALIAS on `lebo-hamath`, the real-world location Scripture's
+//!   own border-survey phrase (Num 34:8 KJV: "the entrance of Hamath")
+//!   names: the traditional identification for the city Hamath's own
+//!   boundary marker, already geocoded and already carrying every one of
+//!   this phrase's own attested verses -- not a new place (minting one
+//!   would duplicate `lebo-hamath`'s own real-world location under a second
+//!   id). `lebo-hamath` carries FIVE further curated aliases beyond this
+//!   one -- every other distinct verbatim wording the same boundary idiom
+//!   takes across its own 11 attested verses ("entering into Hamath" JOS
+//!   13:5; "entering in of Hamath" 1KI 8:65/JDG 3:3/2CH 7:8; "entering of
+//!   Hamath" 2KI 14:25; "entering in of Hemath" AMO 6:14; "entering of
+//!   Hemath" 1CH 13:5 -- the KJV's own "Hemath" spelling, distinct from
+//!   "Hamath", both genuinely attested) -- see `data/curated/
+//!   place-names-kjv.toml`'s own GAZ-1-R1 section for the full citation
+//!   set. `tests/exports_laws.rs` writes a law against all three peer-named
+//!   binding examples now.
 //! - THEO-* IDS: Theographic-opaque event ids (`theo-*`) ship as their
 //!   raw graph id, unrenamed -- `label` + `attestations` carry the
 //!   binding burden for a consumer, exactly the design's own "no

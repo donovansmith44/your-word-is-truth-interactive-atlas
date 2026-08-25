@@ -694,7 +694,27 @@ pub fn run_place_history(history: &[PlaceHistory], place_ids: &HashSet<&str>, ve
 pub fn run_place_names_kjv(aliases: &[PlaceNameAlias], places: &[Place], verses: &HashMap<String, String>) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
-    check_duplicate_ids(aliases.iter().map(|a| a.id.as_str()), "place-names-kjv alias", &mut errors);
+    // Batch GAZ-1-R1: was `check_duplicate_ids` over the bare `id` -- a
+    // place may now legitimately carry more than one curated alias row
+    // (`lebo-hamath`, several distinct verbatim KJV wordings of the same
+    // "entrance of Hamath" boundary idiom), so a repeated id is no longer
+    // itself an error. What still is: the exact same (id, name) pair
+    // authored twice -- a copy-paste mistake, not a second genuine wording.
+    {
+        let mut seen: HashSet<(&str, &str)> = HashSet::new();
+        let mut dupes: Vec<(&str, &str)> = Vec::new();
+        for a in aliases {
+            if let Some(kjv_name) = a.translations.get(DEFAULT_TRANSLATION) {
+                let key = (a.id.as_str(), kjv_name.as_str());
+                if !seen.insert(key) && !dupes.contains(&key) {
+                    dupes.push(key);
+                }
+            }
+        }
+        for (id, name) in dupes {
+            errors.push(format!("duplicate place-names-kjv alias: id '{id}' names '{name}' more than once"));
+        }
+    }
 
     let places_by_id: HashMap<&str, &Place> = places.iter().map(|p| (p.id.as_str(), p)).collect();
 
@@ -715,6 +735,34 @@ pub fn run_place_names_kjv(aliases: &[PlaceNameAlias], places: &[Place], verses:
                 if kjv_name == canonical {
                     errors.push(format!("{ctx}: kjv name '{kjv_name}' is equal to '{}' own canonical name -- noise, not a genuine mismatch", a.id));
                 }
+
+                // Batch GAZ-1-R1 LAW: every curated alias string must be a
+                // case-sensitive verbatim substring of the KJV text of
+                // EVERY verse listed for it -- a phrase form appearing in
+                // no listed verse is an authoring mistake, not a real
+                // citation. Dashes are normalized first (en dash U+2013 /
+                // em dash U+2014 -> plain ASCII hyphen): this dataset's own
+                // KJV text typesets compound Hebrew names with a real en
+                // dash (e.g. "Sela\u{2013}hammahlekoth"), while curated alias
+                // strings are authored with a plain hyphen -- this file's
+                // own header comment already documents that exact
+                // equivalence for its E3 sweep methodology, reused here
+                // rather than re-derived (verified against the real
+                // pre-existing `rock-of-escape` row before this law was
+                // added: it needs exactly this normalization to pass).
+                let normalized_name = normalize_dashes(kjv_name);
+                for v in &a.verses {
+                    // An unresolvable/nonexistent verse is already reported
+                    // by the verse-parse loop below -- not duplicated here.
+                    if let Some(text) = verses.get(v) {
+                        let normalized_text = normalize_dashes(text);
+                        if !normalized_text.contains(&normalized_name) {
+                            errors.push(format!(
+                                "{ctx}: kjv name '{kjv_name}' is not a verbatim substring of verse '{v}''s own KJV text: \"{text}\""
+                            ));
+                        }
+                    }
+                }
             }
         }
 
@@ -734,6 +782,12 @@ pub fn run_place_names_kjv(aliases: &[PlaceNameAlias], places: &[Place], verses:
     }
     let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
     bail!("place-names-kjv validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// Normalizes en dash (U+2013) and em dash (U+2014) to a plain ASCII
+/// hyphen -- see `run_place_names_kjv`'s own verbatim-substring law for why.
+fn normalize_dashes(s: &str) -> String {
+    s.replace('\u{2013}', "-").replace('\u{2014}', "-")
 }
 
 /// Batch F ("the small catechism"), extended Batch F2 (question-level
@@ -1229,5 +1283,90 @@ fn check_eras(eras: &[Era], errors: &mut Vec<String>) {
                 pair[0].id, pair[0].to_year, pair[1].id, pair[1].from_year, pair[1].id, expected
             ));
         }
+    }
+}
+
+// ---------------------------------------------------------------------
+// Batch GAZ-1-R1: run_place_names_kjv's own new verbatim-substring law --
+// this file's first `#[cfg(test)]` module (every other check here is
+// otherwise only exercised transitively, via the real ETL pipeline over
+// real committed data -- e.g. `atlas-etl/tests/etl.rs`'s own real-compile
+// tests, `atlas-graph/tests/*_real_data.rs`). Small, fast, synthetic
+// fixtures specifically for this new law's own logic (substring matching +
+// dash normalization + the relaxed duplicate-id rule), separate from and
+// in addition to the real committed `data/curated/place-names-kjv.toml`
+// already being validated on every real compile.
+// ---------------------------------------------------------------------
+
+#[cfg(test)]
+mod gaz1_r1_tests {
+    use super::*;
+
+    fn place(id: &str, name: &str) -> Place {
+        Place { id: id.into(), name: name.into(), lat: 0.0, lon: 0.0, verse_links: vec![] }
+    }
+
+    fn alias(id: &str, name: &str, verses: &[&str]) -> PlaceNameAlias {
+        PlaceNameAlias {
+            id: id.into(),
+            translations: HashMap::from([(DEFAULT_TRANSLATION.to_string(), name.to_string())]),
+            verses: verses.iter().map(|v| v.to_string()).collect(),
+        }
+    }
+
+    #[test]
+    fn red_then_green_verbatim_substring_law() {
+        let places = vec![place("lebo-hamath", "Lebo-hamath")];
+        let verses = HashMap::from([(
+            "NUM.34.8".to_string(),
+            "From mount Hor ye shall point out your border unto the entrance of Hamath; and the goings forth of the border shall be to Zedad:".to_string(),
+        )]);
+
+        // RED: the alias string is not a substring of its cited verse's own text.
+        let wrong = vec![alias("lebo-hamath", "entering in of Hamath", &["NUM.34.8"])];
+        let err = run_place_names_kjv(&wrong, &places, &verses).unwrap_err();
+        assert!(err.to_string().contains("not a verbatim substring"), "{err}");
+
+        // GREEN: it is.
+        let right = vec![alias("lebo-hamath", "entrance of Hamath", &["NUM.34.8"])];
+        assert!(run_place_names_kjv(&right, &places, &verses).is_ok());
+    }
+
+    #[test]
+    fn verbatim_substring_law_normalizes_en_dash_to_hyphen() {
+        // The real pre-existing `rock-of-escape` row's own shape: the KJV
+        // text's own en dash (U+2013, "Sela\u{2013}hammahlekoth") vs. the
+        // curated alias's plain ASCII hyphen ("Sela-hammahlekoth") --
+        // confirmed against the real committed data before this law was
+        // added (see run_place_names_kjv's own doc comment).
+        let places = vec![place("rock-of-escape", "Rock of Escape")];
+        let verses = HashMap::from([("1SA.23.28".to_string(), "...therefore they called that place Sela\u{2013}hammahlekoth.".to_string())]);
+        let aliases = vec![alias("rock-of-escape", "Sela-hammahlekoth", &["1SA.23.28"])];
+        assert!(run_place_names_kjv(&aliases, &places, &verses).is_ok(), "a plain-hyphen alias must match an en-dash verse under dash normalization");
+    }
+
+    #[test]
+    fn multiple_aliases_on_the_same_id_are_lawful_when_names_differ() {
+        // Batch GAZ-1-R1: lebo-hamath's own real shape -- rejected as a
+        // "duplicate id" before this batch; lawful now.
+        let places = vec![place("lebo-hamath", "Lebo-hamath")];
+        let verses = HashMap::from([
+            ("NUM.34.8".to_string(), "...unto the entrance of Hamath; and the goings forth...".to_string()),
+            ("JOS.13.5".to_string(), "...unto the entering into Hamath.".to_string()),
+        ]);
+        let aliases = vec![
+            alias("lebo-hamath", "entrance of Hamath", &["NUM.34.8"]),
+            alias("lebo-hamath", "entering into Hamath", &["JOS.13.5"]),
+        ];
+        assert!(run_place_names_kjv(&aliases, &places, &verses).is_ok());
+    }
+
+    #[test]
+    fn the_exact_same_id_and_name_repeated_is_still_a_duplicate() {
+        let places = vec![place("lebo-hamath", "Lebo-hamath")];
+        let verses = HashMap::from([("NUM.34.8".to_string(), "...unto the entrance of Hamath...".to_string())]);
+        let aliases = vec![alias("lebo-hamath", "entrance of Hamath", &["NUM.34.8"]), alias("lebo-hamath", "entrance of Hamath", &["NUM.34.8"])];
+        let err = run_place_names_kjv(&aliases, &places, &verses).unwrap_err();
+        assert!(err.to_string().contains("duplicate"), "{err}");
     }
 }

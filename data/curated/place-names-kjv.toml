@@ -547,3 +547,89 @@ name = "Jokneam"
 # identification question is a genuine, separate geography question, but
 # the WORD on this place's own linked verse is unambiguous.
 verses = ["1KI.4.12"]
+
+# --- Batch GAZ-1-R1 (controller ruling on GAZ-1's own NEEDS_CONTEXT: peer
+# needs "entrance of Hamath" to resolve by canonical-or-alias; the real-
+# world location already exists, fully geocoded and correctly attested, as
+# `lebo-hamath` -- alias it rather than mint a duplicate place) -----------
+#
+# THE FIRST MULTI-ALIAS PLACE this file has ever authored: every row above
+# is one place, one alternate KJV wording. `lebo-hamath`'s own 11 attested
+# verses use the SAME underlying boundary-survey idiom ("the X of Hamath/
+# Hemath unto the Y") in SIX genuinely distinct verbatim forms -- collapsing
+# them into a single alias would either misquote most of the verses it
+# claims to cite (this file's own verbatim-substring law, added this batch,
+# would reject that) or drop five real, attested KJV wordings the peer's
+# own canonical-or-alias binding should also be able to resolve. Each row
+# below cites the EXACT verse(s) using its own exact wording, read directly
+# against the real compiled `data/raw/kjv.json` before being written here,
+# same citation-integrity bar this file's every other row already meets.
+# Two of `lebo-hamath`'s own 11 attestations (EZK.47.20, EZK.48.1) carry no
+# "entrance"/"entering" idiom at all (just "over against Hamath" / "the
+# coast of Hamath" -- real boundary-description mentions of the same city,
+# not the same phrase) and NUM.13.21 similarly only has "as men come to
+# Hamath" -- none of the three contribute an alias row here, correctly: no
+# candidate phrase survives in their own text, the same "no authorable
+# candidate word" standard this file's header already applies throughout.
+#
+# Ordered with "entrance of Hamath" FIRST deliberately: `place_name_alias_for`
+# (the singular, first-authored-wins accessor `scene`/`handlers`' own
+# single-name display callers use) surfaces this row specifically -- the
+# peer's own exact named binding target, per the controller's ruling.
+
+[[alias]]
+id = "lebo-hamath"
+name = "entrance of Hamath"
+# NUM.34.8: "From mount Hor ye shall point out your border unto the
+# entrance of Hamath; and the goings forth of the border shall be to
+# Zedad:" The peer's own exact named binding target -- the ONLY verse in
+# the whole KJV using this precise wording.
+verses = ["NUM.34.8"]
+
+[[alias]]
+id = "lebo-hamath"
+name = "entering into Hamath"
+# JOS.13.5: "And the land of the Giblites, and all Lebanon, toward the
+# sunrising, from Baal-gad under mount Hermon unto the entering into
+# Hamath."
+verses = ["JOS.13.5"]
+
+[[alias]]
+id = "lebo-hamath"
+name = "entering in of Hamath"
+# 1KI.8.65: "...from the entering in of Hamath unto the river of Egypt..."
+# JDG.3.3: "...from mount Baal-hermon unto the entering in of Hamath."
+# 2CH.7.8: "...from the entering in of Hamath unto the river of Egypt."
+# All three read directly against the compiled KJV text; note 2CH.7.8 is
+# the parallel account of 1KI.8.65 (Solomon's feast) and shares its exact
+# wording verbatim -- "Hamath" (not "Hemath"), confirmed by direct lookup,
+# not assumed from the parallel.
+verses = ["1KI.8.65", "JDG.3.3", "2CH.7.8"]
+
+[[alias]]
+id = "lebo-hamath"
+name = "entering of Hamath"
+# 2KI.14.25: "He restored the coast of Israel from the entering of Hamath
+# unto the sea of the plain..." No "in" -- a genuinely distinct wording
+# from "entering IN of Hamath" above, not a transcription variant of it.
+verses = ["2KI.14.25"]
+
+[[alias]]
+id = "lebo-hamath"
+name = "entering in of Hemath"
+# AMO.6.14: "...they shall afflict you from the entering in of Hemath unto
+# the river of the wilderness." The KJV's own "Hemath" spelling (distinct
+# from "Hamath" -- a real, attested orthographic variant this project's own
+# KJV-inerrancy doctrine takes as-printed, not normalized away).
+verses = ["AMO.6.14"]
+
+[[alias]]
+id = "lebo-hamath"
+name = "entering of Hemath"
+# 1CH.13.5: "So David gathered all Israel together, from Shihor of Egypt
+# even unto the entering of Hemath, to bring the ark of God from
+# Kirjath-jearim." No "in" -- distinct from AMO.6.14's "entering IN of
+# Hemath" immediately above, not the same row: this file's own new
+# verbatim-substring law would reject either wording under the other's
+# verse (confirmed empirically before writing this row).
+verses = ["1CH.13.5"]

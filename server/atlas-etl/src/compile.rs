@@ -400,7 +400,16 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     let place_names_kjv = curated::parse_place_names_kjv(&read(&curated_dir.join("place-names-kjv.toml"))?)?;
     validate::run_place_names_kjv(&place_names_kjv, &data.places, &data.verses)
         .context("data/compiled/place-names-kjv.json was NOT written; fix data/curated/place-names-kjv.toml and re-run")?;
-    data.place_name_aliases = place_names_kjv.iter().map(|a| (a.id.clone(), a.clone())).collect();
+    // Batch GAZ-1-R1: GROUPED by id (was a plain 1:1 collect, last-wins on
+    // a repeated id) -- `lebo-hamath` is the first place authoring more
+    // than one curated KJV alias row (several distinct verbatim wordings of
+    // the same "entrance of Hamath" boundary idiom); see
+    // `atlas_core::data::AtlasData::place_name_aliases`'s own doc comment.
+    let mut place_name_aliases: HashMap<String, Vec<atlas_core::data::PlaceNameAlias>> = HashMap::new();
+    for a in &place_names_kjv {
+        place_name_aliases.entry(a.id.clone()).or_default().push(a.clone());
+    }
+    data.place_name_aliases = place_name_aliases;
     let place_name_alias_list = place_names_kjv;
 
     // --- data/curated/catechism.toml ----

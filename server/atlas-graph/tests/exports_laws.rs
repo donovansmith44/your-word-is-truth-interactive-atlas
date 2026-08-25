@@ -6,12 +6,11 @@
 //! embedded `atlas_version_root` equals the live `GraphVersion`
 //! (drift-impossible by construction, proven here rather than merely
 //! architected), the peer's own alias/canonical spot-checks
-//! ("Kadesh-barnea", "En-rogel" -- "entrance of Hamath" does NOT resolve
-//! to any distinct gazetteer place today, disclosed in `exports.rs`'s
-//! own header comment; no law is written against it here, per the
-//! design's own "disclose any that don't" instruction), the creation
-//! row is present and resolvable, and every span interval is
-//! well-formed (`from <= to`).
+//! ("Kadesh-barnea", "En-rogel" resolve by CANONICAL name; "entrance of
+//! Hamath" resolves by curated ALIAS on `lebo-hamath` as of Batch
+//! GAZ-1-R1 -- see `exports.rs`'s own header comment for the full
+//! citation set), the creation row is present and resolvable, and every
+//! span interval is well-formed (`from <= to`).
 //!
 //! Real committed `data/raw` + `data/curated`, same pattern `tests/
 //! version_root_regression.rs` already established (duplicated helper,
@@ -116,14 +115,22 @@ fn law_creation_row_is_present_and_resolvable() {
 fn law_alias_and_canonical_spot_checks_for_the_peers_binding_names() {
     let b = built();
     // "Kadesh-barnea" and "En-rogel" both resolve as CANONICAL place
-    // names (not KJV aliases) -- see exports.rs's own header comment for
-    // the full disclosure, including why "entrance of Hamath" is NOT
-    // checked here (it resolves to no distinct gazetteer place today).
+    // names (not KJV aliases) -- see exports.rs's own header comment.
     let kadesh = b.gazetteer.iter().find(|p| p.canonical == "Kadesh-barnea" || p.aliases.iter().any(|a| a == "Kadesh-barnea"));
     assert!(kadesh.is_some(), "\"Kadesh-barnea\" (the peer's own binding name) must be findable by canonical name or alias in the exported gazetteer");
 
     let en_rogel = b.gazetteer.iter().find(|p| p.canonical == "En-rogel" || p.aliases.iter().any(|a| a == "En-rogel"));
     assert!(en_rogel.is_some(), "\"En-rogel\" (the peer's own binding name) must be findable by canonical name or alias in the exported gazetteer");
+
+    // Batch GAZ-1-R1: "entrance of Hamath" (the peer's third named binding
+    // example, previously disclosed as unresolvable) now resolves as a
+    // curated KJV ALIAS on `lebo-hamath` -- checked both ways (findable at
+    // all, AND specifically on the right place id, not merely findable
+    // somewhere) so a future accidental re-homing onto the wrong place
+    // fails loud rather than silently passing this law.
+    let hamath_entrance = b.gazetteer.iter().find(|p| p.canonical == "entrance of Hamath" || p.aliases.iter().any(|a| a == "entrance of Hamath"));
+    assert!(hamath_entrance.is_some(), "\"entrance of Hamath\" (the peer's own binding name) must be findable by canonical name or alias in the exported gazetteer");
+    assert_eq!(hamath_entrance.unwrap().id, "lebo-hamath", "\"entrance of Hamath\" must resolve onto lebo-hamath specifically -- the real-world location this traditional identification names");
 }
 
 #[test]

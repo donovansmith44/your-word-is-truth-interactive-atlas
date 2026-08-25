@@ -345,5 +345,61 @@
     "verses": [
       "1KI.4.12"
     ]
+  },
+  {
+    "id": "lebo-hamath",
+    "translations": {
+      "kjv": "entrance of Hamath"
+    },
+    "verses": [
+      "NUM.34.8"
+    ]
+  },
+  {
+    "id": "lebo-hamath",
+    "translations": {
+      "kjv": "entering into Hamath"
+    },
+    "verses": [
+      "JOS.13.5"
+    ]
+  },
+  {
+    "id": "lebo-hamath",
+    "translations": {
+      "kjv": "entering in of Hamath"
+    },
+    "verses": [
+      "1KI.8.65",
+      "JDG.3.3",
+      "2CH.7.8"
+    ]
+  },
+  {
+    "id": "lebo-hamath",
+    "translations": {
+      "kjv": "entering of Hamath"
+    },
+    "verses": [
+      "2KI.14.25"
+    ]
+  },
+  {
+    "id": "lebo-hamath",
+    "translations": {
+      "kjv": "entering in of Hemath"
+    },
+    "verses": [
+      "AMO.6.14"
+    ]
+  },
+  {
+    "id": "lebo-hamath",
+    "translations": {
+      "kjv": "entering of Hemath"
+    },
+    "verses": [
+      "1CH.13.5"
+    ]
   }
 ]

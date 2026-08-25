@@ -478,11 +478,14 @@ fn place_node(p: &atlas_core::data::Place, atlas: &AtlasData) -> Node {
     // object to index through the generic port, see `graph.rs::
     // build_indexes`'s own disclosed note -- the payload is the queryable
     // form) join the canonical name.
+    // Batch GAZ-1-R1: reads the FULL curated alias list (was `Option`-shaped
+    // `place_name_alias_for`, 0-or-1) -- `lebo-hamath` is the first place
+    // authoring more than one; every pre-existing single-alias place keeps
+    // producing the identical one-element `Vec` as before.
     let aliases: Vec<String> = atlas
-        .place_name_alias_for(&p.id)
-        .and_then(|a| a.translations.get(crate::kjv_adapter::KJV_TRANSLATION))
-        .cloned()
-        .into_iter()
+        .place_name_aliases_for(&p.id)
+        .iter()
+        .filter_map(|a| a.translations.get(crate::kjv_adapter::KJV_TRANSLATION).cloned())
         .collect();
     Node {
         id: PlaceId::new(p.id.clone()).erase(),
