@@ -142,6 +142,24 @@ impl Graph {
             };
             pairs.entry(R::DatedBy).or_default().push((e, t, M::None));
         }
+        // KRETZ-1 (the PRE-AUTHORIZED exception, standing since CORP-2a:
+        // "activating the declared-but-never-wired comments_on field in
+        // build_indexes by mechanically mirroring an existing sibling
+        // loop"): `comments_on` is shaped exactly like `attests` above --
+        // one node-typed field (`item`/`event`) plus one `BibleLocusRange`
+        // field (`on`/`attestation`) -- so this mirrors that loop verbatim,
+        // renamed. The range's own FIRST verse is the edge endpoint (the
+        // SAME "full range stays on the row for display" precedent
+        // `fulfills`/`typology` below also follow) -- a multi-verse
+        // CommentaryItem (a pericope/chapter-intro unit) is reachable from
+        // its range's first verse today; full multi-verse popover surfacing
+        // is deferred with the rest of the client-side POPOVER-LAW-1 work
+        // (decision 7).
+        for row in &self.comments_on {
+            let item = at(&row.item.erase());
+            let tl: TextLocus = row.on.from.clone().into();
+            pairs.entry(R::CommentsOn).or_default().push((item, at(&text_node(&tl)), M::None));
+        }
         for row in &self.located_at {
             pairs.entry(R::LocatedAt).or_default().push((
                 at(&row.event.erase()),
@@ -336,5 +354,49 @@ mod tests {
 
         let from_container_entry = page.entries.iter().find(|e| e.node == crate::id::Position::Node(p1_node.clone())).expect("the container's own page must list paragraph 1");
         assert_eq!(from_container_entry.edge, back.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
+    }
+
+    /// KRETZ-1: the pre-authorized exception's own proof -- `comments_on`
+    /// was declared on this struct at BASE but never lowered into `pairs`
+    /// until this batch. Mirrors `attests`'s own shape/test exactly (one
+    /// node-typed field + one `BibleLocusRange` field, range's first verse
+    /// is the edge endpoint): a CommentaryItem's own forward "comments-on"
+    /// frontier reaches its target verse, and that verse's own inverse
+    /// "commented-on-by" frontier reaches back, under the SAME EdgeId.
+    #[test]
+    fn comments_on_rows_lower_into_the_directed_index_both_ways() {
+        use crate::edge::CommentsOn;
+        use crate::id::CommentaryItemId;
+        use crate::text::{BibleLocusRange, VerseRef};
+
+        let mut g = Graph::default();
+        let verse_id = crate::id::AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/0.1.2".into() };
+        g.nodes.insert(
+            verse_id.clone(),
+            Node {
+                id: verse_id.clone(),
+                payload: NodePayload::TextUnit { corpus: "bible", renderings: [(TranslationId("kjv".into()), "text".into())].into_iter().collect() },
+                provenance: "test".into(),
+            },
+        );
+        let item_id = CommentaryItemId::new("kretzmann/0.1.0");
+        g.nodes.insert(
+            item_id.erase(),
+            Node { id: item_id.erase(), payload: NodePayload::CommentaryItem { work: crate::id::SourceId::new("kretzmann-popular-commentary"), heading: None, text: "prose".into() }, provenance: "test".into() },
+        );
+        let range = BibleLocusRange::new(Locus::whole(VerseRef { book: 0, chapter: 1, verse: 2 }), Locus::whole(VerseRef { book: 0, chapter: 1, verse: 2 })).unwrap();
+        g.comments_on.push(CommentsOn { item: item_id.clone(), on: range, provenance: ProvenanceId::from("test"), justification: Default::default() });
+
+        g.build_indexes();
+
+        let forward = EdgeKind::Directed(RelationId::CommentsOn, Direction::Forward);
+        let page = PositionRef(crate::id::Position::Node(item_id.erase())).edges(&g, &EdgeQuery { kind: forward, cursor: None, limit: 10 });
+        assert_eq!(page.entries.len(), 1, "the CommentaryItem's own forward 'comments-on' frontier reaches its verse");
+        assert_eq!(page.entries[0].node, crate::id::Position::Node(verse_id.clone()));
+
+        let inverse = EdgeKind::Directed(RelationId::CommentsOn, Direction::Inverse);
+        let back = PositionRef(crate::id::Position::Node(verse_id)).edges(&g, &EdgeQuery { kind: inverse, cursor: None, limit: 10 });
+        assert_eq!(back.entries.len(), 1, "the verse's own inverse 'commented-on-by' frontier lists the CommentaryItem back");
+        assert_eq!(back.entries[0].edge, page.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
     }
 }

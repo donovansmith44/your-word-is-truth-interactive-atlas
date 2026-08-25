@@ -95,6 +95,25 @@ pub fn build_graph_from_sources_with_eras_and_brainfuel_and_concord(
     brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
     concord: Option<&crate::concord_adapter::ConcordBundle>,
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
+    build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord, None)
+}
+
+/// KRETZ-1: the richest raw-source form yet -- `bins/compile_graph.rs` and
+/// `GraphService::build`'s own dev fallback both use this directly, with a
+/// real, pre-parsed `atlas_etl::kretzmann::KretzmannCorpus`. `build_graph_
+/// from_sources_with_eras_and_brainfuel_and_concord` above delegates here
+/// with `None`, so every existing caller's own behavior is byte-identical
+/// to before this batch.
+#[allow(clippy::too_many_arguments)]
+pub fn build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(
+    kjv_json: &str,
+    xrefs_tsv: &str,
+    atlas: &AtlasData,
+    eras: &[atlas_core::data::Era],
+    brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
+    concord: Option<&crate::concord_adapter::ConcordBundle>,
+    kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
+) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
     let (canon, verses) = atlas_etl::kjv::parse(kjv_json).context("parsing the KJV source (kjv.json)")?;
     // Batch KJV-CASE (owner ruling; batch-kjv-case-brief.md): restore the
     // Tetragrammaton LORD/Lord case distinction our canonical kjv.json
@@ -119,7 +138,7 @@ pub fn build_graph_from_sources_with_eras_and_brainfuel_and_concord(
         }
         None => &verses,
     };
-    run_pipeline_build_with_brainfuel(&canon, verses, Some(kjv_json), xrefs_tsv, atlas, eras, brainfuel, concord)
+    run_pipeline_build_with_brainfuel(&canon, verses, Some(kjv_json), xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann)
 }
 
 /// The same build, starting from an already-parsed `(Canon, verses)` pair
@@ -163,7 +182,7 @@ fn run_pipeline_build(
     atlas: &AtlasData,
     eras: &[atlas_core::data::Era],
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
-    run_pipeline_build_with_brainfuel(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, None, None)
+    run_pipeline_build_with_brainfuel(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, None, None, None)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -176,8 +195,9 @@ fn run_pipeline_build_with_brainfuel(
     eras: &[atlas_core::data::Era],
     brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
     concord: Option<&crate::concord_adapter::ConcordBundle>,
+    kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
-    let mut ctx = crate::pipeline::BuildCtx::with_eras_and_brainfuel_and_concord(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, concord);
+    let mut ctx = crate::pipeline::BuildCtx::with_eras_and_brainfuel_and_concord_and_kretzmann(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann);
     crate::pipeline::run_pipeline(&mut ctx, &crate::pipeline::pipeline())?;
     Ok((ctx.graph, ctx.stats, ctx.event_world_stats, ctx.chrono))
 }

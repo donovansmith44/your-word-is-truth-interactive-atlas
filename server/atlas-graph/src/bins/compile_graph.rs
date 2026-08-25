@@ -159,11 +159,32 @@ fn main() -> Result<()> {
     );
     let concord_bundle = atlas_graph::concord_adapter::ConcordBundle { corpus: concord_corpus, sc_overlap };
 
+    // KRETZ-1: the real compile step HARD-REQUIRES the vendored Kretzmann
+    // data (the SAME "graph.bin compiled without it would silently ship an
+    // incomplete corpus" reasoning CORP-1a/CORP-2a's own requirements above
+    // already established) -- unlike `GraphService::build`'s own dev
+    // fallback, which degrades gracefully for a fixture `raw_dir`
+    // (`data/raw/kretzmann/`, see `data/raw/README.md`).
+    let kretzmann_root = raw_dir.join("kretzmann");
+    println!("atlas-graph-compile: reading vendored Kretzmann (Popular Commentary of the Bible) data from {}...", kretzmann_root.display());
+    let kretzmann_corpus = atlas_etl::kretzmann::read_all(&kretzmann_root).with_context(|| format!("reading {}", kretzmann_root.display()))?;
+    println!(
+        "atlas-graph-compile: kretzmann {} pages, {} units, {} excised fragments, {} footnotes ({} disclosed structural anomalies)",
+        kretzmann_corpus.stats.pages, kretzmann_corpus.stats.units, kretzmann_corpus.stats.fragments, kretzmann_corpus.stats.footnotes, kretzmann_corpus.stats.disclosures.len(),
+    );
+
     println!("atlas-graph-compile: building implementation #1 (from raw sources)...");
     let build_start = Instant::now();
-    let (graph_a, stats, event_world_stats, chrono) =
-        atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel), Some(&concord_bundle))
-            .context("building the graph from raw sources")?;
+    let (graph_a, stats, event_world_stats, chrono) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(
+        &kjv_json,
+        &xrefs_tsv,
+        &atlas,
+        &eras,
+        Some(&brainfuel),
+        Some(&concord_bundle),
+        Some(&kretzmann_corpus),
+    )
+    .context("building the graph from raw sources")?;
     println!(
         "atlas-graph-compile: {} text units, {} cites edges, {} events ({} dated), {} places, {} narratives, {} anchors -- build time {:?}",
         stats.kjv_verses, stats.cites_rows, event_world_stats.events, event_world_stats.dated_events, event_world_stats.places, event_world_stats.narratives, event_world_stats.anchors,
@@ -175,8 +196,16 @@ fn main() -> Result<()> {
     let dump = atlas_graph::artifact::dump(&graph_a, &chronology, &stats, &event_world_stats).map_err(|e| anyhow::anyhow!("{e}")).context("dumping the built graph")?;
 
     println!("atlas-graph-compile: ADMISSION -- rebuilding implementation #1 a second time (independent model)...");
-    let (mut graph_b, ..) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel), Some(&concord_bundle))
-        .context("building the independent model graph")?;
+    let (mut graph_b, ..) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(
+        &kjv_json,
+        &xrefs_tsv,
+        &atlas,
+        &eras,
+        Some(&brainfuel),
+        Some(&concord_bundle),
+        Some(&kretzmann_corpus),
+    )
+    .context("building the independent model graph")?;
     graph_b.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut graph_b);
 
@@ -216,6 +245,12 @@ fn main() -> Result<()> {
     let chronology_events = atlas_graph::exports::chronology_events(&graph_a_indexed, &chronology);
     let chronology_spans = atlas_graph::exports::chronology_spans(&graph_a_indexed);
     let chronology_anchor_rows = atlas_graph::exports::chronology_anchors(&graph_a_indexed, &atlas.chronology_anchors);
+    // KRETZ-1 (THE DATE MINE): the SAME terminal-pass treatment, riding the
+    // SAME already-admitted `graph_a_indexed` -- drift-impossible by the
+    // SAME construction the C2C3 exports above already rely on. Computed
+    // here, before `graph_a_indexed` moves into `version_store.publish`
+    // below (its own last use).
+    let kretzmann_rows = atlas_graph::exports::kretzmann_date_rows(&graph_a_indexed);
 
     // The SAME version derivation `GraphService`'s own constructors use
     // (service.rs: `MemStore::default(); store.publish(graph)`) -- the only
@@ -256,6 +291,23 @@ fn main() -> Result<()> {
         chronology_export.anchors.len(),
         version_hex
     );
+
+    // KRETZ-1 (THE DATE MINE, owner order 2026-08-24: "extract the years
+    // from Kretzmann and throw them somewhere as our tentative source of
+    // truth that gets shared everywhere") -- its own export file,
+    // `status: "tentative-extraction"` per the scouting memo's own header
+    // (CHRON-CONV-1 adjudicates real placements from it later; this file
+    // carries no placement authority of its own).
+    let kretzmann_export = atlas_graph::exports::KretzmannChronologyExport {
+        format_version: atlas_graph::exports::KRETZMANN_CHRONOLOGY_FORMAT_VERSION,
+        atlas_version_root: version_hex.clone(),
+        status: "tentative-extraction".to_string(),
+        rows: kretzmann_rows,
+    };
+    let kretzmann_json = serde_json::to_string_pretty(&kretzmann_export).map_err(|e| anyhow::anyhow!("{e}")).context("serializing kretzmann-chronology.json")?;
+    let kretzmann_path = exports_dir.join("kretzmann-chronology.json");
+    std::fs::write(&kretzmann_path, format!("{kretzmann_json}\n")).with_context(|| format!("writing {}", kretzmann_path.display()))?;
+    println!("atlas-graph-compile: wrote {} ({} tentative date rows)", kretzmann_path.display(), kretzmann_export.rows.len());
 
     Ok(())
 }

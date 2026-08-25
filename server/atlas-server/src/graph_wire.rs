@@ -127,6 +127,17 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
         // endpoint, NOT a client change -- the identical pattern every
         // prior node-kind batch (M-B/M-C/P) added here.
         "Translation" => Some(AnyNodeId { kind: NodeKind::Translation, raw: rest.to_string() }),
+        // KRETZ-1: the identical one-arm round-trip completion for the
+        // 50,439 CommentaryItem nodes this batch newly authors
+        // (`kretzmann_adapter.rs`) -- `encode_node_id`'s own pre-existing
+        // generic fallback already produces "CommentaryItem:kretzmann/
+        // 0.1.0" etc.; this is what makes a unit's own id resolve through
+        // the existing generic `/api/node/{id}` endpoint (decision 7: "the
+        // generic /api/node/{id} surfaces work automatically once nodes
+        // exist"), not just internally present. NOT a new endpoint, NOT a
+        // client change -- the identical pattern every prior node-kind
+        // batch (M-B/M-C/P/CORP-1a) added here.
+        "CommentaryItem" => Some(AnyNodeId { kind: NodeKind::CommentaryItem, raw: rest.to_string() }),
         _ => None,
     }
 }
@@ -221,6 +232,8 @@ mod tests {
             (NodeKind::Person, "aaron_1", "Person:aaron_1"),
             // Batch CORP-1a.
             (NodeKind::Translation, "latin_vulgate", "Translation:latin_vulgate"),
+            // Batch KRETZ-1.
+            (NodeKind::CommentaryItem, "kretzmann/0.1.0", "CommentaryItem:kretzmann/0.1.0"),
         ] {
             let id = AnyNodeId { kind, raw: raw.to_string() };
             let wire = encode_node_id(&id);

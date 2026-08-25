@@ -347,6 +347,97 @@ pub fn chronology_anchors(graph: &Graph, curated_anchors: &[ChronologyAnchor]) -
         .collect()
 }
 
+// ---------------------------------------------------------------------
+// KRETZ-1 -- kretzmann-chronology.json (the date mine).
+// ---------------------------------------------------------------------
+
+/// The date mine's own format version -- independent of `CHRONOLOGY_
+/// FORMAT_VERSION`/`GAZETTEER_FORMAT_VERSION` above (a different consumer,
+/// a different promise; `artifact.rs`'s own doc-note convention, applied
+/// here). Starts at 1 (KRETZ-1, 2026-08-25).
+pub const KRETZMANN_CHRONOLOGY_FORMAT_VERSION: u32 = 1;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KretzmannDateParsed {
+    /// "BC" | "AD" | "AM" -- `atlas_etl::kretzmann::Calendar`'s own three
+    /// variants, as a plain string (the export boundary, like every other
+    /// wire type in this module, carries no Rust enum directly).
+    pub calendar: String,
+    pub year: u32,
+    pub approx: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KretzmannDateRow {
+    /// The `CommentaryItem` node id this clause's own prose came from
+    /// (`"kretzmann/{book}.{chapter}.{ordinal}"`) -- the row's own
+    /// provenance (scouting memo: "commentary unit id (provenance)").
+    pub unit: String,
+    /// The unit's own comments-on target (`bible_range_str`'s own format,
+    /// e.g. `"GEN.1.1"` or `"GEN.1.1-3"` -- the SAME convention `Chronology
+    /// Event.attestations`/`DtoCrossRef.target_display` already use).
+    pub target: String,
+    /// A real, literal substring of the unit's own stored prose (asserted
+    /// over every row -- scouting memo's own "every verbatim quote is a
+    /// substring of its unit's stored prose" law) -- parsing only, never
+    /// interpretation.
+    pub verbatim: String,
+    pub parsed: KretzmannDateParsed,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KretzmannChronologyExport {
+    pub format_version: u32,
+    pub atlas_version_root: String,
+    /// Scouting memo's own header field, verbatim: this is a TENTATIVE,
+    /// mechanically-parsed extraction -- CHRON-CONV-1 (a later, separate
+    /// act) adjudicates real chronology placements from it; this export
+    /// carries no placement authority of its own.
+    pub status: String,
+    pub rows: Vec<KretzmannDateRow>,
+}
+
+fn calendar_str(c: atlas_etl::kretzmann::Calendar) -> &'static str {
+    match c {
+        atlas_etl::kretzmann::Calendar::Bc => "BC",
+        atlas_etl::kretzmann::Calendar::Ad => "AD",
+        atlas_etl::kretzmann::Calendar::Am => "AM",
+    }
+}
+
+/// Every dating clause found in every `CommentaryItem` node's own stored
+/// prose, in node-id order (`Graph.nodes` is a `BTreeMap`, deterministic
+/// without an extra sort -- the SAME "free determinism" `gazetteer_places`
+/// above already relies on) then discovery order within one unit's own
+/// text (`extract_date_clauses`'s own left-to-right scan order, preserved
+/// by `Vec::extend`). `target` is resolved from `graph.comments_on`'s own
+/// row for that unit (the SAME range every verse-mapped-index query would
+/// resolve) -- a unit with somehow no `comments_on` row of its own (never
+/// true of a real `kretzmann_adapter::normalize` build; the two are
+/// authored together, one row per node) is skipped rather than fabricating
+/// a target, matching this pass's own "extraction only" law.
+pub fn kretzmann_date_rows(graph: &Graph) -> Vec<KretzmannDateRow> {
+    let target_by_item: BTreeMap<String, String> = graph.comments_on.iter().map(|r| (r.item.0.clone(), bible_range_str(&r.on))).collect();
+
+    let mut out = Vec::new();
+    for node in graph.nodes.values() {
+        if node.id.kind != NodeKind::CommentaryItem {
+            continue;
+        }
+        let NodePayload::CommentaryItem { text, .. } = &node.payload else { continue };
+        let Some(target) = target_by_item.get(&node.id.raw) else { continue };
+        for clause in atlas_etl::kretzmann::extract_date_clauses(text) {
+            out.push(KretzmannDateRow {
+                unit: node.id.raw.clone(),
+                target: target.clone(),
+                verbatim: clause.verbatim,
+                parsed: KretzmannDateParsed { calendar: calendar_str(clause.calendar).to_string(), year: clause.year, approx: clause.approx },
+            });
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -432,5 +523,52 @@ mod tests {
 
         let cross_book = BibleLocusRange::new(verse(1, 1, 16), verse(1, 2, 1)).unwrap();
         assert_eq!(bible_range_str(&cross_book), "EXO.1.16-EXO.2.1");
+    }
+
+    #[test]
+    fn kretzmann_date_rows_extracts_verbatim_clauses_and_resolves_their_own_target_and_round_trips_through_json() {
+        use atlas_graph_types::edge::{CommentsOn, Justification};
+        use atlas_graph_types::id::{CommentaryItemId, SourceId};
+
+        let mut g = Graph::default();
+        let item_id = CommentaryItemId::new("kretzmann/23.1.0".to_string());
+        g.nodes.insert(
+            item_id.erase(),
+            Node {
+                id: item_id.erase(),
+                payload: NodePayload::CommentaryItem {
+                    work: SourceId::new("kretzmann-popular-commentary".to_string()),
+                    heading: Some("The Fall of Jerusalem.".to_string()),
+                    text: "The city fell about 606 B. C. and was later rebuilt.".to_string(),
+                },
+                provenance: "kretzmann/jeremiah/1".to_string(),
+            },
+        );
+        let range = BibleLocusRange::new(verse(23, 1, 1), verse(23, 1, 1)).unwrap();
+        g.comments_on.push(CommentsOn { item: item_id, on: range, provenance: "kretzmann/jeremiah/1".to_string(), justification: Justification::default() });
+
+        let rows = kretzmann_date_rows(&g);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].unit, "kretzmann/23.1.0");
+        assert_eq!(rows[0].target, "JER.1.1");
+        assert_eq!(rows[0].verbatim, "about 606 B. C.");
+        assert_eq!(rows[0].parsed, KretzmannDateParsed { calendar: "BC".to_string(), year: 606, approx: true });
+        assert!(g.nodes.get(&CommentaryItemId::new("kretzmann/23.1.0".to_string()).erase()).is_some());
+        let node_text = match &g.nodes.values().next().unwrap().payload {
+            NodePayload::CommentaryItem { text, .. } => text,
+            _ => unreachable!(),
+        };
+        assert!(node_text.contains(&rows[0].verbatim), "the verbatim clause must be a real substring of the unit's own stored prose");
+
+        let export = KretzmannChronologyExport { format_version: KRETZMANN_CHRONOLOGY_FORMAT_VERSION, atlas_version_root: "deadbeef".to_string(), status: "tentative-extraction".to_string(), rows };
+        let json = serde_json::to_string(&export).expect("serializes");
+        let back: KretzmannChronologyExport = serde_json::from_str(&json).expect("deserializes");
+        assert_eq!(back, export, "round-trip must be lossless");
+    }
+
+    #[test]
+    fn kretzmann_date_rows_is_empty_over_a_graph_with_no_commentary_items() {
+        let g = Graph::default();
+        assert!(kretzmann_date_rows(&g).is_empty());
     }
 }

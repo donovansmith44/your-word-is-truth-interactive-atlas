@@ -136,6 +136,77 @@ foreach ($sub in $smalcaldSubArticles) {
   Fetch "https://bookofconcord.org/smalcald-articles/$sub/" "concord\smalcald-sub\$slug.html"
 }
 
+# Batch KRETZ-1: Kretzmann's Popular Commentary of the Bible (Paul E.
+# Kretzmann, Concordia Publishing House, 1921-1924) -- owner order
+# (2026-08-24, via the controller): "pull kretzmann commentary (public
+# domain version) into our corpora". PRIMARY source kretzmanncommentary.org
+# (a modern digital edition; the site's own footer/about text states the
+# work is PD, doubly grounded per kretzmann-scouting.md: published without
+# copyright notice AND all four original volumes predate 1930 regardless).
+# Controller decision 1: "all 66 books, every chapter page" -- book INTRO
+# pages (`/{slug}/intro`) are explicitly out of scope, chapter pages only.
+# `$kretzmannBooks` is (slug, chapter-count), in the SAME 66-book canonical
+# order as `atlas_core::canon::BOOKS` (server/atlas-core/src/canon.rs) --
+# verified 2026-08-25 by scraping kretzmanncommentary.org/bible's own
+# book/chapter link listing: both lists' chapter counts match position-for-
+# position, Genesis(50)..Revelation(22), summing to exactly 1,189 (the
+# standard KJV chapter total), so `BOOKS[i]` <-> `$kretzmannBooks[i]`
+# requires no name-fuzzy-matching join. FALLBACK (kretzmannproject.org, per
+# controller decision 1) was live-probed 2026-08-25 and TIMED OUT (matches
+# kretzmann-scouting.md's own prior finding, "server rejected our fetcher on
+# first probe") -- no verified URL scheme exists to fall back to, so a
+# primary-fetch failure (after retries) is a genuine MISSING page, disclosed
+# below, never silently guessed at with an unverified fallback URL.
+$kretzmannDir = Join-Path $raw 'kretzmann'
+New-Item -ItemType Directory -Force $kretzmannDir | Out-Null
+$kretzmannBooks = @(
+  @('genesis',50), @('exodus',40), @('leviticus',27), @('numbers',36), @('deuteronomy',34),
+  @('joshua',24), @('judges',21), @('ruth',4), @('1-samuel',31), @('2-samuel',24),
+  @('1-kings',22), @('2-kings',25), @('1-chronicles',29), @('2-chronicles',36), @('ezra',10),
+  @('nehemiah',13), @('esther',10), @('job',42), @('psalms',150), @('proverbs',31),
+  @('ecclesiastes',12), @('song-of-solomon',8), @('isaiah',66), @('jeremiah',52), @('lamentations',5),
+  @('ezekiel',48), @('daniel',12), @('hosea',14), @('joel',3), @('amos',9),
+  @('obadiah',1), @('jonah',4), @('micah',7), @('nahum',3), @('habakkuk',3),
+  @('zephaniah',3), @('haggai',2), @('zechariah',14), @('malachi',4), @('matthew',28),
+  @('mark',16), @('luke',24), @('john',21), @('acts',28), @('romans',16),
+  @('1-corinthians',16), @('2-corinthians',13), @('galatians',6), @('ephesians',6), @('philippians',4),
+  @('colossians',4), @('1-thessalonians',5), @('2-thessalonians',3), @('1-timothy',6), @('2-timothy',4),
+  @('titus',3), @('philemon',1), @('hebrews',13), @('james',5), @('1-peter',5),
+  @('2-peter',3), @('1-john',5), @('2-john',1), @('3-john',1), @('jude',1),
+  @('revelation',22)
+)
+$kretzmannTotal = ($kretzmannBooks | ForEach-Object { $_[1] } | Measure-Object -Sum).Sum
+$kretzmannFetched = 0
+$kretzmannHad = 0
+$kretzmannMissing = @()
+foreach ($book in $kretzmannBooks) {
+  $slug = $book[0]; $chapters = $book[1]
+  $bookDir = Join-Path $kretzmannDir $slug
+  New-Item -ItemType Directory -Force $bookDir | Out-Null
+  for ($c = 1; $c -le $chapters; $c++) {
+    $out = Join-Path $bookDir "$c.html"
+    if (Test-Path $out) { $kretzmannHad++; continue }
+    $url = "https://kretzmanncommentary.org/$slug/$c"
+    $ok = $false
+    for ($attempt = 1; $attempt -le 3 -and -not $ok; $attempt++) {
+      try {
+        Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing -TimeoutSec 30
+        $ok = $true
+      } catch {
+        if ($attempt -lt 3) { Start-Sleep -Milliseconds (500 * $attempt) }
+      }
+    }
+    if ($ok) {
+      $kretzmannFetched++
+    } else {
+      Write-Output "kretzmann MISSING (primary failed x3, no verified fallback): $slug/$c"
+      $kretzmannMissing += "$slug/$c"
+    }
+    Start-Sleep -Milliseconds 200
+  }
+}
+Write-Output "kretzmann fetch: $kretzmannFetched fetched, $kretzmannHad already cached, $($kretzmannMissing.Count) missing of $kretzmannTotal total pages"
+
 # Vendor Leaflet 1.9.4 into the client (deterministic, offline-friendly)
 $vendor = Join-Path $PSScriptRoot '..\client\wwwroot\vendor\leaflet'
 New-Item -ItemType Directory -Force $vendor | Out-Null

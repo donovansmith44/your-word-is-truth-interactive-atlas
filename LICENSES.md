@@ -29,6 +29,7 @@ file is the detailed version of record.
 | James Ussher, *The Annals of the World* (1658) | Public domain (published 1658; this project's own reading is the Larry & Marion Pierce paragraph-numbered English text) | Not redistributed as text — two specific paragraph-numbered entries (¶1202, ¶1227/¶1234) consulted directly as PROVENANCE for two `chronology-anchors.toml` `year` values (`ezra-returns`, `nehemiah-wall`), HOTFIX-6 fix round 2; every displayed event title/verse citation is independently authored (CC0) or Theographic-credited, per "Ussher's Annals of the World" below |
 | M. G. Easton, *Easton's Bible Dictionary* (1897) | Public domain (published 1897, USA) | Redistributed — compiled into the graph artifact (`graph.bin`) as `description` on Place/Person/PeopleGroup nodes; delivered via the already-vendored Theographic bundle's own `easton.json` + `people.json` `dictText`/`dictionaryText` fields (CC BY-SA 4.0, see "Theographic — controller ruling" above); see "Easton's Bible Dictionary" below |
 | brain-fuel/bible parallel editions ([brain-fuel/bible](https://github.com/brain-fuel/bible)) — Clementine Vulgate, Westminster Leningrad Codex, Douay-Rheims (Challoner), Biblia 1776, Karl XII:s Bibel (1703), Greek Textus Receptus | Public domain (every text; see "brain-fuel/bible parallel editions" below for the verbatim per-edition sourcing this project verified against) | Redistributed — six edition RENDERINGS compiled into the graph artifact (`graph.bin`) as additional `TranslationId` layers on the existing TextUnit `renderings` LayerMap, alongside (never replacing) this app's own canonical KJV text; the app's own code (the brain-fuel repo's data-vs-code separation) is never used |
+| Paul E. Kretzmann, *Popular Commentary of the Bible* (Concordia Publishing House, 1921-1924), via [kretzmanncommentary.org](https://kretzmanncommentary.org) | Public domain (published 1921-1924, USA; doubly grounded — see "Kretzmann's Popular Commentary of the Bible" below) | Redistributed — Kretzmann's own commentary PROSE (never the excised KJV lemma/quote text itself, per LEMMA-EXCISION) compiled into the graph artifact (`graph.bin`) as `CommentaryItem` nodes, verse-anchored via `comments-on` edges; provenance and verification below |
 
 ## Theographic CC BY-SA 4.0 — controller ruling
 
@@ -803,6 +804,88 @@ dedicated to the public domain under
 The QUOTED TEXT itself (each edition's own words) is public domain by its
 own age/publication, per the per-edition sourcing above, not by this
 project's dedication.
+
+## Kretzmann's Popular Commentary of the Bible — public domain (1921-1924; Batch KRETZ-1)
+
+Batch KRETZ-1 required the owner's own order (2026-08-24, verbatim, via the
+controller): "pull kretzmann commentary (public domain version) into our
+corpora" — "a comprehensive commentary without the verses interleaved into
+it, and it's indexed so that each verse mapped bit of commentary is mapped
+to the appropriate verse in our graph." This section follows the SAME
+Source/Verification/What-was-used shape as "The Book of Concord"/
+"brain-fuel/bible parallel editions" above.
+
+**Source and provenance.** Paul E. Kretzmann, *Popular Commentary of the
+Bible* (St. Louis: Concordia Publishing House, 4 volumes — 2 Old Testament,
+2 New Testament — 1921-1924). Public domain, DOUBLY GROUNDED: the original
+volumes were published without a copyright notice (pre-1978 US rule:
+immediate public domain), and all four volumes predate 1930 regardless —
+public domain by age alone, independent of the first ground. Obtained from
+[kretzmanncommentary.org](https://kretzmanncommentary.org), a modern digital
+edition, fetched 2026-08-25 (`data/fetch-raw.ps1`'s own `$kretzmannBooks`
+table; all 66 books, every KJV chapter page — see `data/raw/README.md`'s own
+"kretzmann/" section for the full fetch tally and page-template details).
+The site's own footer/about text states the work is public domain,
+consistent with the PD grounds above (a later digital transcription cannot
+re-copyright an already-public-domain 1921-1924 work).
+
+**What was used, and how.** `server/atlas-etl/src/kretzmann.rs` (parsing)
+and `server/atlas-graph/src/kretzmann_adapter.rs` (graph merge) implement
+the owner-ruled ANNOTATION shape: the bold/quoted KJV lemma is the parser's
+own JOIN KEY and is EXCISED (LEMMA-EXCISION) — this app's own canonical KJV
+text remains the SOLE source of verse text; only Kretzmann's OWN commentary
+PROSE is stored, as one `CommentaryItem` node per verse-anchored unit,
+linked to its own Bible locus range via a `comments-on` edge. KRETZ-ACCEPT-1
+(the owner's own acceptance test, verbatim: "(initial commentary+verses)
+-(initial commentary)===(whole Bible) / should be exact match") was run as
+an ETL-time law over the WHOLE corpus, checked against this app's own
+RESTORED (KJV-CASE + KJV-CASE-2) canonical text: 31,032 verses checked (70
+verses Kretzmann summarizes with no lemma of their own — lawful, disclosed,
+never guessed); 2,498 exact byte matches; 22,933 pass under a disclosed
+MECHANICAL case+punctuation equivalence (the Tetragrammaton/reverential-
+pronoun case convention, and the digital edition's own fragment/quote-
+boundary punctuation style — never a word/content difference); 1,853 more
+pass under a curated (never fuzzy-matched) American/British spelling-variant
+table, mined and manually vetted from the real corpus's own recurring
+mismatches (`shew`/`show`, `honour`/`honor`, `sepulchre`/`sepulcher`, and
+~130 further pairs — `server/atlas-etl/src/kretzmann.rs`'s own
+`SPELLING_VARIANTS` table has the full list and its own exclusion
+discipline). The remaining 3,748 (12.1%) are genuine, disclosed deviations,
+manually sampled across the whole corpus (both testaments, both page
+templates) and categorized — by far the largest class is Kretzmann quoting
+only a verse's own opening clause before moving to prose commentary
+(ordinary commentary-writing style); smaller classes are an occasional
+inline connective gloss bolded alongside the quote, this app's own
+canonical source's en-dash compound-name convention for Hebrew proper names
+diverging from the digital edition's own hyphenation, and Psalm 119's own
+Hebrew-letter acrostic stanza headers (folded into each stanza's own first
+verse by this app's canonical convention) never being quoted by Kretzmann's
+own lemma at all. Manual sampling found NO case of genuine verse-content
+substitution anywhere — the SAME conclusion, and the SAME disclosure
+discipline, "brain-fuel/bible parallel editions" above already reached over
+an independent cross-check source (9,274 of 31,102 raw mismatches, "every
+single one a typographic/transcription-convention difference... NEVER a
+case of verse-content substitution"). `server/atlas-etl/tests/
+kretzmann_real_data.rs` pins the exact counts above as a regression harness.
+
+**The date mine** (owner order, verbatim: "extract the years from Kretzmann
+and throw them somewhere as our tentative source of truth that gets shared
+everywhere"): a parsing-only pass over the stored commentary prose for
+B.C./A.D./Anno-Mundi dating clauses, emitted to `data/exports/
+kretzmann-chronology.json` (`status: "tentative-extraction"` — a later,
+separate curatorial act adjudicates real chronology placements from it;
+this export carries no placement authority of its own). 83 real clauses
+found (42 B.C., 41 A.D., 0 Anno Mundi — disclosed absent, not assumed);
+every verbatim clause is asserted to be a literal substring of its own
+unit's stored prose.
+
+**Dedication of this project's own ingestion work.** The parser, the
+LEMMA-EXCISION join-key logic, the conservation law and its own curated
+spelling-equivalence table, the date-mine extraction, and the graph-merge
+adapter are original work of this project, dedicated to the public domain
+under [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).
+The QUOTED PROSE itself (Kretzmann's own words) is public domain by its own
+1921-1924 publication, not by this project's dedication.
 
 ## Per-artifact label (`data/compiled/*`)
 

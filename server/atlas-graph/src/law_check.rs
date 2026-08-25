@@ -123,6 +123,18 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
     for row in &graph.catechism {
         check("catechism", "item", row.item.erase())?;
     }
+    // KRETZ-1: `comments_on`'s own node-typed endpoint (`item`) -- the SAME
+    // class of check `catechism`'s own `item` gets immediately above. The
+    // `on` field (a `BibleLocusRange`) is NOT checked here, matching this
+    // law's own disclosed scope (module doc comment): every adapter that
+    // emits a TextLocus/BibleLocusRange-shaped row already derives it
+    // directly from a real, just-built TextUnit position, and `kretzmann_
+    // adapter::normalize` is no exception (`VerseRef { book, chapter, verse
+    // }` built straight from the SAME parsed unit the KJV TextUnit nodes
+    // themselves are keyed by).
+    for row in &graph.comments_on {
+        check("comments_on", "item", row.item.erase())?;
+    }
     // PG-1a: `named_after`'s two node-typed endpoints (`namesake`/`eponym`)
     // -- newly authored this batch, closing the SAME class of gap M-C2's
     // own `mentions`/`catechism` extension above closed first (this law's
@@ -216,6 +228,40 @@ mod tests {
         let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling catechism.item reference");
         assert_eq!(err.relation, "catechism");
         assert_eq!(err.field, "item");
+    }
+
+    /// KRETZ-1: the SAME red-then-green shape as `catechism` immediately
+    /// above, for `comments_on`'s own node-typed `item` endpoint.
+    #[test]
+    fn red_when_a_comments_on_row_names_an_item_with_no_node() {
+        use atlas_graph_types::text::{BibleLocusRange, VerseRef};
+        let mut graph = Graph::default();
+        let range = BibleLocusRange::new(atlas_graph_types::text::Locus::whole(VerseRef { book: 0, chapter: 1, verse: 1 }), atlas_graph_types::text::Locus::whole(VerseRef { book: 0, chapter: 1, verse: 1 })).unwrap();
+        graph.comments_on.push(atlas_graph_types::edge::CommentsOn {
+            item: atlas_graph_types::id::CommentaryItemId::new("nowhere"),
+            on: range,
+            provenance: "test".into(),
+            justification: Justification::default(),
+        });
+        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling comments_on.item reference");
+        assert_eq!(err.relation, "comments_on");
+        assert_eq!(err.field, "item");
+    }
+
+    #[test]
+    fn green_when_a_comments_on_row_resolves_to_a_real_commentary_item_node() {
+        use atlas_graph_types::id::{CommentaryItemId, NodeKind, SourceId};
+        use atlas_graph_types::node::{Node, NodePayload};
+        use atlas_graph_types::text::{BibleLocusRange, VerseRef};
+
+        let mut graph = Graph::default();
+        let item_id = CommentaryItemId::new("kretzmann/0.1.0").erase();
+        assert_eq!(item_id.kind, NodeKind::CommentaryItem);
+        graph.nodes.insert(item_id.clone(), Node { id: item_id.clone(), payload: NodePayload::CommentaryItem { work: SourceId::new("kretzmann-popular-commentary"), heading: None, text: "prose".into() }, provenance: "test".into() });
+        let range = BibleLocusRange::new(atlas_graph_types::text::Locus::whole(VerseRef { book: 0, chapter: 1, verse: 1 }), atlas_graph_types::text::Locus::whole(VerseRef { book: 0, chapter: 1, verse: 1 })).unwrap();
+        graph.comments_on.push(atlas_graph_types::edge::CommentsOn { item: CommentaryItemId::new("kretzmann/0.1.0"), on: range, provenance: "test".into(), justification: Justification::default() });
+
+        assert!(every_authored_edge_resolves(&graph).is_ok());
     }
 
     #[test]

@@ -48,5 +48,26 @@ resolver = "2"
 #
 # Batch POLISH-1 (2026-08-25, parked-minor retirement): moved to 800
 # passed (779 + 21) across 40 sections (+4 workspace tests; +1 section,
-# the new `tests/justified_by_real_data.rs`). CURRENT CANONICAL: 800
-# (779 + 21) across 40 sections at b52634b.
+# the new `tests/justified_by_real_data.rs`).
+#
+# Batch KRETZ-1 (2026-08-25, Kretzmann's Popular Commentary of the Bible,
+# 1921-1924, verse-anchored annotation): moved to 828 passed (806 + 22)
+# across 41 sections. Workspace +27 across +1 section: `kretzmann.rs`'s
+# own parser unit tests (12, in atlas-etl's lib unittests, no new section)
+# -- HTML-template detection, LEMMA-EXCISION splitting/folding, the
+# KRETZ-ACCEPT-1 conservation law's mechanical-equivalence tiers, and the
+# date-mine extractor; `kretzmann_adapter.rs` (3, in atlas-graph's lib
+# unittests) -- Source/CommentaryItem node + comments_on row construction;
+# one new round-trip test each in `artifact.rs` (1) and `exports.rs` (2,
+# the date-mine export); two new `law_check.rs` tests (the comments_on
+# referential-integrity red/green pair); the new `tests/
+# kretzmann_real_data.rs` real-data section (7, the ONE new section --
+# pins the real corpus's own totals: 1,189 pages, 50,439 units, 61,490
+# excised fragments, and KRETZ-ACCEPT-1's real conservation-law shape over
+# the whole corpus: 2,498 exact + 22,933 mechanical(case+punct) + 1,853
+# mechanical(+curated spelling) = 27,284 passing of 31,032 checked, 70
+# uncovered, 3,748 disclosed genuine deviations -- batch-kretz1-report.md
+# has the full categorized breakdown). `atlas-graph-types` +1 (graph.rs's
+# own new `comments_on` indexing test, the pre-authorized mechanical-mirror
+# exception this batch's own report names, standing since CORP-2a).
+# CURRENT CANONICAL: 828 (806 + 22) across 41 sections.

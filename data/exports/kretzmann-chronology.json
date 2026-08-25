@@ -1,0 +1,837 @@
+{
+  "format_version": 1,
+  "atlas_version_root": "9999aa4791f3622e",
+  "status": "tentative-extraction",
+  "rows": [
+    {
+      "unit": "kretzmann/12.5.28",
+      "target": "1CH.5.17",
+      "verbatim": "783 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 783,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/13.36.38",
+      "target": "2CH.36.17",
+      "verbatim": "587 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 587,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/14.4.11",
+      "target": "EZR.4.7",
+      "verbatim": "424 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 424,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/14.4.41",
+      "target": "EZR.4.24",
+      "verbatim": "520 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 520,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/14.6.32",
+      "target": "EZR.6.15",
+      "verbatim": "536 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 536,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/14.6.32",
+      "target": "EZR.6.15",
+      "verbatim": "515 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 515,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/15.1.2",
+      "target": "NEH.1.1",
+      "verbatim": "445 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 445,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/22.14.76",
+      "target": "ISA.14.28",
+      "verbatim": "about 727 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 727,
+        "approx": true
+      }
+    },
+    {
+      "unit": "kretzmann/22.20.3",
+      "target": "ISA.20.1",
+      "verbatim": "711 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 711,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/22.5.107",
+      "target": "ISA.5.30",
+      "verbatim": "70 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 70,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/22.5.26",
+      "target": "ISA.5.7",
+      "verbatim": "70 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 70,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/22.6.0",
+      "target": "ISA.6.1",
+      "verbatim": "758 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 758,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/22.7.2",
+      "target": "ISA.7.1",
+      "verbatim": "739 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 739,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/22.7.26",
+      "target": "ISA.7.9",
+      "verbatim": "722 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 722,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/22.7.26",
+      "target": "ISA.7.9",
+      "verbatim": "about 675 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 675,
+        "approx": true
+      }
+    },
+    {
+      "unit": "kretzmann/22.8.10",
+      "target": "ISA.8.4",
+      "verbatim": "739 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 739,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/23.25.0",
+      "target": "JER.25.1",
+      "verbatim": "606 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 606,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/23.25.2",
+      "target": "JER.25.3",
+      "verbatim": "610 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 610,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/23.25.28",
+      "target": "JER.25.11",
+      "verbatim": "606 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 606,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/23.25.4",
+      "target": "JER.25.3",
+      "verbatim": "629 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 629,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/23.26.0",
+      "target": "JER.26.1",
+      "verbatim": "about 609 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 609,
+        "approx": true
+      }
+    },
+    {
+      "unit": "kretzmann/23.27.1",
+      "target": "JER.27.1",
+      "verbatim": "about 609 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 609,
+        "approx": true
+      }
+    },
+    {
+      "unit": "kretzmann/23.35.0",
+      "target": "JER.35.1",
+      "verbatim": "606 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 606,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/23.36.0",
+      "target": "JER.36.1",
+      "verbatim": "607 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 607,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/23.44.53",
+      "target": "JER.44.30",
+      "verbatim": "about 570 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 570,
+        "approx": true
+      }
+    },
+    {
+      "unit": "kretzmann/23.46.4",
+      "target": "JER.46.2",
+      "verbatim": "606 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 606,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/25.40.0",
+      "target": "EZK.40.1",
+      "verbatim": "575 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 575,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/26.11.10",
+      "target": "DAN.11.4",
+      "verbatim": "301 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 301,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/26.11.19",
+      "target": "DAN.11.6",
+      "verbatim": "B. C. 247",
+      "parsed": {
+        "calendar": "BC",
+        "year": 247,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/36.1.1",
+      "target": "HAG.1.1",
+      "verbatim": "520 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 520,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/37.1.0",
+      "target": "ZEC.1.1",
+      "verbatim": "520 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 520,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/37.7.0",
+      "target": "ZEC.7.1",
+      "verbatim": "518 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 518,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/39.14.0",
+      "target": "MAT.14.1-2",
+      "verbatim": "39 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 39,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/39.2.0",
+      "target": "MAT.2.1",
+      "verbatim": "37 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 37,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/39.22.3",
+      "target": "MAT.22.11-14",
+      "verbatim": "70 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 70,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/39.24.9",
+      "target": "MAT.24.36-41",
+      "verbatim": "1000 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 1000,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/4.4.40",
+      "target": "DEU.4.27",
+      "verbatim": "70 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 70,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/40.13.0",
+      "target": "MRK.13.1-2",
+      "verbatim": "19 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 19,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/40.13.0",
+      "target": "MRK.13.1-2",
+      "verbatim": "64 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 64,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/40.2.3",
+      "target": "MRK.2.13-14",
+      "verbatim": "67 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 67,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/41.2.0",
+      "target": "LUK.2.1-5",
+      "verbatim": "30 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 30,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/41.2.0",
+      "target": "LUK.2.1-5",
+      "verbatim": "14 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 14,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/41.3.0",
+      "target": "LUK.3.1-2",
+      "verbatim": "26 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 26,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/41.3.0",
+      "target": "LUK.3.1-2",
+      "verbatim": "36 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 36,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/41.3.0",
+      "target": "LUK.3.1-2",
+      "verbatim": "38 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 38,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/41.3.0",
+      "target": "LUK.3.1-2",
+      "verbatim": "32 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 32,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/41.3.0",
+      "target": "LUK.3.1-2",
+      "verbatim": "A. D. 36",
+      "parsed": {
+        "calendar": "AD",
+        "year": 36,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/41.3.0",
+      "target": "LUK.3.1-2",
+      "verbatim": "14 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 14,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/41.3.0",
+      "target": "LUK.3.1-2",
+      "verbatim": "35 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 35,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/42.18.2",
+      "target": "JHN.18.10-14",
+      "verbatim": "A. D. 7",
+      "parsed": {
+        "calendar": "AD",
+        "year": 7,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/42.2.5",
+      "target": "JHN.2.18-22",
+      "verbatim": "19 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 19,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/42.2.5",
+      "target": "JHN.2.18-22",
+      "verbatim": "64 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 64,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/42.4.0",
+      "target": "JHN.4.1-6",
+      "verbatim": "722 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 722,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/42.4.4",
+      "target": "JHN.4.19-24",
+      "verbatim": "125 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 125,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.12.0",
+      "target": "ACT.12.1-5",
+      "verbatim": "46 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 46,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.13.1",
+      "target": "ACT.13.4-7",
+      "verbatim": "46 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 46,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.13.1",
+      "target": "ACT.13.4-7",
+      "verbatim": "22 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 22,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.13.3",
+      "target": "ACT.13.13-15",
+      "verbatim": "25 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 25,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.14.0",
+      "target": "ACT.14.1-7",
+      "verbatim": "A. D. 41",
+      "parsed": {
+        "calendar": "AD",
+        "year": 41,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.18.0",
+      "target": "ACT.18.1-6",
+      "verbatim": "50 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 50,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.18.2",
+      "target": "ACT.18.12-17",
+      "verbatim": "51 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 51,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.18.2",
+      "target": "ACT.18.12-17",
+      "verbatim": "B. C. 27",
+      "parsed": {
+        "calendar": "BC",
+        "year": 27,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.18.2",
+      "target": "ACT.18.12-17",
+      "verbatim": "B. C. 146",
+      "parsed": {
+        "calendar": "BC",
+        "year": 146,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.18.2",
+      "target": "ACT.18.12-17",
+      "verbatim": "A. D. 15",
+      "parsed": {
+        "calendar": "AD",
+        "year": 15,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.18.2",
+      "target": "ACT.18.12-17",
+      "verbatim": "A. D. 44",
+      "parsed": {
+        "calendar": "AD",
+        "year": 44,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.18.3",
+      "target": "ACT.18.18-22",
+      "verbatim": "51 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 51,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.24.0",
+      "target": "ACT.24.1-4",
+      "verbatim": "A. D. 53",
+      "parsed": {
+        "calendar": "AD",
+        "year": 53,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.24.5",
+      "target": "ACT.24.23-27",
+      "verbatim": "A. D. 59",
+      "parsed": {
+        "calendar": "AD",
+        "year": 59,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.25.0",
+      "target": "ACT.25.1-5",
+      "verbatim": "60 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 60,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.28.6",
+      "target": "ACT.28.30-31",
+      "verbatim": "33 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 33,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.28.6",
+      "target": "ACT.28.30-31",
+      "verbatim": "36 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 36,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.28.6",
+      "target": "ACT.28.30-31",
+      "verbatim": "46 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 46,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.28.6",
+      "target": "ACT.28.30-31",
+      "verbatim": "48 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 48,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.28.6",
+      "target": "ACT.28.30-31",
+      "verbatim": "49 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 49,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.28.6",
+      "target": "ACT.28.30-31",
+      "verbatim": "49 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 49,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.28.6",
+      "target": "ACT.28.30-31",
+      "verbatim": "50 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 50,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.28.6",
+      "target": "ACT.28.30-31",
+      "verbatim": "50 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 50,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.28.6",
+      "target": "ACT.28.30-31",
+      "verbatim": "50 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 50,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.28.6",
+      "target": "ACT.28.30-31",
+      "verbatim": "50 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 50,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.5.7",
+      "target": "ACT.5.33-37",
+      "verbatim": "44 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 44,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/43.5.7",
+      "target": "ACT.5.33-37",
+      "verbatim": "8 A. D.",
+      "parsed": {
+        "calendar": "AD",
+        "year": 8,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/44.9.5",
+      "target": "ROM.9.22-29",
+      "verbatim": "A. D. 70",
+      "parsed": {
+        "calendar": "AD",
+        "year": 70,
+        "approx": false
+      }
+    },
+    {
+      "unit": "kretzmann/55.1.1",
+      "target": "TIT.1.5-9",
+      "verbatim": "69 B. C.",
+      "parsed": {
+        "calendar": "BC",
+        "year": 69,
+        "approx": false
+      }
+    }
+  ]
+}

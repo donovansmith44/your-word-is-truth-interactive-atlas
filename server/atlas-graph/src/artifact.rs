@@ -47,10 +47,10 @@ use std::collections::BTreeMap;
 
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis, ResolvedDate, ResolvedPlacement, SeqKey, TimePoint, Year};
 use atlas_graph_types::edge::{
-    Attests, CatechismLink, CrossRef, Fulfills, Ground, Justification, LocatedAt, Mentions, MentionedEntity, NamedAfter, Namesake, Succession, Typology,
+    Attests, CatechismLink, CommentsOn, CrossRef, Fulfills, Ground, Justification, LocatedAt, Mentions, MentionedEntity, NamedAfter, Namesake, Succession, Typology,
 };
 use atlas_graph_types::graph::{Graph, ReadingSpine};
-use atlas_graph_types::id::{AnchorId, AnyNodeId, CatechismItemId, EraId, EventId, NarrativeId, NodeKind, PeopleGroupId, PersonId, PlaceId, PolityId, SourceId};
+use atlas_graph_types::id::{AnchorId, AnyNodeId, CatechismItemId, CommentaryItemId, EraId, EventId, NarrativeId, NodeKind, PeopleGroupId, PersonId, PlaceId, PolityId, SourceId};
 use atlas_graph_types::node::{Node, NodePayload, PolityEraPayload};
 use atlas_graph_types::text::{BibleLocus, BibleLocusRange, ConcordRef, LocusRange, TextLocus, TextRef, TokenSpan, TranslationId, VerseRef};
 
@@ -87,6 +87,11 @@ enum DtoNodeKind {
     Source,
     Translation,
     PeopleGroup,
+    /// KRETZ-1: appended (bincode decodes enum variants by index, so an
+    /// APPENDED variant is benign for reading an older artifact -- this
+    /// module's own `FORMAT_VERSION` doc comment has the full "appended
+    /// variant vs. added field" distinction, PG-1's own precedent).
+    CommentaryItem,
 }
 
 impl From<NodeKind> for DtoNodeKind {
@@ -105,13 +110,7 @@ impl From<NodeKind> for DtoNodeKind {
             NodeKind::Source => DtoNodeKind::Source,
             NodeKind::Translation => DtoNodeKind::Translation,
             NodeKind::PeopleGroup => DtoNodeKind::PeopleGroup,
-            // KRETZ-1 crate patch: dump()'s guard refuses CommentaryItem
-            // nodes before lowering ever runs; the batch that emits them
-            // extends the Dto + FORMAT_VERSION (the TRAV-1/PG-1a trigger
-            // class).
-            NodeKind::CommentaryItem => {
-                unreachable!("guarded: dump() refuses CommentaryItem nodes until KRETZ-1 extends the artifact")
-            }
+            NodeKind::CommentaryItem => DtoNodeKind::CommentaryItem,
         }
     }
 }
@@ -131,6 +130,7 @@ impl From<DtoNodeKind> for NodeKind {
             DtoNodeKind::Source => NodeKind::Source,
             DtoNodeKind::Translation => NodeKind::Translation,
             DtoNodeKind::PeopleGroup => NodeKind::PeopleGroup,
+            DtoNodeKind::CommentaryItem => NodeKind::CommentaryItem,
         }
     }
 }
@@ -256,14 +256,16 @@ enum DtoPayload {
     Source { label: String },
     Translation { label: String },
     PeopleGroup { label: String, description: Option<String> },
+    /// KRETZ-1: mirrors `NodePayload::CommentaryItem` -- `work` is the
+    /// commentary work's `Source` node id (a plain `String`, the SAME "id
+    /// carried as a bare string, re-typed on read" convention every other
+    /// node-id-carrying Dto field already uses).
+    CommentaryItem { work: String, heading: Option<String>, text: String },
 }
 
 fn payload_to_dto(p: &NodePayload) -> DtoPayload {
     match p {
-        // KRETZ-1 crate patch: same guard class as the DtoNodeKind arm.
-        NodePayload::CommentaryItem { .. } => {
-            unreachable!("guarded: dump() refuses CommentaryItem nodes until KRETZ-1 extends the artifact")
-        }
+        NodePayload::CommentaryItem { work, heading, text } => DtoPayload::CommentaryItem { work: work.0.clone(), heading: heading.clone(), text: text.clone() },
         NodePayload::TextUnit { corpus, renderings } => DtoPayload::TextUnit {
             corpus: corpus.to_string(),
             renderings: renderings.iter().map(|(k, v)| (k.0.clone(), v.clone())).collect(),
@@ -342,6 +344,7 @@ fn payload_from_dto(d: DtoPayload) -> Result<NodePayload, ArtifactError> {
         DtoPayload::Source { label } => NodePayload::Source { label },
         DtoPayload::Translation { label } => NodePayload::Translation { label },
         DtoPayload::PeopleGroup { label, description } => NodePayload::PeopleGroup { label, description },
+        DtoPayload::CommentaryItem { work, heading, text } => NodePayload::CommentaryItem { work: SourceId::new(work), heading, text },
     })
 }
 
@@ -620,6 +623,19 @@ struct DtoCatechismLink {
     justification: DtoJustification,
 }
 
+/// KRETZ-1: mirrors `graph_types::edge::CommentsOn` -- the SAME `{node id,
+/// range-as-a-{from,to}-pair-of-DtoTextLocus, provenance, justification}`
+/// shape `DtoAttests` already establishes (`event`/`attestation` there,
+/// `item`/`on` here).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoCommentsOn {
+    item: String,
+    on_from: DtoTextLocus,
+    on_to: DtoTextLocus,
+    provenance: String,
+    justification: DtoJustification,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 enum DtoMentionedEntity {
     Place(String),
@@ -697,6 +713,11 @@ pub struct ArtifactDump {
     /// this batch's own scope note above).
     contains_concord: Vec<DtoContains>,
     catechism: Vec<DtoCatechismLink>,
+    /// KRETZ-1: `graph.comments_on`'s own row table -- see `DtoCommentsOn`'s
+    /// own doc comment. The NINTH member of the original guarded set
+    /// (`dump`'s own doc comment) to close, on the same schedule as every
+    /// prior data batch.
+    comments_on: Vec<DtoCommentsOn>,
     mentions: Vec<DtoMentions>,
     cross_refs: Vec<DtoCrossRef>,
     /// TRAV-1: the real `temporal_adjacency` row table (controller decision
@@ -829,7 +850,21 @@ pub struct ArtifactDump {
 /// original guarded set to close, same schedule as every prior data
 /// batch). A genuine wire-shape break both directions -- bincode field
 /// COUNT changed. `data/compiled/graph.bin` rebuilt in this same commit.
-const FORMAT_VERSION: u32 = 8;
+///
+/// KRETZ-1 (2026-08-25): bumped 8 -> 9. Triggers, landed together:
+/// `DtoNodeKind::CommentaryItem`/`DtoPayload::CommentaryItem { work,
+/// heading, text }` ADDED (appended enum variants -- benign for reading an
+/// OLDER artifact, the SAME "appended, never inserted" discipline the PG-1
+/// writer-window note above already established, but a version-8 reader
+/// handed a version-9 artifact carrying real CommentaryItem nodes would not
+/// decode them correctly); `ArtifactDump.comments_on: Vec<DtoCommentsOn>`
+/// ADDED (a new relation table -- `dump`'s own guard forced this the
+/// moment `kretzmann_adapter` started emitting real `comments_on` rows and
+/// CommentaryItem nodes, the NINTH member of the original guarded set to
+/// close, same schedule as every prior data batch). A genuine wire-shape
+/// break both directions -- bincode field COUNT changed. `data/compiled/
+/// graph.bin` rebuilt in this same commit.
+const FORMAT_VERSION: u32 = 9;
 
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
@@ -842,17 +877,15 @@ const FORMAT_VERSION: u32 = 8;
 /// TRAV-1 (2026-08-24) closed the FOURTH member of the original set
 /// (`temporal_adjacency`); PG-1a (2026-08-24) closed the FIFTH
 /// (`named_after`); EDGE-1a (2026-08-24) closed the SIXTH and SEVENTH
-/// (`fulfills`/`typology`); CORP-2a (2026-08-24) closes the EIGHTH
-/// (`contains_concord`) the same way, on schedule, the moment
-/// `concord_adapter` started emitting real rows -- all are REAL
-/// SERIALIZED CONTENT below now, no longer guarded.
+/// (`fulfills`/`typology`); CORP-2a (2026-08-24) closed the EIGHTH
+/// (`contains_concord`); KRETZ-1 (2026-08-25) closes the NINTH
+/// (`comments_on`, alongside CommentaryItem nodes) the same way, on
+/// schedule, the moment `kretzmann_adapter` started emitting real rows --
+/// all are REAL SERIALIZED CONTENT below now, no longer guarded.
 pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_stats: &EventWorldStats) -> Result<ArtifactDump, ArtifactError> {
-    if !g.contains_bible.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty()
-        || !g.comments_on.is_empty()
-        || g.nodes.keys().any(|id| id.kind == NodeKind::CommentaryItem)
-    {
+    if !g.contains_bible.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty() {
         return Err(ArtifactError(
-            "the graph carries content this artifact format does not yet serialize (contains_bible/quotes/confesses/corresponds/comments_on rows, or CommentaryItem nodes -- KRETZ-1's trigger class) -- extend artifact.rs before shipping this content".into(),
+            "the graph carries rows in a relation this artifact format does not yet serialize (contains_bible/quotes/confesses/corresponds) -- extend artifact.rs before shipping this content".into(),
         ));
     }
 
@@ -963,6 +996,17 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         .map(|r: &CatechismLink| DtoCatechismLink { locus: (&r.locus).into(), item: r.item.0.clone(), provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) })
         .collect();
 
+    // KRETZ-1: `graph.comments_on`'s own row table -- the SAME `{from, to}`
+    // range shape `attests` above already uses, one relation wider.
+    let comments_on = g
+        .comments_on
+        .iter()
+        .map(|r: &CommentsOn| {
+            let (on_from, on_to) = bible_range_to_dto(&r.on);
+            DtoCommentsOn { item: r.item.0.clone(), on_from, on_to, provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) }
+        })
+        .collect();
+
     let mentions = g
         .mentions
         .iter()
@@ -1055,6 +1099,7 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         typology,
         contains_concord,
         catechism,
+        comments_on,
         mentions,
         cross_refs,
         temporal_adjacency,
@@ -1183,6 +1228,16 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
 
     for r in d.catechism {
         g.catechism.push(CatechismLink { locus: r.locus.try_into()?, item: CatechismItemId::new(r.item), provenance: r.provenance, justification: dto_to_justification(r.justification)? });
+    }
+
+    // KRETZ-1: a plain row table, like `attests`/`fulfills` above.
+    for r in d.comments_on {
+        g.comments_on.push(CommentsOn {
+            item: CommentaryItemId::new(r.item),
+            on: dto_to_bible_range(r.on_from, r.on_to)?,
+            provenance: r.provenance,
+            justification: dto_to_justification(r.justification)?,
+        });
     }
 
     for r in d.mentions {
@@ -1531,6 +1586,69 @@ mod tests {
         assert_eq!(row.justification.text.as_deref(), Some("a real fulfillment-formula quote"));
         assert_eq!(row.justification.grounds.len(), 1);
         assert!(matches!(row.justification.grounds.iter().next().unwrap(), Ground::Scripture(_)));
+    }
+
+    /// KRETZ-1: the CommentaryItem/comments_on sibling of `fulfills_round_
+    /// trips_losslessly_with_a_real_row` above -- proves the guard shrink
+    /// (`dump`'s own doc comment, "closes the NINTH member") with a REAL
+    /// `kretzmann_adapter::normalize` build, not a hand-built row (the
+    /// node payload AND the row must both survive, and `dump` must no
+    /// longer refuse them).
+    #[test]
+    fn commentary_item_and_comments_on_round_trip_losslessly_with_a_real_kretzmann_build() {
+        use atlas_etl::kretzmann::{ChapterStats, KretzUnit, KretzmannCorpus, ParsedChapter, UnitKind};
+
+        let corpus = KretzmannCorpus {
+            chapters: vec![ParsedChapter {
+                book_index: 0,
+                chapter: 1,
+                units: vec![KretzUnit {
+                    id: "kretzmann/0.1.0".to_string(),
+                    book_index: 0,
+                    chapter: 1,
+                    verse_from: 1,
+                    verse_to: 1,
+                    kind: UnitKind::Verse,
+                    heading: Some("The Creation of the World.".to_string()),
+                    text: "In the beginning, cp. John 1, 1.".to_string(),
+                }],
+                fragments: vec![],
+                stats: ChapterStats::default(),
+            }],
+            stats: Default::default(),
+        };
+
+        let atlas = crate::event_world::empty_atlas();
+        let (graph, stats, event_world_stats, chrono) =
+            crate::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(KJV_FIXTURE, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas, &[], None, None, Some(&corpus))
+                .expect("a real build with Kretzmann data must succeed");
+        assert_eq!(graph.comments_on.len(), 1, "fixture sanity: kretzmann_adapter::normalize must have built exactly one row");
+
+        let chronology = Chronology::from_derivation(chrono);
+        let dumped = dump(&graph, &chronology, &stats, &event_world_stats).expect("dump must succeed with real CommentaryItem nodes + comments_on rows -- the guard's whole point was to force this extension");
+        assert_eq!(dumped.comments_on.len(), 1);
+
+        let bytes = encode(&dumped).expect("encode must succeed");
+        let decoded = decode(&bytes).expect("decode must succeed");
+        let (reconstructed, ..) = to_service_parts(decoded).expect("to_service_parts must succeed");
+
+        assert_eq!(reconstructed.comments_on.len(), 1, "the row must survive the full round trip, not silently drop");
+        let row = &reconstructed.comments_on[0];
+        assert_eq!(row.item.0, "kretzmann/0.1.0");
+        let gen_1_1 = BibleLocus::whole(VerseRef { book: 0, chapter: 1, verse: 1 });
+        assert_eq!(row.on, BibleLocusRange::new(gen_1_1.clone(), gen_1_1).unwrap());
+        assert!(matches!(row.justification.grounds.iter().next().unwrap(), Ground::Scripture(_)), "grounded in the lemma's own locus (decision 4)");
+
+        let node_id = atlas_graph_types::id::CommentaryItemId::new("kretzmann/0.1.0".to_string()).erase();
+        let node = reconstructed.nodes.get(&node_id).expect("the CommentaryItem node itself must survive the round trip");
+        match &node.payload {
+            NodePayload::CommentaryItem { work, heading, text } => {
+                assert_eq!(work.0, crate::kretzmann_adapter::KRETZMANN_SOURCE_ID);
+                assert_eq!(heading.as_deref(), Some("The Creation of the World."));
+                assert_eq!(text, "In the beginning, cp. John 1, 1.");
+            }
+            other => panic!("expected CommentaryItem payload, got {other:?}"),
+        }
     }
 
     /// EDGE-1a: the Typology sibling of `fulfills_round_trips_losslessly_

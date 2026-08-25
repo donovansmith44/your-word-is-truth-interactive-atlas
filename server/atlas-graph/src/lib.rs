@@ -41,6 +41,7 @@ pub mod fidelity;
 pub mod fulfillment_adapter;
 pub mod heading;
 pub mod kjv_adapter;
+pub mod kretzmann_adapter;
 pub mod law_check;
 pub mod legacy;
 pub mod peoples_adapter;

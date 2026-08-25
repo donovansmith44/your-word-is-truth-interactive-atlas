@@ -236,7 +236,25 @@ impl GraphService {
         brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
         concord: Option<&crate::concord_adapter::ConcordBundle>,
     ) -> anyhow::Result<Self> {
-        let (graph, stats, event_world_stats, chrono) = build::build_graph_from_sources_with_eras_and_brainfuel_and_concord(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord)?;
+        Self::from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord, None)
+    }
+
+    /// KRETZ-1: the richest raw-source constructor yet -- see `build::
+    /// build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_
+    /// kretzmann`'s own doc comment. `from_sources_with_eras_and_brainfuel_
+    /// and_concord` above delegates here with `None`, unchanged behavior
+    /// for every existing caller.
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(
+        kjv_json: &str,
+        xrefs_tsv: &str,
+        atlas: &AtlasData,
+        eras: &[atlas_core::data::Era],
+        brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
+        concord: Option<&crate::concord_adapter::ConcordBundle>,
+        kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
+    ) -> anyhow::Result<Self> {
+        let (graph, stats, event_world_stats, chrono) = build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann)?;
         Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono)))
     }
 
@@ -307,7 +325,11 @@ impl GraphService {
         // such subdirectory is an honestly empty build, never an error;
         // real, present vendored files are parsed fail-loud).
         let concord = load_concord(raw_dir)?;
-        Self::from_sources_with_eras_and_brainfuel_and_concord(&kjv_json, &xrefs_tsv, atlas, &eras, brainfuel.as_ref(), concord.as_ref())
+        // KRETZ-1: `data/raw/kretzmann/{slug}/{chapter}.html` -- the SAME
+        // graceful-absence treatment `load_concord`/`load_brainfuel` above
+        // already get.
+        let kretzmann = load_kretzmann(raw_dir)?;
+        Self::from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(&kjv_json, &xrefs_tsv, atlas, &eras, brainfuel.as_ref(), concord.as_ref(), kretzmann.as_ref())
     }
 
     /// M-C: takes an ALREADY-BUILT `Chronology` rather than `&AtlasData` --
@@ -574,6 +596,19 @@ fn load_concord(raw_dir: &Path) -> anyhow::Result<Option<crate::concord_adapter:
     let overlap_text = std::fs::read_to_string(&overlap_path).with_context(|| format!("reading {}", overlap_path.display()))?;
     let sc_overlap = atlas_etl::concord::parse_sc_overlap(&overlap_text).with_context(|| format!("parsing {}", overlap_path.display()))?;
     Ok(Some(crate::concord_adapter::ConcordBundle { corpus, sc_overlap }))
+}
+
+/// KRETZ-1: `raw_dir/kretzmann/` -- `None` (not an error) when that
+/// directory simply doesn't exist (`load_concord`'s own doc comment, same
+/// treatment); `Some(Err(..))` propagated fail-loud when it exists but is
+/// malformed (e.g. a missing page -- `atlas_etl::kretzmann::read_all`'s own
+/// per-file `Result`).
+fn load_kretzmann(raw_dir: &Path) -> anyhow::Result<Option<atlas_etl::kretzmann::KretzmannCorpus>> {
+    let root = raw_dir.join("kretzmann");
+    if !root.is_dir() {
+        return Ok(None);
+    }
+    atlas_etl::kretzmann::read_all(&root).map(Some).with_context(|| format!("reading vendored Kretzmann data from {}", root.display()))
 }
 
 #[cfg(test)]

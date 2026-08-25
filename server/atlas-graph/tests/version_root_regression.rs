@@ -70,8 +70,15 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
     let sc_overlap_text = std::fs::read_to_string(dir.parent().unwrap().join("curated/concord-sc-overlap.toml")).expect("data/curated/concord-sc-overlap.toml must exist");
     let sc_overlap = atlas_etl::concord::parse_sc_overlap(&sc_overlap_text).expect("concord-sc-overlap.toml must parse");
     let concord_bundle = atlas_graph::concord_adapter::ConcordBundle { corpus: concord_corpus, sc_overlap };
+    // KRETZ-1: the real vendored Kretzmann data joins the root computation
+    // here too (CORP-1a/CORP-2a's own brainfuel/concord-threading
+    // precedent, immediately above) -- otherwise this harness would keep
+    // proving a graph MISSING the corpus atlas-graph-compile actually
+    // ships.
+    let kretzmann_corpus = atlas_etl::kretzmann::read_all(&dir.join("kretzmann")).expect("data/raw/kretzmann must exist -- run data/fetch-raw.ps1 first");
 
-    let svc = GraphService::from_sources_with_eras_and_brainfuel_and_concord(&kjv_json, &xrefs_tsv, &atlas, &[], Some(&brainfuel), Some(&concord_bundle)).expect("the real committed sources must build");
+    let svc = GraphService::from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(&kjv_json, &xrefs_tsv, &atlas, &[], Some(&brainfuel), Some(&concord_bundle), Some(&kretzmann_corpus))
+        .expect("the real committed sources must build");
     let hex = atlas_graph::version_hex(svc.snapshot().version());
 
     // Captured once, before the M-C pipeline restructuring (controller
@@ -251,4 +258,18 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // compliant restoration content, not a bug -- the root moving IS the
 // restoration being real, same as batch KJV-CASE's own note above. New
 // captured value: "899e92c9815fb611".
-const EXPECTED_VERSION_HEX: &str = "899e92c9815fb611";
+//
+// MOVED AGAIN (deliberately -- Batch KRETZ-1, "Kretzmann's Popular
+// Commentary of the Bible: the corpus enters the graph," 2026-08-25): this
+// test's own build now threads a real `atlas_etl::kretzmann::
+// KretzmannCorpus` (module doc comment's own "otherwise this harness would
+// keep proving a graph MISSING the corpus atlas-graph-compile actually
+// ships") -- one new `Source` node (the work itself) plus 50,439 new
+// `CommentaryItem` nodes (one per verse-anchored unit, LEMMA-EXCISED per
+// decision 2 -- the excised KJV text itself never enters the graph, only
+// Kretzmann's own prose) and 50,439 new `comments_on` rows all feed the
+// content hash; every existing node kind (Bible/Concord TextUnits, Event,
+// Place, Person, ...) is byte-identical (Kretzmann is purely additive --
+// no existing node's own canonical bytes change). New captured value:
+// "7b4e851142a7a0c5".
+const EXPECTED_VERSION_HEX: &str = "7b4e851142a7a0c5";

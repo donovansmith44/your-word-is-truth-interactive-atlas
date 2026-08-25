@@ -470,6 +470,87 @@ disclosed structure resistance to the `ConcordRef` triple, per the batch
 brief; see `batch-corp2a-report.md` for the full per-document structure
 disclosures and paragraph-count tally.
 
+## `kretzmann/{slug}/{chapter}.html` (Batch KRETZ-1 — Kretzmann's Popular Commentary, 1921-1924)
+
+1,189 chapter pages fetched from `kretzmanncommentary.org` (see
+`data/fetch-raw.ps1`'s own `$kretzmannBooks` table and `LICENSES.md`'s
+"Kretzmann's Popular Commentary" section for the full PD reasoning) — all
+66 books, every KJV chapter, `/{book-slug}/{chapter}` (book INTRO pages,
+`/{slug}/intro`, are explicitly out of scope — controller decision 1 names
+"every chapter page" only). Fetched cleanly: 1,189/1,189, zero missing, zero
+fallback uses (the scouted fallback, `kretzmannproject.org`, was live-probed
+and timed out — no verified URL scheme exists to fall back to).
+
+**Two real page templates, an exact 929/260 OT/NT split** (discovered
+fetching the real corpus, not assumed up front — `server/atlas-etl/src/
+kretzmann.rs`'s own module doc comment has the full parser-facing grammar
+for both):
+
+- **Type A ("interleaved lemma"), every OT chapter**: `<strong><sup>N</sup>
+  LEMMA</strong>` immediately followed by plain commentary prose, repeating
+  — the bold KJV lemma is SUB-VERSE granular (Kretzmann splits a verse at a
+  comma/semicolon and comments between the pieces; GEN 1:2's own
+  three-fragment split is the canonical example). A verse-number marker
+  absent from a fragment means "the same verse continues"; the FIRST
+  fragment of a chapter, if unnumbered, is a Psalm-superscription-class
+  lemma that folds into the first numbered verse that follows (matching how
+  this app's own canonical `kjv.json` already folds a Psalm superscription
+  into verse 1). Some verse markers are SUB-LETTERED (`<sup>5a</sup>`/
+  `<sup>5b</sup>`, a finer split within one verse — the SAME idea as GEN
+  1:2's own unlettered split, just explicitly labeled; the trailing letter
+  carries no locus meaning of its own).
+- **Type B ("block quote + flowing commentary"), every NT chapter**: `<p
+  class="bible"><sup id="vN">N</sup>FULL VERSE TEXT...</p>` (every verse a
+  pericope's own discussion covers, quoted WHOLE, not sub-verse-fragmented)
+  followed by one or more plain `<p>` paragraphs of commentary discussing
+  the whole span.
+
+**Footnotes**: a trailing `<section data-footnotes>` block
+(GitHub-Flavored-Markdown-style), `<sup><a href="#user-content-fn-N"
+id="user-content-fnref-N" data-footnote-ref>N</a></sup>` inline reference
+markers. 257 real footnotes across the corpus, kept verbatim in place
+(resolved to `" [Footnote N: TEXT]"` inline in stored prose) — zero landed
+inside an excised lemma/quote span (a footnote is never genuine KJV
+content, so that would need silent excision from the conservation
+comparison; disclosed as a possible, never-observed case in the parser's
+own doc comment).
+
+**KRETZ-ACCEPT-1 (the conservation law) real outcome**, over the whole
+corpus, checked against this app's own RESTORED (KJV-CASE + KJV-CASE-2)
+canonical text: 31,032 verses checked (70 verses Kretzmann summarizes with
+no lemma of their own — lawful, disclosed); 2,498 exact byte matches;
+22,933 pass under a disclosed MECHANICAL case+punctuation equivalence
+(Tetragrammaton/reverential-pronoun case, and the digital edition's own
+fragment/quote-boundary punctuation convention — a comma/semicolon
+continuing one KJV sentence across a fragment boundary renders as a period
++ capital); 1,853 more pass under a THIRD disclosed mechanical class, a
+curated (never fuzzy-matched) American/British spelling-variant table
+(`shew`/`show`, `honour`/`honor`, `sepulchre`/`sepulcher`, ...) mined and
+manually vetted from the real corpus's own recurring mismatches. The
+remaining 3,748 (12.1%) are genuine, categorized, DISCLOSED deviations —
+manually sampled across the whole corpus (both testaments, both templates):
+by far the largest class is Kretzmann quoting only a verse's OPENING clause
+before moving to prose commentary (completely normal commentary-writing
+style, never a bug); a smaller class is the digital edition occasionally
+bolding a short connective gloss alongside the quoted clause; a further
+class is compound Hebrew proper names, which this app's own canonical
+source en-dash-joins ("Beth–el") while the digital edition sometimes
+hyphenates and sometimes fully joins ("Bethel"); Psalm 119's own
+Hebrew-letter acrostic stanza headers (folded into each stanza's own first
+verse by this app's canonical convention) are simply never quoted by
+Kretzmann's own lemma at all. Manual sampling found NO case of genuine
+verse-content substitution anywhere — the SAME conclusion, and the SAME
+disclosure discipline, Batch CORP-1a's own brain-fuel cross-check reached
+(see "brain-fuel/bible parallel editions" below: "9,274 of 31,102... every
+single one a typographic/transcription-convention difference... NEVER a
+case of verse-content substitution"). `server/atlas-etl/tests/
+kretzmann_real_data.rs` pins these exact counts as a regression harness.
+
+**Date mine**: 83 verbatim dating clauses extracted from stored prose (42
+B.C., 41 A.D., 0 Anno Mundi — disclosed absent, not assumed) — parsing
+only, emitted to `data/exports/kretzmann-chronology.json`
+(`status: "tentative-extraction"`).
+
 ## Vendored Leaflet (`client/wwwroot/vendor/leaflet/`)
 
 `leaflet.js` (147,552 bytes) and `leaflet.css` (14,806 bytes), fetched from

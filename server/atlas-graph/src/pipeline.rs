@@ -136,6 +136,15 @@ pub struct BuildCtx<'a> {
     /// data (every caller of `BuildCtx::new`/`with_eras`/`with_eras_and_
     /// brainfuel`) gets `None`, unchanged from before this batch.
     pub concord: Option<&'a crate::concord_adapter::ConcordBundle>,
+    /// KRETZ-1: `atlas_etl::kretzmann::read_all`'s own pre-parsed corpus --
+    /// the SAME "absent == an honestly empty build, not a placeholder"
+    /// treatment `concord`/`brainfuel` above already get (every test
+    /// fixture that doesn't supply real Kretzmann data, via `BuildCtx::
+    /// new`/`with_eras`/..., gets `None`, unchanged from before this
+    /// batch). Reference, not owned: the corpus is large (61,490 excised
+    /// fragments alone over the real vendored data), and every real caller
+    /// already has one living for the duration of the build.
+    pub kretzmann: Option<&'a atlas_etl::kretzmann::KretzmannCorpus>,
     /// ENT-1a: `description_adapter::fill_descriptions`'s own return value,
     /// captured here (not just returned-and-discarded, unlike the other
     /// MERGE/ALIAS adapter calls' own Stats structs) so a caller that
@@ -210,6 +219,28 @@ impl<'a> BuildCtx<'a> {
         brainfuel: Option<&'a atlas_etl::brainfuel::BrainFuelCorpus>,
         concord: Option<&'a crate::concord_adapter::ConcordBundle>,
     ) -> Self {
+        Self::with_eras_and_brainfuel_and_concord_and_kretzmann(kjv_canon, kjv_verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, concord, None)
+    }
+
+    /// KRETZ-1: the richest form yet -- real startup and the artifact
+    /// compile step use this directly, with a real, pre-parsed
+    /// `atlas_etl::kretzmann::KretzmannCorpus`; every other caller keeps
+    /// calling `new`/`with_eras`/`with_eras_and_brainfuel`/`with_eras_and_
+    /// brainfuel_and_concord` unchanged, getting an honestly absent
+    /// (`None`) `kretzmann` -- see this struct's own `kretzmann` field doc
+    /// comment.
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_eras_and_brainfuel_and_concord_and_kretzmann(
+        kjv_canon: &'a Canon,
+        kjv_verses: &'a std::collections::HashMap<String, String>,
+        kjv_json_source: Option<&'a str>,
+        xrefs_tsv: &'a str,
+        atlas: &'a AtlasData,
+        eras: &'a [atlas_core::data::Era],
+        brainfuel: Option<&'a atlas_etl::brainfuel::BrainFuelCorpus>,
+        concord: Option<&'a crate::concord_adapter::ConcordBundle>,
+        kretzmann: Option<&'a atlas_etl::kretzmann::KretzmannCorpus>,
+    ) -> Self {
         BuildCtx {
             kjv_canon,
             kjv_verses,
@@ -219,6 +250,7 @@ impl<'a> BuildCtx<'a> {
             eras,
             brainfuel,
             concord,
+            kretzmann,
             graph: Graph::default(),
             stats: BuildStats::default(),
             event_world_stats: EventWorldStats::default(),
@@ -261,6 +293,12 @@ impl Pass for NormalizePass {
         // `kjv_adapter::normalize` above already has (module doc comment
         // on `concord_adapter.rs`).
         crate::concord_adapter::normalize(ctx);
+        // KRETZ-1: the Kretzmann corpus's own Source node + CommentaryItem
+        // nodes + comments_on rows -- self-contained (no OTHER pass's
+        // output needed first), the SAME NORMALIZE-eligibility `concord_
+        // adapter::normalize` above already has (module doc comment on
+        // `kretzmann_adapter.rs`).
+        crate::kretzmann_adapter::normalize(ctx);
         // Batch P (the extensibility proof): Person nodes need no OTHER
         // pass's output first (same NORMALIZE-eligibility reasoning as
         // every sibling call above) -- ctx.atlas.people is already fully
