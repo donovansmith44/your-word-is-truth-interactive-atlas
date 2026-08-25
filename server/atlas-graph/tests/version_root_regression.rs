@@ -235,4 +235,20 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // 31,102 Bible TextUnit nodes and every other node kind are byte-
 // identical (Concord is purely additive -- no existing node's own
 // canonical bytes change). New captured value: "19405c160db9de80".
-const EXPECTED_VERSION_HEX: &str = "19405c160db9de80";
+//
+// MOVED AGAIN (deliberately -- Batch KJV-CASE-2, owner ruling verbatim
+// "do it (superscript fix)", 2026-08-25): the superscription-aware
+// extension of the case-restoration pass (`atlas_etl::brainfuel::
+// classify_and_restore`'s own TAIL-ALIGNMENT RULE, wired into the SAME
+// `restore_kjv_case` this test's own build already threads through)
+// changes 136 more KJV `TextUnit` nodes' own canonical bytes -- every
+// superscription-folded position (Psalm/Ps119-acrostic-header titles
+// folded into verse 1 by our own `data/raw/kjv.json`) now gets its
+// ALIGNED TAIL's Tetragrammaton casing restored, the folded-in
+// superscription prefix itself kept byte-identical (PSA 110:1, the
+// flagship, among them: "The Lord said" -> "The LORD said", "A Psalm of
+// David. " untouched). Real, deliberate, KJV-INERRANCY-DIRECTIVE-
+// compliant restoration content, not a bug -- the root moving IS the
+// restoration being real, same as batch KJV-CASE's own note above. New
+// captured value: "899e92c9815fb611".
+const EXPECTED_VERSION_HEX: &str = "899e92c9815fb611";

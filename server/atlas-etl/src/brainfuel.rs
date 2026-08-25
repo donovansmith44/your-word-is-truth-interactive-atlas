@@ -494,15 +494,182 @@ pub fn restore_verse_case(ours: &str, theirs: &str) -> Option<String> {
     Some(String::from_utf8(restored).expect("ASCII-case-only transform of valid UTF-8 stays valid UTF-8 (fn doc comment)"))
 }
 
-/// Per-class tallies (batch brief controller decision 4). `restored`:
-/// positions where `restore_verse_case` produced a genuinely different
-/// string (brain-fuel's own casing disagreed with ours). `already_agreeing`:
+// ---------------------------------------------------------------------
+// Batch KJV-CASE-2 (owner ruling, verbatim "do it (superscript fix)" --
+// .superpowers/sdd/2026-08-17-bible-atlas-m1/batch-kjv-case2-brief.md):
+// extends the pass above to the positions it provably and correctly
+// SKIPPED because our own canonical text folds a book/Psalm superscription
+// (e.g. "A Psalm of David.") into verse 1 while brain-fuel's own column
+// carries the verse body alone -- so the whole-verse case-fold-equality
+// gate above never fires there. PSA 110:1 is the flagship: "The LORD said
+// unto my Lord" (both Tetragrammaton-referent forms, one verse).
+//
+// KJV INERRANCY DIRECTIVE still binds: restoration, never revision -- the
+// superscription text itself IS Scripture and keeps its place, characters
+// AND casing both, byte-for-byte untouched; only the ALIGNED TAIL (the
+// verse body brain-fuel's own column actually carries) is ever eligible
+// for case restoration, via the SAME `restore_verse_case` primitive pass 1
+// already proved correct -- this extension adds an ALIGNMENT step ahead
+// of that primitive, it never forks a second byte-transform mechanism.
+// ---------------------------------------------------------------------
+
+/// EXCLUSION LIST (batch KJV-CASE-2 controller decision 3): positions
+/// this pass's own tail-alignment sweep (`tail_align` below) would
+/// otherwise classify `OursSuffix` (superscription-class, eligible for
+/// restoration), but which this batch's own real-data inspection showed
+/// are NOT a genuine folded-in superscription -- brain-fuel `king_james`
+/// column data artifacts of the same general kind batch KJV-CASE's own
+/// report self-review catalogued (transcription quirks, never a real KJV
+/// convention). Authored from what THIS run's own data showed
+/// (batch-kjv-case2-brief.md controller decision 3: "the code's table is
+/// authored from what the DATA shows... this run is the authority") --
+/// position + one-line reason each, from real inspection of the aligned
+/// prefix/tail this run produced. Checked BEFORE `tail_align` runs
+/// (`classify_and_restore` below): an excluded position restores nothing
+/// regardless of what the alignment check would otherwise decide, and is
+/// asserted untouched by `brainfuel_real_data.rs`'s own
+/// `superscription_exclusions_are_provably_untouched`.
+/// Authored from a full real-data sweep of the 3,801 pass-1-skipped
+/// positions (batch-kjv-case2-report.md has the full methodology): 139
+/// positions tail-aligned (`OursSuffix`), a word-level diff against each
+/// one's own restored tail flagged exactly these three as changing a word
+/// OTHER than a Tetragrammaton-pattern one (LORD/GOD/JAH/JEHOVAH, or the
+/// unrestored Adonai-class "Lord"/"God" left alone) -- the report's own
+/// "~136-class" estimate reconciles exactly: 139 - 3 = 136.
+pub const SUPERSCRIPTION_EXCLUSIONS: &[(&str, &str)] = &[
+    (
+        "PSA.70.1",
+        "brain-fuel's own king_james column renders this verse's ENTIRE body in spurious ALL-CAPS (not just the Tetragrammaton word) -- the same brain-fuel transcription-artifact class batch KJV-CASE's own report already catalogued at PRO.22.1/LAM.3.1, never a genuine KJV casing convention.",
+    ),
+    (
+        "PSA.92.1",
+        "brain-fuel's own king_james column renders this verse's ENTIRE body in spurious ALL-CAPS (not just the Tetragrammaton word) -- the same brain-fuel transcription-artifact class batch KJV-CASE's own report already catalogued at PRO.22.1/LAM.3.1, never a genuine KJV casing convention.",
+    ),
+    (
+        "ACT.9.29",
+        "brain-fuel's own versification SPLITS verses 28/29 differently from ours (their v28 absorbs our v29's own first clause, 'And he spake boldly in the name of the Lord Jesus,') -- the folded-suffix match is a versification-boundary coincidence, never a folded-in superscription (Acts carries no book/Psalm-style superscriptions at all).",
+    ),
+];
+
+/// One position's own tail-alignment outcome (batch KJV-CASE-2 controller
+/// decision 1), computed once the whole verse is already known NOT to be
+/// case-fold-equal to brain-fuel's own column (`restore_verse_case`
+/// already returned `None`). ASCII-folds BOTH texts -- the IDENTICAL fold
+/// `restore_verse_case`'s own `eq_ignore_ascii_case` uses, never a
+/// broader Unicode fold, keeping this pass's UTF-8 safety guarantee
+/// identical to pass 1's -- and checks for a SUFFIX alignment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TailAlignment {
+    /// `ours`'s own folded text ends with `theirs`'s folded text -- the
+    /// expected shape (a folded-in superscription prefix ahead of the
+    /// verse body). Carries the untouched prefix's own BYTE length.
+    OursSuffix { prefix_len: usize },
+    /// `theirs`'s own folded text ends with `ours`'s -- NOT expected
+    /// (controller decision 1: "Mirror-case... is NOT expected -- if
+    /// found, count + disclose, restore nothing there").
+    TheirsSuffix,
+    /// Neither aligns -- true residue (whitespace conventions, spelling
+    /// residue, etc: the non-superscription mismatch classes this batch
+    /// does not touch).
+    NoAlignment,
+}
+
+/// Pure, dependency-free alignment check -- no case transform happens
+/// here (`classify_and_restore` below does that, via `restore_verse_case`
+/// on the aligned tail only, never a bespoke second transform).
+/// `is_char_boundary` guards every byte slice: real KJV/brain-fuel text is
+/// ASCII at every observed superscription boundary, but this never
+/// assumes it -- a non-boundary split is treated as no alignment, never a
+/// panic.
+fn tail_align(ours: &str, theirs: &str) -> TailAlignment {
+    if ours.len() > theirs.len() {
+        let prefix_len = ours.len() - theirs.len();
+        if ours.is_char_boundary(prefix_len) && ours[prefix_len..].eq_ignore_ascii_case(theirs) {
+            return TailAlignment::OursSuffix { prefix_len };
+        }
+    } else if theirs.len() > ours.len() {
+        let prefix_len = theirs.len() - ours.len();
+        if theirs.is_char_boundary(prefix_len) && theirs[prefix_len..].eq_ignore_ascii_case(ours) {
+            return TailAlignment::TheirsSuffix;
+        }
+    }
+    TailAlignment::NoAlignment
+}
+
+/// The full, richer per-position classification (batch KJV-CASE-2): pass
+/// 1's own binary `restore_verse_case` `Some`/`None` outcome, extended
+/// with the tail-alignment/exclusion/mirror-case buckets. ONE function,
+/// shared by BOTH real call sites that need this decision
+/// (`restore_kjv_case` below, and `atlas_graph::fidelity::
+/// check_kjv_fidelity`'s own independent "expected"-side re-derivation) --
+/// mirrors pass 1's own precedent of sharing `restore_verse_case` itself
+/// between those same two call sites, so the law stays provably ONE
+/// mechanism, never two.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RestorationOutcome {
+    /// Pass-1 class: whole verse case-fold-equal. Carries the fully
+    /// restored text (byte-identical to `ours` when already agreeing).
+    WholeVerse(String),
+    /// Pass-2 class (batch KJV-CASE-2): a folded-in superscription
+    /// prefix, kept byte-identical, ahead of a case-restored tail.
+    /// Carries the fully restored text (untouched prefix + restored tail).
+    Superscription(String),
+    /// Named in `SUPERSCRIPTION_EXCLUSIONS` -- restore nothing.
+    Excluded,
+    /// Mirror-case (brain-fuel longer) -- NOT expected; restore nothing.
+    MirrorCase,
+    /// True residue -- neither whole-verse-equal nor tail-aligned.
+    Residue,
+}
+
+/// `dot_ref` is needed only for the `SUPERSCRIPTION_EXCLUSIONS` lookup --
+/// every byte-level decision still flows through `restore_verse_case`
+/// alone, exactly as pass 1 established.
+pub fn classify_and_restore(dot_ref: &str, ours: &str, theirs: &str) -> RestorationOutcome {
+    if let Some(new_text) = restore_verse_case(ours, theirs) {
+        return RestorationOutcome::WholeVerse(new_text);
+    }
+    if SUPERSCRIPTION_EXCLUSIONS.iter().any(|(excluded_ref, _reason)| *excluded_ref == dot_ref) {
+        return RestorationOutcome::Excluded;
+    }
+    match tail_align(ours, theirs) {
+        TailAlignment::OursSuffix { prefix_len } => {
+            let tail = restore_verse_case(&ours[prefix_len..], theirs).expect(
+                "tail_align's own OursSuffix match guarantees the aligned tail is case-fold-equal to theirs -- restore_verse_case cannot return None here",
+            );
+            RestorationOutcome::Superscription(format!("{}{}", &ours[..prefix_len], tail))
+        }
+        TailAlignment::TheirsSuffix => RestorationOutcome::MirrorCase,
+        TailAlignment::NoAlignment => RestorationOutcome::Residue,
+    }
+}
+
+/// Per-class tallies (batch brief controller decision 4; buckets 3-6
+/// added by batch KJV-CASE-2, controller decisions 1-3). `restored`/
+/// `already_agreeing` are PASS-1's own two whole-verse buckets, byte-for-
+/// byte UNCHANGED by this extension (KJV-CASE-2 never touches a position
+/// pass 1 already restored or already-agreed): `restored` -- positions
+/// where `restore_verse_case` produced a genuinely different string
+/// (brain-fuel's own casing disagreed with ours). `already_agreeing` --
 /// positions where the folded texts matched AND the bytes were ALREADY
 /// identical -- no case drift to restore, the bulk of the KJV.
-/// `skipped_mismatch`: positions where the folded texts themselves
-/// differ -- NEVER touched, count and disclose only. `restored +
-/// already_agreeing + skipped_mismatch == compared` always (every
-/// compared position falls into exactly one bucket) -- and `compared`
+///
+/// The remaining four fields subdivide PASS-1's own single
+/// `skipped_mismatch` bucket via KJV-CASE-2's own TAIL-ALIGNMENT RULE:
+/// `superscription_restored` -- `ours`'s own folded text ends with
+/// `theirs`'s folded text (a folded-in superscription prefix): case
+/// restored over the aligned TAIL only, the prefix kept byte-identical.
+/// `excluded` -- named in `SUPERSCRIPTION_EXCLUSIONS` (a brain-fuel
+/// artifact, not a genuine superscription) -- restore nothing.
+/// `mirror_case_found` -- `theirs`'s own folded text ends with `ours`'s
+/// (brain-fuel longer) -- NOT expected; disclosed, never restored.
+/// `skipped_mismatch` -- true residue: neither whole-verse-equal nor
+/// tail-aligned at all (whitespace conventions, spelling residue, etc.) --
+/// KJV-CASE-2 does NOT touch this class, per its own scope.
+///
+/// `compared == restored + already_agreeing + superscription_restored +
+/// excluded + mirror_case_found + skipped_mismatch` always (every compared
+/// position falls into exactly one of the six buckets) -- and `compared`
 /// itself matches `KjvCrossCheckReport.compared` exactly, over the same
 /// two inputs (both walk the identical `corpus.rows`/`our_kjv_verses`
 /// alignment).
@@ -511,23 +678,31 @@ pub struct CaseRestorationReport {
     pub compared: usize,
     pub restored: usize,
     pub already_agreeing: usize,
+    pub superscription_restored: usize,
+    pub excluded: usize,
+    pub mirror_case_found: usize,
     pub skipped_mismatch: usize,
 }
 
 /// The owner-ordered case-restoration pass (batch brief controller
-/// decision 1). Returns a NEW `"BOOK.CH.V" -> text` map: a full clone of
-/// `our_kjv_verses` with ONLY the `restored` positions' values replaced.
-/// Every other entry -- including any position brain-fuel doesn't cover at
-/// all -- passes through byte-identical by construction (this starts from
+/// decision 1; extended by batch KJV-CASE-2's own superscription-aware
+/// tail alignment, controller decisions 1-3). Returns a NEW
+/// `"BOOK.CH.V" -> text` map: a full clone of `our_kjv_verses` with ONLY
+/// the restored positions' values replaced (whole-verse OR
+/// superscription-tail class). Every other entry -- including any
+/// position brain-fuel doesn't cover at all -- passes through
+/// byte-identical by construction (this starts from
 /// `our_kjv_verses.clone()` and only ever `.insert()`s at a position this
 /// loop actually visits and restores), which is exactly the case-only
-/// law's second half: a skipped/uncovered position is untouched, not
-/// merely "close."
+/// law's second half: a skipped/excluded/uncovered position is untouched,
+/// not merely "close."
 ///
 /// Same per-row loop shape as `kjv_cross_check` above (the batch brief's
-/// own instruction: "build the restoration pass beside it"). Iteration
-/// order over `corpus.rows` cannot change the result: every write lands
-/// at a distinct `dot_ref` key.
+/// own instruction: "build the restoration pass beside it"), now
+/// delegating the per-position DECISION to `classify_and_restore` above
+/// (the ONE mechanism this whole module's own KJV-CASE-2 section extends,
+/// never a second one). Iteration order over `corpus.rows` cannot change
+/// the result: every write lands at a distinct `dot_ref` key.
 pub fn restore_kjv_case(corpus: &BrainFuelCorpus, our_kjv_verses: &HashMap<String, String>) -> (HashMap<String, String>, CaseRestorationReport) {
     let mut restored_verses = our_kjv_verses.clone();
     let mut report = CaseRestorationReport::default();
@@ -536,8 +711,8 @@ pub fn restore_kjv_case(corpus: &BrainFuelCorpus, our_kjv_verses: &HashMap<Strin
         let dot_ref = format!("{}.{}.{}", row.book.code(), row.chapter, row.verse);
         let Some(ours) = our_kjv_verses.get(&dot_ref) else { continue };
         report.compared += 1;
-        match restore_verse_case(ours, theirs) {
-            Some(new_text) => {
+        match classify_and_restore(&dot_ref, ours, theirs) {
+            RestorationOutcome::WholeVerse(new_text) => {
                 if &new_text == ours {
                     report.already_agreeing += 1;
                 } else {
@@ -545,7 +720,13 @@ pub fn restore_kjv_case(corpus: &BrainFuelCorpus, our_kjv_verses: &HashMap<Strin
                     restored_verses.insert(dot_ref, new_text);
                 }
             }
-            None => report.skipped_mismatch += 1,
+            RestorationOutcome::Superscription(new_text) => {
+                report.superscription_restored += 1;
+                restored_verses.insert(dot_ref, new_text);
+            }
+            RestorationOutcome::Excluded => report.excluded += 1,
+            RestorationOutcome::MirrorCase => report.mirror_case_found += 1,
+            RestorationOutcome::Residue => report.skipped_mismatch += 1,
         }
     }
     (restored_verses, report)
@@ -758,13 +939,110 @@ mod tests {
         assert_eq!(report.compared, 3, "GEN.4.1 (absent from our side) is not compared");
         assert_eq!(report.already_agreeing, 1);
         assert_eq!(report.restored, 1);
-        assert_eq!(report.skipped_mismatch, 1);
-        assert_eq!(report.compared, report.restored + report.already_agreeing + report.skipped_mismatch, "every compared position falls into exactly one bucket");
+        assert_eq!(report.skipped_mismatch, 1, "GEN.3.1's extra word 'indeed' is a PREFIX-side difference on theirs, not a suffix alignment on ours -- true residue");
+        assert_eq!(report.superscription_restored, 0);
+        assert_eq!(report.excluded, 0);
+        assert_eq!(report.mirror_case_found, 0);
+        assert_eq!(
+            report.compared,
+            report.restored + report.already_agreeing + report.superscription_restored + report.excluded + report.mirror_case_found + report.skipped_mismatch,
+            "every compared position falls into exactly one of the six buckets"
+        );
 
         assert_eq!(restored.get("GEN.1.1").map(String::as_str), Some("In the beginning"), "already-agreeing position is untouched");
         assert_eq!(restored.get("GEN.2.4").map(String::as_str), Some("the LORD God made"), "case genuinely restored");
         assert_eq!(restored.get("GEN.3.1").map(String::as_str), Some("Now the serpent was subtil"), "skipped position is BYTE-IDENTICAL to before -- never touched");
         assert_eq!(restored.len(), ours.len(), "no keys added or removed, only values at restored positions");
+    }
+
+    // -------------------------------------------------------------------
+    // Batch KJV-CASE-2: tail_align / classify_and_restore / the
+    // superscription-aware extension of restore_kjv_case.
+    // -------------------------------------------------------------------
+
+    #[test]
+    fn classify_and_restore_restores_a_folded_in_superscription_tail_only() {
+        // The real PSA 110:1 shape: our own text folds "A Psalm of
+        // David. " into verse 1 ahead of the body; brain-fuel's column
+        // carries the body alone, cased correctly. The prefix must come
+        // through BYTE-IDENTICAL (including its own "Lord" -- Adonai, not
+        // Tetragrammaton, correctly lowercase-l already) while the tail's
+        // "lord" (Tetragrammaton) gets promoted to "LORD".
+        let ours = "A Psalm of David. The lord said unto my Lord.";
+        let theirs = "The LORD said unto my Lord.";
+        match classify_and_restore("PSA.110.1", ours, theirs) {
+            RestorationOutcome::Superscription(text) => {
+                assert_eq!(text, "A Psalm of David. The LORD said unto my Lord.");
+            }
+            other => panic!("expected Superscription, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn classify_and_restore_leaves_the_prefix_byte_identical_even_when_it_itself_contains_mixed_case() {
+        // The prefix (superscription) must never be touched, even where
+        // it contains letters that coincidentally look Tetragrammaton-ish
+        // -- only the ALIGNED TAIL is ever eligible.
+        let ours = "To the chief Musician, A Psalm of david. the LORD reigneth.";
+        let theirs = "The LORD reigneth.";
+        match classify_and_restore("PSA.99.1", ours, theirs) {
+            RestorationOutcome::Superscription(text) => {
+                assert_eq!(text, "To the chief Musician, A Psalm of david. The LORD reigneth.", "prefix bytes ('david.', lowercase d) survive untouched; only the tail's case follows theirs");
+                assert!(text.starts_with("To the chief Musician, A Psalm of david. "), "prefix region byte-identical before/after");
+            }
+            other => panic!("expected Superscription, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn classify_and_restore_finds_mirror_case_and_restores_nothing() {
+        // brain-fuel's own column LONGER than ours, folded-suffix-equal --
+        // the NOT-expected mirror shape (controller decision 1). Must be
+        // disclosed as MirrorCase, never restored.
+        let ours = "The LORD reigneth.";
+        let theirs = "Unto the end, A Psalm of David. The LORD reigneth.";
+        assert_eq!(classify_and_restore("PSA.X.1", ours, theirs), RestorationOutcome::MirrorCase);
+    }
+
+    #[test]
+    fn classify_and_restore_finds_no_alignment_when_neither_side_is_a_folded_suffix() {
+        let ours = "Now the serpent was subtil";
+        let theirs = "Now the serpent was subtil indeed";
+        assert_eq!(classify_and_restore("GEN.3.1", ours, theirs), RestorationOutcome::Residue);
+    }
+
+    #[test]
+    fn classify_and_restore_honors_the_exclusion_table_over_an_otherwise_valid_alignment() {
+        // A position that WOULD tail-align (ours' folded text ends with
+        // theirs') but is named in SUPERSCRIPTION_EXCLUSIONS must restore
+        // nothing regardless -- the exclusion check runs BEFORE tail_align.
+        // Uses PSA.70.1, one of the three REAL excluded positions
+        // (brainfuel_real_data.rs's own real-data test proves the actual
+        // corpus shape; this unit test proves the MECHANISM in isolation
+        // with a synthetic fixture standing in for the real ALL-CAPS text).
+        assert!(SUPERSCRIPTION_EXCLUSIONS.iter().any(|(d, _)| *d == "PSA.70.1"), "this test targets a real exclusion-table entry -- update if PSA.70.1 is ever removed from the table");
+        let ours = "To the chief Musician, A Psalm of David, to bring to remembrance. Make haste, O God, to deliver me.";
+        let theirs = "MAKE HASTE, O GOD, TO DELIVER ME.";
+        // Sanity: without the exclusion, this WOULD tail-align (folded
+        // suffix match holds regardless of the all-caps artifact).
+        assert!(matches!(classify_and_restore("PSA.NOT.EXCLUDED", ours, theirs), RestorationOutcome::Superscription(_)));
+        assert_eq!(classify_and_restore("PSA.70.1", ours, theirs), RestorationOutcome::Excluded);
+    }
+
+    #[test]
+    fn restore_kjv_case_wires_the_superscription_class_through_the_whole_corpus_pass() {
+        let rows = vec![VerseRow { book: resolve_alias("Genesis").unwrap(), chapter: 1, verse: 1, king_james: Some("The LORD reigneth.".into()), renderings: vec![] }];
+        let corpus = BrainFuelCorpus { rows, stats: ParseStats::default() };
+        let mut ours = HashMap::new();
+        ours.insert("GEN.1.1".to_string(), "A Psalm of David. The lord reigneth.".to_string());
+
+        let (restored, report) = restore_kjv_case(&corpus, &ours);
+
+        assert_eq!(report.compared, 1);
+        assert_eq!(report.superscription_restored, 1);
+        assert_eq!(report.restored, 0, "the whole-verse bucket must not also count this -- it is a distinct bucket");
+        assert_eq!(report.compared, report.restored + report.already_agreeing + report.superscription_restored + report.excluded + report.mirror_case_found + report.skipped_mismatch);
+        assert_eq!(restored.get("GEN.1.1").map(String::as_str), Some("A Psalm of David. The LORD reigneth."));
     }
 
     #[test]

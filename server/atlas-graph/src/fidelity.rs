@@ -40,6 +40,15 @@
 //! positions. `None` (no real brainfuel) leaves `expected` untouched,
 //! exactly the pre-batch behavior -- every existing caller that never
 //! threads real brainfuel data through is unaffected.
+//!
+//! BATCH KJV-CASE-2 (batch-kjv-case2-brief.md): `atlas_etl::brainfuel::
+//! restore_kjv_case` (the adapter path's own case-restoration call, in
+//! `build.rs`) now also restores superscription-tail-aligned positions,
+//! via `atlas_etl::brainfuel::classify_and_restore` -- the ONE mechanism
+//! shared by both real call sites (that module's own doc comment). This
+//! law's own loop below now calls the SAME function, so its "expected"
+//! side stays in lockstep with whatever the adapter path actually did at
+//! every position, superscription-tail class included.
 
 use std::collections::BTreeSet;
 
@@ -210,8 +219,22 @@ pub fn check_kjv_fidelity(source_kjv_json: &str, built: &Graph, brainfuel: Optio
         for v in &mut expected {
             let dot_ref = kjv_adapter::dot_ref(v.book_index, v.chapter, v.verse);
             if let Some(theirs) = kjv_by_dot_ref.get(&dot_ref) {
-                if let Some(restored) = atlas_etl::brainfuel::restore_verse_case(&v.text, theirs) {
-                    v.text = restored;
+                // Batch KJV-CASE-2: `classify_and_restore` is the SAME
+                // shared mechanism `atlas_etl::brainfuel::restore_kjv_case`
+                // uses to build the graph's own TextUnit renderings (see
+                // that function's own doc comment) -- both the whole-verse
+                // class (pass 1) AND the superscription-tail class (batch
+                // KJV-CASE-2) must apply identically here, or this law
+                // would report a false violation at every superscription-
+                // restored position (the graph's own text would carry the
+                // restored tail while this law's own "expected" stayed
+                // unrestored). Excluded/mirror-case/residue positions
+                // leave `v.text` untouched, exactly matching what the
+                // adapter path also left untouched at those positions.
+                use atlas_etl::brainfuel::RestorationOutcome;
+                match atlas_etl::brainfuel::classify_and_restore(&dot_ref, &v.text, theirs) {
+                    RestorationOutcome::WholeVerse(restored) | RestorationOutcome::Superscription(restored) => v.text = restored,
+                    RestorationOutcome::Excluded | RestorationOutcome::MirrorCase | RestorationOutcome::Residue => {}
                 }
             }
         }

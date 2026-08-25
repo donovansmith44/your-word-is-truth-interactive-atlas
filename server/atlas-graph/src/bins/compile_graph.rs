@@ -118,11 +118,21 @@ fn main() -> Result<()> {
     // recomputation purely for this startup log, reusing `atlas.verses`
     // (already in scope, unrestored, from the SAME `data/raw/kjv.json`
     // `kjv_json` above reads) so the operator sees the exact counts
-    // without a third parse of that file.
+    // without a third parse of that file. Batch KJV-CASE-2 (batch-kjv-
+    // case2-brief.md) extended `restore_kjv_case` itself in place -- the
+    // SAME call here now also reports the superscription-tail class.
     let (_, case_restoration) = atlas_etl::brainfuel::restore_kjv_case(&brainfuel, &atlas.verses);
     println!(
-        "atlas-graph-compile: KJV-CASE restoration -- {} compared, {} case-restored, {} already agreeing, {} skipped (folded-text mismatch, untouched)",
-        case_restoration.compared, case_restoration.restored, case_restoration.already_agreeing, case_restoration.skipped_mismatch,
+        "atlas-graph-compile: KJV-CASE restoration -- {} compared, {} case-restored (whole-verse), {} already agreeing, \
+         {} superscription-tail-restored, {} excluded (brain-fuel artifacts), {} mirror-case (disclosed, untouched), \
+         {} skipped (non-superscription folded-text mismatch, untouched)",
+        case_restoration.compared,
+        case_restoration.restored,
+        case_restoration.already_agreeing,
+        case_restoration.superscription_restored,
+        case_restoration.excluded,
+        case_restoration.mirror_case_found,
+        case_restoration.skipped_mismatch,
     );
 
     // CORP-2a: the real compile step HARD-REQUIRES the vendored Concord
