@@ -28,14 +28,20 @@
 //! round-tripping in isolation (see `tests` below) -- the tradeoff this
 //! batch makes on purpose, documented here rather than silently.
 //!
-//! SCOPE, disclosed: `Graph`'s `contains_bible`/`contains_concord`/
-//! `quotes`/`confesses`/`corresponds_bible` tables are ALWAYS EMPTY as of
-//! this batch (no adapter populates Container/Quotes/Confesses/Corresponds
-//! rows anywhere in this codebase -- confirmed by reading every adapter
+//! SCOPE, disclosed: `Graph`'s `contains_bible`/`quotes`/`confesses`/
+//! `corresponds_bible` tables are ALWAYS EMPTY as of this batch (no
+//! adapter populates Bible-Container/Quotes/Confesses/Corresponds rows
+//! anywhere in this codebase -- confirmed by reading every adapter
 //! fresh). `dump` asserts each is empty and returns a loud, named error if
 //! not, rather than silently discarding real data a future batch might
 //! add without updating this module -- "everything fail-loud," not a
-//! silent drop.
+//! silent drop. Batch CORP-2a CLOSES the `contains_concord` member of that
+//! set: `concord_adapter.rs` is the first real caller of `Contains<
+//! ConcordTag>` in this codebase, so `DtoContains`/`concord_locus_to_dto`
+//! below are real, tested, serialized content now -- not the placeholder
+//! this doc comment (and the crate's own "no real caller yet" note,
+//! previously living where `concord_locus_to_dto` is defined below) used
+//! to describe.
 
 use std::collections::BTreeMap;
 
@@ -410,12 +416,24 @@ fn dto_to_bible_range(from: DtoTextLocus, to: DtoTextLocus) -> Result<BibleLocus
     LocusRange::new(dto_to_bible_locus(from)?, dto_to_bible_locus(to)?).map_err(|_| ArtifactError("inverted Bible locus range in serialized artifact".into()))
 }
 
-// Deliberately no `concord_locus_to_dto`/`dto_to_concord_locus`: `dump`
-// rejects a non-empty `confesses` table outright (the one row kind that
-// would need one), so there is no real caller for a Concord-locus
-// conversion yet -- adding it speculatively, untested against real
-// Concord data, would be exactly the kind of code this project's own
-// discipline argues against.
+/// CORP-2a: the Concord-corpus sibling of `bible_locus_to_dto`/
+/// `dto_to_bible_locus` above -- SAME shape, narrowed to `ConcordTag`
+/// instead of `BibleTag`. This is the real caller `graph-types`' own
+/// `TextLocus::as_bible` doc comment anticipated a Concord counterpart
+/// for; rather than widen that OWNER-APPROVED, EXTEND-ONLY method with a
+/// sibling `as_concord` (a graph-types shape change for a purely
+/// artifact-boundary concern), the narrowing is done here instead, by a
+/// direct match on `TextRef` (already public) -- zero graph-types changes.
+fn concord_locus_to_dto(l: &atlas_graph_types::text::ConcordLocus) -> DtoTextLocus {
+    DtoTextLocus::from(&TextLocus::from(atlas_graph_types::text::ConcordLocus { unit: l.unit.clone(), span: l.span.clone() }))
+}
+fn dto_to_concord_locus(d: DtoTextLocus) -> Result<atlas_graph_types::text::ConcordLocus, ArtifactError> {
+    let tl = TextLocus::try_from(d)?;
+    match tl.at {
+        TextRef::Concord(c) => Ok(atlas_graph_types::text::Locus { unit: c, span: tl.span }),
+        TextRef::Bible(_) => Err(ArtifactError("expected a Concord-corpus locus in serialized artifact, found a Bible-corpus one".into())),
+    }
+}
 
 // ---------------------------------------------------------------------
 // Justification / grounds.
@@ -569,6 +587,20 @@ struct DtoTypology {
     justification: DtoJustification,
 }
 
+/// CORP-2a: mirrors `graph_types::edge::Contains<ConcordTag>` -- `content`
+/// (a `LocusSet<ConcordTag>`, i.e. a `BTreeSet<ConcordLocus>`) serializes
+/// as a plain `Vec` (bincode has no native set type; `BTreeSet`'s own
+/// iteration is already deterministic ascending order, so round-tripping
+/// through a `Vec` and back through a set constructor is lossless and
+/// order-independent either way).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoContains {
+    container: String,
+    content: Vec<DtoTextLocus>,
+    provenance: String,
+    justification: DtoJustification,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DtoCatechismLink {
     locus: DtoTextLocus,
@@ -648,6 +680,11 @@ pub struct ArtifactDump {
     /// EDGE-1a: `graph.typology`'s own row table -- see `DtoTypology`'s own
     /// doc comment.
     typology: Vec<DtoTypology>,
+    /// CORP-2a: `graph.contains_concord`'s own row table -- see
+    /// `DtoContains`'s own doc comment. The FIRST populated `Contains<C>`
+    /// table in this codebase (`contains_bible` stays empty/guarded,
+    /// this batch's own scope note above).
+    contains_concord: Vec<DtoContains>,
     catechism: Vec<DtoCatechismLink>,
     mentions: Vec<DtoMentions>,
     cross_refs: Vec<DtoCrossRef>,
@@ -774,26 +811,34 @@ pub struct ArtifactDump {
 /// hit this guard ON PURPOSE"). A genuine wire-shape break both
 /// directions -- bincode field COUNT changed (two fields, one commit).
 /// `data/compiled/graph.bin` rebuilt in this same commit.
-const FORMAT_VERSION: u32 = 7;
+/// CORP-2a (2026-08-24): bumped 7 -> 8. Trigger: `ArtifactDump.
+/// contains_concord: Vec<DtoContains>` ADDED (a new relation table --
+/// `dump`'s own guard forced this the moment `concord_adapter` started
+/// emitting real `contains_concord` rows, the EIGHTH member of the
+/// original guarded set to close, same schedule as every prior data
+/// batch). A genuine wire-shape break both directions -- bincode field
+/// COUNT changed. `data/compiled/graph.bin` rebuilt in this same commit.
+const FORMAT_VERSION: u32 = 8;
 
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
 /// startup stats. Errors loudly if any of the currently-always-empty
-/// tables (`contains_bible`/`contains_concord`/`quotes`/`confesses`/
-/// `corresponds_bible`) is non-empty -- this format does not yet carry
-/// them; extending it is a real, deliberate future act, not something
-/// this batch silently punts by dropping rows. The EDGE-1/PG-1 data
-/// batches hit this guard ON PURPOSE: serializing their rows is part of
-/// each batch's own scope. TRAV-1 (2026-08-24) closed the FOURTH member
-/// of the original set (`temporal_adjacency`); PG-1a (2026-08-24) closed
-/// the FIFTH (`named_after`); EDGE-1a (2026-08-24) closes the SIXTH and
-/// SEVENTH (`fulfills`/`typology`) the same way, on schedule, the moment
-/// `fulfillment_adapter` started emitting real rows -- both are REAL
+/// tables (`contains_bible`/`quotes`/`confesses`/`corresponds_bible`) is
+/// non-empty -- this format does not yet carry them; extending it is a
+/// real, deliberate future act, not something this batch silently punts
+/// by dropping rows. The EDGE-1/PG-1 data batches hit this guard ON
+/// PURPOSE: serializing their rows is part of each batch's own scope.
+/// TRAV-1 (2026-08-24) closed the FOURTH member of the original set
+/// (`temporal_adjacency`); PG-1a (2026-08-24) closed the FIFTH
+/// (`named_after`); EDGE-1a (2026-08-24) closed the SIXTH and SEVENTH
+/// (`fulfills`/`typology`); CORP-2a (2026-08-24) closes the EIGHTH
+/// (`contains_concord`) the same way, on schedule, the moment
+/// `concord_adapter` started emitting real rows -- all are REAL
 /// SERIALIZED CONTENT below now, no longer guarded.
 pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_stats: &EventWorldStats) -> Result<ArtifactDump, ArtifactError> {
-    if !g.contains_bible.is_empty() || !g.contains_concord.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty() {
+    if !g.contains_bible.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty() {
         return Err(ArtifactError(
-            "the graph carries rows in a relation this artifact format does not yet serialize (contains/quotes/confesses/corresponds) -- extend artifact.rs before shipping this content".into(),
+            "the graph carries rows in a relation this artifact format does not yet serialize (contains_bible/quotes/confesses/corresponds) -- extend artifact.rs before shipping this content".into(),
         ));
     }
 
@@ -882,6 +927,19 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
             let (type_from, type_to) = bible_range_to_dto(&r.type_passage);
             let (antitype_from, antitype_to) = bible_range_to_dto(&r.antitype_passage);
             DtoTypology { type_from, type_to, antitype_from, antitype_to, note: r.note.clone(), provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) }
+        })
+        .collect();
+
+    // CORP-2a: `graph.contains_concord`'s own row table -- see
+    // `DtoContains`'s own doc comment.
+    let contains_concord = g
+        .contains_concord
+        .iter()
+        .map(|r: &atlas_graph_types::edge::Contains<atlas_graph_types::text::ConcordTag>| DtoContains {
+            container: r.container.0.clone(),
+            content: r.content.0.iter().map(concord_locus_to_dto).collect(),
+            provenance: r.provenance.clone(),
+            justification: justification_to_dto(&r.justification),
         })
         .collect();
 
@@ -981,6 +1039,7 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         named_after,
         fulfills,
         typology,
+        contains_concord,
         catechism,
         mentions,
         cross_refs,
@@ -1089,6 +1148,20 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
             type_passage: dto_to_bible_range(r.type_from, r.type_to)?,
             antitype_passage: dto_to_bible_range(r.antitype_from, r.antitype_to)?,
             note: r.note,
+            provenance: r.provenance,
+            justification: dto_to_justification(r.justification)?,
+        });
+    }
+
+    // CORP-2a: a plain row table, like `attests`/`located_at` above --
+    // `content` reconstructs as a `BTreeSet` (`LocusSet`'s own inner
+    // shape); `Vec` -> `BTreeSet` is lossless regardless of the serialized
+    // order (`DtoContains`'s own doc comment).
+    for r in d.contains_concord {
+        let content: Result<std::collections::BTreeSet<_>, ArtifactError> = r.content.into_iter().map(dto_to_concord_locus).collect();
+        g.contains_concord.push(atlas_graph_types::edge::Contains {
+            container: atlas_graph_types::id::ContainerNodeId::new(r.container),
+            content: atlas_graph_types::text::LocusSet(content?),
             provenance: r.provenance,
             justification: dto_to_justification(r.justification)?,
         });
@@ -1485,6 +1558,50 @@ mod tests {
         assert_eq!(row.justification.text.as_deref(), Some("a real typology quote"));
         assert_eq!(row.justification.grounds.len(), 1);
         assert!(matches!(row.justification.grounds.iter().next().unwrap(), Ground::Scripture(_)));
+    }
+
+    /// CORP-2a: the `Contains<ConcordTag>` sibling of `fulfills_round_
+    /// trips_losslessly_with_a_real_row` above -- constructed directly
+    /// (the concord_adapter's own pipeline wiring is proven by ITS OWN
+    /// tests; this proves artifact.rs's own round trip, in isolation,
+    /// the same "prove the DTO layer, not the adapter, here" discipline
+    /// `node_payloads_survive_the_round_trip_with_real_values` already
+    /// follows for Place/TextUnit payloads).
+    #[test]
+    fn contains_concord_round_trips_losslessly_with_a_real_row() {
+        use atlas_graph_types::edge::Contains;
+        use atlas_graph_types::id::ContainerNodeId;
+        use atlas_graph_types::text::{ConcordRef, ConcordTag, Locus, LocusSet};
+
+        let mut g = Graph::default();
+        let p1 = Locus::<ConcordTag>::whole(ConcordRef { part: 3, article: 4, paragraph: 1 });
+        let p2 = Locus::<ConcordTag>::whole(ConcordRef { part: 3, article: 4, paragraph: 2 });
+        let mut content = std::collections::BTreeSet::new();
+        content.insert(p1);
+        content.insert(p2);
+        g.contains_concord.push(Contains {
+            container: ContainerNodeId::new("concord-ac-iv"),
+            content: LocusSet(content),
+            provenance: "concord-adapter".into(),
+            justification: Justification { text: Some("Augsburg Confession Article IV, paragraphs 1-2".into()), grounds: Default::default() },
+        });
+
+        let empty_chrono = Chronology::from_derivation(ChronologyDerivation::default());
+        let dumped = dump(&g, &empty_chrono, &BuildStats::default(), &EventWorldStats::default()).expect("dump must succeed with a real contains_concord row -- the guard's whole point was to force this extension");
+        assert_eq!(dumped.contains_concord.len(), 1);
+        assert_eq!(dumped.contains_concord[0].content.len(), 2);
+
+        let bytes = encode(&dumped).expect("encode must succeed");
+        let decoded = decode(&bytes).expect("decode must succeed");
+        let (reconstructed, ..) = to_service_parts(decoded).expect("to_service_parts must succeed");
+
+        assert_eq!(reconstructed.contains_concord.len(), 1, "the row must survive the full round trip, not silently drop");
+        let row = &reconstructed.contains_concord[0];
+        assert_eq!(row.container.0, "concord-ac-iv");
+        assert_eq!(row.content.0.len(), 2);
+        assert!(row.content.0.contains(&Locus::<ConcordTag>::whole(ConcordRef { part: 3, article: 4, paragraph: 1 })));
+        assert!(row.content.0.contains(&Locus::<ConcordTag>::whole(ConcordRef { part: 3, article: 4, paragraph: 2 })));
+        assert_eq!(row.justification.text.as_deref(), Some("Augsburg Confession Article IV, paragraphs 1-2"));
     }
 
     #[test]

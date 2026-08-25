@@ -76,6 +76,66 @@ if (-not (Test-Path $bibleVendored)) {
 # own hand-curated, CC0 data at data/curated/borders/*.geojson, committed
 # to the repo like the rest of data/curated/. See LICENSES.md.
 
+# Batch CORP-2a: the Book of Concord (1921 Bente-Dau translation, Concordia
+# Triglotta's English column), vendored from bookofconcord.org -- the
+# ONLY complete Bente-Dau set online (see corp2-scouting.md's 2026-08-24
+# RE-SCOUT: Project Wittenberg is missing the Apology/Formula of Concord/
+# Creeds/Preface entirely, and its Small Catechism is the copyrighted
+# Smith 1994 translation -- NEVER vendor that). DISCOVERY (verified by
+# fetching a document root and inspecting its HTML): each document's own
+# ROOT page already embeds the FULL text of every one of its articles
+# inline (heading + numbered paragraphs), not just a table of contents --
+# so only the 10 document ROOTS are fetched here, never the ~150
+# individual per-article pages nested under them (confirmed redundant:
+# fetching e.g. /augsburg-confession/of-justification/ returns the exact
+# same paragraph text /augsburg-confession/ already carries for Article
+# IV). Ten document roots = the traditional Book of Concord order
+# (Preface to the whole 1580 volume, then the Three Ecumenical Creeds,
+# then the six 16th-century confessional documents, then the Formula of
+# Concord's two forms) -- see server/atlas-etl/src/concord.rs's own
+# module doc comment for the part-numbering this order feeds.
+$concordDir = Join-Path $raw 'concord'
+New-Item -ItemType Directory -Force $concordDir | Out-Null
+$concordDocs = @(
+  'preface',
+  'ecumenical-creeds',
+  'augsburg-confession',
+  'defense',
+  'smalcald-articles',
+  'power-and-primacy',
+  'small-catechism',
+  'large-catechism',
+  'epitome',
+  'solid-declaration'
+)
+foreach ($doc in $concordDocs) {
+  Fetch "https://bookofconcord.org/$doc/" "concord\$doc.html"
+}
+# Smalcald Articles EXCEPTION (discovered parsing the vendored root page,
+# not assumed up front): unlike every other document, `/smalcald-articles/`
+# does NOT embed Parts I/II/III's own 4+4+15 named articles inline -- each
+# Part's own root section is just a one-paragraph blurb, and the real,
+# numbered article text lives ONLY on 23 separate per-article pages one
+# level deeper (e.g. `/smalcald-articles/iii/of-sin/`), a genuinely
+# different page template (`<h2>TITLE</h2>` + numbered paragraphs, no
+# `<a href><h3>...</section>` wrapper at all -- see concord.rs's own
+# module doc comment). Vendored into their own subdirectory so the
+# document-root fetch above stays uniform across all ten documents.
+$smalcaldSubDir = Join-Path $raw 'concord\smalcald-sub'
+New-Item -ItemType Directory -Force $smalcaldSubDir | Out-Null
+$smalcaldSubArticles = @(
+  'i/nature-of-god', 'i/the-father', 'i/the-son', 'i/the-work-of-salvation',
+  'ii/first-and-chief-article', 'ii/of-the-mass', 'ii/of-chapters-and-cloisters', 'ii/of-the-papacy',
+  'iii/of-sin', 'iii/of-the-law', 'iii/of-repentance', 'iii/of-the-gospel', 'iii/of-baptism',
+  'iii/of-the-scarament-of-the-altar', 'iii/of-the-keys', 'iii/of-confession', 'iii/of-excommunication',
+  'iii/of-ordination', 'iii/of-the-marriage-of-priests', 'iii/of-the-church', 'iii/of-good-works',
+  'iii/of-monastic-vows', 'iii/of-human-tradition'
+)
+foreach ($sub in $smalcaldSubArticles) {
+  $slug = $sub.Split('/')[-1]
+  Fetch "https://bookofconcord.org/smalcald-articles/$sub/" "concord\smalcald-sub\$slug.html"
+}
+
 # Vendor Leaflet 1.9.4 into the client (deterministic, offline-friendly)
 $vendor = Join-Path $PSScriptRoot '..\client\wwwroot\vendor\leaflet'
 New-Item -ItemType Directory -Force $vendor | Out-Null

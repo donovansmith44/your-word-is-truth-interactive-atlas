@@ -125,10 +125,35 @@ fn main() -> Result<()> {
         case_restoration.compared, case_restoration.restored, case_restoration.already_agreeing, case_restoration.skipped_mismatch,
     );
 
+    // CORP-2a: the real compile step HARD-REQUIRES the vendored Concord
+    // data + curated SC-overlap alignment (the SAME "graph.bin compiled
+    // without it would silently ship an incomplete corpus" reasoning
+    // CORP-1a's own brainfuel requirement above already established) --
+    // unlike `GraphService::build`'s own dev fallback, which degrades
+    // gracefully for a fixture `raw_dir` (`data/raw/concord/`, see
+    // `data/raw/README.md`).
+    let concord_root = raw_dir.join("concord");
+    println!("atlas-graph-compile: reading vendored Concord (Book of Concord) data from {}...", concord_root.display());
+    let concord_corpus = atlas_etl::concord::read_all(&concord_root).with_context(|| format!("reading {}", concord_root.display()))?;
+    let sc_overlap_path = curated_dir.join("concord-sc-overlap.toml");
+    let sc_overlap_text = std::fs::read_to_string(&sc_overlap_path).with_context(|| format!("reading {}", sc_overlap_path.display()))?;
+    let sc_overlap = atlas_etl::concord::parse_sc_overlap(&sc_overlap_text).with_context(|| format!("parsing {}", sc_overlap_path.display()))?;
+    println!(
+        "atlas-graph-compile: concord {} documents, {} articles, {} paragraphs ({} skipped non-confessional articles, {} disclosed structural anomalies), {} SC-overlap rows",
+        concord_corpus.stats.documents,
+        concord_corpus.stats.articles,
+        concord_corpus.stats.paragraphs,
+        concord_corpus.stats.skipped_articles,
+        concord_corpus.stats.disclosures.len(),
+        sc_overlap.len(),
+    );
+    let concord_bundle = atlas_graph::concord_adapter::ConcordBundle { corpus: concord_corpus, sc_overlap };
+
     println!("atlas-graph-compile: building implementation #1 (from raw sources)...");
     let build_start = Instant::now();
     let (graph_a, stats, event_world_stats, chrono) =
-        atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel)).context("building the graph from raw sources")?;
+        atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel), Some(&concord_bundle))
+            .context("building the graph from raw sources")?;
     println!(
         "atlas-graph-compile: {} text units, {} cites edges, {} events ({} dated), {} places, {} narratives, {} anchors -- build time {:?}",
         stats.kjv_verses, stats.cites_rows, event_world_stats.events, event_world_stats.dated_events, event_world_stats.places, event_world_stats.narratives, event_world_stats.anchors,
@@ -140,7 +165,8 @@ fn main() -> Result<()> {
     let dump = atlas_graph::artifact::dump(&graph_a, &chronology, &stats, &event_world_stats).map_err(|e| anyhow::anyhow!("{e}")).context("dumping the built graph")?;
 
     println!("atlas-graph-compile: ADMISSION -- rebuilding implementation #1 a second time (independent model)...");
-    let (mut graph_b, ..) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel)).context("building the independent model graph")?;
+    let (mut graph_b, ..) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel), Some(&concord_bundle))
+        .context("building the independent model graph")?;
     graph_b.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut graph_b);
 

@@ -61,8 +61,19 @@ pub fn window(query: &dyn GraphQuery, corpus: &'static str, start_pos: usize, n:
 /// The KJV rendering text of a TextUnit node, if any — via
 /// `GraphQuery::node`, never a direct field reach.
 pub fn render(query: &dyn GraphQuery, id: &AnyNodeId) -> Option<String> {
+    render_layer(query, id, KJV_TRANSLATION)
+}
+
+/// CORP-2a: the corpus-generic sibling of `render` — same shape, the
+/// translation KEY is a caller-supplied parameter instead of the
+/// hardcoded KJV constant, so a Concord TextUnit's own canonical layer
+/// (`concord_adapter::CONCORD_TRANSLATION`, "bente-dau" — genuinely NOT
+/// the King James Version) reads through the identical port-only path.
+/// `render` above is now a thin wrapper (byte-identical behavior for
+/// every existing caller).
+pub fn render_layer(query: &dyn GraphQuery, id: &AnyNodeId, translation: &str) -> Option<String> {
     match query.node(id)?.payload {
-        NodePayload::TextUnit { renderings, .. } => renderings.get(&TranslationId(KJV_TRANSLATION.to_string())).cloned(),
+        NodePayload::TextUnit { renderings, .. } => renderings.get(&TranslationId(translation.to_string())).cloned(),
         _ => None,
     }
 }
@@ -107,6 +118,20 @@ mod tests {
         let snap = svc.snapshot();
         let id = crate::kjv_adapter::verse_node_id(0, 1, 1);
         assert_eq!(render(&snap, &id).as_deref(), Some("In the beginning God created the heaven and the earth."));
+    }
+
+    /// CORP-2a: `render` is a thin wrapper over `render_layer` -- proves
+    /// the delegation directly (same query, same id, same result) and
+    /// that a DIFFERENT translation key on the SAME node reads back
+    /// `None` (never a wrong-layer's text) — the exact guard a Concord
+    /// TextUnit's own non-KJV layer needs.
+    #[test]
+    fn render_layer_generalizes_render_and_is_layer_selective() {
+        let svc = service();
+        let snap = svc.snapshot();
+        let id = crate::kjv_adapter::verse_node_id(0, 1, 1);
+        assert_eq!(render_layer(&snap, &id, crate::kjv_adapter::KJV_TRANSLATION), render(&snap, &id));
+        assert_eq!(render_layer(&snap, &id, "bente-dau"), None, "a translation key this node carries no layer for is None, not a guess");
     }
 
     #[test]

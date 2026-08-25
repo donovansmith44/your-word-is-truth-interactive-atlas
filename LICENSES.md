@@ -22,6 +22,7 @@ file is the detailed version of record.
 | Leaflet ([leafletjs.com](https://leafletjs.com)) | BSD-2-Clause | Vendored AND COMMITTED at `client/wwwroot/vendor/leaflet/` (v1.9.4, upstream copyright banner retained in the files per BSD-2's notice condition) — committed so a fresh clone runs without any fetch step; `data/fetch-raw.ps1` can still refresh it |
 | All curated data — historical polity borders, the land mask, landmarks, narratives, eras, `events-extra.toml`, `event-witnesses.toml` (Batch T), and future short blurbs of ours (e.g. era/place descriptions) | **CC0 1.0 Universal** (public domain dedication) | Ours. Everything under `data/curated/` and everything compiled purely from it (`narratives.json`, `eras.json`, `books-meta.json`, `landmarks.json`, `polities.json`, `land-mask.json`) |
 | Luther's Small Catechism, English (1921 Bente–Dau translation, *Triglot Concordia / Concordia Triglotta*) | Public domain (published 1921, USA) | Redistributed — compiled into `catechism.json`; provenance and verification below |
+| The Book of Concord, English (1921 Bente–Dau translation, *Triglot Concordia / Concordia Triglotta*), via [bookofconcord.org](https://bookofconcord.org) | Public domain (published 1921, USA) | Redistributed — compiled into the graph artifact (`graph.bin`) as the "concord" corpus's TextUnit paragraphs; provenance and verification below |
 | Catechism verse mapping ([brain-fuel/catechism](https://github.com/brain-fuel/catechism)) | No license file — used by the project owner's explicit direction (see "Batch F2" below) | Redistributed — canonicalized and compiled into `catechism.json` (`CatechismItem.questions`) |
 | A.T. Robertson, *A Harmony of the Gospels for Students of the Life of Christ* (1922) | Public domain (published 1922, USA; copyright notice reads "COPYRIGHT, 1922, BY HARPER & BROTHERS") | Not redistributed as text — section titles/numbers and parallel-account groupings consulted as PROVENANCE for our own curated `event-witnesses.toml`/`events-extra.toml` fields (`robertson_section`, `ref_note`); every displayed event title/date/verse citation is independently authored (CC0) or Theographic-credited, per the mapping below |
 | William Day Crockett, *A Harmony of the Books of Samuel, Kings and Chronicles* (1897) | Public domain (published 1897, USA; title page reads "Copyright, 1897, William Day Crockett") | Not redistributed as text — section numbers/titles and parallel-account groupings (Samuel/Kings/Chronicles, plus the book's own Appendix of cross-references to Genesis, Joshua, Ruth, Ezra, Nehemiah, Psalms, Isaiah, Jeremiah, Matthew, and Luke) consulted as PROVENANCE for our own curated `event-witnesses.toml` witness rows (Batch W2); every displayed event title/date/verse citation is independently authored (CC0), Theographic-credited, or the compiled KJV text itself, per "Crockett's Harmony of Samuel, Kings, and Chronicles" below |
@@ -241,6 +242,92 @@ domain under
 same as every other file under `data/curated/`; the QUOTED TEXT itself
 (Luther's own words, in the 1921 Bente–Dau translation) is public domain by
 its own 1921 US publication, not by our dedication.
+
+## The Book of Concord — public domain, 1921 Bente–Dau translation (Batch CORP-2a)
+
+`data/raw/concord/*.html` (vendored, gitignored — see `data/raw/README.md`),
+parsed by `server/atlas-etl/src/concord.rs` into the "concord" corpus's
+TextUnit paragraphs, compiled straight into the graph artifact
+(`graph.bin`) — no `data/compiled/*.json` intermediate (the same
+graph-artifact-only disposition the brain-fuel/bible parallel editions
+above already use). Added Batch CORP-2a ("BoC before Kretzmann" — owner
+order): the graph's second corpus, data half only (the reader tab is
+explicitly held for a later brainstorm).
+
+**Source.** *Triglot Concordia: The Symbolical Books of the Evangelical
+Lutheran Church: German-Latin-English* (St. Louis: Concordia Publishing
+House, 1921) — the SAME Bente–Dau translation, the SAME 1921 publication,
+as "The Small Catechism" above (translation consistency across both
+Concord ingestions comes free: the Small Catechism's own paragraphs,
+re-encountered here as Concord TextUnits, read word-for-word against the
+existing curated `catechism.toml` — see the SC-overlap alignment in
+`batch-corp2a-report.md`). Published 1921 in the USA: public domain,
+regardless of any later site's own copyright notice (the same
+never-copyrighted-by-transcription class as this project's planned
+Kretzmann ingestion).
+
+**Text obtained from.** [bookofconcord.org](https://bookofconcord.org),
+fetched 2026-08-24 (`data/fetch-raw.ps1`'s own `$concordDocs` list; ten
+document-root pages, each carrying its OWN document's full text inline —
+see `data/raw/README.md`). Translation identity CONFIRMED by two verbatim
+probes before vendoring (corp2-scouting.md's own 2026-08-24 RE-SCOUT):
+the Formula of Concord Epitome's "Comprehensive Summary, Rule and Norm"
+opens "We believe, teach, and confess that the sole rule and standard
+according to which all dogmas together with [all] teachers should be
+estimated and judged are the prophetic and apostolic Scriptures of the Old
+and of the New Testament alone" — the Triglotta's own signature phrasing
+(the Kolb-Wengert translation, a DIFFERENT modern translation this project
+does not use, reads entirely differently here); the Small Catechism's own
+First Commandment reads "We should fear, love, and trust in God above all
+things" — byte-identical to this project's own pre-existing, independently
+(Wikisource-)sourced `catechism.toml` wording. bookofconcord.org's site
+footer ("Original Content Copyright 1998–2024") covers the site's own
+chrome/editorial notes, not the 1921 translation it transcribes, which
+cannot be re-copyrighted by a later transcription — the PD ground here is
+the 1921 publication date itself, exactly as with the Small Catechism
+above.
+
+**Cross-check.** Project Wittenberg's own Bente–Dau plain-text Large
+Catechism (`luther/catechism/cat-*.txt`) and Bente–Dau-class Augsburg
+Confession (`concord/web/augs-*.html`) spot-verify fidelity where both
+sites carry the same text — Project Wittenberg is NOT the vendored source
+(it is missing the Apology, the Formula of Concord, the Three Ecumenical
+Creeds, and the Preface entirely, and its OWN Small Catechism is the
+Smith 1994 translation, copyrighted and the wrong translation — never
+vendored by this project, on either count).
+
+**Editorial handling (disclosed, not silent).** The source's own inline
+paragraph-number markup (`<span class="...-content">N</span>`, one per
+`ConcordRef.paragraph` position) is stripped from the rendered TextUnit
+text — a citation number is metadata, not prose. Section-heading markup
+(`<h3>`/`<h4>`, e.g. "The Second Commandment.") falling between one
+paragraph's own close and the next paragraph's own open is likewise
+excluded from paragraph text (it is a structural label the source's own
+markup places there, never a sentence of the confession itself) — no word
+of the confessional TEXT PROPER is ever dropped, only this non-prose
+markup. The Small Catechism's own Question/Answer sub-lettering (source
+labels like "1", "1b", "1c" for one catechetical unit) merges into ONE
+`ConcordRef.paragraph` per base number — Question and Answer are one
+paragraph position, matching the existing `catechism.toml`'s own
+text+explanation shape for the identical content; two sub-lettered
+non-numeric labels ("intro"/"intro-ans", "conclusion"/"conclusion-ans" in
+the Lord's Prayer) merge the same way. Full per-document structure
+disclosures (including the Three Ecumenical Creeds, whose source carries
+no inline paragraph numbers at all, and the Small Catechism's own
+Prefatory Notes/Preface/"in PDF" sections, likewise unnumbered) are in
+`batch-corp2a-report.md`, per the batch brief's own disclosure
+requirement — never force-fit to the triple.
+
+**Dedication of our own additions.** The parser's own document/article
+part-and-article numbering (`ConcordRef.part`/`.article`), the "concord"
+reading spine's canonical document order, the Small Catechism-overlap
+alignment table (`data/curated/concord-sc-overlap.toml`), and every other
+organizational choice are original work of this project, dedicated to the
+public domain under
+[CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/);
+the QUOTED TEXT itself (the Book of Concord's own words, in the 1921
+Bente–Dau translation) is public domain by its own 1921 US publication,
+not by our dedication.
 
 ## Catechism verse mapping — brain-fuel/catechism (Batch F2)
 

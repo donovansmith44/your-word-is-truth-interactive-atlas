@@ -63,9 +63,19 @@ fn built() -> Built {
             let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
             let atlas = real_atlas_data();
             let brainfuel = atlas_etl::brainfuel::read_all(&dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first");
+            // CORP-2a: the real vendored Concord data joins the root
+            // computation, the SAME "otherwise this harness proves a
+            // DIFFERENT graph than atlas-graph-compile actually produces"
+            // reasoning CORP-1a's own brainfuel threading already
+            // established here.
+            let concord_corpus = atlas_etl::concord::read_all(&dir.join("concord")).expect("data/raw/concord must exist -- run data/fetch-raw.ps1 first");
+            let sc_overlap_text = std::fs::read_to_string(dir.parent().unwrap().join("curated/concord-sc-overlap.toml")).expect("data/curated/concord-sc-overlap.toml must exist");
+            let sc_overlap = atlas_etl::concord::parse_sc_overlap(&sc_overlap_text).expect("concord-sc-overlap.toml must parse");
+            let concord_bundle = atlas_graph::concord_adapter::ConcordBundle { corpus: concord_corpus, sc_overlap };
 
-            let (mut graph, _stats, _ews, chrono) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &atlas.eras, Some(&brainfuel))
-                .expect("the real committed sources must build");
+            let (mut graph, _stats, _ews, chrono) =
+                atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord(&kjv_json, &xrefs_tsv, &atlas, &atlas.eras, Some(&brainfuel), Some(&concord_bundle))
+                    .expect("the real committed sources must build");
             graph.build_indexes();
             atlas_graph::event_world::add_justified_by(&mut graph);
             let chronology = atlas_graph::Chronology::from_derivation(chrono);
@@ -80,7 +90,7 @@ fn built() -> Built {
             let version = store.publish(graph);
             let actual_hex = atlas_graph::version_hex(version);
 
-            let svc = atlas_graph::GraphService::from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &atlas.eras, Some(&brainfuel))
+            let svc = atlas_graph::GraphService::from_sources_with_eras_and_brainfuel_and_concord(&kjv_json, &xrefs_tsv, &atlas, &atlas.eras, Some(&brainfuel), Some(&concord_bundle))
                 .expect("GraphService must build the same real sources");
             let expected_hex = atlas_graph::version_hex(svc.version());
 

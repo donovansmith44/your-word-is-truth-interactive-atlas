@@ -157,6 +157,75 @@ async fn text_window_bad_ref_and_missing_ref_are_400() {
     }
 }
 
+// ---------------------------------------------------------------------
+// CORP-2a (decision 8): corpus=concord through the SAME `/api/text`
+// route -- `real_app()` above already carries the real Book of Concord
+// data (`GraphService::build` loads `data/raw/concord/` + `data/curated/
+// concord-sc-overlap.toml` automatically, the identical "real vendored
+// tree present -> real content" path brainfuel/eras already use), so
+// these ARE the real, vendored First Commandment/Article IV text, not a
+// fixture double.
+// ---------------------------------------------------------------------
+
+#[tokio::test]
+async fn text_window_concord_single_paragraph_is_the_real_sc_first_commandment() {
+    let app = real_app();
+    let (st, body, _headers) = get(&app, "/api/text?ref=BoC%207.2.1&corpus=concord").await;
+    assert_eq!(st, 200, "{body}");
+    let units = body["units"].as_array().unwrap();
+    assert_eq!(units.len(), 1);
+    assert_eq!(units[0]["ref"], "BoC 7.2.1");
+    assert_eq!(
+        units[0]["text"].as_str().unwrap(),
+        "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
+        "the real bookofconcord.org-sourced First Commandment paragraph, served through the existing generic endpoint"
+    );
+    assert_eq!(body["next"], "BoC 7.2.2");
+}
+
+#[tokio::test]
+async fn text_window_concord_n_and_dir_walk_onward_and_backward_within_augsburg_confession_iv() {
+    let app = real_app();
+    // Augsburg Confession (part 3), Article IV (Of Justification), which
+    // this batch's own report quotes as a 3-paragraph article.
+    let (st, onward, _) = get(&app, "/api/text?ref=BoC%203.5.1&n=3&dir=onward&corpus=concord").await;
+    assert_eq!(st, 200, "{onward}");
+    let refs: Vec<&str> = onward["units"].as_array().unwrap().iter().map(|u| u["ref"].as_str().unwrap()).collect();
+    assert_eq!(refs, vec!["BoC 3.5.1", "BoC 3.5.2", "BoC 3.5.3"]);
+
+    let (st, backward, _) = get(&app, "/api/text?ref=BoC%203.5.3&n=3&dir=backward&corpus=concord").await;
+    assert_eq!(st, 200, "{backward}");
+    let refs: Vec<&str> = backward["units"].as_array().unwrap().iter().map(|u| u["ref"].as_str().unwrap()).collect();
+    assert_eq!(refs, vec!["BoC 3.5.1", "BoC 3.5.2", "BoC 3.5.3"], "a backward window ENDS at ref, in ascending reading order");
+}
+
+#[tokio::test]
+async fn text_window_concord_scope_chapter_and_bad_ref_and_unknown_corpus_are_400() {
+    let app = real_app();
+    let (st, body, _) = get(&app, "/api/text?ref=BoC%207.2.1&scope=chapter&corpus=concord").await;
+    assert_eq!(st, 400, "{body}");
+    assert_eq!(body["error"]["code"], "bad_dir");
+
+    let (st, body, _) = get(&app, "/api/text?ref=JHN.3.16&corpus=concord").await;
+    assert_eq!(st, 400, "a Bible-shaped ref under corpus=concord is bad_ref, never silently reinterpreted: {body}");
+    assert_eq!(body["error"]["code"], "bad_ref");
+
+    let (st, body, _) = get(&app, "/api/text?ref=BoC%207.2.1&corpus=lxx").await;
+    assert_eq!(st, 400, "{body}");
+    assert_eq!(body["error"]["code"], "bad_corpus");
+}
+
+#[tokio::test]
+async fn text_window_bible_default_corpus_is_unchanged_by_the_new_param() {
+    // Zero client changes (decision 8): omitting `corpus` entirely must
+    // still serve the Bible corpus, byte-identical to `text_window_
+    // single_verse_matches_the_compiled_verse_map` above.
+    let app = real_app();
+    let (st, body, _) = get(&app, "/api/text?ref=JHN.3.16&corpus=bible").await;
+    assert_eq!(st, 200, "{body}");
+    assert_eq!(body["units"][0]["text"].as_str().unwrap(), "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.");
+}
+
 #[tokio::test]
 async fn node_card_returns_id_kind_label_edge_summary_and_version() {
     let app = real_app();

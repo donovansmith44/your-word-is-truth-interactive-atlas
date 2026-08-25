@@ -18,6 +18,7 @@
 pub mod brainfuel;
 pub mod catechism_map;
 pub mod compile;
+pub mod concord;
 pub mod curated;
 pub mod easton;
 pub mod geo;

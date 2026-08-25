@@ -62,8 +62,16 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
     // here would test a DIFFERENT (KJV-only) graph than the one
     // atlas-graph-compile actually produces.
     let brainfuel = atlas_etl::brainfuel::read_all(&dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first");
+    // CORP-2a: the real vendored Concord data joins the root computation
+    // here too (CORP-1a's own brainfuel-threading precedent, immediately
+    // above) -- otherwise this harness would keep proving a graph
+    // MISSING the corpus atlas-graph-compile actually ships.
+    let concord_corpus = atlas_etl::concord::read_all(&dir.join("concord")).expect("data/raw/concord must exist -- run data/fetch-raw.ps1 first");
+    let sc_overlap_text = std::fs::read_to_string(dir.parent().unwrap().join("curated/concord-sc-overlap.toml")).expect("data/curated/concord-sc-overlap.toml must exist");
+    let sc_overlap = atlas_etl::concord::parse_sc_overlap(&sc_overlap_text).expect("concord-sc-overlap.toml must parse");
+    let concord_bundle = atlas_graph::concord_adapter::ConcordBundle { corpus: concord_corpus, sc_overlap };
 
-    let svc = GraphService::from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &[], Some(&brainfuel)).expect("the real committed sources must build");
+    let svc = GraphService::from_sources_with_eras_and_brainfuel_and_concord(&kjv_json, &xrefs_tsv, &atlas, &[], Some(&brainfuel), Some(&concord_bundle)).expect("the real committed sources must build");
     let hex = atlas_graph::version_hex(svc.snapshot().version());
 
     // Captured once, before the M-C pipeline restructuring (controller
@@ -216,4 +224,15 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // correction only ever touches a `DatedBy` EDGE, never a node payload --
 // confirmed by that commit's own report, not assumed here.) New captured
 // value: "d8d7d4acea171fd5".
-const EXPECTED_VERSION_HEX: &str = "d8d7d4acea171fd5";
+//
+// MOVED AGAIN (deliberately -- Batch CORP-2a, "the Book of Concord: data
+// half", 2026-08-24): this test's own build now threads a real
+// `concord_adapter::ConcordBundle` (module doc comment's own "otherwise
+// this harness would keep proving a graph MISSING the corpus atlas-graph-
+// compile actually ships") -- 3,827 new Concord TextUnit nodes (one per
+// parsed paragraph, across the ten documents), 145 new Container nodes
+// (10 documents + 135 articles) all feed the content hash; the existing
+// 31,102 Bible TextUnit nodes and every other node kind are byte-
+// identical (Concord is purely additive -- no existing node's own
+// canonical bytes change). New captured value: "19405c160db9de80".
+const EXPECTED_VERSION_HEX: &str = "19405c160db9de80";

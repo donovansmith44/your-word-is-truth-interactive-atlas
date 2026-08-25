@@ -30,3 +30,14 @@ resolver = "2"
 # split (workspace N + atlas-graph-types N) alongside the grand total and
 # the section count, not the grand total alone. Canonical ground truth at
 # f988f1b: 747 passed (727 + 20) across 37 sections.
+#
+# Batch CORP-2a (2026-08-25, the Book of Concord corpus, data half): moved
+# to 788 passed (767 + 21) across 39 sections. Workspace +35 across +2
+# sections (atlas-etl's new `concord::` parser unit tests -- 13 -- and its
+# new `tests/concord_real_data.rs` real-data section -- 6 -- plus
+# `concord_adapter.rs`'s own new module -- 6 -- one new test each in
+# `artifact.rs`/`window.rs`/`fidelity.rs` -- 1+1+1 -- four new tests in
+# `graph_api.rs`, and the new `tests/concord_sc_overlap_real_data.rs`
+# section -- 3); `atlas-graph-types` +1 (graph.rs's own new
+# `contains_concord` indexing test, the disclosed minimal crate wiring
+# this batch's own report names).

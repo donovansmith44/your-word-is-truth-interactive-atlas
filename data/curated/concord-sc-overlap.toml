@@ -1,0 +1,218 @@
+# Batch CORP-2a, decision 4 (SC-OVERLAP, owner-approved design): the Small
+# Catechism lives in the graph TWICE by history -- the catechism adapter's
+# own CatechismItem nodes (data/curated/catechism.toml, the six chief
+# parts, Wikisource-sourced 1921 Bente-Dau) and now the Small Catechism's
+# OWN paragraphs as Concord TextUnits (bookofconcord.org-sourced, SAME
+# 1921 Bente-Dau translation). These are NOT merged and NOT
+# duplicated-away: this file is the CURATED, HAND-VERIFIED alignment
+# between them -- one row per CatechismItem, naming the Concord
+# (part=7 "small-catechism", article, paragraph) position(s) whose text IS
+# that item (its `text` question plus its `explanation` answer, matching
+# `catechism.toml`'s own text+explanation shape for the identical
+# content). `paragraphs` is a list because bookofconcord.org's own
+# paragraph numbering is sometimes FINER than one CatechismItem: several
+# Baptism/Altar items have their own separate "Where is this written?"
+# follow-up as a SEPARATE source paragraph, so the item's own alignment
+# is TWO Concord paragraphs, not one -- both listed, both become their own
+# `CatechismLink` row (multiple loci per item is already how the EXISTING
+# Bible-locus links work: one row per cited verse).
+#
+# ARTICLE NUMBERS below are the Concord parser's own 1-based position
+# WITHIN the small-catechism document, AFTER the two non-confessional
+# site-furniture articles are excluded (see `server/atlas-etl/src/
+# concord.rs`'s own `is_skipped_article`): 1=preface, 2=ten-commandments,
+# 3=the-creed, 4=the-lords-prayer, 5=the-sacrament-of-holy-baptism,
+# 6=how-christians-confess, 7=the-sacrament-of-the-altar. (daily-prayers=8,
+# table-of-duties=9, christian-questions-and-answers=10 carry no
+# CatechismItem counterpart at all -- `catechism.toml`'s own documented
+# scope is "the six chief parts... Daily Prayers/Table of Duties are out
+# of scope," so those two Concord articles are simply unmatched, disclosed
+# in the batch report, not an error.)
+#
+# HAND-VERIFICATION (decision 4: "the SC is small; hand-verify the
+# mapping"): every row below was checked against the real, parsed
+# bookofconcord.org paragraph text (`server/atlas-etl/tests/
+# concord_real_data.rs` spot-checks several), confirming word-for-word
+# agreement (modulo the disclosed straight/curly-quote transcription
+# convention difference -- LICENSES.md's own "The Book of Concord"
+# section) between each item's `catechism.toml` explanation and its
+# aligned Concord paragraph(s). Two DISCLOSED wrinkles, not force-fit:
+# - `confession-2` ("The Absolution") is NOT its own separate Concord
+#   paragraph -- its exact wording ("As thou believest...Depart in
+#   peace.") sits embedded within the LARGER article-6 paragraph 4 (the
+#   full "Brief Form of Confession" Luther gives), which paragraph 4
+#   alone also fully covers. Linked to paragraph 4 anyway (the wording
+#   genuinely appears there) rather than left unmatched.
+# - how-christians-confess (article 6) paragraphs 2 and 3 ("What sins
+#   should we confess?" / "Which are these?") have NO CatechismItem
+#   counterpart at all -- genuinely extra catechetical material
+#   `catechism.toml`'s own curated scope never captured. Unmatched,
+#   disclosed in the batch report, never invented a spurious item for.
+#
+# Total: 37 CatechismLink rows from 33 CatechismItems (baptism/altar's own
+# split items account for the +4).
+
+[[link]]
+item = "commandment-1"
+article = 2
+paragraphs = [1]
+
+[[link]]
+item = "commandment-2"
+article = 2
+paragraphs = [2]
+
+[[link]]
+item = "commandment-3"
+article = 2
+paragraphs = [3]
+
+[[link]]
+item = "commandment-4"
+article = 2
+paragraphs = [4]
+
+[[link]]
+item = "commandment-5"
+article = 2
+paragraphs = [5]
+
+[[link]]
+item = "commandment-6"
+article = 2
+paragraphs = [6]
+
+[[link]]
+item = "commandment-7"
+article = 2
+paragraphs = [7]
+
+[[link]]
+item = "commandment-8"
+article = 2
+paragraphs = [8]
+
+[[link]]
+item = "commandment-9"
+article = 2
+paragraphs = [9]
+
+[[link]]
+item = "commandment-10"
+article = 2
+paragraphs = [10]
+
+[[link]]
+item = "commandments-close"
+article = 2
+paragraphs = [11]
+
+[[link]]
+item = "creed-1"
+article = 3
+paragraphs = [1]
+
+[[link]]
+item = "creed-2"
+article = 3
+paragraphs = [2]
+
+[[link]]
+item = "creed-3"
+article = 3
+paragraphs = [3]
+
+[[link]]
+item = "lords-prayer-intro"
+article = 4
+paragraphs = [0]
+
+[[link]]
+item = "lords-prayer-1"
+article = 4
+paragraphs = [1]
+
+[[link]]
+item = "lords-prayer-2"
+article = 4
+paragraphs = [2]
+
+[[link]]
+item = "lords-prayer-3"
+article = 4
+paragraphs = [3]
+
+[[link]]
+item = "lords-prayer-4"
+article = 4
+paragraphs = [4]
+
+[[link]]
+item = "lords-prayer-5"
+article = 4
+paragraphs = [5]
+
+[[link]]
+item = "lords-prayer-6"
+article = 4
+paragraphs = [6]
+
+[[link]]
+item = "lords-prayer-7"
+article = 4
+paragraphs = [7]
+
+[[link]]
+item = "lords-prayer-amen"
+article = 4
+paragraphs = [8]
+
+[[link]]
+item = "baptism-1"
+article = 5
+paragraphs = [1, 2]
+
+[[link]]
+item = "baptism-2"
+article = 5
+paragraphs = [3, 4]
+
+[[link]]
+item = "baptism-3"
+article = 5
+paragraphs = [5]
+
+[[link]]
+item = "baptism-4"
+article = 5
+paragraphs = [6, 7]
+
+[[link]]
+item = "confession-1"
+article = 6
+paragraphs = [1]
+
+[[link]]
+item = "confession-2"
+article = 6
+paragraphs = [4]
+
+[[link]]
+item = "altar-1"
+article = 7
+paragraphs = [1, 2]
+
+[[link]]
+item = "altar-2"
+article = 7
+paragraphs = [3]
+
+[[link]]
+item = "altar-3"
+article = 7
+paragraphs = [4]
+
+[[link]]
+item = "altar-4"
+article = 7
+paragraphs = [5]

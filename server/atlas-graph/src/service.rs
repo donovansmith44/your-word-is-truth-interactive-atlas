@@ -54,6 +54,12 @@ pub struct GraphService {
     /// graph, is what lets `chapter_span`/`position_of` below resolve
     /// "start from this ref" without scanning the whole spine per call.
     bible_position: HashMap<AnyNodeId, usize>,
+    /// CORP-2a (decision 8): the Concord-corpus sibling of
+    /// `bible_position` above -- SAME shape, over the "concord" reading
+    /// spine (empty when no Concord data was built, e.g. every fixture
+    /// that doesn't supply a `ConcordBundle` -- an honestly empty
+    /// lookup, never a placeholder).
+    concord_position: HashMap<AnyNodeId, usize>,
     pub stats: BuildStats,
     /// Batch M-B (narrowed at M-C, renamed `EventWorld` -> `Chronology`):
     /// the chronology companion index -- same status as `bible_position`
@@ -214,7 +220,23 @@ impl GraphService {
         eras: &[atlas_core::data::Era],
         brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
     ) -> anyhow::Result<Self> {
-        let (graph, stats, event_world_stats, chrono) = build::build_graph_from_sources_with_eras_and_brainfuel(kjv_json, xrefs_tsv, atlas, eras, brainfuel)?;
+        Self::from_sources_with_eras_and_brainfuel_and_concord(kjv_json, xrefs_tsv, atlas, eras, brainfuel, None)
+    }
+
+    /// CORP-2a: the richest raw-source constructor yet -- see `build::
+    /// build_graph_from_sources_with_eras_and_brainfuel_and_concord`'s own
+    /// doc comment. `from_sources_with_eras_and_brainfuel` above delegates
+    /// here with `None`, unchanged behavior for every existing caller.
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_sources_with_eras_and_brainfuel_and_concord(
+        kjv_json: &str,
+        xrefs_tsv: &str,
+        atlas: &AtlasData,
+        eras: &[atlas_core::data::Era],
+        brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
+        concord: Option<&crate::concord_adapter::ConcordBundle>,
+    ) -> anyhow::Result<Self> {
+        let (graph, stats, event_world_stats, chrono) = build::build_graph_from_sources_with_eras_and_brainfuel_and_concord(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord)?;
         Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono)))
     }
 
@@ -279,7 +301,13 @@ impl GraphService {
         // ever parsed, and parsing IT is still fail-loud (a malformed
         // vendored file is a real bug, never silently skipped).
         let brainfuel = load_brainfuel(raw_dir)?;
-        Self::from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, atlas, &eras, brainfuel.as_ref())
+        // CORP-2a: `data/raw/concord/*.html` + `data/curated/
+        // concord-sc-overlap.toml` -- the SAME graceful-absence treatment
+        // `load_brainfuel` above already gets (a fixture `raw_dir` with no
+        // such subdirectory is an honestly empty build, never an error;
+        // real, present vendored files are parsed fail-loud).
+        let concord = load_concord(raw_dir)?;
+        Self::from_sources_with_eras_and_brainfuel_and_concord(&kjv_json, &xrefs_tsv, atlas, &eras, brainfuel.as_ref(), concord.as_ref())
     }
 
     /// M-C: takes an ALREADY-BUILT `Chronology` rather than `&AtlasData` --
@@ -293,6 +321,13 @@ impl GraphService {
         let bible_position = graph
             .reading
             .get(crate::kjv_adapter::BIBLE_CORPUS)
+            .map(|spine| spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect())
+            .unwrap_or_default();
+        // CORP-2a: the SAME one-time reverse-index build as `bible_position`
+        // above, over the "concord" spine.
+        let concord_position = graph
+            .reading
+            .get(crate::concord_adapter::CONCORD_CORPUS)
             .map(|spine| spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect())
             .unwrap_or_default();
         // M-C (map migration): the era_ids/polity_ids companion
@@ -430,6 +465,7 @@ impl GraphService {
         GraphService {
             snapshot,
             bible_position,
+            concord_position,
             stats,
             chronology,
             event_world_stats,
@@ -467,6 +503,13 @@ impl GraphService {
     /// companion, same status as `chapter_span` below.
     pub fn position_of(&self, book: u8, chapter: u16, verse: u16) -> Option<usize> {
         self.bible_position.get(&crate::kjv_adapter::verse_node_id(book, chapter, verse)).copied()
+    }
+
+    /// CORP-2a (decision 8): the Concord-corpus sibling of `position_of`
+    /// above — resolves a `(part, article, paragraph)` ref into the
+    /// "concord" spine's own starting index.
+    pub fn concord_position_of(&self, part: u8, article: u16, paragraph: u16) -> Option<usize> {
+        self.concord_position.get(&crate::concord_adapter::text_unit_id(part, article, paragraph)).copied()
     }
 
     /// The (start, n) window covering exactly one chapter -- `scope=chapter`'s
@@ -508,6 +551,29 @@ fn load_brainfuel(raw_dir: &Path) -> anyhow::Result<Option<atlas_etl::brainfuel:
         return Ok(None);
     }
     atlas_etl::brainfuel::read_all(&root).map(Some).with_context(|| format!("reading vendored brain-fuel data from {}", root.display()))
+}
+
+/// CORP-2a: `raw_dir/concord/` -- `None` (not an error) when that
+/// directory simply doesn't exist (`load_brainfuel`'s own doc comment,
+/// same treatment); `Some(Err(..))` propagated fail-loud when it exists
+/// but is malformed. Also reads the curated SC-overlap alignment
+/// (`raw_dir`'s own sibling `curated/concord-sc-overlap.toml`, the SAME
+/// derivation `load_eras` above uses for `curated/eras.toml`) -- bundled
+/// together (`concord_adapter::ConcordBundle`'s own doc comment) since a
+/// caller with real Concord HTML but no curated overlap file (or vice
+/// versa) would be a real, if unlikely, misconfiguration worth failing
+/// loud on rather than silently serving a half-built corpus.
+fn load_concord(raw_dir: &Path) -> anyhow::Result<Option<crate::concord_adapter::ConcordBundle>> {
+    let root = raw_dir.join("concord");
+    if !root.is_dir() {
+        return Ok(None);
+    }
+    let corpus = atlas_etl::concord::read_all(&root).with_context(|| format!("reading vendored Concord data from {}", root.display()))?;
+    let curated_dir = raw_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| Path::new("../data/curated").to_path_buf());
+    let overlap_path = curated_dir.join("concord-sc-overlap.toml");
+    let overlap_text = std::fs::read_to_string(&overlap_path).with_context(|| format!("reading {}", overlap_path.display()))?;
+    let sc_overlap = atlas_etl::concord::parse_sc_overlap(&overlap_text).with_context(|| format!("parsing {}", overlap_path.display()))?;
+    Ok(Some(crate::concord_adapter::ConcordBundle { corpus, sc_overlap }))
 }
 
 #[cfg(test)]

@@ -63,6 +63,15 @@ impl ApiError {
     pub fn bad_dir(message: impl Into<String>) -> Self {
         Self { status: StatusCode::BAD_REQUEST, code: "bad_dir", message: message.into() }
     }
+
+    /// CORP-2a (decision 8): `GET /api/text?corpus=` names anything other
+    /// than the two corpora `/api/text` currently serves (`bible`, the
+    /// default when `corpus` is absent, and `concord`) -- same "typed
+    /// error, not axum's default rejection body" discipline as `bad_ref`/
+    /// `bad_kind` above.
+    pub fn bad_corpus(raw: &str) -> Self {
+        Self { status: StatusCode::BAD_REQUEST, code: "bad_corpus", message: format!("unknown corpus: '{raw}' (expected 'bible' or 'concord')") }
+    }
 }
 
 #[derive(Serialize)]

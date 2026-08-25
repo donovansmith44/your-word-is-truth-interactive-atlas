@@ -231,12 +231,48 @@ fn parse_ref(raw: &str, scope: &str) -> Result<(u8, u16, Option<u16>), ApiError>
     }
 }
 
-/// `GET /api/text?ref=<dot-ref>&n=&dir=&scope=` (design doc §6; M-A brief
-/// requirement 4): a window of `{ref, text}` units + next cursor + graph
-/// version. `scope=chapter` returns exactly that chapter's units (`n` is
-/// ignored -- the count is derived server-side, `GraphService::chapter_span`)
-/// -- still the SAME window query (`window::window`) every other path
-/// calls, just with server-derived bounds.
+/// CORP-2a (decision 8): the Concord-corpus sibling of `parse_ref` above --
+/// `ref` is `ConcordTag::cite`'s own citation form, `"BoC {part}.
+/// {article}.{paragraph}"` (graph-types' text.rs; the SAME string
+/// `graph_wire::encode_node_id`/`describe_node` already produce and parse
+/// for a Concord TextUnit's own wire id). No `scope=chapter` equivalent --
+/// a Concord article's own paragraph count varies too widely (a Small
+/// Catechism commandment is one paragraph; the Apology's own Article IV is
+/// hundreds) for a single server-derived span to mean the same thing
+/// `scope=chapter` means for the Bible; `n` always governs, the same as
+/// every other non-chapter-scoped window.
+fn parse_concord_ref(raw: &str) -> Result<(u8, u16, u16), ApiError> {
+    let rest = raw.strip_prefix("BoC ").ok_or_else(|| ApiError::bad_ref(raw))?;
+    let mut parts = rest.split('.');
+    let (Some(part), Some(article), Some(paragraph), None) = (parts.next(), parts.next(), parts.next(), parts.next()) else {
+        return Err(ApiError::bad_ref(raw));
+    };
+    let part: u8 = part.parse().map_err(|_| ApiError::bad_ref(raw))?;
+    let article: u16 = article.parse().map_err(|_| ApiError::bad_ref(raw))?;
+    let paragraph: u16 = paragraph.parse().map_err(|_| ApiError::bad_ref(raw))?;
+    Ok((part, article, paragraph))
+}
+
+/// `GET /api/text?ref=<dot-ref>&n=&dir=&scope=&corpus=` (design doc §6;
+/// M-A brief requirement 4): a window of `{ref, text}` units + next
+/// cursor + graph version. `scope=chapter` returns exactly that chapter's
+/// units (`n` is ignored -- the count is derived server-side,
+/// `GraphService::chapter_span`) -- still the SAME window query
+/// (`window::window`) every other path calls, just with server-derived
+/// bounds.
+///
+/// CORP-2a (decision 8, "additive... the EXISTING generic endpoint... NO
+/// new bespoke endpoints; zero client changes"): `corpus=concord` serves
+/// the Book of Concord's own reading spine through this SAME route --
+/// `ref` is then `ConcordTag::cite`'s own citation form
+/// (`"BoC {part}.{article}.{paragraph}"`, e.g. `"BoC 7.2.1"` for the
+/// Small Catechism's First Commandment), `scope=chapter` is rejected
+/// (`parse_concord_ref`'s own doc comment has the reasoning), and the
+/// canonical rendering is the corpus's own Bente-Dau layer
+/// (`window::render_layer`, not `window::render`'s hardcoded KJV).
+/// `corpus` defaults to `"bible"` when absent -- the client never needs
+/// to send it, so every existing request's own behavior is
+/// byte-for-byte unchanged.
 ///
 /// Fix round 1, I1: `dir=backward` is REJECTED (`bad_dir`, 400) when
 /// combined with `scope=chapter`, rather than silently misapplied. A
@@ -272,11 +308,69 @@ pub async fn text_window(
     let raw_ref = params.get("ref").map(String::as_str).unwrap_or("");
     let scope = params.get("scope").map(String::as_str).unwrap_or("verse");
     let dir_raw = params.get("dir").map(String::as_str);
+    // CORP-2a (decision 8): `corpus` defaults to "bible" -- every EXISTING
+    // caller (the client never sends this param) gets byte-identical
+    // behavior; `concord` is the one other corpus `/api/text` now serves,
+    // through this SAME route (design doc §6; no new bespoke endpoint).
+    let corpus = params.get("corpus").map(String::as_str).unwrap_or("bible");
+    if corpus != "bible" && corpus != "concord" {
+        return Err(ApiError::bad_corpus(corpus));
+    }
 
     if scope == "chapter" && dir_raw == Some("backward") {
         return Err(ApiError::bad_dir(
             "dir=backward is not supported with scope=chapter -- a chapter-scoped window's bounds are already fully determined by the chapter itself, so there is no direction left to walk; omit dir, or use dir=onward, or drop scope=chapter and anchor on a specific verse instead",
         ));
+    }
+    if corpus == "concord" && scope == "chapter" {
+        return Err(ApiError::bad_dir(
+            "scope=chapter is not supported with corpus=concord -- a Concord article's own paragraph count varies too widely for one server-derived span; omit scope (or use scope=verse) and set n explicitly instead",
+        ));
+    }
+
+    let dir = match dir_raw {
+        Some("backward") => WindowDir::Backward,
+        _ => WindowDir::Onward,
+    };
+
+    let snap = graph.snapshot();
+
+    if corpus == "concord" {
+        let (part, article, paragraph) = parse_concord_ref(raw_ref)?;
+        let start = graph.concord_position_of(part, article, paragraph).ok_or_else(|| ApiError::not_found("concord paragraph"))?;
+        let n = params.get("n").and_then(|s| s.parse::<usize>().ok()).unwrap_or(1).clamp(1, 500);
+
+        let ids = window::window(&snap, atlas_graph::concord_adapter::CONCORD_CORPUS, start, n, dir);
+        let units: Vec<TextUnitOut> = ids
+            .iter()
+            .filter_map(|id| {
+                let (p, a, para) = atlas_graph::concord_adapter::decode_text_unit(id)?;
+                let text = window::render_layer(&snap, id, atlas_graph::concord_adapter::CONCORD_TRANSLATION)?;
+                Some(TextUnitOut { sref: format!("BoC {p}.{a}.{para}"), text })
+            })
+            .collect();
+
+        let unit_at = |pos: usize| {
+            snap.reading_window(atlas_graph::concord_adapter::CONCORD_CORPUS, pos, 1)
+                .into_iter()
+                .next()
+                .and_then(|id| atlas_graph::concord_adapter::decode_text_unit(&id))
+                .map(|(p, a, para)| format!("BoC {p}.{a}.{para}"))
+        };
+        let next = match dir {
+            WindowDir::Onward => unit_at(start + units.len()),
+            WindowDir::Backward => {
+                let window_start = window::resolved_start(start, n, dir);
+                if window_start == 0 {
+                    None
+                } else {
+                    unit_at(window_start - 1)
+                }
+            }
+        };
+
+        let body = Json(TextWindowOut { units, next, version: atlas_graph::version_hex(graph.version()) });
+        return Ok(([(header::ETAG, etag)], body).into_response());
     }
 
     let (book, chapter, verse_opt) = parse_ref(raw_ref, scope)?;
@@ -290,12 +384,6 @@ pub async fn text_window(
         (start, n)
     };
 
-    let dir = match dir_raw {
-        Some("backward") => WindowDir::Backward,
-        _ => WindowDir::Onward,
-    };
-
-    let snap = graph.snapshot();
     let ids = window::window(&snap, atlas_graph::kjv_adapter::BIBLE_CORPUS, start, n, dir);
     let units: Vec<TextUnitOut> = ids
         .iter()

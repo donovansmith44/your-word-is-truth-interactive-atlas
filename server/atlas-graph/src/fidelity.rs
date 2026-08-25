@@ -239,10 +239,21 @@ pub fn check_kjv_fidelity(source_kjv_json: &str, built: &Graph, brainfuel: Optio
             )));
         }
     }
-    // ...and no EXTRA TextUnit node claims to be a KJV verse the source
-    // doesn't have (bijection is two-sided).
+    // ...and no EXTRA *Bible* TextUnit node claims to be a KJV verse the
+    // source doesn't have (bijection is two-sided). CORP-2a: `NodeKind::
+    // TextUnit` is now shared by TWO corpora (`kjv_adapter`'s own Bible
+    // verses AND `concord_adapter`'s own Concord paragraphs, both
+    // `AnyNodeId { kind: TextUnit, .. }`, differing only in their `raw`
+    // string's own corpus prefix) -- this law is titled and scoped "KJV
+    // adapter fidelity" (module doc comment), so it must only ever police
+    // the BIBLE half of that shared kind, via `kjv_adapter::decode_text_unit`'s
+    // own "bible/" prefix check (the SAME test that already tells a real
+    // Bible id apart from a malformed one, reused here rather than a
+    // second hand-written prefix check). A real, non-empty `contains_concord`
+    // corpus riding alongside is not a fidelity violation of THIS law --
+    // it has no boundary claim over Concord at all.
     for id in built.nodes.keys() {
-        if id.kind == NodeKind::TextUnit && !expected_ids.contains(id) {
+        if id.kind == NodeKind::TextUnit && kjv_adapter::decode_text_unit(id).is_some() && !expected_ids.contains(id) {
             return Err(FidelityViolation(format!("built graph has a TextUnit node {id:?} with no corresponding source verse")));
         }
     }
@@ -314,6 +325,26 @@ mod tests {
     fn green_on_a_clean_fixture() {
         let (graph, ..) = build_graph_from_sources(GOOD_KJV, NO_XREFS, &crate::event_world::empty_atlas()).unwrap();
         assert_eq!(check_kjv_fidelity(GOOD_KJV, &graph, None), Ok(()));
+    }
+
+    /// CORP-2a: a real, live-caught regression -- before this batch's own
+    /// fix, this law scanned EVERY `NodeKind::TextUnit` node for Bible
+    /// bijection membership, so a real Concord TextUnit riding alongside
+    /// (this test inserts one directly, the same shape `concord_adapter::
+    /// normalize` builds) failed as "no corresponding source verse," even
+    /// though this law's own scope is titled "KJV adapter fidelity" and
+    /// was never meant to police a different corpus at all.
+    #[test]
+    fn a_concord_text_unit_riding_alongside_is_not_a_kjv_fidelity_violation() {
+        let (mut graph, ..) = build_graph_from_sources(GOOD_KJV, NO_XREFS, &crate::event_world::empty_atlas()).unwrap();
+        let concord_id = atlas_graph_types::id::AnyNodeId { kind: NodeKind::TextUnit, raw: "concord/7.2.1".to_string() };
+        let mut renderings = atlas_graph_types::text::LayerMap::new();
+        renderings.insert(TranslationId("bente-dau".to_string()), "We should fear, love, and trust in God above all things.".to_string());
+        graph.nodes.insert(
+            concord_id.clone(),
+            atlas_graph_types::node::Node { id: concord_id, payload: NodePayload::TextUnit { corpus: "concord", renderings }, provenance: "concord".to_string() },
+        );
+        assert_eq!(check_kjv_fidelity(GOOD_KJV, &graph, None), Ok(()), "a real Concord TextUnit is out of this law's own scope, never a violation");
     }
 
     #[test]

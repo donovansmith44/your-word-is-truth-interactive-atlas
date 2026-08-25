@@ -127,6 +127,15 @@ pub struct BuildCtx<'a> {
     /// over the real vendored data) and every real caller already has one
     /// living for the duration of the build (mirrors `eras: &'a [Era]`).
     pub brainfuel: Option<&'a atlas_etl::brainfuel::BrainFuelCorpus>,
+    /// CORP-2a: `concord_adapter.rs`'s own source -- the parsed Book of
+    /// Concord corpus plus the curated SC-overlap alignment, bundled
+    /// (`concord_adapter::ConcordBundle`'s own doc comment explains why
+    /// ONE optional field, not two). The SAME "absent == an honestly
+    /// empty build, not a placeholder" treatment `brainfuel`/`eras` above
+    /// already get -- every test fixture that doesn't supply real Concord
+    /// data (every caller of `BuildCtx::new`/`with_eras`/`with_eras_and_
+    /// brainfuel`) gets `None`, unchanged from before this batch.
+    pub concord: Option<&'a crate::concord_adapter::ConcordBundle>,
     /// ENT-1a: `description_adapter::fill_descriptions`'s own return value,
     /// captured here (not just returned-and-discarded, unlike the other
     /// MERGE/ALIAS adapter calls' own Stats structs) so a caller that
@@ -181,6 +190,26 @@ impl<'a> BuildCtx<'a> {
         eras: &'a [atlas_core::data::Era],
         brainfuel: Option<&'a atlas_etl::brainfuel::BrainFuelCorpus>,
     ) -> Self {
+        Self::with_eras_and_brainfuel_and_concord(kjv_canon, kjv_verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, None)
+    }
+
+    /// CORP-2a: the richest form yet -- real startup and the artifact
+    /// compile step use this directly, with a real, pre-parsed
+    /// `concord_adapter::ConcordBundle`; every other caller keeps calling
+    /// `new`/`with_eras`/`with_eras_and_brainfuel` unchanged, getting an
+    /// honestly absent (`None`) `concord` -- see this struct's own
+    /// `concord` field doc comment.
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_eras_and_brainfuel_and_concord(
+        kjv_canon: &'a Canon,
+        kjv_verses: &'a std::collections::HashMap<String, String>,
+        kjv_json_source: Option<&'a str>,
+        xrefs_tsv: &'a str,
+        atlas: &'a AtlasData,
+        eras: &'a [atlas_core::data::Era],
+        brainfuel: Option<&'a atlas_etl::brainfuel::BrainFuelCorpus>,
+        concord: Option<&'a crate::concord_adapter::ConcordBundle>,
+    ) -> Self {
         BuildCtx {
             kjv_canon,
             kjv_verses,
@@ -189,6 +218,7 @@ impl<'a> BuildCtx<'a> {
             atlas,
             eras,
             brainfuel,
+            concord,
             graph: Graph::default(),
             stats: BuildStats::default(),
             event_world_stats: EventWorldStats::default(),
@@ -225,6 +255,12 @@ impl Pass for NormalizePass {
         crate::era_adapter::normalize(ctx);
         crate::polity_adapter::normalize(ctx);
         crate::catechism_adapter::normalize(ctx);
+        // CORP-2a: the Concord corpus's own TextUnit nodes + document/
+        // article containers + reading spine -- self-contained (no OTHER
+        // pass's output needed first), the SAME NORMALIZE-eligibility
+        // `kjv_adapter::normalize` above already has (module doc comment
+        // on `concord_adapter.rs`).
+        crate::concord_adapter::normalize(ctx);
         // Batch P (the extensibility proof): Person nodes need no OTHER
         // pass's output first (same NORMALIZE-eligibility reasoning as
         // every sibling call above) -- ctx.atlas.people is already fully
@@ -254,6 +290,15 @@ impl Pass for MergeAliasPass {
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
         crate::place_adapter::merge_alias(ctx);
         crate::catechism_adapter::merge_alias(ctx);
+        // CORP-2a: the SC-overlap CatechismLink rows (decision 4) -- runs
+        // AFTER catechism_adapter::merge_alias only incidentally (no
+        // ordering dependency between the two catechism-link builders
+        // themselves); the REAL dependency is on catechism_adapter::
+        // NORMALIZE (CatechismItem nodes) and concord_adapter::NORMALIZE
+        // (Concord TextUnits), both already complete by the time
+        // MergeAliasPass runs at all (concord_adapter.rs's own module doc
+        // comment).
+        crate::concord_adapter::merge_alias(ctx);
         // Batch P: Person.verse_links -> mentions rows, the SAME
         // "legacy-vocabulary boundary crossing" shape place_adapter's own
         // mentions half already is (this stage's own doc comment above).

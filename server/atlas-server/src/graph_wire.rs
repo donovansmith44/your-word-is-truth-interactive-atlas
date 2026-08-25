@@ -45,9 +45,23 @@ use atlas_graph_types::store::GraphQuery;
 /// cost of a less pretty wire string until THAT batch's own DTO work lands.
 pub fn encode_node_id(id: &AnyNodeId) -> String {
     match id.kind {
+        // CORP-2a: `NodeKind::TextUnit` is now shared by TWO corpora (the
+        // scouting memo's own "ConcordRef locus grammar joins graph_wire,
+        // one decode arm, the P precedent" -- realized here, in BOTH
+        // halves of the round trip, not just decode). Bible tried first
+        // (the overwhelmingly common case, unchanged cost); a Concord id
+        // (`kjv_adapter::decode_text_unit` returns `None` for a
+        // "concord/..." raw string, since it checks the "bible/" prefix)
+        // falls to the Concord decode, which produces the wire form
+        // `"text-unit:BoC {part}.{article}.{paragraph}"` -- reusing
+        // `ConcordTag::cite()`'s own citation format verbatim
+        // (graph-types' text.rs), not a new one invented here.
         NodeKind::TextUnit => match atlas_graph::kjv_adapter::decode_text_unit(id) {
             Some((book, chapter, verse)) => format!("text-unit:{}", atlas_graph::kjv_adapter::dot_ref(book, chapter, verse)),
-            None => format!("text-unit:{}", id.raw),
+            None => match atlas_graph::concord_adapter::decode_text_unit(id) {
+                Some((part, article, paragraph)) => format!("text-unit:BoC {part}.{article}.{paragraph}"),
+                None => format!("text-unit:{}", id.raw),
+            },
         },
         other => format!("{other:?}:{}", id.raw),
     }
@@ -62,7 +76,22 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
         return None;
     }
     match kind {
+        // CORP-2a: try the Concord "BoC {part}.{article}.{paragraph}"
+        // form first (a cheap, unambiguous prefix check -- Bible dot-refs
+        // never start "BoC "), then fall through to the existing Bible
+        // parse unchanged. See `encode_node_id`'s own matching doc
+        // comment for the full round-trip picture.
         "text-unit" => {
+            if let Some(concord_rest) = rest.strip_prefix("BoC ") {
+                let mut parts = concord_rest.split('.');
+                let part: u8 = parts.next()?.parse().ok()?;
+                let article: u16 = parts.next()?.parse().ok()?;
+                let paragraph: u16 = parts.next()?.parse().ok()?;
+                if parts.next().is_some() {
+                    return None; // trailing garbage -- not one of this adapter's ids
+                }
+                return Some(atlas_graph::concord_adapter::text_unit_id(part, article, paragraph));
+            }
             let vid = atlas_core::refs::VerseId::parse_canonical(rest).ok()?;
             Some(atlas_graph::kjv_adapter::verse_node_id(vid.book.0, vid.chapter, vid.verse))
         }
@@ -135,6 +164,13 @@ pub fn describe_node(id: &AnyNodeId, query: &dyn GraphQuery) -> (String, String)
         NodeKind::TextUnit => {
             if let Some((book, chapter, verse)) = atlas_graph::kjv_adapter::decode_text_unit(id) {
                 return (atlas_graph::kjv_adapter::dot_ref(book, chapter, verse), "TextUnit".to_string());
+            }
+            // CORP-2a: the Concord sibling -- `ConcordTag::cite`'s own
+            // citation format (graph-types' text.rs), reused verbatim
+            // rather than a third hand-written "BoC ..." string.
+            if let Some((part, article, paragraph)) = atlas_graph::concord_adapter::decode_text_unit(id) {
+                use atlas_graph_types::text::Corpus;
+                return (atlas_graph_types::text::ConcordTag::cite(&atlas_graph_types::text::ConcordRef { part, article, paragraph }), "TextUnit".to_string());
             }
             ("text unit".to_string(), "TextUnit".to_string())
         }

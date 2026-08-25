@@ -97,6 +97,24 @@ impl Graph {
                 pairs.entry(R::Contains).or_default().push((c.clone(), at(&text_node(&tl)), M::None));
             }
         }
+        // CORP-2a: the Concord sibling of the `contains_bible` loop
+        // immediately above -- SAME shape, the OTHER `Contains<C>`
+        // instantiation this struct carries (graph.rs's own field-level
+        // doc comment: "authored"). Declared alongside `contains_bible`
+        // since M-A but never lowered into `pairs` until now: `Contains<
+        // ConcordTag>` had no real caller before `concord_adapter.rs`
+        // (this batch's own first-real-caller note, matching artifact.rs's
+        // identical "deliberately incomplete until a real caller arrives"
+        // shape for `concord_locus_to_dto`) -- both are precedented,
+        // mechanical completions of an already-declared field, not a new
+        // relation or a type-shape change.
+        for row in &self.contains_concord {
+            let c = at(&row.container.erase());
+            for l in &row.content.0 {
+                let tl: TextLocus = l.clone().into();
+                pairs.entry(R::Contains).or_default().push((c.clone(), at(&text_node(&tl)), M::None));
+            }
+        }
         for row in &self.attests {
             let e = at(&row.event.erase());
             let tl: TextLocus = row.attestation.from.clone().into();
@@ -253,4 +271,66 @@ impl Graph {
 /// Marker: corpus id helper for spines.
 pub fn corpus_key<C: Corpus>() -> &'static str {
     C::ID
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::edge::{Contains, Direction, EdgeKind, RelationId};
+    use crate::explore::{EdgeQuery, Explorable, PositionRef};
+    use crate::id::{ContainerNodeId, NodeKind};
+    use crate::ingest::ProvenanceId;
+    use crate::node::{Node, NodePayload};
+    use crate::text::{ConcordRef, ConcordTag, Locus, LocusSet, TranslationId};
+    use std::collections::BTreeSet;
+
+    /// CORP-2a: `contains_concord` was declared on this struct since M-A
+    /// but never lowered into `pairs` until this batch (see this file's
+    /// own `build_indexes` doc comment on the loop immediately after
+    /// `contains_bible`'s) -- this proves the wiring, mirroring the
+    /// `contains_bible` shape exactly: a container's own forward
+    /// "contains" frontier lists its member paragraphs, and each
+    /// paragraph's inverse "member-of" frontier lists the SAME container
+    /// back, under the SAME EdgeId either way (the bijection witness).
+    #[test]
+    fn contains_concord_rows_lower_into_the_directed_contains_index_both_ways() {
+        let mut g = Graph::default();
+        let container_id = ContainerNodeId::new("concord-ac-iv");
+        let p1 = ConcordRef { part: 3, article: 4, paragraph: 1 };
+        let p2 = ConcordRef { part: 3, article: 4, paragraph: 2 };
+        for p in [&p1, &p2] {
+            let raw = format!("concord/{}.{}.{}", p.part, p.article, p.paragraph);
+            g.nodes.insert(
+                crate::id::AnyNodeId { kind: NodeKind::TextUnit, raw: raw.clone() },
+                Node {
+                    id: crate::id::AnyNodeId { kind: NodeKind::TextUnit, raw },
+                    payload: NodePayload::TextUnit { corpus: "concord", renderings: [(TranslationId("bente-dau".into()), "text".into())].into_iter().collect() },
+                    provenance: "test".into(),
+                },
+            );
+        }
+        g.nodes.insert(
+            container_id.erase(),
+            Node { id: container_id.erase(), payload: NodePayload::Container { title: "Article IV. Of Justification.".into() }, provenance: "test".into() },
+        );
+        let mut content: BTreeSet<Locus<ConcordTag>> = BTreeSet::new();
+        content.insert(Locus::whole(p1.clone()));
+        content.insert(Locus::whole(p2.clone()));
+        g.contains_concord.push(Contains { container: container_id.clone(), content: LocusSet(content), provenance: ProvenanceId::from("test"), justification: Default::default() });
+
+        g.build_indexes();
+
+        let forward = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
+        let page = PositionRef(crate::id::Position::Node(container_id.erase())).edges(&g, &EdgeQuery { kind: forward, cursor: None, limit: 10 });
+        assert_eq!(page.entries.len(), 2, "the container's own forward 'contains' frontier lists both paragraphs");
+
+        let p1_node = crate::id::AnyNodeId { kind: NodeKind::TextUnit, raw: "concord/3.4.1".into() };
+        let inverse = EdgeKind::Directed(RelationId::Contains, Direction::Inverse);
+        let back = PositionRef(crate::id::Position::Node(p1_node.clone())).edges(&g, &EdgeQuery { kind: inverse, cursor: None, limit: 10 });
+        assert_eq!(back.entries.len(), 1, "the paragraph's own inverse 'member-of' frontier lists its container");
+        assert_eq!(back.entries[0].node, crate::id::Position::Node(container_id.erase()));
+
+        let from_container_entry = page.entries.iter().find(|e| e.node == crate::id::Position::Node(p1_node.clone())).expect("the container's own page must list paragraph 1");
+        assert_eq!(from_container_entry.edge, back.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
+    }
 }

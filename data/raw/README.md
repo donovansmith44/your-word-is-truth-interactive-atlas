@@ -422,6 +422,54 @@ matching the upstream repo's own README), douay_rheims 13, swedish_karl_xii
 3; zero anomalies (an edition ever empty-and-unmarked) anywhere in the
 real data.
 
+## `concord/*.html` (Batch CORP-2a — the Book of Concord, 1921 Bente-Dau)
+
+Ten document-root pages fetched from `bookofconcord.org` (see
+`data/fetch-raw.ps1`'s own `$concordDocs` list and `LICENSES.md`'s "The
+Book of Concord" section for the full provenance/PD reasoning):
+`preface.html`, `ecumenical-creeds.html`, `augsburg-confession.html`,
+`defense.html` (= the Apology), `smalcald-articles.html`,
+`power-and-primacy.html` (= the Treatise), `small-catechism.html`,
+`large-catechism.html`, `epitome.html`, `solid-declaration.html`.
+
+**Each document's ROOT page already carries its own FULL text inline** —
+verified before writing the fetch script: `/augsburg-confession/`'s own
+HTML contains every one of its 28 articles' complete paragraph text, not
+just a table-of-contents linking out to 28 separate per-article pages
+(those per-article pages exist too, e.g. `/augsburg-confession/
+of-justification/`, and carry byte-identical paragraph text — confirmed
+by direct comparison — so fetching them as well would be pure
+redundancy). This is why only 10 files are vendored here, not the ~150
+the document/article grammar might suggest.
+
+**HTML shape** (`server/atlas-etl/src/concord.rs`'s own module doc
+comment has the full parser-facing grammar): each article is
+`<a href="/{doc}/{slug}/"><h3>TITLE</h3></a>` immediately followed by
+`<section>...paragraphs...</section>`. Paragraph boundaries are
+`<span id="{prefix}-acontent" class="{prefix2}-content">LABEL</span>`
+markers, `LABEL` being the source's own visible paragraph number (plain
+digits for every document except the Small Catechism, whose own
+Question/Answer format sub-letters a shared base number — "1", "1b",
+"1c" — or, for its Introduction/Conclusion units only, uses a literal
+"*" with an explicit `-ans`-suffixed id pairing instead of a digit).
+`smalcald-articles.html`'s own markup has one confirmed template quirk
+(harmless): its `{prefix}`/`{prefix2}` template variables render EMPTY
+(`id="0001" class="-content"` rather than `id="ac-iv-0001-acontent"
+class="bocanchor-content"`-style ids elsewhere) — the marker STILL
+matches the same `-acontent"..."-content"` grammar, so parsing is
+unaffected. A handful of Small-Catechism sub-lettered marker ids are
+ALSO Go template-bug artifacts (literal text like
+`id="sc-lords-prayer-%!d(string=001b)-acontent"`, a `fmt.Sprintf("%d",
+...)` misfire on the SITE'S OWN end) — cosmetic (affects only an
+internal deep-link anchor id never read by this project's parser, never
+the visible paragraph label or the paragraph's own prose).
+
+The Three Ecumenical Creeds (`ecumenical-creeds.html`) carry NO inline
+paragraph-number markers at all in the source (plain `<p>` prose only) —
+disclosed structure resistance to the `ConcordRef` triple, per the batch
+brief; see `batch-corp2a-report.md` for the full per-document structure
+disclosures and paragraph-count tally.
+
 ## Vendored Leaflet (`client/wwwroot/vendor/leaflet/`)
 
 `leaflet.js` (147,552 bytes) and `leaflet.css` (14,806 bytes), fetched from

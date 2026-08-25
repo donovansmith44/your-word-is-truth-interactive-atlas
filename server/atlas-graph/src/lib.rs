@@ -32,6 +32,7 @@ pub mod artifact;
 pub mod brainfuel_adapter;
 pub mod build;
 pub mod catechism_adapter;
+pub mod concord_adapter;
 pub mod description_adapter;
 pub mod era_adapter;
 pub mod event_world;
