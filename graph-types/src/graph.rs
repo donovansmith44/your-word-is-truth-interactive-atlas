@@ -4,7 +4,8 @@
 use std::collections::BTreeMap;
 
 use crate::edge::{
-    at, Attests, BiIndex, CatechismLink, Confesses, Contains, Corresponds, CrossRef, Fulfills,
+    at, Attests, BiIndex, CatechismLink, CommentsOn, Confesses, Contains, Corresponds, CrossRef,
+    Fulfills,
     LocatedAt, MentionedEntity, Mentions, NamedAfter, Namesake, Quotes, RelationId,
     Succession, TemporalAdjacency, Typology,
 };
@@ -35,6 +36,9 @@ pub struct Graph {
     pub typology: Vec<Typology>,
     pub named_after: Vec<NamedAfter>,
     pub catechism: Vec<CatechismLink>,
+    /// KRETZ-1: verse-anchored commentary targets (annotation shape;
+    /// the units themselves are CommentaryItem nodes).
+    pub comments_on: Vec<CommentsOn>,
     // -------- imported --------
     pub mentions: Vec<Mentions>,
     pub cross_refs: Vec<CrossRef>,

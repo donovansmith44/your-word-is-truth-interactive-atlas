@@ -26,6 +26,9 @@ pub enum NodeKind {
     Source,
     Translation,
     PeopleGroup,
+    /// KRETZ-1: a verse-anchored unit of a commentary work's prose
+    /// (annotation shape -- owner order 2026-08-24).
+    CommentaryItem,
 }
 
 /// Kind tag for phantom-typed ids: a cross-kind reference is a type
@@ -56,6 +59,7 @@ kind_tags! {
     SourceTag => Source,
     TranslationTag => Translation,
     PeopleGroupTag => PeopleGroup,
+    CommentaryItemTag => CommentaryItem,
 }
 
 /// Typed in-memory handle; renders to its Pid at the boundary.
@@ -112,6 +116,7 @@ pub type CatechismItemId = NodeId<CatechismItemTag>;
 pub type SourceId = NodeId<SourceTag>;
 pub type TranslationNodeId = NodeId<TranslationTag>;
 pub type PeopleGroupId = NodeId<PeopleGroupTag>;
+pub type CommentaryItemId = NodeId<CommentaryItemTag>;
 
 /// Erased form for the wire/UI boundary and heterogeneous holdings.
 /// Narrowing back to a typed id is a checked parse.

@@ -4,7 +4,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::id::{
-    AnchorId, AnyNodeId, CatechismItemId, ContainerNodeId, ContentAddressed, EventId, Interned,
+    AnchorId, AnyNodeId, CatechismItemId, CommentaryItemId, ContainerNodeId, ContentAddressed,
+    EventId, Interned,
     NarrativeId, PeopleGroupId, PersonId, PlaceId, PolityId, Position, PositionKind, SourceId,
 };
 use crate::ingest::ProvenanceId;
@@ -83,6 +84,7 @@ relations! {
         Typology    => "prefigures" / "prefigured-by",
         NamedAfter  => "named-after" / "namesake-of",
         JustifiedBy => "justified-by" / "justifies",
+        CommentsOn  => "comments-on" / "commented-on-by",
         DerivedFrom => "derived-from" / "derives"
     }
     symmetric {
@@ -280,6 +282,19 @@ pub enum Namesake {
 pub struct CatechismLink {
     pub locus: TextLocus,
     pub item: CatechismItemId,
+    pub provenance: ProvenanceId,
+    pub justification: Justification,
+}
+
+/// KRETZ-1: one verse-anchored commentary unit's target -- the unit's
+/// own Bible locus RANGE (lemma spans lower to ranges; pericope intros
+/// to the pericope range; chapter intros to the chapter's full range),
+/// per the owner-ruled verse-mapped-index law. Justification is
+/// grounded in the lemma's own locus.
+#[derive(Clone, Debug)]
+pub struct CommentsOn {
+    pub item: CommentaryItemId,
+    pub on: BibleLocusRange,
     pub provenance: ProvenanceId,
     pub justification: Justification,
 }

@@ -105,6 +105,13 @@ impl From<NodeKind> for DtoNodeKind {
             NodeKind::Source => DtoNodeKind::Source,
             NodeKind::Translation => DtoNodeKind::Translation,
             NodeKind::PeopleGroup => DtoNodeKind::PeopleGroup,
+            // KRETZ-1 crate patch: dump()'s guard refuses CommentaryItem
+            // nodes before lowering ever runs; the batch that emits them
+            // extends the Dto + FORMAT_VERSION (the TRAV-1/PG-1a trigger
+            // class).
+            NodeKind::CommentaryItem => {
+                unreachable!("guarded: dump() refuses CommentaryItem nodes until KRETZ-1 extends the artifact")
+            }
         }
     }
 }
@@ -253,6 +260,10 @@ enum DtoPayload {
 
 fn payload_to_dto(p: &NodePayload) -> DtoPayload {
     match p {
+        // KRETZ-1 crate patch: same guard class as the DtoNodeKind arm.
+        NodePayload::CommentaryItem { .. } => {
+            unreachable!("guarded: dump() refuses CommentaryItem nodes until KRETZ-1 extends the artifact")
+        }
         NodePayload::TextUnit { corpus, renderings } => DtoPayload::TextUnit {
             corpus: corpus.to_string(),
             renderings: renderings.iter().map(|(k, v)| (k.0.clone(), v.clone())).collect(),
@@ -836,9 +847,12 @@ const FORMAT_VERSION: u32 = 8;
 /// `concord_adapter` started emitting real rows -- all are REAL
 /// SERIALIZED CONTENT below now, no longer guarded.
 pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_stats: &EventWorldStats) -> Result<ArtifactDump, ArtifactError> {
-    if !g.contains_bible.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty() {
+    if !g.contains_bible.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty()
+        || !g.comments_on.is_empty()
+        || g.nodes.keys().any(|id| id.kind == NodeKind::CommentaryItem)
+    {
         return Err(ArtifactError(
-            "the graph carries rows in a relation this artifact format does not yet serialize (contains_bible/quotes/confesses/corresponds) -- extend artifact.rs before shipping this content".into(),
+            "the graph carries content this artifact format does not yet serialize (contains_bible/quotes/confesses/corresponds/comments_on rows, or CommentaryItem nodes -- KRETZ-1's trigger class) -- extend artifact.rs before shipping this content".into(),
         ));
     }
 

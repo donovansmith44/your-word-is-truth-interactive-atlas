@@ -154,6 +154,17 @@ pub enum NodePayload {
     /// "Ptolemaic Egypt").
     Polity { label: String, color_key: u8, eras: Vec<PolityEraPayload> },
     CatechismItem { label: String },
+    /// KRETZ-1 (owner order 2026-08-24: "pull kretzmann commentary
+    /// (public domain version) into our corpora"; ruled the ANNOTATION
+    /// shape: "a comprehensive commentary without the verses interleaved
+    /// into it, and it's indexed so that each verse mapped bit of
+    /// commentary is mapped to the appropriate verse in our graph").
+    /// One node per verse-anchored unit of the work's prose; the bold
+    /// KJV lemma is the parser's join key and is EXCISED -- verse text
+    /// has ONE source (the canonical layer); verse + commentary compose
+    /// at render. `work` is the commentary work's Source node; `heading`
+    /// carries the pericope context where the source printed one.
+    CommentaryItem { work: crate::id::SourceId, heading: Option<String>, text: String },
     Source { label: String },
     Translation { label: String },
 }
@@ -222,6 +233,9 @@ pub fn card(n: &dyn NodeData) -> Card {
         | NodePayload::Source { label }
         | NodePayload::Translation { label }
         | NodePayload::PeopleGroup { label, .. } => label.clone(),
+        NodePayload::CommentaryItem { heading, .. } => {
+            heading.clone().unwrap_or_else(|| "Commentary".to_string())
+        }
         NodePayload::Place { canonical, .. } => canonical.clone(),
         NodePayload::Anchor { citation, .. } => citation.clone(),
     };
