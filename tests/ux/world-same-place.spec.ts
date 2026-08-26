@@ -102,17 +102,82 @@ test('UI-1: every JDG.4 marker renders within 20px of its true wire position, at
   // decision 3's own target at FAR/MID label tier -- a place absorbed into
   // a `marker-cluster-{n}` glyph this pass is HIDDEN (still attached, per
   // applyMarkerClusters' own comment), not individually nudge-positioned,
-  // by design; nudge accuracy simply doesn't apply to it at this tier.
-  // Skipped here rather than asserted against -- this property is about
-  // nudge precision for whichever places DO still render individually,
-  // unchanged from its own pre-C3 intent, not a claim that clustering
-  // itself must never happen for this scene.
+  // by design; nudge accuracy simply doesn't apply to it at this tier. This
+  // property is about nudge precision for whichever places DO still render
+  // individually, unchanged from its own pre-C3 intent, not a claim that
+  // clustering itself must never happen for this scene.
+  //
+  // Fix round 1 (review finding, LOW): a hidden marker is no longer
+  // silently `continue`d past with nothing checked at all -- it must now
+  // PROVE it belongs to a real, currently-rendered cluster glyph (every
+  // on-screen `marker-cluster-{n}`'s own chooser membership, read once via
+  // clusterMembership below), which is exactly the "cluster glyph position
+  // law" applyMarkerClusters itself establishes (a marker is hidden iff its
+  // own id is in `inst.clusteredIds` THIS pass, which is exactly the set
+  // every currently-rendered glyph's own membership union covers -- see
+  // map.js's own applyMarkerClusters comment). A hidden id that ISN'T a
+  // member of any on-screen glyph would mean something ELSE hid it (a real
+  // bug this property should catch, not wave through), so that case now
+  // fails loudly instead of silently passing. Also refuses to let the whole
+  // scene silently degenerate into 100% exempted (checked.length must stay
+  // >0) and logs the exact accounting (checked vs. cluster-verified) for
+  // each pass -- batch-c3-report.md's own UI-1 section cites this.
+  async function clusterMembership(page: Page): Promise<Set<string>> {
+    // Fix round 1 (review re-run finding): reads every glyph's own screen
+    // CENTER once, upfront, into plain numbers -- then drives the pointer
+    // there with raw page.mouse.move, never a second locator-based
+    // `.hover()` mid-loop. A locator's own `.hover()` re-resolves and
+    // actionability-waits on the LIVE element on every call; a transient
+    // re-render elsewhere on the page (any Blazor re-render this test's own
+    // chooser-open/close cycle causes counts as "the element moved") can
+    // make that retry loop spin for the test's own full timeout without
+    // ever settling -- confirmed live (240s timeout, "element was detached
+    // from the DOM, retrying") on a later re-run of this exact test. Plain
+    // coordinates sidestep that retry loop entirely.
+    const glyphs = await page.locator('[data-testid^="marker-cluster-"]').evaluateAll(
+      els => els.map(el => {
+        const r = (el as HTMLElement).getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+      }));
+    const covered = new Set<string>();
+    for (const { x, y } of glyphs) {
+      await page.mouse.move(x, y, { steps: 5 });
+      // wireClusterEvents' own QUIET_HOVER_INTENT_MS dwell debounce (map.js,
+      // 150ms -- self-review finding, fix round 1 of the original C3 batch:
+      // "the SAME QUIET_HOVER_INTENT_MS dwell debounce wireQuietEvents' own
+      // mouseover already uses") -- a cluster glyph's own chooser does NOT
+      // fire on a bare mouseover, so reading place-chooser-* rows
+      // immediately would read stale/empty state. Real margin above 150ms,
+      // same as this file's own header comment reasoning elsewhere in this
+      // suite for the identical timer.
+      await page.waitForTimeout(300);
+      const rows = await page.locator('[data-testid^="place-chooser-"]').evaluateAll(
+        els => els.map(el => (el as HTMLElement).dataset.testid!.replace('place-chooser-', '')));
+      for (const id of rows) {
+        covered.add(id);
+      }
+      // Same "leave everything, steps: 10" pattern this suite's own
+      // world-hover-text.spec.ts already established for closing a hover
+      // flyout cleanly, reused here rather than an ad hoc single-jump move.
+      await page.mouse.move(0, 0, { steps: 10 });
+      await page.waitForTimeout(200);
+    }
+    return covered;
+  }
+
   async function assertEveryPlaceWithinBound(label: string) {
+    const clusterCovered = await clusterMembership(page);
+    const checked: string[] = [];
+    const exempted: string[] = [];
     for (const p of scene.places) {
       const marker = page.getByTestId(`marker-${p.id}`);
       if (!(await marker.isVisible())) {
+        expect(clusterCovered.has(p.id),
+          `${label}: marker-${p.id} is hidden but is NOT a member of any on-screen cluster glyph -- not a legitimate cluster exemption`).toBe(true);
+        exempted.push(p.id);
         continue;
       }
+      checked.push(p.id);
       const box = await marker.boundingBox();
       expect(box, `${label}: marker-${p.id} has no bounding box`).not.toBeNull();
       const cx = box!.x + box!.width / 2, cy = box!.y + box!.height / 2;
@@ -121,6 +186,8 @@ test('UI-1: every JDG.4 marker renders within 20px of its true wire position, at
       const gap = Math.hypot(cx - truePt!.x, cy - truePt!.y);
       expect(gap, `${label}: marker-${p.id} rendered ${gap.toFixed(1)}px from its true wire position (limit ~20px)`).toBeLessThanOrEqual(20);
     }
+    expect(checked.length, `${label}: every JDG.4 marker was hidden inside a cluster -- nothing left for this property to actually check`).toBeGreaterThan(0);
+    console.log(`UI-1 (${label}): checked ${checked.length}/${scene.places.length} markers directly against true position; ${exempted.length} exempted as verified cluster members [${exempted.join(', ')}]`);
   }
 
   await assertEveryPlaceWithinBound('default fit');

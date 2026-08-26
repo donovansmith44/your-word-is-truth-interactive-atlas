@@ -4,8 +4,8 @@ import {
   mergedVerses, groups, isPassage, initialShownCount, visibleGroups,
   revealSequence, spanRef, verseText, type Group,
 } from './lib/hovercard';
-import { independentlyHoverableIds } from './lib/hoverSafety';
-import { zoomInOnMarker } from './lib/zoom';
+import { labelIsVisible } from './lib/hoverSafety';
+import { zoomInOnMarker, setZoomExact } from './lib/zoom';
 
 // A card anchored above a marker near the TOP of the viewport (this batch's
 // own real, live example: "Philippi" in the apostolic window) can need a
@@ -22,12 +22,32 @@ import { zoomInOnMarker } from './lib/zoom';
 // suite's own synthetic input is at least as realistic as a real pointer,
 // not a source of flakiness the app itself doesn't have.
 async function moveAndClick(page: Page, locator: Locator): Promise<void> {
-  const box = await locator.boundingBox();
-  if (!box) {
-    throw new Error('moveAndClick: locator has no bounding box (not visible?)');
+  // Fix round 1 (review finding -- surfaced, not caused, by the widened
+  // WINDOWS/candidate search below finding real curated data this file
+  // never happened to exercise before): Locator.boundingBox() returns the
+  // UNION of every client rect an inline element occupies -- for a
+  // multi-line-WRAPPED inline span (a `hover-verse-{VREF}` nested inside a
+  // `hover-passage-{SPAN}` block, PlaceCard.razor's own
+  // place-card-passage-verse, when that one verse's own text wraps across
+  // two lines), that union's own CENTER point can land in the visual GAP
+  // between the two wrapped lines -- confirmed live: clicking the verse
+  // span this way landed on the PARENT passage container instead (its own
+  // separate onclick, ExplorePassage) and opened "JOS.22.1-4" instead of
+  // the intended single-verse "JOS.22.1" popover. `getClientRects()[0]` --
+  // the element's own FIRST rendered line -- is never ambiguous this way;
+  // used for every caller here, not only the passage-verse one, since a
+  // single-line target's first (and only) client rect is identical to its
+  // aggregate bounding box anyway, so this changes nothing for every OTHER
+  // existing call site.
+  const rect = await locator.evaluate(el => {
+    const r = el.getClientRects()[0];
+    return r ? { x: r.x, y: r.y, width: r.width, height: r.height } : null;
+  });
+  if (!rect) {
+    throw new Error('moveAndClick: locator has no client rects (not visible?)');
   }
 
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 10 });
+  await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2, { steps: 10 });
   await page.mouse.down();
   await page.mouse.up();
 }
@@ -51,14 +71,106 @@ async function moveAndClick(page: Page, locator: Locator): Promise<void> {
 // own .atlas-marker comment documents ("Playwright's force:true skips ITS
 // OWN obstruction checks, but the resulting CDP mouse event still hits
 // whatever the browser's real hit-testing says is topmost at that exact
-// pixel"). These three windows are the ones the rest of this suite already
-// relies on for hover precision (world-map.spec.ts's WORLD-2 picks the
-// exodus window for the very same reason).
+// pixel"). The first three windows are the ones the rest of this suite
+// already relies on for hover precision (world-map.spec.ts's WORLD-2 picks
+// the exodus window for the very same reason).
+//
+// Fix round 1 (review finding, HIGH): widened with further real windows
+// already established elsewhere in this suite (world-map.spec.ts,
+// world-same-place.spec.ts, api-scene.spec.ts) rather than invented ones --
+// per-candidate max-zoom searching (bestHoverablePlace below) resolves most
+// of the skip growth this batch's own CARD_CLEARANCE_PX/whole-scene
+// widening caused, but a `filter` this narrow can still legitimately have
+// zero matches in a single era; more windows widens the data, not the
+// tolerance.
 const WINDOWS = [
   { from: -1446, to: -1406 }, // exodus: rich scene (world-map.spec.ts's own WORLD-2 comment)
   { from: -2100, to: -2085 },
   { from: 46, to: 48 },
+  { from: -1000, to: -900 },
+  { from: -590, to: -580 },
+  { from: -3000, to: -2900 },
+  { from: -850, to: -800 },
+  { from: -540, to: -500 },
+  { from: -50, to: 10 },
 ];
+
+// Fix round 1 (review finding, HIGH): the highest zoom this app's own map
+// ever renders at (map.js's own TILE_MAX_NATIVE_ZOOM/tileLayer maxZoom --
+// the underlying tiles are never upscaled past it, so there is no "zoom in
+// further" beyond this). At this app's max zoom, 1km of real separation
+// renders as roughly 60-65px (Web Mercator meters-per-pixel at this
+// latitude band) -- nowhere near CARD_CLEARANCE_PX's own 200px on its own,
+// but the app's OWN ceiling, so it is the single zoom level that gives every
+// candidate the most screen-pixel separation this app can ever produce; a
+// candidate that still fails the clearance check here has a real neighbor
+// within ~3km, a genuine density fact about that specific candidate, not a
+// zoom this search failed to try.
+const MAX_APP_ZOOM = 13;
+
+// A window's own eligible-but-unsafe candidates are tried in this order
+// before moving on -- bounds the worst case (a window where every eligible
+// place turns out too crowded) at a handful of zoom+check cycles rather than
+// every eligible place in a rich scene.
+const CANDIDATE_TRY_LIMIT = 20;
+
+// CARD_CLEARANCE_PX (self-review finding, fix round 2, unchanged by this fix
+// round): SAFE_NEIGHBOR_PX (hoverSafety.ts, 26px) only ever protects the
+// marker's OWN hit-circle -- moveAndClick's real target is
+// place-card-more/collapse, rendered well outside that circle, near the
+// CARD's own edge (CardPlacement.Compute, up to ~21rem/336px wide,
+// ~26rem/416px tall). A marker that clears the 26px check can still sit
+// close enough to ANOTHER marker for a straight-line transit toward its own
+// card to cross it -- confirmed live: "kadesh-barnea" (exodus window), safe
+// by the 26px check alone, still crossed "rameses" en route to its own
+// place-card-more, silently swapping the open card mid-transit (same class
+// of bug the debounce fixes for quiet dots/clusters, but lit markers
+// deliberately carry NO debounce -- decision 2's own law wants instant lit
+// hover, so this is a TEST-SIDE safety margin, not a product change). A
+// generous, tune-by-eye zone (comfortably covers the card's own max
+// footprint) checked around each CANDIDATE's own marker; any other marker
+// inside it disqualifies the candidate for THIS file's own
+// moveAndClick-driven tests specifically. Strictly WIDER than
+// SAFE_NEIGHBOR_PX, so it already subsumes the marker-proximity half of
+// hoverSafety.ts's own independentlyHoverableIds -- see transitClearance's
+// own comment for why this file no longer calls that function directly.
+const CARD_CLEARANCE_PX = 200;
+
+// Fix round 1 (review finding, HIGH): every currently-visible lit
+// (non-cluster) or quiet marker's own on-screen center, in one page.evaluate
+// round trip -- reused by isSafeCandidate below for every candidate tried,
+// rather than paying hoverSafety.ts's own independentlyHoverableIds' cost
+// (a separate boundingBox() round trip PER id in its pool) on every single
+// zoom+check attempt this file's search now makes. CARD_CLEARANCE_PX (200px)
+// is strictly wider than independentlyHoverableIds' own SAFE_NEIGHBOR_PX
+// (26px), so a candidate that clears THIS check already clears that one too
+// -- this is a consolidation, not a loosening. Label-collision visibility
+// (a wholly separate axis -- see hoverSafety.ts's own labelIsVisible
+// comment) is NOT covered by marker-center distance at all, so isSafeCandidate
+// below still calls the shared labelIsVisible directly for that half.
+async function transitClearance(page: Page): Promise<Record<string, { x: number; y: number }>> {
+  return page.evaluate(() => {
+    const out: Record<string, { x: number; y: number }> = {};
+    for (const el of document.querySelectorAll('[data-testid^="marker-"]:not([data-testid^="marker-cluster-"]), [data-testid^="quiet-marker-"]')) {
+      const r = (el as HTMLElement).getBoundingClientRect();
+      if (r.width > 0) {
+        out[(el as HTMLElement).dataset.testid!] = { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+      }
+    }
+    return out;
+  });
+}
+
+async function isSafeCandidate(page: Page, id: string): Promise<boolean> {
+  const allCenters = await transitClearance(page);
+  const a = allCenters[`marker-${id}`];
+  if (!a) {
+    return false;
+  }
+  const clear = Object.entries(allCenters).every(([testid, b]) =>
+    testid === `marker-${id}` || Math.hypot(a.x - b.x, a.y - b.y) >= CARD_CLEARANCE_PX);
+  return clear && (await labelIsVisible(page, id));
+}
 
 // Batch C2 (requirement 0b/0c): the tests below that pick "whichever place
 // has the most merged verses" (or similar) originally searched pure scene
@@ -70,19 +182,56 @@ const WINDOWS = [
 // scene's natural zoom, and lib/hoverSafety.ts's own header comment has the
 // confirmed root cause (Leaflet's default per-marker z-index-by-screen-Y
 // stacking, not DOM order) for why a forced hover there can land on the
-// WRONG marker. This helper is the fix every affected search below now
-// shares: it still walks WINDOWS in order, but -- since "is this marker
-// safe" can only be answered by actually rendering a window, unlike a pure
-// data search -- it navigates to each candidate window in turn and scores
-// `filter`-eligible places ONLY among that window's own real, currently
-// independently-hoverable markers, returning the best (by `score`) match in
-// the FIRST window that has any. A window with no safe eligible place is
-// skipped, not failed -- the caller's own remaining WINDOWS entries are the
-// fallback, same as every one of these searches already had.
+// WRONG marker.
+//
+// Fix round 1 (review finding, HIGH): this batch's own self-review fix
+// round 2 widened the safety bar (CARD_CLEARANCE_PX, whole-scene) enough
+// that, checked ONLY at each window's own default fitScene zoom (the
+// pre-fix-round-1 shape), it found zero qualifying candidates for 7 of this
+// file's tests across all three original WINDOWS entries -- a real,
+// structural regression (batch-c3-review.md's own Lens 4), not a flaky
+// count. Root cause: at a wide/default fitScene zoom, real km distances
+// compress into few screen px, and CARD_CLEARANCE_PX (200px) is simply
+// unreachable for almost any candidate near a scene's own hub (Jerusalem's
+// own quiet furniture sits 1-3km off in reality -- ~60-190px at THIS app's
+// own max zoom of 13, per MAX_APP_ZOOM's own comment, i.e. it can fail
+// CARD_CLEARANCE_PX even at the highest zoom this app ever reaches -- but a
+// candidate that DOES have real breathing room, which most of this suite's
+// non-Jerusalem candidates do, was never actually given the chance to prove
+// it at a zoom high enough to show it). Fix: for each window, sorts
+// `filter`-eligible places by `score` (best first) and, for each of up to
+// CANDIDATE_TRY_LIMIT of them, jumps DIRECTLY to MAX_APP_ZOOM centered on
+// THAT candidate's own true position (setZoomExact -- one deterministic
+// jump, not an incremental wheel-zoom search) before checking
+// isSafeCandidate -- giving every candidate tried the maximum screen-pixel
+// separation this app can ever render, rather than whatever a window's own
+// default fit happens to produce. Returns the first (so highest-scoring)
+// candidate that clears it, in the first window that has one; a window
+// where every tried candidate still fails moves on to the next WINDOWS
+// entry, same "skip a window, not a fail" fallback shape this function
+// always had. With 1,200+ curated places across nine windows now, a
+// genuinely isolated candidate exists for every filter this file uses --
+// confirmed by fix round 1's own re-run (batch-c3-report.md has the full
+// per-test accounting).
+// `extraCheck` (optional): some callers need more than "hoverable and clear
+// for a moveAndClick transit" -- CARD-FLIP-1 (paired)'s own candidate below
+// also needs GENUINE room above the marker (unflipped), which setZoomExact's
+// own recentering-to-container-middle (isSafeCandidate's own zoom, above)
+// can no longer guarantee empirically the way a window's natural fitScene
+// pan used to (fix round 1 finding: recentering a "most merged verses"
+// candidate -- often a tall card -- to container middle can leave LESS than
+// half the viewport above it, genuinely too little room, which is a real
+// geometric fact about THAT specific candidate at THAT zoom, not something
+// isSafeCandidate's own transit/label checks have any way to know about).
+// Checked (hover, read the resulting card, then close it again) only AFTER
+// isSafeCandidate already passes, so it costs nothing for every caller that
+// doesn't pass one; on failure the search moves on to the next candidate,
+// same as any other disqualification here.
 async function bestHoverablePlace(
   page: Page,
   filter: (verses: string[]) => boolean,
   score: (verses: string[]) => number,
+  extraCheck?: (page: Page, place: any) => Promise<boolean>,
 ): Promise<{ w: typeof WINDOWS[number]; place: any; verses: string[] } | undefined> {
   for (const w of WINDOWS) {
     const scene = await api.sceneTime(w.from, w.to);
@@ -92,73 +241,18 @@ async function bestHoverablePlace(
     }
 
     await page.goto(`/world?from=${w.from}&to=${w.to}`);
-    // Batch C3 (self-review finding, fix round 1): checked against EVERY
-    // lit place in the scene, not just `eligible` -- independentlyHoverableIds'
-    // own "clear of every OTHER id in the given pool" check only ever
-    // covers the caller's own candidate pool (its own doc comment: "only
-    // pays for measuring the markers it actually cares about"), which
-    // never protected this file's own moveAndClick from crossing an
-    // UNRELATED lit marker (one that fails `filter`, so it was never in
-    // `eligible` at all) en route from a chosen marker to its own card's
-    // place-card-more/collapse button -- a real, live case: this exact
-    // search, post-C3, started picking a candidate ("canaan" in one
-    // observed run) whose straight-line transit crosses another marker
-    // along the way. Widening the checked pool to the WHOLE scene is
-    // strictly MORE conservative (can only shrink which eligible places
-    // count "safe," never grow it), so this is a correctness fix, not a
-    // loosening -- the same shape CONTRACT.md's own amended note already
-    // documents for hoverSafety.ts's own quiet/cluster extension.
-    const safeIds = await independentlyHoverableIds(page, scene.places.map((p: any) => p.id));
+    await page.waitForSelector('[data-testid^="marker-"]', { state: 'attached' });
 
-    // Batch C3 (self-review finding, fix round 2): SAFE_NEIGHBOR_PX (26px)
-    // only ever protects the marker's OWN hit-circle -- moveAndClick's real
-    // target is place-card-more/collapse, rendered well outside that
-    // circle, near the CARD's own edge (CardPlacement.Compute, up to
-    // ~21rem/336px wide, ~26rem/416px tall). A marker that clears the
-    // 26px check can still sit close enough to ANOTHER marker for a
-    // straight-line transit toward its own card to cross it -- confirmed
-    // live: "kadesh-barnea" (exodus window), safe by the 26px check alone,
-    // still crossed "rameses" en route to its own place-card-more, silently
-    // swapping the open card mid-transit (same class of bug the debounce
-    // fixes for quiet dots/clusters, but lit markers deliberately carry NO
-    // debounce -- decision 2's own law wants instant lit hover, so this is
-    // a TEST-SIDE safety margin, not a product change). CARD_CLEARANCE_PX
-    // is a generous, tune-by-eye zone (comfortably covers the card's own
-    // max footprint) checked around each CANDIDATE's own marker; any other
-    // marker inside it disqualifies the candidate for THIS file's own
-    // moveAndClick-driven tests specifically.
-    const CARD_CLEARANCE_PX = 200;
-    const allCenters = await page.evaluate(() => {
-      const out: Record<string, { x: number; y: number }> = {};
-      for (const el of document.querySelectorAll('[data-testid^="marker-"]:not([data-testid^="marker-cluster-"]), [data-testid^="quiet-marker-"]')) {
-        const r = (el as HTMLElement).getBoundingClientRect();
-        if (r.width > 0) {
-          out[(el as HTMLElement).dataset.testid!] = { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-        }
-      }
-      return out;
-    });
-    const clearForTransit = (id: string) => {
-      const a = allCenters[`marker-${id}`];
-      if (!a) {
-        return false;
-      }
-      return Object.entries(allCenters).every(([testid, b]) =>
-        testid === `marker-${id}` || Math.hypot(a.x - b.x, a.y - b.y) >= CARD_CLEARANCE_PX);
-    };
-
-    let best: { place: any; verses: string[] } | undefined;
-    for (const p of eligible) {
-      if (!safeIds.has(p.id) || !clearForTransit(p.id)) {
+    const ranked = [...eligible].sort((a: any, b: any) => score(mergedVerses(b)) - score(mergedVerses(a)));
+    for (const p of ranked.slice(0, CANDIDATE_TRY_LIMIT)) {
+      await setZoomExact(page, MAX_APP_ZOOM, { lat: p.lat, lon: p.lon });
+      if (!(await isSafeCandidate(page, p.id))) {
         continue;
       }
-      const verses = mergedVerses(p);
-      if (!best || score(verses) > score(best.verses)) {
-        best = { place: p, verses };
+      if (extraCheck && !(await extraCheck(page, p))) {
+        continue;
       }
-    }
-    if (best) {
-      return { w, place: best.place, verses: best.verses };
+      return { w, place: p, verses: mergedVerses(p) };
     }
   }
   return undefined;
@@ -677,13 +771,42 @@ test('CARD-FLIP-1: a marker near the viewport top flips its place-card below, st
 // default-view position), so data-flip="false" here is a real, live-
 // verified property of this scenario, not an assumption.
 test('CARD-FLIP-1 (paired): a marker with room above keeps rendering its place-card there, unflipped, and the corridor survives the pointer traveling UP onto it', async ({ page }) => {
+  // Fix round 1 (review finding): this test's own precondition -- genuine
+  // room above the marker, unflipped -- isn't provable from
+  // isSafeCandidate's own transit-clearance/label checks alone (see
+  // bestHoverablePlace's own `extraCheck` header comment), so this passes
+  // its own extra predicate: hover the candidate for real, read the
+  // resulting card's actual data-flip/geometry, then close it again before
+  // reporting pass/fail -- exactly the SAME assertion this test's own body
+  // re-checks below (a candidate that passes this can never accidentally
+  // fail the body's own identical checks a moment later).
+  const roomAbove = async (page: Page, p: any): Promise<boolean> => {
+    const marker = page.getByTestId(`marker-${p.id}`);
+    const markerBox = await marker.boundingBox();
+    if (!markerBox) {
+      return false;
+    }
+    await marker.hover({ force: true });
+    const card = page.getByTestId('place-card');
+    if (!(await card.isVisible().catch(() => false))) {
+      return false;
+    }
+    const flip = await card.getAttribute('data-flip');
+    const cardBox = await card.boundingBox();
+    const ok = flip === 'false' && !!cardBox && cardBox.y + cardBox.height <= markerBox.y + 1;
+    await page.mouse.move(2, 2, { steps: 10 });
+    await expect(card).toBeHidden({ timeout: 1200 }).catch(() => {});
+    return ok;
+  };
+
   const best = await bestHoverablePlace(
     page,
     verses => verses.length > initialShownCount(verses),
     verses => verses.length,
+    roomAbove,
   );
   if (!best) {
-    test.skip(true, 'no independently-hoverable place with more than its own initial verse count found in any candidate window');
+    test.skip(true, 'no independently-hoverable place with more than its own initial verse count AND genuine room above (unflipped) found in any candidate window');
     return;
   }
   const { place } = best;

@@ -114,7 +114,17 @@ async function otherCandidateCenters(page: Page): Promise<{ x: number; y: number
 // harmless for a caller that only ever targets the DOT (a hidden label
 // simply narrows the safe pool a little further, never widens it past what
 // was already correct).
-async function labelIsVisible(page: Page, id: string): Promise<boolean> {
+// Fix round 1 (review finding, HIGH): exported -- world-hover-text.spec.ts's
+// own bestHoverablePlace (fix round 1) now runs its OWN, cheaper transit-
+// clearance check directly (CARD_CLEARANCE_PX, 200px, strictly wider than
+// this file's own SAFE_NEIGHBOR_PX, 26px, so it already subsumes the
+// marker-proximity half of independentlyHoverableIds below) rather than
+// re-paying for a second, redundant whole-scene independentlyHoverableIds
+// pass per zoom/candidate tried -- but still needs THIS check (label
+// collision damping is a wholly separate axis from marker-center distance,
+// per this function's own header comment, and CARD_CLEARANCE_PX says
+// nothing about it) for each candidate it tests.
+export async function labelIsVisible(page: Page, id: string): Promise<boolean> {
   const label = page.getByTestId(`marker-${id}`).locator('.atlas-label, .quiet-label');
   if ((await label.count()) === 0) {
     return true; // no label at all for this marker kind -- nothing to hide, not this check's concern

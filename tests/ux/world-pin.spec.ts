@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { api } from './lib/api';
-import { independentlyHoverableIds } from './lib/hoverSafety';
+import { setZoomExact } from './lib/zoom';
 
 // Batch G1 requirement 3 (click-to-pin/narrative traversal). PIN-1/TRAVERSAL-1
 // in CONTRACT.md. The exodus window (-1446..-1406) is this suite's own
@@ -195,19 +195,16 @@ test('TRAVERSAL-1: pinning a place on the exodus route and walking next/prev tra
 // dispatchEvent bypass -- this test is specifically about what a genuine,
 // un-pinned MOUSE hover renders, so a scripted DOM event dispatch (which
 // never touches the browser's real hit-testing) would prove nothing about
-// the actual defect. `independentlyHoverableIds` (world-hover-text.spec.ts's
-// own shared safety helper) first confirms the route's start marker isn't
-// sitting within a neighbor's hit-testing distance in THIS scene (the exact,
-// separately-documented dense-cluster risk both that file's and this file's
-// own header comments call out for this same exodus window) -- only once
-// that's confirmed does `page.mouse.move(..., { steps: 10 })` glide the
-// pointer there in many small steps, never a single teleporting jump, the
-// same "at least as realistic as a real pointer" technique moveAndClick
-// established (world-hover-text.spec.ts's own header comment). The
-// pin-click that follows reuses that exact same pointer position (mouse.
-// down/up, no further move needed) rather than re-resolving the marker
-// locator, so there is no second hit-test to risk landing on a different,
-// overlapping marker.
+// the actual defect. Zooms to this app's own max zoom first (fix round 1,
+// see the test body's own comment) so a merely-crowded-at-default-fit false
+// positive never masks the real property; `page.mouse.move(..., { steps:
+// 10 })` then glides the pointer there in many small steps, never a single
+// teleporting jump, the same "at least as realistic as a real pointer"
+// technique moveAndClick established (world-hover-text.spec.ts's own header
+// comment). The pin-click that follows (whichever branch -- see the test
+// body) reuses that exact same pointer position/element rather than
+// re-resolving the marker locator, so there is no second hit-test to risk
+// landing on a different, overlapping marker.
 test('TRAVERSAL-2: an unpinned hover shows no narrative section; pinning the same marker reveals it and traversal still works', async ({ page }) => {
   await page.goto(`/world?from=${EXODUS_WINDOW.from}&to=${EXODUS_WINDOW.to}`);
   const scene = await api.sceneTime(EXODUS_WINDOW.from, EXODUS_WINDOW.to);
@@ -217,9 +214,27 @@ test('TRAVERSAL-2: an unpinned hover shows no narrative section; pinning the sam
   const nameOf = (id: string) => scene.places.find((p: any) => p.id === id).display_name;
   const start = legs[0].from_place;
   const afterNext = legs[0].to_place;
+  const startPlace = scene.places.find((p: any) => p.id === start);
 
-  const safe = await independentlyHoverableIds(page, [start]);
-  test.skip(!safe.has(start), 'exodus route start place is not independently hoverable in this window (marker cluster too dense)');
+  // Fix round 1 (review finding, HIGH): `start` is the semantic SUBJECT of
+  // this test (the exodus narrative's own first stop) -- not swappable for
+  // "any independently-hoverable place" the way world-hover-text.spec.ts's
+  // search helpers can substitute candidates. What IS free to choose is the
+  // ZOOM this exact scene renders at: this batch's own hoverSafety.ts
+  // extension (quiet-marker/cluster-glyph proximity, on top of the
+  // pre-existing lit-lit check) can trip at the exodus window's own default
+  // far/mid-tier fitScene zoom even when `start` has real breathing room
+  // once actually rendered close up -- exactly the same "checked only at
+  // default fit" root cause world-hover-text.spec.ts's own bestHoverablePlace
+  // fix round 1 diagnoses (batch-c3-review.md's own Lens 4). Jumping to this
+  // app's own max zoom (map.js's TILE_MAX_NATIVE_ZOOM, 13 -- world-hover-
+  // text.spec.ts's own MAX_APP_ZOOM comment has the full reasoning),
+  // centered on `start`'s own true position, is also always past
+  // ZOOM_TIER_NEAR (map.js, 9) -- decision 3's own "NEAR tier never
+  // clusters" guarantee -- so no `marker-cluster-{n}` glyph can be sitting
+  // on `start` at this zoom regardless of how the same scene renders at its
+  // own default fit.
+  await setZoomExact(page, 13, { lat: startPlace.lat, lon: startPlace.lon });
 
   const marker = page.getByTestId(`marker-${start}`);
   const box = await marker.boundingBox();
@@ -230,23 +245,64 @@ test('TRAVERSAL-2: an unpinned hover shows no narrative section; pinning the sam
   const cy = box.y + box.height / 2;
 
   const card = page.getByTestId('place-card');
+  const chooser = page.getByTestId('place-chooser');
 
   // Phase 1: hover only -- real, multi-step pointer arrival, never a click.
   await page.mouse.move(cx, cy, { steps: 10 });
-  await expect(card).toBeVisible();
-  await expect(card).toHaveAttribute('data-pinned', 'false');
-  await expect(page.getByTestId('place-card-title')).toHaveText(nameOf(start));
 
-  // The MAJOR finding itself: none of these may appear while merely hovering.
-  await expect(card.getByTestId('place-card-narratives')).toHaveCount(0);
-  await expect(card.getByTestId('card-next-event-exodus')).toHaveCount(0);
-  await expect(card.getByTestId('card-prev-event-exodus')).toHaveCount(0);
+  // Fix round 1 (review finding, HIGH, replaces the independentlyHoverableIds
+  // pre-check this test used to skip on): `start` (rameses, this window's
+  // own exodus route start) sits at the EXACT same true lat/lon as a real,
+  // independently curated QUIET neighbor -- "goshen-1" (Rameses was built
+  // IN Goshen; confirmed live, GET /api/place/rameses and /goshen-1 both
+  // report 30.79937/31.834217, byte-identical). This is a genuine,
+  // PERMANENT coincidence under decision 2's own AMBIGUITY_RADIUS_PX law --
+  // two candidates at the identical true point are 0px apart at EVERY zoom,
+  // forever, so no candidate/zoom search (unlike the "merely crowded at
+  // THIS zoom" cases world-hover-text.spec.ts's own fix round 1 resolves)
+  // can ever avoid it. Under the CURRENT, correct arbitration law, a real
+  // hover here legitimately opens `place-chooser` instead of a direct
+  // `place-card`. Rather than skip (this genuinely can't be dodged, but it
+  // CAN still be exercised), this test now proves the exact SAME "hover
+  // never reveals the narrative, only a pin does" guarantee via WHICHEVER
+  // surface the pointer actually resolves to -- neither branch is a weaker
+  // claim than the original single-card assumption: the chooser branch is
+  // in fact the MORE common real case for this specific narrative-critical
+  // place today, and clicking `start`'s own row goes through the identical
+  // PickChooserPlace -> OnPlaceClick pin path a direct marker click already
+  // takes (PIN-1), landing in the exact same pinned state Phase 2 always
+  // asserted. If curated data ever separates rameses/goshen-1, the `else`
+  // branch below (the ORIGINAL, unmodified assertion) is what would exercise
+  // instead -- this test degrades gracefully either way, never silently
+  // asserting the wrong thing.
+  if (await chooser.isVisible().catch(() => false)) {
+    await expect(page.getByTestId(`place-chooser-${start}`)).toBeVisible();
+    // The chooser itself never renders narrative content at all -- confirms
+    // "merely hovering never reveals the narrative section," the SAME
+    // guarantee the card branch below asserts directly for the
+    // not-currently-coincident case.
+    await expect(page.locator(
+      '[data-testid^="card-next-event-"], [data-testid^="card-prev-event-"], [data-testid="place-card-narratives"]'
+    )).toHaveCount(0);
+    // Phase 2 (chooser path): a row click IS the "click to commit" gesture
+    // here -- PIN-1's own law, same as a direct marker click.
+    await page.getByTestId(`place-chooser-${start}`).click();
+  } else {
+    await expect(card).toBeVisible();
+    await expect(card).toHaveAttribute('data-pinned', 'false');
+    await expect(page.getByTestId('place-card-title')).toHaveText(nameOf(start));
 
-  // Phase 2: click the SAME marker, from the SAME pointer position (already
-  // there -- no jump) -- the deliberate, real "click to commit" half of the
-  // batch's own two-gesture design.
-  await page.mouse.down();
-  await page.mouse.up();
+    // The MAJOR finding itself: none of these may appear while merely hovering.
+    await expect(card.getByTestId('place-card-narratives')).toHaveCount(0);
+    await expect(card.getByTestId('card-next-event-exodus')).toHaveCount(0);
+    await expect(card.getByTestId('card-prev-event-exodus')).toHaveCount(0);
+
+    // Phase 2 (direct path): click the SAME marker, from the SAME pointer
+    // position (already there -- no jump) -- the deliberate, real "click to
+    // commit" half of the batch's own two-gesture design.
+    await page.mouse.down();
+    await page.mouse.up();
+  }
   await expect(card).toHaveAttribute('data-pinned', 'true');
   await expect(page.getByTestId('place-card-title')).toHaveText(nameOf(start));
 

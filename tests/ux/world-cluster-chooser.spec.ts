@@ -132,13 +132,27 @@ test('CLUSTER-1: a dense far/mid-tier pileup collapses into one marker-cluster-{
   await expect(rows).toHaveCount(n);
   // decision 2: a chooser row click pins exactly that member, same as
   // clicking that place's own marker would -- proven generically by
-  // CHOOSER-1 above; here just confirm the FIRST cluster member (lowest
-  // id, decision 4's sort) resolves and pins without erroring.
+  // CHOOSER-1 above for an individually-coincident pair; here confirms the
+  // SAME PickChooserPlace code path for a cluster member specifically.
+  //
+  // Fix round 1 (review finding, LOW): captures the row's OWN rendered name
+  // (PlaceChooser.razor's `.place-chooser-name` span -- the exact same
+  // `p.DisplayName` PlaceCard's own title reads) BEFORE clicking, then
+  // asserts the pinned card's title equals THAT text exactly -- not merely
+  // non-empty. Weaker than this would let a wrong-member bug (pins some
+  // OTHER cluster member, or leaves a stale card from a prior action) pass
+  // silently; CHOOSER-1 above already proves this for the individual-
+  // coincidence path with a hardcoded expected name ('Negeb') since that
+  // scene's own membership is fixed test data -- this cluster's own
+  // FIRST member is data-dependent (whichever real place sorts lowest by
+  // id in the exodus window's own six-member pileup), so the expected name
+  // is read directly off the row itself rather than hardcoded.
   const firstRowId = (await rows.first().getAttribute('data-testid'))!.replace('place-chooser-', '');
+  const firstRowName = (await rows.first().locator('.place-chooser-name').textContent())!.trim();
+  expect(firstRowName.length, 'sanity: a real display name was read off the row, not an empty string').toBeGreaterThan(0);
   await rows.first().click();
   await expect(page.getByTestId('place-card')).toHaveAttribute('data-pinned', 'true');
-  const pinnedTitle = await page.getByTestId('place-card-title').textContent();
-  expect(pinnedTitle, 'pinned card should be for the clicked chooser row, not some other place').toBeTruthy();
+  await expect(page.getByTestId('place-card-title')).toHaveText(firstRowName);
   await page.getByTestId('place-card-close').click();
   expect(firstRowId.length).toBeGreaterThan(0); // sanity: a real id was read, not an empty string
 
