@@ -766,8 +766,10 @@
     // place _from/_to/_scriptureRef get kept in sync with the atom's current
     // arm (via SyncTimeWindowProjection), AND the home of the follow-text
     // link's own async fetch EFFECT (a pure Derive can't perform one itself).
+    // The projection sync always runs (harmless/idempotent, correct even on
+    // an about-to-be-disposed instance).
     //
-    // The effect is gated to fire ONLY for a transition the LINK ITSELF just
+    // The EFFECT is gated to fire ONLY for a transition the LINK ITSELF just
     // caused: TimeWindowAtom.LastOrigin (law 3's own echo tag) names the
     // link whenever the change this handler is reacting to came from
     // StateLinkRunner's own dispatch, read HERE, synchronously, inside the
@@ -780,12 +782,25 @@
     // body -- firing the effect again here for those would double-fetch, so
     // this handler stays a no-op for them (LastOrigin is null on a direct,
     // user-originated dispatch).
+    //
+    // `SplitMode &&` (live, self-caught bug -- see OnViewArrangementChanged's
+    // own comment for the full mechanism): `_followLink.Name` is the SAME
+    // constant regardless of which World instance owns the link, so a STALE,
+    // still-subscribed standalone instance's own LastOrigin check would ALSO
+    // pass whenever ANY OTHER (correctly-timed) instance's own SyncNow/
+    // follow-derived dispatch touches the SAME shared TimeWindowAtom during a
+    // navigation Blazor hasn't finished disposing yet -- firing a wasted (at
+    // best) or state-corrupting (at worst, writing stale ViewState.Map
+    // fields a LATER page visit could read back) fetch on the dying
+    // instance. The effect is only ever meaningful for a genuinely embedded
+    // (SplitMode) pane -- standalone /world has no follow chip to have
+    // triggered it in the first place.
     private void OnTimeWindowChanged()
     {
         SyncTimeWindowProjection();
         StateHasChanged();
 
-        if (TimeWindowAtom.LastOrigin != _followLink.Name || TimeWindowAtom.Value is not ScriptureMode sm)
+        if (!SplitMode || TimeWindowAtom.LastOrigin != _followLink.Name || TimeWindowAtom.Value is not ScriptureMode sm)
         {
             _pendingLinkEffect = null;
             return;
@@ -822,18 +837,35 @@
     // live on "the atom transition" itself, not be forked/duplicated at
     // every future writer of the Follow flag. Edge-detected against
     // _lastKnownFollow (seeded in OnInitializedAsync) so a DividerFraction-only
-    // commit, or an arrangement transition that happens to start Follow true
-    // (a fresh split-open), doesn't spuriously re-trigger this -- though for
-    // a fresh split-open specifically, InitializeSplitModeIfNeeded's own
-    // SyncNow call already does the equivalent re-sync directly, and this
-    // subscription doesn't even exist yet at the moment Reader.razor's own
-    // EnterSplit dispatch happens (it's dispatched by a DIFFERENT component,
-    // before THIS instance's OnInitializedAsync ever subscribes) -- so no
-    // double-trigger risk there either.
+    // commit doesn't spuriously re-trigger this.
+    //
+    // Live, self-caught bug (this batch's own Playwright verification): an
+    // earlier draft had NO `!SplitMode` guard, reasoning "this subscription
+    // doesn't exist yet at the moment a fresh split-open's own EnterSplit
+    // dispatch happens." That reasoning only covered the NEW split
+    // instance's own subscription timing -- it missed that ViewArrangementAtom
+    // is a GLOBAL, page-independent DI singleton, and a STANDALONE
+    // (`!SplitMode`) World instance's OWN subscription is still very much
+    // wired at the moment a DIFFERENT page's navigation dispatches EnterSplit
+    // into it, because Blazor gives NO ordering guarantee between an
+    // outgoing component's DisposeAsync and an incoming one's own
+    // OnParametersSetAsync (the exact, already-documented hazard
+    // SyncViewState's own header comment describes for a different field --
+    // same root cause, newly hit here). Observed live: opening a split from
+    // /world fired THIS handler on the dying standalone instance, whose own
+    // `_follow` projection reads the SAME global Split(true, ...) the
+    // NEW instance was about to use, tripping the false->true edge and
+    // calling SyncNow() -- which, because Derive is REAL now (R2), genuinely
+    // overwrote the shared TimeWindowAtom with ScriptureMode(the standalone
+    // page's own stale default Locus) before the new split instance's own
+    // (correctly-ordered) InitializeSplitModeIfNeeded ever ran. `_follow` is
+    // only ever MEANINGFUL while SplitMode (this file's own pre-existing
+    // field comment, before ST-2 too) -- the guard below makes that
+    // semantic actually true for this handler, not just documented.
     private void OnViewArrangementChanged()
     {
         var nowFollowing = _follow;
-        if (nowFollowing && !_lastKnownFollow)
+        if (SplitMode && nowFollowing && !_lastKnownFollow)
         {
             _pickerSyncToken++;
             _followRunner.SyncNow();
@@ -1115,25 +1147,31 @@
     // this button. Locus.Default (GEN, 1) matches ReaderViewState's own
     // defaults exactly, so "never visited the reader this session" still
     // opens GEN 1, unchanged.
-    // Batch ST-2 (R4): dispatches EnterSplit before navigating away --
-    // explicit per the controller ruling's own dispatch-site list
-    // (OpenSplit/CloseSplitAtlas/OpenReadBesideMap/ToggleFollow). The
-    // DESTINATION Reader.razor instance's own SplitQuery-consumption block
-    // dispatches the SAME intent independently on arrival, so this call is
-    // belt-and-suspenders, not load-bearing for correctness. Disclosed
-    // tradeoff: standalone /world's own _follow projection is always false
-    // (WorldOnly carries no Follow field); if ViewState.Map.Follow happens
-    // to be true, THIS dispatch transitions Follow false->true on this
-    // about-to-be-disposed instance, and OnViewArrangementChanged's own
-    // SyncNow() may start a scene fetch that never completes here --
-    // DisposeAsync's existing _fetchCts cancellation handles that cleanly
-    // (DebouncedLoadScriptureScene's own OperationCanceledException catch),
-    // so this is wasted work on the way out, not a correctness bug; no
-    // render glitch either, since SplitMode (the parameter, unaffected by
-    // this dispatch) -- not _follow -- gates which markup branch renders.
+    // Batch ST-2 (R4): does NOT dispatch EnterSplit here, despite the
+    // controller ruling's own dispatch-site list naming OpenReadBesideMap
+    // alongside OpenSplit/CloseSplitAtlas/ToggleFollow -- a live, self-caught
+    // bug during this batch's own Playwright verification proved that
+    // reading is unsafe. Tracing why: this standalone instance's own
+    // ViewArrangementAtom.Changed subscription (OnViewArrangementChanged) is
+    // STILL WIRED at the moment this method runs (DisposeAsync hasn't fired
+    // yet -- Nav.NavigateTo below hasn't even been called). A dispatch here
+    // (Follow false->true, since standalone's own _follow projection is
+    // always false) synchronously triggers THIS instance's own
+    // OnViewArrangementChanged -> _followRunner.SyncNow() -> a REAL
+    // Locus->TimeWindow derive-and-dispatch (Derive is real now, R2, not
+    // ST-1's identity) into the SHARED (DI-singleton) TimeWindowAtom --
+    // observed live: it overwrote a just-committed TimeMode(window) with
+    // ScriptureMode(locus.Ref) BEFORE the destination Reader.razor/embedded
+    // World instance ever mounted, so the new instance's own
+    // SyncTimeWindowProjection (OnInitializedAsync) read the CORRUPTED
+    // value, not the one the user actually just set. This is a genuine
+    // correctness defect, not merely "wasted work" as an earlier draft of
+    // this comment claimed -- reverted. The destination Reader.razor
+    // instance's own SplitQuery-consumption dispatch (Reader.razor's
+    // OnParametersSetAsync) is sufficient on its own -- it runs on a FRESH
+    // instance with no such side-effecting subscription wired yet.
     private void OpenReadBesideMap()
     {
-        ViewArrangementAtom.Dispatch(new EnterSplit(ViewState.Map.Follow));
         Nav.NavigateTo($"/read/{_locus.Value.Book}/{_locus.Value.Chapter}?split=1");
     }
 

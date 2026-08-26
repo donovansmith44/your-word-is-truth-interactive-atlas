@@ -4163,6 +4163,16 @@ Notes:
   fresh session; this is the correct, intended behavior for "follow default
   ON applies unless persisted" (VIEWSTATE-1's own explicitly-scoped
   in-memory-only design), not a gap.
+  ST-2 AMENDMENT (batch-st2-brief.md, controller ruling R4): a new
+  `ViewArrangement` atom (`ReaderOnly | WorldOnly | Split(Follow,
+  DividerFraction?)`, `client/State/ViewArrangement.cs`) now owns which of
+  the three this session is in -- `Reader.razor`'s own `_splitOpen` and
+  `World.razor`'s own `SplitMode`-gated `_follow` are both PROJECTIONS of
+  it now, not independent fields. `split-open-reader`/`split-close-atlas`/
+  `split-open-world` ("Read beside the map") each dispatch the matching
+  intent (`EnterSplit`/`EnterReaderOnly`) instead of a direct field write;
+  every DOM-observable behavior this section describes is UNCHANGED -- see
+  state-window.spec.ts for the ST-2 regression coverage.
   NO-NESTED-POPUP: an ExplorerPopover opened from EITHER pane while split
   is open still renders normally -- full-viewport backdrop/panel, unchanged
   -- but a chip that would otherwise
@@ -4215,6 +4225,21 @@ Notes:
   affordance (`split-open-reader` or `split-open-world`) opened it, so
   "works from the reader side too" is true by construction, not a second,
   separately-tested implementation.
+  ST-2 AMENDMENT (batch-st2-brief.md, controller ruling R4): the LIVE, every-
+  pointermove resize into `_splitReaderWidthPx` described above is
+  UNCHANGED -- still no "commit at release" step for the VISUAL width.
+  `SplitDivider.razor` gains a SEPARATE `OnCommitted` event, fired once per
+  completed gesture only (pointer-up or a keyboard nudge, never a live drag
+  frame -- "DividerFraction commits on drag END only"), carrying the final
+  px plus that px as a fraction of the measured `.split-view` width at that
+  instant; `Reader.razor` dispatches `SetSplitDividerFraction` into the new
+  `ViewArrangement` atom (`client/State/ViewArrangement.cs`) from that
+  event. Write-through only this batch -- the atom's own DividerFraction is
+  NOT read back into a fresh px value on a later split re-open;
+  `_splitReaderWidthPx` (a plain Reader.razor field, unchanged) remains the
+  actual render source and already correctly survives any same-instance
+  close/reopen, the only scenario this app's own UI can reach without a
+  full page navigation.
 - FOLLOW-1 (batch-h-brief.md): follow is ON by default the moment a split
   opens. While following, the atlas pane shows the scripture scene of the
   reader's CURRENT chapter via the exact same mechanism `/world?ref=`
@@ -4252,6 +4277,23 @@ Notes:
   state-sync.spec.ts and the ST-1 batch report for the full mechanism and
   its disclosed scope (TimeWindow's own numeric value is NOT yet derived
   from Locus -- full TimeWindow ownership is ST-2).
+  ST-2 AMENDMENT (batch-st2-brief.md, controller rulings R1-R2): `TimeWindow`
+  is now a one-of union (`TimeMode(From, To) | ScriptureMode(Ref)`,
+  `client/State/TimeWindow.cs`) and `FollowTextLink.Derive` is REAL --
+  `ScriptureMode(locus.Ref)`, not the ST-1 identity pass-through. The async
+  scene-fetch this section describes ("re-scenes the atlas pane
+  automatically") is now driven by `World.razor`'s own subscription to
+  `TimeWindowAtom.Changed` (not `LocusAtom.Changed` directly -- that
+  subscription's own re-scening side effect is retired, replaced by the
+  link's real Derive plus this new target-atom subscription), gated on
+  `TimeWindowAtom.LastOrigin` naming the link (law 3's echo tag) so a
+  direct, non-follow write into the same atom (a slider commit, a deep
+  link) never double-fires the effect. `_follow` itself also moves this
+  batch (see the SPLIT-1/DIVIDER-1 ST-2 amendments below) -- the user-
+  visible contract in THIS section (default ON, re-scenes on reader nav,
+  chip toggle semantics, precedence over VIEWSTATE-1) is again UNCHANGED;
+  see state-window.spec.ts for the ST-2 regression coverage and the ST-2
+  batch report for the full mechanism.
 - VIEWSTATE-1 (batch-h-brief.md): a lightweight, in-memory (NOT
   localStorage-persisted -- explicitly out of scope this batch; a hard
   reload starts fresh), app-lifetime view-state service remembers where the
