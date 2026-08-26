@@ -12,16 +12,15 @@ test('app shell renders', async ({ page }) => {
   await expect(page.getByTestId('nav-world')).toBeVisible();
 });
 
-// Fix round 1 (M1): the Credits popover's Escape-to-close silently did
-// nothing until MainLayout focused the popover panel after open (mirroring
-// ExplorerPopover's FocusAsync). Using page.keyboard.press (global, whatever
-// the page itself currently has focused) rather than
-// locator.press('Escape') is load-bearing here -- locator.press() focuses
-// its target before pressing, which would pass even without the real fix.
-test('credits popover opens and closes on Escape', async ({ page }) => {
+// Batch S ("document our sources for everything and give it a dedicated
+// page on the site"): the Credits control used to open a popover (Fix
+// round 1, M1's own Escape-to-close test, retired here) -- it is a plain
+// nav link to /sources now, the app's one decisive home for attribution
+// (requirement 1). See sources.spec.ts for the Sources page's own
+// content/contrast/CONTRACT tests.
+test('credits link navigates to the Sources page', async ({ page }) => {
   await page.goto('/');
   await page.getByTestId('attribution').click();
-  await expect(page.getByTestId('popover')).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(page.getByTestId('popover')).toBeHidden();
+  await expect(page).toHaveURL(/\/sources$/);
+  await expect(page.getByTestId('sources-page')).toBeVisible();
 });

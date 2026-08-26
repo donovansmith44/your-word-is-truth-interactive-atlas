@@ -37,6 +37,10 @@ export const api = {
   // Batch R requirement 1: GET /api/land-mask -- the curated coastline
   // clip geometry.
   landMask: () => getJson('/api/land-mask'),
+  // Batch S: GET /api/sources -- the Sources page's own single source of
+  // truth (categories + per-source entries), generated 1:1 from
+  // LICENSES.md.
+  sources: () => getJson('/api/sources'),
   // Batch M-D2 (P7 closure): the two generic graph endpoints -- the SAME
   // shapes client/IExplorableClient.cs's Card()/Edges() consume, read here
   // directly (raw fetch, not through the Blazor app) for CONTRACT-lockstep

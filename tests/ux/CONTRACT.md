@@ -36,6 +36,9 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
   split open, local component state) IS the split; there is no `/split/...`
   path. Closing the atlas pane returns to plain `/read/{BOOK}/{chapter}`;
   closing the reader pane navigates to plain `/world` (see SPLIT-1)
+- `/sources` (batch-s-brief.md, SOURCES-1 below) — the Sources page, the
+  app's one decisive home for attribution; reached from the header's
+  `attribution` link on either page
 
 ## Displayed text formats
 - Year: `1447 BC` or `AD 30`
@@ -43,7 +46,12 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
 - Canonical refs: `GEN`, `GEN.1`, `GEN.1.1`, `GEN.1.1-5`
 
 ## data-testid inventory
-Header: `nav-reader`, `nav-world`, `translation-select`, `attribution`, `hamburger-menu`
+Header: `nav-reader`, `nav-world`, `translation-select`,
+  `attribution` (batch-s-brief.md requirement 1, SOURCES-1 below; a plain `<a>` to `/sources`,
+  the app's one decisive home for attribution -- NOT a popover-opening button, since
+  batch-g2-brief.md/M1's own "credits popover opens and closes on Escape" test era; that
+  popover, and its own hardcoded credit list, are retired, folded into the data-driven
+  Sources page), `hamburger-menu`
   (batch-g2-brief.md decision 5; button, top-right on BOTH pages via MainLayout.razor --
   see EXPLORE-TRAIL-1 below; hidden outright when localStorage genuinely isn't available,
   same "feature hides if storage unavailable" rule as `popover-save-exploration`),
@@ -51,6 +59,13 @@ Header: `nav-reader`, `nav-world`, `translation-select`, `attribution`, `hamburg
   `selection-tray` (batch-g2-brief.md decision 6; see SELECTION-1 below; mounted once in
   MainLayout, so it appears identically on both pages; hidden entirely whenever the tray
   is empty)
+Sources page (batch-s-brief.md, SOURCES-1 below): `sources-page` (the page root),
+  `sources-category-{categoryId}` (one per `GET /api/sources` category, in that response's
+  own order -- e.g. `sources-category-scripture`), `source-{sourceId}` (one per source
+  entry, e.g. `source-kjv-text`; a card carrying that source's title/what-it-is/what-we-
+  built/license text, ALL read from `GET /api/sources`, never hardcoded prose),
+  `source-link-{sourceId}` (anchor to that source's own external link; present only when
+  the source entry carries one)
 World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief.md,
   "the ever-present graph": one per currently QUIET place -- an event-bearing place not
   lit this window, see QUIET-1 below -- distinct from and never overlapping
@@ -4652,11 +4667,14 @@ Notes:
   than offering a broken save/view affordance.
 
   THE HAMBURGER PANEL (MainLayout.razor, mounted once, reaches both pages):
-  `hamburger-menu` opens `hamburger-panel` -- same shared parchment-popover
-  chrome (backdrop/Escape/Close) as the pre-existing Credits panel, its own
-  fixed testids (not the generic `popover`/`popover-backdrop` -- this panel
-  MANAGES saved explorations, it does not render one `IExplorable` node, so
-  it deliberately does not ride `ExplorerPopover`'s own machinery). Empty
+  `hamburger-menu` opens `hamburger-panel` -- the same shared parchment-
+  popover chrome (backdrop/Escape/Close) `ExplorerPopover.razor` establishes,
+  its own fixed testids (not the generic `popover`/`popover-backdrop` --
+  this panel MANAGES saved explorations, it does not render one
+  `IExplorable` node, so it deliberately does not ride `ExplorerPopover`'s
+  own machinery). (batch-s-brief.md: the Credits panel this comment used to
+  cite as the OTHER example of this same shared chrome is retired -- Credits
+  is a plain link to `/sources` now, see SOURCES-1.) Empty
   state: `hamburger-empty`, plain direction-not-mood copy ("Save an
   exploration from any popover to see it here.") -- "create" needs no
   separate control, per the brief, verbatim. Each saved exploration is one
@@ -4733,3 +4751,67 @@ Notes:
   verse-line/marker elements the Ctrl/Cmd-click cases exercise and asserts
   the popover still opens exactly as before AND the tray stays untouched --
   the gesture split is real, not merely documented.
+
+- SOURCES-1 (batch-s-brief.md, "document our sources for everything and
+  give it a dedicated page on the site" -- owner directive, 2026-08-21,
+  verbatim): a dedicated `/sources` page, the app's ONE decisive home for
+  attribution -- the header's `attribution` control (see the data-testid
+  inventory above) is a plain link to it, not a popover-opening button;
+  the popover it used to open, and its own hardcoded credit `<ul>`, are
+  retired (git history has the prior markup if ever needed again).
+
+  SINGLE SOURCE OF TRUTH (requirement 3, "the page renders from data, not
+  hardcoded duplicate prose"): `data/curated/sources.toml` (one
+  `[[category]]`/`[[source]]` entry per LICENSES.md per-source-table row)
+  is the curated single source of truth. `cargo run -p atlas-etl --bin
+  gen_sources` (from `server/`) compiles it straight to
+  `data/compiled/sources.json`, which atlas-server loads at startup and
+  serves at `GET /api/sources`; the client's `Sources.razor` page fetches
+  that endpoint (`AtlasClient.Sources()`) and renders every category/
+  source directly -- no per-source prose is duplicated anywhere in the
+  client. Deliberately kept OUTSIDE the graph pipeline (its own module,
+  `atlas_core::sources`/`atlas_etl::sources` -- never a field on
+  `AtlasData`, never read by `compile::compile`/`compile_graph`) so
+  `graph.bin`/`data/exports/` stay byte-untouched by this batch.
+
+  FAIL-LOUD DRIFT VALIDATION (requirement 3's own explicit ask: "a
+  LICENSES.md row absent from the page (or vice versa) fails the build or
+  a test"): each `[[source]]` entry carries a `licenses_row_key` (never
+  rendered) -- a literal substring of that source's own row in
+  LICENSES.md's "## Per-source table" Source column.
+  `atlas_etl::sources::validate_against_licenses` cross-checks BOTH
+  directions -- every LICENSES.md row matches EXACTLY ONE curated entry,
+  and vice versa -- bailing loud (naming the unmatched row/entry) on any
+  mismatch. This runs from TWO places: `gen_sources` itself (so a stale
+  regeneration is caught at generation time) and
+  `server/atlas-etl/tests/sources_validate.rs` (so `cargo test
+  --workspace` alone already catches drift a future batch introduces by
+  editing LICENSES.md without touching `sources.toml`, with nothing extra
+  to remember to run) -- plus a hardcoded expected-row-count assertion (18
+  as of this batch) as a second, independent guard against both sides
+  drifting together in the same wrong direction.
+
+  CITATION INTEGRITY / TONE: every entry's wording is positive (the KJV
+  inerrancy directive's own tone rule -- describe sources positively, zero
+  textual-criticism register anywhere on the page) and its license text is
+  copied verbatim from LICENSES.md, never upgraded/embellished. This batch
+  also corrected one pre-existing LICENSES.md staleness caught while
+  building this cross-check: the Esri per-source-table row still named the
+  RETIRED `NatGeo_World_Map` tile service (Batch C swapped the live
+  basemap to `World_Shaded_Relief`, and the app's own then-existing Credits
+  popover already said so) -- fixed in the same commit, disclosed here and
+  in the batch report, never silently.
+
+  TESTS (`sources.spec.ts`, `SOURCES-1..4`; `smoke.spec.ts`'s own "credits
+  link navigates to the Sources page"): reachable from the nav; every
+  `GET /api/sources` entry renders as its own `source-{id}` card, checked
+  BIDIRECTIONALLY (`.source-card` count on the page equals the API's own
+  `sources.length` -- the page can neither drop nor invent a row); Esri
+  and Leaflet attribution intact on the map itself (`.leaflet-control-
+  attribution`, untouched by this batch) AND on the Sources page
+  (`source-esri-tiles`/`source-leaflet` cards); contrast >=10:1 on
+  `--parchment` (`.source-card` body text is `--ink`, `rgb(43, 33, 23)` --
+  `--ink-soft`/`--bronze-ink`/`--lapis` measure only 5.66:1/7.26:1/8.03:1
+  there, all under this floor, so none of the three are used for this
+  page's own body text) and no horizontal overflow from the 1024px
+  desktop+tablet floor through ultrawide.
