@@ -168,6 +168,16 @@ version that would have to bump.
 
 ## 4. Frontend type system (composition over inheritance)
 
+> **COMPILED AUTHORITY (owner order 2026-08-26: "write a compilable
+> code skeleton first and work directly from that so that there is no
+> drift from our agreed upon types"):** these types are materialized at
+> `client/Contracts/{Views,Interactions,State,Focus}.cs` — implementers
+> work from those FILES, extend-only, member changes route through the
+> controller (the atlas-graph-types discipline). Members the spec names
+> but does not declare are resolved in-code under `SKELETON RESOLUTION`
+> markers. Where this prose and the compiled skeleton disagree, the
+> skeleton wins pending an owner ruling.
+
 All interfaces; no inheritance hierarchies — capabilities compose:
 
 ```csharp

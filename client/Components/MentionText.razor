@@ -131,7 +131,7 @@
     public readonly record struct TextRun(string Text, bool IsRed);
 
     /// Pure; covered end-to-end by tests/ux/reader-red-letters.spec.ts
-    /// (no client unit-test project exists). `spans` is
+    /// rather than a client.Tests unit test. `spans` is
     /// trusted sorted/non-overlapping (the server's own alignment walk
     /// guarantees this -- `red_letter.rs`'s `align_verse`: "a cursor that
     /// advances past each successful match"), but this function still
