@@ -39,6 +39,15 @@ namespace BibleAtlas.Client;
 /// never was -- see <c>World.ApplyScriptureRef</c>'s own doc comment) -- so
 /// the two halves documented above stay "deliberately not coupled," exactly
 /// as before ST-1.
+///
+/// Batch ST-2 fix round 1 (Adjudication C): <see cref="MapViewState.DividerFraction"/>
+/// added -- this class's role for it is IDENTICAL to
+/// <see cref="MapViewState.Follow"/>'s own: the root, cross-remount
+/// persistence source a fresh <c>ViewArrangement.Split</c> arm is re-seeded
+/// from (<c>Reader.OpenSplit</c>/the <c>SplitQuery</c>-consumption block,
+/// via <c>EnterSplit</c>'s own <c>DefaultDividerFraction</c> parameter) --
+/// see that field's own doc comment for why the arm itself cannot carry it
+/// through a <c>ReaderOnly</c>/<c>WorldOnly</c> detour.
 /// </summary>
 public sealed class ViewStateService
 {
@@ -84,6 +93,15 @@ public sealed class ViewStateService
 /// to the split pane specifically, per the brief's "one map state, it is the
 /// same atlas" -- only a split-mode instance's own SyncViewState ever
 /// writes it, though, so an intervening standalone visit can never reset it.
+///
+/// <see cref="DividerFraction"/> (Batch ST-2 fix round 1, Adjudication C):
+/// the SAME persistence role as <see cref="Follow"/>, for the split
+/// divider's own last-committed position -- written by
+/// <c>Reader.OnDividerCommitted</c> (a Reader.razor concern, not really
+/// "the atlas's" own state, but placed alongside <see cref="Follow"/> for
+/// the identical reason that field already lives here: R5 groups
+/// split-layout state with the Map half, not the Reader half). Null until
+/// the user has ever actually moved the divider this session.
 /// </summary>
 public sealed class MapViewState
 {
@@ -92,6 +110,7 @@ public sealed class MapViewState
     public int To { get; set; }
     public string? ScriptureRef { get; set; }
     public bool Follow { get; set; } = true;
+    public double? DividerFraction { get; set; }
     public double? CenterLat { get; set; }
     public double? CenterLon { get; set; }
     public double? Zoom { get; set; }

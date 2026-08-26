@@ -19,9 +19,11 @@ namespace BibleAtlas.Client.State;
 /// NEITHER) are unrepresentable, the same "structure it so it cannot occur"
 /// philosophy the owner's own ruling names for this whole migration.
 /// C# record equality is used for law 2 (idempotence) and the union-equality
-/// tests this batch adds (client.Tests/State/TimeWindowTests.cs) --
-/// deliverable 2 asks this to be PROVEN, not assumed, since a hand-written
-/// Equals bug here would poison every law test built on top of it.
+/// tests this batch adds (client.Tests/State/LocusAndTimeWindowTests.cs --
+/// fix round 1, Q-4: corrected from an earlier draft's own stale
+/// "TimeWindowTests.cs" citation, no such file exists) -- deliverable 2 asks
+/// this to be PROVEN, not assumed, since a hand-written Equals bug here
+/// would poison every law test built on top of it.
 /// </summary>
 public abstract record TimeWindow
 {

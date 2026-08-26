@@ -60,16 +60,17 @@ public class ViewArrangementTests
     }
 
     // ========================================================================
-    // EnterSplit (R4): idempotent, preserves an already-Split arm untouched.
+    // EnterSplit (R4; fix round 1 adds DefaultDividerFraction, Adjudication
+    // C): idempotent, preserves an already-Split arm untouched.
     // ========================================================================
 
     [Fact]
-    public void EnterSplit_Apply_FromReaderOnly_EntersSplitWithTheSuppliedDefaultFollowAndNoFraction()
+    public void EnterSplit_Apply_FromReaderOnly_EntersSplitWithTheSuppliedDefaults()
     {
-        var intent = new EnterSplit(DefaultFollow: true);
-        Assert.Equal(new Split(true, null), intent.Apply(new ReaderOnly()));
+        var intent = new EnterSplit(DefaultFollow: true, DefaultDividerFraction: 0.6);
+        Assert.Equal(new Split(true, 0.6), intent.Apply(new ReaderOnly()));
 
-        var intentFalse = new EnterSplit(DefaultFollow: false);
+        var intentFalse = new EnterSplit(DefaultFollow: false, DefaultDividerFraction: null);
         Assert.Equal(new Split(false, null), intentFalse.Apply(new WorldOnly()));
     }
 
@@ -77,7 +78,8 @@ public class ViewArrangementTests
     public void EnterSplit_Apply_WhenAlreadySplit_ReturnsCurrentUnchanged_PreservingAnyExistingFraction()
     {
         var current = new Split(false, 0.42);
-        var intent = new EnterSplit(DefaultFollow: true); // a different DefaultFollow -- still ignored, current wins
+        // A different DefaultFollow/DefaultDividerFraction -- both ignored, current wins.
+        var intent = new EnterSplit(DefaultFollow: true, DefaultDividerFraction: 0.9);
 
         var result = intent.Apply(current);
 
@@ -87,16 +89,46 @@ public class ViewArrangementTests
     [Fact]
     public void EnterSplit_Apply_IsIdempotent_ReapplyingProducesTheSameValue()
     {
-        var intent = new EnterSplit(DefaultFollow: true);
+        var intent = new EnterSplit(DefaultFollow: true, DefaultDividerFraction: 0.5);
         var once = intent.Apply(new ReaderOnly());
         var twice = intent.Apply(once);
 
         Assert.Equal(once, twice);
     }
 
+    [Fact]
+    public void EnterSplit_Apply_AfterALeaveAndReturn_OnlyRestoresWhatTheCallerRePassesIn()
+    {
+        // Adjudication C (fix round 1): the Split arm itself has NO memory
+        // across a ReaderOnly/WorldOnly detour (by design -- see Split's own
+        // doc comment). EnterSplit's own DefaultFollow/DefaultDividerFraction
+        // parameters are what let a CALLER (Reader.razor, sourcing them from
+        // ViewState.Map) restore a value that survived elsewhere. Pins that
+        // the atom does NOT remember across the detour on its own -- a
+        // caller that fails to re-pass a remembered value gets a genuinely
+        // fresh split, not a silently recovered one.
+        var atom = new StateAtom<ViewArrangement>(AtomNamesViewArrangement, new Split(false, 0.42));
+
+        atom.Dispatch(new EnterReaderOnly());
+        Assert.Equal(new ReaderOnly(), atom.Value);
+
+        atom.Dispatch(new EnterSplit(true, null)); // caller didn't re-pass the old fraction
+        Assert.Equal(new Split(true, null), atom.Value); // genuinely gone -- not silently recovered
+
+        atom.Dispatch(new EnterReaderOnly());
+        atom.Dispatch(new EnterSplit(false, 0.42)); // caller DOES re-pass it (mirrors ViewState.Map.DividerFraction)
+        Assert.Equal(new Split(false, 0.42), atom.Value); // restored, because the CALLER remembered
+    }
+
     // ========================================================================
     // SetSplitFollow / SetSplitDividerFraction (R4): each preserves the
     // sibling field on the Split arm without needing to know its value.
+    //
+    // Fix round 1 (Q-1, review): applying either while NOT already Split is
+    // now a NO-OP (returns `current` unchanged) rather than fabricating a
+    // Split arm out of ReaderOnly/WorldOnly -- see each intent's own doc
+    // comment. Replaces the earlier "...DegradesGracefullyWith..." tests,
+    // which pinned the fabricating behavior the review flagged.
     // ========================================================================
 
     [Fact]
@@ -109,10 +141,15 @@ public class ViewArrangementTests
     }
 
     [Fact]
-    public void SetSplitFollow_Apply_WhenNotAlreadySplit_DegradesGracefullyWithNoFraction()
+    public void SetSplitFollow_Apply_WhenNotAlreadySplit_IsANoOp()
     {
         var intent = new SetSplitFollow(true);
-        Assert.Equal(new Split(true, null), intent.Apply(new ReaderOnly()));
+
+        var readerOnly = new ReaderOnly();
+        Assert.Same(readerOnly, intent.Apply(readerOnly));
+
+        var worldOnly = new WorldOnly();
+        Assert.Same(worldOnly, intent.Apply(worldOnly));
     }
 
     [Fact]
@@ -125,10 +162,15 @@ public class ViewArrangementTests
     }
 
     [Fact]
-    public void SetSplitDividerFraction_Apply_WhenNotAlreadySplit_DegradesGracefullyWithFollowTrue()
+    public void SetSplitDividerFraction_Apply_WhenNotAlreadySplit_IsANoOp()
     {
         var intent = new SetSplitDividerFraction(0.6);
-        Assert.Equal(new Split(true, 0.6), intent.Apply(new WorldOnly()));
+
+        var readerOnly = new ReaderOnly();
+        Assert.Same(readerOnly, intent.Apply(readerOnly));
+
+        var worldOnly = new WorldOnly();
+        Assert.Same(worldOnly, intent.Apply(worldOnly));
     }
 
     [Fact]
@@ -177,7 +219,7 @@ public class ViewArrangementTests
         var readerProjection = new Projection<ViewArrangement>(atom);
         var worldProjection = new Projection<ViewArrangement>(atom);
 
-        atom.Dispatch(new EnterSplit(true));
+        atom.Dispatch(new EnterSplit(true, null));
         Assert.Equal(readerProjection.Value, worldProjection.Value);
 
         atom.Dispatch(new SetSplitDividerFraction(0.55));

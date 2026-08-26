@@ -332,6 +332,14 @@
     // mechanism this value now feeds.
     private double _splitReaderWidthPx = 704;
 
+    // Fix round 1 (S-3/Q-2/Adjudication C): guards RestoreDividerWidthFromAtom
+    // (OnAfterRenderAsync below) to at most once per split-open transition --
+    // set true the moment a restore attempt is made (success or fail-soft
+    // failure, either way there is nothing left to retry against THIS
+    // opening), reset false the moment _splitOpen goes false again so a
+    // LATER reopen gets its own fresh attempt.
+    private bool _dividerRestoreAttempted;
+
     private List<BookTocEntry>? _toc;
 
     // Batch ST-1 (SYNC-1 fix): _book/_chapterNum are now THIN READS of the
@@ -451,9 +459,15 @@
     // so this read is always the last live value, never stale). Only takes
     // effect if the atom is NOT already Split (EnterSplit's own Apply is a
     // no-op otherwise, preserving whatever's already there).
+    //
+    // Fix round 1 (Adjudication C, S-3/Q-2): DefaultDividerFraction sources
+    // from ViewState.Map.DividerFraction the SAME way -- written by
+    // OnDividerCommitted below at the moment of every real commit. This is
+    // the mechanism that lets DividerFraction survive a genuine cross-remount
+    // (the Split arm itself cannot -- see Split's own doc comment).
     private void OpenSplit()
     {
-        ViewArrangementAtom.Dispatch(new EnterSplit(ViewState.Map.Follow));
+        ViewArrangementAtom.Dispatch(new EnterSplit(ViewState.Map.Follow, ViewState.Map.DividerFraction));
         SyncSplitUrl();
     }
 
@@ -481,30 +495,75 @@
     // per completed gesture (drag-end or a keyboard nudge), never a live drag
     // frame ("DividerFraction commits on drag END only"). _splitReaderWidthPx
     // -- the ACTUAL render source for the divider's pixel position, UNCHANGED
-    // since before this batch -- is updated unconditionally; the atom only
-    // receives the fraction when SplitDivider's own measurement succeeded
-    // (Fraction is null on a failed/unavailable measurement -- same fail-soft
-    // spirit SplitDivider's own EnsureMaxWidthAsync already uses elsewhere).
-    // Scope note (disclosed in the batch report): this is write-through only
-    // -- the atom's own DividerFraction is NOT read back into a fresh px
-    // value on a later split re-open. The pre-existing mechanism
-    // (_splitReaderWidthPx surviving untouched across any same-instance
-    // close/reopen, exactly as it did before ST-2) already covers the one
-    // scenario this app's own UI can reach without a full page navigation; a
-    // genuine cross-remount restore would need an async DOM remeasurement at
-    // an awkward point in the render cycle (the `.split-view` class, and
-    // therefore its own measurable layout width, doesn't exist until AFTER
-    // the split-open render commits) for a scenario the pre-ST-2 code never
-    // supported either (a full remount already reset to the 704px default
-    // before this batch, unchanged).
+    // since before this batch -- is updated unconditionally; the atom (and,
+    // fix round 1, ViewState.Map.DividerFraction) only receive the fraction
+    // when SplitDivider's own measurement succeeded (Fraction is null on a
+    // failed/unavailable measurement -- same fail-soft spirit
+    // SplitDivider's own EnsureMaxWidthAsync already uses elsewhere).
+    //
+    // Fix round 1 (S-3/Q-2/Adjudication C, review): DividerFraction is no
+    // longer write-only. ViewState.Map.DividerFraction is written here (the
+    // SAME persistence-beneath-the-atom role MapViewState.Follow already
+    // plays) so a FRESH EnterSplit dispatch (OpenSplit/the SplitQuery block)
+    // can seed a brand-new Split arm with it, and RestoreDividerWidthFromAtom
+    // (OnAfterRenderAsync below) reads the atom's own Split.DividerFraction
+    // back into _splitReaderWidthPx on every split-open transition -- see
+    // that method's own comment for the cross-remount mechanism this now
+    // genuinely supports.
     private void OnDividerCommitted((double WidthPx, double? Fraction) result)
     {
         _splitReaderWidthPx = result.WidthPx;
         if (result.Fraction is { } fraction)
         {
             ViewArrangementAtom.Dispatch(new SetSplitDividerFraction(fraction));
+            ViewState.Map.DividerFraction = fraction;
         }
     }
+
+    // Fix round 1 (S-3/Q-2/Adjudication C, review -- "the requirement was
+    // weakened, not met"): the read side of DividerFraction. Called once per
+    // split-open transition, from OnAfterRenderAsync, specifically AFTER the
+    // render that applies `.split-view`'s own CSS class has already
+    // committed -- `.split-view`'s measurable content-box width does not
+    // exist before that, so this cannot run any earlier in the lifecycle
+    // (the same reason SplitDivider's own EnsureMaxWidthAsync only ever
+    // measures on a real pointerdown/keydown, never at construction).
+    // Measures via the SAME `getPaneRect` reader.js already exports for
+    // SplitDivider's own use, fails soft to whatever _splitReaderWidthPx
+    // already holds on a failed/unavailable measurement -- the identical
+    // stance EnsureMaxWidthAsync takes.
+    private async Task RestoreDividerWidthFromAtom(double fraction)
+    {
+        try
+        {
+            var rect = await _readerJs!.InvokeAsync<PaneRectDto?>("getPaneRect", ".split-view");
+            if (rect is { Width: > 0 } r)
+            {
+                // A light sanity floor (not SplitDivider's own precise
+                // MinWidthPx/DividerWidthPx constants, which are private to
+                // that component) -- good enough for an INITIAL restore; the
+                // very next real drag/nudge re-clamps to the exact bounds
+                // via SplitDivider's own EnsureMaxWidthAsync regardless.
+                _splitReaderWidthPx = Math.Clamp(fraction * r.Width, 200, r.Width - 200);
+                StateHasChanged();
+            }
+        }
+        catch (Exception)
+        {
+            // Fail soft -- keep whatever _splitReaderWidthPx already holds
+            // (the untouched local field from a same-instance reopen, or the
+            // 704px default on a genuine cross-remount), same graceful-
+            // degrade spirit SplitDivider's own EnsureMaxWidthAsync uses.
+        }
+    }
+
+    // reader.js's own getPaneRect return shape -- a second, independently-
+    // declared copy of SplitDivider.razor's own private PaneRectDto (that
+    // one is file-scoped private too, so this file needs its own -- same
+    // "one shape, many callers, no shared type" precedent SplitDivider's own
+    // header comment already establishes for ExplorerPopover's analogous
+    // VerseAnchorRectDto/PaneRectDto pair).
+    private sealed record PaneRectDto(double Left, double Top, double Width, double Height);
 
     // reader-prev/reader-next (Batch R requirement 6/HOTFIX NAV-4) -- their
     // own hrefs are plain <a> tags (Blazor's router intercepts same-origin
@@ -541,6 +600,20 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Fix round 1 (Q-3, Important -- review): _splitOpen is a LIVE read
+        // of ViewArrangementAtom.Value, but until this fix Reader never
+        // subscribed to its own Changed event -- correct today only because
+        // every arrangement change Reader itself must re-render for
+        // originates in Reader's OWN event handlers (OpenSplit/
+        // CloseSplitAtlas/the SplitQuery block), which Blazor already
+        // re-renders after. The moment a LATER batch dispatches an
+        // arrangement change from anywhere else (World's own
+        // OpenReadBesideMap not dispatching at all today is exactly the
+        // kind of asymmetry that makes this fragile), the split host would
+        // silently stop re-rendering. Subscribed symmetrically with World.razor
+        // now -- unsubscribed in DisposeAsync below.
+        ViewArrangementAtom.Changed += OnViewArrangementChanged;
+
         try
         {
             _toc = await Atlas.Books();
@@ -549,6 +622,16 @@
         {
             _errorMessage = "Couldn't load the book list — check your connection and try again.";
         }
+    }
+
+    // Fix round 1 (Q-3): a plain re-render -- Reader has no side effect of
+    // its own to run here (unlike World's OWN ViewArrangementAtom.Changed
+    // subscriber, OnViewArrangementChanged, which also drives the
+    // SyncToken/follow re-sync -- that stays World's job, this is purely
+    // "keep _splitOpen's own rendering live").
+    private void OnViewArrangementChanged()
+    {
+        StateHasChanged();
     }
 
     // Runs on every navigation, including the very first one -- book/chapter
@@ -583,11 +666,15 @@
             // atom correctly reflects reality regardless of whatever
             // arrangement a PRIOR instance/page this session left it in (the
             // standalone counterpart to this is World.OnParametersSetAsync's
-            // own EnterWorldOnly dispatch). EnterSplit's own DefaultFollow
-            // source (ViewState.Map.Follow) matches OpenSplit's own reasoning
-            // above.
+            // own EnterWorldOnly dispatch). EnterSplit's own DefaultFollow/
+            // DefaultDividerFraction sources (ViewState.Map.Follow/
+            // .DividerFraction) match OpenSplit's own reasoning above -- this
+            // is the ONE genuinely cross-remount-reachable EnterSplit call
+            // site (a fresh instance landing directly on ?split=1), so it is
+            // also the path Adjudication C's own cross-remount restore test
+            // exercises.
             ViewArrangementAtom.Dispatch(SplitQuery == "1"
-                ? new EnterSplit(ViewState.Map.Follow)
+                ? new EnterSplit(ViewState.Map.Follow, ViewState.Map.DividerFraction)
                 : new EnterReaderOnly());
         }
 
@@ -668,6 +755,26 @@
             // stay viewport-centered through `.reader-page`'s own
             // pre-existing `contain: layout` containing-block substitution).
             await _readerJs.InvokeVoidAsync("watchChapterNavCenter");
+        }
+
+        // Fix round 1 (S-3/Q-2/Adjudication C, review): restores
+        // _splitReaderWidthPx from the atom's own Split.DividerFraction, once
+        // per split-open transition -- see RestoreDividerWidthFromAtom's own
+        // comment for the full mechanism and why this specifically closes
+        // the "cross-remount" gap the review found (DividerFraction was
+        // write-only before this round). Independent of ChapterMatchesRoute
+        // -- this has nothing to do with which chapter loaded.
+        if (_splitOpen && !_dividerRestoreAttempted && _readerJs is not null)
+        {
+            _dividerRestoreAttempted = true;
+            if (ViewArrangementAtom.Value is Split { DividerFraction: { } fraction })
+            {
+                await RestoreDividerWidthFromAtom(fraction);
+            }
+        }
+        else if (!_splitOpen)
+        {
+            _dividerRestoreAttempted = false;
         }
 
         if (!ChapterMatchesRoute || _readerJs is null)
@@ -1323,6 +1430,14 @@
 
     public async ValueTask DisposeAsync()
     {
+        // Fix round 1 (Q-3): unsubscribe from the SHARED (app-lifetime)
+        // ViewArrangement atom before this instance goes away -- same
+        // reasoning World.razor's own equivalent unsubscribe gives (the atom
+        // outlives this component; leaving the subscription wired would call
+        // back into a disposed component on every future arrangement
+        // dispatch, from ANY page).
+        ViewArrangementAtom.Changed -= OnViewArrangementChanged;
+
         // M-D3 (R3): cancels any in-flight hover-close delay -- without
         // this, DelayedHoverClose's own await could resolve AFTER this
         // component is disposed (a real navigation-away-while-hovering

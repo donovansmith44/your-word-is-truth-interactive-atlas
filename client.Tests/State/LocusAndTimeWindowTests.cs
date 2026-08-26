@@ -259,6 +259,17 @@ public class LocusAndTimeWindowTests
         // cause a real, non-trivial TimeWindow write: if the link (or
         // anything else) looped back, this count would exceed the ONE
         // genuine user dispatch.
+        //
+        // Fix round 1 (Q-6, Trivia, review): DISCLOSED scope limit -- with
+        // no reverse TimeWindow -> Locus runner wired into this fixture,
+        // `locusChangedCount` is 1 BY CONSTRUCTION; this test cannot go red
+        // for the reason its own name suggests (a genuine echo would need
+        // an actual bidirectional pair to manifest). It documents/pins the
+        // real, current topology (one-directional, no echo possible) rather
+        // than exercising law 3's own oscillation-prevention mechanism --
+        // that mechanism, over a genuinely oscillation-prone SYNTHETIC pair,
+        // is what NoEchoLawTests.cs (ST-1) actually covers; this test is not
+        // a substitute for it.
         var locusAtom = new StateAtom<Locus>(AtomNamesLocus, Locus.Default);
         var windowAtom = new StateAtom<TimeWindow>(AtomNamesTimeWindow, TimeWindow.Default);
         var link = new FollowTextLink(locusAtom, windowAtom, () => true);

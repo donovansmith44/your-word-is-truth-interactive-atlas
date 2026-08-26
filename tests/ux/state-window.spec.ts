@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { api } from './lib/api';
 import { formatRange } from './lib/years';
 import { LIT_MARKER_TESTID } from './lib/markers';
@@ -13,6 +13,33 @@ import { LIT_MARKER_TESTID } from './lib/markers';
 // links still resolving identically post-migration. See CONTRACT.md's own
 // ST-2 AMENDMENT paragraphs (FOLLOW-1/SPLIT-1/DIVIDER-1) for the mechanism
 // each test below locks in.
+
+// Shared by both R4 divider tests below. LEFT, not right -- widens the
+// atlas pane rather than narrowing it. split-atlas-controls (left-anchored)
+// and .picker-dusk (right-anchored, max-width 19rem) are both
+// position:absolute inside .split-pane-atlas (app.css) with no responsive
+// reflow between them -- narrowing the pane enough (a rightward drag, tried
+// in an earlier draft) makes them genuinely overlap, with the picker
+// painting on top and physically blocking a click on split-close-atlas
+// underneath. Unrelated to this batch's own state migration (pure layout,
+// pre-existing), so this helper avoids the combination rather than the app
+// being changed to fix it. Returns the reader pane's own width after the
+// drag, for the caller's own before/after comparison.
+async function dragDividerLeftBy(page: Page, deltaX: number): Promise<number> {
+  const dividerBefore = await page.getByTestId('split-divider').boundingBox();
+  if (!dividerBefore) {
+    throw new Error('split-divider not found');
+  }
+  const startX = dividerBefore.x + dividerBefore.width / 2;
+  const startY = dividerBefore.y + Math.min(dividerBefore.height, 300) / 2;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX - deltaX, startY, { steps: 8 });
+  await page.mouse.up();
+  await page.mouse.move(startX, startY - 200); // clear of both panes' absolute-positioned controls before the next click
+
+  return (await page.getByTestId('reader-root').boundingBox())!.width;
+}
 
 test('ST-2/R3: a time-mode window committed via the slider survives, through the shared TimeWindow atom, into a freshly opened split pane', async ({ page }) => {
   const eras = await api.eras();
@@ -82,7 +109,72 @@ test('ST-2/R2: follow OFF -- reader chapter navigation does not touch the atlas 
   await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('ST-2/R4: split open -> close -> reopen preserves the follow flag and the divider width via the ViewArrangement atom', async ({ page }) => {
+// Fix round 1 (S-1, CRITICAL -- review): the two named repro doors, both
+// asserting MARKER COUNT (not just chip text) -- the review's own finding
+// was that the prior round's coverage "routes around exactly this," since
+// turning follow OFF first (as the old reopen test did) takes the
+// RestoreMapState branch, which DOES fetch, sidestepping SyncNow's own
+// law-2 no-op collision entirely.
+test('ST-2/S-1: split open with follow ON -> close -> reopen renders the followed scene\'s markers (not a blank pane)', async ({ page }) => {
+  await page.goto('/read/GEN/12');
+  await page.getByTestId('split-open-reader').click();
+  await expect(page.getByTestId('follow-chip')).toHaveText('Following GEN.12');
+  const scene = await api.sceneScripture('GEN.12');
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
+
+  // Close (nothing ever resets TimeWindowAtom on a split-close -- it stays
+  // ScriptureMode("GEN.12")) then reopen with follow ON (the default) --
+  // SyncNow's own derive-and-dispatch is now a LAW-2 NO-OP (the atom
+  // already holds exactly the value it would derive). THE REGRESSION LOCK:
+  // the fetch effect must still run unconditionally, or this pane renders
+  // with zero markers despite the chip confidently reading "Following GEN.12".
+  await page.getByTestId('split-close-atlas').click();
+  await expect(page.getByTestId('split-view')).toHaveCount(0);
+
+  await page.getByTestId('split-open-reader').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page.getByTestId('follow-chip')).toHaveText('Following GEN.12');
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
+});
+
+test('ST-2/S-1: /world?ref=X, then reading X in the reader, then opening a split at X renders markers immediately (not a blank pane)', async ({ page }) => {
+  // The review's own second named door: TimeWindowAtom already holds
+  // ScriptureMode(X) (set via a direct /world picker Apply) at the exact
+  // moment a split opens with the reader ALSO already on X (Locus set by
+  // an earlier, separate reader visit this same session) -- the same
+  // law-2-no-op collision, reached a different way.
+  await page.goto('/read/EXO/14'); // sets Locus = EXO.14
+  await expect(page.getByTestId('chapter-head')).toContainText('14');
+
+  await page.getByTestId('nav-world').click();
+  await page.waitForURL(u => u.pathname === '/world');
+
+  await page.getByTestId('picker-book').selectOption('EXO');
+  await page.getByTestId('picker-chapter').selectOption('14');
+  await page.getByTestId('picker-apply').click();
+  await page.waitForURL(u => u.searchParams.get('ref') === 'EXO.14');
+  const scene = await api.sceneScripture('EXO.14');
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
+
+  // "Read beside the map" lands at Locus's own book/chapter (EXO/14, set
+  // above) with ?split=1 -- follow ON by default, and the atom ALREADY
+  // holds ScriptureMode("EXO.14") from the picker Apply just above.
+  await page.getByTestId('split-open-world').click();
+  await expect(page).toHaveURL(/\/read\/EXO\/14/);
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page.getByTestId('follow-chip')).toHaveText('Following EXO.14');
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
+});
+
+// Fix round 1 (S-3/Adjudication C, review -- "met in name only... the
+// test's own title claims atom provenance it does not have"): the ORIGINAL
+// same-instance reopen test, renamed for honesty (this alone does NOT prove
+// atom provenance for the divider -- Reader.razor's own untouched
+// _splitReaderWidthPx field would pass this identically with the atom
+// write deleted), paired with a NEW cross-remount test that only the
+// atom-backed mechanism (RestoreDividerWidthFromAtom, fed by
+// ViewState.Map.DividerFraction -> EnterSplit) can satisfy.
+test('ST-2/R4: split open -> close -> reopen (same reader instance) preserves the follow flag; the divider width matches too', async ({ page }) => {
   await page.goto('/read/GEN/12');
   await page.getByTestId('split-open-reader').click();
   await expect(page.getByTestId('split-view')).toBeVisible();
@@ -92,27 +184,7 @@ test('ST-2/R4: split open -> close -> reopen preserves the follow flag and the d
   await page.getByTestId('follow-chip').click();
   await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
 
-  const dividerBefore = await page.getByTestId('split-divider').boundingBox();
-  expect(dividerBefore).toBeTruthy();
-  if (!dividerBefore) return;
-  const startX = dividerBefore.x + dividerBefore.width / 2;
-  const startY = dividerBefore.y + Math.min(dividerBefore.height, 300) / 2;
-  await page.mouse.move(startX, startY);
-  await page.mouse.down();
-  // LEFT, not right -- widens the atlas pane rather than narrowing it.
-  // split-atlas-controls (left-anchored) and .picker-dusk (right-anchored,
-  // max-width 19rem) are both position:absolute inside .split-pane-atlas
-  // (app.css) with no responsive reflow between them -- narrowing the pane
-  // enough (a rightward drag, tried in an earlier draft of this test) makes
-  // them genuinely overlap, with the picker painting on top and physically
-  // blocking a click on split-close-atlas underneath. Unrelated to this
-  // batch's own state migration (pure layout, pre-existing), so this test
-  // avoids the combination rather than the app being changed to fix it.
-  await page.mouse.move(startX - 120, startY, { steps: 8 });
-  await page.mouse.up();
-  await page.mouse.move(startX, startY - 200); // clear of both panes' absolute-positioned controls before the next click
-
-  const readerWidthAfterDrag = (await page.getByTestId('reader-root').boundingBox())!.width;
+  const readerWidthAfterDrag = await dragDividerLeftBy(page, 120);
 
   // Close via World's own close button -- Reader.razor stays mounted (a
   // local field/atom flip, not a Nav.NavigateTo -- SPLIT-1/CloseSplitAtlas's
@@ -121,6 +193,43 @@ test('ST-2/R4: split open -> close -> reopen preserves the follow flag and the d
   await expect(page.getByTestId('split-view')).toHaveCount(0);
 
   // Reopen from the SAME reader instance.
+  await page.getByTestId('split-open-reader').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+
+  await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
+  const readerWidthAfterReopen = (await page.getByTestId('reader-root').boundingBox())!.width;
+  expect(Math.round(readerWidthAfterReopen)).toBe(Math.round(readerWidthAfterDrag));
+});
+
+test('ST-2/R4/Adjudication C: split open -> drag divider -> navigate fully away -> return -> reopen split restores BOTH follow and divider width, via the atom (a genuine cross-remount, not the untouched local field)', async ({ page }) => {
+  await page.goto('/read/GEN/12');
+  await page.getByTestId('split-open-reader').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+
+  await page.getByTestId('follow-chip').click(); // off, non-default
+  await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
+
+  const readerWidthAfterDrag = await dragDividerLeftBy(page, 120);
+
+  // Navigate AWAY entirely -- World.razor's own "Close the reader, keep the
+  // map" (split-close-reader), a REAL route change to /world that tears
+  // down THIS Reader.razor instance, not just the local split-open flag.
+  await page.getByTestId('split-close-reader').click();
+  await expect(page).toHaveURL(/\/world/);
+
+  // Return to the reader -- a FRESH Reader.razor instance mounts (its own
+  // _splitReaderWidthPx field starts back at the 704px default; it has no
+  // memory of the earlier instance's drag at all).
+  await page.getByTestId('nav-reader').click();
+  await page.waitForURL(u => u.pathname === '/');
+
+  // Reopen the split on this fresh instance. The restored width/follow
+  // below can ONLY come from ViewState.Map (the persistence layer beneath
+  // the atom, R5) seeding a fresh EnterSplit dispatch, which
+  // Reader.OnAfterRenderAsync then reads back off the atom
+  // (Split.DividerFraction) to initialize the local field -- see
+  // EnterSplit's own doc comment for why the arm itself cannot carry this
+  // through the WorldOnly detour on its own.
   await page.getByTestId('split-open-reader').click();
   await expect(page.getByTestId('split-view')).toBeVisible();
 

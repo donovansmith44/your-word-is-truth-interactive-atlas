@@ -427,6 +427,25 @@
     // /world never reads or writes it" -- true by construction now, not by
     // convention (there is no WorldOnly.Follow field to have EVER read).
     private bool _follow => ViewArrangementAtom.Value is Split { Follow: true };
+
+    // Fix round 1 (S-2/Adjudication A, review, CRITICAL-adjacent): the ONE
+    // shared predicate every side-effecting subscription/closure that could
+    // touch shared atom state now reads -- `FollowTextLink.Active`,
+    // `OnTimeWindowChanged`, `OnViewArrangementChanged`. Restores the
+    // pre-ST-2 `SplitMode && _follow` instance-scoping conjunct that R4's
+    // own re-plumbing of `Active` (correctly, per the ruling's own letter)
+    // dropped -- `_follow` alone is a read of the GLOBAL ViewArrangement
+    // atom with no instance scoping, so a STALE, still-subscribed instance
+    // (the exact hazard already found and partially fixed for two of three
+    // sites in the prior round) reads it as true the moment ANY page
+    // dispatches Follow=true, not just this one. `SplitMode` is the
+    // per-instance fact no atom read can spoof. One predicate, three call
+    // sites, zero forks -- the ST-3 ownership-claim rule (reviewer
+    // Adjudication A part 2, accepted, see the report's own fix-round
+    // addendum) is expected to replace this predicate's own definition
+    // wholesale, not each of its three call sites independently.
+    private bool _followEffectsLive => SplitMode;
+
     private bool _splitInitialized;
 
     // Batch ST-1: _locus is this page's own Projection<Locus> over the
@@ -518,11 +537,19 @@
         // for this component instance's whole lifetime -- unsubscribed in
         // DisposeAsync below (_followRunner.Dispose() + Changed -=). _locus
         // itself is a lazy property (see its own field comment) -- nothing
-        // to construct here for it. Batch ST-2 (R4): Active now reads the
-        // ViewArrangement projection directly (_follow already IS that
-        // projection -- see that property's own comment), replacing the
-        // retired SplitMode && _follow field closure.
-        _followLink = new FollowTextLink(LocusAtom, TimeWindowAtom, () => _follow);
+        // to construct here for it. Batch ST-2 (R4) / fix round 1 (S-2,
+        // Adjudication A): Active reads `_followEffectsLive && _follow` --
+        // the ViewArrangement projection (R4's own "Split && Follow"), PLUS
+        // the instance-scoping conjunct R4 asked to move OFF this closure's
+        // wording but never asked to be dropped as a SAFETY conjunct (the
+        // ruling's own letter: "reads the projection instead of the old
+        // field closure" -- not "stops checking SplitMode"). Without it,
+        // `StateLinkRunner`'s own `LocusAtom.Changed` subscription is the
+        // ONE side-effecting path this app has that a bare `SplitMode &&`
+        // guard on `OnTimeWindowChanged`/`OnViewArrangementChanged` alone
+        // does not reach -- see `_followEffectsLive`'s own doc comment for
+        // the full trace.
+        _followLink = new FollowTextLink(LocusAtom, TimeWindowAtom, () => _followEffectsLive && _follow);
         _followRunner = new StateLinkRunner<Locus, TimeWindow>(_followLink.Name, _followLink, LocusAtom, TimeWindowAtom);
         LocusAtom.Changed += OnLocusChanged;
 
@@ -716,12 +743,22 @@
             // Batch ST-2 (R2): re-syncs THROUGH the link -- the same
             // mechanism ToggleFollow's own true-branch uses below -- rather
             // than a direct EnterScriptureMode call, now that Derive is real
-            // and genuinely does this work. _pendingLinkEffect is set (if
-            // the derive-and-dispatch produced a genuine change; it always
-            // will here, since a fresh atom always starts in TimeMode, never
-            // equal to a ScriptureMode value) by OnTimeWindowChanged, invoked
-            // synchronously inside SyncNow's own Dispatch call.
-            _followRunner.SyncNow();
+            // and genuinely does this work.
+            //
+            // Fix round 1 (S-1/Q-7, CRITICAL -- review): an earlier draft's
+            // own comment here claimed the derive-and-dispatch "always
+            // will" produce a genuine change "since a fresh atom always
+            // starts in TimeMode" -- FALSE (Q-7's exact finding):
+            // TimeWindowAtom is a DI SINGLETON that outlives the page, so
+            // THIS instance can mount and find it already holding EXACTLY
+            // `ScriptureMode(locus.Ref)` (a split reopened at the same
+            // followed ref; a /world?ref=X visit followed by opening a
+            // split at X) -- a case `TriggerFollowSync` (not a bare
+            // `SyncNow()`) now handles correctly: it guarantees the fetch
+            // effect runs even when the dispatch itself was a law-2 no-op.
+            // See `TriggerFollowSync`'s own header comment for the full
+            // regression this fixes (S-1, the blank-atlas-pane defect).
+            TriggerFollowSync();
             if (_pendingLinkEffect is { } task)
             {
                 await task;
@@ -783,24 +820,25 @@
     // this handler stays a no-op for them (LastOrigin is null on a direct,
     // user-originated dispatch).
     //
-    // `SplitMode &&` (live, self-caught bug -- see OnViewArrangementChanged's
-    // own comment for the full mechanism): `_followLink.Name` is the SAME
-    // constant regardless of which World instance owns the link, so a STALE,
-    // still-subscribed standalone instance's own LastOrigin check would ALSO
-    // pass whenever ANY OTHER (correctly-timed) instance's own SyncNow/
-    // follow-derived dispatch touches the SAME shared TimeWindowAtom during a
-    // navigation Blazor hasn't finished disposing yet -- firing a wasted (at
-    // best) or state-corrupting (at worst, writing stale ViewState.Map
-    // fields a LATER page visit could read back) fetch on the dying
-    // instance. The effect is only ever meaningful for a genuinely embedded
-    // (SplitMode) pane -- standalone /world has no follow chip to have
-    // triggered it in the first place.
+    // `_followEffectsLive &&` (live, self-caught bug, fix round 1 hardened
+    // via the shared predicate -- see that property's own comment for the
+    // full mechanism): `_followLink.Name` is the SAME constant regardless of
+    // which World instance owns the link, so a STALE, still-subscribed
+    // standalone instance's own LastOrigin check would ALSO pass whenever
+    // ANY OTHER (correctly-timed) instance's own SyncNow/follow-derived
+    // dispatch touches the SAME shared TimeWindowAtom during a navigation
+    // Blazor hasn't finished disposing yet -- firing a wasted (at best) or
+    // state-corrupting (at worst, writing stale ViewState.Map fields a LATER
+    // page visit could read back) fetch on the dying instance. The effect is
+    // only ever meaningful for a genuinely embedded (SplitMode) pane --
+    // standalone /world has no follow chip to have triggered it in the first
+    // place.
     private void OnTimeWindowChanged()
     {
         SyncTimeWindowProjection();
         StateHasChanged();
 
-        if (!SplitMode || TimeWindowAtom.LastOrigin != _followLink.Name || TimeWindowAtom.Value is not ScriptureMode sm)
+        if (!_followEffectsLive || TimeWindowAtom.LastOrigin != _followLink.Name || TimeWindowAtom.Value is not ScriptureMode sm)
         {
             _pendingLinkEffect = null;
             return;
@@ -862,17 +900,79 @@
     // only ever MEANINGFUL while SplitMode (this file's own pre-existing
     // field comment, before ST-2 too) -- the guard below makes that
     // semantic actually true for this handler, not just documented.
+    //
+    // Fix round 1 (S-2/Adjudication A): the ad hoc `SplitMode &&` guard is
+    // now `_followEffectsLive &&`, the ONE shared predicate -- see that
+    // property's own comment for why the review found this guard alone
+    // insufficient (a THIRD, unguarded side-effecting subscription,
+    // `StateLinkRunner`'s own `LocusAtom.Changed` handler, was still open;
+    // fixed at `_followLink`'s own construction site, not here).
+    //
+    // Fix round 1 (S-1, CRITICAL): `_followRunner.SyncNow()` alone is
+    // REPLACED by `TriggerFollowSync()` -- see that method's own comment for
+    // why a bare `SyncNow()` here was the root of the blank-atlas-pane
+    // regression (a law-2 no-op silently drops the fetch effect whenever the
+    // atom already held the derived value, which a DI-singleton TimeWindowAtom
+    // makes an ORDINARY case, not a rare one).
     private void OnViewArrangementChanged()
     {
         var nowFollowing = _follow;
-        if (SplitMode && nowFollowing && !_lastKnownFollow)
+        if (_followEffectsLive && nowFollowing && !_lastKnownFollow)
         {
             _pickerSyncToken++;
-            _followRunner.SyncNow();
+            TriggerFollowSync();
         }
 
         _lastKnownFollow = nowFollowing;
         StateHasChanged();
+    }
+
+    // Fix round 1 (S-1, CRITICAL -- review): the shared "re-sync TimeWindow
+    // to the currently-followed Locus, and GUARANTEE the fetch effect runs"
+    // primitive -- the ONE place `_followRunner.SyncNow()` is ever called
+    // (InitializeSplitModeIfNeeded, ToggleFollow's ON branch,
+    // OnViewArrangementChanged's own edge trigger above all route through
+    // this now, replacing each of their own bare `SyncNow()` calls).
+    //
+    // THE BUG: `SyncNow()`'s own dispatch is silent whenever the derived
+    // `ScriptureMode(locus.Ref)` already equals `TimeWindowAtom.Value` (law
+    // 2) -- no `Changed`, so `OnTimeWindowChanged` never runs, so
+    // `_pendingLinkEffect` is never set, so NO FETCH EVER HAPPENS, while
+    // `_scriptureRef` (seeded by `SyncTimeWindowProjection` in
+    // `OnInitializedAsync`, independent of whether Changed ever fires) makes
+    // the follow-chip confidently read "Following X" over an empty `_scene`.
+    // An earlier draft's own comment claimed this "always will" derive a
+    // genuine change "since a fresh atom always starts in TimeMode" --
+    // FALSE: `TimeWindowAtom` is a DI SINGLETON that outlives the page, so
+    // "the atom already holds exactly the value this pane is about to
+    // derive" is an ORDINARY case (open split at ref X -> close -> reopen;
+    // /world?ref=X -> the reader visits X -> open a split there), not an
+    // edge case -- `EnterScriptureMode`'s OWN doc comment already names the
+    // general rule this violated: "the effect must still run regardless of
+    // whether the dispatch changed anything."
+    //
+    // THE FIX: after `SyncNow()`, if it did NOT queue an effect
+    // (`_pendingLinkEffect` still null) AND the atom is (now, regardless of
+    // whether THIS call changed it) in `ScriptureMode`, run the effect
+    // anyway -- mirroring `EnterScriptureMode`'s own unconditional-effect
+    // rule exactly, just reached through the link instead of a direct
+    // dispatch. `_followEffectsLive` gates it the same way OnTimeWindowChanged's
+    // own gate does, defensively (every real caller is already
+    // SplitMode-only, but this keeps the invariant local and self-evident).
+    private void TriggerFollowSync()
+    {
+        _pendingLinkEffect = null;
+        _followRunner.SyncNow();
+
+        if (_pendingLinkEffect is not null)
+        {
+            return; // a genuine change -- OnTimeWindowChanged already queued the effect
+        }
+
+        if (_followEffectsLive && TimeWindowAtom.Value is ScriptureMode sm)
+        {
+            _pendingLinkEffect = RunScriptureModeEffectAndSurfaceFaults(sm.Ref);
+        }
     }
 
     // Batch ST-2 (R2) -- see OnTimeWindowChanged's own comment for why this
@@ -1050,14 +1150,20 @@
     // directly -- ViewArrangementAtom.Dispatch below (SetSplitFollow) is what
     // flips Follow true, which synchronously fires OnViewArrangementChanged
     // (subscribed in OnInitializedAsync), which is what now performs BOTH the
-    // SyncToken bump AND the SyncNow() re-sync (per the controller ruling,
-    // "re-seat its trigger on the atom transition, don't fork it" -- see that
-    // handler's own comment). _pendingLinkEffect -- set by OnTimeWindowChanged,
-    // itself invoked synchronously by SyncNow's own Dispatch call, all before
-    // THIS method reaches the line below -- is what lets this method still
-    // AWAIT the actual fetch's completion, preserving the exact async-timing
-    // contract every pre-ST-2 caller of ToggleFollow already depended on,
-    // even though the fetch is now triggered indirectly, through the atom.
+    // SyncToken bump AND the TriggerFollowSync() re-sync (per the controller
+    // ruling, "re-seat its trigger on the atom transition, don't fork it" --
+    // see that handler's own comment). _pendingLinkEffect -- set by
+    // TriggerFollowSync (fix round 1, S-1: guaranteed set whenever the atom
+    // ends up in ScriptureMode, even if THIS specific dispatch was itself a
+    // law-2 no-op), all before THIS method reaches the line below -- is what
+    // lets this method still AWAIT the actual fetch's completion, preserving
+    // the exact async-timing contract every pre-ST-2 caller of ToggleFollow
+    // already depended on, even though the fetch is now triggered
+    // indirectly, through the atom. Before the S-1 fix, THIS branch's own
+    // collision (toggling follow ON when the atom already held the
+    // followed ref) was "benign only by luck" per the review -- it is now
+    // handled by the same unconditional-effect guarantee the mount path
+    // uses.
     private async Task ToggleFollow()
     {
         _pendingLinkEffect = null;
@@ -1157,9 +1263,9 @@
     // yet -- Nav.NavigateTo below hasn't even been called). A dispatch here
     // (Follow false->true, since standalone's own _follow projection is
     // always false) synchronously triggers THIS instance's own
-    // OnViewArrangementChanged -> _followRunner.SyncNow() -> a REAL
-    // Locus->TimeWindow derive-and-dispatch (Derive is real now, R2, not
-    // ST-1's identity) into the SHARED (DI-singleton) TimeWindowAtom --
+    // OnViewArrangementChanged -> (what is now) TriggerFollowSync() -> a
+    // REAL Locus->TimeWindow derive-and-dispatch (Derive is real now, R2,
+    // not ST-1's identity) into the SHARED (DI-singleton) TimeWindowAtom --
     // observed live: it overwrote a just-committed TimeMode(window) with
     // ScriptureMode(locus.Ref) BEFORE the destination Reader.razor/embedded
     // World instance ever mounted, so the new instance's own
@@ -1170,6 +1276,21 @@
     // instance's own SplitQuery-consumption dispatch (Reader.razor's
     // OnParametersSetAsync) is sufficient on its own -- it runs on a FRESH
     // instance with no such side-effecting subscription wired yet.
+    //
+    // ADJUDICATION B (review, fix round 1): this reading is ACCEPTED as-is
+    // -- traced independently by the reviewer, no path found where the atom
+    // misses or mis-orders the Split transition (the destination's own
+    // dispatch runs in Reader.OnParametersSetAsync's synchronous prefix,
+    // strictly before the embedded World ever renders). Two caveats carried
+    // forward, neither changing the verdict: (1) the destination's dispatch
+    // is sufficient BECAUSE `?split=1` is on this method's own target URL --
+    // this URL and Reader's own SplitQuery consumption are now a coupled
+    // pair; a future caller reaching `/read/...` without that query would
+    // leave the arrangement at whatever a prior page left it. (2) this is
+    // one of S-1's own doors: when Locus and the atom's held ScriptureMode
+    // ref coincide, the pane arriving here fetches nothing UNLESS S-1's own
+    // fix (TriggerFollowSync, above) is in place -- it is, as of this same
+    // fix round.
     private void OpenReadBesideMap()
     {
         Nav.NavigateTo($"/read/{_locus.Value.Book}/{_locus.Value.Chapter}?split=1");
