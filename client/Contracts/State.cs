@@ -102,6 +102,47 @@ public interface IStateLink<A, B>
     bool Active { get; }
 }
 
+/// <summary>
+/// CONTROLLER ADDITION (2026-08-26, ST-2 review Adjudication A; owner may
+/// veto): an EFFECT is the async materialization of an atom's value into
+/// the world (a scene fetch, JS interop) -- everything a pure projection
+/// cannot be. ST-2 proved the hazard class this contract retires: singleton
+/// atoms + Blazor's unordered dispose/init let a stale, still-subscribed
+/// component instance run effects against the shared atom (the
+/// cross-instance corruption), and law-2 idempotence means an
+/// already-converged atom fires no Changed on remount (the blank-pane
+/// defect). Semantics, both defects dead by construction:
+/// one owner per effect name; CLAIM on mount, release on dispose (the
+/// returned IDisposable), LATEST claim wins (the newest live instance is
+/// always the owner); claiming RECONCILES -- the effect runs against the
+/// atom's CURRENT value at claim time even though no Changed fires; while
+/// claimed, the registry runs the effect on every real change of the
+/// source atom. Only the registry invokes effects -- a component never
+/// subscribes an effect handler to an atom directly.
+/// </summary>
+public interface IStateEffect<T>
+{
+    /// <summary>Stable effect name -- the ownership key ("follow-scene", ...).</summary>
+    string Name { get; }
+
+    IStateAtom<T> Source { get; }
+
+    /// <summary>Gate: whether this value calls for materialization at all
+    /// (e.g. only ScriptureMode windows). Pure.</summary>
+    bool AppliesTo(T value);
+
+    /// <summary>Idempotent per value: materializing the same value twice
+    /// must be safe and cheap (the reconcile-on-claim path depends on it).</summary>
+    Task Materialize(T value);
+}
+
+/// <summary>See <see cref="IStateEffect{T}"/>. Claim = subscribe + reconcile;
+/// disposing the returned handle = release. Latest claim wins.</summary>
+public interface IEffectRegistry
+{
+    IDisposable Claim<T>(IStateEffect<T> effect);
+}
+
 /// <summary>Spec §4d's seed atom names -- the one vocabulary shared by atom
 /// implementations, persistence keys, and tests. Extend-only.</summary>
 public static class AtomNames

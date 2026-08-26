@@ -269,6 +269,17 @@ interface IStateLink<A, B> {
 // section) is APPROVED FOR IMPLEMENTATION ahead of the rest of this
 // spec, staged migrations with the standing review discipline.
 
+// 4d-EFFECTS [CONTROLLER ADDITION 2026-08-26, forced by ST-2's review;
+// owner may veto]: async materialization of atom values (fetches, JS
+// interop) is an OWNED EFFECT: IStateEffect<T> {Name, Source,
+// AppliesTo, Materialize} + IEffectRegistry.Claim — one owner per
+// effect name, claim-on-mount / release-on-dispose / latest-claim-
+// wins / RECONCILE-on-claim (the effect runs against the current
+// value even when idempotence fired no Changed). Retires by
+// construction the two defect classes ST-2 hit live: stale-instance
+// effects against shared atoms, and blank-on-remount when the atom
+// was already converged. Compiled in client/Contracts/State.cs.
+
 // The focus component — the owner's named construct.
 interface IFocusComponent : IViewComponent {
     Focus Focus { get; }                              // descriptor + payload
