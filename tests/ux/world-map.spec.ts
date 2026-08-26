@@ -6,12 +6,25 @@ import { fcAssert, RUNS_UI } from './lib/fc';
 import { formatRange } from './lib/years';
 import { mergedVerses, groups, isPassage, initialShownCount, visibleGroups, spanRef } from './lib/hovercard';
 import { independentlyHoverableIds } from './lib/hoverSafety';
+import { LIT_MARKER_TESTID } from './lib/markers';
+import { setZoomExact } from './lib/zoom';
 
+// Batch C3: `/^marker-/` also matches `marker-cluster-{n}` (decision 3's
+// own glyph testid, deliberately namespaced under the same `marker-`
+// prefix as every other marker kind on this plate -- see CONTRACT.md's own
+// `marker-cluster-{n}` note) -- lib/markers.ts's own LIT_MARKER_TESTID
+// excludes it via a negative lookahead so this property keeps meaning
+// exactly what it always did, "one element per PLACE," regardless of
+// whether any of this window's own places happen to be clustered together
+// this pass. Every place's own `marker-{placeId}` element stays ATTACHED
+// (never removed) even while hidden inside a cluster (map.js's own
+// applyMarkerClusters comment) -- toBeAttached below is unaffected either
+// way.
 test('WORLD-1: rendered markers equal the API scene', async ({ page }) => {
   await fcAssert(fc.asyncProperty(arbWindow, async w => {
     await page.goto(`/world?from=${w.from}&to=${w.to}`);
     const scene = await api.sceneTime(w.from, w.to);
-    await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
+    await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
     for (const p of scene.places) {
       await expect(page.getByTestId(`marker-${p.id}`)).toBeAttached();
     }
@@ -32,29 +45,39 @@ test('WORLD-1: rendered markers equal the API scene', async ({ page }) => {
 // grouping existed at all) and always rendered verse-group-*/place-card-
 // expand, the opposite of what's asserted below.
 // Batch C2 (requirement 0b/0c): the ember marker's own >=14px hit target
-// (map.js's NUDGE_STEP_DEG comment has the full empirical derivation) makes
-// precise sub-14px disambiguation impossible BY DESIGN -- a deliberate
-// accessibility floor, not a defect -- which the OLD 4x4px marker never
-// needed to clear. nudgeCloseLatLng's own re-tuning fixes the two pairs it
-// safely CAN (the exact Shittim/"plains of Moab" coincidence and Gilgal/
-// Jericho, both separated to 29px+ by that fix alone) -- but NOT every
-// close pair in this scene: map.js's own comment explains why
-// CLOSE_THRESHOLD_KM deliberately stays narrow (raising it far enough to
-// also reach Marah/Elim and Rephidim/Mount Sinai caused a confirmed
-// regression in a DIFFERENT scene, Philippi/Neapolis in the apostolic
-// window -- see lib/hoverSafety.ts's own header comment for the full root
-// cause, Leaflet's own default per-marker z-index-by-screen-Y stacking, not
-// DOM order) rather than growing to cover every close-but-real pair
-// everywhere. This exact window also lights a real six-member geographic
-// cluster (Ai/Gilgal/Jericho/"plains of Moab"/Shittim/Timnath-serah --
-// genuinely different places, 18-58km apart in reality) that its own
-// fitScene zoom compresses to single-digit screen pixels regardless of any
-// nudge tuning (see map.js's own comment for why this is a structural
-// limit, exhausted by a real grid search, not a tuning miss). So this
-// property is about hover -> card-content correctness, not marker layout,
-// and draws only from places independentlyHoverableIds (lib/hoverSafety.ts,
-// shared with world-hover-text.spec.ts's own affected searches) confirms
-// against this run's own live rendered positions.
+// (map.js's NUDGE_TRIGGER_PX/NUDGE_STEP_PX comments have the full
+// empirical derivation) makes precise sub-14px disambiguation impossible
+// BY DESIGN -- a deliberate accessibility floor, not a defect -- which the
+// OLD 4x4px marker never needed to clear. This exact window lights a real
+// six-member geographic cluster (Ai/Gilgal/Jericho/"plains of Moab"/
+// Shittim/Timnath-serah -- genuinely different places, 18-58km apart in
+// reality) that its own fitScene zoom compresses to single-digit screen
+// pixels -- STILL a real structural fact about this scene's own geometry
+// at that zoom (a nudge, being bounded to ~20px, genuinely cannot spread
+// six markers piled onto a handful of pixels into six independently
+// hoverable dots) -- but Batch C3 (dense-marker disambiguation +
+// clustering) retired the CONSEQUENCE this comment used to describe:
+// hover no longer silently guesses at this pileup. At this scene's own
+// far/mid label tier it collapses into ONE `marker-cluster-{n}` glyph
+// (map.js's CLUSTER_D_PX) whose hover opens a `place-chooser` listing
+// every member (world-cluster-chooser.spec.ts's own CLUSTER-1); at NEAR
+// tier the six markers render individually again and any residual
+// close-but-real pair (a Philippi/Neapolis-class case -- see lib/
+// hoverSafety.ts's own header comment for that pair's own root cause,
+// Leaflet's default per-marker z-index-by-screen-Y stacking, not DOM
+// order) resolves DETERMINISTICALLY to whichever candidate's TRUE
+// position the pointer is nearest (map.js's resolveHoverTarget), never by
+// z-order luck -- world-cluster-chooser.spec.ts's own ARBITRATION-1/
+// CHOOSER-1 cover both outcomes directly. This property below is
+// unaffected by any of that -- it is about hover -> card-CONTENT
+// correctness once a hover has already landed somewhere, not about which
+// marker a hover resolves to -- and continues to draw only from places
+// independentlyHoverableIds (lib/hoverSafety.ts, shared with
+// world-hover-text.spec.ts's own affected searches) confirms against this
+// run's own live rendered positions; C3 extended that filter (a
+// correctness fix, not a loosening) to also check quiet-dot/cluster-glyph
+// proximity, not just other lit markers -- see CONTRACT.md's own amended
+// "Marker hover-target resolution" note.
 
 test('WORLD-2: hover card matches scene data', async ({ page }) => {
   const w = { from: -1446, to: -1406 };                    // exodus window: rich scene
@@ -143,6 +166,23 @@ test('WORLD-3: three exactly-coincident places each land on a distinct marker sl
     }));
 
   await page.goto(`/world?from=${w.from}&to=${w.to}`);
+  await page.waitForSelector(`[data-testid="marker-${rigged[0].id}"]`, { state: 'attached' });
+
+  // Batch C3: three EXACTLY coincident points (0px true separation, by
+  // construction) sit inside decision 3's own CLUSTER_D_PX at ANY far/mid
+  // tier zoom -- their true distance can never grow no matter how far in
+  // this zooms, only the TIER GATE decides whether they cluster (unlike a
+  // merely-close real pair). This property is specifically about golden-
+  // angle nudge SLOT distinctness, which only applies once the trio
+  // renders individually -- ZOOM_TIER_NEAR (map.js) is 9, so a direct jump
+  // there (lib/zoom.ts's own setZoomExact, precise -- a real scroll-wheel's
+  // own whole-level steps are unnecessary here, this test doesn't care
+  // which zoom, only that it's unambiguously NEAR tier) lands past decision
+  // 3's own "NEAR tier never clusters" gate, where nudging alone (unchanged
+  // pre-C3 behavior) is exactly what this property has always exercised.
+  await setZoomExact(page, 10);
+  await expect(page.locator('[data-testid^="marker-cluster-"]')).toHaveCount(0);
+
   const positions: string[] = [];
   for (const p of rigged) {
     const marker = page.getByTestId(`marker-${p.id}`);
@@ -200,10 +240,33 @@ test('WORLD-10a: place labels show at every zoom, collision damping only (no bri
   // with no tier gate left to do that anymore, only collision (which it
   // clears) decides.
   await page.goto('/world?from=-4004&to=100');
-  await expect(page.getByTestId('marker-egypt').locator('.atlas-label'),
-    'brightness-5 place ("Egypt") visible -- always was, tier or not').toBeVisible();
-  await expect(page.getByTestId('marker-susa').locator('.atlas-label'),
-    'brightness-1 place ("Susa"), isolated from any collision -- NO tier gate left to hide it now').toBeVisible();
+  // Batch C3: at this FAR-tier full-span density, "egypt" can now land
+  // inside a `marker-cluster-{n}` glyph instead of rendering its own dot +
+  // label (decision 3, an entirely separate, ORTHOGONAL layer from label
+  // collision -- a clustered place never individually competes for a
+  // label cell at all, superseded by the glyph). This property is
+  // specifically about collision-damping priority, not clustering, so it
+  // only asserts the label directly when egypt ISN'T clustered this pass;
+  // when it is, the glyph itself is the correct "still shown" answer.
+  const egyptClustered = !(await page.getByTestId('marker-egypt').isVisible());
+  if (egyptClustered) {
+    await expect(page.locator('[data-testid^="marker-cluster-"]'), 'egypt is clustered this pass -- its own glyph must still be on the plate').not.toHaveCount(0);
+  } else {
+    await expect(page.getByTestId('marker-egypt').locator('.atlas-label'),
+      'brightness-5 place ("Egypt") visible -- always was, tier or not').toBeVisible();
+  }
+  // Batch C3: same clustering-is-orthogonal reasoning as egypt above --
+  // "isolated from any COLLISION" (this test's own original claim) no
+  // longer implies "never absorbed into a cluster GLYPH," a separate
+  // mechanism decision 3 adds; confirmed live, Susa can cluster with
+  // another Persia/Elam-area place at this same far-tier whole-span view.
+  const susaClustered = !(await page.getByTestId('marker-susa').isVisible());
+  if (susaClustered) {
+    await expect(page.locator('[data-testid^="marker-cluster-"]'), 'susa is clustered this pass -- its own glyph must still be on the plate').not.toHaveCount(0);
+  } else {
+    await expect(page.getByTestId('marker-susa').locator('.atlas-label'),
+      'brightness-1 place ("Susa"), isolated from any collision -- NO tier gate left to hide it now').toBeVisible();
+  }
 
   // Gospels (-5..29, this batch's own new bare-/world default -- CONTRACT):
   // "Egypt" is a real place in BOTH scenes at different brightness per

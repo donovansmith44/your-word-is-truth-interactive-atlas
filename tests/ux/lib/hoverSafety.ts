@@ -63,6 +63,38 @@ async function markerCenters(page: Page, ids: string[]): Promise<Map<string, { x
   return centers;
 }
 
+// Batch C3 (dense-marker disambiguation + clustering): every currently
+// rendered `quiet-marker-{id}`/`marker-cluster-{n}` center on the page,
+// REGARDLESS of the caller's own candidate pool -- map.js's own
+// resolveHoverTarget now arbitrates against EVERY on-screen candidate
+// (lit, quiet, and cluster glyphs alike, not just other lit markers), so a
+// lit candidate with no other LIT neighbor nearby can still land in a
+// place-chooser (or, if the pointer's nearest candidate turns out to be a
+// cluster glyph, ALWAYS lands in one -- decision 3) whenever a QUIET dot
+// or a cluster happens to render within the same radius -- a real, live
+// case, not a hypothetical: in the exodus window (-1446..-1406), "canaan"
+// has no other LIT marker within SAFE_NEIGHBOR_PX yet renders a
+// place-chooser (Cana/Galilee/Nain/Nazareth, all real QUIET dots at this
+// scene's own far-zoomed fitScene view) when force-hovered, confirmed live
+// via a throwaway diagnostic script, not assumed. independentlyHoverableIds
+// below now checks a candidate against these too, on top of its own
+// existing lit-lit check -- narrows the safe pool a little further in a
+// dense/quiet-heavy scene, never widens it past what was already correct.
+async function otherCandidateCenters(page: Page): Promise<{ x: number; y: number }[]> {
+  return page.evaluate(() => {
+    const els = document.querySelectorAll('[data-testid^="quiet-marker-"], [data-testid^="marker-cluster-"]');
+    const out: { x: number; y: number }[] = [];
+    for (const el of els) {
+      const r = (el as HTMLElement).getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) {
+        continue; // hidden (e.g. a display:none ancestor) -- not a real on-screen candidate
+      }
+      out.push({ x: r.x + r.width / 2, y: r.y + r.height / 2 });
+    }
+    return out;
+  });
+}
+
 // Batch W1 self-review finding: a candidate's MARKER (dot) having no close
 // neighbor (the check below) does NOT mean its own LABEL is safe to force a
 // hover/click onto -- labels go through a SEPARATE, coarser collision-
@@ -99,20 +131,24 @@ async function labelIsVisible(page: Page, id: string): Promise<boolean> {
 // measuring the markers it actually cares about.
 export async function independentlyHoverableIds(page: Page, ids: string[]): Promise<Set<string>> {
   const centers = await markerCenters(page, ids);
+  const others = await otherCandidateCenters(page);
   const safe = new Set<string>();
   for (const id of ids) {
     const a = centers.get(id);
     if (!a) {
       continue;
     }
-    const clear = ids.every(otherId => {
+    const clearOfPool = ids.every(otherId => {
       if (otherId === id) {
         return true;
       }
       const b = centers.get(otherId);
       return !b || Math.hypot(a.x - b.x, a.y - b.y) >= SAFE_NEIGHBOR_PX;
     });
-    if (clear && (await labelIsVisible(page, id))) {
+    // Batch C3: also clear of every quiet dot/cluster glyph currently on
+    // screen -- see otherCandidateCenters' own comment.
+    const clearOfOthers = others.every(b => Math.hypot(a.x - b.x, a.y - b.y) >= SAFE_NEIGHBOR_PX);
+    if (clearOfPool && clearOfOthers && (await labelIsVisible(page, id))) {
       safe.add(id);
     }
   }

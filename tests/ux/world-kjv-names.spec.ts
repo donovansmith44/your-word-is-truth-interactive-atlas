@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { api } from './lib/api';
+import { setZoomExact } from './lib/zoom';
 
 // Batch E3 (batch-e3-brief.md, "KJV display-name alias layer"): owner bug
 // report 2026-08-20, verbatim: "there are two locations, cush and gihon,
@@ -44,11 +45,35 @@ test('requirement 4: GEN.2 lights Eden\'s rivers/lands with their KJV names, not
 });
 
 test('requirement 5 (name consistency): marker label, hover card title, and popover title all agree on the aliased name', async ({ page }) => {
+  const scene = await api.sceneScripture('GEN.2');
+  const cush = scene.places.find((p: any) => p.id === 'cush-2');
+  expect(cush, 'cush-2 must be lit in GEN.2').toBeTruthy();
+
   await page.goto('/world?ref=GEN.2');
+  await page.waitForSelector('[data-testid="marker-cush-2"]', { state: 'attached' });
 
   await expect(page.getByTestId('marker-cush-2').locator('.atlas-label')).toHaveText('Ethiopia');
 
+  // Batch C3: Eden's own rivers cluster tightly at this scene's own
+  // fitScene zoom (this file's own header comment already flagged the
+  // density, pre-C3) -- can now collapse into a `marker-cluster-{n}` glyph
+  // at far/mid tier. lib/zoom.ts's own setZoomExact, recentered on cush-2's
+  // own TRUE lat/lon, walks it into NEAR tier first (decision 3: clustering
+  // stops there) WITHOUT the drift-off-screen risk a bare zoom-toward-
+  // cursor gesture has for a scene this tiny and off-center (confirmed
+  // live: a plain zoomInOnMarker pushed cush-2 thousands of px past the
+  // viewport edge by zoom 10 -- see debugSetZoom's own header comment).
+  await setZoomExact(page, 10, { lat: cush.lat, lon: cush.lon });
   await page.getByTestId('marker-cush-2').hover({ force: true });
+  // Batch C3 decision 2: cush-2 is genuinely coincident with "havilah-1"
+  // (GEN.2.11's own "land of Havilah", curated at/near the identical
+  // point) -- confirmed live -- so the hover can legitimately open the
+  // chooser instead of a direct card; pick cush-2's own row, exactly what
+  // clicking its marker directly would (PIN-1).
+  const chooserRow = page.getByTestId('place-chooser-cush-2');
+  if (await chooserRow.count() > 0) {
+    await chooserRow.click();
+  }
   const card = page.getByTestId('place-card');
   await expect(card).toBeVisible();
   await expect(page.getByTestId('place-card-title')).toHaveText('Ethiopia');
@@ -60,8 +85,22 @@ test('requirement 5 (name consistency): marker label, hover card title, and popo
 });
 
 test('requirement 2 (quiet provenance): the place popover shows the canonical name ONCE, quietly', async ({ page }) => {
+  const scene = await api.sceneScripture('GEN.2');
+  const cush = scene.places.find((p: any) => p.id === 'cush-2');
+  expect(cush, 'cush-2 must be lit in GEN.2').toBeTruthy();
+
   await page.goto('/world?ref=GEN.2');
+  await page.waitForSelector('[data-testid="marker-cush-2"]', { state: 'attached' });
+  // Batch C3: see requirement 5's own comment above -- Eden's rivers can
+  // cluster at this scene's own default zoom, and cush-2 is genuinely
+  // coincident with "havilah-1" (confirmed live), so the hover can
+  // legitimately open the chooser instead of a direct card.
+  await setZoomExact(page, 10, { lat: cush.lat, lon: cush.lon });
   await page.getByTestId('marker-cush-2').hover({ force: true });
+  const chooserRow = page.getByTestId('place-chooser-cush-2');
+  if (await chooserRow.count() > 0) {
+    await chooserRow.click();
+  }
   await page.getByTestId('place-card-title').click();
 
   const popover = page.getByTestId('popover');

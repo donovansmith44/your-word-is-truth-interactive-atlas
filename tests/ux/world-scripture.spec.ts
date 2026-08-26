@@ -4,6 +4,7 @@ import { api } from './lib/api';
 import { loadToc, arbChapterRef } from './lib/canon';
 import { formatRange } from './lib/years';
 import { fcAssert, RUNS_UI } from './lib/fc';
+import { LIT_MARKER_TESTID } from './lib/markers';
 
 test('WORLD-6: dropdown override and return-to-time', async ({ page }) => {
   const toc = await loadToc();
@@ -17,7 +18,7 @@ test('WORLD-6: dropdown override and return-to-time', async ({ page }) => {
     await expect(page.getByTestId('mode-chip')).toContainText(sref);
     await expect(page.getByTestId('slider')).toHaveAttribute('aria-disabled', 'true');
     const scene = await api.sceneScripture(sref);
-    await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
+    await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
     await page.getByTestId('mode-chip-return').click();
     await page.waitForURL(u => u.searchParams.get('from') === '-1446'
                             && u.searchParams.get('to') === '-1406');
@@ -28,7 +29,7 @@ test('WORLD-6: dropdown override and return-to-time', async ({ page }) => {
 test('NAV-1 (world/ref): scripture deep link survives reload', async ({ page }) => {
   await page.goto('/world?ref=EXO.14');
   const scene = await api.sceneScripture('EXO.14');
-  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
   await page.reload();
-  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
 });

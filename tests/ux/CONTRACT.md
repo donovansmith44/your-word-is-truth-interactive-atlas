@@ -56,7 +56,11 @@ World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief
   lit this window, see QUIET-1 below -- distinct from and never overlapping
   `marker-{placeId}`'s own ids for the same scene, per QUIET-1's disjointness; a small,
   unlit, non-glowing dot, hoverable/clickable exactly like a lit marker; absent entirely
-  in scripture mode), `place-card` (attr `data-pinned` = "true"|"false" --
+  in scripture mode), `marker-cluster-{n}` (batch-c3-brief.md decision 3, CLUSTER-1 below;
+  `n` = member count, literally -- present only at FAR/MID label tier, only for lit
+  markers whose TRUE positions collapse within `CLUSTER_D_PX`; replaces those markers'
+  own `marker-{placeId}` elements on the plate for as long as they're clustered, though
+  those elements stay attached to the DOM, just hidden -- never removed), `place-card` (attr `data-pinned` = "true"|"false" --
   batch-g1-brief.md requirement 3, PIN-1 below; attr `data-flip` = "true"|"false" --
   batch-hotfix-brief.md requirement 1, CARD-FLIP-1 below), `place-card-title`,
   `place-card-close` (batch-g1-brief.md; button; present ONLY while `data-pinned="true"`;
@@ -93,6 +97,14 @@ World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief
   — drag the timeline."; mutually exclusive with every `hover-verse-{VREF}`/
   `hover-passage-{SPAN}`/`place-card-more`/`place-card-collapse` on the same card, which
   never appear together with it),
+  `place-chooser` (batch-c3-brief.md decision 2, CHOOSER-1 below; the hover flyout that
+  replaces a guess whenever 2+ candidates are genuinely coincident at the current zoom,
+  or whenever a `marker-cluster-{n}` glyph is hovered; wraps one `place-chooser-{placeId}`
+  row per tied candidate, ascending-sorted by place id; mutually exclusive with
+  `place-card` -- at most one of the two is ever shown, same hover-grace/pointer-enter/
+  leave discipline as `place-card` itself), `place-chooser-{placeId}` (button; text
+  contains that candidate's own display name; click pins the SAME `place-card` clicking
+  that place's own marker directly would, per PIN-1, closing the chooser),
   `arrows-svg`, `arrow-{narrativeId}-{order}` (SVG path; attr `stroke` = narrative color;
   attr `data-faded` = "true"|"false"; `marker-end` set),
   `legend`, `legend-item-{narrativeId}` (button; `aria-pressed` = isolated),
@@ -3779,23 +3791,103 @@ Notes:
   genuine, deliberate quiet-marker hover clears 150ms comfortably and opens the SAME
   place-card any other hover does (see "Quiet-place hover card" above), just ~150ms
   later than a lit marker's own immediate open.
-- Marker hover-target resolution is best-effort, not a per-marker guarantee,
-  once two or more markers' own hit areas overlap on screen -- a disclosed
-  trade-off of the >=14px hit target every marker carries (batch-c2-brief.md
-  requirement 0c), which two or more genuinely different, merely-close-together
-  places can exceed at typical/dense zoom (the exodus scene alone measures a
-  majority of its own places mutually within this radius -- 75%, 12 of 16;
-  other comparably rich scenes measure lower, e.g. 29% for the apostolic
-  window and 33% for the -2100..-2085 window, so "a majority" is a property
-  of the exodus scene specifically, not a general claim about every rich
-  scene -- batch-c2-rereview.md). Which marker a
-  pointer at an overlapping pixel resolves to is decided by the browser's own
-  hit-testing (Leaflet's default per-marker z-index, keyed off screen position,
-  not DOM or testid order) -- not a rule this app controls or a claim any test
-  should assume. A marker is only reliably, individually hoverable when no other
-  marker's own hit area overlaps it on the screen as currently rendered.
-  Resolving this for real marker density (not just test-side mitigation) is
-  deferred to a future marker-clustering/decluttering batch.
+- ARBITRATION-1 (batch-c3-brief.md decision 2, AMENDS the note this replaces
+  -- see below -- rather than weakening it: the underlying trade-off it
+  measured is still real and still cited here, only the CONSEQUENCE changed).
+  batch-c2-brief.md requirement 0c's own >=14px hit target means two or more
+  markers' hit areas legitimately overlap on screen at typical/dense zoom
+  (the exodus scene alone measures a majority of its own places mutually
+  within this radius -- 75%, 12 of 16; other comparably rich scenes measure
+  lower, e.g. 29% for the apostolic window and 33% for the -2100..-2085
+  window, so "a majority" is a property of the exodus scene specifically,
+  not a general claim about every rich scene -- batch-c2-rereview.md) --
+  that measurement stands unchanged. What no longer holds is the OLD
+  consequence, "which marker wins is decided by the browser's own
+  hit-testing... not a rule this app controls": Batch C3's own Phase-0
+  diagnosis root-caused that exact mechanism live (Leaflet's default
+  per-marker z-index, assigned purely from each marker's own screen Y
+  position, with no relationship to which marker's TRUE center a pointer
+  is actually nearest -- confirmed both for a real, non-coincident pair,
+  Philippi/Neapolis, 13.92km apart yet rendering single-digit px apart at
+  the apostolic window's own fitScene zoom [lib/hoverSafety.ts's own header
+  comment], and for a genuinely coincident triple, Beersheba-1/Beersheba-2/
+  Negeb, three independently curated records at one identical lat/lon
+  [batch-c3-report.md's own repro]) -- and retired it: a pointer event now
+  ALWAYS resolves to the candidate (place, quiet place, or `marker-cluster-
+  {n}` glyph -- CLUSTER-1 below) whose own TRUE (unnudged) position is
+  nearest the pointer among everything within map.js's `HIT_RADIUS_PX`,
+  deterministic and independent of which DOM element the browser happened
+  to route the raw event to (map.js's `resolveHoverTarget`, consumed by
+  every marker-kind's own mouseover/click handler uniformly). "A marker is
+  only reliably, individually hoverable when no other marker's own hit area
+  overlaps it" is RETIRED, not merely softened -- overlap no longer means
+  unreliable, only that arbitration is now doing real work instead of
+  falling through to browser luck.
+- CHOOSER-1 (batch-c3-brief.md decision 2): the one case ARBITRATION-1's
+  single-winner rule deliberately does NOT resolve silently -- when 2+
+  candidates' own TRUE positions sit within map.js's `AMBIGUITY_RADIUS_PX`
+  of the winner's (genuinely coincident at the current zoom, not merely
+  close -- e.g. the Beersheba/Negeb triple above, or Shittim/the "plains of
+  Moab" camp, curated 0km apart), the hover opens `place-chooser` instead
+  of guessing: one row per tied candidate (`place-chooser-{placeId}`,
+  ascending-sorted by place id -- the same determinism law
+  `applyMarkerNudges`' own sorted-by-id order already establishes), each
+  showing that place's own display name plus a small lit/quiet dot hint
+  (`place-chooser-dot-lit`/`-quiet` -- an era hint would need a per-
+  candidate fetch, not cheap, so it's the one hint decision 2's "if cheap"
+  qualifier actually admits). Clicking a row does exactly what clicking
+  that place's own marker does today (PIN-1) -- pins the SAME `place-card`
+  a direct hover/click would, closing the chooser. The chooser is
+  hover-chrome: it obeys the EXACT SAME hover-grace/pointer-enter/leave
+  discipline `place-card` already does (World.razor's `_pointerOverCard`/
+  `_closeCts`/`ScheduleCardClose`, literally shared, not a parallel
+  timing implementation -- PlaceChooser.razor's own header comment), and
+  is mutually exclusive with `place-card` by construction (each hover path
+  clears the other's state). A forced-hover test that specifically wants a
+  single, unambiguous card should keep using `independentlyHoverableIds`
+  (lib/hoverSafety.ts) -- still the correct tool for "pick any of these N
+  places and trust the resulting card," just no longer the only way to
+  test a close pair AT ALL, now that world-cluster-chooser.spec.ts covers
+  the previously-untestable named stacks directly. Batch C3 DOES extend
+  this helper (a correctness fix, not a loosening -- it only ever shrinks
+  the "safe" pool further, never grows it): resolveHoverTarget arbitrates
+  against every ON-SCREEN candidate now, lit, quiet, AND cluster glyphs
+  alike, so a lit candidate with no other LIT neighbor nearby (the OLD,
+  only check) can still land in a chooser once a QUIET dot or a cluster
+  glyph happens to render within `SAFE_NEIGHBOR_PX` -- confirmed live: in
+  the exodus window, "canaan" has no lit neighbor that close yet opens a
+  chooser (Cana/Galilee/Nain/Nazareth, real quiet dots at that scene's own
+  far-zoomed fitScene view) when force-hovered. `independentlyHoverableIds`
+  now also checks a candidate against every currently-rendered
+  `quiet-marker-{id}`/`marker-cluster-{n}` on the page, not just the
+  caller's own lit-only pool.
+- CLUSTER-1 (batch-c3-brief.md decision 3, cluster collapse): at FAR/MID
+  label tier only (`labelTier`; NEAR tier never clusters -- nudges alone
+  are enough there, unchanged pre-C3 behavior), lit markers (quiet dots are
+  OUT of scope -- see map.js's `applyMarkerClusters` own comment: they stay
+  E2's low-priority "furniture," never named in any of the brief's own
+  dense-stack examples) whose TRUE container points sit within
+  `CLUSTER_D_PX` (18px, the tune-by-eye band's own low end -- picked by
+  screenshot review against the Jordan-bend/Bethsaida-pair/exodus-pileup
+  stacks, batch-c3-report.md) collapse into ONE `marker-cluster-{n}` glyph,
+  `n` literally the member count (two distinct same-count clusters in one
+  scene therefore share a testid -- no curated scene today produces that
+  collision). Rendered in the plate's own parchment/bronze/ember language
+  (app.css's `.atlas-cluster`), never a green leaflet.markercluster blob.
+  Hover opens the SAME `place-chooser` CHOOSER-1 describes, listing every
+  member; click zooms the map one step centered on the cluster (bounded at
+  the map's own max zoom, where it degrades to the same chooser-open a
+  hover already gives, rather than no-op'ing). Membership is a deterministic
+  union-find over TRUE positions at the current zoom (sorted-by-id
+  processing order, lower id always wins a union) -- a stable scene never
+  jitters cluster membership on an unrelated refetch/zoomend, the same
+  determinism law nudging's own history already established
+  (world-cluster-chooser.spec.ts's own CLUSTER-2). Resolving real marker
+  density for the exodus window's own six-member Ai/Gilgal/Jericho/"plains
+  of Moab"/Shittim/Timnath-serah pileup (world-map.spec.ts's own WORLD-2
+  comment, "a structural limit... not a tuning miss") -- the "deferred to a
+  future marker-clustering/decluttering batch" ARBITRATION-1 above used to
+  cite -- is this note; that deferral is now closed.
 - LABEL-1 (batch-r-brief.md requirement 2, regression + enhancement, user
   2026-08-19: "i can no longer click on a location's name, where i used to
   be able to and i would get the est/dest dates. we need that functionality

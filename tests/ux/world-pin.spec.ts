@@ -50,9 +50,31 @@ test('PIN-1: clicking a marker pins its card open, ignores hover elsewhere, and 
   // ambiguity, land on a marker other than `other` -- harmless either way:
   // the assertion holds regardless of WHICH marker's hover actually fired,
   // since hover-while-pinned is a no-op for every marker uniformly.)
-  const other = scene.places.find((p: any) => p.id !== start);
-  if (other) {
-    await page.getByTestId(`marker-${other.id}`).hover({ force: true });
+  // Batch C3: picks any CURRENTLY VISIBLE lit marker that isn't `start` --
+  // decision 3's own far/mid-tier clustering can now hide the DOM-first
+  // "other" place entirely (still attached, never removed, but a
+  // display:none ancestor per applyMarkerClusters' own comment means
+  // Playwright's own `.hover()` -- even `force:true`, which only skips the
+  // interactability pre-checks, never the underlying visibility
+  // requirement -- can't act on it at all). This test's own comment
+  // already tolerates landing on WHICHEVER other marker actually receives
+  // the hover ("harmless either way"), so any visible one satisfies it.
+  // Native `document.querySelectorAll` (unlike Playwright's own locator
+  // engine) has no `:visible` pseudo-class, so visibility is checked here
+  // via `offsetParent !== null` instead -- null exactly when an element (or
+  // an ancestor) is display:none, the same check this file's own
+  // c3-shot-style diagnostics already established live.
+  const otherId: string | null = await page.evaluate((startId) => {
+    for (const el of document.querySelectorAll('[data-testid^="marker-"]:not([data-testid^="marker-cluster-"])')) {
+      const testid = (el as HTMLElement).dataset.testid!;
+      if (testid !== `marker-${startId}` && (el as HTMLElement).offsetParent !== null) {
+        return testid;
+      }
+    }
+    return null;
+  }, start);
+  if (otherId) {
+    await page.getByTestId(otherId).hover({ force: true });
     await expect(page.getByTestId('place-card-title')).toHaveText(startPlace.display_name);
   }
 

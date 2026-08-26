@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { api } from './lib/api';
 import { formatClaim } from './lib/years';
+import { zoomInOnMarker } from './lib/zoom';
 
 // Batch E (batch-e-brief.md, "time-accurate places"): NAME-1 (period-true
 // display names swap at their curated boundary, visible on the map/card),
@@ -47,6 +48,14 @@ test('NAME-1: Jerusalem/Jebus swaps on the marker label and card title when the 
   // After the conquest -- the exile/destruction window (also exercises
   // established/destroyed being present at the very same hover).
   await page.goto('/world?from=-590&to=-580');
+  await page.waitForSelector('[data-testid="marker-jerusalem"]', { state: 'attached' });
+  // Batch C3: this window's own lit set (siege/destruction-era places,
+  // scattered well beyond just Jerusalem's own immediate vicinity) fits to
+  // a wide enough zoom that Jerusalem can land in a far/mid-tier cluster
+  // glyph -- lib/zoom.ts's own zoomInOnMarker (same technique this file's
+  // pre-C3 own header comment already flagged this exact risk for) walks
+  // it into NEAR tier first, where decision 3 guarantees clustering stops.
+  await zoomInOnMarker(page, 'marker-jerusalem', 3);
   await page.getByTestId('marker-jerusalem').hover({ force: true });
   await expect(page.getByTestId('place-card')).toBeVisible();
   await expect(page.getByTestId('marker-jerusalem').getByText('Jerusalem', { exact: true })).toBeVisible();
@@ -108,6 +117,10 @@ test('BLURB-1: exactly one blurb shows, era inside one range, broad summary once
 
 test('DATE-1: the established date affordance opens a popover that lists curated supporting verses first, then "Show this time on the map"', async ({ page }) => {
   await page.goto('/world?from=-590&to=-580');
+  await page.waitForSelector('[data-testid="marker-jerusalem"]', { state: 'attached' });
+  // Batch C3: see NAME-1's own comment above -- this window's own wide
+  // fitScene zoom can cluster Jerusalem at far/mid tier.
+  await zoomInOnMarker(page, 'marker-jerusalem', 3);
   await page.getByTestId('marker-jerusalem').hover({ force: true });
   const card = page.getByTestId('place-card');
   await expect(card).toBeVisible();
@@ -167,6 +180,10 @@ test('DATE-1: the established date affordance opens a popover that lists curated
 
 test('DATE-1: "Show this time on the map" navigates /world to the claim\'s own window', async ({ page }) => {
   await page.goto('/world?from=-590&to=-580');
+  await page.waitForSelector('[data-testid="marker-jerusalem"]', { state: 'attached' });
+  // Batch C3: see NAME-1's own comment above -- this window's own wide
+  // fitScene zoom can cluster Jerusalem at far/mid tier.
+  await zoomInOnMarker(page, 'marker-jerusalem', 3);
   await page.getByTestId('marker-jerusalem').hover({ force: true });
   await page.getByTestId('place-card-date-established').click();
   await expect(page.getByTestId('popover')).toBeVisible();

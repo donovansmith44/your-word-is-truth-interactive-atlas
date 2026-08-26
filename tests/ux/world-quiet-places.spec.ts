@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { api } from './lib/api';
+import { LIT_MARKER_TESTID } from './lib/markers';
 
 // Batch E2 (the ever-present graph, batch-e2-brief.md -- user direction
 // 2026-08-19: "change it so that all of the cities in our graph are
@@ -33,7 +34,7 @@ test('quiet dots: primeval era renders both embers and quiet dots, counts matchi
   // marker/quiet-marker counts equal the API scene exactly. The two testid
   // prefixes never collide (`quiet-marker-` does not match `/^marker-/`),
   // so this also stands as a live QUIET-1 disjointness check at the DOM level.
-  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
   await expect(page.getByTestId(/^quiet-marker-/)).toHaveCount(scene.quiet_places.length);
   for (const p of scene.places) {
     await expect(page.getByTestId(`marker-${p.id}`)).toBeAttached();
@@ -154,7 +155,7 @@ test('quiet dots: scripture mode never shows one', async ({ page }) => {
   expect(scene.quiet_places.length).toBe(0);
   await expect(page.getByTestId(/^quiet-marker-/)).toHaveCount(0);
   // The scene's own lit markers are unaffected (scripture scenes unchanged).
-  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
 });
 
 // Isolate mode (batch-e2-brief.md Requirement 2: "quiet dots stay visible
@@ -230,7 +231,7 @@ test('density smoke: primeval era (204 quiet dots, always-on labels) prunes via 
   // and (PLACE_PRIORITY_BASE) always win any contested cell against a quiet
   // label, so both ararat's and babel's own labels are always among the
   // visible survivors regardless of how the 204 quiet ones collide.
-  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
   for (const p of scene.places) {
     // `marker-{id}` IS the `.atlas-marker` div itself (map.js's makeIcon
     // sets the testid directly on it, not a wrapper) -- checking its own

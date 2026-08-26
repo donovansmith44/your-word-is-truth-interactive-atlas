@@ -1,6 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import { api } from './lib/api';
 import { loadToc } from './lib/canon';
+import { LIT_MARKER_TESTID, VISIBLE_LIT_MARKER_SELECTOR } from './lib/markers';
 
 // VIEWSTATE-1's own camera round-trip needs the map's EXACT (lat, lng,
 // zoom), not a rendered pixel position -- a rendered marker's own
@@ -54,7 +55,7 @@ test('SPLIT-1: "Open the map beside the text" lands in split, atlas following th
   await expect(chip).toHaveAttribute('aria-pressed', 'true');
   await expect(chip).toHaveText('Following GEN.12');
   const scene = await api.sceneScripture('GEN.12');
-  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
 });
 
 test('SPLIT-1: closing the atlas pane returns to a full reader on the same URL, undisturbed', async ({ page }) => {
@@ -118,7 +119,7 @@ test('SPLIT-1: closing the reader pane returns to a full /world, preserving the 
   // silently falls back to.
   await expect(page.getByTestId('mode-chip')).toContainText('GEN.12');
   const scene = await api.sceneScripture('GEN.12');
-  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
 });
 
 // Important-2 (same review): the reverse direction shares the identical
@@ -181,14 +182,14 @@ test('FOLLOW-1: reader navigation (next chapter) re-scenes the atlas pane automa
   await expect(page.getByTestId(/^quiet-marker-/)).toHaveCount(0);
 
   const scene12 = await api.sceneScripture('GEN.12');
-  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene12.places.length);
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene12.places.length);
 
   await page.getByTestId('reader-next').click();
   await page.waitForURL(/\/read\/GEN\/13/);
 
   await expect(page.getByTestId('follow-chip')).toHaveText('Following GEN.13');
   const scene13 = await api.sceneScripture('GEN.13');
-  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene13.places.length);
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene13.places.length);
   await expect(page.getByTestId('slider')).toHaveAttribute('aria-disabled', 'true');
   await expect(page.getByTestId(/^quiet-marker-/)).toHaveCount(0);
   // Split itself survives the navigation -- Reader.razor is reused, not
@@ -225,7 +226,7 @@ test('FOLLOW-1: toggling follow back on re-syncs to the current chapter\'s scene
   await expect(chip).toHaveText('Following GEN.12');
   await expect(page.getByTestId('slider')).toHaveAttribute('aria-disabled', 'true');
   const scene = await api.sceneScripture('GEN.12');
-  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
 });
 
 // SPLIT-1's own "no nested-popup rule": a popover chip that would otherwise
@@ -251,7 +252,7 @@ test('no nested-popup rule: a "Show on /world" chip updates the open atlas pane 
   // FOLLOW-1's own precedence -- nothing else in this flow touches it).
   await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
   const scene = await api.sceneScripture('GEN.12');
-  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
 });
 
 // VIEWSTATE-1: the round-trip the brief itself names verbatim. Uses REAL
@@ -283,7 +284,7 @@ test('VIEWSTATE-1: reader scroll and atlas window/camera round-trip across page-
   // TIMELINE note); this line must keep matching whatever World.razor's
   // own DefaultFrom/DefaultTo actually are, not a frozen snapshot of them.
   const scene = await api.sceneTime(-5, 33); // the bare-/world Gospels-era default this lands on
-  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length); // settled: render matches the API
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length); // settled: render matches the API
   // Leg 1 left the document scrolled -- the mouse actions below use plain
   // VIEWPORT coordinates (640,360) that assume that's landing on the map,
   // which only holds once the document's own scroll position has actually
@@ -330,7 +331,7 @@ test('VIEWSTATE-1: reader scroll and atlas window/camera round-trip across page-
   // instance exists is already the final value.
   await page.getByTestId('nav-world').click();
   await page.waitForURL(u => u.pathname === '/world' && !u.search);
-  await expect(page.getByTestId(/^marker-/)).toHaveCount(scene.places.length);
+  await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
   await expect.poll(() => readCamera(page)).toEqual(afterDrag);
 });
 
@@ -423,9 +424,15 @@ test('PANE-ANCHOR-1: a place popover opened from the atlas pane stays fully with
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto('/read/GEN/12?split=1');
   await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
-  await expect(page.getByTestId(/^marker-/).first()).toBeVisible({ timeout: 10000 });
+  // Batch C3: VISIBLE_LIT_MARKER_SELECTOR, not a bare LIT_MARKER_TESTID
+  // `.first()` -- the DOM-first `marker-{placeId}` could itself be hidden
+  // inside a cluster this pass (still attached, never removed), which
+  // would never satisfy `.toBeVisible()`; this selector's own `:visible`
+  // filters that out (see lib/markers.ts's own comment).
+  const anyVisibleMarker = page.locator(VISIBLE_LIT_MARKER_SELECTOR).first();
+  await expect(anyVisibleMarker).toBeVisible({ timeout: 10000 });
 
-  await page.getByTestId(/^marker-/).first().click({ force: true });
+  await anyVisibleMarker.click({ force: true });
   await page.getByTestId('place-card-title').click();
   await expect(page.getByTestId('popover')).toBeVisible();
 

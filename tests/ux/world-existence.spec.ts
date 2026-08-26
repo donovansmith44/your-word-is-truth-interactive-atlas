@@ -1,5 +1,6 @@
 import { test, expect, Page, Locator } from '@playwright/test';
 import { api } from './lib/api';
+import { zoomInOnMarker as zoomInOnMarkerTestId } from './lib/zoom';
 
 // Batch H requirement 4 (existence gating, deferred from E2 -- CONTRACT.md's
 // own EXISTENCE-1): a place's NAME -- the label span inside its marker,
@@ -99,9 +100,22 @@ test('existence gating: a place with no curated existence bounds always labels',
   expect(jericho.existence_to).toBeUndefined();
 
   await page.goto(`/world?from=${w.from}&to=${w.to}`);
+  await page.waitForSelector('[data-testid="marker-jericho-1"]', { state: 'attached' });
   const marker = page.getByTestId('marker-jericho-1');
+  // Batch C3: jericho-1 is part of this scene's own known dense pileup
+  // (world-map.spec.ts's own WORLD-2 comment) -- at this window's default
+  // FAR/MID-tier fit it can be absorbed into a `marker-cluster-{n}` glyph
+  // (decision 3), hidden but still ATTACHED (applyMarkerClusters' own
+  // comment), so `boundingBox()`-based zoomInOnMarker above can't center on
+  // it while hidden. lib/zoom.ts's own zoomInOnMarker reads the marker's
+  // real position from its Leaflet-set wrapper transform instead, which
+  // works regardless -- used here specifically (this file's own local
+  // helper, above, stays as-is for the other tests, which don't hit this).
+  // Zooming enough steps in also crosses into NEAR tier, where clustering
+  // itself stops (decision 3), independent of the collision-damping
+  // this file's own helper was originally written to rule out.
+  await zoomInOnMarkerTestId(page, 'marker-jericho-1', 6);
   await expect(marker).toBeVisible();
-  await zoomInOnMarker(page, marker);
 
   const label = marker.locator('.atlas-label');
   await expect(label).toBeVisible();
