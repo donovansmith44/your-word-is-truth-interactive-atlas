@@ -13,6 +13,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
 
 use atlas_core::data::AtlasData;
+use atlas_core::sources::SourcesDocument;
 use atlas_graph::GraphService;
 
 use crate::{graph_handlers, handlers};
@@ -39,10 +40,19 @@ use crate::{graph_handlers, handlers};
 /// automatically -- while the new graph handlers extract
 /// `State<Arc<GraphService>>` the same way. Neither state type needs to
 /// know about the other.
+/// Batch S addition: `sources` (the Sources page's own single source of
+/// truth, `data/compiled/sources.json` -- see `atlas_core::sources`'s own
+/// doc comment) is a THIRD, independent piece of state, held the same
+/// `Arc`-and-`FromRef` way `data`/`graph` already are. It is deliberately
+/// its own field, never folded into `AtlasData`: this content has nothing
+/// to do with the Explorable Graph, and batch-s-brief.md's own
+/// finalization block requires this batch's own additions stay outside
+/// the graph pipeline so `graph.bin`/`data/exports/` stay byte-untouched.
 #[derive(Clone)]
 pub struct AppState {
     pub data: Arc<AtlasData>,
     pub graph: Arc<GraphService>,
+    pub sources: Arc<SourcesDocument>,
 }
 
 impl FromRef<AppState> for Arc<AtlasData> {
@@ -54,6 +64,12 @@ impl FromRef<AppState> for Arc<AtlasData> {
 impl FromRef<AppState> for Arc<GraphService> {
     fn from_ref(s: &AppState) -> Self {
         s.graph.clone()
+    }
+}
+
+impl FromRef<AppState> for Arc<SourcesDocument> {
+    fn from_ref(s: &AppState) -> Self {
+        s.sources.clone()
     }
 }
 
@@ -93,8 +109,25 @@ impl FromRef<AppState> for Arc<GraphService> {
 /// test in `tests/api.rs`, which asserts the CORS header on both an `/api`
 /// response and a fallback-served response so this ordering can't silently
 /// regress.
+/// Every pre-existing caller (the real binary via `main.rs`, and every
+/// test in this crate that doesn't itself need `/api/sources`) keeps
+/// calling this exact signature, unchanged -- it delegates to
+/// [`build_with_sources`] with an empty [`SourcesDocument`], the same
+/// "feature absent, everything else identical" shape this crate already
+/// uses for optional state. Only `main.rs`'s own real startup path calls
+/// `build_with_sources` directly, with the real loaded
+/// `data/compiled/sources.json`.
 pub fn build(data: Arc<AtlasData>, graph: Arc<GraphService>, static_dir: Option<PathBuf>) -> Router {
-    let state = AppState { data, graph };
+    build_with_sources(data, graph, Arc::new(SourcesDocument::default()), static_dir)
+}
+
+pub fn build_with_sources(
+    data: Arc<AtlasData>,
+    graph: Arc<GraphService>,
+    sources: Arc<SourcesDocument>,
+    static_dir: Option<PathBuf>,
+) -> Router {
+    let state = AppState { data, graph, sources };
 
     let api = Router::new()
         .route("/health", get(handlers::health))
@@ -114,6 +147,10 @@ pub fn build(data: Arc<AtlasData>, graph: Arc<GraphService>, static_dir: Option<
         .route("/api/polities", get(handlers::polities))
         .route("/api/landmarks", get(handlers::landmarks))
         .route("/api/land-mask", get(handlers::land_mask))
+        // Batch S: the Sources page's own single source of truth --
+        // straight off `data/compiled/sources.json`, never a hardcoded
+        // duplicate list (requirement 3).
+        .route("/api/sources", get(handlers::sources))
         // Batch M-A: the two generic graph endpoints (design doc §5) + the
         // text-window endpoint (design doc §6). Uniform across every
         // node/edge kind the graph carries -- not bespoke per-feature shapes.

@@ -11,6 +11,7 @@ use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
 use atlas_core::data::AtlasData;
+use atlas_core::sources::SourcesDocument;
 use atlas_graph::GraphService;
 
 struct Args {
@@ -183,7 +184,23 @@ async fn main() -> Result<()> {
     );
     let graph = Arc::new(graph);
 
-    let app = atlas_server::app::build(data, graph, args.static_dir);
+    // Batch S: the Sources page's own single source of truth --
+    // `data/compiled/sources.json`, a sibling of every other compiled
+    // file already read above, but deliberately loaded as its OWN
+    // independent piece of state (never folded into `AtlasData`/the
+    // graph -- see `app::AppState`'s own doc comment). A missing or
+    // unparseable file fails loud at startup, the same "never silently
+    // serve stale/absent data" discipline this binary already applies to
+    // `graph.bin`/the compiled JSON files above -- run `cargo run -p
+    // atlas-etl --bin gen_sources` (from `server/`) to (re)generate it.
+    let sources_path = args.data_dir.join("sources.json");
+    let sources_json = std::fs::read_to_string(&sources_path)
+        .with_context(|| format!("reading {} (run `cargo run -p atlas-etl --bin gen_sources` from server/ first)", sources_path.display()))?;
+    let sources: SourcesDocument = serde_json::from_str(&sources_json).with_context(|| format!("parsing {}", sources_path.display()))?;
+    println!("atlas-server: {} source categories, {} sources loaded from {}", sources.categories.len(), sources.sources.len(), sources_path.display());
+    let sources = Arc::new(sources);
+
+    let app = atlas_server::app::build_with_sources(data, graph, sources, args.static_dir);
 
     let addr = format!("0.0.0.0:{}", args.port);
     let listener = tokio::net::TcpListener::bind(&addr).await.with_context(|| format!("binding {addr}"))?;

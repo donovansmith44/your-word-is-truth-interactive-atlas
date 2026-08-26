@@ -14,6 +14,7 @@ use atlas_core::data::{AtlasData, BookMeta, CanonBook, Era, Event, Landmark, Nar
 use atlas_core::history::{resolve_blurb, resolve_display_name, resolve_display_name_and_canonical};
 use atlas_core::refs::{ScriptureRef, VerseId};
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene, to_scene_event};
+use atlas_core::sources::SourcesDocument;
 use atlas_core::time::TimeRange;
 use atlas_core::wire::{Scene, SceneEvent, VerseGroup};
 use atlas_core::xrefs::aggregate_span_xrefs;
@@ -128,6 +129,16 @@ pub async fn narratives(State(graph): State<Arc<GraphService>>) -> Json<Vec<Narr
 
 pub async fn landmarks(State(data): State<Arc<AtlasData>>) -> Json<Vec<Landmark>> {
     Json(data.landmarks.clone())
+}
+
+/// `GET /api/sources` (batch-s-brief.md requirement 3): the Sources
+/// page's entire single source of truth, straight off
+/// `data/compiled/sources.json` (itself generated 1:1 from LICENSES.md by
+/// `atlas_etl::sources`'s own fail-loud drift check -- see the
+/// `gen_sources` binary). The client renders this directly; nothing here
+/// is a hardcoded duplicate list.
+pub async fn sources(State(sources): State<Arc<SourcesDocument>>) -> Json<SourcesDocument> {
+    Json((*sources).clone())
 }
 
 /// `GET /api/land-mask` (Batch R requirement 1, "borders become part of the
