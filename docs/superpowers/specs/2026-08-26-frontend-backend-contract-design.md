@@ -68,15 +68,21 @@ consumes, its request shape, response shape, and invariants:
 - `SceneQuery(window) → scene` — the map composition query.
 - `ExplorationRoundTrip(descriptor)` — descriptor → node → descriptor
   identity (the G2 seam, now a contract law).
-- **[ASSUMED]** v1 wraps the EXISTING endpoints' shapes as-is (a
-  contract snapshot of today's truth), so v1 ships with zero server
-  behavior change; redesigned query shapes come as MINOR/MAJOR
-  revisions afterward. (§9 Q4.)
+- **[ASSUMED]** the initial contract (v0.1.0) wraps the EXISTING
+  endpoints' shapes as-is (a contract snapshot of today's truth), so it
+  ships with zero server behavior change; redesigned query shapes come
+  as later 0.x revisions. (§9 Q4.)
 
-**Semver law:**
-- MAJOR — any breaking change to a shape the client consumes.
-- MINOR — additive: new queries, new optional response fields.
-- PATCH — documentation/invariant tightening with no shape change.
+**Semver law (OWNER RULING 2026-08-26: v1.0.0 IS the production
+release — we are not live, so the contract lives in 0.x until launch):**
+- Pre-launch (0.x.y): initial contract = **0.1.0**; breaking changes
+  bump MINOR (0.2.0, 0.3.0 …); additive/compatible changes bump PATCH.
+  The 0.x line signals "interface still forming" per semver convention.
+- **1.0.0 is minted at production launch** — the moment external
+  consumers exist, and from then on:
+  - MAJOR — any breaking change to a shape a consumer uses.
+  - MINOR — additive: new queries, new optional response fields.
+  - PATCH — documentation/invariant tightening with no shape change.
 - The server advertises its supported contract range at
   `/api/contract` (new, tiny endpoint); the client checks at startup
   and fails LOUD on mismatch (fail-loud house law) rather than
@@ -202,19 +208,19 @@ can ingest FROM the map app.**
 
 - Consumer-driven again — WE declare the view shapes we accept:
   `contracts/map-view-contract/` with its own semver.
-- **[ASSUMED]** v1 ingestible view kinds: a `SceneView` (window +
+- **[ASSUMED]** initial (0.1.0) ingestible view kinds: a `SceneView` (window +
   camera + lit places + overlays — what our World pane renders today)
   and a `MiniSceneView` (the mini-map's contract), so the map app can
   hand us a fully-specified view and our `IView` composition mounts it
   as a component. Richer kinds (comparative scenes, route/journey
-  views) become MINOR revisions after the owner names them. (§9 Q2.)
+  views) become later 0.x revisions after the owner names them. (§9 Q2.)
 - Property tests: every ingested view definition validates and mounts
   (headless render smoke) or is rejected loudly with the contract
   clause it violates.
 
 ## 7. Migration path (behavior-preserving; no big-bang)
 
-1. **AQC v1.0.0** — contract document snapshotting today's consumed
+1. **AQC v0.1.0** — contract document snapshotting today's consumed
    shapes + `/api/contract` endpoint + generated types + property
    contract tests. Zero behavior change; the Playwright suite is the
    proof.
@@ -224,7 +230,7 @@ can ingest FROM the map app.**
    behavior (suite green throughout; CONTRACT.md untouched).
 3. **Frontier generation** — the relations!-manifest-driven frontier,
    replacing per-kind hand lists where they exist.
-4. **Map-view contract v1** — the two ingestible view kinds, wired to
+4. **Map-view contract v0.1.0** — the two ingestible view kinds, wired to
    the existing World/mini-map rendering.
 5. New features (selection verbs, new popover surfaces, new corpora
    frontiers) build ON the contract from then on; contract version
@@ -250,11 +256,12 @@ Each step is its own batch with the standing review discipline.
    §6 assumes SceneView + MiniSceneView.
 3. **Contract format** — JSON Schema (broad tooling, verbose) vs a
    small hand-rolled TOML/IDL we generate from (tighter, house-styled)?
-   Recommendation: JSON Schema for v1 (generation tooling exists on
+   Recommendation: JSON Schema for the initial contract (generation
+   tooling exists on
    both sides), revisit if it fights us.
-4. **v1 scope** — snapshot today's endpoint shapes as AQC v1 (zero
+4. **Initial scope** — snapshot today's endpoint shapes as AQC v0.1.0 (zero
    behavior change, recommended) or redesign the query surface
-   immediately as part of v1?
+   immediately in the first contract?
 5. **Frontier generation** — comfortable with frontier abstractions
    being generated from the relations! manifest (new edge kinds surface
    automatically, presentation-gated), or do you want every frontier
