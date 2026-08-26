@@ -1,12 +1,14 @@
 @page "/"
 @page "/read/{Book}/{Chapter:int}"
 @using System.Text.RegularExpressions
+@using BibleAtlas.Client.State
 @implements IAsyncDisposable
 @inject AtlasClient Atlas
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ViewStateService ViewState
 @inject SelectionTrayService Selection
+@inject StateAtom<Locus> LocusAtom
 
 <PageTitle>Bible Explorer &mdash; @BookName @_chapterNum</PageTitle>
 
@@ -221,14 +223,14 @@
 
     @* Batch H: the atlas pane -- the EXISTING World.razor page componentry,
        reused directly as a child component (not a copy), narrowed to its
-       own split-pane-atlas layout via SplitMode's markup branch. FollowRef
-       re-renders World with a new value every time _book/_chapterNum below
-       change (this Reader instance is REUSED, not recreated, across
-       chapter-to-chapter navigation -- see ComputeAdjacent's own <a href>
-       targets, which stay plain /read/... links precisely because that
-       reuse already keeps _splitOpen/this whole pane alive across it), so
-       "Reader navigation re-scenes the map automatically" falls out of
-       ordinary Blazor parameter diffing, no event bus needed. *@
+       own split-pane-atlas layout via SplitMode's markup branch. Batch
+       ST-1: the FollowRef PARAMETER that used to carry this page's own
+       current chapter down to World is RETIRED -- World now injects the
+       SAME shared Locus atom directly (client/State/Locus.cs) and
+       subscribes to its own Changed event, so "Reader navigation re-scenes
+       the map automatically" now falls out of both pages sharing ONE
+       atom, not a parameter Reader had to thread down (this is the actual
+       SYNC-1 fix -- see the batch report for the full mechanism). *@
     @if (_splitOpen)
     {
         @* M-D3/B2: the drag-resize divider -- see SplitDivider.razor's own
@@ -238,7 +240,7 @@
            comments elsewhere -- so there is exactly one owner for this
            value, the same reasoning _splitOpen itself already follows). *@
         <SplitDivider WidthPx="_splitReaderWidthPx" WidthPxChanged="w => _splitReaderWidthPx = w" />
-        <World @ref="_worldPane" SplitMode="true" FollowRef="@CurrentRef" OnRequestClose="CloseSplitAtlas" />
+        <World @ref="_worldPane" SplitMode="true" OnRequestClose="CloseSplitAtlas" />
     }
 
     @if (_activeNode is not null)
@@ -281,12 +283,14 @@
     // beyond the one-shot SplitQuery arrival above. Reader.razor is reused
     // (never recreated) across ordinary chapter-to-chapter navigation (see
     // ComputeAdjacent's own plain /read/... links), so this field -- and
-    // therefore an open split -- survives that navigation for free, with no
-    // extra plumbing: World.razor's own FollowRef parameter re-renders with
-    // each new CurrentRef automatically. Reader.razor is the split's ONLY
-    // ever host/orchestrator (World.razor is always the embedded guest,
-    // never the other way around -- see World.razor's own OnRequestClose
-    // param and the batch report's layout section for why).
+    // therefore an open split -- survives that navigation for free. Batch
+    // ST-1: World.razor now reacts to the shared Locus atom directly
+    // (LocusAtom.Changed), not a re-rendered FollowRef parameter, so this
+    // continues to need no extra plumbing on Reader's own side either.
+    // Reader.razor is the split's ONLY ever host/orchestrator (World.razor
+    // is always the embedded guest, never the other way around -- see
+    // World.razor's own OnRequestClose param and the batch report's layout
+    // section for why).
     private bool _splitOpen;
     private bool _splitQueryConsumed;
     private World? _worldPane;
@@ -308,8 +312,21 @@
     private double _splitReaderWidthPx = 704;
 
     private List<BookTocEntry>? _toc;
-    private string _book = "GEN";
-    private int _chapterNum = 1;
+
+    // Batch ST-1 (SYNC-1 fix): _book/_chapterNum are now THIN READS of the
+    // shared Locus atom (client/State/Locus.cs), never independently
+    // assigned -- Reader.razor is this app's ONE writer of Locus (every
+    // chapter-navigation path -- picker Apply, reader-prev/next, deep
+    // links, "read in context" hatches -- already funnels through
+    // OnParametersSetAsync below, the single choke point that now
+    // dispatches SetLocus instead of assigning these directly). _locus
+    // wraps LocusAtom in a real Projection<Locus> (rather than reading
+    // LocusAtom.Value directly) so this page's own reads go through the
+    // SAME IProjection<T> seam the compiled contract declares for
+    // consumers -- see client/State/Projection.cs's own header comment.
+    private Projection<Locus> _locus = null!; // set in OnInitializedAsync (LocusAtom isn't injected yet at field-init time)
+    private string _book => _locus.Value.Book;
+    private int _chapterNum => _locus.Value.Chapter;
     private ChapterOut? _chapter;
     private string? _loadedBook;
     private int? _loadedChapterNum;
@@ -351,14 +368,11 @@
 
     private string BookName => _toc?.FirstOrDefault(b => b.Code == _book)?.Name ?? _book;
 
-    // Batch H: the split host's own current chapter ref ("GEN.12"), fed to
-    // World.razor's FollowRef parameter -- see <World> above's own comment
-    // for why re-rendering with a new value on every chapter change is
-    // enough (no callback/event needed). Computed from _book/_chapterNum
-    // directly (not gated on ChapterMatchesRoute/_chapter having actually
-    // loaded yet) so the atlas pane's own fetch starts in PARALLEL with
-    // this page's own chapter-text fetch, not after it.
-    private string CurrentRef => $"{_book}.{_chapterNum}";
+    // Batch ST-1: CurrentRef (the split host's own current chapter ref,
+    // "GEN.12") is GONE -- it existed only to feed World.razor's own
+    // FollowRef parameter, now retired (see the <World> tag's own comment
+    // above). World reads the shared Locus atom directly for the identical
+    // information, no longer needing Reader to compute/push it.
 
     // ExplorerPopover.OnNavigateWorldInSplit ("no nested-popup rule"): a
     // popover chip that would otherwise open a second full /world instead
@@ -456,6 +470,11 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Batch ST-1: LocusAtom is available now (DI-injected properties are
+        // set before any lifecycle method runs) -- see _locus's own field
+        // comment for why this can't be a field initializer instead.
+        _locus = new Projection<Locus>(LocusAtom);
+
         try
         {
             _toc = await Atlas.Books();
@@ -522,8 +541,17 @@
             return;
         }
 
-        _book = book;
-        _chapterNum = chapterNum;
+        // Batch ST-1 (SYNC-1 fix): the ONE choke point that used to assign
+        // _book/_chapterNum directly now dispatches SetLocus onto the
+        // shared atom instead -- _book/_chapterNum (above) are thin reads
+        // of it, so this single Dispatch is the whole migration for every
+        // navigation path that lands here (picker Apply's own NavigateTo,
+        // reader-prev/next, deep links, "read in context" hatches -- see
+        // the batch report's own divergent-copy retirement table). Origin
+        // left null: this IS the user-originated write (there is no link
+        // deriving Locus FROM anything -- Locus is this app's one leaf
+        // atom no other atom ever drives).
+        LocusAtom.Dispatch(new SetLocus(book, chapterNum));
         // M-D3/U6: this Reader.razor instance is now actively showing
         // exactly this chapter -- see ViewStateService.MountedReaderChapter's
         // own doc comment for why this is deliberately separate from

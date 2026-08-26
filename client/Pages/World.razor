@@ -1,5 +1,6 @@
 @page "/world"
 @using System.Globalization
+@using BibleAtlas.Client.State
 @implements IAsyncDisposable
 @implements IMapEvents
 @inject AtlasClient Atlas
@@ -7,6 +8,8 @@
 @inject IJSRuntime JS
 @inject ViewStateService ViewState
 @inject SelectionTrayService Selection
+@inject StateAtom<Locus> LocusAtom
+@inject StateAtom<TimeWindow> TimeWindowAtom
 
 <PageTitle>Bible Explorer &mdash; World</PageTitle>
 
@@ -35,7 +38,13 @@
         <div class="split-atlas-controls" data-testid="split-atlas-controls">
             <button type="button" class="follow-chip" data-testid="follow-chip"
                     aria-pressed="@(_follow ? "true" : "false")" @onclick="ToggleFollow">
-                @(_follow && FollowRef is not null ? $"Following {FollowRef}" : "Follow the text")
+                @* Batch ST-1: reads the shared Locus atom's own Ref (via
+                   _locus, the same Projection<Locus> the picker mount below
+                   renders from) instead of the retired FollowRef parameter --
+                   see this file's own top-of-code-block comment. Locus
+                   always has a value (Locus.Default, never null), so the
+                   old "FollowRef is not null" guard is gone with it. *@
+                @(_follow ? $"Following {_locus.Value.Ref}" : "Follow the text")
             </button>
             <button type="button" class="split-close split-close-dusk" data-testid="split-close-atlas"
                     aria-label="Close the map, keep reading" @onclick="() => OnRequestClose.InvokeAsync()">
@@ -44,7 +53,20 @@
         </div>
     }
 
-    <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-dusk" />
+    @* Batch ST-1 (SYNC-1 fix): this mount used to pass NO CurrentBook/
+       CurrentChapter at all -- SYNC-1's own root mechanism ("the world-side
+       box structurally cannot track the followed locus"). Now renders FROM
+       the SAME Locus projection Reader.razor's own mount uses (_locus,
+       wrapping the shared, DI-injected LocusAtom) -- both boxes are
+       projections of the ONE atom, so they cannot disagree about what it
+       currently holds. This is the ONE user-visible change this batch
+       permits/requires: the world-side picker shows the current chapter and
+       stays in sync, standalone or split alike (Locus is a single
+       app-lifetime singleton, not split-scoped). Apply's own behavior
+       (jump the ATLAS to a ref) is UNCHANGED -- see ApplyScriptureRef's own
+       doc comment for why it deliberately does NOT dispatch SetLocus. *@
+    <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-dusk"
+                      CurrentBook="@_locus.Value.Book" CurrentChapter="@_locus.Value.Chapter" />
 
     @if (_scene is not null && _scene.Places.Count == 0)
     {
@@ -205,17 +227,15 @@
     // there, so standalone behavior is untouched byte-for-byte.
     [Parameter] public bool SplitMode { get; set; }
 
-    // Batch H: the split HOST's own current chapter ref ("GEN.12"), fed down
-    // fresh every time Reader.razor's own _book/_chapterNum change (a normal
-    // parameter re-render -- Reader stays the SAME component instance across
-    // chapter-to-chapter navigation, so this arrives as an ordinary changed
-    // parameter, not a fresh component). Applied via the EXACT SAME
-    // DebouncedLoadScriptureScene /world?ref= already uses (SyncFollowRef
-    // below) -- ONLY while following (_follow); a null value (should never
-    // happen in practice -- Reader always has a current chapter once loaded,
-    // but SplitMode is set before that first load resolves) simply means
-    // "nothing to follow yet."
-    [Parameter] public string? FollowRef { get; set; }
+    // Batch ST-1: the FollowRef PARAMETER ("GEN.12", fed down by Reader.razor
+    // on every _book/_chapterNum change) is RETIRED -- this was SYNC-1's own
+    // "own copy #2" (see the batch report's divergent-copy retirement
+    // table). World now reads the reader's current chapter straight off the
+    // shared Locus atom (_locus below, LocusAtom injected), which needs no
+    // parameter at all: a DI singleton is already the SAME instance on both
+    // pages, always current, with no propagation-order/staleness window a
+    // parameter chain has. See OnLocusChanged/_followLink/_followRunner
+    // below for the mechanism that replaces SyncFollowRef.
 
     // Batch H: the atlas pane's own close button (data-testid
     // split-close-atlas) invokes this -- Reader.razor wires it to set its
@@ -391,7 +411,20 @@
     // why a standalone visit must never overwrite it).
     private bool _follow = true;
     private bool _splitInitialized;
-    private string? _lastFollowRef;
+
+    // Batch ST-1: _locus is this page's own Projection<Locus> over the
+    // shared, DI-injected LocusAtom -- the picker mount above and the
+    // follow-chip label both render from it (see their own markup
+    // comments). _followLink/_followRunner realize "follow-text IS
+    // Link(Locus -> TimeWindow)" (spec §4d) -- Active bound to _follow &&
+    // SplitMode, the SAME bool the chip already reads/writes; see
+    // FollowTextLink's own header comment for why its Derive is a
+    // disclosed identity pass-through this batch, and OnLocusChanged below
+    // for the SEPARATE mechanism that actually re-scenes the atlas pane
+    // (a pure Derive can't perform the async scene fetch itself).
+    private Projection<Locus> _locus = null!; // set in OnInitializedAsync
+    private FollowTextLink _followLink = null!;
+    private StateLinkRunner<Locus, TimeWindow> _followRunner = null!;
 
     // Batch H (view-state round-trip): non-null exactly when a saved camera
     // (center/zoom) is waiting to be applied once the map instance exists --
@@ -405,6 +438,15 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Batch ST-1: LocusAtom/TimeWindowAtom are available now (DI-injected
+        // properties are set before any lifecycle method runs). Subscribes
+        // for this component instance's whole lifetime -- unsubscribed in
+        // DisposeAsync below (_followRunner.Dispose() + Changed -=).
+        _locus = new Projection<Locus>(LocusAtom);
+        _followLink = new FollowTextLink(LocusAtom, TimeWindowAtom, () => SplitMode && _follow);
+        _followRunner = new StateLinkRunner<Locus, TimeWindow>(_followLink.Name, _followLink, LocusAtom, TimeWindowAtom);
+        LocusAtom.Changed += OnLocusChanged;
+
         try
         {
             _eras = await Atlas.Eras();
@@ -523,61 +565,87 @@
         }
 
         // Batch H: SplitMode branches to a COMPLETELY separate path --
-        // SyncFollowRef below, never SyncFromQuery -- since this instance's
-        // host URL (/read/{Book}/{Chapter}) never carries ref=/from=/to= at
-        // all; reading them here would just see three permanently-absent
-        // query keys and fall into SyncFromQuery's own "bare /world"
-        // branch, silently ignoring FollowRef entirely. Standalone
-        // (!SplitMode) behavior below this check is completely untouched.
+        // InitializeSplitModeIfNeeded below, never SyncFromQuery -- since
+        // this instance's host URL (/read/{Book}/{Chapter}) never carries
+        // ref=/from=/to= at all. Standalone (!SplitMode) behavior below this
+        // check is completely untouched. Batch ST-1: the ONGOING (not just
+        // first-call) reactivity SyncFollowRef used to provide here --
+        // reacting to a changed FollowRef parameter on every re-render -- is
+        // GONE from this method entirely; OnLocusChanged below (a genuine
+        // Locus.Changed subscription, not a parameter push) now owns that,
+        // so repeated OnParametersSetAsync calls in SplitMode have nothing
+        // left to do beyond the one-time init.
         if (SplitMode)
         {
-            await SyncFollowRef();
+            await InitializeSplitModeIfNeeded();
             return;
         }
 
         await SyncFromQuery();
     }
 
-    // Batch H: the SplitMode counterpart to SyncFromQuery -- reacts to
-    // FollowRef parameter changes (the split host's own current chapter,
-    // see FollowRef's own doc comment) instead of the URL's query string.
-    // The FIRST call (per instance) also restores follow/window state from
-    // the shared ViewState -- _splitInitialized guards that one-time part
-    // only; FollowRef-change reactivity below it runs on every call.
-    private async Task SyncFollowRef()
+    // Batch ST-1 (replaces SyncFollowRef): the SplitMode counterpart to
+    // SyncFromQuery, now purely a ONE-TIME initializer -- restores follow/
+    // window state from the shared ViewState on this instance's first
+    // parameter-set pass (_splitInitialized guards repeats, same as
+    // before), reading the reader's current chapter straight off the shared
+    // Locus atom instead of a FollowRef parameter. Ongoing reactivity to a
+    // LATER chapter change now lives in OnLocusChanged below, a genuine
+    // Locus.Changed subscription -- correct regardless of whether this
+    // component instance's own OnParametersSetAsync ever runs again (it
+    // won't, in practice: SplitMode/OnRequestClose are this instance's only
+    // parameters, and neither changes across an ordinary chapter nav).
+    private async Task InitializeSplitModeIfNeeded()
     {
-        if (!_splitInitialized)
-        {
-            _splitInitialized = true;
-            _follow = ViewState.Map.Follow;
-            _lastFollowRef = FollowRef;
-
-            if (_follow && FollowRef is not null)
-            {
-                await EnterScriptureMode(FollowRef);
-            }
-            else if (ViewState.Map.HasData)
-            {
-                await RestoreMapState();
-            }
-            else
-            {
-                await EnterTimeMode(_from, _to);
-            }
-
-            return;
-        }
-
-        if (FollowRef == _lastFollowRef)
+        if (_splitInitialized)
         {
             return;
         }
 
-        _lastFollowRef = FollowRef;
-        if (_follow && FollowRef is not null)
+        _splitInitialized = true;
+        _follow = ViewState.Map.Follow;
+
+        if (_follow)
         {
-            await EnterScriptureMode(FollowRef);
+            await EnterScriptureMode(_locus.Value.Ref);
         }
+        else if (ViewState.Map.HasData)
+        {
+            await RestoreMapState();
+        }
+        else
+        {
+            await EnterTimeMode(_from, _to);
+        }
+    }
+
+    // Batch ST-1: fired by LocusAtom.Changed (subscribed in
+    // OnInitializedAsync, unsubscribed in DisposeAsync) -- this is the
+    // ACTUAL mechanism that replaces SyncFollowRef's own ongoing
+    // reactivity, and the reason both ScripturePicker mounts stay live-in-
+    // sync (SYNC-1's fix): a plain C# event, not a Blazor parameter, so it
+    // fires regardless of whether THIS component would otherwise have
+    // re-rendered for any other reason. Re-renders unconditionally (the
+    // picker mount above always reads _locus.Value live) and, additionally,
+    // re-scenes the atlas pane via the EXACT SAME EnterScriptureMode every
+    // other follow path already uses -- but ONLY while genuinely following
+    // (SplitMode && _follow, the follow-text link's own Active condition;
+    // _followLink.Active is read here directly rather than duplicating the
+    // expression, so the two can never drift). Blazor WASM is single-
+    // threaded (no cross-thread marshaling concern the way Blazor Server
+    // has), so this fires synchronously on the correct sync context, same
+    // as OnPlaceHover/OnArrowHover elsewhere in this file -- no InvokeAsync
+    // needed.
+    private void OnLocusChanged()
+    {
+        StateHasChanged();
+
+        if (!_followLink.Active)
+        {
+            return;
+        }
+
+        _ = EnterScriptureMode(_locus.Value.Ref);
     }
 
     // Batch H fix round 2 (review Critical-1, take 2): pushes THIS instance's
@@ -709,24 +777,24 @@
     // -- reloads the last-applied time window (_from/_to) exactly like
     // ReturnToTime's own effect, via DebouncedLoadScene directly (SplitMode
     // has no URL to round-trip through, see ReturnToTime's own SplitMode
-    // branch). Toggling back ON re-syncs to FollowRef, the SAME mechanism a
-    // chapter change already uses (SyncFollowRef) -- both directions reuse
-    // the one system-wide scene-loading primitive, never a parallel path.
+    // branch). Toggling back ON re-syncs to the reader's CURRENT chapter
+    // (Batch ST-1: read straight off the shared Locus atom, _locus.Value --
+    // always current, no FollowRef parameter to have gone stale) -- both
+    // directions reuse the one system-wide scene-loading primitive, never a
+    // parallel path. This is also, per StateLinkRunner<A,B>'s own doc
+    // comment, the "Active flipped false->true" case a bare Changed
+    // subscription can't cover on its own -- SyncNow() below realizes the
+    // SAME immediate-resync effect for the (identity, this batch) TimeWindow
+    // side of the follow-text link, kept alongside the real scene-loading
+    // call so both halves of "what follow-text owns" move together.
     private async Task ToggleFollow()
     {
         _follow = !_follow;
-        // fix round 2: syncs the flipped Follow value even in the
-        // (practically unreachable -- Reader.razor always supplies a real
-        // FollowRef in SplitMode -- but defensively worth covering) edge
-        // case where toggling ON finds FollowRef null and neither branch
-        // below would otherwise call a SyncViewState-carrying helper at all.
         SyncViewState();
         if (_follow)
         {
-            if (FollowRef is not null)
-            {
-                await EnterScriptureMode(FollowRef);
-            }
+            _followRunner.SyncNow();
+            await EnterScriptureMode(_locus.Value.Ref);
         }
         else
         {
@@ -1057,6 +1125,21 @@
     // present in the query string -- SyncFromQuery's own RefQuery-first
     // check depends on that invariant. Batch H: SplitMode branch, same
     // reasoning as HandleWindowChange above.
+    //
+    // Batch ST-1, DISCLOSED: deliberately does NOT dispatch SetLocus onto
+    // the shared Locus atom, unlike Reader.razor's own picker Apply. This
+    // action's own EXISTING contract (ApplyExternalQuery, just below) is
+    // "look at something on the map, decoupled from the reader" -- it turns
+    // follow OFF unconditionally first, precisely because it may show a ref
+    // that has nothing to do with where the reader actually is. Were this to
+    // ALSO overwrite Locus, it would clobber the one shared record of "the
+    // reader's real position" that a LATER follow-chip re-toggle needs to
+    // re-converge to (FOLLOW-1's own "ON re-syncs to the reader's current
+    // chapter" contract) -- so Locus stays reader-owned; only the atlas
+    // pane's own (unmigrated, pre-existing) `_scriptureRef`/scene state
+    // changes here. This is exactly the "world picker stops tracking [while
+    // follow is off], but a world-picker Apply still works" case the
+    // batch's own SYNC-1 regression test (state-sync.spec.ts) pins.
     private Task ApplyScriptureRef(string sref)
     {
         if (SplitMode)
@@ -1860,6 +1943,16 @@
     {
         _fetchCts?.Cancel();
         _closeCts?.Cancel();
+
+        // Batch ST-1: unsubscribe from the SHARED (app-lifetime) Locus atom
+        // before this instance goes away -- LocusAtom outlives this
+        // component (it's a DI singleton), so leaving the subscription wired
+        // would call back into a disposed component on every future
+        // navigation's SetLocus dispatch. _followRunner.Dispose() unwires
+        // its own Source.Changed subscription the same way (see that
+        // class's own Dispose).
+        LocusAtom.Changed -= OnLocusChanged;
+        _followRunner.Dispose();
 
         if (_mapInterop is not null)
         {
