@@ -114,43 +114,52 @@ LICENSES.md/sources-page discipline applied to API shapes.
 
 ## 3. Property-based contract tests
 
-**LAW (owner ruling 2026-08-26, verbatim): "contract tests ought to be
-language agnostic."** No test that binds the contract may exist only as
-code in one language's test framework. The binding expression of every
-contract test is a language-neutral artifact in the contract directory;
-each side runs a thin native HARNESS over the SAME artifact:
+**LAW (owner ruling 2026-08-26; clarified same day: "something like
+gherkin BDD"):** contract tests are language-agnostic — the binding
+expression of every contract test is **Gherkin** (Given/When/Then
+`.feature` files) in the contract directory. No test that binds the
+contract may exist only as code in one language's test framework. Each
+side executes the SAME feature files through its own thin step-
+definition layer:
 
 ```
 contracts/
   atlas-query-contract/
-    aqc.schema.json        # shapes (§2)
-    invariants.json        # every contract invariant, declared as data
-    vectors/               # committed test vectors: request +
-                           # expected-schema ref + invariant refs +
-                           # golden response where exactness is the law
+    aqc.schema.json        # shapes (§2) — referenced by steps
+    features/              # THE contract test corpus (Gherkin)
+      focus-query.feature
+      traversal.feature
+      text-window.feature      # incl. annotation-spans law (RED-1)
+      scene-query.feature
+      exploration-roundtrip.feature
+      versioning.feature       # /api/contract advertisement + fail-loud
 ```
 
-- **Invariants are declared, not coded:** frontier-groups ⊆ relations!
-  vocabulary; no dangling traversal target; every hatch named is
-  defined for its view context; descriptor round-trip identity (the G2
-  seam); annotation spans within verse length (RED-1's alignment law
-  promoted). Each carries an id; vectors and harness failures cite ids.
-- **Vectors are generated, then committed:** a provider-side exporter
-  draws descriptors from the REAL graph (every kind, seeded/
-  deterministic sampling — reproducible, never wall-clock random) and
-  emits the vector files, pact-style. The generator is code; its
-  OUTPUT is the contract corpus both sides execute verbatim.
-- **Harnesses are thin and contract-ignorant:** the Rust harness runs
-  every vector against the live handlers; the C# harness deserializes
-  every vector through the generated types and re-checks the same
-  invariant ids. Neither harness contains contract knowledge of its
-  own — adding a contract test = adding a vector/invariant to the
-  neutral corpus, and BOTH sides pick it up with zero harness edits.
-- Native property tests (proptest etc.) may explore deeper, but
-  anything they enforce about the contract must also exist as a
-  declared invariant + vectors — a native-only contract assertion is a
-  drift bug under this law. (This also settles §9 Q3's direction:
-  JSON Schema + JSON vectors, executable from any language.)
+- **Scenarios ARE the invariants**, readable by the owner without any
+  code: "Given a node of every kind sampled from the graph / When I run
+  FocusQuery / Then every frontier group is a relations! family / And
+  every traversal target resolves to a live node / And every escape
+  hatch is defined for the view context." Descriptor round-trip (the G2
+  seam) and spans-within-verse-length (RED-1's alignment law) each get
+  a scenario the same way.
+- **Property depth via Scenario Outlines:** a provider-side exporter
+  draws descriptors from the REAL graph (every kind; seeded,
+  deterministic — never wall-clock random) and emits/refreshes the
+  committed `Examples:` tables. The generator is code; its OUTPUT is
+  Gherkin both sides execute verbatim. Steps phrased over "every kind"/
+  "each sampled node" iterate internally so tables stay readable.
+- **Step definitions are thin glue, not contract knowledge:** Rust
+  binds steps with the `cucumber` crate against live handlers; C# binds
+  the same phrases (Reqnroll/SpecFlow lineage) through the generated
+  types. A phrase means ONE thing; both bindings implement the same
+  glossary (kept beside the features). Adding a contract test = writing
+  a scenario; a scenario either binds on both sides or the suite fails
+  loud with the unbound phrase.
+- Native property tests (proptest etc.) may explore deeper, but any
+  contract behavior they enforce must also be stated as a scenario — a
+  native-only contract assertion is a drift bug under this law.
+  (§9 Q3 accordingly resolves: Gherkin features + JSON Schema for
+  shapes.)
 
 **The gate:** contract tests are part of the standing suite (they join
 the canonical count); a provider change that breaks a consumer
