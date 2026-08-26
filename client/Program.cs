@@ -50,6 +50,10 @@ builder.Services.AddSingleton<ViewStateService>();
 builder.Services.AddSingleton(_ => new StateAtom<Locus>(AtomNames.Locus, Locus.Default));
 builder.Services.AddSingleton(_ => new StateAtom<TimeWindow>(AtomNames.TimeWindow, TimeWindow.Default));
 
+// Batch ST-2: the ViewArrangement atom (controller ruling R4) -- same
+// singleton treatment as Locus/TimeWindow above.
+builder.Services.AddSingleton(_ => new StateAtom<ViewArrangement>(AtomNames.ViewArrangement, ViewArrangement.Default));
+
 // Batch G2 decisions 4/6: saved explorations + the selection tray, each a
 // localStorage-backed singleton (LocalStore.cs's own header comment has the
 // full reasoning) -- resolved lazily off the SAME IJSRuntime the framework

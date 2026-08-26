@@ -10,6 +10,7 @@
 @inject SelectionTrayService Selection
 @inject StateAtom<Locus> LocusAtom
 @inject StateAtom<TimeWindow> TimeWindowAtom
+@inject StateAtom<ViewArrangement> ViewArrangementAtom
 
 <PageTitle>Bible Explorer &mdash; World</PageTitle>
 
@@ -296,12 +297,22 @@
     private PolitiesOut? _polityRoster;
     private bool _polityRosterPushed;
 
-    // The most recently APPLIED time-mode window -- i.e. the last from/to
-    // SyncFromQuery validated, which is exactly "the window to return to"
-    // (WORLD-6's mode-chip-return). Only the time-mode branch below ever
-    // assigns these, so arriving directly on a scripture deep link (never
-    // having had a time-mode URL this session) correctly leaves them at the
-    // whole-span default, per the brief.
+    // Batch ST-2 (controller ruling R3): _from/_to/_scriptureRef are now
+    // PROJECTIONS of TimeWindowAtom's current arm -- SyncTimeWindowProjection
+    // below is the ONE place any of the three is ever assigned (called from
+    // OnTimeWindowChanged, the atom's own Changed subscriber, AND directly
+    // from RunTimeModeEffect/RunScriptureModeEffect for the one case Changed
+    // can't cover -- a dispatch that turns out to be a no-op because the
+    // requested value already matched the atom's current value, e.g. a bare
+    // first /world visit already sitting at TimeWindow.Default). No method
+    // below writes any of the three directly anymore; every writer dispatches
+    // an intent (SetTimeWindow/SetScriptureWindow) via EnterTimeMode/
+    // EnterScriptureMode instead -- see those two methods' own comments.
+    // The field initializers here are a defensive fallback only (overwritten
+    // synchronously by OnInitializedAsync's own SyncTimeWindowProjection call
+    // before the very first render, matching whatever TimeWindowAtom -- a
+    // DI singleton that may already hold a NON-default value from an earlier
+    // page/instance this session -- actually holds at construction time).
     private int _from = DefaultFrom;
     private int _to = DefaultTo;
     private CancellationTokenSource? _fetchCts;
@@ -408,28 +419,27 @@
     // themselves -- see PlaceCard.razor's own file header.
     private IExplorable? _activeNode;
 
-    // Batch H (split-view study, follow mode). _follow defaults true (the
-    // brief's "follow mode default ON") and is only ever MEANINGFUL while
-    // SplitMode -- standalone /world never reads or writes it. Restored from
-    // ViewState.Map.Follow on a SplitMode instance's own first
-    // OnParametersSetAsync pass (_splitInitialized guards that pass running
-    // more than once); captured back into ViewState.Map.Follow on dispose,
-    // but ONLY for a SplitMode instance (see DisposeAsync's own comment for
-    // why a standalone visit must never overwrite it).
-    private bool _follow = true;
+    // Batch ST-2 (controller ruling R4): "_follow migrates INTO the Split
+    // arm" -- no longer an independent field. A pure projection of the
+    // shared ViewArrangement atom: true exactly when the atom's current arm
+    // is Split AND that arm's own Follow flag is set. Standalone /world
+    // (atom == WorldOnly) always reads false here, matching "standalone
+    // /world never reads or writes it" -- true by construction now, not by
+    // convention (there is no WorldOnly.Follow field to have EVER read).
+    private bool _follow => ViewArrangementAtom.Value is Split { Follow: true };
     private bool _splitInitialized;
 
     // Batch ST-1: _locus is this page's own Projection<Locus> over the
     // shared, DI-injected LocusAtom -- the picker mount above and the
     // follow-chip label both render from it (see their own markup
     // comments). _followLink/_followRunner realize "follow-text IS
-    // Link(Locus -> TimeWindow)" (spec §4d) -- Active bound to _follow &&
-    // SplitMode, the SAME bool the chip already reads/writes; see
-    // FollowTextLink's own header comment for why its Derive is INERT this
-    // batch (never actually changes TimeWindow -- review Adjudication 2),
-    // and OnLocusChanged below for the SEPARATE mechanism that actually
-    // re-scenes the atlas pane (a pure Derive can't perform the async scene
-    // fetch itself).
+    // Link(Locus -> TimeWindow)" (spec §4d) -- Active now bound to the
+    // ViewArrangement projection (controller ruling R4: "Split && Follow"),
+    // not the retired SplitMode && _follow field closure. Batch ST-2 (R2):
+    // FollowTextLink's Derive is now REAL (ScriptureMode(locus.Ref)), not
+    // identity -- see that class's own header comment for the full
+    // mechanism, and OnTimeWindowChanged below for the effect (async fetch)
+    // it drives.
     //
     // Fix round 1 (Q-6, trivia): a lazy property over a nullable backing
     // field, not a `null!`-then-assigned-in-OnInitializedAsync field --
@@ -447,15 +457,37 @@
     private FollowTextLink _followLink = null!;
     private StateLinkRunner<Locus, TimeWindow> _followRunner = null!;
 
-    // Fix round 1 (S-1, CRITICAL): bumped by ToggleFollow on the false->true
-    // transition -- see ScripturePicker's own SyncToken parameter doc
-    // comment for the exact SYNC-1-resurrection gap this closes (a
-    // world-picker Apply turns follow off without touching Locus; if the
-    // reader's chapter ALSO hasn't changed while follow was off, toggling
-    // follow back on leaves CurrentBook/CurrentChapter byte-identical to
-    // what the picker was already showing, so the picker's own "did the
-    // parameter change" guard alone can never re-sync it).
+    // Fix round 1 (S-1, CRITICAL): bumped on the ViewArrangement Follow
+    // false->true transition -- see ScripturePicker's own SyncToken
+    // parameter doc comment for the exact SYNC-1-resurrection gap this
+    // closes (a world-picker Apply turns follow off without touching Locus;
+    // if the reader's chapter ALSO hasn't changed while follow was off,
+    // toggling follow back on leaves CurrentBook/CurrentChapter
+    // byte-identical to what the picker was already showing, so the
+    // picker's own "did the parameter change" guard alone can never re-sync
+    // it). Batch ST-2 (R4, "re-seat its trigger on the atom transition,
+    // don't fork it"): the BUMP itself now lives in OnViewArrangementChanged
+    // below, not inline in ToggleFollow -- any future writer of the Follow
+    // flag gets the same re-sync for free, not just this one call site.
     private int _pickerSyncToken;
+
+    // Batch ST-2: edge-detection state for OnViewArrangementChanged below --
+    // the LAST Follow value this instance observed, so a ViewArrangement
+    // change that ISN'T a false->true Follow edge (a DividerFraction commit,
+    // an arrangement transition unrelated to Follow) doesn't spuriously
+    // re-trigger the SyncToken bump/re-sync. Seeded from the live projection
+    // in OnInitializedAsync, before the subscription that reads it starts.
+    private bool _lastKnownFollow;
+
+    // Batch ST-2 (R2): the follow-text link's own async fetch EFFECT, keyed
+    // off TimeWindowAtom.Changed (OnTimeWindowChanged below) rather than a
+    // direct call -- ToggleFollow awaits THIS, not a direct EnterScriptureMode
+    // call, so its own Task still only completes once the actual fetch does
+    // (preserving the exact async-completion timing every pre-ST-2 caller of
+    // ToggleFollow already depended on), even though the fetch itself is now
+    // triggered indirectly, through the atom. Null whenever the most recent
+    // TimeWindowAtom change wasn't link-derived (nothing to await).
+    private Task? _pendingLinkEffect;
 
     // Batch H (view-state round-trip): non-null exactly when a saved camera
     // (center/zoom) is waiting to be applied once the map instance exists --
@@ -469,15 +501,43 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Batch ST-2 (R3): seeds _from/_to/_scriptureRef from whatever
+        // TimeWindowAtom -- a DI singleton that outlives any one page visit
+        // -- ALREADY holds, before this instance's very first render (this
+        // runs synchronously, in OnInitializedAsync's own synchronous prefix,
+        // ahead of every await below). Matters now that the atom is a real,
+        // meaningfully-mutated store across navigations (unlike ST-1, where
+        // TimeWindow was practically inert) -- without this, a fresh World
+        // instance mounting after e.g. a prior split session left the atom in
+        // ScriptureMode would flash the hardcoded field-initializer defaults
+        // for one frame.
+        SyncTimeWindowProjection();
+
         // Batch ST-1: LocusAtom/TimeWindowAtom are available now (DI-injected
         // properties are set before any lifecycle method runs). Subscribes
         // for this component instance's whole lifetime -- unsubscribed in
         // DisposeAsync below (_followRunner.Dispose() + Changed -=). _locus
         // itself is a lazy property (see its own field comment) -- nothing
-        // to construct here for it.
-        _followLink = new FollowTextLink(LocusAtom, TimeWindowAtom, () => SplitMode && _follow);
+        // to construct here for it. Batch ST-2 (R4): Active now reads the
+        // ViewArrangement projection directly (_follow already IS that
+        // projection -- see that property's own comment), replacing the
+        // retired SplitMode && _follow field closure.
+        _followLink = new FollowTextLink(LocusAtom, TimeWindowAtom, () => _follow);
         _followRunner = new StateLinkRunner<Locus, TimeWindow>(_followLink.Name, _followLink, LocusAtom, TimeWindowAtom);
         LocusAtom.Changed += OnLocusChanged;
+
+        // Batch ST-2 (R2): the follow-text link's own async fetch EFFECT lives
+        // here now -- see OnTimeWindowChanged's own comment for the full
+        // mechanism, and FollowTextLink's header comment for why it can't
+        // live in Derive itself.
+        TimeWindowAtom.Changed += OnTimeWindowChanged;
+
+        // Batch ST-2 (R4): seeds the edge-detector BEFORE subscribing, so the
+        // subscription's own first invocation (if any) correctly compares
+        // against this instance's actual starting Follow state, not a
+        // meaningless default.
+        _lastKnownFollow = _follow;
+        ViewArrangementAtom.Changed += OnViewArrangementChanged;
 
         try
         {
@@ -613,20 +673,35 @@
             return;
         }
 
+        // Batch ST-2 (R4): asserts this standalone visit's own arrangement on
+        // every parameter-set pass (idempotent after the first -- a no-op
+        // dispatch once the atom already reads WorldOnly) -- the standalone
+        // counterpart to Reader.razor's own EnterReaderOnly/EnterSplit
+        // dispatch sites, so the atom always reflects reality regardless of
+        // whatever arrangement a PRIOR page/instance this session left it in.
+        ViewArrangementAtom.Dispatch(new EnterWorldOnly());
         await SyncFromQuery();
     }
 
     // Batch ST-1 (replaces SyncFollowRef): the SplitMode counterpart to
     // SyncFromQuery, now purely a ONE-TIME initializer -- restores follow/
-    // window state from the shared ViewState on this instance's first
-    // parameter-set pass (_splitInitialized guards repeats, same as
-    // before), reading the reader's current chapter straight off the shared
-    // Locus atom instead of a FollowRef parameter. Ongoing reactivity to a
-    // LATER chapter change now lives in OnLocusChanged below, a genuine
-    // Locus.Changed subscription -- correct regardless of whether this
+    // window state on this instance's first parameter-set pass
+    // (_splitInitialized guards repeats, same as before), reading the
+    // reader's current chapter straight off the shared Locus atom instead of
+    // a FollowRef parameter. Ongoing reactivity to a LATER chapter change
+    // now lives in the follow-text link itself (OnLocusChanged/
+    // OnTimeWindowChanged below), correct regardless of whether this
     // component instance's own OnParametersSetAsync ever runs again (it
     // won't, in practice: SplitMode/OnRequestClose are this instance's only
     // parameters, and neither changes across an ordinary chapter nav).
+    //
+    // Batch ST-2 (R4): _follow is no longer restored from ViewState.Map.Follow
+    // directly here -- by the time THIS method runs, Reader.razor (the split
+    // HOST) has already dispatched EnterSplit (with ViewState.Map.Follow as
+    // ITS OWN restoration source, the exact same pattern RestoreMapState
+    // below already uses for TimeWindow) into the shared ViewArrangement
+    // atom, so _follow already reads correctly the moment this instance
+    // constructs it -- nothing to assign here at all.
     private async Task InitializeSplitModeIfNeeded()
     {
         if (_splitInitialized)
@@ -635,11 +710,22 @@
         }
 
         _splitInitialized = true;
-        _follow = ViewState.Map.Follow;
 
         if (_follow)
         {
-            await EnterScriptureMode(_locus.Value.Ref);
+            // Batch ST-2 (R2): re-syncs THROUGH the link -- the same
+            // mechanism ToggleFollow's own true-branch uses below -- rather
+            // than a direct EnterScriptureMode call, now that Derive is real
+            // and genuinely does this work. _pendingLinkEffect is set (if
+            // the derive-and-dispatch produced a genuine change; it always
+            // will here, since a fresh atom always starts in TimeMode, never
+            // equal to a ScriptureMode value) by OnTimeWindowChanged, invoked
+            // synchronously inside SyncNow's own Dispatch call.
+            _followRunner.SyncNow();
+            if (_pendingLinkEffect is { } task)
+            {
+                await task;
+            }
         }
         else if (ViewState.Map.HasData)
         {
@@ -652,58 +738,123 @@
     }
 
     // Batch ST-1: fired by LocusAtom.Changed (subscribed in
-    // OnInitializedAsync, unsubscribed in DisposeAsync) -- this is the
-    // ACTUAL mechanism that replaces SyncFollowRef's own ongoing
-    // reactivity, and the reason both ScripturePicker mounts stay live-in-
-    // sync (SYNC-1's fix): a plain C# event, not a Blazor parameter, so it
-    // fires regardless of whether THIS component would otherwise have
-    // re-rendered for any other reason. Re-renders unconditionally (the
-    // picker mount above always reads _locus.Value live) and, additionally,
-    // re-scenes the atlas pane via the EXACT SAME EnterScriptureMode every
-    // other follow path already uses -- but ONLY while genuinely following
-    // (SplitMode && _follow, the follow-text link's own Active condition;
-    // _followLink.Active is read here directly rather than duplicating the
-    // expression, so the two can never drift). Blazor WASM is single-
-    // threaded (no cross-thread marshaling concern the way Blazor Server
-    // has), so this fires synchronously on the correct sync context, same
-    // as OnPlaceHover/OnArrowHover elsewhere in this file -- no InvokeAsync
+    // OnInitializedAsync, unsubscribed in DisposeAsync) -- the reason both
+    // ScripturePicker mounts stay live-in-sync (SYNC-1's fix): a plain C#
+    // event, not a Blazor parameter, so it fires regardless of whether THIS
+    // component would otherwise have re-rendered for any other reason.
+    //
+    // Batch ST-2 (R2): the re-scening side effect this handler used to carry
+    // (a direct, Active-gated EnterScriptureMode call) is RETIRED -- see
+    // FollowTextLink's own header comment. FollowTextLink.Derive is now
+    // real, so a Locus change already flows into TimeWindowAtom on its own,
+    // through _followRunner's OWN independent subscription to LocusAtom.Changed
+    // (wired in its constructor -- a SEPARATE subscription from this one,
+    // both fired by the SAME Dispatch call). OnTimeWindowChanged below is
+    // what performs the actual fetch now, keyed off the TARGET atom's own
+    // Changed event, not this SOURCE one. This handler's only remaining job
+    // is re-rendering the picker boxes (_locus.Value is read live by both
+    // ScripturePicker mounts) -- Blazor WASM is single-threaded, so this
+    // fires synchronously on the correct sync context, same as
+    // OnPlaceHover/OnArrowHover elsewhere in this file -- no InvokeAsync
     // needed.
     private void OnLocusChanged()
     {
         StateHasChanged();
+    }
 
-        if (!_followLink.Active)
+    // Batch ST-2 (R2/R3): TimeWindowAtom's own Changed subscriber -- the ONE
+    // place _from/_to/_scriptureRef get kept in sync with the atom's current
+    // arm (via SyncTimeWindowProjection), AND the home of the follow-text
+    // link's own async fetch EFFECT (a pure Derive can't perform one itself).
+    //
+    // The effect is gated to fire ONLY for a transition the LINK ITSELF just
+    // caused: TimeWindowAtom.LastOrigin (law 3's own echo tag) names the
+    // link whenever the change this handler is reacting to came from
+    // StateLinkRunner's own dispatch, read HERE, synchronously, inside the
+    // very Changed invocation that write caused -- see StateLinkRunner's own
+    // "SHARPER EDGE" comment for why LastOrigin's stickiness is a hazard for
+    // an ASYNC/later read, not a synchronous one like this. Every OTHER
+    // writer (EnterTimeMode/EnterScriptureMode's own direct callers) already
+    // runs its own effect (RunTimeModeEffect/RunScriptureModeEffect)
+    // unconditionally, right after its own Dispatch call, in the same method
+    // body -- firing the effect again here for those would double-fetch, so
+    // this handler stays a no-op for them (LastOrigin is null on a direct,
+    // user-originated dispatch).
+    private void OnTimeWindowChanged()
+    {
+        SyncTimeWindowProjection();
+        StateHasChanged();
+
+        if (TimeWindowAtom.LastOrigin != _followLink.Name || TimeWindowAtom.Value is not ScriptureMode sm)
         {
+            _pendingLinkEffect = null;
             return;
         }
 
-        // Fix round 1 (Q-1, IMPORTANT): the retired path awaited
-        // EnterScriptureMode from inside OnParametersSetAsync, so a fetch
-        // failure surfaced through Blazor's own lifecycle error handling.
-        // A bare `_ = EnterScriptureMode(...)` here would instead turn any
-        // exception into a silently-dropped unobserved task fault --
-        // DebouncedLoadScriptureScene's own try/catch already covers
-        // ordinary fetch failures (see that method's own comment), but
-        // EnterScriptureMode's own SetPolitiesVisible call, just above it,
-        // is not wrapped. EnterScriptureModeAndSurfaceFaults below is the
-        // minimum needed to keep a genuine failure user-visible, via the
-        // SAME toast every other scene-load failure already uses, instead
-        // of it vanishing.
-        _ = EnterScriptureModeAndSurfaceFaults(_locus.Value.Ref);
+        _pendingLinkEffect = RunScriptureModeEffectAndSurfaceFaults(sm.Ref);
     }
 
-    // Fix round 1 (Q-1) -- see OnLocusChanged's own comment for why this
-    // wrapper exists instead of a bare fire-and-forget call. Every OTHER
-    // caller of EnterScriptureMode in this file is already awaited from
-    // inside a Blazor-lifecycle-aware async method (InitializeSplitModeIfNeeded,
-    // ToggleFollow, ApplyExternalQuery, SyncFromQuery), so only THIS one
-    // call site -- driven by a plain C# event, not a lifecycle method --
-    // needs its own explicit fault handling.
-    private async Task EnterScriptureModeAndSurfaceFaults(string sref)
+    // Batch ST-2 (R3): the ONE place _from/_to/_scriptureRef are ever
+    // assigned -- always read fresh off TimeWindowAtom.Value, never
+    // independently. Called both from OnTimeWindowChanged (covers a
+    // genuinely NEW value) and directly from RunTimeModeEffect/
+    // RunScriptureModeEffect (covers a Dispatch that turned out to be a
+    // no-op, which never fires Changed at all -- see those methods' own
+    // comments).
+    private void SyncTimeWindowProjection()
+    {
+        switch (TimeWindowAtom.Value)
+        {
+            case TimeMode tm:
+                _scriptureRef = null;
+                _from = tm.From;
+                _to = tm.To;
+                break;
+            case ScriptureMode sm:
+                _scriptureRef = sm.Ref;
+                break;
+        }
+    }
+
+    // Batch ST-2 (R4): ViewArrangementAtom's own Changed subscriber. Its ONE
+    // job is re-seating the SyncToken/re-sync trigger ST-1 fix round 1 (S-1)
+    // put inline in ToggleFollow -- the controller ruling asks for this to
+    // live on "the atom transition" itself, not be forked/duplicated at
+    // every future writer of the Follow flag. Edge-detected against
+    // _lastKnownFollow (seeded in OnInitializedAsync) so a DividerFraction-only
+    // commit, or an arrangement transition that happens to start Follow true
+    // (a fresh split-open), doesn't spuriously re-trigger this -- though for
+    // a fresh split-open specifically, InitializeSplitModeIfNeeded's own
+    // SyncNow call already does the equivalent re-sync directly, and this
+    // subscription doesn't even exist yet at the moment Reader.razor's own
+    // EnterSplit dispatch happens (it's dispatched by a DIFFERENT component,
+    // before THIS instance's OnInitializedAsync ever subscribes) -- so no
+    // double-trigger risk there either.
+    private void OnViewArrangementChanged()
+    {
+        var nowFollowing = _follow;
+        if (nowFollowing && !_lastKnownFollow)
+        {
+            _pickerSyncToken++;
+            _followRunner.SyncNow();
+        }
+
+        _lastKnownFollow = nowFollowing;
+        StateHasChanged();
+    }
+
+    // Batch ST-2 (R2) -- see OnTimeWindowChanged's own comment for why this
+    // wrapper exists instead of a bare fire-and-forget call (same reasoning
+    // ST-1's now-retired EnterScriptureModeAndSurfaceFaults gave: every OTHER
+    // caller of RunScriptureModeEffect is already awaited from inside a
+    // Blazor-lifecycle-aware async method, so only the link-derived path --
+    // driven by a plain C# event, not a lifecycle method -- needs its own
+    // explicit fault handling).
+    private async Task RunScriptureModeEffectAndSurfaceFaults(string sref)
     {
         try
         {
-            await EnterScriptureMode(sref);
+            await RunScriptureModeEffect(sref);
         }
         catch (Exception)
         {
@@ -755,21 +906,34 @@
     }
 
     // Batch H: the shared "enter scripture mode" sequence every direct
-    // (non-URL) scene-loading call site below needs -- SyncFromQuery's own
-    // ref-branch already inlines these exact three steps (stamp
-    // _scriptureRef, hide the polity layer, THEN fetch -- fix round 1,
-    // finding 5's own ordering, preserved here); this is the same sequence,
-    // factored out so every SplitMode call site (which never goes through
-    // SyncFromQuery at all -- see FollowRef's own doc comment) gets it too,
-    // rather than each one re-deriving/risking missing a step.
-    // SyncFromQuery's own two call sites are intentionally left as they
-    // are (not refactored onto this) -- battle-tested, unrelated to this
-    // batch's own risk surface -- but each now makes its own SyncViewState
-    // call directly (fix round 2), so every path that sets _scriptureRef/
-    // _from/_to stays covered either way.
-    private async Task EnterScriptureMode(string sref)
+    // (non-URL) scene-loading call site below needs. Batch ST-2 (R3): "every
+    // writer dispatches intents instead" -- this is now THE choke point
+    // every scripture-mode entry funnels through (including SyncFromQuery's
+    // own ref-branch, which used to inline an identical three-step copy of
+    // this -- fix round 1's own comment on that duplication is retired along
+    // with the duplication itself: SyncFromQuery now just calls this).
+    // Dispatches SetScriptureWindow (Origin: null -- every call site here is
+    // a direct, user-driven entry, never link-derived) THEN runs the effect
+    // unconditionally via RunScriptureModeEffect -- not by relying on
+    // TimeWindowAtom.Changed to trigger it, because a dispatch that happens
+    // to already match the atom's current value is a LAW-2 no-op (no Changed
+    // fires at all), and the effect must still run (e.g. re-entering the
+    // exact scripture ref already showing, or a fresh mount already sitting
+    // at TimeWindow.Default).
+    private Task EnterScriptureMode(string sref)
     {
-        _scriptureRef = sref;
+        TimeWindowAtom.Dispatch(new SetScriptureWindow(sref));
+        return RunScriptureModeEffect(sref);
+    }
+
+    // Batch ST-2: the actual scripture-mode EFFECT (sync view-state, hide the
+    // polity layer, fetch) -- called unconditionally from EnterScriptureMode
+    // above (every direct writer) AND from OnTimeWindowChanged's own
+    // link-derived path (via RunScriptureModeEffectAndSurfaceFaults) --
+    // ONE implementation, two callers, per R2/R3.
+    private async Task RunScriptureModeEffect(string sref)
+    {
+        SyncTimeWindowProjection();
         SyncViewState();
         if (_mapInterop is not null)
         {
@@ -779,17 +943,21 @@
         await DebouncedLoadScriptureScene(sref);
     }
 
-    // Batch H: the time-mode counterpart to EnterScriptureMode above.
-    // Unlike scripture mode, no extra polities call is needed here --
-    // DebouncedLoadScene's own LoadPolitiesFor already unconditionally
-    // restores SetPolitiesVisible(true) before its fetch even starts (see
-    // that method's own doc comment), so a bare _scriptureRef=null plus the
-    // ordinary time-mode load is the complete, correct sequence.
+    // Batch H: the time-mode counterpart to EnterScriptureMode above -- same
+    // ST-2 dispatch-then-effect shape (R3).
     private Task EnterTimeMode(int from, int to)
     {
-        _scriptureRef = null;
-        _from = from;
-        _to = to;
+        TimeWindowAtom.Dispatch(new SetTimeWindow(from, to));
+        return RunTimeModeEffect(from, to);
+    }
+
+    // Batch ST-2: the actual time-mode EFFECT. Unlike scripture mode, no
+    // extra polities call is needed here -- DebouncedLoadScene's own
+    // LoadPolitiesFor already unconditionally restores SetPolitiesVisible(true)
+    // before its fetch even starts (see that method's own doc comment).
+    private Task RunTimeModeEffect(int from, int to)
+    {
+        SyncTimeWindowProjection();
         SyncViewState();
         return DebouncedLoadScene(from, to);
     }
@@ -840,44 +1008,40 @@
         await _mapInterop.SetCamera(cam.Lat, cam.Lon, cam.Zoom);
     }
 
-    // follow-chip (Batch H). Toggling OFF frees the pane to full time-mode
-    // -- reloads the last-applied time window (_from/_to) exactly like
-    // ReturnToTime's own effect, via DebouncedLoadScene directly (SplitMode
-    // has no URL to round-trip through, see ReturnToTime's own SplitMode
-    // branch). Toggling back ON re-syncs to the reader's CURRENT chapter
-    // (Batch ST-1: read straight off the shared Locus atom, _locus.Value --
-    // always current, no FollowRef parameter to have gone stale) -- both
-    // directions reuse the one system-wide scene-loading primitive, never a
-    // parallel path. This is also, per StateLinkRunner<A,B>'s own doc
-    // comment, the "Active flipped false->true" case a bare Changed
-    // subscription can't cover on its own -- SyncNow() below realizes the
-    // SAME immediate-resync effect for the (identity, this batch) TimeWindow
-    // side of the follow-text link, kept alongside the real scene-loading
-    // call so both halves of "what follow-text owns" move together.
+    // follow-chip (Batch H). Toggling OFF frees the pane to full time-mode --
+    // reloads the last-applied time window (_from/_to) exactly like
+    // ReturnToTime's own effect, via EnterTimeMode. Toggling back ON re-syncs
+    // to the reader's CURRENT chapter -- both directions reuse the one
+    // system-wide scene-loading primitive, never a parallel path.
+    //
+    // Batch ST-2 (R2/R4): the true-branch no longer calls EnterScriptureMode
+    // directly -- ViewArrangementAtom.Dispatch below (SetSplitFollow) is what
+    // flips Follow true, which synchronously fires OnViewArrangementChanged
+    // (subscribed in OnInitializedAsync), which is what now performs BOTH the
+    // SyncToken bump AND the SyncNow() re-sync (per the controller ruling,
+    // "re-seat its trigger on the atom transition, don't fork it" -- see that
+    // handler's own comment). _pendingLinkEffect -- set by OnTimeWindowChanged,
+    // itself invoked synchronously by SyncNow's own Dispatch call, all before
+    // THIS method reaches the line below -- is what lets this method still
+    // AWAIT the actual fetch's completion, preserving the exact async-timing
+    // contract every pre-ST-2 caller of ToggleFollow already depended on,
+    // even though the fetch is now triggered indirectly, through the atom.
     private async Task ToggleFollow()
     {
-        _follow = !_follow;
+        _pendingLinkEffect = null;
+        var newFollow = !_follow;
+        ViewArrangementAtom.Dispatch(new SetSplitFollow(newFollow));
         SyncViewState();
-        if (_follow)
-        {
-            // Fix round 1 (S-1, CRITICAL): forces the world-side picker to
-            // re-sync to Locus on THIS EXACT transition -- see SyncToken's
-            // own doc comment (ScripturePicker.razor) for why a bare
-            // Locus.Changed-driven re-render alone cannot: a world-picker
-            // Apply turns follow off WITHOUT touching Locus (by design --
-            // ApplyScriptureRef's own doc comment), so if the reader's own
-            // chapter also hasn't moved while follow was off, Locus never
-            // changes across this whole OFF/ON cycle and CurrentBook/
-            // CurrentChapter stay byte-identical to what the picker is
-            // already (stale) showing. Bumping the token forces a resync
-            // regardless.
-            _pickerSyncToken++;
-            _followRunner.SyncNow();
-            await EnterScriptureMode(_locus.Value.Ref);
-        }
-        else
+
+        if (!newFollow)
         {
             await EnterTimeMode(_from, _to);
+            return;
+        }
+
+        if (_pendingLinkEffect is { } task)
+        {
+            await task;
         }
     }
 
@@ -902,7 +1066,15 @@
     // themselves, per the brief's own explicit-toggle precedence.
     public async Task ApplyExternalQuery(string query)
     {
-        _follow = false;
+        // Batch ST-2 (R4): dispatches instead of a direct field write (Follow
+        // has no setter anymore -- it lives in the ViewArrangement atom's
+        // Split arm). OnViewArrangementChanged (subscribed in
+        // OnInitializedAsync) re-renders on this; the explicit StateHasChanged
+        // below stays for the SAME "snappy chip feedback ahead of the load's
+        // own debounce" reason this method's own doc comment already gives --
+        // harmless if it turns out redundant with that subscription's own
+        // re-render.
+        ViewArrangementAtom.Dispatch(new SetSplitFollow(false));
         StateHasChanged(); // snappy chip feedback -- see this method's own doc comment; the load below still runs its own debounce/fetch on top of this
 
         var parts = query.Split('&')
@@ -943,8 +1115,25 @@
     // this button. Locus.Default (GEN, 1) matches ReaderViewState's own
     // defaults exactly, so "never visited the reader this session" still
     // opens GEN 1, unchanged.
+    // Batch ST-2 (R4): dispatches EnterSplit before navigating away --
+    // explicit per the controller ruling's own dispatch-site list
+    // (OpenSplit/CloseSplitAtlas/OpenReadBesideMap/ToggleFollow). The
+    // DESTINATION Reader.razor instance's own SplitQuery-consumption block
+    // dispatches the SAME intent independently on arrival, so this call is
+    // belt-and-suspenders, not load-bearing for correctness. Disclosed
+    // tradeoff: standalone /world's own _follow projection is always false
+    // (WorldOnly carries no Follow field); if ViewState.Map.Follow happens
+    // to be true, THIS dispatch transitions Follow false->true on this
+    // about-to-be-disposed instance, and OnViewArrangementChanged's own
+    // SyncNow() may start a scene fetch that never completes here --
+    // DisposeAsync's existing _fetchCts cancellation handles that cleanly
+    // (DebouncedLoadScriptureScene's own OperationCanceledException catch),
+    // so this is wasted work on the way out, not a correctness bug; no
+    // render glitch either, since SplitMode (the parameter, unaffected by
+    // this dispatch) -- not _follow -- gates which markup branch renders.
     private void OpenReadBesideMap()
     {
+        ViewArrangementAtom.Dispatch(new EnterSplit(ViewState.Map.Follow));
         Nav.NavigateTo($"/read/{_locus.Value.Book}/{_locus.Value.Chapter}?split=1");
     }
 
@@ -1036,30 +1225,25 @@
     // picker/deep-linking into scripture mode REPLACES from/to in the URL
     // (never both at once, see ApplyScriptureRef/ReturnToTime), so checking
     // it first is enough to fully separate the two branches below.
+    // Batch ST-2 (R3): both branches below now call EnterScriptureMode/
+    // EnterTimeMode -- ST-1 fix round 2 deliberately left this method's own
+    // logic inlined (a byte-for-byte copy of what those two methods do),
+    // reasoning it was "battle-tested, unrelated to this batch's own risk
+    // surface." That reasoning doesn't survive R3's own mandate ("every
+    // writer dispatches intents instead"): keeping the duplicate would mean
+    // maintaining TWO separate copies of the dispatch-then-effect wiring,
+    // doubling the surface a future bug/drift could hide in. Collapsing onto
+    // the shared methods is confirmed behavior-preserving -- the inlined
+    // steps were IDENTICAL to EnterScriptureMode/EnterTimeMode's own bodies
+    // already (compared line-for-line before this change), so this is pure
+    // deduplication, not a new code path.
     private async Task SyncFromQuery()
     {
         if (!string.IsNullOrEmpty(RefQuery))
         {
-            _scriptureRef = RefQuery;
-            SyncViewState(); // fix round 2 -- see SyncViewState's own comment
-
-            // Fix round 1 (finding 5): hide the polity-border LAYER the
-            // moment scripture mode is entered -- unconditionally, right
-            // where _scriptureRef itself is set, before the scene fetch
-            // below even starts. Previously this only happened in
-            // DebouncedLoadScriptureScene's SUCCESS branch, so a failed
-            // scripture fetch left the vector layer painting with no time
-            // window to justify it.
-            if (_mapInterop is not null)
-            {
-                await _mapInterop.SetPolitiesVisible(false);
-            }
-
-            await DebouncedLoadScriptureScene(RefQuery);
+            await EnterScriptureMode(RefQuery);
             return;
         }
-
-        _scriptureRef = null;
 
         if (FromQuery is null && ToQuery is null)
         {
@@ -1079,8 +1263,7 @@
                 }
                 else
                 {
-                    SyncViewState(); // fix round 2 -- see SyncViewState's own comment
-                    await DebouncedLoadScene(_from, _to);
+                    await EnterTimeMode(_from, _to);
                 }
             }
 
@@ -1105,10 +1288,7 @@
             return;
         }
 
-        _from = from;
-        _to = to;
-        SyncViewState(); // fix round 2 -- see SyncViewState's own comment
-        await DebouncedLoadScene(from, to);
+        await EnterTimeMode(from, to);
     }
 
     // Batch M requirement 3a: true for exactly the duration of an in-
@@ -2045,6 +2225,11 @@
         // class's own Dispose).
         LocusAtom.Changed -= OnLocusChanged;
         _followRunner.Dispose();
+
+        // Batch ST-2: same reasoning, for the two app-lifetime atoms this
+        // batch adds subscriptions on.
+        TimeWindowAtom.Changed -= OnTimeWindowChanged;
+        ViewArrangementAtom.Changed -= OnViewArrangementChanged;
 
         if (_mapInterop is not null)
         {

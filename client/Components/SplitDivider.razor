@@ -63,10 +63,42 @@
     [Parameter] public double WidthPx { get; set; }
     [Parameter] public EventCallback<double> WidthPxChanged { get; set; }
 
+    // Batch ST-2 (controller ruling R4): fires ONCE per completed gesture --
+    // pointer-up (drag end) or immediately after a keyboard nudge (already a
+    // complete, atomic gesture on its own, unlike a drag) -- never on a live
+    // drag frame the way WidthPxChanged above does. Carries the SAME final
+    // px WidthPxChanged's own last call already reported, plus the
+    // normalized fraction of the measured `.split-view` container width at
+    // that moment (null if the measurement failed/unavailable -- same
+    // fail-soft spirit EnsureMaxWidthAsync below already uses) -- this
+    // component already measures that container for its own clamp ceiling,
+    // so reporting the fraction here avoids Reader.razor needing a second,
+    // duplicate JS round-trip just to compute one.
+    [Parameter] public EventCallback<(double WidthPx, double? Fraction)> OnCommitted { get; set; }
+
     private ElementReference _hitRef;
     private bool _dragging;
     private double _dragStartClientX;
     private double _dragStartWidthPx;
+
+    // The LAST value this drag actually computed (OnPointerMove), NOT the
+    // WidthPx PARAMETER -- Blazor parameter updates only land on the NEXT
+    // render, so reading WidthPx from inside OnPointerUp (fired in the same
+    // synchronous burst as the drag's own final OnPointerMove) risks reading
+    // a stale pre-drag value depending on exact render timing. Reset to the
+    // drag's own starting width at OnPointerDown, so a click-then-release
+    // with zero actual movement still commits a well-defined (unchanged)
+    // value rather than carrying over a PRIOR gesture's leftover number.
+    private double _lastDraggedWidthPx;
+
+    // The total `.split-view` width EnsureMaxWidthAsync below most recently
+    // measured -- cached alongside _maxWidthPx (which is a CLAMP CEILING
+    // derived from this, not the raw total itself) specifically so
+    // OnPointerUp/OnKeyDown can compute a normalized fraction without a
+    // second JS round-trip. Null on a failed/unavailable measurement, same
+    // as _maxWidthPx's own double.MaxValue fallback conceptually means "no
+    // real measurement to divide by."
+    private double? _lastMeasuredTotalWidthPx;
 
     // Re-measured at the START of every gesture (drag OR keyboard), never
     // cached across gestures -- a browser window resize between two
@@ -105,19 +137,29 @@
         {
             var js = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
             var rect = await js.InvokeAsync<PaneRectDto?>("getPaneRect", ".split-view");
+            _lastMeasuredTotalWidthPx = rect?.Width;
             _maxWidthPx = rect is { } r ? Math.Max(MinWidthPx, r.Width - MinWidthPx - DividerWidthPx) : double.MaxValue;
         }
         catch (Exception)
         {
+            _lastMeasuredTotalWidthPx = null;
             _maxWidthPx = double.MaxValue; // fail soft -- see this method's own header comment
         }
     }
+
+    // Batch ST-2: the shared fraction computation OnPointerUp/OnKeyDown both
+    // need for their own OnCommitted call -- null whenever the most recent
+    // EnsureMaxWidthAsync measurement failed/never ran, or (defensively)
+    // came back as a non-positive width.
+    private double? FractionOf(double px) =>
+        _lastMeasuredTotalWidthPx is { } total && total > 0 ? px / total : null;
 
     private async Task OnPointerDown(PointerEventArgs e)
     {
         _dragging = true;
         _dragStartClientX = e.ClientX;
         _dragStartWidthPx = WidthPx;
+        _lastDraggedWidthPx = WidthPx;
 
         var js = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
         await js.InvokeVoidAsync("capturePointer", _hitRef, e.PointerId);
@@ -132,6 +174,7 @@
         }
 
         var next = Math.Clamp(_dragStartWidthPx + (e.ClientX - _dragStartClientX), MinWidthPx, EffectiveMaxWidthPx);
+        _lastDraggedWidthPx = next;
         await WidthPxChanged.InvokeAsync(next);
     }
 
@@ -139,13 +182,25 @@
     // above) -- an interrupted gesture (e.g. a browser-level gesture
     // taking over mid-drag) simply stops updating at whatever width the
     // last successful pointermove already committed, never left visually
-    // "stuck" mid-drag the way leaving _dragging true would risk.
-    private Task OnPointerUp(PointerEventArgs e)
+    // "stuck" mid-drag the way leaving _dragging true would risk. Batch
+    // ST-2 (R4): fires OnCommitted here -- drag END, never a live frame --
+    // with _lastDraggedWidthPx (NOT the WidthPx parameter; see that field's
+    // own comment for why) and the fraction computed from the SAME
+    // measurement OnPointerDown's own EnsureMaxWidthAsync already took.
+    private async Task OnPointerUp(PointerEventArgs e)
     {
+        if (!_dragging)
+        {
+            return;
+        }
+
         _dragging = false;
-        return Task.CompletedTask;
+        await OnCommitted.InvokeAsync((_lastDraggedWidthPx, FractionOf(_lastDraggedWidthPx)));
     }
 
+    // Batch ST-2 (R4): a keyboard nudge is already a complete, atomic gesture
+    // (unlike a drag) -- fires OnCommitted immediately after WidthPxChanged,
+    // in the same call, no separate "end" event to wait for.
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
         var delta = e.Key switch { "ArrowLeft" => -KeyboardStepPx, "ArrowRight" => KeyboardStepPx, _ => 0.0 };
@@ -157,6 +212,7 @@
         await EnsureMaxWidthAsync();
         var next = Math.Clamp(WidthPx + delta, MinWidthPx, EffectiveMaxWidthPx);
         await WidthPxChanged.InvokeAsync(next);
+        await OnCommitted.InvokeAsync((next, FractionOf(next)));
     }
 
     // reader.js's own getPaneRect return shape -- deserialized via

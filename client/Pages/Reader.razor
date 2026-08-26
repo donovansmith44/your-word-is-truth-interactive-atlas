@@ -9,6 +9,7 @@
 @inject ViewStateService ViewState
 @inject SelectionTrayService Selection
 @inject StateAtom<Locus> LocusAtom
+@inject StateAtom<ViewArrangement> ViewArrangementAtom
 
 <PageTitle>Bible Explorer &mdash; @BookName @_chapterNum</PageTitle>
 
@@ -238,9 +239,20 @@
            _splitReaderWidthPx directly (Reader.razor is the split's only
            ever host -- see this page's own SplitMode/OnRequestClose
            comments elsewhere -- so there is exactly one owner for this
-           value, the same reasoning _splitOpen itself already follows). *@
-        <SplitDivider WidthPx="_splitReaderWidthPx" WidthPxChanged="w => _splitReaderWidthPx = w" />
-        <World @ref="_worldPane" SplitMode="true" OnRequestClose="CloseSplitAtlas" />
+           value, the same reasoning _splitOpen itself already follows).
+           Batch ST-2 (R4): OnCommitted is the ONE path DividerFraction ever
+           reaches ViewArrangementAtom -- "commits on drag END only," never a
+           live drag frame (see OnDividerCommitted's own comment). *@
+        <SplitDivider WidthPx="_splitReaderWidthPx" WidthPxChanged="w => _splitReaderWidthPx = w" OnCommitted="OnDividerCommitted" />
+        @* Batch ST-2 (R6): SplitMode stays a plain [Parameter] on World.razor
+           (it is render wiring from this host's own markup branch, not
+           shared state) -- but its VALUE here is now the ViewArrangement
+           projection (_splitOpen itself, per that property's own comment),
+           not an independent literal. Tautologically true inside this @if
+           block (this branch only ever renders while _splitOpen is true),
+           spelled out explicitly anyway so the parameter's VALUE is honestly
+           traceable to the atom, per the controller ruling's own wording. *@
+        <World @ref="_worldPane" SplitMode="@_splitOpen" OnRequestClose="CloseSplitAtlas" />
     }
 
     @if (_activeNode is not null)
@@ -291,7 +303,16 @@
     // is always the embedded guest, never the other way around -- see
     // World.razor's own OnRequestClose param and the batch report's layout
     // section for why).
-    private bool _splitOpen;
+    //
+    // Batch ST-2 (R4/R6): no longer an independent field -- a pure
+    // projection of the shared ViewArrangement atom (Split arm == open).
+    // Every prior writer of this field (OpenSplit, CloseSplitAtlas, the
+    // SplitQuery-consumption block below) now dispatches the corresponding
+    // intent (EnterSplit/EnterReaderOnly) instead, keeping this reading, by
+    // construction, whatever the atom actually holds -- the SAME
+    // "cannot desync because there's nothing to desync FROM" reasoning R6
+    // asks for at World.razor's own SplitMode parameter.
+    private bool _splitOpen => ViewArrangementAtom.Value is Split;
     private bool _splitQueryConsumed;
     private World? _worldPane;
 
@@ -418,15 +439,27 @@
     // -- so it needs no equivalent change). CloseSplitAtlas is the embedded
     // atlas pane's own close button (World.razor's split-close-atlas,
     // wired via OnRequestClose) -- "closing the split cleans the param."
+    // Batch ST-2 (R4): dispatches EnterSplit instead of a direct field write
+    // -- _splitOpen is now a projection (see its own comment). DefaultFollow
+    // sources from ViewState.Map.Follow, the SAME restoration pattern
+    // World.RestoreMapState already uses for TimeWindow (ViewStateService
+    // remains the PERSISTENCE layer beneath the atom -- see EnterSplit's own
+    // doc comment) -- preserves a same-session "last explicit Follow choice"
+    // across a close/reopen, matching this app's pre-ST-2 behavior exactly
+    // (ViewState.Map.Follow is written continuously by World.SyncViewState
+    // whenever Follow -- itself now an atom projection there too -- changes,
+    // so this read is always the last live value, never stale). Only takes
+    // effect if the atom is NOT already Split (EnterSplit's own Apply is a
+    // no-op otherwise, preserving whatever's already there).
     private void OpenSplit()
     {
-        _splitOpen = true;
+        ViewArrangementAtom.Dispatch(new EnterSplit(ViewState.Map.Follow));
         SyncSplitUrl();
     }
 
     private void CloseSplitAtlas()
     {
-        _splitOpen = false;
+        ViewArrangementAtom.Dispatch(new EnterReaderOnly());
         SyncSplitUrl();
     }
 
@@ -442,6 +475,35 @@
     {
         var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?> { ["split"] = _splitOpen ? "1" : null });
         Nav.NavigateTo(uri, replace: true);
+    }
+
+    // Batch ST-2 (R4): SplitDivider's own OnCommitted callback -- fires ONCE
+    // per completed gesture (drag-end or a keyboard nudge), never a live drag
+    // frame ("DividerFraction commits on drag END only"). _splitReaderWidthPx
+    // -- the ACTUAL render source for the divider's pixel position, UNCHANGED
+    // since before this batch -- is updated unconditionally; the atom only
+    // receives the fraction when SplitDivider's own measurement succeeded
+    // (Fraction is null on a failed/unavailable measurement -- same fail-soft
+    // spirit SplitDivider's own EnsureMaxWidthAsync already uses elsewhere).
+    // Scope note (disclosed in the batch report): this is write-through only
+    // -- the atom's own DividerFraction is NOT read back into a fresh px
+    // value on a later split re-open. The pre-existing mechanism
+    // (_splitReaderWidthPx surviving untouched across any same-instance
+    // close/reopen, exactly as it did before ST-2) already covers the one
+    // scenario this app's own UI can reach without a full page navigation; a
+    // genuine cross-remount restore would need an async DOM remeasurement at
+    // an awkward point in the render cycle (the `.split-view` class, and
+    // therefore its own measurable layout width, doesn't exist until AFTER
+    // the split-open render commits) for a scenario the pre-ST-2 code never
+    // supported either (a full remount already reset to the 704px default
+    // before this batch, unchanged).
+    private void OnDividerCommitted((double WidthPx, double? Fraction) result)
+    {
+        _splitReaderWidthPx = result.WidthPx;
+        if (result.Fraction is { } fraction)
+        {
+            ViewArrangementAtom.Dispatch(new SetSplitDividerFraction(fraction));
+        }
     }
 
     // reader-prev/reader-next (Batch R requirement 6/HOTFIX NAV-4) -- their
@@ -515,10 +577,18 @@
         if (!_splitQueryConsumed)
         {
             _splitQueryConsumed = true;
-            if (SplitQuery == "1")
-            {
-                _splitOpen = true;
-            }
+
+            // Batch ST-2 (R4): asserts this fresh Reader.razor instance's own
+            // arrangement, always -- not just on the ?split=1 case -- so the
+            // atom correctly reflects reality regardless of whatever
+            // arrangement a PRIOR instance/page this session left it in (the
+            // standalone counterpart to this is World.OnParametersSetAsync's
+            // own EnterWorldOnly dispatch). EnterSplit's own DefaultFollow
+            // source (ViewState.Map.Follow) matches OpenSplit's own reasoning
+            // above.
+            ViewArrangementAtom.Dispatch(SplitQuery == "1"
+                ? new EnterSplit(ViewState.Map.Follow)
+                : new EnterReaderOnly());
         }
 
         var book = string.IsNullOrWhiteSpace(Book) ? "GEN" : Book.ToUpperInvariant();
