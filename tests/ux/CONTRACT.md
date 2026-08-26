@@ -43,7 +43,14 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
 - Canonical refs: `GEN`, `GEN.1`, `GEN.1.1`, `GEN.1.1-5`
 
 ## data-testid inventory
-Header: `nav-reader`, `nav-world`, `translation-select`, `attribution`
+Header: `nav-reader`, `nav-world`, `translation-select`, `attribution`, `hamburger-menu`
+  (batch-g2-brief.md decision 5; button, top-right on BOTH pages via MainLayout.razor --
+  see EXPLORE-TRAIL-1 below; hidden outright when localStorage genuinely isn't available,
+  same "feature hides if storage unavailable" rule as `popover-save-exploration`),
+  `hamburger-panel` (the open panel -- see EXPLORE-TRAIL-1 for its own contents' testids),
+  `selection-tray` (batch-g2-brief.md decision 6; see SELECTION-1 below; mounted once in
+  MainLayout, so it appears identically on both pages; hidden entirely whenever the tray
+  is empty)
 World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief.md,
   "the ever-present graph": one per currently QUIET place -- an event-bearing place not
   lit this window, see QUIET-1 below -- distinct from and never overlapping
@@ -234,6 +241,11 @@ Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
   {REF}" while following with a REF to show, else "Follow the text"; present
   only on the embedded atlas pane, i.e. only while split is open)
 Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
+  `popover-save-exploration` (batch-g2-brief.md decision 2; button, in the popover's own
+  chrome beside close/back -- POPOVER-LAW-1, no new popover CONTENT; click snapshots the
+  CURRENT trail (decision 1) into a new saved exploration, never closes the popover, never
+  updates a prior save -- see EXPLORE-TRAIL-1; hidden outright when localStorage genuinely
+  isn't available, per decision 4's own "feature hides if storage unavailable"),
   `popover-body` (batch-r-brief.md; the section-registry's own render target
   -- see REGISTRY-1 below),
   `popover-section-{id}` (batch-r-brief.md; one wrapper per RESOLVED section
@@ -3463,6 +3475,17 @@ Notes:
   `hover-passage-{SPAN}` row; clicking a specific verse span opens just that verse and
   never also bubbles into the passage's own click (stopPropagation on the inner
   element) -- the more specific target always wins.
+  batch-g2-brief.md decision 6 layers a FOURTH gesture onto the SAME
+  targets `verse-line-{n}` and `marker-{placeId}`/`quiet-marker-{placeId}`/
+  their own labels already cover, WITHOUT touching this rule's own
+  click-opens-a-popover meaning: Ctrl/Cmd-click never opens a popover and
+  never pins/moves a marker -- see SELECTION-1 below. This is a
+  gesture-level split, not a target-level exclusion (unlike `verse-num-{n}`
+  above, which is a wholly separate ELEMENT) -- plain click on
+  `verse-line-{n}`/a marker/label keeps opening a popover exactly as this
+  rule already describes; the SAME element's own Ctrl/Cmd-click toggles
+  tray selection instead, per SELECTION-1's own "plain-click semantics
+  UNCHANGED" law, asserted directly by `selection-tray.spec.ts`'s SELECTION-2.
 - AFFORDANCE-1 (batch-hotfix4-brief.md requirement 6, owner's own law,
   2026-08-21, near-verbatim: "if something isn't traversable it shouldn't
   look like other things that are actually traversable"). After
@@ -4481,3 +4504,140 @@ Notes:
   Nothing else in `graph_handlers.rs`/`store.rs`/`explore.rs` needed a
   change for the two generic endpoints to serve Person nodes -- the
   thesis's own most direct evidence.
+
+- EXPLORE-TRAIL-1 (batch-g2-brief.md decisions 1/2/3/4/5, "saved
+  explorations + the hamburger menu," Batch G ledger spec: "every node
+  traversal maintains an EPHEMERAL exploration stack with a clean back
+  arrow... explorations SAVEABLE at any point with a record of nodes
+  traversed... hamburger menu top-right on ALL pages: view/continue/edit/
+  create explorations (persist via localStorage)"): the ALREADY-EXISTING
+  back-stack (`ExplorerPopover._stack`, `Back()`, unchanged by this batch)
+  gets a second, PARALLEL, append-only list, `_trail` -- every node VISITED
+  this popover session, in order, distinct from the stack ("where I've
+  been" vs. "where back goes" -- Back never removes a trail entry). Recorded
+  at every point `Current` actually changes (initial open, every Push, every
+  Back landing), collapsing consecutive duplicates. Trail entries render NO
+  new popover CONTENT (POPOVER-LAW-1) -- the only new UI is the chrome save
+  affordance, `popover-save-exploration` (see the testid inventory above).
+
+  THE DESCRIPTOR SEAM: `ExplorationDescriptor` (client/Explore/
+  ExplorationDescriptor.cs) is `{ Kind, Key, Title }` -- `Kind` matches
+  `IExplorable.Kind` exactly; `Key` is the minimal reconstruction string
+  (usually the same string the node's own constructor already takes);
+  `Title` is a cached display copy, never re-fetched just to LIST a saved
+  trail. ONE factory, `ExplorationDescriptor.Reconstruct`, with an
+  exhaustive switch over all 12 concrete `IExplorable` kinds this app
+  defines today (Verse/Passage/Chapter/Book/Author/Place/TimeAndPlace/Year/
+  Catechism/Event/PolityDelta/Person) -- every one is reconstructible; a
+  kind the switch doesn't recognize throws `NotSupportedException` rather
+  than silently dropping it. Most kinds reconstruct synchronously (their
+  constructors take just an id/ref + the cached Title as label, no fetch
+  needed); four kinds -- Passage, TimeAndPlace, Year, PolityDelta -- re-fetch
+  their own already-existing endpoint(s) to rebuild data their live
+  construction site had in hand but never stored on the node itself before
+  this batch (`TimeAndPlaceNode`/`YearNode` both gained a small,
+  additive `PlaceId`/`EventId`/`Label` constructor widening for exactly this
+  -- see each class's own doc comment). `PolityDeltaNode`'s own
+  reconstruction degrades GRACEFULLY (never throws) to that node's own
+  pre-existing "minimal popover" shape if the exact era can no longer be
+  re-located by name+from+to (map.js's own click payload never carried the
+  polity's stable id to .NET, only its display Name -- disclosed, not a new
+  gap this batch introduces).
+
+  PERSISTENCE: `SavedExplorationsService` (client/SavedExplorationsService.cs),
+  a DI singleton, localStorage-backed via the shared `LocalStore` primitive
+  (client/LocalStore.cs) -- one JSON document, key `explorations-v1`: an
+  array of `{id, name, createdUtc, nodes: [descriptor]}`. Restored once at
+  construction, written through on every mutation (Save/Rename/Delete) --
+  ViewStateService's own "restore on init, synced continuously at the point
+  state actually changes" idiom (that file's own header comment), now
+  backed by REAL persistence (ViewStateService's own Map/Reader halves stay
+  deliberately in-memory-only, unchanged). `SavedExplorationsService.Available`
+  (a one-time real localStorage round-trip probe, `LocalStore.Probe`) gates
+  BOTH `hamburger-menu` and `popover-save-exploration` -- "feature hides if
+  storage unavailable," per the brief, verbatim: neither renders at all when
+  storage genuinely doesn't work (private browsing, blocked storage), rather
+  than offering a broken save/view affordance.
+
+  THE HAMBURGER PANEL (MainLayout.razor, mounted once, reaches both pages):
+  `hamburger-menu` opens `hamburger-panel` -- same shared parchment-popover
+  chrome (backdrop/Escape/Close) as the pre-existing Credits panel, its own
+  fixed testids (not the generic `popover`/`popover-backdrop` -- this panel
+  MANAGES saved explorations, it does not render one `IExplorable` node, so
+  it deliberately does not ride `ExplorerPopover`'s own machinery). Empty
+  state: `hamburger-empty`, plain direction-not-mood copy ("Save an
+  exploration from any popover to see it here.") -- "create" needs no
+  separate control, per the brief, verbatim. Each saved exploration is one
+  `ExplorationListItem` (client/Components/ExplorationListItem.razor)
+  instance, testid `exploration-item-{id}`: name, node count, created date;
+  a caret expands/collapses its own trail, `exploration-node-{i}` rows
+  (`i` LOCAL to that item, 0-based), each showing kind + title. Clicking a
+  trail row bubbles the trail PREFIX up to `[0..i]` (that row's own node
+  last); MainLayout reconstructs every descriptor in the prefix CONCURRENTLY
+  (`Task.WhenAll`, this app's own "independent fetches never serialize"
+  rule) and opens a FRESH `ExplorerPopover` seeded via the new
+  `SeedStack` parameter -- pushes every reconstructed node in order, so the
+  clicked node ends up `Current` and Back walks the PRECEDING nodes, exactly
+  "continue," per the brief. A reconstruction failure (the underlying
+  curated data has since disappeared) surfaces via the app's own pre-existing
+  `.toast` affordance, never a crash. Edit: inline rename
+  (`exploration-rename-{id}` toggles an inline `<input>`, Enter commits,
+  Escape cancels, blur commits) and delete (`exploration-delete-{id}` reveals
+  an INLINE confirm -- `exploration-delete-{id}-confirm`/`-cancel` -- never a
+  browser `confirm()` dialog, per the brief, verbatim).
+
+- SELECTION-1 (batch-g2-brief.md decision 6, "selection tray (multi-select
+  v1) -- RULED," accepting batch-r-report.md §7's own proposal verbatim):
+  Ctrl/Cmd-click on an explorable element or a map marker/label toggles that
+  node's own `ExplorationDescriptor` into a persistent Selection Tray --
+  NEVER opens a popover, NEVER moves/pins a marker. Three gestures, three
+  meanings, one target set, no overloaded key: plain click keeps its
+  existing meaning everywhere UNCHANGED (ONE-RULE explore/pin); Shift-click
+  on `verse-num-{n}` keeps its existing, unrelated range-extend meaning
+  UNCHANGED; Ctrl/Cmd-click is the one new gesture. The hover-revealed "+"
+  affordance batch-r-report.md §7 considered and set aside is DEFERRED
+  (declutter law) -- not built.
+
+  WIRED SURFACES (v1 scope, disclosed -- not every explorable element in the
+  app): reader verse lines (`VerseLine.razor`'s own row, `OnRowClick`
+  branches on `e.CtrlKey`/`e.MetaKey` before ever calling `OnExplore`) and
+  world map markers/labels (map.js's `wireEvents`/`wireQuietEvents`, a new
+  `isToggleSelectClick` check ahead of the existing pin-click branch, fired
+  for BOTH marker and label since LABEL-1's own bubbling fix already routes
+  a label click into the SAME handler as its dot). Popover-INTERNAL
+  explorable rows (inline cross-references, place-event rows, mentions,
+  etc.) are NOT wired for this gesture in v1 -- a disclosed scope limit, not
+  an oversight, matching this proposal's own "prove the gesture first"
+  framing; a later batch can extend coverage without changing the mechanism
+  itself.
+
+  PERSISTENCE: `SelectionTrayService` (client/SelectionTrayService.cs), a DI
+  singleton (app-lifetime, exactly like `ViewStateService`) -- being a
+  singleton is the ENTIRE mechanism behind "persists across reader<->world
+  navigation" (the brief's own requirement): the same instance's `Items` is
+  still populated when the OTHER page mounts, localStorage or not.
+  localStorage (`LocalStore`, key `selection-v1`, ONE descriptor array --
+  the SAME descriptor vocabulary decision 4's saved explorations use) adds
+  survival across a hard reload on top of that; unlike
+  `SavedExplorationsService`, the tray itself is NEVER hidden when storage
+  is unavailable (only in-session behavior would be lost, a smaller cost
+  than for a deliberate save).
+
+  THE TRAY (`SelectionTray.razor`, mounted once in MainLayout, reaches both
+  pages -- "a parchment strip," per batch-r-report.md §7, verbatim,
+  regardless of which page's own theme is showing, same "One [shared
+  artifact] style everywhere" precedent the popover itself already
+  established): `selection-tray`, hidden ENTIRELY whenever the tray is
+  empty (conditional presence, never an empty shell) -- `selection-tray-count`,
+  one `selection-chip-{i}` per selected node (title + kind + a remove
+  button), `selection-clear`. NO ACTION VERBS (the brief's own explicit
+  scoping, verbatim: "the tray exists so the owner can judge the gesture;
+  the verb set is a later brief") -- every control here does exactly one
+  thing, remove itself or clear the set; there is no per-chip "do something
+  with this node" affordance at all.
+
+  PLAIN-CLICK PARITY (asserted, not assumed): `selection-tray.spec.ts`'s
+  own SELECTION-2 case drives an ORDINARY (no modifier) click on the same
+  verse-line/marker elements the Ctrl/Cmd-click cases exercise and asserts
+  the popover still opens exactly as before AND the tray stays untouched --
+  the gesture split is real, not merely documented.
