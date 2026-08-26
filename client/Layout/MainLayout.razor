@@ -50,7 +50,7 @@
 @if (_showHamburger)
 {
     <div class="popover-backdrop" data-testid="popover-backdrop" @onclick="CloseHamburger"></div>
-    <div class="hamburger-panel" data-testid="hamburger-panel" tabindex="-1" @ref="_hamburgerPanelRef" @onkeydown="OnHamburgerKeyDown">
+    <div class="popover hamburger-panel" data-testid="hamburger-panel" tabindex="-1" @ref="_hamburgerPanelRef" @onkeydown="OnHamburgerKeyDown">
         <div class="popover-head">
             <p class="popover-title" data-testid="popover-title" data-ref="false">Explorations</p>
             <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" @onclick="CloseHamburger">&times;</button>
