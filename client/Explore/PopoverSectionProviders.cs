@@ -1095,9 +1095,10 @@ public sealed class PlaceEventsSection : IPopoverSectionProvider
         RenderFragment body = builder =>
         {
             builder.OpenComponent<Components.PlaceEventsList>(0);
-            builder.AddAttribute(1, "PlaceName", placeName);
-            builder.AddAttribute(2, "Events", events);
-            builder.AddAttribute(3, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.AddAttribute(1, "PlaceId", place.PlaceId);
+            builder.AddAttribute(2, "PlaceName", placeName);
+            builder.AddAttribute(3, "Events", events);
+            builder.AddAttribute(4, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
         };
         return new PopoverSection("place-events", body);

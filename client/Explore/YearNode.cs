@@ -18,13 +18,25 @@ public sealed class YearNode : IExplorable
     private readonly TimeRangeDto _when;
     private readonly List<string> _verses;
 
-    public YearNode(string label, TimeRangeDto when, List<string> verses, string? note)
+    // Batch G2 decision 3: PlaceId + the raw Label (below) let
+    // ExplorationDescriptor.Capture build a stable "{placeId}|{label}"
+    // reconstruction key -- PlaceCard (this node's only constructor) already
+    // has Place.Id on hand for both its "Established"/"Destroyed" call
+    // sites, so this costs it nothing new. Reconstruction re-fetches
+    // AtlasClient.PlaceHistory(placeId) and reads back whichever of
+    // History.Established/.Destroyed matches Label -- see
+    // ExplorationDescriptor.cs's own doc comment.
+    public YearNode(string placeId, string label, TimeRangeDto when, List<string> verses, string? note)
     {
+        PlaceId = placeId;
+        Label = label;
         Title = $"{label} {YearText.FormatClaim(when.FromYear, when.ToYear, note)}";
         _when = when;
         _verses = verses;
     }
 
+    public string PlaceId { get; }
+    public string Label { get; }
     public string Title { get; }
     public string Kind => "Year";
 

@@ -4567,6 +4567,373 @@ input:focus-visible,
     color: var(--ink);
 }
 
+/* Batch G2 decision 2: the popover's own save affordance -- same icon-scale
+   footprint/material as .popover-head-action/.popover-breadcrumb-back
+   immediately above (a deliberate match, same flex row), a plain filled
+   star glyph (a quiet, universally-legible "save/bookmark" instrument
+   mark, matching this file's own established "quiet Unicode glyph, never
+   an emoji" register -- ExplorerPopover.razor's own ChipGlyph comment names
+   the same precedent). */
+.popover-save-exploration {
+    flex: none;
+    width: 1.9rem;
+    height: 1.9rem;
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--bronze-ink);
+    background: none;
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: color 120ms ease-out, border-color 120ms ease-out;
+}
+
+.popover-save-exploration:hover {
+    color: var(--lapis);
+    border-color: var(--lapis);
+}
+
+/* A brief, quiet acknowledgment that a save just landed -- cleared on the
+   next navigation (ExplorerPopover.razor's own RecordTrailVisit), never a
+   timer, so it can never linger or fight a fast double-save. --lapis, the
+   SAME already-vetted (>=7:1 on --parchment-raised) accent
+   .popover-head-action/.popover-breadcrumb-back already use for their own
+   hover state -- not --ember (that token is tuned for GLOW against dark map
+   terrain, not text/icon contrast against light parchment; measured well
+   under 7:1 here). */
+.popover-save-exploration-saved {
+    color: var(--lapis);
+    border-color: var(--lapis);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .popover-save-exploration {
+        transition: none;
+    }
+}
+
+/* Batch G2 decision 5: the hamburger button -- same quiet-icon-button
+   treatment as .attribution's own small header control, sized instead like
+   a compact instrument button (matching .popover-head-action's own
+   footprint, reused here for the SAME "small, bordered, single-glyph
+   control" reason) since it needs its own visible hit target/focus ring
+   independent of any text baseline. */
+.hamburger-menu {
+    flex: none;
+    width: 1.8rem;
+    height: 1.8rem;
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    line-height: 1;
+    color: var(--header-fg, var(--ink));
+    background: none;
+    border: 1px solid var(--header-border, var(--bronze));
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* The OPEN/hover state changes only the BORDER weight (no new text/glyph
+   color -- borders carry no WCAG text-contrast obligation, so this is the
+   one visual change here with zero contrast risk to re-check): the resting
+   glyph color (--header-fg, already the header's own vetted >=7:1 token,
+   parchment or dusk) never changes, unlike .attribution's own opacity
+   treatment, which this batch does not touch or reuse (dimming via opacity
+   would quietly undercut an already-passing token's real contrast, exactly
+   the kind of risk decision 7's own 7:1 floor rules out). */
+.hamburger-menu:hover,
+.hamburger-menu[aria-expanded="true"] {
+    border-color: var(--header-fg, var(--ink));
+}
+
+/* The hamburger panel itself rides .popover's own base rule (position,
+   material, animation) via a SECOND class -- same "shared shape, own
+   content" reuse Task 16's Credits panel already established (that panel
+   is bare `.popover`, no second class at all, since it needs no width
+   override of its own; this one does, hence the extra class here). */
+.hamburger-panel {
+    width: min(26rem, calc(100vw - 3rem));
+}
+
+.hamburger-exploration-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.hamburger-empty {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: .92rem;
+    /* Real, readable copy (not quiet metadata) -- --ink, same as
+       .popover-body/.popover-verse-text, matches the established >=7:1
+       floor with real margin (13.98:1, computed) rather than --ink-soft
+       (measured well under 7:1 on either parchment surface -- see this
+       batch's own contrast working notes in the report). */
+    color: var(--ink);
+}
+
+.hamburger-exploration {
+    border: 1px solid rgba(138, 107, 61, .3);
+    border-radius: 4px;
+    padding: .5rem .6rem;
+}
+
+.hamburger-exploration-row {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.hamburger-exploration-summary {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: baseline;
+    gap: .5rem;
+    min-width: 0;
+    font-family: inherit;
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: start;
+    cursor: pointer;
+}
+
+.hamburger-caret {
+    flex: none;
+    /* --bronze-ink, not --ink-soft -- see .hamburger-empty's own comment on
+       why every small instrument-face text token in this batch's own new
+       CSS is --bronze-ink/--ink, never the under-floor --ink-soft. */
+    color: var(--bronze-ink);
+    font-size: .8rem;
+}
+
+.hamburger-exploration-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-serif);
+    font-size: .96rem;
+    color: var(--ink);
+}
+
+.hamburger-exploration-meta {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    color: var(--bronze-ink);
+}
+
+.hamburger-rename-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: var(--font-serif);
+    font-size: .96rem;
+    color: var(--ink);
+    background: var(--parchment);
+    border: 1px solid var(--bronze);
+    border-radius: 3px;
+    padding: .1rem .3rem;
+}
+
+.hamburger-exploration-controls {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+
+.hamburger-exploration-control {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .03em;
+    font-size: .78rem;
+    color: var(--bronze-ink);
+    background: none;
+    border: 1px solid var(--bronze);
+    border-radius: 3px;
+    padding: .15rem .45rem;
+    cursor: pointer;
+}
+
+.hamburger-exploration-control:hover {
+    color: var(--lapis);
+    border-color: var(--lapis);
+}
+
+.hamburger-delete-confirm-text {
+    font-family: var(--font-serif);
+    font-size: .78rem;
+    /* --red-letter, not --ochre-alert -- this is STATIC warning text (not a
+       transient hover state the way .popover-close:hover's own --ochre-alert
+       use is), so it needs a token that clears 7:1 at rest; --red-letter is
+       this file's own already-vetted red-family token for exactly that
+       ("7.47:1 on --parchment / 8.07:1 on --parchment-raised", its own
+       :root comment). */
+    color: var(--red-letter);
+}
+
+.hamburger-exploration-trail {
+    margin: .5rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+    border-top: 1px solid rgba(138, 107, 61, .18);
+    padding-top: .4rem;
+}
+
+.hamburger-exploration-trail-node {
+    display: flex;
+    align-items: baseline;
+    gap: .5rem;
+    width: 100%;
+    font-family: inherit;
+    background: none;
+    border: none;
+    border-radius: 3px;
+    padding: .2rem .3rem;
+    text-align: start;
+    cursor: pointer;
+}
+
+.hamburger-node-kind {
+    flex: none;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .04em;
+    font-size: .78rem;
+    color: var(--bronze-ink);
+}
+
+.hamburger-node-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: .88rem;
+    color: var(--ink);
+}
+
+/* Batch G2 decision 6 (multi-select v1): the selection tray -- "a small,
+   dismissible parchment strip," batch-r-report.md §7's own proposal,
+   verbatim. Docked bottom-center, ABOVE .toast's own bottom-left slot and
+   clear of every other docked corner panel this file already establishes
+   (.mode-chip/.legend/.slider at bottom-right and bottom-center-timeline,
+   .toast at bottom-left) -- position:fixed (not :absolute) since, unlike
+   those, this strip is mounted once in MainLayout and must stay
+   viewport-anchored across BOTH page shapes (the scrolling reader page and
+   the fixed-height world page) without a page-specific override the way
+   .toast needs one. */
+.selection-tray {
+    position: fixed;
+    left: 50%;
+    bottom: 1.25rem;
+    transform: translateX(-50%);
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    max-width: min(46rem, calc(100vw - 3rem));
+    padding: .5rem .75rem;
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+    border-radius: 8px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .3);
+}
+
+.selection-tray-count {
+    flex: none;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .04em;
+    font-size: .82rem;
+    color: var(--bronze-ink);
+}
+
+.selection-tray-chips {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    overflow-x: auto;
+}
+
+.selection-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    background: var(--parchment);
+    border: 1px solid rgba(138, 107, 61, .4);
+    border-radius: 999px;
+    padding: .15rem .3rem .15rem .55rem;
+}
+
+.selection-chip-kind {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .03em;
+    font-size: .74rem;
+    color: var(--bronze-ink);
+}
+
+.selection-chip-title {
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    color: var(--ink);
+}
+
+.selection-chip-remove {
+    flex: none;
+    font-family: var(--font-serif);
+    font-size: .95rem;
+    line-height: 1;
+    color: var(--ink-soft);
+    background: none;
+    border: none;
+    padding: 0 .15rem;
+    cursor: pointer;
+}
+
+.selection-chip-remove:hover {
+    color: var(--ochre-alert);
+}
+
+.selection-clear {
+    flex: none;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .04em;
+    font-size: .8rem;
+    color: var(--bronze-ink);
+    background: none;
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    padding: .2rem .55rem;
+    cursor: pointer;
+}
+
+.selection-clear:hover {
+    color: var(--lapis);
+    border-color: var(--lapis);
+}
+
 /* --- Blazor WebAssembly framework chrome (boot loader + unhandled-error
    banner) -- required by the runtime, retinted to the app's palette. --- */
 

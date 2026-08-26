@@ -810,10 +810,10 @@
     // code, consuming the closing quote early). Named methods sidestep it
     // entirely; no inline string literals appear in the markup at all.
     private Task ExploreEstablished(DateClaimOut claim) =>
-        OnExploreNode.InvokeAsync(new YearNode("Established", claim.When, claim.Verses, claim.Note));
+        OnExploreNode.InvokeAsync(new YearNode(Place.Id, "Established", claim.When, claim.Verses, claim.Note));
 
     private Task ExploreDestroyed(DateClaimOut claim) =>
-        OnExploreNode.InvokeAsync(new YearNode("Destroyed", claim.When, claim.Verses, claim.Note));
+        OnExploreNode.InvokeAsync(new YearNode(Place.Id, "Destroyed", claim.When, claim.Verses, claim.Note));
 
     // Batch G1 requirement 1b: card verses/passages become explorable via
     // the SAME OnExploreNode callback Batch E's dates already use (World

@@ -1,6 +1,9 @@
+@using BibleAtlas.Client.Explore
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject NavigationManager Nav
+@inject AtlasClient Atlas
+@inject SavedExplorationsService SavedExplorations
 
 <header class="app-header @HeaderThemeClass">
     <a class="wordmark" href="/">Bible Explorer <span class="wordmark-glyph" aria-hidden="true">&#8756;</span></a>
@@ -15,9 +18,74 @@
         <select id="translation-select" class="translation-select" data-testid="translation-select">
             <option value="kjv">KJV</option>
         </select>
+        @* Batch G2 decision 5: "hamburger menu top-right on ALL pages" --
+           MainLayout wraps every page (design-direction.md/Batch G ledger
+           spec, verbatim), so one instance here reaches both without either
+           page needing its own copy. Reuses .header-tools' own existing
+           top-right slot, alongside Credits -- same shared chrome, same
+           placement discipline. *@
+        @* Batch G2 decision 4's own "feature hides if storage unavailable"
+           extended here too -- the ENTIRE hamburger feature (decision 5) is
+           a view onto SavedExplorationsService's own localStorage-backed
+           list; with no durable store behind it, there is nothing honest
+           for this button to open. *@
+        @if (SavedExplorations.Available)
+        {
+            <button type="button" class="hamburger-menu" data-testid="hamburger-menu" aria-label="Explorations menu"
+                    aria-expanded="@(_showHamburger ? "true" : "false")" @onclick="ToggleHamburger">&#9776;</button>
+        }
         <button type="button" class="attribution" data-testid="attribution" @onclick="ToggleAttribution">Credits</button>
     </div>
 </header>
+
+<SelectionTray />
+
+@* Batch G2 decision 5: the hamburger panel -- same shared parchment-popover
+   markup/testids the Credits panel immediately below already establishes
+   (backdrop click / Close / Escape all close it), NOT reusing the generic
+   `popover`/`popover-backdrop` testids themselves (decision 5's own fixed
+   ids: hamburger-menu/hamburger-panel) -- this is chrome for MANAGING saved
+   explorations, not an ExplorerPopover rendering one IExplorable node, so it
+   deliberately does not ride that component's own machinery. *@
+@if (_showHamburger)
+{
+    <div class="popover-backdrop" data-testid="popover-backdrop" @onclick="CloseHamburger"></div>
+    <div class="hamburger-panel" data-testid="hamburger-panel" tabindex="-1" @ref="_hamburgerPanelRef" @onkeydown="OnHamburgerKeyDown">
+        <div class="popover-head">
+            <p class="popover-title" data-testid="popover-title" data-ref="false">Explorations</p>
+            <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" @onclick="CloseHamburger">&times;</button>
+        </div>
+        @if (SavedExplorations.Items.Count == 0)
+        {
+            @* House copy law: direction, not mood -- "Save an exploration
+               from any popover" class of copy, per the brief, verbatim. *@
+            <p class="hamburger-empty" data-testid="hamburger-empty">
+                Save an exploration from any popover to see it here.
+            </p>
+        }
+        else
+        {
+            <ol class="hamburger-exploration-list">
+                @foreach (var item in SavedExplorations.Items)
+                {
+                    <ExplorationListItem Item="item" OnContinue="Continue" OnRename="Rename" OnDelete="Delete" />
+                }
+            </ol>
+        }
+    </div>
+}
+
+@if (_hamburgerActiveNode is not null)
+{
+    <ExplorerPopover @key="_hamburgerActiveNode" Root="_hamburgerActiveNode" SeedStack="_hamburgerSeedStack" OnClose="CloseHamburgerPopover" />
+}
+
+@if (_hamburgerError is not null)
+{
+    <div class="toast" data-testid="toast">
+        <p class="toast-message">@_hamburgerError</p>
+    </div>
+}
 
 <main class="app-main">
     @Body
@@ -79,8 +147,28 @@
     private bool _focusPending;
     private ElementReference _panelRef;
 
+    // Batch G2 decision 5: the hamburger panel -- same focus-on-open/
+    // Escape-to-close discipline as the Credits popover immediately above,
+    // a SEPARATE bool/ref pair (not a rename of the Credits fields) since
+    // the two panels can, in principle, each be independently opened/closed
+    // (never SIMULTANEOUSLY per ToggleHamburger/ToggleAttribution below --
+    // opening one closes the other, avoiding two backdrops stacking -- but
+    // each still needs its own state to track that).
+    private bool _showHamburger;
+    private bool _focusHamburgerPending;
+    private ElementReference _hamburgerPanelRef;
+
+    // "Continue" (ExplorationListItem.OnContinue): the hamburger-opened
+    // ExplorerPopover's own Root/SeedStack -- see ExplorerPopover.razor's
+    // own SeedStack doc comment for why Root is always SeedStack's own last
+    // element when both are set.
+    private IExplorable? _hamburgerActiveNode;
+    private IReadOnlyList<IExplorable>? _hamburgerSeedStack;
+    private string? _hamburgerError;
+
     private void ToggleAttribution()
     {
+        _showHamburger = false; // never two chrome backdrops stacked at once
         _showAttribution = !_showAttribution;
         if (_showAttribution)
         {
@@ -96,6 +184,64 @@
         {
             CloseAttribution();
         }
+    }
+
+    // Batch G2 decision 5: same toggle/close/Escape shape as
+    // ToggleAttribution/CloseAttribution/OnAttributionKeyDown immediately
+    // above, one bool/ref pair of its own.
+    private void ToggleHamburger()
+    {
+        _showAttribution = false; // never two chrome backdrops stacked at once
+        _showHamburger = !_showHamburger;
+        if (_showHamburger)
+        {
+            _focusHamburgerPending = true;
+        }
+    }
+
+    private void CloseHamburger() => _showHamburger = false;
+
+    private void OnHamburgerKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            CloseHamburger();
+        }
+    }
+
+    private void Rename((string Id, string Name) args) => SavedExplorations.Rename(args.Id, args.Name);
+
+    private void Delete(string id) => SavedExplorations.Delete(id);
+
+    // Batch G2 decision 5 ("continue"): reconstructs every descriptor in
+    // the clicked trail-prefix (ExplorationDescriptor.Reconstruct, decision
+    // 3) CONCURRENTLY -- same "independent fetches never serialize" rule
+    // this app follows throughout (ExplorerPopover.LoadCurrent's own doc
+    // comment) -- then seeds a fresh ExplorerPopover with all of them, in
+    // order, via SeedStack. A descriptor whose underlying curated data has
+    // since disappeared throws (see Reconstruct's own doc comment); caught
+    // here and surfaced via the same .toast affordance every page already
+    // uses for a failed fetch, never a crash.
+    private async Task Continue(List<ExplorationDescriptor> trailPrefix)
+    {
+        CloseHamburger();
+        _hamburgerError = null;
+        try
+        {
+            var nodes = await Task.WhenAll(trailPrefix.Select(d => ExplorationDescriptor.Reconstruct(d, Atlas)));
+            _hamburgerSeedStack = nodes;
+            _hamburgerActiveNode = nodes[^1];
+        }
+        catch (Exception)
+        {
+            _hamburgerError = "Couldn't reopen this exploration — some of it may no longer be available.";
+        }
+    }
+
+    private void CloseHamburgerPopover()
+    {
+        _hamburgerActiveNode = null;
+        _hamburgerSeedStack = null;
     }
 
     // Fix round 1 (M1): mirrors ExplorerPopover's FocusAsync-after-open
@@ -129,9 +275,43 @@
             // visible focus ring on open), never load-bearing for the
             // popover's own functionality.
         }
+
+        // Batch G2 decision 5: same guarded, re-armed-per-open focus
+        // discipline as _focusPending/_panelRef immediately above,
+        // independently gated in the SAME override (a component has only
+        // ONE OnAfterRenderAsync) -- in practice only ever one of the two
+        // is pending at once, since opening either panel closes the other
+        // (ToggleHamburger/ToggleAttribution).
+        if (_focusHamburgerPending)
+        {
+            _focusHamburgerPending = false;
+            try
+            {
+                await _hamburgerPanelRef.FocusAsync();
+            }
+            catch (Exception)
+            {
+                // Non-fatal -- same graceful-degradation stance as above.
+            }
+        }
     }
 
-    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+    protected override void OnInitialized()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+        // Batch G2 decision 2/5: ExplorerPopover's own save button lives
+        // under Reader.razor/World.razor's render tree, a SIBLING of
+        // MainLayout, not a descendant -- Blazor's automatic post-EventCallback
+        // re-render only reaches the component that OWNS the callback
+        // delegate, so a save made there does not, on its own, tell an
+        // ALREADY-OPEN hamburger panel here to refresh. Subscribing to the
+        // service's own Changed event closes that gap -- same "one owner
+        // mutates, every reader re-renders on notice" shape SelectionTray.razor
+        // already uses for SelectionTrayService.Changed.
+        SavedExplorations.Changed += OnSavedExplorationsChanged;
+    }
+
+    private void OnSavedExplorationsChanged() => InvokeAsync(StateHasChanged);
 
     // MainLayout persists across client-side navigations (Blazor doesn't
     // recreate the layout per route), so the theme class needs an explicit
@@ -142,8 +322,20 @@
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         _showAttribution = false;
+        // Batch G2 decision 5: same reasoning -- a hamburger panel, or a
+        // popover it opened via "continue," left floating here would
+        // otherwise persist over the next page too (MainLayout itself
+        // survives client-side navigation; neither of these do the pages'
+        // own per-navigation reset today).
+        _showHamburger = false;
+        _hamburgerActiveNode = null;
+        _hamburgerSeedStack = null;
         StateHasChanged();
     }
 
-    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+        SavedExplorations.Changed -= OnSavedExplorationsChanged;
+    }
 }

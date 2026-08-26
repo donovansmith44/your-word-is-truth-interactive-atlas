@@ -98,7 +98,7 @@
 
 <div class="@RowClass" data-testid="@RowTestId" data-focal="@(Focal ? "true" : "false")" id="@Id"
      tabindex="0" role="button" aria-label="@($"Explore {Vref}")"
-     @onclick="() => OnExplore.InvokeAsync(new VerseNode(Vref))" @onkeydown="@(e => OnLineKeyDown(e))">
+     @onclick="OnRowClick" @onkeydown="@(e => OnLineKeyDown(e))">
     @if (ShowVerseNumButton)
     {
         <button type="button" class="@VerseNumClass" data-testid="@VerseNumTestId"
@@ -137,6 +137,28 @@
     // through) -- see this file's own header comment for the two
     // containers' own different wiring.
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    // Batch G2 decision 6 (multi-select v1): Ctrl/Cmd-click on the row
+    // toggles this verse into the Selection Tray INSTEAD of opening a
+    // popover -- "plain click keeps ONE-RULE explore/pin semantics
+    // everywhere... Ctrl/Cmd-click never opens a popover," per the brief,
+    // verbatim. Optional (default unbound, a harmless no-op EventCallback)
+    // -- MiniReaderExpand's own mini-reader rows leave this unwired, same
+    // "declutter/scope" stance XrefHoverEnter/-Leave already establish for
+    // that container (this file's own header comment): the tray gesture's
+    // v1 scope is the MAIN reader surface, not a nested popover's own
+    // secondary rendering of the same chapter.
+    [Parameter] public EventCallback<VerseNode> OnToggleSelect { get; set; }
+
+    // Splits the row's own single onclick into the three-gesture grammar
+    // batch-r-report.md §7 proposes: Ctrl/Cmd-click toggles selection (never
+    // opens a popover, never touches OnExplore); every other click keeps its
+    // pre-existing, UNCHANGED meaning (open this verse's popover). Shift is
+    // deliberately not read here at all -- shift-click's own range-extend
+    // meaning lives entirely on verse-NUM (a different element, OnVerseNumClick
+    // below), never on this row.
+    private Task OnRowClick(MouseEventArgs e) =>
+        e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(new VerseNode(Vref)) : OnExplore.InvokeAsync(new VerseNode(Vref));
 
     // MiniReaderExpand only: is this verse inside the popover's own focal
     // range (`data-focal`, READER-1's calm static highlight)? Reader.razor

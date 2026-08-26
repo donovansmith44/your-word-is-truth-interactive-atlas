@@ -16,6 +16,19 @@ public interface IMapEvents
     void OnPlaceHover(string id, double x, double y);
     void OnPlaceLeave();
     void OnPlaceClick(string id, double x, double y);
+
+    /// <summary>
+    /// Batch G2 decision 6 (multi-select v1, RULED per batch-r-report.md
+    /// §7): Ctrl/Cmd-click on a marker OR label (both already bubble into
+    /// the SAME wireEvents/wireQuietEvents click handler map.js's own
+    /// BLINK-1/LABEL-1 fix already established -- see map.js's own
+    /// `wireEvents` header comment). Fired INSTEAD of <see cref="OnPlaceClick"/>
+    /// for that one gesture -- never both for the same physical click -- so
+    /// this never opens a popover and never moves the pin, per the brief's
+    /// own gesture ruling.
+    /// </summary>
+    void OnPlaceToggleSelect(string id);
+
     void OnArrowHover(string key, double x, double y);
     void OnArrowLeave();
     void OnArrowClick(string key, double x, double y);
@@ -399,6 +412,7 @@ public sealed class MapEventsSink
     [JSInvokable] public void OnPlaceHover(string id, double x, double y) => _sink.OnPlaceHover(id, x, y);
     [JSInvokable] public void OnPlaceLeave() => _sink.OnPlaceLeave();
     [JSInvokable] public void OnPlaceClick(string id, double x, double y) => _sink.OnPlaceClick(id, x, y);
+    [JSInvokable] public void OnPlaceToggleSelect(string id) => _sink.OnPlaceToggleSelect(id);
     [JSInvokable] public void OnArrowHover(string key, double x, double y) => _sink.OnArrowHover(key, x, y);
     [JSInvokable] public void OnArrowLeave() => _sink.OnArrowLeave();
     [JSInvokable] public void OnArrowClick(string key, double x, double y) => _sink.OnArrowClick(key, x, y);

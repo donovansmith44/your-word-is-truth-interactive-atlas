@@ -6,6 +6,7 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ViewStateService ViewState
+@inject SelectionTrayService Selection
 
 <PageTitle>Bible Explorer &mdash; @BookName @_chapterNum</PageTitle>
 
@@ -185,7 +186,7 @@
                                TextClass="verse-text" MentionClass="verse-mention"
                                XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(v.Verse, "")"
                                OnXrefClick="OpenVerseXrefEntryPersistent" OnXrefHoverEnter="OpenVerseXrefEntryHover"
-                               OnXrefHoverLeave="OnXrefMarkerPointerLeave" />
+                               OnXrefHoverLeave="OnXrefMarkerPointerLeave" OnToggleSelect="OnLineToggleSelect" />
                 }
             </article>
         }
@@ -653,6 +654,11 @@
         ResetXrefEntryState();
         _activeNode = node;
     }
+
+    // Batch G2 decision 6: VerseLine's own Ctrl/Cmd-click gesture -- never
+    // touches _activeNode/ResetXrefEntryState (no popover opens; the plain-
+    // click path above is completely untouched by this branch existing).
+    private void OnLineToggleSelect(VerseNode node) => Selection.Toggle(ExplorationDescriptor.Capture(node));
 
     // Shared by every popover-opening method that is NOT a superscript
     // entry point (OnLineExplore/OpenChapter/OpenPassage/ClosePopover) --

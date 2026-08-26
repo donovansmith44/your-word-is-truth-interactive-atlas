@@ -1,0 +1,159 @@
+@* Batch G2 decision 5: one row in the hamburger panel's own saved-
+   explorations list -- a real component (not a hand-built RenderFragment
+   in MainLayout.razor) because it owns genuine per-item interactive state
+   (expanded/collapsed, an in-progress rename value, a pending delete
+   confirm) MainLayout's own shared, persistent instance has no clean way to
+   hold per-item -- the same "a provider instance is shared/static and
+   cannot own per-item state; a component can" precedent VerseTextSection/
+   PlaceEventsList already established (see those files' own header
+   comments). *@
+@using BibleAtlas.Client.Explore
+
+<li class="hamburger-exploration" data-testid="@($"exploration-item-{Item.Id}")">
+    <div class="hamburger-exploration-row">
+        <button type="button" class="hamburger-exploration-summary" aria-expanded="@(_expanded ? "true" : "false")" @onclick="ToggleExpanded">
+            <span class="hamburger-caret" aria-hidden="true">@(_expanded ? "▾" : "▸")</span>
+            @if (_renaming)
+            {
+                <input class="hamburger-rename-input" data-testid="@($"exploration-rename-input-{Item.Id}")" value="@_renameValue"
+                       @oninput="e => _renameValue = e.Value?.ToString() ?? string.Empty" @onclick:stopPropagation="true"
+                       @onkeydown="OnRenameKeyDown" @onkeydown:stopPropagation="true" @onblur="CommitRename" @ref="_renameInputRef" />
+            }
+            else
+            {
+                <span class="hamburger-exploration-name">@Item.Name</span>
+            }
+            <span class="hamburger-exploration-meta">
+                @Item.Nodes.Count node@(Item.Nodes.Count == 1 ? "" : "s") &middot; @Item.CreatedUtc.ToLocalTime().ToString("MMM d, yyyy")
+            </span>
+        </button>
+        <div class="hamburger-exploration-controls">
+            @if (_confirmingDelete)
+            {
+                <span class="hamburger-delete-confirm-text">Delete this exploration?</span>
+                <button type="button" class="hamburger-exploration-control" data-testid="@($"exploration-delete-{Item.Id}-confirm")"
+                        @onclick="ConfirmDelete">Delete</button>
+                <button type="button" class="hamburger-exploration-control" data-testid="@($"exploration-delete-{Item.Id}-cancel")"
+                        @onclick="() => _confirmingDelete = false">Cancel</button>
+            }
+            else
+            {
+                <button type="button" class="hamburger-exploration-control" data-testid="@($"exploration-rename-{Item.Id}")"
+                        aria-label="Rename this exploration" @onclick="StartRename">Rename</button>
+                <button type="button" class="hamburger-exploration-control" data-testid="@($"exploration-delete-{Item.Id}")"
+                        aria-label="Delete this exploration" @onclick="() => _confirmingDelete = true">Delete</button>
+            }
+        </div>
+    </div>
+
+    @if (_expanded)
+    {
+        <ol class="hamburger-exploration-trail">
+            @for (var i = 0; i < Item.Nodes.Count; i++)
+            {
+                var idx = i; // local copy -- captured per-row by the onclick closure below
+                var node = Item.Nodes[idx];
+                <li>
+                    <button type="button" class="hamburger-exploration-trail-node explorable" data-testid="@($"exploration-node-{idx}")"
+                            @onclick="() => OnContinue.InvokeAsync(Item.Nodes.Take(idx + 1).ToList())">
+                        <span class="hamburger-node-kind">@node.Kind</span>
+                        <span class="hamburger-node-title">@node.Title</span>
+                    </button>
+                </li>
+            }
+        </ol>
+    }
+</li>
+
+@code {
+    [Parameter, EditorRequired] public SavedExploration Item { get; set; } = default!;
+
+    // Batch G2 decision 5 ("continue"): fires with the trail TRUNCATED to
+    // [0..clickedIndex] (the clicked node last, the trail's own PRECEDING
+    // nodes before it, in order) -- MainLayout reconstructs each descriptor
+    // via ExplorationDescriptor.Reconstruct and opens the popover seeded
+    // with exactly that sub-stack (ExplorerPopover.SeedStack), so Back walks
+    // the saved journey up to the clicked point.
+    [Parameter, EditorRequired] public EventCallback<List<ExplorationDescriptor>> OnContinue { get; set; }
+    [Parameter, EditorRequired] public EventCallback<(string Id, string Name)> OnRename { get; set; }
+    [Parameter, EditorRequired] public EventCallback<string> OnDelete { get; set; }
+
+    private bool _expanded;
+    private bool _renaming;
+    private bool _confirmingDelete;
+    private string _renameValue = "";
+    private ElementReference _renameInputRef;
+    private bool _focusRenamePending;
+
+    // Guards against the input's own @onblur firing a SECOND commit after
+    // Escape has already cancelled -- removing a focused element from the
+    // DOM (which _renaming=false triggers, on the very next render) can
+    // itself dispatch a blur event; without this guard that blur would
+    // re-fire CommitRename and silently save the very edit Escape was meant
+    // to discard.
+    private bool _cancelling;
+
+    private void ToggleExpanded() => _expanded = !_expanded;
+
+    private void StartRename()
+    {
+        _renameValue = Item.Name;
+        _renaming = true;
+        _focusRenamePending = true;
+    }
+
+    private async Task CommitRename()
+    {
+        if (_cancelling)
+        {
+            _cancelling = false;
+            return;
+        }
+
+        _renaming = false;
+        var trimmed = _renameValue.Trim();
+        if (trimmed.Length > 0 && trimmed != Item.Name)
+        {
+            await OnRename.InvokeAsync((Item.Id, trimmed));
+        }
+    }
+
+    private Task OnRenameKeyDown(KeyboardEventArgs e) => e.Key switch
+    {
+        "Enter" => CommitRename(),
+        "Escape" => CancelRename(),
+        _ => Task.CompletedTask,
+    };
+
+    private Task CancelRename()
+    {
+        _cancelling = true;
+        _renaming = false;
+        return Task.CompletedTask;
+    }
+
+    private Task ConfirmDelete()
+    {
+        _confirmingDelete = false;
+        return OnDelete.InvokeAsync(Item.Id);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_focusRenamePending)
+        {
+            return;
+        }
+
+        _focusRenamePending = false;
+        try
+        {
+            await _renameInputRef.FocusAsync();
+        }
+        catch (Exception)
+        {
+            // Non-fatal -- same graceful-degradation stance every other
+            // focus-after-open call in this app already takes.
+        }
+    }
+}

@@ -6,6 +6,7 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ViewStateService ViewState
+@inject SelectionTrayService Selection
 
 <PageTitle>Bible Explorer &mdash; World</PageTitle>
 
@@ -1426,6 +1427,23 @@
         _hoverX = x;
         _hoverY = y;
         StateHasChanged();
+    }
+
+    // Batch G2 decision 6: map.js's own isToggleSelectClick branch (marker
+    // AND label, per that function's own comment) -- never pins, never
+    // opens a popover; resolves the place the SAME way OnPlaceClick/
+    // OnPlaceHover do (lit ScenePlace or a synthetic QuietAsScenePlace) so
+    // the tray chip's own Title always matches whatever name this same
+    // place shows everywhere else in the current scene.
+    public void OnPlaceToggleSelect(string id)
+    {
+        var place = _scene?.Places.FirstOrDefault(p => p.Id == id) ?? QuietAsScenePlace(id);
+        if (place is null)
+        {
+            return;
+        }
+
+        Selection.Toggle(new ExplorationDescriptor("Place", id, place.DisplayName));
     }
 
     // arrow-tip (WORLD-4/contract "arrow-tip"). `key` is "{narrative}:{order}"

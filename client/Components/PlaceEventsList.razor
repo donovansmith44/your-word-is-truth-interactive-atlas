@@ -25,7 +25,7 @@
 {
     var ev = e; // local copy -- captured per-row by the onclick closure below
     <button type="button" class="popover-event-row popover-event-row-button explorable" data-testid="@($"place-event-{ev.Id}")"
-            @onclick="() => OnExplore.InvokeAsync(new TimeAndPlaceNode(PlaceName, ev.When, ev.Label, ev.VerseGroups))">
+            @onclick="() => OnExplore.InvokeAsync(new TimeAndPlaceNode(PlaceId, PlaceName, ev.Id, ev.When, ev.Label, ev.VerseGroups))">
         <span class="popover-event-label">@ev.Label</span>
         <span class="popover-event-years">@YearText.FormatRange(ev.When.FromYear, ev.When.ToYear)</span>
     </button>
@@ -46,6 +46,13 @@
 }
 
 @code {
+    // Batch G2 decision 3: threaded through so this component's own
+    // TimeAndPlaceNode construction can carry a stable "{placeId}|{eventId}"
+    // descriptor key (ExplorationDescriptor.Capture) -- see
+    // TimeAndPlaceNode.cs's own doc comment. The caller (PlaceEventsSection,
+    // Explore/PopoverSectionProviders.cs) already has the enclosing
+    // PlaceNode's own PlaceId on hand, so this costs it nothing new.
+    [Parameter, EditorRequired] public string PlaceId { get; set; } = default!;
     [Parameter, EditorRequired] public string PlaceName { get; set; } = default!;
     [Parameter, EditorRequired] public List<SceneEvent> Events { get; set; } = new();
     [Parameter] public int Cap { get; set; } = 10;

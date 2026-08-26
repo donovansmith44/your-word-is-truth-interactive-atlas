@@ -708,6 +708,17 @@ function applyMarkerNudges(inst) {
     }
 }
 
+// Batch G2 decision 6 (multi-select v1, RULED per batch-r-report.md §7):
+// Ctrl/Cmd-click on a marker (or its own label -- LABEL-1's own bubbling fix
+// means both already reach this SAME handler) toggles tray selection
+// INSTEAD of pinning -- never both for one physical click. `e.originalEvent`
+// is Leaflet's own wrapped-native-event field (every Leaflet mouse event
+// carries it); metaKey covers Cmd on macOS, ctrlKey covers Ctrl everywhere
+// else, per the brief's own "Ctrl/Cmd-click" gesture name.
+function isToggleSelectClick(e) {
+    return !!(e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey));
+}
+
 function wireEvents(marker, dotnetRef, placeId) {
     marker.on('mouseover', e => dotnetRef.invokeMethodAsync('OnPlaceHover', placeId, e.containerPoint.x, e.containerPoint.y));
     marker.on('mouseout', () => dotnetRef.invokeMethodAsync('OnPlaceLeave'));
@@ -718,6 +729,10 @@ function wireEvents(marker, dotnetRef, placeId) {
         // pinning THIS marker would, in the very same gesture, immediately
         // fire OnMapClick and unpin it again. See init()'s own comment.
         L.DomEvent.stopPropagation(e);
+        if (isToggleSelectClick(e)) {
+            dotnetRef.invokeMethodAsync('OnPlaceToggleSelect', placeId);
+            return;
+        }
         dotnetRef.invokeMethodAsync('OnPlaceClick', placeId, e.containerPoint.x, e.containerPoint.y);
     });
 }
@@ -790,6 +805,10 @@ function wireQuietEvents(marker, dotnetRef, placeId) {
     // via a bubbled map-background click.
     marker.on('click', e => {
         L.DomEvent.stopPropagation(e);
+        if (isToggleSelectClick(e)) {
+            dotnetRef.invokeMethodAsync('OnPlaceToggleSelect', placeId);
+            return;
+        }
         dotnetRef.invokeMethodAsync('OnPlaceClick', placeId, e.containerPoint.x, e.containerPoint.y);
     });
 }

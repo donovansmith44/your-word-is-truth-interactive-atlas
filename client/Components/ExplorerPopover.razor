@@ -99,6 +99,7 @@
 @inject IExplorableClient GraphClient
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject SavedExplorationsService SavedExplorations
 @implements IPopoverSectionContext
 
 @* M-D3 (R3): ShowBackdrop=false (Reader.razor passes this while the
@@ -179,6 +180,20 @@
                 }
             </div>
         }
+        @* Batch G2 decision 2: the save affordance -- chrome, not content
+           (POPOVER-LAW-1), beside close/back per the brief. Hidden outright
+           (not merely disabled) when localStorage genuinely isn't available
+           (SavedExplorationsService.Available, LocalStore.Probe's own
+           one-time round-trip check) -- "feature hides if storage
+           unavailable," per the brief, verbatim: an affordance whose whole
+           point is durable persistence has no honest disabled-but-visible
+           state to offer instead. *@
+        @if (SavedExplorations.Available)
+        {
+            <button type="button" class="popover-save-exploration@(_justSaved ? " popover-save-exploration-saved" : "")"
+                    data-testid="popover-save-exploration" aria-label="Save this exploration" title="Save this exploration"
+                    @onclick="SaveExploration">&#9733;</button>
+        }
         <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" @onclick="RequestClose">&times;</button>
     </div>
 
@@ -223,6 +238,21 @@
 @code {
     [Parameter, EditorRequired] public IExplorable Root { get; set; } = default!;
     [Parameter] public EventCallback OnClose { get; set; }
+
+    // Batch G2 decision 5 ("continue" -- the hamburger panel's own
+    // trail-node click): when present, SEEDS the whole back-stack in order
+    // (index 0 pushed first, ..., the LAST entry pushed last and therefore
+    // Current) instead of the ordinary single-Root push -- "reopens the
+    // popover at that node... with the trail's PRECEDING nodes as the
+    // back-stack (so back works through the saved journey)," per the brief,
+    // verbatim. Null (every pre-existing caller) is the ordinary single-Root
+    // path, byte-for-byte unchanged. Callers that DO pass this still also
+    // pass Root (EditorRequired stays satisfied) -- by convention, the LAST
+    // element of this list, matching what ends up on top of the stack; this
+    // component itself never reads Root when SeedStack is non-null (see
+    // OnInitializedAsync below), so it's fine that they'd otherwise be
+    // redundant.
+    [Parameter] public IReadOnlyList<IExplorable>? SeedStack { get; set; }
 
     // Batch H (split-view study, "no nested-popup rule"): true when this
     // popover instance is currently sharing the screen with the OTHER pane
@@ -277,6 +307,54 @@
 
     private readonly Stack<IExplorable> _stack = new();
     private IExplorable Current => _stack.Peek();
+
+    // Batch G2 decision 1: the trail = every node VISITED this popover
+    // SESSION, in order -- distinct from _stack ("where back goes"; Back
+    // pops _stack but never removes anything from here). Recorded via
+    // RecordTrailVisit, called at every point Current actually changes
+    // (initial open, every Push -- both PushAsync's own and Activate's
+    // inline ExplorationTarget.Push case -- and every Back landing),
+    // collapsing consecutive duplicates (a Push immediately undone by a Back
+    // to the SAME node, or two identical Explorations chips landing back to
+    // back, never grows the trail twice in a row for the same node).
+    // Naturally resets to empty on every fresh "opening" -- this component
+    // gets a brand-new instance per open (Reader.razor/World.razor's own
+    // @key="_activeNode"), so decision 1's own "trail resets when the
+    // popover closes without saving" falls out of ordinary component
+    // lifecycle, no explicit reset code needed.
+    private readonly List<ExplorationDescriptor> _trail = new();
+
+    // Batch G2 decision 2: a brief, quiet acknowledgment (CSS-only pulse,
+    // .popover-save-exploration-saved) that a save just landed -- cleared on
+    // the NEXT navigation (RecordTrailVisit) rather than a timer, so it
+    // never lingers or fights a fast double-save.
+    private bool _justSaved;
+
+    // Batch G2 decision 1: appends Current's own descriptor to the trail,
+    // UNLESS it is identical (Kind+Key+Title, record equality) to the trail's
+    // own most recent entry -- "consecutive duplicates collapsed," per the
+    // brief, verbatim.
+    private void RecordTrailVisit()
+    {
+        _justSaved = false;
+        var descriptor = ExplorationDescriptor.Capture(Current);
+        if (_trail.Count == 0 || _trail[^1] != descriptor)
+        {
+            _trail.Add(descriptor);
+        }
+    }
+
+    // Batch G2 decision 2: snapshots the CURRENT trail (not the stack --
+    // Back-visited-then-abandoned nodes stay in the saved record, per "the
+    // trail is where I've been"). Does not close the popover; a later save
+    // (this trail having grown further since) is a brand-new entry, never an
+    // update to this one -- SavedExplorationsService.Save's own "snapshot,
+    // not live link" doc comment.
+    private void SaveExploration()
+    {
+        SavedExplorations.Save(_trail);
+        _justSaved = true;
+    }
 
     private IReadOnlyList<Exploration> _explorations = Array.Empty<Exploration>();
     private RenderFragment _body = _ => { };
@@ -398,7 +476,20 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _stack.Push(Root);
+        if (SeedStack is { Count: > 0 } seed)
+        {
+            foreach (var node in seed)
+            {
+                _stack.Push(node);
+                RecordTrailVisit();
+            }
+        }
+        else
+        {
+            _stack.Push(Root);
+            RecordTrailVisit();
+        }
+
         await LoadCurrent();
     }
 
@@ -634,6 +725,7 @@
     public async Task PushAsync(IExplorable node)
     {
         _stack.Push(node);
+        RecordTrailVisit();
         await LoadCurrent();
         StateHasChanged();
     }
@@ -665,6 +757,7 @@
         {
             case ExplorationTarget.Push push:
                 _stack.Push(push.Next);
+                RecordTrailVisit();
                 await LoadCurrent();
                 break;
 
@@ -713,6 +806,7 @@
         }
 
         _stack.Pop();
+        RecordTrailVisit();
         await LoadCurrent();
     }
 

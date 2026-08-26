@@ -57,6 +57,13 @@ public sealed class PlaceNode : IExplorable
     public string Title => _placeName;
     public string Kind => "Place";
 
+    /// Batch G2 decision 3 (the descriptor seam): the minimal reconstruction
+    /// key for this node -- <c>ExplorationDescriptor.Capture</c>'s own source
+    /// for a Place descriptor, mirroring <see cref="EventNode.EventId"/>/
+    /// <see cref="PersonNode.PersonId"/>'s own established "expose the raw id
+    /// publicly, thread it through unchanged" pattern.
+    public string PlaceId => _placeId;
+
     /// <summary>
     /// Wired by <c>ExplorerPopover.LoadCurrent</c> right after this node
     /// becomes Current; invoked by an event row's own onclick (see
@@ -112,7 +119,7 @@ public sealed class PlaceNode : IExplorable
                 {
                     if (select is not null)
                     {
-                        await select(new TimeAndPlaceNode(placeName, ev.When, ev.Label, ev.VerseGroups));
+                        await select(new TimeAndPlaceNode(_placeId, placeName, ev.Id, ev.When, ev.Label, ev.VerseGroups));
                     }
                 }));
 
