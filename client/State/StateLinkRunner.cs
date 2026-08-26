@@ -40,8 +40,35 @@ namespace BibleAtlas.Client.State;
 /// link landing this batch, Locus -&gt; TimeWindow, is one hop); a future batch
 /// that needs real chaining should revisit this rule specifically, not the
 /// atom/projection layer around it.
+///
+/// SHARPER EDGE (fix round 1, review finding Q-4 -- amendment only, no code
+/// change: correct and safe for ST-1's own topology): <see cref="StateAtom{T}.LastOrigin"/>
+/// is STICKY, not momentary -- <see cref="StateAtom{T}.Dispatch"/> only ever
+/// updates it on a dispatch that actually changes Value, so it retains
+/// whichever intent's Origin caused the LAST real change INDEFINITELY, not
+/// just for the instant of this Changed invocation. The guard above therefore
+/// reads "was the source's last EFFECTIVE change link-derived", not "did the
+/// source just now echo a derivation" -- those coincide for ST-1 (Locus is
+/// written only by Reader, always with Origin: null, so LastOrigin can never
+/// be sticky-poisoned here) but would NOT coincide in a future topology where
+/// an atom is BOTH a link's target and an independently-linked source: that
+/// atom's own first hop as a source could be wrongly suppressed by an origin
+/// stamped by an unrelated, earlier gesture that happens to still be the last
+/// thing sitting in LastOrigin. That is a strictly larger hazard than "chains
+/// stop after one hop." The real fix, when chaining arrives: pass the
+/// triggering Origin THROUGH the notification itself (an
+/// <c>event Action&lt;string?&gt;</c> seam on Changed, rather than reading it
+/// back off sticky atom state) -- named here as the intended direction, not
+/// implemented, since no topology in this app needs it yet.
 /// </summary>
+// Fix round 1 (Q-8): `where A : notnull, where B : notnull` propagates from
+// StateAtom<T>'s own new constraint (StateAtom.cs) -- this class holds
+// concrete StateAtom<A>/StateAtom<B> fields (not the bare interface), so the
+// compiler requires the same constraint here; there is no weaker option that
+// still lets this class name those fields' types.
 public sealed class StateLinkRunner<A, B> : IDisposable
+    where A : notnull
+    where B : notnull
 {
     private readonly string _name;
     private readonly IStateLink<A, B> _link;

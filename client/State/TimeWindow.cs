@@ -49,16 +49,29 @@ public sealed record SetTimeWindow(int From, int To, string? Origin = null) : II
 /// driven derivation" the brief asks this Derive to compute -- "exactly what
 /// SyncFollowRef/EnterScriptureMode compute today" -- for the WINDOW VALUE
 /// specifically is: nothing; the window is left exactly as it was. Derive is
-/// therefore a pure, honest identity pass-through (still real, still
-/// testable, still satisfies law 4/confluence trivially). The actual visible
-/// "follow" BEHAVIOR -- the atlas pane re-scening to the reader's current
-/// chapter -- is driven separately, by World.razor subscribing directly to
-/// the Locus atom's own Changed event (guarded on this SAME Active flag) and
-/// calling EnterScriptureMode(locus.Ref), exactly mirroring the pre-ST-1
-/// SyncFollowRef mechanism, just keyed off the shared Locus atom instead of
-/// a FollowRef parameter. FULL TimeWindow ownership (ST-2) is expected to
-/// replace this identity Derive with a real one once the atom itself, not
-/// just this link's scaffolding, owns the window.
+/// therefore a pure identity pass-through -- and, precisely BECAUSE it is
+/// identity, this link is INERT at runtime, not merely low-value (review
+/// Adjudication 2): the runner's own dispatch of
+/// <c>LinkDerivedIntent(name, current)</c> is rejected by
+/// <see cref="StateAtom{T}.Dispatch"/>'s equality check before it ever
+/// touches <see cref="TimeWindow"/>'s Value, fires its Changed event, or
+/// stamps its LastOrigin. <see cref="StateLinkRunner{A,B}.SyncNow"/>, called
+/// from World.razor's ToggleFollow, is likewise a guaranteed no-op here.
+/// Still real, still wired, still tested (law 4/confluence, and the
+/// inertness itself, both pinned in LocusAndTimeWindowTests.cs) -- the
+/// scaffolding is correct and correctly scoped, it simply does no WORK yet.
+/// The actual visible "follow" BEHAVIOR -- the atlas pane re-scening to the
+/// reader's current chapter -- is driven separately, by World.razor
+/// subscribing directly to the Locus atom's own Changed event (guarded on
+/// this SAME Active flag) and calling EnterScriptureMode(locus.Ref), exactly
+/// mirroring the pre-ST-1 SyncFollowRef mechanism, just keyed off the shared
+/// Locus atom instead of a FollowRef parameter -- because the compiled
+/// contract makes Derive synchronous and pure, and this behavior needs an
+/// async scene fetch, no pure link could ever have carried it. FULL
+/// TimeWindow ownership (ST-2) is expected to replace this identity Derive
+/// with a real one once the atom itself, not just this link's scaffolding,
+/// owns the window -- ST-2 should not treat the existing wiring as a working
+/// reference for a link that carries real behavior; it never has.
 /// </summary>
 public sealed class FollowTextLink : IStateLink<Locus, TimeWindow>
 {

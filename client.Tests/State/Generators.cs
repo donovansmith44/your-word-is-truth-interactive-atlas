@@ -7,7 +7,7 @@ namespace BibleAtlas.Client.Tests.State;
 // generators for the five-laws property tests in this directory. These
 // exercise the GENERIC atom/projection/link layer (client/State/*.cs) with
 // throwaway types -- not Locus/TimeWindow -- so the laws are proven for the
-// infrastructure itself, independent of any one migration (LocusLawTests.cs,
+// infrastructure itself, independent of any one migration (LocusAndTimeWindowTests.cs,
 // alongside these, separately re-checks the concrete Locus/SetLocus shapes).
 //
 // House law (batch-st1-brief.md): "never wall-clock random; no new test
@@ -115,7 +115,7 @@ internal static class Generators
         return list;
     }
 
-    /// <summary>Seeded (book, chapter) pairs -- for LocusLawTests.cs's own
+    /// <summary>Seeded (book, chapter) pairs -- for LocusAndTimeWindowTests.cs's own
     /// generated sequences over the REAL SetLocus/Locus shapes.</summary>
     public static IReadOnlyList<(string Book, int Chapter)> LocusSequence(int seed, int count)
     {

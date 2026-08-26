@@ -102,14 +102,20 @@ public class LocusAndTimeWindowTests
     }
 
     [Fact]
-    public void FollowTextLink_WiredThroughARunner_NeverChangesTimeWindowsValue_ButStampsLastOrigin()
+    public void FollowTextLink_WiredThroughARunner_IsInert_NeverChangesValueNeverFiresChangedNeverStampsLastOrigin()
     {
-        // End-to-end sanity for the ACTUAL wiring World.razor constructs:
-        // Locus changes propagate into TimeWindow (LastOrigin stamped, so a
-        // consumer CAN observe "this was link-derived"), but since Derive is
-        // identity, TimeWindow's own Value literally never moves -- and
-        // therefore Changed correctly never fires for it either (law 2: a
-        // dispatch that produces the CURRENT value is a no-op).
+        // End-to-end sanity for the ACTUAL wiring World.razor constructs, and
+        // the direct test of review Adjudication 2's finding: because Derive
+        // is identity, the runner's own dispatch
+        // (LinkDerivedIntent(name, current)) is REJECTED by StateAtom.Dispatch's
+        // equality check BEFORE it reaches the Value assignment, the
+        // LastOrigin assignment, or the Changed invocation (StateAtom.cs) --
+        // so this link is inert at runtime on all three fronts, not just the
+        // Value one. Fix round 1 (Q-2): the ORIGINAL name/doc comment here
+        // claimed LastOrigin WAS stamped -- false; Dispatch returns before
+        // ever reaching that line when the intent's result already equals
+        // the current value, which the identity Derive guarantees is always
+        // the case here.
         var locusAtom = new StateAtom<Locus>(AtomNamesLocus, Locus.Default);
         var windowAtom = new StateAtom<TimeWindow>(AtomNamesTimeWindow, TimeWindow.Default);
         var link = new FollowTextLink(locusAtom, windowAtom, () => true);
@@ -121,7 +127,8 @@ public class LocusAndTimeWindowTests
         locusAtom.Dispatch(new SetLocus("JOS", 6));
 
         Assert.Equal(TimeWindow.Default, windowAtom.Value); // identity Derive -- never actually moves
-        Assert.False(windowChanged); // so Changed correctly never fires (law 2's own no-op guard)
+        Assert.False(windowChanged); // Changed correctly never fires (law 2's own no-op guard)
+        Assert.Null(windowAtom.LastOrigin); // LastOrigin is correctly NEVER stamped -- Dispatch returns before that line
     }
 
     // AtomNames.Locus/AtomNames.TimeWindow (Contracts/State.cs) are the

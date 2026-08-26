@@ -64,9 +64,16 @@
        stays in sync, standalone or split alike (Locus is a single
        app-lifetime singleton, not split-scoped). Apply's own behavior
        (jump the ATLAS to a ref) is UNCHANGED -- see ApplyScriptureRef's own
-       doc comment for why it deliberately does NOT dispatch SetLocus. *@
+       doc comment for why it deliberately does NOT dispatch SetLocus.
+
+       Fix round 1 (review finding S-1, CRITICAL): SyncToken -- see that
+       parameter's own doc comment (ScripturePicker.razor) and
+       _pickerSyncToken's own comment below -- closes the gap where a
+       follow OFF->ON cycle left this picker showing a stale applied ref
+       even though CurrentBook/CurrentChapter never changed. *@
     <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-dusk"
-                      CurrentBook="@_locus.Value.Book" CurrentChapter="@_locus.Value.Chapter" />
+                      CurrentBook="@_locus.Value.Book" CurrentChapter="@_locus.Value.Chapter"
+                      SyncToken="@_pickerSyncToken" />
 
     @if (_scene is not null && _scene.Places.Count == 0)
     {
@@ -418,13 +425,37 @@
     // comments). _followLink/_followRunner realize "follow-text IS
     // Link(Locus -> TimeWindow)" (spec §4d) -- Active bound to _follow &&
     // SplitMode, the SAME bool the chip already reads/writes; see
-    // FollowTextLink's own header comment for why its Derive is a
-    // disclosed identity pass-through this batch, and OnLocusChanged below
-    // for the SEPARATE mechanism that actually re-scenes the atlas pane
-    // (a pure Derive can't perform the async scene fetch itself).
-    private Projection<Locus> _locus = null!; // set in OnInitializedAsync
+    // FollowTextLink's own header comment for why its Derive is INERT this
+    // batch (never actually changes TimeWindow -- review Adjudication 2),
+    // and OnLocusChanged below for the SEPARATE mechanism that actually
+    // re-scenes the atlas pane (a pure Derive can't perform the async scene
+    // fetch itself).
+    //
+    // Fix round 1 (Q-6, trivia): a lazy property over a nullable backing
+    // field, not a `null!`-then-assigned-in-OnInitializedAsync field --
+    // LocusAtom is available the instant DI injection completes (before
+    // ANY lifecycle method runs), so this is safe on first access
+    // regardless of exactly which lifecycle method that first access
+    // happens from, rather than depending on "OnInitializedAsync's own
+    // synchronous prefix runs before the first render" (three framework
+    // facts deep, per the review). Projection<T> has no side effects of
+    // its own to defer, unlike _followLink/_followRunner just below (whose
+    // constructor genuinely subscribes to Changed) -- those stay
+    // constructed exactly once, in OnInitializedAsync, on purpose.
+    private Projection<Locus>? _locusBacking;
+    private Projection<Locus> _locus => _locusBacking ??= new Projection<Locus>(LocusAtom);
     private FollowTextLink _followLink = null!;
     private StateLinkRunner<Locus, TimeWindow> _followRunner = null!;
+
+    // Fix round 1 (S-1, CRITICAL): bumped by ToggleFollow on the false->true
+    // transition -- see ScripturePicker's own SyncToken parameter doc
+    // comment for the exact SYNC-1-resurrection gap this closes (a
+    // world-picker Apply turns follow off without touching Locus; if the
+    // reader's chapter ALSO hasn't changed while follow was off, toggling
+    // follow back on leaves CurrentBook/CurrentChapter byte-identical to
+    // what the picker was already showing, so the picker's own "did the
+    // parameter change" guard alone can never re-sync it).
+    private int _pickerSyncToken;
 
     // Batch H (view-state round-trip): non-null exactly when a saved camera
     // (center/zoom) is waiting to be applied once the map instance exists --
@@ -441,8 +472,9 @@
         // Batch ST-1: LocusAtom/TimeWindowAtom are available now (DI-injected
         // properties are set before any lifecycle method runs). Subscribes
         // for this component instance's whole lifetime -- unsubscribed in
-        // DisposeAsync below (_followRunner.Dispose() + Changed -=).
-        _locus = new Projection<Locus>(LocusAtom);
+        // DisposeAsync below (_followRunner.Dispose() + Changed -=). _locus
+        // itself is a lazy property (see its own field comment) -- nothing
+        // to construct here for it.
         _followLink = new FollowTextLink(LocusAtom, TimeWindowAtom, () => SplitMode && _follow);
         _followRunner = new StateLinkRunner<Locus, TimeWindow>(_followLink.Name, _followLink, LocusAtom, TimeWindowAtom);
         LocusAtom.Changed += OnLocusChanged;
@@ -645,7 +677,42 @@
             return;
         }
 
-        _ = EnterScriptureMode(_locus.Value.Ref);
+        // Fix round 1 (Q-1, IMPORTANT): the retired path awaited
+        // EnterScriptureMode from inside OnParametersSetAsync, so a fetch
+        // failure surfaced through Blazor's own lifecycle error handling.
+        // A bare `_ = EnterScriptureMode(...)` here would instead turn any
+        // exception into a silently-dropped unobserved task fault --
+        // DebouncedLoadScriptureScene's own try/catch already covers
+        // ordinary fetch failures (see that method's own comment), but
+        // EnterScriptureMode's own SetPolitiesVisible call, just above it,
+        // is not wrapped. EnterScriptureModeAndSurfaceFaults below is the
+        // minimum needed to keep a genuine failure user-visible, via the
+        // SAME toast every other scene-load failure already uses, instead
+        // of it vanishing.
+        _ = EnterScriptureModeAndSurfaceFaults(_locus.Value.Ref);
+    }
+
+    // Fix round 1 (Q-1) -- see OnLocusChanged's own comment for why this
+    // wrapper exists instead of a bare fire-and-forget call. Every OTHER
+    // caller of EnterScriptureMode in this file is already awaited from
+    // inside a Blazor-lifecycle-aware async method (InitializeSplitModeIfNeeded,
+    // ToggleFollow, ApplyExternalQuery, SyncFromQuery), so only THIS one
+    // call site -- driven by a plain C# event, not a lifecycle method --
+    // needs its own explicit fault handling.
+    private async Task EnterScriptureModeAndSurfaceFaults(string sref)
+    {
+        try
+        {
+            await EnterScriptureMode(sref);
+        }
+        catch (Exception)
+        {
+            // Same message shape DebouncedLoadScriptureScene's own catch
+            // already uses for a scripture-mode load failure -- one honest
+            // toast, not a second, differently-worded one.
+            _errorMessage = $"Couldn't load {sref} -- check your connection and try again.";
+            StateHasChanged();
+        }
     }
 
     // Batch H fix round 2 (review Critical-1, take 2): pushes THIS instance's
@@ -793,6 +860,18 @@
         SyncViewState();
         if (_follow)
         {
+            // Fix round 1 (S-1, CRITICAL): forces the world-side picker to
+            // re-sync to Locus on THIS EXACT transition -- see SyncToken's
+            // own doc comment (ScripturePicker.razor) for why a bare
+            // Locus.Changed-driven re-render alone cannot: a world-picker
+            // Apply turns follow off WITHOUT touching Locus (by design --
+            // ApplyScriptureRef's own doc comment), so if the reader's own
+            // chapter also hasn't moved while follow was off, Locus never
+            // changes across this whole OFF/ON cycle and CurrentBook/
+            // CurrentChapter stay byte-identical to what the picker is
+            // already (stale) showing. Bumping the token forces a resync
+            // regardless.
+            _pickerSyncToken++;
             _followRunner.SyncNow();
             await EnterScriptureMode(_locus.Value.Ref);
         }
@@ -848,12 +927,25 @@
     // never renders this button). Lands directly in split, per the brief
     // ("both land in the same split layout"): ?split=1 tells Reader.razor to
     // set its own _splitOpen = true on arrival (see its own SplitQuery
-    // param). The reader's own last-known position (ViewState.Reader) picks
-    // which chapter to open beside -- GEN 1 if this session never visited
-    // the reader at all yet (ReaderViewState's own field defaults).
+    // param).
+    //
+    // Fix round 1 (S-5, IMPORTANT): reads the reader's last-known position
+    // off the shared Locus atom (_locus.Value), NOT ViewState.Reader --
+    // deliverable 5's "locus persistence reads/writes go through the
+    // atoms' values" was satisfied on the WRITE side only (Reader.OnScroll
+    // writes ViewState.Reader.Book/Chapter from the atom-derived _book/
+    // _chapterNum) but this READ still went straight to the persistence
+    // layer, which can lag the atom whenever a chapter was navigated
+    // without a scroll event landing. Newly visible this batch: standalone
+    // /world now shows the atom's locus directly in its own picker (this
+    // page's own SYNC-1 fix), so a stale ViewState.Reader could jump to a
+    // chapter that visibly contradicts the picker rendered one line above
+    // this button. Locus.Default (GEN, 1) matches ReaderViewState's own
+    // defaults exactly, so "never visited the reader this session" still
+    // opens GEN 1, unchanged.
     private void OpenReadBesideMap()
     {
-        Nav.NavigateTo($"/read/{ViewState.Reader.Book}/{ViewState.Reader.Chapter}?split=1");
+        Nav.NavigateTo($"/read/{_locus.Value.Book}/{_locus.Value.Chapter}?split=1");
     }
 
     // The Leaflet map can only be created once #world-map is actually in

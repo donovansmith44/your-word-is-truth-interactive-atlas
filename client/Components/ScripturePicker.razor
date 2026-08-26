@@ -75,6 +75,27 @@
     [Parameter] public string? CurrentBook { get; set; }
     [Parameter] public int? CurrentChapter { get; set; }
 
+    // Batch ST-1 fix round 1 (review finding S-1, CRITICAL): the B4 "don't
+    // clobber in-progress typing" guard below (`_synced`) only re-syncs when
+    // CurrentBook/CurrentChapter actually CHANGE -- correct when the ONLY
+    // possible external event is a genuine locus change, which was true
+    // pre-ST-1 (Reader was the only mount that ever set these). It is no
+    // longer sufficient: World.razor's own follow chip can flip OFF-then-ON
+    // while the shared Locus atom never moves at all (a world-picker Apply
+    // deliberately does not touch Locus, by design -- see World.razor's own
+    // ApplyScriptureRef doc comment), leaving CurrentBook/CurrentChapter
+    // byte-identical across the whole OFF/ON cycle -- so `_synced` never
+    // invalidates and the dropdowns keep showing the stale applied ref even
+    // after "re-syncing" is supposed to have happened, resurrecting SYNC-1.
+    // SyncToken is the fix the review recommended: an opaque counter the
+    // MOUNTING PAGE bumps on exactly the transition that needs a forced
+    // resync regardless of whether CurrentBook/CurrentChapter changed
+    // (World.razor's ToggleFollow, on the false->true edge) -- optional,
+    // defaults to 0, so Reader's own mount (which never needs this) is
+    // completely unaffected.
+    [Parameter] public int SyncToken { get; set; }
+    private int _syncedToken;
+
     private List<BookTocEntry>? _toc;
     private string _bookCode = "";
     private string _chapterText = "";
@@ -127,6 +148,7 @@
         if (CurrentBook is { } book && CurrentChapter is { } chapter)
         {
             _synced = (book, chapter);
+            _syncedToken = SyncToken;
             _bookCode = book;
             _chapterText = chapter.ToString();
         }
@@ -156,12 +178,19 @@
             return; // World.razor's own mount -- stays unsynced, unchanged
         }
 
-        if (_synced is { } prior && prior.Book == book && prior.Chapter == chapter)
+        // Batch ST-1 fix round 1 (S-1): a bumped SyncToken forces a resync
+        // even when (book, chapter) is byte-identical to `_synced` -- the
+        // ONE case the pre-existing guard alone can't catch (see SyncToken's
+        // own doc comment above for the exact scenario).
+        var forced = _syncedToken != SyncToken;
+
+        if (!forced && _synced is { } prior && prior.Book == book && prior.Chapter == chapter)
         {
             return; // already reflects this exact chapter -- don't clobber in-progress typing
         }
 
         _synced = (book, chapter);
+        _syncedToken = SyncToken;
         _bookCode = book;
         _chapterText = chapter.ToString();
         _verseFromText = "";

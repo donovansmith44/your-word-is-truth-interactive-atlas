@@ -14,15 +14,29 @@ namespace BibleAtlas.Client.Tests.State;
 /// </summary>
 public class NoEchoLawTests
 {
+    // Fix round 1 (S-4, IMPORTANT / Q-7, trivia): this used to be
+    // `[InlineData(seed, userValue)]` with `seed` discarded at the top of the
+    // body ("kept for signature symmetry") -- a dead parameter masquerading
+    // as generated coverage the report itself then mis-described. Now
+    // genuinely feeds Generators.MixedCounterIntents(seed, N) -- the SAME
+    // generator laws 4/5 use -- through the bidirectional pair, asserting
+    // the one-hop-settle invariant after EVERY generated intent, not just
+    // once.
     [Theory]
-    [InlineData(4001, 1)]
-    [InlineData(4002, 500)]
-    [InlineData(4003, -37)]
-    public void Law3_NoEcho_ABidirectionalPairSettlesAfterExactlyOneHop(int seed, int userValue)
+    [InlineData(4001)]
+    [InlineData(4002)]
+    [InlineData(4003)]
+    public void Law3_NoEcho_ABidirectionalPairSettlesAfterExactlyOneHop_OverAGeneratedSequence(int seed)
     {
-        _ = seed; // kept for signature symmetry with the other seeded law tests; this case is deterministic in userValue alone
         var a = new StateAtom<Counter>("a", new Counter(0));
-        var b = new StateAtom<Counter>("b", new Counter(0));
+        // `b` starts at a.Value+1 (1, not 0) -- establishes the "b == a+1"
+        // invariant as the TRUE base case before any dispatch happens (a
+        // live-caught bug in an earlier draft of this test started both at
+        // 0, which makes the invariant FALSE at t=0 -- 0 != 0+1 -- and stays
+        // false for however many leading generated intents happen to be
+        // no-ops against a==0, e.g. a ResetCounter or SetCounter(0), since a
+        // no-op dispatch never fires the link at all).
+        var b = new StateAtom<Counter>("b", new Counter(1));
 
         // Deliberately runaway: WITHOUT the no-echo guard, one user dispatch
         // into `a` would bounce a->b->a->b->... forever (each hop +1),
@@ -30,20 +44,22 @@ public class NoEchoLawTests
         var linkAb = new DelegateLink<Counter, Counter>(a, b, (src, _) => new Counter(src.Value + 1), () => true);
         var linkBa = new DelegateLink<Counter, Counter>(b, a, (src, _) => new Counter(src.Value + 1), () => true);
 
-        var aChanges = 0;
-        var bChanges = 0;
-        a.Changed += () => aChanges++;
-        b.Changed += () => bChanges++;
-
         using var runnerAb = new StateLinkRunner<Counter, Counter>("ab", linkAb, a, b);
         using var runnerBa = new StateLinkRunner<Counter, Counter>("ba", linkBa, b, a);
 
-        a.Dispatch(new SetCounter(userValue)); // Origin null -- a genuine user gesture
+        var intents = Generators.MixedCounterIntents(seed, 40);
+        foreach (var intent in intents)
+        {
+            a.Dispatch(intent); // Origin null -- a genuine user gesture into `a`
 
-        Assert.Equal(userValue, a.Value.Value); // `a` was never bounced back by the echo
-        Assert.Equal(userValue + 1, b.Value.Value); // exactly ONE hop of derivation into `b`
-        Assert.Equal(1, aChanges); // only the user's own dispatch ever changed `a`
-        Assert.Equal(1, bChanges); // only the one link-derived hop ever changed `b`
+            // Holds after EVERY dispatch, whether or not this particular
+            // intent actually changed `a` (a no-op dispatch leaves both
+            // sides exactly where they already were, so the invariant
+            // trivially still holds -- true by induction from the seeded
+            // base case above): `b` always sits exactly one hop ahead of
+            // `a`'s own current value, never bounced further by an echo.
+            Assert.Equal(a.Value.Value + 1, b.Value.Value);
+        }
     }
 
     [Fact]

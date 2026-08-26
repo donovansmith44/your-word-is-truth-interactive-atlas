@@ -113,12 +113,28 @@ test('SYNC-1: follow OFF -- a world-picker Apply still works and leaves the read
   await expect(readerRoot.getByTestId('picker-chapter')).toHaveValue('13');
 });
 
-test('SYNC-1: follow back ON re-converges the atlas pane to the reader\'s actual current chapter', async ({ page }) => {
+// Fix round 1 (review finding S-1, CRITICAL -- the rejection defect): the
+// pre-fix version of this test asserted the follow-chip label, the
+// mode-chip's absence, and the marker count after re-toggling follow back
+// ON -- but never the picker dropdowns themselves, which is EXACTLY where
+// SYNC-1 was still reachable. ScripturePicker's own B4 `_synced` guard only
+// re-syncs when CurrentBook/CurrentChapter genuinely CHANGE; since a
+// world-picker Apply deliberately never touches Locus (see
+// ApplyScriptureRef's own doc comment) and the reader's own chapter hasn't
+// moved either across this OFF/ON cycle, Locus itself never changes, so
+// without the SyncToken fix (ScripturePicker.razor/World.razor) the world
+// picker's dropdowns stayed on the applied ref (JOS/6) FOREVER -- follow ON,
+// map scened to GEN.13, reader picker GEN 13, world picker JOS 6, stable --
+// the owner's defect verbatim. The two `atlasPane` assertions below are the
+// actual regression lock; everything else in this test already passed
+// before the fix.
+test('SYNC-1: follow back ON re-converges the atlas pane to the reader\'s actual current chapter -- BOTH the scene and the picker dropdowns', async ({ page }) => {
   await page.goto('/read/GEN/12');
   await page.getByTestId('split-open-reader').click();
   await page.getByTestId('reader-next').click();
   await page.waitForURL(/\/read\/GEN\/13/);
 
+  const readerRoot = page.getByTestId('reader-root');
   const atlasPane = page.getByTestId('split-pane-atlas');
 
   // Diverge via the world picker (as the prior test), then re-toggle follow.
@@ -127,6 +143,8 @@ test('SYNC-1: follow back ON re-converges the atlas pane to the reader\'s actual
   await atlasPane.getByTestId('picker-apply').click();
   await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByTestId('mode-chip')).toContainText('JOS.6');
+  await expect(atlasPane.getByTestId('picker-book')).toHaveValue('JOS'); // the stale-before-reconvergence baseline
+  await expect(atlasPane.getByTestId('picker-chapter')).toHaveValue('6');
 
   await page.getByTestId('follow-chip').click(); // back ON
 
@@ -135,6 +153,58 @@ test('SYNC-1: follow back ON re-converges the atlas pane to the reader\'s actual
   await expect(page.getByTestId('mode-chip')).toHaveCount(0); // suppressed while following (FOLLOW-1)
   const scene = await api.sceneScripture('GEN.13');
   await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
+
+  // THE REGRESSION LOCK (S-1): the world picker's own dropdowns re-converge
+  // to GEN.13 too -- not left stuck on the applied JOS.6 forever -- so both
+  // pickers genuinely agree again, matching the reader's own picker.
+  await expect(atlasPane.getByTestId('picker-book')).toHaveValue('GEN');
+  await expect(atlasPane.getByTestId('picker-chapter')).toHaveValue('13');
+  await expect(readerRoot.getByTestId('picker-book')).toHaveValue('GEN');
+  await expect(readerRoot.getByTestId('picker-chapter')).toHaveValue('13');
+});
+
+// S-2: deliverable 7's own most load-bearing scenario ("split view, follow
+// on, navigate chapters via reader picker / arrows / world picker; BOTH
+// pickers agree after each mutation") applied specifically to the WORLD
+// picker, which the earlier tests in this file never actually exercised
+// with follow starting ON. The honest, deliberate contract for this
+// specific path (ratified by the controller, see the batch report's fix
+// round 1 addendum) is: applying the world picker while following turns
+// follow OFF as an immediate side effect (ApplyExternalQuery's own first
+// statement), so the two pickers are NEVER simultaneously "follow ON AND
+// disagreeing" -- they only ever disagree once follow has already, visibly,
+// turned itself off. This test pins that as a real, asserted contract
+// rather than leaving it implicit.
+test('SYNC-1/deliverable 7: applying the world picker while follow is ON turns follow off immediately, and the two pickers then legitimately diverge', async ({ page }) => {
+  await page.goto('/read/GEN/12');
+  await page.getByTestId('split-open-reader').click();
+  await page.getByTestId('reader-next').click();
+  await page.waitForURL(/\/read\/GEN\/13/);
+
+  const readerRoot = page.getByTestId('reader-root');
+  const atlasPane = page.getByTestId('split-pane-atlas');
+
+  // Before: follow ON, both pickers agree on GEN.13.
+  await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'true');
+  await expect(readerRoot.getByTestId('picker-book')).toHaveValue('GEN');
+  await expect(readerRoot.getByTestId('picker-chapter')).toHaveValue('13');
+  await expect(atlasPane.getByTestId('picker-book')).toHaveValue('GEN');
+  await expect(atlasPane.getByTestId('picker-chapter')).toHaveValue('13');
+
+  await atlasPane.getByTestId('picker-book').selectOption('JOS');
+  await atlasPane.getByTestId('picker-chapter').selectOption('6');
+  await atlasPane.getByTestId('picker-apply').click();
+
+  // After: follow flipped OFF as an immediate, visible side effect of the
+  // Apply itself (never a state where follow reads ON while the two
+  // pickers disagree) -- and the divergence that follows is real and
+  // expected, not a bug: the reader stays exactly where it was.
+  await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
+  await expect(atlasPane.getByTestId('picker-book')).toHaveValue('JOS');
+  await expect(atlasPane.getByTestId('picker-chapter')).toHaveValue('6');
+  await expect(readerRoot.getByTestId('picker-book')).toHaveValue('GEN');
+  await expect(readerRoot.getByTestId('picker-chapter')).toHaveValue('13');
+  await expect(page).toHaveURL(/\/read\/GEN\/13/); // the reader's own route: completely undisturbed
 });
 
 test('SYNC-1: the world-side picker shows the current chapter standalone too (not split-only)', async ({ page }) => {

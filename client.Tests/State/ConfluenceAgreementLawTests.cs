@@ -108,6 +108,47 @@ public class ConfluenceAgreementLawTests
         Assert.Equal(straight.Value, interleaved.Value);
     }
 
+    // Fix round 1 (Q-3, IMPORTANT): the timing variation that can ACTUALLY
+    // break this layer in Blazor is RE-ENTRANT dispatch from inside a
+    // Changed handler -- and production does exactly this shape
+    // (World.OnLocusChanged -> StateHasChanged -> a child's own
+    // OnParametersSet, one of which could dispatch). StateAtom.Dispatch
+    // happens to get this right because Value is committed BEFORE
+    // Changed?.Invoke() fires (StateAtom.cs) -- a re-entrant dispatch reads
+    // a consistent, already-current value, and the OUTER frame has nothing
+    // left to do after invoking Changed, so it can never clobber the
+    // re-entrant write. Nothing in the earlier tests above exercises this;
+    // a future refactor that moved the Invoke above the assignment would
+    // pass every one of them while breaking this.
+    [Fact]
+    public void Law4_Confluence_ReEntrantDispatchFromInsideAChangedHandlerIsHandledConsistently()
+    {
+        var atom = new StateAtom<Counter>("counter", new Counter(0));
+        var reentered = false;
+        atom.Changed += () =>
+        {
+            if (reentered)
+            {
+                return; // this test's own re-entry guard, not part of StateAtom itself
+            }
+
+            reentered = true;
+            // Dispatched from INSIDE the outer Dispatch's own Changed
+            // invocation -- exactly the production shape (OnLocusChanged ->
+            // StateHasChanged -> a child dispatching).
+            atom.Dispatch(new Increment(1));
+        };
+
+        atom.Dispatch(new SetCounter(10));
+
+        // Expected: the fold of BOTH intents, in the order they were
+        // actually dispatched (SetCounter(10), then the re-entrant
+        // Increment(1)) -- proving the re-entrant write neither gets lost
+        // nor gets clobbered by the outer frame resuming afterward.
+        var expected = new Increment(1).Apply(new SetCounter(10).Apply(new Counter(0)));
+        Assert.Equal(expected, atom.Value);
+    }
+
     // ------------------------------------------------------------------
     // Law 5: agreement -- all projections of one atom are equal ALWAYS.
     // ------------------------------------------------------------------

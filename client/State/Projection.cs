@@ -15,7 +15,7 @@ namespace BibleAtlas.Client.State;
 /// <see cref="IStateAtom{T}.Value"/> property at read time, so N
 /// projections of one atom can never disagree at any instant (there is
 /// nothing per-projection that could drift). client.Tests/State/
-/// AgreementLawTests.cs still exercises this over generated intent
+/// ConfluenceAgreementLawTests.cs still exercises this over generated intent
 /// sequences -- not because the invariant is in doubt, but because the LAW
 /// is a binding test obligation per State.cs's header, and a future
 /// implementation swap must not be able to violate it silently.

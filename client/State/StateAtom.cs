@@ -26,8 +26,23 @@ namespace BibleAtlas.Client.State;
 /// produces the same observable effect as dispatching it once: the second
 /// call's Apply(current) equals current (since current already equals
 /// Apply(the value before either dispatch)), so it hits this no-op branch.
+///
+/// IMMUTABILITY OBLIGATION (fix round 1, review finding Q-8, trivia): law 1
+/// (single-writer) holds only because every T this batch actually uses
+/// (<see cref="Locus"/>, <see cref="TimeWindow"/>) is an immutable record
+/// with `init`-only members -- <see cref="Value"/> hands out the stored
+/// reference/value directly, so a T with settable properties would let any
+/// holder of <c>atom.Value</c> mutate shared state from OUTSIDE
+/// <see cref="Dispatch"/>, silently, with the reflection test
+/// (StateAtomLawTests.cs) still passing (it only proves the PROPERTY has no
+/// public setter, not that the referenced object is unmutable). `where T :
+/// notnull` below is the cheap half of that obligation this type CAN enforce
+/// mechanically; the rest -- "T must be an immutable value" -- is a
+/// discipline every future atom's own value type must uphold, the same way
+/// <see cref="Locus"/>/<see cref="TimeWindow"/> already do, not something the
+/// compiler can check for us.
 /// </summary>
-public sealed class StateAtom<T> : IStateAtom<T>
+public sealed class StateAtom<T> : IStateAtom<T> where T : notnull
 {
     private readonly IEqualityComparer<T> _comparer;
 

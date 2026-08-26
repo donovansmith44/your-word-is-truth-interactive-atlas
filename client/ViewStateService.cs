@@ -20,6 +20,25 @@ namespace BibleAtlas.Client;
 /// "split" -- it is just "the atlas's last position" and "the reader's last
 /// position," full stop, exactly as true for two ordinary full-page visits
 /// as for a split session.
+///
+/// Batch ST-1 DEMOTION (spec §4d: "ViewStateService remains the PERSISTENCE
+/// layer beneath atoms -- it persists state; atoms OWN it"): this class
+/// itself is byte-unchanged by ST-1 -- the demotion is entirely in what
+/// reads/writes it. <see cref="ReaderViewState.Book"/>/
+/// <see cref="ReaderViewState.Chapter"/>'s one write site
+/// (<c>Reader.razor</c>'s <c>OnScroll</c>) now writes values that are
+/// themselves thin reads of the shared <c>Locus</c> atom (client/State/
+/// Locus.cs) -- satisfied by construction, no code here needed to change.
+/// Every OTHER reader of <c>ViewState.Reader</c> was audited to also go
+/// through the atom directly rather than this persistence layer (fix round
+/// 1, review finding S-5 -- <c>World.OpenReadBesideMap</c> was the one miss,
+/// now fixed). <see cref="MapViewState.ScriptureRef"/>/<see cref="MapViewState.Follow"/>
+/// stay OUTSIDE this migration entirely, deliberately -- "the atlas's
+/// current scene" and "the reader's actual locus" are genuinely different
+/// facts (a world-picker Apply can point the scene somewhere the reader
+/// never was -- see <c>World.ApplyScriptureRef</c>'s own doc comment) -- so
+/// the two halves documented above stay "deliberately not coupled," exactly
+/// as before ST-1.
 /// </summary>
 public sealed class ViewStateService
 {

@@ -324,7 +324,16 @@
     // LocusAtom.Value directly) so this page's own reads go through the
     // SAME IProjection<T> seam the compiled contract declares for
     // consumers -- see client/State/Projection.cs's own header comment.
-    private Projection<Locus> _locus = null!; // set in OnInitializedAsync (LocusAtom isn't injected yet at field-init time)
+    //
+    // Fix round 1 (Q-6, trivia): a lazy property over a nullable backing
+    // field, not `null!`-then-assigned-in-OnInitializedAsync -- LocusAtom
+    // is available the instant DI injection completes, so first access is
+    // safe regardless of exactly which lifecycle method triggers it,
+    // rather than depending on "OnInitializedAsync's own synchronous
+    // prefix runs before the first render" (see World.razor's matching
+    // field for the fuller reasoning).
+    private Projection<Locus>? _locusBacking;
+    private Projection<Locus> _locus => _locusBacking ??= new Projection<Locus>(LocusAtom);
     private string _book => _locus.Value.Book;
     private int _chapterNum => _locus.Value.Chapter;
     private ChapterOut? _chapter;
@@ -470,11 +479,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Batch ST-1: LocusAtom is available now (DI-injected properties are
-        // set before any lifecycle method runs) -- see _locus's own field
-        // comment for why this can't be a field initializer instead.
-        _locus = new Projection<Locus>(LocusAtom);
-
         try
         {
             _toc = await Atlas.Books();
