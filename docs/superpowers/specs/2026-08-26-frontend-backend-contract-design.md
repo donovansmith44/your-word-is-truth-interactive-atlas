@@ -226,6 +226,13 @@ interface IStateLink<A, B> {
 // ViewArrangement. ViewStateService remains the PERSISTENCE layer
 // beneath atoms (it persists state; atoms OWN it); URLs/deep links
 // are projections under the same agreement law.
+//
+// OWNER RULING (2026-08-26, verbatim): "no we're not going to track
+// down the state bugs one by one. we're going to structure our front
+// end so that they cannot occur." State defects are retired BY
+// CONSTRUCTION, never by targeted patches -- the state layer (this
+// section) is APPROVED FOR IMPLEMENTATION ahead of the rest of this
+// spec, staged migrations with the standing review discipline.
 
 // The focus component — the owner's named construct.
 interface IFocusComponent : IViewComponent {
