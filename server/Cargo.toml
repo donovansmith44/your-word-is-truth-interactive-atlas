@@ -121,8 +121,9 @@ resolver = "2"
 # `spoken_at` indexing test, the pre-authorized mechanical-mirror exception
 # this batch's own report names, standing since CORP-2a/KRETZ-1).
 #
-# DISCLOSED, NOT COUNTED AS A FAILURE: `atlas-graph`'s own
-# `artifact_conformance.rs::serialized_artifact_is_admitted_and_loads_
+# DISCLOSED, NOT COUNTED AS A FAILURE (RED-1's own note, standing until
+# PERF-2b closed it -- see PERF-2b's own paragraph below): `atlas-graph`'s
+# own `artifact_conformance.rs::serialized_artifact_is_admitted_and_loads_
 # under_the_committed_ceiling` (a wall-clock 3s load-time ceiling, unrelated
 # to this batch's own code path -- it builds via the pre-RED-1
 # `build_graph_from_sources_with_eras_and_brainfuel` signature, never
@@ -135,4 +136,29 @@ resolver = "2"
 # (workspace) figure above counts it as the one passing test it reliably
 # is, confirmed separately from the `--skip`-run total both counting
 # passes used.
-# CURRENT CANONICAL: 880 (857 + 23) across 45 sections.
+#
+# Batch PERF-2b (2026-08-25, artifact-load performance + profile-guided
+# query wins): moved to 881 (857 + 24) across 45 sections. Workspace +0
+# (this batch's own change to `Graph::build_indexes`, `graph-types/src/
+# graph.rs`, is production code, not a new test -- see
+# `parallel_build_indexes_matches_sequential_over_a_large_relation` below,
+# which lands in `atlas-graph-types` instead, since `Graph` lives there).
+# `atlas-graph-types` +1: that new test, proving the batch's own
+# `std::thread::scope`-parallel `Graph::build_indexes` reproduces
+# `BiIndex::build`'s sequential per-key edge order exactly, including
+# across a chunk boundary -- the correctness proof behind the batch's own
+# ~2.6x `build_indexes` / ~1.65x full-artifact-load win (`server/
+# BENCHMARKS.md`'s own `artifact_load` section has the full before/after).
+# CLOSES the flake immediately above: the SAME parallelization measurably
+# lowered `serialized_artifact_is_admitted_and_loads_under_the_committed_
+# ceiling`'s own timed window too (7 samples this batch, quiet through
+# genuinely heavy concurrent-`cargo test --workspace` contention:
+# 2.388-2.591s, comfortably under both the old 3s ceiling AND the
+# retargeted 4s one -- that constant's own doc comment in
+# `artifact_conformance.rs` has the full evidence). No longer disclosed as
+# a non-counted flake: the 857 (workspace) figure above is now the SAME
+# number reliably, every run, not "the one passing test it reliably is."
+# `data/compiled/graph.bin` NOT rebuilt this batch (no format change --
+# `FORMAT_VERSION` stays 10; Phase 2's fix is `std::thread::scope`
+# parallelism, entirely in-memory).
+# CURRENT CANONICAL: 881 (857 + 24) across 45 sections.

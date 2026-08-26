@@ -9,6 +9,16 @@ is the permanent harness that makes speed claims and regressions measurable
 at all. Full investigation, before/after tables, and what was tried and
 rejected: `.superpowers/sdd/2026-08-17-bible-atlas-m1/batch-perf2a-report.md`.
 
+Batch PERF-2b (2026-08-25) is Phases 2+3: the artifact-load hot spot
+(`GraphService::from_artifact`, real committed `data/compiled/graph.bin`)
+and a profile-guided sweep of the query surface above ~1ms. Full
+investigation, profile evidence, and what was tried and rejected:
+`.superpowers/sdd/2026-08-17-bible-atlas-m1/batch-perf2b-report.md`. This
+file's `artifact_load` table and the ceiling-test note below are THAT
+batch's own update; every other section (query surface, smoke tier, payload)
+is UNCHANGED by it -- PERF-2b touched no query-serving code at all, only
+`Graph::build_indexes` (a startup-time cost, not a per-query one).
+
 ## Machine context
 
 - Windows 11 Home 10.0.26200, quiet at measurement time (no concurrent
@@ -17,6 +27,11 @@ rejected: `.superpowers/sdd/2026-08-17-bible-atlas-m1/batch-perf2a-report.md`.
   timing number below unless marked otherwise; criterion's own `bench`
   profile (opt+debuginfo, same optimization level as release) for the
   `cargo bench` numbers.
+- 16 logical processors (`std::thread::available_parallelism()`) --
+  relevant starting PERF-2b: `Graph::build_indexes` now sizes its own
+  parallel chunking off this number (see the `artifact_load` section
+  below), so the achieved multiplier is machine-dependent in a way no
+  earlier number in this file was.
 - All HTTP timings below use `http://127.0.0.1:8000` (the loopback IP
   literal), never the hostname `localhost` -- this machine's own hostname
   resolution for `localhost` adds a large (~200ms), request-count-*and*-
@@ -59,6 +74,25 @@ Criterion's own full statistical output (mean/median/stddev per query,
 outlier detection) is the authoritative source -- these are the headline
 numbers from the run recorded below; re-run `cargo bench` for current
 figures whenever investigating a regression `tests/perf_smoke.rs` flagged.
+
+**PERF-2b's own Phase 3 pass (re-confirmed, table below UNCHANGED)**: every
+number in this section stays PERF-2a's own recorded baseline -- PERF-2b
+touched zero query-serving code (only `Graph::build_indexes`, a
+startup-time cost). Re-running `cargo bench -p atlas-server` this batch, on
+the SAME machine, DID show criterion reporting small ("Performance has
+improved", 5-18%) deltas across nearly every group here -- disclosed as
+machine/thermal variance between the two runs, NOT a code-driven win: no
+diff touches `atlas-core::scene`, `atlas_server::handlers`, or
+`atlas_server::graph_handlers`, so there is no mechanism by which any
+number in THIS section could have legitimately moved. (The one exception,
+`artifact_load`, DID move for a real, code-attributable reason -- see that
+section below, which reports it separately with its own before/after.)
+Every query above the brief's own ~1ms floor (`scene_pure`/`handlers`'
+`scene_time`/`scene_scripture` entries) was PERF-2a's own investigation
+target already: every lookup on that path is O(1) HashMap/HashSet-backed,
+no O(n) scan to index away -- re-confirmed, not re-litigated, left alone
+per the brief's own "anything at floor: LEFT ALONE, no churn for numbers"
+law.
 
 ### `scene_pure` (pure `atlas_core::scene` composition, no HTTP/JSON)
 
@@ -110,9 +144,96 @@ smelled -- it is just ~5ms at the ceiling, not ~200ms.
 
 ### `artifact_load` (full startup load path, sample_size=10)
 
-| Measure | Time (median [min, max] of 10 samples) |
-|---|---|
-| `GraphService::from_artifact` + `AtlasData::load` + overlay + `finish` (main.rs's own default startup path) | 2.124s [2.095, 2.154] (server startup log's own single reading: 1.697s -- both comfortably under the committed 3s ceiling; criterion's slightly higher median is consistent with `bench` profile overhead vs. a bare `release` binary, not a regression) |
+| Measure | Before (PERF-2a baseline) | After (PERF-2b) | Change |
+|---|---|---|---|
+| `GraphService::from_artifact` + `AtlasData::load` + overlay + `finish` (main.rs's own default startup path, criterion `bench` profile) | 2.124s [2.095, 2.154] | 1.289s [1.275, 1.305] | criterion's own paired comparison: -39.3% [-40.3%, -38.2%], p=0.00, "Performance has improved" -- **~1.65x** |
+
+**Where the time went (profiled before touching anything)**: a scratch
+phase-timing harness (removed before this batch's own commit; the profiling
+technique, not the win, is disclosed here) split `GraphService::from_artifact`
+into its five real phases, release profile, quiet machine, real committed
+`graph.bin` (100,785,455 bytes):
+
+| Phase | Before | After | Change |
+|---|---:|---:|---|
+| file read | ~14.6ms | ~14.6ms | unchanged (I/O, not touched) |
+| bincode decode | ~146-166ms | ~146-148ms | unchanged (not touched -- see disclosed floor below) |
+| `to_service_parts` (DTO -> domain) | ~100-115ms | ~99-100ms | unchanged (not touched -- see disclosed floor below) |
+| **`Graph::build_indexes`** | **~965-1030ms** | **~365-375ms** | **~2.6x -- the fix, see below** |
+| `add_justified_by` | ~0.15ms | ~0.2ms | unchanged (already negligible) |
+| **from_artifact-equivalent total** | **~1.23-1.27s** | **~630-645ms** | **~1.9x** |
+
+`build_indexes` was ~80-93% of the whole load path and, itself, split three
+ways (per-relation instrumentation, same harness): `pid_index` (one
+content-address hash per NODE, ~92k nodes on the real graph) ~344ms;
+row-table lowering (`pairs`/`sym_pairs` construction) ~101-104ms; the
+`BiIndex::build`/`build_symmetric` pass itself (one hash per EDGE
+OCCURRENCE -- `cites` alone ~344k rows, by far the largest single relation)
+~600-615ms.
+
+**The fix (candidate (a), the brief's own first-reversibility choice --
+never reached candidate (b), a format change)**: `Graph::build_indexes`
+(`graph-types/src/graph.rs`) now computes `pid_index` and every relation's
+`BiIndex` concurrently via `std::thread::scope` -- no `unsafe`, no shared
+mutable state crossing a thread boundary, no hash/format/algorithm change
+(the exact same `Node::pid`/`BiIndex::build`/`build_symmetric` calls the
+sequential version made, run over SLICES instead of whole tables, merged
+back). Two things were tried and only the second one won:
+
+- **REJECTED, no measured win**: per-`Position` Debug-byte memoization
+  inside `entry_id`/`entry_id_symmetric` (the hypothesis: `cites`'s own
+  ~344k `entry_id` calls re-Debug-format the same handful of hub verses
+  over and over). A/B'd directly (same binary, one env-var-gated branch,
+  same machine, same run): cached 602-615ms vs. uncached 612-613ms for
+  `BiIndex::build`'s total -- statistically indistinguishable. The
+  formatting/hashing cost per call was real but small; the actual cost is
+  the surrounding clone + `BTreeMap` insertion machinery. Reverted whole
+  (house law: keep only proven wins) before the parallel work below.
+- **KEPT, measured ~2.6x on `build_indexes` alone**: `std::thread::scope`
+  parallelism, chunk size sized off `std::thread::available_parallelism()`
+  (this machine: 16) rather than a flat row constant -- a first pass with a
+  flat 50k-row chunk gave `pid_index` only 2 chunks (barely any speedup,
+  ~307ms of a ~344ms sequential baseline, starved of CPU share against 20
+  concurrently-running edge chunks); sizing both the node pool and the edge
+  pool off the SAME core count fixed that (16 node chunks, ~20-27 edge
+  chunks depending on relation-table sizes that commit to commit).
+
+**Correctness, proven three ways** (not just claimed): (1) a new unit test,
+`parallel_build_indexes_matches_sequential_over_a_large_relation`
+(`graph-types/src/graph.rs`), proves the chunk-then-merge algorithm
+(`Vec::append`, never a re-sort) reproduces `BiIndex::build`'s own
+sequential per-key edge order exactly, including for a position spanning
+more than one chunk -- the case a real small relation never exercises. (2)
+The full standing suite, including `scene_byte_identity.rs`'s 25 pinned
+response hashes and `version_root_regression.rs`, passes UNCHANGED. (3) A
+direct before/after HTTP diff this batch ran itself: built and ran the
+server from the pre-parallel commit, captured `/api/node/text-unit:JHN.3.16/
+edges?kind=cites` (the single highest-risk endpoint -- `cites` is the
+relation chunked most aggressively), `/api/xrefs/JHN.3.16`, `/api/scene?
+from=-5&to=100`, `/api/node/place:hebron/edges?kind=located-at`, and
+`/api/node/text-unit:JHN.3.16`; rebuilt and reran from the parallel commit;
+byte-for-byte IDENTICAL (`diff`, not just a hash) on every one.
+
+**Disclosed floor, not chased this batch**: `bincode decode` (~146-166ms)
+and `to_service_parts` (~99-115ms) together are ~245-280ms, now a LARGER
+share of the (much smaller) total than before. Neither was touched.
+`decode` is a single sequential pass over bincode's own length-prefixed
+byte stream -- not parallelizable without a wire-format change (the
+brief's own candidate (b), reversibility group two, "only if (a) cannot
+reach the target"; this batch stayed in group (a) the whole way and did
+not attempt it). `to_service_parts`'s own per-relation DTO->domain
+conversion loops are STRUCTURALLY the same shape `build_indexes`'s
+row-lowering loops were before this batch's fix -- a disclosed, low-risk
+follow-up (chunk-then-concatenate a `Vec`, simpler than `build_indexes`'s
+own chunk-then-merge-a-map, since a flat `Vec` split needs no per-key
+ordering argument at all) that this batch did NOT attempt, for schedule
+reasons, not a discovered obstacle. Together these two disclose why the
+achieved **~1.65x-1.9x** falls short of the owner's own 4x floor: this
+batch's own target was met for `build_indexes` (~2.6x) but that function
+was never the WHOLE cost, and reaching 4x on the total would need EITHER
+the `to_service_parts` follow-up above OR a format change (group (b)) --
+neither taken here, both named so a future batch does not have to
+re-discover them.
 
 ### Admission (NOT criterion-benched here -- see `benches/queries.rs`'s own
 doc comment for why)
@@ -161,6 +282,77 @@ own default), was measured 10 times and showed NO flaking: 2.095-2.154s,
 a tight, stable range comfortably under the 3s ceiling despite being the
 LARGER, richer artifact. The flaky reading belongs to a narrower legacy
 test fixture, not to the real, current, owner-facing artifact load.
+
+## PERF-2b: the ceiling-flake closure
+
+The disclosed flake immediately above (this file's own PERF-2a text,
+unedited) is CLOSED this batch. `artifact_conformance.rs::
+serialized_artifact_is_admitted_and_loads_under_the_committed_ceiling`'s
+own `LOAD_CEILING` was retargeted 3s -> 4s (see that constant's own doc
+comment for the full before/after and the exact 7-sample evidence: quiet
+runs at 2.388-2.408s, one and two concurrent full `cargo test --workspace`
+runs backgrounded alongside it at 2.550-2.591s -- worst observed 2.591s,
+~54% margin to the new 4s ceiling). The SAME `Graph::build_indexes`
+parallelization this file's own `artifact_load` section documents is why:
+this legacy test's own timed window (`read_file` -> `to_service_parts` ->
+`build_indexes` -> `add_justified_by`) runs the identical, now-parallel
+code path. Two tests live in that one file and, by default, run
+CONCURRENTLY (Rust's own multi-threaded test harness) -- THAT cross-test
+contention, not necessarily unrelated cargo processes, is the largest real
+source of the "full-workspace parallel load" flake PERF-2a's own report
+named; this batch's stress tests (concurrent full-workspace `cargo test`
+runs backgrounded alongside it, not just the file's own two tests
+contending) confirm the fix holds under BOTH contention sources.
+
+## PERF-2b: `data/compiled/graph.bin` on-disk size
+
+**No format change was made this batch** (Phase 2's fix was `std::thread::
+scope` parallelism inside `Graph::build_indexes`, entirely in-memory --
+`FORMAT_VERSION` stays 10, `artifact.rs`'s DTO wire shape is untouched,
+`data/compiled/graph.bin` is BYTE-IDENTICAL to what it was at BASE,
+confirmed by `git status` showing no diff under `data/`). Size: unchanged
+at 100,785,455 bytes -- 4,072,145 bytes (~3.88MB) of headroom before
+GitHub's 104,857,600-byte hard block.
+
+**Projected growth, disclosed** (git history, `data/compiled/graph.bin`
+size at each corpus-touching batch's own commit):
+
+| Batch | Size | Delta |
+|---|---:|---:|
+| CORP-1a (brain-fuel ingestion) | 72,301,785 | -- |
+| CORP-2a (Book of Concord, data half) | 74,501,640 | +2.20MB |
+| KRETZ-1 (Kretzmann's Popular Commentary) | 99,404,977 | +24.90MB |
+| RED-1 (red letters + SpokenBy/SpokenAt) | 100,785,455 | +1.38MB |
+
+The variance is real, not noise: a full NEW corpus onboarding (KRETZ-1's
+own scale, +24.9MB) would exceed the entire remaining ~3.88MB headroom in
+ONE batch; even a RED-1-scale incremental batch (+1.38MB) leaves room for
+only ~2-3 more before the hard block. **This is flagged as urgent**, not
+because this batch's own work moved the needle (it didn't -- no format
+change), but because the headroom was already this thin at BASE and the
+NEXT corpus-scale batch, whatever it is, is likely to hit it. Options
+(controller/owner decision, not made here, per the brief's own explicit
+instruction not to adopt LFS or split the artifact unilaterally):
+- **git-lfs** for `data/compiled/graph.bin` specifically (a large, mostly-
+  binary, infrequently-diffed file -- a textbook LFS candidate) -- adds a
+  new dependency (an LFS-aware git client/CI step) every clone/checkout
+  needs, a real workflow cost the owner may or may not want to accept.
+- **Split the artifact** (e.g., one file per corpus, loaded and merged at
+  startup) -- avoids the single-file cap entirely and could ALSO parallelize
+  further (each corpus's own `from_artifact`-equivalent load already
+  independent, similar to this batch's own `build_indexes` parallelism) but
+  is a real format change (FORMAT_VERSION bump, `dump`/`to_service_parts`
+  restructuring, both admission checks re-proven) -- bigger than this
+  batch's own scope.
+- **Re-examine on-disk compression**: this batch's own artifact.rs reading
+  (candidate (a) in the brief's own reversibility order) found no
+  low-risk win in the DTO shape itself; a general-purpose compression pass
+  over the whole file (e.g., zstd) was NOT evaluated this batch (out of
+  scope -- Phase 2's target was load TIME, and decompression would ADD
+  CPU cost to the very path this batch just sped up) but is a real,
+  disclosed, unexplored option for the SIZE side specifically.
+- **Prune/trim content**: not evaluated (a data-content decision, not an
+  engineering one).
 
 ## Smoke-tier regression gate (`cargo test`, `tests/perf_smoke.rs`)
 

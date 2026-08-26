@@ -85,13 +85,29 @@ impl Graph {
     /// Build every bidirectional index from the row tables — one pass
     /// per relation; both directions are projections of the same rows.
     /// Also builds the pid index (derive() as lookup).
+    ///
+    /// PERF-2b (profile-guided; see the batch report's own load-time
+    /// investigation): row-table lowering (the loops below, building
+    /// `pairs`/`sym_pairs`) stays exactly as it always was -- ONE
+    /// sequential pass per relation, unchanged. What changed is what
+    /// happens AFTER: turning those rows into `pid_index`/`indexes`/
+    /// `symmetric_indexes` was measured to be the dominant cost of the
+    /// whole artifact-load path (`pid_index`, one hash per NODE, and the
+    /// relation lowering below, one hash per EDGE OCCURRENCE -- `cites`
+    /// alone ~344k rows on the real committed graph) -- and every one of
+    /// those hashes is a pure function of its own input, read-only, with
+    /// no relation's rows depending on any other's and no node depending
+    /// on any edge. That's safe, unsafe-free data parallelism
+    /// (`std::thread::scope` -- no shared mutable state crosses a thread
+    /// boundary, no algorithm change: the exact same `Node::pid`/
+    /// `BiIndex::build`/`build_symmetric` calls the sequential version
+    /// made, just spread across worker threads and merged back), not a
+    /// hash/format rewrite -- measured ~2.6x for `build_indexes` alone
+    /// (~1.9x for the whole `GraphService::from_artifact` load path it
+    /// dominates) on this 16-core machine (see `server/BENCHMARKS.md`'s
+    /// own `artifact_load` section for the full before/after).
     pub fn build_indexes(&mut self) {
         use crate::id::ContentAddressed;
-        self.pid_index = self
-            .nodes
-            .values()
-            .map(|n| (n.pid(), n.id.clone()))
-            .collect();
 
         use RelationId as R;
 
@@ -261,11 +277,6 @@ impl Graph {
         // (node.rs). Manifest row, row struct, and the `graph.named`
         // table are gone; aliases remain a fact ABOUT the place.
 
-        self.indexes = pairs
-            .into_iter()
-            .map(|(rel, ps)| (rel, BiIndex::build(rel, &ps)))
-            .collect();
-
         // M-C: the symmetric sibling of the directed pass above -- closes
         // the "Symmetric relations: skeleton serves none yet" gap
         // (`explore.rs`'s own `raw_neighbors`, disclosed since M-A).
@@ -295,10 +306,132 @@ impl Graph {
                 M::None,
             ));
         }
-        self.symmetric_indexes = sym_pairs
-            .into_iter()
-            .map(|(rel, ps)| (rel, BiIndex::build_symmetric(rel, &ps)))
-            .collect();
+
+        // PERF-2b: the parallel pass -- see this function's own doc
+        // comment. Chunk sizes are sized off `available_parallelism`
+        // (falling back to 4 if the platform can't report it), NOT a flat
+        // row constant: `pid_index` (one chunk per node-heavy pass) and
+        // the edge relations (one chunk pool sized off the TOTAL row count
+        // across every relation, so `cites` alone -- by far the largest --
+        // is split into roughly as many pieces as there are cores, and the
+        // many small relations don't each independently multiply the
+        // thread count) are sized so BOTH pools land near, not far under
+        // or wildly over, the core count -- measured (see the batch
+        // report): a flat 50k-row constant gave `pid_index` only 2 chunks
+        // on this 92k-node graph (barely any speedup, ~307ms of a ~344ms
+        // sequential baseline) while starving it of CPU share against 20
+        // concurrently-running edge chunks; sizing both pools off the same
+        // core count fixed that. Every chunk is `BiIndex::build`/
+        // `build_symmetric` (or, for `pid_index`, `Node::pid`) run over a
+        // SLICE -- the identical function the pre-parallel code called
+        // over the WHOLE table, just given less of it -- so per-item
+        // computation is bit-for-bit unchanged; only the merge below is
+        // new code.
+        let n_threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
+
+        // `pid_index`'s own chunks: read-only over `self.nodes`, touches
+        // none of the relation row tables the directed/symmetric chunks
+        // below read -- safe to run fully concurrently with them. Computed
+        // OUTSIDE the scope below (not just outside its closure body) so
+        // it outlives every spawned thread, satisfying `thread::scope`'s
+        // own borrow requirement.
+        let node_refs: Vec<(&AnyNodeId, &Node)> = self.nodes.iter().collect();
+        let node_chunk_size = node_refs.len().div_ceil(n_threads).max(1);
+
+        // The edge-relation chunk size: total rows across every relation,
+        // divided by the core count -- `cites` (by far the largest single
+        // relation) ends up split into roughly `n_threads` pieces on its
+        // own; every smaller relation gets fewer (often just one).
+        let total_edge_rows: usize = pairs.values().map(|v| v.len()).sum::<usize>() + sym_pairs.values().map(|v| v.len()).sum::<usize>();
+        let edge_chunk_size = total_edge_rows.div_ceil(n_threads).max(1);
+
+        let (pid_index, indexes, symmetric_indexes) = std::thread::scope(|scope| {
+            let pid_handles: Vec<_> = node_refs
+                .chunks(node_chunk_size)
+                .map(|chunk| scope.spawn(move || chunk.iter().map(|(_, n)| (n.pid(), n.id.clone())).collect::<BTreeMap<_, _>>()))
+                .collect();
+
+            // Directed-relation chunks. Pushed relation by relation, and
+            // WITHIN a relation strictly in original row order -- the
+            // order this vector (and so `directed_handles`, and so the
+            // merge loop below, which joins/processes handles in vector
+            // order regardless of which thread the OS finishes first) is
+            // built in is EXACTLY the order the pre-parallel sequential
+            // pass would have visited these same rows in.
+            let mut directed_chunks: Vec<(R, &[(Position, Position, M)])> = Vec::new();
+            for (rel, ps) in &pairs {
+                if ps.len() <= edge_chunk_size {
+                    directed_chunks.push((*rel, ps.as_slice()));
+                } else {
+                    for c in ps.chunks(edge_chunk_size) {
+                        directed_chunks.push((*rel, c));
+                    }
+                }
+            }
+            let directed_handles: Vec<_> = directed_chunks.into_iter().map(|(rel, ps)| scope.spawn(move || (rel, BiIndex::build(rel, ps)))).collect();
+
+            // The symmetric sibling -- same splitting rule (today's tables
+            // are far smaller than `edge_chunk_size`, so this is one chunk each
+            // in practice, but the rule stays uniform for future growth).
+            let mut sym_chunks: Vec<(S, &[(Position, Position, M)])> = Vec::new();
+            for (rel, ps) in &sym_pairs {
+                if ps.len() <= edge_chunk_size {
+                    sym_chunks.push((*rel, ps.as_slice()));
+                } else {
+                    for c in ps.chunks(edge_chunk_size) {
+                        sym_chunks.push((*rel, c));
+                    }
+                }
+            }
+            let sym_handles: Vec<_> = sym_chunks.into_iter().map(|(rel, ps)| scope.spawn(move || (rel, BiIndex::build_symmetric(rel, ps)))).collect();
+
+            // pid_index: key-unique (one pid per node), so chunk merge
+            // order carries no meaning -- a plain union.
+            let pid_index: BTreeMap<crate::id::Pid, AnyNodeId> = pid_handles.into_iter().flat_map(|h| h.join().expect("pid-index worker panicked").into_iter()).collect();
+
+            // Directed indexes: merge each relation's own chunks back
+            // together IN ORDER (`Vec::append`, never a re-sort) -- for
+            // any `Position` key that chunk i and chunk i+1 both touch,
+            // chunk i's edges land first in `fwd`/`inv`'s Vec, exactly
+            // reproducing the single sequential pass's own per-key order
+            // (proven for a large, multi-chunk relation by
+            // `parallel_build_indexes_matches_sequential_over_a_large_relation`
+            // below, and by the standing full suite, including
+            // `scene_byte_identity.rs`'s pinned response hashes, staying
+            // green through this batch).
+            let mut indexes: BTreeMap<R, BiIndex> = BTreeMap::new();
+            for h in directed_handles {
+                let (rel, partial) = h.join().expect("index-build worker panicked");
+                let entry = indexes.entry(rel).or_default();
+                for (k, mut v) in partial.fwd {
+                    entry.fwd.entry(k).or_default().append(&mut v);
+                }
+                for (k, mut v) in partial.inv {
+                    entry.inv.entry(k).or_default().append(&mut v);
+                }
+            }
+
+            let mut symmetric_indexes: BTreeMap<S, BiIndex> = BTreeMap::new();
+            for h in sym_handles {
+                let (rel, partial) = h.join().expect("symmetric index-build worker panicked");
+                let entry = symmetric_indexes.entry(rel).or_default();
+                for (k, mut v) in partial.fwd {
+                    entry.fwd.entry(k).or_default().append(&mut v);
+                }
+                // `.inv` is always empty for a symmetric `BiIndex`
+                // (`build_symmetric`'s own doc comment) -- merged anyway,
+                // for free, rather than assumed.
+                for (k, mut v) in partial.inv {
+                    entry.inv.entry(k).or_default().append(&mut v);
+                }
+            }
+
+            (pid_index, indexes, symmetric_indexes)
+        });
+
+        self.pid_index = pid_index;
+        self.indexes = indexes;
+        self.symmetric_indexes = symmetric_indexes;
     }
 
     /// Windowed reading query — the reader's only primitive. Any
@@ -331,6 +464,61 @@ mod tests {
     use crate::node::{Node, NodePayload};
     use crate::text::{ConcordRef, ConcordTag, Locus, LocusSet, TranslationId};
     use std::collections::BTreeSet;
+
+    /// PERF-2b: `Graph::build_indexes`'s own chunk-then-merge parallelism
+    /// (this file's own `build_indexes` doc comment) is only as correct
+    /// as the claim that splitting a relation's rows into contiguous
+    /// chunks, building a `BiIndex` over each chunk separately, and
+    /// merging the chunks back IN ORDER (`Vec::append`, never a re-sort)
+    /// reproduces EXACTLY what `BiIndex::build` over the WHOLE, unchunked
+    /// slice would have produced -- including PER-KEY EDGE ORDER for a
+    /// position that spans more than one chunk (a small relation, run
+    /// whole on a real machine, never exercises this -- it only ever sees
+    /// one chunk). This test hardcodes 3 chunks so the property it proves
+    /// holds regardless of `std::thread::available_parallelism()`'s own
+    /// answer on whatever machine runs it (that call only decides HOW
+    /// MANY chunks a real run uses -- it is not what this test is about).
+    #[test]
+    fn parallel_build_indexes_matches_sequential_over_a_large_relation() {
+        fn node(kind: NodeKind, raw: &str) -> Position {
+            Position::Node(crate::id::AnyNodeId { kind, raw: raw.to_string() })
+        }
+        use crate::explore::EdgeMeta as M;
+
+        // A hub position ("hebron") that is the SOURCE of every row below,
+        // spread across all three chunks -- the case that actually
+        // exercises cross-chunk merge (a position touched by only one
+        // chunk proves nothing about merge order).
+        let common = node(NodeKind::Place, "hebron");
+        let pairs: Vec<(Position, Position, M)> = (0..300u32).map(|i| (common.clone(), node(NodeKind::TextUnit, &format!("bible/{i}.1.1")), M::Votes(i))).collect();
+
+        // Sequential reference: `BiIndex::build` over the WHOLE slice,
+        // exactly what the pre-PERF-2b code always did.
+        let sequential = crate::edge::BiIndex::build(RelationId::Cites, &pairs);
+
+        // The SAME merge `Graph::build_indexes` performs, over 3
+        // hardcoded contiguous chunks.
+        let chunk_size = pairs.len().div_ceil(3);
+        let mut merged = crate::edge::BiIndex::default();
+        for chunk in pairs.chunks(chunk_size) {
+            let partial = crate::edge::BiIndex::build(RelationId::Cites, chunk);
+            for (k, mut v) in partial.fwd {
+                merged.fwd.entry(k).or_default().append(&mut v);
+            }
+            for (k, mut v) in partial.inv {
+                merged.inv.entry(k).or_default().append(&mut v);
+            }
+        }
+
+        assert_eq!(merged.fwd.len(), sequential.fwd.len());
+        assert_eq!(merged.inv.len(), sequential.inv.len());
+        for (k, v) in &sequential.fwd {
+            assert_eq!(merged.fwd.get(k), Some(v), "fwd entry for {k:?} must match the sequential build, IN ORDER");
+        }
+        for (k, v) in &sequential.inv {
+            assert_eq!(merged.inv.get(k), Some(v), "inv entry for {k:?} must match the sequential build, IN ORDER");
+        }
+    }
 
     /// CORP-2a: `contains_concord` was declared on this struct since M-A
     /// but never lowered into `pairs` until this batch (see this file's
