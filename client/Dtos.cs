@@ -460,6 +460,24 @@ public sealed record LandmarkDto(string Name, string Kind, double Lat, double Lo
 /// <see cref="PolityEraOut.Rings"/>.
 public sealed record LandMaskOut(JsonElement Rings);
 
+/// <c>GET /api/sources</c> (batch-s-brief.md): the Sources page's entire
+/// single source of truth, mirroring <c>atlas_core::sources::
+/// SourcesDocument</c> field for field. The Sources page renders this
+/// directly -- no hardcoded duplicate prose anywhere in this client.
+public sealed record SourcesDocumentOut(List<SourceCategoryDto> Categories, List<SourceEntryDto> Sources);
+
+public sealed record SourceCategoryDto(string Id, string Label);
+
+public sealed record SourceEntryDto(
+    string Id,
+    string Category,
+    string Title,
+    string WhatItIs,
+    string WhatWeBuilt,
+    string License,
+    string? Link,
+    string LicensesRowKey);
+
 // -----------------------------------------------------------------------
 // Batch M-D2 (P7 closure, "CLIENT ACCESS" -- design spec §5/§8): wire DTOs
 // for the two generic graph endpoints + the text-window endpoint. "Wire

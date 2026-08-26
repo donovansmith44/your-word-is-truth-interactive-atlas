@@ -48,6 +48,7 @@ public sealed class AtlasClient
     private List<EraDto>? _erasCache;
     private List<LandmarkDto>? _landmarksCache;
     private LandMaskOut? _landMaskCache;
+    private SourcesDocumentOut? _sourcesCache;
 
     public AtlasClient(HttpClient http)
     {
@@ -273,6 +274,15 @@ public sealed class AtlasClient
     {
         _landMaskCache ??= await GetRequired<LandMaskOut>("api/land-mask");
         return _landMaskCache;
+    }
+
+    // Batch S: the Sources page's own single source of truth -- curated,
+    // never changes within a running session, same fetch-once-cache-forever
+    // treatment as Landmarks()/LandMask() above.
+    public async Task<SourcesDocumentOut> Sources()
+    {
+        _sourcesCache ??= await GetRequired<SourcesDocumentOut>("api/sources");
+        return _sourcesCache;
     }
 
     private async Task<T> GetRequired<T>(string relativeUrl)

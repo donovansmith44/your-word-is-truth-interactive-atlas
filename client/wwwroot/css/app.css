@@ -276,6 +276,125 @@ input:focus-visible,
     overflow: hidden;
 }
 
+/* Sources page (Batch S, "document our sources for everything and give it
+   a dedicated page on the site"). A THIRD page-root class -- never
+   combined with .reader-page/.world-page above, per this file's own
+   single-class-selector discipline -- but the SAME parchment material as
+   .reader-page (design-direction.md's "quiet parchment" direction for
+   this page: reading material, not a legal dump). Body text throughout
+   this section is --ink, never --ink-soft/--bronze-ink/--lapis: those
+   measure 5.66:1/7.26:1/8.03:1 on --parchment respectively (see NAV-4's
+   own reader.spec.ts comment for the --ink figure, 13.98:1, computed the
+   same live way) -- under this page's own explicit >=10:1 floor
+   (batch-s-brief.md requirement 2), so only --ink clears it. */
+.sources-page {
+    min-height: 100vh;
+    background: var(--parchment);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sources-column {
+    width: 100%;
+    max-width: 860px;
+    padding: 6rem 1.5rem 4rem;
+}
+
+.sources-title {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.08em;
+    font-size: 2.4rem;
+    color: var(--ink);
+    margin: 0 0 1rem;
+}
+
+.sources-intro {
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--ink);
+    max-width: 66ch;
+    margin: 0 0 2.5rem;
+}
+
+.sources-loading {
+    font-family: var(--font-serif);
+    color: var(--ink);
+}
+
+.sources-category {
+    margin: 0 0 2.5rem;
+}
+
+.sources-category-title {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.08em;
+    font-size: 1.3rem;
+    color: var(--ink);
+    border-bottom: 1px solid var(--bronze);
+    padding-bottom: 0.4rem;
+    margin: 0 0 1.25rem;
+}
+
+/* auto-fill/minmax (not a fixed column count): reflows naturally from the
+   1024px desktop+tablet floor (batch-s-brief.md requirement 2) up through
+   ultrawide with no horizontal overflow -- the same "nothing breaks
+   between 1024px and ultrawide" quality floor design-direction.md already
+   states, met here by the grid itself rather than a media query. */
+.sources-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+}
+
+.source-card {
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.source-title {
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0;
+}
+
+.source-what,
+.source-built,
+.source-license {
+    font-family: var(--font-serif);
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: var(--ink);
+    margin: 0;
+}
+
+.source-label {
+    font-variant-caps: small-caps;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.source-link {
+    align-self: flex-start;
+    font-family: var(--font-serif);
+    font-size: 0.88rem;
+    color: var(--ink);
+    text-decoration: underline;
+    margin-top: 0.25rem;
+}
+
 /* Split view (Batch H, study without page-turning): reader-left/atlas-right.
    .split-view is Reader.razor's own outer wrapper, reused (see its file
    header) -- .split-pane-reader/.split-pane-atlas are ADDITIONAL classes
@@ -541,10 +660,10 @@ input:focus-visible,
     font-size: 0.8rem;
     color: var(--header-fg-soft, var(--ink-soft));
     opacity: 0.85;
-    /* Task 16: now a <button> (it opens the credits popover rather than
-       navigating), so reset the button-chrome browser defaults a plain <a>
-       never had -- background/border/padding/cursor -- to keep it looking
-       exactly like the plain text link it always was. */
+    /* Batch S: back to a plain <a> (it navigates to /sources instead of
+       opening a popover) -- background/border/padding/cursor are harmless
+       no-ops on an anchor (kept so this rule needs no change either way),
+       a leftover from Task 16's own now-retired <button> era. */
     background: none;
     border: none;
     padding: 0;
@@ -3770,26 +3889,12 @@ input:focus-visible,
     line-height: 1.7;
 }
 
-/* Task 16: the attribution/credits popover's source list (MainLayout.razor).
-   A plain reading list, not instrument-readout data -- no mono, no
-   small-caps -- just quieter than ordinary popover-body prose since it's
-   reference material, not narrative content. */
-.attribution-list {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
-    font-size: .88rem;
-    line-height: 1.5;
-    color: var(--ink-soft);
-}
-
-.attribution-list strong {
-    color: var(--ink);
-    font-weight: 600;
-}
+/* Batch S: .attribution-list/.attribution-list strong (Task 16's own
+   credits-popover source list) retired -- MainLayout.razor's Credits
+   control is a plain link to /sources now, no popover of its own left to
+   style; recoverable from git history if ever needed again, same
+   reversibility discipline M-D3's own retirement note above already
+   follows. */
 
 .popover-meta {
     margin: 0;

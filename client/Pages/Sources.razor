@@ -1,0 +1,86 @@
+@page "/sources"
+@inject AtlasClient Atlas
+
+@* Batch S ("document our sources for everything and give it a dedicated
+   page on the site"): the app's ONE decisive home for attribution --
+   MainLayout's own "Credits" header link now points straight here (see
+   MainLayout.razor's `attribution` anchor), replacing the popover it used
+   to open. This page renders ENTIRELY from `AtlasClient.Sources()` (`GET
+   /api/sources`, itself generated 1:1 from LICENSES.md -- see
+   `server/atlas-etl/src/sources.rs`'s own doc comment): no hardcoded
+   duplicate credit list lives anywhere in this client (requirement 3).
+
+   Styling: design-direction.md's "quiet parchment" direction -- this is
+   reading material, not a legal dump, so it gets its own page-root class
+   (never combined with .reader-page/.world-page -- "each page's root
+   element carries one of these two classes" governs THOSE two; a third
+   distinct page root is the correct, single-class-selector way to add a
+   third material, not stacking a second class onto an existing one). *@
+
+<PageTitle>Bible Explorer &mdash; Sources</PageTitle>
+
+<div class="sources-page" data-testid="sources-page">
+    <div class="sources-column">
+        <h1 class="sources-title">Sources</h1>
+        <p class="sources-intro">
+            Bible Explorer stands on the work of translators, researchers, and
+            scholars across many centuries. Every source below is honestly
+            named: what it is, what we built from it, and its license.
+        </p>
+
+        @if (_error is not null)
+        {
+            <div class="toast" data-testid="toast">
+                <p class="toast-message">@_error</p>
+            </div>
+        }
+        else if (_doc is null)
+        {
+            <p class="sources-loading">Loading sources&hellip;</p>
+        }
+        else
+        {
+            @foreach (var category in _doc.Categories)
+            {
+                <section class="sources-category" data-testid="sources-category-@category.Id">
+                    <h2 class="sources-category-title">@category.Label</h2>
+                    <div class="sources-grid">
+                        @foreach (var source in SourcesFor(category.Id))
+                        {
+                            <article class="source-card" data-testid="source-@source.Id">
+                                <h3 class="source-title">@source.Title</h3>
+                                <p class="source-what">@source.WhatItIs</p>
+                                <p class="source-built"><span class="source-label">What we built:</span> @source.WhatWeBuilt</p>
+                                <p class="source-license"><span class="source-label">License:</span> @source.License</p>
+                                @if (!string.IsNullOrWhiteSpace(source.Link))
+                                {
+                                    <a class="source-link" data-testid="source-link-@source.Id" href="@source.Link" target="_blank" rel="noopener noreferrer">Visit source</a>
+                                }
+                            </article>
+                        }
+                    </div>
+                </section>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private SourcesDocumentOut? _doc;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _doc = await Atlas.Sources();
+        }
+        catch (Exception)
+        {
+            _error = "Couldn't load the sources list -- try refreshing the page.";
+        }
+    }
+
+    private IEnumerable<SourceEntryDto> SourcesFor(string categoryId) =>
+        _doc!.Sources.Where(s => s.Category == categoryId);
+}

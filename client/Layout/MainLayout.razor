@@ -34,19 +34,31 @@
             <button type="button" class="hamburger-menu" data-testid="hamburger-menu" aria-label="Explorations menu"
                     aria-expanded="@(_showHamburger ? "true" : "false")" @onclick="ToggleHamburger">&#9776;</button>
         }
-        <button type="button" class="attribution" data-testid="attribution" @onclick="ToggleAttribution">Credits</button>
+        @* Batch S ("document our sources for everything and give it a
+           dedicated page on the site"): "the existing Credits nav link
+           becomes/points to it -- one page, one decisive home for
+           attribution, no duplicate partial credit lists left behind"
+           (requirement 1). This used to be a <button> that toggled a
+           popover carrying its own hardcoded <ul> of credits (see git
+           history) -- that popover, and its hardcoded list, are gone;
+           the SAME `attribution` testid now sits on a plain nav-style
+           link straight to /sources, the app's one decisive home for
+           attribution. *@
+        <a class="attribution" data-testid="attribution" href="/sources">Credits</a>
     </div>
 </header>
 
 <SelectionTray />
 
-@* Batch G2 decision 5: the hamburger panel -- same shared parchment-popover
-   markup/testids the Credits panel immediately below already establishes
+@* Batch G2 decision 5: the hamburger panel -- the same shared
+   parchment-popover markup/testids ExplorerPopover.razor establishes
    (backdrop click / Close / Escape all close it), NOT reusing the generic
    `popover`/`popover-backdrop` testids themselves (decision 5's own fixed
    ids: hamburger-menu/hamburger-panel) -- this is chrome for MANAGING saved
    explorations, not an ExplorerPopover rendering one IExplorable node, so it
-   deliberately does not ride that component's own machinery. *@
+   deliberately does not ride that component's own machinery. (Batch S: the
+   Credits popover this comment used to also point at is gone -- Credits is
+   a plain link to /sources now.) *@
 @if (_showHamburger)
 {
     <div class="popover-backdrop" data-testid="popover-backdrop" @onclick="CloseHamburger"></div>
@@ -91,49 +103,6 @@
     @Body
 </main>
 
-@* Task 16: attribution content. Reuses the shared parchment popover
-   pattern (design-direction.md: "One popover style everywhere") via its
-   existing, already-shared testids/classes (popover/popover-backdrop/
-   popover-title/popover-close — see ExplorerPopover.razor and CONTRACT.md's
-   "Popover (shared)" list) rather than pulling this static, non-explorable
-   content through the IExplorable/AtlasClient machinery ExplorerPopover is
-   built around: there's nothing here to fetch, push, or drill into, so a
-   minimal disclosure (backdrop click / Close button / Escape all close it)
-   is the honest fit, not a fourth IExplorable node type invented for one
-   static panel. No new CONTRACT testids are introduced. *@
-@if (_showAttribution)
-{
-    <div class="popover-backdrop" data-testid="popover-backdrop" @onclick="CloseAttribution"></div>
-    <div class="popover" data-testid="popover" tabindex="-1" @ref="_panelRef" @onkeydown="OnAttributionKeyDown">
-        <div class="popover-head">
-            <p class="popover-title" data-testid="popover-title" data-ref="false">Credits &amp; Attribution</p>
-            <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" @onclick="CloseAttribution">&times;</button>
-        </div>
-        <div class="popover-body">
-            <ul class="attribution-list">
-                <li><strong>KJV</strong> — the King James Version text. Public domain.</li>
-                <li><strong>OpenBible.info</strong> — place geocoding. CC-BY 4.0, openbible.info.</li>
-                <li><strong>OpenBible.info</strong> — cross-references. Free to use with credit, openbible.info.</li>
-                <li><strong>Theographic Bible Metadata</strong> — people, place, and event data. CC BY-SA 4.0, Robert Rouse.</li>
-                <li><strong>Historical polity borders</strong> — coarse original cartography by this project, hand-authored per-polity timerange eras. CC0 (public domain dedication). Boundaries are approximate, non-scholarly sketches, not surveyed fact.</li>
-                <li><strong>Leaflet</strong> — the map library. BSD-2-Clause.</li>
-                @* Batch C: basemap swapped to Esri World_Shaded_Relief (label-free
-                   light terrain, see map.js's own TILE_* comment for the
-                   screenshot comparison). Attribution text is the service's
-                   OWN copyrightText, quoted verbatim (never guessed/paraphrased,
-                   the standing citation-integrity rule) -- fetched live via
-                   its REST endpoint's ?f=json on 2026-08-19 -- and kept
-                   byte-for-byte in sync with map.js's own TILE_ATTRIBUTION
-                   constant, which quotes the identical source. *@
-                <li><strong>Esri World Shaded Relief</strong> — map tiles. Attribution (verbatim): "Copyright:(c) 2014 Esri"</li>
-                <li><strong>Carto</strong> — fallback map tiles (label-free, used only if the primary tile service fails to load).</li>
-                <li>Landmark, narrative, and era curation is our own. CC0.</li>
-                <li>Full license details and per-source citations: <code>LICENSES.md</code> in the project repository.</li>
-            </ul>
-        </div>
-    </div>
-}
-
 @code {
     // The header is shared chrome (MainLayout wraps every page), but its
     // material -- parchment vs dusk glass -- depends on which page is
@@ -143,17 +112,10 @@
     private bool IsWorld => Nav.ToBaseRelativePath(Nav.Uri).StartsWith("world", StringComparison.OrdinalIgnoreCase);
     private string HeaderThemeClass => IsWorld ? "header-dusk" : "header-parchment";
 
-    private bool _showAttribution;
-    private bool _focusPending;
-    private ElementReference _panelRef;
-
-    // Batch G2 decision 5: the hamburger panel -- same focus-on-open/
-    // Escape-to-close discipline as the Credits popover immediately above,
-    // a SEPARATE bool/ref pair (not a rename of the Credits fields) since
-    // the two panels can, in principle, each be independently opened/closed
-    // (never SIMULTANEOUSLY per ToggleHamburger/ToggleAttribution below --
-    // opening one closes the other, avoiding two backdrops stacking -- but
-    // each still needs its own state to track that).
+    // Batch S: the Credits popover (and its own _showAttribution/
+    // _focusPending/_panelRef state, ToggleAttribution/CloseAttribution/
+    // OnAttributionKeyDown handlers) is gone -- `attribution` is a plain
+    // link to /sources now (see the header markup above).
     private bool _showHamburger;
     private bool _focusHamburgerPending;
     private ElementReference _hamburgerPanelRef;
@@ -166,32 +128,12 @@
     private IReadOnlyList<IExplorable>? _hamburgerSeedStack;
     private string? _hamburgerError;
 
-    private void ToggleAttribution()
-    {
-        _showHamburger = false; // never two chrome backdrops stacked at once
-        _showAttribution = !_showAttribution;
-        if (_showAttribution)
-        {
-            _focusPending = true;
-        }
-    }
-
-    private void CloseAttribution() => _showAttribution = false;
-
-    private void OnAttributionKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Escape")
-        {
-            CloseAttribution();
-        }
-    }
-
-    // Batch G2 decision 5: same toggle/close/Escape shape as
-    // ToggleAttribution/CloseAttribution/OnAttributionKeyDown immediately
-    // above, one bool/ref pair of its own.
+    // Batch G2 decision 5: opening the hamburger panel used to also close
+    // an open Credits popover (never two chrome backdrops stacked at
+    // once) -- the popover is gone (Batch S), so there is nothing left to
+    // close here.
     private void ToggleHamburger()
     {
-        _showAttribution = false; // never two chrome backdrops stacked at once
         _showHamburger = !_showHamburger;
         if (_showHamburger)
         {
@@ -246,42 +188,16 @@
 
     // Fix round 1 (M1): mirrors ExplorerPopover's FocusAsync-after-open
     // exactly (@ref + tabindex="-1" on the panel, FocusAsync in
-    // OnAfterRenderAsync, non-fatal try/catch) -- without it, the Credits
-    // button keeps DOM focus after its own click (standard browser
-    // behavior), so Escape's keydown never reaches this popover's
-    // @onkeydown at all. One necessary adaptation from ExplorerPopover's
-    // own version: ExplorerPopover gets a brand-new component instance per
-    // "opening" (Reader.razor's @key), so a focus-once-ever bool is
-    // correct there. MainLayout is the persistent layout -- it is never
-    // recreated across navigations -- so "have we focused yet" has to be
-    // re-armed on every open rather than spent permanently after the
-    // first; ToggleAttribution sets _focusPending on each open, and this
-    // clears it after the resulting render actually focuses the panel.
+    // OnAfterRenderAsync, non-fatal try/catch) -- MainLayout is the
+    // persistent layout (never recreated across navigations), so "have we
+    // focused yet" has to be re-armed on every open rather than spent
+    // permanently after the first; ToggleHamburger sets
+    // _focusHamburgerPending on each open, and this clears it after the
+    // resulting render actually focuses the panel. (Batch S: the Credits
+    // popover this pattern originally described alongside is gone; the
+    // hamburger panel below is the sole remaining user.)
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_focusPending)
-        {
-            return;
-        }
-
-        _focusPending = false;
-        try
-        {
-            await _panelRef.FocusAsync();
-        }
-        catch (Exception)
-        {
-            // Non-fatal -- focus is a nicety (keyboard Escape-to-close, a
-            // visible focus ring on open), never load-bearing for the
-            // popover's own functionality.
-        }
-
-        // Batch G2 decision 5: same guarded, re-armed-per-open focus
-        // discipline as _focusPending/_panelRef immediately above,
-        // independently gated in the SAME override (a component has only
-        // ONE OnAfterRenderAsync) -- in practice only ever one of the two
-        // is pending at once, since opening either panel closes the other
-        // (ToggleHamburger/ToggleAttribution).
         if (_focusHamburgerPending)
         {
             _focusHamburgerPending = false;
@@ -316,13 +232,12 @@
     // MainLayout persists across client-side navigations (Blazor doesn't
     // recreate the layout per route), so the theme class needs an explicit
     // re-render hook -- otherwise switching / <-> /world would leave the
-    // header stuck in its first-rendered theme. Also closes an open credits
-    // popover on navigation -- MainLayout persisting across routes means a
-    // popover left open here would otherwise float over the next page too.
+    // header stuck in its first-rendered theme. (Batch S: the Credits
+    // popover this used to also close on navigation is gone -- Credits is
+    // a plain link to /sources now, nothing left floating to close.)
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        _showAttribution = false;
-        // Batch G2 decision 5: same reasoning -- a hamburger panel, or a
+        // Batch G2 decision 5: a hamburger panel, or a
         // popover it opened via "continue," left floating here would
         // otherwise persist over the next page too (MainLayout itself
         // survives client-side navigation; neither of these do the pages'
