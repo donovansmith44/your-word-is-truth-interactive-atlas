@@ -19,6 +19,21 @@ interfaces for everything, types for everything, composition over
 inheritance, reusable components and shared interfaces to guarantee
 uniformity.
 
+**Owner amendments (2026-08-26, second directive):** views also need
+escape hatches; we need ways to compose views (reader + world at the
+same time is the example); hover vs click vs highlight interactions are
+contractual on ALL components; and the governing law, verbatim:
+
+## 0. THE TOTAL-CAPTURE LAW
+
+**"There shall be nothing implemented which is not captured by an
+interface and contract."** (Owner, 2026-08-26.) Every behavior traces to
+an interface; every wire shape to the AQC (§2); every gesture to an
+interaction contract (§4c); every view arrangement to a composition
+contract (§4b); every exit to an escape hatch declaration. Anything
+found implemented outside a contract is a defect by definition -- the
+review rubric enforces this on every batch touching the client.
+
 ---
 
 ## 1. What this formalizes (and why it's the right time)
@@ -131,9 +146,44 @@ version that would have to bump.
 All interfaces; no inheritance hierarchies — capabilities compose:
 
 ```csharp
-// A View is a composition of components. Nothing more.
-interface IView { string Name { get; } IReadOnlyList<IViewComponent> Components { get; } }
+// A View composes components AND declares its own escape hatches
+// (owner amendment 2026-08-26): Reader declares "open-world"/
+// "enter-split", World the mirror, Split its collapses.
+interface IView {
+    string Name { get; }
+    IReadOnlyList<IViewComponent> Components { get; }
+    IReadOnlyList<IEscapeHatch> EscapeHatches { get; }
+}
 interface IViewComponent { }             // marker + lifecycle seam
+
+// 4b. View composition -- a composition IS a view (so compositions
+// nest, and get hatches/components like any other view). Today's
+// split view becomes the first IViewComposition:
+// Members=[Reader, World], Layout=split-h (bible left, atlas right).
+interface IViewComposition : IView {
+    IReadOnlyList<IView> Members { get; }
+    ICompositionLayout Layout { get; }
+}
+interface ICompositionLayout {
+    string Kind { get; }   // "split-h" | "overlay" | "pinned-panel" | ...
+    // constraints (min widths, focus rules) are contract DATA
+}
+
+// 4c. Interaction contracts -- on ALL components (owner amendment).
+// A component MAY NOT respond to a gesture it has not declared; two
+// components declaring the same (Gesture, Semantic) must behave
+// identically -- uniformity as a testable guarantee, not a convention.
+interface IInteractive {
+    IReadOnlyList<IInteractionContract> Interactions { get; }
+}
+interface IInteractionContract {
+    Gesture Gesture { get; }     // Hover | Click | CtrlClick | ShiftClick | Highlight
+    string Semantic { get; }     // "peek"|"explore"|"pin"|"select"|"range-extend"|"emphasize"
+    TimingDiscipline Timing { get; }  // grace/debounce constants as contract data
+}
+// Seed vocabulary = the already-litigated gesture laws: Hover=peek
+// (grace-timed), Click=explore/pin (ONE-RULE/PIN-1), CtrlClick=select
+// (tray ruling), ShiftClick=range-extend, Highlight=emphasize.
 
 // The focus component — the owner's named construct.
 interface IFocusComponent : IViewComponent {
@@ -249,9 +299,9 @@ Each step is its own batch with the standing review discipline.
 
 ## 9. OPEN QUESTIONS for the owner
 
-1. **Escape hatches** — is §5's definition (typed exits from traversal
-   into views) what you meant, or do you mean something broader (e.g.
-   also "escape" to external references/sources)?
+1. **Escape hatches** — RESOLVED (owner, 2026-08-26): "yes" to §5's
+   definition, extended: VIEWS carry escape hatches too (§4's amended
+   IView).
 2. **Map-app views** — which view kinds do you want ingestible first?
    §6 assumes SceneView + MiniSceneView.
 3. **Contract format** — JSON Schema (broad tooling, verbose) vs a
