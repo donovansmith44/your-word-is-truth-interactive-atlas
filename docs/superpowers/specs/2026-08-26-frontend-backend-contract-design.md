@@ -185,6 +185,48 @@ interface IInteractionContract {
 // (grace-timed), Click=explore/pin (ONE-RULE/PIN-1), CtrlClick=select
 // (tray ruling), ShiftClick=range-extend, Highlight=emphasize.
 
+// 4d. STATE CONTRACTS -- semantics + algebra (owner amendment
+// 2026-08-26: "we have severe state management issues... we need to
+// create semantics and algebra around this problem"; motivating
+// defect SYNC-1: the map-side chapter picker and the reader-side
+// chapter picker disagree in follow-text mode).
+//
+// SEMANTICS: all shared state lives in named, typed ATOMS, one
+// canonical store each. Components never hold copies -- they render
+// PROJECTIONS and emit INTENTS. Desync is impossible by construction.
+interface IStateAtom<T> {
+    string Name { get; }              // "locus" | "time-window" | "selection" | ...
+    T Value { get; }
+    void Dispatch(IIntent<T> intent); // the ONLY write path
+}
+interface IProjection<T> {            // what components consume; pure, read-only
+    IStateAtom<T> Source { get; }
+}
+// ALGEBRA: atoms compose via LINKS -- declared derivations making
+// modes (follow-text) first-class testable objects.
+interface IStateLink<A, B> {
+    IStateAtom<A> Source { get; }
+    IStateAtom<B> Target { get; }
+    B Derive(A source, B current);    // pure
+    bool Active { get; }              // links toggle = modes
+}
+// Follow-text IS Link(Locus -> TimeWindow), active in split view;
+// both chapter boxes are projections of the ONE Locus atom.
+//
+// LAWS (property-tested over generated intent sequences):
+// 1. Single-writer: atoms mutate only via Dispatch.
+// 2. Idempotence: same intent twice = once.
+// 3. No-echo: link-derived updates carry origin, never re-derive
+//    their source (bidirectional links cannot oscillate).
+// 4. Confluence: same intent sequence => same final state regardless
+//    of render timing.
+// 5. Agreement: all projections of one atom are equal ALWAYS.
+//
+// Seed atoms: Locus, TimeWindow, FocusStack, Selection,
+// ViewArrangement. ViewStateService remains the PERSISTENCE layer
+// beneath atoms (it persists state; atoms OWN it); URLs/deep links
+// are projections under the same agreement law.
+
 // The focus component — the owner's named construct.
 interface IFocusComponent : IViewComponent {
     Focus Focus { get; }                              // descriptor + payload
