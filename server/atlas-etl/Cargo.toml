@@ -2,6 +2,27 @@
 name = "atlas-etl"
 version = "0.1.0"
 edition = "2021"
+# Batch S: with a second [[bin]] target (gen_sources) now declared below,
+# a bare `cargo run -p atlas-etl` (no --bin) would otherwise become
+# ambiguous -- `default-run` pins it to the pre-existing primary binary
+# (src/main.rs, package-named "atlas-etl"), preserving every prior batch's
+# own bare-invocation convention (grep-verified: dozens of existing batch
+# reports/tests call it exactly this way). `gen_sources` is always reached
+# explicitly, via `cargo run -p atlas-etl --bin gen_sources`.
+default-run = "atlas-etl"
+
+[[bin]]
+# Batch S: named explicitly, at a path OUTSIDE `src/bin/` -- this repo's
+# own root `.gitignore` carries a broad `**/bin/` rule (meant for the
+# Blazor client's own .NET build-output `bin/` directories), which would
+# silently exclude a real SOURCE file living at Cargo's own
+# auto-discovered `src/bin/*.rs` convention. Same disclosed workaround
+# `atlas-graph/Cargo.toml`'s own `[[bin]]` entry for `compile_graph.rs`
+# already established (see that file's own comment): source lives at
+# `src/bins/gen_sources.rs` (note the "s" -- outside the ignored
+# pattern), declared here explicitly instead of relying on auto-discovery.
+name = "gen_sources"
+path = "src/bins/gen_sources.rs"
 
 [dependencies]
 atlas-core = { path = "../atlas-core" }

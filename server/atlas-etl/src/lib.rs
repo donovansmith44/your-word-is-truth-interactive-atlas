@@ -30,6 +30,7 @@ pub mod people_groups;
 pub mod polities;
 pub mod red_letter;
 pub mod report;
+pub mod sources;
 pub mod theographic;
 pub mod validate;
 pub mod xrefs;

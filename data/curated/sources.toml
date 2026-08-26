@@ -1,0 +1,233 @@
+# The Sources page's own curated single source of truth (batch-s-brief.md,
+# "document our sources for everything and give it a dedicated page on the
+# site"). `server/atlas-etl/src/bin/gen_sources.rs` compiles this 1:1 into
+# `data/compiled/sources.json`, which `GET /api/sources` serves and the
+# client's `Sources.razor` page renders directly -- "the page renders from
+# data, not hardcoded duplicate prose" (requirement 3).
+#
+# EVERY [[source]] entry below corresponds to exactly one row of
+# LICENSES.md's own "## Per-source table" -- `licenses_row_key` is a
+# literal substring of that row's own Source-column text, checked
+# bidirectionally by `atlas_etl::sources::validate_against_licenses`
+# (both `gen_sources` and `server/atlas-etl/tests/sources_validate.rs`
+# run this check, so a LICENSES.md row added without a matching entry
+# here -- or vice versa -- fails loud, at generation time AND under
+# `cargo test --workspace`). `licenses_row_key` is never rendered on the
+# page itself.
+#
+# Wording throughout is deliberately POSITIVE (the KJV inerrancy
+# directive's own tone rule, which this file follows exactly as the app's
+# reader does): every entry describes what a source IS and what this
+# project BUILT from it, never a comparative/critical register. License
+# wording is copied from LICENSES.md, never upgraded or embellished
+# (citation-integrity rule -- no license overclaimed).
+
+[[category]]
+id = "scripture"
+label = "Scripture & Text"
+
+[[category]]
+id = "narrative-history"
+label = "Historical & Narrative Sources"
+
+[[category]]
+id = "lutheran-texts"
+label = "Lutheran Confessional Texts"
+
+[[category]]
+id = "map"
+label = "Map & Cartography"
+
+[[category]]
+id = "our-work"
+label = "Our Own Curated Work"
+
+# --- Scripture & Text -------------------------------------------------
+
+[[source]]
+id = "kjv-text"
+category = "scripture"
+title = "The King James Version"
+what_it_is = "The King James Version of the Holy Bible -- the canonical English text this app reads, cites, and builds every other layer around."
+what_we_built = "Compiled into verses-kjv.json and canon.json: the book/chapter/verse structure and the verse text itself, obtained via the scrollmapper/bible_databases project. Every other translation this app carries rides alongside this text; none ever replaces it."
+license = "Public domain"
+link = "https://github.com/scrollmapper/bible_databases"
+licenses_row_key = "KJV text"
+
+[[source]]
+id = "openbible-geocoding"
+category = "scripture"
+title = "OpenBible.info Geocoding"
+what_it_is = "Place-coordinate data for the locations named throughout Scripture, from OpenBible.info's Bible-Geocoding-Data project."
+what_we_built = "Compiled into places.json, giving mapped places their coordinates on the World page."
+license = "CC-BY 4.0"
+link = "https://github.com/openbibleinfo/Bible-Geocoding-Data"
+licenses_row_key = "OpenBible.info geocoding"
+
+[[source]]
+id = "openbible-xrefs"
+category = "scripture"
+title = "OpenBible.info Cross-References"
+what_it_is = "A cross-reference dataset connecting related passages across the whole Bible."
+what_we_built = "Compiled into cross-refs.json, powering the reader's own cross-reference lookups."
+license = "Free to use with credit"
+link = "https://www.openbible.info/labs/cross-references/"
+licenses_row_key = "OpenBible.info cross-references"
+
+[[source]]
+id = "red-letter"
+category = "scripture"
+title = "KJV Red-Letter Markup"
+what_it_is = "A words-of-Christ annotation layer tracing back to Louis Klopsch's 1901 red-letter edition, obtained through eBible.org's own public-domain KJV OSIS distribution (via the seven1m/open-bibles collection)."
+what_we_built = "Compiled into SpokenBy/SpokenAt graph edges and data/compiled/red-letter-spans.json, which color Christ's own words wherever verse text renders in the reader. An annotation over our own KJV text, never a change to it."
+license = "Public domain"
+link = "https://github.com/seven1m/open-bibles"
+licenses_row_key = "KJV red-letter"
+
+[[source]]
+id = "brainfuel-bible"
+category = "scripture"
+title = "brain-fuel/bible Parallel Editions"
+what_it_is = "Six further public-domain Bible editions: the Clementine Vulgate, the Westminster Leningrad Codex, the Douay-Rheims (Challoner), Biblia 1776, Karl XII:s Bibel (1703), and the Greek Textus Receptus."
+what_we_built = "Compiled as additional translation layers in the graph, alongside -- never replacing -- this app's own canonical KJV text."
+license = "Public domain"
+link = "https://github.com/brain-fuel/bible"
+licenses_row_key = "brain-fuel/bible parallel editions"
+
+# --- Historical & Narrative Sources ------------------------------------
+
+[[source]]
+id = "theographic"
+category = "narrative-history"
+title = "Theographic Bible Metadata"
+what_it_is = "A rich, hand-built dataset of biblical people, places, and events with dates, by Robert Rouse."
+what_we_built = "Compiled into events.json and much of places.json -- the great majority of this app's dated, narrative content rests on this dataset."
+license = "CC BY-SA 4.0"
+link = "https://github.com/robertrouse/theographic-bible-metadata"
+licenses_row_key = "Theographic Bible Metadata"
+
+[[source]]
+id = "robertson-harmony"
+category = "narrative-history"
+title = "Robertson's Harmony of the Gospels"
+what_it_is = "A.T. Robertson's A Harmony of the Gospels for Students of the Life of Christ (1922), which orders and groups the four Gospels' own parallel accounts."
+what_we_built = "Robertson's own section numbers, titles, and groupings guided event-witnesses.toml's parallel-witness groupings and Passion Week's own chronological order. Every displayed event title and verse citation is this project's own, provenance-tagged (robertson_section) back to the section that grounded it."
+license = "Public domain"
+link = "https://www.gutenberg.org/ebooks/36264"
+licenses_row_key = "A.T. Robertson"
+
+[[source]]
+id = "crockett-harmony"
+category = "narrative-history"
+title = "Crockett's Harmony of Samuel, Kings, and Chronicles"
+what_it_is = "William Day Crockett's A Harmony of the Books of Samuel, Kings and Chronicles (1897)."
+what_we_built = "Crockett's own section groupings guided the parallel-witness rows connecting Samuel, Kings, and Chronicles (and their related passages). Every displayed event title and verse citation is this project's own."
+license = "Public domain"
+link = "https://www.swartzentrover.com/cotor/E-Books/christ/Crockett/HSKC_AO.htm"
+licenses_row_key = "William Day Crockett"
+
+[[source]]
+id = "ussher-annals"
+category = "narrative-history"
+title = "Ussher's Annals of the World"
+what_it_is = "James Ussher's The Annals of the World (1658), a chronology of biblical and ancient history."
+what_we_built = "Two of its own paragraph-numbered entries grounded two chronology-anchors.toml year values: Ezra's return, and the completion of Nehemiah's wall."
+license = "Public domain"
+link = "https://archive.org/details/james-usher-annals-of-the-world"
+licenses_row_key = "James Ussher"
+
+[[source]]
+id = "easton-dictionary"
+category = "narrative-history"
+title = "Easton's Bible Dictionary"
+what_it_is = "M. G. Easton's Bible Dictionary (1897), describing who and what the people and places of Scripture are."
+what_we_built = "Its own entries fill the description shown on Place, Person, and PeopleGroup cards throughout the app, delivered via the already-vendored Theographic bundle."
+license = "Public domain (carried in the vendored Theographic bundle, itself CC BY-SA 4.0)"
+link = "https://github.com/robertrouse/theographic-bible-metadata"
+licenses_row_key = "M. G. Easton"
+
+[[source]]
+id = "kretzmann-commentary"
+category = "narrative-history"
+title = "Kretzmann's Popular Commentary of the Bible"
+what_it_is = "Paul E. Kretzmann's Popular Commentary of the Bible (Concordia Publishing House, 1921-1924) -- verse-by-verse commentary across the whole Bible."
+what_we_built = "Kretzmann's own commentary prose (never the KJV text his own commentary quotes) is compiled into verse-anchored commentary entries throughout the reader. A tentative date-mining pass over that same prose also surfaces the B.C./A.D. years Kretzmann mentions (data/exports/kretzmann-chronology.json, honestly marked tentative-extraction -- a future curatorial pass, not this app's chronology of record, adjudicates real placements from it)."
+license = "Public domain"
+link = "https://kretzmanncommentary.org"
+licenses_row_key = "Paul E. Kretzmann"
+
+# --- Lutheran Confessional Texts ----------------------------------------
+
+[[source]]
+id = "small-catechism"
+category = "lutheran-texts"
+title = "Luther's Small Catechism"
+what_it_is = "Martin Luther's Small Catechism -- the Ten Commandments, the Creed, the Lord's Prayer, and the Sacraments -- in the 1921 Bente-Dau English translation (Triglot Concordia / Concordia Triglotta)."
+what_we_built = "Compiled into catechism.json, in Luther's own words, with verse links drawn from Luther's own citations and from the mapping below."
+license = "Public domain (published 1921, USA)"
+link = "https://en.wikisource.org/wiki/Index:Concordia_Triglotta.pdf"
+licenses_row_key = "Luther's Small Catechism"
+
+[[source]]
+id = "book-of-concord"
+category = "lutheran-texts"
+title = "The Book of Concord"
+what_it_is = "The Lutheran church's confessional writings, in the same 1921 Bente-Dau translation as the Small Catechism above."
+what_we_built = "Compiled into the graph as a second full reading corpus alongside Scripture, paragraph by paragraph."
+license = "Public domain (published 1921, USA)"
+link = "https://bookofconcord.org"
+licenses_row_key = "The Book of Concord"
+
+[[source]]
+id = "catechism-mapping"
+category = "lutheran-texts"
+title = "Catechism Verse Mapping"
+what_it_is = "A mapping of Scripture references to Small Catechism questions, from the brain-fuel/catechism project, used here by the project owner's own direction."
+what_we_built = "Compiled into catechism.json's own per-question verse links, connecting the Catechism to Scripture throughout the reader."
+license = "No license file -- used by the project owner's own explicit direction"
+link = "https://github.com/brain-fuel/catechism"
+licenses_row_key = "Catechism verse mapping"
+
+# --- Map & Cartography ---------------------------------------------------
+
+[[source]]
+id = "esri-tiles"
+category = "map"
+title = "Esri World Shaded Relief"
+what_it_is = "The label-free, light-terrain basemap tiles behind the World page's map -- relief, coastlines, and water tone, with every label of our own drawn on top."
+what_we_built = "Fetched live by the browser from Esri's own servers at runtime -- never stored or redistributed by this app -- attributed on the map itself and here, verbatim: \"Copyright:(c) 2014 Esri\"."
+license = "Esri terms of use"
+link = "https://www.esri.com"
+licenses_row_key = "World_Shaded_Relief"
+
+[[source]]
+id = "carto-tiles"
+category = "map"
+title = "Carto Basemap Tiles"
+what_it_is = "A fallback set of basemap tiles, used only if the Esri tile service is unreachable."
+what_we_built = "Fetched live by the browser at runtime, the same as Esri above -- never stored or redistributed by this app."
+license = "Carto terms of use"
+link = "https://carto.com/basemaps"
+licenses_row_key = "Carto basemap tiles"
+
+[[source]]
+id = "leaflet"
+category = "map"
+title = "Leaflet"
+what_it_is = "The open-source JavaScript map library that renders the World page."
+what_we_built = "Vendored and committed at client/wwwroot/vendor/leaflet/ (v1.9.4, upstream copyright banner retained), so a fresh clone runs without any fetch step."
+license = "BSD-2-Clause"
+link = "https://leafletjs.com"
+licenses_row_key = "Leaflet"
+
+# --- Our Own Curated Work -------------------------------------------------
+
+[[source]]
+id = "our-curated-work"
+category = "our-work"
+title = "Our Own Curated Work"
+what_it_is = "Everything this project authored directly: the historical polity borders, the coastline land mask, biblical landmarks, narrative threads, eras, and the titles, sectioning, and aliases that connect it all together."
+what_we_built = "Hand-authored under data/curated/ and compiled into narratives.json, eras.json, books-meta.json, landmarks.json, polities.json, and land-mask.json. Every displayed event title is this project's own phrasing, provenance-tagged (robertson_section, acts_section, kjv_superscription, theographic, atlas_section) back to whichever source above grounded it, so the mapping stays auditable."
+license = "CC0 1.0 Universal"
+link = "https://creativecommons.org/publicdomain/zero/1.0/"
+licenses_row_key = "All curated data"
