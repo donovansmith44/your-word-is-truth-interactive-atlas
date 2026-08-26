@@ -197,6 +197,32 @@ Picker (ScripturePicker, shared by world and reader):
   continuation too, deferring to them over the "default to the first book"
   fallback, so whichever of the two resolves LAST only ever confirms the
   same already-correct sync, never clobbers it.
+  SYNC-1 (batch-st1-brief.md, owner verbatim: "when we follow text in map,
+  there is a box on the map that allows you to pick which chapter you're on
+  but it's out of sync with the analogous box on the reader side"; owner
+  ruling: "we're going to structure our front end so that they cannot
+  occur"): AMENDS the B4 paragraph immediately above -- World.razor's own
+  mount no longer leaves `CurrentBook`/`CurrentChapter` null. Both mounts
+  now render from the SAME shared `Locus` atom (`client/State/Locus.cs`,
+  DI singleton `StateAtom<Locus>`) via a `Projection<Locus>` -- World
+  subscribes to the atom's own `Changed` event directly (not a Blazor
+  parameter) so its own picker updates live even when nothing else about
+  World's own render tree changed. `picker-book`/`picker-chapter` therefore
+  reflect the CURRENT locus on BOTH mounts, standalone or split, always --
+  structurally, not by convention (SYNC-1 dies by construction, not a
+  targeted patch). Every chapter-navigation path that used to assign
+  Reader's own `_book`/`_chapterNum` directly now dispatches a `SetLocus`
+  intent onto the shared atom instead (picker Apply, `reader-prev`/`reader-
+  next`, deep links, "read in context" hatches -- all funnel through
+  Reader.razor's own `OnParametersSetAsync`, the ONE choke point that
+  changed). World's OWN picker Apply is UNCHANGED (still `ApplyExternalQuery`/
+  a `ref=` navigation, decoupled from Locus by design -- it does NOT
+  dispatch `SetLocus`, so a manual "look at something on the map" pick
+  never overwrites the reader's own actual position; see FollowTextLink's
+  own doc comment and the ST-1 batch report for why). See state-sync.spec.ts
+  for the regression coverage (both pickers agree while following; a
+  world-picker Apply still works with follow off, undisturbing the reader;
+  follow back on re-converges to the reader's actual chapter).
 Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   book-name/chapter-numeral spans; opens the ExplorerPopover with a
   ChapterNode -- M-D3/U4/B3: that popover's own content is now the
@@ -4212,6 +4238,20 @@ Notes:
   NOT following (follow was last explicitly turned off, or this session has
   no saved state at all yet -- see VIEWSTATE-1's own field for the exact
   "which one wins" order).
+  ST-1 AMENDMENT (batch-st1-brief.md, SYNC-1): the MECHANISM behind "re-
+  scenes the atlas pane automatically" changes -- World.razor's own
+  `FollowRef` [Parameter] (fed by Reader.razor on every re-render) is
+  RETIRED. World now reads the reader's current chapter off the shared
+  `Locus` atom directly (DI singleton, `client/State/Locus.cs`) and reacts
+  to its `Changed` event; "follow-text IS Link(Locus -&gt; TimeWindow)" (spec
+  §4d) is realized as a real, wired `FollowTextLink`/`StateLinkRunner`
+  pair, `Active` bound to the SAME `_follow` bool the chip already reads/
+  writes. The user-visible contract in this note (default ON, re-scenes on
+  reader nav, chip toggle semantics, precedence over VIEWSTATE-1) is
+  UNCHANGED -- this is a re-plumbing, not a behavior change; see
+  state-sync.spec.ts and the ST-1 batch report for the full mechanism and
+  its disclosed scope (TimeWindow's own numeric value is NOT yet derived
+  from Locus -- full TimeWindow ownership is ST-2).
 - VIEWSTATE-1 (batch-h-brief.md): a lightweight, in-memory (NOT
   localStorage-persisted -- explicitly out of scope this batch; a hard
   reload starts fresh), app-lifetime view-state service remembers where the
