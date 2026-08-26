@@ -114,27 +114,43 @@ LICENSES.md/sources-page discipline applied to API shapes.
 
 ## 3. Property-based contract tests
 
-Two directions, both against the REAL committed graph (house precedent:
-proptest already in the Rust suite; the UX suite already tests real
-data):
+**LAW (owner ruling 2026-08-26, verbatim): "contract tests ought to be
+language agnostic."** No test that binds the contract may exist only as
+code in one language's test framework. The binding expression of every
+contract test is a language-neutral artifact in the contract directory;
+each side runs a thin native HARNESS over the SAME artifact:
 
-**Provider satisfies consumer (Rust, proptest):**
-- For arbitrary node descriptors drawn from the real graph (every kind,
-  sampled ids): `FocusQuery` responses validate against the contract
-  schema; every frontier group returned is a member of the crate's
-  `relations!` vocabulary; every traversal target returned resolves to
-  a live node (no dangling frontier); every escape hatch named is one
-  the contract defines for that view context.
-- Round-trip law: descriptor → query → returned descriptor(s) →
-  re-query is stable (no identity drift).
-- Annotation spans law: every span lies within its verse's byte length
-  (generalizes RED-1's alignment law to the contract level).
+```
+contracts/
+  atlas-query-contract/
+    aqc.schema.json        # shapes (§2)
+    invariants.json        # every contract invariant, declared as data
+    vectors/               # committed test vectors: request +
+                           # expected-schema ref + invariant refs +
+                           # golden response where exactness is the law
+```
 
-**Consumer honors contract (C# side):**
-- Generated types deserialize every provider fixture (fixtures exported
-  by a provider test run — pact-file style, committed).
-- Descriptor round-trip property: serialize → Reconstruct → same kind +
-  key (extends G2's tests from examples to properties).
+- **Invariants are declared, not coded:** frontier-groups ⊆ relations!
+  vocabulary; no dangling traversal target; every hatch named is
+  defined for its view context; descriptor round-trip identity (the G2
+  seam); annotation spans within verse length (RED-1's alignment law
+  promoted). Each carries an id; vectors and harness failures cite ids.
+- **Vectors are generated, then committed:** a provider-side exporter
+  draws descriptors from the REAL graph (every kind, seeded/
+  deterministic sampling — reproducible, never wall-clock random) and
+  emits the vector files, pact-style. The generator is code; its
+  OUTPUT is the contract corpus both sides execute verbatim.
+- **Harnesses are thin and contract-ignorant:** the Rust harness runs
+  every vector against the live handlers; the C# harness deserializes
+  every vector through the generated types and re-checks the same
+  invariant ids. Neither harness contains contract knowledge of its
+  own — adding a contract test = adding a vector/invariant to the
+  neutral corpus, and BOTH sides pick it up with zero harness edits.
+- Native property tests (proptest etc.) may explore deeper, but
+  anything they enforce about the contract must also exist as a
+  declared invariant + vectors — a native-only contract assertion is a
+  drift bug under this law. (This also settles §9 Q3's direction:
+  JSON Schema + JSON vectors, executable from any language.)
 
 **The gate:** contract tests are part of the standing suite (they join
 the canonical count); a provider change that breaks a consumer
