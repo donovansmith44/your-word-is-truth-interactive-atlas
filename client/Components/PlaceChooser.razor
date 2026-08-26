@@ -1,0 +1,74 @@
+@using System.Globalization
+@* Batch C3 decision 2 (dense-marker disambiguation): the small hover flyout
+   that replaces a guess whenever map.js's resolveHoverTarget finds two or
+   more places genuinely coincident at the current zoom (AMBIGUITY_RADIUS_PX)
+   -- or, decision 3, whenever a marker-cluster-{n} glyph itself is hovered,
+   in which case Places is that cluster's own full member list -- instead of
+   silently picking one via whatever the browser's own z-order happened to
+   deliver the raw event to (map.js's own HIT_RADIUS_PX comment has the full
+   Phase-0 diagnosis this retires).
+
+   World.razor owns the hover/close-delay state machine (exactly the way it
+   already does for <PlaceCard>) and renders AT MOST ONE of PlaceCard/
+   PlaceChooser at a time -- OnPlaceHover clears the chooser, OnPlaceHoverAmbiguous
+   clears the card, so the two states are mutually exclusive by construction,
+   never a design decision this component has to make itself. Deliberately
+   NOT a variant of PlaceCard (see app.css's own .place-chooser comment for
+   why it skips CardPlacement's flip/clamp machinery too) -- a chooser's
+   whole job is "list the tied candidates, let one be picked," nothing else
+   PlaceCard's own content model (verses/blurb/dates/narratives) applies to.
+
+   "Reuse the shared hover-safety helper; do NOT hand-roll new timing"
+   (decision 2, verbatim): OnPointerEnter/OnPointerLeave below are wired to
+   World.razor's OWN CardPointerEnter/CardPointerLeave -- the exact same
+   _pointerOverCard/_closeCts grace-timer pair PlaceCard already uses, not a
+   parallel implementation. That pair's own field/method names still say
+   "card" (unrenamed, to keep this batch's diff to World.razor minimal) but
+   the mechanism itself is kind-agnostic: whichever of the two flyouts is
+   currently showing, entering/leaving IT is what the pointer physically
+   does, and that's all the grace timer has ever cared about.
+
+   A candidate row (place-chooser-{placeId}) is a plain, non-explorable
+   <button> -- clicking it does exactly what clicking that place's own
+   marker does today (PIN-1: pins the SAME place-card a direct hover/click
+   would), never opens a popover directly and never displaces the chooser
+   into anything else PlaceCard's own title/verse/date affordances do. *@
+<div class="place-chooser" data-testid="place-chooser"
+     style="left: @X.ToString(CultureInfo.InvariantCulture)px; top: @Y.ToString(CultureInfo.InvariantCulture)px;"
+     @onpointerenter="OnPointerEnter" @onpointerleave="OnPointerLeave">
+    @foreach (var p in Places)
+    {
+        @* SCENE-2 guarantees a REAL lit ScenePlace always carries >=1 event;
+           an empty Events list can only mean World.razor's own
+           QuietAsScenePlace synthetic path -- same "Events.Count == 0 means
+           quiet" signal PlaceCard.razor's own place-card-quiet branch
+           already reads off this exact field, reused here rather than
+           threading a second "kind" flag through the chooser's own ids-only
+           wire shape (map.js's OnPlaceHoverAmbiguous carries ids, nothing
+           else -- see MapInterop.cs). This is the one "kind hint if cheap"
+           decision 2 asks for: free (no extra fetch), reusing colors
+           .atlas-marker/.quiet-marker already define rather than a third
+           palette. An era hint would need a per-candidate history fetch --
+           not cheap -- so it's out of scope here, same reasoning noted in
+           app.css's own .place-chooser-row comment. *@
+        var isQuiet = p.Events.Count == 0;
+        <button type="button" class="place-chooser-row" data-testid="place-chooser-@p.Id"
+                @onclick="() => OnPick.InvokeAsync(p.Id)">
+            <span class="place-chooser-dot @(isQuiet ? "place-chooser-dot-quiet" : "place-chooser-dot-lit")"></span>
+            <span class="place-chooser-name">@p.DisplayName</span>
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public List<ScenePlace> Places { get; set; } = default!;
+    [Parameter] public double X { get; set; }
+    [Parameter] public double Y { get; set; }
+    [Parameter] public EventCallback OnPointerEnter { get; set; }
+    [Parameter] public EventCallback OnPointerLeave { get; set; }
+
+    // Fires with the picked place's own id -- World.razor's PickChooserPlace
+    // resolves and pins it the SAME way OnPlaceClick already does for a
+    // direct marker click (PIN-1).
+    [Parameter] public EventCallback<string> OnPick { get; set; }
+}

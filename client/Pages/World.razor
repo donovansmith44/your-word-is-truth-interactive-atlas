@@ -63,6 +63,17 @@
                    OnGoToPlace="GoToAdjacent" OnClosePin="ClosePinnedCard" />
     }
 
+    @* Batch C3 decision 2: mutually exclusive with PlaceCard above --
+       OnPlaceHover clears _chooserPlaces, OnPlaceHoverAmbiguous clears
+       _hoverPlace, so at most one of the two @if blocks ever renders. *@
+    @{ var chooserPlaces = _chooserPlaces; }
+    @if (chooserPlaces is not null)
+    {
+        <PlaceChooser Places="chooserPlaces" X="_chooserX" Y="_chooserY"
+                      OnPointerEnter="CardPointerEnter" OnPointerLeave="CardPointerLeave"
+                      OnPick="PickChooserPlace" />
+    }
+
     @if (_hoverArrowText is not null)
     {
         <div class="arrow-tip" data-testid="arrow-tip"
@@ -295,6 +306,16 @@
     private double _hoverX;
     private double _hoverY;
     private CancellationTokenSource? _closeCts;
+
+    // Batch C3 decision 2 (dense-marker disambiguation): the chooser's own
+    // state, mirroring _hoverPlace/_hoverX/_hoverY's shape exactly -- see
+    // OnPlaceHoverAmbiguous below. Non-null exactly when the chooser flyout
+    // is showing; ALWAYS mutually exclusive with _hoverPlace (each setter
+    // clears the other) so World.razor's markup never has to decide which
+    // of the two "wins" -- there is only ever one to show.
+    private List<ScenePlace>? _chooserPlaces;
+    private double _chooserX;
+    private double _chooserY;
 
     // Batch G1 requirement 3 (click-to-pin): non-null exactly when a marker
     // (lit or quiet) has been clicked and its card should stay open
@@ -1357,6 +1378,49 @@
         _hoverPlace = place;
         _hoverX = x;
         _hoverY = y;
+        _chooserPlaces = null;
+        StateHasChanged();
+    }
+
+    // Batch C3 decision 2 (dense-marker disambiguation): fired INSTEAD of
+    // OnPlaceHover above whenever map.js's own resolveHoverTarget decided
+    // the pointer's nearest candidate is genuinely coincident (at the
+    // current zoom) with one or more others, or whenever a marker-
+    // cluster-{n} glyph itself was hovered -- `ids` is that cluster's own
+    // full member list (map.js's wireClusterEvents). Same pinned-guard,
+    // same _closeCts cancel, same StateHasChanged discipline as
+    // OnPlaceHover -- the only difference is WHAT gets shown (a
+    // PlaceChooser listing every candidate, instead of a single PlaceCard).
+    // Resolves each id the SAME way OnPlaceHover/OnPlaceClick already do
+    // (lit ScenePlace, or a synthetic QuietAsScenePlace) so a chooser row's
+    // content (name, lit-vs-quiet dot) is never inconsistent with what
+    // hovering or clicking that SAME place directly would show. `ids`
+    // arrives already ascending-sorted by place id (map.js's own
+    // determinism law) -- preserved here via `ids.Select`, never re-sorted
+    // by anything else (decision 4: chooser candidate order is
+    // deterministic).
+    public void OnPlaceHoverAmbiguous(string[] ids, double x, double y)
+    {
+        if (_pinnedPlaceId is not null)
+        {
+            return;
+        }
+
+        _closeCts?.Cancel();
+        var places = ids
+            .Select(id => _scene?.Places.FirstOrDefault(p => p.Id == id) ?? QuietAsScenePlace(id))
+            .Where(p => p is not null)
+            .Select(p => p!)
+            .ToList();
+        if (places.Count == 0)
+        {
+            return;
+        }
+
+        _chooserPlaces = places;
+        _chooserX = x;
+        _chooserY = y;
+        _hoverPlace = null;
         StateHasChanged();
     }
 
@@ -1426,7 +1490,24 @@
         _hoverPlace = place;
         _hoverX = x;
         _hoverY = y;
+        _chooserPlaces = null;
         StateHasChanged();
+    }
+
+    // PlaceChooser.OnPick (Batch C3 decision 2): "click a row = exactly
+    // what clicking that place's marker does today" -- the brief's own
+    // wording, verbatim -- so this just closes the chooser and forwards
+    // straight into OnPlaceClick, the SAME pin-and-show path a direct
+    // marker click already takes, anchored at the chooser's own X/Y (every
+    // tied candidate a chooser can ever list rendered within, at most,
+    // HIT_RADIUS_PX or CLUSTER_D_PX of that point -- close enough that
+    // re-anchoring the resulting card there, rather than hunting down the
+    // picked place's own individual marker position, is imperceptible and
+    // not worth a second round trip through MapInterop).
+    private void PickChooserPlace(string id)
+    {
+        _chooserPlaces = null;
+        OnPlaceClick(id, _chooserX, _chooserY);
     }
 
     // Batch G2 decision 6: map.js's own isToggleSelectClick branch (marker
@@ -1651,6 +1732,7 @@
         _hoverPlace = place;
         _hoverX = x;
         _hoverY = y;
+        _chooserPlaces = null; // Batch C3: defensive symmetry with OnPlaceClick -- see its own comment (unreachable in practice: the chooser only ever shows unpinned, per OnPlaceHoverAmbiguous's own pinned-guard)
     }
 
     // The one choke point for "the card is now fully gone" -- ALWAYS clears
@@ -1664,6 +1746,7 @@
     {
         _closeCts?.Cancel();
         _hoverPlace = null;
+        _chooserPlaces = null; // Batch C3: the ONE choke point covers the chooser too -- see its own field comment
         _pointerOverCard = false;
         _pinnedPlaceId = null;
     }
@@ -1746,6 +1829,7 @@
         }
 
         _hoverPlace = null;
+        _chooserPlaces = null; // Batch C3: the delayed-close path covers the chooser too -- see CloseCardNow's own comment
         _pointerOverCard = false;
         StateHasChanged();
     }

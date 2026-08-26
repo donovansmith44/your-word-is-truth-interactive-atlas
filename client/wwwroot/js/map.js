@@ -257,6 +257,14 @@ export function init(el, dotnetRef, opts) {
         map, dotnetRef, mini, markers: new Map(), arrows, polities, landmarkMarkers: [], litByName: new Map(),
         quietMarkers: new Map(), // Batch E2 -- see setScene's own quiet-places diff for the shape each entry carries
         window: null, // Batch H (existence gating): set by setScene from the scene's own `window` (null in scripture mode); applyLabelTier's existenceGatesLabel check reads this
+        // Batch C3: cluster glyphs (far/mid tier only, lit markers only --
+        // see applyMarkerClusters' own comment) plus the set of lit place
+        // ids each pass currently absorbs into one. Always present (even
+        // on a mini instance, which simply never populates them -- decision
+        // 4's mini exemption -- so applyMarkerNudges/resolveHoverTarget can
+        // read both unconditionally, no `mini` branch needed at either call
+        // site).
+        clusterMarkers: [], clusteredIds: new Set(),
     });
 
     // Zoom-tiered label density (design-direction.md's declutter rule --
@@ -271,6 +279,17 @@ export function init(el, dotnetRef, opts) {
     if (!mini) {
         map.on('zoomend', () => applyLabelTier(instances.get(id)));
     }
+
+    // Batch C3: cluster groups are a function of TRUE marker positions at
+    // the CURRENT zoom (same "recompute fresh every zoom change" shape as
+    // applyLabelTier/applyMarkerNudges) -- always BEFORE applyMarkerNudges
+    // below, which needs this pass's own `inst.clusteredIds` to skip
+    // nudging a marker that's hidden inside a cluster this tick (see that
+    // function's own comment). No-ops on mini itself (decision 4) -- see
+    // applyMarkerClusters' own guard -- so this listener, like
+    // applyMarkerNudges' just below, is safe to register unconditionally
+    // rather than gated `!mini`.
+    map.on('zoomend', () => applyMarkerClusters(instances.get(id)));
 
     // Batch HOTFIX-2: re-derives every marker's own screen-pixel nudge on
     // every zoom change -- see applyMarkerNudges' own doc comment for why
@@ -410,7 +429,7 @@ export function setScene(id, sceneJson) {
             // added or updated, so a brand new marker never paints at its
             // true position for even one frame if it needs a nudge.
             const marker = L.marker([p.lat, p.lon], { icon: makeIcon(p) });
-            wireEvents(marker, inst.dotnetRef, p.id);
+            wireEvents(inst, marker, p.id);
             marker.addTo(inst.map);
             // existenceFrom/existenceTo (Batch H): curated once per place id,
             // never re-derived on update below -- a place's own curated
@@ -467,7 +486,7 @@ export function setScene(id, sceneJson) {
 
             if (!prior) {
                 const marker = L.marker([p.lat, p.lon], { icon: makeQuietIcon(p), pane: 'quietPane' });
-                wireQuietEvents(marker, inst.dotnetRef, p.id);
+                wireQuietEvents(inst, marker, p.id);
                 marker.addTo(inst.map);
                 // existenceFrom/existenceTo (Batch H) -- same "set once at
                 // creation, never re-derived" reasoning as the lit side above.
@@ -494,6 +513,13 @@ export function setScene(id, sceneJson) {
             }
         }
     }
+
+    // Batch C3: decides which lit markers (far/mid tier only) collapse into
+    // a cluster glyph THIS pass -- always before applyMarkerNudges just
+    // below, which reads this pass's own `inst.clusteredIds` to skip
+    // nudging anything already hidden inside one (see both functions' own
+    // comments).
+    applyMarkerClusters(inst);
 
     // Batch HOTFIX-2: derives every marker's final on-screen position from
     // its TRUE lat/lon (just written above) plus a small SCREEN-PIXEL nudge
@@ -611,6 +637,90 @@ const GOLDEN_ANGLE_RAD = 2.399963229728653;
 const NUDGE_TRIGGER_PX = 26;
 const NUDGE_STEP_PX = 16;
 
+// Batch C3 (dense-marker disambiguation + clustering). Phase-0 diagnosis
+// (see the batch report for the full repro/measurement): mis-hover in a
+// dense scene is NOT a data/geometry bug -- it's that map.js has always
+// (WORLD-1 onward) let the RAW BROWSER EVENT pick the resolved place.
+// wireEvents/wireQuietEvents below used to trust their own closure
+// `placeId` -- "whichever marker's DOM element the browser delivered this
+// mouseover to" -- as gospel. Once two markers' own >=14px hit boxes
+// overlap on screen (app.css's `.atlas-marker::after`/`.quiet-marker::after`,
+// inset:-8px), that's decided by Leaflet's DEFAULT per-marker z-index,
+// which it assigns purely from each marker's own screen Y position (a
+// marker lower on screen -- larger container-point Y -- paints in FRONT of
+// one higher up, simulating "nearer" the way overlapping pins on a real
+// paper map would) -- see lib/hoverSafety.ts's own header comment, which
+// already root-caused and live-confirmed this exact mechanism for
+// Philippi/Neapolis via `document.elementsFromPoint`. That z-index has
+// NOTHING to do with which marker's TRUE center the pointer is actually
+// closer to. Concrete, live-reproduced repro (recorded in the batch
+// report): the exodus window's own Beersheba sits a few px north of Negeb
+// on screen at that scene's fitScene zoom; Negeb, being the LOWER of the
+// pair (larger container Y), always wins the z-order regardless of which
+// of the two the pointer is actually closer to -- "aim at Beersheba, land
+// on Negeb" whenever the pointer is anywhere inside Negeb's own hit-circle,
+// including pixels strictly closer to Beersheba's own true center.
+//
+// Fix (decision 2's law): STOP trusting which DOM element the browser
+// routed the raw event to. Every mouseover/click handler below now calls
+// resolveHoverTarget with the event's own e.containerPoint (the pointer's
+// REAL position, always accurate regardless of z-order) and dispatches
+// whatever it resolves to -- the candidate whose TRUE (unnudged) position
+// is nearest that point, among every candidate within HIT_RADIUS_PX. This
+// is idempotent and self-correcting: even though overlapping hit-boxes
+// still mean the RAW event can land on any one of several DOM elements as
+// the pointer glides, every one of them now recomputes the SAME correct
+// answer from the SAME real pointer position, so which element happened to
+// receive the native event no longer matters. Reuses NUDGE_TRIGGER_PX
+// (already the empirically-derived "hit-circle diameter" constant, see its
+// own comment) as the candidate search radius rather than inventing a
+// second number for the same physical fact.
+const HIT_RADIUS_PX = NUDGE_TRIGGER_PX;
+
+// "Genuinely coincident, not just close" (decision 2): once the nearest
+// candidate is chosen, any OTHER candidate whose own TRUE position sits
+// within this many px of the WINNER's true position is a real, ambiguous
+// tie -- e.g. Shittim and the "plains of Moab" camp, 0km apart in the
+// curated data (this file's own setScene header comment) -- and the hover
+// resolves to a CHOOSER (place-chooser) listing every tied candidate
+// instead of silently picking one. Deliberately much tighter than
+// HIT_RADIUS_PX/NUDGE_TRIGGER_PX (26px): a merely-close-but-real pair like
+// Zaanannim/Mount Tabor (~4.2km apart, CONTRACT.md's SAMEPLACE-1) must
+// still resolve directly via nearest-true-center, never fall into the
+// chooser, at any zoom this app's fitScene realistically lands on.
+//
+// Self-review finding, fix round 1: 8px (this constant's own first value)
+// was still too generous once measured against a real, live, wide-zoomed
+// scene -- greater Jerusalem (window -1000..-900, that era's own fitScene
+// zoom spans the whole divided-kingdom map) collapsed FOURTEEN genuinely
+// distinct real sites (Bethany, Gethsemane, Golgotha, Mount of Olives...
+// each 1-3km from the Old City in reality, comfortably the "merely-close-
+// but-real" category Zaanannim/Tabor already established the chooser must
+// NOT catch) into one giant chooser, purely because that window's own
+// wide zoom compresses several real km into single-digit screen pixels --
+// confirmed live, not assumed. A literal (0km) coincidence like Beersheba/
+// Negeb (three independently curated records at one identical lat/lon,
+// this batch's own repro) renders at essentially 0px apart at ANY zoom,
+// so tightening this catches it exactly as reliably at 3px as it did at
+// 8 -- the only thing a smaller value gives up is exactly the
+// false-positive width that swept in real, distinct, merely-nearby places
+// it was never meant to.
+const AMBIGUITY_RADIUS_PX = 3;
+
+// Cluster-collapse D (decision 3): lit markers (never quiet -- see
+// applyMarkerClusters' own comment for why the scope stays lit-only) whose
+// TRUE container points sit within D px of each other, at the CURRENT
+// zoom, collapse into one marker-cluster-{n} glyph -- FAR/MID label tier
+// only (labelTier below); NEAR tier never clusters, nudges alone are
+// enough there (existing behavior, unchanged). Tune-by-eye band 18-32px
+// per the brief; chosen value + the screenshot review that picked it
+// (Jordan bend, Bethesda/Bethlehem, and the exodus window's own six-member
+// Ai/Gilgal/Jericho/"plains of Moab"/Shittim/Timnath-serah pileup -- see
+// world-map.spec.ts's WORLD-2 comment, "compresses to single-digit screen
+// pixels... a structural limit... not a tuning miss," EXACTLY the case
+// this constant retires) are in the batch report.
+const CLUSTER_D_PX = 18;
+
 // Re-derives every marker's rendered position from its TRUE (server-
 // provided, post-merge) lat/lon plus a fresh screen-pixel nudge, at the
 // map's CURRENT zoom -- called by setScene (every scene load) and by the
@@ -655,6 +765,32 @@ function applyMarkerNudges(inst) {
     // markers must never jitter on an unrelated refetch/zoom).
     const entries = [...inst.markers.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1));
 
+    // Batch C3 self-review finding, fix round 1: a marker currently
+    // absorbed into a cluster glyph (applyMarkerClusters, run just before
+    // this from setScene/zoomend) is hidden outright, so ITS OWN nudge
+    // result is moot -- but this pass deliberately still COMPUTES one for
+    // it, unconditionally, same as every other entry, rather than skipping
+    // it out of the collision-detection loop entirely. An earlier version
+    // of this fix DID skip clustered entries (reasoning: "hidden, so it
+    // shouldn't need a nudge or contribute one") -- reverted after a real,
+    // live regression: skipping a clustered marker also removes its own
+    // TRUE point from `placedTrue`, which changes the computed REPULSION
+    // DIRECTION for every UNCLUSTERED neighbor this pass would otherwise
+    // have nudged away from it, shifting THEIR rendered positions by a few
+    // px versus pre-C3 behavior -- confirmed live: exactly this shifted
+    // "sidon" (default Gospels-era view) just far enough to newly satisfy
+    // world-hover-text.spec.ts's own CARD-FLIP-1 "near the viewport top"
+    // precondition (permanently `test.skip`-vacuous pre-C3, since Sidon
+    // never actually landed that close to the top before), which then
+    // exercised a genuinely pre-existing, unrelated PlaceCard/CardPlacement
+    // interaction this batch has no business fixing (decision 5: "do not
+    // redesign markers, cards, or popovers"). Computing every entry's own
+    // nudge unconditionally, same as before this batch, keeps every
+    // UNCLUSTERED marker's own rendered position byte-identical to pre-C3
+    // -- a clustered marker's own resulting nudge is simply never looked
+    // at (its element stays hidden regardless, per applyMarkerClusters'
+    // own comment), so this costs a little wasted computation on a hidden
+    // marker and nothing else.
     const placedTrue = []; // {x, y} TRUE (unnudged) container points already resolved this pass, in the sorted order above
     for (const [, entry] of entries) {
         const truePt = map.latLngToContainerPoint([entry.trueLat, entry.trueLon]);
@@ -708,6 +844,399 @@ function applyMarkerNudges(inst) {
     }
 }
 
+// Batch C3 decision 3 (cluster collapse, far/mid tier only). Lit markers
+// ONLY -- quiet dots stay E2's low-priority "furniture" (QUIET_LABEL_PRIORITY,
+// tiny 5px core, no glow) and were never among any of the brief's own named
+// dense-stack examples (Jordan bend; Bethesda/Bethlehem; the exodus
+// window's own Ai/Gilgal/Jericho/"plains of Moab"/Shittim/Timnath-serah
+// pileup -- all lit places, world-map.spec.ts's own WORLD-2 comment);
+// clustering quiet dots too would be scope creep past what the brief
+// actually asks for, so E2/applyLabelTier's existing collision damping
+// keeps handling them exactly as before. NEAR tier never clusters
+// (decision 3: "nudges suffice there -- existing behavior preserved") and
+// mini never clusters at all (decision 4) -- both simply skip the grouping
+// pass below, leaving inst.clusteredIds empty, same as if this function
+// didn't exist.
+//
+// Membership: a plain union-find over every lit marker's own TRUE
+// (unnudged) container point at the CURRENT zoom, so a CHAIN of
+// pairwise-close markers (A-B close, B-C close, A-C not) still lands in
+// ONE group -- a strict "every pair within D" rule would arbitrarily
+// split a genuine dense pileup into overlapping sub-clusters instead,
+// which is not what "collapse into one cluster glyph" asks for. Recomputed
+// fresh every pass (never diffed), from `inst.markers`' own sorted-by-id
+// order (applyMarkerNudges' own determinism precedent) with the LOWER id
+// always winning a union -- a pure function of TRUE positions + current
+// zoom, so "a stable scene never jitters clusters on unrelated refetch/
+// zoomend" (decision 4) falls out for free: identical input always
+// produces the identical grouping, identical centroid, identical glyph.
+function applyMarkerClusters(inst) {
+    if (!inst) {
+        return;
+    }
+    const map = inst.map;
+
+    for (const c of inst.clusterMarkers) {
+        map.removeLayer(c.marker);
+    }
+    inst.clusterMarkers = [];
+    inst.clusteredIds = new Set();
+
+    if (!inst.mini && labelTier(map.getZoom()) !== 'near') {
+        const entries = [...inst.markers.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1));
+        const points = entries.map(([id, entry]) => ({ id, pt: map.latLngToContainerPoint([entry.trueLat, entry.trueLon]) }));
+
+        // Union-find keyed by place id -- small N (a scene's own lit-place
+        // count), a plain Map beats pulling in a real disjoint-set library
+        // for this.
+        const parent = new Map(points.map(p => [p.id, p.id]));
+        const find = id => {
+            while (parent.get(id) !== id) {
+                parent.set(id, parent.get(parent.get(id))); // path-halving
+                id = parent.get(id);
+            }
+            return id;
+        };
+        const union = (a, b) => {
+            const ra = find(a), rb = find(b);
+            if (ra !== rb) {
+                // Lower id becomes the root -- deterministic regardless of
+                // scan order, same "sort/tie-break by id" law every other
+                // determinism guarantee in this file leans on.
+                const [lo, hi] = ra < rb ? [ra, rb] : [rb, ra];
+                parent.set(hi, lo);
+            }
+        };
+        for (let i = 0; i < points.length; i++) {
+            for (let j = i + 1; j < points.length; j++) {
+                const dist = Math.hypot(points[i].pt.x - points[j].pt.x, points[i].pt.y - points[j].pt.y);
+                if (dist <= CLUSTER_D_PX) {
+                    union(points[i].id, points[j].id);
+                }
+            }
+        }
+
+        const groups = new Map(); // root id -> [{id, pt}]
+        for (const p of points) {
+            const root = find(p.id);
+            const list = groups.get(root);
+            if (list) {
+                list.push(p);
+            } else {
+                groups.set(root, [p]);
+            }
+        }
+
+        for (const members of groups.values()) {
+            if (members.length < 2) {
+                continue; // a lone marker is never its own "cluster of 1"
+            }
+            members.sort((a, b) => (a.id < b.id ? -1 : 1)); // decision 4: member/candidate order
+            const cx = members.reduce((s, m) => s + m.pt.x, 0) / members.length;
+            const cy = members.reduce((s, m) => s + m.pt.y, 0) / members.length;
+            const center = map.containerPointToLatLng({ x: cx, y: cy });
+            const memberIds = members.map(m => m.id);
+            const marker = L.marker(center, { icon: makeClusterIcon(memberIds.length) });
+            wireClusterEvents(inst, marker, memberIds, center);
+            marker.addTo(map);
+            inst.clusterMarkers.push({ marker, memberIds, lat: center.lat, lon: center.lng });
+            for (const id of memberIds) {
+                inst.clusteredIds.add(id);
+            }
+        }
+    }
+
+    // Hide every clustered lit marker's own icon element (dot + label
+    // together -- both live inside the one node `getElement()` returns,
+    // see makeIcon) so the cluster glyph is the only thing on the plate
+    // for the group it represents; applyLabelTier's own per-label display
+    // toggling (a CHILD of this element) can never un-hide it, since a
+    // `display:none` ancestor wins regardless of a descendant's own
+    // display value -- no applyLabelTier change needed. Un-hidden the
+    // moment a marker leaves clusteredIds on a later pass (zoomed to NEAR,
+    // or the group broke apart) -- this loop always runs, every pass,
+    // reading the FRESH clusteredIds computed just above (empty on
+    // mini/near tier), so a marker's display is always exactly "hidden iff
+    // clustered THIS pass," never a stale leftover from a prior one.
+    for (const [id, entry] of inst.markers) {
+        const el = entry.marker.getElement();
+        if (el) {
+            el.style.display = inst.clusteredIds.has(id) ? 'none' : '';
+        }
+    }
+}
+
+// Batch C3 decision 3: "the app's own visual language... a slightly larger
+// dot + count numeral -- parchment/dusk palette, NOT a green
+// leaflet.markercluster blob" (app.css's own .atlas-cluster rule carries
+// the actual palette). testid `marker-cluster-{n}` is verbatim from the
+// brief, n literally the member count -- two distinct clusters sharing a
+// count in one scene therefore share a testid (Playwright's getByTestId
+// matches every element with it); no curated scene today produces that
+// collision, and disambiguating it would mean inventing a naming scheme
+// the brief never specified.
+function makeClusterIcon(count) {
+    const html = `<div class="atlas-cluster" data-testid="marker-cluster-${esc(count)}"><span class="atlas-cluster-count">${esc(count)}</span></div>`;
+    return L.divIcon({ html, className: 'atlas-marker-icon', iconSize: [0, 0] });
+}
+
+// Batch C3 decision 3 interactions. Hover opens the SAME chooser decision 2
+// built for a genuinely-coincident individual pair -- a cluster IS a
+// coincidence at this zoom, just a wider one -- listing every member
+// (memberIds already sorted by id, decision 4). Self-review finding, fix
+// round 1: a cluster glyph gets the SAME QUIET_HOVER_INTENT_MS dwell
+// debounce wireQuietEvents' own mouseover already uses, for the identical
+// reason that function's own header comment documents -- confirmed live
+// while verifying this batch against world-hover-text.spec.ts's own
+// pre-existing place-card-more property: an ORDINARY straight-line pointer
+// transit from a marker to its own card's place-card-more button (real
+// intermediate mousemove events, not a single jump -- moveAndClick's own
+// `steps: 10`) can graze a cluster glyph sitting along that path, and an
+// immediate-fire mouseover (the pre-fix behavior here) silently swapped
+// the open card out from under the click mid-transit -- the exact same
+// regression class E2 already fixed for quiet dots, just newly reachable
+// through a different marker kind this batch introduces. A genuine,
+// deliberate cluster hover clears the delay comfortably; a fast graze
+// never commits (mirrors wireQuietEvents' own `committed` guard exactly).
+// Click is unaffected -- a discrete, deliberate action, same reasoning
+// wireQuietEvents' own click already documents for the lit/quiet case.
+function wireClusterEvents(inst, marker, memberIds, latlng) {
+    let timer = null;
+    let committed = false;
+    marker.on('mouseover', e => {
+        const pt = e.containerPoint;
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            committed = true;
+            inst.dotnetRef.invokeMethodAsync('OnPlaceHoverAmbiguous', memberIds, pt.x, pt.y);
+        }, QUIET_HOVER_INTENT_MS);
+    });
+    marker.on('mouseout', () => {
+        clearTimeout(timer);
+        if (committed) {
+            committed = false;
+            inst.dotnetRef.invokeMethodAsync('OnPlaceLeave');
+        }
+    });
+    marker.on('click', e => {
+        L.DomEvent.stopPropagation(e); // same "never also a map-background click" reasoning as wireEvents' own click handler
+        const map = inst.map;
+        if (map.getZoom() >= map.getMaxZoom()) {
+            inst.dotnetRef.invokeMethodAsync('OnPlaceHoverAmbiguous', memberIds, e.containerPoint.x, e.containerPoint.y);
+            return;
+        }
+        map.setZoomAround(latlng, map.getZoom() + 1);
+    });
+}
+
+// Batch C3 decision 2 (arbitration law -- see HIT_RADIUS_PX's own header
+// comment for the full Phase-0 diagnosis this replaces). Every place-
+// marker/quiet-marker/cluster-glyph mouseover or click below funnels
+// through this, given the pointer's OWN real containerPoint -- never
+// trusting which DOM element the browser happened to deliver the raw
+// event to. Returns:
+//   null                     -- nothing within HIT_RADIUS_PX of the point
+//   { type: 'single', id }   -- one clear winner, resolve directly
+//   { type: 'chooser', ids } -- a cluster glyph (its own members, always)
+//                               or 2+ individual candidates genuinely
+//                               coincident at this zoom (AMBIGUITY_RADIUS_PX)
+// `ids` is always ascending-sorted by place id (decision 4).
+function collectHoverCandidates(inst) {
+    const list = [];
+    for (const [id, entry] of inst.markers) {
+        if (inst.clusteredIds.has(id)) {
+            continue; // represented by its own cluster glyph instead, below
+        }
+        list.push({ id, kind: 'place', lat: entry.trueLat, lon: entry.trueLon });
+    }
+    for (const [id, entry] of inst.quietMarkers) {
+        // Never nudged (setScene's own comment on the quiet-places diff) --
+        // lat/lon IS the true position already, unlike a lit entry's
+        // separate trueLat/trueLon pair.
+        list.push({ id, kind: 'quiet', lat: entry.lat, lon: entry.lon });
+    }
+    for (const c of inst.clusterMarkers) {
+        list.push({ id: null, kind: 'cluster', lat: c.lat, lon: c.lon, memberIds: c.memberIds });
+    }
+    return list;
+}
+
+// `fallbackId` (optional): the closure place id whichever DOM element
+// actually raised the underlying native event belongs to, if any (a plain
+// marker/quiet-marker mouseover/click always has one; a cluster glyph does
+// not, and never needs one -- see wireClusterEvents' own comment). Used
+// ONLY when NO candidate's own TRUE position is within HIT_RADIUS_PX of
+// `pt` -- a genuine geometric edge case this file's own numbers allow: a
+// marker's rendered hit-circle can (nudge, up to NUDGE_STEP_PX=16px, plus
+// its own ~13px hit-radius) cover a pixel up to ~29px from ITS OWN true
+// center, just past HIT_RADIUS_PX=26 -- a real mouseover on that exact
+// marker's own DOM element could then legitimately find zero candidates
+// within range, and resolving it to "nothing happened" would be a real
+// regression: whichever DOM element actually raised the event IS a
+// legitimate, unambiguous answer on its own in that case -- there was no
+// overlap for the browser to have resolved arbitrarily in the first
+// place. Only reached at all when `trusted` (dispatchResolvedHover/Click's
+// own caller-supplied flag -- see their header comments) is true; an
+// UNTRUSTED event skips this function's own arbitration entirely, for a
+// completely different, more common reason -- see dispatchResolvedClick's
+// own header comment.
+function resolveHoverTarget(inst, pt, fallbackId) {
+    const map = inst.map;
+    const candidates = collectHoverCandidates(inst)
+        .map(c => {
+            const p = map.latLngToContainerPoint([c.lat, c.lon]);
+            return Object.assign(c, { sx: p.x, sy: p.y, dist: Math.hypot(p.x - pt.x, p.y - pt.y) });
+        })
+        .filter(c => c.dist <= HIT_RADIUS_PX);
+
+    if (candidates.length === 0) {
+        return fallbackId ? { type: 'single', id: fallbackId } : null;
+    }
+
+    // Nearest wins; a tied distance breaks first by KIND -- a lit place (or
+    // a cluster, which only ever exists BECAUSE of lit places) always wins
+    // a tie over a quiet dot, same "lit beats quiet outright, no contest"
+    // priority applyLabelTier's own PLACE_PRIORITY_BASE/QUIET_LABEL_PRIORITY
+    // already establishes for label collision -- self-review finding, fix
+    // round 1: without this, a quiet dot geocoded to the EXACT same point
+    // as a real, lit neighbor (a real, live case: several of greater
+    // Jerusalem's own quiet furniture -- "beautiful-gate", "salem",
+    // "uzza" -- share Jerusalem's own exact lat/lon) could win the sort on
+    // id alone ("beautiful-gate" < "jerusalem"), silently handing a hover
+    // aimed at the glowing ember to an unrelated quiet-only card instead --
+    // exactly the kind of z-order-style arbitrary loss this whole batch
+    // exists to retire, just at the tie-break instead of the browser's own
+    // hit-testing. Only THEN by id, for a genuine same-kind tie (two
+    // records, same kind, same exact point) -- same determinism law as
+    // everything else in this file.
+    const KIND_RANK = { place: 0, cluster: 0, quiet: 1 };
+    candidates.sort((a, b) => a.dist - b.dist || KIND_RANK[a.kind] - KIND_RANK[b.kind] || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const winner = candidates[0];
+
+    if (winner.kind === 'cluster') {
+        return { type: 'chooser', ids: [...winner.memberIds].sort() };
+    }
+
+    // Self-review finding, fix round 1: a tie only ever forms among
+    // candidates of the SAME kind as the winner -- `place` vs `place`, or
+    // `quiet` vs `quiet`, never a quiet dot contesting a lit place's own
+    // slot. A lit place always wins outright over ANY quiet neighbor
+    // regardless of distance (the SAME "lit beats quiet, no contest"
+    // priority applyLabelTier's own PLACE_PRIORITY_BASE/QUIET_LABEL_PRIORITY
+    // already establishes for label collision) -- confirmed live this needed
+    // fixing, not merely tightening AMBIGUITY_RADIUS_PX further: greater
+    // Jerusalem (window -1000..-900) still produced an 11-candidate chooser
+    // for "jerusalem" (a lit place, individually visible, NOT itself
+    // clustered) even at a much smaller radius, because a WIDE fitScene zoom
+    // compresses its own real-world quiet neighbors (Gethsemane, Golgotha,
+    // Mount of Olives... each genuinely 1-3km away, the ever-present graph's
+    // own furniture, not places genuinely competing to BE this hover) into
+    // a few screen pixels -- decision 3's own cluster collapse never
+    // touches quiet dots (out of scope by design, see applyMarkerClusters'
+    // own comment), so nothing else was thinning that list before this fix.
+    const tied = candidates.filter(c =>
+        c !== winner && c.kind === winner.kind &&
+        Math.hypot(c.sx - winner.sx, c.sy - winner.sy) <= AMBIGUITY_RADIUS_PX);
+    if (tied.length > 0) {
+        return { type: 'chooser', ids: [winner.id, ...tied.map(c => c.id)].sort() };
+    }
+
+    return { type: 'single', id: winner.id };
+}
+
+// Self-review finding, fix round 1: is `pt` (e.containerPoint) even a REAL
+// pointer position worth arbitrating from at all? A genuine browser mouse
+// event's own `clientX`/`clientY` are always real, but this suite also
+// widely, deliberately fires events PROGRAMMATICALLY --
+// `element.dispatchEvent(new Event('click'))`, world-pin.spec.ts's own
+// clickMarker among others -- to target one specific element unambiguously,
+// bypassing real screen-coordinate hit-testing on purpose; a pattern that
+// predates this batch and is exactly as valid a way to fire a marker's
+// click as a real pointer is. Such an event's `clientX`/`clientY` default
+// to 0 (DOM spec, MouseEventInit), which -- worse than simply being
+// "nowhere near any candidate" -- can genuinely happen to land close to
+// SOME unrelated candidate near the map's own screen origin (confirmed
+// live: a synthetic click dispatched directly on "rameses" resolved to an
+// unrelated chooser instead, because containerPoint (0,0)-ish happened to
+// sit within HIT_RADIUS_PX of two totally different quiet dots near that
+// corner) -- so an empty-candidates check alone (this function's OWN
+// resolveHoverTarget, before this fix round) is not enough; a synthetic
+// event needs to skip position-based arbitration ENTIRELY, not just its
+// empty-result branch. `Event.isTrusted` is the DOM's own, exact signal
+// for this: true only for an event the user agent itself generated from
+// real input (including Playwright's `.hover()`/`.click()`, which drive
+// the browser's own input pipeline via CDP), false for ANY
+// script-dispatched event regardless of which "automation" produced it.
+// Leaflet's own wrapped mouse event carries the native one at
+// `e.originalEvent` (same field `isToggleSelectClick` already reads).
+function isTrustedPointerEvent(e) {
+    return !!(e.originalEvent && e.originalEvent.isTrusted);
+}
+
+// Shared hover dispatch -- wireEvents'/wireQuietEvents' own mouseover
+// handlers below both just call this with the raw event's containerPoint,
+// its own trust flag, and their own closure placeId (resolveHoverTarget's
+// own fallback -- see its header comment). An untrusted hover (this
+// suite never actually dispatches one today, but the symmetry costs
+// nothing and closes the same gap dispatchResolvedClick's own header
+// comment documents for click, should a future test ever need it) trusts
+// `fallbackId` directly, skipping arbitration entirely, same as click.
+function dispatchResolvedHover(inst, pt, trusted, fallbackId) {
+    if (!trusted) {
+        if (fallbackId) {
+            inst.dotnetRef.invokeMethodAsync('OnPlaceHover', fallbackId, pt.x, pt.y);
+        }
+        return;
+    }
+    const resolved = resolveHoverTarget(inst, pt, fallbackId);
+    if (!resolved) {
+        return;
+    }
+    if (resolved.type === 'chooser') {
+        inst.dotnetRef.invokeMethodAsync('OnPlaceHoverAmbiguous', resolved.ids, pt.x, pt.y);
+    } else {
+        inst.dotnetRef.invokeMethodAsync('OnPlaceHover', resolved.id, pt.x, pt.y);
+    }
+}
+
+// Shared click dispatch -- a TRUSTED click undergoes the exact SAME
+// arbitration a hover does (decision 2: never guess a click target
+// either); an UNTRUSTED one (isTrustedPointerEvent's own header comment
+// has the full story) skips arbitration entirely and trusts `fallbackId`
+// directly -- exactly the pre-C3 behavior for this suite's own widely-used
+// `dispatchEvent('click')` pattern, which has no real position to
+// arbitrate from in the first place, not merely an unlucky one.
+function dispatchResolvedClick(inst, e, fallbackId) {
+    // Batch G1 requirement 3: a marker/cluster click must never ALSO
+    // register as a map-background click -- see wireEvents' own original
+    // comment on this exact call, unchanged reasoning.
+    L.DomEvent.stopPropagation(e);
+
+    if (!isTrustedPointerEvent(e)) {
+        if (isToggleSelectClick(e)) {
+            inst.dotnetRef.invokeMethodAsync('OnPlaceToggleSelect', fallbackId);
+        } else if (fallbackId) {
+            inst.dotnetRef.invokeMethodAsync('OnPlaceClick', fallbackId, e.containerPoint.x, e.containerPoint.y);
+        }
+        return;
+    }
+
+    const resolved = resolveHoverTarget(inst, e.containerPoint, fallbackId);
+    if (isToggleSelectClick(e)) {
+        const id = resolved ? (resolved.type === 'chooser' ? resolved.ids[0] : resolved.id) : fallbackId;
+        inst.dotnetRef.invokeMethodAsync('OnPlaceToggleSelect', id);
+        return;
+    }
+    if (!resolved) {
+        return;
+    }
+    if (resolved.type === 'chooser') {
+        inst.dotnetRef.invokeMethodAsync('OnPlaceHoverAmbiguous', resolved.ids, e.containerPoint.x, e.containerPoint.y);
+        return;
+    }
+    inst.dotnetRef.invokeMethodAsync('OnPlaceClick', resolved.id, e.containerPoint.x, e.containerPoint.y);
+}
+
 // Batch G2 decision 6 (multi-select v1, RULED per batch-r-report.md §7):
 // Ctrl/Cmd-click on a marker (or its own label -- LABEL-1's own bubbling fix
 // means both already reach this SAME handler) toggles tray selection
@@ -719,22 +1248,18 @@ function isToggleSelectClick(e) {
     return !!(e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey));
 }
 
-function wireEvents(marker, dotnetRef, placeId) {
-    marker.on('mouseover', e => dotnetRef.invokeMethodAsync('OnPlaceHover', placeId, e.containerPoint.x, e.containerPoint.y));
-    marker.on('mouseout', () => dotnetRef.invokeMethodAsync('OnPlaceLeave'));
-    marker.on('click', e => {
-        // Batch G1 requirement 3: a marker click must never ALSO register
-        // as a map-background click (Leaflet markers bubble mouse events to
-        // the map by default, `bubblingMouseEvents: true`) -- otherwise
-        // pinning THIS marker would, in the very same gesture, immediately
-        // fire OnMapClick and unpin it again. See init()'s own comment.
-        L.DomEvent.stopPropagation(e);
-        if (isToggleSelectClick(e)) {
-            dotnetRef.invokeMethodAsync('OnPlaceToggleSelect', placeId);
-            return;
-        }
-        dotnetRef.invokeMethodAsync('OnPlaceClick', placeId, e.containerPoint.x, e.containerPoint.y);
-    });
+// Batch C3: takes `inst`, not a bare `dotnetRef`, now that mouseover/click
+// both have to consult the map's own live candidate set (resolveHoverTarget)
+// rather than trusting `placeId` -- the closure id of whichever marker this
+// listener happens to be attached to -- directly. `placeId` still survives
+// as dispatchResolvedHover/Click's own fallback -- see their header
+// comments for the two separate reasons that matters (an untrusted/
+// synthetic event skips arbitration entirely; a trusted one with zero
+// candidates in range falls back too).
+function wireEvents(inst, marker, placeId) {
+    marker.on('mouseover', e => dispatchResolvedHover(inst, e.containerPoint, isTrustedPointerEvent(e), placeId));
+    marker.on('mouseout', () => inst.dotnetRef.invokeMethodAsync('OnPlaceLeave'));
+    marker.on('click', e => dispatchResolvedClick(inst, e, placeId));
 }
 
 // Batch E2 fix (self-review finding, not in the original brief): a real bug
@@ -777,15 +1302,23 @@ function wireEvents(marker, dotnetRef, placeId) {
 // opens the SAME quiet card exactly as before.
 const QUIET_HOVER_INTENT_MS = 150;
 
-function wireQuietEvents(marker, dotnetRef, placeId) {
+// Batch C3: `inst`, not a bare `dotnetRef` -- see wireEvents' own comment,
+// same reasoning. The commit still fires resolveHoverTarget's arbitration
+// (via dispatchResolvedHover) against the ORIGINAL captured `pt`, not
+// wherever the pointer happens to be QUIET_HOVER_INTENT_MS later -- an
+// ordinary dwell doesn't move the pointer meaningfully in 150ms, and this
+// keeps the resolved target anchored to the pixel that actually earned the
+// dwell.
+function wireQuietEvents(inst, marker, placeId) {
     let timer = null;
     let committed = false;
     marker.on('mouseover', e => {
         const pt = e.containerPoint;
+        const trusted = isTrustedPointerEvent(e); // captured now -- `e` itself doesn't survive into the timeout below
         clearTimeout(timer);
         timer = setTimeout(() => {
             committed = true;
-            dotnetRef.invokeMethodAsync('OnPlaceHover', placeId, pt.x, pt.y);
+            dispatchResolvedHover(inst, pt, trusted, placeId);
         }, QUIET_HOVER_INTENT_MS);
     });
     marker.on('mouseout', () => {
@@ -795,22 +1328,15 @@ function wireQuietEvents(marker, dotnetRef, placeId) {
         // function's own header comment for the full race this avoids).
         if (committed) {
             committed = false;
-            dotnetRef.invokeMethodAsync('OnPlaceLeave');
+            inst.dotnetRef.invokeMethodAsync('OnPlaceLeave');
         }
     });
     // Click is a discrete, deliberate action (not a continuous transit risk
     // the way mouseover is) -- fires immediately, same as a lit marker's
-    // own, including the same Batch G1 stopPropagation (see wireEvents's
-    // own comment) so pinning a quiet marker's card doesn't also unpin it
-    // via a bubbled map-background click.
-    marker.on('click', e => {
-        L.DomEvent.stopPropagation(e);
-        if (isToggleSelectClick(e)) {
-            dotnetRef.invokeMethodAsync('OnPlaceToggleSelect', placeId);
-            return;
-        }
-        dotnetRef.invokeMethodAsync('OnPlaceClick', placeId, e.containerPoint.x, e.containerPoint.y);
-    });
+    // own, including the same Batch G1 stopPropagation (see
+    // dispatchResolvedClick's own comment) so pinning a quiet marker's card
+    // doesn't also unpin it via a bubbled map-background click.
+    marker.on('click', e => dispatchResolvedClick(inst, e, placeId));
 }
 
 function makeIcon(p) {
@@ -1083,7 +1609,22 @@ function applyLabelTier(inst) {
     // own PRIORITY (brighter wins a contested cell over dimmer, unchanged),
     // it just no longer gates whether the label is EVEN OFFERED a chance to
     // win one.
-    for (const entry of inst.markers.values()) {
+    for (const [id, entry] of inst.markers) {
+        // Batch C3 (self-review finding, fix round 1): a lit marker
+        // currently absorbed into a cluster glyph is hidden entirely (its
+        // own DOM element's ANCESTOR is display:none -- applyMarkerClusters'
+        // own comment), so its label could never actually be SEEN regardless
+        // of whether it wins a collision cell here -- but without this
+        // guard it still COMPETED for one (a real, live bug: confirmed via
+        // WORLD-10a, where a clustered-but-still-candidate label silently
+        // claimed a cell an unrelated, genuinely visible label -- "Susa" --
+        // would otherwise have won). Skipped before ever entering
+        // `candidates`, same "hidden and skipped" treatment the existence
+        // gate just below already gives its own failures -- a real cell a
+        // clustered place's own ghost label can no longer phantom-claim.
+        if (inst.clusteredIds.has(id)) {
+            continue;
+        }
         const el = entry.marker.getElement();
         const label = el && el.querySelector('.atlas-label');
         if (!label) {
@@ -1393,6 +1934,46 @@ export function debugTrueScreenPoint(id, lat, lon) {
     }
     const pt = inst.map.latLngToContainerPoint([lat, lon]);
     return { x: pt.x, y: pt.y };
+}
+
+// Batch C3, test-support-only (same treatment as debugTrueScreenPoint
+// above -- never called from production Blazor code, MapInterop.cs has no
+// wrapper for it): sets the map's zoom DIRECTLY to an exact value
+// (fractional accepted -- Leaflet's own setZoom does, and labelTier/
+// applyMarkerClusters/applyMarkerNudges all just read map.getZoom() back,
+// so a fractional value is honored exactly, not rounded). Exists because a
+// real user gesture (scroll-wheel) only ever steps by a whole zoom level at
+// a time (Leaflet's default zoomSnap:1), which can overshoot a scene whose
+// own rendered pixel gap between two real points needs a PRECISE
+// intermediate zoom to land in -- e.g. "past CLUSTER_D_PX's own cluster
+// threshold but still inside NUDGE_TRIGGER_PX's own nudge-eligible range"
+// -- a window a single whole zoom step can jump straight over (confirmed
+// live while writing world-same-place.spec.ts's own UI-3: one wheel notch
+// took a rigged pair from a clustered ~18px gap to a 35px+ gap, skipping
+// the 18-26px band entirely). A real user never needs this precision (any
+// zoom they land on is equally "correct"); a deterministic property test
+// asserting a SPECIFIC geometric regime does.
+//
+// `lat`/`lon` (optional): also RECENTERS the map there (Leaflet's own
+// `setView`, not a bare `setZoom`) -- self-review finding, fix round 1: a
+// bare `setZoom` zooms around the map's CURRENT center, which drifts a
+// target increasingly far off-screen, zoom step after zoom step, whenever
+// that target isn't already near center (confirmed live: GEN.2's own tiny
+// Eden-rivers scene, zoomed via bare setZoom from its own off-center
+// fitScene position, pushed "cush-2" thousands of px past the viewport
+// edge by zoom 10). Passing the target's own TRUE lat/lon keeps it
+// anchored at the CONTAINER CENTER through every zoom level instead.
+export function debugSetZoom(id, zoom, lat, lon) {
+    const inst = instances.get(id);
+    if (!inst) {
+        return false;
+    }
+    if (lat != null && lon != null) {
+        inst.map.setView([lat, lon], zoom);
+    } else {
+        inst.map.setZoom(zoom);
+    }
+    return true;
 }
 
 // Batch M requirement 5, test-support-only (same treatment as the three

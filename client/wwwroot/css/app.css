@@ -1638,6 +1638,62 @@ input:focus-visible,
     }
 }
 
+/* Batch C3 decision 3 (cluster collapse, far/mid tier only): the glyph
+   map.js's applyMarkerClusters renders in place of 2+ lit markers whose
+   TRUE positions sit within CLUSTER_D_PX of each other -- explicitly NOT
+   a green leaflet.markercluster blob (the brief's own wording) but this
+   plate's own parchment/bronze/ember language, one step more prominent
+   than a single ember core (a cluster IS "more lit places," so it reads
+   bigger, not different in kind) rather than a foreign UI chrome element
+   landing on top of the atlas. Parchment-raised fill (the SAME surface
+   .place-card/.place-chooser sit on) with a bronze ring reads as a small
+   sealed disc/token on the plate; the ember-tinted halo underneath keeps
+   it legible as "glowing places, gathered" rather than a flat UI badge.
+   Sized ~20px (between .atlas-marker's 10px core and .quiet-marker's 5px)
+   -- "slightly larger dot," per the brief, not a dramatically different
+   shape. Same absolute+translate(-50%,-50%) anchor and hit-halo technique
+   (::after below) every other marker on this plate already uses, so
+   map.js's own containerPoint math (fitScene, latLngToContainerPoint)
+   needs no special case for it. */
+.atlas-cluster {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--parchment-raised);
+    border: 2px solid var(--bronze);
+    box-shadow: 0 0 14px 4px rgba(231, 90, 20, .35);
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    animation: atlas-marker-in 180ms ease-out both;
+}
+
+.atlas-cluster::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+}
+
+.atlas-cluster-count {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: .68rem;
+    line-height: 1;
+    color: var(--bronze-ink);
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .atlas-cluster {
+        animation: none;
+    }
+}
+
 /* Place labels read as dark ink on the plate now, not pale text on night sky
    -- design-direction.md "World -- REVISED": "place labels in small-caps
    --ink with a soft LIGHT halo (parchment text-shadow) for legibility over
@@ -2443,6 +2499,104 @@ input:focus-visible,
     .place-card {
         animation: none;
     }
+}
+
+/* Batch C3 decision 2 (arbitration + chooser): the small hover flyout that
+   replaces a guess whenever two or more places are genuinely coincident at
+   the current zoom (map.js's own AMBIGUITY_RADIUS_PX) or whenever a
+   marker-cluster-{n} glyph (decision 3) is hovered -- same parchment
+   surface/absolute-anchored-at-X/Y idiom as .place-card immediately above
+   (World.razor renders at most ONE of the two at a time, sharing the SAME
+   hover-grace/pointer-enter/leave discipline -- PlaceChooser.razor's own
+   header comment), deliberately WITHOUT that card's own flip/clamp
+   measurement machinery (CardPlacement.Compute): a chooser is a short,
+   fixed-shape list of names, never tall/wide enough in the curated data to
+   need it -- a plain "always above, own scroll if a cluster is ever huge"
+   default is enough (see max-height below), same "don't redesign" scope
+   discipline the brief itself asks for. */
+.place-chooser {
+    position: absolute;
+    z-index: 30;
+    transform: translate(-50%, calc(-100% - 18px));
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 9rem;
+    max-width: 16rem;
+    max-height: min(14rem, 50vh);
+    overflow-y: auto;
+    padding: .4rem;
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .45);
+    animation: place-chooser-in 120ms ease-out both;
+}
+
+@keyframes place-chooser-in {
+    from { opacity: 0; transform: translate(-50%, calc(-100% - 12px)); }
+    to { opacity: 1; transform: translate(-50%, calc(-100% - 18px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .place-chooser {
+        animation: none;
+    }
+}
+
+/* One candidate row -- decision 2: "name + a small kind/era hint if
+   cheap." An era hint would need a per-candidate fetch (each ScenePlace's
+   own curated history isn't part of the scene payload) -- not cheap, so
+   this stays scoped to the one hint that IS free: a small dot in the
+   SAME visual language as the candidate's own marker (a lit ember vs a
+   quiet hollow ring, .place-chooser-dot-lit/-quiet below), reusing colors
+   already defined for .atlas-marker/.quiet-marker rather than inventing a
+   third palette. A plain <button>, not an .explorable row (see PlaceChooser.razor's own
+   header comment) -- clicking it does exactly what clicking that place's
+   own marker does today (PIN-1), never opens a popover directly. */
+.place-chooser-row {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .3rem .45rem;
+    border: none;
+    border-radius: 3px;
+    background: none;
+    font-family: var(--font-serif);
+    font-size: .85rem;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+}
+
+.place-chooser-row:hover,
+.place-chooser-row:focus-visible {
+    background: var(--parchment);
+}
+
+.place-chooser-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.place-chooser-dot-lit {
+    background: var(--ember);
+    border: 1px solid var(--bronze-ink);
+}
+
+.place-chooser-dot-quiet {
+    background: rgba(246, 241, 229, .5);
+    border: 1px solid var(--bronze);
+}
+
+.place-chooser-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Batch E additions -- strictly below .place-card-controls above, never

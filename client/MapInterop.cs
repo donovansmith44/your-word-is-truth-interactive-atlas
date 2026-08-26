@@ -14,6 +14,22 @@ namespace BibleAtlas.Client;
 public interface IMapEvents
 {
     void OnPlaceHover(string id, double x, double y);
+
+    /// <summary>
+    /// Batch C3 decision 2 (arbitration + chooser): fired INSTEAD of
+    /// <see cref="OnPlaceHover"/> whenever map.js's own resolveHoverTarget
+    /// finds the pointer's nearest candidate genuinely coincident (at the
+    /// current zoom) with one or more OTHERS -- or, decision 3, whenever a
+    /// marker-cluster-{n} glyph itself is hovered, in which case
+    /// <paramref name="ids"/> is that cluster's own full member list.
+    /// <paramref name="ids"/> is always ascending-sorted by place id (the
+    /// same determinism law <c>applyMarkerNudges</c>' own sorted-by-id order
+    /// already establishes for this file). Same grace/cancel discipline as
+    /// <see cref="OnPlaceHover"/> -- a subsequent <see cref="OnPlaceLeave"/>
+    /// closes whichever of the card/chooser is currently showing.
+    /// </summary>
+    void OnPlaceHoverAmbiguous(string[] ids, double x, double y);
+
     void OnPlaceLeave();
     void OnPlaceClick(string id, double x, double y);
 
@@ -410,6 +426,7 @@ public sealed class MapEventsSink
     public MapEventsSink(IMapEvents sink) => _sink = sink;
 
     [JSInvokable] public void OnPlaceHover(string id, double x, double y) => _sink.OnPlaceHover(id, x, y);
+    [JSInvokable] public void OnPlaceHoverAmbiguous(string[] ids, double x, double y) => _sink.OnPlaceHoverAmbiguous(ids, x, y);
     [JSInvokable] public void OnPlaceLeave() => _sink.OnPlaceLeave();
     [JSInvokable] public void OnPlaceClick(string id, double x, double y) => _sink.OnPlaceClick(id, x, y);
     [JSInvokable] public void OnPlaceToggleSelect(string id) => _sink.OnPlaceToggleSelect(id);
