@@ -416,6 +416,16 @@ test('NAV-5: reader-prev/reader-next stay pixel-IDENTICAL across every sampled f
 // rather than only trusting that reading, since split view is exactly
 // where NAV-3's own history shows a standalone-only check can miss a real,
 // pane-specific regression.
+// Batch CORPREAD-1a (SPLIT-SCROLL-1) note: `window.scrollBy` below still
+// runs, harmlessly, but no longer moves the page far in split view -- the
+// reader pane is now its OWN internal overflow-y:auto scroll container
+// (app.css's own .split-view header comment), so `window` itself only ever
+// has a small, header-sized amount of scroll room left. This test still
+// proves a genuinely true, desired property (the buttons don't drift from
+// whatever residual window scroll remains) -- it just no longer exercises
+// a REAL "deep scroll" in split view the way it originally did; NAV-STABLE-1
+// below (using the reader pane's own scrollTop) is what re-establishes that
+// deep-scroll coverage under the new mechanism.
 test('NAV-6: reader-prev/reader-next stay pixel-IDENTICAL across every sampled frame of a scripted >=3-viewport-height scroll -- no reposition jitter, split view', async ({ page }) => {
   const toc = await loadToc();
   let longest = { book: toc[0].code, chapter: 1, verses: toc[0].chapters[0] };
@@ -501,4 +511,73 @@ test('NAV-7: reader-prev/reader-next are never re-created by the continuous scro
   expect(prevStillSame, 'reader-prev was recreated during scroll').toBe(true);
   expect(await nextHandle!.evaluate(el => el.isConnected)).toBe(true);
   expect(await prevHandle!.evaluate(el => el.isConnected)).toBe(true);
+});
+
+// NAV-STABLE-1 (owner order, verbatim: "chapter navigation buttons are
+// still not stable and seem to reload on scroll"). PHASE-0 DIAGNOSIS (this
+// batch's own report has the full write-up): a live rAF-timestamped trace
+// plus a MutationObserver on the whole nav subtree, run AFTER SPLIT-SCROLL-1
+// landed (per the ticket's own instruction -- diagnose on the NEW layout),
+// found the mechanism to be the IDENTICAL one SPLIT-SCROLL-1 already fixed
+// (reader.js's own watchChapterNavCenter, its `--chapter-nav-top` compute
+// now compensating for the reader pane's own internal scrollTop) -- no
+// residual jitter, no DOM churn, in either mode. What NAV-2..7 (above) do
+// NOT yet cover is the SECOND half of the deliverable-0c nav-stability
+// contract (CONTRACT.md): that the buttons stay genuinely INTERACTIVE, not
+// just visually stable, through a scroll gesture -- this test is that
+// coverage, for both modes, using a REAL scroll for the mode it's genuinely
+// reachable in (the reader pane's own internal scrollTop in split -- window
+// no longer scrolls deep there, see NAV-6's own updated comment; window in
+// standalone, unchanged).
+test('NAV-STABLE-1: reader-prev/reader-next keep DOM identity AND stay genuinely interactive through a real scroll session, split and standalone', async ({ page }) => {
+  const toc = await loadToc();
+  let longest = { book: toc[0].code, chapter: 1, verses: toc[0].chapters[0] };
+  for (const b of toc) {
+    b.chapters.forEach((v, i) => {
+      if (v > longest.verses) longest = { book: b.code, chapter: i + 1, verses: v };
+    });
+  }
+
+  for (const splitMode of [true, false]) {
+    const url = splitMode ? `/read/${longest.book}/${longest.chapter}?split=world` : `/read/${longest.book}/${longest.chapter}`;
+    await page.goto(url);
+    await expect(page.getByTestId('verse-line-1')).toBeVisible();
+
+    const next = page.getByTestId('reader-next');
+    await expect(next).toBeVisible();
+    const nextHandle = await next.elementHandle();
+
+    if (splitMode) {
+      // The reader pane's OWN internal scroll -- the genuine "deep scroll"
+      // mechanism in split view now (SPLIT-SCROLL-1) -- exercised via real
+      // mouse.wheel input over the pane, not a programmatic scrollTop
+      // assignment, matching this suite's own "real gesture" precedent.
+      await page.mouse.move(400, 450);
+      for (let i = 0; i < 5; i++) {
+        await page.mouse.wheel(0, 300);
+        await page.waitForTimeout(120);
+      }
+    } else {
+      for (let i = 0; i < 5; i++) {
+        await page.mouse.wheel(0, 300);
+        await page.waitForTimeout(120);
+      }
+    }
+
+    // DOM identity: unaffected, same proof NAV-7 already establishes
+    // (kept here too so this ONE test is the complete NAV-STABLE-1 story on
+    // its own, not split across two files a future reader has to cross-
+    // reference).
+    const stillSame = await page.evaluate(el => document.querySelector('[data-testid="reader-next"]') === el, nextHandle);
+    expect(stillSame, `${splitMode ? 'split' : 'standalone'}: reader-next was recreated during scroll`).toBe(true);
+
+    // Interactivity: a click fired with NO settle delay after the LAST
+    // scroll tick above -- "during or immediately after a scroll gesture
+    // reliably fires its navigation" (deliverable-0c's own contract
+    // wording) -- must still reliably navigate, not silently no-op against
+    // a stale/detached listener.
+    const before = await page.getByTestId('chapter-head').textContent();
+    await page.getByTestId('reader-next').click();
+    await expect(page.getByTestId('chapter-head')).not.toHaveText(before ?? '');
+  }
 });

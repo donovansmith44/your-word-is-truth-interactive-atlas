@@ -4549,6 +4549,32 @@ Notes:
   PHASE-0 DIAGNOSIS," for the mechanism this guarantee was actually
   diagnosed and fixed against.
 
+  NAV-STABLE-1 CLOSE-OUT (owner order, verbatim: "chapter navigation
+  buttons are still not stable and seem to reload on scroll"): PHASE-0
+  DIAGNOSIS run AFTER SPLIT-SCROLL-1 landed, on the NEW layout, per the
+  ticket's own instruction -- a live rAF-timestamped position trace PLUS a
+  MutationObserver on the whole nav subtree (both mirroring HOTFIX-3's own
+  established methodology), across real mouse-wheel scroll gestures in
+  BOTH split and standalone, PLUS a click-immediately-after-scroll
+  interactivity probe. Result: zero position drift (byte-identical rect at
+  every sampled frame), zero DOM mutations, DOM identity intact, and every
+  post-scroll click navigated correctly, in both modes. CONCLUSION: the
+  mechanism behind this report is the IDENTICAL one SPLIT-SCROLL-1 already
+  fixed (reader.js's own watchChapterNavCenter -- its `--chapter-nav-top`
+  compute previously did not account for the reader pane's own internal
+  scrollTop once that pane became its own genuine scroll container; see
+  the SPLIT-SCROLL-1 entry above for the full mechanism). No additional
+  STRUCTURAL fix was needed beyond what SPLIT-SCROLL-1 already shipped --
+  the brief's own text anticipated exactly this possibility ("your
+  SPLIT-SCROLL-1 container change may itself resolve or alter this").
+  What THIS ticket adds: the dedicated `NAV-STABLE-1` regression test
+  (`tests/ux/reader.spec.ts`) closing the one gap NAV-2..7 (above) did not
+  yet cover -- genuine post-scroll INTERACTIVITY (not just visual/DOM
+  stability), in both modes, using each mode's own REAL scroll mechanism
+  (the reader pane's own scrollTop in split, since window no longer
+  scrolls deep there -- see NAV-6's own updated comment; window,
+  unchanged, in standalone).
+
   SPLIT-SCROLL-1 (implemented this batch, owner order verbatim: "when i
   scroll through reader with world open beside world does not remain
   stable and i can scroll past the world window so that its totally out
