@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.JSInterop;
 using BibleAtlas.Client;
 using BibleAtlas.Client.Contracts;
+using BibleAtlas.Client.Explore;
 using BibleAtlas.Client.State;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -54,13 +55,58 @@ builder.Services.AddSingleton(_ => new StateAtom<TimeWindow>(AtomNames.TimeWindo
 // singleton treatment as Locus/TimeWindow above.
 builder.Services.AddSingleton(_ => new StateAtom<ViewArrangement>(AtomNames.ViewArrangement, ViewArrangement.Default));
 
-// Batch G2 decisions 4/6: saved explorations + the selection tray, each a
-// localStorage-backed singleton (LocalStore.cs's own header comment has the
-// full reasoning) -- resolved lazily off the SAME IJSRuntime the framework
-// already registers, cast once here to IJSInProcessRuntime (Blazor
-// WebAssembly's own DI-registered instance always implements it -- there is
-// no cross-process hop the way Blazor Server has).
+// Batch ST-3 (R1): the effect-ownership registry (client/Contracts/State.cs's
+// own IStateEffect<T>/IEffectRegistry, controller addition) -- ONE singleton
+// registered under its concrete type (so call sites needing EffectClaim's
+// own ReconcileTask, e.g. World.razor's follow-scene re-seat, don't need a
+// downcast) AND under the interface (so Contracts/-facing code can depend on
+// the abstraction), resolving to the SAME instance either way.
+builder.Services.AddSingleton<EffectRegistry>();
+builder.Services.AddSingleton<IEffectRegistry>(sp => sp.GetRequiredService<EffectRegistry>());
+
+// Batch ST-3 (R4): the multi-instance ownership registry for the FocusStack
+// atom below -- see OwnershipRegistry.cs's own header for why this is a
+// separate primitive from EffectRegistry above, not a reuse of it.
+builder.Services.AddSingleton<OwnershipRegistry>();
+
+// Batch ST-3 (R3): the FocusStack atom -- one popover session's stack +
+// trail, as one value (see FocusStack.cs's own header). Empty at every
+// fresh app load (ExplorerPopover.razor's own OnInitializedAsync always
+// claims ownership and seeds it before ever rendering from it -- there is
+// no cross-reload persistence for this atom, matching the pre-atom
+// component-local _stack/_trail fields' own "resets on a fresh open"
+// behavior exactly).
+builder.Services.AddSingleton(_ => new StateAtom<FocusStack>(AtomNames.FocusStack, FocusStack.Empty));
+
+// Batch ST-3 (R2): the Selection atom -- seeded directly from whatever
+// "selection-v1" doc localStorage already holds (the SAME LocalStore.Read/
+// Probe idiom SelectionTrayService's own pre-atom constructor used to run
+// itself), off the SAME already-registered IJSInProcessRuntime cast the
+// saved-explorations/selection-tray registrations below already perform --
+// no separate JS-interop bootstrapping step. SequenceEqualityComparer
+// (client/State/SequenceEqualityComparer.cs) is REQUIRED here, not
+// optional -- see that type's own header for why List<T>'s lack of
+// structural equality would otherwise break laws 2/5 for a list-valued atom.
+builder.Services.AddSingleton(sp =>
+{
+    var js = (IJSInProcessRuntime)sp.GetRequiredService<IJSRuntime>();
+    var initial = LocalStore.Probe(js)
+        ? (IReadOnlyList<ExplorationDescriptor>)LocalStore.Read(js, SelectionTrayService.StorageKey, new List<ExplorationDescriptor>())
+        : Selection.Empty;
+    return new StateAtom<IReadOnlyList<ExplorationDescriptor>>(AtomNames.Selection, initial, SequenceEqualityComparer<ExplorationDescriptor>.Instance);
+});
+
+// Batch G2 decisions 4/6: saved explorations + the selection tray's own
+// PERSISTENCE half (Batch ST-3, R2 -- see SelectionTrayService.cs's own
+// updated header), each a localStorage-backed singleton (LocalStore.cs's
+// own header comment has the full reasoning) -- resolved lazily off the
+// SAME IJSRuntime the framework already registers, cast once here to
+// IJSInProcessRuntime (Blazor WebAssembly's own DI-registered instance
+// always implements it -- there is no cross-process hop the way Blazor
+// Server has).
 builder.Services.AddSingleton(sp => new SavedExplorationsService((IJSInProcessRuntime)sp.GetRequiredService<IJSRuntime>()));
-builder.Services.AddSingleton(sp => new SelectionTrayService((IJSInProcessRuntime)sp.GetRequiredService<IJSRuntime>()));
+builder.Services.AddSingleton(sp => new SelectionTrayService(
+    (IJSInProcessRuntime)sp.GetRequiredService<IJSRuntime>(),
+    sp.GetRequiredService<StateAtom<IReadOnlyList<ExplorationDescriptor>>>()));
 
 await builder.Build().RunAsync();

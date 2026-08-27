@@ -7,10 +7,11 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ViewStateService ViewState
-@inject SelectionTrayService Selection
+@inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
 @inject StateAtom<Locus> LocusAtom
 @inject StateAtom<TimeWindow> TimeWindowAtom
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
+@inject EffectRegistry Effects
 
 <PageTitle>Bible Explorer &mdash; World</PageTitle>
 
@@ -498,15 +499,31 @@
     // in OnInitializedAsync, before the subscription that reads it starts.
     private bool _lastKnownFollow;
 
-    // Batch ST-2 (R2): the follow-text link's own async fetch EFFECT, keyed
-    // off TimeWindowAtom.Changed (OnTimeWindowChanged below) rather than a
-    // direct call -- ToggleFollow awaits THIS, not a direct EnterScriptureMode
-    // call, so its own Task still only completes once the actual fetch does
-    // (preserving the exact async-completion timing every pre-ST-2 caller of
-    // ToggleFollow already depended on), even though the fetch itself is now
-    // triggered indirectly, through the atom. Null whenever the most recent
-    // TimeWindowAtom change wasn't link-derived (nothing to await).
-    private Task? _pendingLinkEffect;
+    // Batch ST-3 (R1): the follow-text link's own async fetch, RE-SEATED as
+    // an owned effect ("follow-scene") -- replaces ST-2's own
+    // `_pendingLinkEffect`/`TriggerFollowSync` mechanism entirely. Source =
+    // TimeWindowAtom; AppliesTo gates on ScriptureMode only (the SAME shape
+    // IStateEffect<T>'s own doc comment example gives, "e.g. only
+    // ScriptureMode windows" -- client/Contracts/State.cs); Materialize
+    // wraps RunScriptureModeEffectAndSurfaceFaults. Lazy, same pattern as
+    // _locus below -- constructed on first access, no side effects of its
+    // own (DelegateEffect is a plain data holder; EffectRegistry.Claim is
+    // what actually subscribes).
+    private DelegateEffect<TimeWindow>? _followSceneEffectBacking;
+    private DelegateEffect<TimeWindow> _followSceneEffect => _followSceneEffectBacking ??= new DelegateEffect<TimeWindow>(
+        "follow-scene", TimeWindowAtom, value => value is ScriptureMode, value => RunScriptureModeEffectAndSurfaceFaults(((ScriptureMode)value).Ref));
+
+    // Batch ST-3 (R1): non-null exactly while THIS instance currently owns
+    // the "follow-scene" effect -- claimed by EnableFollowScene (mount with
+    // follow already on, ToggleFollow's ON branch, OnViewArrangementChanged's
+    // own edge trigger -- the SAME three call sites ST-2's own
+    // TriggerFollowSync served), released by DisableFollowScene (ToggleFollow's
+    // OFF branch, ApplyExternalQuery, OnViewArrangementChanged's own OFF
+    // edge) and defensively in DisposeAsync. AppliesTo/Materialize/claim-
+    // time reconcile (EffectRegistry.Claim's own mechanism) is what replaces
+    // TriggerFollowSync's hand-rolled "run the effect anyway if the dispatch
+    // was a law-2 no-op" logic -- see EnableFollowScene's own comment.
+    private EffectClaim? _followSceneClaim;
 
     // Batch H (view-state round-trip): non-null exactly when a saved camera
     // (center/zoom) is waiting to be applied once the map instance exists --
@@ -745,24 +762,16 @@
             // than a direct EnterScriptureMode call, now that Derive is real
             // and genuinely does this work.
             //
-            // Fix round 1 (S-1/Q-7, CRITICAL -- review): an earlier draft's
-            // own comment here claimed the derive-and-dispatch "always
-            // will" produce a genuine change "since a fresh atom always
-            // starts in TimeMode" -- FALSE (Q-7's exact finding):
-            // TimeWindowAtom is a DI SINGLETON that outlives the page, so
-            // THIS instance can mount and find it already holding EXACTLY
-            // `ScriptureMode(locus.Ref)` (a split reopened at the same
-            // followed ref; a /world?ref=X visit followed by opening a
-            // split at X) -- a case `TriggerFollowSync` (not a bare
-            // `SyncNow()`) now handles correctly: it guarantees the fetch
-            // effect runs even when the dispatch itself was a law-2 no-op.
-            // See `TriggerFollowSync`'s own header comment for the full
-            // regression this fixes (S-1, the blank-atlas-pane defect).
-            TriggerFollowSync();
-            if (_pendingLinkEffect is { } task)
-            {
-                await task;
-            }
+            // Batch ST-3 (R1): EnableFollowScene REPLACES TriggerFollowSync --
+            // claiming "follow-scene" RECONCILES against TimeWindowAtom's
+            // CURRENT value unconditionally (EffectRegistry.Claim's own
+            // mechanism), which is exactly the guarantee ST-2's own
+            // TriggerFollowSync had to hand-roll to fix S-1 (a split reopened
+            // at the same followed ref -- TimeWindowAtom is a DI SINGLETON
+            // that outlives the page, so finding it already holding
+            // `ScriptureMode(locus.Ref)` is an ORDINARY case, not an edge
+            // one -- see EnableFollowScene's own comment for the full trace).
+            await EnableFollowScene();
         }
         else if (ViewState.Map.HasData)
         {
@@ -801,50 +810,25 @@
 
     // Batch ST-2 (R2/R3): TimeWindowAtom's own Changed subscriber -- the ONE
     // place _from/_to/_scriptureRef get kept in sync with the atom's current
-    // arm (via SyncTimeWindowProjection), AND the home of the follow-text
-    // link's own async fetch EFFECT (a pure Derive can't perform one itself).
-    // The projection sync always runs (harmless/idempotent, correct even on
-    // an about-to-be-disposed instance).
+    // arm (via SyncTimeWindowProjection). Always runs (harmless/idempotent,
+    // correct even on an about-to-be-disposed instance) -- every instance,
+    // SplitMode or not, needs its own picker/chip rendering to reflect the
+    // shared atom's current value regardless of who wrote it.
     //
-    // The EFFECT is gated to fire ONLY for a transition the LINK ITSELF just
-    // caused: TimeWindowAtom.LastOrigin (law 3's own echo tag) names the
-    // link whenever the change this handler is reacting to came from
-    // StateLinkRunner's own dispatch, read HERE, synchronously, inside the
-    // very Changed invocation that write caused -- see StateLinkRunner's own
-    // "SHARPER EDGE" comment for why LastOrigin's stickiness is a hazard for
-    // an ASYNC/later read, not a synchronous one like this. Every OTHER
-    // writer (EnterTimeMode/EnterScriptureMode's own direct callers) already
-    // runs its own effect (RunTimeModeEffect/RunScriptureModeEffect)
-    // unconditionally, right after its own Dispatch call, in the same method
-    // body -- firing the effect again here for those would double-fetch, so
-    // this handler stays a no-op for them (LastOrigin is null on a direct,
-    // user-originated dispatch).
-    //
-    // `_followEffectsLive &&` (live, self-caught bug, fix round 1 hardened
-    // via the shared predicate -- see that property's own comment for the
-    // full mechanism): `_followLink.Name` is the SAME constant regardless of
-    // which World instance owns the link, so a STALE, still-subscribed
-    // standalone instance's own LastOrigin check would ALSO pass whenever
-    // ANY OTHER (correctly-timed) instance's own SyncNow/follow-derived
-    // dispatch touches the SAME shared TimeWindowAtom during a navigation
-    // Blazor hasn't finished disposing yet -- firing a wasted (at best) or
-    // state-corrupting (at worst, writing stale ViewState.Map fields a LATER
-    // page visit could read back) fetch on the dying instance. The effect is
-    // only ever meaningful for a genuinely embedded (SplitMode) pane --
-    // standalone /world has no follow chip to have triggered it in the first
-    // place.
+    // Batch ST-3 (R1): the follow-text link's own async fetch EFFECT this
+    // handler used to also carry (gated on TimeWindowAtom.LastOrigin ==
+    // _followLink.Name, a law-3 echo-tag check) is RETIRED from here
+    // entirely -- it now lives in EffectRegistry's own internal Changed
+    // subscription, wired by EnableFollowScene's own Claim call, which
+    // checks OWNERSHIP (a claim token, immune to Blazor's undocumented
+    // dispose-vs-mount ordering) rather than this handler's own
+    // `_followEffectsLive`/LastOrigin double-check. See EffectRegistry.cs's
+    // own header for why token-based supersession is strictly stronger than
+    // the SplitMode-guard-plus-LastOrigin-check this replaces.
     private void OnTimeWindowChanged()
     {
         SyncTimeWindowProjection();
         StateHasChanged();
-
-        if (!_followEffectsLive || TimeWindowAtom.LastOrigin != _followLink.Name || TimeWindowAtom.Value is not ScriptureMode sm)
-        {
-            _pendingLinkEffect = null;
-            return;
-        }
-
-        _pendingLinkEffect = RunScriptureModeEffectAndSurfaceFaults(sm.Ref);
     }
 
     // Batch ST-2 (R3): the ONE place _from/_to/_scriptureRef are ever
@@ -901,78 +885,86 @@
     // field comment, before ST-2 too) -- the guard below makes that
     // semantic actually true for this handler, not just documented.
     //
-    // Fix round 1 (S-2/Adjudication A): the ad hoc `SplitMode &&` guard is
-    // now `_followEffectsLive &&`, the ONE shared predicate -- see that
-    // property's own comment for why the review found this guard alone
-    // insufficient (a THIRD, unguarded side-effecting subscription,
-    // `StateLinkRunner`'s own `LocusAtom.Changed` handler, was still open;
-    // fixed at `_followLink`'s own construction site, not here).
-    //
-    // Fix round 1 (S-1, CRITICAL): `_followRunner.SyncNow()` alone is
-    // REPLACED by `TriggerFollowSync()` -- see that method's own comment for
-    // why a bare `SyncNow()` here was the root of the blank-atlas-pane
-    // regression (a law-2 no-op silently drops the fetch effect whenever the
-    // atom already held the derived value, which a DI-singleton TimeWindowAtom
-    // makes an ORDINARY case, not a rare one).
+    // Batch ST-3 (R1): the ad hoc `SplitMode &&`/`_followEffectsLive &&`
+    // guard around the OLD `TriggerFollowSync()` call is GONE -- ownership
+    // (EnableFollowScene/DisableFollowScene, below) now decides whether this
+    // instance's follow-derived writes actually reach the shared
+    // TimeWindowAtom, structurally, the same way it decides whether the
+    // effect itself runs. The SyncToken bump stays exactly where R4 (ST-2)
+    // put it -- "re-seat its trigger on the atom transition, don't fork
+    // it" -- now paired with a symmetric OFF-edge that releases the claim
+    // (there was no OFF-edge branch pre-ST-3 because the old mechanism had
+    // no persistent ownership state to release -- TriggerFollowSync ran
+    // fresh, self-contained, on every ON edge only).
     private void OnViewArrangementChanged()
     {
         var nowFollowing = _follow;
         if (_followEffectsLive && nowFollowing && !_lastKnownFollow)
         {
             _pickerSyncToken++;
-            TriggerFollowSync();
+            _ = EnableFollowScene();
+        }
+        else if (!nowFollowing && _lastKnownFollow)
+        {
+            DisableFollowScene();
         }
 
         _lastKnownFollow = nowFollowing;
         StateHasChanged();
     }
 
-    // Fix round 1 (S-1, CRITICAL -- review): the shared "re-sync TimeWindow
-    // to the currently-followed Locus, and GUARANTEE the fetch effect runs"
-    // primitive -- the ONE place `_followRunner.SyncNow()` is ever called
-    // (InitializeSplitModeIfNeeded, ToggleFollow's ON branch,
-    // OnViewArrangementChanged's own edge trigger above all route through
-    // this now, replacing each of their own bare `SyncNow()` calls).
+    // Batch ST-3 (R1): claims the "follow-scene" effect and re-syncs THROUGH
+    // the link -- the ONE place this instance ever calls `_followRunner.SyncNow()`
+    // (InitializeSplitModeIfNeeded's `_follow` branch, ToggleFollow's ON
+    // branch, OnViewArrangementChanged's own edge trigger above all route
+    // through this, replacing ST-2's own TriggerFollowSync/`_pendingLinkEffect`
+    // pair entirely).
     //
-    // THE BUG: `SyncNow()`'s own dispatch is silent whenever the derived
-    // `ScriptureMode(locus.Ref)` already equals `TimeWindowAtom.Value` (law
-    // 2) -- no `Changed`, so `OnTimeWindowChanged` never runs, so
-    // `_pendingLinkEffect` is never set, so NO FETCH EVER HAPPENS, while
-    // `_scriptureRef` (seeded by `SyncTimeWindowProjection` in
-    // `OnInitializedAsync`, independent of whether Changed ever fires) makes
-    // the follow-chip confidently read "Following X" over an empty `_scene`.
-    // An earlier draft's own comment claimed this "always will" derive a
-    // genuine change "since a fresh atom always starts in TimeMode" --
-    // FALSE: `TimeWindowAtom` is a DI SINGLETON that outlives the page, so
-    // "the atom already holds exactly the value this pane is about to
-    // derive" is an ORDINARY case (open split at ref X -> close -> reopen;
-    // /world?ref=X -> the reader visits X -> open a split there), not an
-    // edge case -- `EnterScriptureMode`'s OWN doc comment already names the
-    // general rule this violated: "the effect must still run regardless of
-    // whether the dispatch changed anything."
+    // WHY CLAIMING SUBSUMES ST-2's OWN HAND-ROLLED FIX (S-1, the
+    // blank-atlas-pane regression): `SyncNow()`'s own dispatch is silent
+    // whenever the derived `ScriptureMode(locus.Ref)` already equals
+    // `TimeWindowAtom.Value` (law 2) -- no `Changed`, so a bare Changed
+    // SUBSCRIPTION alone would never fire. `EffectRegistry.Claim` does not
+    // depend on Changed firing at all for this case: claiming RECONCILES --
+    // it runs `Materialize` against the atom's CURRENT value UNCONDITIONALLY
+    // at claim time (client/State/EffectRegistry.cs's own header), which is
+    // exactly "the effect must still run regardless of whether the dispatch
+    // changed anything" (`EnterScriptureMode`'s own pre-existing rule),
+    // built into the registry's own claim mechanism instead of hand-rolled
+    // per call site. Order matters: SyncNow() runs FIRST (so the atom
+    // already holds the CORRECT, current locus's ScriptureMode by the time
+    // Claim reconciles against it) -- claiming BEFORE syncing would reconcile
+    // against a possibly-stale value, then redundantly re-materialize once
+    // SyncNow's own dispatch (now claimed) fires Changed.
     //
-    // THE FIX: after `SyncNow()`, if it did NOT queue an effect
-    // (`_pendingLinkEffect` still null) AND the atom is (now, regardless of
-    // whether THIS call changed it) in `ScriptureMode`, run the effect
-    // anyway -- mirroring `EnterScriptureMode`'s own unconditional-effect
-    // rule exactly, just reached through the link instead of a direct
-    // dispatch. `_followEffectsLive` gates it the same way OnTimeWindowChanged's
-    // own gate does, defensively (every real caller is already
-    // SplitMode-only, but this keeps the invariant local and self-evident).
-    private void TriggerFollowSync()
+    // Disposes any PRIOR claim first (defensive -- idempotent, matches
+    // EffectClaim's own Dispose contract; no real call site invokes this
+    // while already claimed, since every caller is edge-triggered or
+    // one-shot-per-mount).
+    private async Task EnableFollowScene()
     {
-        _pendingLinkEffect = null;
         _followRunner.SyncNow();
+        _followSceneClaim?.Dispose();
+        _followSceneClaim = Effects.Claim(_followSceneEffect);
 
-        if (_pendingLinkEffect is not null)
+        if (_followSceneClaim.ReconcileTask is { } task)
         {
-            return; // a genuine change -- OnTimeWindowChanged already queued the effect
+            await task; // RunScriptureModeEffectAndSurfaceFaults already catches/surfaces its own faults -- nothing further to catch here
         }
+    }
 
-        if (_followEffectsLive && TimeWindowAtom.Value is ScriptureMode sm)
-        {
-            _pendingLinkEffect = RunScriptureModeEffectAndSurfaceFaults(sm.Ref);
-        }
+    // Batch ST-3 (R1): releases the "follow-scene" claim -- called whenever
+    // this instance stops being the live follow session (ToggleFollow's OFF
+    // branch, ApplyExternalQuery's explicit-navigation-supersedes-follow
+    // dispatch, OnViewArrangementChanged's own OFF edge above) and
+    // defensively in DisposeAsync. A no-op if nothing is currently claimed
+    // (EffectClaim.Dispose is itself idempotent, but the null-check here
+    // avoids allocating/disposing a claim reference this instance never
+    // held).
+    private void DisableFollowScene()
+    {
+        _followSceneClaim?.Dispose();
+        _followSceneClaim = null;
     }
 
     // Batch ST-2 (R2) -- see OnTimeWindowChanged's own comment for why this
@@ -1150,23 +1142,19 @@
     // directly -- ViewArrangementAtom.Dispatch below (SetSplitFollow) is what
     // flips Follow true, which synchronously fires OnViewArrangementChanged
     // (subscribed in OnInitializedAsync), which is what now performs BOTH the
-    // SyncToken bump AND the TriggerFollowSync() re-sync (per the controller
-    // ruling, "re-seat its trigger on the atom transition, don't fork it" --
-    // see that handler's own comment). _pendingLinkEffect -- set by
-    // TriggerFollowSync (fix round 1, S-1: guaranteed set whenever the atom
-    // ends up in ScriptureMode, even if THIS specific dispatch was itself a
-    // law-2 no-op), all before THIS method reaches the line below -- is what
-    // lets this method still AWAIT the actual fetch's completion, preserving
-    // the exact async-timing contract every pre-ST-2 caller of ToggleFollow
-    // already depended on, even though the fetch is now triggered
-    // indirectly, through the atom. Before the S-1 fix, THIS branch's own
-    // collision (toggling follow ON when the atom already held the
-    // followed ref) was "benign only by luck" per the review -- it is now
-    // handled by the same unconditional-effect guarantee the mount path
-    // uses.
+    // SyncToken bump AND (Batch ST-3, R1) the EnableFollowScene claim/re-sync
+    // (per the controller ruling, "re-seat its trigger on the atom
+    // transition, don't fork it" -- see that handler's own comment).
+    // `_followSceneClaim` -- assigned by EnableFollowScene's own SYNCHRONOUS
+    // prefix (up to its first await), which the Dispatch call above already
+    // ran to completion before returning (Blazor WASM is single-threaded, no
+    // interleaving) -- is what lets THIS method still AWAIT the actual
+    // fetch's completion via `.ReconcileTask`, preserving the exact
+    // async-timing contract every pre-ST-3 caller of ToggleFollow already
+    // depended on, even though the fetch is now triggered indirectly,
+    // through the atom AND the effect registry.
     private async Task ToggleFollow()
     {
-        _pendingLinkEffect = null;
         var newFollow = !_follow;
         ViewArrangementAtom.Dispatch(new SetSplitFollow(newFollow));
         SyncViewState();
@@ -1177,7 +1165,7 @@
             return;
         }
 
-        if (_pendingLinkEffect is { } task)
+        if (_followSceneClaim?.ReconcileTask is { } task)
         {
             await task;
         }
@@ -1291,6 +1279,20 @@
     // ref coincide, the pane arriving here fetches nothing UNLESS S-1's own
     // fix (TriggerFollowSync, above) is in place -- it is, as of this same
     // fix round.
+    //
+    // Batch ST-3 ADDENDUM: `TriggerFollowSync` above is now `EnableFollowScene`
+    // (R1's effect-registry re-seat) -- the trace and verdict are otherwise
+    // UNCHANGED; ownership (EffectRegistry.Claim's own token supersession)
+    // would in fact make a dispatch HERE safe today the way it wasn't under
+    // ST-2's own SplitMode-guard mechanism (a stale standalone instance's
+    // own claim, if it somehow re-triggered, would simply be superseded the
+    // moment the destination instance claims) -- not re-enabled this batch
+    // regardless: R1 scopes ownership to EFFECTS, not the LINK derivation
+    // this reading is actually about (`_followRunner.SyncNow`'s own
+    // dispatch into the SHARED TimeWindowAtom), which is unchanged, still
+    // `_followEffectsLive`-guarded, and still carries the SAME S-2-class
+    // residual risk ST-2's own review named. Revisiting this reading is
+    // future-batch scope, not implied by R1.
     private void OpenReadBesideMap()
     {
         Nav.NavigateTo($"/read/{_locus.Value.Book}/{_locus.Value.Chapter}?split=1");
@@ -2038,7 +2040,8 @@
             return;
         }
 
-        Selection.Toggle(new ExplorationDescriptor("Place", id, place.DisplayName));
+        // Batch ST-3 (R2): dispatches directly onto the shared Selection atom.
+        SelectionAtom.Dispatch(new ToggleSelection(new ExplorationDescriptor("Place", id, place.DisplayName)));
     }
 
     // arrow-tip (WORLD-4/contract "arrow-tip"). `key` is "{narrative}:{order}"
@@ -2389,6 +2392,16 @@
         // batch adds subscriptions on.
         TimeWindowAtom.Changed -= OnTimeWindowChanged;
         ViewArrangementAtom.Changed -= OnViewArrangementChanged;
+
+        // Batch ST-3 (R1): defensive release -- ordinarily already null by
+        // the time DisposeAsync runs (ToggleFollow's OFF branch/
+        // OnViewArrangementChanged's own OFF edge already call
+        // DisableFollowScene whenever follow is turned off before a close),
+        // but a split pane closed WHILE still following (CloseSplitAtlas,
+        // Reader's own "X" button) never fires that edge -- disposing here
+        // is what guarantees this instance can never remain the "follow-
+        // scene" owner after it's gone, regardless of which path led here.
+        DisableFollowScene();
 
         if (_mapInterop is not null)
         {
