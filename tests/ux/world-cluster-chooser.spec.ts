@@ -192,3 +192,43 @@ test('CLUSTER-2 (determinism): a stable scene never jitters cluster membership a
 
   expect(second).toEqual(first);
 });
+
+// C3-m1 (batch-c3-report.md's own "stays out of direct-test scope,
+// justified" gap): Philippi/Neapolis, the apostolic-window (AD 46-48) real,
+// non-coincident, 13.92km-apart pair -- lib/hoverSafety.ts's own header
+// comment root-caused this exact live repro (Leaflet's default per-marker
+// z-index-by-screen-Y stacking used to resolve a hover at Philippi's own
+// center to NEAPOLIS instead). ARBITRATION-1's law (nearest-TRUE-center
+// wins, deterministically) already covers this pair GENERICALLY -- this
+// test closes the disclosed gap by naming it directly: aim each marker's
+// own true center, get that marker's own place back, for BOTH members of
+// the pair (not just the ordinary single-winner case ARBITRATION-1 itself
+// exercises via "Marah").
+test('C3-M1: Philippi and Neapolis (a real, non-coincident, 13.92km-apart close pair) each resolve to their own true center -- aim each, get each', async ({ page }) => {
+  await page.goto('/world?from=46&to=48');
+  await page.waitForSelector('[data-testid="marker-philippi"]', { state: 'attached' });
+  await page.waitForSelector('[data-testid="marker-neapolis"]', { state: 'attached' });
+
+  await zoomInOnMarker(page, 'marker-philippi', 3);
+  const philippiBox = await page.getByTestId('marker-philippi').boundingBox();
+  expect(philippiBox, 'philippi should render individually at NEAR tier').toBeTruthy();
+  await page.mouse.move(philippiBox!.x + philippiBox!.width / 2, philippiBox!.y + philippiBox!.height / 2, { steps: 5 });
+  await expect(page.getByTestId('place-chooser')).toHaveCount(0);
+  await expect(page.getByTestId('place-card')).toBeVisible();
+  await expect(page.getByTestId('place-card-title')).toHaveText('Philippi');
+
+  // Fresh navigation: re-aiming at Neapolis after Philippi's own hover/zoom
+  // state would conflate "did the FIRST aim actually resolve correctly"
+  // with "does the SECOND aim also resolve correctly independent of the
+  // first" -- this test wants both proven, not just the pair's own
+  // ordering.
+  await page.goto('/world?from=46&to=48');
+  await page.waitForSelector('[data-testid="marker-neapolis"]', { state: 'attached' });
+  await zoomInOnMarker(page, 'marker-neapolis', 3);
+  const neapolisBox = await page.getByTestId('marker-neapolis').boundingBox();
+  expect(neapolisBox, 'neapolis should render individually at NEAR tier').toBeTruthy();
+  await page.mouse.move(neapolisBox!.x + neapolisBox!.width / 2, neapolisBox!.y + neapolisBox!.height / 2, { steps: 5 });
+  await expect(page.getByTestId('place-chooser')).toHaveCount(0);
+  await expect(page.getByTestId('place-card')).toBeVisible();
+  await expect(page.getByTestId('place-card-title')).toHaveText('Neapolis');
+});
