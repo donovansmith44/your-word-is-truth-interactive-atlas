@@ -614,12 +614,28 @@ public class ConformanceTests
     private static readonly string[] OtherAtomNames = { "Locus", "TimeWindow", "Selection", "FocusStack" };
     private static readonly string OtherAtomAlternation = string.Join("|", OtherAtomNames.Select(n => n + "Atom"));
 
+    // ST4-m1 (batch-finalp2-brief.md ticket 8; origin: batch-st4-review.md
+    // Q-1, Trivia): the lazy-match window between the assignment operator
+    // and the Atom.Value token was originally 400 characters -- wide
+    // enough that "a sufficiently long, unrelated multi-line expression
+    // containing an incidental FooAtom.Value substring somewhere within
+    // 400 chars of an assignment could false-positive" (the review's own
+    // words). Tightened to 120: comfortably wider than any real single-
+    // statement C# field/property initializer or assignment in this
+    // codebase's own style (verified: every real match this scan has ever
+    // found -- the planted test literals below -- sits well under 20
+    // chars from operator to Atom.Value), while shrinking the false-
+    // positive surface named in Q-1 by ~3.3x. No real site's detection
+    // changes (confirmed: `NoComponentHeldOtherAtomState_
+    // NoRealSiteOutsideTheSanctionedOwners` below stays green, and there
+    // were zero real matches at 400 chars to begin with -- see this
+    // pattern's own header comment above).
     private static readonly Regex OtherAtomStateInitializerPattern = new(
-        @"(?:private|public|protected|internal)\s+(?:readonly\s+)?[^\n;{}]+?\s+(_?\w+)\s*(?:=>|=)\s*[^;]{0,400}?(?:" + OtherAtomAlternation + @")\.Value",
+        @"(?:private|public|protected|internal)\s+(?:readonly\s+)?[^\n;{}]+?\s+(_?\w+)\s*(?:=>|=)\s*[^;]{0,120}?(?:" + OtherAtomAlternation + @")\.Value",
         RegexOptions.Compiled);
 
     private static readonly Regex OtherAtomStateAssignmentPattern = new(
-        @"(?<![.\w])(_\w+)\s*=\s*[^;=]{0,400}?(?:" + OtherAtomAlternation + @")\.Value",
+        @"(?<![.\w])(_\w+)\s*=\s*[^;=]{0,120}?(?:" + OtherAtomAlternation + @")\.Value",
         RegexOptions.Compiled);
 
     [Fact]
@@ -822,6 +838,40 @@ public class ConformanceTests
     private static string StripLineComments(string text) => Regex.Replace(text, "//[^\n]*", string.Empty);
 
     [Fact]
+    public void StripLineComments_DisclosedLimitation_ASlashSlashInsideAStringLiteralSilentlyEatsTheRestOfTheLine()
+    {
+        // ST4-m2 (batch-finalp2-brief.md ticket 8; origin: batch-st4-review.md
+        // Q-2, Trivia): StripLineComments' own header comment candidly
+        // discloses it "does not understand string literals containing
+        // '//'" -- correct to accept as-is (no real site in this codebase
+        // has this shape today, confirmed by the green NoRealSite scan
+        // below), but a latent false-negative surface. PINNED here directly
+        // (was: prose only) -- a real ViewNames identity-comparison
+        // violation, sharing a line with an EARLIER string literal that
+        // itself contains "//" (a URL, most plausibly), is silently
+        // stripped away before ViewIdentityComparisonPattern ever sees it.
+        // If this assertion ever starts FAILING (the violation survives
+        // stripping), StripLineComments was improved to understand string
+        // literals -- update this test's own doc comment to match, don't
+        // just delete the test.
+        const string planted = "var note = \"see http://example.com//path\"; var isWorld = memberName == ViewNames.World;";
+
+        // Sanity first: the SAME violation, UNSTRIPPED, is caught -- proving
+        // the pattern itself is sound; the disclosed gap is specifically in
+        // the stripping step, not the identity-comparison pattern.
+        Assert.Matches(ViewIdentityComparisonPattern, planted);
+
+        var stripped = StripLineComments(planted);
+
+        // The naive stripper treats the FIRST "//" (inside "http://", part
+        // of the string literal) as a comment opener and truncates
+        // EVERYTHING after it on the line -- including the real violation
+        // that follows.
+        Assert.DoesNotContain("ViewNames.World", stripped);
+        Assert.DoesNotMatch(ViewIdentityComparisonPattern, stripped);
+    }
+
+    [Fact]
     public void ViewIdentityVsCapability_NoRealSiteOutsideTheRegistryDeclarationLayer()
     {
         static string Normalize(string path) => path.Replace('\\', '/');
@@ -913,5 +963,82 @@ public class ConformanceTests
         // sniff, not a ViewNames comparison -- D1's own scan correctly
         // never flags it (no ViewNames.* token appears on this line at all).
         Assert.DoesNotContain("ViewNames.", text.Split('\n').First(l => l.Contains("IsWorld =>")));
+    }
+
+    // ------------------------------------------------------------------
+    // ST4-m3 (batch-finalp2-brief.md ticket 8; origin: batch-st4-review.md
+    // Q-3, Trivia): the two SweepExemption tests above only ever pinned
+    // the EXEMPTED site's own shape ("did ViewStateService.cs/
+    // MainLayout.razor change?") -- they would catch that, but NOT "a
+    // SECOND site matching the SAME exemption rationale appeared elsewhere
+    // without being added to this ledger" (they never asserted the
+    // exempted site's own ABSENCE from anywhere else, the way a real
+    // allowlist entry would). Each exemption below has a genuine
+    // MECHANICAL fingerprint distinct from the regex each scan already
+    // runs (that's WHY a controller ruling was needed instead of just
+    // passing the existing scan) -- these two tests search the whole
+    // client tree for that fingerprint and assert the one ruled-exempt
+    // file is the ONLY site carrying it.
+    // ------------------------------------------------------------------
+    [Fact]
+    public void SweepExemption_A2_NoOtherViewStateNamedClassExistsOutsideViewStateServiceCs()
+    {
+        // The A2 exemption's own mechanical fingerprint: the "*ViewState"
+        // class-naming convention ViewStateService.cs already establishes
+        // (MapViewState/ReaderViewState) for "a persistence-layer class
+        // that mirrors atom state in plain scalar fields." A second class
+        // adopting that SAME naming convention outside that one file would
+        // be claiming the same exemption without ever having been ruled on.
+        var classPattern = new Regex(@"(?:public|internal)\s+sealed\s+class\s+(\w*ViewState\w*)\b", RegexOptions.Compiled);
+        var violations = new List<string>();
+        foreach (var file in ClientSourceFiles())
+        {
+            var relative = Path.GetRelativePath(RepoRoot(), file).Replace('\\', '/');
+            if (relative == "client/ViewStateService.cs")
+            {
+                continue; // the one file spec §4d's A2 ruling was scoped to
+            }
+
+            var text = File.ReadAllText(file);
+            foreach (Match m in classPattern.Matches(text))
+            {
+                violations.Add($"{relative}: {m.Groups[1].Value}");
+            }
+        }
+
+        Assert.True(violations.Count == 0,
+            "Found a *ViewState-named class OUTSIDE ViewStateService.cs -- the A2 exemption (spec §4d, \"ViewStateService remains the PERSISTENCE layer beneath atoms\") was ruled for THAT file specifically; a second site needs its own reasoned ledger entry, not a silent free ride on this one:\n" +
+            string.Join("\n", violations));
+    }
+
+    [Fact]
+    public void SweepExemption_D2_NoOtherRoutePathViewIdentitySniffExistsOutsideMainLayoutRazor()
+    {
+        // The D2 exemption's own mechanical fingerprint: a
+        // Nav.ToBaseRelativePath(Nav.Uri).StartsWith(...) route-path string
+        // sniff used to derive a view identity -- structurally invisible to
+        // D1's own ViewIdentityComparisonPattern scan (no ViewNames.* token
+        // is involved at all), which is WHY this needed a controller ruling
+        // rather than simply passing that scan.
+        var sniffPattern = new Regex(@"Nav\.ToBaseRelativePath\(Nav\.Uri\)\.StartsWith\(", RegexOptions.Compiled);
+        var violations = new List<string>();
+        foreach (var file in ClientSourceFiles())
+        {
+            var relative = Path.GetRelativePath(RepoRoot(), file).Replace('\\', '/');
+            if (relative == "client/Layout/MainLayout.razor")
+            {
+                continue; // the one file the controller's D2 ruling was scoped to
+            }
+
+            var text = File.ReadAllText(file);
+            if (sniffPattern.IsMatch(text))
+            {
+                violations.Add(relative);
+            }
+        }
+
+        Assert.True(violations.Count == 0,
+            "Found a Nav.ToBaseRelativePath(Nav.Uri).StartsWith(...) route-path view-identity sniff OUTSIDE MainLayout.razor -- the D2 exemption (controller ruling, \"cosmetic header theming\") was scoped to THAT file specifically; a second site needs its own reasoned ruling, not a silent free ride:\n" +
+            string.Join("\n", violations));
     }
 }
