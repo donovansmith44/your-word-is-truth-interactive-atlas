@@ -98,7 +98,19 @@
    back to KRETZ-SCALE-1's original ONE-request shape. Zero server changes
    is this batch's own standing machine rule, so this ticket stays parked;
    the lazy-load mitigation above is the honest, disclosed interim fix, not
-   a stand-in for the real one. *@
+   a stand-in for the real one.
+
+   FIX ROUND 2 (re-review finding, IMPORTANT -- CompositionSplit.razor's own
+   RULING 4(a), the VC-1 hazard class): the lazy-load observer used to
+   rebind only on a NEW chapter load (a `_pendingObserve` flag), which
+   silently orphaned it on a same-chapter split toggle (CompositionSplit
+   discards/recreates every ChildContent DOM node across that transition,
+   per its own header) -- any not-yet-requested item's prose then never
+   loaded again until the reader changed chapters. Fixed: `OnAfterRenderAsync`
+   below now rebinds UNCONDITIONALLY, every render, the same "bind on every
+   render, rely on the JS side's own idempotency" discipline `Reader.razor`'s
+   `watchScroll`/`watchChapterNavCenter` already establish for this exact
+   hazard class -- see that method's own comment for the full reasoning. *@
 
 <PageTitle>Bible Explorer &mdash; Kretzmann</PageTitle>
 
@@ -299,7 +311,6 @@
     private DotNetObjectReference<Kretzmann>? _selfRef;
     private readonly HashSet<string> _proseRequested = new(); // one fetch per item, ever, per chapter generation
     private readonly SemaphoreSlim _proseFetchGate = new(8); // bounded ACTUAL concurrency, independent of when a fetch is requested
-    private bool _pendingObserve;
 
     private string BookName => _toc?.FirstOrDefault(b => b.Code == _book)?.Name ?? _book;
 
@@ -335,23 +346,60 @@
         await LoadCommentaryAsync();
     }
 
-    // Fix round (Q-2): fires the lazy-load observer exactly once per
-    // chapter -- LoadCommentaryAsync sets _pendingObserve after the
-    // listing's own headings first render, and this is the ONE place that
-    // notices and wires the observer against the now-current DOM. Not
-    // called on every render (the observer, once wired, keeps watching on
-    // its own -- see lazyProse.js's own header); a NEW chapter re-arms it.
+    // Fix round 2 (re-review finding, IMPORTANT -- CompositionSplit.razor's
+    // own RULING 4(a), THE VC-1 hazard class this codebase documents
+    // verbatim: "bind on EVERY render (guarded only by 'is my JS module
+    // loaded,' never `firstRender`), relying on the JS side being
+    // IDEMPOTENT and SELF-CLEANING"). Fix round 1's own first cut of this
+    // method gated the rebind behind a `_pendingObserve` flag set ONLY
+    // inside `LoadCommentaryAsync` -- i.e. only on a genuinely NEW chapter
+    // load -- which is exactly the anti-pattern that ruling warns against:
+    // this view's entire body (every `[data-kretzmann-item-id]` element the
+    // observer watches) renders as `CompositionSplit`'s own `ChildContent`,
+    // and toggling split open/closed on an UNCHANGED chapter is a
+    // structurally different render tree (CompositionSplit.razor:126-151) --
+    // Blazor discards and recreates every node inside `ChildContent` across
+    // that transition. `OnArrangementChanged` below only calls
+    // `LoadCommentaryAsync` (the sole place that used to set
+    // `_pendingObserve = true`) when the book/chapter actually changed;
+    // toggling split without navigating left the pre-toggle
+    // `IntersectionObserver` instance watching now-detached nodes,
+    // permanently stalling any not-yet-requested item's own prose fetch
+    // until the reader changed chapters. Fixed the SAME way
+    // `Reader.razor`'s own `watchScroll`/`watchChapterNavCenter` already
+    // fix the identical hazard class (that file's own `OnAfterRenderAsync`
+    // comment has the full incident history, NAV-3/NAV-6): rebind
+    // UNCONDITIONALLY, every render, guarded only by "is my JS module
+    // loaded" (`_lazyJs is not null`) -- relying entirely on
+    // `lazyProse.js`'s own `observeProseItems` already being idempotent/
+    // self-cleaning (`unobserveProseItems()` at its own top, see that
+    // file's own header) to make a repeat call safe and cheap. A duplicate
+    // callback for an item already requested is a guaranteed no-op on the
+    // C# side too (`OnItemNearViewport`'s own `_proseRequested.Add` guard
+    // below) -- re-observing an already-loaded or already-in-flight item
+    // fires at most one more harmless, immediately-discarded invocation,
+    // never a duplicate fetch.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_pendingObserve)
+        if (firstRender)
+        {
+            try
+            {
+                _lazyJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/lazyProse.js");
+            }
+            catch (JSDisconnectedException)
+            {
+                return; // navigated away mid-import -- nothing left to bind
+            }
+        }
+
+        if (_lazyJs is null)
         {
             return;
         }
 
-        _pendingObserve = false;
         try
         {
-            _lazyJs ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/lazyProse.js");
             await _lazyJs.InvokeVoidAsync("observeProseItems", _selfRef, "[data-kretzmann-item-id]");
         }
         catch (JSDisconnectedException)
@@ -595,8 +643,7 @@
             _loadedChapterNum = chapterNum;
             _loading = false;
             _proseRequested.Clear(); // fresh chapter -- a fresh lazy-load generation
-            _pendingObserve = true; // OnAfterRenderAsync wires the observer against the freshly-rendered rows
-            StateHasChanged(); // headings visible immediately -- prose loads lazily below, never blocking the whole chapter
+            StateHasChanged(); // headings visible immediately -- prose loads lazily below, never blocking the whole chapter; OnAfterRenderAsync rebinds the observer unconditionally, every render (fix round 2), so no explicit "please re-observe" flag is needed here
         }
         catch (Exception)
         {

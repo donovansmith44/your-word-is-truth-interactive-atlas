@@ -385,3 +385,48 @@ test('KRETZMANN-14 (S-1 fix): real, non-fabricated, de-duplicated section headin
   await expect(page.locator('.kretzmann-item').first()).toContainText(card.description);
   await expect(headings.first()).toBeVisible();
 });
+
+// Fix round 2 (re-review finding, IMPORTANT -- CompositionSplit.razor's own
+// RULING 4(a), the VC-1 hazard class): fix round 1's own lazy-prose
+// IntersectionObserver rebound only on a genuinely NEW chapter load (a
+// `_pendingObserve` flag set solely inside LoadCommentaryAsync). Toggling
+// split open/closed WITHOUT changing chapters is a structurally different
+// render tree (CompositionSplit discards and recreates every ChildContent
+// DOM node across that transition, its own header) -- the pre-toggle
+// observer was silently left watching now-detached nodes, so any item whose
+// row had not yet crossed the rootMargin threshold before the toggle never
+// loaded its prose again until the reader changed chapters. Fixed:
+// OnAfterRenderAsync now rebinds UNCONDITIONALLY, every render (the same
+// "bind on every render, rely on JS-side idempotency" discipline
+// Reader.razor's own watchScroll/watchChapterNavCenter already establish).
+test('KRETZMANN-15 (fix round 2): a same-chapter split toggle does not orphan the lazy-prose observer -- scrolling to a not-yet-loaded item after toggling split still loads its prose', async ({ page }) => {
+  const ground = await api.kretzmannChapter('PSA.119');
+  const lastVerse = ground.verses[ground.verses.length - 1];
+  const lastItem = lastVerse.items[lastVerse.items.length - 1];
+  const groundCard = await api.node(lastItem.id);
+  expect(groundCard.description).toBeTruthy();
+
+  await page.goto('/kretzmann');
+  await page.getByTestId('picker-book').selectOption('PSA');
+  await page.getByTestId('picker-chapter').selectOption('119');
+  await page.getByTestId('picker-apply').click();
+  await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('119');
+
+  // Toggle split WITHOUT changing chapter -- the exact scenario the
+  // re-review found broken. OnArrangementChanged's own book/chapter check
+  // takes the "nothing changed" branch here (Following stays true, the
+  // shared Locus atom is untouched by opening the split), which is exactly
+  // why fix round 1's own chapter-load-only rebind never re-armed.
+  await page.getByTestId('split-open-kretzmann').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('119'); // same chapter, confirmed -- not a reload
+
+  // The chapter's own LAST item's row -- far below the initial viewport
+  // plus the observer's own 800px rootMargin, so it was almost certainly
+  // never requested before the toggle. Scrolling it into view now is what
+  // exercises the REBOUND observer, not the pre-toggle one.
+  const lastRow = page.locator(`[data-kretzmann-item-id="${lastItem.id}"]`);
+  await lastRow.scrollIntoViewIfNeeded();
+
+  await expect(lastRow).toContainText(groundCard.description, { timeout: 10000 });
+});
