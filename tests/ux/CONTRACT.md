@@ -88,24 +88,121 @@ Sources page (batch-s-brief.md, SOURCES-1 below): `sources-page` (the page root)
   built/license text, ALL read from `GET /api/sources`, never hardcoded prose),
   `source-link-{sourceId}` (anchor to that source's own external link; present only when
   the source entry carries one)
-Kretzmann page (batch-corp1-brief.md, R2, KRETZMANN-1 below): `kretzmann-page` (the page
-  root), `split-open-kretzmann` ("Read beside the reader," present only when not already
-  split), `kretzmann-chapter-head` (the current book+chapter, always the SAME chapter the
-  reader is on), `kretzmann-verse-group-{n}` (one per verse of the current chapter that
-  carries >=1 CommentaryItem, `n` = verse number), `kretzmann-item-{slug}` (one explorable
-  row per CommentaryItem, plain click opens the ONE-RULE popover), `kretzmann-empty`
-  (present when the current chapter carries no indexed commentary at all). The popover's
-  own body carries the unit's own REAL prose (batch-corp1-brief.md CORP-1b, `popover-body`
-  -- served via the generic node card's additive `description` field, the SAME seam
-  ENT-1a built for Place/Person/PeopleGroup).
-Concord page (batch-corp1-brief.md, R3, CONCORD-1 below): `concord-page` (the page root),
-  `concord-picker` (the part/article/paragraph jump form; `concord-picker-part`/
-  `-article`/`-paragraph`/`-go`), `split-open-concord` ("Read beside the reader," present
-  only when not already split), `concord-position` (the current window's own first
-  citation, e.g. "BoC 7.2.1"), `concord-unit-{slug}` (one explorable row per TextUnit in
-  the current window, plain click opens the ONE-RULE popover with the unit's own full
-  paragraph text -- already resolved, no second fetch), `concord-prev`/`concord-next`
-  (reading-spine paging; present only when a window in that direction exists).
+Kretzmann page (batch-corpread1b-brief.md, ticket K -- a CONTINUOUS READING SURFACE, not
+  an item list): `kretzmann-page` (the page root, `.reader-column` typography shared
+  directly with the Bible reader), `kretzmann-controls` (the grouped picker + read-beside/
+  follow chrome cluster), `split-open-kretzmann` ("Read beside the reader," present only
+  when not already split), `kretzmann-follow-chip` (THE FOLLOW-RELEASE LAW's own declared
+  toggle-follow hatch instance -- present only while split; see the escape-hatch vocabulary
+  entry below), `kretzmann-chapter-head` (the current book+chapter -- the shared Locus atom
+  while following, a view-local released position otherwise), `kretzmann-verse-group-{n}`
+  (one per verse of the current chapter that carries >=1 CommentaryItem, `n` = verse
+  number), `kretzmann-verse-anchor-{n}` (the verse's own quiet marginal mark, independently
+  explorable -- a plain VerseNode push, ONE-RULE), `kretzmann-item-{slug}` (one explorable
+  paragraph per CommentaryItem, its OWN real prose rendered inline -- not hidden behind a
+  click; plain click still opens the ONE-RULE popover, carrying the SAME prose plus
+  attribution chrome), `kretzmann-ref-{ownerSlug}-{n}` (an explorable scripture reference
+  found INSIDE a commentary paragraph's own prose -- the explorable-reference law, below),
+  `kretzmann-prev`/`kretzmann-next` (chapter-to-chapter continuation, in-flow at the foot of
+  the column; present only where an adjacent chapter exists, crossing book boundaries via
+  the TOC), `kretzmann-empty` (present when the current chapter carries no indexed
+  commentary at all).
+Concord page (batch-corpread1b-brief.md, ticket C -- a CONTINUOUS READING SURFACE, boxes
+  retired): `concord-page` (the page root, `.reader-column` typography shared), `concord-
+  controls` (the grouped Contents/read-beside cluster), `concord-toc-toggle` (reveals/hides
+  the nav menu, `aria-expanded` reflects state), `concord-toc-menu` (the nav menu itself,
+  present only while open), `concord-toc-part-{n}` (one per traditional document, Explore/
+  ConcordToc.cs's own ten-entry table, `n` = part number 1-10; jumps to that document's own
+  opening paragraph, landing in full reading flow -- never a bare fragment), `concord-
+  picker` (the pre-existing fine-grained part/article/paragraph jump form, kept alongside
+  the menu; `concord-picker-part`/`-article`/`-paragraph`/`-go`), `split-open-concord`
+  ("Read beside the reader," present only when not already split), `concord-position` (the
+  current window's own first citation, e.g. "BoC 7.2.1"), `concord-part-heading-{n}` /
+  `concord-article-heading-{part}-{article}` (part/article STRUCTURE carried by typography,
+  interleaved directly in reading flow the instant the window crosses into a new one --
+  never a container), `concord-unit-{slug}` (one explorable paragraph per TextUnit in the
+  current window, its own real paragraph text flowing directly, no box; plain click opens
+  the ONE-RULE popover with the SAME text -- already resolved, no second fetch),
+  `concord-ref-{ownerSlug}-{n}` (an explorable scripture reference found INSIDE a
+  confession paragraph's own text -- the explorable-reference law, below), `concord-prev`/
+  `concord-next` (reading-spine paging; present only when a window in that direction
+  exists).
+
+  CORPREAD-1b AMENDMENT (ticket K/C, superseding CORP-1's own original rows above): CORP-1
+  shipped both pages as an ITEM LIST -- each CommentaryItem/TextUnit its own bordered,
+  backgrounded card (`kretzmann-item-{slug}`/`concord-unit-{slug}` existed then too, but
+  named a CARD, not a reading-flow paragraph), Kretzmann's own prose hidden entirely behind
+  a popover click (CORP-1's own disclosed NEEDS_CONTEXT gap, later closed by CORP-1b's
+  `description` field -- but even once real prose existed, CORP-1 never rendered it inline),
+  and Concord's own part/article/paragraph navigation was numeric-picker-only, no menu. Every
+  testid named above is this batch's OWN current, accurate shape -- the boxed-card
+  presentation, and Concord's picker-only navigation, are retired.
+
+Escape-hatch vocabulary (batch-corpread1b-brief.md, deliverable 0a -- THE FOLLOW-RELEASE
+  LAW, design spec §5, owner ruling 2026-08-27 verbatim: "on every thing sharing state with
+  the reader state, we need an escape hatch to stop following the reader as well"): a
+  `"toggle-follow"` Kind (`client/Views/ToggleFollowHatch.cs`), declared once by every
+  registered view that carries `ViewCapabilities.BearsLocus` (Reader, Kretzmann) plus World
+  (BearsWindow -- the precedent instance for its own window, per deliverable 0a's own
+  explicit instruction) -- CONFORMANCE TRIPWIRE: a registered view declaring BearsLocus
+  without a declared toggle-follow hatch fails
+  `ViewRegistryConformanceTests.HatchConformance_EveryBearsLocusView_
+  DeclaresAToggleFollowHatch`. Semantics: FOLLOWING (the default) = this view renders from
+  the shared Locus atom directly, no held copy; RELEASED = a view-local position, seeded
+  from the shared atom's own value at the instant of release, drives the view instead (the
+  shared atom is neither read nor written by this view's own navigation while released);
+  RE-FOLLOW = reconverges to whatever the shared atom holds NOW (never a stale remembered
+  value -- the SyncToken discipline). Kretzmann's own instance (`kretzmann-follow-chip`)
+  renders only while split with the reader (nothing to escape from standalone); World's own
+  pre-existing `follow-chip` is UNCHANGED, VISUALLY (deliverable 0a: "zero visual change to
+  world") -- it is now the declared instance of this SAME hatch kind, but its own click
+  handler is untouched (a richer, World-specific sequence beyond the bare intent dispatch);
+  Reader also declares one (BearsLocus compels it) with no rendered chip anywhere today --
+  a real, invokable, conformance-satisfying declaration, not a stub (mirrors Sources' own
+  pre-existing "read-beside" hatch, declared but not reachable from every pairing, R4's own
+  precedent).
+
+Explorable-reference law (batch-corpread1b-brief.md, ticket K/C -- "references inside
+  commentary prose ... are clickable explorables ... ONE-RULE for any embedded verse
+  text"): a scripture citation found by `Explore/ScriptureRefScan.cs` inside Kretzmann
+  commentary or Concord confession prose renders as an inline explorable span
+  (`kretzmann-ref-{ownerSlug}-{n}` / `concord-ref-{ownerSlug}-{n}`, `Components/
+  ScriptureRefText.razor`) -- plain click/Enter opens the SAME VerseNode/ExplorerPopover
+  every other verse reference in this app already uses (no bespoke citation popover). THE
+  SCANNER IS SHARED, not forked, between both pages. DISCLOSED, MINIMAL IMPLEMENTATION
+  (investigated first -- neither `Explore/PlaceMentions.cs`, a curated-name matcher with no
+  chapter/verse grammar, nor `Explore/CanonRef.cs`, a parse/format helper with no scanning
+  half, is a ref-in-arbitrary-prose scanner; none existed client-side): matches
+  "`<Book>[.]? <chapter>[,:] <verse>[-<verse>]`" against the app's own canonical book names
+  plus a small table of citation abbreviations verified against real vendored prose (`Gen.`,
+  `Cor.`, `Ps.`, ...); a verse RANGE resolves to its own first verse only (mirrors
+  `CanonRef.TargetSpan`'s own same-chapter-only precedent); an unlisted abbreviation is
+  simply not matched (a miss, never a misattribution).
+
+BoC nav-menu structure (batch-corpread1b-brief.md, ticket C, owner order verbatim: "I
+  should have a menu through which I can navigate to different parts in the BoC"):
+  `Explore/ConcordToc.cs`'s own ten-entry table (Preface, the Three Ecumenical Creeds, the
+  Augsburg Confession, its Apology, the Smalcald Articles, the Treatise on the Power and
+  Primacy of the Pope, the Small and Large Catechisms, and the Formula of Concord's Epitome
+  and Solid Declaration) mirrors `atlas-etl/src/concord.rs`'s own `CONCORD_DOC_SPECS`
+  verbatim (part number, title) -- the corpus's OWN part→article grammar (`ConcordRef`),
+  not an invented taxonomy. Disclosed: a plain client-side constant (no Concord TOC/
+  structure endpoint exists to fetch it from; zero server changes is this batch's own
+  machine rule). `concord-toc-toggle` reveals `concord-toc-menu`; each `concord-toc-part-{n}`
+  jumps to `BoC {n}.1.1` (every document's own opening paragraph) through the SAME
+  `LoadWindowAsync` every other navigation uses -- the landing always renders in full
+  reading flow, never a bare fragment.
+
+Reading-continuity guarantees (batch-corpread1b-brief.md, ticket K/C): both pages render
+  their ENTIRE current window as flowing prose on every navigation (picker, prev/next, TOC
+  jump, follow re-converge) -- there is no partial/fragment render state; a chapter/window
+  transition always replaces the FULL body in one commit (the pre-existing `_requestId`
+  stale-response-discard guard, unchanged, prevents a superseded fetch from ever painting
+  over a newer one). Kretzmann's own prose STREAMS IN under already-visible headings (the
+  chapter-scoped listing resolves first, each item's own full text arrives shortly after,
+  concurrently) rather than blocking the whole chapter on its slowest single fetch --
+  disclosed as a real, N-fetch cost (no bespoke bulk-prose endpoint exists) in the batch
+  report, not hidden.
 World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief.md,
   "the ever-present graph": one per currently QUIET place -- an event-bearing place not
   lit this window, see QUIET-1 below -- distinct from and never overlapping
