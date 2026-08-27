@@ -292,6 +292,17 @@ public class ConformanceTests
     // doc comment for the full reasoning: it is not a live copy of shared
     // state, it is a frozen last-known session kept ONLY because the
     // shared atom can no longer promise a superseded instance anything).
+    //
+    // PARKED (fix round 2, N-6, trivia -- re-review, "fix cheap or park
+    // with one line"): the two regexes below only catch a bare
+    // `private|public|protected|internal <Type> _name` field declaration --
+    // a `static` field, a property-shaped copy
+    // (`FocusStack Snapshot { get; set; }`), or an `ExplorationDescriptor[]`/
+    // `ImmutableArray<ExplorationDescriptor>` copy would all evade this
+    // scan (verified misses, not merely suspected). Meets ruling 6.iii's own
+    // stated bar today (re-planting the exact `_focus` violation IS caught,
+    // proven in the re-review) -- broadening the pattern set is left for
+    // ST-4's own general, all-types sweep rather than duplicated here.
     // ------------------------------------------------------------------
     [Fact]
     public void NoComponentHeldSharedState_NoFieldIsTypedAsAMigratedAtomValueTypeOutsideTheDocumentedException()

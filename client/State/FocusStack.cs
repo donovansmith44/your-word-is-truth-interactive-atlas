@@ -36,6 +36,20 @@ namespace BibleAtlas.Client.State;
 /// Kind/Key, never anything Node-specific) all key off it -- so this is the
 /// identity the type ALREADY had, made honest in <c>Equals</c> too, not a
 /// new rule invented for this fix.
+///
+/// CONSEQUENCE (fix round 2, N-7, trivia -- re-review): because equality is
+/// descriptor-only, a law-2 no-op <see cref="SeedFromTrail"/>/<see cref="Reseed"/>
+/// (one whose descriptors already match what the atom holds) KEEPS the
+/// atom's own, already-stored <see cref="Focus.Node"/> instances rather than
+/// swapping in the freshly-reconstructed ones the caller just supplied --
+/// so <c>Current => FocusValue.Current!.Node</c> can hand a caller a node
+/// object that is not literally the one it passed in. Benign today (every
+/// real producer of a "fresh" node --
+/// <c>ExplorationDescriptor.Reconstruct</c> for "continue," a live
+/// <c>IExplorable</c> pushed from a click -- is behaviourally equivalent for
+/// the SAME descriptor, and nothing in this app compares node references),
+/// but worth knowing before a future node kind's own behavior depends on
+/// object identity rather than descriptor equality.
 /// </summary>
 public sealed record FocusStack(IReadOnlyList<Focus> Stack, IReadOnlyList<ExplorationDescriptor> Trail)
 {

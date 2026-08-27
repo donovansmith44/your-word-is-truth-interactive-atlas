@@ -81,13 +81,17 @@ test('ST-3/R3: closing the popover and reopening a DIFFERENT node starts a fresh
   // instance -- a fresh open must never inherit a prior session's own
   // stack/trail. Fix round 1 (S-6, review): this test's own title used to
   // claim it exercises "Reset on close" specifically -- it does not
-  // distinguish that from the fresh instance's OWN mount-time Reset
-  // (ExplorerPopover.razor's OnInitializedAsync resets defensively before
-  // seeding regardless of what a prior instance's own Dispose already did),
-  // so it cannot fail on THAT ONE mechanism alone; retitled to claim only
-  // what it actually proves. The Dispose-time Reset's own more precise
-  // proof -- and the ownership hand-off S-2/Adjudication E's fix also
-  // needed -- lives in client.Tests/State/FocusStackOwnershipHandoffTests.cs
+  // distinguish that from the fresh instance's OWN mount-time seed, which
+  // OVERWRITES whatever a prior instance's own Dispose already did
+  // regardless (ExplorerPopover.razor's OnInitializedAsync dispatches ONE
+  // atomic SeedFromTrail, which ignores `current` entirely -- fix round 1's
+  // own live-caught fix for the atomic-seed race, N-5 of the fix round 1
+  // re-review; an earlier version of THIS comment cited a separate,
+  // defensive Reset dispatch that round's own fix had already removed), so
+  // this test cannot fail on the Dispose-time Reset alone; retitled to
+  // claim only what it actually proves. The Dispose-time Reset's own more
+  // precise proof -- and the ownership hand-off S-2/Adjudication E's fix
+  // also needed -- lives in client.Tests/State/FocusStackOwnershipHandoffTests.cs
   // (a genuine multi-instance Playwright equivalent was investigated and
   // found impractical -- see that file's own header for why).
   await page.goto('/read/GEN/1');
