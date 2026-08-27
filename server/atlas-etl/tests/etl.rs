@@ -1979,6 +1979,140 @@ fn run_cross_book_duplicates_ignores_general_kind_events() {
 }
 
 // ---------------------------------------------------------------------
+// Batch CHRON-1 (THE CHRONOLOGY AUTHORITY LAW's own DIRECT enforcement):
+// validate::run_no_two_opinions. Unlike run_event_merges/
+// run_cross_book_duplicates above, this validator runs on the POST-merge
+// event set and checks PLACEMENT AGREEMENT directly, not "is this pair
+// listed" -- red-then-green: two synthetic same-verse events with
+// DIFFERENT from_year, neither merged nor distinct-listed, must fail
+// (proving the law's own direct enforcement actually catches a live
+// violation); the real post-triage EVENT_DISTINCT_PAIRS corpus, and an
+// agreeing-placement duplicate, must both pass.
+// ---------------------------------------------------------------------
+
+fn placed_event(id: &str, label: &str, from_year: i32, to_year: i32, order_key: i32, verses: &[&str]) -> Event {
+    Event {
+        id: id.into(),
+        label: label.into(),
+        when: TimeRange::new(from_year, to_year).unwrap(),
+        order_key,
+        verses: verses.iter().map(|s| s.to_string()).collect(),
+        ..Default::default()
+    }
+}
+
+#[test]
+fn run_no_two_opinions_red_then_green_planted_violation_fails_loud() {
+    // RED: two events, identical verse set (jaccard 1.000, well over the
+    // 0.5 threshold), but DIFFERENT from_year -- exactly the leper-pair
+    // shape (two ids, two dates, one episode) THE CHRONOLOGY AUTHORITY LAW
+    // forbids, planted directly rather than merely asserted.
+    let events = vec![
+        placed_event("planted-a", "A leper healed", 30, 30, 450, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]),
+        placed_event("planted-b", "Healing the Leper", 31, 31, 0, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]),
+    ];
+    let err = atlas_etl::validate::run_no_two_opinions(&[], &events).unwrap_err();
+    let msg = err.to_string();
+    // GREEN: the validator actually catches it, naming both ids and the score.
+    assert!(msg.contains("'planted-a'") && msg.contains("'planted-b'"), "{msg}");
+    assert!(msg.contains("jaccard"), "{msg}");
+    assert!(msg.contains("1.000"), "{msg}");
+    assert!(msg.contains("DISAGREE"), "{msg}");
+}
+
+#[test]
+fn run_no_two_opinions_a_distinct_listed_pair_with_disagreeing_placements_passes() {
+    // Same shape as the planted violation above, but the pair is
+    // EXPLICITLY documented in EVENT_DISTINCT_PAIRS -- a genuinely distinct
+    // pair is EXPECTED to keep two independent placements; that is what
+    // "distinct" means, and the law's own direct enforcement must not flag it.
+    let distinct_pairs = [EventDistinct { a: "planted-a", b: "planted-b", reason: "test: genuinely distinct" }];
+    let events = vec![
+        placed_event("planted-a", "A leper healed", 30, 30, 450, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]),
+        placed_event("planted-b", "Healing the Leper", 31, 31, 0, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]),
+    ];
+    let result = atlas_etl::validate::run_no_two_opinions(&distinct_pairs, &events);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+#[test]
+fn run_no_two_opinions_agreeing_placements_pass_even_though_unlisted() {
+    // Heavy overlap, but the SAME placement on both sides -- no conflicting
+    // opinion reaches a reader, so this passes without needing an
+    // EVENT_DISTINCT_PAIRS entry at all (this validator's own job is
+    // narrower than run_event_merges's own "every candidate must be
+    // listed" sweep -- it only fails on an actual placement DISAGREEMENT).
+    let events = vec![
+        placed_event("agree-a", "A leper healed", 30, 30, 450, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]),
+        placed_event("agree-b", "Healing the Leper", 30, 30, 450, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]),
+    ];
+    let result = atlas_etl::validate::run_no_two_opinions(&[], &events);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+#[test]
+fn run_no_two_opinions_below_threshold_overlap_passes_regardless_of_placement() {
+    // Low overlap (jaccard well under 0.5) with disagreeing placements --
+    // not the same episode, so a placement disagreement is expected and
+    // not a violation.
+    let events = vec![
+        placed_event("low-a", "Event A", 30, 30, 0, &["MAT.8.1", "MAT.8.2", "MAT.8.3", "MAT.8.4"]),
+        placed_event("low-b", "Event B", 60, 60, 0, &["MAT.8.4", "MRK.1.1", "MRK.1.2", "MRK.1.3"]),
+    ];
+    let result = atlas_etl::validate::run_no_two_opinions(&[], &events);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+#[test]
+fn run_no_two_opinions_ignores_general_kind_events() {
+    // kind="general" events carry no comparable `when` by definition
+    // (Batch T2's own undated policy) -- out of scope for this check, same
+    // "kind == event" gate run_cross_book_duplicates already applies.
+    let mut a = placed_event("gen-a", "A leper healed", 30, 30, 450, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]);
+    let mut b = placed_event("gen-b", "Healing the Leper", 31, 31, 0, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]);
+    a.kind = "general".into();
+    b.kind = "general".into();
+    let result = atlas_etl::validate::run_no_two_opinions(&[], &[a, b]);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+#[test]
+fn run_no_two_opinions_passes_on_the_real_post_triage_corpus() {
+    // The real, standing EVENT_DISTINCT_PAIRS table -- every pair this
+    // module's own module doc documents as genuinely distinct must ALSO
+    // pass this direct, placement-based check (not just the pairwise
+    // sweep's own "is it listed" bar). Uses synthetic events matching each
+    // real distinct pair's own id/placement shape rather than the full
+    // compiled corpus (a live end-to-end proof runs at `cargo run -p
+    // atlas-etl` time against the real data, exercised in this batch's own
+    // report); this proves the FUNCTION's own exemption lookup works
+    // against every real entry, not a stale subset.
+    use atlas_core::event_merge::EVENT_DISTINCT_PAIRS;
+    let mut events = Vec::new();
+    for (i, pair) in EVENT_DISTINCT_PAIRS.iter().enumerate() {
+        let verses: Vec<String> = vec![format!("GEN.{}.{}", i + 1, 1)];
+        events.push(Event {
+            id: pair.a.into(),
+            label: pair.a.into(),
+            when: TimeRange::new(1, 1).unwrap(),
+            order_key: 1,
+            verses: verses.clone(),
+            ..Default::default()
+        });
+        events.push(Event {
+            id: pair.b.into(),
+            label: pair.b.into(),
+            when: TimeRange::new(2, 2).unwrap(), // disagreeing placement -- would fail if not exempt
+            order_key: 2,
+            verses,
+            ..Default::default()
+        });
+    }
+    let result = atlas_etl::validate::run_no_two_opinions(EVENT_DISTINCT_PAIRS, &events);
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+// ---------------------------------------------------------------------
 // Batch HOTFIX-6 (graph-wide chronology audit): validate::run_chronology_anchors
 // / run_chronology_windows / run_era_boundaries. The first two mirror the
 // established quartet shape (run_place_merges/run_event_merges above)

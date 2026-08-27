@@ -1113,6 +1113,94 @@ pub fn run_cross_book_duplicates(merge_pairs: &[EventMerge], distinct_pairs: &[E
     bail!("cross-book event-duplicate validation failed with {} error(s):\n{}", unlisted.len(), joined);
 }
 
+/// THE NO-TWO-OPINIONS VALIDATION (Batch CHRON-1, THE CHRONOLOGY AUTHORITY
+/// LAW's own DIRECT enforcement -- `atlas_core::event_merge`'s own module
+/// doc, part (b); designed in that same doc comment before this function was
+/// written, per the batch's own contract-first order). Unlike
+/// `run_event_merges`/`run_cross_book_duplicates` above (pairwise CURATION
+/// TOOLING: "is this an unlisted candidate pair," run on the PRE-merge event
+/// set, the only point a soon-to-be-absorbed id and its own survivor both
+/// still exist to compare), this check runs on the event set a READER
+/// actually sees -- POST-merge, POST-`nt_calibration`, POST-
+/// `THEO_DATE_OVERRIDES` (`compile.rs` calls it against `data.events`, the
+/// same post-`finish()` orientation as `run_chronology_anchors`) -- and
+/// asserts the law ITSELF, directly: no two surviving `kind == "event"`
+/// entries at verse-jaccard >= `DUPLICATE_JACCARD_THRESHOLD` (heavy witness
+/// overlap -- the SAME real-world episode) carry independent placements
+/// (`when.from_year`, `when.to_year`, or `order_key` differing). A pair
+/// explicitly listed in `EVENT_DISTINCT_PAIRS` is exempt by definition -- a
+/// genuinely distinct mega-span/complementary-beat pair is EXPECTED to keep
+/// two placements, that is what "distinct" means.
+///
+/// Also closes a gap NEITHER prior sweep covers: `run_event_merges` only
+/// ever compares a LAYER-0 event against a LAYER-0 or LAYER-1 one
+/// (`is_layer0`-gated); `run_cross_book_duplicates` requires year-overlap +
+/// place-overlap + high TITLE similarity. Two CURATED (LAYER-1) events that
+/// duplicate each other via heavy VERSE overlap alone (no prior sweep's own
+/// shape) would still fail loud here -- this is the law's own backstop, not
+/// merely a third restatement of the same check.
+///
+/// Book-bucketed (not naive O(n^2) over ~1700 events): two events are only
+/// ever compared if they touch >= 1 common book, the same cheap-early-check
+/// discipline `cross_book_duplicate_candidate`'s own doc comment describes,
+/// keeping this well under a second in practice.
+pub fn run_no_two_opinions(distinct_pairs: &[EventDistinct], events: &[Event]) -> Result<()> {
+    let exempt: HashSet<(&str, &str)> = distinct_pairs.iter().flat_map(|p| [(p.a, p.b), (p.b, p.a)]).collect();
+
+    let dated: Vec<&Event> = events.iter().filter(|e| e.kind == "event").collect();
+
+    // book code -> indices (into `dated`) of every event touching it, so a
+    // pair is only ever compared once they share >= 1 book.
+    let mut by_book: HashMap<&str, Vec<usize>> = HashMap::new();
+    for (i, e) in dated.iter().enumerate() {
+        let mut seen_books: HashSet<&str> = HashSet::new();
+        for v in e.verses.iter().chain(e.witnesses.iter().filter_map(|w| w.translations.get(DEFAULT_TRANSLATION)).flatten()) {
+            if let Some(book) = v.split('.').next() {
+                if seen_books.insert(book) {
+                    by_book.entry(book).or_default().push(i);
+                }
+            }
+        }
+    }
+
+    let mut candidate_pairs: HashSet<(usize, usize)> = HashSet::new();
+    for indices in by_book.values() {
+        for a in 0..indices.len() {
+            for b in (a + 1)..indices.len() {
+                let (i, j) = (indices[a], indices[b]);
+                candidate_pairs.insert(if i < j { (i, j) } else { (j, i) });
+            }
+        }
+    }
+
+    let mut violations: Vec<String> = Vec::new();
+    for (i, j) in candidate_pairs {
+        let (a, b) = (dated[i], dated[j]);
+        let j_score = verse_jaccard(a, b);
+        if j_score < DUPLICATE_JACCARD_THRESHOLD {
+            continue;
+        }
+        if exempt.contains(&(a.id.as_str(), b.id.as_str())) {
+            continue;
+        }
+        if a.when.from_year == b.when.from_year && a.when.to_year == b.when.to_year && a.order_key == b.order_key {
+            continue; // same episode, same placement -- no conflicting opinion reaches a reader
+        }
+        violations.push(format!(
+            "'{}' ({:?}, placed {}..{} order_key {}) <-> '{}' ({:?}, placed {}..{} order_key {}): jaccard {j_score:.3} >= {DUPLICATE_JACCARD_THRESHOLD} but the two placements DISAGREE, and neither is documented as genuinely distinct (EVENT_DISTINCT_PAIRS)",
+            a.id, a.label, a.when.from_year, a.when.to_year, a.order_key,
+            b.id, b.label, b.when.from_year, b.when.to_year, b.order_key,
+        ));
+    }
+    violations.sort();
+
+    if violations.is_empty() {
+        return Ok(());
+    }
+    let joined = violations.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("no-two-opinions validation failed with {} violation(s) (THE CHRONOLOGY AUTHORITY LAW):\n{}", violations.len(), joined);
+}
+
 /// Batch HOTFIX-6 (graph-wide chronology audit): `data/curated/
 /// chronology-anchors.toml`'s own structural validity -- every `event_id`
 /// (when present) must name a real compiled event, and every `era_boundary`

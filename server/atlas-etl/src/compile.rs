@@ -364,6 +364,15 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     )?;
     validate::run_era_boundaries(&data)
         .context("data/compiled/* was NOT written; fix the flagged event's own date, or its book's own data/curated/book-narration-windows.toml window")?;
+
+    // THE NO-TWO-OPINIONS VALIDATION (Batch CHRON-1, THE CHRONOLOGY
+    // AUTHORITY LAW's own DIRECT enforcement -- `event_merge.rs`'s own
+    // module doc part (b)): runs on `data.events`, the FINAL (post-merge,
+    // post-nt_calibration, post-THEO_DATE_OVERRIDES) set -- same
+    // post-`finish()` orientation as `run_chronology_anchors` above.
+    validate::run_no_two_opinions(atlas_core::event_merge::EVENT_DISTINCT_PAIRS, &data.events).context(
+        "data/compiled/* was NOT written; two surviving events with heavy witness overlap carry independent placements -- either merge them (EVENT_MERGE_PAIRS) or, if genuinely distinct, document the pair in EVENT_DISTINCT_PAIRS",
+    )?;
     counts.events = data.events.len();
 
     // --- data/curated/polities/ ---------------------------------------------

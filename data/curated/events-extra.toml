@@ -44,7 +44,12 @@ label = "Famine drives Abram to Egypt"
 from_year = -2090
 to_year = -2089
 places = ["egypt"]
-verses = ["GEN.12.10", "GEN.12.14-20"]
+# Batch CHRON-1: widened from ["GEN.12.10", "GEN.12.14-20"] to one
+# contiguous GEN.12.10-20, restoring theo-73's own GEN.12.11-13 coverage
+# (Abram's own instruction to Sarai to pose as his sister) that pair's
+# merge otherwise would have dropped, per the standing coverage-completion
+# law -- no other curated event claims 12:11-13 either.
+verses = ["GEN.12.10-20"]
 [[event]]
 id = "ab_hebron"
 label = "Abram settles at Mamre in Hebron"
@@ -336,7 +341,11 @@ label = "Joseph rises to rule over Egypt"
 from_year = -1885
 to_year = -1885
 places = ["egypt"]
-verses = ["GEN.41.41-46"]
+# Batch CHRON-1: widened from GEN.41.41-46 to GEN.41.37-46, restoring
+# theo-111's own extra lead-in coverage (Pharaoh's own deliberation before
+# the appointment) that pair's merge otherwise would have dropped, per the
+# standing coverage-completion law.
+verses = ["GEN.41.37-46"]
 # places: same Beersheba 1/2 disambiguation as jj_beersheba above.
 # beersheba-2's verse_links include both GEN.46.1 and GEN.46.5. Using
 # beersheba-2.
@@ -854,10 +863,10 @@ label = "Jesus speaks with the woman at the well in Sychar"
 from_year = 30
 to_year = 30
 places = ["sychar"]
-verses = ["JHN.4.4-26"]
+verses = ["JHN.4.4-42"]
 order_key = 350
 robertson_section = "Robertson (1922) §35, \"Jesus in Samaria at Jacob's Well and in Sychar\""
-ref_note = "John 4:4-26 read directly against the compiled KJV text; scoped narrower than Robertson's own §35 (John 4:5-42, which also covers the disciples' return and the Samaritans' own belief over the following two days) -- this event's own pre-existing scope is the well conversation itself"
+ref_note = "John 4:4-42 read directly against the compiled KJV text. Batch CHRON-1: widened from the pre-existing JHN.4.4-26 (the well conversation itself) to the full JHN.4.4-42 -- matching Robertson's own §35 exactly -- restoring theo-278's own trailing coverage (the disciples' return and the Samaritans' own belief, 4:27-42) that pair's merge otherwise would have dropped, per the standing coverage-completion law; the same Sychar scene continues without a real scene break through v.42."
 # places: brief guessed "bethsaida", but geo ancient.jsonl collides into
 # "Bethsaida 1"/"Bethsaida 2" (identical coords, 32.9104, 35.6310 --
 # same town, split only by which verses were tagged to which record).
@@ -889,7 +898,7 @@ order_key = 820
 # Batch T2 (period 5's own validation fix, enriched ahead of period 6 for
 # ordering -- fully covered there too): Robertson's own §82.
 robertson_section = "Robertson (1922) §82, \"Near Caesarea Philippi Jesus Tests the Faith of the Twelve in His Messiahship\""
-ref_note = "Matthew 16:13-20 read directly against the compiled KJV text"
+ref_note = "Matthew 16:13-20 read directly against the compiled KJV text; Mark 8:27-30 and Luke 9:18-21 also read directly -- see event-witnesses.toml (Batch CHRON-1: added to restore theo-404's own MRK/LUK coverage that pair's merge otherwise would have dropped, per the standing coverage-completion law)"
 # places: same Jericho 1/2 split as cq_jericho above, opposite pick:
 # jericho-2 (31.8519, 35.4362, the NT/Herodian-era site) carries only
 # Gospel verse_links, including LUK.19.1, this event's verse.
@@ -2112,10 +2121,10 @@ label = "A leper healed; great popular excitement"
 from_year = 30
 to_year = 30
 places = ["galilee-1"]
-verses = ["MAT.8.2-4"]
+verses = ["MAT.8.1-4"]
 order_key = 450
 robertson_section = "Robertson (1922) §45, \"A Leper Healed and Much Popular Excitement\""
-ref_note = "Matthew 8:2-4 read directly against the compiled KJV text; Luke's own witness (5:12) names only 'a certain city,' unspecified -- galilee-1 kept as the broad, defensible region"
+ref_note = "Matthew 8:1-4 read directly against the compiled KJV text (Batch CHRON-1: widened from 8:2-4 to include 8:1, the scene-setting 'when he was come down from the mountain, great multitudes followed him' verse -- theo-286's own boundary-verse coverage this event's own theo-286 merge otherwise would have dropped, per the standing coverage-completion law); Luke's own witness (5:12) names only 'a certain city,' unspecified -- galilee-1 kept as the broad, defensible region"
 
 [[event]]
 id = "rob_paralytic_roof"

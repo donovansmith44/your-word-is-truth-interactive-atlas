@@ -2909,6 +2909,35 @@ book = "JER"
 verses = ["JER.41.1-18"]
 ref_note = "Jeremiah 41:1-18 read directly against the compiled KJV text -- this event's own top-level verses, restated as an explicit self-witness so JER keeps its own reader heading now that a 2KI witness exists alongside it."
 
+# Batch CHRON-1: jm_caesarea_philippi/theo-404 merge -- theo-404's own MRK/
+# LUK coverage restored as real witness rows (the jm_jordan/theo-267
+# precedent), per the standing coverage-completion law (this pair's own
+# merge would otherwise have dropped MRK.8.27-30/LUK.9.18-21 from every
+# container entirely). MAT witness row required too, same pw_bethany-class
+# rule as rob_leper_healed's own MAT row above: once ANY witness exists,
+# the top-level book needs an explicit witness row of its own or
+# heading_anchors_for silently drops its own anchor.
+[[witness]]
+event_id = "jm_caesarea_philippi"
+book = "MAT"
+verses = ["MAT.16.13-20"]
+ref_note = "Matthew 16:13-20 read directly against the compiled KJV text -- this event's own top-level verses, restated as an explicit self-witness so MAT keeps its own reader heading now that MRK/LUK witnesses exist alongside it."
+robertson_section = "Robertson (1922) §82, \"Near Caesarea Philippi Jesus Tests the Faith of the Twelve in His Messiahship\""
+
+[[witness]]
+event_id = "jm_caesarea_philippi"
+book = "MRK"
+verses = ["MRK.8.27-30"]
+ref_note = "Mark 8:27-30 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §82, \"Near Caesarea Philippi Jesus Tests the Faith of the Twelve in His Messiahship\""
+
+[[witness]]
+event_id = "jm_caesarea_philippi"
+book = "LUK"
+verses = ["LUK.9.18-21"]
+ref_note = "Luke 9:18-21 read directly against the compiled KJV text"
+robertson_section = "Robertson (1922) §82, \"Near Caesarea Philippi Jesus Tests the Faith of the Twelve in His Messiahship\""
+
 # NOTE (theo-242 / 2ki_jerusalem_aftermath / exl_jerusalem -- the review's
 # own named "content overlap," reconciled by disclosure, not by a forced
 # merge): all three are now real, witnessed, dated containers touching

@@ -78,7 +78,7 @@ fn every_reconstructed_event_equals_compiles_own_real_event_field_for_field() {
     let mut got = real_overlay().events;
     want.sort_by(|a, b| a.id.cmp(&b.id));
     got.sort_by(|a, b| a.id.cmp(&b.id));
-    assert_eq!(got.len(), want.len(), "event count must match exactly (real data: 1,735 as of M-D1's own 3-pair remaining-duplicates merge)");
+    assert_eq!(got.len(), want.len(), "event count must match exactly (real data: 1,711 as of Batch CHRON-1's own 24-pair triage merge, DUPLICATE_JACCARD_THRESHOLD lowered 0.8 -> 0.5; this test compares the COMMITTED data/compiled/graph.bin against a fresh recompile of source -- a mismatch here means graph.bin needs regenerating, `cargo run -p atlas-graph --bin atlas-graph-compile`, not that this count is wrong)");
     assert_eq!(got, want, "every ID must reconstruct to an Event equal in EVERY field to compile()'s own real Event -- a diff here means atlas_data_overlay silently drops or corrupts data for at least one real event");
 }
 
