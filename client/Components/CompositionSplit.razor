@@ -1,0 +1,217 @@
+@* Batch VC-1 fix round 1 (Adjudication F, controller ruling 1 -- REJECTS the
+   original CompositionHost's per-host wrapper trade "as shipped," adopts the
+   reviewer's third option verbatim): a ChildContent-taking wrapper. The
+   HOST page's own outer keydown/keyup div (Reader's shift-tracking
+   ancestor) stays exactly where it always was -- the PARENT of this
+   component -- so the DOM ancestor relation the shift-tracking mechanism
+   depends on (a common ancestor of .reader-page and ExplorerPopover) is
+   preserved byte-for-byte; this component learns nothing about keyboards.
+   See the batch report's own Adjudication F section for the full trade
+   discussion this replaces.
+
+   This component now owns EVERYTHING R3 named and Adjudication F's own
+   duplication inventory listed as copied: role determination (self-routed
+   vs. registry-guest-mounted; host vs. guest), the split-view flex
+   container + `--split-reader-width` custom property + its own testid
+   contract, the SplitDivider (width state, restore-on-open, the SetDivider
+   commit), hatch invocation, and close plumbing (CloseGuest). Reader.razor's
+   and Sources.razor's OWN `_splitOpen`-style branches are RETIRED -- BOTH of
+   them (S-2) -- replaced by this ONE shared component, used by both.
+
+   Controller ruling 2: "no separate CanHost flag" -- there is deliberately
+   no `CanHost` capability anywhere in this codebase. The declared
+   enter-split HATCH (EnterSplitHatch.HostView) IS the hosting declaration --
+   one vocabulary, not two. The tripwire against a future "pasted wrapper"
+   host is client.Tests' own hatch-conformance test: every hatch's own
+   HostView must be found using this component, by name
+   (`<CompositionSplit HostName="@ViewNames.X"`), in that view's own source --
+   a fourth host with no CompositionSplit usage fails that test, loudly.
+
+   Controller ruling 3 (S-1, CRITICAL): every render decision below is driven
+   by a REAL `IViewComposition`/`ICompositionLayout` (`Composition`, via
+   `ViewRegistry.ComposeFrom`) -- `Layout.Kind`/`Members` are read off the
+   COMPILED CONTRACT TYPES, not `ViewArrangement`'s own bare strings
+   directly. Unrecognized `Layout.Kind` fails LOUD (a visible toast,
+   `data-testid="composition-error"`) -- and, fix round 1 (Q-6): renders
+   INSTEAD of the normal split content, not alongside it, now that
+   "loud" is cheap to get right while already rewriting this file. *@
+@using BibleAtlas.Client.Contracts
+@using BibleAtlas.Client.State
+@using BibleAtlas.Client.Views
+@inject StateAtom<ViewArrangement> ViewArrangementAtom
+@inject ViewRegistry Registry
+@inject IJSRuntime JS
+
+@if (!IsGuestMount && !LayoutKinds.IsKnown(Composition.Layout.Kind))
+{
+    <div class="toast" data-testid="composition-error">
+        <p class="toast-message">Unrecognized arrangement layout "@Composition.Layout.Kind" -- ICompositionLayout.Kind is out of vocabulary.</p>
+    </div>
+}
+else if (!IsSplitOpen)
+{
+    @ChildContent(BuildContext())
+}
+else if (IsHost)
+{
+    <div class="split-view" style="--split-reader-width:@(_widthPx.ToString(System.Globalization.CultureInfo.InvariantCulture))px;" data-testid="split-view">
+        @ChildContent(BuildContext())
+        <SplitDivider WidthPx="_widthPx" WidthPxChanged="w => _widthPx = w" OnCommitted="OnDividerCommitted" />
+        <div class="split-pane-guest">
+            @Registry.Get(Composition.Members[1].Name).Mount(new ViewMountContext(
+                SplitMode: true,
+                OnRequestClose: EventCallback.Factory.Create(this, RequestCloseAsync),
+                RegisterQueryHandler: h => _guestQueryHandler = h))
+        </div>
+    </div>
+}
+else
+{
+    @ChildContent(BuildContext())
+}
+
+@code {
+    /// <summary>Which registered view is asking. Required: without an
+    /// identity, this component cannot tell "I am currently hosting" from
+    /// "some OTHER view hosts, I have nothing extra to render here."</summary>
+    [Parameter, EditorRequired]
+    public string HostName { get; set; } = null!;
+
+    /// <summary>null = self-determine from the shared atom (the common
+    /// case: this view was reached by ordinary Blazor routing, and is
+    /// therefore either single or host). Explicit true = this instance is
+    /// being mounted as a GUEST via the registry (ViewRegistrySetup's own
+    /// mount closures always pass true here, never false -- a
+    /// registry-mounted component is, by this batch's own design, ALWAYS a
+    /// guest).</summary>
+    [Parameter]
+    public bool? SplitModeOverride { get; set; }
+
+    [Parameter, EditorRequired]
+    public RenderFragment<CompositionSplitContext> ChildContent { get; set; } = null!;
+
+    /// <summary>Optional -- the ONE genuinely per-host behavior Adjudication
+    /// F's own inventory named (Reader's own `ViewState.Map.DividerFraction`
+    /// persistence; Sources has no such slot and leaves this unbound).
+    /// Fired alongside (never instead of) the unconditional `SetDivider`
+    /// dispatch below, whenever a real fraction commits.</summary>
+    [Parameter]
+    public EventCallback<double> OnFractionCommitted { get; set; }
+
+    private double _widthPx = 704;
+    private bool _dividerRestoreAttempted;
+    private IJSObjectReference? _js;
+    private Func<string, Task>? _guestQueryHandler;
+
+    private bool IsGuestMount => SplitModeOverride == true;
+
+    private IViewComposition Composition => Registry.ComposeFrom(ViewArrangementAtom.Value);
+
+    /// <summary>Public -- read via `@ref` by a host page's OWN markup/methods
+    /// that sit OUTSIDE this component's own ChildContent lambda scope (e.g.
+    /// Reader's ExplorerPopover, its picker-jump handler) so EVERY read site
+    /// uses this ONE unambiguous, already-computed value instead of
+    /// re-deriving a hand-copied formula (fix round 1, S-4).</summary>
+    public bool IsSplitOpen => IsGuestMount || (Composition.Layout.Kind == LayoutKinds.SplitH && Composition.Members.Count > 0 && Composition.Members[0].Name == HostName);
+
+    /// <summary>Public, same reasoning as <see cref="IsSplitOpen"/>. Only
+    /// meaningful while <see cref="IsSplitOpen"/>.</summary>
+    public bool IsHost => !IsGuestMount;
+
+    /// <summary>The composed "route a popover-originated scene query into my
+    /// currently-mounted guest" delegate -- null while no split-h guest is
+    /// mounted, or while the mounted guest never called
+    /// <see cref="ViewMountContext.RegisterQueryHandler"/> (i.e. it doesn't
+    /// support being a query-routing target at all, e.g. Sources). The host
+    /// page reads this via its own `@ref` on this component and forwards it
+    /// to its OWN popover's `OnNavigateWorldInSplit` parameter -- the
+    /// generalized "no nested-popup rule" (Batch H), unchanged behavior for
+    /// reader+world, generically available to any future query-routable
+    /// guest.</summary>
+    public Func<string, Task> NavigateGuestInSplit => query => _guestQueryHandler?.Invoke(query) ?? Task.CompletedTask;
+
+    private CompositionSplitContext BuildContext() => new(
+        IsSplitOpen,
+        IsHost,
+        EventCallback.Factory.Create(this, InvokeHatchAsync),
+        EventCallback.Factory.Create(this, RequestCloseAsync));
+
+    private Task InvokeHatchAsync() =>
+        Registry.Get(HostName).EscapeHatches.First(h => h.Kind == HatchKinds.EnterSplit).Invoke();
+
+    private Task RequestCloseAsync()
+    {
+        // Correct regardless of who mounted this instance -- CloseGuest's
+        // own Apply is "if split-h, single(Members[0])," which needs no
+        // knowledge of which guest is asking (client/State/ViewArrangement.cs).
+        ViewArrangementAtom.Dispatch(new CloseGuest());
+        return Task.CompletedTask;
+    }
+
+    // Fix round 1 (Adjudication C's own mechanism, relocated here): fires
+    // ONCE per completed drag/keyboard-nudge gesture ("commits on drag END
+    // only"). _widthPx -- the ACTUAL render source for the divider's pixel
+    // position -- is updated unconditionally; the atom (and the optional
+    // OnFractionCommitted) only receive the fraction when SplitDivider's own
+    // measurement succeeded.
+    private async Task OnDividerCommitted((double WidthPx, double? Fraction) result)
+    {
+        _widthPx = result.WidthPx;
+        if (result.Fraction is { } fraction)
+        {
+            ViewArrangementAtom.Dispatch(new SetDivider(fraction));
+            if (OnFractionCommitted.HasDelegate)
+            {
+                await OnFractionCommitted.InvokeAsync(fraction);
+            }
+        }
+    }
+
+    // Fix round 1 (relocated from Reader.razor's own RestoreDividerWidthFromAtom):
+    // restores _widthPx from the atom's own DividerFraction once per
+    // split-open transition, via a LIVE measurement of `.split-view`'s own
+    // content-box width (the same `getPaneRect` SplitDivider.razor already
+    // uses for its own clamp ceiling) -- this component now owns its OWN JS
+    // import rather than depending on a host page's cached module reference,
+    // since divider-width ownership itself moved here.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsSplitOpen && IsHost && !_dividerRestoreAttempted)
+        {
+            _dividerRestoreAttempted = true;
+            if (ViewArrangementAtom.Value.DividerFraction is { } fraction)
+            {
+                try
+                {
+                    _js ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
+                    var rect = await _js.InvokeAsync<PaneRectDto?>("getPaneRect", ".split-view");
+                    if (rect is { Width: > 0 } r)
+                    {
+                        // Same light sanity floor as the pre-fix-round-1 code
+                        // this replaces -- SplitDivider's own next real
+                        // drag/nudge re-clamps to its own exact bounds
+                        // regardless.
+                        _widthPx = Math.Clamp(fraction * r.Width, 200, r.Width - 200);
+                        StateHasChanged();
+                    }
+                }
+                catch (Exception)
+                {
+                    // Fail soft -- keep whatever _widthPx already holds, same
+                    // graceful-degrade stance SplitDivider's own
+                    // EnsureMaxWidthAsync takes.
+                }
+            }
+        }
+        else if (!IsSplitOpen)
+        {
+            _dividerRestoreAttempted = false;
+        }
+    }
+
+    // reader.js's own getPaneRect return shape -- a second, independently
+    // declared copy of SplitDivider.razor's own private PaneRectDto (that
+    // one is file-scoped private too -- same "one shape, many callers, no
+    // shared type" precedent that file's own header already establishes).
+    private sealed record PaneRectDto(double Left, double Top, double Width, double Height);
+}

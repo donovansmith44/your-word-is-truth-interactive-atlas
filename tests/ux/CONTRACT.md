@@ -301,8 +301,9 @@ Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
   -- closes the guest, dispatches `CloseGuest`, returns to single-sources;
   distinct testid from `split-close-reader` above, which stays reader's OWN
   HOST self-close, unchanged), `composition-error` (a loud toast,
-  `Components/CompositionHost.razor`; renders only if `ViewArrangement`'s
-  own `LayoutKind` is ever a value outside its closed vocabulary --
+  `Components/CompositionSplit.razor` -- fix round 1 renamed this file from
+  `CompositionHost.razor`; renders only if `ViewArrangement`'s own
+  `LayoutKind` is ever a value outside its closed vocabulary --
   unreachable through any shipped UI path, exists so an unrecognized kind
   fails LOUD per R6, not silently).
 Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
@@ -4226,6 +4227,35 @@ Notes:
   amendment) is false by construction for this pairing; degrades cleanly,
   not a special case. See composition.spec.ts for the sources+reader
   regression coverage.
+  VC-1 FIX ROUND 1 AMENDMENT (batch-vc1-review.md, Adjudication F +
+  controller rulings 1-3): `Components/CompositionHost.razor` is RETIRED,
+  replaced by `Components/CompositionSplit.razor` -- a `ChildContent`-taking
+  wrapper each host-capable view (`Reader.razor`/`Sources.razor`) embeds
+  around its OWN content, rather than a guest-only mounter each host also
+  duplicated role-determination/divider/close glue around. Reader's own
+  outer shift-tracking div (keydown/keyup, the range-select-vs-popover
+  bubble-catch) stays exactly where it always was -- CompositionSplit's own
+  PARENT, not a replacement for it -- so that mechanism is unchanged,
+  byte-for-byte. `Reader.razor`'s and `Sources.razor`'s own `_splitOpen`-
+  style branches (the thing R3 originally named to retire, but which
+  survived AND was cloned into Sources in the first submission) are BOTH
+  genuinely gone now -- role (single/host/guest) is computed exactly ONCE,
+  by CompositionSplit, and read either via its own `ChildContent` context
+  parameter (`ctx.IsSplitOpen`/`ctx.IsHost`/`ctx.InvokeHatch`/
+  `ctx.RequestClose`) or via `@ref` for the handful of read sites outside
+  that lambda's scope (the popover's own `InSplit`/`PaneAnchor`, the
+  picker-jump handler). `.split-pane-sources` is renamed
+  `.split-pane-host` (a fourth host reuses it directly, no per-host paste).
+  No `CanHost` capability exists anywhere -- the declared `enter-split`
+  hatch IS the hosting declaration (`EnterSplitHatch.HostView`); a
+  `client.Tests` conformance test asserts every declared hatch's own
+  HostView genuinely uses `<CompositionSplit HostName="..."/>` in that
+  view's own source, the tripwire against a future pasted-wrapper host.
+  User-visible behavior for every pairing in this document is UNCHANGED --
+  this is a structural consolidation, not a behavior change; see
+  composition.spec.ts's own COMP-5 for the one genuine bug this
+  consolidation fixed along the way (a picker jump from a guest-mounted
+  reader no longer silently converts sources+reader into reader+world).
 - DIVIDER-1 (M-D3/B2, owner morning address verbatim: "map toggles halfway
   into view, reader can't -- parity ('not good')"; brief: "the split-view
   drag affordance works from the reader side too"): `Components/

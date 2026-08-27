@@ -63,18 +63,32 @@ public static class ViewRegistrySetup
             return Task.CompletedTask;
         }
 
-        var readerHatch = new EnterSplitHatch(ViewNames.Reader, ViewNames.World, EnterSplitReaderHostsWorld);
-        var worldHatch = new EnterSplitHatch(ViewNames.World, ViewNames.Reader, EnterSplitWorldRequestsReader);
-        var sourcesHatch = new EnterSplitHatch(ViewNames.Sources, ViewNames.Reader, EnterSplitSourcesHostsReader);
+        // Fix round 1 (controller ruling 2): HostView is the hosting
+        // declaration -- Reader's and Sources' own hatches host themselves;
+        // World's own hatch (declared by World, "Read beside the map")
+        // still makes READER the host, byte-identical to pre-VC-1 (R7) --
+        // see EnterSplitHatch.cs's own header for the OwnerView-vs-HostView
+        // distinction this encodes.
+        var readerHatch = new EnterSplitHatch(ViewNames.Reader, ViewNames.World, hostView: ViewNames.Reader, EnterSplitReaderHostsWorld);
+        var worldHatch = new EnterSplitHatch(ViewNames.World, ViewNames.Reader, hostView: ViewNames.Reader, EnterSplitWorldRequestsReader);
+        var sourcesHatch = new EnterSplitHatch(ViewNames.Sources, ViewNames.Reader, hostView: ViewNames.Sources, EnterSplitSourcesHostsReader);
 
+        // Fix round 1 (Adjudication F): Reader/Sources no longer take
+        // IsHost/OnRequestClose parameters at all -- both are host-CAPABLE
+        // views that embed their own <CompositionSplit HostName="..."/>
+        // (see that component's own header), which computes host-vs-guest
+        // internally from SplitMode alone (null = self-routed = host-or-
+        // single; explicit true = registry-mounted = guest, always) and
+        // dispatches CloseGuest itself when guest, with no externally
+        // threaded callback. World is UNCHANGED -- it never hosts, so it
+        // still needs an externally-supplied OnRequestClose the same way it
+        // always has.
         var views = new List<RegisteredView>
         {
             new(ViewNames.Reader, ViewCapabilities.BearsLocus, ctx => builder =>
             {
                 builder.OpenComponent<Reader>(0);
                 builder.AddAttribute(1, nameof(Reader.SplitMode), (bool?)ctx.SplitMode);
-                builder.AddAttribute(2, nameof(Reader.IsHost), ctx.IsHost);
-                builder.AddAttribute(3, nameof(Reader.OnRequestClose), ctx.OnRequestClose);
                 builder.CloseComponent();
             }, new IEscapeHatch[] { readerHatch }),
 
@@ -91,8 +105,6 @@ public static class ViewRegistrySetup
             {
                 builder.OpenComponent<Sources>(0);
                 builder.AddAttribute(1, nameof(Sources.SplitMode), (bool?)ctx.SplitMode);
-                builder.AddAttribute(2, nameof(Sources.IsHost), ctx.IsHost);
-                builder.AddAttribute(3, nameof(Sources.OnRequestClose), ctx.OnRequestClose);
                 builder.CloseComponent();
             }, new IEscapeHatch[] { sourcesHatch }),
         };

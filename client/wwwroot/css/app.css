@@ -537,16 +537,23 @@ input:focus-visible,
    had -- .split-pane-reader/.split-pane-atlas above stay byte-unchanged
    (that pairing keeps its own exact pre-VC-1 sizing) so the reader+world
    split remains pixel-identical (R7). These two are the fallback shapes
-   ANY new host/guest pairing gets for free: .split-pane-sources (a HOST
-   pane -- reuses the SAME --split-reader-width custom property Reader's
-   own outer wrapper already sets, deliberately, rather than inventing a
+   ANY new host/guest pairing gets for free: .split-pane-host (a HOST pane
+   -- reuses the SAME --split-reader-width custom property CompositionSplit
+   sets on its own outer wrapper, deliberately, rather than inventing a
    second differently-named variable for the identical concept -- see
-   CompositionHost.razor's own header) and .split-pane-guest (a GUEST pane
+   CompositionSplit.razor's own header) and .split-pane-guest (a GUEST pane
    with no bespoke sizing of its own, e.g. Reader-as-guest inside Sources --
    1 1 auto, filling whatever the host's own fixed-basis pane doesn't
    claim, the same complementary shape .split-pane-atlas already
-   establishes). */
-.split-pane-sources {
+   establishes).
+
+   Fix round 1 (Q-2, IMPORTANT -- review): renamed from .split-pane-sources
+   -- that name promised a Sources-specific rule while its own body was
+   already fully generic; a fourth host would have had to paste an
+   identically-bodied rule under its own name, or reuse a rule named for a
+   DIFFERENT page. .split-pane-host is the honest, reusable name -- the
+   companion .split-pane-guest below was already correctly role-named. */
+.split-pane-host {
     flex: 0 0 var(--split-reader-width, 55%);
     min-width: 0;
 }

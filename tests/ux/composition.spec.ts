@@ -41,7 +41,7 @@ test('COMP-1: Sources declares its own "read-beside" hatch -- split opens with s
 
   // The generalization proof itself: no privileged host. Sources -- never
   // capable of hosting anything before this batch -- is doing so here via
-  // the exact same CompositionHost/ViewRegistry mechanism Reader always
+  // the exact same CompositionSplit/ViewRegistry mechanism Reader always
   // used, not a bespoke code path.
   await expect(page).toHaveURL(/\/sources$/); // sources stays the route; no navigation
 });
@@ -96,6 +96,30 @@ test('COMP-3: the arrangement round-trips cleanly through open -> close -> reope
   await expect(page.getByTestId('reader-root')).toBeVisible();
   await expect(page.getByTestId('verse-line-1')).toBeVisible();
   await expect(page.getByTestId('sources-page')).toBeVisible();
+});
+
+test('COMP-5 (fix round 1, S-4 regression): a picker jump from the guest-mounted reader does not silently open a reader+world split', async ({ page }) => {
+  // The ONE real, live bug the retired ambiguous `_splitOpen` flag caused
+  // (not just a code-smell): a GUEST-mounted Reader read `_splitOpen` alone
+  // (true in EITHER role) for its picker-jump handler's own `?split=1`
+  // query decision, silently converting a picker jump made from INSIDE the
+  // sources+reader split into a reader+world one. Fixed by reading
+  // CompositionSplit's own unambiguous IsHost too (client/Pages/Reader.razor's
+  // own ApplyScriptureRef).
+  await page.goto('/sources');
+  await page.getByTestId('split-open-sources').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+
+  await page.getByTestId('picker-book').selectOption('EXO');
+  await page.getByTestId('picker-apply').click();
+
+  // Disclosed limitation (unchanged by this fix): a picker jump from inside
+  // a guest-mounted reader leaves the sources+reader split entirely
+  // (navigates to standalone /read/...) -- but it must NEVER carry
+  // ?split=1, which would silently open an UNRELATED reader+world split.
+  await page.waitForURL(/\/read\/EXO\//);
+  await expect(page).not.toHaveURL(/split=1/);
+  await expect(page.getByTestId('world-map')).toHaveCount(0);
 });
 
 test('COMP-4: reader+world split still opens via the reader\'s own hatch and survives a refresh -- the reshaped EnterSplit(host,guest) intent round-trips through the URL exactly as before', async ({ page }) => {

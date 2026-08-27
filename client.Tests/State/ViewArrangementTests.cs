@@ -222,34 +222,38 @@ public class ViewArrangementTests
     }
 
     // ========================================================================
-    // R2: "Persistence (ViewState demotion from ST-2) migrates losslessly --
-    // a saved ReaderOnly/Split restores to the equivalent Arrangement (cold-
-    // start compatibility test)." ViewArrangement itself was never
-    // localStorage-persisted (in-memory atom, seeded from
-    // ViewArrangement.Default -- see AppServices.AddStateAtoms); the ACTUAL
-    // cross-session persistence for split state is the ?split=1 URL query
-    // Reader.razor's own SplitQuery param consumes, plus ViewState.Map's own
-    // Follow/DividerFraction restoration source. This test proves the
-    // MAPPING every pre-VC-1 shape had onto the reshaped type is exactly
-    // what R2's own worked examples specify, verbatim.
+    // Fix round 1 (S-5, IMPORTANT -- review): R2's own "cold-start
+    // compatibility test" phrase names a migration that does not exist --
+    // ViewArrangement was NEVER localStorage-persisted (in-memory atom,
+    // seeded from ViewArrangement.Default -- see AppServices.AddStateAtoms;
+    // ViewStateService.cs's own header states outright "NOT persisted to
+    // localStorage"). There is no pre-VC-1 serialized value to migrate FROM,
+    // so R2's migration clause is VACUOUS by construction, not silently
+    // unmet -- disclosed here rather than dressed up as a real migration
+    // test. The two tests this section used to carry
+    // (`ColdStart_PreVC1ReaderOnly_MapsToSingleReader`,
+    // `ColdStart_PreVC1SplitReaderWorld_MapsToSplitHReaderWorld`) asserted
+    // only that `ViewArrangement.Default` equals its own declaration and
+    // that `EnterSplit` returns its own arguments -- neither could ever fail
+    // on a migration drift, because there was no migration for them to
+    // guard. The FIRST one is now GONE outright (redundant with
+    // `ViewArrangement_Default_IsSingleReader` above, byte-identical
+    // assertion); the second is renamed below to what it actually proves --
+    // R2's own worked example, verbatim. The genuine cross-session restore
+    // mechanism for split state is the `?split=1` URL query, and it IS
+    // properly proven end-to-end (a real page reload) by
+    // `composition.spec.ts`'s own COMP-4 -- THAT is where R2's
+    // compatibility claim actually earns its keep.
     // ========================================================================
 
     [Fact]
-    public void ColdStart_PreVC1ReaderOnly_MapsToSingleReader()
-    {
-        // R2, verbatim: "ReaderOnly => Arrangement(["reader"], "single")."
-        Assert.Equal(new ViewArrangement(new[] { "reader" }, "single", null, false), ViewArrangement.Default);
-    }
-
-    [Fact]
-    public void ColdStart_PreVC1SplitReaderWorld_MapsToSplitHReaderWorld()
+    public void EnterSplit_ProducesTheR2WorkedExample()
     {
         // R2, verbatim: "today's split => Arrangement(["reader","world"],
         // "split-h", ...)." -- exercised via the SAME dispatch path
         // Reader.razor's own ?split=1 consumption (OnParametersSetAsync) and
-        // World's own OpenReadBesideMap hatch both use: EnterSplit(reader,
-        // world, defaultFollow, defaultDividerFraction), landing on a fresh
-        // atom (the cold-start case -- no prior session).
+        // World's own EnterSplitWorldRequestsReader hatch both use:
+        // EnterSplit(reader, world, defaultFollow, defaultDividerFraction).
         var atom = new StateAtom<ViewArrangement>(BibleAtlas.Client.Contracts.AtomNames.ViewArrangement, ViewArrangement.Default);
 
         atom.Dispatch(new EnterSplit(ViewNames.Reader, ViewNames.World, DefaultFollow: true, DefaultDividerFraction: 0.55));

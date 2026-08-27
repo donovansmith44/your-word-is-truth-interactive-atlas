@@ -353,4 +353,118 @@ public class ConformanceTests
             "Found a component-held field typed as a migrated atom's own value type -- render a Projection<T> instead, or add a reasoned allowlist entry here (the S-2 fix's own frozen-snapshot exception is the only one on record):\n" +
             string.Join("\n", violations));
     }
+
+    // ------------------------------------------------------------------
+    // Batch VC-1 fix round 1 (S-3, CRITICAL -- review): "R6's own no-copy
+    // scan extension to arrangement state was never written ... a planted
+    // `private bool _splitOpen;` -- literally the pattern R6 names -- is a
+    // bool, matches nothing in [ruling 6.iii's own type-name regex], and
+    // passes silently." This is the extension: it does NOT match on field
+    // TYPE (a `_splitOpen`-style copy is usually a bare bool/string derived
+    // FROM the atom, never typed AS the atom) -- it matches on whether a
+    // component-level field or property's own INITIALIZER reads
+    // `ViewArrangementAtom.Value` at all, exactly the review's own "more
+    // robust" suggested fix. Proven with the PLANTED-LINE technique (the
+    // ST-3 re-reviewer's own method -- feed the matcher a synthetic snippet
+    // containing the exact retired violation shape and a REALISTIC
+    // multi-line one, assert both are caught) rather than trusting an
+    // empty real-file scan alone to mean the pattern works.
+    // ------------------------------------------------------------------
+    private static readonly Regex ArrangementStateInitializerPattern = new(
+        @"(?:private|public|protected|internal)\s+(?:readonly\s+)?[^\n;{}]+?\s+(_?\w+)\s*(?:=>|=)\s*[^;]{0,400}?ViewArrangementAtom\.Value",
+        RegexOptions.Compiled);
+
+    // Secondary shape: a bare assignment INTO a field from a method body
+    // (not the field's own declaration) -- e.g. `_splitOpen =
+    // ViewArrangementAtom.Value...;` inside OnParametersSetAsync. This
+    // codebase's own established convention (every private field visibly
+    // uses a leading underscore, confirmed across client/Pages/client/
+    // Components) makes `_\w+\s*=` a safe, low-false-positive heuristic for
+    // "assigning into a FIELD," not a local variable (locals never carry
+    // this app's own `_` prefix).
+    private static readonly Regex ArrangementStateAssignmentPattern = new(
+        @"(?<![.\w])(_\w+)\s*=\s*[^;=]{0,400}?ViewArrangementAtom\.Value",
+        RegexOptions.Compiled);
+
+    [Fact]
+    public void NoComponentHeldArrangementState_PlantedRetiredShapeViolation_IsCaught()
+    {
+        // The EXACT shape this batch's own first-draft Reader.razor/
+        // Sources.razor shipped, pre-fix-round-1 (now genuinely retired).
+        const string planted = "private bool _splitOpen => SplitMode ?? (ViewArrangementAtom.Value is { LayoutKind: LayoutKinds.SplitH } a && a.Members.Count > 0 && a.Members[0] == ViewNames.Reader);";
+
+        Assert.Matches(ArrangementStateInitializerPattern, planted);
+    }
+
+    [Fact]
+    public void NoComponentHeldArrangementState_PlantedMultiLineViolation_IsCaught()
+    {
+        // A realistic MULTI-LINE shape (an expression body wrapped onto
+        // several lines, exactly how World.razor's own legitimate, real,
+        // ALLOWLISTED _follow property below is actually written) -- proves
+        // the scan is not merely a single-line trick.
+        const string planted = "private bool _isHost =>\n        ViewArrangementAtom.Value is { LayoutKind: LayoutKinds.SplitH } a\n        && a.Members[0] == HostName;";
+
+        Assert.Matches(ArrangementStateInitializerPattern, planted);
+    }
+
+    [Fact]
+    public void NoComponentHeldArrangementState_PlantedAssignmentViolation_IsCaught()
+    {
+        const string planted = "        _cachedArrangement = ViewArrangementAtom.Value;";
+
+        Assert.Matches(ArrangementStateAssignmentPattern, planted);
+    }
+
+    [Fact]
+    public void NoComponentHeldArrangementState_NoRealSiteOutsideTheSanctionedOwners()
+    {
+        var allowlist = new (string File, string Justification)[]
+        {
+            ("client\\Components\\CompositionSplit.razor",
+                "The ONE sanctioned generic reader -- Composition => Registry.ComposeFrom(ViewArrangementAtom.Value) IS R1/R3's own job (materializing the live arrangement through the compiled IViewComposition contract), not a component-held copy of role state; nothing derived from it is cached past this one render-scoped property."),
+            ("client\\Pages\\World.razor",
+                "R5's own capability-gated follow read (_follow) -- pre-existing (ST-2/ST-3/VC-1), reviewed and verified-passing in this batch's own original review ('R5 capability-based follow ... verified PASSING'). Not a role-determination copy of the retired _splitOpen shape -- Reader/Sources no longer have ANY such property after this fix round; CompositionSplit computes role ONCE, centrally."),
+        };
+
+        static string Normalize(string path) => path.Replace('\\', '/');
+
+        var violations = new List<string>();
+        foreach (var file in ClientSourceFiles())
+        {
+            var relative = Normalize(Path.GetRelativePath(RepoRoot(), file));
+            if (relative.StartsWith("client/State/") || relative.StartsWith("client/Views/"))
+            {
+                continue; // where the atom and the registry-backed contract projection are legitimately DEFINED
+            }
+
+            var text = File.ReadAllText(file);
+            var matched = ArrangementStateInitializerPattern.IsMatch(text) || ArrangementStateAssignmentPattern.IsMatch(text);
+            if (!matched)
+            {
+                continue;
+            }
+
+            if (!allowlist.Any(e => relative.EndsWith(Normalize(e.File))))
+            {
+                violations.Add(relative);
+            }
+        }
+
+        Assert.True(violations.Count == 0,
+            "Found a component-held field/property reading ViewArrangementAtom.Value directly outside the sanctioned owners -- retire it in favor of CompositionSplit's own centrally-computed role (IsSplitOpen/IsHost via ctx or @ref), or add a reasoned allowlist entry here:\n" +
+            string.Join("\n", violations));
+
+        // The allowlist itself must stay accurate -- every entry must
+        // actually match something real, or it is silently covering for a
+        // site that no longer exists.
+        foreach (var (file, _) in allowlist)
+        {
+            var path = Path.Combine(RepoRoot(), file.Replace('\\', Path.DirectorySeparatorChar));
+            Assert.True(File.Exists(path), $"Stale allowlist entry -- file no longer exists: {file}");
+            var text = File.ReadAllText(path);
+            Assert.True(ArrangementStateInitializerPattern.IsMatch(text) || ArrangementStateAssignmentPattern.IsMatch(text),
+                $"Stale allowlist entry -- {file} no longer matches the pattern it was allowlisted for.");
+        }
+    }
 }

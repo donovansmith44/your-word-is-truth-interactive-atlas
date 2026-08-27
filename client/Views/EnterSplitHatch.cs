@@ -28,15 +28,30 @@ namespace BibleAtlas.Client.Views;
 /// turns out to need nothing instance-specific at all, so a hatch can be
 /// constructed ONCE, at registry-build time, and invoked from ANY live
 /// button that happens to render it.
+///
+/// <see cref="HostView"/> (fix round 1, controller ruling 2): "the declared
+/// enter-split HATCH is the hosting declaration" -- distinct from
+/// <see cref="OwnerView"/> (who DECLARES/renders the button) because they
+/// are not always the same view. World's own hatch is declared BY World
+/// ("Read beside the map" lives on World's own page) but its OWN Invoke()
+/// makes READER the host (R7: byte-identical to pre-VC-1 -- see
+/// ViewRegistrySetup's own EnterSplitWorldRequestsReader). Reader's and
+/// Sources' own hatches have OwnerView == HostView (the declaring page
+/// becomes the host). This is what the R6 hatch-conformance test's own
+/// CompositionSplit tripwire (client.Tests) checks against: EVERY hatch's
+/// own HostView must render through <c>&lt;CompositionSplit HostName=... /&gt;</c>
+/// somewhere in that view's own component -- "no separate CanHost flag: the
+/// hatch vocabulary IS the hosting declaration."
 /// </summary>
 public sealed class EnterSplitHatch : IEscapeHatch
 {
     private readonly Func<Task> _invoke;
 
-    public EnterSplitHatch(string ownerView, string partnerView, Func<Task> invoke)
+    public EnterSplitHatch(string ownerView, string partnerView, string hostView, Func<Task> invoke)
     {
         OwnerView = ownerView;
         PartnerView = partnerView;
+        HostView = hostView;
         _invoke = invoke;
     }
 
@@ -45,6 +60,8 @@ public sealed class EnterSplitHatch : IEscapeHatch
     public string OwnerView { get; }
 
     public string PartnerView { get; }
+
+    public string HostView { get; }
 
     public Task Invoke() => _invoke();
 }

@@ -11,7 +11,6 @@
 @inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
 @inject StateAtom<Locus> LocusAtom
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
-@inject ViewRegistry Registry
 
 <PageTitle>Bible Explorer &mdash; @BookName @_chapterNum</PageTitle>
 
@@ -58,43 +57,37 @@
    removed from normal flow regardless of its DOM parent's own display,
    so adding display:flex here never affects them -- they still render
    exactly like "normal", full-viewport, per the brief. *@
-@* Batch VC-1: the split-view flex-container classing/testid/width-var is
-   now gated on `_splitOpen && _isHost` -- only the HOST lays out
-   [own content][divider][guest]; a GUEST-mounted Reader (sources+reader)
-   is just an ordinary content block sized by ITS OWN host's flex layout.
-
-   THIS OUTER DIV -- not the inner .reader-page below -- is Reader.razor's
-   own ROOT element, and Blazor components introduce no DOM element of
-   their own: when CompositionHost mounts Reader as a GUEST, THIS div lands
-   as the actual flex ITEM inside the HOST's own .split-view container
-   (Sources.razor's, for the sources+reader pairing) -- one level ABOVE
-   .reader-page. So .split-pane-guest (the sizing class, `flex: 1 1 auto`)
-   belongs HERE, on the true flex item, while .reader-page's own
-   .split-pane-reader stays reserved for the case THIS div itself is the
-   flex CONTAINER (hosting). Getting this one level wrong was caught before
-   ever reaching Playwright -- see ReaderPaneClass's own comment for the
-   matching other half. *@
-<div class="@(_shiftHeld ? "reader-shift-active" : "") @(_splitOpen && _isHost ? "split-view" : "") @(_splitOpen && !_isHost ? "split-pane-guest" : "")"
-     style="--split-reader-width:@(_splitReaderWidthPx.ToString(System.Globalization.CultureInfo.InvariantCulture))px;"
-     @onkeydown="OnPageKeyDown" @onkeyup="OnPageKeyUp" data-testid="@(_splitOpen && _isHost ? "split-view" : null)">
-    <div class="@ReaderPaneClass" data-testid="reader-root">
-        @* Batch VC-1 (R4): the "Open the map beside the text" button is now
-           an INVOCATION of Reader's own declared enter-split hatch
-           (ViewRegistry, Kind "enter-split") -- see InvokeEnterSplitHatch's
-           own comment. The two close affordances stay split by ROLE, not by
-           a Reader-specific "am I split" flag alone: HOST's own self-close
+@* Batch VC-1 fix round 1 (Adjudication F, controller ruling 1): this outer
+   div is Reader's OWN shift-tracking scope, UNCHANGED in role and now
+   carrying NO split-related classing/style/testid at all -- all of that
+   moved into CompositionSplit (see that component's own header). This div
+   stays the common DOM ancestor of .reader-page and ExplorerPopover
+   (a sibling, below) regardless of host/guest/single role, which is the
+   ENTIRE reason the shift-tracking mechanism survives this refactor
+   byte-for-byte: CompositionSplit is a CHILD of this div, not a
+   replacement for it. *@
+<div class="@(_shiftHeld ? "reader-shift-active" : "")"
+     @onkeydown="OnPageKeyDown" @onkeyup="OnPageKeyUp">
+    <CompositionSplit HostName="@ViewNames.Reader" SplitModeOverride="@SplitMode"
+                       OnFractionCommitted="OnDividerFractionCommitted" @ref="_compositionSplit" Context="ctx">
+        @* Batch VC-1 fix round 1 (S-2): Reader's own `_splitOpen`-style
+           branch is RETIRED -- role now comes from `ctx`, computed ONCE by
+           CompositionSplit, never re-derived here. The two close
+           affordances stay split by ROLE: HOST's own self-close
            (CloseReaderPane, unchanged -- "close the reader, keep the map,"
-           byte-identical to pre-VC-1) vs. GUEST's own close (dispatches the
-           generic CloseGuest intent via OnRequestClose, the SAME wiring
-           World.razor's own split-close-atlas button already uses). *@
-        @if (!_splitOpen)
+           byte-identical to pre-VC-1, a real navigation, not a generic
+           dispatch) vs. GUEST's own close (`ctx.RequestClose`, dispatches
+           the generic CloseGuest intent -- the SAME semantic World.razor's
+           own split-close-atlas button already uses, now shared). *@
+        <div class="@(ctx.IsSplitOpen && ctx.IsHost ? "reader-page split-pane-reader" : "reader-page")" data-testid="reader-root">
+        @if (!ctx.IsSplitOpen)
         {
             <button type="button" class="split-open split-open-parchment" data-testid="split-open-reader"
-                    @onclick="InvokeEnterSplitHatch">
+                    @onclick="ctx.InvokeHatch">
                 Open the map beside the text
             </button>
         }
-        else if (_isHost)
+        else if (ctx.IsHost)
         {
             <button type="button" class="split-close split-close-parchment" data-testid="split-close-reader"
                     aria-label="Close the reader, keep the map" @onclick="CloseReaderPane">
@@ -104,7 +97,7 @@
         else
         {
             <button type="button" class="split-close split-close-parchment" data-testid="split-close-reader-guest"
-                    aria-label="Close the reader" @onclick="() => OnRequestClose.InvokeAsync()">
+                    aria-label="Close the reader" @onclick="ctx.RequestClose">
                 &times;
             </button>
         }
@@ -235,11 +228,11 @@
         <nav aria-label="Chapter navigation">
             @if (PrevTarget is { } prev)
             {
-                <a class="reader-prev" data-testid="reader-prev" href="@ChapterHref(prev.Book, prev.Chapter)" aria-label="@($"Previous chapter: {prev.Name} {prev.Chapter}")">&lsaquo;<span class="reader-nav-label"> @prev.Name @prev.Chapter</span></a>
+                <a class="reader-prev" data-testid="reader-prev" href="@ChapterHref(prev.Book, prev.Chapter, ctx)" aria-label="@($"Previous chapter: {prev.Name} {prev.Chapter}")">&lsaquo;<span class="reader-nav-label"> @prev.Name @prev.Chapter</span></a>
             }
             @if (NextTarget is { } next)
             {
-                <a class="reader-next" data-testid="reader-next" href="@ChapterHref(next.Book, next.Chapter)" aria-label="@($"Next chapter: {next.Name} {next.Chapter}")"><span class="reader-nav-label">@next.Name @next.Chapter </span>&rsaquo;</a>
+                <a class="reader-next" data-testid="reader-next" href="@ChapterHref(next.Book, next.Chapter, ctx)" aria-label="@($"Next chapter: {next.Name} {next.Chapter}")"><span class="reader-nav-label">@next.Name @next.Chapter </span>&rsaquo;</a>
             }
         </nav>
 
@@ -254,32 +247,8 @@
                 <p class="toast-message">@_errorMessage</p>
             </div>
         }
-    </div>
-
-    @* Batch H: the atlas pane -- the EXISTING World.razor page componentry,
-       reused directly as a child component (not a copy), narrowed to its
-       own split-pane-atlas layout via SplitMode's markup branch. Batch
-       ST-1: the FollowRef PARAMETER that used to carry this page's own
-       current chapter down to World is RETIRED -- World now injects the
-       SAME shared Locus atom directly (client/State/Locus.cs) and
-       subscribes to its own Changed event, so "Reader navigation re-scenes
-       the map automatically" now falls out of both pages sharing ONE
-       atom, not a parameter Reader had to thread down (this is the actual
-       SYNC-1 fix -- see the batch report for the full mechanism). *@
-    @if (_splitOpen && _isHost)
-    {
-        @* Batch VC-1 (R3): Reader.razor's own hard-wired World embed is
-           RETIRED -- this now mounts WHICHEVER view the current
-           ViewArrangement names as the guest, by NAME, via CompositionHost/
-           ViewRegistry (never a hardcoded &lt;World .../&gt; tag). The
-           divider itself (M-D3/B2's own SplitDivider, unchanged) stays
-           OWNED here, alongside _splitReaderWidthPx -- see
-           CompositionHost.razor's own header for why: SplitDivider's own
-           pre-VC-1 doc comment already anticipated "a future second split
-           host inherits the identical mechanic for free." *@
-        <SplitDivider WidthPx="_splitReaderWidthPx" WidthPxChanged="w => _splitReaderWidthPx = w" OnCommitted="OnDividerCommitted" />
-        <CompositionHost @ref="_compositionHost" HostName="@ViewNames.Reader" />
-    }
+        </div>
+    </CompositionSplit>
 
     @if (_activeNode is not null)
     {
@@ -290,9 +259,18 @@
            chapter/event/place push, ...) passes null/unbound, which
            ExplorerPopover's own parameter doc comments already establish
            as a correct no-op, keeping this component's pre-existing
-           viewport/pane-centered behavior byte-for-byte unchanged there. *@
+           viewport/pane-centered behavior byte-for-byte unchanged there.
+           Batch VC-1 fix round 1 (S-4): InSplit/PaneAnchor now read
+           `_compositionSplit`'s own unambiguous IsSplitOpen/IsHost
+           properties (via @ref) instead of the retired `_splitOpen`/
+           `_isHost` pair -- InSplit stays HOST-only (routing a popover chip
+           into the already-embedded guest is only ever meaningful from the
+           host side); PaneAnchor stays "any split role" (Reader's own
+           content is narrowed -- and worth pane-anchoring a popover
+           against -- in EITHER role), matching this file's own pre-fix-round
+           behavior for both, just through the new unambiguous source. *@
         <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover"
-                          InSplit="@(_splitOpen && _isHost)" OnNavigateWorldInSplit="NavigateWorldInSplit" PaneAnchor="@(_splitOpen ? "reader" : null)"
+                          InSplit="@(_compositionSplit?.IsSplitOpen == true && _compositionSplit?.IsHost == true)" OnNavigateWorldInSplit="NavigateWorldInSplit" PaneAnchor="@(_compositionSplit?.IsSplitOpen == true ? "reader" : null)"
                           VerseAnchorSelector="@(_xrefEntryVerse is int xv ? $"#v{xv}" : null)" ShowBackdrop="!_hoverOnlyOpen"
                           OnPanelPointerEnter="CancelHoverClose" OnPanelPointerLeave="OnPanelPointerLeaveHoverGuard" />
     }
@@ -313,19 +291,16 @@
     // instance never receives this parameter at all (Blazor's router only
     // ever feeds route/query parameters), so the null branch is exactly the
     // pre-VC-1 self-determined path, byte-unchanged in shape.
+    // Batch VC-1 fix round 1: this is now CompositionSplit's own
+    // SplitModeOverride, threaded straight through -- null = self-determine
+    // (routed here by Blazor's router, so either single or host); explicit
+    // true = registry-mounted as a guest. IsHost/OnRequestClose (the
+    // pre-fix-round-1 parameters) are GONE -- Reader no longer computes
+    // role or close-plumbing itself at all; CompositionSplit does, once,
+    // and hands the result down via `ctx` (markup above) or exposes it via
+    // `@ref` (_compositionSplit below) for the few read sites outside
+    // ctx's own lambda scope.
     [Parameter] public bool? SplitMode { get; set; }
-
-    // Meaningful only while SplitMode is explicit (guest-mounted) -- always
-    // false there (a guest is never a host); ignored when SplitMode is null
-    // (self-determined mounts are always host -- Reader.razor is never
-    // ROUTED as anyone's guest).
-    [Parameter] public bool IsHost { get; set; }
-
-    // The generic "close ME" callback CompositionHost wires when mounting
-    // this instance as a guest -- dispatches CloseGuest on the shared atom.
-    // Unused (EventCallback.Empty) when self-determined/host, since the
-    // host's own self-close (CloseReaderPane) never needs it.
-    [Parameter] public EventCallback OnRequestClose { get; set; }
 
     // Batch H (split-view study): "Read beside the map" (World.razor)
     // navigates here with ?split=1 so the two entry points ("Open the map
@@ -353,61 +328,23 @@
     // World.razor's own OnRequestClose param and the batch report's layout
     // section for why).
     //
-    // Batch ST-2 (R4/R6): no longer an independent field -- a pure
-    // projection of the shared ViewArrangement atom. Batch VC-1: reads the
-    // SplitMode PARAMETER when explicitly supplied (guest-mounted), else
-    // self-determines from the atom exactly as ST-2 shipped it (routed
-    // host/standalone) -- "cannot desync because there's nothing to desync
-    // FROM" still holds either way, just from two different sources
-    // depending on which role this instance is playing.
-    private bool _splitOpen => SplitMode ?? (ViewArrangementAtom.Value is { LayoutKind: LayoutKinds.SplitH } a && a.Members.Count > 0 && a.Members[0] == ViewNames.Reader);
-
-    // Batch VC-1: true for every self-determined (routed) mount -- Reader is
-    // never routed as anyone's guest -- and for an explicit guest-mount only
-    // when IsHost was itself explicitly true (not reachable in this batch's
-    // own registrations, kept general rather than assumed-impossible).
-    private bool _isHost => SplitMode is null || IsHost;
-
-    // Batch VC-1: .split-pane-reader (the sizing class) applies HERE only
-    // while hosting -- this div is the true flex ITEM of the outer wrapper
-    // (itself the flex container) in that case. While GUEST-mounted, the
-    // OUTER wrapper div is the flex item instead (see its own comment,
-    // markup above) -- this inner div stays a plain "reader-page", filling
-    // that outer div's own natural content flow.
-    private string ReaderPaneClass => _splitOpen && _isHost ? "reader-page split-pane-reader" : "reader-page";
-
+    // Batch VC-1 fix round 1 (S-2, Adjudication F): _splitOpen/_isHost/
+    // ReaderPaneClass/_splitReaderWidthPx/_dividerRestoreAttempted are ALL
+    // RETIRED as independent Reader-owned state -- every one of them is now
+    // computed exactly ONCE, by CompositionSplit (client/Components/
+    // CompositionSplit.razor), and read here either via `ctx` (inside its
+    // own ChildContent lambda, markup above) or via `@ref`
+    // (_compositionSplit below, for the handful of read sites -- the
+    // popover, the picker-jump handler -- that sit outside that lambda's
+    // scope).
     private bool _splitQueryConsumed;
 
-    // Batch VC-1: the local CompositionHost this instance embeds while
-    // hosting (see the markup above) -- @ref gives access to its own
-    // NavigateGuestInSplit for the generalized "no nested-popup rule"
-    // (NavigateWorldInSplit below). Null while !(_splitOpen && _isHost) --
-    // CompositionHost isn't in the DOM at all then.
-    private CompositionHost? _compositionHost;
-
-    // M-D3/B2: the reader pane's own drag-adjustable width (SplitDivider.razor),
-    // read by the outer wrapper's own --split-reader-width custom property
-    // (app.css's own .split-pane-reader rule reads it via var()) -- a plain
-    // field, not ViewStateService, for the SAME "Reader.razor is reused
-    // across chapter navigation, so a plain field already survives it for
-    // free" reasoning _splitOpen's own comment above gives; also matches
-    // _splitOpen's own persistence TIER (session-local, resets on a fresh
-    // page load) rather than reaching for cross-session persistence nothing
-    // else about split-view has either. 704px matches this app's own
-    // pre-existing 55%-of-1280px default look (a common real viewport
-    // width) closely enough that a first-ever split-open, before any drag,
-    // is visually indistinguishable from the static split this batch
-    // replaces -- see SplitDivider.razor's own header comment for the full
-    // mechanism this value now feeds.
-    private double _splitReaderWidthPx = 704;
-
-    // Fix round 1 (S-3/Q-2/Adjudication C): guards RestoreDividerWidthFromAtom
-    // (OnAfterRenderAsync below) to at most once per split-open transition --
-    // set true the moment a restore attempt is made (success or fail-soft
-    // failure, either way there is nothing left to retry against THIS
-    // opening), reset false the moment _splitOpen goes false again so a
-    // LATER reopen gets its own fresh attempt.
-    private bool _dividerRestoreAttempted;
+    // Batch VC-1 fix round 1: @ref onto the embedded CompositionSplit --
+    // gives access to its own public IsSplitOpen/IsHost (for read sites
+    // outside ctx's own lambda scope, S-4) and NavigateGuestInSplit (the
+    // generalized "no nested-popup rule," NavigateWorldInSplit below). Null
+    // only before this component's own first render.
+    private CompositionSplit? _compositionSplit;
 
     private List<BookTocEntry>? _toc;
 
@@ -484,23 +421,18 @@
     // ExplorerPopover.OnNavigateWorldInSplit ("no nested-popup rule"): a
     // popover chip that would otherwise open a second full /world instead
     // hands its query straight to the ALREADY-EMBEDDED atlas pane, in
-    // place. Batch VC-1: generalized through CompositionHost's own
+    // place. Batch VC-1: generalized through CompositionSplit's own
     // NavigateGuestInSplit (a delegate handoff, not a typed @ref to World
-    // specifically -- see that component's own header) -- _compositionHost
-    // is null only in the impossible case this callback fires while
-    // !(_splitOpen && _isHost) (InSplit gates ExplorerPopover's own choice
-    // to invoke this at all) or before CompositionHost's own @ref has
-    // landed; the null-coalesce is pure defensive belt-and-suspenders, not
-    // an expected path.
-    private Task NavigateWorldInSplit(string query) => _compositionHost?.NavigateGuestInSplit(query) ?? Task.CompletedTask;
+    // specifically -- see that component's own header) -- _compositionSplit
+    // is null only in the impossible case this callback fires before
+    // CompositionSplit's own @ref has landed; the null-coalesce is pure
+    // defensive belt-and-suspenders, not an expected path.
+    private Task NavigateWorldInSplit(string query) => _compositionSplit?.NavigateGuestInSplit(query) ?? Task.CompletedTask;
 
-    // Batch VC-1 (R4): "Open the map beside the text" is now an invocation
-    // of Reader's own declared enter-split hatch (ViewRegistry, Kind
-    // "enter-split") -- see EnterSplitHatch/ViewRegistrySetup for the
-    // (dispatch EnterSplit + sync ?split=1) behavior this replaces,
-    // byte-identical to pre-VC-1's own OpenSplit.
-    private Task InvokeEnterSplitHatch() =>
-        Registry.Get(ViewNames.Reader).EscapeHatches.First(h => h.Kind == HatchKinds.EnterSplit).Invoke();
+    // Batch VC-1 fix round 1: InvokeEnterSplitHatch (the pre-fix-round-1
+    // page-local lookup method) is RETIRED -- "Open the map beside the
+    // text" binds directly to `ctx.InvokeHatch` in the markup above now,
+    // computed once by CompositionSplit.
 
     // split-close-reader ("close the reader pane -> full /world" per the
     // brief). A bare navigate -- the atlas pane's own CURRENT position
@@ -543,15 +475,12 @@
     // cross-remount survival mechanism -- unchanged, see ViewArrangement.cs's
     // own EnterSplit doc comment.
     //
-    // Batch VC-1: OpenSplit/CloseSplitAtlas (the pre-VC-1 direct dispatch
-    // methods) are RETIRED as separate methods -- OpenSplit's own body lives
-    // on now as EnterSplitReaderHostsWorld inside ViewRegistrySetup (invoked
-    // via InvokeEnterSplitHatch above); CloseSplitAtlas's own job (dispatch
-    // + SyncSplitUrl) is now the generic OnRequestClose wiring CompositionHost
-    // supplies to the GUEST it mounts, PLUS the resync below -- moved onto
-    // OnViewArrangementChanged so it fires no matter WHICH dispatch site
-    // changed the arrangement (this batch adds a second one: the guest's own
-    // CloseGuest dispatch, which this page never calls directly).
+    // Batch VC-1 fix round 1: OpenSplit/CloseSplitAtlas (already retired
+    // pre-fix-round-1) stay retired; CloseSplitAtlas's own job (dispatch +
+    // SyncSplitUrl) is the generic CloseGuest dispatch CompositionSplit now
+    // performs itself for the GUEST it mounts, PLUS the resync below --
+    // moved onto OnViewArrangementChanged so it fires no matter WHICH
+    // dispatch site changed the arrangement.
     //
     // A query-string-only navigation (book/chapter route params unchanged)
     // -- OnParametersSetAsync's own book/chapterNum-unchanged early-return
@@ -559,11 +488,11 @@
     // state; SplitQuery's own one-shot consumption (_splitQueryConsumed) is
     // already spent for this instance by the time either dispatch site
     // above ever runs, so this is the ONLY thing that keeps the URL
-    // truthful about _splitOpen from here on. replace:true -- a pure state
-    // reflection, not a new history entry to back-button through. A no-op
-    // (SplitMode explicit, i.e. guest-mounted -- e.g. sources+reader) never
-    // touches the URL at all, since Reader-as-guest owns no route/query of
-    // its own to keep in sync.
+    // truthful about the arrangement from here on. replace:true -- a pure
+    // state reflection, not a new history entry to back-button through. A
+    // no-op (SplitMode explicit, i.e. guest-mounted -- e.g. sources+reader)
+    // never touches the URL at all, since Reader-as-guest owns no
+    // route/query of its own to keep in sync.
     private void SyncSplitUrl()
     {
         if (SplitMode is not null)
@@ -571,83 +500,35 @@
             return; // guest-mounted -- no route/query of my own to keep in sync (see this method's own comment)
         }
 
-        var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?> { ["split"] = _splitOpen ? "1" : null });
+        // Fix round 1 (a live, self-caught crash -- reads the ATOM directly,
+        // deliberately NOT `_compositionSplit?.IsSplitOpen`): this method is
+        // reached via OnViewArrangementChanged, which can fire SYNCHRONOUSLY
+        // as a side effect of the SplitQuery-driven EnterSplit dispatch
+        // inside OnParametersSetAsync -- i.e. BEFORE this component's own
+        // FIRST render, before CompositionSplit's own @ref has EVER been
+        // assigned. Reading `_compositionSplit?.IsSplitOpen` there evaluates
+        // to `false` (null-conditional on a still-null ref), stripping the
+        // `?split=1` that dispatch just added and firing a SECOND,
+        // re-entrant Nav.NavigateTo mid-navigation -- reproduced live as an
+        // `ObjectDisposedException` crash in World's own PushLandmarksIfReady
+        // (the second navigation destabilized an already-fragile dispose-
+        // vs-mount race, Batch H's own documented SPLITCLOSE-1 class of
+        // hazard, tipping it from "wrong state" into a hard crash). The
+        // atom itself has no such timing gap -- it is always valid,
+        // synchronously, the SAME reasoning the pre-fix-round-1 `_splitOpen`
+        // formula relied on for this exact reason.
+        var isSplitOpen = ViewArrangementAtom.Value is { LayoutKind: LayoutKinds.SplitH } a && a.Members.Count > 0 && a.Members[0] == ViewNames.Reader;
+        var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?> { ["split"] = isSplitOpen ? "1" : null });
         Nav.NavigateTo(uri, replace: true);
     }
 
-    // Batch ST-2 (R4): SplitDivider's own OnCommitted callback -- fires ONCE
-    // per completed gesture (drag-end or a keyboard nudge), never a live drag
-    // frame ("DividerFraction commits on drag END only"). _splitReaderWidthPx
-    // -- the ACTUAL render source for the divider's pixel position, UNCHANGED
-    // since before this batch -- is updated unconditionally; the atom (and,
-    // fix round 1, ViewState.Map.DividerFraction) only receive the fraction
-    // when SplitDivider's own measurement succeeded (Fraction is null on a
-    // failed/unavailable measurement -- same fail-soft spirit
-    // SplitDivider's own EnsureMaxWidthAsync already uses elsewhere).
-    //
-    // Fix round 1 (S-3/Q-2/Adjudication C, review): DividerFraction is no
-    // longer write-only. ViewState.Map.DividerFraction is written here (the
-    // SAME persistence-beneath-the-atom role MapViewState.Follow already
-    // plays) so a FRESH EnterSplit dispatch (OpenSplit/the SplitQuery block)
-    // can seed a brand-new Split arm with it, and RestoreDividerWidthFromAtom
-    // (OnAfterRenderAsync below) reads the atom's own Split.DividerFraction
-    // back into _splitReaderWidthPx on every split-open transition -- see
-    // that method's own comment for the cross-remount mechanism this now
-    // genuinely supports.
-    private void OnDividerCommitted((double WidthPx, double? Fraction) result)
-    {
-        _splitReaderWidthPx = result.WidthPx;
-        if (result.Fraction is { } fraction)
-        {
-            ViewArrangementAtom.Dispatch(new SetDivider(fraction));
-            ViewState.Map.DividerFraction = fraction;
-        }
-    }
-
-    // Fix round 1 (S-3/Q-2/Adjudication C, review -- "the requirement was
-    // weakened, not met"): the read side of DividerFraction. Called once per
-    // split-open transition, from OnAfterRenderAsync, specifically AFTER the
-    // render that applies `.split-view`'s own CSS class has already
-    // committed -- `.split-view`'s measurable content-box width does not
-    // exist before that, so this cannot run any earlier in the lifecycle
-    // (the same reason SplitDivider's own EnsureMaxWidthAsync only ever
-    // measures on a real pointerdown/keydown, never at construction).
-    // Measures via the SAME `getPaneRect` reader.js already exports for
-    // SplitDivider's own use, fails soft to whatever _splitReaderWidthPx
-    // already holds on a failed/unavailable measurement -- the identical
-    // stance EnsureMaxWidthAsync takes.
-    private async Task RestoreDividerWidthFromAtom(double fraction)
-    {
-        try
-        {
-            var rect = await _readerJs!.InvokeAsync<PaneRectDto?>("getPaneRect", ".split-view");
-            if (rect is { Width: > 0 } r)
-            {
-                // A light sanity floor (not SplitDivider's own precise
-                // MinWidthPx/DividerWidthPx constants, which are private to
-                // that component) -- good enough for an INITIAL restore; the
-                // very next real drag/nudge re-clamps to the exact bounds
-                // via SplitDivider's own EnsureMaxWidthAsync regardless.
-                _splitReaderWidthPx = Math.Clamp(fraction * r.Width, 200, r.Width - 200);
-                StateHasChanged();
-            }
-        }
-        catch (Exception)
-        {
-            // Fail soft -- keep whatever _splitReaderWidthPx already holds
-            // (the untouched local field from a same-instance reopen, or the
-            // 704px default on a genuine cross-remount), same graceful-
-            // degrade spirit SplitDivider's own EnsureMaxWidthAsync uses.
-        }
-    }
-
-    // reader.js's own getPaneRect return shape -- a second, independently-
-    // declared copy of SplitDivider.razor's own private PaneRectDto (that
-    // one is file-scoped private too, so this file needs its own -- same
-    // "one shape, many callers, no shared type" precedent SplitDivider's own
-    // header comment already establishes for ExplorerPopover's analogous
-    // VerseAnchorRectDto/PaneRectDto pair).
-    private sealed record PaneRectDto(double Left, double Top, double Width, double Height);
+    // Batch VC-1 fix round 1 (Adjudication F): the divider's own width
+    // state, restore-on-open, and SetDivider commit all moved into
+    // CompositionSplit -- this is the ONE genuinely per-host behavior
+    // Adjudication F's own inventory named (ViewState.Map.DividerFraction
+    // persistence), bound as CompositionSplit's own optional
+    // OnFractionCommitted callback (markup above).
+    private void OnDividerFractionCommitted(double fraction) => ViewState.Map.DividerFraction = fraction;
 
     // reader-prev/reader-next (Batch R requirement 6/HOTFIX NAV-4) -- their
     // own hrefs are plain <a> tags (Blazor's router intercepts same-origin
@@ -658,13 +539,24 @@
     // when a split is open -- otherwise the URL silently drops it on the
     // very next chapter turn, and a refresh right after would lose split
     // state even though _splitOpen itself is still (correctly) true.
-    // Batch VC-1: guarded on _isHost too -- a guest-mounted instance
+    // Batch VC-1: guarded on IsHost too -- a guest-mounted instance
     // (sources+reader) has no ?split=1 of its own to propagate; prev/next
     // there is a plain chapter link, disclosed to leave the sources+reader
     // split (navigating to standalone /read/...) rather than trying to keep
     // an arrangement its own route knows nothing about alive across a real
     // navigation.
-    private string ChapterHref(string book, int chapter) => _splitOpen && _isHost ? $"/read/{book}/{chapter}?split=1" : $"/read/{book}/{chapter}";
+    //
+    // Fix round 1: takes `ctx` as a PARAMETER (from the markup's own
+    // ChildContent lambda), NOT `_compositionSplit` -- another live,
+    // self-caught bug this round: this href is computed WHILE
+    // CompositionSplit is still executing its own first render (invoking
+    // ChildContent to build the tree), which is BEFORE Blazor assigns the
+    // `_compositionSplit` @ref field -- reading the ref here would silently
+    // omit `?split=1` from prev/next on a fresh split-open's own first
+    // paint. `ctx` carries the SAME IsSplitOpen/IsHost, correct at exactly
+    // the moment this executes, no timing gap.
+    private string ChapterHref(string book, int chapter, CompositionSplitContext ctx) =>
+        ctx is { IsSplitOpen: true, IsHost: true } ? $"/read/{book}/{chapter}?split=1" : $"/read/{book}/{chapter}";
 
     // Fix round 1 finding: _book/_chapterNum are updated to the NEW route's
     // values SYNCHRONOUSLY in OnParametersSetAsync, before LoadChapter's
@@ -878,25 +770,10 @@
             await _readerJs.InvokeVoidAsync("watchChapterNavCenter");
         }
 
-        // Fix round 1 (S-3/Q-2/Adjudication C, review): restores
-        // _splitReaderWidthPx from the atom's own Split.DividerFraction, once
-        // per split-open transition -- see RestoreDividerWidthFromAtom's own
-        // comment for the full mechanism and why this specifically closes
-        // the "cross-remount" gap the review found (DividerFraction was
-        // write-only before this round). Independent of ChapterMatchesRoute
-        // -- this has nothing to do with which chapter loaded.
-        if (_splitOpen && _isHost && !_dividerRestoreAttempted && _readerJs is not null)
-        {
-            _dividerRestoreAttempted = true;
-            if (ViewArrangementAtom.Value is { LayoutKind: LayoutKinds.SplitH, DividerFraction: { } fraction })
-            {
-                await RestoreDividerWidthFromAtom(fraction);
-            }
-        }
-        else if (!_splitOpen)
-        {
-            _dividerRestoreAttempted = false;
-        }
+        // Batch VC-1 fix round 1: the divider-width restore-on-open block
+        // that used to live here is RETIRED -- CompositionSplit now owns
+        // _widthPx/_dividerRestoreAttempted and restores itself, in its own
+        // OnAfterRenderAsync (client/Components/CompositionSplit.razor).
 
         if (!ChapterMatchesRoute || _readerJs is null)
         {
@@ -1501,7 +1378,15 @@
         // fragment -- standard URL syntax, path?query#fragment -- so a
         // picker jump made while split is open doesn't silently drop it
         // (same reasoning as ChapterHref above).
-        var query = _splitOpen ? "?split=1" : "";
+        //
+        // Fix round 1 (S-4, IMPORTANT -- review): this was the ONE real,
+        // live bug the retired ambiguous `_splitOpen` flag caused (not just
+        // a code-smell) -- a GUEST-mounted Reader (sources+reader) read
+        // `_splitOpen` alone (true in EITHER role) and silently converted a
+        // picker jump into a reader+world split, navigating away from
+        // /sources entirely. Guarded on IsHost too now, matching
+        // ChapterHref's own already-correct pattern exactly.
+        var query = _compositionSplit is { IsSplitOpen: true, IsHost: true } ? "?split=1" : "";
         var fragment = verse is int v ? $"#v{v}" : "";
         Nav.NavigateTo($"/read/{book}/{chapterNum}{query}{fragment}");
         return Task.CompletedTask;
