@@ -66,6 +66,37 @@ fn real_eras() -> Vec<atlas_core::data::Era> {
     real_atlas_data().eras.clone()
 }
 
+// KRETZ-m3 (batch-finalp2-brief.md ticket 5, grep-origin -- parked since
+// KRETZ-1's own batch): both tests below used to build their "source graph"
+// via `build_graph_from_sources_with_eras_and_brainfuel` -- KJV + brainfuel
+// ONLY, exactly mirroring CORP-1a's own fix-round-1 precedent (this file's
+// own `brainfuel` threading, same reasoning) but never extended when
+// Concord/Kretzmann joined the graph. Confirmed via `BENCHMARKS.md`'s own
+// disclosure ("this specific test's own 'source graph' (72.3MB)... SMALLER
+// than, and not representative of, the REAL committed `data/compiled/
+// graph.bin` (99.5MB, all three corpora)"): the REAL artifact
+// `atlas-graph-compile` actually writes carries Concord + Kretzmann content
+// this admission gate never exercised -- meaning a divergence bug specific
+// to `contains_concord`/`catechism`/`comments_on` round-tripping through
+// `artifact::dump`/`to_service_parts` (the exact surface PERF-m1, this same
+// batch, touches for `comments_on`) would NOT have been caught here. Threads
+// real, already-vendored Concord + Kretzmann data in, the SAME "richest
+// raw-source form" constructors `kretzmann_adapter_real_data.rs`'s own
+// `real_graph()` helper already establishes -- red_letter is deliberately
+// NOT added here (out of this ticket's own named scope, "Concord/
+// Kretzmann"; RED-m1/RED-m2 own that surface separately).
+fn real_concord_bundle(raw_dir: &Path) -> atlas_graph::concord_adapter::ConcordBundle {
+    let concord_corpus = atlas_etl::concord::read_all(&raw_dir.join("concord")).expect("data/raw/concord must exist -- run data/fetch-raw.ps1 first");
+    let sc_overlap_text = std::fs::read_to_string(raw_dir.parent().unwrap().join("curated/concord-sc-overlap.toml")).expect("data/curated/concord-sc-overlap.toml must exist");
+    let sc_overlap = atlas_etl::concord::parse_sc_overlap(&sc_overlap_text).expect("concord-sc-overlap.toml must parse");
+    atlas_graph::concord_adapter::ConcordBundle { corpus: concord_corpus, sc_overlap }
+}
+
+fn real_kretzmann_corpus(kjv_json: &str, raw_dir: &Path) -> atlas_etl::kretzmann::KretzmannCorpus {
+    let (_, kjv_verses) = atlas_etl::kjv::parse(kjv_json).expect("kjv.json must parse");
+    atlas_etl::kretzmann::read_all(&raw_dir.join("kretzmann"), &kjv_verses).expect("data/raw/kretzmann must exist -- run data/fetch-raw.ps1 first")
+}
+
 #[test]
 fn serialized_artifact_is_admitted_and_loads_under_the_committed_ceiling() {
     let raw_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
@@ -77,10 +108,17 @@ fn serialized_artifact_is_admitted_and_loads_under_the_committed_ceiling() {
     // otherwise this test would only ever admit a KJV-only graph, not the
     // one `atlas-graph-compile` actually writes to `graph.bin`.
     let brainfuel = atlas_etl::brainfuel::read_all(&raw_dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first");
+    // KRETZ-m3: real vendored Concord + Kretzmann data join the admission
+    // proof too (see this file's own module-level doc comment above) --
+    // otherwise this test would only ever admit a graph missing two of the
+    // three real corpora `atlas-graph-compile` actually writes.
+    let concord_bundle = real_concord_bundle(&raw_dir);
+    let kretzmann_corpus = real_kretzmann_corpus(&kjv_json, &raw_dir);
 
     // Implementation #1: build from raw, as `GraphService::build` does at
     // real startup (before this batch's artifact path exists).
-    let built = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel)).expect("the real committed sources must build");
+    let built = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel), Some(&concord_bundle), Some(&kretzmann_corpus))
+        .expect("the real committed sources must build");
     let (model_graph, stats, event_world_stats, chrono) = built;
     let chronology = atlas_graph::Chronology::from_derivation(chrono);
     println!(
@@ -146,10 +184,15 @@ fn graph_service_from_artifact_serves_the_same_answers_as_from_sources() {
     let atlas = real_atlas_data();
     let eras = real_eras();
     let brainfuel = atlas_etl::brainfuel::read_all(&raw_dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first");
+    // KRETZ-m3 (see this file's own module-level doc comment): thread real
+    // Concord + Kretzmann data through this equivalence proof too, so it
+    // covers the SAME three-corpora graph `atlas-graph-compile` ships.
+    let concord_bundle = real_concord_bundle(&raw_dir);
+    let kretzmann_corpus = real_kretzmann_corpus(&kjv_json, &raw_dir);
 
-    let from_sources = GraphService::from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel)).unwrap();
+    let from_sources = GraphService::from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel), Some(&concord_bundle), Some(&kretzmann_corpus)).unwrap();
 
-    let (model_graph, stats, event_world_stats, chrono) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel)).unwrap();
+    let (model_graph, stats, event_world_stats, chrono) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(&kjv_json, &xrefs_tsv, &atlas, &eras, Some(&brainfuel), Some(&concord_bundle), Some(&kretzmann_corpus)).unwrap();
     let chronology = atlas_graph::Chronology::from_derivation(chrono);
     let dump = atlas_graph::artifact::dump(&model_graph, &chronology, &stats, &event_world_stats).unwrap();
     let tmp = std::env::temp_dir().join(format!("atlas-graph-service-from-artifact-{}.bin", std::process::id()));
