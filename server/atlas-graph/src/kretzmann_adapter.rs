@@ -161,6 +161,22 @@ pub struct ChapterCommentaryRow {
 /// returned rows -- mirrors the client's own pre-existing "if
 /// (items.Count > 0)" filter exactly, just computed once here instead of
 /// once per verse over HTTP.
+///
+/// KRETZ-m2 (batch-finalp2-brief.md ticket 5, DOCUMENTED not fixed --
+/// `atlas-graph/tests/kretzmann_adapter_real_data.rs`'s own
+/// `chapter_commentary_shows_a_multi_verse_spanning_unit_only_at_its_own_
+/// first_verse_kretz_m2` pins this over real data): a multi-verse-spanning
+/// unit (`ChapterIntro`/`PericopeIntro` -- `atlas-etl`'s own `kretzmann.rs`
+/// range-backfill pass) appears in this listing ONLY at its own FIRST
+/// verse, never at any later verse its real range also covers --
+/// `comments_on` is indexed at the range's first verse only
+/// (`graph-types/src/graph.rs`'s own doc comment), and `GraphQuery` (the
+/// port this function queries through) has no way to recover a row's own
+/// full range from an edge query alone. Fine for THIS function's own
+/// chapter-listing use (an intro repeated under every verse would be
+/// worse), but a future "verse -> applicable commentary" popover lookup
+/// must NOT assume this listing's own per-verse grouping is exhaustive for
+/// multi-verse units.
 pub fn chapter_commentary(query: &dyn GraphQuery, book_index: u8, chapter: u16, verse_count: u16) -> Vec<ChapterCommentaryRow> {
     let mut rows = Vec::new();
     for verse in 1..=verse_count {

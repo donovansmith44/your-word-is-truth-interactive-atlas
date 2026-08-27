@@ -160,4 +160,96 @@ fn chapter_commentary_serves_psalm_119_with_real_counts_matching_a_direct_commen
     }
     let actual: std::collections::BTreeSet<(u16, String)> = rows.iter().map(|r| (r.verse, r.item_id.raw.clone())).collect();
     assert_eq!(actual, expected, "chapter_commentary's own rows must exactly match a direct graph.comments_on cross-check for PSA 119");
+
+    // KRETZ-m2 (batch-finalp2-brief.md ticket 5): this cross-check's own
+    // full-range expansion (`for v in row.on.from.unit.verse..=row.on.to.
+    // unit.verse` above) happens to equal a single-verse set for EVERY real
+    // `comments_on` row touching PSA 119 -- verified empirically here as a
+    // precondition, not assumed -- so this test does NOT exercise (and
+    // never has exercised) the multi-verse-spanning-unit case at all. See
+    // `chapter_commentary_shows_a_multi_verse_spanning_unit_only_at_its_own_
+    // first_verse_kretz_m2` below (a DIFFERENT, real chapter, found
+    // generically) for the test that actually does, and for the documented
+    // reason `chapter_commentary` cannot do full-range attribution today.
+    assert!(
+        graph
+            .comments_on
+            .iter()
+            .filter(|row| row.on.from.unit.book == book.0 && row.on.to.unit.book == book.0 && row.on.from.unit.chapter == chapter)
+            .all(|row| row.on.from.unit.verse == row.on.to.unit.verse),
+        "precondition for the cross-check above: PSA 119 must carry no multi-verse-spanning comments_on row in the real corpus (if this ever fails, the cross-check above was silently passing vacuously on the multi-verse case, and the KRETZ-m2 test below is not, in fact, the only real coverage of it)"
+    );
+}
+
+/// KRETZ-m2 (parked since KRETZ-1's own batch, flagged for "before popover
+/// work"; batch-finalp2-brief.md ticket 5): `comments_on`'s own lowering
+/// into the generic directed edge index (`graph-types/src/graph.rs`'s own
+/// `build_indexes`, a standing-veto crate this batch may not touch)
+/// anchors EVERY row -- including `ChapterIntro`/`PericopeIntro` units,
+/// whose real range routinely spans dozens of verses (`atlas-etl`'s own
+/// `kretzmann.rs`, the pericope/chapter-intro range-backfill pass:
+/// `ChapterIntro` = `(1, chapter_verse_count)`) -- at its range's OWN FIRST
+/// VERSE ONLY (`graph.rs`'s own doc comment: "the range's own FIRST verse
+/// is the edge endpoint... full multi-verse popover surfacing is
+/// deferred"). `chapter_commentary` (KRETZ-SCALE-1) queries
+/// `commented-on-by` edges at EACH verse's own position in turn, so it
+/// inherits this exactly: a chapter-intro/pericope-intro unit's own
+/// commentary appears ONLY under its first verse's row, never under any
+/// LATER verse its own range covers.
+///
+/// NOT fixable within this batch: `GraphQuery` (the owner-approved port --
+/// `node`/`derive`/`edge_summary`/`edges`/`reading_window`, `service.rs`'s
+/// own "never a direct `Graph` field reach" law) offers no way to recover a
+/// `CommentsOn` row's own full range from an edge query alone (only its
+/// indexed endpoint is queryable) -- fixing the ROOT would mean either
+/// re-indexing in `graph-types` (the standing veto) or reaching around the
+/// port to a concrete `Graph` (forbidden by `service.rs`'s own documented
+/// law, which exists precisely so a second `GraphStore` implementation
+/// stays possible). DOCUMENTED here exactly like RED-m2's own SpokenAt
+/// disposition (the same brief's ticket 2, "DOCUMENT-ONLY... a test pinning
+/// current coverage + a comment -- no artifact moves"): this test pins
+/// CURRENT, real, live behavior over the real corpus, discovered
+/// generically (not a hardcoded book/chapter), so any future fix (or
+/// regression) to this gap shows up here first.
+///
+/// Disclosed judgment call: for the CHAPTER-LISTING use case `chapter_
+/// commentary` actually serves today, first-verse-only attribution is
+/// arguably the RIGHT product behavior (nobody wants a 176-verse chapter's
+/// intro repeated under all 176 verses) -- the real risk this test flags is
+/// a FUTURE "verse -> applicable commentary" popover lookup silently
+/// missing coverage for any verse past a multi-verse unit's own first.
+#[test]
+fn chapter_commentary_shows_a_multi_verse_spanning_unit_only_at_its_own_first_verse_kretz_m2() {
+    let graph = real_graph();
+
+    let spanning = graph
+        .comments_on
+        .iter()
+        .find(|r| r.on.from.unit.book == r.on.to.unit.book && r.on.from.unit.chapter == r.on.to.unit.chapter && r.on.to.unit.verse > r.on.from.unit.verse)
+        .expect("the real Kretzmann corpus must contain at least one multi-verse-spanning unit (a ChapterIntro or PericopeIntro -- kretzmann.rs's own range-backfill pass)");
+
+    let book_index = spanning.on.from.unit.book;
+    let chapter = spanning.on.from.unit.chapter;
+    let first_verse = spanning.on.from.unit.verse;
+    let last_verse = spanning.on.to.unit.verse;
+    let item_id_str = spanning.item.0.clone();
+    assert!(last_verse > first_verse, "sanity: the discovered row must genuinely span more than one verse");
+
+    // `verse_count = last_verse` is sufficient (not the chapter's true real
+    // length): `chapter_commentary` only needs to walk far enough to cover
+    // every verse this ONE row's own range touches -- this test does not
+    // need a real `AtlasData` chapter-length lookup to prove its point.
+    let rows = atlas_graph::kretzmann_adapter::chapter_commentary(graph, book_index, chapter, last_verse);
+
+    assert!(
+        rows.iter().any(|r| r.verse == first_verse && r.item_id.raw == item_id_str),
+        "the spanning unit must appear at its own first verse ({first_verse}) -- that's the position `comments_on` is indexed at"
+    );
+
+    for v in (first_verse + 1)..=last_verse {
+        assert!(
+            !rows.iter().any(|r| r.verse == v && r.item_id.raw == item_id_str),
+            "KRETZ-m2 (documented, not fixable this batch -- see this test's own doc comment): the spanning unit must be ABSENT from verse {v}, inside its own range ({first_verse}..={last_verse}) but past its indexed first verse. If this assertion ever fails, the port gained a way to recover full-range attribution -- update this test AND `chapter_commentary`'s own doc comment (kretzmann_adapter.rs) to reflect the fix, don't just relax the assertion."
+        );
+    }
 }
