@@ -164,7 +164,69 @@
    a lifecycle synchronous prefix that yields a genuinely DIFFERENT URL
    would reopen this crash with no guard and no red test (re-review's own
    finding, "hazard-class open") -- the real rule is the one stated in this
-   sentence, not the narrower guard that happens to satisfy it today. *@
+   sentence, not the narrower guard that happens to satisfy it today.
+
+   ============================================================
+   BATCH CORPREAD-1a, RULING 5 -- the split-URL projection trio, owned HERE,
+   for EVERY host. Read this section before touching the SplitQuery/
+   FollowQuery parameters or SyncSplitUrl below.
+   ============================================================
+
+   SPLIT-PERSIST-1 (owner order, verbatim: "when i refresh in split screen
+   mode it takes me out of split screen") generalizes what was, pre-
+   CORPREAD-1a, a Reader.razor-only mechanism (its own retired `SplitQuery`
+   parameter + `SyncSplitUrl` method, and Sources/Kretzmann/Concord's own
+   disclosed "does not survive refresh" limitation) into this component,
+   the ONE place every host-capable page already gets its role/close/
+   divider machinery from -- see this file's own RULING 3, "the official
+   host recipe." A host declares NOTHING extra to get URL persistence; it
+   already had none to declare for the Adjudication-F machinery this
+   mirrors.
+
+   MECHANISM (see `client/Views/SplitUrlContract.cs` for the declared
+   grammar this reads/writes):
+     - RESTORE-ONCE-ON-LOAD: `SplitQuery`/`FollowQuery` are
+       `[SupplyParameterFromQuery]` parameters -- Blazor's router supplies
+       them from the CURRENT URL regardless of which component declares
+       them (no `@page` requirement). `OnParametersSet` below consumes them
+       EXACTLY ONCE per component instance (`_splitQueryConsumed`, never
+       re-armed by a later, unrelated parameter set -- the SAME one-shot
+       discipline Reader's own retired `_splitQueryConsumed` field used),
+       ONLY when NOT guest-mounted (a guest has no route/query of its own
+       -- reads the ambient URL of whatever page embeds it, which is
+       meaningless here). A known, non-self guest name dispatches
+       `EnterSplit`; anything else (absent, unknown, self-referential)
+       dispatches `EnterSingle(HostName)` -- this ALWAYS asserts the
+       instance's own arrangement, not just on a present split param, so
+       the atom correctly reflects reality regardless of whatever a PRIOR
+       page/instance this session left it in (mirrors Reader's own retired
+       comment on this exact point, generalized to every host).
+     - PROJECT-ON-CHANGE: `SyncSplitUrl` (below) runs from
+       `HandleArrangementChanged` -- THIS component's own single owned
+       subscription (RULING 1), so it fires for every dispatch site
+       (a hatch click, a guest's own close, the restore dispatch itself)
+       with no second subscription anywhere. Guarded by the SAME `uri ==
+       Nav.Uri` no-op check Reader's own retired `SyncSplitUrl` used --
+       RULING 4(b)'s hazard (Nav.NavigateTo from a lifecycle synchronous
+       prefix) applies here too: the restore dispatch above runs from
+       `OnParametersSet`'s own synchronous body, and its own resync target
+       is BY CONSTRUCTION the URL just arrived at (same-URL, a no-op) in
+       every case except a garbage/unrecognized split value on an
+       otherwise-non-empty query string -- an inherited, disclosed
+       corner (Reader's own pre-CORPREAD-1a implementation carried the
+       identical exposure for a garbage `?split=xyz`; not newly introduced
+       or newly widened here, see the batch report's own concerns list).
+
+   Every hatch closure (`ViewRegistrySetup.cs`) that dispatches `EnterSplit`
+   from a PLAIN CLICK HANDLER (not a lifecycle synchronous prefix) needs NO
+   manual `Nav.NavigateTo` of its own any more -- this component's own
+   subscription resyncs the URL as a side effect of the dispatch,
+   automatically, for every host. The ONE exception is
+   `EnterSplitWorldRequestsReader`: World has no live CompositionSplit of
+   its OWN to resync through (it never hosts) -- it navigates to Reader's
+   route directly, building the target URL from `SplitUrlContract` so
+   Reader's own restore-on-load (this same mechanism) picks it up on
+   arrival. *@
 @using BibleAtlas.Client.Contracts
 @using BibleAtlas.Client.State
 @using BibleAtlas.Client.Views
@@ -172,6 +234,7 @@
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 @inject ViewRegistry Registry
 @inject IJSRuntime JS
+@inject NavigationManager Nav
 
 @if (!IsGuestMount && !LayoutKinds.IsKnown(Composition.Layout.Kind))
 {
@@ -261,6 +324,21 @@ else
     [Parameter]
     public Action? OnArrangementChanged { get; set; }
 
+    // Batch CORPREAD-1a (SPLIT-PERSIST-1, RULING 5 -- see this file's own
+    // header): the split-URL grammar's two halves, supplied by Blazor's
+    // router from the CURRENT URL regardless of which component declares
+    // them (no @page requirement) -- consumed once, below, in
+    // OnParametersSet.
+    [SupplyParameterFromQuery(Name = SplitUrlContract.SplitParam)]
+    [Parameter]
+    public string? SplitQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = SplitUrlContract.FollowParam)]
+    [Parameter]
+    public string? FollowQuery { get; set; }
+
+    private bool _splitQueryConsumed;
+
     // Batch CORPREAD-1a (SPLIT-5050): this literal 704px is no longer the
     // PRIMARY no-stored-fraction path (see OnAfterRenderAsync below, which
     // now always attempts a live 50/50 measurement first) -- it survives
@@ -336,10 +414,82 @@ else
         ViewArrangementAtom.Changed += HandleArrangementChanged;
     }
 
+    // Batch CORPREAD-1a (RULING 5): resyncs the URL (SyncSplitUrl, a no-op
+    // when guest-mounted) alongside the pre-existing re-render/hook pair --
+    // fires from THIS component's own single owned subscription, so every
+    // dispatch site (a hatch click, a guest's own close, the restore
+    // dispatch in OnParametersSet below) keeps whichever host page is
+    // currently routed here truthful, for every host, with no per-host
+    // wiring.
     private void HandleArrangementChanged()
     {
+        SyncSplitUrl();
         StateHasChanged();
         OnArrangementChanged?.Invoke();
+    }
+
+    // Batch CORPREAD-1a (SPLIT-PERSIST-1, RULING 5): restore-once-on-load --
+    // see this file's own header for the full mechanism and the one
+    // disclosed, inherited corner case (a garbage/unrecognized split value
+    // reachable from this synchronous prefix). Guarded on `IsGuestMount`
+    // (a registry-mounted guest has no route/query of its own to restore
+    // from -- reads whatever page embeds it, meaningless here) and
+    // `_splitQueryConsumed` (never re-armed by a LATER, unrelated parameter
+    // set -- e.g. Reader.razor's own SplitMode/HostPaneClass parameters
+    // being re-passed by its parent on an unrelated re-render).
+    protected override void OnParametersSet()
+    {
+        if (IsGuestMount || _splitQueryConsumed)
+        {
+            return;
+        }
+
+        _splitQueryConsumed = true;
+
+        if (SplitQuery is { } guestName && guestName != HostName && Registry.TryGet(guestName, out _))
+        {
+            ViewArrangementAtom.Dispatch(new EnterSplit(HostName, guestName, FollowQuery == SplitUrlContract.FollowTrueValue, DefaultDividerFraction: null));
+        }
+        else
+        {
+            ViewArrangementAtom.Dispatch(new EnterSingle(HostName));
+        }
+    }
+
+    // Batch CORPREAD-1a (SPLIT-PERSIST-1, RULING 5): project-on-change --
+    // see this file's own header for the full mechanism. `IsGuestMount`
+    // guard first (a guest has no route/query of its own to keep in sync);
+    // reads `IsSplitOpen`/`Composition` AFTER the atom's own Changed event
+    // has already fired, so both already reflect the NEW value.
+    private void SyncSplitUrl()
+    {
+        if (IsGuestMount)
+        {
+            return;
+        }
+
+        var guestName = IsSplitOpen ? Composition.Members[1].Name : null;
+        var follow = IsSplitOpen && ViewArrangementAtom.Value.Follow;
+
+        var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            [SplitUrlContract.SplitParam] = guestName,
+            [SplitUrlContract.FollowParam] = follow ? SplitUrlContract.FollowTrueValue : null,
+        });
+
+        // Fix round 1's own live, self-caught crash (this file's own
+        // header, RULING 4(b)) -- a genuine no-op guard, not just an
+        // optimization: skips the Nav.NavigateTo call entirely whenever
+        // nothing would actually change, which is what makes it safe to
+        // call unconditionally from HandleArrangementChanged even when that
+        // fires from OnParametersSet's own synchronous prefix (the restore
+        // dispatch above).
+        if (uri == Nav.Uri)
+        {
+            return;
+        }
+
+        Nav.NavigateTo(uri, replace: true);
     }
 
     public void Dispose()

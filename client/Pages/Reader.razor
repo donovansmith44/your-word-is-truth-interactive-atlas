@@ -11,12 +11,13 @@
 @inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
 @inject StateAtom<Locus> LocusAtom
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
-@* Fix round 2 (N-2): re-injected so SyncSplitUrl can call the ONE shared
-   Registry.ComposeFrom(...).IsHostedBy(...) law instead of hand-rederiving
-   the role formula (removed in fix round 1, re-added here for exactly this
-   one call site -- see SyncSplitUrl's own comment and
-   CompositionSplit.razor's own header, RULING 2). *@
-@inject ViewRegistry Registry
+@* Batch CORPREAD-1a (SPLIT-PERSIST-1): the ViewRegistry injection fix
+   round 2 (N-2) added here (SyncSplitUrl's own Registry.ComposeFrom(...)
+   .IsHostedBy(...) call, needed because `ctx` was out of reach from that
+   hook) is RETIRED along with SyncSplitUrl itself -- CompositionSplit now
+   performs the identical resync from ITS OWN OnParametersSet/
+   HandleArrangementChanged, where it already has direct, unambiguous
+   access to Composition/HostName with no re-derivation needed at all. *@
 
 <PageTitle>Bible Explorer &mdash; @BookName @_chapterNum</PageTitle>
 
@@ -326,25 +327,16 @@
     // ctx's own lambda scope.
     [Parameter] public bool? SplitMode { get; set; }
 
-    // Batch H (split-view study): "Read beside the map" (World.razor)
-    // navigates here with ?split=1 so the two entry points ("Open the map
-    // beside the text" here, "Read beside the map" there) land in the SAME
-    // split layout, per the brief -- read once, on arrival, by
-    // OnParametersSetAsync (_splitQueryConsumed guards that so a LATER,
-    // unrelated OnParametersSetAsync call -- e.g. a plain chapter nav that
-    // happens to leave a stale ?split=1 sitting in the URL, see this
-    // param's own consumption site for the full reasoning -- can never
-    // reopen a split the user already explicitly closed).
-    [SupplyParameterFromQuery(Name = "split")]
-    [Parameter]
-    public string? SplitQuery { get; set; }
-
-    // Batch H: local, in-memory split-open state -- NOT query/route driven
-    // beyond the one-shot SplitQuery arrival above. Reader.razor is reused
-    // (never recreated) across ordinary chapter-to-chapter navigation (see
-    // ComputeAdjacent's own plain /read/... links), so this field -- and
-    // therefore an open split -- survives that navigation for free. Batch
-    // ST-1: World.razor now reacts to the shared Locus atom directly
+    // Batch H (split-view study): local, in-memory split-open state -- NOT
+    // query/route driven beyond CompositionSplit's own one-shot restore
+    // (Batch CORPREAD-1a, RULING 5 -- see that component's own header;
+    // Reader's own retired `SplitQuery` parameter/`_splitQueryConsumed`
+    // field/`SyncSplitUrl` method lived HERE pre-CORPREAD-1a, generalized
+    // into CompositionSplit this batch so every host gets the identical
+    // mechanism). Reader.razor is reused (never recreated) across ordinary
+    // chapter-to-chapter navigation (see ComputeAdjacent's own plain
+    // /read/... links), so an open split survives that navigation for free.
+    // Batch ST-1: World.razor now reacts to the shared Locus atom directly
     // (LocusAtom.Changed), not a re-rendered FollowRef parameter, so this
     // continues to need no extra plumbing on Reader's own side either.
     // Reader.razor is the split's ONLY ever host/orchestrator (World.razor
@@ -361,7 +353,6 @@
     // (_compositionSplit below, for the handful of read sites -- the
     // popover, the picker-jump handler -- that sit outside that lambda's
     // scope).
-    private bool _splitQueryConsumed;
 
     // Batch VC-1 fix round 1: @ref onto the embedded CompositionSplit --
     // gives access to its own public IsSplitOpen/IsHost (for read sites
@@ -468,117 +459,19 @@
     // the atlas's own current state at all.
     private void CloseReaderPane() => Nav.NavigateTo("/world");
 
-    // Batch F2 requirement 6c ("if i am in split screen mode and refresh,
-    // the split screen mode shalt not be ceased on account of refresh"):
-    // both split entry points now keep the URL's own ?split=1 continuously
-    // in sync with _splitOpen -- the HOUSE PATTERN this app already uses
-    // everywhere state must survive a dispose+mount navigation (sync
-    // continuously AT THE POINT OF MUTATION, never captured lazily/at
-    // dispose time -- ViewStateService.SyncViewState/World.razor's
-    // OnCameraChanged/reader.js's watchScroll are the existing models).
-    // OpenSplit is the reader's OWN "Open the map beside the text" entry
-    // point (World.razor's OWN "Read beside the map" already builds
-    // ?split=1 into its target URL directly -- see OpenReadBesideMap there
-    // -- so it needs no equivalent change). CloseSplitAtlas is the embedded
-    // atlas pane's own close button (World.razor's split-close-atlas,
-    // wired via OnRequestClose) -- "closing the split cleans the param."
-    // Batch ST-2 (R4): dispatches EnterSplit instead of a direct field write
-    // -- _splitOpen is now a projection (see its own comment). DefaultFollow
-    // sources from ViewState.Map.Follow, the SAME restoration pattern
-    // World.RestoreMapState already uses for TimeWindow (ViewStateService
-    // remains the PERSISTENCE layer beneath the atom -- see EnterSplit's own
-    // doc comment) -- preserves a same-session "last explicit Follow choice"
-    // across a close/reopen, matching this app's pre-ST-2 behavior exactly
-    // (ViewState.Map.Follow is written continuously by World.SyncViewState
-    // whenever Follow -- itself now an atom projection there too -- changes,
-    // so this read is always the last live value, never stale). Only takes
-    // effect if the atom is NOT already Split (EnterSplit's own Apply is a
-    // no-op otherwise, preserving whatever's already there).
-    //
-    // Fix round 1 (Adjudication C, S-3/Q-2): DividerFraction's own
-    // cross-remount survival mechanism -- unchanged, see ViewArrangement.cs's
-    // own EnterSplit doc comment.
-    //
-    // Batch VC-1 fix round 1: OpenSplit/CloseSplitAtlas (already retired
-    // pre-fix-round-1) stay retired; CloseSplitAtlas's own job (dispatch +
-    // SyncSplitUrl) is the generic CloseGuest dispatch CompositionSplit now
-    // performs itself for the GUEST it mounts, PLUS the resync below --
-    // moved onto OnViewArrangementChanged so it fires no matter WHICH
-    // dispatch site changed the arrangement.
-    //
-    // A query-string-only navigation (book/chapter route params unchanged)
-    // -- OnParametersSetAsync's own book/chapterNum-unchanged early-return
-    // means this never re-fetches the chapter or disturbs scroll/popover
-    // state; SplitQuery's own one-shot consumption (_splitQueryConsumed) is
-    // already spent for this instance by the time either dispatch site
-    // above ever runs, so this is the ONLY thing that keeps the URL
-    // truthful about the arrangement from here on. replace:true -- a pure
-    // state reflection, not a new history entry to back-button through. A
-    // no-op (SplitMode explicit, i.e. guest-mounted -- e.g. sources+reader)
-    // never touches the URL at all, since Reader-as-guest owns no
-    // route/query of its own to keep in sync.
-    private void SyncSplitUrl()
-    {
-        if (SplitMode is not null)
-        {
-            return; // guest-mounted -- no route/query of my own to keep in sync (see this method's own comment)
-        }
-
-        // Fix round 1 (a live, self-caught crash -- reads the ATOM directly,
-        // deliberately NOT `_compositionSplit?.IsSplitOpen`): this method is
-        // reached via OnViewArrangementChanged, which can fire SYNCHRONOUSLY
-        // as a side effect of the SplitQuery-driven EnterSplit dispatch
-        // inside OnParametersSetAsync -- i.e. BEFORE this component's own
-        // FIRST render, before CompositionSplit's own @ref has EVER been
-        // assigned. Reading `_compositionSplit?.IsSplitOpen` there evaluates
-        // to `false` (null-conditional on a still-null ref), stripping the
-        // `?split=1` that dispatch just added and firing a SECOND,
-        // re-entrant Nav.NavigateTo mid-navigation -- reproduced live as an
-        // `ObjectDisposedException` crash in World's own PushLandmarksIfReady
-        // (the second navigation destabilized an already-fragile dispose-
-        // vs-mount race, Batch H's own documented SPLITCLOSE-1 class of
-        // hazard, tipping it from "wrong state" into a hard crash). The
-        // atom itself has no such timing gap -- it is always valid,
-        // synchronously, the SAME reasoning the pre-fix-round-1 `_splitOpen`
-        // formula relied on for this exact reason.
-        //
-        // Fix round 2 (ruling 2, N-2 -- re-review): the formula itself is no
-        // longer hand-written here -- `Registry.ComposeFrom(...).IsHostedBy(...)`
-        // is the SAME extension method CompositionSplit's own IsSplitOpen
-        // calls (client/Views/ViewRegistry.cs), the ONE shared law, driven
-        // by the compiled IViewComposition contract like S-1 requires
-        // everywhere else, not a bare-ViewArrangement-strings copy. `ctx` is
-        // genuinely out of reach here (this runs from CompositionSplit's own
-        // OnArrangementChanged hook, outside ChildContent's lambda) -- the
-        // registry call is the sanctioned fallback the ruling names for
-        // exactly that case.
-        var isSplitOpen = Registry.ComposeFrom(ViewArrangementAtom.Value).IsHostedBy(ViewNames.Reader);
-        var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?> { ["split"] = isSplitOpen ? "1" : null });
-
-        // Fix round 1 (a SECOND live, self-caught bug found while verifying
-        // the FIRST): a genuine no-op guard, not just an optimization. The
-        // very first call to this method -- the SplitQuery-driven EnterSplit
-        // dispatch's own synchronous OnViewArrangementChanged, still inside
-        // OnParametersSetAsync's own synchronous prefix -- computes a `uri`
-        // IDENTICAL to `Nav.Uri` (the URL the user already navigated to
-        // carried `?split=1` already). Calling `Nav.NavigateTo` there
-        // regardless -- even to the SAME URL -- reproduced live as a
-        // `System.InvalidOperationException: InvalidOperation_EnumFailedVersion`
-        // inside Blazor's OWN `SupplyParameterFromQueryValueProvider.OnLocationChanged`
-        // (a framework-internal collection mutated while a location-changed
-        // notification was still enumerating it) -- Blazor's own navigation
-        // pipeline is not safe to re-enter from a component's own
-        // OnParametersSetAsync. Skipping when nothing would actually change
-        // closes this at the root, and is correct regardless of timing --
-        // this method never needed to issue a same-URL "sync" in the first
-        // place.
-        if (uri == Nav.Uri)
-        {
-            return;
-        }
-
-        Nav.NavigateTo(uri, replace: true);
-    }
+    // Batch CORPREAD-1a (SPLIT-PERSIST-1): the URL-sync job this section
+    // used to describe (OpenSplit/CloseSplitAtlas keeping ?split=1 truthful,
+    // SyncSplitUrl below) is RETIRED from Reader.razor entirely --
+    // CompositionSplit.razor now owns the split-URL projection trio for
+    // EVERY host, not just Reader (see that component's own header, RULING
+    // 5). DefaultFollow still sources from ViewState.Map.Follow for the
+    // BUTTON-CLICK entry point below (EnterSplitReaderHostsWorld,
+    // ViewRegistrySetup.cs) -- unchanged, same reasoning as always (a
+    // same-session "last explicit Follow choice" survives a close/reopen);
+    // the REFRESH-survives-Follow path is now the URL's own explicit
+    // `&follow=1`, not this field (see SplitUrlContract.cs's own header for
+    // why the URL, not ViewStateService, has to be the source of truth
+    // there -- ViewStateService is NOT persisted across a hard reload).
 
     // Batch VC-1 fix round 1 (Adjudication F): the divider's own width
     // state, restore-on-open, and SetDivider commit all moved into
@@ -614,11 +507,37 @@
     // CompositionSplit is still executing its own first render (invoking
     // ChildContent to build the tree), which is BEFORE Blazor assigns the
     // `_compositionSplit` @ref field -- reading the ref here would silently
-    // omit `?split=1` from prev/next on a fresh split-open's own first
+    // omit the split query from prev/next on a fresh split-open's own first
     // paint. `ctx` carries the SAME IsSplitOpen/IsHost, correct at exactly
     // the moment this executes, no timing gap.
+    //
+    // Batch CORPREAD-1a (SPLIT-PERSIST-1): the literal `?split=1` this used
+    // to build is retired in favor of `SplitQuerySuffix` below, built from
+    // the ONE declared grammar (SplitUrlContract) instead of a hand-rolled
+    // string -- see that method's own comment.
     private string ChapterHref(string book, int chapter, CompositionSplitContext ctx) =>
-        ctx is { IsSplitOpen: true, IsHost: true } ? $"/read/{book}/{chapter}?split=1" : $"/read/{book}/{chapter}";
+        $"/read/{book}/{chapter}{SplitQuerySuffix(ctx.IsSplitOpen && ctx.IsHost)}";
+
+    // Batch CORPREAD-1a (SPLIT-PERSIST-1): the shared query-suffix builder
+    // for BOTH Reader-originated navigations that must keep an already-open
+    // split alive across the jump (ChapterHref above, ApplyScriptureRef's
+    // own picker-jump below) -- built from SplitUrlContract's own declared
+    // vocabulary, never a hand-rolled `"?split=1"` literal (that would be
+    // exactly the SECOND URL vocabulary the owner order forbade). Reader's
+    // only reachable host pairing is World (ViewRegistrySetup.cs's own
+    // readerHatch) -- ViewNames.World is used directly here, a disclosed
+    // narrowing (CompositionSplit's own SyncSplitUrl, by contrast, is fully
+    // generic, reading the ACTUAL guest name off the live Composition,
+    // since it must work for every host, not just Reader). `follow` reads
+    // the shared atom directly (the live source of truth for Follow -- see
+    // World.razor's own `_follow`), not ViewState.Map.Follow, so an
+    // in-session picker jump/chapter turn keeps whatever Follow state is
+    // ACTUALLY live right now, not a stale persisted default.
+    private string SplitQuerySuffix(bool isHostSplit) =>
+        isHostSplit
+            ? $"?{SplitUrlContract.SplitParam}={ViewNames.World}" +
+              (ViewArrangementAtom.Value.Follow ? $"&{SplitUrlContract.FollowParam}={SplitUrlContract.FollowTrueValue}" : "")
+            : "";
 
     // Fix round 1 finding: _book/_chapterNum are updated to the NEW route's
     // values SYNCHRONOUSLY in OnParametersSetAsync, before LoadChapter's
@@ -652,12 +571,14 @@
         // <CompositionSplit> tag above) whenever the arrangement changes,
         // from ANY dispatch site. Reader still NEEDS this callback (it is
         // not a "nothing beyond ChildContent's own re-render" host, unlike
-        // Sources): SyncSplitUrl is a genuine Nav.NavigateTo side effect,
-        // and ExplorerPopover's own InSplit/PaneAnchor bindings (a SIBLING
-        // of <CompositionSplit>, outside ChildContent's own lambda scope)
-        // need THIS component's own re-render to stay fresh -- but it gets
-        // that callback WITHOUT registering a second subscribe/unsubscribe
-        // pair of its own.
+        // Sources): ExplorerPopover's own InSplit/PaneAnchor bindings (a
+        // SIBLING of <CompositionSplit>, outside ChildContent's own lambda
+        // scope) need THIS component's own re-render to stay fresh -- but it
+        // gets that callback WITHOUT registering a second subscribe/
+        // unsubscribe pair of its own. Batch CORPREAD-1a (SPLIT-PERSIST-1):
+        // the OTHER original reason this hook existed -- SyncSplitUrl's own
+        // Nav.NavigateTo side effect -- moved INTO CompositionSplit itself
+        // (RULING 5); this callback's remaining job is the re-render alone.
         // Batch CORP-1 (R2, the split-follow-by-construction proof):
         // guest-mounted only (SplitMode is explicit) -- a SELF-DETERMINED
         // instance (SplitMode null) is the one WRITER of Locus, reached
@@ -713,12 +634,12 @@
         StateHasChanged();
     }
 
-    // Batch VC-1: resyncs the URL (SyncSplitUrl, a no-op when guest-mounted)
-    // and re-renders (for ExplorerPopover's own InSplit/PaneAnchor bindings,
-    // which read `_compositionSplit` directly -- see that @ref's own read
-    // sites) whenever the shared arrangement changes, regardless of WHICH
-    // dispatch site changed it (World's own hatch, a guest's own CloseGuest,
-    // Reader's own hatch/SplitQuery consumption -- all funnel through here).
+    // Batch VC-1: re-renders (for ExplorerPopover's own InSplit/PaneAnchor
+    // bindings, which read `_compositionSplit` directly -- see that @ref's
+    // own read sites) whenever the shared arrangement changes, regardless of
+    // WHICH dispatch site changed it (World's own hatch, a guest's own
+    // CloseGuest, CompositionSplit's own restore-on-load dispatch -- all
+    // funnel through here).
     //
     // Fix round 2 (ruling 1, N-1): no longer a direct
     // ViewArrangementAtom.Changed subscriber -- bound instead as
@@ -728,9 +649,15 @@
     // see OnInitializedAsync's own comment for why Reader is the ONE
     // documented exception to "a host needs nothing beyond ChildContent's
     // own re-render"), different wiring.
+    // Batch CORPREAD-1a (SPLIT-PERSIST-1): the SyncSplitUrl() call this
+    // method used to make is RETIRED -- CompositionSplit resyncs the URL
+    // itself now, from its own single owned subscription (RULING 5), so
+    // this hook's only remaining job is the re-render ExplorerPopover's own
+    // InSplit/PaneAnchor bindings need (they read `_compositionSplit`
+    // directly, outside ChildContent's lambda scope -- see the
+    // <ExplorerPopover> tag's own comment).
     private void OnViewArrangementChanged()
     {
-        SyncSplitUrl();
         StateHasChanged();
     }
 
@@ -761,32 +688,14 @@
         // does for an embedded pane (see the else-branch below).
         if (SplitMode is null)
         {
-            // Batch H: consumed exactly once per component instance (never
-            // re-applied on a later, unrelated OnParametersSetAsync call) --
-            // World.razor's own "Read beside the map" link is the only writer
-            // of ?split=1, and only on the FIRST navigation TO this instance;
-            // the guard means a user who explicitly closes split (leaving the
-            // stale query key sitting in an unchanged URL, since closing is a
-            // local field flip, not a Nav.NavigateTo -- see the split-close-atlas
-            // button's own handler) can never have it silently reopened by some
-            // later, unrelated re-render.
-            if (!_splitQueryConsumed)
-            {
-                _splitQueryConsumed = true;
-
-                // Batch ST-2 (R4): asserts this fresh Reader.razor instance's own
-                // arrangement, always -- not just on the ?split=1 case -- so the
-                // atom correctly reflects reality regardless of whatever
-                // arrangement a PRIOR instance/page this session left it in (the
-                // standalone counterpart to this is World.OnParametersSetAsync's
-                // own EnterWorldOnly/EnterSingle dispatch). Batch VC-1: the
-                // EnterSplit(host,guest) shape replaces ST-2's own single-arg
-                // EnterSplit -- reader/world, positionally, exactly as OpenSplit's
-                // own retired body always dispatched.
-                ViewArrangementAtom.Dispatch(SplitQuery == "1"
-                    ? new EnterSplit(ViewNames.Reader, ViewNames.World, ViewState.Map.Follow, ViewState.Map.DividerFraction)
-                    : new EnterSingle(ViewNames.Reader));
-            }
+            // Batch CORPREAD-1a (SPLIT-PERSIST-1): the restore-once-on-load
+            // dispatch this branch used to perform (SplitQuery-consumption,
+            // _splitQueryConsumed) is RETIRED from Reader.razor -- owned
+            // centrally by CompositionSplit now, for every host, not just
+            // this one (see that component's own header, RULING 5). Its own
+            // OnParametersSet fires from the SAME route-parameter-supplying
+            // pass this method runs in, so the arrangement atom is already
+            // correctly asserted by the time anything below reads it.
 
             book = string.IsNullOrWhiteSpace(Book) ? "GEN" : Book.ToUpperInvariant();
             chapterNum = Chapter ?? 1;
@@ -1564,9 +1473,9 @@
             return Task.CompletedTask;
         }
 
-        // Batch F2 requirement 6c: query (?split=1, when open) BEFORE the
-        // fragment -- standard URL syntax, path?query#fragment -- so a
-        // picker jump made while split is open doesn't silently drop it
+        // Batch F2 requirement 6c: query (the split suffix, when open)
+        // BEFORE the fragment -- standard URL syntax, path?query#fragment --
+        // so a picker jump made while split is open doesn't silently drop it
         // (same reasoning as ChapterHref above).
         //
         // Fix round 1 (S-4, IMPORTANT -- review): this was the ONE real,
@@ -1579,7 +1488,12 @@
         // Fix round 2 (ruling 4): provably post-first-render -- this is a
         // click handler (ApplyScriptureRef, ScripturePicker's own OnApply),
         // which cannot fire before this page's first render has completed.
-        var query = _compositionSplit is { IsSplitOpen: true, IsHost: true } ? "?split=1" : "";
+        //
+        // Batch CORPREAD-1a (SPLIT-PERSIST-1): reads `_compositionSplit`
+        // directly (this call site sits outside ctx's own lambda scope, same
+        // as ever) but builds the suffix through the SAME SplitQuerySuffix
+        // helper ChapterHref uses, not its own second hand-rolled literal.
+        var query = SplitQuerySuffix(_compositionSplit is { IsSplitOpen: true, IsHost: true });
         var fragment = verse is int v ? $"#v{v}" : "";
         Nav.NavigateTo($"/read/{book}/{chapterNum}{query}{fragment}");
         return Task.CompletedTask;

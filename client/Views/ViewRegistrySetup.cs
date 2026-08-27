@@ -29,38 +29,45 @@ public static class ViewRegistrySetup
 {
     public static ViewRegistry Build(StateAtom<ViewArrangement> arrangement, ViewStateService viewState, StateAtom<Locus> locus, NavigationManager nav)
     {
+        // Batch CORPREAD-1a (SPLIT-PERSIST-1, RULING 5 -- CompositionSplit.razor's
+        // own header): every hatch below that dispatches EnterSplit for a
+        // host with a LIVE CompositionSplit already mounted on its own
+        // current page (Reader/Sources/Kretzmann/Concord -- every hatch
+        // except EnterSplitWorldRequestsReader) no longer builds its own
+        // Nav.NavigateTo -- CompositionSplit's own subscription resyncs the
+        // URL automatically, as a side effect of the SAME dispatch, for
+        // every host generically. This also RETIRES the "disclosed
+        // limitation" the Sources/Kretzmann/Concord hatches used to carry
+        // ("a hard refresh while this split is open does not restore it") --
+        // every pairing now gets the identical refresh-survives-split
+        // guarantee Reader always had.
         Task EnterSplitReaderHostsWorld()
         {
-            // Mirrors Reader.razor's own pre-VC-1 OpenSplit exactly (byte-
-            // identical dispatch + query-string shape) -- see that method's
-            // retirement note.
             arrangement.Dispatch(new EnterSplit(ViewNames.Reader, ViewNames.World, viewState.Map.Follow, viewState.Map.DividerFraction));
-            var uri = nav.GetUriWithQueryParameters(new Dictionary<string, object?> { ["split"] = "1" });
-            nav.NavigateTo(uri, replace: true);
             return Task.CompletedTask;
         }
 
         Task EnterSplitWorldRequestsReader()
         {
-            // Mirrors World.razor's own pre-VC-1 OpenReadBesideMap exactly:
-            // READER still ends up hosting (R7 -- byte-identical user-visible
-            // behavior for the two pre-existing entry points), reached via
-            // the SAME navigation, not a locally-hosted "world hosts reader"
-            // arrangement -- the owner ruling retires the PRIVILEGE (any view
-            // COULD host), not this pairing's own established shape.
-            nav.NavigateTo($"/read/{locus.Value.Book}/{locus.Value.Chapter}?split=1");
+            // World navigates AWAY to Reader's own route -- there is no live
+            // CompositionSplit instance on THIS page to resync a URL
+            // through (World never hosts), so this is the ONE hatch that
+            // still builds its own Nav.NavigateTo, from the ONE declared
+            // split-URL vocabulary (SplitUrlContract), not a hand-rolled
+            // literal. Reader still ends up hosting (R7 -- byte-identical
+            // user-visible behavior for the two pre-existing entry points)
+            // -- its own CompositionSplit restores EnterSplit(reader, world,
+            // ...) from this URL on arrival (RULING 5's restore-once-on-load
+            // half).
+            var follow = viewState.Map.Follow ? $"&{SplitUrlContract.FollowParam}={SplitUrlContract.FollowTrueValue}" : "";
+            nav.NavigateTo($"/read/{locus.Value.Book}/{locus.Value.Chapter}?{SplitUrlContract.SplitParam}={ViewNames.World}{follow}");
             return Task.CompletedTask;
         }
 
         Task EnterSplitSourcesHostsReader()
         {
-            // R4's own generality proof: Sources stays on its own URL (no
-            // navigation -- unlike the reader/world pair, Sources has no
-            // per-route split query to keep in sync, disclosed limitation:
-            // a hard refresh while this split is open does not restore it,
-            // matching this atom's own baseline -- ViewArrangement was never
-            // localStorage-persisted either, see that atom's own header) and
-            // becomes host; Reader becomes guest.
+            // R4's own generality proof: Sources becomes host; Reader
+            // becomes guest.
             arrangement.Dispatch(new EnterSplit(ViewNames.Sources, ViewNames.Reader, DefaultFollow: false, DefaultDividerFraction: null));
             return Task.CompletedTask;
         }
@@ -68,14 +75,13 @@ public static class ViewRegistrySetup
         // Batch CORP-1 (R2/R3): Kretzmann and Concord each declare their OWN
         // "read-beside" hatch, self-hosting -- the SAME shape Sources' own
         // EnterSplitSourcesHostsReader establishes immediately above (owner
-        // becomes host, Reader becomes guest, no per-route split query to
-        // keep in sync). Kretzmann PROJECTS the shared Locus atom directly
-        // (R2) -- it never navigates on entering split; the already-shared
-        // atom is why the guest Reader pane tracks it "by construction," not
-        // a link. Concord (R3) is identical in shape, just with a different
-        // owner name; it bears no locus/window capability, so nothing about
-        // this hatch differs from Sources' own proof that any two views may
-        // pair this way.
+        // becomes host, Reader becomes guest). Kretzmann PROJECTS the shared
+        // Locus atom directly (R2) -- the already-shared atom is why the
+        // guest Reader pane tracks it "by construction," not a link. Concord
+        // (R3) is identical in shape, just with a different owner name; it
+        // bears no locus/window capability, so nothing about this hatch
+        // differs from Sources' own proof that any two views may pair this
+        // way.
         Task EnterSplitKretzmannHostsReader()
         {
             arrangement.Dispatch(new EnterSplit(ViewNames.Kretzmann, ViewNames.Reader, DefaultFollow: false, DefaultDividerFraction: null));

@@ -1348,9 +1348,12 @@
 
     // "Read beside the map" (Batch H, standalone /world only -- SplitMode
     // never renders this button). Lands directly in split, per the brief
-    // ("both land in the same split layout"): ?split=1 tells Reader.razor to
-    // set its own _splitOpen = true on arrival (see its own SplitQuery
-    // param).
+    // ("both land in the same split layout"): the split-URL query (Batch
+    // CORPREAD-1a: `?split=world`, superseding the retired `?split=1`
+    // boolean -- see SplitUrlContract.cs) tells the destination Reader
+    // instance's own CompositionSplit to restore a reader-hosts-world split
+    // on arrival (CompositionSplit.razor's own header, RULING 5 -- the
+    // mechanism Reader's own retired SplitQuery param used to own directly).
     //
     // Fix round 1 (S-5, IMPORTANT): reads the reader's last-known position
     // off the shared Locus atom (_locus.Value), NOT ViewState.Reader --

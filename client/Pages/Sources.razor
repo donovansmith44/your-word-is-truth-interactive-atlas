@@ -2,7 +2,6 @@
 @using BibleAtlas.Client.State
 @using BibleAtlas.Client.Views
 @inject AtlasClient Atlas
-@inject StateAtom<ViewArrangement> ViewArrangementAtom
 
 @* Batch S ("document our sources for everything and give it a dedicated
    page on the site"): the app's ONE decisive home for attribution --
@@ -139,17 +138,16 @@
     // fourth host to mount it FROM).
     [Parameter] public bool? SplitMode { get; set; }
 
+    // Batch CORPREAD-1a (SPLIT-PERSIST-1): the standalone EnterSingle
+    // reconciliation this method used to assert directly (mount-time, when
+    // SplitMode is null) is RETIRED -- CompositionSplit's own OnParametersSet
+    // performs the identical assert now (EnterSingle when no valid split
+    // query is present, EnterSplit when one is -- see that component's own
+    // header, RULING 5), generalized so Sources gets the SAME refresh-
+    // survives-split guarantee Reader always had, not just the standalone
+    // reset.
     protected override async Task OnInitializedAsync()
     {
-        if (SplitMode is null)
-        {
-            // The standalone counterpart to Reader/World's own EnterSingle
-            // reconciliation -- asserted once, at mount (Sources has no
-            // per-navigation route params to react to repeatedly the way
-            // World's from/to/ref query does).
-            ViewArrangementAtom.Dispatch(new EnterSingle(ViewNames.Sources));
-        }
-
         try
         {
             _doc = await Atlas.Sources();

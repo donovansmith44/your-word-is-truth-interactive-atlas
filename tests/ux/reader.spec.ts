@@ -243,7 +243,7 @@ test('NAV-3: chapter-nav never overlaps the verse text column in split view at t
   expect(longest.verses, 'expected a real long chapter for real mid-chapter scroll room').toBeGreaterThan(30);
 
   await page.setViewportSize({ width: 1024, height: 800 });
-  await page.goto(`/read/${longest.book}/${longest.chapter}?split=1`);
+  await page.goto(`/read/${longest.book}/${longest.chapter}?split=world`);
 
   const mid = Math.floor(longest.verses / 2);
   await page.getByTestId(`verse-line-${mid}`).scrollIntoViewIfNeeded();
@@ -302,7 +302,7 @@ test('NAV-4: reader-prev/reader-next measure a real, >=40x40px hit target in spl
   }
 
   await page.setViewportSize({ width: 1024, height: 800 });
-  await page.goto(`/read/${longest.book}/${longest.chapter}?split=1`);
+  await page.goto(`/read/${longest.book}/${longest.chapter}?split=world`);
 
   const prev = page.getByTestId('reader-prev');
   const next = page.getByTestId('reader-next');
@@ -426,7 +426,7 @@ test('NAV-6: reader-prev/reader-next stay pixel-IDENTICAL across every sampled f
   }
 
   await page.setViewportSize({ width: 1024, height: 800 });
-  await page.goto(`/read/${longest.book}/${longest.chapter}?split=1`);
+  await page.goto(`/read/${longest.book}/${longest.chapter}?split=world`);
   await expect(page.getByTestId('reader-next')).toBeVisible();
 
   for (const testId of ['reader-prev', 'reader-next']) {

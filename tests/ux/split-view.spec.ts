@@ -77,10 +77,13 @@ test('SPLIT-1: "Read beside the map" from /world lands in split at the reader\'s
   await expect(page.getByTestId('split-open-world')).toBeVisible();
 
   await page.getByTestId('split-open-world').click();
-  await page.waitForURL(u => u.pathname.startsWith('/read/') && u.searchParams.get('split') === '1');
+  await page.waitForURL(u => u.pathname.startsWith('/read/') && u.searchParams.get('split') === 'world');
 
   await expect(page.getByTestId('split-view')).toBeVisible();
-  await expect(page).toHaveURL(/\/read\/GEN\/1\?split=1/);
+  // Batch CORPREAD-1a (SPLIT-PERSIST-1): ?split=1 is retired in favor of
+  // ?split={guest view name} (&follow=1 when Follow is true, the untouched
+  // ViewStateService.Map.Follow default this fresh /world visit carries).
+  await expect(page).toHaveURL(/\/read\/GEN\/1\?split=world&follow=1/);
   await expect(page.getByTestId('chapter-head')).toContainText('1');
   await expect(page.getByTestId('follow-chip')).toHaveText('Following GEN.1');
 });
@@ -161,7 +164,7 @@ test('SPLIT-1: "Read beside the map" preserves a ref just applied on the standal
   // The actual race: THIS instance (JOS.6 live, never yet captured)
   // disposes while a brand-new SplitMode instance mounts, in one navigation.
   await page.getByTestId('split-open-world').click();
-  await page.waitForURL(u => u.pathname.startsWith('/read/') && u.searchParams.get('split') === '1');
+  await page.waitForURL(u => u.pathname.startsWith('/read/') && u.searchParams.get('split') === 'world');
 
   await expect(page.getByTestId('split-view')).toBeVisible();
   await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
@@ -338,28 +341,34 @@ test('VIEWSTATE-1: reader scroll and atlas window/camera round-trip across page-
 // ---------------------------------------------------------------------
 // Batch F2 requirement 6c (SPLIT-1, user direction 2026-08-20, verbatim:
 // "if i am in split screen mode and refresh, the split screen mode shalt
-// not be ceased on account of refresh"). Both entry points now keep
-// ?split=1 continuously in sync with the split's own open/closed state.
+// not be ceased on account of refresh"). Both entry points now keep the
+// split-URL query continuously in sync with the split's own open/closed
+// state. Batch CORPREAD-1a (SPLIT-PERSIST-1): ?split=1 is retired --
+// ?split={guest view name} (here, "world"), optionally &follow=1, per
+// SplitUrlContract.cs -- and this refresh-survives-split guarantee now
+// generalizes to every host, not just the reader.
 // ---------------------------------------------------------------------
 
-test('SPLIT-1/6c: opening split via the reader reflects ?split=1 in the URL, and a refresh returns to split view on the same chapter', async ({ page }) => {
+test('SPLIT-1/6c: opening split via the reader reflects ?split=world in the URL, and a refresh returns to split view on the same chapter', async ({ page }) => {
   await page.goto('/read/GEN/12');
-  await expect(page).toHaveURL(/\/read\/GEN\/12$/); // no ?split=1 yet
+  await expect(page).toHaveURL(/\/read\/GEN\/12$/); // no split query yet
 
   await page.getByTestId('split-open-reader').click();
   await expect(page.getByTestId('split-view')).toBeVisible();
-  await expect(page).toHaveURL(/\/read\/GEN\/12\?split=1$/);
+  // Follow defaults true (ViewStateService.Map.Follow's own field default)
+  // on this fresh button-click entry, so &follow=1 rides along too.
+  await expect(page).toHaveURL(/\/read\/GEN\/12\?split=world&follow=1$/);
 
   await page.reload();
   await expect(page.getByTestId('split-view')).toBeVisible();
   await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
   await expect(page.getByTestId('chapter-head')).toContainText('12');
   await expect(page.getByTestId('verse-line-1')).toBeVisible();
-  await expect(page).toHaveURL(/\/read\/GEN\/12\?split=1$/);
+  await expect(page).toHaveURL(/\/read\/GEN\/12\?split=world&follow=1$/);
 });
 
-test('SPLIT-1/6c: closing the atlas pane cleans ?split=1 from the URL, and a refresh stays out of split view', async ({ page }) => {
-  await page.goto('/read/GEN/12?split=1');
+test('SPLIT-1/6c: closing the atlas pane cleans the split query from the URL, and a refresh stays out of split view', async ({ page }) => {
+  await page.goto('/read/GEN/12?split=world');
   await expect(page.getByTestId('split-view')).toBeVisible();
 
   await page.getByTestId('split-close-atlas').click();
@@ -371,13 +380,16 @@ test('SPLIT-1/6c: closing the atlas pane cleans ?split=1 from the URL, and a ref
   await expect(page.getByTestId('split-open-reader')).toBeVisible();
 });
 
-test('SPLIT-1/6c: chapter navigation while split is open keeps ?split=1 in the URL (so a later refresh still restores it)', async ({ page }) => {
-  await page.goto('/read/GEN/12?split=1');
+test('SPLIT-1/6c: chapter navigation while split is open keeps the split query in the URL (so a later refresh still restores it)', async ({ page }) => {
+  await page.goto('/read/GEN/12?split=world');
   await expect(page.getByTestId('split-view')).toBeVisible();
 
   await page.getByTestId('reader-next').click();
   await expect(page.getByTestId('chapter-head')).toContainText('13');
-  await expect(page).toHaveURL(/\/read\/GEN\/13\?split=1$/);
+  // This split was restored from a URL with no &follow=1 -- Follow reads
+  // false (SplitUrlContract's own "presence is the true value" grammar),
+  // so the resynced URL carries no follow param either.
+  await expect(page).toHaveURL(/\/read\/GEN\/13\?split=world$/);
   await expect(page.getByTestId('split-view')).toBeVisible();
 
   await page.reload();
@@ -396,7 +408,7 @@ test('SPLIT-1/6c: chapter navigation while split is open keeps ?split=1 in the U
 
 test('PANE-ANCHOR-1: a verse popover opened from the reader pane stays fully within the reader pane\'s own region', async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });
-  await page.goto('/read/GEN/12?split=1');
+  await page.goto('/read/GEN/12?split=world');
   await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
 
   await page.getByTestId('verse-line-1').click();
@@ -422,7 +434,7 @@ test('PANE-ANCHOR-1: a verse popover opened from the reader pane stays fully wit
 
 test('PANE-ANCHOR-1: a place popover opened from the atlas pane stays fully within the atlas pane\'s own region', async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });
-  await page.goto('/read/GEN/12?split=1');
+  await page.goto('/read/GEN/12?split=world');
   await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
   // Batch C3: VISIBLE_LIT_MARKER_SELECTOR, not a bare LIT_MARKER_TESTID
   // `.first()` -- the DOM-first `marker-{placeId}` could itself be hidden
@@ -538,7 +550,7 @@ test('BACKDROP-1: the popover backdrop covers the full viewport at any scroll po
   const toc = await loadToc();
   const longest = await longestChapter(toc);
 
-  await page.goto(`/read/${longest.book}/${longest.chapter}?split=1`);
+  await page.goto(`/read/${longest.book}/${longest.chapter}?split=world`);
   await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
   await page.getByTestId('verse-line-1').click();
   await expect(page.getByTestId('popover-backdrop')).toBeVisible();

@@ -307,7 +307,7 @@ test('AMENDMENT C: exactly one Baptism and one Temptation event exist; Baptism i
 });
 
 test('HOTFIX-4 req 3, TRAV-1: map coherence -- traversing the Chronology block from a map-side event popover behaves exactly like narrative traversal (shared code path, no special case)', async ({ page }) => {
-  // Split view (`?split=1`, SPLIT-1) puts the reader AND the atlas pane on
+  // Split view (`?split=world`, SPLIT-1) puts the reader AND the atlas pane on
   // screen together -- the same "map-side" surface a narrative popover's
   // own MAP FOCUS SYNC already targets today, reached without inventing a
   // new navigation path for this test alone.
@@ -325,7 +325,7 @@ test('HOTFIX-4 req 3, TRAV-1: map coherence -- traversing the Chronology block f
   const gethsemaneDetail = await api.event('pw_gethsemane');
   const vref = gethsemaneDetail.witnesses[0].verse_groups[0].verses[0];
   const v = parseVerse(vref);
-  await page.goto(`/read/${v.book}/${v.chapter}?split=1`);
+  await page.goto(`/read/${v.book}/${v.chapter}?split=world`);
   // Keyboard activation -- see openEventPopover's own comment above for
   // why a plain coordinate click on a verse-line is unsafe now.
   await page.getByTestId(`verse-line-${v.verse}`).focus();
@@ -357,7 +357,7 @@ test('HOTFIX-4 req 3, TRAV-1: map coherence -- traversing the Chronology block f
   const isaacDetail = await api.event('gen_binding_isaac');
   const isaacVref = isaacDetail.witnesses[0].verse_groups[0].verses[0];
   const iv = parseVerse(isaacVref);
-  await page.goto(`/read/${iv.book}/${iv.chapter}?split=1`);
+  await page.goto(`/read/${iv.book}/${iv.chapter}?split=world`);
   await page.getByTestId(`verse-line-${iv.verse}`).focus();
   await page.keyboard.press('Enter');
   await page.getByTestId('verse-event-gen_binding_isaac').click();

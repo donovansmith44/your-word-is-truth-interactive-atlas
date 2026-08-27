@@ -43,7 +43,13 @@ test('COMP-1: Sources declares its own "read-beside" hatch -- split opens with s
   // capable of hosting anything before this batch -- is doing so here via
   // the exact same CompositionSplit/ViewRegistry mechanism Reader always
   // used, not a bespoke code path.
-  await expect(page).toHaveURL(/\/sources$/); // sources stays the route; no navigation
+  //
+  // Batch CORPREAD-1a (SPLIT-PERSIST-1): Sources now keeps its OWN split
+  // query in sync too (the disclosed "does not survive refresh" limitation
+  // this pairing used to carry is retired -- CompositionSplit's own
+  // SyncSplitUrl is generic, not Reader-only) -- the route itself still
+  // never changes (/sources), but the query now does.
+  await expect(page).toHaveURL(/\/sources\?split=reader$/);
 });
 
 test('COMP-1: closing the embedded reader (the guest\'s own close button) returns to a full, single Sources page', async ({ page }) => {
@@ -125,11 +131,13 @@ test('COMP-5 (fix round 1, S-4 regression; superseded by READER-GUEST-1): a pick
   await page.getByTestId('picker-book').selectOption('EXO');
   await page.getByTestId('picker-apply').click();
 
-  // The split stays intact -- no navigation at all, still /sources, no
+  // The split stays intact -- no navigation at all, still /sources (with
+  // its own now-generalized ?split=reader query, unchanged by the picker
+  // jump -- that dispatches SetLocus only, never the arrangement), no
   // reader+world split silently opened (the ORIGINAL S-4 bug this test was
   // written to catch), and no /read/... navigation either (the
   // READER-GUEST-1 fix).
-  await expect(page).toHaveURL(/\/sources$/);
+  await expect(page).toHaveURL(/\/sources\?split=reader$/);
   await expect(page.getByTestId('world-map')).toHaveCount(0);
   await expect(page.getByTestId('split-view')).toBeVisible();
   await expect(page.getByTestId('sources-page')).toBeVisible();
@@ -144,35 +152,38 @@ test('COMP-4: reader+world split still opens via the reader\'s own hatch and sur
   // split-view.spec.ts already covers this pairing's FULL contract
   // (untouched, not duplicated here) -- this one test exists only to prove
   // the NEW EnterSplit(reader, world, ...) shape, invoked through Reader's
-  // own declared hatch, still round-trips through ?split=1 + a real reload.
+  // own declared hatch, still round-trips through the split query (Batch
+  // CORPREAD-1a: ?split=world&follow=1, superseding the retired ?split=1)
+  // + a real reload.
   await page.goto('/read/GEN/12');
   await page.getByTestId('split-open-reader').click();
   await expect(page.getByTestId('split-view')).toBeVisible();
   await expect(page.getByTestId('world-map')).toBeVisible();
-  await expect(page).toHaveURL(/[?&]split=1/);
+  await expect(page).toHaveURL(/[?&]split=world/);
 
   await page.reload();
 
   await expect(page.getByTestId('split-view')).toBeVisible();
   await expect(page.getByTestId('world-map')).toBeVisible();
   await expect(page.getByTestId('verse-line-1')).toBeVisible();
-  await expect(page).toHaveURL(/\/read\/GEN\/12\?split=1$/);
+  await expect(page).toHaveURL(/\/read\/GEN\/12\?split=world&follow=1$/);
 });
 
-test('COMP-6 (fix round 2, N-7 -- re-review, "no automated guard for the two crash regressions"): a fresh ?split=1 load and reload never throw inside Blazor\'s own lifecycle', async ({ page }) => {
+test('COMP-6 (fix round 2, N-7 -- re-review, "no automated guard for the two crash regressions"): a fresh split load and reload never throw inside Blazor\'s own lifecycle', async ({ page }) => {
   // Both fix-round-1 self-caught live crashes (ObjectDisposedException from
   // a stale @ref read; InvalidOperationException:
   // InvalidOperation_EnumFailedVersion from a same-URL re-entrant
-  // Nav.NavigateTo) lived on EXACTLY this path -- a fresh `?split=1` load,
+  // Nav.NavigateTo) lived on EXACTLY this path -- a fresh split-query load
+  // (Batch CORPREAD-1a: ?split=world, superseding the retired ?split=1),
   // where [SupplyParameterFromQuery]'s own documented timing quirk means
-  // Reader genuinely renders "single" once before "split-h" -- and neither
-  // one failed any EXISTING assertion in this suite or reader.spec.ts,
-  // because nothing anywhere asserted on page-level errors at all (the
-  // re-review's own finding). This is that guard.
+  // the host genuinely renders "single" once before "split-h" -- and
+  // neither one failed any EXISTING assertion in this suite or
+  // reader.spec.ts, because nothing anywhere asserted on page-level errors
+  // at all (the re-review's own finding). This is that guard.
   const pageErrors: string[] = [];
   page.on('pageerror', (err) => pageErrors.push(err.message));
 
-  await page.goto('/read/GEN/12?split=1');
+  await page.goto('/read/GEN/12?split=world');
   await expect(page.getByTestId('split-view')).toBeVisible();
 
   await page.reload();
@@ -196,7 +207,7 @@ test('COMP-6 (READER-GUEST-1): reader-next from inside a sources+reader split mo
 
   await page.getByTestId('reader-next').click();
 
-  await expect(page).toHaveURL(/\/sources$/); // no navigation -- still Sources' own route
+  await expect(page).toHaveURL(/\/sources\?split=reader$/); // no navigation -- still Sources' own route, own split query intact
   await expect(page.getByTestId('split-view')).toBeVisible();
   await expect(page.getByTestId('sources-page')).toBeVisible();
   await expect(page.getByTestId('reader-root')).toBeVisible();

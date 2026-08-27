@@ -566,7 +566,12 @@ test('BLINK-1: hovering a place mention in the mini-reader blinks its map marker
   // (GEN.12.5's own real text: "into the land of Canaan"), so the SAME
   // marker this test hovers-to-blink is authentically on screen for a
   // reason that has nothing to do with the mini-reader's own chapter.
-  await page.goto('/read/GEN/12?split=1');
+  // Batch CORPREAD-1a (SPLIT-PERSIST-1): the retired ?split=1 boolean is now ?split=world; &follow=1 is
+  // now required explicitly on a direct URL visit for Follow to restore
+  // true (the URL is the live source of truth for Follow, not
+  // ViewStateService.Map.Follow's own field default -- see
+  // SplitUrlContract.cs's own header).
+  await page.goto('/read/GEN/12?split=world&follow=1');
   await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'true');
 
   const marker = page.getByTestId('marker-canaan').or(page.getByTestId('quiet-marker-canaan'));
@@ -695,7 +700,7 @@ test('MENTION-4: clicking a place mention INSIDE the mini-reader pushes a new po
   // own primary text, proving OnExplore's own new plumbing (MiniReaderExpand
   // -> VerseTextSection/PassageList -> ctx.PushAsync) independently of the
   // Reader.razor-level MENTION-1 test above.
-  await page.goto('/read/GEN/12?split=1');
+  await page.goto('/read/GEN/12?split=world');
   await page.getByTestId('verse-line-8').click();
   const more = page.getByTestId('xrefs-more');
   await expect(more).toBeVisible();

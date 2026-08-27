@@ -97,6 +97,7 @@
 @using System.Globalization
 @using BibleAtlas.Client.Contracts
 @using BibleAtlas.Client.State
+@using BibleAtlas.Client.Views
 @inject AtlasClient Atlas
 @inject IExplorableClient GraphClient
 @inject NavigationManager Nav
@@ -1006,8 +1007,18 @@
                 // split is showing, so this is correct for a chip clicked
                 // from the atlas pane's own popover as well). Query BEFORE
                 // fragment, same reasoning as Reader.razor's own ChapterHref/
-                // ApplyScriptureRef.
-                var query = InSplit ? "?split=1" : "";
+                // ApplyScriptureRef. Batch CORPREAD-1a (SPLIT-PERSIST-1):
+                // built from the ONE declared split-URL vocabulary
+                // (SplitUrlContract), not a hand-rolled "?split=1" literal --
+                // InSplit is ONLY ever true when Reader.razor supplies it
+                // (this component's own doc comment on that parameter), and
+                // Reader's only reachable host pairing is World, the SAME
+                // disclosed narrowing Reader.razor's own SplitQuerySuffix
+                // uses. Disclosed scope: unlike SplitQuerySuffix, this site
+                // does not carry a live Follow flag forward (ExplorerPopover
+                // has no ViewArrangement injection of its own) -- a narrow,
+                // pre-existing gap, not newly introduced by this batch.
+                var query = InSplit ? $"?{SplitUrlContract.SplitParam}={ViewNames.World}" : "";
                 var fragment = reader.Verse is int v ? $"#v{v}" : "";
                 var url = $"/read/{reader.Book}/{reader.Chapter}{query}{fragment}";
                 Nav.NavigateTo(url);

@@ -2,7 +2,6 @@
 @using BibleAtlas.Client.Explore
 @using BibleAtlas.Client.State
 @using BibleAtlas.Client.Views
-@inject StateAtom<ViewArrangement> ViewArrangementAtom
 @inject IExplorableClient Graph
 
 @* Batch CORP-1 (R3): the Book of Concord structure browser -- a STRUCTURE
@@ -142,13 +141,14 @@
 
     private static string Slug(string reference) => reference.Replace(' ', '-').Replace('.', '-');
 
+    // Batch CORPREAD-1a (SPLIT-PERSIST-1): the standalone mount-time assert
+    // this method used to perform directly is RETIRED -- CompositionSplit's
+    // own OnParametersSet now performs it generically (see its own header,
+    // RULING 5), and additionally restores a split from the URL when one is
+    // present -- Concord gets the SAME refresh-survives-split guarantee
+    // Reader always had.
     protected override async Task OnInitializedAsync()
     {
-        if (SplitMode is null)
-        {
-            ViewArrangementAtom.Dispatch(new EnterSingle(ViewNames.Concord));
-        }
-
         await LoadWindowAsync(_currentRef, "onward");
     }
 

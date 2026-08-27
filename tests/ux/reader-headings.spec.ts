@@ -176,7 +176,7 @@ test('split view: the reader pane shows the SAME pericope heading (shared code p
   const matWitness = detail.witnesses.find((w: any) => w.book === 'MAT');
   const [book, chapter] = matWitness.verse_groups[0].verses[0].split('.');
 
-  await page.goto(`/read/${book}/${chapter}?split=1`);
+  await page.goto(`/read/${book}/${chapter}?split=world`);
   await expect(page.getByTestId('split-view')).toBeVisible();
   const heading = page.getByTestId('reader-root').getByTestId('pericope-heading-pw_golgotha');
   await expect(heading).toBeVisible();

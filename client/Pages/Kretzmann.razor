@@ -4,7 +4,6 @@
 @using BibleAtlas.Client.Views
 @implements IDisposable
 @inject StateAtom<Locus> LocusAtom
-@inject StateAtom<ViewArrangement> ViewArrangementAtom
 @inject AtlasClient Atlas
 
 @* Batch CORP-1 (R2): the Kretzmann Popular Commentary browser -- a
@@ -165,17 +164,14 @@
     // the testid only (never used to re-derive the id itself).
     private static string Slug(string wireId) => wireId.Replace(':', '-').Replace('/', '-').Replace('.', '-');
 
+    // Batch CORPREAD-1a (SPLIT-PERSIST-1): the standalone mount-time assert
+    // this method used to perform directly is RETIRED -- CompositionSplit's
+    // own OnParametersSet now performs it generically (see its own header,
+    // RULING 5), and additionally restores a split from the URL when one is
+    // present -- Kretzmann gets the SAME refresh-survives-split guarantee
+    // Reader always had.
     protected override async Task OnInitializedAsync()
     {
-        if (SplitMode is null)
-        {
-            // The standalone counterpart to Sources' own mount-time assert --
-            // Kretzmann has no per-navigation route params to react to
-            // repeatedly (R2: it is never itself the SetLocus writer via
-            // routing, only via the picker below).
-            ViewArrangementAtom.Dispatch(new EnterSingle(ViewNames.Kretzmann));
-        }
-
         // Batch CORP-1: the one legitimate direct LocusAtom.Changed
         // subscription this view needs -- see ConformanceTests.cs's own
         // EffectsOnlyViaRegistry allowlist entry for the full justification
