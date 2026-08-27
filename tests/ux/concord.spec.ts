@@ -178,6 +178,49 @@ test('CONCORD-9 (BoC nav menu): Contents reveals the ten traditional documents; 
   await expect(page.getByTestId('concord-unit-BoC-7-1-1')).toContainText(realText);
 });
 
+// Fix round (S-8, TRIVIA -- review): CONCORD-9 above only spot-verified
+// StartRef ("BoC {part}.1.1" exists) for parts 1 (the default load) and 7
+// -- the other eight were unproven; a document whose first article isn't
+// numbered 1 would land on the error toast instead. Cheap to cover, per
+// the review -- extended here to every one of the ten menu entries. This
+// list mirrors Explore/ConcordToc.cs's own ten-entry table verbatim (a
+// Playwright spec has no access to that C# constant directly -- the same
+// "read directly, not guessed" discipline that table's own header
+// documents against atlas-etl/src/concord.rs's real DOCUMENTS table).
+const CONCORD_TOC_DOCUMENTS = [
+  { part: 1, title: 'Preface to the Book of Concord' },
+  { part: 2, title: 'The Three Ecumenical Creeds' },
+  { part: 3, title: 'The Augsburg Confession' },
+  { part: 4, title: 'Apology of the Augsburg Confession' },
+  { part: 5, title: 'The Smalcald Articles' },
+  { part: 6, title: 'Treatise on the Power and Primacy of the Pope' },
+  { part: 7, title: 'The Small Catechism' },
+  { part: 8, title: 'The Large Catechism' },
+  { part: 9, title: 'Formula of Concord: Epitome' },
+  { part: 10, title: 'Formula of Concord: Solid Declaration' },
+];
+
+test('CONCORD-9b (S-8): every one of the ten TOC entries lands on its own real opening paragraph, not an error toast', async ({ page }) => {
+  await page.goto('/concord');
+
+  for (const doc of CONCORD_TOC_DOCUMENTS) {
+    const startRef = `BoC ${doc.part}.1.1`;
+    const ground = await api.reading(startRef, 1, { corpus: 'concord' });
+    expect(ground.units).toHaveLength(1);
+    const realText = ground.units[0].text as string;
+
+    await page.getByTestId('concord-toc-toggle').click();
+    await expect(page.getByTestId('concord-toc-menu')).toBeVisible();
+    await page.getByTestId(`concord-toc-part-${doc.part}`).click();
+
+    await expect(page.getByTestId('toast')).toHaveCount(0);
+    await expect(page.getByTestId('concord-position')).toContainText(startRef);
+    await expect(page.getByTestId(`concord-part-heading-${doc.part}`)).toBeVisible();
+    await expect(page.getByTestId(`concord-part-heading-${doc.part}`)).toContainText(doc.title);
+    await expect(page.getByTestId(`concord-unit-${startRef.replace(/ /g, '-').replace(/\./g, '-')}`)).toContainText(realText);
+  }
+});
+
 // Ticket C, "same mechanism as ticket K -- do not fork the scanner."
 test('CONCORD-10 (explorable-reference law): a scripture reference inside confession prose opens the SAME VerseNode popover', async ({ page }) => {
   await page.goto('/concord');

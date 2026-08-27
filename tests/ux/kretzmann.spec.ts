@@ -277,20 +277,39 @@ test('KRETZMANN-12 (ticket K, "the verse anchors themselves are clickable explor
 // KRETZ-SCALE-1 (batch-corp1-review.md Q-1, batch-finalp1-brief.md ticket
 // 2): PSA 119 is the exact pileup this ticket names -- the listing itself
 // must still cost exactly ONE chapter-scoped request, zero of the retired
-// per-verse fan-out, regardless of this batch's own additional (disclosed,
-// N-fetch) per-item prose fetch.
-test('KRETZMANN-13 (KRETZ-SCALE-1, unchanged): PSA 119\'s own LISTING loads via ONE chapter-scoped request, not a per-verse fan-out', async ({ page }) => {
+// per-verse fan-out.
+//
+// Fix round (Q-2, CRITICAL -- review): the first ship of this batch fetched
+// EVERY item's own prose concurrently the instant the listing resolved --
+// reintroducing KRETZ-SCALE-1's own retired per-verse fan-out through
+// Card() instead of the retired .../edges?kind=commented-on-by shape, and
+// THIS test's own prior version was narrowed to assert only that the OLD
+// url shape stayed at zero, silently excusing the NEW one ("regardless of
+// this batch's own additional (disclosed, N-fetch) per-item prose fetch")
+// rather than bounding it -- exactly the tripwire-evasion pattern the
+// controller ordered never repeated. Restored honest: a genuine TOTAL
+// bound on the NEW request family (Kretzmann.razor now fetches prose
+// lazily, one item at a time, as its own row approaches the viewport --
+// wwwroot/js/lazyProse.js's own IntersectionObserver, bounded concurrency
+// 8), proven by asserting SOME prose loads without any scroll (whatever is
+// near the viewport) but NOWHERE NEAR the full 176-verse chapter's worth.
+test('KRETZMANN-13 (KRETZ-SCALE-1 + KRETZ-PROSE-SCALE, honest total-request bound): PSA 119\'s own LISTING loads via ONE chapter-scoped request, zero per-verse fan-out, and the lazy prose fetch never requests the whole chapter up front', async ({ page }) => {
   const ground = await api.kretzmannChapter('PSA.119');
   expect(ground.verses.length).toBeGreaterThan(0);
+  const totalItems = ground.verses.reduce((n, v) => n + v.items.length, 0);
+  expect(totalItems).toBeGreaterThan(50); // PSA 119 is the exact pileup this ticket names
 
   const kretzmannChapterRequests: string[] = [];
   const perVerseEdgesRequests: string[] = [];
+  const proseCardRequests: string[] = [];
   page.on('request', req => {
     const url = new URL(req.url());
     if (url.pathname === '/api/kretzmann/chapter/PSA.119') {
       kretzmannChapterRequests.push(req.url());
     } else if (/^\/api\/node\/text-unit%3APSA\.119\.\d+\/edges$/.test(url.pathname) && url.searchParams.get('kind') === 'commented-on-by') {
       perVerseEdgesRequests.push(req.url());
+    } else if (url.pathname.startsWith('/api/node/CommentaryItem%3Akretzmann') && !url.pathname.includes('/edges')) {
+      proseCardRequests.push(req.url());
     }
   });
 
@@ -306,6 +325,63 @@ test('KRETZMANN-13 (KRETZ-SCALE-1, unchanged): PSA 119\'s own LISTING loads via 
     await expect(page.getByTestId(`kretzmann-verse-group-${v.verse}`)).toBeVisible();
   }
 
+  // Every section heading for the whole chapter renders immediately (the
+  // listing IS the whole chapter) -- S-1's own fix, re-verified at scale.
+  await expect(page.locator('.kretzmann-section-heading').first()).toBeVisible();
+
+  // Give the lazy loader's own IntersectionObserver a moment to settle for
+  // whatever is genuinely near the viewport on load (no scroll performed).
+  await page.waitForTimeout(500);
+
   expect(kretzmannChapterRequests.length).toBe(1);
   expect(perVerseEdgesRequests.length).toBe(0);
+
+  // THE HONEST BOUND: loading a 176-verse chapter must not itself trigger a
+  // prose request for every single item -- only what's near the viewport.
+  expect(proseCardRequests.length).toBeGreaterThan(0); // something loads without scrolling
+  expect(proseCardRequests.length).toBeLessThan(totalItems); // but nowhere near the whole chapter
+});
+
+// Fix round (S-1, CRITICAL -- review, "renders section headings WITH
+// prose -- both, always"): the first ship of this batch discarded the
+// corpus's own section headings the instant an item's prose resolved --
+// screenshotted proof at the time (kretzmann-standalone.png) showed NOT
+// ONE section heading anywhere on the page, despite Genesis 1's own real
+// "The Creation of Chaos and Light" / "The Creation of the Firmament" /
+// "The Creation and Blessing of Man" structure. This test asserts real,
+// non-fabricated section headings actually render, de-duplicated
+// (Concord.RenderRows's own technique), and never disappear once an
+// item's own prose has loaded.
+test('KRETZMANN-14 (S-1 fix): real, non-fabricated, de-duplicated section headings render alongside the prose, and stay visible after it loads', async ({ page }) => {
+  const ground = await api.kretzmannChapter('GEN.1');
+  const distinctHeadings = new Set<string>();
+  for (const v of ground.verses) {
+    for (const item of v.items) {
+      distinctHeadings.add(item.heading ?? 'Commentary');
+    }
+  }
+  expect(distinctHeadings.size).toBeGreaterThan(1); // GEN.1 genuinely carries multiple distinct sections
+
+  await page.goto('/kretzmann');
+  await expect(page.getByTestId('kretzmann-verse-group-1')).toBeVisible();
+
+  const headings = page.locator('.kretzmann-section-heading');
+  await expect(headings.first()).toBeVisible();
+  const renderedCount = await headings.count();
+  expect(renderedCount).toBeGreaterThan(0);
+  expect(renderedCount).toBeLessThanOrEqual(distinctHeadings.size); // de-duplicated, never one per item
+
+  // Every rendered heading is REAL corpus text, not fabricated.
+  for (let i = 0; i < renderedCount; i++) {
+    const text = (await headings.nth(i).textContent())?.trim() ?? '';
+    expect(distinctHeadings.has(text)).toBe(true);
+  }
+
+  // Let the first item's own lazy prose fetch resolve (it's in the
+  // initial viewport, so the IntersectionObserver fires immediately) --
+  // the heading must still be there afterward, not discarded once the
+  // prose it introduces has arrived.
+  const card = await api.node('CommentaryItem:kretzmann/0.1.0');
+  await expect(page.locator('.kretzmann-item').first()).toContainText(card.description);
+  await expect(headings.first()).toBeVisible();
 });
