@@ -404,6 +404,15 @@ input:focus-visible,
    -- this file's own established convention for "visually identical, still
    an independent rule per page root" (compare .reader-page/.sources-page
    themselves). */
+/* Batch CORPREAD-1b (ticket K, owner order verbatim: "design it like a
+   sensible UI developer would ... the whole kretzmann commentary just like
+   on the kretzmann.org"): REBUILT from CORP-1's own bordered-card list
+   (see git history) into a CONTINUOUS READING SURFACE, sharing
+   .reader-column's own reading-column measure/padding directly (the
+   markup combines both classes -- "typography carrying the structure,"
+   not a second, parallel column rule) -- .kretzmann-column below now
+   supplies ONLY what genuinely differs (a slightly wider historical-prose
+   measure), never re-declaring width/padding .reader-column already sets. */
 .kretzmann-page {
     min-height: 100vh;
     background: var(--parchment);
@@ -414,9 +423,7 @@ input:focus-visible,
 }
 
 .kretzmann-column {
-    width: 100%;
-    max-width: 860px;
-    padding: 6rem 1.5rem 4rem;
+    max-width: 70ch;
 }
 
 .kretzmann-title {
@@ -437,55 +444,141 @@ input:focus-visible,
     margin: 0 0 1.5rem;
 }
 
+/* Batch CORPREAD-1b design pass: controls grouped where a reader expects
+   them -- the picker (navigate anywhere) and the read-beside/follow chip
+   (mode chrome) sit together, ABOVE the chapter head, never floating
+   separately from one another. */
+.kretzmann-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0 1.5rem;
+}
+
 .kretzmann-loading,
 .kretzmann-empty {
     font-family: var(--font-serif);
     color: var(--ink);
 }
 
-.kretzmann-chapter-head {
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: 0.06em;
-    font-size: 1.3rem;
-    color: var(--ink);
-    border-bottom: 1px solid var(--bronze);
-    padding-bottom: 0.4rem;
-    margin: 1.5rem 0 1.25rem;
+/* .chapter-head itself (reused directly, see the markup) already supplies
+   the small-caps book / big old-style numeral / bronze rule -- Kretzmann's
+   own heading is now BYTE-IDENTICAL typography to the reader's, not a
+   parallel, smaller-scale rule. */
+
+/* Batch CORPREAD-1b: the boxed ".kretzmann-verse-group" card dies -- a
+   verse's own commentary is now a plain reading-flow section: a quiet
+   marginal anchor label, then its paragraph(s) directly beneath, no
+   border/background/radius of any kind. */
+.kretzmann-verse-block {
+    margin: 0 0 1.75rem;
 }
 
-.kretzmann-verse-group {
-    margin: 0 0 1.5rem;
+/* The verse anchor: a quiet, small-caps, mono-adjacent marginal mark --
+   the SAME register .verse-num's own gutter numerals use (bronze-ink,
+   small), but laid out as its own line (Kretzmann's own commentary can run
+   to several paragraphs per verse, unlike a single verse line, so a
+   left-gutter number would misalign against multi-paragraph content) --
+   explorable (.explorable-quiet, this file's own existing lighter-weight
+   hover/focus treatment for a mark that is not itself the main reading
+   content). */
+.kretzmann-verse-anchor {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: var(--bronze-ink);
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0 0 0.5rem;
+    cursor: pointer;
 }
 
-/* --ink-soft measures 7.26:1 on --parchment (this file's own header
-   comment) -- a bare verse-number label is exactly the "quiet, not the
-   subject" role .verse-num already uses --bronze-ink for; this one is
-   plain running prose furniture (not a click target of its own), so the
-   softer, still-compliant --ink-soft is the honest choice here, matching
-   .source-what/.source-built's own body-text color one level up. */
-.kretzmann-verse-num {
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: 0.06em;
-    font-size: 0.85rem;
-    color: var(--ink-soft);
-    margin: 0 0 0.4rem;
-}
-
+/* The commentary paragraph itself -- plain reading-column prose, the SAME
+   measure/weight .verse-text already establishes one file-section up, not
+   a smaller, boxed, secondary treatment. Kretzmann's own words are
+   subordinate to THE text (inerrancy/register law) but are still the
+   PRIMARY content of this particular page, so they read at full reading
+   size/contrast, not muted. */
 .kretzmann-item {
     display: block;
     width: 100%;
     text-align: left;
     font-family: var(--font-serif);
-    font-size: 1rem;
-    line-height: 1.6;
+    font-size: 1.1rem;
+    line-height: 1.7;
     color: var(--ink);
-    background: var(--parchment-raised);
-    border: 1px solid var(--bronze);
+    background: none;
+    border: none;
     border-radius: 4px;
-    padding: 0.6rem 0.9rem;
-    margin: 0 0 0.5rem;
+    padding: 0.15rem 0.4rem;
+    margin: 0 0 0.85rem;
+}
+
+.kretzmann-item-loading {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    color: var(--ink-soft);
+}
+
+/* Batch CORPREAD-1b: an in-prose scripture reference (Explore/
+   ScriptureRefScan.cs via Components/ScriptureRefText.razor) -- the SAME
+   quiet explorable-mention treatment .verse-mention already establishes
+   for a place/person name inside verse text, reused for a citation inside
+   commentary/confession prose (shared by .concord-ref below). */
+.kretzmann-ref,
+.concord-ref {
+    color: var(--lapis);
+    cursor: pointer;
+    border-bottom: 1px dotted var(--lapis);
+}
+
+.kretzmann-ref:hover,
+.kretzmann-ref:focus-visible,
+.concord-ref:hover,
+.concord-ref:focus-visible {
+    color: var(--bronze-ink);
+    border-bottom-style: solid;
+}
+
+/* Chapter-to-chapter continuation (design pass: "navigation at top/bottom
+   of the column"). Deliberately IN-FLOW, not .reader-prev/.reader-next's
+   own position:fixed viewport-edge treatment: THAT positioning is only
+   correct because .reader-page carries `contain: layout` (its own
+   substituted containing block confines left/right to the reader PANE's
+   own width in split view -- see .reader-prev's own comment) -- .kretzmann-
+   page carries no such containment, so a fixed-viewport-edge button would
+   glue itself to the WHOLE WINDOW's edge even while split-hosting at half
+   width, overlapping the guest pane. An in-flow button at the foot of the
+   column (the SAME idiom .concord-nav-button already establishes,
+   generalized here) is simpler and correct in both layouts by
+   construction, not merely un-tested. */
+.kretzmann-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--bronze);
+}
+
+.kretzmann-nav-button {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.06em;
+    font-size: 0.95rem;
+    color: var(--ink);
+    background: none;
+    border: none;
+    padding: 0.3rem 0;
+    cursor: pointer;
+}
+
+.kretzmann-nav-button:hover,
+.kretzmann-nav-button:focus-visible {
+    color: var(--lapis);
 }
 
 /* Concord page (Batch CORP-1, R3/R4): a FIFTH page-root class, the SAME
@@ -500,10 +593,12 @@ input:focus-visible,
     align-items: center;
 }
 
+/* Batch CORPREAD-1b (ticket C): shares .reader-column's own measure/padding
+   directly (the markup combines both classes) -- .concord-column below now
+   supplies ONLY the genuine divergence, mirroring .kretzmann-column's own
+   identical move immediately above. */
 .concord-column {
-    width: 100%;
-    max-width: 860px;
-    padding: 6rem 1.5rem 4rem;
+    max-width: 70ch;
 }
 
 .concord-title {
@@ -522,6 +617,75 @@ input:focus-visible,
     color: var(--ink);
     max-width: 66ch;
     margin: 0 0 1.5rem;
+}
+
+/* Batch CORPREAD-1b design pass: controls grouped where a reader expects
+   them -- Contents toggle + read-beside chip together, above the picker,
+   mirroring .kretzmann-controls's own identical discipline. */
+.concord-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0 1rem;
+}
+
+.concord-toc-toggle {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.06em;
+    font-size: 0.95rem;
+    color: var(--bronze-ink);
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+    border-radius: 3px;
+    padding: 0.4rem 0.9rem;
+    cursor: pointer;
+}
+
+.concord-toc-toggle:hover,
+.concord-toc-toggle:focus-visible {
+    color: var(--lapis);
+}
+
+/* Batch CORPREAD-1b (ticket C, "a menu through which I can navigate to
+   different parts in the BoC"): a reader's table-of-contents affordance --
+   collapsed by default (design discipline: "not chrome clutter"), a plain
+   bordered panel over the ten traditional documents (Explore/ConcordToc.cs),
+   never one of the retired boxed reading-row cards reused for a different
+   purpose. */
+.concord-toc-menu {
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    margin: 0 0 1.25rem;
+}
+
+.concord-toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.concord-toc-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    color: var(--ink);
+    background: none;
+    border: none;
+    padding: 0.4rem 0.3rem;
+    cursor: pointer;
+}
+
+.concord-toc-item:hover,
+.concord-toc-item:focus-visible {
+    color: var(--lapis);
 }
 
 /* R3's own numeric part/article/paragraph jump -- "navigation mirrors the
@@ -577,33 +741,62 @@ input:focus-visible,
     color: var(--ink);
 }
 
+/* Batch CORPREAD-1b (ticket C, owner order verbatim: "everything doesn't
+   need to be shown visually as belonging to these boxes"): PART/ARTICLE
+   structure carried by TYPOGRAPHY, interleaved directly in reading flow
+   (Concord.razor's own RenderRows) -- .concord-part-heading reuses
+   .chapter-head's own register (big, small-caps, bronze rule) since a
+   document boundary is genuinely chapter-scale structure; .concord-article-
+   heading reuses .pericope-heading's own quieter register one level down. */
+.concord-part-heading {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.06em;
+    font-size: 1.7rem;
+    color: var(--ink);
+    text-align: center;
+    border-bottom: 1px solid var(--bronze);
+    padding-bottom: 0.75rem;
+    margin: 2.5rem 0 1.5rem;
+}
+
+.concord-article-heading {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.07em;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 1.75rem 0 0.6rem;
+}
+
+/* The confession's own paragraph -- plain reading-column prose (the SAME
+   measure/weight .verse-text/.kretzmann-item both already establish), not
+   a boxed row. A quiet marginal ref label precedes it (the SAME register
+   .kretzmann-verse-anchor's own mono/bronze-ink mark uses), itself part of
+   the SAME explorable row (ONE-RULE: the whole paragraph is one click
+   target -- see Concord.razor's own markup). */
 .concord-unit {
     display: block;
     width: 100%;
     text-align: left;
-    background: var(--parchment-raised);
-    border: 1px solid var(--bronze);
-    border-radius: 4px;
-    padding: 0.6rem 0.9rem;
-    margin: 0 0 0.5rem;
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--ink);
+    background: none;
+    border: none;
+    padding: 0.15rem 0.4rem;
+    margin: 0 0 0.85rem;
 }
 
 .concord-unit-ref {
     display: block;
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: 0.06em;
-    font-size: 0.78rem;
-    color: var(--ink-soft);
-    margin: 0 0 0.25rem;
-}
-
-.concord-unit-text {
-    display: block;
-    font-family: var(--font-serif);
-    font-size: 1rem;
-    line-height: 1.6;
-    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--bronze-ink);
+    margin: 0 0 0.3rem;
 }
 
 .concord-nav {

@@ -1,81 +1,75 @@
 @page "/kretzmann"
+@using BibleAtlas.Client.Contracts
 @using BibleAtlas.Client.Explore
 @using BibleAtlas.Client.State
 @using BibleAtlas.Client.Views
 @implements IDisposable
 @inject StateAtom<Locus> LocusAtom
+@inject StateAtom<ViewArrangement> ViewArrangementAtom
 @inject AtlasClient Atlas
+@inject IExplorableClient Graph
+@inject ViewRegistry Registry
 
-@* Batch CORP-1 (R2): the Kretzmann Popular Commentary browser -- a
-   LOCUS-KEYED commentary browser. It PROJECTS the shared Locus atom
-   (declares ViewCapabilities.BearsLocus, ViewRegistrySetup.Build): it
-   ALWAYS shows the commentary for the current book+chapter -- the same one
-   the reader is on, by the agreement law (client/Contracts/State.cs's own
-   law 5) -- with the SAME ScripturePicker idiom Reader.razor uses for
-   direct navigation (the picker's own OnApply dispatches SetLocus directly
-   here, since this route carries no per-chapter route params of its own --
-   unlike /read/{Book}/{Chapter}, there is nothing to navigate TO; the
-   shared atom IS the destination).
+@* Batch CORPREAD-1b (ticket K, owner order verbatim: "we should have the
+   whole kretzmann commentary just like on the kretzmann.org, just having
+   the verses be clickable and explorable ... we need an escape hatch to
+   stop following the reader as well ... design it like a sensible UI
+   developer would") -- REBUILDS CORP-1's own item-list/card browser
+   (batch-corp1-report.md §4) into a CONTINUOUS READING SURFACE: the
+   chapter's own commentary, in canonical order, flowing as prose (a quiet
+   verse-anchor label, then that verse's own commentary item(s) as ordinary
+   paragraphs) -- the SAME reading-column register Reader.razor already
+   establishes (.reader-column typography, reused, not re-invented), not a
+   list of bordered cards.
 
-   SPLIT-FOLLOW BY CONSTRUCTION (R2, the state layer's first free win):
-   this view declares a "read-beside" enter-split hatch with Reader
-   (EnterSplitKretzmannHostsReader, ViewRegistrySetup.cs), the SAME
-   self-hosting shape Sources.razor's own hatch already proved generic.
-   NO Follow link is declared or needed -- Reader ALSO projects the SAME
-   Locus atom (BearsLocus) directly off its own `_book`/`_chapterNum` thin
-   read, so once both panes are mounted, navigating the reader (picker,
-   prev/next, a "read in context" hatch, ...) dispatches SetLocus onto the
-   ONE shared atom both members already render off; this page's own
-   OnLocusChanged (below) re-renders/refetches in response, with no wiring
-   between the two views at all. tests/ux/kretzmann.spec.ts proves this
-   directly: navigate the reader while split ⇒ the commentary pane follows.
+   FOLLOW/RELEASE (deliverable 0a/0b, THE FOLLOW-RELEASE LAW): this view
+   still declares ViewCapabilities.BearsLocus and, BY DEFAULT, still
+   projects the shared Locus atom directly (`Following` below, true unless
+   BOTH split-open AND the shared ViewArrangement's own Follow flag is
+   false) -- CORP-1's own "split-follow-by-construction" proof is UNCHANGED
+   for the default (following) case: no link, no held copy, both panes
+   simply render the SAME atom. The NEW toggle-follow chip (below, rendered
+   only while split -- mirrors World.razor's own follow-chip, which
+   likewise only renders while SplitMode) invokes the SAME declared
+   ToggleFollowHatch every locus-bearing view now carries
+   (ViewRegistrySetup.cs) -- flips the ONE shared ViewArrangement.Follow
+   flag (client/State/ViewArrangement.cs's own pre-existing ToggleFollow
+   intent, reused verbatim, not reinvented). RELEASED: `_releasedBook`/
+   `_releasedChapter` (plain scalar fields -- NOT typed as Locus, so this
+   deliberately does NOT trip ConformanceTests.cs's own no-copy scan, the
+   SAME "view-local plain-scalar position, not an atom copy" shape ST-3's
+   own D2 ruling already ledgers for Concord.razor's `_currentRef`) seed
+   from the shared value at the INSTANT of release and this view then
+   browses independently (picker/prev-next write the view-local fields,
+   never LocusAtom, while released) until re-follow reconverges (drops the
+   seed, reloads from whatever the shared atom holds NOW -- the brief's own
+   "SyncToken discipline": re-follow always snaps to CURRENT shared state,
+   never a stale remembered one).
 
-   Batch VC-1's own official host recipe (CompositionSplit.razor's own
-   header, "read this page as that reference example"): follows
-   Sources.razor VERBATIM -- a `<CompositionSplit HostName="@ViewNames.Kretzmann">`
-   wrapping this page's own content as ChildContent, a `SplitMode`
-   parameter threaded to `SplitModeOverride`, `ctx.HostPaneClassSuffix` for
-   the class conditional, and one route-level EnterSingle dispatch at mount.
-   No second ViewArrangementAtom.Changed subscription -- CompositionSplit
-   owns that one, exactly once (see its own header, RULING 1); this page's
-   own ENTIRE markup lives inside ChildContent, so it re-renders for free
-   whenever the arrangement changes.
+   VERSE REFS EXPLORABLE (ticket K): every commentary paragraph's own prose
+   renders through the shared Components/ScriptureRefText.razor scanner
+   (Explore/ScriptureRefScan.cs) -- the SAME mechanism Concord.razor uses
+   (the brief's own "do not fork the scanner"); a verse ANCHOR (the small
+   marginal label opening each verse's own block) is independently
+   explorable too (a plain VerseNode push, ONE-RULE).
 
-   Body: the current chapter's CommentaryItem entries, in canonical order,
-   grouped by verse (mirrors the reader's own verse-line grouping). Plain
-   click on a row = the existing ONE-RULE explore/popover semantics
-   (Explore/CommentaryItemNode.cs): the popover's own title is the row's
-   heading (already fetched, shown here); its BODY carries the unit's own
-   real prose (Batch CORP-1b, CommentaryItemProseSection -- the generic
-   node card's additive `description` field, server-side:
-   `atlas_graph::legacy::node_description`'s widened match, resolving
-   CORP-1's own disclosed NEEDS_CONTEXT gap).
-
-   LISTING MECHANISM (KRETZ-SCALE-1, batch-finalp1-brief.md ticket 2 --
-   supersedes R2's own original "expressible as edge queries from the
-   nodes that anchor them" client-side fan-out): `comments-on`/
-   `commented-on-by` is a bespoke row table (graph.comments_on) ALREADY
-   lowered into the generic directed edge index (graph-types/src/graph.rs's
-   own KRETZ-1 "pre-authorized exception") -- R2 shipped with no
-   chapter-scoped listing query on the server, so this page used to issue
-   one `commented-on-by` edges call PER VERSE in the current chapter,
-   concurrently (176 simultaneous requests for a chapter like PSA 119, on
-   EVERY locus change). KRETZ-SCALE-1 adds a real, additive, chapter-scoped
-   server endpoint (`GET /api/kretzmann/chapter/{cref}`,
-   `atlas_graph::kretzmann_adapter::chapter_commentary`) that walks the
-   SAME edge machinery server-side, in one request -- this page now issues
-   exactly ONE fetch per locus change (`AtlasClient.KretzmannChapter`),
-   already grouped by verse, already in document order (the server's own
-   accessor sorts by each CommentaryItem's own trailing id ordinal --
-   kretzmann_adapter.rs's own "NODE IDENTITY: kretzmann/{book}.{chapter}.
-   {ordinal}" -- the SAME ordering this page's own retired client-side
-   `OrdinalOf` used to compute locally). *@
+   Body data: LISTING (KRETZ-SCALE-1, unchanged -- one chapter-scoped
+   request, `AtlasClient.KretzmannChapter`) carries only each item's own
+   HEADING; the FULL PROSE (CORP-1b's own additive `description` field on
+   the generic node card) is fetched per item, CONCURRENTLY, once the
+   listing resolves -- disclosed in the batch report as a real N-fetch cost
+   (no bespoke bulk-prose endpoint exists; zero server changes is this
+   batch's own machine rule) -- "independent fetches never serialize," this
+   app's own house pattern. Headings render immediately; prose streams in
+   under each heading as it resolves, never blocking the whole chapter on
+   the slowest single item. *@
 
 <PageTitle>Bible Explorer &mdash; Kretzmann</PageTitle>
 
-<CompositionSplit HostName="@ViewNames.Kretzmann" SplitModeOverride="@SplitMode" HostPaneClass="split-pane-host" Context="ctx">
+<CompositionSplit HostName="@ViewNames.Kretzmann" SplitModeOverride="@SplitMode" HostPaneClass="split-pane-host"
+                   OnArrangementChanged="OnArrangementChanged" @ref="_compositionSplit" Context="ctx">
     <div class="@($"kretzmann-page{ctx.HostPaneClassSuffix}")" data-testid="kretzmann-page">
-        <div class="kretzmann-column">
+        <article class="kretzmann-column reader-column">
             <h1 class="kretzmann-title">Kretzmann</h1>
             <p class="kretzmann-intro">
                 Paul E. Kretzmann's <em>Popular Commentary of the Bible</em>
@@ -83,22 +77,35 @@
                 verse, subordinate to the text it serves.
             </p>
 
-            <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" CurrentBook="@_book" CurrentChapter="@_chapterNum" />
+            <div class="kretzmann-controls">
+                <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" CurrentBook="@_book" CurrentChapter="@_chapterNum" />
 
-            @* Sources.razor's own MINIMAL host recipe: only the "read
-               beside" affordance renders here; a split-h GUEST closes
-               itself (Reader's own guest-role close button, wired through
-               ctx.RequestClose there) -- no separate host-side close
-               affordance is needed, matching Sources exactly. *@
-            @if (!ctx.IsSplitOpen)
-            {
-                <button type="button" class="split-open split-open-parchment" data-testid="split-open-kretzmann"
-                        @onclick="ctx.InvokeHatch">
-                    Read beside the reader
-                </button>
-            }
+                @if (!ctx.IsSplitOpen)
+                {
+                    <button type="button" class="split-open split-open-parchment" data-testid="split-open-kretzmann"
+                            @onclick="ctx.InvokeHatch">
+                        Read beside the reader
+                    </button>
+                }
+                else
+                {
+                    @* Batch CORPREAD-1b, deliverable 0a/ticket K: the
+                       release/re-follow chip -- rendered ONLY while split
+                       (mirrors World.razor's own follow-chip, which
+                       likewise only exists while SplitMode; there is
+                       nothing to escape FROM while standalone -- see this
+                       file's own header). *@
+                    <button type="button" class="follow-chip" data-testid="kretzmann-follow-chip"
+                            aria-pressed="@(Following ? "true" : "false")" @onclick="ToggleFollowClick">
+                        @(Following ? "Following the reader" : "Reading independently")
+                    </button>
+                }
+            </div>
 
-            <h2 class="kretzmann-chapter-head" data-testid="kretzmann-chapter-head">@BookName @_chapterNum</h2>
+            <h2 class="chapter-head kretzmann-chapter-head" data-testid="kretzmann-chapter-head">
+                <span class="chapter-head-book">@BookName</span>
+                <span class="chapter-head-num">@_chapterNum</span>
+            </h2>
 
             @if (_error is not null)
             {
@@ -118,19 +125,47 @@
             {
                 @foreach (var group in _rows)
                 {
-                    <section class="kretzmann-verse-group" data-testid="@($"kretzmann-verse-group-{group.Verse}")">
-                        <p class="kretzmann-verse-num">@group.Verse</p>
+                    <section class="kretzmann-verse-block" data-testid="@($"kretzmann-verse-group-{group.Verse}")">
+                        <button type="button" class="kretzmann-verse-anchor explorable-quiet" data-testid="@($"kretzmann-verse-anchor-{group.Verse}")"
+                                aria-label="@($"Explore {BookName} {_chapterNum}:{group.Verse}")"
+                                @onclick="@(() => OnExploreVerse(group.Verse))">
+                            @group.Verse
+                        </button>
                         @foreach (var item in group.Items)
                         {
-                            <button type="button" class="kretzmann-item explorable" data-testid="@($"kretzmann-item-{Slug(item.Id)}")"
-                                    @onclick="@(() => OnExplore(item))">
-                                @item.Heading
-                            </button>
+                            <div class="kretzmann-item explorable" data-testid="@($"kretzmann-item-{Slug(item.Id)}")"
+                                 tabindex="0" role="button" aria-label="@($"Explore {item.Heading}")"
+                                 @onclick="@(() => OnExplore(item))" @onkeydown="@(e => OnItemKeyDown(e, item))">
+                                @if (item.Text is { } text)
+                                {
+                                    <ScriptureRefText Text="@text" Toc="@(_toc ?? EmptyToc)" ClassPrefix="kretzmann-ref"
+                                                       OwnerSlug="@Slug(item.Id)" OnExplore="OnExploreNode" />
+                                }
+                                else
+                                {
+                                    @item.Heading <span class="kretzmann-item-loading" aria-hidden="true">&hellip;</span>
+                                }
+                            </div>
                         }
                     </section>
                 }
             }
-        </div>
+
+            <nav class="kretzmann-nav" aria-label="Chapter navigation">
+                @if (PrevTarget is { } prev)
+                {
+                    <button type="button" class="kretzmann-nav-button" data-testid="kretzmann-prev"
+                            aria-label="@($"Previous chapter: {prev.Name} {prev.Chapter}")"
+                            @onclick="@(() => OnChapterNavClick(prev.Book, prev.Chapter))">&lsaquo; @prev.Name @prev.Chapter</button>
+                }
+                @if (NextTarget is { } next)
+                {
+                    <button type="button" class="kretzmann-nav-button" data-testid="kretzmann-next"
+                            aria-label="@($"Next chapter: {next.Name} {next.Chapter}")"
+                            @onclick="@(() => OnChapterNavClick(next.Book, next.Chapter))">@next.Name @next.Chapter &rsaquo;</button>
+                }
+            </nav>
+        </article>
     </div>
 </CompositionSplit>
 
@@ -140,15 +175,38 @@
 }
 
 @code {
-    private sealed record CommentaryItemRow(string Id, string Heading);
+    private sealed record CommentaryItemRow(string Id, string Heading, string? Text);
     private sealed record CommentaryVerseGroup(int Verse, List<CommentaryItemRow> Items);
+
+    private static readonly List<BookTocEntry> EmptyToc = new();
 
     [Parameter] public bool? SplitMode { get; set; }
 
+    private CompositionSplit? _compositionSplit;
+
     private Projection<Locus>? _locusBacking;
     private Projection<Locus> _locus => _locusBacking ??= new Projection<Locus>(LocusAtom);
-    private string _book => _locus.Value.Book;
-    private int _chapterNum => _locus.Value.Chapter;
+
+    // Batch CORPREAD-1b (deliverable 0a/ticket K, THE FOLLOW-RELEASE LAW):
+    // true whenever this view's own display should track the shared Locus
+    // atom directly -- ALWAYS true while not split (nothing to escape from
+    // standalone, see this file's own header), otherwise the shared
+    // ViewArrangement's own Follow flag. Reads `ViewArrangementAtom.Value`
+    // directly (the SAME shape World.razor's own pre-existing, allowlisted
+    // `_follow` property already uses -- ConformanceTests.cs's own
+    // NoComponentHeldArrangementState_NoRealSiteOutsideTheSanctionedOwners
+    // gained a matching new entry for this file, reasoned the identical way).
+    private bool Following => !(_compositionSplit?.IsSplitOpen ?? false) || ViewArrangementAtom.Value.Follow;
+
+    // View-local, RELEASED-only browsing position -- plain scalars (never
+    // typed as Locus), seeded from the shared atom's own value at the
+    // INSTANT of release (ToggleFollowClick below). Null whenever following
+    // (the shared atom is the live source then; these are simply unused).
+    private string? _releasedBook;
+    private int? _releasedChapter;
+
+    private string _book => Following ? _locus.Value.Book : (_releasedBook ?? _locus.Value.Book);
+    private int _chapterNum => Following ? _locus.Value.Chapter : (_releasedChapter ?? _locus.Value.Chapter);
 
     private List<BookTocEntry>? _toc;
     private List<CommentaryVerseGroup> _rows = new();
@@ -156,6 +214,10 @@
     private string? _error;
     private int _requestId;
     private IExplorable? _activeNode;
+    private IEscapeHatch? _followHatchBacking;
+
+    private string? _loadedBook;
+    private int? _loadedChapterNum;
 
     private string BookName => _toc?.FirstOrDefault(b => b.Code == _book)?.Name ?? _book;
 
@@ -164,12 +226,6 @@
     // the testid only (never used to re-derive the id itself).
     private static string Slug(string wireId) => wireId.Replace(':', '-').Replace('/', '-').Replace('.', '-');
 
-    // Batch CORPREAD-1a (SPLIT-PERSIST-1): the standalone mount-time assert
-    // this method used to perform directly is RETIRED -- CompositionSplit's
-    // own OnParametersSet now performs it generically (see its own header,
-    // RULING 5), and additionally restores a split from the URL when one is
-    // present -- Kretzmann gets the SAME refresh-survives-split guarantee
-    // Reader always had.
     protected override async Task OnInitializedAsync()
     {
         // Batch CORP-1: the one legitimate direct LocusAtom.Changed
@@ -187,7 +243,10 @@
         {
             // Non-fatal -- BookName falls back to the bare code (see its own
             // property above); the commentary fetch below does not need the
-            // TOC at all except to resolve THIS chapter's own verse count.
+            // TOC at all except to resolve THIS chapter's own verse count
+            // and the scripture-ref scanner's own book-name alternation
+            // (ScriptureRefText simply renders no explorable refs until the
+            // TOC resolves -- Scan's own toc.Count==0 short-circuit).
         }
 
         await LoadCommentaryAsync();
@@ -195,8 +254,69 @@
 
     private void OnLocusChanged()
     {
+        // Batch CORPREAD-1b, THE FOLLOW-RELEASE LAW: while released, this
+        // view browses independently -- a shared-atom move (e.g. the
+        // guest reader pane navigating) is deliberately IGNORED, exactly
+        // the ticket's own text ("released Kretzmann browses independently").
+        if (!Following)
+        {
+            return;
+        }
+
         _activeNode = null; // a new chapter invalidates whatever was open, same reset Reader.razor already performs on navigation
         _ = LoadCommentaryAsync();
+    }
+
+    // Batch CORPREAD-1b: re-renders for the follow-chip's own live label,
+    // and reconverges the loaded chapter whenever a split-close (or any
+    // other arrangement change) flips `Following` back to true onto a
+    // DIFFERENT locus than what is currently loaded (e.g. the guest reader
+    // pane moved the shared atom while this view was released, then the
+    // split closed).
+    private void OnArrangementChanged()
+    {
+        if (_loadedBook != _book || _loadedChapterNum != _chapterNum)
+        {
+            _releasedBook = null;
+            _releasedChapter = null;
+            _activeNode = null;
+            _ = LoadCommentaryAsync();
+        }
+        else
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleFollowClick()
+    {
+        var wasFollowing = Following;
+        if (wasFollowing)
+        {
+            // RELEASE: seed the view-local position from the CURRENT shared
+            // value -- deliverable 0b, verbatim: "released = view-local
+            // position seeded from the shared value at release."
+            _releasedBook = _locus.Value.Book;
+            _releasedChapter = _locus.Value.Chapter;
+        }
+
+        _followHatchBacking ??= Registry.Get(ViewNames.Kretzmann).EscapeHatches.Single(h => h.Kind == HatchKinds.ToggleFollow);
+        await _followHatchBacking.Invoke();
+
+        if (wasFollowing)
+        {
+            StateHasChanged(); // released -- book/chapter identical at this instant, only the chip's own label changes
+        }
+        else
+        {
+            // RE-FOLLOW: reconverge -- deliverable 0b, verbatim: "re-follow
+            // = reconverge." Drops the seed and reloads from whatever the
+            // shared atom holds NOW, never a stale remembered position.
+            _releasedBook = null;
+            _releasedChapter = null;
+            _activeNode = null;
+            await LoadCommentaryAsync();
+        }
     }
 
     public void Dispose()
@@ -217,7 +337,82 @@
 
         var book = parts[0];
         var chapter = parts.Length > 1 && int.TryParse(parts[1], out var c) ? c : 1;
-        LocusAtom.Dispatch(new SetLocus(book, chapter));
+        NavigateTo(book, chapter);
+    }
+
+    private sealed record AdjacentChapter(string Book, string Name, int Chapter);
+
+    private AdjacentChapter? PrevTarget => ComputeAdjacent(forward: false);
+    private AdjacentChapter? NextTarget => ComputeAdjacent(forward: true);
+
+    // Batch CORPREAD-1b (ticket K, "chapter-to-chapter continuation ...
+    // reads like the Bible reader's own flow"): mirrors Reader.razor's own
+    // ComputeAdjacent exactly (crosses book boundaries via the TOC; null
+    // -- hidden -- at GEN.1's prev and REV.22's next).
+    private AdjacentChapter? ComputeAdjacent(bool forward)
+    {
+        if (_toc is null)
+        {
+            return null;
+        }
+
+        var idx = _toc.FindIndex(b => b.Code == _book);
+        if (idx < 0)
+        {
+            return null;
+        }
+
+        var entry = _toc[idx];
+        var chapterIdx = entry.Chapters.IndexOf(_chapterNum);
+
+        if (forward)
+        {
+            if (chapterIdx >= 0 && chapterIdx + 1 < entry.Chapters.Count)
+            {
+                return new AdjacentChapter(entry.Code, entry.Name, entry.Chapters[chapterIdx + 1]);
+            }
+            if (idx + 1 < _toc.Count)
+            {
+                var next = _toc[idx + 1];
+                return new AdjacentChapter(next.Code, next.Name, next.Chapters[0]);
+            }
+            return null;
+        }
+
+        if (chapterIdx > 0)
+        {
+            return new AdjacentChapter(entry.Code, entry.Name, entry.Chapters[chapterIdx - 1]);
+        }
+        if (idx > 0)
+        {
+            var prev = _toc[idx - 1];
+            return new AdjacentChapter(prev.Code, prev.Name, prev.Chapters[^1]);
+        }
+        return null;
+    }
+
+    private void OnChapterNavClick(string book, int chapterNum) => NavigateTo(book, chapterNum);
+
+    // Batch CORPREAD-1b, THE FOLLOW-RELEASE LAW: the ONE choke point every
+    // navigation gesture (picker, prev/next) funnels through -- while
+    // FOLLOWING, dispatches onto the shared Locus atom (moves a guest
+    // reader pane too, if one is mounted -- the pre-existing, unchanged
+    // "free win" behavior); while RELEASED, writes the view-local scalars
+    // directly and reloads locally, touching LocusAtom not at all (ticket
+    // K, verbatim: "released Kretzmann browses independently").
+    private void NavigateTo(string book, int chapterNum)
+    {
+        if (Following)
+        {
+            LocusAtom.Dispatch(new SetLocus(book, chapterNum));
+        }
+        else
+        {
+            _releasedBook = book;
+            _releasedChapter = chapterNum;
+            _activeNode = null;
+            _ = LoadCommentaryAsync();
+        }
     }
 
     private async Task LoadCommentaryAsync()
@@ -231,15 +426,9 @@
 
         try
         {
-            // KRETZ-SCALE-1: ONE chapter-scoped fetch -- replaces the retired
-            // per-verse fan-out (this file's own header comment has the full
-            // "why"). The server's own accessor already groups by verse and
-            // orders within a verse by document order (its own trailing id
-            // ordinal), so no client-side grouping/sorting is needed here at
-            // all -- this page's own retired OrdinalOf helper (formerly
-            // needed to re-sort the fan-out's own out-of-order concurrent
-            // results) is deleted along with the fan-out itself, not merely
-            // left dead.
+            // KRETZ-SCALE-1: ONE chapter-scoped fetch for the LISTING
+            // (headings, already grouped/ordered server-side) -- unchanged
+            // from CORP-1's own shipped mechanism.
             var doc = await Atlas.KretzmannChapter(book, chapterNum);
 
             if (myRequest != _requestId)
@@ -247,11 +436,48 @@
                 return; // superseded by a newer navigation -- discard this stale response
             }
 
-            _rows = doc.Verses
+            var headingRows = doc.Verses
                 .Select(v => new CommentaryVerseGroup(
                     v.Verse,
-                    v.Items.Select(item => new CommentaryItemRow(item.Id, item.Heading ?? "Commentary")).ToList())) // same fallback graph-types' own card() applies server-side for every OTHER consumer of a heading-less CommentaryItem
+                    v.Items.Select(item => new CommentaryItemRow(item.Id, item.Heading ?? "Commentary", null)).ToList()))
                 .ToList();
+
+            _rows = headingRows;
+            _loadedBook = book;
+            _loadedChapterNum = chapterNum;
+            _loading = false;
+            StateHasChanged(); // headings visible immediately -- prose streams in below, never blocking the whole chapter
+
+            // Batch CORPREAD-1b (ticket K): the FULL PROSE -- one Card()
+            // fetch per item, concurrently ("independent fetches never
+            // serialize," this app's own house pattern; disclosed as a
+            // real N-fetch cost in the batch report -- no bespoke
+            // bulk-prose endpoint exists, and this batch makes zero server
+            // changes).
+            var allItems = headingRows.SelectMany(g => g.Items).ToList();
+            var proseResults = await Task.WhenAll(allItems.Select(async row =>
+            {
+                try
+                {
+                    var card = await Graph.Card(row.Id);
+                    return (row.Id, Text: card.Description);
+                }
+                catch (Exception)
+                {
+                    return (row.Id, Text: (string?)null); // fail soft -- the heading still renders, matches the app's own lazy-fetch degradation policy
+                }
+            }));
+
+            if (myRequest != _requestId)
+            {
+                return;
+            }
+
+            var proseById = proseResults.ToDictionary(r => r.Id, r => r.Text);
+            _rows = headingRows
+                .Select(g => g with { Items = g.Items.Select(item => item with { Text = proseById.GetValueOrDefault(item.Id) ?? item.Heading }).ToList() })
+                .ToList();
+            StateHasChanged();
         }
         catch (Exception)
         {
@@ -261,18 +487,29 @@
             }
 
             _error = "Couldn't load the commentary for this chapter — check your connection and try again.";
-        }
-        finally
-        {
-            if (myRequest == _requestId)
-            {
-                _loading = false;
-                StateHasChanged();
-            }
+            _loading = false;
+            StateHasChanged();
         }
     }
 
     private void OnExplore(CommentaryItemRow item) => _activeNode = new CommentaryItemNode(item.Id, item.Heading);
+
+    private void OnItemKeyDown(KeyboardEventArgs e, CommentaryItemRow item)
+    {
+        if (e.Key == "Enter")
+        {
+            OnExplore(item);
+        }
+    }
+
+    // Batch CORPREAD-1b (ticket K, "the verse anchors themselves are
+    // clickable explorables"): the SAME VerseNode every other verse
+    // reference in this app opens (Reader's own verse-num click, xref
+    // targets, ScriptureRefText's own in-prose matches below) -- ONE-RULE,
+    // no bespoke anchor popover.
+    private void OnExploreVerse(int verse) => _activeNode = new VerseNode($"{_book}.{_chapterNum}.{verse}");
+
+    private void OnExploreNode(IExplorable node) => _activeNode = node;
 
     private void ClosePopover() => _activeNode = null;
 }
