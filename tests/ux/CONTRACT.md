@@ -4529,7 +4529,9 @@ Notes:
       two-viewport-height-pane shape) -- never a per-host CSS override.
     - 50/50 DEFAULT (SPLIT-5050's own contract, implemented this batch):
       the no-stored-`DividerFraction` initial width is exactly
-      `ViewArrangement.DefaultDividerFraction` (a named constant, `0.5`)
+      `ViewArrangement.InitialDividerFraction` (a named constant, `0.5`,
+      deliberately named distinctly from `EnterSplit`'s own pre-existing
+      `DefaultDividerFraction` seed parameter -- a different concern)
       of the measured `.split-view` content-box width, computed at the
       ONE initial-width site (`CompositionSplit.razor`'s own
       `OnAfterRenderAsync`) -- applies to every pairing through

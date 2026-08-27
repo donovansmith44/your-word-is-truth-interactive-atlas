@@ -46,12 +46,20 @@ public sealed record ViewArrangement(IReadOnlyList<string> Members, string Layou
     /// width computation reads -- <c>CompositionSplit.razor</c>'s own
     /// <c>OnAfterRenderAsync</c> is the sole production site (grep-able;
     /// conformance-tripwired, <c>ConformanceTests.cs</c>'s own
-    /// <c>DefaultDividerFraction_ReferencedFromExactlyOneProductionSite</c>)
+    /// <c>InitialDividerFraction_ReferencedFromExactlyOneProductionSite</c>)
     /// -- never a bare <c>0.5</c> literal, and applies through
     /// <c>CompositionSplit</c> to EVERY pairing (no per-pair tuning, per the
     /// ticket's own text) since that component is the ONE place any host's
-    /// divider ever restores its width from.</summary>
-    public const double DefaultDividerFraction = 0.5;
+    /// divider ever restores its width from. Named DISTINCTLY from
+    /// <see cref="EnterSplit.DefaultDividerFraction"/> (that record's own
+    /// per-dispatch-site SEED parameter for a brand-new arrangement, a
+    /// genuinely different concern -- most callers pass it <c>null</c>) even
+    /// though both default to conceptually "the divider's starting point" --
+    /// a shared name would have been a real, silent name COLLISION (this
+    /// constant's own conformance scan caught it live during development:
+    /// grepping bare <c>DefaultDividerFraction</c> also matched every
+    /// <c>EnterSplit(..., DefaultDividerFraction: null)</c> call site).</summary>
+    public const double InitialDividerFraction = 0.5;
 
     public bool Equals(ViewArrangement? other) =>
         other is not null

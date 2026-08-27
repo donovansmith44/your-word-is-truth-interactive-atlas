@@ -1041,4 +1041,43 @@ public class ConformanceTests
             "Found a Nav.ToBaseRelativePath(Nav.Uri).StartsWith(...) route-path view-identity sniff OUTSIDE MainLayout.razor -- the D2 exemption (controller ruling, \"cosmetic header theming\") was scoped to THAT file specifically; a second site needs its own reasoned ruling, not a silent free ride:\n" +
             string.Join("\n", violations));
     }
+
+    // ------------------------------------------------------------------
+    // Batch CORPREAD-1a, DELIVERABLE 0d ("conformance where scannable: the
+    // DividerFraction default constant referenced from exactly one site
+    // (grep-able)"), landed alongside SPLIT-5050 (the ticket that gives the
+    // constant its one real read site). ViewArrangement.InitialDividerFraction
+    // is the ONE named constant the no-stored-fraction initial-width
+    // computation reads (named distinctly from EnterSplit's own, pre-
+    // existing DefaultDividerFraction SEED parameter -- a genuinely
+    // different concern -- to avoid exactly the name collision a bare
+    // grep for "DefaultDividerFraction" would have produced against every
+    // EnterSplit(..., DefaultDividerFraction: null) call site; see that
+    // constant's own doc comment). A second production read site would mean
+    // a second place could drift from 0.5 independently -- exactly the
+    // "magic number, not a constant" shape the owner order rejected.
+    // ------------------------------------------------------------------
+    [Fact]
+    public void InitialDividerFraction_ReferencedFromExactlyOneProductionSite()
+    {
+        var pattern = new Regex(@"InitialDividerFraction\b", RegexOptions.Compiled);
+        var sites = new List<string>();
+        foreach (var file in ClientSourceFiles())
+        {
+            var relative = Path.GetRelativePath(RepoRoot(), file).Replace('\\', '/');
+            if (relative == "client/State/ViewArrangement.cs")
+            {
+                continue; // the constant's own declaration site, not a read/reference
+            }
+
+            if (pattern.IsMatch(File.ReadAllText(file)))
+            {
+                sites.Add(relative);
+            }
+        }
+
+        Assert.True(sites.Count == 1 && sites[0] == "client/Components/CompositionSplit.razor",
+            "ViewArrangement.InitialDividerFraction must be referenced from EXACTLY ONE production site (CompositionSplit.razor's own OnAfterRenderAsync, SPLIT-5050's sole initial-width computation) -- found: " +
+            (sites.Count == 0 ? "(none -- the site was removed or renamed)" : string.Join(", ", sites)));
+    }
 }

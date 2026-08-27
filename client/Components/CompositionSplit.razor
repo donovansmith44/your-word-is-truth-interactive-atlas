@@ -261,6 +261,13 @@ else
     [Parameter]
     public Action? OnArrangementChanged { get; set; }
 
+    // Batch CORPREAD-1a (SPLIT-5050): this literal 704px is no longer the
+    // PRIMARY no-stored-fraction path (see OnAfterRenderAsync below, which
+    // now always attempts a live 50/50 measurement first) -- it survives
+    // only as the last-resort value if that measurement itself fails
+    // (JS interop error, `.split-view` not yet in the DOM), the same
+    // fail-soft floor every other measured-width computation in this file
+    // already falls back to.
     private double _widthPx = 704;
     private bool _dividerRestoreAttempted;
     private IJSObjectReference? _js;
@@ -397,40 +404,55 @@ else
     // uses for its own clamp ceiling) -- this component now owns its OWN JS
     // import rather than depending on a host page's cached module reference,
     // since divider-width ownership itself moved here.
+    //
+    // Batch CORPREAD-1a (SPLIT-5050, owner order verbatim: "by default
+    // whatever opens up to the right when you split screen is way bigger.
+    // make it so that it's 50/50 by default"): this used to run the live
+    // measurement ONLY when `DividerFraction is { } fraction` -- a
+    // no-stored-value split (every FIRST-ever open this session, for any
+    // pairing) skipped it entirely and fell through to the field default
+    // above (`_widthPx = 704`, a bare pixel guess with no relationship to
+    // the pane's own actual measured width, let alone 50/50 of it). Now
+    // ALWAYS attempts the measurement once split-open (dropping the
+    // `is {} fraction` gate), reading `ViewArrangement.InitialDividerFraction`
+    // (the ONE named 0.5 constant, deliverable 0b) whenever no stored
+    // fraction exists yet -- so the FIRST open of ANY pairing lands at a
+    // real, measured 50/50 split, and only a genuinely FAILED/unavailable
+    // measurement (JS interop error, `.split-view` not yet in the DOM) ever
+    // falls back to the 704px field default, same fail-soft stance as
+    // before.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (IsSplitOpen && IsHost && !_dividerRestoreAttempted)
         {
             _dividerRestoreAttempted = true;
-            if (ViewArrangementAtom.Value.DividerFraction is { } fraction)
+            var fraction = ViewArrangementAtom.Value.DividerFraction ?? ViewArrangement.InitialDividerFraction;
+            try
             {
-                try
+                _js ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
+                var rect = await _js.InvokeAsync<PaneRectDto?>("getPaneRect", ".split-view");
+                if (rect is { Width: > 0 } r)
                 {
-                    _js ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
-                    var rect = await _js.InvokeAsync<PaneRectDto?>("getPaneRect", ".split-view");
-                    if (rect is { Width: > 0 } r)
-                    {
-                        // Same light sanity floor as the pre-fix-round-1 code
-                        // this replaces -- SplitDivider's own next real
-                        // drag/nudge re-clamps to its own exact bounds
-                        // regardless. ST2-m1: order the bounds so a
-                        // sub-400px container (r.Width - 200 < 200) can never
-                        // invert min/max into a Math.Clamp throw -- the
-                        // ceiling floors at the same 200 the lower bound
-                        // uses, instead of relying on the surrounding
-                        // try/catch to swallow the exception.
-                        var minWidthPx = 200.0;
-                        var maxWidthPx = Math.Max(minWidthPx, r.Width - 200);
-                        _widthPx = Math.Clamp(fraction * r.Width, minWidthPx, maxWidthPx);
-                        StateHasChanged();
-                    }
+                    // Same light sanity floor as the pre-fix-round-1 code
+                    // this replaces -- SplitDivider's own next real
+                    // drag/nudge re-clamps to its own exact bounds
+                    // regardless. ST2-m1: order the bounds so a
+                    // sub-400px container (r.Width - 200 < 200) can never
+                    // invert min/max into a Math.Clamp throw -- the
+                    // ceiling floors at the same 200 the lower bound
+                    // uses, instead of relying on the surrounding
+                    // try/catch to swallow the exception.
+                    var minWidthPx = 200.0;
+                    var maxWidthPx = Math.Max(minWidthPx, r.Width - 200);
+                    _widthPx = Math.Clamp(fraction * r.Width, minWidthPx, maxWidthPx);
+                    StateHasChanged();
                 }
-                catch (Exception)
-                {
-                    // Fail soft -- keep whatever _widthPx already holds, same
-                    // graceful-degrade stance SplitDivider's own
-                    // EnsureMaxWidthAsync takes.
-                }
+            }
+            catch (Exception)
+            {
+                // Fail soft -- keep whatever _widthPx already holds, same
+                // graceful-degrade stance SplitDivider's own
+                // EnsureMaxWidthAsync takes.
             }
         }
         else if (!IsSplitOpen)
