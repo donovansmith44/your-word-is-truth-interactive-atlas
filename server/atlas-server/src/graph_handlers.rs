@@ -68,6 +68,13 @@ pub struct NodeCardOut {
     /// exists for either), so widening the generic card here is what
     /// actually reaches them; it reaches Place/PeopleGroup for free too
     /// (the same payload fact, whichever kind carries it).
+    ///
+    /// Batch CORP-1b: the SAME field, widened again -- a CommentaryItem's
+    /// own prose (`NodePayload::CommentaryItem.text`) rides here too now
+    /// (`atlas_graph::legacy::node_description`'s own updated match), for
+    /// the identical reason: no dedicated per-kind endpoint exists for
+    /// CommentaryItem either, and the prose was already sitting on the
+    /// compiled graph payload, just never read.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }
@@ -93,9 +100,9 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<St
 
     let edge_summary = summary.into_iter().map(|(kind, count)| EdgeSummaryEntryOut { kind: kind.label().to_string(), count }).collect();
 
-    // ENT-1a: whichever of the three described kinds this node is (or
-    // `None` for every other kind, and `None` until a match exists even for
-    // those three) -- via `atlas_graph::legacy::node_description`, the SAME
+    // ENT-1a: whichever of the described kinds this node is (or `None` for
+    // every other kind, and `None` until a match exists even for those) --
+    // via `atlas_graph::legacy::node_description`, the SAME
     // shared accessor `handlers::place` calls (batch-polish1-brief.md
     // ENT1A-m4: this used to hand-roll its own copy of that exact
     // NodePayload match on the already-fetched `node` above; unified,

@@ -395,6 +395,27 @@ async fn place_detail_carries_a_real_easton_description_when_a_match_exists() {
     assert!(description.contains("Eshcol") || description.contains("Jerusalem"), "must be Easton's own real Hebron prose, got: {description}");
 }
 
+/// Batch CORP-1b (owner authorization, resolving CORP-1's own disclosed
+/// NEEDS_CONTEXT gap: "no existing server query exposes a CommentaryItem's
+/// own prose"): the SAME additive `description` seam, widened to a FOURTH
+/// kind (`atlas_graph::legacy::node_description`'s new CommentaryItem arm)
+/// -- over HTTP, over REAL compiled data, proving the wire actually carries
+/// a real Kretzmann unit's own prose end to end through the SAME generic
+/// `GET /api/node/{id}` this file's own Person/Place tests above already
+/// exercise (no new endpoint, no new wire type). `kretzmann/0.1.0` is
+/// GEN.1.1's own real first commentary unit (kretzmann_adapter.rs's own
+/// "NODE IDENTITY" doc comment: `kretzmann/{book}.{chapter}.{ordinal}`).
+#[tokio::test]
+async fn commentary_item_card_carries_its_own_real_kretzmann_prose_via_description() {
+    let app = real_app();
+    let (st, body, _) = get(&app, "/api/node/CommentaryItem:kretzmann%2F0.1.0").await;
+    assert_eq!(st, 200, "{body}");
+    assert_eq!(body["label"], "The Creation of the World.: The Creation of Chaos and Light");
+    let description = body["description"].as_str().expect("a real CommentaryItem must carry its own prose over the real compiled data");
+    assert!(description.starts_with("In the beginning, cp. John 1, 1"), "must be Kretzmann's own verbatim prose (the lemma already excised, KRETZ-1), got: {description}");
+    assert!(description.contains("the heaven"), "must be the FULL unit text, not truncated, got: {description}");
+}
+
 /// ENT-1a (additive-only, batch-ent1a-brief.md controller decision 3): when
 /// no description match exists, the JSON key is OMITTED entirely (never a
 /// present `null`) -- the SAME `skip_serializing_if` discipline every other

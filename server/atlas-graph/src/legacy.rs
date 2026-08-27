@@ -165,6 +165,23 @@ pub fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
     let node = q.node(id)?;
     match node.payload {
         NodePayload::Place { description, .. } | NodePayload::Person { description, .. } | NodePayload::PeopleGroup { description, .. } => description,
+        // Batch CORP-1b (owner authorization, resolving CORP-1's own
+        // disclosed NEEDS_CONTEXT gap): a CommentaryItem's own prose is
+        // ALREADY on the compiled graph payload (`NodePayload::
+        // CommentaryItem.text`, KRETZ-1) -- it was simply never read by
+        // this accessor. Reusing the SAME additive `description` seam
+        // ENT-1a built for Place/Person/PeopleGroup (rather than a new
+        // wire field or a bespoke endpoint) is the smaller, more
+        // precedented diff: `graph_handlers::node_card` already calls this
+        // function and already serializes its result as an OPTIONAL,
+        // `skip_serializing_if`-omitted JSON key
+        // (`NodeCardOut.description`) -- widening this ONE match arm is
+        // the ENTIRE server-side change needed to make a real
+        // CommentaryItem's own prose reachable over `GET /api/node/{id}`,
+        // with zero new routes, zero new wire types, zero graph-types
+        // changes, and zero artifact/ETL changes (the text was already
+        // there; only this accessor was blind to it).
+        NodePayload::CommentaryItem { text, .. } => Some(text),
         _ => None,
     }
 }
