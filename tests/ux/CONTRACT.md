@@ -293,6 +293,18 @@ Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
   `follow-chip` (button; attr `aria-pressed` = follow state; text "Following
   {REF}" while following with a REF to show, else "Follow the text"; present
   only on the embedded atlas pane, i.e. only while split is open)
+  VC-1 (batch-vc1-brief.md, R4's generality proof): `split-open-sources`
+  (button, /sources only, absent once split is open; "Read beside the
+  reader"; opens `split-h` with sources hosting, reader guest, sources
+  stays the route), `split-close-reader-guest` (button, present only on the
+  READER pane while it is playing GUEST -- e.g. embedded in sources+reader
+  -- closes the guest, dispatches `CloseGuest`, returns to single-sources;
+  distinct testid from `split-close-reader` above, which stays reader's OWN
+  HOST self-close, unchanged), `composition-error` (a loud toast,
+  `Components/CompositionHost.razor`; renders only if `ViewArrangement`'s
+  own `LayoutKind` is ever a value outside its closed vocabulary --
+  unreachable through any shipped UI path, exists so an unrecognized kind
+  fails LOUD per R6, not silently).
 Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `popover-save-exploration` (batch-g2-brief.md decision 2; button, in the popover's own
   chrome beside close/back -- POPOVER-LAW-1, no new popover CONTENT; click snapshots the
@@ -4180,6 +4192,40 @@ Notes:
   instead applies its exact query (a scripture ref or a time window) to the
   atlas pane THAT'S ALREADY SHOWING, in place; no second atlas ever opens
   while a split is up, from either pane's own popover.
+  VC-1 AMENDMENT (batch-vc1-brief.md, owner order verbatim: "your reader
+  world split interface is too specific we should support split for any
+  view. No privileged split host, no privileged guest." -- SUPERSEDES the
+  ST-2 amendment's own "Reader.razor is ALWAYS the split's host" clause):
+  `ViewArrangement` is reshaped to `(Members: [name, ...], LayoutKind:
+  "single"|"split-h", DividerFraction, Follow)` (`client/State/
+  ViewArrangement.cs`) -- an ordered list of registered view NAMES (`client/
+  Views/ViewNames.cs`) instead of a closed Reader/World/Split union.
+  `client/Views/ViewRegistry.cs` maps each name to its own mount factory and
+  declared capabilities (`BearsLocus` for reader, `BearsWindow` for world,
+  neither for sources); `Components/CompositionHost.razor` resolves a
+  host's OWN guest slot generically by NAME through the registry --
+  `Reader.razor`'s hard-wired `&lt;World .../&gt;` embed is RETIRED. The
+  reader+world pairing described in this whole SPLIT-1 entry is UNCHANGED,
+  byte-for-byte, for the user (same `split-open-reader`/`split-open-world`
+  buttons, same `split-close-atlas`/`split-close-reader` behavior, same
+  divider, same follow chip) -- both are now invocations of a declared
+  "enter-split" escape hatch (`client/Views/EnterSplitHatch.cs`) rather than
+  page-local methods, but the dispatched arrangement and every DOM-observable
+  behavior are identical. NEW this batch (the generality proof, R4): Sources
+  (`/sources`) declares its own "read-beside" enter-split hatch, partner
+  reader -- `split-open-sources` opens a genuine `split-h` pairing (`sources`
+  host, `reader` guest): `split-view`/`split-divider` render exactly as
+  SPLIT-1/DIVIDER-1 describe, `sources-page` narrows via a new
+  `split-pane-sources` class (reusing the SAME `--split-reader-width`
+  custom property host panes already share), the embedded reader pane closes
+  via its own new `split-close-reader-guest` button (dispatches the generic
+  `CloseGuest` intent, returning to single-sources). NO follow chip and no
+  follow link for this pairing -- neither `sources` nor `reader` alone
+  declares `BearsWindow`, so `World.razor`'s own `_follow` capability query
+  (the ONE place FOLLOW-1's mechanism is gated, see that entry's own
+  amendment) is false by construction for this pairing; degrades cleanly,
+  not a special case. See composition.spec.ts for the sources+reader
+  regression coverage.
 - DIVIDER-1 (M-D3/B2, owner morning address verbatim: "map toggles halfway
   into view, reader can't -- parity ('not good')"; brief: "the split-view
   drag affordance works from the reader side too"): `Components/
@@ -4240,6 +4286,15 @@ Notes:
   actual render source and already correctly survives any same-instance
   close/reopen, the only scenario this app's own UI can reach without a
   full page navigation.
+  VC-1 AMENDMENT (batch-vc1-brief.md): PARITY now extends past reader/world
+  -- `SplitDivider.razor`'s own pre-VC-1 doc comment already anticipated "a
+  future second split host inherits the identical mechanic for free," and
+  this batch is that host: `Sources.razor` wires the SAME component (its
+  own `_sourcesPaneWidthPx` field, `OnDividerCommitted` dispatching
+  `SetDivider`) with zero changes to `SplitDivider.razor` itself. Reader's
+  own divider wiring is UNCHANGED (still `_splitReaderWidthPx`,
+  `SetDivider` replacing the retired `SetSplitDividerFraction` by name
+  only -- identical semantics).
 - FOLLOW-1 (batch-h-brief.md): follow is ON by default the moment a split
   opens. While following, the atlas pane shows the scripture scene of the
   reader's CURRENT chapter via the exact same mechanism `/world?ref=`
@@ -4314,6 +4369,20 @@ Notes:
   contract is UNCHANGED; ST-2's own state-window.spec.ts (S-1's two named
   repro doors, the cross-instance guard) stays green untouched -- proof the
   re-seat preserved semantics.
+
+  VC-1 AMENDMENT (batch-vc1-brief.md, controller ruling R5): `_follow`
+  (`World.razor`, the ONE read every mechanism in this section -- the chip,
+  `FollowTextLink.Active`, the follow-scene effect's own claim decision --
+  is gated on) now reads "does the current `split-h` pair contain a
+  `BearsLocus` member AND a `BearsWindow` member," queried through
+  `client/Views/ViewRegistry.cs`, instead of pattern-matching the retired
+  `Split` type. reader+world (the only pairing with both capabilities) is
+  UNCHANGED, byte-for-byte, per this section's own contract above. A
+  pairing with no `BearsWindow` member (sources+reader, SPLIT-1's own VC-1
+  amendment) reads `_follow` false unconditionally, by construction --
+  never a special case, never a rendered chip, never a claimed effect. The
+  per-instance `SplitMode` conjunct (S-3, ST-3 review) is UNCHANGED and
+  still load-bearing alongside the capability query.
 - VIEWSTATE-1 (batch-h-brief.md): a lightweight, in-memory (NOT
   localStorage-persisted -- explicitly out of scope this batch; a hard
   reload starts fresh), app-lifetime view-state service remembers where the
