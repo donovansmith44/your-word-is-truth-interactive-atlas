@@ -205,3 +205,52 @@ test('KRETZMANN-7: closing the embedded reader (the guest\'s own close button) r
   await expect(page.getByTestId('kretzmann-page')).toBeVisible();
   await expect(page.getByTestId('split-open-kretzmann')).toBeVisible();
 });
+
+// KRETZ-SCALE-1 (batch-corp1-review.md Q-1, batch-corp1-report.md §5,
+// batch-finalp1-brief.md ticket 2): PSA 119 is the exact pileup this
+// ticket names -- 176 verses, the chapter whose OLD per-verse fan-out
+// meant 176 concurrent `commented-on-by` edges requests on a single locus
+// change. Asserts BOTH halves: the page still loads sanely (real content,
+// cross-checked against the new endpoint's own ground truth), AND the
+// request count via Playwright's own request-tracking is exactly what the
+// new chapter-scoped endpoint promises -- ONE request, not 176, and zero
+// requests to the retired per-verse edges pattern.
+test('KRETZMANN-8 (KRETZ-SCALE-1): PSA 119 loads via ONE chapter-scoped request, not a 176-request per-verse fan-out', async ({ page }) => {
+  const ground = await api.kretzmannChapter('PSA.119');
+  expect(ground.verses.length).toBeGreaterThan(0);
+
+  const kretzmannChapterRequests: string[] = [];
+  const perVerseEdgesRequests: string[] = [];
+  page.on('request', req => {
+    const url = new URL(req.url());
+    if (url.pathname === '/api/kretzmann/chapter/PSA.119') {
+      kretzmannChapterRequests.push(req.url());
+    } else if (/^\/api\/node\/text-unit%3APSA\.119\.\d+\/edges$/.test(url.pathname) && url.searchParams.get('kind') === 'commented-on-by') {
+      perVerseEdgesRequests.push(req.url());
+    }
+  });
+
+  await page.goto('/kretzmann');
+  await page.getByTestId('picker-book').selectOption('PSA');
+  await page.getByTestId('picker-chapter').selectOption('119');
+  await page.getByTestId('picker-apply').click();
+
+  await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('Psalms');
+  await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('119');
+
+  // Sane load: every ground-truth verse group renders, carrying real
+  // (non-fabricated) headings -- not just "the page didn't crash."
+  for (const v of ground.verses) {
+    const group = page.getByTestId(`kretzmann-verse-group-${v.verse}`);
+    await expect(group).toBeVisible();
+    for (const item of v.items) {
+      await expect(group).toContainText(item.heading ?? 'Commentary');
+    }
+  }
+
+  // The scale proof itself: exactly one chapter-scoped request, zero of
+  // the retired per-verse ones -- not "fewer," exactly the shape this
+  // ticket promises.
+  expect(kretzmannChapterRequests.length).toBe(1);
+  expect(perVerseEdgesRequests.length).toBe(0);
+});

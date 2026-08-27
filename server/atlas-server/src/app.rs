@@ -135,6 +135,11 @@ pub fn build_with_sources(
         .route("/api/scene/scripture", get(handlers::scene_scripture))
         .route("/api/books", get(handlers::books))
         .route("/api/chapter/{cref}", get(handlers::chapter))
+        // KRETZ-SCALE-1 (batch-finalp1-brief.md ticket 2, sanctioned server
+        // addition): the chapter-scoped commentary listing that replaces
+        // Kretzmann.razor's own retired per-verse fan-out. Additive-only --
+        // no existing route's behavior changes.
+        .route("/api/kretzmann/chapter/{cref}", get(handlers::kretzmann_chapter))
         .route("/api/verse/{vref}", get(handlers::verse))
         .route("/api/xrefs/{sref}", get(handlers::xrefs))
         .route("/api/catechism/item/{id}", get(handlers::catechism_item))

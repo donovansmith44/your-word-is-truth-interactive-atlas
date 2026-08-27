@@ -59,4 +59,11 @@ export const api = {
     const params = new URLSearchParams({ ref, n: String(n), dir: opts.dir ?? 'onward', corpus: opts.corpus ?? 'bible' });
     return getJson(`/api/text?${params}`);
   },
+  // KRETZ-SCALE-1 (batch-finalp1-brief.md ticket 2): GET
+  // /api/kretzmann/chapter/{cref} -- the chapter-scoped commentary listing
+  // that replaced Kretzmann.razor's own retired per-verse fan-out. Read
+  // here directly for a CONTRACT-lockstep ground-truth comparison, the SAME
+  // convention every other bespoke-vs-generic cross-check in this file
+  // already follows.
+  kretzmannChapter: (cref: string) => getJson(`/api/kretzmann/chapter/${cref}`),
 };

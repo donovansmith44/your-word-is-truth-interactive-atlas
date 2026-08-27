@@ -128,6 +128,22 @@ public sealed class AtlasClient
     public Task<VerseDetail> Verse(string vref) =>
         GetRequired<VerseDetail>($"api/verse/{vref}");
 
+    /// <summary>
+    /// KRETZ-SCALE-1 (batch-finalp1-brief.md ticket 2): <c>GET
+    /// /api/kretzmann/chapter/{book}.{chapter}</c> -- the chapter-scoped
+    /// commentary listing that replaces Kretzmann.razor's own retired
+    /// per-verse fan-out. No LRU cache here (unlike <see cref="Chapter"/>):
+    /// this app's own "independent fetches never serialize" house pattern
+    /// still applies (this is a single fetch, not a fan-out to memoize
+    /// away), and Kretzmann re-fetches fresh on every real locus change
+    /// regardless (LoadCommentaryAsync's own request-id guard already
+    /// discards a stale in-flight response) -- a curator-added commentary
+    /// unit should be visible on the very next chapter visit, not held
+    /// stale behind a cache with no invalidation path.
+    /// </summary>
+    public Task<KretzmannChapterOut> KretzmannChapter(string book, int chapter) =>
+        GetRequired<KretzmannChapterOut>($"api/kretzmann/chapter/{book}.{chapter}");
+
     public Task<PlaceDetail> Place(string id) =>
         GetRequired<PlaceDetail>($"api/place/{id}");
 

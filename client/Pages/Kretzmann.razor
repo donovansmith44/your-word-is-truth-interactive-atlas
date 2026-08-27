@@ -6,7 +6,6 @@
 @inject StateAtom<Locus> LocusAtom
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 @inject AtlasClient Atlas
-@inject IExplorableClient Graph
 
 @* Batch CORP-1 (R2): the Kretzmann Popular Commentary browser -- a
    LOCUS-KEYED commentary browser. It PROJECTS the shared Locus atom
@@ -53,17 +52,25 @@
    `atlas_graph::legacy::node_description`'s widened match, resolving
    CORP-1's own disclosed NEEDS_CONTEXT gap).
 
-   LISTING MECHANISM (R2's own "expressible as edge queries from the nodes
-   that anchor them"): `comments-on`/`commented-on-by` is a bespoke row
-   table (graph.comments_on) ALREADY lowered into the generic directed edge
-   index (graph-types/src/graph.rs's own KRETZ-1 "pre-authorized
-   exception") -- there is no chapter-scoped listing query, so this page
-   issues one `commented-on-by` edges call per verse in the current chapter,
-   concurrently (this app's own "independent fetches never serialize" house
-   pattern, MainLayout.Continue's own doc comment), and groups the results.
-   A CommentaryItem's own trailing id ordinal (kretzmann_adapter.rs's own
-   "NODE IDENTITY: kretzmann/{book}.{chapter}.{ordinal}", document order)
-   orders items within a verse group. *@
+   LISTING MECHANISM (KRETZ-SCALE-1, batch-finalp1-brief.md ticket 2 --
+   supersedes R2's own original "expressible as edge queries from the
+   nodes that anchor them" client-side fan-out): `comments-on`/
+   `commented-on-by` is a bespoke row table (graph.comments_on) ALREADY
+   lowered into the generic directed edge index (graph-types/src/graph.rs's
+   own KRETZ-1 "pre-authorized exception") -- R2 shipped with no
+   chapter-scoped listing query on the server, so this page used to issue
+   one `commented-on-by` edges call PER VERSE in the current chapter,
+   concurrently (176 simultaneous requests for a chapter like PSA 119, on
+   EVERY locus change). KRETZ-SCALE-1 adds a real, additive, chapter-scoped
+   server endpoint (`GET /api/kretzmann/chapter/{cref}`,
+   `atlas_graph::kretzmann_adapter::chapter_commentary`) that walks the
+   SAME edge machinery server-side, in one request -- this page now issues
+   exactly ONE fetch per locus change (`AtlasClient.KretzmannChapter`),
+   already grouped by verse, already in document order (the server's own
+   accessor sorts by each CommentaryItem's own trailing id ordinal --
+   kretzmann_adapter.rs's own "NODE IDENTITY: kretzmann/{book}.{chapter}.
+   {ordinal}" -- the SAME ordering this page's own retired client-side
+   `OrdinalOf` used to compute locally). *@
 
 <PageTitle>Bible Explorer &mdash; Kretzmann</PageTitle>
 
@@ -217,12 +224,6 @@
         LocusAtom.Dispatch(new SetLocus(book, chapter));
     }
 
-    private int VerseCountFor(string book, int chapter)
-    {
-        var entry = _toc?.FirstOrDefault(b => b.Code == book);
-        return entry is not null && chapter >= 1 && chapter <= entry.Chapters.Count ? entry.Chapters[chapter - 1] : 0;
-    }
-
     private async Task LoadCommentaryAsync()
     {
         var myRequest = ++_requestId;
@@ -234,40 +235,27 @@
 
         try
         {
-            var verseCount = VerseCountFor(book, chapterNum);
-            var spec = EdgeSectionRegistry.CommentedOnBy;
-
-            // Independent fetches never serialize (this app's own house
-            // pattern, MainLayout.Continue's own doc comment) -- one
-            // "commented-on-by" edges call per verse, concurrently.
-            var tasks = Enumerable.Range(1, verseCount)
-                .Select(async v =>
-                {
-                    var page = await Graph.Edges($"text-unit:{book}.{chapterNum}.{v}", spec.EdgeKind, cursor: null, limit: spec.InitialClamp);
-                    return (Verse: v, Page: page);
-                });
-            var results = await Task.WhenAll(tasks);
+            // KRETZ-SCALE-1: ONE chapter-scoped fetch -- replaces the retired
+            // per-verse fan-out (this file's own header comment has the full
+            // "why"). The server's own accessor already groups by verse and
+            // orders within a verse by document order (its own trailing id
+            // ordinal), so no client-side grouping/sorting is needed here at
+            // all -- this page's own retired OrdinalOf helper (formerly
+            // needed to re-sort the fan-out's own out-of-order concurrent
+            // results) is deleted along with the fan-out itself, not merely
+            // left dead.
+            var doc = await Atlas.KretzmannChapter(book, chapterNum);
 
             if (myRequest != _requestId)
             {
                 return; // superseded by a newer navigation -- discard this stale response
             }
 
-            var groups = new List<CommentaryVerseGroup>();
-            foreach (var (verse, page) in results.OrderBy(r => r.Verse))
-            {
-                var items = page.Entries
-                    .Where(e => e.Node.Kind == "CommentaryItem")
-                    .Select(e => new CommentaryItemRow(e.Node.Id, e.Node.Label))
-                    .OrderBy(r => OrdinalOf(r.Id))
-                    .ToList();
-                if (items.Count > 0)
-                {
-                    groups.Add(new CommentaryVerseGroup(verse, items));
-                }
-            }
-
-            _rows = groups;
+            _rows = doc.Verses
+                .Select(v => new CommentaryVerseGroup(
+                    v.Verse,
+                    v.Items.Select(item => new CommentaryItemRow(item.Id, item.Heading ?? "Commentary")).ToList())) // same fallback graph-types' own card() applies server-side for every OTHER consumer of a heading-less CommentaryItem
+                .ToList();
         }
         catch (Exception)
         {
@@ -286,15 +274,6 @@
                 StateHasChanged();
             }
         }
-    }
-
-    // "CommentaryItem:kretzmann/0.1.0" -> 0, the unit's own trailing
-    // ordinal -- kretzmann_adapter.rs's own "NODE IDENTITY" doc comment:
-    // the id's own last '.'-separated segment IS document order.
-    private static int OrdinalOf(string wireId)
-    {
-        var dot = wireId.LastIndexOf('.');
-        return dot >= 0 && int.TryParse(wireId[(dot + 1)..], out var n) ? n : 0;
     }
 
     private void OnExplore(CommentaryItemRow item) => _activeNode = new CommentaryItemNode(item.Id, item.Heading);

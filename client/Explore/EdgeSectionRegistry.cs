@@ -139,6 +139,18 @@ public static class EdgeSectionRegistry
     /// the whole set for virtually every real verse -- the SAME "single
     /// generous page" reasoning EdgeSectionRegistry.Mentions already
     /// establishes for its own per-locus frontier.
+    ///
+    /// KRETZ-SCALE-1 (batch-finalp1-brief.md ticket 2): Kretzmann.razor's
+    /// own LoadCommentaryAsync -- this spec's one real caller -- no longer
+    /// issues a per-verse `commented-on-by` edges call at all (replaced by
+    /// one chapter-scoped `GET /api/kretzmann/chapter/{cref}` fetch; see
+    /// that page's own header comment). This display-policy entry is kept,
+    /// not deleted -- the `commented-on-by` relation itself is unchanged,
+    /// still real KRETZ-1 vocabulary, and remains the correct place to look
+    /// up this edge kind's own display policy for any future consumer
+    /// (e.g. a CommentaryItem popover section reading "what verses does
+    /// this comment on" the other direction) -- disclosed here so an
+    /// unused entry reads as a deliberate seam, not an oversight.
     public static readonly EdgeSectionSpec CommentedOnBy = new(new EdgeKindId("commented-on-by"), SectionStyle.Standard, InitialClamp: 20, SectionOrder.Canonical);
 
     // Batch P fix round 1: keyed by EdgeKindId now (a record struct --

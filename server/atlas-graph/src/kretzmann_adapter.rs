@@ -27,9 +27,11 @@
 use std::collections::BTreeSet;
 
 use atlas_etl::kretzmann::{KretzmannCorpus, KretzUnit, BOOKS};
-use atlas_graph_types::edge::{CommentsOn, Ground, Justification};
-use atlas_graph_types::id::{AnyNodeId, CommentaryItemId, SourceId};
+use atlas_graph_types::edge::{CommentsOn, Direction, EdgeKind, Ground, Justification, RelationId};
+use atlas_graph_types::explore::EdgeQuery;
+use atlas_graph_types::id::{AnyNodeId, CommentaryItemId, NodeKind, Position, SourceId};
 use atlas_graph_types::node::{Node, NodePayload};
+use atlas_graph_types::store::GraphQuery;
 use atlas_graph_types::text::{BibleLocusRange, Locus, VerseRef};
 
 use crate::pipeline::BuildCtx;
@@ -124,6 +126,83 @@ pub fn normalize(ctx: &mut BuildCtx) -> KretzmannAdapterStats {
     }
 
     stats
+}
+
+/// One `CommentaryItem` row within a chapter-scoped listing -- see
+/// `chapter_commentary`'s own doc comment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ChapterCommentaryRow {
+    pub verse: u16,
+    pub item_id: AnyNodeId,
+    pub heading: Option<String>,
+}
+
+/// KRETZ-SCALE-1 (batch-corp1-review.md Q-1, batch-corp1-report.md §5):
+/// the chapter-scoped commentary listing `Kretzmann.razor`'s own
+/// `LoadCommentaryAsync` used to build with one `commented-on-by` edges
+/// HTTP call PER VERSE, concurrently (176 simultaneous requests for a
+/// chapter like PSA 119, on every locus change). This is the SAME
+/// `commented-on-by` query (KRETZ-1's own "pre-authorized exception" --
+/// `comments_on` rows already lowered into the generic directed edge
+/// index, `graph-types/src/graph.rs`), just run server-side, once per
+/// request, in-process, instead of once per verse per client. No
+/// types-crate change (`CommentsOn`/`RelationId::CommentsOn` are unchanged,
+/// pre-existing KRETZ-1 vocabulary) and no artifact change (reads the
+/// already-compiled graph exactly the way every other accessor in this
+/// module family does) -- purely additive: a new READ path over data the
+/// graph already carries.
+///
+/// For every verse `1..=verse_count` of `book_index`/`chapter`, the real
+/// items commenting on it, ordered the SAME way the retired client-side
+/// fan-out did: verse ascending, then each item's own trailing
+/// document-order ordinal within a verse (this module's own "NODE
+/// IDENTITY" doc comment -- the id's own last '.'-separated segment IS
+/// document order). Only verses with >=1 item are represented in the
+/// returned rows -- mirrors the client's own pre-existing "if
+/// (items.Count > 0)" filter exactly, just computed once here instead of
+/// once per verse over HTTP.
+pub fn chapter_commentary(query: &dyn GraphQuery, book_index: u8, chapter: u16, verse_count: u16) -> Vec<ChapterCommentaryRow> {
+    let mut rows = Vec::new();
+    for verse in 1..=verse_count {
+        let text_node = Position::Node(crate::kjv_adapter::verse_node_id(book_index, chapter, verse));
+
+        let mut items: Vec<(AnyNodeId, Option<String>, u64)> = Vec::new();
+        let mut cursor = None;
+        loop {
+            let page = query.edges(&text_node, &EdgeQuery { kind: EdgeKind::Directed(RelationId::CommentsOn, Direction::Inverse), cursor, limit: 200 });
+            for entry in &page.entries {
+                let Position::Node(item_id) = &entry.node else { continue };
+                if item_id.kind != NodeKind::CommentaryItem {
+                    continue;
+                }
+                let heading = query.node(item_id).and_then(|n| match n.payload {
+                    NodePayload::CommentaryItem { heading, .. } => heading,
+                    _ => None,
+                });
+                items.push((item_id.clone(), heading, ordinal_of(&item_id.raw)));
+            }
+            match page.next {
+                Some(c) => cursor = Some(c),
+                None => break,
+            }
+        }
+
+        items.sort_by_key(|(_, _, ordinal)| *ordinal);
+        for (item_id, heading, _) in items {
+            rows.push(ChapterCommentaryRow { verse, item_id, heading });
+        }
+    }
+    rows
+}
+
+/// "kretzmann/{book}.{chapter}.{ordinal}" -> ordinal -- this module's own
+/// "NODE IDENTITY" doc comment: the id's own last '.'-separated segment IS
+/// document order. Mirrors `Kretzmann.razor`'s own retired client-side
+/// `OrdinalOf` exactly (same fallback to 0 on anything unparseable, never a
+/// panic -- a malformed id here would be a genuine graph-construction bug,
+/// not something a listing query should crash a request over).
+fn ordinal_of(raw: &str) -> u64 {
+    raw.rsplit('.').next().and_then(|s| s.parse().ok()).unwrap_or(0)
 }
 
 #[cfg(test)]

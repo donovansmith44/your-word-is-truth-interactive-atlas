@@ -577,6 +577,87 @@ pub async fn chapter(
     Ok(Json(ChapterOut { sref: format!("{code}.{chapter}"), book: book.name().to_string(), chapter, verses }))
 }
 
+/// KRETZ-SCALE-1 (batch-corp1-review.md Q-1, batch-corp1-report.md §5,
+/// batch-finalp1-brief.md ticket 2, SANCTIONED SERVER ADDITION): one
+/// `CommentaryItem` row within one verse of `GET /api/kretzmann/chapter/{cref}`'s
+/// own chapter-scoped response.
+#[derive(Debug, Serialize)]
+pub struct KretzmannChapterItemOut {
+    pub id: String,
+    pub heading: Option<String>,
+}
+
+/// One verse's own commentary items, in document order. Only verses with
+/// >=1 item appear at all (mirrors `Kretzmann.razor`'s own retired
+/// client-side "if (items.Count > 0)" filter).
+#[derive(Debug, Serialize)]
+pub struct KretzmannChapterVerseOut {
+    pub verse: u16,
+    pub items: Vec<KretzmannChapterItemOut>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct KretzmannChapterOut {
+    pub verses: Vec<KretzmannChapterVerseOut>,
+    pub version: String,
+}
+
+/// `GET /api/kretzmann/chapter/{cref}`. `cref` must parse as exactly a
+/// `ScriptureRef::Chapter` (book + chapter, e.g. `PSA.119`) -- same 400
+/// `bad_ref` convention as `GET /api/chapter/{cref}` for a book-only or
+/// verse/passage-shaped path segment. Same ruling-3-policy as `chapter`
+/// above: an out-of-range chapter number (or a book with no known chapters)
+/// is NOT an error -- `verse_count` resolves to 0 and this 200s with an
+/// empty `verses` list, never a 404 for "this chapter has no commentary."
+///
+/// Replaces `Kretzmann.razor`'s own retired client-side fan-out (one
+/// `commented-on-by` edges HTTP call PER VERSE, concurrently -- 176
+/// simultaneous requests on every locus change for a chapter like PSA 119)
+/// with ONE request, computed by walking the SAME `commented-on-by` edge
+/// machinery server-side, in-process, via `atlas_graph::kretzmann_adapter::
+/// chapter_commentary` -- see that function's own doc comment for why this
+/// is additive, not a types-crate or artifact change: the underlying
+/// `CommentsOn`/`RelationId::CommentsOn` KRETZ-1 vocabulary is completely
+/// unchanged, this is a new READ path over data the graph already carries.
+pub async fn kretzmann_chapter(
+    State(data): State<Arc<AtlasData>>,
+    State(graph): State<Arc<GraphService>>,
+    Path(cref): Path<String>,
+) -> Result<Json<KretzmannChapterOut>, ApiError> {
+    let (book, chapter) = match ScriptureRef::parse(&cref) {
+        Ok(ScriptureRef::Chapter { book, chapter }) => (book, chapter),
+        _ => return Err(ApiError::bad_ref(&cref)),
+    };
+    let code = book.code();
+
+    let verse_count = data
+        .canon
+        .books
+        .iter()
+        .find(|b| b.code == code)
+        .and_then(|b| b.chapters.get((chapter - 1) as usize))
+        .copied()
+        .unwrap_or(0);
+
+    let snap = graph.snapshot();
+    let rows = atlas_graph::kretzmann_adapter::chapter_commentary(&snap, book.0, chapter, verse_count);
+
+    // `chapter_commentary` already returns rows verse-ascending with every
+    // verse's own items grouped consecutively (its own doc comment) -- this
+    // loop just folds that flat Vec into the wire's own nested shape,
+    // never re-sorting or re-grouping independently.
+    let mut verses: Vec<KretzmannChapterVerseOut> = Vec::new();
+    for row in rows {
+        let item = KretzmannChapterItemOut { id: crate::graph_wire::encode_node_id(&row.item_id), heading: row.heading };
+        match verses.last_mut() {
+            Some(v) if v.verse == row.verse => v.items.push(item),
+            _ => verses.push(KretzmannChapterVerseOut { verse: row.verse, items: vec![item] }),
+        }
+    }
+
+    Ok(Json(KretzmannChapterOut { verses, version: atlas_graph::version_hex(graph.version()) }))
+}
+
 #[derive(Debug, Serialize)]
 pub struct BookMetaOut {
     pub author: String,

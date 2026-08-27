@@ -92,6 +92,19 @@ public sealed record EraDto(string Id, string Name, int FromYear, int ToYear);
 
 public sealed record ChapterOut(string Ref, string Book, int Chapter, List<VerseOut> Verses);
 
+/// KRETZ-SCALE-1 (batch-finalp1-brief.md ticket 2): the chapter-scoped
+/// commentary listing <c>GET /api/kretzmann/chapter/{cref}</c> returns --
+/// one row per verse that carries >=1 real commentary item (an
+/// uncommented verse contributes no row at all, mirroring the server's own
+/// "if (items.Count > 0)" filter). Replaces Kretzmann.razor's own retired
+/// per-verse fan-out (one <c>commented-on-by</c> edges call per verse,
+/// concurrently) with ONE fetch.
+public sealed record KretzmannChapterItemOut(string Id, string? Heading);
+
+public sealed record KretzmannChapterVerseOut(int Verse, List<KretzmannChapterItemOut> Items);
+
+public sealed record KretzmannChapterOut(List<KretzmannChapterVerseOut> Verses, string Version);
+
 /// Batch R requirement 5 (place-in-verse hover -> marker blink):
 /// <see cref="Places"/> is the reverse-index list <c>GET /api/chapter/{cref}</c>
 /// now carries per verse -- every curated place whose own <c>verse_links</c>
