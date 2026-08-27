@@ -34,6 +34,19 @@ contract (§4b); every exit to an escape hatch declaration. Anything
 found implemented outside a contract is a defect by definition -- the
 review rubric enforces this on every batch touching the client.
 
+**THE CONTRACT-FIRST ORDER (owner ruling 2026-08-27, verbatim:
+"henceforth you write the contracts first."):** for every batch that
+adds or changes behavior, the CONTRACT ARTIFACTS land before the
+implementation: the compiled types (the skeleton-first precedent, now
+general), the declared capabilities/hatches/interaction contracts the
+new surface will honor, and — for wire behavior — the Gherkin
+scenarios. Order within a batch: contract → test → implementation;
+where the contract needs controller/owner authority (compiled-
+authority members, spec vocabulary), it lands as a preceding
+controller commit before the batch dispatches. The conformance
+corollary below then holds the implementation to what was written
+first.
+
 **THE CONFORMANCE COROLLARY (owner ruling 2026-08-26, verbatim: "if
 contracts don't match implementation tests should fail"):** every
 contract carries an enforcement mechanism that FAILS -- a compile
