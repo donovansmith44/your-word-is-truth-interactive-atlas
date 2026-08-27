@@ -82,9 +82,17 @@ public static class ViewRegistrySetup
         // bears no locus/window capability, so nothing about this hatch
         // differs from Sources' own proof that any two views may pair this
         // way.
+        // Batch CORPREAD-1b (ticket K, "following by default"): DefaultFollow
+        // flips true here -- unlike R2's own original registration (Follow
+        // was meaningless for this pairing until this batch gave it a real
+        // reader, ToggleFollowHatch's own Invoke below), a freshly opened
+        // kretzmann+reader split now starts FOLLOWING the shared Locus atom,
+        // per the follow-release law's own default ("following = render
+        // from the shared atom" is the STARTING state; release is the
+        // escape hatch away from it, never the other way around).
         Task EnterSplitKretzmannHostsReader()
         {
-            arrangement.Dispatch(new EnterSplit(ViewNames.Kretzmann, ViewNames.Reader, DefaultFollow: false, DefaultDividerFraction: null));
+            arrangement.Dispatch(new EnterSplit(ViewNames.Kretzmann, ViewNames.Reader, DefaultFollow: true, DefaultDividerFraction: null));
             return Task.CompletedTask;
         }
 
@@ -93,6 +101,30 @@ public static class ViewRegistrySetup
             arrangement.Dispatch(new EnterSplit(ViewNames.Concord, ViewNames.Reader, DefaultFollow: false, DefaultDividerFraction: null));
             return Task.CompletedTask;
         }
+
+        // Batch CORPREAD-1b, DELIVERABLE 0a (THE FOLLOW-RELEASE LAW, design
+        // spec §5): ONE shared closure -- `ToggleFollow` (client/State/
+        // ViewArrangement.cs) is a pure write against the ONE shared
+        // ViewArrangement atom ("flip Follow"), the SAME meaning regardless
+        // of which locus-bearing owner's own chip fired it (see
+        // ToggleFollowHatch.cs's own header for the full reasoning). Reader
+        // and Kretzmann both declare BearsLocus (registrations below) and so
+        // are COMPELLED by the standing conformance tripwire
+        // (ViewRegistryConformanceTests.cs's own
+        // HatchConformance_EveryBearsLocusView_DeclaresAToggleFollowHatch)
+        // to carry one of these; World declares BearsWindow, not BearsLocus,
+        // and gets one too per deliverable 0a's own explicit instruction
+        // ("the world map's follow chip becomes the declared instance of the
+        // same hatch kind") -- not because the tripwire demands it.
+        Task ToggleFollowGlobal()
+        {
+            arrangement.Dispatch(new ToggleFollow(!arrangement.Value.Follow));
+            return Task.CompletedTask;
+        }
+
+        var readerFollowHatch = new ToggleFollowHatch(ViewNames.Reader, ToggleFollowGlobal);
+        var worldFollowHatch = new ToggleFollowHatch(ViewNames.World, ToggleFollowGlobal);
+        var kretzmannFollowHatch = new ToggleFollowHatch(ViewNames.Kretzmann, ToggleFollowGlobal);
 
         // Fix round 1 (controller ruling 2): HostView is the hosting
         // declaration -- Reader's and Sources' own hatches host themselves;
@@ -123,7 +155,7 @@ public static class ViewRegistrySetup
                 builder.OpenComponent<Reader>(0);
                 builder.AddAttribute(1, nameof(Reader.SplitMode), (bool?)ctx.SplitMode);
                 builder.CloseComponent();
-            }, new IEscapeHatch[] { readerHatch }),
+            }, new IEscapeHatch[] { readerHatch, readerFollowHatch }),
 
             new(ViewNames.World, ViewCapabilities.BearsWindow, ctx => builder =>
             {
@@ -132,7 +164,7 @@ public static class ViewRegistrySetup
                 builder.AddAttribute(2, nameof(World.OnRequestClose), ctx.OnRequestClose);
                 builder.AddAttribute(3, nameof(World.RegisterQueryHandler), ctx.RegisterQueryHandler);
                 builder.CloseComponent();
-            }, new IEscapeHatch[] { worldHatch }),
+            }, new IEscapeHatch[] { worldHatch, worldFollowHatch }),
 
             // Fix round 2 (Q-4, trivia -- re-review, PARTIAL, one-line
             // justified): this closure is not invoked by any shipped
@@ -158,7 +190,7 @@ public static class ViewRegistrySetup
                 builder.OpenComponent<Kretzmann>(0);
                 builder.AddAttribute(1, nameof(Kretzmann.SplitMode), (bool?)ctx.SplitMode);
                 builder.CloseComponent();
-            }, new IEscapeHatch[] { kretzmannHatch }),
+            }, new IEscapeHatch[] { kretzmannHatch, kretzmannFollowHatch }),
 
             // Batch CORP-1 (R3): the Book of Concord structure browser --
             // declares NO capability (navigates its own part/article/paragraph

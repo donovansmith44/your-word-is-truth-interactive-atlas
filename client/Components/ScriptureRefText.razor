@@ -1,0 +1,84 @@
+@* Batch CORPREAD-1b (ticket K/C): the shared "explorable-reference" render
+   primitive -- given a run of corpus prose (Kretzmann commentary, Book of
+   Concord confession text) plus the app's own canonical book TOC, renders
+   plain text interleaved with clickable scripture-reference spans, one per
+   Explore/ScriptureRefScan.cs match. Genuinely ONE component, used by BOTH
+   Kretzmann.razor and Concord.razor (the brief's own "same mechanism as
+   ticket K -- do not fork the scanner"), mirroring MentionScan.razor's own
+   "the ONE place a scan actually renders" shape for its own domain.
+
+   Each match opens the SAME VerseNode/ExplorerPopover every other verse
+   reference in this app already uses (Reader's own verse-num click,
+   MentionText's own place/person mentions) -- ONE-RULE, no bespoke citation
+   popover. A range collapses to its own first verse (ScriptureRefScan's own
+   disclosed limitation) -- the popover opens on that verse; the visible
+   TEXT still shows the full matched citation string verbatim (e.g. "John
+   1, 1-5"), so nothing about what the reader SEES is ever altered, only
+   what a click resolves to. *@
+@using BibleAtlas.Client.Explore
+
+@foreach (var seg in Segments)
+{
+    @if (seg.Sref is { } sref)
+    {
+        <span class="@ClassPrefix" data-testid="@($"{ClassPrefix}-{OwnerSlug}-{seg.Index}")"
+              tabindex="0" role="button" aria-label="@($"Explore {seg.Text}")"
+              @onclick="() => Open(sref)" @onclick:stopPropagation="true"
+              @onkeydown="@(e => OnKeyDown(e, sref))" @onkeydown:stopPropagation="true">@seg.Text</span>
+    }
+    else
+    {
+        @seg.Text
+    }
+}
+
+@code {
+    private readonly record struct Segment(string Text, string? Sref, int Index);
+
+    [Parameter, EditorRequired] public string Text { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<BookTocEntry> Toc { get; set; } = default!;
+    [Parameter, EditorRequired] public string ClassPrefix { get; set; } = default!;
+
+    // A stable, per-owner disambiguator for the testid (the commentary
+    // item's own slug, the Concord unit's own ref slug) -- mirrors
+    // MentionText's own Verse-number role, just keyed to whichever owner
+    // this run of prose belongs to (there is no single "verse number" in
+    // Concord's own case).
+    [Parameter, EditorRequired] public string OwnerSlug { get; set; } = default!;
+
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    private IReadOnlyList<Segment> Segments
+    {
+        get
+        {
+            var matches = ScriptureRefScan.Scan(Text, Toc);
+            if (matches.Count == 0)
+            {
+                return new[] { new Segment(Text, null, 0) };
+            }
+
+            var segments = new List<Segment>();
+            var cursor = 0;
+            var n = 0;
+            foreach (var m in matches)
+            {
+                if (m.Start > cursor)
+                {
+                    segments.Add(new Segment(Text[cursor..m.Start], null, 0));
+                }
+                segments.Add(new Segment(Text.Substring(m.Start, m.Length), m.Sref, n++));
+                cursor = m.Start + m.Length;
+            }
+            if (cursor < Text.Length)
+            {
+                segments.Add(new Segment(Text[cursor..], null, 0));
+            }
+            return segments;
+        }
+    }
+
+    private Task Open(string sref) => OnExplore.InvokeAsync(new VerseNode(sref));
+
+    private Task OnKeyDown(KeyboardEventArgs e, string sref) => e.Key == "Enter" ? Open(sref) : Task.CompletedTask;
+}

@@ -53,4 +53,9 @@ public enum ViewCapabilities
 public static class HatchKinds
 {
     public const string EnterSplit = "enter-split";
+
+    /// <summary>Batch CORPREAD-1b, deliverable 0a -- the follow-release law's
+    /// own declared hatch Kind (design spec §5). See
+    /// <see cref="ToggleFollowHatch"/>'s own header for the full "why."</summary>
+    public const string ToggleFollow = "toggle-follow";
 }

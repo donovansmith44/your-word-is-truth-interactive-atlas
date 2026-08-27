@@ -272,6 +272,55 @@ public class ViewRegistryConformanceTests
     }
 
     // ------------------------------------------------------------------
+    // Batch CORPREAD-1b, DELIVERABLE 0a -- THE FOLLOW-RELEASE LAW's own
+    // conformance tripwire (design spec §5, owner ruling 2026-08-27,
+    // verbatim: "on every thing sharing state with the reader state, we
+    // need an escape hatch to stop following the reader as well"; §5's own
+    // conformance clause, verbatim: "a registered view that declares the
+    // locus-bearing capability without declaring the toggle-follow hatch
+    // fails a standing conformance test"). Reflects over the REAL registry
+    // (the same BuildRegistry() every other test in this file uses) --
+    // structural, not a source-text scan, mirroring HatchConformance_
+    // EveryEnterSplitHatch_ResolvesBothItsViewsInTheRegistry's own proof
+    // shape immediately above.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void HatchConformance_EveryBearsLocusView_DeclaresAToggleFollowHatch()
+    {
+        var registry = BuildRegistry();
+        var bearsLocusViews = registry.All.Where(v => v.Capabilities.HasFlag(ViewCapabilities.BearsLocus)).ToList();
+
+        // Reader and Kretzmann, both BearsLocus (Registry_CapabilityData_
+        // MatchesR1sOwnAssignment above pins this) -- never vacuous.
+        Assert.Equal(2, bearsLocusViews.Count);
+
+        foreach (var view in bearsLocusViews)
+        {
+            Assert.Contains(view.EscapeHatches, h => h.Kind == HatchKinds.ToggleFollow);
+        }
+    }
+
+    // The planted-violation proof (this file's own established style, e.g.
+    // Registry_ConstructorThrows_OnAPlantedDuplicateName above): a
+    // synthetic RegisteredView, built directly (NOT through the real
+    // registry, which by construction never produces this shape today) --
+    // proves the CHECK ITSELF genuinely fails on the exact defect §5
+    // describes, not merely that today's registry happens to pass.
+    [Fact]
+    public void HatchConformance_PlantedBearsLocusViewWithNoToggleFollowHatch_FailsTheLawsOwnCheck()
+    {
+        RenderFragment Empty(ViewMountContext ctx) => builder => { };
+        var offender = new RegisteredView("planted-locus-view", ViewCapabilities.BearsLocus, Empty,
+            new IEscapeHatch[] { new EnterSplitHatch("planted-locus-view", ViewNames.Reader, "planted-locus-view", () => Task.CompletedTask) });
+
+        var violatesTheLaw = offender.Capabilities.HasFlag(ViewCapabilities.BearsLocus)
+            && !offender.EscapeHatches.Any(h => h.Kind == HatchKinds.ToggleFollow);
+
+        Assert.True(violatesTheLaw, "The planted view declares BearsLocus with no toggle-follow hatch -- the law's own check must catch this, or the real-registry proof above is vacuous.");
+    }
+
+    // ------------------------------------------------------------------
     // R6: arrangement-vocabulary -- every LayoutKind is a real, known value
     // (proven directly, structurally); unknown fails loud. CompositionSplit's
     // OWN "unknown kind" branch reads LayoutKinds.IsKnown -- see that
