@@ -106,7 +106,11 @@ test('KRETZMANN-5: declares its own "read-beside" hatch -- split opens with Kret
   await expect(page.getByTestId('reader-root')).toBeVisible();
   await expect(page.getByTestId('chapter-head')).toContainText('Genesis');
   await expect(page.getByTestId('chapter-head')).toContainText('1'); // the reader's own default, matching Kretzmann's own default locus
-  await expect(page).toHaveURL(/\/kretzmann$/); // Kretzmann stays the route; no navigation
+  // Batch CORPREAD-1a (SPLIT-PERSIST-1): Kretzmann now keeps its OWN split
+  // query in sync too (the route itself never changes, but the query now
+  // does -- CompositionSplit's own SyncSplitUrl is generic, not
+  // Reader-only; see SplitUrlContract.cs's own header).
+  await expect(page).toHaveURL(/\/kretzmann\?split=reader$/); // Kretzmann stays the route; no navigation
 });
 
 test('KRETZMANN-6 (R2, the free win): navigating the reader in split -- wait, navigating via Kretzmann\'s OWN picker while split is open -- moves BOTH panes, by construction, no link wired', async ({ page }) => {
@@ -137,7 +141,8 @@ test('KRETZMANN-6 (R2, the free win): navigating the reader in split -- wait, na
   await expect(page.getByTestId('reader-root')).toBeVisible();
   await expect(page.getByTestId('chapter-head')).toContainText('Exodus');
   await expect(page.getByTestId('chapter-head')).toContainText('3');
-  await expect(page).toHaveURL(/\/kretzmann$/); // still Kretzmann's own route -- no navigation happened
+  // Batch CORPREAD-1a (SPLIT-PERSIST-1): ?split=reader rides along now too.
+  await expect(page).toHaveURL(/\/kretzmann\?split=reader$/); // still Kretzmann's own route -- no navigation happened
 });
 
 // READER-GUEST-1 (batch-corp1-review.md S-2/Q-4, batch-finalp1-brief.md
@@ -173,8 +178,9 @@ test('KRETZMANN-6b (R2, the reverse direction -- READER-GUEST-1): navigating the
   await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('Exodus');
   await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('3');
 
-  // Split intact throughout -- still Kretzmann's own route, no navigation.
-  await expect(page).toHaveURL(/\/kretzmann$/);
+  // Split intact throughout -- still Kretzmann's own route, no navigation
+  // (Batch CORPREAD-1a: ?split=reader rides along too).
+  await expect(page).toHaveURL(/\/kretzmann\?split=reader$/);
   await expect(page.getByTestId('split-view')).toBeVisible();
 });
 
@@ -186,7 +192,8 @@ test('KRETZMANN-6c (READER-GUEST-1): reader-next from the GUEST pane also moves 
 
   await page.getByTestId('reader-next').click();
 
-  await expect(page).toHaveURL(/\/kretzmann$/);
+  // Batch CORPREAD-1a: ?split=reader rides along too.
+  await expect(page).toHaveURL(/\/kretzmann\?split=reader$/);
   await expect(page.getByTestId('split-view')).toBeVisible();
   await expect(page.getByTestId('chapter-head')).toContainText('2');
   await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('2');

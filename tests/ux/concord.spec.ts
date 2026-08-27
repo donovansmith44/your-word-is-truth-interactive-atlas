@@ -91,7 +91,10 @@ test('CONCORD-6: declares its own "read-beside" hatch -- split opens with Concor
 
   await expect(page.getByTestId('reader-root')).toBeVisible();
   await expect(page.getByTestId('verse-line-1')).toBeVisible();
-  await expect(page).toHaveURL(/\/concord$/); // Concord stays the route; no navigation
+  // Batch CORPREAD-1a (SPLIT-PERSIST-1): Concord now keeps its OWN split
+  // query in sync too (the route itself never changes, but the query now
+  // does -- see kretzmann.spec.ts's own matching update).
+  await expect(page).toHaveURL(/\/concord\?split=reader$/); // Concord stays the route; no navigation
 
   await page.getByTestId('split-close-reader-guest').click();
   await expect(page.getByTestId('split-view')).toHaveCount(0);
