@@ -413,8 +413,15 @@ else
                         // Same light sanity floor as the pre-fix-round-1 code
                         // this replaces -- SplitDivider's own next real
                         // drag/nudge re-clamps to its own exact bounds
-                        // regardless.
-                        _widthPx = Math.Clamp(fraction * r.Width, 200, r.Width - 200);
+                        // regardless. ST2-m1: order the bounds so a
+                        // sub-400px container (r.Width - 200 < 200) can never
+                        // invert min/max into a Math.Clamp throw -- the
+                        // ceiling floors at the same 200 the lower bound
+                        // uses, instead of relying on the surrounding
+                        // try/catch to swallow the exception.
+                        var minWidthPx = 200.0;
+                        var maxWidthPx = Math.Max(minWidthPx, r.Width - 200);
+                        _widthPx = Math.Clamp(fraction * r.Width, minWidthPx, maxWidthPx);
                         StateHasChanged();
                     }
                 }
