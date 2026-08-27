@@ -519,6 +519,29 @@
         // formula relied on for this exact reason.
         var isSplitOpen = ViewArrangementAtom.Value is { LayoutKind: LayoutKinds.SplitH } a && a.Members.Count > 0 && a.Members[0] == ViewNames.Reader;
         var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?> { ["split"] = isSplitOpen ? "1" : null });
+
+        // Fix round 1 (a SECOND live, self-caught bug found while verifying
+        // the FIRST): a genuine no-op guard, not just an optimization. The
+        // very first call to this method -- the SplitQuery-driven EnterSplit
+        // dispatch's own synchronous OnViewArrangementChanged, still inside
+        // OnParametersSetAsync's own synchronous prefix -- computes a `uri`
+        // IDENTICAL to `Nav.Uri` (the URL the user already navigated to
+        // carried `?split=1` already). Calling `Nav.NavigateTo` there
+        // regardless -- even to the SAME URL -- reproduced live as a
+        // `System.InvalidOperationException: InvalidOperation_EnumFailedVersion`
+        // inside Blazor's OWN `SupplyParameterFromQueryValueProvider.OnLocationChanged`
+        // (a framework-internal collection mutated while a location-changed
+        // notification was still enumerating it) -- Blazor's own navigation
+        // pipeline is not safe to re-enter from a component's own
+        // OnParametersSetAsync. Skipping when nothing would actually change
+        // closes this at the root, and is correct regardless of timing --
+        // this method never needed to issue a same-URL "sync" in the first
+        // place.
+        if (uri == Nav.Uri)
+        {
+            return;
+        }
+
         Nav.NavigateTo(uri, replace: true);
     }
 
@@ -760,13 +783,48 @@
             // (Blazor's own router resets window scroll on navigation
             // before DisposeAsync ever runs).
             await _readerJs.InvokeVoidAsync("watchScroll", _selfRef);
+        }
 
-            // Batch R requirement 6 (chapter nav always visible, middle-
-            // aligned, even as i scroll): see reader.js's own
-            // watchChapterNavCenter comment for why this needs a JS-side
-            // listener at all (a plain CSS `top` value can't, by itself,
-            // stay viewport-centered through `.reader-page`'s own
-            // pre-existing `contain: layout` containing-block substitution).
+        // Batch R requirement 6 (chapter nav always visible, middle-
+        // aligned, even as i scroll): see reader.js's own
+        // watchChapterNavCenter comment for why this needs a JS-side
+        // listener at all (a plain CSS `top` value can't, by itself,
+        // stay viewport-centered through `.reader-page`'s own pre-existing
+        // `contain: layout` containing-block substitution).
+        //
+        // Fix round 1 (a THIRD live, self-caught bug found while verifying
+        // the first two): moved OUT of the `if (firstRender)` block above
+        // and now called on EVERY render (guarded only by `_readerJs is not
+        // null`), not just the first. Root cause: `watchChapterNavCenter`
+        // captures a DIRECT DOM ELEMENT reference
+        // (`document.querySelector('[data-testid="reader-root"]')`) the
+        // instant it runs. Pre-fix-round-1, `.reader-page` and its outer
+        // wrapper were the SAME element carrying conditional CLASSES only
+        // (Reader.razor's own single top-level div) -- Blazor's diffing
+        // patches classes on an EXISTING node, never recreating it, so a
+        // reference captured on `firstRender` stayed valid forever. Now,
+        // CompositionSplit's own `@if (!IsSplitOpen) { @ChildContent(ctx) }
+        // else if (IsHost) { ... a NEW WRAPPING DIV ... }` branches are
+        // STRUCTURALLY different render trees -- on a query-driven fresh
+        // load (`?split=1`), Blazor's OWN first render commits BEFORE
+        // `[SupplyParameterFromQuery]` has actually supplied `SplitQuery`
+        // (a documented Blazor timing quirk), so the true FIRST render is
+        // "single" (bare ChildContent, no `.split-view` wrapper) and only
+        // the SECOND commits split-h -- Blazor's diffing sees the SHAPE
+        // change and discards+recreates `.reader-page` as a NEW DOM node.
+        // `watchChapterNavCenter`'s own OWN `firstRender`-only call had
+        // already bound to the FIRST (soon-orphaned) node, silently leaving
+        // the SECOND (live, visible) one with no listener at all --
+        // `--chapter-nav-top` never gets set, `reader-prev`/`reader-next`
+        // fall back to the CSS default `50vh` and never re-center on
+        // scroll. `watchChapterNavCenter`'s own implementation is already
+        // idempotent/self-cleaning (its own `_navCenterCleanup`, called at
+        // the top of every invocation) specifically so a REPEAT call is
+        // always safe and cheap -- calling it here, every render, is what
+        // makes it self-healing against this exact class of DOM-identity
+        // churn instead of depending on it never happening.
+        if (_readerJs is not null)
+        {
             await _readerJs.InvokeVoidAsync("watchChapterNavCenter");
         }
 
