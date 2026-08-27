@@ -1867,6 +1867,40 @@ mod tests {
         format!(r#"<html><body><article data-pagefind-body>{inner}</article></body></html>"#)
     }
 
+    /// KRETZ-m4 (batch-finalp2-brief.md ticket 5; origin: KRETZ-1 re-review
+    /// round 2, "LEV 21:14 counter-example has no dedicated pin test --
+    /// aggregate `inline_verse_markers==8` guards indirectly"). Real,
+    /// byte-verbatim excerpt (`data/raw/kretzmann/leviticus/21.html`) --
+    /// `find_inline_verse_marker`'s OWN doc comment names this exact real
+    /// instance as the counter-example its sequential-adjacency
+    /// requirement exists to reject: verse 14's lemma cites BACK to verse
+    /// 7's own similar restriction ("v. 7") mid-sentence, while verse 14 is
+    /// the one currently open.
+    const LEV_21_14_V7_CITATION_EXCERPT: &str = "or an harlot, these shall he not take, v. 7; but he shall take a virgin of his own people to wife,";
+
+    #[test]
+    fn find_inline_verse_marker_correctly_ignores_lev_21_14s_own_real_backward_v_7_citation() {
+        // Verse 14 is open -- the next REAL boundary this text could
+        // legitimately open is verse 15, never verse 7 (backward). This is
+        // the exact real corpus instance the aggregate
+        // `inline_verse_markers == 8` pin (`kretzmann_real_data.rs`) only
+        // ever guarded INDIRECTLY -- this test pins it directly, by name.
+        assert_eq!(
+            find_inline_verse_marker(LEV_21_14_V7_CITATION_EXCERPT, Some(15)),
+            None,
+            "a backward 'v. 7' citation, while verse 14 is open (expecting verse 15 next), must NEVER be treated as a verse boundary"
+        );
+
+        // Control: the SAME literal "v. 7" substring, in the SAME
+        // position, DOES match when 7 genuinely IS the expected next verse
+        // -- proving the sequential-adjacency check above is what
+        // discriminates the real case (not, say, "7" being otherwise
+        // unparseable or the "v. " prefix not being found at all).
+        let (start, end, verse) = find_inline_verse_marker(LEV_21_14_V7_CITATION_EXCERPT, Some(7)).expect("the identical 'v. 7' text must match when 7 genuinely is the expected next verse");
+        assert_eq!(verse, 7);
+        assert_eq!(&LEV_21_14_V7_CITATION_EXCERPT[start..end], "v. 7");
+    }
+
     const PSA_110_EXCERPT: &str = r#"<h3 id="a">A Psalm of Christ.</h3>
 <p><strong>A psalm of David,</strong> altogether prophetic. <strong><sup>1</sup>The Lord said unto my Lord,</strong> literally. <strong>Sit Thou at My right hand,</strong> emblem. <strong>until I make Thine enemies Thy footstool.</strong> The Messiah.</p>"#;
 
