@@ -398,7 +398,9 @@ async fn place_detail_carries_a_real_easton_description_when_a_match_exists() {
 /// Batch CORP-1b (owner authorization, resolving CORP-1's own disclosed
 /// NEEDS_CONTEXT gap: "no existing server query exposes a CommentaryItem's
 /// own prose"): the SAME additive `description` seam, widened to a FOURTH
-/// kind (`atlas_graph::legacy::node_description`'s new CommentaryItem arm)
+/// kind (`graph_handlers::node_description`'s CommentaryItem arm --
+/// relocated from `atlas_graph::legacy` by batch-finalp2's own layering
+/// cleanup, ticket 10; behavior unchanged)
 /// -- over HTTP, over REAL compiled data, proving the wire actually carries
 /// a real Kretzmann unit's own prose end to end through the SAME generic
 /// `GET /api/node/{id}` this file's own Person/Place tests above already
@@ -430,6 +432,67 @@ async fn node_card_omits_description_for_a_kind_that_never_carries_one() {
     let (st, body, _) = get(&app, "/api/node/Era:primeval").await;
     assert_eq!(st, 200, "{body}");
     assert!(body.get("description").is_none(), "an Era card must never carry a description key at all, got: {body}");
+}
+
+// ---------------------------------------------------------------------
+// RED-m1 (origin: batch-red1 ledger/report, INFO finding 3 -- "no Rust
+// integration test on words_of_christ wire field... PARKED as RED-m1 (unit
+// + Playwright E2E coverage exists; add when handlers next touched)"; this
+// batch, batch-finalp2-brief.md ticket 1): a real verse with a known,
+// ledgered span, asserted end-to-end through the REAL handler over the REAL
+// compiled data -- `handlers.rs`'s own unit tests exercise the wire SHAPE
+// against synthetic fixtures, and Playwright's own red-letter specs prove
+// the CLIENT renders red text, but neither proves the HTTP handler itself
+// serves the correct span over the real committed data; this test is that
+// missing middle layer. MAT.4.19 (`"And he saith unto them, Follow me, and
+// I will make you fishers of men."`) is the exact worked example
+// `demo44`'s own owner-visible proof used (this file's own progress ledger,
+// "Tick 2026-08-25 ~21:20"): span {start:24,end:70} is "Follow me, and I
+// will make you fishers of men." (byte offsets into the verse's own KJV
+// text), narration prefix ("And he saith unto them, ") stays outside the
+// span/black, matching the real red-letter rendering rule.
+// ---------------------------------------------------------------------
+
+#[tokio::test]
+async fn verse_endpoint_serves_the_real_words_of_christ_span_for_mat_4_19() {
+    let app = real_app();
+    let (st, body, _) = get(&app, "/api/verse/MAT.4.19").await;
+    assert_eq!(st, 200, "{body}");
+
+    let text = body["text"].as_str().unwrap();
+    assert_eq!(text, "And he saith unto them, Follow me, and I will make you fishers of men.");
+
+    let spans = body["words_of_christ"].as_array().expect("words_of_christ must always be present, even at 0, never an omitted key");
+    assert_eq!(spans.len(), 1, "MAT.4.19 must carry exactly one real red-letter span over the compiled data: {spans:?}");
+    assert_eq!(spans[0]["start"], 24, "{spans:?}");
+    assert_eq!(spans[0]["end"], 70, "{spans:?}");
+
+    // The span's own byte range, read directly off THIS SAME response's own
+    // `text`, must equal the real spoken words -- not just an opaque
+    // {start,end} pair asserted in isolation, but proven to slice the
+    // actual verse text correctly end to end.
+    let start = spans[0]["start"].as_u64().unwrap() as usize;
+    let end = spans[0]["end"].as_u64().unwrap() as usize;
+    assert_eq!(&text[start..end], "Follow me, and I will make you fishers of men.");
+}
+
+/// The SAME real span, over the OTHER wire surface `words_of_christ` rides
+/// (`VerseOut`, `GET /api/chapter/{cref}` -- `handlers.rs`'s own doc
+/// comment: "the SAME O(1) per-verse lookup... off the precomputed
+/// `graph.red_letter_spans` companion", identical shape/convention to
+/// `VerseDetailOut`'s sibling field the test above proves) -- confirms both
+/// server-side call sites of the SAME precomputed companion agree, not just
+/// one of the two.
+#[tokio::test]
+async fn chapter_endpoint_serves_the_same_real_words_of_christ_span_for_mat_4_19() {
+    let app = real_app();
+    let (st, chapter, _) = get(&app, "/api/chapter/MAT.4").await;
+    assert_eq!(st, 200);
+    let v19 = chapter["verses"].as_array().unwrap().iter().find(|v| v["verse"] == 19).expect("MAT.4.19 must be in the chapter");
+    let spans = v19["words_of_christ"].as_array().expect("words_of_christ must always be present, even at 0, never an omitted key");
+    assert_eq!(spans.len(), 1, "{spans:?}");
+    assert_eq!(spans[0]["start"], 24, "{spans:?}");
+    assert_eq!(spans[0]["end"], 70, "{spans:?}");
 }
 
 /// The inverse direction of the same relation: a VERSE's own `mentions`
