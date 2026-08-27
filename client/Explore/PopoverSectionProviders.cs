@@ -2275,3 +2275,59 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
         return new PopoverSection("person-mentions", body);
     }
 }
+
+/// <summary>
+/// Batch CORP-1b (owner authorization, resolving CORP-1's own disclosed
+/// NEEDS_CONTEXT gap): a Kretzmann CommentaryItem's own real prose, fetched
+/// through the generic graph client's <c>Card()</c> call -- the SAME
+/// additive <c>description</c> field ENT-1a built for Place/Person/
+/// PeopleGroup (server: <c>atlas_graph::legacy::node_description</c>'s
+/// widened match), reused rather than a new endpoint. Conditional presence:
+/// a unit with no resolvable description (never true for a real compiled
+/// CommentaryItem, but the wire's own <c>skip_serializing_if</c> makes this
+/// honestly possible) renders no section at all, matching this app's
+/// standing "nothing registered / nothing to show = no placeholder" rule.
+/// ANY embedded verse text inside the prose (Kretzmann's own inline quotes,
+/// KRETZ-1's lemma-excision design: "inline verse-fragment quotes inside
+/// the prose are content, kept verbatim") is already part of this same
+/// plain-text string -- there is no separately-marked-up sub-span to route
+/// through a second render path, so the ONE render rule here is simply:
+/// this text, verbatim, in one paragraph (the same shape <c>VerseNode.
+/// BodyAsync</c> already uses for its own verse text).
+/// </summary>
+public sealed class CommentaryItemProseSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "CommentaryItem";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not CommentaryItemNode item)
+        {
+            return null;
+        }
+
+        NodeCardDto card;
+        try
+        {
+            card = await ctx.Graph.Card(item.Id);
+        }
+        catch (Exception)
+        {
+            return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+        }
+
+        if (string.IsNullOrWhiteSpace(card.Description))
+        {
+            return null;
+        }
+
+        RenderFragment body = builder =>
+        {
+            builder.OpenElement(0, "p");
+            builder.AddAttribute(1, "class", "popover-commentary-text");
+            builder.AddContent(2, card.Description);
+            builder.CloseElement();
+        };
+        return new PopoverSection("commentary-text", body);
+    }
+}

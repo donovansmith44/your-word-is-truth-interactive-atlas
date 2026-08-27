@@ -20,23 +20,20 @@ namespace BibleAtlas.Client.Explore;
 /// graph client -- a node whose own constructor NEEDS
 /// <see cref="IExplorableClient"/> cannot be reconstructed from a saved
 /// descriptor at all. (A first draft of this class held one for a "Read in
-/// context" chip; retired once this constraint surfaced -- see the batch
-/// report's own self-review.)
+/// context" chip; retired once this constraint surfaced -- see
+/// batch-corp1-report.md's own self-review.)
 ///
-/// DISCLOSED GAP (batch-corp1-report.md has the full investigation): no
-/// existing server query exposes a CommentaryItem's own PROSE (its `text`
-/// field) to the client. The generic node card computes ONLY the heading as
-/// its label (graph-types/src/node.rs's own <c>card()</c>: <c>NodePayload::
-/// CommentaryItem { heading, .. } => heading...</c> -- the `text` field is
-/// never read there); <c>/api/text</c> serves only the "bible"/"concord"
-/// corpora (server: `graph_handlers.rs`, CORP-2a); there is no bespoke
-/// `/api/commentary/item/{id}` the way `CatechismItem` has its own
-/// `/api/catechism/item/{id}` (`AtlasClient.CatechismItem`). This node
-/// therefore renders the heading only -- it does NOT fabricate placeholder
-/// prose. Closing this gap for real needs a bespoke commentary-detail server
-/// route (mirroring <c>CatechismItemDetail</c>), which this batch's own
-/// machine rules bar it from adding (ZERO server/Rust changes) -- see the
-/// report's own NEEDS_CONTEXT naming of the exact missing endpoint.
+/// Batch CORP-1b (owner authorization, resolving CORP-1's own disclosed
+/// NEEDS_CONTEXT gap): the unit's own PROSE now rides the generic node
+/// card's additive <c>description</c> field, server-side
+/// (<c>atlas_graph::legacy::node_description</c>'s widened match -- the
+/// SAME seam ENT-1a built for Place/Person/PeopleGroup, reused rather than
+/// a new endpoint/wire type) -- reached client-side via
+/// <see cref="CommentaryItemProseSection"/> (Explore/PopoverSectionProviders.cs),
+/// the SAME "a registered provider reads <c>ctx.Graph</c>, this node's own
+/// constructor stays fetch-free" shape <c>PersonCardAndMentionsSection</c>/
+/// <c>PersonNode</c> already establish, for the identical reconstruction
+/// reason above.
 /// </summary>
 public sealed class CommentaryItemNode : IExplorable
 {
@@ -50,7 +47,9 @@ public sealed class CommentaryItemNode : IExplorable
 
     /// The graph's own wire node id (e.g. "CommentaryItem:kretzmann/0.1.0")
     /// -- also this descriptor's own reconstruction Key
-    /// (<see cref="ExplorationDescriptor"/>).
+    /// (<see cref="ExplorationDescriptor"/>), and what
+    /// <see cref="CommentaryItemProseSection"/> threads into its own
+    /// <c>Card()</c> call.
     public string Id => _id;
 
     public string Title { get; }
@@ -58,23 +57,14 @@ public sealed class CommentaryItemNode : IExplorable
 
     // No chips this batch -- the SAME "nothing extra to offer" shape
     // CatechismNode/PersonNode already establish for a node kind with no
-    // registered popover section provider either.
+    // onward traversal of its own.
     public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api) =>
         Task.FromResult<IReadOnlyList<Exploration>>(Array.Empty<Exploration>());
 
-    // No popover section provider claims Kind == "CommentaryItem" -- this
-    // fallback renders directly, the same shape VerseNode's own BodyAsync
-    // establishes. See this class's own header for why there is no prose to
-    // show beyond the heading already carried in the popover's own title.
-    public Task<RenderFragment> BodyAsync(AtlasClient api)
-    {
-        RenderFragment fragment = builder =>
-        {
-            builder.OpenElement(0, "p");
-            builder.AddAttribute(1, "class", "popover-commentary-note");
-            builder.AddContent(2, "Kretzmann, Popular Commentary of the Bible.");
-            builder.CloseElement();
-        };
-        return Task.FromResult(fragment);
-    }
+    // Batch CORP-1b: PopoverSectionRegistry now claims Kind == "CommentaryItem"
+    // (CommentaryItemProseSection), so ExplorerPopover.LoadCurrent never
+    // calls this in practice -- the SAME "registry supersedes BodyAsync
+    // entirely" shape PersonNode/CatechismNode already establish. Defensive
+    // fallback only.
+    public Task<RenderFragment> BodyAsync(AtlasClient api) => Task.FromResult<RenderFragment>(_ => { });
 }

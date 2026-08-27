@@ -498,7 +498,15 @@ public sealed record SourceEntryDto(
 
 public sealed record EdgeSummaryEntryDto(string Kind, int Count);
 
-public sealed record NodeCardDto(string Id, string Kind, string Label, string Provenance, List<EdgeSummaryEntryDto> EdgeSummary, string Version);
+/// Batch ENT-1a: <see cref="Description"/> is OMITTED on the wire (never a
+/// present JSON `null`) whenever no description match exists for this
+/// node's own kind/id -- server: `graph_handlers::NodeCardOut.description`'s
+/// own `skip_serializing_if`. Populated for Place/Person/PeopleGroup
+/// (Easton's Bible Dictionary prose) and, since Batch CORP-1b, for
+/// CommentaryItem (a Kretzmann unit's own prose, `NodePayload::
+/// CommentaryItem.text` -- `atlas_graph::legacy::node_description`'s own
+/// widened match) -- the SAME additive field, reused, not a new one.
+public sealed record NodeCardDto(string Id, string Kind, string Label, string Provenance, List<EdgeSummaryEntryDto> EdgeSummary, string Version, string? Description = null);
 
 public sealed record NodeRefDto(string Id, string Kind, string Label);
 

@@ -46,13 +46,12 @@
    Body: the current chapter's CommentaryItem entries, in canonical order,
    grouped by verse (mirrors the reader's own verse-line grouping). Plain
    click on a row = the existing ONE-RULE explore/popover semantics
-   (Explore/CommentaryItemNode.cs). DISCLOSED GAP, named in
-   batch-corp1-report.md: no existing server query serves a CommentaryItem's
-   own prose text (only its heading, via the generic node card) -- see
-   CommentaryItemNode.cs's own header for the full investigation. This
-   listing is real (every heading + verse anchor below is genuine, fetched
-   data, never fabricated); the popover it opens is honestly limited to
-   what the current server surface can serve.
+   (Explore/CommentaryItemNode.cs): the popover's own title is the row's
+   heading (already fetched, shown here); its BODY carries the unit's own
+   real prose (Batch CORP-1b, CommentaryItemProseSection -- the generic
+   node card's additive `description` field, server-side:
+   `atlas_graph::legacy::node_description`'s widened match, resolving
+   CORP-1's own disclosed NEEDS_CONTEXT gap).
 
    LISTING MECHANISM (R2's own "expressible as edge queries from the nodes
    that anchor them"): `comments-on`/`commented-on-by` is a bespoke row

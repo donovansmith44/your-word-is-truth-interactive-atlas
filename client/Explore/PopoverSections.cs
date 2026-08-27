@@ -290,5 +290,11 @@ public static class PopoverSectionRegistry
         // persons) no longer lives here -- M-D3/U6 moved it up to sit
         // between VerseParallelsSection and CatechismSeamSection, above.
         new PersonCardAndMentionsSection(),
+        // Batch CORP-1b (owner authorization, resolving CORP-1's own
+        // disclosed NEEDS_CONTEXT gap): the CommentaryItem node's own real
+        // prose -- appended at the end, same "later batches append below,
+        // never disturb" convention every prior batch's own new provider
+        // already followed.
+        new CommentaryItemProseSection(),
     };
 }

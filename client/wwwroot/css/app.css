@@ -4157,6 +4157,17 @@ input:focus-visible,
     line-height: 1.7;
 }
 
+/* Batch CORP-1b: a Kretzmann CommentaryItem's own prose (CommentaryItemProseSection)
+   -- same shape as .popover-verse-text immediately above (this app's own
+   "quiet, subordinate to the text it comments on" register, R4), a touch
+   smaller since a commentary unit's own prose runs meaningfully longer than
+   a single verse. */
+.popover-commentary-text {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
 /* Batch S: .attribution-list/.attribution-list strong (Task 16's own
    credits-popover source list) retired -- MainLayout.razor's Credits
    control is a plain link to /sources now, no popover of its own left to
