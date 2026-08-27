@@ -110,10 +110,16 @@ test('CONCORD-7 (degraded-link law): concord+reader has no BearsWindow/BearsLocu
 
 test('CONCORD-8 (batch-corp1-report.md §13 boundary-overlap fix): Next then Previous never repeats a row -- the unit that anchored the next page is not re-shown as the previous page\'s own last row', async ({ page }) => {
   await page.goto('/concord');
+  await expect(page.getByTestId('concord-next')).toBeVisible();
+  const firstPosition = await page.getByTestId('concord-position').textContent();
 
   // Capture the ref that anchors page 2 (the unit dir=backward's own
-  // inclusive-of-fromRef semantics would otherwise duplicate).
+  // inclusive-of-fromRef semantics would otherwise duplicate). Waits for
+  // the position to actually CHANGE before reading it -- LoadWindowAsync is
+  // async, so reading concord-position's own textContent immediately after
+  // the click (with no wait) can race the still-stale page-1 value.
   await page.getByTestId('concord-next').click();
+  await expect(page.getByTestId('concord-position')).not.toHaveText(firstPosition ?? '');
   const page2AnchorRef = await page.getByTestId('concord-position').textContent();
   expect(page2AnchorRef).toBeTruthy();
   const anchorSlug = (page2AnchorRef ?? '').replace(/ /g, '-').replace(/\./g, '-');
