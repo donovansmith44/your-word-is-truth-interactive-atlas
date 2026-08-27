@@ -1,5 +1,10 @@
 @page "/sources"
+@using BibleAtlas.Client.State
+@using BibleAtlas.Client.Views
+@implements IDisposable
 @inject AtlasClient Atlas
+@inject StateAtom<ViewArrangement> ViewArrangementAtom
+@inject ViewRegistry Registry
 
 @* Batch S ("document our sources for everything and give it a dedicated
    page on the site"): the app's ONE decisive home for attribution --
@@ -15,62 +20,126 @@
    (never combined with .reader-page/.world-page -- "each page's root
    element carries one of these two classes" governs THOSE two; a third
    distinct page root is the correct, single-class-selector way to add a
-   third material, not stacking a second class onto an existing one). *@
+   third material, not stacking a second class onto an existing one).
+
+   Batch VC-1 (R4, the generality proof): Sources declares its own
+   enter-split hatch ("read-beside," Kind "enter-split," partner
+   ViewNames.Reader) and, when it wins ownership of the split-h HOST slot,
+   embeds a CompositionHost of its own -- the SAME mechanism Reader.razor
+   already uses, not a bespoke copy. This is genuinely the generality proof
+   the owner ordered: Sources was never privileged as a host before this
+   batch (it had no split awareness at all); now it hosts exactly the same
+   way Reader always could, proving "no privileged split host" for real,
+   not just in the type system. No follow chip/link renders here at all --
+   Sources declares no BearsWindow (or BearsLocus) capability, so
+   World.razor's own _follow predicate (the ONE place that capability query
+   runs) is unreachable for this pairing by construction; see that
+   property's own comment. *@
 
 <PageTitle>Bible Explorer &mdash; Sources</PageTitle>
 
-<div class="sources-page" data-testid="sources-page">
-    <div class="sources-column">
-        <h1 class="sources-title">Sources</h1>
-        <p class="sources-intro">
-            Bible Explorer stands on the work of translators, researchers, and
-            scholars across many centuries. Every source below is honestly
-            named: what it is, what we built from it, and its license.
-        </p>
+<div class="@(_splitOpen && _isHost ? "split-view" : "")"
+     style="--split-reader-width:@(_sourcesPaneWidthPx.ToString(System.Globalization.CultureInfo.InvariantCulture))px;"
+     data-testid="@(_splitOpen && _isHost ? "split-view" : null)">
+    <div class="@(_splitOpen && _isHost ? "sources-page split-pane-sources" : "sources-page")" data-testid="sources-page">
+        <div class="sources-column">
+            <h1 class="sources-title">Sources</h1>
+            <p class="sources-intro">
+                Bible Explorer stands on the work of translators, researchers, and
+                scholars across many centuries. Every source below is honestly
+                named: what it is, what we built from it, and its license.
+            </p>
 
-        @if (_error is not null)
-        {
-            <div class="toast" data-testid="toast">
-                <p class="toast-message">@_error</p>
-            </div>
-        }
-        else if (_doc is null)
-        {
-            <p class="sources-loading">Loading sources&hellip;</p>
-        }
-        else
-        {
-            @foreach (var category in _doc.Categories)
+            @if (!_splitOpen)
             {
-                <section class="sources-category" data-testid="sources-category-@category.Id">
-                    <h2 class="sources-category-title">@category.Label</h2>
-                    <div class="sources-grid">
-                        @foreach (var source in SourcesFor(category.Id))
-                        {
-                            <article class="source-card" data-testid="source-@source.Id">
-                                <h3 class="source-title">@source.Title</h3>
-                                <p class="source-what">@source.WhatItIs</p>
-                                <p class="source-built"><span class="source-label">What we built:</span> @source.WhatWeBuilt</p>
-                                <p class="source-license"><span class="source-label">License:</span> @source.License</p>
-                                @if (!string.IsNullOrWhiteSpace(source.Link))
-                                {
-                                    <a class="source-link" data-testid="source-link-@source.Id" href="@source.Link" target="_blank" rel="noopener noreferrer">Visit source</a>
-                                }
-                            </article>
-                        }
-                    </div>
-                </section>
+                <button type="button" class="split-open split-open-parchment" data-testid="split-open-sources"
+                        @onclick="InvokeEnterSplitHatch">
+                    Read beside the reader
+                </button>
             }
-        }
+
+            @if (_error is not null)
+            {
+                <div class="toast" data-testid="toast">
+                    <p class="toast-message">@_error</p>
+                </div>
+            }
+            else if (_doc is null)
+            {
+                <p class="sources-loading">Loading sources&hellip;</p>
+            }
+            else
+            {
+                @foreach (var category in _doc.Categories)
+                {
+                    <section class="sources-category" data-testid="sources-category-@category.Id">
+                        <h2 class="sources-category-title">@category.Label</h2>
+                        <div class="sources-grid">
+                            @foreach (var source in SourcesFor(category.Id))
+                            {
+                                <article class="source-card" data-testid="source-@source.Id">
+                                    <h3 class="source-title">@source.Title</h3>
+                                    <p class="source-what">@source.WhatItIs</p>
+                                    <p class="source-built"><span class="source-label">What we built:</span> @source.WhatWeBuilt</p>
+                                    <p class="source-license"><span class="source-label">License:</span> @source.License</p>
+                                    @if (!string.IsNullOrWhiteSpace(source.Link))
+                                    {
+                                        <a class="source-link" data-testid="source-link-@source.Id" href="@source.Link" target="_blank" rel="noopener noreferrer">Visit source</a>
+                                    }
+                                </article>
+                            }
+                        </div>
+                    </section>
+                }
+            }
+        </div>
     </div>
+
+    @if (_splitOpen && _isHost)
+    {
+        <SplitDivider WidthPx="_sourcesPaneWidthPx" WidthPxChanged="w => _sourcesPaneWidthPx = w" OnCommitted="OnDividerCommitted" />
+        <CompositionHost HostName="@ViewNames.Sources" />
+    }
 </div>
 
 @code {
     private SourcesDocumentOut? _doc;
     private string? _error;
 
+    // Batch VC-1: null = self-determine (Sources is always routed directly
+    // -- there is no scenario in this batch where Sources is mounted as
+    // someone ELSE's guest). Kept nullable/IsHost-shaped for symmetry with
+    // Reader.razor's own parameters, not because a guest-mounted Sources is
+    // reachable today.
+    [Parameter] public bool? SplitMode { get; set; }
+    [Parameter] public bool IsHost { get; set; }
+    [Parameter] public EventCallback OnRequestClose { get; set; }
+
+    private bool _splitOpen => SplitMode ?? (ViewArrangementAtom.Value is { LayoutKind: LayoutKinds.SplitH } a && a.Members.Count > 0 && a.Members[0] == ViewNames.Sources);
+    private bool _isHost => SplitMode is null || IsHost;
+
+    // Batch VC-1: this page's own divider width state -- SplitDivider's own
+    // pre-VC-1 doc comment already anticipated "a future second split host
+    // inherits the identical mechanic for free" (see CompositionHost.razor's
+    // own header). No ViewState persistence slot exists for Sources
+    // (disclosed, matching the hatch's own DefaultDividerFraction: null) --
+    // 704px matches Reader's own pre-VC-1 default for the same "roughly
+    // 55% of a common viewport" reasoning.
+    private double _sourcesPaneWidthPx = 704;
+
     protected override async Task OnInitializedAsync()
     {
+        if (SplitMode is null)
+        {
+            // The standalone counterpart to Reader/World's own EnterSingle
+            // reconciliation -- asserted once, at mount (Sources has no
+            // per-navigation route params to react to repeatedly the way
+            // World's from/to/ref query does).
+            ViewArrangementAtom.Dispatch(new EnterSingle(ViewNames.Sources));
+        }
+
+        ViewArrangementAtom.Changed += OnViewArrangementChanged;
+
         try
         {
             _doc = await Atlas.Sources();
@@ -81,6 +150,25 @@
         }
     }
 
+    private void OnViewArrangementChanged() => StateHasChanged();
+
+    private void OnDividerCommitted((double WidthPx, double? Fraction) result)
+    {
+        _sourcesPaneWidthPx = result.WidthPx;
+        if (result.Fraction is { } fraction)
+        {
+            ViewArrangementAtom.Dispatch(new SetDivider(fraction));
+        }
+    }
+
+    private Task InvokeEnterSplitHatch() =>
+        Registry.Get(ViewNames.Sources).EscapeHatches.First(h => h.Kind == HatchKinds.EnterSplit).Invoke();
+
     private IEnumerable<SourceEntryDto> SourcesFor(string categoryId) =>
         _doc!.Sources.Where(s => s.Category == categoryId);
+
+    public void Dispose()
+    {
+        ViewArrangementAtom.Changed -= OnViewArrangementChanged;
+    }
 }

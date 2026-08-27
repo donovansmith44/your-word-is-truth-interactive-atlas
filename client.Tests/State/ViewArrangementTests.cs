@@ -1,238 +1,259 @@
 using BibleAtlas.Client.State;
+using BibleAtlas.Client.Views;
 
 namespace BibleAtlas.Client.Tests.State;
 
 /// <summary>
-/// Batch ST-2 (controller ruling R4): correctness of the concrete
-/// ViewArrangement union/intents (client/State/ViewArrangement.cs) --
-/// distinct from the generic law tests, which prove the LAWS hold for the
-/// infrastructure using synthetic atoms. Deliverable 2's "union value-type
-/// equality tested explicitly" applies here too, alongside the union's own
-/// (R4-specific) intents.
+/// Batch VC-1 (controller ruling R2): correctness of the reshaped
+/// ViewArrangement value/intents (client/State/ViewArrangement.cs) --
+/// SUPERSEDES ST-2's own ViewArrangementTests.cs (the ReaderOnly/WorldOnly/
+/// Split three-arm union it tested is deleted wholesale, per the owner
+/// ruling "no privileged split host, no privileged guest"). Distinct from
+/// the generic law tests, which prove the LAWS hold for the infrastructure
+/// using synthetic atoms.
 /// </summary>
 public class ViewArrangementTests
 {
     // ========================================================================
-    // Union equality -- proven, not assumed (same reasoning as TimeWindow's
-    // own union tests in LocusAndTimeWindowTests.cs).
+    // Equality -- proven, not assumed (Members compares by SEQUENCE, per
+    // this type's own hand-rolled Equals -- same reasoning
+    // Selection/FocusStack's own list-valued equality already established).
     // ========================================================================
 
     [Fact]
-    public void ReaderOnly_And_WorldOnly_AreEqualToThemselvesAndUnequalToEachOther()
+    public void Equality_SameMembersOrderLayoutFractionFollow_AreEqual()
     {
-        Assert.Equal(new ReaderOnly(), new ReaderOnly());
-        Assert.Equal(new WorldOnly(), new WorldOnly());
-        Assert.NotEqual<ViewArrangement>(new ReaderOnly(), new WorldOnly());
+        var a = new ViewArrangement(new[] { "reader", "world" }, LayoutKinds.SplitH, 0.5, true);
+        var b = new ViewArrangement(new[] { "reader", "world" }, LayoutKinds.SplitH, 0.5, true);
+
+        Assert.Equal(a, b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
     }
 
     [Fact]
-    public void Split_RecordEquality_SameFollowAndFractionAreEqual()
+    public void Equality_MembersOrderMatters_HostVsGuestIsPositional()
     {
-        Assert.Equal(new Split(true, 0.5), new Split(true, 0.5));
-        Assert.Equal(new Split(true, null), new Split(true, null));
-        Assert.Equal(new Split(true, 0.5).GetHashCode(), new Split(true, 0.5).GetHashCode());
+        var reversed = new ViewArrangement(new[] { "world", "reader" }, LayoutKinds.SplitH, null, false);
+        var forward = new ViewArrangement(new[] { "reader", "world" }, LayoutKinds.SplitH, null, false);
+
+        Assert.NotEqual(forward, reversed);
     }
 
     [Fact]
-    public void Split_RecordEquality_DifferentFollowOrFractionAreNotEqual()
+    public void Equality_DifferentLayoutFractionOrFollow_AreNotEqual()
     {
-        Assert.NotEqual(new Split(true, 0.5), new Split(false, 0.5));
-        Assert.NotEqual(new Split(true, 0.5), new Split(true, 0.6));
-        Assert.NotEqual(new Split(true, 0.5), new Split(true, null));
+        var baseline = new ViewArrangement(new[] { "reader", "world" }, LayoutKinds.SplitH, 0.5, true);
+
+        Assert.NotEqual(baseline, baseline with { DividerFraction = 0.6 });
+        Assert.NotEqual(baseline, baseline with { Follow = false });
+        Assert.NotEqual(baseline, baseline with { LayoutKind = LayoutKinds.Single });
     }
 
     [Fact]
-    public void ViewArrangement_UnionArms_AreNeverEqualAcrossArms()
+    public void ViewArrangement_Default_IsSingleReader()
     {
-        ViewArrangement readerOnly = new ReaderOnly();
-        ViewArrangement worldOnly = new WorldOnly();
-        ViewArrangement split = new Split(true, null);
-
-        Assert.False(readerOnly.Equals(worldOnly));
-        Assert.False(readerOnly.Equals(split));
-        Assert.False(worldOnly.Equals(split));
-    }
-
-    [Fact]
-    public void ViewArrangement_Default_IsReaderOnly()
-    {
-        Assert.Equal(new ReaderOnly(), ViewArrangement.Default);
+        Assert.Equal(new ViewArrangement(new[] { ViewNames.Reader }, LayoutKinds.Single, null, false), ViewArrangement.Default);
     }
 
     // ========================================================================
-    // EnterSplit (R4; fix round 1 adds DefaultDividerFraction, Adjudication
-    // C): idempotent, preserves an already-Split arm untouched.
+    // EnterSingle (R2).
     // ========================================================================
 
     [Fact]
-    public void EnterSplit_Apply_FromReaderOnly_EntersSplitWithTheSuppliedDefaults()
+    public void EnterSingle_Apply_FromSplitH_EntersSingleWithTheNamedMember()
     {
-        var intent = new EnterSplit(DefaultFollow: true, DefaultDividerFraction: 0.6);
-        Assert.Equal(new Split(true, 0.6), intent.Apply(new ReaderOnly()));
+        var current = new ViewArrangement(new[] { "reader", "world" }, LayoutKinds.SplitH, 0.5, true);
+        var result = new EnterSingle("world").Apply(current);
 
-        var intentFalse = new EnterSplit(DefaultFollow: false, DefaultDividerFraction: null);
-        Assert.Equal(new Split(false, null), intentFalse.Apply(new WorldOnly()));
+        Assert.Equal(new ViewArrangement(new[] { "world" }, LayoutKinds.Single, null, false), result);
     }
 
     [Fact]
-    public void EnterSplit_Apply_WhenAlreadySplit_ReturnsCurrentUnchanged_PreservingAnyExistingFraction()
+    public void EnterSingle_Apply_WhenAlreadyThatExactSingle_ReturnsCurrentUnchanged()
     {
-        var current = new Split(false, 0.42);
-        // A different DefaultFollow/DefaultDividerFraction -- both ignored, current wins.
-        var intent = new EnterSplit(DefaultFollow: true, DefaultDividerFraction: 0.9);
+        var current = new ViewArrangement(new[] { "reader" }, LayoutKinds.Single, null, false);
+        var result = new EnterSingle("reader").Apply(current);
 
-        var result = intent.Apply(current);
-
-        Assert.Same(current, result); // literally the same reference -- a true no-op, not just an equal value
+        Assert.Same(current, result);
     }
 
     [Fact]
-    public void EnterSplit_Apply_IsIdempotent_ReapplyingProducesTheSameValue()
+    public void EnterSingle_Apply_IsIdempotent()
     {
-        var intent = new EnterSplit(DefaultFollow: true, DefaultDividerFraction: 0.5);
-        var once = intent.Apply(new ReaderOnly());
+        var intent = new EnterSingle("sources");
+        var once = intent.Apply(ViewArrangement.Default);
         var twice = intent.Apply(once);
 
         Assert.Equal(once, twice);
     }
 
-    [Fact]
-    public void EnterSplit_Apply_AfterALeaveAndReturn_OnlyRestoresWhatTheCallerRePassesIn()
-    {
-        // Adjudication C (fix round 1): the Split arm itself has NO memory
-        // across a ReaderOnly/WorldOnly detour (by design -- see Split's own
-        // doc comment). EnterSplit's own DefaultFollow/DefaultDividerFraction
-        // parameters are what let a CALLER (Reader.razor, sourcing them from
-        // ViewState.Map) restore a value that survived elsewhere. Pins that
-        // the atom does NOT remember across the detour on its own -- a
-        // caller that fails to re-pass a remembered value gets a genuinely
-        // fresh split, not a silently recovered one.
-        var atom = new StateAtom<ViewArrangement>(AtomNamesViewArrangement, new Split(false, 0.42));
-
-        atom.Dispatch(new EnterReaderOnly());
-        Assert.Equal(new ReaderOnly(), atom.Value);
-
-        atom.Dispatch(new EnterSplit(true, null)); // caller didn't re-pass the old fraction
-        Assert.Equal(new Split(true, null), atom.Value); // genuinely gone -- not silently recovered
-
-        atom.Dispatch(new EnterReaderOnly());
-        atom.Dispatch(new EnterSplit(false, 0.42)); // caller DOES re-pass it (mirrors ViewState.Map.DividerFraction)
-        Assert.Equal(new Split(false, 0.42), atom.Value); // restored, because the CALLER remembered
-    }
-
     // ========================================================================
-    // SetSplitFollow / SetSplitDividerFraction (R4): each preserves the
-    // sibling field on the Split arm without needing to know its value.
-    //
-    // Fix round 1 (Q-1, review): applying either while NOT already Split is
-    // now a NO-OP (returns `current` unchanged) rather than fabricating a
-    // Split arm out of ReaderOnly/WorldOnly -- see each intent's own doc
-    // comment. Replaces the earlier "...DegradesGracefullyWith..." tests,
-    // which pinned the fabricating behavior the review flagged.
+    // EnterSplit (R2): "host left / guest right," positional, any two
+    // distinct names legal -- no privileged host.
     // ========================================================================
 
     [Fact]
-    public void SetSplitFollow_Apply_FlipsFollowAndPreservesDividerFraction()
+    public void EnterSplit_Apply_FromSingle_EntersSplitHWithHostFirstGuestSecond()
     {
-        var current = new Split(false, 0.3);
-        var intent = new SetSplitFollow(true);
+        var intent = new EnterSplit("sources", "reader", DefaultFollow: false, DefaultDividerFraction: 0.6);
+        var result = intent.Apply(ViewArrangement.Default);
 
-        Assert.Equal(new Split(true, 0.3), intent.Apply(current));
+        Assert.Equal(new ViewArrangement(new[] { "sources", "reader" }, LayoutKinds.SplitH, 0.6, false), result);
     }
 
     [Fact]
-    public void SetSplitFollow_Apply_WhenNotAlreadySplit_IsANoOp()
+    public void EnterSplit_Apply_AnyTwoDistinctViews_IsLegal_NoPrivilegedHost()
     {
-        var intent = new SetSplitFollow(true);
+        // The owner's own ruling, proven directly: "world" can host "sources"
+        // just as validly as "reader" hosting "world" -- nothing in Apply
+        // special-cases any particular name.
+        var result = new EnterSplit("world", "sources").Apply(ViewArrangement.Default);
 
-        var readerOnly = new ReaderOnly();
-        Assert.Same(readerOnly, intent.Apply(readerOnly));
-
-        var worldOnly = new WorldOnly();
-        Assert.Same(worldOnly, intent.Apply(worldOnly));
+        Assert.Equal(new[] { "world", "sources" }, result.Members);
+        Assert.Equal(LayoutKinds.SplitH, result.LayoutKind);
     }
 
     [Fact]
-    public void SetSplitDividerFraction_Apply_CommitsFractionAndPreservesFollow()
+    public void EnterSplit_Apply_WhenAlreadySplitWithTheSamePairInTheSameOrder_ReturnsCurrentUnchanged_PreservingFractionAndFollow()
     {
-        var current = new Split(true, 0.3);
-        var intent = new SetSplitDividerFraction(0.6);
+        var current = new ViewArrangement(new[] { "reader", "world" }, LayoutKinds.SplitH, 0.42, true);
+        var intent = new EnterSplit("reader", "world", DefaultFollow: false, DefaultDividerFraction: 0.9); // different defaults -- ignored
 
-        Assert.Equal(new Split(true, 0.6), intent.Apply(current));
+        var result = intent.Apply(current);
+
+        Assert.Same(current, result);
     }
 
     [Fact]
-    public void SetSplitDividerFraction_Apply_WhenNotAlreadySplit_IsANoOp()
+    public void EnterSplit_Apply_SamePairReversed_IsANewArrangement_NotANoOp()
     {
-        var intent = new SetSplitDividerFraction(0.6);
+        var current = new ViewArrangement(new[] { "reader", "world" }, LayoutKinds.SplitH, 0.42, true);
+        var intent = new EnterSplit("world", "reader");
 
-        var readerOnly = new ReaderOnly();
-        Assert.Same(readerOnly, intent.Apply(readerOnly));
+        var result = intent.Apply(current);
 
-        var worldOnly = new WorldOnly();
-        Assert.Same(worldOnly, intent.Apply(worldOnly));
+        Assert.Equal(new[] { "world", "reader" }, result.Members);
+        Assert.Null(result.DividerFraction); // a genuinely fresh arrangement, not a preserved one
     }
 
     [Fact]
-    public void SetSplitFollow_And_SetSplitDividerFraction_AreIndependentWriters_NeitherClobbersTheOther()
+    public void EnterSplit_Apply_IsIdempotent()
     {
-        // The exact scenario both intents' own doc comments describe: a
-        // follow-toggle and a divider-drag, dispatched in either order,
-        // never need to know each other's latest value to avoid clobbering
-        // it.
-        var atom = new StateAtom<ViewArrangement>(AtomNamesViewArrangement, new Split(true, null));
+        var intent = new EnterSplit("reader", "world", DefaultFollow: true, DefaultDividerFraction: 0.5);
+        var once = intent.Apply(ViewArrangement.Default);
+        var twice = intent.Apply(once);
 
-        atom.Dispatch(new SetSplitDividerFraction(0.4));
-        Assert.Equal(new Split(true, 0.4), atom.Value);
-
-        atom.Dispatch(new SetSplitFollow(false));
-        Assert.Equal(new Split(false, 0.4), atom.Value); // fraction survived the follow flip
-
-        atom.Dispatch(new SetSplitDividerFraction(0.7));
-        Assert.Equal(new Split(false, 0.7), atom.Value); // follow survived the fraction commit
+        Assert.Equal(once, twice);
     }
 
     // ========================================================================
-    // Idempotence (law 2) over StateAtom.Dispatch, and agreement (law 5)
-    // over multiple projections -- the SAME obligations LocusAndTimeWindowTests.cs
-    // proves for Locus/TimeWindow, here for the real ViewArrangement atom.
+    // CloseGuest (R2): closes Members[1], returning to single-Members[0].
     // ========================================================================
 
     [Fact]
-    public void ViewArrangementAtom_Idempotence_RedispatchingEnterReaderOnlyIsANoOpTheSecondTime()
+    public void CloseGuest_Apply_FromSplitH_ReturnsSingleWithTheHostOnly()
     {
-        var atom = new StateAtom<ViewArrangement>(AtomNamesViewArrangement, new Split(true, 0.5));
-        var changedCount = 0;
-        atom.Changed += () => changedCount++;
+        var current = new ViewArrangement(new[] { "sources", "reader" }, LayoutKinds.SplitH, 0.5, false);
+        var result = new CloseGuest().Apply(current);
 
-        atom.Dispatch(new EnterReaderOnly());
-        Assert.Equal(1, changedCount);
-
-        atom.Dispatch(new EnterReaderOnly()); // a DIFFERENT intent instance, same shape
-        Assert.Equal(1, changedCount); // no second Changed
+        Assert.Equal(new ViewArrangement(new[] { "sources" }, LayoutKinds.Single, null, false), result);
     }
 
     [Fact]
-    public void ViewArrangementAtom_Agreement_MultipleProjectionsAgreeAfterEveryDispatch()
+    public void CloseGuest_Apply_WhenNotSplitH_IsANoOp()
     {
-        var atom = new StateAtom<ViewArrangement>(AtomNamesViewArrangement, ViewArrangement.Default);
-        var readerProjection = new Projection<ViewArrangement>(atom);
-        var worldProjection = new Projection<ViewArrangement>(atom);
-
-        atom.Dispatch(new EnterSplit(true, null));
-        Assert.Equal(readerProjection.Value, worldProjection.Value);
-
-        atom.Dispatch(new SetSplitDividerFraction(0.55));
-        Assert.Equal(readerProjection.Value, worldProjection.Value);
-        Assert.Equal(new Split(true, 0.55), readerProjection.Value);
-
-        atom.Dispatch(new SetSplitFollow(false));
-        Assert.Equal(readerProjection.Value, worldProjection.Value);
-
-        atom.Dispatch(new EnterReaderOnly());
-        Assert.Equal(readerProjection.Value, worldProjection.Value);
-        Assert.Equal(new ReaderOnly(), readerProjection.Value);
+        var single = ViewArrangement.Default;
+        Assert.Same(single, new CloseGuest().Apply(single));
     }
 
-    private const string AtomNamesViewArrangement = BibleAtlas.Client.Contracts.AtomNames.ViewArrangement;
+    // ========================================================================
+    // SetDivider / ToggleFollow (R2): independent sibling writers, neither
+    // clobbers the other; no-op off split-h.
+    // ========================================================================
+
+    [Fact]
+    public void SetDivider_Apply_CommitsFractionAndPreservesFollow()
+    {
+        var current = new ViewArrangement(new[] { "reader", "world" }, LayoutKinds.SplitH, 0.3, true);
+        var result = new SetDivider(0.6).Apply(current);
+
+        Assert.Equal(new ViewArrangement(new[] { "reader", "world" }, LayoutKinds.SplitH, 0.6, true), result);
+    }
+
+    [Fact]
+    public void SetDivider_Apply_WhenNotSplitH_IsANoOp()
+    {
+        var single = ViewArrangement.Default;
+        Assert.Same(single, new SetDivider(0.6).Apply(single));
+    }
+
+    [Fact]
+    public void ToggleFollow_Apply_FlipsFollowAndPreservesDividerFraction()
+    {
+        var current = new ViewArrangement(new[] { "reader", "world" }, LayoutKinds.SplitH, 0.3, false);
+        var result = new ToggleFollow(true).Apply(current);
+
+        Assert.Equal(new ViewArrangement(new[] { "reader", "world" }, LayoutKinds.SplitH, 0.3, true), result);
+    }
+
+    [Fact]
+    public void ToggleFollow_Apply_WhenNotSplitH_IsANoOp()
+    {
+        var single = ViewArrangement.Default;
+        Assert.Same(single, new ToggleFollow(true).Apply(single));
+    }
+
+    [Fact]
+    public void SetDivider_And_ToggleFollow_AreIndependentWriters_NeitherClobbersTheOther()
+    {
+        var atom = new StateAtom<ViewArrangement>(BibleAtlas.Client.Contracts.AtomNames.ViewArrangement, new ViewArrangement(new[] { "reader", "world" }, LayoutKinds.SplitH, null, true));
+
+        atom.Dispatch(new SetDivider(0.4));
+        Assert.Equal(0.4, atom.Value.DividerFraction);
+        Assert.True(atom.Value.Follow);
+
+        atom.Dispatch(new ToggleFollow(false));
+        Assert.Equal(0.4, atom.Value.DividerFraction); // fraction survived the follow flip
+        Assert.False(atom.Value.Follow);
+
+        atom.Dispatch(new SetDivider(0.7));
+        Assert.Equal(0.7, atom.Value.DividerFraction);
+        Assert.False(atom.Value.Follow); // follow survived the fraction commit
+    }
+
+    // ========================================================================
+    // R2: "Persistence (ViewState demotion from ST-2) migrates losslessly --
+    // a saved ReaderOnly/Split restores to the equivalent Arrangement (cold-
+    // start compatibility test)." ViewArrangement itself was never
+    // localStorage-persisted (in-memory atom, seeded from
+    // ViewArrangement.Default -- see AppServices.AddStateAtoms); the ACTUAL
+    // cross-session persistence for split state is the ?split=1 URL query
+    // Reader.razor's own SplitQuery param consumes, plus ViewState.Map's own
+    // Follow/DividerFraction restoration source. This test proves the
+    // MAPPING every pre-VC-1 shape had onto the reshaped type is exactly
+    // what R2's own worked examples specify, verbatim.
+    // ========================================================================
+
+    [Fact]
+    public void ColdStart_PreVC1ReaderOnly_MapsToSingleReader()
+    {
+        // R2, verbatim: "ReaderOnly => Arrangement(["reader"], "single")."
+        Assert.Equal(new ViewArrangement(new[] { "reader" }, "single", null, false), ViewArrangement.Default);
+    }
+
+    [Fact]
+    public void ColdStart_PreVC1SplitReaderWorld_MapsToSplitHReaderWorld()
+    {
+        // R2, verbatim: "today's split => Arrangement(["reader","world"],
+        // "split-h", ...)." -- exercised via the SAME dispatch path
+        // Reader.razor's own ?split=1 consumption (OnParametersSetAsync) and
+        // World's own OpenReadBesideMap hatch both use: EnterSplit(reader,
+        // world, defaultFollow, defaultDividerFraction), landing on a fresh
+        // atom (the cold-start case -- no prior session).
+        var atom = new StateAtom<ViewArrangement>(BibleAtlas.Client.Contracts.AtomNames.ViewArrangement, ViewArrangement.Default);
+
+        atom.Dispatch(new EnterSplit(ViewNames.Reader, ViewNames.World, DefaultFollow: true, DefaultDividerFraction: 0.55));
+
+        Assert.Equal(new ViewArrangement(new[] { "reader", "world" }, "split-h", 0.55, true), atom.Value);
+    }
 }

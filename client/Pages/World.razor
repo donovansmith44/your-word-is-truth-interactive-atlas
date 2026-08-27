@@ -1,6 +1,7 @@
 @page "/world"
 @using System.Globalization
 @using BibleAtlas.Client.State
+@using BibleAtlas.Client.Views
 @implements IAsyncDisposable
 @implements IMapEvents
 @inject AtlasClient Atlas
@@ -12,6 +13,7 @@
 @inject StateAtom<TimeWindow> TimeWindowAtom
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 @inject EffectRegistry Effects
+@inject ViewRegistry Registry
 
 <PageTitle>Bible Explorer &mdash; World</PageTitle>
 
@@ -26,7 +28,7 @@
        and its own close button instead -- see their own comments below. *@
     @if (!SplitMode)
     {
-        <button type="button" class="split-open split-open-dusk" data-testid="split-open-world" @onclick="OpenReadBesideMap">
+        <button type="button" class="split-open split-open-dusk" data-testid="split-open-world" @onclick="InvokeEnterSplitHatch">
             Read beside the map
         </button>
     }
@@ -39,7 +41,7 @@
            for; the flex wrapper lays them out naturally instead. *@
         <div class="split-atlas-controls" data-testid="split-atlas-controls">
             <button type="button" class="follow-chip" data-testid="follow-chip"
-                    aria-pressed="@(_follow ? "true" : "false")" @onclick="ToggleFollow">
+                    aria-pressed="@(_follow ? "true" : "false")" @onclick="OnToggleFollowClick">
                 @* Batch ST-1: reads the shared Locus atom's own Ref (via
                    _locus, the same Projection<Locus> the picker mount below
                    renders from) instead of the retired FollowRef parameter --
@@ -253,6 +255,17 @@
     // whoever embedded me."
     [Parameter] public EventCallback OnRequestClose { get; set; }
 
+    // Batch VC-1: the generalized "no nested-popup rule" plumbing (see
+    // ViewRegistry.cs's own ViewMountContext header) -- while SplitMode, this
+    // instance hands its OWN ApplyExternalQuery straight to whichever
+    // CompositionHost mounted it, so a popover chip on the HOST side (e.g.
+    // Reader's own) can route into this ALREADY-EMBEDDED pane. Not invoked
+    // at all for a standalone /world mount (CompositionHost never sets it
+    // there -- see World's own ViewRegistrySetup mount closure, which passes
+    // it unconditionally, harmlessly unused when SplitMode is false since
+    // nothing calls it).
+    [Parameter] public Action<Func<string, Task>>? RegisterQueryHandler { get; set; }
+
     private List<EraDto>? _eras;
     private Scene? _scene;
     private string? _errorMessage;
@@ -427,7 +440,21 @@
     // (atom == WorldOnly) always reads false here, matching "standalone
     // /world never reads or writes it" -- true by construction now, not by
     // convention (there is no WorldOnly.Follow field to have EVER read).
-    private bool _follow => ViewArrangementAtom.Value is Split { Follow: true };
+    // Batch VC-1 (R5): the capability query REPLACES the pre-VC-1 "is Split"
+    // shape-check -- Active is now genuinely "does the CURRENT split-h pair
+    // contain a BearsLocus member and a BearsWindow member," read via the
+    // registry, never a "== ViewNames.Reader"/"== ViewNames.World" name
+    // check. reader+world (the only split-h pairing this batch's own
+    // ViewCapabilities data makes true) behaves EXACTLY as before;
+    // sources+reader (no BearsWindow member at all) reads false here by
+    // construction -- R4's own "degrade cleanly, no chip, no link active"
+    // falls out of this ONE definition, not a separate check anywhere else
+    // (FollowTextLink.Active and the follow-scene effect's own claim
+    // decision both read THIS property, unchanged, below).
+    private bool _follow =>
+        ViewArrangementAtom.Value is { LayoutKind: LayoutKinds.SplitH, Follow: true } a
+        && a.Members.Any(m => (Registry.CapabilitiesOf(m) & ViewCapabilities.BearsLocus) != 0)
+        && a.Members.Any(m => (Registry.CapabilitiesOf(m) & ViewCapabilities.BearsWindow) != 0);
 
     // Fix round 1 (S-2/Adjudication A, review, CRITICAL-adjacent): the ONE
     // shared predicate every side-effecting subscription/closure that could
@@ -537,6 +564,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Batch VC-1: hands this instance's own ApplyExternalQuery up to
+        // whichever CompositionHost mounted it, if any (see
+        // ViewMountContext's own header) -- a safe no-op call site
+        // regardless of SplitMode, since RegisterQueryHandler is only ever
+        // non-null when this instance IS a genuinely embedded guest.
+        RegisterQueryHandler?.Invoke(ApplyExternalQuery);
+
         // Batch ST-2 (R3): seeds _from/_to/_scriptureRef from whatever
         // TimeWindowAtom -- a DI singleton that outlives any one page visit
         // -- ALREADY holds, before this instance's very first render (this
@@ -723,7 +757,7 @@
         // counterpart to Reader.razor's own EnterReaderOnly/EnterSplit
         // dispatch sites, so the atom always reflects reality regardless of
         // whatever arrangement a PRIOR page/instance this session left it in.
-        ViewArrangementAtom.Dispatch(new EnterWorldOnly());
+        ViewArrangementAtom.Dispatch(new EnterSingle(ViewNames.World));
         await SyncFromQuery();
     }
 
@@ -1238,10 +1272,14 @@
     // async-timing contract every pre-ST-3 caller of ToggleFollow already
     // depended on, even though the fetch is now triggered indirectly,
     // through the atom AND the effect registry.
-    private async Task ToggleFollow()
+    // Batch VC-1: renamed from ToggleFollow (the method) to avoid colliding
+    // with the new ToggleFollow INTENT (client/State/ViewArrangement.cs) --
+    // same method, same markup binding site (follow-chip's own @onclick,
+    // updated), byte-identical behavior otherwise.
+    private async Task OnToggleFollowClick()
     {
         var newFollow = !_follow;
-        ViewArrangementAtom.Dispatch(new SetSplitFollow(newFollow));
+        ViewArrangementAtom.Dispatch(new ToggleFollow(newFollow));
         SyncViewState();
 
         if (!newFollow)
@@ -1285,7 +1323,7 @@
         // own debounce" reason this method's own doc comment already gives --
         // harmless if it turns out redundant with that subscription's own
         // re-render.
-        ViewArrangementAtom.Dispatch(new SetSplitFollow(false));
+        ViewArrangementAtom.Dispatch(new ToggleFollow(false));
         StateHasChanged(); // snappy chip feedback -- see this method's own doc comment; the load below still runs its own debounce/fetch on top of this
 
         var parts = query.Split('&')
@@ -1378,10 +1416,14 @@
     // `_followEffectsLive`-guarded, and still carries the SAME S-2-class
     // residual risk ST-2's own review named. Revisiting this reading is
     // future-batch scope, not implied by R1.
-    private void OpenReadBesideMap()
-    {
-        Nav.NavigateTo($"/read/{_locus.Value.Book}/{_locus.Value.Chapter}?split=1");
-    }
+    //
+    // Batch VC-1 (R4): OpenReadBesideMap (the pre-VC-1 direct method) is
+    // RETIRED as a separate method -- its exact body (this trace's own
+    // subject) lives on as EnterSplitWorldRequestsReader inside
+    // ViewRegistrySetup, invoked below via InvokeEnterSplitHatch, so there
+    // is exactly ONE copy of this navigation, not two.
+    private Task InvokeEnterSplitHatch() =>
+        Registry.Get(ViewNames.World).EscapeHatches.First(h => h.Kind == HatchKinds.EnterSplit).Invoke();
 
     // The Leaflet map can only be created once #world-map is actually in
     // the DOM, i.e. after the component's first render. If a scene fetch

@@ -532,6 +532,30 @@ input:focus-visible,
     overflow: hidden;
 }
 
+/* Batch VC-1 (R3, split for any view): the two GENERIC pane roles a
+   registry-mounted composition needs beyond the two reader/world already
+   had -- .split-pane-reader/.split-pane-atlas above stay byte-unchanged
+   (that pairing keeps its own exact pre-VC-1 sizing) so the reader+world
+   split remains pixel-identical (R7). These two are the fallback shapes
+   ANY new host/guest pairing gets for free: .split-pane-sources (a HOST
+   pane -- reuses the SAME --split-reader-width custom property Reader's
+   own outer wrapper already sets, deliberately, rather than inventing a
+   second differently-named variable for the identical concept -- see
+   CompositionHost.razor's own header) and .split-pane-guest (a GUEST pane
+   with no bespoke sizing of its own, e.g. Reader-as-guest inside Sources --
+   1 1 auto, filling whatever the host's own fixed-basis pane doesn't
+   claim, the same complementary shape .split-pane-atlas already
+   establishes). */
+.split-pane-sources {
+    flex: 0 0 var(--split-reader-width, 55%);
+    min-width: 0;
+}
+
+.split-pane-guest {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 @media (max-width: 1023.98px) {
     .split-open,
     .split-atlas-controls,

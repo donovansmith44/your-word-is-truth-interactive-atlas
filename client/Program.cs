@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.JSInterop;
@@ -5,6 +6,7 @@ using BibleAtlas.Client;
 using BibleAtlas.Client.Contracts;
 using BibleAtlas.Client.Explore;
 using BibleAtlas.Client.State;
+using BibleAtlas.Client.Views;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -89,5 +91,15 @@ AppServices.AddSelectionAtom(builder.Services);
 // SelectionTrayService above): MainLayout.razor injects it directly for the
 // hamburger panel's own Available/Items/Save/Rename/Delete surface.
 builder.Services.AddSingleton(sp => new SavedExplorationsService((IJSInProcessRuntime)sp.GetRequiredService<IJSRuntime>()));
+
+// Batch VC-1 (R1): the view registry -- one singleton, built from the SAME
+// DI-singleton services its own hatches close over (see
+// ViewRegistrySetup.Build's own header for why no live component instance
+// is needed).
+builder.Services.AddSingleton(sp => ViewRegistrySetup.Build(
+    sp.GetRequiredService<StateAtom<ViewArrangement>>(),
+    sp.GetRequiredService<ViewStateService>(),
+    sp.GetRequiredService<StateAtom<Locus>>(),
+    sp.GetRequiredService<NavigationManager>()));
 
 await builder.Build().RunAsync();
