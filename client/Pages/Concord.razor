@@ -186,8 +186,27 @@
             }
 
             _units = window.Units;
+
+            // CORP-1 trivia (batch-corp1-report.md §13): dir=backward's own
+            // server semantics walk a window ENDING AT fromRef, INCLUSIVE --
+            // so fromRef itself (the unit already shown as the page we're
+            // paging backward FROM) reappears as this window's own last row.
+            // Trim that one boundary duplicate here rather than displaying
+            // it twice; forward-paging from the trimmed page must then land
+            // back on fromRef (the unit we just removed), not on whatever
+            // `window.Next` the server computed past it -- otherwise Forward
+            // would skip the very unit Previous just hid.
+            if (dir == "backward" && _units.Count > 0 && _units[^1].Ref == fromRef)
+            {
+                _units.RemoveAt(_units.Count - 1);
+                _nextRef = fromRef;
+            }
+            else
+            {
+                _nextRef = window.Next;
+            }
+
             _currentRef = _units.Count > 0 ? _units[0].Ref : fromRef;
-            _nextRef = window.Next;
             // "Previous" from here means: walk backward from THIS window's
             // own first unit (exclusive of it) -- the same anchor the
             // server's own dir=backward semantics already resolve against.

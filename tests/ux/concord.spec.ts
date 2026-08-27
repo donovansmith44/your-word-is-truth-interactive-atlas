@@ -107,3 +107,28 @@ test('CONCORD-7 (degraded-link law): concord+reader has no BearsWindow/BearsLocu
   await expect(page.getByTestId('mode-chip')).toHaveCount(0);
   await expect(page.getByTestId('world-map')).toHaveCount(0);
 });
+
+test('CONCORD-8 (batch-corp1-report.md §13 boundary-overlap fix): Next then Previous never repeats a row -- the unit that anchored the next page is not re-shown as the previous page\'s own last row', async ({ page }) => {
+  await page.goto('/concord');
+
+  // Capture the ref that anchors page 2 (the unit dir=backward's own
+  // inclusive-of-fromRef semantics would otherwise duplicate).
+  await page.getByTestId('concord-next').click();
+  const page2AnchorRef = await page.getByTestId('concord-position').textContent();
+  expect(page2AnchorRef).toBeTruthy();
+  const anchorSlug = (page2AnchorRef ?? '').replace(/ /g, '-').replace(/\./g, '-');
+  await expect(page.getByTestId(`concord-unit-${anchorSlug}`)).toBeVisible();
+
+  // Page back to page 1's own "previous of page 2" window -- before the
+  // fix, this window's own LAST row duplicated page2AnchorRef (it was
+  // already shown, above, as page 2's own first row).
+  await page.getByTestId('concord-prev').click();
+  await expect(page.getByTestId('concord-position')).toBeVisible();
+  await expect(page.getByTestId(`concord-unit-${anchorSlug}`)).toHaveCount(0);
+
+  // Forward-paging from here must land exactly back on page2AnchorRef --
+  // no gap, no repeat -- confirming the trim didn't just hide the
+  // duplicate but also correctly rewired "Next".
+  await page.getByTestId('concord-next').click();
+  await expect(page.getByTestId('concord-position')).toContainText(page2AnchorRef ?? '');
+});
