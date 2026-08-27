@@ -4294,6 +4294,26 @@ Notes:
   chip toggle semantics, precedence over VIEWSTATE-1) is again UNCHANGED;
   see state-window.spec.ts for the ST-2 regression coverage and the ST-2
   batch report for the full mechanism.
+
+  ST-3 AMENDMENT (batch-st3-brief.md, controller ruling R1): the async
+  scene-fetch this section describes is RE-SEATED onto
+  `client/Contracts/State.cs`'s own `IStateEffect<T>`/`IEffectRegistry`
+  (controller addition, ST-2 review Adjudication A) -- a "follow-scene"
+  effect (`client/State/EffectRegistry.cs`'s own `EffectRegistry`,
+  `client/Pages/World.razor`'s `EnableFollowScene`/`DisableFollowScene`)
+  claimed/released on the SplitMode+Follow edges. `_pendingLinkEffect`/
+  `TriggerFollowSync` (ST-2's own fix-round mechanism for the S-1
+  blank-atlas-pane regression) are RETIRED -- the registry's own
+  reconcile-on-claim (runs the effect against the atom's CURRENT value at
+  claim time, unconditionally) is what now closes that regression
+  structurally, not a hand-rolled per-call-site check.
+  `TimeWindowAtom.LastOrigin`-gating is likewise retired from the effect
+  path (the registry's own claim/token supersession replaces it) --
+  `OnTimeWindowChanged` keeps only the projection-sync half (`_from`/`_to`/
+  `_scriptureRef`), unconditionally, for every instance. The user-visible
+  contract is UNCHANGED; ST-2's own state-window.spec.ts (S-1's two named
+  repro doors, the cross-instance guard) stays green untouched -- proof the
+  re-seat preserved semantics.
 - VIEWSTATE-1 (batch-h-brief.md): a lightweight, in-memory (NOT
   localStorage-persisted -- explicitly out of scope this batch; a hard
   reload starts fresh), app-lifetime view-state service remembers where the
@@ -4778,6 +4798,41 @@ Notes:
   an INLINE confirm -- `exploration-delete-{id}-confirm`/`-cancel` -- never a
   browser `confirm()` dialog, per the brief, verbatim).
 
+  ST-3 AMENDMENT (batch-st3-brief.md, controller ruling R3): `ExplorerPopover._stack`/
+  `_trail` are RETIRED as independent fields -- both collapse into ONE
+  shared atom, `AtomNames.FocusStack` (`client/State/FocusStack.cs`): an
+  immutable `Stack` (Contracts' own `Focus`, top = current) PLUS the trail,
+  as one value, mutated via `Visit`/`Back`/`Reset`/`SeedFromTrail` intents.
+  `Visit` (push + trail-append) is now genuinely IDEMPOTENT when re-visiting
+  the node already on top (a naive unconditional push would not be, per
+  law 2) -- a safety property, not an observed behavior change (no existing
+  entry point re-visits the current node consecutively). `Back` now leaves
+  the trail UNTOUCHED (R3, verbatim) -- a DISCLOSED behavior change from the
+  pre-ST-3 code, which recorded a "return to X" trail entry on every Back
+  too; a saved exploration's own trail no longer includes those entries,
+  only genuine forward visits. `SeedFromTrail` replaces the pre-atom
+  per-node Push+record-trail loop `SeedStack` used to drive, byte-identical
+  result. `Reset` fires on EVERY popover close (`ExplorerPopover`'s own new
+  `Dispose`, not just `RequestClose` -- Blazor calls `Dispose` for every
+  path that removes the component from the tree, so a chapter-navigation
+  close and an explicit close button both reset the atom identically) --
+  necessary now that the atom is a DI singleton outliving any one popover
+  instance, where the pre-atom code's "a fresh component starts blank" was
+  automatic. MULTI-INSTANCE REALITY (R4): three independent sites can each
+  mount an `ExplorerPopover` at once (`Reader.razor`, `World.razor`'s
+  embedded split pane, `MainLayout.razor`'s own hamburger "continue"
+  popover), none cross-clearing another -- the atom holds "the ACTIVE
+  session" (whichever popover most recently claimed ownership,
+  `client/State/OwnershipRegistry.cs`, claim-on-open/release-on-close); each
+  popover instance's own RENDERING stays sourced from its own local `_focus`
+  field (mutated via the SAME pure intent `Apply` the atom's own `Dispatch`
+  uses), so a superseded instance never regresses its own functionality --
+  it simply stops mirroring into the shared atom. Every DOM-observable
+  behavior this section describes (drilling in, backing out, saving,
+  "continue") is UNCHANGED for the single-popover-open case this app's own
+  UI/tests actually exercise; see state-focus.spec.ts and the batch report's
+  own R4 design notes for the full reasoning.
+
 - SELECTION-1 (batch-g2-brief.md decision 6, "selection tray (multi-select
   v1) -- RULED," accepting batch-r-report.md §7's own proposal verbatim):
   Ctrl/Cmd-click on an explorable element or a map marker/label toggles that
@@ -4833,6 +4888,29 @@ Notes:
   verse-line/marker elements the Ctrl/Cmd-click cases exercise and asserts
   the popover still opens exactly as before AND the tray stays untouched --
   the gesture split is real, not merely documented.
+
+  ST-3 AMENDMENT (batch-st3-brief.md, controller ruling R2): `SelectionTrayService`
+  no longer holds the selection itself -- `AtomNames.Selection`
+  (`client/State/Selection.cs`) is the canonical store now, an ordered,
+  duplicate-free `IReadOnlyList<ExplorationDescriptor>` (identity is
+  Kind+Key, unchanged), mutated via `ToggleSelection`/`RemoveSelection`/
+  `ClearSelection`. Every Ctrl/Cmd-click surface dispatches directly onto
+  the atom; `SelectionTray.razor` renders a live projection of it.
+  `SelectionTrayService` narrows to exactly what "persistence BENEATH the
+  atom" (R2, verbatim) needs: `Available` (unchanged, `LocalStore.Probe`)
+  and a `Changed`-subscriber that writes `"selection-v1"` on every atom
+  change -- the READ (cold-start restore) side moved to the atom's own
+  construction (`Program.cs`), off the SAME `LocalStore.Read`/`Probe` this
+  service used to call itself. THE ON-DISK SHAPE IS UNCHANGED (a bare JSON
+  array of `{kind,key,title}`, camelCase) -- a hand-written pre-ST-3
+  `"selection-v1"` document restores correctly on a fresh load, proven by
+  state-focus.spec.ts's own cold-start test. `ToggleSelection` is
+  deliberately, DISCLOSED-ly NOT idempotent per-intent (two toggles of the
+  same descriptor cancel, they do not converge to "once") -- the property
+  that DOES hold is pair-idempotence (two toggles return to the ORIGINAL
+  list), the same shape Ctrl/Cmd-click's own UX contract already required
+  pre-atom. Every DOM-observable behavior this section describes is
+  UNCHANGED; selection-tray.spec.ts stays green untouched.
 
 - SOURCES-1 (batch-s-brief.md, "document our sources for everything and
   give it a dedicated page on the site" -- owner directive, 2026-08-21,
