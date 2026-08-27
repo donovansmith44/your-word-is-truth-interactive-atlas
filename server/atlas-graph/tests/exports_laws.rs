@@ -152,6 +152,75 @@ fn law_every_span_interval_is_well_formed() {
     }
 }
 
+/// EXPORT-HASH-1 (batch-finalp2-brief.md ticket 6, grep-origin -- parked
+/// since CORP-2a's batch): `atlas_version_root` (`GraphVersion`, hashed
+/// over NODE PAYLOADS ONLY -- `DatedBy` is an EDGE, never a node payload;
+/// M-D3's own ruling moved `from_year`/`to_year`/`order_key` OFF the
+/// event's node payload entirely, onto `DatedBy` placements resolved via
+/// `ChronologyDerivation`) does not uniquely identify EXPORTED CONTENT.
+/// The peer hit this for real (chronology.json content changed while the
+/// embedded root stayed `c97a7d7aa390634c`); reproduced here MECHANICALLY,
+/// not merely asserted in prose -- own, self-contained real-data build
+/// (this file's own header comment: "every real-data integration test file
+/// in this crate keeps its own copy"), separate from `built()` above so
+/// this test can inspect (and locally mutate a COPY of) the raw
+/// `Chronology` that `built()` deliberately does not expose.
+///
+/// DISPOSITION (peer-accepted, LOW priority, per the ledger): a
+/// `content_hash` header field is the candidate fix, but it "rides the
+/// NEXT deliberate export format_version bump" -- explicitly NOT this
+/// batch (`data/` stays byte-untouched always, and `CHRONOLOGY_FORMAT_
+/// VERSION` is not bumped here). This test's job is exactly RED-m2's own
+/// SpokenAt disposition for this batch: pin the CURRENT, real gap with a
+/// real, mechanical proof, so it has a paper trail instead of remaining a
+/// one-line ledger claim.
+#[test]
+fn export_hash_1_atlas_version_root_does_not_change_when_only_a_dated_events_own_resolved_placement_does() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
+    let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
+    let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
+    let atlas = real_atlas_data();
+
+    let (graph, _stats, _ews, chrono) = atlas_graph::build::build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &atlas.eras).expect("the real committed sources must build");
+    let chronology = atlas_graph::Chronology::from_derivation(chrono);
+
+    // Pick a real dated event and shift its own RESOLVED year by +1 --
+    // `resolved` (`ChronologyDerivation`'s own field) is exactly the
+    // `DatedBy`-edge-DERIVED data `exports::chronology_events` reads for
+    // `placement` (`resolved.date.from.year`) -- an edge-shaped fact,
+    // never a `NodePayload` (M-D3's own ruling, this test's own doc
+    // comment above).
+    let event_id = chronology.chrono.order.first().cloned().expect("the real compiled data must have at least one dated event");
+    let mut mutated = atlas_graph::Chronology::from_derivation(chronology.chrono.clone());
+    let placement = mutated.chrono.resolved.get_mut(&event_id).expect("the chosen event id must resolve in its own derivation's resolved map");
+    let shifted_year = atlas_graph_types::chrono::Year::new(placement.date.from.year.get() + 1).expect("a valid shifted year");
+    placement.date.from.year = shifted_year;
+    placement.date.to.year = shifted_year;
+
+    let events_before = exports::chronology_events(&graph, &chronology);
+    let events_after = exports::chronology_events(&graph, &mutated);
+    assert_ne!(events_before, events_after, "the mutated resolved placement must produce a genuinely different exported row -- otherwise this test proves nothing");
+
+    // `graph` never changed (only `chronology`/`mutated` differ, and
+    // `GraphVersion` is a pure function of `graph` alone) -- so BOTH
+    // exports below would embed the IDENTICAL `atlas_version_root` no
+    // matter how many times it were recomputed; one computation suffices
+    // to name it, and the two `ChronologyExport` values built from it
+    // make the gap explicit and comparable, not merely implied.
+    let mut store = MemStore::default();
+    let version = store.publish(graph);
+    let root_hex = atlas_graph::version_hex(version);
+
+    let export_before = exports::ChronologyExport { format_version: exports::CHRONOLOGY_FORMAT_VERSION, atlas_version_root: root_hex.clone(), events: events_before, spans: vec![], anchors: vec![] };
+    let export_after = exports::ChronologyExport { format_version: exports::CHRONOLOGY_FORMAT_VERSION, atlas_version_root: root_hex, events: events_after, spans: vec![], anchors: vec![] };
+
+    assert_eq!(
+        export_before.atlas_version_root, export_after.atlas_version_root,
+        "EXPORT-HASH-1 (documented, not fixed this batch -- a content_hash field rides the NEXT deliberate format_version bump): two exports with genuinely DIFFERENT content embed the IDENTICAL atlas_version_root -- the root alone cannot detect this class of drift"
+    );
+    assert_ne!(export_before, export_after, "sanity: the two exports must differ in some field (their own `events`) despite sharing a root -- otherwise the assertion above would be vacuous");
+}
+
 #[test]
 fn real_data_export_round_trips_through_json() {
     let b = built();
