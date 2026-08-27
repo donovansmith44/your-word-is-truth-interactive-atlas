@@ -379,6 +379,21 @@ but "what are the sanctioned ways OUT of here" — making hatches
 testable (a hatch that navigates nowhere is a contract violation) and
 uniform (the same hatch kind renders identically everywhere). (§9 Q1.)
 
+**THE FOLLOW-RELEASE LAW (owner ruling 2026-08-27, verbatim: "on every
+thing sharing state with the reader state, we need an escape hatch to
+stop following the reader as well"):** every view that shares the
+reader's state — today, any view declaring the locus-bearing
+capability and rendering from the shared Locus atom (Kretzmann; the
+world map's follow chip is the precedent instance for its window) —
+MUST declare a "toggle-follow" escape hatch: one affordance, same
+semantics everywhere (following = render from the shared atom;
+released = the view navigates independently from its own view-local
+position, seeded from the shared value at release; re-follow =
+reconverge to the shared atom, the SyncToken re-sync discipline).
+Conformance (per §0's corollary): a registered view that declares the
+locus-bearing capability without declaring the toggle-follow hatch
+fails a standing conformance test.
+
 ## 6. Map-app view consumer contract
 
 The peer map system already consumes our data exports under pinned
