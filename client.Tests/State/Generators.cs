@@ -129,4 +129,23 @@ internal static class Generators
 
         return list;
     }
+
+    /// <summary>Batch ST-3: seeded verse refs (a small, deliberately
+    /// duplicate-prone pool of 5 -- FocusStackTests.cs/SelectionTests.cs both
+    /// need CONSECUTIVE-DUPLICATE and repeat-membership cases, not just
+    /// distinct values, to exercise Visit's own idempotent-no-op branch and
+    /// ToggleSelection's own pair-cancellation over a generated sequence
+    /// rather than only hand-picked fixtures).</summary>
+    public static IReadOnlyList<string> VerseRefSequence(int seed, int count)
+    {
+        var refs = new[] { "GEN.1.1", "GEN.1.2", "EXO.3.14", "PSA.23.1", "JHN.1.1" };
+        var rng = new Random(seed);
+        var list = new List<string>(count);
+        for (var i = 0; i < count; i++)
+        {
+            list.Add(refs[rng.Next(refs.Length)]);
+        }
+
+        return list;
+    }
 }

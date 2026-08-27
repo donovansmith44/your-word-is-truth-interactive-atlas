@@ -95,12 +95,17 @@
    unaffected -- a popover opened from a pane still appears beside that
    pane, only the backdrop's own coverage changed. *@
 @using System.Globalization
+@using BibleAtlas.Client.Contracts
+@using BibleAtlas.Client.State
 @inject AtlasClient Atlas
 @inject IExplorableClient GraphClient
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject SavedExplorationsService SavedExplorations
+@inject StateAtom<FocusStack> FocusStackAtom
+@inject OwnershipRegistry FocusOwnership
 @implements IPopoverSectionContext
+@implements IDisposable
 
 @* M-D3 (R3): ShowBackdrop=false (Reader.razor passes this while the
    current popover is hover-only -- see that parameter's own doc comment)
@@ -154,7 +159,7 @@
      style="@(VerseAnchorStyle ?? PaneRectStyle)" data-testid="popover" tabindex="-1" @ref="_panelRef" @onkeydown="OnKeyDown"
      @onpointerenter="OnPanelPointerEnter" @onpointerleave="OnPanelPointerLeave">
     <div class="popover-head">
-        @if (_stack.Count > 1)
+        @if (_focus.Stack.Count > 1)
         {
             <button type="button" class="popover-breadcrumb-back" data-testid="popover-breadcrumb-back"
                     aria-label="Back" @onclick="Back">&lsaquo;</button>
@@ -305,42 +310,61 @@
     [Parameter] public EventCallback OnPanelPointerEnter { get; set; }
     [Parameter] public EventCallback OnPanelPointerLeave { get; set; }
 
-    private readonly Stack<IExplorable> _stack = new();
-    private IExplorable Current => _stack.Peek();
+    // Batch ST-3 (R3, R4): this popover session's stack+trail, RE-SEATED as
+    // the shared FocusStack atom's own value -- a live field, not a
+    // Projection<T> wrapper, because it must keep rendering correctly even
+    // AFTER this instance has been superseded as the atom's own "ACTIVE
+    // session" owner (see _claim's own doc comment; R4 option (b), the batch
+    // report's own multi-instance evidence). Every mutating method below
+    // (OnInitializedAsync's own seed, PushAsync, Activate's Push case, Back)
+    // updates THIS field via the SAME IIntent<FocusStack>.Apply the atom's
+    // own Dispatch would use (pure, so calling it locally is exactly as
+    // correct as dispatching), and ALSO mirrors into the shared atom
+    // whenever `_claim.IsCurrent` -- see MirrorToSharedAtom's own comment.
+    private FocusStack _focus = FocusStack.Empty;
+    private IExplorable Current => _focus.Current!.Node;
 
-    // Batch G2 decision 1: the trail = every node VISITED this popover
-    // SESSION, in order -- distinct from _stack ("where back goes"; Back
-    // pops _stack but never removes anything from here). Recorded via
-    // RecordTrailVisit, called at every point Current actually changes
-    // (initial open, every Push -- both PushAsync's own and Activate's
-    // inline ExplorationTarget.Push case -- and every Back landing),
-    // collapsing consecutive duplicates (a Push immediately undone by a Back
-    // to the SAME node, or two identical Explorations chips landing back to
-    // back, never grows the trail twice in a row for the same node).
-    // Naturally resets to empty on every fresh "opening" -- this component
-    // gets a brand-new instance per open (Reader.razor/World.razor's own
-    // @key="_activeNode"), so decision 1's own "trail resets when the
-    // popover closes without saving" falls out of ordinary component
-    // lifecycle, no explicit reset code needed.
-    private readonly List<ExplorationDescriptor> _trail = new();
+    // Batch ST-3 (R4): claims "focus-stack" ownership on open (below),
+    // releases on close (Dispose, below) -- R4's own literal wording,
+    // "claim/release follows the effect-ownership pattern on open/close."
+    // R4's own multi-instance reality check found THREE independent sites
+    // that can each mount an ExplorerPopover at once (Reader.razor,
+    // World.razor's embedded split pane, MainLayout.razor's own hamburger
+    // "continue" popover -- none cross-clear another), so more than one CAN
+    // genuinely be alive simultaneously (option (b) chosen over (a); see the
+    // batch report's own evidence, including why a proof of (a) was NOT
+    // found despite the full-viewport popover backdrop narrowing the
+    // practical window). `_claim.IsCurrent` gates every WRITE this instance
+    // makes into the SHARED atom (MirrorToSharedAtom) -- once superseded by
+    // a LATER-opened popover, this instance keeps working fully off its own
+    // `_focus` field (zero functional/visual regression for ITS OWN
+    // rendering) but simply stops mirroring; the shared atom is a
+    // best-effort reflection of "whichever popover most recently claimed
+    // it," not every simultaneously-open session's own state (there is no
+    // single correct "the" focus stack when more than one is legitimately
+    // open at once -- see the report's own R4 design notes).
+    private OwnershipClaim? _claim;
 
     // Batch G2 decision 2: a brief, quiet acknowledgment (CSS-only pulse,
     // .popover-save-exploration-saved) that a save just landed -- cleared on
-    // the NEXT navigation (RecordTrailVisit) rather than a timer, so it
-    // never lingers or fights a fast double-save.
+    // the NEXT navigation rather than a timer, so it never lingers or fights
+    // a fast double-save.
     private bool _justSaved;
 
-    // Batch G2 decision 1: appends Current's own descriptor to the trail,
-    // UNLESS it is identical (Kind+Key+Title, record equality) to the trail's
-    // own most recent entry -- "consecutive duplicates collapsed," per the
-    // brief, verbatim.
-    private void RecordTrailVisit()
+    // Batch ST-3: mirrors `_focus` into the shared FocusStackAtom -- ONLY
+    // while `_claim.IsCurrent` (see that field's own comment for why a
+    // superseded instance must NOT keep writing into a shared atom another,
+    // now-current popover session owns). The atom's own Dispatch is passed
+    // the SAME intent whose Apply already produced `_focus` locally, so the
+    // atom converges to the identical value this instance is rendering --
+    // never a fire-and-forget "just set the atom's own Value" side channel,
+    // preserving law 1 (single-writer via Dispatch) for every write that
+    // does reach the atom.
+    private void MirrorToSharedAtom(IIntent<FocusStack> intent)
     {
-        _justSaved = false;
-        var descriptor = ExplorationDescriptor.Capture(Current);
-        if (_trail.Count == 0 || _trail[^1] != descriptor)
+        if (_claim?.IsCurrent == true)
         {
-            _trail.Add(descriptor);
+            FocusStackAtom.Dispatch(intent);
         }
     }
 
@@ -352,8 +376,23 @@
     // not live link" doc comment.
     private void SaveExploration()
     {
-        SavedExplorations.Save(_trail);
+        SavedExplorations.Save(_focus.Trail);
         _justSaved = true;
+    }
+
+    public void Dispose()
+    {
+        // Batch ST-3 (R3): "close resets both" -- dispatched from HERE
+        // (Blazor's own IDisposable teardown, fired for EVERY path that
+        // removes this component from the tree -- RequestClose's own
+        // OnClose.InvokeAsync callback chain AND every OTHER direct
+        // `_activeNode = null`/equivalent site in Reader.razor/World.razor/
+        // MainLayout.razor that bypasses RequestClose entirely, e.g. a
+        // chapter navigation) rather than inside RequestClose itself, so
+        // EVERY close path gets the reset uniformly, not just the one this
+        // component's own markup happens to route through.
+        MirrorToSharedAtom(new Reset());
+        _claim?.Dispose();
     }
 
     private IReadOnlyList<Exploration> _explorations = Array.Empty<Exploration>();
@@ -476,18 +515,30 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Batch ST-3 (R4): claim BEFORE seeding -- this instance is
+        // guaranteed to be the CURRENT owner the moment Claim returns
+        // (single-threaded WASM, nothing else can supersede it synchronously
+        // in between), so the mirrored Reset+Visit/SeedFromTrail dispatches
+        // immediately below are always safe (never appending onto whatever
+        // a PREVIOUS session's own claim left in the shared atom).
+        _claim = FocusOwnership.Claim("focus-stack");
+        MirrorToSharedAtom(new Reset());
+
         if (SeedStack is { Count: > 0 } seed)
         {
-            foreach (var node in seed)
-            {
-                _stack.Push(node);
-                RecordTrailVisit();
-            }
+            // Batch ST-3 (R3, G2 decision 5 "continue"): SeedFromTrail builds
+            // the WHOLE session (stack + trail) from the seed list in one
+            // pure Apply call, exactly mirroring the pre-atom per-node
+            // Push+RecordTrailVisit loop this replaces.
+            var intent = new SeedFromTrail(seed);
+            _focus = intent.Apply(_focus);
+            MirrorToSharedAtom(intent);
         }
         else
         {
-            _stack.Push(Root);
-            RecordTrailVisit();
+            var intent = new Visit(Root);
+            _focus = intent.Apply(_focus);
+            MirrorToSharedAtom(intent);
         }
 
         await LoadCurrent();
@@ -724,8 +775,9 @@
     // subtlety a second time.
     public async Task PushAsync(IExplorable node)
     {
-        _stack.Push(node);
-        RecordTrailVisit();
+        var intent = new Visit(node);
+        _focus = intent.Apply(_focus);
+        MirrorToSharedAtom(intent);
         await LoadCurrent();
         StateHasChanged();
     }
@@ -756,10 +808,13 @@
         switch (ex.Target)
         {
             case ExplorationTarget.Push push:
-                _stack.Push(push.Next);
-                RecordTrailVisit();
+            {
+                var intent = new Visit(push.Next);
+                _focus = intent.Apply(_focus);
+                MirrorToSharedAtom(intent);
                 await LoadCurrent();
                 break;
+            }
 
             case ExplorationTarget.NavigateWorld world:
                 await RequestClose();
@@ -800,13 +855,20 @@
 
     private async Task Back()
     {
-        if (_stack.Count <= 1)
+        if (_focus.Stack.Count <= 1)
         {
             return;
         }
 
-        _stack.Pop();
-        RecordTrailVisit();
+        // Batch ST-3 (R3, verbatim): "Back pops stack, trail untouched" --
+        // a DISCLOSED, ruling-mandated behavior change from the pre-ST-3
+        // code, which called RecordTrailVisit() here too (recording a
+        // "return to X" entry whenever X differed from the trail's own last
+        // entry -- which it usually did). See FocusStack.cs's own Back
+        // record doc comment and the batch report's own retirement table.
+        var intent = new BibleAtlas.Client.State.Back(); // fully qualified -- this method is ALSO named Back()
+        _focus = intent.Apply(_focus);
+        MirrorToSharedAtom(intent);
         await LoadCurrent();
     }
 
