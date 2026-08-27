@@ -393,13 +393,15 @@ public class EffectRegistryTests
     // ------------------------------------------------------------------
     // Fix round 1 (S-4 -- IMPORTANT, review): "release-before-direct-write"
     // invariant, pinned at the registry level (World.razor's own
-    // EnterScriptureMode fix -- calling DisableFollowScene first -- is the
-    // production application of this same fact). EffectRegistry's own
-    // AppliesTo gate is origin-blind BY DESIGN (it only ever sees the atom's
-    // VALUE, never which write produced it) -- both tests below pin that
-    // fact honestly, as documented behavior, not a defect: the first proves
-    // a direct write WHILE claimed also materializes through the registry
-    // (the double-fetch hazard, if a caller does not release first); the
+    // EnterScriptureMode fix -- calling Effects.Release(EffectNames.
+    // FollowScene) first, ST3-m1 correction: NOT DisableFollowScene, which
+    // this comment named until batch-finalp2 -- is the production
+    // application of this same fact). EffectRegistry's own AppliesTo gate
+    // is origin-blind BY DESIGN (it only ever sees the atom's VALUE, never
+    // which write produced it) -- both tests below pin that fact honestly,
+    // as documented behavior, not a defect: the first proves a direct
+    // write WHILE claimed also materializes through the registry (the
+    // double-fetch hazard, if a caller does not release first); the
     // second proves a direct write AFTER release does not.
     // ------------------------------------------------------------------
     [Fact]
