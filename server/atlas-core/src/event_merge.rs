@@ -1,3 +1,88 @@
+//! # THE CHRONOLOGY AUTHORITY LAW (Batch CHRON-1, owner ruling 2026-08-27,
+//! verbatim: "why are we pulling chronology from conflicting sources? we
+//! should have one absolute source of truth") -- this module's own
+//! governing law from this batch forward. Everything below this block (the
+//! HOTFIX-4 root-cause analysis, the sweep, the two curated tables) is now
+//! this law's OWN IMPLEMENTATION, not a separate policy standing beside it:
+//!
+//! 1. **ONE CHRONOLOGICAL SCALE.** Every dated event in the compiled graph
+//!    sits on the SAME scale -- the curated, Robertson-anchored, hand-typed
+//!    AD-33 Passion-anchor scale HOTFIX-4 already established as this
+//!    atlas's own authority (`nt_calibration.rs`'s `THEO_DATE_OVERRIDES` /
+//!    `chronology.rs`'s anchor machinery already carry NT-era Theographic
+//!    dates onto it). This law does not ask for a new scale -- only that NO
+//!    event escape it under a second, uncalibrated id.
+//! 2. **ONE PRECEDENCE ORDER.** Wherever a CURATED opinion exists for a
+//!    real-world occurrence (a `robertson_section`/`acts_section`/
+//!    `atlas_section`/`kjv_superscription`-grounded container -- this
+//!    module's own `is_layer0` predicate's negation, LAYER-1), that curated
+//!    date is THE truth for it, full stop. Theographic remains, permanently,
+//!    a source of event EXISTENCE and WITNESSES -- its no-curated-
+//!    counterpart events (the ~295 OT/Acts/Epistle rows the Gospel-harmony
+//!    curated set never touches) keep their own coverage, undiminished by
+//!    this law -- but its OWN dates are SUBORDINATE: admitted onto the one
+//!    scale (today's calibration machinery, unchanged by this law) only
+//!    where NO curated opinion exists for that same occurrence, carried
+//!    basis-labelled (`PlacementBasis`, unchanged; `graph-types` stays
+//!    untouched, standing veto) exactly as every event already is today --
+//!    this law invents no new basis value, it forbids a SECOND, unreconciled
+//!    opinion from ever reaching a reader.
+//! 3. **NO VERSE SURFACES TWO INDEPENDENT DATE OPINIONS FOR ONE EPISODE.**
+//!    The leper pair (`rob_leper_healed`, curated, AD 30 vs `theo-286`,
+//!    Theographic-calibrated, AD 31, both citing MAT.8.2-4/MAT.8.1-4) is the
+//!    charter violation this law forbids by name -- two ids, two dates, one
+//!    verse, exactly the root-cause CLASS the HOTFIX-4 doc comment below
+//!    already named ("two ids for one event, each with a different opinion
+//!    about when it happened") but whose own sweep
+//!    (`DUPLICATE_JACCARD_THRESHOLD` at its former 0.8) was empirically
+//!    tuned too high to catch (leper-pair verse-jaccard 0.733 -- see
+//!    `.superpowers/sdd/2026-08-17-bible-atlas-m1/dup-events-investigation.md`).
+//!
+//! **ENFORCEMENT (the conformance corollary,
+//! `docs/superpowers/specs/2026-08-26-frontend-backend-contract-design.md`
+//! §0a):** two independent, fail-loud mechanisms, neither alone sufficient
+//! -- mirrors this module's own existing two-detector precedent
+//! (`verse_jaccard` + `cross_book_duplicate_candidate` below):
+//! (a) **THE SWEEP, lowered.** `DUPLICATE_JACCARD_THRESHOLD` moves from this
+//!     module's former 0.8 floor to **0.5**: the investigation's real census
+//!     of the whole curated x Theographic corpus found every unaudited
+//!     same-pericope pair sitting in the 0.5-0.8 band (~27 pairs, plus the 4
+//!     disclosed-but-unswept layer0-layer0 Acts pairs below), with no
+//!     confirmed-distinct pair scoring above it once that band is
+//!     hand-triaged (ticket 1) -- the SAME "measure, don't guess" discipline
+//!     the original 0.8 derivation used, re-run against the wider,
+//!     hand-audited sample. `atlas_etl::validate::run_event_merges` is ALSO
+//!     widened to compare LAYER-0-against-LAYER-0 pairs (previously
+//!     LAYER-0-vs-LAYER-1 only), closing the gap the 4 disclosed Acts pairs
+//!     (`p1_pisidian_antioch`/`theo-340` etc., named in the "NOT swept"
+//!     section below) sat in.
+//! (b) **THE NO-TWO-OPINIONS VALIDATION** (new, `atlas_etl::validate::
+//!     run_no_two_opinions`, ticket 2): a corpus-wide, POST-merge check --
+//!     unlike the sweep above, which runs on the PRE-merge event set (the
+//!     only point a curated/absorbed pair both still exist to compare) --
+//!     asserting no two SURVIVING events at verse-jaccard >=
+//!     `DUPLICATE_JACCARD_THRESHOLD` (the law's own threshold, reused, not
+//!     re-derived) carry independent placements (`when.from_year`,
+//!     `when.to_year`, or `order_key` differing). This is the law's DIRECT
+//!     enforcement: the sweep is pairwise triage tooling for CURATING the
+//!     merge tables; this check fails the build if, after every triage
+//!     decision, a placement-level contradiction still reaches a reader.
+//!     Design: reuse `event_merge::effective_verses`/`verse_jaccard`
+//!     (identical to the union `AtlasData::finish()`'s own `verse_to_events`
+//!     index uses, so "who touches this verse" never disagrees with the
+//!     check); run once, on the POST-`apply_event_merges` event set, over
+//!     every `kind == "event"` pair; skip a pair listed in
+//!     `EVENT_DISTINCT_PAIRS` (a genuinely-distinct mega-span/complementary-
+//!     beat pair is EXPECTED to keep two placements -- that is what
+//!     "distinct" means); a hit fails loud naming both ids, both labels,
+//!     both placements, and the jaccard score. Proven both directions in
+//!     `validate.rs`'s own test module: PASSES on the real post-triage
+//!     corpus, and PROVABLY FAILS on a planted violation (two synthetic
+//!     same-verse events given different `from_year`s, neither merged nor
+//!     distinct-listed).
+//!
+//! ---
+//!
 //! Batch HOTFIX-4 (coordinator amendment, 2026-08-21, owner live report:
 //! "the ordering of the narratives is wrong. the temptation of Jesus in the
 //! wilderness, for instance, is labeled as being before Jesus' baptism.

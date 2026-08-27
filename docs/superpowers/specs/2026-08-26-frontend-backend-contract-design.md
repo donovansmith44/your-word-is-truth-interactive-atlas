@@ -69,6 +69,60 @@ contract then in force.
 
 ---
 
+## 0a. THE CHRONOLOGY AUTHORITY LAW (data-side; Batch CHRON-1)
+
+**Owner ruling (2026-08-27, verbatim): "why are we pulling chronology
+from conflicting sources? we should have one absolute source of
+truth."** A data-side companion to §0's TOTAL-CAPTURE LAW: just as no
+behavior may exist outside a contract, no verse may carry two
+uncontracted opinions about when its own event happened. Compiled
+home of the full policy text and its implementation:
+`server/atlas-core/src/event_merge.rs`'s own module doc (the
+authoritative, code-adjacent copy — this section is a citation of it,
+not a fork of it; the two must never drift, and any future amendment
+lands in both in the same commit). Summary for readers of this spec:
+
+- **ONE chronological scale** — the curated, Robertson-anchored,
+  AD-33 Passion-anchor scale already established by Batch HOTFIX-4.
+- **ONE precedence order** — a curated (`robertson_section`/
+  `acts_section`/`atlas_section`/`kjv_superscription`-grounded) date
+  is THE truth wherever it exists. Theographic remains a source of
+  event EXISTENCE and WITNESSES (its no-curated-counterpart events
+  keep their OT/Acts coverage undiminished) but its OWN dates are
+  subordinate: admitted onto the one scale, basis-labelled, only
+  where no curated opinion exists for the same occurrence.
+- **NO verse surfaces two independent date opinions for one
+  episode** — the charter violation this law forbids by name is the
+  leper pair (`rob_leper_healed` / `theo-286`, MAT.8.2-4), two ids
+  each with its own date for the identical pericope.
+
+**Enforcement (the conformance corollary applied to data):** two
+fail-loud mechanisms, neither alone sufficient — (a) the pairwise
+duplicate sweep (`atlas_etl::validate::run_event_merges` /
+`run_cross_book_duplicates`) at `DUPLICATE_JACCARD_THRESHOLD = 0.5`
+(Batch CHRON-1, lowered from 0.8; also widened to compare
+layer0-against-layer0 pairs, not just layer0-vs-layer1), the tooling
+a curator uses to triage every candidate pair into
+`EVENT_MERGE_PAIRS` or `EVENT_DISTINCT_PAIRS` with a written reason —
+an unlisted pair fails the ETL build loud; (b) the NEW
+`atlas_etl::validate::run_no_two_opinions` (ticket 2), a corpus-wide,
+POST-merge check asserting no two surviving events at heavy witness
+overlap (the same threshold) carry independent placements — the
+law's own DIRECT enforcement, proven to both pass on the real
+post-triage corpus and fail on a planted violation. Same status as
+every other contract in this spec: a rule with no failing mechanism
+is documentation, not a contract, and is itself a defect.
+
+This section governs `data/curated/`, `server/atlas-core/`,
+`server/atlas-etl/`, and the compiled `chronology.json` export; it
+does not decide anything about the AQC's own wire shapes (§2) or
+frontier abstractions (§4) — the EV-1 requirement (event-traversal
+rows rendering the event-mapped verse text) is a client-side
+`MentionText` rendering rule, downstream of this law, not a
+chronology-authority question of its own.
+
+---
+
 ## 1. What this formalizes (and why it's the right time)
 
 The client already contains an informal version of every construct the
