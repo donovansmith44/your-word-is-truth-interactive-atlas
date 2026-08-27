@@ -153,6 +153,16 @@
         try
         {
             _doc = await Atlas.Sources();
+            // S-m1 (batch-s-review.md trivia): group once, here, rather than
+            // re-scanning the full source list with a fresh LINQ `Where` on
+            // every render for every category (the markup's own @foreach
+            // over categories was calling `SourcesFor` once per category,
+            // per render). Immaterial at today's 18-source/5-category size
+            // (as the review itself noted), but memoizing costs nothing and
+            // removes the re-scan entirely.
+            _byCategory = _doc.Sources
+                .GroupBy(s => s.Category)
+                .ToDictionary(g => g.Key, g => (IReadOnlyList<SourceEntryDto>)g.ToList());
         }
         catch (Exception)
         {
@@ -160,6 +170,10 @@
         }
     }
 
-    private IEnumerable<SourceEntryDto> SourcesFor(string categoryId) =>
-        _doc!.Sources.Where(s => s.Category == categoryId);
+    private static readonly IReadOnlyList<SourceEntryDto> EmptySources = Array.Empty<SourceEntryDto>();
+
+    private Dictionary<string, IReadOnlyList<SourceEntryDto>> _byCategory = new();
+
+    private IReadOnlyList<SourceEntryDto> SourcesFor(string categoryId) =>
+        _byCategory.TryGetValue(categoryId, out var sources) ? sources : EmptySources;
 }
