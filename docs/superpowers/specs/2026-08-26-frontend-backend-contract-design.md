@@ -34,6 +34,26 @@ contract (§4b); every exit to an escape hatch declaration. Anything
 found implemented outside a contract is a defect by definition -- the
 review rubric enforces this on every batch touching the client.
 
+**THE CONFORMANCE COROLLARY (owner ruling 2026-08-26, verbatim: "if
+contracts don't match implementation tests should fail"):** every
+contract carries an enforcement mechanism that FAILS -- a compile
+error, a failing test in a standing suite, or a fail-loud runtime
+check -- the moment implementation drifts from it. A contract whose
+violation nothing can fail on is documentation, not a contract, and
+is itself a defect. The mechanisms, by contract kind: compiled types
+(the client/Contracts skeleton, generated AQC types) fail at compile
+time; wire behavior fails in the Gherkin corpus run by BOTH sides
+(§3); state semantics fail in the law/effect property suites;
+structural rules (atoms registered and named, effects only via the
+registry, no undeclared gesture handling, no component-held shared
+state) fail in CONFORMANCE TESTS -- reflection- or source-scan-based
+tests in the standing client suite. Staging rule: each migration
+batch that moves a construct onto a contract lands that construct's
+conformance test IN THE SAME BATCH -- a migrated construct without
+its drift-failing test is an incomplete batch, and the ST-4 sweep's
+final rubric includes verifying the conformance suite covers every
+contract then in force.
+
 ---
 
 ## 1. What this formalizes (and why it's the right time)
