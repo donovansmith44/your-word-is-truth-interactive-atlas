@@ -303,7 +303,94 @@ public class ConformanceTests
     // stated bar today (re-planting the exact `_focus` violation IS caught,
     // proven in the re-review) -- broadening the pattern set is left for
     // ST-4's own general, all-types sweep rather than duplicated here.
+    //
+    // ST-4 SWEEP (A4, controller-approved MIGRATE -- closing VC-1 fix round
+    // 2's own PARKED N-6 finding, "fix cheap or park with one line": "a
+    // static field, a property-shaped copy (`FocusStack Snapshot { get;
+    // set; }`), or an `ExplorationDescriptor[]`/`ImmutableArray&lt;
+    // ExplorationDescriptor&gt;` copy would all evade this scan (verified
+    // misses, not merely suspected)." Verified by direct full-tree grep
+    // this batch BEFORE writing the fix: zero real instances of any of the
+    // three shapes exist today (sweep-inventory.md row A4) -- this is
+    // preventive hardening of a documented, currently-dormant blind spot,
+    // proven via the same planted-line technique the file's own Arrangement
+    // scan below already established, not a live-bug fix.
     // ------------------------------------------------------------------
+    private static readonly string[] AtomValueTypeNames = { "Locus", "TimeWindow", "ViewArrangement", "FocusStack" };
+    private static readonly string AtomValueTypeAlternation = string.Join("|", AtomValueTypeNames);
+
+    // Field-shaped (this codebase's own `_name` convention) -- ORIGINAL
+    // shape, now also matching an optional `static` modifier (the first of
+    // N-6's three named misses: a static field never carried `readonly`
+    // alone in the old alternation's assumed position).
+    private static readonly Regex AtomTypedFieldPattern = new(
+        @"(?:private|public|protected|internal)\s+(?:static\s+)?(?:readonly\s+)?(?:" + AtomValueTypeAlternation + @")\??\s+(_\w+)",
+        RegexOptions.Compiled);
+
+    // Property-shaped (N-6's second named miss) -- a PascalCase name (this
+    // codebase never prefixes a property with `_`) terminated by a
+    // block-property `{` or an expression-bodied `=>`; never a bare `;`,
+    // which would just be a second match of a field the pattern above
+    // already caught.
+    private static readonly Regex AtomTypedPropertyPattern = new(
+        @"(?:private|public|protected|internal)\s+(?:static\s+)?(?:" + AtomValueTypeAlternation + @")\??\s+(\w+)\s*(?:\{|=>)",
+        RegexOptions.Compiled);
+
+    // Selection-shaped collection, broadened (N-6's third named miss): the
+    // original only matched List/IReadOnlyList<ExplorationDescriptor> --
+    // ImmutableArray<ExplorationDescriptor> and a bare
+    // ExplorationDescriptor[] array are two more shapes the SAME Selection
+    // atom's value type (IReadOnlyList<ExplorationDescriptor>) could
+    // plausibly be copied as.
+    private static readonly Regex SelectionShapedListPattern = new(
+        @"(?:private|public|protected|internal)\s+(?:static\s+)?(?:readonly\s+)?(?:List|IReadOnlyList|ImmutableArray)<ExplorationDescriptor>\s+(_\w+)",
+        RegexOptions.Compiled);
+    private static readonly Regex SelectionShapedArrayPattern = new(
+        @"(?:private|public|protected|internal)\s+(?:static\s+)?(?:readonly\s+)?ExplorationDescriptor\[\]\s+(_\w+)",
+        RegexOptions.Compiled);
+
+    [Fact]
+    public void NoComponentHeldSharedState_PlantedPropertyShapedViolation_IsCaught()
+    {
+        // The exact shape N-6 named as a hypothetical: a property, not a
+        // field, so the original `_\w+`-only regex would never see it.
+        const string planted = "private FocusStack Snapshot { get; set; }";
+
+        Assert.Matches(AtomTypedPropertyPattern, planted);
+    }
+
+    [Fact]
+    public void NoComponentHeldSharedState_PlantedExpressionBodiedPropertyShapedViolation_IsCaught()
+    {
+        const string planted = "public ViewArrangement Current => _cached;";
+
+        Assert.Matches(AtomTypedPropertyPattern, planted);
+    }
+
+    [Fact]
+    public void NoComponentHeldSharedState_PlantedStaticFieldViolation_IsCaught()
+    {
+        const string planted = "private static Locus _lastKnownLocus;";
+
+        Assert.Matches(AtomTypedFieldPattern, planted);
+    }
+
+    [Fact]
+    public void NoComponentHeldSharedState_PlantedImmutableArraySelectionViolation_IsCaught()
+    {
+        const string planted = "private readonly ImmutableArray<ExplorationDescriptor> _selectionCopy;";
+
+        Assert.Matches(SelectionShapedListPattern, planted);
+    }
+
+    [Fact]
+    public void NoComponentHeldSharedState_PlantedArraySelectionViolation_IsCaught()
+    {
+        const string planted = "private ExplorationDescriptor[] _selectionCopy;";
+
+        Assert.Matches(SelectionShapedArrayPattern, planted);
+    }
+
     [Fact]
     public void NoComponentHeldSharedState_NoFieldIsTypedAsAMigratedAtomValueTypeOutsideTheDocumentedException()
     {
@@ -322,15 +409,16 @@ public class ConformanceTests
             // style copy computed once and left to drift. See
             // CompositionSplit.razor's own Composition property.
             ("client\\Components\\CompositionSplit.razor", "_lastArrangement"),
+            // ST-4 sweep (A4), real hit from the newly-added property-shaped
+            // pattern: `FocusValue => _frozenSnapshot;` (fix round 2, N-3) is
+            // a PURE, one-line forward to the field ALREADY allowlisted two
+            // rows up -- not a second, independent copy. `_frozenSnapshot`
+            // is the sanctioned storage; `FocusValue` is merely its public
+            // read name (every consumer in this file reads `FocusValue`,
+            // never `_frozenSnapshot` directly -- see that field's own
+            // `SyncSnapshot`-is-the-one-write-path header comment above).
+            ("client\\Components\\ExplorerPopover.razor", "FocusValue"),
         };
-
-        var typeNames = new[] { "Locus", "TimeWindow", "ViewArrangement", "FocusStack" };
-        var pattern = new Regex(
-            @"(?:private|public|protected|internal)\s+(?:readonly\s+)?(?:" + string.Join("|", typeNames) + @")\??\s+(_\w+)",
-            RegexOptions.Compiled);
-        var listPattern = new Regex(
-            @"(?:private|public|protected|internal)\s+(?:readonly\s+)?(?:List|IReadOnlyList)<ExplorationDescriptor>\s+(_\w+)",
-            RegexOptions.Compiled);
 
         // Same cross-platform normalization as the effects-only-via-registry
         // test above (S-8) -- '/' on both sides of every comparison.
@@ -349,7 +437,11 @@ public class ConformanceTests
             }
 
             var text = File.ReadAllText(file);
-            foreach (Match m in pattern.Matches(text).Cast<Match>().Concat(listPattern.Matches(text).Cast<Match>()))
+            var matches = AtomTypedFieldPattern.Matches(text).Cast<Match>()
+                .Concat(AtomTypedPropertyPattern.Matches(text).Cast<Match>())
+                .Concat(SelectionShapedListPattern.Matches(text).Cast<Match>())
+                .Concat(SelectionShapedArrayPattern.Matches(text).Cast<Match>());
+            foreach (var m in matches)
             {
                 var fieldName = m.Groups[1].Value;
                 if (!allowlist.Any(e => relative.EndsWith(Normalize(e.File)) && e.FieldName == fieldName))
@@ -360,7 +452,7 @@ public class ConformanceTests
         }
 
         Assert.True(violations.Count == 0,
-            "Found a component-held field typed as a migrated atom's own value type -- render a Projection<T> instead, or add a reasoned allowlist entry here (the S-2 fix's own frozen-snapshot exception is the only one on record):\n" +
+            "Found a component-held field/property typed as a migrated atom's own value type -- render a Projection<T> instead, or add a reasoned allowlist entry here (the S-2 fix's own frozen-snapshot exception is the only one on record):\n" +
             string.Join("\n", violations));
     }
 
@@ -479,6 +571,111 @@ public class ConformanceTests
     }
 
     // ------------------------------------------------------------------
+    // ST-4 SWEEP (B2, controller-approved MIGRATE): the no-copy scan above
+    // (ArrangementStateInitializerPattern/ArrangementStateAssignmentPattern)
+    // is hard-coded to `ViewArrangementAtom.Value` alone. Deliverable 1b's
+    // own instruction is to generalize this class of scan wherever
+    // scannable, not just leave it proven for the one atom that happened to
+    // have a live historical violation (Reader:520). This is the same
+    // field/property-initializer + bare-assignment shape, generalized to
+    // the OTHER four atoms (`LocusAtom`/`TimeWindowAtom`/`SelectionAtom`/
+    // `FocusStackAtom`) -- `ViewArrangementAtom` itself is deliberately left
+    // out of this pattern (the scan above already covers it; duplicating it
+    // here would just double-report the same real site under two tests).
+    //
+    // Verified by direct full-tree grep BEFORE writing this (sweep-
+    // inventory.md row B2): each of the four other atoms has exactly ONE
+    // sanctioned site today --
+    // `LocusAtom`: zero direct-assignment sites at all (every consumer
+    //   reads through a live `Projection<Locus>`);
+    // `TimeWindowAtom`: `World.razor`'s own `SyncTimeWindowProjection`
+    //   switch statement (the ONE place `_from`/`_to`/`_scriptureRef` are
+    //   ever assigned, per the A1 sweep row -- a `switch` STATEMENT has no
+    //   `=`/`=>` binding `TimeWindowAtom.Value` to a name, so this pattern
+    //   does not even match it; the real per-field assignments inside each
+    //   `case` arm read `tm.From`/`tm.To`/`sm.Ref`, never `TimeWindowAtom.Value`
+    //   itself a second time, so nothing here needs an allowlist entry);
+    // `SelectionAtom`: `SelectionTray.razor`'s own `var items =
+    //   SelectionAtom.Value;` -- a LOCAL variable (no access modifier, no
+    //   leading underscore), invisible to both patterns by construction,
+    //   exactly the "read live, never copy" shape this rule wants;
+    // `FocusStackAtom`: `ExplorerPopover.razor`'s own ownership-handoff
+    //   check (`FocusStackAtom.Value == FocusStack.Empty`, a comparison
+    //   inside an `if`, not an assignment or initializer) -- also invisible
+    //   to both patterns by construction.
+    // No allowlist entries are needed as a result -- confirmed empirically
+    // by running the real-tree assertion below, not assumed from the grep
+    // alone.
+    // ------------------------------------------------------------------
+    private static readonly string[] OtherAtomNames = { "Locus", "TimeWindow", "Selection", "FocusStack" };
+    private static readonly string OtherAtomAlternation = string.Join("|", OtherAtomNames.Select(n => n + "Atom"));
+
+    private static readonly Regex OtherAtomStateInitializerPattern = new(
+        @"(?:private|public|protected|internal)\s+(?:readonly\s+)?[^\n;{}]+?\s+(_?\w+)\s*(?:=>|=)\s*[^;]{0,400}?(?:" + OtherAtomAlternation + @")\.Value",
+        RegexOptions.Compiled);
+
+    private static readonly Regex OtherAtomStateAssignmentPattern = new(
+        @"(?<![.\w])(_\w+)\s*=\s*[^;=]{0,400}?(?:" + OtherAtomAlternation + @")\.Value",
+        RegexOptions.Compiled);
+
+    [Fact]
+    public void NoComponentHeldOtherAtomState_PlantedLocusShapeViolation_IsCaught()
+    {
+        const string planted = "private string _book => LocusAtom.Value.Book;\n    private string _bookCopy = LocusAtom.Value.Book;";
+
+        // The FIRST line (a live Projection-style read) is the CORRECT,
+        // sanctioned pattern this app actually uses (Reader.razor/
+        // World.razor's own `_book => _locus.Value.Book`, which reads
+        // through a `Projection<Locus>`, never the bare atom, so it does
+        // NOT match this pattern at all -- proven by the second line here
+        // instead, a hypothetical BARE-atom copy this scan exists to catch).
+        Assert.Matches(OtherAtomStateInitializerPattern, planted);
+    }
+
+    [Fact]
+    public void NoComponentHeldOtherAtomState_PlantedSelectionAssignmentViolation_IsCaught()
+    {
+        const string planted = "        _cachedSelection = SelectionAtom.Value;";
+
+        Assert.Matches(OtherAtomStateAssignmentPattern, planted);
+    }
+
+    [Fact]
+    public void NoComponentHeldOtherAtomState_PlantedFocusStackAssignmentViolation_IsCaught()
+    {
+        const string planted = "        _cachedFocus = FocusStackAtom.Value;";
+
+        Assert.Matches(OtherAtomStateAssignmentPattern, planted);
+    }
+
+    [Fact]
+    public void NoComponentHeldOtherAtomState_NoRealSiteOutsideTheSanctionedOwners()
+    {
+        static string Normalize(string path) => path.Replace('\\', '/');
+
+        var violations = new List<string>();
+        foreach (var file in ClientSourceFiles())
+        {
+            var relative = Normalize(Path.GetRelativePath(RepoRoot(), file));
+            if (relative.StartsWith("client/State/") || relative.StartsWith("client/Views/"))
+            {
+                continue; // where the atoms themselves are legitimately DEFINED
+            }
+
+            var text = File.ReadAllText(file);
+            var matched = OtherAtomStateInitializerPattern.IsMatch(text) || OtherAtomStateAssignmentPattern.IsMatch(text);
+            if (matched)
+            {
+                violations.Add(relative);
+            }
+        }
+
+        Assert.True(violations.Count == 0,
+            "Found a component-held field/property reading Locus/TimeWindow/Selection/FocusStack Atom.Value directly, outside a live Projection<T> read -- render a Projection<T> (or read the atom's own .Value fresh, never copy it into a field) instead, or add a reasoned allowlist entry here (none exist yet -- see ConformanceTests.cs's own header comment on this test for why):\n" +
+            string.Join("\n", violations));
+    }
+
+    // ------------------------------------------------------------------
     // Batch VC-1 fix round 2 (N-2, Important -- re-review, controller
     // ruling 2, binding): "extend the no-copy scan to catch this shape:
     // role/arrangement FORMULAS re-derived outside CompositionSplit and the
@@ -562,5 +759,155 @@ public class ConformanceTests
         Assert.True(violations.Count == 0,
             "Found a hand-derived 'is this the split-h host' formula (a LayoutKind/SplitH check near a Members[0] read) outside the sanctioned IsHostedBy definition -- call Composition.IsHostedBy(name) (or Registry.ComposeFrom(...).IsHostedBy(name) where ctx/Composition is out of reach) instead:\n" +
             string.Join("\n", violations));
+    }
+
+    // ------------------------------------------------------------------
+    // ST-4 SWEEP (D1, controller-approved MIGRATE): "view-identity checks
+    // where capability checks belong" (deliverable 1d) had NO conformance
+    // mechanism at all before this batch -- a genuine spec §0 conformance-
+    // corollary gap ("a contract whose violation nothing can fail on is
+    // documentation, not a contract, and is itself a defect"). Verified by
+    // direct full-tree grep this batch (sweep-inventory.md row D1): ZERO
+    // `==`/`!=` comparisons against a `ViewNames.*` constant exist anywhere
+    // outside `client/Views/` today -- every real `ViewNames` reference is
+    // an intent-construction argument, a hatch-by-name registry lookup, a
+    // `HostName=` declaration, or a call into the sanctioned `IsHostedBy`
+    // law. This test starts GREEN and stays green until a future
+    // regression re-introduces a name check where R5's own capability
+    // query (`Registry.CapabilitiesOf(name) & ViewCapabilities.X`) belongs
+    // -- its value is the tripwire, per the controller's own ruling.
+    // ------------------------------------------------------------------
+    private static readonly Regex ViewIdentityComparisonPattern = new(
+        @"ViewNames\.\w+\s*(?:==|!=)|(?:==|!=)\s*ViewNames\.\w+",
+        RegexOptions.Compiled);
+
+    [Fact]
+    public void ViewIdentityVsCapability_PlantedEqualityComparisonViolation_IsCaught()
+    {
+        // The exact shape this rule guards against: gating a behavior on
+        // "is this literally the Reader/World view" instead of querying
+        // its DECLARED capability (BearsLocus/BearsWindow) through the
+        // registry -- R5's own "never a name check" law (client/Pages/
+        // World.razor's own _follow property is the real, correct example
+        // this planted line deliberately does NOT match, since it uses
+        // Registry.CapabilitiesOf(...), never ViewNames.*, at all).
+        const string planted = "if (member == ViewNames.Reader) { EnableFollowScene(); }";
+
+        Assert.Matches(ViewIdentityComparisonPattern, planted);
+    }
+
+    [Fact]
+    public void ViewIdentityVsCapability_PlantedInequalityComparisonViolation_IsCaught()
+    {
+        const string planted = "var isNotWorld = ViewNames.World != memberName;";
+
+        Assert.Matches(ViewIdentityComparisonPattern, planted);
+    }
+
+    // Strips `// ...` line comments before scanning -- a real, live false
+    // positive caught while writing this test: World.razor:447's own
+    // EXPLANATORY comment for R5's capability-based follow read literally
+    // quotes the retired shape this rule forbids ('never a "==
+    // ViewNames.Reader" ... name check'), which is prose ABOUT the rule,
+    // not a violation of it. Naive (does not understand string literals
+    // containing "//"), but sufficient here: no real ViewNames identity
+    // comparison in this codebase sits on a line with a "//" earlier in
+    // the same line, confirmed by this fix's own before/after diff on the
+    // real tree (World.razor:447 was the only site this stripping changed
+    // the outcome for).
+    private static string StripLineComments(string text) => Regex.Replace(text, "//[^\n]*", string.Empty);
+
+    [Fact]
+    public void ViewIdentityVsCapability_NoRealSiteOutsideTheRegistryDeclarationLayer()
+    {
+        static string Normalize(string path) => path.Replace('\\', '/');
+
+        var violations = new List<string>();
+        foreach (var file in ClientSourceFiles())
+        {
+            var relative = Normalize(Path.GetRelativePath(RepoRoot(), file));
+            if (relative.StartsWith("client/Views/"))
+            {
+                continue; // the registry/declaration layer itself -- ViewNames constants are legitimately DEFINED and internally referenced here (e.g. RegisteredView construction, hatch OwnerView/PartnerView/HostView wiring)
+            }
+
+            var text = StripLineComments(File.ReadAllText(file));
+            if (ViewIdentityComparisonPattern.IsMatch(text))
+            {
+                violations.Add(relative);
+            }
+        }
+
+        Assert.True(violations.Count == 0,
+            "Found a view-IDENTITY comparison (== / != against a ViewNames constant) outside the registry/declaration layer -- query the view's own DECLARED capability instead (Registry.CapabilitiesOf(name) & ViewCapabilities.X, R5's own law), or add a reasoned allowlist entry here (none exist yet):\n" +
+            string.Join("\n", violations));
+    }
+
+    // ------------------------------------------------------------------
+    // ST-4 SWEEP EXEMPTION LEDGER (A2, D2 -- controller-ruled EXEMPT,
+    // checkpoint response verbatim). Neither exemption below trips ANY
+    // scan in this file today (ViewStateService's fields are never typed
+    // as one of the five atom value types; MainLayout's IsWorld references
+    // no ViewNames constant at all) -- there is no regex for either to be
+    // "allowlisted" against in the mechanical sense. Recorded here as a
+    // real, TESTABLE ledger instead of prose alone (matching this file's
+    // own "an allowlist entry must match something real, or it is
+    // silently covering for a site that no longer exists" discipline,
+    // e.g. NoComponentHeldArrangementState_NoRealSiteOutsideTheSanctionedOwners's
+    // own stale-entry check above): each assertion fails loud if its own
+    // exempted site disappears or changes shape without this ledger being
+    // updated to match, which is the honest substitute for a scan that has
+    // nothing to match against.
+    // ------------------------------------------------------------------
+    [Fact]
+    public void SweepExemption_A2_ViewStateServiceIsThePersistenceLayerBeneathAtoms()
+    {
+        // Spec §4d, verbatim: "ViewStateService remains the PERSISTENCE
+        // layer beneath atoms (it persists state; atoms OWN it); URLs/deep
+        // links are projections under the same agreement law." MapViewState/
+        // ReaderViewState hold plain scalar fields (never typed as Locus/
+        // TimeWindow/ViewArrangement/FocusStack themselves, confirmed --
+        // this is WHY neither NoComponentHeldSharedState nor the two
+        // no-copy scans above ever flag them) and are consumed by 3+
+        // components (Reader.razor/World.razor/CompositionSplit.razor) by
+        // DESIGN: write-on-commit, read-only-at-mount-to-seed-a-dispatch,
+        // never a live runtime value two components race to read. This
+        // test pins the exemption's own PRECONDITION (the persistence
+        // classes still exist, still hold plain scalar fields, never the
+        // atom value types) -- if a future edit changes that shape, this
+        // fails loud rather than leaving the exemption's justification
+        // silently stale.
+        var text = File.ReadAllText(Path.Combine(RepoRoot(), "client", "ViewStateService.cs"));
+
+        Assert.Contains("public sealed class MapViewState", text);
+        Assert.Contains("public sealed class ReaderViewState", text);
+        Assert.DoesNotMatch(AtomTypedFieldPattern, text);
+        Assert.DoesNotMatch(AtomTypedPropertyPattern, text);
+    }
+
+    [Fact]
+    public void SweepExemption_D2_MainLayoutIsWorldIsCosmeticHeaderTheming()
+    {
+        // Controller ruling (checkpoint response, verbatim): "MainLayout's
+        // IsWorld URL sniff is cosmetic header theming outside the
+        // composition/capability system's scope... CORP-1 (per-corpus
+        // tabs, queued next) may grow per-view header theming -- if it
+        // does, this exemption is the first thing that batch revisits;
+        // note that in the exemption justification so the tripwire is a
+        // breadcrumb, not a blessing."
+        //
+        // BREADCRUMB FOR CORP-1: if per-corpus tabs grow per-view header
+        // theming beyond "world vs. everything else," re-examine whether
+        // IsWorld should become a real registry capability query instead
+        // of a raw URL-path sniff -- this exemption was ruled correct for
+        // TODAY'S single reader/world distinction, not a permanent
+        // blessing on route-string sniffing in general.
+        var text = File.ReadAllText(Path.Combine(RepoRoot(), "client", "Layout", "MainLayout.razor"));
+
+        Assert.Contains("Nav.ToBaseRelativePath(Nav.Uri).StartsWith(\"world\"", text);
+        // Confirms the exemption's own precondition: this is a route-path
+        // sniff, not a ViewNames comparison -- D1's own scan correctly
+        // never flags it (no ViewNames.* token appears on this line at all).
+        Assert.DoesNotContain("ViewNames.", text.Split('\n').First(l => l.Contains("IsWorld =>")));
     }
 }
