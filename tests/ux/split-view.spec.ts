@@ -338,6 +338,78 @@ test('VIEWSTATE-1: reader scroll and atlas window/camera round-trip across page-
   await expect.poll(() => readCamera(page)).toEqual(afterDrag);
 });
 
+// FIX ROUND 1 (review S-1, CRITICAL): the VIEWSTATE-1 test above is
+// standalone-only -- window.scrollTo(0, 400) forces the WHOLE-DOCUMENT
+// scroll VIEWSTATE-1's own pre-SPLIT-SCROLL-1 mechanism always used. Once
+// the reader pane became its own internal overflow-y:auto container in
+// split (SPLIT-SCROLL-1), reader.js's watchScroll needed rebinding to
+// match -- it was NOT rebound (only ever called from Reader.razor's own
+// `firstRender` branch), so the round trip silently captured `window`
+// (≈0 scroll room in split post-SPLIT-SCROLL-1) instead of the pane's own
+// real scrollTop. This is the missing split-mode leg the review required:
+// scroll deep in the reader pane's OWN internal container (a real
+// mouse.wheel gesture, matching SPLIT-SCROLL-1's own technique -- not a
+// programmatic scrollTop assignment, which would exercise setScrollY's own
+// restore half but not prove watchScroll's CAPTURE half is bound to the
+// right target), navigate away (split-close-reader, a real in-page
+// NavigateTo -- disposes this Reader.razor instance, capturing its last
+// reported scroll position into ViewStateService), then return to the
+// EXACT same chapter via World's own "Read beside the map" hatch
+// (split-open-world navigates using the shared Locus atom, which still
+// names the same long chapter Reader last set it to -- not nav-reader,
+// which always lands on GEN 1 regardless of where you left off).
+test('VIEWSTATE-1 (split mode): reader scroll captured from the pane\'s own internal container round-trips across a real navigate-away-and-back', async ({ page }) => {
+  const toc = await loadToc();
+  let longest = { book: toc[0].code, chapter: 1, verses: toc[0].chapters[0] };
+  for (const b of toc) {
+    b.chapters.forEach((v: number, i: number) => {
+      if (v > longest.verses) longest = { book: b.code, chapter: i + 1, verses: v };
+    });
+  }
+  expect(longest.verses, 'expected a real long chapter for real internal scroll room').toBeGreaterThan(30);
+
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto(`/read/${longest.book}/${longest.chapter}?split=world`);
+  await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
+  await expect(page.getByTestId('verse-line-1')).toBeVisible();
+
+  // Real scroll gesture over the reader pane -- its own internal
+  // overflow-y:auto container, not window (SPLIT-SCROLL-1's own design).
+  await page.mouse.move(400, 450);
+  for (let i = 0; i < 6; i++) {
+    await page.mouse.wheel(0, 400);
+  }
+  await page.waitForTimeout(200);
+  const scrolledTop = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="reader-root"]') as HTMLElement;
+    return el.scrollTop;
+  });
+  expect(scrolledTop, 'expected the wheel gesture to have actually scrolled the pane internally').toBeGreaterThan(200);
+
+  // Navigate away -- disposes this Reader.razor instance, capturing its
+  // last-reported scroll position (watchScroll's own continuous report,
+  // now correctly bound to the pane) into ViewStateService.Reader.
+  await page.getByTestId('split-close-reader').click();
+  await page.waitForURL(u => u.pathname === '/world');
+  await expect(page.getByTestId('world-map')).toBeVisible();
+
+  // Return to the EXACT same chapter -- World's own "Read beside the map"
+  // hatch navigates using the shared Locus atom (still the long chapter),
+  // not nav-reader (always GEN 1).
+  await page.getByTestId('split-open-world').click();
+  await page.waitForURL(u => u.pathname === `/read/${longest.book}/${longest.chapter}`);
+  await expect(page.getByTestId('verse-line-1')).toBeVisible();
+
+  await expect.poll(() => page.evaluate(() => {
+    const el = document.querySelector('[data-testid="reader-root"]') as HTMLElement;
+    return el.scrollTop;
+  })).toBeGreaterThan(scrolledTop - 100);
+  await expect.poll(() => page.evaluate(() => {
+    const el = document.querySelector('[data-testid="reader-root"]') as HTMLElement;
+    return el.scrollTop;
+  })).toBeLessThan(scrolledTop + 100);
+});
+
 // ---------------------------------------------------------------------
 // Batch F2 requirement 6c (SPLIT-1, user direction 2026-08-20, verbatim:
 // "if i am in split screen mode and refresh, the split screen mode shalt
@@ -423,8 +495,16 @@ test('PANE-ANCHOR-1: a verse popover opened from the reader pane stays fully wit
     expect(popoverBox.x + popoverBox.width).toBeLessThanOrEqual(readerBox.x + readerBox.width + 1);
     // Also genuinely on the LEFT side of the viewport (the reader pane's
     // own side), not coincidentally still within bounds because the pane
-    // happens to span the whole window.
-    expect(popoverBox.x + popoverBox.width / 2).toBeLessThan(700);
+    // happens to span the whole window. FIX ROUND 1 (review Q-5, TRIVIA --
+    // "a pre-existing tight bound became an exactly-boundary one"): the
+    // literal `700` this used to hardcode was a viewport-half assumption
+    // that SPLIT-5050's own 0.5 default now makes EXACT (the reader pane is
+    // now precisely 700px wide at this 1400px viewport, where the retired
+    // 704px field default left 4px of slack) -- re-expressed against the
+    // MEASURED pane box instead, so it stays correct (and non-flaky) for
+    // whatever the pane's own real width happens to be, not a value that
+    // now sits exactly on its own boundary.
+    expect(popoverBox.x + popoverBox.width / 2).toBeLessThan(readerBox.x + readerBox.width);
   }
 
   // The OTHER pane (atlas) stays fully visible and interactive -- "explore

@@ -317,8 +317,10 @@ Split view (batch-h-brief.md, "study without page-turning" -- see SPLIT-1/
   `split-open-reader` (button, reader only, absent once split is open;
   "Open the map beside the text"; opens split, reader stays the route),
   `split-open-world` (button, /world only, absent once split is open;
-  "Read beside the map"; navigates to `/read/{book}/{chapter}?split=1` for
-  the reader's own last-known chapter, GEN 1 if none this session),
+  "Read beside the map"; navigates to `/read/{book}/{chapter}?split=world`
+  -- CORPREAD-1a AMENDMENT: was `?split=1`, retired, see the top-of-doc URL
+  patterns note -- for the reader's own last-known chapter, GEN 1 if none
+  this session),
   `split-view` (the split's own flex-row container; present only while
   split is open -- element and testid both, on Reader.razor's own outer
   wrapper),
@@ -4216,6 +4218,33 @@ Notes:
   fresh session; this is the correct, intended behavior for "follow default
   ON applies unless persisted" (VIEWSTATE-1's own explicitly-scoped
   in-memory-only design), not a gap.
+
+  CORPREAD-1a AMENDMENT (SPLIT-PERSIST-1, fix round 1 -- review S-4): the
+  four paragraphs immediately above describe the PRE-CORPREAD-1a mechanism
+  and are kept as history, but THREE of their own claims are now
+  superseded, not merely narrowed:
+  (1) `?split=1` is RETIRED -- every site named above (`split-open-reader`,
+  `split-open-world`, `reader-prev`/`reader-next`'s own hrefs, the
+  `ScripturePicker`, the "Read in context" chip) now builds
+  `?split={guest view name}` (optionally `&follow=1`) from
+  `client/Views/SplitUrlContract.cs`'s own declared vocabulary -- see the
+  0a DELIVERABLE-0 rows below this SPLIT-1 entry for the full grammar.
+  (2) The URL-sync mechanism itself moved from Reader.razor's own
+  per-field-flip `NavigateTo` calls to `CompositionSplit.razor`'s own
+  single, generic `SyncSplitUrl` (RULING 5, that component's own header)
+  -- every host gets it now, not just Reader; Sources/Kretzmann/Concord's
+  own disclosed "does not survive refresh" limitation (named in this
+  document's own VC-1/CORP-1 entries below) is retired along with it.
+  (3) Follow state is **NO LONGER** the "not separately persisted, restarts
+  at the ON default" behavior this paragraph describes -- this batch moved
+  Follow's own live source of truth to the URL itself (`&follow=1`,
+  presence-is-true, same grammar as the guest name), specifically BECAUSE
+  `ViewStateService` cannot survive a hard reload and the owner's own order
+  required "Refresh in split ⇒ ... same follow state." A refresh now
+  restores whatever Follow value the URL itself carries (default false if
+  absent, NOT the old "restarts at ON" default) -- see SPLIT-PERSIST-1's
+  own CONTRACT rows under DELIVERABLE 0 below.
+
   ST-2 AMENDMENT (batch-st2-brief.md, controller ruling R4): a new
   `ViewArrangement` atom (`ReaderOnly | WorldOnly | Split(Follow,
   DividerFraction?)`, `client/State/ViewArrangement.cs`) now owns which of
@@ -4332,7 +4361,9 @@ Notes:
   churn orphaning JS-captured DOM nodes; never navigate from a lifecycle
   synchronous prefix) this round moved there from scattered prose. Also
   new: `composition.spec.ts`'s own COMP-6, a `page.on('pageerror')` guard
-  on a fresh `?split=1` load + reload -- the exact path BOTH fix-round-1
+  on a fresh `?split=1` load + reload (CORPREAD-1a AMENDMENT: now
+  `?split=world`, see the top-of-doc URL patterns note -- same guard, same
+  path, grammar only) -- the exact path BOTH fix-round-1
   self-caught live crashes lived on, previously uncovered by any
   assertion anywhere in this suite (re-review's own N-7 finding).
 - DIVIDER-1 (M-D3/B2, owner morning address verbatim: "map toggles halfway

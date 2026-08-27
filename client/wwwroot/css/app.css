@@ -759,42 +759,66 @@ input:focus-visible,
    long unbroken word, say) should clip, not add a second, unwanted
    scrollbar dimension. See .split-view's own header comment (immediately
    above, this file) for the full pinned-pane design and its own live
-   root-cause diagnosis. */
-.split-pane-reader {
+   root-cause diagnosis.
+
+   FIX ROUND 1 (review S-3, IMPORTANT -- "deliverable 0b's 'ONE layout
+   rule ... never a per-host CSS override' shipped as four parallel
+   rules"): `.split-pane-reader`/`.split-pane-host` are now ONE grouped
+   selector for every property except the reader-specific token overrides
+   below (`--reader-col-pad-x`/`--nav-*`) -- Reader is the only host still
+   passing its own bespoke `HostPaneClass="split-pane-reader"`
+   (`Reader.razor`'s own `<CompositionSplit>` tag) rather than the generic
+   `"split-pane-host"` every other host uses, so the pinned-pane GEOMETRY
+   (the actual deliverable-0b law) now genuinely lives in exactly one
+   place, and only the reader-column-padding/nav-sizing tokens -- which
+   were never part of that law -- stay under the specific name. A future
+   edit to the shared geometry now reaches both by construction; it cannot
+   silently diverge the way two independently-maintained copies already
+   had (`.split-pane-reader` carrying `--reader-col-pad-x` the OTHER copy
+   never needed is the token divergence that was actually fine; the
+   geometry properties being copy-pasted at all was the drift risk). */
+.split-pane-reader,
+.split-pane-host {
     flex: 0 0 var(--split-reader-width, 55%);
     min-width: 0;
-    /* Batch CORPREAD-1a (SPLIT-SCROLL-1): 3rem -> 3.25rem, a real, live-
-       caught overlap (NAV-3, not guessed): --nav-left(6px) + --nav-max-width
-       (44px) = a 50px right edge for reader-prev/-next, 2px PAST this
-       property's own pre-existing 3rem/48px value -- an overlap that was
-       already latent in these exact numbers regardless of this batch (the
-       arithmetic doesn't depend on scroll position at all), but never
-       actually OBSERVED before: the reader pane's own internal overflow
-       scroll (this file's own .split-view header comment) lands
-       `scrollIntoViewIfNeeded` on a genuinely different vertical alignment
-       than the whole-document scroll it replaces, which is what finally
-       put a REAL verse row inside the overlapping 2px band where no
-       existing test's own scroll target previously had one. 3.25rem/52px
-       leaves a small, real, positive gap (2px) instead of a negative one. */
+    height: 100%;
+    /* min-height:0 CANCELS the host page-root's own min-height:100vh
+       (.reader-page/.sources-page/.kretzmann-page/.concord-page all
+       declare it, above) -- a real, live-caught bug in an earlier draft
+       of this fix: min-height wins over a SMALLER explicit height per
+       spec (the resolved height is max(height, min-height)), so without
+       this override, this pane rendered at the FULL 100vh regardless of
+       .split-view's own shorter, header-aware box -- overflowing it by
+       exactly the header's own height (the identical class of gap
+       iteration 1 of this fix already had to catch and correct once,
+       resurfacing here through a DIFFERENT CSS mechanism: the page-root's
+       OWN pre-existing min-height, not a missing height at all). */
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Batch CORPREAD-1a (SPLIT-SCROLL-1): reader-specific token overrides
+   ONLY -- the shared pinned-pane geometry lives in the grouped rule
+   immediately above (S-3's own fix). 3rem -> 3.25rem, a real, live-caught
+   overlap (NAV-3, not guessed): --nav-left(6px) + --nav-max-width(44px) =
+   a 50px right edge for reader-prev/-next, 2px PAST this property's own
+   pre-existing 3rem/48px value -- an overlap that was already latent in
+   these exact numbers regardless of this batch (the arithmetic doesn't
+   depend on scroll position at all), but never actually OBSERVED before:
+   the reader pane's own internal overflow scroll (this file's own
+   .split-view header comment) lands `scrollIntoViewIfNeeded` on a
+   genuinely different vertical alignment than the whole-document scroll
+   it replaces, which is what finally put a REAL verse row inside the
+   overlapping 2px band where no existing test's own scroll target
+   previously had one. 3.25rem/52px leaves a small, real, positive gap
+   (2px) instead of a negative one. */
+.split-pane-reader {
     --reader-col-pad-x: 3.25rem;
     --nav-left: .375rem;
     --nav-max-width: 2.75rem;
     --nav-glyph-size: 1.3rem;
     --nav-label-size: .62rem;
-    height: 100%;
-    /* min-height:0 CANCELS .reader-page's own min-height:100vh (above) --
-       a real, live-caught bug in an earlier draft of this fix: min-height
-       wins over a SMALLER explicit height per spec (the resolved height is
-       max(height, min-height)), so without this override, this pane
-       rendered at the FULL 100vh regardless of .split-view's own shorter,
-       header-aware box -- overflowing it by exactly the header's own
-       height (the identical class of gap iteration 1 of this fix already
-       had to catch and correct once, resurfacing here through a DIFFERENT
-       CSS mechanism: the page-root's OWN pre-existing min-height, not a
-       missing height at all). */
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
 }
 
 /* M-D3/B2 (SplitDivider.razor): the OLD .split-divider -- a static 1px
@@ -850,91 +874,73 @@ input:focus-visible,
     }
 }
 
-/* Pinned, not scrolling-away: the atlas pane stays fully visible at all
-   times as the reader column scrolls beside it -- a chapter is routinely
+/* Pinned, not scrolling-away: the atlas/guest pane stays fully visible at
+   all times as the host column scrolls beside it -- a chapter is routinely
    taller than one screen, and "the map follows what you're reading" loses
    its whole point the moment the map itself scrolls out of view first.
-   height:100% + overflow:hidden together mean .world-page's own
-   min-height:100vh (unchanged, the same rule every standalone /world visit
-   already uses) exactly fills this box instead of overflowing it.
+   height:100% + the shared min-height:0 below together mean the guest
+   page-root's own min-height:100vh (.world-page/.reader-page/etc.,
+   unchanged, the same rule every standalone visit already uses) exactly
+   fills this box instead of overflowing it.
 
    Batch CORPREAD-1a (SPLIT-SCROLL-1): `position: sticky; top: 0` RETIRED
-   from this rule -- pinning now lives on `.split-view` itself (a
+   from `.split-pane-atlas` -- pinning now lives on `.split-view` itself (a
    header-aware `calc(100vh - ...)` box, not a bare 100vh -- this file's
    own header comment on that rule has the full live-diagnosed root cause,
    INCLUDING a first iteration of this exact fix that also had to be
-   caught and corrected before landing). This pane no longer needs its OWN
+   caught and corrected before landing). Neither pane below needs its OWN
    sticky positioning at all: once `.split-view` itself is exactly one
-   viewport tall (header included), this pane -- an ordinary,
-   non-positioned, height:100% flex child of it -- is automatically fully
-   visible for free, the same way its sibling .split-pane-reader is.
-   overflow:hidden UNCHANGED (not widened to `auto` like the generic
-   .split-pane-guest below) -- a map genuinely never exceeds one viewport,
-   so there is nothing this pane specifically would ever need to scroll. */
-.split-pane-atlas {
-    flex: 1 1 auto;
-    min-width: 0;
-    height: 100%;
-    /* min-height:0 cancels .world-page's own min-height:100vh (above) --
-       see .split-pane-reader's own comment on the identical fix, same
-       mechanism, same live-caught bug class. */
-    min-height: 0;
-    overflow: hidden;
-}
+   viewport tall (header included), an ordinary, non-positioned,
+   height:100% flex child of it is automatically fully visible for free,
+   the same way `.split-pane-reader`/`.split-pane-host` above already are.
 
-/* Batch VC-1 (R3, split for any view): the two GENERIC pane roles a
-   registry-mounted composition needs beyond the two reader/world already
-   had -- .split-pane-reader/.split-pane-atlas above stay byte-unchanged
-   (that pairing keeps its own exact pre-VC-1 sizing) so the reader+world
-   split remains pixel-identical (R7). These two are the fallback shapes
-   ANY new host/guest pairing gets for free: .split-pane-host (a HOST pane
-   -- reuses the SAME --split-reader-width custom property CompositionSplit
-   sets on its own outer wrapper, deliberately, rather than inventing a
-   second differently-named variable for the identical concept -- see
-   CompositionSplit.razor's own header) and .split-pane-guest (a GUEST pane
-   with no bespoke sizing of its own, e.g. Reader-as-guest inside Sources --
-   1 1 auto, filling whatever the host's own fixed-basis pane doesn't
-   claim, the same complementary shape .split-pane-atlas already
-   establishes).
+   Batch VC-1 (R3, split for any view): `.split-pane-atlas`/
+   `.split-pane-guest` are the two GENERIC pane roles a registry-mounted
+   composition needs beyond the two reader/world already had --
+   `.split-pane-guest` (VC-1's own historical fix round 1, its own
+   Q-2: renamed from .split-pane-sources -- that name promised a
+   Sources-specific rule while its own body was already fully generic) is
+   the fallback shape ANY new guest gets for free, e.g. Reader-as-guest
+   inside Sources/Kretzmann/Concord.
 
-   Fix round 1 (Q-2, IMPORTANT -- review): renamed from .split-pane-sources
-   -- that name promised a Sources-specific rule while its own body was
-   already fully generic; a fourth host would have had to paste an
-   identically-bodied rule under its own name, or reuse a rule named for a
-   DIFFERENT page. .split-pane-host is the honest, reusable name -- the
-   companion .split-pane-guest below was already correctly role-named.
-
-   Batch CORPREAD-1a (SPLIT-SCROLL-1): height:100% (of .split-view's own
-   header-aware box, not a second independently-computed 100vh) +
-   overflow-y:auto on BOTH generic roles below -- the SAME "two
-   viewport-height panes, host scrolls internally" law .split-pane-reader/
-   .split-pane-atlas above apply for the reader+world pairing specifically,
-   generalized here so EVERY future host/guest pairing gets it for free,
-   with no per-host CSS of its own to write (see .split-view's own header
-   comment for the full design). .split-pane-guest gets `overflow-y: auto`,
-   not `hidden` like .split-pane-atlas above -- a generic guest (e.g.
-   Reader mounted as guest under Sources/Kretzmann/Concord, a real,
-   reachable pairing) can genuinely have more than one viewport of
-   content, unlike World's own map; this is what lets a long chapter
-   scroll WITHIN its own guest pane there too, by the identical mechanism,
-   rather than needing its own bespoke rule. */
-.split-pane-host {
-    flex: 0 0 var(--split-reader-width, 55%);
-    min-width: 0;
-    height: 100%;
-    /* min-height:0 cancels whichever host page-root's own min-height:100vh
-       this class is layered onto (.sources-page/.kretzmann-page/
-       .concord-page all declare it) -- see .split-pane-reader's own
-       comment on the identical fix, same mechanism. */
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
-
+   CORPREAD-1a FIX ROUND 1 (review S-3, IMPORTANT + Q-2, IMPORTANT -- this
+   batch's OWN findings, unrelated to VC-1's identically-numbered Q-2
+   immediately above): grouped into ONE shared rule, same "ONE layout
+   rule, not four parallel ones" fix as `.split-pane-reader`/
+   `.split-pane-host` above -- the ONLY genuine divergence between the
+   atlas-specific and guest-generic roles is overflow (a map never has
+   more than one viewport of content and deliberately stays `hidden`; a
+   generic guest -- e.g. a long chapter, Reader-as-guest -- genuinely can,
+   and gets `auto`), so that is the ONLY property left under the two
+   specific names below. This ALSO closes CORPREAD-1a's own Q-2 (IMPORTANT
+   -- "`.split-pane-guest` gains `overflow-y: auto` but is the only pane
+   rule without `min-height: 0`"): the shared rule's own min-height:0 now
+   covers it too, by construction, rather than needing a fourth
+   independently-remembered copy. */
+.split-pane-atlas,
 .split-pane-guest {
     flex: 1 1 auto;
     min-width: 0;
     height: 100%;
+    /* min-height:0 cancels the guest page-root's own min-height:100vh
+       (.world-page/.reader-page/etc., above) -- see
+       .split-pane-reader/.split-pane-host's own comment on the identical
+       fix, same mechanism, same live-caught bug class. */
+    min-height: 0;
+}
+
+.split-pane-atlas {
+    /* A map genuinely never exceeds one viewport -- nothing here would
+       ever need to scroll. */
+    overflow: hidden;
+}
+
+.split-pane-guest {
+    /* A generic guest (e.g. Reader mounted under Sources/Kretzmann/
+       Concord) can genuinely have more than one viewport of content --
+       this is what lets a long chapter scroll WITHIN its own guest pane,
+       by the identical host-side mechanism, rather than needing its own
+       bespoke rule. */
     overflow-y: auto;
 }
 
@@ -1634,28 +1640,40 @@ input:focus-visible,
 /* Batch CORPREAD-1a (SPLIT-SCROLL-1): a real, live-caught bug found while
    verifying reader-prev/reader-next's own fix (this file's own .split-view
    header comment, and reader.js's own watchChapterNavCenter comment, have
-   the fuller story) -- ANY `position: fixed` descendant of `.reader-page`
-   (this batch's own `contain: layout`-established containing block for
-   fixed descendants, pre-existing) scrolls WITH `.reader-page`'s own
-   content once THAT element is genuinely its own overflow-y:auto scroll
-   container (the HOST-in-split case) -- `bottom`/`left` offsets resolve
-   against the SCROLLED content's own coordinate space, not the visible
-   viewport slice, exactly like `top` did for reader-prev/next. Confirmed
-   live: `.passage-chip` drifted off-screen by the exact internal-scroll
-   delta, same signature. UNLIKE reader-prev/next (whose `top` is a
-   continuously JS-recomputed custom property, cheap to compensate for in
-   JS), `.passage-chip`/`.toast` (below) use plain, static offsets -- the
-   simpler fix here is `position: sticky` instead of `fixed`, SCOPED to
-   exactly the two generic split-host classes (a plain descendant
-   selector, not a bespoke per-page override -- "ONE layout rule," the
-   same discipline this whole ticket follows): a sticky element's own
-   `bottom`/`left` resolve against its nearest SCROLLING ancestor's
-   viewport (not the scrolled content), which is exactly `.reader-page`
-   itself here -- no drift, and STANDALONE mode (no split-pane-reader/
-   split-pane-host ancestor -- window genuinely scrolls, unaffected) keeps
-   `position: fixed` exactly as before, byte-identical. */
-.split-pane-reader .passage-chip,
-.split-pane-host .passage-chip {
+   the fuller story) -- a `position: fixed` descendant scrolls WITH its own
+   containing block's content once THAT block is genuinely its own
+   overflow-y:auto scroll container AND is also the `contain: layout`-
+   established containing block for that descendant (the HOST-in-split
+   case, but only for a host that carries BOTH properties on the SAME
+   element) -- `bottom`/`left` offsets resolve against the SCROLLED
+   content's own coordinate space, not the visible viewport slice, exactly
+   like `top` did for reader-prev/next. Confirmed live: `.passage-chip`
+   drifted off-screen by the exact internal-scroll delta, same signature.
+   UNLIKE reader-prev/next (whose `top` is a continuously JS-recomputed
+   custom property, cheap to compensate for in JS), `.passage-chip`/
+   `.toast` (below) use plain, static offsets -- the simpler fix here is
+   `position: sticky` instead of `fixed`.
+
+   FIX ROUND 1 (review Q-1, IMPORTANT -- "over-applied to three hosts that
+   never had the bug"): SCOPED to `.reader-page.split-pane-reader`
+   specifically (a compound selector -- both classes on the SAME element),
+   not the generic `.split-pane-host` this rule used to also match.
+   `.reader-page` is the ONLY page root that carries `contain: layout`
+   (above) -- `.sources-page`/`.kretzmann-page`/`.concord-page` declare no
+   contain/transform/filter/position at all, so their own fixed
+   `.passage-chip`/`.toast` were ALREADY viewport-anchored and never
+   drifted; converting them to sticky anyway pulled them into normal flow
+   under those pages' own `display: flex; align-items: center` root rule,
+   silently re-docking a left-anchored element to center. `.passage-chip`
+   only ever renders inside `.reader-page` at all (this rule's own narrower
+   scope is defensive, not presently load-bearing there) -- `.toast`
+   (below) is the one this actually fixes a live regression for. A sticky
+   element's own `bottom`/`left` resolve against its nearest SCROLLING
+   ancestor's viewport (not the scrolled content), which is exactly
+   `.reader-page` itself here -- no drift, and STANDALONE mode (no
+   split-pane-reader ancestor -- window genuinely scrolls, unaffected)
+   keeps `position: fixed` exactly as before, byte-identical. */
+.reader-page.split-pane-reader .passage-chip {
     position: sticky;
 }
 
@@ -4003,13 +4021,21 @@ input:focus-visible,
 }
 
 /* Batch CORPREAD-1a (SPLIT-SCROLL-1): same fix, same reasoning as
-   .passage-chip's own comment (near .split-view, this file) -- scoped to
-   the SAME two generic split-host classes, so ONLY a toast rendered
-   inside a genuinely split-hosting pane (Reader/Sources/Kretzmann/Concord,
-   any of them) switches to sticky; every other .toast in this app (World,
-   standalone, a split-h GUEST pane) stays position:fixed, unaffected. */
-.split-pane-reader .toast,
-.split-pane-host .toast {
+   .passage-chip's own comment (near .split-view, this file).
+   FIX ROUND 1 (review Q-1, IMPORTANT -- "over-applied to three hosts that
+   never had the bug"): SCOPED to `.reader-page.split-pane-reader`
+   specifically -- see .passage-chip's own comment for the full
+   `contain: layout` reasoning this narrows against. Sources/Kretzmann/
+   Concord's own toasts (`.sources-page`/`.kretzmann-page`/`.concord-page`,
+   none of which carry `contain`/`transform`/`filter`/`position`) were
+   ALREADY correctly viewport-anchored and never drifted -- the original,
+   wider `.split-pane-host .toast` rule pulled them into normal flow under
+   those pages' own `display: flex; align-items: center` root instead,
+   silently re-docking a left-anchored toast to center-docked, a cosmetic
+   regression on an error path for zero benefit. Every OTHER `.toast` in
+   this app (World, standalone, a split-h GUEST pane) stays
+   `position: fixed`, unaffected. */
+.reader-page.split-pane-reader .toast {
     position: sticky;
 }
 

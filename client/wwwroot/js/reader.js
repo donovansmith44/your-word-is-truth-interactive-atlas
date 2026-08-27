@@ -144,14 +144,27 @@ export function setScrollY(y) {
 //
 // Batch CORPREAD-1a (SPLIT-SCROLL-1): rebound to
 // findReaderScrollContainer()'s own result -- REPORTS that container's own
-// scrollTop, not window.scrollY, whenever one is found (idempotent/
-// self-cleaning discipline: re-resolves the target on EVERY call, exactly
-// like watchChapterNavCenter below already does for its own DOM query, so a
-// later call after the split/standalone layout itself changed -- e.g. this
-// same Reader.razor instance closing its split -- rebinds correctly rather
-// than staying latched onto a target that may no longer be the real
-// scroller). Standalone (no container found) is BYTE-IDENTICAL to the
-// pre-CORPREAD-1a behavior -- window.scrollY, unchanged.
+// scrollTop, not window.scrollY, whenever one is found. This FUNCTION is
+// idempotent/self-cleaning (re-resolves the target fresh on every call,
+// exactly like watchChapterNavCenter below does for its own DOM query) --
+// but being idempotent only means a REPEAT call is safe and correct; it
+// does not, by itself, cause one. FIX ROUND 1 (review S-1, CRITICAL): an
+// earlier draft of this comment claimed the re-resolution alone kept this
+// "rebinding correctly rather than staying latched onto a target that may
+// no longer be the real scroller" -- true of this function, false of the
+// SYSTEM: Reader.razor called this ONLY from `OnAfterRenderAsync`'s
+// `firstRender` branch, so nothing ever actually issued that later call --
+// a split opened via a hatch click, or a fresh `?split=world` load hitting
+// the SAME SupplyParameterFromQuery timing quirk watchChapterNavCenter's
+// own comment describes, left this permanently bound to `window` even
+// once `.reader-page` became a real scroll container, silently breaking
+// the VIEWSTATE-1 round-trip in split (window scroll is capped near the
+// header's own height there post-SPLIT-SCROLL-1, so the continuously-
+// reported position collapsed to ≈0). Reader.razor now calls this from the
+// SAME every-render block that already calls watchChapterNavCenter, for
+// the identical self-healing reason -- see that call site's own comment
+// for the full fix. Standalone (no container found) is BYTE-IDENTICAL to
+// the pre-CORPREAD-1a behavior -- window.scrollY, unchanged.
 let _scrollCleanup = null;
 
 export function watchScroll(dotnetRef) {
@@ -557,4 +570,33 @@ export function capturePointer(el, pointerId) {
     if (el && typeof el.setPointerCapture === 'function') {
         el.setPointerCapture(pointerId);
     }
+}
+
+// Batch CORPREAD-1a fix round 1 (review S-6, IMPORTANT -- "--app-header-height
+// is measured with a viewport-CLAMPING helper, so a scrolled hatch-open
+// under-measures it"): `CompositionSplit.razor`'s own `.split-view`
+// height:calc() (`app.css`'s own header comment on that rule) needs
+// `.app-header`'s TRUE, intrinsic rendered height -- getPaneRect above
+// deliberately clamps its own rect to [0, innerWidth]/[0, innerHeight] (the
+// CORRECT behavior for its own original purpose, bounding a pane-anchored
+// popover to "the visible slice of this pane, right now"), which is WRONG
+// for measuring an element's own height: `.app-header` is in NORMAL FLOW
+// (`.header-parchment` sets no `position`), so opening a split from a
+// standalone reader already scrolled down by even a small amount clamps
+// `top` to 0 and silently under-reports `bottom - top` by exactly that
+// scroll offset -- confirmed live (the review's own repro): at scrollY≈20,
+// a real 54.375px header measured as ≈34px, making `.split-view` ~20px
+// TALLER than the remaining viewport, reintroducing (for that session) the
+// exact "header-sized sliver stranded below the fold" failure class
+// iteration 1 of the SPLIT-SCROLL-1 fix was rejected for. `offsetHeight` is
+// the CSS layout height of the element's own border box -- entirely
+// independent of scroll position or viewport clipping, exactly what a
+// `calc(100vh - ...)` sizing computation needs. `el.offsetHeight` is `0`
+// for a `display:none`/detached element, matching this call site's own
+// existing "0/negative measurement -> fall back to the CSS default"
+// fail-soft handling (CompositionSplit.razor's own `if (h.Height > 0)`
+// still applies to whatever this returns).
+export function getElementHeight(selector) {
+    const el = document.querySelector(selector);
+    return el ? el.offsetHeight : 0;
 }

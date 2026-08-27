@@ -771,14 +771,6 @@
             // own comment. _selfRef is disposed in DisposeAsync below.
             _selfRef = DotNetObjectReference.Create(this);
             await _readerJs.InvokeVoidAsync("watchShiftRelease", _selfRef);
-
-            // Batch H (view-state round-trip): continuously reports scroll
-            // position into ViewState.Reader (OnScroll below) -- NOT a
-            // dispose-time read. See reader.js's own watchScroll comment
-            // for the real, confirmed race a dispose-time read loses to
-            // (Blazor's own router resets window scroll on navigation
-            // before DisposeAsync ever runs).
-            await _readerJs.InvokeVoidAsync("watchScroll", _selfRef);
         }
 
         // Batch R requirement 6 (chapter nav always visible, middle-
@@ -819,8 +811,33 @@
         // always safe and cheap -- calling it here, every render, is what
         // makes it self-healing against this exact class of DOM-identity
         // churn instead of depending on it never happening.
+        //
+        // FIX ROUND 1 (review S-1, CRITICAL -- "watchScroll is bound once
+        // at firstRender and never rebound; reader scroll capture in split
+        // view is silently broken"): `watchScroll` (Batch H, view-state
+        // round-trip -- continuously reports scroll position into
+        // ViewState.Reader, OnScroll below, NOT a dispose-time read; see
+        // reader.js's own watchScroll comment for the confirmed race a
+        // dispose-time read loses to) gets the IDENTICAL treatment as
+        // watchChapterNavCenter now, for the IDENTICAL reason -- it was
+        // previously called ONLY inside the `if (firstRender)` block above,
+        // so a split opened via a hatch click (no navigation, no fresh
+        // render pass) or a fresh `?split=world` load (the SAME
+        // SupplyParameterFromQuery timing quirk described above) left it
+        // permanently bound to `window` even once `.reader-page` became its
+        // own real scroll container (SPLIT-SCROLL-1) -- silently breaking
+        // the VIEWSTATE-1 reader-scroll round-trip in split (window scroll
+        // is now capped near the header's own height there, so the
+        // continuously-reported position collapsed to ≈0 regardless of the
+        // reader's real scroll depth). `watchScroll`'s own `_scrollCleanup`
+        // prologue already makes a repeat call safe and cheap, the
+        // identical argument this comment already makes for
+        // watchChapterNavCenter -- calling it here too is what actually
+        // rebinds it to the reader pane's own container once one exists,
+        // not merely makes it *capable* of doing so.
         if (_readerJs is not null)
         {
+            await _readerJs.InvokeVoidAsync("watchScroll", _selfRef);
             await _readerJs.InvokeVoidAsync("watchChapterNavCenter");
         }
 

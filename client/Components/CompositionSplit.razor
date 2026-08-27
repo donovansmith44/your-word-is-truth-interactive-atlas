@@ -86,10 +86,15 @@
    `ExplorerPopover`, a sibling of `<CompositionSplit>`, reads `_compositionSplit`
    directly -- see that `@ref`'s own read sites) or that is a genuine side
    effect tied to the SAME trigger, not a rendering concern at all (Reader's
-   `SyncSplitUrl`, a `Nav.NavigateTo` call keeping ITS OWN route's `?split=1`
-   truthful -- an arrangement change ELSEWHERE, e.g. World's own hatch or a
-   guest's `CloseGuest`, must still resync Reader's URL the next time Reader
-   itself is the one routed here). For exactly this case -- and ONLY this
+   `SyncSplitUrl`, a `Nav.NavigateTo` call keeping ITS OWN route's split
+   query truthful -- an arrangement change ELSEWHERE, e.g. World's own hatch
+   or a guest's `CloseGuest`, must still resync Reader's URL the next time
+   Reader itself is the one routed here). PRE-CORPREAD-1a history: at the
+   time this ruling was written, `SyncSplitUrl` was Reader.razor's OWN
+   method; RULING 5 (below) subsequently absorbed it into THIS component
+   directly for every host, not just Reader -- the documented EXCEPTION
+   itself (a host needing a hook for markup/side effects outside
+   `ChildContent`) is otherwise unaffected. For exactly this case -- and ONLY this
    case -- `OnArrangementChanged` (an optional `Action?` parameter, below) is
    the sanctioned hook: it fires from THIS component's OWN single owned
    subscription, so the trio itself is STILL never duplicated; the host
@@ -211,11 +216,30 @@
        prefix) applies here too: the restore dispatch above runs from
        `OnParametersSet`'s own synchronous body, and its own resync target
        is BY CONSTRUCTION the URL just arrived at (same-URL, a no-op) in
-       every case except a garbage/unrecognized split value on an
-       otherwise-non-empty query string -- an inherited, disclosed
-       corner (Reader's own pre-CORPREAD-1a implementation carried the
-       identical exposure for a garbage `?split=xyz`; not newly introduced
-       or newly widened here, see the batch report's own concerns list).
+       the overwhelming majority of reachable cases.
+       FIX ROUND 1 (review Q-6, TRIVIA -- the disclosure previously named
+       here overstated the WRONG parameter): a garbage/unrecognized split
+       value (`?split=xyz`, or the retired `?split=1`) is PROVABLY BENIGN,
+       not a corner case at all -- on a fresh document load the atom is
+       always `ViewArrangement.Default`, `Registry.TryGet` fails,
+       `EnterSingle(HostName)` no-ops against that SAME default
+       (`ViewArrangement.cs`'s own `EnterSingle.Apply`), and a no-op
+       `StateAtom.Dispatch` never raises `Changed` at all -- `SyncSplitUrl`
+       never runs, so there is no resync call to be unsafe in the first
+       place. The genuinely reachable divergent-URL case is a non-`1`
+       `follow` value on an OTHERWISE-VALID split (e.g.
+       `?split=world&amp;follow=0`): `EnterSplit(..., Follow: false)` DOES
+       change the atom, and the resync target (`?split=world`, follow
+       stripped) genuinely differs from `Nav.Uri` -- firing one
+       `Nav.NavigateTo` from this method's own synchronous body. Traced and
+       found SAFE, not merely disclosed: a fresh document load has no
+       in-flight `OnLocationChanged` enumeration to re-enter (RULING 4(b)'s
+       own crash class needs one), and `_splitQueryConsumed` stops any
+       second pass -- a single, self-healing cleanup navigation, not the
+       `EnumFailedVersion` crash. Inherited, not newly introduced: Reader's
+       own pre-CORPREAD-1a implementation carried the identical shape for
+       its own single boolean `follow` source; see the batch report's own
+       concerns list for the full trace.
 
    Every hatch closure (`ViewRegistrySetup.cs`) that dispatches `EnterSplit`
    from a PLAIN CLICK HANDLER (not a lifecycle synchronous prefix) needs NO
@@ -437,9 +461,12 @@ else
     }
 
     // Batch CORPREAD-1a (SPLIT-PERSIST-1, RULING 5): restore-once-on-load --
-    // see this file's own header for the full mechanism and the one
-    // disclosed, inherited corner case (a garbage/unrecognized split value
-    // reachable from this synchronous prefix). Guarded on `IsGuestMount`
+    // see this file's own header for the full mechanism (FIX ROUND 1,
+    // review Q-6: a garbage/unrecognized split value is provably benign
+    // here -- EnterSingle no-ops against the fresh-load default, so
+    // SyncSplitUrl below never even runs; the one genuinely reachable
+    // divergent-resync case is a non-`1` follow value on an otherwise-valid
+    // split, traced safe in the header's own RULING 5 section). Guarded on `IsGuestMount`
     // (a registry-mounted guest has no route/query of its own to restore
     // from -- reads whatever page embeds it, meaningless here) and
     // `_splitQueryConsumed` (never re-armed by a LATER, unrelated parameter
@@ -590,6 +617,19 @@ else
     // whatever `_headerHeightPx` already holds -- the field default (56)
     // matches the CSS fallback exactly, so a failed measurement degrades to
     // the SAME value the stylesheet would have used on its own anyway.
+    //
+    // FIX ROUND 1 (review S-6, IMPORTANT -- "measured with a viewport-
+    // CLAMPING helper, so a scrolled hatch-open under-measures it"): reads
+    // `getElementHeight` (reader.js's own new export, its doc comment has
+    // the full live-repro'd root cause), NOT `getPaneRect` -- `getPaneRect`
+    // deliberately clamps its own rect to the CURRENTLY VISIBLE viewport
+    // (correct for its own original purpose, bounding a pane-anchored
+    // popover), which silently under-measures a normal-flow element like
+    // `.app-header` the instant the page is scrolled even slightly at the
+    // moment the hatch opens (reachable: the hatch performs no navigation
+    // and does not reset window scroll). `getElementHeight` returns the
+    // element's own `offsetHeight` -- its real CSS layout height,
+    // independent of scroll position or viewport clipping entirely.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (IsSplitOpen && IsHost && !_dividerRestoreAttempted)
@@ -600,10 +640,10 @@ else
             {
                 _js ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
 
-                var headerRect = await _js.InvokeAsync<PaneRectDto?>("getPaneRect", ".app-header");
-                if (headerRect is { Height: > 0 } h)
+                var headerHeight = await _js.InvokeAsync<double>("getElementHeight", ".app-header");
+                if (headerHeight > 0)
                 {
-                    _headerHeightPx = h.Height;
+                    _headerHeightPx = headerHeight;
                 }
 
                 var rect = await _js.InvokeAsync<PaneRectDto?>("getPaneRect", ".split-view");

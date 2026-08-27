@@ -529,7 +529,21 @@ test('NAV-7: reader-prev/reader-next are never re-created by the continuous scro
 // reachable in (the reader pane's own internal scrollTop in split -- window
 // no longer scrolls deep there, see NAV-6's own updated comment; window in
 // standalone, unchanged).
-test('NAV-STABLE-1: reader-prev/reader-next keep DOM identity AND stay genuinely interactive through a real scroll session, split and standalone', async ({ page }) => {
+//
+// FIX ROUND 1 (review S-5, IMPORTANT -- "nothing asserts nav-button
+// GEOMETRY across a deep scroll in split view any more"): captures
+// `next.boundingBox()` BEFORE the wheel loop and asserts it `toBeCloseTo`
+// after, in both modes -- the exact property SPLIT-SCROLL-1's own
+// `page.scrollTop` compensation (`reader.js`'s `watchChapterNavCenter`)
+// exists to hold, and which NAV-5/6 (above) either don't reach in split
+// (NAV-6, see its own updated comment) or were never asked to hold at all
+// for the SAME real internal-scroll mechanism this test already drives.
+// Also (review Q-3, TRIVIA): collapsed the split/standalone branches to
+// one shared wheel loop (they only ever differed by the initial
+// `mouse.move`) and pinned the viewport so `(400, 450)` reliably lands on
+// the reader pane rather than resting on an unstated default.
+test('NAV-STABLE-1: reader-prev/reader-next keep DOM identity, GEOMETRY, AND stay genuinely interactive through a real scroll session, split and standalone', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
   const toc = await loadToc();
   let longest = { book: toc[0].code, chapter: 1, verses: toc[0].chapters[0] };
   for (const b of toc) {
@@ -546,22 +560,28 @@ test('NAV-STABLE-1: reader-prev/reader-next keep DOM identity AND stay genuinely
     const next = page.getByTestId('reader-next');
     await expect(next).toBeVisible();
     const nextHandle = await next.elementHandle();
+    const before = await next.boundingBox();
+    expect(before, `${splitMode ? 'split' : 'standalone'}: expected a real initial boundingBox`).toBeTruthy();
 
-    if (splitMode) {
-      // The reader pane's OWN internal scroll -- the genuine "deep scroll"
-      // mechanism in split view now (SPLIT-SCROLL-1) -- exercised via real
-      // mouse.wheel input over the pane, not a programmatic scrollTop
-      // assignment, matching this suite's own "real gesture" precedent.
-      await page.mouse.move(400, 450);
-      for (let i = 0; i < 5; i++) {
-        await page.mouse.wheel(0, 300);
-        await page.waitForTimeout(120);
-      }
-    } else {
-      for (let i = 0; i < 5; i++) {
-        await page.mouse.wheel(0, 300);
-        await page.waitForTimeout(120);
-      }
+    // The reader pane's OWN internal scroll in split (the genuine "deep
+    // scroll" mechanism there now, SPLIT-SCROLL-1) vs. window in
+    // standalone -- both driven by the SAME real mouse.wheel gesture over
+    // the reader column, matching this suite's own "real gesture"
+    // precedent; only the cursor's own starting position differs (over the
+    // narrower split pane vs. the full-width standalone column).
+    await page.mouse.move(splitMode ? 400 : 700, 450);
+    for (let i = 0; i < 5; i++) {
+      await page.mouse.wheel(0, 300);
+      await page.waitForTimeout(120);
+    }
+
+    // Geometry: byte-identical position after a real deep scroll -- the
+    // property SPLIT-SCROLL-1's own scrollTop compensation exists to hold.
+    const after = await next.boundingBox();
+    expect(after, `${splitMode ? 'split' : 'standalone'}: expected a real post-scroll boundingBox`).toBeTruthy();
+    if (before && after) {
+      expect(after.x, `${splitMode ? 'split' : 'standalone'}: reader-next.x drifted during scroll`).toBeCloseTo(before.x, 0);
+      expect(after.y, `${splitMode ? 'split' : 'standalone'}: reader-next.y drifted during scroll`).toBeCloseTo(before.y, 0);
     }
 
     // DOM identity: unaffected, same proof NAV-7 already establishes
@@ -576,8 +596,8 @@ test('NAV-STABLE-1: reader-prev/reader-next keep DOM identity AND stay genuinely
     // reliably fires its navigation" (deliverable-0c's own contract
     // wording) -- must still reliably navigate, not silently no-op against
     // a stale/detached listener.
-    const before = await page.getByTestId('chapter-head').textContent();
+    const beforeChapterHead = await page.getByTestId('chapter-head').textContent();
     await page.getByTestId('reader-next').click();
-    await expect(page.getByTestId('chapter-head')).not.toHaveText(before ?? '');
+    await expect(page.getByTestId('chapter-head')).not.toHaveText(beforeChapterHead ?? '');
   }
 });
