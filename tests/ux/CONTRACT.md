@@ -4802,32 +4802,48 @@ Notes:
   `_trail` are RETIRED as independent fields -- both collapse into ONE
   shared atom, `AtomNames.FocusStack` (`client/State/FocusStack.cs`): an
   immutable `Stack` (Contracts' own `Focus`, top = current) PLUS the trail,
-  as one value, mutated via `Visit`/`Back`/`Reset`/`SeedFromTrail` intents.
-  `Visit` (push + trail-append) is now genuinely IDEMPOTENT when re-visiting
-  the node already on top (a naive unconditional push would not be, per
-  law 2) -- a safety property, not an observed behavior change (no existing
-  entry point re-visits the current node consecutively). `Back` now leaves
-  the trail UNTOUCHED (R3, verbatim) -- a DISCLOSED behavior change from the
-  pre-ST-3 code, which recorded a "return to X" trail entry on every Back
-  too; a saved exploration's own trail no longer includes those entries,
-  only genuine forward visits. `SeedFromTrail` replaces the pre-atom
-  per-node Push+record-trail loop `SeedStack` used to drive, byte-identical
-  result. `Reset` fires on EVERY popover close (`ExplorerPopover`'s own new
-  `Dispose`, not just `RequestClose` -- Blazor calls `Dispose` for every
-  path that removes the component from the tree, so a chapter-navigation
-  close and an explicit close button both reset the atom identically) --
-  necessary now that the atom is a DI singleton outliving any one popover
-  instance, where the pre-atom code's "a fresh component starts blank" was
-  automatic. MULTI-INSTANCE REALITY (R4): three independent sites can each
-  mount an `ExplorerPopover` at once (`Reader.razor`, `World.razor`'s
-  embedded split pane, `MainLayout.razor`'s own hamburger "continue"
-  popover), none cross-clearing another -- the atom holds "the ACTIVE
-  session" (whichever popover most recently claimed ownership,
-  `client/State/OwnershipRegistry.cs`, claim-on-open/release-on-close); each
-  popover instance's own RENDERING stays sourced from its own local `_focus`
-  field (mutated via the SAME pure intent `Apply` the atom's own `Dispatch`
-  uses), so a superseded instance never regresses its own functionality --
-  it simply stops mirroring into the shared atom. Every DOM-observable
+  as one value, mutated via `Visit`/`Back`/`Reset`/`SeedFromTrail`/`Reseed`
+  intents. `Visit` (push + trail-append) is now genuinely IDEMPOTENT when
+  re-visiting the node already on top (a naive unconditional push would not
+  be, per law 2) -- a safety property, not an observed behavior change (no
+  existing entry point re-visits the current node consecutively). **`Back`
+  PRESERVES G2's own shipped rule, byte-for-byte (fix round 1, Adjudication
+  D): a Back landing IS a visit** -- it appends the landed-on node's own
+  descriptor to the trail with the SAME consecutive-dedupe guard `Visit`
+  uses, exactly matching this row's own "every Back landing" wording above
+  and the pre-ST-3 code it replaces; an earlier ST-3 draft misread R3's own
+  wording as "trail untouched" and shipped the opposite behavior for one
+  fix round -- corrected, not a second amendment to this row's own EXISTING
+  authority. `SeedFromTrail` replaces the pre-atom per-node Push+record-trail
+  loop `SeedStack` used to drive, byte-identical result. `Reset` fires on
+  EVERY popover close (`ExplorerPopover`'s own `Dispose`, not just
+  `RequestClose` -- Blazor calls `Dispose` for every path that removes the
+  component from the tree, so a chapter-navigation close and an explicit
+  close button both reset the atom identically) -- necessary now that the
+  atom is a DI singleton outliving any one popover instance, where the
+  pre-atom code's "a fresh component starts blank" was automatic.
+
+  MULTI-INSTANCE REALITY (R4): three independent sites can each mount an
+  `ExplorerPopover` at once (`Reader.razor`, `World.razor`'s embedded split
+  pane, `MainLayout.razor`'s own hamburger "continue" popover), none
+  cross-clearing another -- the atom holds "the ACTIVE session" (whichever
+  popover most recently claimed ownership, `client/State/OwnershipRegistry.cs`,
+  claim-on-open/release-on-close). Fix round 1 (S-2, CRITICAL): the OWNING
+  instance's own rendering reads the atom directly through a
+  `Projection<FocusStack>` (`FocusValue`, gated on `_claim.IsCurrent`) --
+  satisfying "components never hold copies... render projections" for the
+  session that matters, rather than an earlier draft's write-only atom with
+  every render sourced from a permanent local field. A SUPERSEDED instance
+  falls back to `_frozenSnapshot` -- kept continuously warm from the atom
+  WHILE this instance was current, so it is always exactly its own
+  last-known-correct state the instant ownership is lost -- the ONE
+  disclosed, narrow exception to "render a projection," since the shared
+  atom cannot promise a superseded instance anything once another session
+  owns it. HAND-OFF (Adjudication E): closing the ACTIVE session Resets the
+  atom; if another live, superseded popover is still listening, it reclaims
+  ownership and re-seeds the atom from its OWN frozen session (`Reseed`,
+  "claim = reconcile," mirroring `EffectRegistry.Claim`'s own reconcile-on-
+  claim shape) -- otherwise the atom simply stays Reset. Every DOM-observable
   behavior this section describes (drilling in, backing out, saving,
   "continue") is UNCHANGED for the single-popover-open case this app's own
   UI/tests actually exercise; see state-focus.spec.ts and the batch report's

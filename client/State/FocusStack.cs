@@ -13,24 +13,29 @@ namespace BibleAtlas.Client.State;
 /// own pre-atom <c>Stack{IExplorable} _stack</c> + <c>List{ExplorationDescriptor} _trail</c>
 /// fields collapse into this.
 ///
-/// EQUALITY: hand-rolled (not the compiler-generated, per-property one a
-/// plain <c>record</c> would get) -- <see cref="IReadOnlyList{T}"/> properties
-/// need SEQUENCE equality for the SAME law-2/law-5 reason
-/// <see cref="SequenceEqualityComparer{T}"/>'s own header explains for
-/// Selection; overriding the record's own generated <c>Equals(FocusStack?)</c>
-/// directly (a supported, standard C# technique -- the compiler uses YOUR
-/// definition instead of generating a member-wise one once the signature
-/// matches) keeps this a genuine <c>record</c> (value semantics everywhere
-/// else: <c>with</c> expressions, deconstruction) while fixing ONLY the
-/// list-comparison gap. <see cref="Contracts.Focus"/> itself is Contracts/-
-/// sealed, extend-only, with its OWN (uneditable) equality -- Descriptor
-/// value-equal, Node REFERENCE-equal (concrete <see cref="IExplorable"/>
-/// implementations, e.g. VerseNode/PlaceNode, are plain classes, never
-/// records -- grep-confirmed). SequenceEqual over Stack therefore only
-/// recognizes "no change" when every UNCHANGED entry is the SAME node
-/// object reference, not merely an equal one -- true by construction here,
-/// since every intent below only ever appends/removes at the ends and never
-/// reconstructs a Focus for an entry it isn't touching.
+/// EQUALITY (fix round 1, Q-3 -- review, "prefer descriptor-based equality;
+/// it is also what makes law tests meaningful for this atom"): hand-rolled
+/// (not the compiler-generated, per-property one a plain <c>record</c> would
+/// get), comparing <see cref="Stack"/> by each entry's own
+/// <see cref="Focus.Descriptor"/> ONLY -- <see cref="Focus.Node"/> is
+/// PAYLOAD, excluded from equality. Why: <see cref="Contracts.Focus"/> is
+/// Contracts/-sealed, extend-only, with its OWN (uneditable) generated
+/// equality -- Descriptor value-equal, Node REFERENCE-equal (concrete
+/// <see cref="IExplorable"/> implementations, e.g. VerseNode/PlaceNode, are
+/// plain classes, never records). A naive <c>Stack.SequenceEqual</c> (the
+/// original draft) therefore only recognized "no change" when every entry
+/// was the literal SAME node object -- which <see cref="SeedFromTrail"/>
+/// breaks: MainLayout's own "continue" reconstructs FRESH node instances
+/// via <c>ExplorationDescriptor.Reconstruct</c> on every click, so two
+/// re-seeds of an EQUAL trail would never compare equal, firing spurious
+/// <c>Changed</c> events and breaking law 2 for exactly the intent whose
+/// whole job is "the same session, seeded again." Descriptor is this
+/// value's own OBSERVABLE identity everywhere else already --
+/// <see cref="Visit"/>'s own idempotent-no-op guard, <see cref="Back"/>'s
+/// own trail-append-dedupe guard, and the popover's own rendering (Title/
+/// Kind/Key, never anything Node-specific) all key off it -- so this is the
+/// identity the type ALREADY had, made honest in <c>Equals</c> too, not a
+/// new rule invented for this fix.
 /// </summary>
 public sealed record FocusStack(IReadOnlyList<Focus> Stack, IReadOnlyList<ExplorationDescriptor> Trail)
 {
@@ -43,18 +48,19 @@ public sealed record FocusStack(IReadOnlyList<Focus> Stack, IReadOnlyList<Explor
     public Focus? Current => Stack.Count > 0 ? Stack[^1] : null;
 
     public bool Equals(FocusStack? other) =>
-        other is not null && Stack.SequenceEqual(other.Stack) && Trail.SequenceEqual(other.Trail);
+        other is not null
+        && Stack.Select(f => f.Descriptor).SequenceEqual(other.Stack.Select(f => f.Descriptor))
+        && Trail.SequenceEqual(other.Trail);
 
     public override int GetHashCode()
     {
         var hash = new HashCode();
-        hash.Add(Stack.Count);
-        hash.Add(Trail.Count);
-        if (Current is { } c)
+        foreach (var f in Stack)
         {
-            hash.Add(c);
+            hash.Add(f.Descriptor);
         }
 
+        hash.Add(Trail.Count);
         return hash.ToHashCode();
     }
 }
@@ -94,31 +100,71 @@ public sealed record Visit(IExplorable Node, string? Origin = null) : IIntent<Fo
 }
 
 /// <summary>
-/// R3: "Back pops stack, TRAIL UNTOUCHED" -- verbatim, applied even though
-/// the pre-ST-3 code (ExplorerPopover.razor's own <c>Back()</c>) called
-/// <c>RecordTrailVisit()</c> after every pop too (recording a return to a
-/// shallower node whenever it differed from the trail's own last entry --
-/// which it usually does, since Back is normally reached only after pushing
-/// at least one level deeper first). DISCLOSED, RULING-MANDATED BEHAVIOR
-/// CHANGE from that prior code, not a re-derivation: a saved exploration's
-/// own trail (SaveExploration -> SavedExplorationsService.Save) will no
-/// longer include "return to X" entries a Back gesture used to add -- only
-/// genuine forward visits. See the batch report's own retirement table.
-/// Idempotent by construction: redispatching the same Back twice pops at
-/// most one level total (the second dispatch, against the already-popped
-/// value, either pops again if Count was still &gt;1 -- a DIFFERENT
-/// observable pop, so NOT idempotent for a 3+-deep stack dispatched twice in
-/// a row -- disclosed negative-control case, same "Increment" precedent as
-/// ToggleSelection; law 2's OWN positive test only requires the SAME-VALUE
-/// convergence law-2 tests generated sequences honor, which single-pop-at-
-/// bottom cases do (Count&lt;=1 is a genuine, real no-op)).
+/// Fix round 1 (Adjudication D, S-1 -- CRITICAL, review): G2's OWN
+/// record-of-nodes-traversed rule, restored -- **a Back LANDING is a
+/// visit.** The pre-atom code (`ExplorerPopover.razor`'s own `Back()`)
+/// called `RecordTrailVisit()` after every pop, appending the LANDED-ON
+/// node's own descriptor to the trail with the SAME consecutive-dedupe
+/// guard `Visit` uses (never double-appending when the landed node already
+/// equals the trail's own last entry) -- `tests/ux/CONTRACT.md`'s own
+/// shipped EXPLORE-TRAIL-1 row states this explicitly and is the winning
+/// authority: "Recorded at every point Current actually changes (initial
+/// open, every Push, **every Back landing**), collapsing consecutive
+/// duplicates." An earlier draft of this record read "Back pops stack,
+/// trail untouched" into R3's own wording and shipped it as a deliberate,
+/// disclosed deviation -- WRONG: R3's wording was the controller's own
+/// transcription error, not a ruling that ever meant to retire G2's shipped
+/// behavior. Fixed here, not re-litigated further.
+///
+/// Idempotent by construction over the SAME-VALUE convergence law-2 tests
+/// actually exercise: at the bottom of the stack (Count&lt;=1) this is a
+/// genuine, real no-op (`current` returned unchanged, by reference). A
+/// 3+-deep stack dispatched twice in a row is NOT pointwise-idempotent
+/// (each dispatch pops --and appends-- once more) -- the same disclosed
+/// negative-control shape `ToggleSelection` already established via the
+/// `Increment` precedent, not a defect.
 /// </summary>
 public sealed record Back(string? Origin = null) : IIntent<FocusStack>
 {
     public string Name => "focus-back";
 
-    public FocusStack Apply(FocusStack current) =>
-        current.Stack.Count > 1 ? current with { Stack = current.Stack.Take(current.Stack.Count - 1).ToList() } : current;
+    public FocusStack Apply(FocusStack current)
+    {
+        if (current.Stack.Count <= 1)
+        {
+            return current;
+        }
+
+        var stack = current.Stack.Take(current.Stack.Count - 1).ToList();
+        var landed = stack[^1].Descriptor;
+        var trail = current.Trail.Count > 0 && current.Trail[^1] == landed
+            ? current.Trail
+            : current.Trail.Append(landed).ToList();
+        return new FocusStack(stack, trail);
+    }
+}
+
+/// <summary>
+/// Fix round 1 (S-2/Adjudication E -- CRITICAL, review): the ownership
+/// hand-off primitive -- restores a FULL session snapshot verbatim,
+/// ignoring <c>current</c> entirely (the same overwrite shape
+/// <see cref="Reset"/>/<see cref="SeedFromTrail"/> already use). The ONE
+/// caller is a SUPERSEDED <c>ExplorerPopover</c> instance that reclaims
+/// "focus-stack" ownership after the previously-active session closes
+/// (its own <c>Dispose</c> having Reset the atom to <see cref="FocusStack.Empty"/>)
+/// while THIS instance is still mounted and showing something real --
+/// "claim = reconcile," mirroring <c>EffectRegistry.Claim</c>'s own
+/// reconcile-on-claim shape (client/State/EffectRegistry.cs), just
+/// reconciling from the reclaiming instance's OWN last-known session
+/// (its frozen local snapshot) rather than from the atom's stale/reset
+/// value. See ExplorerPopover.razor's own reclaim wiring for the full
+/// mechanism.
+/// </summary>
+public sealed record Reseed(FocusStack Snapshot, string? Origin = null) : IIntent<FocusStack>
+{
+    public string Name => "focus-reseed";
+
+    public FocusStack Apply(FocusStack current) => Snapshot;
 }
 
 /// <summary>

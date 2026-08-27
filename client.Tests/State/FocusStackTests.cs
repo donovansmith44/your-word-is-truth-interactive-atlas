@@ -80,23 +80,54 @@ public class FocusStackTests
     }
 
     // ------------------------------------------------------------------
-    // Shape: Back pops stack, TRAIL UNTOUCHED (R3, verbatim -- a disclosed
-    // behavior change from the pre-ST-3 component code).
+    // Shape: Back pops stack AND records the landed-on node in the trail
+    // (Adjudication D, fix round 1 -- G2's own shipped rule, restored: "a
+    // Back landing is a visit," CONTRACT.md's own EXPLORE-TRAIL-1 row,
+    // verbatim). An earlier draft read R3's "trail untouched" wording
+    // literally and shipped the OPPOSITE behavior -- wrong, per the
+    // controller's own ruling; see FocusStack.cs's own Back record doc
+    // comment for the full history.
     // ------------------------------------------------------------------
 
     [Fact]
-    public void Back_PopsTheStack_TrailUntouched()
+    public void Back_PopsTheStack_AndRecordsTheLandedNodeInTheTrail()
     {
         var atom = new StateAtom<FocusStack>("focus-stack", FocusStack.Empty);
-        atom.Dispatch(new Visit(V("GEN.1.1")));
-        atom.Dispatch(new Visit(V("GEN.1.2")));
-        var trailBeforeBack = atom.Value.Trail;
+        atom.Dispatch(new Visit(V("GEN.1.1"))); // A
+        atom.Dispatch(new Visit(V("GEN.1.2"))); // B -- trail: [A, B]
 
-        atom.Dispatch(new Back());
+        atom.Dispatch(new Back()); // lands back on A -- trail: [A, B, A]
 
         Assert.Single(atom.Value.Stack);
         Assert.Equal("GEN.1.1", atom.Value.Current!.Descriptor.Key);
-        Assert.Equal(trailBeforeBack, atom.Value.Trail); // R3, verbatim: "trail untouched"
+        Assert.Equal(new[] { "GEN.1.1", "GEN.1.2", "GEN.1.1" }, atom.Value.Trail.Select(d => d.Key));
+    }
+
+    [Fact]
+    public void Back_ConsecutiveDedupeGuard_WhenTheTrailAlreadyEndsWithTheLandedDescriptor_DoesNotDoubleAppend()
+    {
+        // Fix round 1 (Adjudication D, item 5): the SAME consecutive-dedupe
+        // guard Visit uses (never double-appending when a landed descriptor
+        // already equals the trail's own last entry) must also hold on the
+        // Back path. NOT reachable through an ordinary Visit/Back dispatch
+        // sequence, disclosed: Visit's own idempotence guard means no two
+        // ADJACENT stack entries can ever share a descriptor, which in turn
+        // means an ordinary walk up/down the stack never lands on the exact
+        // descriptor the trail's own last entry already names. Constructed
+        // directly here instead, to prove the GUARD ITSELF is correct by
+        // inspection -- the same "prove it, don't just assume it never
+        // triggers" discipline this file already applies to Visit's own
+        // guard, and cheap insurance against a future change (e.g. a
+        // relaxed Visit dedupe rule) that WOULD make this reachable.
+        var a = new Focus(new ExplorationDescriptor("Verse", "GEN.1.1", "GEN.1.1"), V("GEN.1.1"));
+        var b = new Focus(new ExplorationDescriptor("Verse", "GEN.1.2", "GEN.1.2"), V("GEN.1.2"));
+        var handBuilt = new FocusStack(new[] { a, b }, new[] { a.Descriptor, b.Descriptor, a.Descriptor }); // trail ALREADY ends with "GEN.1.1" -- exactly what Back is about to land on
+
+        var result = new Back().Apply(handBuilt);
+
+        Assert.Single(result.Stack);
+        Assert.Equal(3, result.Trail.Count); // unchanged -- did NOT double-append
+        Assert.Equal(handBuilt.Trail, result.Trail);
     }
 
     [Fact]
