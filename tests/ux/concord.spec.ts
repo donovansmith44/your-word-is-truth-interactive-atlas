@@ -1,13 +1,19 @@
 import { test, expect } from '@playwright/test';
 import { api } from './lib/api';
 
-// Batch CORP-1 (R3/R5): the Book of Concord structure browser. Coverage: tab
-// navigation from both existing pages; part/article/paragraph browse (the
-// corpus's OWN shape, not scripture locus) + explore-on-click (ONE-RULE,
-// with REAL paragraph text -- unlike Kretzmann, Concord's own reading-spine
-// fetch already carries full text, no disclosed gap here); read-beside split
-// with clean degradation (R3: "works via VC-1's generality; no follow
-// anything").
+// Batch CORPREAD-1b (ticket C, owner order verbatim: "I want to be able ot
+// read it like the normal BoC. Everything doesn't need to be shown
+// visually as belonging to these boxes. It should be a smooth reading
+// experiecne like the Bible, except verses and verse fragements and
+// verse/passage references are explorable. I should have a menu through
+// which I can navigate to different parts in the BoC.") -- REBUILDS
+// CORP-1's own bordered-row list into a continuous reading surface.
+// Coverage: tab navigation (unchanged); part/article/paragraph browse with
+// paragraphs now flowing as prose, part/article structure carried by
+// typography; the NEW nav menu; ONE-RULE explore-on-click; the
+// explorable-reference law (the shared scanner, ticket K's own mechanism);
+// read-beside split with clean degradation (unchanged); the boundary
+// no-duplicate fix (unchanged mechanism).
 
 test('CONCORD-1: nav-concord reaches /concord from both Reader and World', async ({ page }) => {
   await page.goto('/');
@@ -23,7 +29,7 @@ test('CONCORD-1: nav-concord reaches /concord from both Reader and World', async
   await expect(page.getByTestId('concord-page')).toBeVisible();
 });
 
-test('CONCORD-2: opens on the Preface (BoC 1.1.1) and every rendered row is real, non-fabricated paragraph text', async ({ page }) => {
+test('CONCORD-2: opens on the Preface (BoC 1.1.1) and every rendered paragraph is real, non-fabricated text', async ({ page }) => {
   const ground = await api.reading('BoC 1.1.1', 20, { corpus: 'concord' });
   expect(ground.units.length).toBeGreaterThan(0);
 
@@ -36,6 +42,18 @@ test('CONCORD-2: opens on the Preface (BoC 1.1.1) and every rendered row is real
     await expect(row).toBeVisible();
     await expect(row).toContainText(unit.text);
   }
+});
+
+test('CONCORD-2b (ticket C, "boxes die ... part/article structure carried by TYPOGRAPHY"): the Preface\'s own part heading renders, no bordered row anywhere', async ({ page }) => {
+  await page.goto('/concord');
+  await expect(page.getByTestId('concord-part-heading-1')).toBeVisible();
+  await expect(page.getByTestId('concord-part-heading-1')).toContainText('Preface to the Book of Concord');
+
+  // The retired CORP-1 box treatment (border + background on the row
+  // itself) is genuinely gone -- a real, live style assertion, not just
+  // "the class name changed."
+  const firstUnit = page.locator('.concord-unit').first();
+  await expect(firstUnit).toHaveCSS('border-style', 'none');
 });
 
 test('CONCORD-3: the part/article/paragraph picker navigates the corpus\'s OWN shape -- jumping to 7.2.1 shows the real First Commandment text', async ({ page }) => {
@@ -53,7 +71,7 @@ test('CONCORD-3: the part/article/paragraph picker navigates the corpus\'s OWN s
   await expect(page.getByTestId('concord-unit-BoC-7-2-1')).toContainText(realText);
 });
 
-test('CONCORD-4 (ONE-RULE): plain click on a paragraph row opens the existing explore/popover, carrying the REAL full paragraph text', async ({ page }) => {
+test('CONCORD-4 (ONE-RULE): plain click on a paragraph opens the existing explore/popover, carrying the REAL full paragraph text', async ({ page }) => {
   const ground = await api.reading('BoC 1.1.1', 1, { corpus: 'concord' });
   const realText = ground.units[0].text as string;
 
@@ -86,41 +104,34 @@ test('CONCORD-6: declares its own "read-beside" hatch -- split opens with Concor
 
   await expect(page.getByTestId('split-view')).toBeVisible();
   await expect(page.getByTestId('split-divider')).toBeVisible();
-  await expect(page.getByTestId('concord-page')).toBeVisible(); // both members live
+  await expect(page.getByTestId('concord-page')).toBeVisible();
   await expect(page.getByTestId('split-open-concord')).toHaveCount(0);
 
   await expect(page.getByTestId('reader-root')).toBeVisible();
   await expect(page.getByTestId('verse-line-1')).toBeVisible();
-  // Batch CORPREAD-1a (SPLIT-PERSIST-1): Concord now keeps its OWN split
-  // query in sync too (the route itself never changes, but the query now
-  // does -- see kretzmann.spec.ts's own matching update).
-  await expect(page).toHaveURL(/\/concord\?split=reader$/); // Concord stays the route; no navigation
+  await expect(page).toHaveURL(/\/concord\?split=reader$/);
 
   await page.getByTestId('split-close-reader-guest').click();
   await expect(page.getByTestId('split-view')).toHaveCount(0);
   await expect(page.getByTestId('concord-page')).toBeVisible();
 });
 
-test('CONCORD-7 (degraded-link law): concord+reader has no BearsWindow/BearsLocus member -- no follow chip, no follow link, no world map, ever', async ({ page }) => {
+test('CONCORD-7 (degraded-link law, unchanged): concord+reader has no BearsWindow/BearsLocus member -- no follow chip, no follow link, no world map, ever', async ({ page }) => {
   await page.goto('/concord');
   await page.getByTestId('split-open-concord').click();
   await expect(page.getByTestId('split-view')).toBeVisible();
 
   await expect(page.getByTestId('follow-chip')).toHaveCount(0);
+  await expect(page.getByTestId('kretzmann-follow-chip')).toHaveCount(0);
   await expect(page.getByTestId('mode-chip')).toHaveCount(0);
   await expect(page.getByTestId('world-map')).toHaveCount(0);
 });
 
-test('CONCORD-8 (batch-corp1-report.md §13 boundary-overlap fix): Next then Previous never repeats a row -- the unit that anchored the next page is not re-shown as the previous page\'s own last row', async ({ page }) => {
+test('CONCORD-8 (batch-corp1-report.md §13 boundary-overlap fix, unchanged): Next then Previous never repeats a row', async ({ page }) => {
   await page.goto('/concord');
   await expect(page.getByTestId('concord-next')).toBeVisible();
   const firstPosition = await page.getByTestId('concord-position').textContent();
 
-  // Capture the ref that anchors page 2 (the unit dir=backward's own
-  // inclusive-of-fromRef semantics would otherwise duplicate). Waits for
-  // the position to actually CHANGE before reading it -- LoadWindowAsync is
-  // async, so reading concord-position's own textContent immediately after
-  // the click (with no wait) can race the still-stale page-1 value.
   await page.getByTestId('concord-next').click();
   await expect(page.getByTestId('concord-position')).not.toHaveText(firstPosition ?? '');
   const page2AnchorRef = await page.getByTestId('concord-position').textContent();
@@ -128,16 +139,67 @@ test('CONCORD-8 (batch-corp1-report.md §13 boundary-overlap fix): Next then Pre
   const anchorSlug = (page2AnchorRef ?? '').replace(/ /g, '-').replace(/\./g, '-');
   await expect(page.getByTestId(`concord-unit-${anchorSlug}`)).toBeVisible();
 
-  // Page back to page 1's own "previous of page 2" window -- before the
-  // fix, this window's own LAST row duplicated page2AnchorRef (it was
-  // already shown, above, as page 2's own first row).
   await page.getByTestId('concord-prev').click();
   await expect(page.getByTestId('concord-position')).toBeVisible();
   await expect(page.getByTestId(`concord-unit-${anchorSlug}`)).toHaveCount(0);
 
-  // Forward-paging from here must land exactly back on page2AnchorRef --
-  // no gap, no repeat -- confirming the trim didn't just hide the
-  // duplicate but also correctly rewired "Next".
   await page.getByTestId('concord-next').click();
   await expect(page.getByTestId('concord-position')).toContainText(page2AnchorRef ?? '');
+});
+
+// Ticket C, owner order verbatim: "I should have a menu through which I
+// can navigate to different parts in the BoC."
+test('CONCORD-9 (BoC nav menu): Contents reveals the ten traditional documents; jumping lands in full reading flow, not a bare fragment', async ({ page }) => {
+  await page.goto('/concord');
+  await expect(page.getByTestId('concord-toc-menu')).toHaveCount(0); // collapsed by default -- no chrome clutter
+  await expect(page.getByTestId('concord-toc-toggle')).toHaveAttribute('aria-expanded', 'false');
+
+  await page.getByTestId('concord-toc-toggle').click();
+  await expect(page.getByTestId('concord-toc-menu')).toBeVisible();
+  await expect(page.getByTestId('concord-toc-toggle')).toHaveAttribute('aria-expanded', 'true');
+
+  // The traditional documents, verbatim (Explore/ConcordToc.cs, mirroring
+  // atlas-etl/src/concord.rs's own CONCORD_DOC_SPECS).
+  await expect(page.getByTestId('concord-toc-part-3')).toContainText('Augsburg Confession');
+  await expect(page.getByTestId('concord-toc-part-7')).toContainText('Small Catechism');
+  await expect(page.getByTestId('concord-toc-part-9')).toContainText('Epitome');
+
+  const ground = await api.reading('BoC 7.1.1', 1, { corpus: 'concord' });
+  const realText = ground.units[0].text as string;
+
+  await page.getByTestId('concord-toc-part-7').click();
+
+  // Landed in FULL READING FLOW -- the part heading, the first paragraph's
+  // own real text, both rendered -- never a bare fragment.
+  await expect(page.getByTestId('concord-toc-menu')).toHaveCount(0); // closes on jump
+  await expect(page.getByTestId('concord-position')).toContainText('BoC 7.1.1');
+  await expect(page.getByTestId('concord-part-heading-7')).toBeVisible();
+  await expect(page.getByTestId('concord-part-heading-7')).toContainText('The Small Catechism');
+  await expect(page.getByTestId('concord-unit-BoC-7-1-1')).toContainText(realText);
+});
+
+// Ticket C, "same mechanism as ticket K -- do not fork the scanner."
+test('CONCORD-10 (explorable-reference law): a scripture reference inside confession prose opens the SAME VerseNode popover', async ({ page }) => {
+  await page.goto('/concord');
+  await page.getByTestId('concord-toc-toggle').click();
+  // The Augsburg Confession -- real, verified citations present in its own
+  // vendored text (data/raw/concord/augsburg-confession.html), e.g. "Luke
+  // 17:10", "Eph. 4:5-6", within its first several reading windows.
+  await page.getByTestId('concord-toc-part-3').click();
+  await expect(page.getByTestId('concord-position')).toContainText('BoC 3.1.1');
+
+  let ref = page.locator('.concord-ref').first();
+  for (let i = 0; i < 12 && (await ref.count()) === 0; i++) {
+    await page.getByTestId('concord-next').click();
+    ref = page.locator('.concord-ref').first();
+  }
+  await expect(ref).toBeVisible();
+
+  await ref.click();
+
+  await expect(page.getByTestId('popover-title')).toBeVisible();
+  // A vref-shaped title (e.g. "LUK.17.10") -- the SAME VerseNode popover
+  // every other verse reference in this app opens, not a bespoke citation
+  // popover.
+  await expect(page.getByTestId('popover-title')).toHaveText(/^[A-Z0-9]{2,3}\.\d+\.\d+/);
 });

@@ -60,6 +60,21 @@ public static class ScriptureRefScan
     // book-by-book (canon order) for readability; matching itself is
     // length-ordered at scan time (see BuildAliasTable), not by this
     // declaration order.
+    // CODES verified live against THIS app's own real GET /api/books
+    // response (not re-guessed from an ETL source file a second time) --
+    // a real, live-caught bug (KRETZMANN-10's own first Playwright run):
+    // an earlier draft of this table copied several codes from
+    // `data/raw/brain-fuel-bible/data/books.json` verbatim, which turned
+    // out to disagree with this app's OWN canonical codes for several
+    // books (e.g. John is "JHN" here, not that source's "JOH"; Ezekiel is
+    // "EZK", not "EZE"; Mark is "MRK", not "MAR"; James is "JAS", not
+    // "JAM"; Jude is "JUD", not "JDE"; Nahum is "NAM", not "NAH"; the
+    // Johannine epistles are "1JN"/"2JN"/"3JN", not "1JO"/"2JO"/"3JO") --
+    // corrected here. This particular mismatch was HARMLESS for a book
+    // matched by its own full curated NAME (the live-fetched TOC always
+    // supplies the correct code for that path, regardless of this table),
+    // but would have been a real, silent misattribution for a book ONLY
+    // ever matched via one of these short ALIASES.
     private static readonly (string Alias, string Code)[] CitationAliases =
     {
         ("Gen", "GEN"), ("Exod", "EXO"), ("Exo", "EXO"), ("Lev", "LEV"), ("Num", "NUM"),
@@ -69,18 +84,18 @@ public static class ScriptureRefScan
         ("2 Chron", "2CH"), ("2 Chr", "2CH"), ("Neh", "NEH"), ("Esth", "EST"),
         ("Ps", "PSA"), ("Pss", "PSA"), ("Psalm", "PSA"), ("Prov", "PRO"),
         ("Eccl", "ECC"), ("Isa", "ISA"), ("Jer", "JER"), ("Lam", "LAM"),
-        ("Ezek", "EZE"), ("Eze", "EZE"), ("Dan", "DAN"), ("Hos", "HOS"),
-        ("Obad", "OBA"), ("Mic", "MIC"), ("Nah", "NAH"), ("Hab", "HAB"),
+        ("Ezek", "EZK"), ("Eze", "EZK"), ("Dan", "DAN"), ("Hos", "HOS"),
+        ("Obad", "OBA"), ("Mic", "MIC"), ("Nah", "NAM"), ("Hab", "HAB"),
         ("Zeph", "ZEP"), ("Hag", "HAG"), ("Zech", "ZEC"), ("Mal", "MAL"),
-        ("Matt", "MAT"), ("Mat", "MAT"), ("Mk", "MAR"), ("Lk", "LUK"),
+        ("Matt", "MAT"), ("Mat", "MAT"), ("Mk", "MRK"), ("Lk", "LUK"),
         ("Rom", "ROM"), ("1 Cor", "1CO"), ("Cor", "1CO"), ("2 Cor", "2CO"),
         ("Gal", "GAL"), ("Eph", "EPH"), ("Phil", "PHP"), ("Php", "PHP"),
         ("Col", "COL"), ("1 Thess", "1TH"), ("1 Thes", "1TH"), ("2 Thess", "2TH"),
         ("2 Thes", "2TH"), ("1 Tim", "1TI"), ("2 Tim", "2TI"), ("Tit", "TIT"),
-        ("Philem", "PHM"), ("Heb", "HEB"), ("Jas", "JAM"),
+        ("Philem", "PHM"), ("Heb", "HEB"), ("Jas", "JAS"),
         ("1 Pet", "1PE"), ("Pet", "1PE"), ("2 Pet", "2PE"),
-        ("1 John", "1JO"), ("2 John", "2JO"), ("3 John", "3JO"),
-        ("Jude", "JDE"), ("Rev", "REV"),
+        ("1 John", "1JN"), ("2 John", "2JN"), ("3 John", "3JN"),
+        ("Jude", "JUD"), ("Rev", "REV"),
     };
 
     /// <summary>
