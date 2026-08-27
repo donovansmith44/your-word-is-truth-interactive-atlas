@@ -3502,6 +3502,7 @@ const BorderLayer = L.Layer.extend({
             const d = found.delta;
             this._dotnetRef.invokeMethodAsync(
                 'OnPolityDeltaClick',
+                g.entry.id, // G2-m1: the polity's own stable id, already resolved here (this._roster) -- now threaded to .NET, not just used locally for the testid
                 g.entry.name,
                 found.kind,
                 found.titleFrom,

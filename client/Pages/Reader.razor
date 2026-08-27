@@ -227,7 +227,8 @@
                                TextClass="verse-text" MentionClass="verse-mention"
                                XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(v.Verse, "")"
                                OnXrefClick="OpenVerseXrefEntryPersistent" OnXrefHoverEnter="OpenVerseXrefEntryHover"
-                               OnXrefHoverLeave="OnXrefMarkerPointerLeave" OnToggleSelect="OnLineToggleSelect" />
+                               OnXrefHoverLeave="OnXrefMarkerPointerLeave" OnToggleSelect="OnLineToggleSelect"
+                               OnMentionToggleSelect="OnMentionToggleSelect" />
                 }
             </article>
         }
@@ -1005,6 +1006,13 @@
     // SelectionTrayService no longer exposes a Toggle method (see that
     // file's own updated header).
     private void OnLineToggleSelect(VerseNode node) => SelectionAtom.Dispatch(new ToggleSelection(ExplorationDescriptor.Capture(node)));
+
+    // G2-m2: the generic sibling of OnLineToggleSelect immediately above --
+    // a mention span's own node (PlaceNode/PersonNode) is never a VerseNode,
+    // so VerseLine forwards it through its own separate OnMentionToggleSelect
+    // parameter (see that parameter's own doc comment) rather than sharing
+    // OnToggleSelect's VerseNode-typed callback. Same atom, same intent.
+    private void OnMentionToggleSelect(IExplorable node) => SelectionAtom.Dispatch(new ToggleSelection(ExplorationDescriptor.Capture(node)));
 
     // Shared by every popover-opening method that is NOT a superscript
     // entry point (OnLineExplore/OpenChapter/OpenPassage/ClosePopover) --

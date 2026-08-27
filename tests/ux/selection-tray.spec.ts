@@ -112,6 +112,30 @@ test('SELECTION-1: a selection persists across reader<->world navigation (one sh
   await expect(page.getByTestId('selection-tray-count')).toHaveText('1 selected');
 });
 
+// G2-m3 (batch-r-report.md §7's own three-gesture grammar: "Shift-click on
+// verse-num-{n} keeps its existing, unrelated meaning (range-extend)"):
+// reader.spec.ts's own READ-2d already proves shift-click still FORMS a
+// range after this batch's Ctrl/Cmd-click gesture landed on the SAME row --
+// what it never asserted is the THIRD leg of the grammar the report itself
+// names: that shift-click's own anchor+extend sequence never ALSO touches
+// the tray (the exact gap "the shift-click range-extend assertion gap"
+// names). Both plain verse-num clicks that form the anchor/range here are
+// deliberately never Ctrl/Cmd-modified -- this is shift-click in complete
+// isolation from the Selection Tray gesture, not a combined chord.
+test('SELECTION-3 (G2-m3): shift-click\'s own range-extend on verse-num never touches the Selection Tray -- three gestures, three meanings, no cross-talk', async ({ page }) => {
+  await page.goto('/read/GEN/1');
+
+  await page.getByTestId('verse-num-1').click();
+  await expect(page.getByTestId('selection-tray')).toHaveCount(0);
+
+  await page.keyboard.down('Shift');
+  await page.getByTestId('verse-num-2').click();
+  await page.keyboard.up('Shift');
+
+  await expect(page.getByTestId('passage-chip')).toContainText('GEN.1.1-2');
+  await expect(page.getByTestId('selection-tray')).toHaveCount(0);
+});
+
 test('SELECTION-1: a selection survives a fresh page load (localStorage-backed)', async ({ page }) => {
   await page.goto('/read/GEN/1');
   await page.getByTestId('verse-line-3').click({ modifiers: ['Control'] });

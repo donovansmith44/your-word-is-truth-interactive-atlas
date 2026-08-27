@@ -5073,6 +5073,15 @@ Notes:
   the popover still opens exactly as before AND the tray stays untouched --
   the gesture split is real, not merely documented.
 
+  SHIFT-CLICK PARITY (G2-m3, batch-finalp1-brief.md ticket 5 -- the third
+  leg of batch-r-report.md §7's own three-gesture grammar, asserted, not
+  assumed): `selection-tray.spec.ts`'s own SELECTION-3 case drives
+  `verse-num-{n}`'s own PRE-EXISTING shift-click anchor+extend sequence
+  (reader.spec.ts's READ-2d already proves the range itself still forms)
+  and additionally asserts the tray stays untouched throughout -- Ctrl/Cmd-
+  click, plain click, and shift-click are now each independently proven not
+  to cross-talk with either of the other two.
+
   ST-3 AMENDMENT (batch-st3-brief.md, controller ruling R2): `SelectionTrayService`
   no longer holds the selection itself -- `AtomNames.Selection`
   (`client/State/Selection.cs`) is the canonical store now, an ordered,

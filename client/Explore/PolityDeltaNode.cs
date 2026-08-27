@@ -37,6 +37,15 @@ namespace BibleAtlas.Client.Explore;
 /// </summary>
 public sealed class PolityDeltaNode : IExplorable
 {
+    // G2-m1 (batch-g2-report.md parked section): the polity's own STABLE id
+    // (PolityEraOut.Id on the wire, already resolved client-side in
+    // map.js's own in-memory roster -- just never threaded through
+    // OnPolityDeltaClick's invokeMethodAsync call before this). Carried
+    // alongside PolityName (still needed for Title/display; the id is not
+    // human-readable) so ExplorationDescriptor can key a saved exploration
+    // on the boundary's own real identity instead of re-locating it by
+    // Name+From+To, which a curator rename could silently mismatch.
+    public string PolityId { get; }
     public string PolityName { get; }
     public string DeltaKind { get; } // "transition" | "fall"
     public int FromYear { get; }
@@ -48,8 +57,9 @@ public sealed class PolityDeltaNode : IExplorable
     public string Title { get; }
     public string Kind => "PolityDelta";
 
-    public PolityDeltaNode(string polityName, string deltaKind, int fromYear, int toYear, string? eventText, IReadOnlyList<string> verses, string? refNote)
+    public PolityDeltaNode(string polityId, string polityName, string deltaKind, int fromYear, int toYear, string? eventText, IReadOnlyList<string> verses, string? refNote)
     {
+        PolityId = polityId;
         PolityName = polityName;
         DeltaKind = deltaKind;
         FromYear = fromYear;

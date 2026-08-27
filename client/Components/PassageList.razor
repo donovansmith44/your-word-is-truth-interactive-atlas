@@ -85,7 +85,7 @@
                spans. *@
             <div class="popover-passage-entry explorable" data-testid="@entry.TestId"
                  tabindex="0" role="button" aria-label="@($"Explore {entry.Block.Span}")"
-                 @onclick="() => Explore(entry.Block)" @onkeydown="@(e => OnKeyDown(e, entry.Block))">
+                 @onclick="@(e => OnEntryClick(e, entry.Block))" @onkeydown="@(e => OnKeyDown(e, entry.Block))">
                 <span class="popover-passage-ref-label">@entry.Block.Span</span>
                 @if (entry.Block.Caption is { } caption)
                 {
@@ -193,6 +193,15 @@
     [Parameter] public string RevealNoun { get; set; } = "entries";
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
+    // G2-m2 (batch-g2-report.md's own disclosed v1-scope gap, "inline
+    // cross-references... are NOT wired for this gesture"): the SAME
+    // Ctrl/Cmd-click toggle VerseLine.razor's own OnRowClick already
+    // gives the reader pane's verse rows. Optional (default: no-op
+    // EventCallback) -- every OTHER PassageList consumer (THE SCRIPTURES,
+    // place est/dest, PRIOR/FOLLOWING) is unaffected by this parameter
+    // simply existing; only CrossRefsSection wires it.
+    [Parameter] public EventCallback<IExplorable> OnToggleSelect { get; set; }
+
     // Batch N2 requirement 2: when set, caps a PASSAGE entry's own compact
     // text at this many verses -- see this file's own header comment.
     [Parameter] public int? ClampVerses { get; set; }
@@ -286,6 +295,17 @@
             ? new PassageNode(block.Span, string.Join(" ", block.Verses.Select(v => v.Text)))
             : new VerseNode(block.FirstVref);
         return OnExplore.InvokeAsync(node);
+    }
+
+    // G2-m2: Ctrl/Cmd-click branches to OnToggleSelect instead of OnExplore
+    // -- same node, same VerseNode/PassageNode identity choice above, only
+    // the destination differs (mirrors VerseLine.razor's own OnRowClick).
+    private Task OnEntryClick(MouseEventArgs e, PassageBlockData block)
+    {
+        IExplorable node = block.IsPassage && !ExploreAsVerse
+            ? new PassageNode(block.Span, string.Join(" ", block.Verses.Select(v => v.Text)))
+            : new VerseNode(block.FirstVref);
+        return e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node) : OnExplore.InvokeAsync(node);
     }
 
     // Keyboard equivalent (design-direction.md: "Enter opens") -- same

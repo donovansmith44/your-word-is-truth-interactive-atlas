@@ -2287,9 +2287,9 @@
     // (OpenExploreNode's own "close any pinned card, push the node" shape),
     // even though a delta ring has no hover-card precursor to close --
     // CloseCardNow is harmless when nothing is pinned.
-    public void OnPolityDeltaClick(string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote)
+    public void OnPolityDeltaClick(string polityId, string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote)
     {
-        _activeNode = new PolityDeltaNode(polityName, kind, titleFromYear, titleToYear, eventText, verses, refNote);
+        _activeNode = new PolityDeltaNode(polityId, polityName, kind, titleFromYear, titleToYear, eventText, verses, refNote);
         CloseCardNow();
         StateHasChanged();
     }

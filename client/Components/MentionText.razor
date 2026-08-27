@@ -80,12 +80,12 @@
     @if (run.IsRed)
     {
         <span class="words-of-christ">
-            <MentionScan Text="@run.Text" Places="@Places" Persons="@Persons" Verse="@Verse" ClassPrefix="@ClassPrefix" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" />
+            <MentionScan Text="@run.Text" Places="@Places" Persons="@Persons" Verse="@Verse" ClassPrefix="@ClassPrefix" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" OnToggleSelect="OnToggleSelect" />
         </span>
     }
     else
     {
-        <MentionScan Text="@run.Text" Places="@Places" Persons="@Persons" Verse="@Verse" ClassPrefix="@ClassPrefix" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" />
+        <MentionScan Text="@run.Text" Places="@Places" Persons="@Persons" Verse="@Verse" ClassPrefix="@ClassPrefix" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" OnToggleSelect="OnToggleSelect" />
     }
 }
 
@@ -124,6 +124,13 @@
     // platform already follows (MiniReaderExpand.razor's own prior doc
     // comment on OnExplore, verbatim precedent).
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    // G2-m2: forwarded straight through to MentionScan, same "this
+    // component only ever proposes a node, never decides how it opens"
+    // contract OnExplore above already documents -- optional (default
+    // no-op) so a caller that never wires it (none currently pass through
+    // a Ctrl/Cmd-click surface) still compiles and renders unchanged.
+    [Parameter] public EventCallback<IExplorable> OnToggleSelect { get; set; }
 
     /// Batch RED-1: one contiguous slice of `text`, either wholly INSIDE a
     /// red-letter span or wholly outside every one -- module doc comment

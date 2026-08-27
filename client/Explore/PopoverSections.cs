@@ -21,6 +21,19 @@ public interface IPopoverSectionContext
     Task PushAsync(IExplorable node);
 
     /// <summary>
+    /// G2-m2 (batch-g2-report.md's own disclosed v1-scope gap: "popover-
+    /// internal explorable rows... are NOT wired for this gesture"): the
+    /// SAME Ctrl/Cmd-click toggle-into-the-Selection-Tray gesture
+    /// VerseLine.razor/map.js already give their own surfaces, reachable
+    /// from every popover-internal explorable row through this ONE
+    /// back-channel -- mirrors <see cref="PushAsync"/>'s own "one
+    /// interface method, every provider reaches it the same way" shape, so
+    /// closing this gap never means teaching each section provider its own
+    /// bespoke selection mechanism.
+    /// </summary>
+    Task ToggleSelectAsync(IExplorable node);
+
+    /// <summary>
     /// Batch F2 requirement 6 (cross-reference truncation, "no more than 3
     /// if xrefs are the ONLY kind of context... no more than 2 if there are
     /// OTHER types of context (small catechism, etc.)"): how many OTHER

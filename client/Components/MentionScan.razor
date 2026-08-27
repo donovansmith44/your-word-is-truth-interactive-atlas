@@ -24,14 +24,14 @@
               tabindex="0" role="button" aria-label="@($"Explore {seg.PlaceName}")"
               @onpointerenter="() => Blink(placeId, true)" @onpointerleave="() => Blink(placeId, false)"
               @onfocus="() => Blink(placeId, true)" @onblur="() => Blink(placeId, false)"
-              @onclick="() => OpenPlace(placeId, seg.PlaceName!)" @onclick:stopPropagation="true"
+              @onclick="@(e => OpenPlace(e, placeId, seg.PlaceName!))" @onclick:stopPropagation="true"
               @onkeydown="@(e => OnPlaceKeyDown(e, placeId, seg.PlaceName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
     }
     else if (seg.PersonId is { } personId)
     {
         <span class="@ClassPrefix @($"{ClassPrefix}-person")" data-testid="@($"{ClassPrefix}-person-{Verse}-{personId}{TestIdSuffix}")"
               tabindex="0" role="button" aria-label="@($"Explore {seg.PersonName}")"
-              @onclick="() => OpenPerson(personId, seg.PersonName!)" @onclick:stopPropagation="true"
+              @onclick="@(e => OpenPerson(e, personId, seg.PersonName!))" @onclick:stopPropagation="true"
               @onkeydown="@(e => OnPersonKeyDown(e, personId, seg.PersonName!))" @onkeydown:stopPropagation="true">@seg.Text</span>
     }
     else
@@ -49,11 +49,30 @@
     [Parameter] public string TestIdSuffix { get; set; } = "";
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
+    // G2-m2 (batch-g2-report.md's own disclosed v1-scope gap, "in-text
+    // mentions... are NOT wired for this gesture"): the SAME Ctrl/Cmd-click
+    // toggle VerseLine.razor's own OnRowClick already gives the reader
+    // pane's verse rows -- reached here too, since this component is the
+    // ONE place `PlaceMentions.Scan` actually renders (this file's own
+    // header comment), so every in-text mention span (Reader.razor's live
+    // text AND any popover section reusing this component) gets the
+    // gesture from this one change.
+    [Parameter] public EventCallback<IExplorable> OnToggleSelect { get; set; }
+
     private Task Blink(string placeId, bool active) => MapInterop.BlinkPlace(JS, placeId, active);
 
-    private Task OpenPlace(string placeId, string placeName) => OnExplore.InvokeAsync(new PlaceNode(placeId, placeName));
-    private Task OpenPerson(string personId, string personName) => OnExplore.InvokeAsync(new PersonNode($"Person:{personId}", personName));
+    private Task OpenPlace(MouseEventArgs e, string placeId, string placeName)
+    {
+        var node = new PlaceNode(placeId, placeName);
+        return e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node) : OnExplore.InvokeAsync(node);
+    }
 
-    private Task OnPlaceKeyDown(KeyboardEventArgs e, string placeId, string placeName) => e.Key == "Enter" ? OpenPlace(placeId, placeName) : Task.CompletedTask;
-    private Task OnPersonKeyDown(KeyboardEventArgs e, string personId, string personName) => e.Key == "Enter" ? OpenPerson(personId, personName) : Task.CompletedTask;
+    private Task OpenPerson(MouseEventArgs e, string personId, string personName)
+    {
+        var node = new PersonNode($"Person:{personId}", personName);
+        return e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node) : OnExplore.InvokeAsync(node);
+    }
+
+    private Task OnPlaceKeyDown(KeyboardEventArgs e, string placeId, string placeName) => e.Key == "Enter" ? OnExplore.InvokeAsync(new PlaceNode(placeId, placeName)) : Task.CompletedTask;
+    private Task OnPersonKeyDown(KeyboardEventArgs e, string personId, string personName) => e.Key == "Enter" ? OnExplore.InvokeAsync(new PersonNode($"Person:{personId}", personName)) : Task.CompletedTask;
 }

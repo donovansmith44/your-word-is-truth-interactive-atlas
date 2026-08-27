@@ -434,6 +434,9 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             // PassageList.razor's own ExploreAsVerse doc comment.
             builder.AddAttribute(seq++, "ExploreAsVerse", true);
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            // G2-m2: the ONE PassageList consumer this batch wires for
+            // Ctrl/Cmd-click -- see that parameter's own doc comment.
+            builder.AddAttribute(seq++, "OnToggleSelect", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.ToggleSelectAsync(n)));
             builder.CloseComponent();
         };
         return new PopoverSection("xrefs", body);
@@ -1099,6 +1102,8 @@ public sealed class PlaceEventsSection : IPopoverSectionProvider
             builder.AddAttribute(2, "PlaceName", placeName);
             builder.AddAttribute(3, "Events", events);
             builder.AddAttribute(4, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            // G2-m2: closes this section's own named gap in the parked report.
+            builder.AddAttribute(5, "OnToggleSelect", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.ToggleSelectAsync(n)));
             builder.CloseComponent();
         };
         return new PopoverSection("place-events", body);

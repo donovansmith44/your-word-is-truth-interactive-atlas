@@ -67,7 +67,12 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
         YearNode y => new ExplorationDescriptor("Year", $"{y.PlaceId}|{y.Label}", y.Title),
         CatechismNode ct => new ExplorationDescriptor("Catechism", ct.Id, ct.Title),
         EventNode ev => new ExplorationDescriptor("Event", ev.EventId, ev.Title),
-        PolityDeltaNode pd => new ExplorationDescriptor("PolityDelta", $"{pd.PolityName}|{pd.DeltaKind}|{pd.FromYear}|{pd.ToYear}", pd.Title),
+        // G2-m1: Key now leads with the polity's own stable id (5 fields,
+        // was 4) -- Reconstruct below still accepts the pre-G2-m1 4-field
+        // form (a descriptor saved before this batch) and falls back to the
+        // original Name+From+To re-location for it, so no previously saved
+        // exploration breaks.
+        PolityDeltaNode pd => new ExplorationDescriptor("PolityDelta", $"{pd.PolityId}|{pd.PolityName}|{pd.DeltaKind}|{pd.FromYear}|{pd.ToYear}", pd.Title),
         PersonNode pn => new ExplorationDescriptor("Person", pn.PersonId, pn.Title),
         // Batch CORP-1: CommentaryItem's own Key is the wire node id
         // ("CommentaryItem:kretzmann/0.1.0") -- Reconstruct needs nothing
@@ -177,27 +182,49 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
 
             case "PolityDelta":
             {
+                // G2-m1: two supported Key shapes. 5 fields (current) leads
+                // with the polity's own STABLE id -- re-locate by Id, immune
+                // to a curator rename. 4 fields (legacy -- a descriptor
+                // saved to localStorage before this batch, when map.js's own
+                // click payload never carried the id at all) falls back to
+                // the original Name+From+To re-location. Either way, a
+                // boundary that can no longer be found degrades to the SAME
+                // "minimal popover" state PolityDeltaNode already documents
+                // as a first-class, supported shape for "an uneventful
+                // boundary" -- never a thrown error for what is, from this
+                // node kind's own point of view, an ordinary
+                // conditional-absence case.
                 var parts = descriptor.Key.Split('|');
-                var polityName = parts[0];
-                var deltaKind = parts[1];
-                var fromYear = int.Parse(parts[2]);
-                var toYear = int.Parse(parts[3]);
-                // Graceful degrade, not a throw: map.js's own click payload
-                // (World.razor.OnPolityDeltaClick) never carried the
-                // polity's own STABLE id to .NET, only this era's display
-                // Name -- re-locating by Name+From+To is the best available
-                // key without widening that JS interop call. If a curator
-                // has since renamed/reshaped this exact boundary, this
-                // degrades to the SAME "minimal popover" state
-                // PolityDeltaNode already documents as a first-class,
-                // supported shape for "an uneventful boundary" -- never a
-                // thrown error for what is, from this node kind's own point
-                // of view, an ordinary conditional-absence case.
+                string? polityId;
+                string polityName;
+                string deltaKind;
+                int fromYear;
+                int toYear;
+                if (parts.Length >= 5)
+                {
+                    polityId = parts[0];
+                    polityName = parts[1];
+                    deltaKind = parts[2];
+                    fromYear = int.Parse(parts[3]);
+                    toYear = int.Parse(parts[4]);
+                }
+                else
+                {
+                    polityId = null;
+                    polityName = parts[0];
+                    deltaKind = parts[1];
+                    fromYear = int.Parse(parts[2]);
+                    toYear = int.Parse(parts[3]);
+                }
+
                 PolityDeltaDto? delta = null;
+                PolityEraOut? era = null;
                 try
                 {
                     var polities = await api.Polities(fromYear, toYear);
-                    var era = polities.Polities.FirstOrDefault(e => e.Name == polityName && e.From == fromYear && e.To == toYear);
+                    era = polityId is not null
+                        ? polities.Polities.FirstOrDefault(e => e.Id == polityId)
+                        : polities.Polities.FirstOrDefault(e => e.Name == polityName && e.From == fromYear && e.To == toYear);
                     delta = deltaKind == "fall" ? era?.Fall : era?.Transition;
                 }
                 catch (Exception)
@@ -206,7 +233,7 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
                     // best-effort fetch in this app -- falls through to the
                     // minimal-popover construction below.
                 }
-                return new PolityDeltaNode(polityName, deltaKind, fromYear, toYear, delta?.Event, delta?.Verses ?? new List<string>(), delta?.RefNote);
+                return new PolityDeltaNode(polityId ?? era?.Id ?? "", era?.Name ?? polityName, deltaKind, fromYear, toYear, delta?.Event, delta?.Verses ?? new List<string>(), delta?.RefNote);
             }
 
             case "Person":

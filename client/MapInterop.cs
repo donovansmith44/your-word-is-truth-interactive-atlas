@@ -94,9 +94,13 @@ public interface IMapEvents
     /// <paramref name="eventText"/>/<paramref name="refNote"/> are
     /// <c>null</c> and <paramref name="verses"/> empty for the MINIMAL-
     /// popover case (an honestly uneventful boundary -- conditional
-    /// presence, not a placeholder).
+    /// presence, not a placeholder). G2-m1: <paramref name="polityId"/> is
+    /// the polity's own stable id (map.js's own roster entry, <c>g.entry.id</c>
+    /// -- the SAME id already used for that ring's own testid), threaded
+    /// through so a saved exploration can re-locate this exact boundary by
+    /// identity rather than by display Name+From+To.
     /// </summary>
-    void OnPolityDeltaClick(string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote);
+    void OnPolityDeltaClick(string polityId, string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote);
 }
 
 /// <summary>
@@ -436,8 +440,8 @@ public sealed class MapEventsSink
     [JSInvokable] public void OnMapClick() => _sink.OnMapClick();
     [JSInvokable] public void OnEscapePressed() => _sink.OnEscapePressed();
     [JSInvokable] public void OnCameraChanged(double lat, double lon, double zoom) => _sink.OnCameraChanged(lat, lon, zoom);
-    [JSInvokable] public void OnPolityDeltaClick(string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote) =>
-        _sink.OnPolityDeltaClick(polityName, kind, titleFromYear, titleToYear, eventText, verses, refNote);
+    [JSInvokable] public void OnPolityDeltaClick(string polityId, string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote) =>
+        _sink.OnPolityDeltaClick(polityId, polityName, kind, titleFromYear, titleToYear, eventText, verses, refNote);
 }
 
 /// <summary>

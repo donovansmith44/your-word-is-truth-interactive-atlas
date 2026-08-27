@@ -111,7 +111,7 @@
     }
     <span class="@TextClass">
         <MentionText Text="@Verse.Text" Places="@Verse.Places" Persons="@Verse.Persons" WordsOfChrist="@Verse.WordsOfChrist" Verse="@Verse.Verse"
-                     ClassPrefix="@MentionClass" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" />
+                     ClassPrefix="@MentionClass" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" OnToggleSelect="OnMentionToggleSelect" />
         @if (ShowXrefMarker)
         {
             <sup class="verse-xref-marker" data-testid="@XrefMarkerTestId"
@@ -149,6 +149,16 @@
     // v1 scope is the MAIN reader surface, not a nested popover's own
     // secondary rendering of the same chapter.
     [Parameter] public EventCallback<VerseNode> OnToggleSelect { get; set; }
+
+    // G2-m2 (batch-g2-report.md's own disclosed v1-scope gap, "in-text
+    // mentions... are NOT wired for this gesture"): a mention SPAN's own
+    // node (PlaceNode/PersonNode) is never a VerseNode, so it cannot share
+    // OnToggleSelect above (typed to this row's own VerseNode identity) --
+    // a second, generic callback, forwarded straight through to MentionText
+    // below exactly the way OnExplore already is. Optional (default
+    // no-op), same "MiniReaderExpand's own rows leave the row-level toggle
+    // unwired too" v1-scope stance immediately above.
+    [Parameter] public EventCallback<IExplorable> OnMentionToggleSelect { get; set; }
 
     // Splits the row's own single onclick into the three-gesture grammar
     // batch-r-report.md §7 proposes: Ctrl/Cmd-click toggles selection (never

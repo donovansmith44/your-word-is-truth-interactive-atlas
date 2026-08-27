@@ -25,7 +25,7 @@
 {
     var ev = e; // local copy -- captured per-row by the onclick closure below
     <button type="button" class="popover-event-row popover-event-row-button explorable" data-testid="@($"place-event-{ev.Id}")"
-            @onclick="() => OnExplore.InvokeAsync(new TimeAndPlaceNode(PlaceId, PlaceName, ev.Id, ev.When, ev.Label, ev.VerseGroups))">
+            @onclick="@(e => OnRowClick(e, ev))">
         <span class="popover-event-label">@ev.Label</span>
         <span class="popover-event-years">@YearText.FormatRange(ev.When.FromYear, ev.When.ToYear)</span>
     </button>
@@ -58,5 +58,17 @@
     [Parameter] public int Cap { get; set; } = 10;
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
+    // G2-m2 (batch-g2-report.md's own disclosed v1-scope gap, "place-event
+    // rows... are NOT wired for this gesture"): the SAME Ctrl/Cmd-click
+    // toggle VerseLine.razor's own OnRowClick already gives the reader
+    // pane's verse rows.
+    [Parameter] public EventCallback<IExplorable> OnToggleSelect { get; set; }
+
     private bool _showAll;
+
+    private Task OnRowClick(MouseEventArgs e, SceneEvent ev)
+    {
+        var node = new TimeAndPlaceNode(PlaceId, PlaceName, ev.Id, ev.When, ev.Label, ev.VerseGroups);
+        return e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node) : OnExplore.InvokeAsync(node);
+    }
 }

@@ -104,6 +104,7 @@
 @inject SavedExplorationsService SavedExplorations
 @inject StateAtom<FocusStack> FocusStackAtom
 @inject OwnershipRegistry FocusOwnership
+@inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
 @implements IPopoverSectionContext
 @implements IDisposable
 
@@ -931,6 +932,20 @@
         ApplyLocally(new Visit(node));
         await LoadCurrent();
         StateHasChanged();
+    }
+
+    // G2-m2: the popover-internal half of the Ctrl/Cmd-click toggle
+    // gesture -- same intent, same atom, same ExplorationDescriptor.Capture
+    // call VerseLine's own OnLineToggleSelect (Reader.razor) and map.js's
+    // marker/label toggle (World.razor) already dispatch through. Never
+    // touches the popover's own stack/Current -- no push, no pop, no
+    // StateHasChanged (SelectionAtom's own Changed subscribers, e.g.
+    // SelectionTray.razor, re-render themselves; this popover has nothing
+    // of its own that depends on selection state).
+    public Task ToggleSelectAsync(IExplorable node)
+    {
+        SelectionAtom.Dispatch(new ToggleSelection(ExplorationDescriptor.Capture(node)));
+        return Task.CompletedTask;
     }
 
     // Batch F2 requirement 6: see IPopoverSectionContext.OtherContextSectionCount's
