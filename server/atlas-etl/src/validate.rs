@@ -933,15 +933,17 @@ pub fn run_place_merges(pairs: &[PlaceMerge], places: &[Place]) -> Result<()> {
 ///    ids in the compiled event set (a stale/typo'd curated entry is a
 ///    curation error, same class as `run_place_merges`'s own dangling-id
 ///    check above).
-/// 2. THE FAIL-LOUD SWEEP ITSELF: every (LAYER-0, LAYER-1) event pair in
-///    the WHOLE compiled set at verse-set jaccard >= `DUPLICATE_JACCARD_THRESHOLD`
-///    must be accounted for -- either merged (`EVENT_MERGE_PAIRS`) or
-///    explicitly documented as genuinely distinct despite the overlap
-///    (`EVENT_DISTINCT_PAIRS`). An unlisted pair fails loud, naming both
-///    ids, both labels, and the jaccard score, so a future curator adding a
-///    new event that happens to duplicate an existing one is caught
-///    immediately, not silently shipped as a second "straight up lie" the
-///    way `theo-267`/`jm_jordan` was.
+/// 2. THE FAIL-LOUD SWEEP ITSELF: every (LAYER-0, LAYER-1) event pair --
+///    and, Batch CHRON-1 (THE CHRONOLOGY AUTHORITY LAW,
+///    `atlas_core::event_merge`'s own module doc), every (LAYER-0, LAYER-0)
+///    pair too -- in the WHOLE compiled set at verse-set jaccard >=
+///    `DUPLICATE_JACCARD_THRESHOLD` (0.5 as of CHRON-1) must be accounted
+///    for -- either merged (`EVENT_MERGE_PAIRS`) or explicitly documented as
+///    genuinely distinct despite the overlap (`EVENT_DISTINCT_PAIRS`). An
+///    unlisted pair fails loud, naming both ids, both labels, and the
+///    jaccard score, so a future curator adding a new event that happens to
+///    duplicate an existing one is caught immediately, not silently shipped
+///    as a second "straight up lie" the way `theo-267`/`jm_jordan` was.
 pub fn run_event_merges(merge_pairs: &[EventMerge], distinct_pairs: &[EventDistinct], events: &[Event]) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
     let by_id: HashMap<&str, &Event> = events.iter().map(|e| (e.id.as_str(), e)).collect();
@@ -997,6 +999,33 @@ pub fn run_event_merges(merge_pairs: &[EventMerge], distinct_pairs: &[EventDisti
             }
             unlisted.push(format!(
                 "'{}' ({:?}) <-> '{}' ({:?}): jaccard {:.3} >= {DUPLICATE_JACCARD_THRESHOLD} and NEITHER merged (EVENT_MERGE_PAIRS) nor explicitly documented as distinct (EVENT_DISTINCT_PAIRS)",
+                a.id, a.label, b.id, b.label, j
+            ));
+        }
+    }
+    // THE CHRONOLOGY AUTHORITY LAW (`atlas_core::event_merge`'s own module
+    // doc, Batch CHRON-1, part (a)): the sweep is widened to ALSO compare
+    // LAYER-0-against-LAYER-0 pairs -- the shape neither this loop (until
+    // now) nor `run_cross_book_duplicates` below ever caught, since both
+    // sides lack the real (LAYER-1) provenance that made an "obvious
+    // survivor" easy to pick. The 4 disclosed-but-unswept Acts pairs
+    // (`p1_pisidian_antioch`/`theo-340` etc., named in `event_merge.rs`'s
+    // own former "NOT swept" section) live in exactly this gap. Same
+    // threshold, same exemption tables, same unordered-pair keying as the
+    // layer0-vs-layer1 loop above; `i+1..` avoids comparing a pair to
+    // itself or reporting it twice in either order.
+    for i in 0..layer0.len() {
+        for j_idx in (i + 1)..layer0.len() {
+            let (a, b) = (layer0[i], layer0[j_idx]);
+            let j = verse_jaccard(a, b);
+            if j < DUPLICATE_JACCARD_THRESHOLD {
+                continue;
+            }
+            if listed.contains(&(a.id.as_str(), b.id.as_str())) {
+                continue;
+            }
+            unlisted.push(format!(
+                "'{}' ({:?}) <-> '{}' ({:?}): jaccard {:.3} >= {DUPLICATE_JACCARD_THRESHOLD} (LAYER0-LAYER0) and NEITHER merged (EVENT_MERGE_PAIRS) nor explicitly documented as distinct (EVENT_DISTINCT_PAIRS)",
                 a.id, a.label, b.id, b.label, j
             ));
         }

@@ -4,7 +4,7 @@ Bible Atlas ETL report
 Compiled file counts:
   canon.json        66 books
   places (graph-only, places.json retired at M-C2)      1373
-  events (graph-only, events.json retired at M-C2)      1735
+  events (graph-only, events.json retired at M-C2)      1711
   narratives (graph-only, narratives.json retired at M-C2) 13
   eras (curated)    10 eras (graph-only; eras.json retired at M-C)
   books-meta.json   66 rows
