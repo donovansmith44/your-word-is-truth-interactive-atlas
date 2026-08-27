@@ -5,12 +5,15 @@ import { api } from './lib/api';
 // locus-keyed. Coverage: tab navigation from both existing pages (Reader,
 // World); the current-locus commentary listing + the picker's own SetLocus
 // dispatch; explore-on-click (ONE-RULE popover); and the split-follow-by-
-// construction proof R2 ordered ("the state layer's first free win"). The
-// disclosed content gap (a CommentaryItem's own prose text has no existing
-// server query -- see client/Explore/CommentaryItemNode.cs's own header,
-// batch-corp1-report.md) means the popover this batch's own explore-on-click
-// test checks against carries the unit's own heading, not prose -- asserted
-// honestly, not papered over.
+// construction proof R2 ordered ("the state layer's first free win").
+//
+// Batch CORP-1b (owner authorization, resolving CORP-1's own disclosed
+// NEEDS_CONTEXT gap): a CommentaryItem's own real prose now rides the
+// generic node card's additive `description` field
+// (server: `atlas_graph::legacy::node_description`'s widened match) --
+// KRETZMANN-4 below asserts the popover body carries REAL, non-fabricated
+// prose (fetched from `/api/node/{id}` directly, the same call
+// CommentaryItemProseSection itself makes), not just the heading.
 
 test('KRETZMANN-1: nav-kretzmann reaches /kretzmann from both Reader and World', async ({ page }) => {
   await page.goto('/');
@@ -71,6 +74,21 @@ test('KRETZMANN-4 (ONE-RULE): plain click on a commentary row opens the existing
 
   await expect(page.getByTestId('popover-title')).toBeVisible();
   await expect(page.getByTestId('popover-title')).toContainText(heading!);
+});
+
+test('KRETZMANN-4b (CORP-1b): the popover body carries the unit\'s own REAL prose, not just its heading', async ({ page }) => {
+  // Ground truth: GEN.1.1's own real first Kretzmann unit -- the SAME
+  // generic node card the popover's own CommentaryItemProseSection reads.
+  const card = await api.node('CommentaryItem:kretzmann/0.1.0');
+  expect(card.description).toBeTruthy();
+  expect(card.description.length).toBeGreaterThan(20); // a real paragraph, not a stub
+
+  await page.goto('/kretzmann');
+  await expect(page.getByTestId('kretzmann-verse-group-1')).toBeVisible();
+  await page.locator('.kretzmann-item').first().click();
+
+  await expect(page.getByTestId('popover-body')).toBeVisible();
+  await expect(page.getByTestId('popover-body')).toContainText(card.description);
 });
 
 test('KRETZMANN-5: declares its own "read-beside" hatch -- split opens with Kretzmann hosting, Reader as a genuine, live guest, showing the SAME chapter', async ({ page }) => {

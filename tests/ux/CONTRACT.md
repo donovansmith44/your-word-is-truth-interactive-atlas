@@ -84,10 +84,10 @@ Kretzmann page (batch-corp1-brief.md, R2, KRETZMANN-1 below): `kretzmann-page` (
   reader is on), `kretzmann-verse-group-{n}` (one per verse of the current chapter that
   carries >=1 CommentaryItem, `n` = verse number), `kretzmann-item-{slug}` (one explorable
   row per CommentaryItem, plain click opens the ONE-RULE popover), `kretzmann-empty`
-  (present when the current chapter carries no indexed commentary at all).
-  DISCLOSED GAP (see batch-corp1-report.md): the popover this row opens carries the unit's
-  own heading only, not its prose -- no existing server query serves a CommentaryItem's own
-  text (`client/Explore/CommentaryItemNode.cs` has the full investigation).
+  (present when the current chapter carries no indexed commentary at all). The popover's
+  own body carries the unit's own REAL prose (batch-corp1-brief.md CORP-1b, `popover-body`
+  -- served via the generic node card's additive `description` field, the SAME seam
+  ENT-1a built for Place/Person/PeopleGroup).
 Concord page (batch-corp1-brief.md, R3, CONCORD-1 below): `concord-page` (the page root),
   `concord-picker` (the part/article/paragraph jump form; `concord-picker-part`/
   `-article`/`-paragraph`/`-go`), `split-open-concord` ("Read beside the reader," present
