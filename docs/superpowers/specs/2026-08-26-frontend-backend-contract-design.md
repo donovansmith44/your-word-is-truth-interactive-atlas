@@ -195,6 +195,21 @@ interface IViewComponent { }             // marker + lifecycle seam
 // nest, and get hatches/components like any other view). Today's
 // split view becomes the first IViewComposition:
 // Members=[Reader, World], Layout=split-h (bible left, atlas right).
+//
+// OWNER RULING (2026-08-26, verbatim): "your reader world split
+// interface is too specific we should support split for any view."
+// This interface was always view-agnostic; the RULING binds the
+// IMPLEMENTATION to honor it: no view is a privileged split host, no
+// view a privileged guest. Reader.razor's hard-wired World embed and
+// any arrangement vocabulary shaped like ReaderOnly|WorldOnly|Split
+// are transitional and must generalize to: ViewArrangement's value =
+// (ordered Members over ANY views, a Layout kind, per-member state
+// such as divider fraction); one generic composition host mounts the
+// members; "enter-split" becomes a declared escape hatch any view can
+// offer with any partner view. Mode links (follow-text) activate on
+// arrangement CONTENT ("a locus-bearing member and a window-bearing
+// member are both present"), never on hard-coded page identity.
+// (Supersedes ST-2 ruling R4's "Reader remains the only split HOST".)
 interface IViewComposition : IView {
     IReadOnlyList<IView> Members { get; }
     ICompositionLayout Layout { get; }
