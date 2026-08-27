@@ -15,46 +15,57 @@
    thing, remove itself; there is no per-chip "do something with this node"
    control at all. *@
 @using BibleAtlas.Client.Explore
-@inject SelectionTrayService Selection
+@using BibleAtlas.Client.State
+@inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
 @implements IDisposable
 
-@if (Selection.Items.Count > 0)
+@* Batch ST-3 (R2): renders a PROJECTION of the shared Selection atom --
+   Items below reads SelectionAtom.Value directly (never a copy); every
+   control dispatches (RemoveSelection/ClearSelection) instead of calling a
+   service method. SelectionTrayService itself is no longer injected here --
+   this component never needed Available (decision 6 never asked the TRAY
+   to hide on storage unavailability, only the SAVE affordance elsewhere). *@
+@{
+    var items = SelectionAtom.Value;
+}
+@if (items.Count > 0)
 {
     <div class="selection-tray" data-testid="selection-tray">
         <span class="selection-tray-count" data-testid="selection-tray-count">
-            @Selection.Items.Count selected
+            @items.Count selected
         </span>
         <ul class="selection-tray-chips">
-            @for (var i = 0; i < Selection.Items.Count; i++)
+            @for (var i = 0; i < items.Count; i++)
             {
-                var item = Selection.Items[i];
+                var item = items[i];
                 <li>
                     <span class="selection-chip" data-testid="@($"selection-chip-{i}")">
                         <span class="selection-chip-kind">@item.Kind</span>
                         <span class="selection-chip-title">@item.Title</span>
                         <button type="button" class="selection-chip-remove" aria-label="@($"Remove {item.Title} from selection")"
-                                @onclick="() => Selection.Remove(item)">&times;</button>
+                                @onclick="() => SelectionAtom.Dispatch(new RemoveSelection(item))">&times;</button>
                     </span>
                 </li>
             }
         </ul>
-        <button type="button" class="selection-clear" data-testid="selection-clear" @onclick="() => Selection.Clear()">Clear</button>
+        <button type="button" class="selection-clear" data-testid="selection-clear" @onclick="() => SelectionAtom.Dispatch(new ClearSelection())">Clear</button>
     </div>
 }
 
 @code {
-    // Batch G2 decision 6: SelectionTrayService is a DI singleton shared
-    // with every page's own Ctrl/Cmd-click gesture handler (Reader.razor's
-    // VerseLine wiring, World.razor's OnPlaceToggleSelect) -- a mutation
+    // Batch ST-3 (R2): the Selection atom is a DI singleton shared with
+    // every page's own Ctrl/Cmd-click gesture handler (Reader.razor's
+    // VerseLine wiring, World.razor's OnPlaceToggleSelect) -- a dispatch
     // made from EITHER never automatically re-renders THIS separate
     // component instance on its own (Blazor only re-renders a component in
     // response to ITS OWN parameter changes or explicit StateHasChanged),
-    // so this subscribes to the service's own Changed event, the same
-    // "one owner mutates, every reader re-renders on notice" shape
-    // SavedExplorationsService's own header comment documents.
-    protected override void OnInitialized() => Selection.Changed += OnChanged;
+    // so this subscribes to the atom's own Changed event (law 5, agreement,
+    // is what GUARANTEES this subscription is enough -- every projection of
+    // one atom reads the same Value at read time, so there's nothing left
+    // to keep separately in sync).
+    protected override void OnInitialized() => SelectionAtom.Changed += OnChanged;
 
     private void OnChanged() => InvokeAsync(StateHasChanged);
 
-    public void Dispose() => Selection.Changed -= OnChanged;
+    public void Dispose() => SelectionAtom.Changed -= OnChanged;
 }

@@ -7,7 +7,7 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ViewStateService ViewState
-@inject SelectionTrayService Selection
+@inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
 @inject StateAtom<Locus> LocusAtom
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 
@@ -867,7 +867,10 @@
     // Batch G2 decision 6: VerseLine's own Ctrl/Cmd-click gesture -- never
     // touches _activeNode/ResetXrefEntryState (no popover opens; the plain-
     // click path above is completely untouched by this branch existing).
-    private void OnLineToggleSelect(VerseNode node) => Selection.Toggle(ExplorationDescriptor.Capture(node));
+    // Batch ST-3 (R2): dispatches directly onto the shared Selection atom --
+    // SelectionTrayService no longer exposes a Toggle method (see that
+    // file's own updated header).
+    private void OnLineToggleSelect(VerseNode node) => SelectionAtom.Dispatch(new ToggleSelection(ExplorationDescriptor.Capture(node)));
 
     // Shared by every popover-opening method that is NOT a superscript
     // entry point (OnLineExplore/OpenChapter/OpenPassage/ClosePopover) --
