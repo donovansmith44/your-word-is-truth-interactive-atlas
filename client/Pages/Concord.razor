@@ -22,7 +22,12 @@
    own canon -- Explore/ConcordToc.cs's ten traditional documents (Creeds,
    AC, Apology, Smalcald, Treatise, SC, LC, FC, plus the Preface and the
    Formula's two forms), mirrored from `atlas-etl/src/concord.rs`'s own
-   CONCORD_DOC_SPECS table (read directly before writing, not guessed).
+   `DOCUMENTS: &[ConcordDocSpec]` table (read directly before writing, not
+   guessed -- fix round S-7 trivia: an earlier draft of this comment named
+   this table "CONCORD_DOC_SPECS," which is the RECORD TYPE's name
+   (`ConcordDocSpec`), not the constant's own real name; the content mirror
+   itself was always exact, verified line by line -- this was a citation
+   slip only, corrected here and in ConcordToc.cs/CONTRACT.md).
    Jumping loads that document's own opening window (BoC {part}.1.1) into
    the SAME reading-flow body every other navigation renders through --
    never a bare fragment. The pre-existing numeric part/article/paragraph
@@ -108,7 +113,16 @@
                 <button type="submit" class="picker-apply" data-testid="concord-picker-go">Go</button>
             </form>
 
-            <h2 class="concord-position" data-testid="concord-position">@_currentRef</h2>
+            @* Fix round (Q-7, TRIVIA -- review): this used to be an `<h2>`
+               with its own bronze rule, stacked directly above
+               `.concord-part-heading`'s own bronze rule -- two rules, and a
+               machine citation ("BoC 1.1.1") sitting in HEADING position,
+               exactly the "page of BoC x.x.x labels" the owner complained
+               about (the boxes are gone; this one label wasn't). Demoted to
+               a plain `<p>`, quiet register (app.css's own `.concord-
+               position`) -- a position ANNOUNCEMENT, not a document
+               heading; `.concord-part-heading` is the one real heading now. *@
+            <p class="concord-position" data-testid="concord-position">@_currentRef</p>
 
             @if (_error is not null)
             {
@@ -135,8 +149,18 @@
                     else if (row is UnitRow ur)
                     {
                         var unit = ur.Unit;
+                        @* Fix round (Q-6, IMPORTANT -- review): dropped the
+                           `aria-label="Explore ..."` this wrapper used to
+                           carry -- it REPLACED the accessible name, so a
+                           screen reader announced only "Explore BoC x.x.x,
+                           button" and never read the confession paragraph
+                           itself. The element's own text content (the ref
+                           label + the paragraph) is now its accessible name
+                           -- still focusable/actionable via tabindex+Enter,
+                           unchanged. Mirrors Kretzmann.razor's own identical
+                           fix, same finding, same reasoning. *@
                         <div class="concord-unit explorable" data-testid="@($"concord-unit-{Slug(unit.Ref)}")"
-                             tabindex="0" role="button" aria-label="@($"Explore {unit.Ref}")"
+                             tabindex="0" role="button"
                              @onclick="@(() => OnExplore(unit))" @onkeydown="@(e => OnUnitKeyDown(e, unit))">
                             <span class="concord-unit-ref">@unit.Ref</span>
                             <ScriptureRefText Text="@unit.Text" Toc="@(_toc ?? EmptyToc)" ClassPrefix="concord-ref"

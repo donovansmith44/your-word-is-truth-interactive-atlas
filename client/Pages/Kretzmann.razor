@@ -3,12 +3,13 @@
 @using BibleAtlas.Client.Explore
 @using BibleAtlas.Client.State
 @using BibleAtlas.Client.Views
-@implements IDisposable
+@implements IAsyncDisposable
 @inject StateAtom<Locus> LocusAtom
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 @inject AtlasClient Atlas
 @inject IExplorableClient Graph
 @inject ViewRegistry Registry
+@inject IJSRuntime JS
 
 @* Batch CORPREAD-1b (ticket K, owner order verbatim: "we should have the
    whole kretzmann commentary just like on the kretzmann.org, just having
@@ -21,6 +22,22 @@
    paragraphs) -- the SAME reading-column register Reader.razor already
    establishes (.reader-column typography, reused, not re-invented), not a
    list of bordered cards.
+
+   FIX ROUND (S-1, CRITICAL -- review): the first ship of this batch
+   DISCARDED the corpus's own section headings the instant an item's prose
+   resolved (`@if (item.Text is { } text) { <ScriptureRefText .../> } else
+   { @item.Heading ... }` -- a heading rendered ONLY while loading, then
+   gone forever), which is the exact opposite of kretzmann.org's own
+   defining structure (a bolded section heading above each block of verse
+   commentary) and of the owner's own words ("just like on the
+   kretzmann.org"). Fixed the same way `Concord.RenderRows` already
+   de-duplicates part/article headings: `LoadCommentaryAsync` below computes
+   `CommentaryItemRow.IsSectionStart` ONCE, structurally, the instant an
+   item's own Heading differs from the immediately preceding item's
+   (canonical order, across verse boundaries too) -- a `kretzmann-section-
+   heading-{slug}` row then renders WITH the prose, ALWAYS, whether that
+   item's own text has arrived yet or not (S-C1: "renders section headings
+   WITH prose -- both, always").
 
    FOLLOW/RELEASE (deliverable 0a/0b, THE FOLLOW-RELEASE LAW): this view
    still declares ViewCapabilities.BearsLocus and, BY DEFAULT, still
@@ -56,13 +73,32 @@
    Body data: LISTING (KRETZ-SCALE-1, unchanged -- one chapter-scoped
    request, `AtlasClient.KretzmannChapter`) carries only each item's own
    HEADING; the FULL PROSE (CORP-1b's own additive `description` field on
-   the generic node card) is fetched per item, CONCURRENTLY, once the
-   listing resolves -- disclosed in the batch report as a real N-fetch cost
-   (no bespoke bulk-prose endpoint exists; zero server changes is this
-   batch's own machine rule) -- "independent fetches never serialize," this
-   app's own house pattern. Headings render immediately; prose streams in
-   under each heading as it resolves, never blocking the whole chapter on
-   the slowest single item. *@
+   the generic node card) is fetched per item, LAZILY, one item at a time as
+   its own row approaches the viewport.
+
+   FIX ROUND (Q-2, CRITICAL -- review, KRETZMANN-13): the first ship of this
+   batch fetched EVERY item's own prose CONCURRENTLY the instant the listing
+   resolved (`Task.WhenAll` over the whole chapter) -- reintroducing
+   KRETZ-SCALE-1's own retired per-verse fan-out through `Card()` instead of
+   the retired `.../edges?kind=commented-on-by` shape, with its own guard
+   test narrowed to assert only the OLD url stayed at zero rather than that
+   the NEW one was bounded ("never do anything like this," controller
+   ruling). Fixed for real: `wwwroot/js/lazyProse.js`'s own
+   IntersectionObserver requests an item's own prose only once its row
+   approaches the viewport (a generous rootMargin, so the fetch starts
+   slightly ahead of scroll); `OnItemNearViewport` below additionally gates
+   ACTUAL CONCURRENT fetches through a `SemaphoreSlim(8)`. KRETZMANN-13
+   (tests/ux/kretzmann.spec.ts) now asserts a genuine TOTAL-request bound on
+   PSA.119 (176 verses) -- some prose loads without scrolling (whatever is
+   near the viewport), but nowhere near all of it.
+
+   KRETZ-PROSE-SCALE (PARKED, disclosed, not built this round): the REAL fix
+   is a future, additive server change -- widen the chapter-scoped LISTING
+   response to carry each item's own prose, collapsing this whole mechanism
+   back to KRETZ-SCALE-1's original ONE-request shape. Zero server changes
+   is this batch's own standing machine rule, so this ticket stays parked;
+   the lazy-load mitigation above is the honest, disclosed interim fix, not
+   a stand-in for the real one. *@
 
 <PageTitle>Bible Explorer &mdash; Kretzmann</PageTitle>
 
@@ -94,8 +130,17 @@
                        (mirrors World.razor's own follow-chip, which
                        likewise only exists while SplitMode; there is
                        nothing to escape FROM while standalone -- see this
-                       file's own header). *@
-                    <button type="button" class="follow-chip" data-testid="kretzmann-follow-chip"
+                       file's own header).
+                       Fix round (Q-3, IMPORTANT -- review): `.follow-chip`
+                       alone is World's own DUSK register (dark glass over
+                       the night map) -- reused verbatim here put a dark
+                       chip on Kretzmann's own PARCHMENT page, directly
+                       contradicting the register law and the report's own
+                       "no new colors" claim. `.follow-chip-parchment`
+                       (app.css) is the SAME modifier idiom
+                       `.split-open-parchment`/`.picker-parchment` already
+                       establish for "this control, on a parchment page." *@
+                    <button type="button" class="follow-chip follow-chip-parchment" data-testid="kretzmann-follow-chip"
                             aria-pressed="@(Following ? "true" : "false")" @onclick="ToggleFollowClick">
                         @(Following ? "Following the reader" : "Reading independently")
                     </button>
@@ -133,8 +178,30 @@
                         </button>
                         @foreach (var item in group.Items)
                         {
+                            @* Fix round (S-1, CRITICAL -- review): the section
+                               heading renders WITH the prose, ALWAYS -- while
+                               loading and after -- never discarded once text
+                               arrives (S-C1). IsSectionStart is computed once,
+                               structurally, in LoadCommentaryAsync -- not a
+                               markup-time dedup. *@
+                            @if (item.IsSectionStart)
+                            {
+                                <h3 class="kretzmann-section-heading" data-testid="@($"kretzmann-section-heading-{Slug(item.Id)}")">@item.Heading</h3>
+                            }
+                            @* Fix round (Q-6, IMPORTANT -- review): the
+                               `aria-label="Explore ..."` this wrapper used to
+                               carry REPLACED its accessible name -- a screen
+                               reader announced only "Explore <heading>,
+                               button" and never read the paragraph itself.
+                               Dropped; the element's own text content is now
+                               its accessible name (still focusable/actionable
+                               via tabindex+Enter, same as before).
+                               data-kretzmann-item-id/data-loaded (Q-2): the
+                               lazy-load observer's own hook -- see this
+                               file's own header and wwwroot/js/lazyProse.js. *@
                             <div class="kretzmann-item explorable" data-testid="@($"kretzmann-item-{Slug(item.Id)}")"
-                                 tabindex="0" role="button" aria-label="@($"Explore {item.Heading}")"
+                                 data-kretzmann-item-id="@item.Id" data-loaded="@(item.Text is not null ? "true" : "false")"
+                                 tabindex="0" role="button"
                                  @onclick="@(() => OnExplore(item))" @onkeydown="@(e => OnItemKeyDown(e, item))">
                                 @if (item.Text is { } text)
                                 {
@@ -143,7 +210,7 @@
                                 }
                                 else
                                 {
-                                    @item.Heading <span class="kretzmann-item-loading" aria-hidden="true">&hellip;</span>
+                                    <span class="kretzmann-item-loading" aria-hidden="true">&hellip;</span>
                                 }
                             </div>
                         }
@@ -175,7 +242,14 @@
 }
 
 @code {
-    private sealed record CommentaryItemRow(string Id, string Heading, string? Text);
+    // Fix round (S-1): IsSectionStart is computed ONCE, structurally, when
+    // the listing resolves (LoadCommentaryAsync below) -- true exactly when
+    // this item's own Heading differs from the immediately preceding item's
+    // in canonical order (mirrors Concord.RenderRows's own part/article
+    // change-detection). `with { Text = ... }` (the lazy-load update path,
+    // UpdateItemText below) preserves it untouched -- a later prose arrival
+    // never affects section-heading placement.
+    private sealed record CommentaryItemRow(string Id, string Heading, string? Text, bool IsSectionStart);
     private sealed record CommentaryVerseGroup(int Verse, List<CommentaryItemRow> Items);
 
     private static readonly List<BookTocEntry> EmptyToc = new();
@@ -219,6 +293,14 @@
     private string? _loadedBook;
     private int? _loadedChapterNum;
 
+    // Fix round (Q-2, CRITICAL): the lazy-prose mitigation's own state --
+    // see this file's own header and wwwroot/js/lazyProse.js.
+    private IJSObjectReference? _lazyJs;
+    private DotNetObjectReference<Kretzmann>? _selfRef;
+    private readonly HashSet<string> _proseRequested = new(); // one fetch per item, ever, per chapter generation
+    private readonly SemaphoreSlim _proseFetchGate = new(8); // bounded ACTUAL concurrency, independent of when a fetch is requested
+    private bool _pendingObserve;
+
     private string BookName => _toc?.FirstOrDefault(b => b.Code == _book)?.Name ?? _book;
 
     // Wire ids ("CommentaryItem:kretzmann/0.1.0") carry ':' and '/' -- not
@@ -234,6 +316,7 @@
         // (mirrors World.razor's own OnLocusChanged: pure re-render, plus
         // here a refetch, no JS interop/Materialize-shaped side effect).
         LocusAtom.Changed += OnLocusChanged;
+        _selfRef = DotNetObjectReference.Create(this);
 
         try
         {
@@ -250,6 +333,31 @@
         }
 
         await LoadCommentaryAsync();
+    }
+
+    // Fix round (Q-2): fires the lazy-load observer exactly once per
+    // chapter -- LoadCommentaryAsync sets _pendingObserve after the
+    // listing's own headings first render, and this is the ONE place that
+    // notices and wires the observer against the now-current DOM. Not
+    // called on every render (the observer, once wired, keeps watching on
+    // its own -- see lazyProse.js's own header); a NEW chapter re-arms it.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_pendingObserve)
+        {
+            return;
+        }
+
+        _pendingObserve = false;
+        try
+        {
+            _lazyJs ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/lazyProse.js");
+            await _lazyJs.InvokeVoidAsync("observeProseItems", _selfRef, "[data-kretzmann-item-id]");
+        }
+        catch (JSDisconnectedException)
+        {
+            // Navigated away mid-call -- nothing left to observe.
+        }
     }
 
     private void OnLocusChanged()
@@ -319,9 +427,24 @@
         }
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         LocusAtom.Changed -= OnLocusChanged;
+
+        if (_lazyJs is not null)
+        {
+            try
+            {
+                await _lazyJs.InvokeVoidAsync("unobserveProseItems");
+                await _lazyJs.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is already gone during teardown -- nothing left to clean up JS-side.
+            }
+        }
+
+        _selfRef?.Dispose();
     }
 
     // ScripturePicker's own composed sref ("GEN.1", "GEN.1.5", "GEN.1.5-9")
@@ -443,48 +566,37 @@
                 return; // superseded by a newer navigation -- discard this stale response
             }
 
-            var headingRows = doc.Verses
-                .Select(v => new CommentaryVerseGroup(
-                    v.Verse,
-                    v.Items.Select(item => new CommentaryItemRow(item.Id, item.Heading ?? "Commentary", null)).ToList()))
-                .ToList();
+            // Fix round (S-1, CRITICAL): IsSectionStart computed HERE,
+            // structurally, once -- true exactly when this item's own
+            // Heading differs from the immediately preceding item's, in
+            // canonical order, across verse boundaries (mirrors
+            // Concord.RenderRows's own part/article change-detection).
+            // `lastHeading` is a local, not view state -- correct by
+            // construction for a fresh chapter load; a NEW LoadCommentaryAsync
+            // call always starts it fresh, never carrying a stale heading
+            // over from the previous chapter.
+            string? lastHeading = null;
+            var headingRows = new List<CommentaryVerseGroup>();
+            foreach (var v in doc.Verses)
+            {
+                var items = new List<CommentaryItemRow>();
+                foreach (var item in v.Items)
+                {
+                    var heading = item.Heading ?? "Commentary";
+                    var isSectionStart = heading != lastHeading;
+                    lastHeading = heading;
+                    items.Add(new CommentaryItemRow(item.Id, heading, null, isSectionStart));
+                }
+                headingRows.Add(new CommentaryVerseGroup(v.Verse, items));
+            }
 
             _rows = headingRows;
             _loadedBook = book;
             _loadedChapterNum = chapterNum;
             _loading = false;
-            StateHasChanged(); // headings visible immediately -- prose streams in below, never blocking the whole chapter
-
-            // Batch CORPREAD-1b (ticket K): the FULL PROSE -- one Card()
-            // fetch per item, concurrently ("independent fetches never
-            // serialize," this app's own house pattern; disclosed as a
-            // real N-fetch cost in the batch report -- no bespoke
-            // bulk-prose endpoint exists, and this batch makes zero server
-            // changes).
-            var allItems = headingRows.SelectMany(g => g.Items).ToList();
-            var proseResults = await Task.WhenAll(allItems.Select(async row =>
-            {
-                try
-                {
-                    var card = await Graph.Card(row.Id);
-                    return (row.Id, Text: card.Description);
-                }
-                catch (Exception)
-                {
-                    return (row.Id, Text: (string?)null); // fail soft -- the heading still renders, matches the app's own lazy-fetch degradation policy
-                }
-            }));
-
-            if (myRequest != _requestId)
-            {
-                return;
-            }
-
-            var proseById = proseResults.ToDictionary(r => r.Id, r => r.Text);
-            _rows = headingRows
-                .Select(g => g with { Items = g.Items.Select(item => item with { Text = proseById.GetValueOrDefault(item.Id) ?? item.Heading }).ToList() })
-                .ToList();
-            StateHasChanged();
+            _proseRequested.Clear(); // fresh chapter -- a fresh lazy-load generation
+            _pendingObserve = true; // OnAfterRenderAsync wires the observer against the freshly-rendered rows
+            StateHasChanged(); // headings visible immediately -- prose loads lazily below, never blocking the whole chapter
         }
         catch (Exception)
         {
@@ -497,6 +609,71 @@
             _loading = false;
             StateHasChanged();
         }
+    }
+
+    // Fix round (Q-2, CRITICAL): called from wwwroot/js/lazyProse.js's own
+    // IntersectionObserver, once per item, the instant that item's own row
+    // approaches the viewport -- never for the whole chapter up front (the
+    // regression this fix exists to remove; see this file's own header).
+    // `_proseRequested` is the authoritative "at most once" guard (the JS
+    // side's own unobserve-on-trigger is a courtesy, not load-bearing);
+    // `_proseFetchGate` bounds ACTUAL CONCURRENT fetches to 8 regardless of
+    // how many items request one in a burst (e.g. a fast scroll that brings
+    // many rows into range at once).
+    [JSInvokable]
+    public async Task OnItemNearViewport(string itemId)
+    {
+        if (!_proseRequested.Add(itemId))
+        {
+            return; // already requested (or a duplicate observer callback) -- fetch at most once per item per chapter generation
+        }
+
+        var myRequest = _requestId; // pins the chapter generation this request belongs to
+        await _proseFetchGate.WaitAsync();
+        try
+        {
+            if (myRequest != _requestId)
+            {
+                return; // superseded by a newer chapter navigation -- discard
+            }
+
+            string? text;
+            try
+            {
+                var card = await Graph.Card(itemId);
+                text = card.Description;
+            }
+            catch (Exception)
+            {
+                text = null; // fail soft -- the heading still renders, matches the app's own lazy-fetch degradation policy
+            }
+
+            if (myRequest != _requestId)
+            {
+                return;
+            }
+
+            UpdateItemText(itemId, text);
+            StateHasChanged();
+        }
+        finally
+        {
+            _proseFetchGate.Release();
+        }
+    }
+
+    // Fix round (Q-9 trivia, resolved as a side effect of the Q-2 rewrite):
+    // each item's own prose fetch is now independently try/caught in
+    // OnItemNearViewport above -- a failure for ONE item can no longer
+    // discard the whole already-rendered chapter the way the old single
+    // outer catch could (a duplicate-id ToDictionary failure, e.g.).
+    private void UpdateItemText(string itemId, string? text)
+    {
+        _rows = _rows
+            .Select(g => g.Items.Any(i => i.Id == itemId)
+                ? g with { Items = g.Items.Select(i => i.Id == itemId ? i with { Text = text ?? i.Heading } : i).ToList() }
+                : g)
+            .ToList();
     }
 
     private void OnExplore(CommentaryItemRow item) => _activeNode = new CommentaryItemNode(item.Id, item.Heading);

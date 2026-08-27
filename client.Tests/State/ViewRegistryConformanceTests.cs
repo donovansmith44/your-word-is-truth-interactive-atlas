@@ -283,22 +283,80 @@ public class ViewRegistryConformanceTests
     // structural, not a source-text scan, mirroring HatchConformance_
     // EveryEnterSplitHatch_ResolvesBothItsViewsInTheRegistry's own proof
     // shape immediately above.
+    //
+    // ADJUDICATION G (fix round, review): the law's own LITERAL predicate
+    // (BearsLocus => toggle-follow) over-fired on exactly one view --
+    // Reader, the CANONICAL LOCUS WRITER, whose own route IS the shared
+    // value's projection (CORPREAD-1a's URL-projection contract), so there
+    // is no external value for it to stop following, and a "released
+    // Reader" would render a chapter its own URL contradicts. The first
+    // ship of this batch satisfied the letter with a hatch NO UI anywhere
+    // in the app could ever invoke (verified exhaustively by the review:
+    // every EscapeHatches consumer selects by Kind == EnterSplit or by a
+    // specific view's OWN name; nothing renders a generic "every hatch"
+    // button) -- contract theater, the exact opposite of this codebase's
+    // "the vocabulary IS what's real" discipline (the Sources precedent the
+    // first ship leaned on does not carry: Sources' own read-beside hatch
+    // is unreachable from SOME pairings but is really invoked from the
+    // Sources page itself; Reader's toggle-follow hatch was invoked from
+    // NOWHERE at all -- a different category). Exempted BY NAME, with this
+    // reason, rather than satisfied by a hatch no UI can reach. Any FUTURE
+    // locus-bearing view is still caught -- this list is a closed, pinned
+    // set, not a predicate a future batch could quietly widen to make a
+    // real violation pass (the companion pinning test below guards that).
+    // If Reader ever gains a genuine guest-mode independent-browse
+    // capability, it will need its own designed release semantics (what
+    // does the URL show while released?) -- the hatch should be declared
+    // THEN, alongside the chip that invokes it, not kept inert "for future
+    // semantics" in the meantime.
     // ------------------------------------------------------------------
+
+    private static readonly string[] FollowReleaseExemptViews = { ViewNames.Reader };
+
+    // Fix round (Q-5, IMPORTANT -- review, folded into this same edit): the
+    // ONE predicate the law actually checks, now shared by BOTH tests
+    // below. Before this fix, the planted-violation proof re-implemented
+    // this exact boolean expression inline -- a self-referential assertion
+    // that would keep passing even if the REAL tripwire immediately below
+    // were weakened or deleted, proving only that the author could restate
+    // the predicate twice, not that the check itself catches the defect.
+    // RegisteredView, not the compiled IView contract (client/Contracts/) --
+    // Capabilities is RegisteredView's own additive data beyond what IView
+    // itself declares (see that class's own header, Views/ViewRegistry.cs),
+    // and client/Contracts/ is extend-only for this batch, so this helper
+    // is correctly typed against the concrete class both call sites already
+    // use, not against the interface.
+    private static bool ViolatesFollowReleaseLaw(RegisteredView view) =>
+        view.Capabilities.HasFlag(ViewCapabilities.BearsLocus)
+        && !FollowReleaseExemptViews.Contains(view.Name)
+        && !view.EscapeHatches.Any(h => h.Kind == HatchKinds.ToggleFollow);
 
     [Fact]
     public void HatchConformance_EveryBearsLocusView_DeclaresAToggleFollowHatch()
     {
         var registry = BuildRegistry();
-        var bearsLocusViews = registry.All.Where(v => v.Capabilities.HasFlag(ViewCapabilities.BearsLocus)).ToList();
+        var bearsLocusViews = registry.All
+            .Where(v => v.Capabilities.HasFlag(ViewCapabilities.BearsLocus))
+            .Where(v => !FollowReleaseExemptViews.Contains(v.Name))
+            .ToList();
 
-        // Reader and Kretzmann, both BearsLocus (Registry_CapabilityData_
-        // MatchesR1sOwnAssignment above pins this) -- never vacuous.
-        Assert.Equal(2, bearsLocusViews.Count);
+        // Kretzmann -- never vacuous (Reader is exempted above, by name,
+        // not silently filtered out of this count).
+        Assert.Single(bearsLocusViews);
 
         foreach (var view in bearsLocusViews)
         {
-            Assert.Contains(view.EscapeHatches, h => h.Kind == HatchKinds.ToggleFollow);
+            Assert.False(ViolatesFollowReleaseLaw(view), $"'{view.Name}' declares BearsLocus without a toggle-follow hatch and is not on the exemption list.");
         }
+    }
+
+    // The exemption list itself is pinned, so a future batch cannot quietly
+    // widen it to make a real violation pass without this test itself
+    // failing loud first.
+    [Fact]
+    public void HatchConformance_TheFollowReleaseExemptionList_IsExactlyTheCanonicalLocusWriter()
+    {
+        Assert.Equal(new[] { ViewNames.Reader }, FollowReleaseExemptViews);
     }
 
     // The planted-violation proof (this file's own established style, e.g.
@@ -306,7 +364,10 @@ public class ViewRegistryConformanceTests
     // synthetic RegisteredView, built directly (NOT through the real
     // registry, which by construction never produces this shape today) --
     // proves the CHECK ITSELF genuinely fails on the exact defect §5
-    // describes, not merely that today's registry happens to pass.
+    // describes, not merely that today's registry happens to pass. Fix
+    // round (Q-5): now calls the SAME ViolatesFollowReleaseLaw helper the
+    // real test above uses -- so a future weakening of that helper breaks
+    // BOTH tests together, not just the real-registry one silently.
     [Fact]
     public void HatchConformance_PlantedBearsLocusViewWithNoToggleFollowHatch_FailsTheLawsOwnCheck()
     {
@@ -314,10 +375,7 @@ public class ViewRegistryConformanceTests
         var offender = new RegisteredView("planted-locus-view", ViewCapabilities.BearsLocus, Empty,
             new IEscapeHatch[] { new EnterSplitHatch("planted-locus-view", ViewNames.Reader, "planted-locus-view", () => Task.CompletedTask) });
 
-        var violatesTheLaw = offender.Capabilities.HasFlag(ViewCapabilities.BearsLocus)
-            && !offender.EscapeHatches.Any(h => h.Kind == HatchKinds.ToggleFollow);
-
-        Assert.True(violatesTheLaw, "The planted view declares BearsLocus with no toggle-follow hatch -- the law's own check must catch this, or the real-registry proof above is vacuous.");
+        Assert.True(ViolatesFollowReleaseLaw(offender), "The planted view declares BearsLocus with no toggle-follow hatch -- the law's own check must catch this, or the real-registry proof above is vacuous.");
     }
 
     // ------------------------------------------------------------------

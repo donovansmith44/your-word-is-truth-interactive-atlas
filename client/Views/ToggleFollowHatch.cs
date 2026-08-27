@@ -32,13 +32,51 @@ namespace BibleAtlas.Client.Views;
 /// deliverable 0a): <c>ViewRegistryConformanceTests.cs</c>'s
 /// <c>HatchConformance_EveryBearsLocusView_DeclaresAToggleFollowHatch</c>
 /// fails loud if a registered view declares
-/// <see cref="ViewCapabilities.BearsLocus"/> without one of these in its own
-/// <see cref="Contracts.IView.EscapeHatches"/> list. World itself declares
-/// <see cref="ViewCapabilities.BearsWindow"/>, not BearsLocus, so it is not
-/// COMPELLED by that tripwire -- it still gets one declared here (deliverable
-/// 0a, verbatim: "the world map's follow chip becomes the declared instance
-/// of the same hatch kind") as the precedent instance for its own window,
-/// for vocabulary completeness, not because the tripwire demands it.
+/// <see cref="ViewCapabilities.BearsLocus"/> (and is not on that file's own
+/// pinned <c>FollowReleaseExemptViews</c> list) without one of these in its
+/// own <see cref="Contracts.IView.EscapeHatches"/> list. World itself
+/// declares <see cref="ViewCapabilities.BearsWindow"/>, not BearsLocus, so
+/// it is not COMPELLED by that tripwire -- it still gets one declared here
+/// (deliverable 0a, verbatim: "the world map's follow chip becomes the
+/// declared instance of the same hatch kind") as the precedent instance for
+/// its own window, for vocabulary completeness, not because the tripwire
+/// demands it.
+///
+/// ADJUDICATION G (fix round, review): Reader used to declare one too
+/// (BearsLocus literally compelled it) with NO rendered chip anywhere in the
+/// app -- verified exhaustively (every <c>EscapeHatches</c> consumer in
+/// shipped code selects by <c>Kind == EnterSplit</c> or by a specific view's
+/// OWN name; nothing renders a generic "every hatch" button) to be genuinely
+/// UNREACHABLE, not merely undemonstrated. Reader is the CANONICAL LOCUS
+/// WRITER -- its own route already IS the shared value's projection
+/// (CORPREAD-1a's URL-projection contract), so there is no external value
+/// for it to stop following, and a "released Reader" would render a chapter
+/// its own URL contradicts. A declared-but-unreachable hatch is contract
+/// theater, the opposite of this codebase's "the vocabulary IS what's real"
+/// discipline -- deleted; Reader is now exempted BY NAME (with this reason)
+/// in <c>ViewRegistryConformanceTests.cs</c>'s own
+/// <c>FollowReleaseExemptViews</c>, a closed/pinned list a future batch
+/// cannot silently widen (that file's own companion test guards it). If
+/// Reader ever gains a genuine guest-mode independent-browse capability, its
+/// own release semantics and chip get designed and declared together, then.
+///
+/// S-4 (IMPORTANT, review, one-line justified rather than rewired): World's
+/// own declared instance (<c>worldFollowHatch</c>, <c>ViewRegistrySetup.cs</c>)
+/// is DECLARATION-ONLY -- its semantics remain owned by World's own chip
+/// (<c>OnToggleFollowClick</c>, World.razor), which does strictly MORE than
+/// this hatch's bare <c>Invoke()</c> (it also calls <c>SyncViewState()</c>
+/// and awaits an <c>EnterTimeMode</c> reconcile). The two are NOT
+/// interchangeable: invoking this hatch's own <c>Invoke()</c> for World would
+/// flip Follow without that scene sync. Left un-rewired deliberately -- World's
+/// own richer sequence is real, load-bearing, already-shipped behavior
+/// (deliverable 0a's own "zero visual change to world" instruction), and
+/// rewiring it through this generic closure is a real behavior-risk change
+/// this batch's fix round did not need to take to satisfy the vocabulary
+/// requirement (a registered `"toggle-follow"`-Kind hatch exists for World,
+/// satisfying inventory/conformance completeness). Kretzmann's own instance
+/// IS wired directly through <see cref="Invoke"/> (new code this batch,
+/// no legacy risk) -- the two owners are deliberately NOT symmetric, and
+/// this is why.
 /// </summary>
 public sealed class ToggleFollowHatch : IEscapeHatch
 {

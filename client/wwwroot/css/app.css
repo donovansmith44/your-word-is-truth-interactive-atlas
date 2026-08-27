@@ -410,9 +410,17 @@ input:focus-visible,
    (see git history) into a CONTINUOUS READING SURFACE, sharing
    .reader-column's own reading-column measure/padding directly (the
    markup combines both classes -- "typography carrying the structure,"
-   not a second, parallel column rule) -- .kretzmann-column below now
-   supplies ONLY what genuinely differs (a slightly wider historical-prose
-   measure), never re-declaring width/padding .reader-column already sets. */
+   not a second, parallel column rule).
+
+   Fix round (Q-4, IMPORTANT -- review): a `.kretzmann-column { max-width:
+   70ch }` rule used to live here, with this comment claiming "a slightly
+   wider historical-prose measure" -- but `.reader-column`'s own `max-width:
+   66ch` (declared LATER in this file, same specificity, same element)
+   always won: the 70ch rule was dead on arrival, and the "wider measure"
+   language described something that never actually rendered. Deleted
+   rather than reordered -- the design pass never asked for 70ch, only for
+   THIS reading column to share the reader's own measure, which it now does
+   honestly (66ch, .reader-column, no parallel override). */
 .kretzmann-page {
     min-height: 100vh;
     background: var(--parchment);
@@ -420,10 +428,6 @@ input:focus-visible,
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-
-.kretzmann-column {
-    max-width: 70ch;
 }
 
 .kretzmann-title {
@@ -502,6 +506,11 @@ input:focus-visible,
    subordinate to THE text (inerrancy/register law) but are still the
    PRIMARY content of this particular page, so they read at full reading
    size/contrast, not muted. */
+/* Fix round (Q-8, TRIVIA -- review): `border-radius: 4px` used to survive
+   here on a rule with no background and no border of its own -- the
+   retired card's own fingerprint, left behind. Removed (harmless either
+   way -- a radius on an invisible box paints nothing -- but this rule
+   should say only what's genuinely true of it now). */
 .kretzmann-item {
     display: block;
     width: 100%;
@@ -512,9 +521,23 @@ input:focus-visible,
     color: var(--ink);
     background: none;
     border: none;
-    border-radius: 4px;
     padding: 0.15rem 0.4rem;
     margin: 0 0 0.85rem;
+}
+
+/* Fix round (S-1, CRITICAL): the de-duplicated section heading (Kretzmann.
+   razor's own IsSectionStart) -- reuses .pericope-heading's own quieter
+   register, the SAME level Concord's own .concord-article-heading reuses
+   for its one-level-down structural heading, so a Kretzmann section reads
+   at the same typographic weight a Concord article does. */
+.kretzmann-section-heading {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.07em;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 1.75rem 0 0.6rem;
 }
 
 .kretzmann-item-loading {
@@ -594,13 +617,14 @@ input:focus-visible,
 }
 
 /* Batch CORPREAD-1b (ticket C): shares .reader-column's own measure/padding
-   directly (the markup combines both classes) -- .concord-column below now
-   supplies ONLY the genuine divergence, mirroring .kretzmann-column's own
-   identical move immediately above. */
-.concord-column {
-    max-width: 70ch;
-}
+   directly (the markup combines both classes).
 
+   Fix round (Q-4, IMPORTANT -- review): a `.concord-column { max-width:
+   70ch }` rule used to live here, dead on arrival for the identical reason
+   .kretzmann-column's own removed rule was (see that rule's own comment,
+   immediately above the .kretzmann-page block) -- `.reader-column`'s later
+   66ch always won. Deleted; Concord shares the reader's own 66ch measure
+   honestly now. */
 .concord-title {
     font-family: var(--font-serif);
     font-variant-caps: small-caps;
@@ -725,15 +749,21 @@ input:focus-visible,
     padding: 0.3rem 0.5rem;
 }
 
+/* Fix round (Q-7, TRIVIA -- review): this used to be styled (and marked
+   up, see Concord.razor) as a SECOND heading -- its own bronze
+   border-bottom rule stacked directly above .concord-part-heading's own
+   bronze rule, both at heading scale -- putting a machine citation
+   ("BoC 1.1.1") in heading position, exactly the "page of BoC x.x.x
+   labels" the owner's own complaint named. Demoted to the SAME quiet
+   marginal-mark register .kretzmann-verse-anchor/.concord-unit-ref already
+   use (mono, small, bronze-ink, no border/heading weight) -- a position
+   ANNOUNCEMENT, not a second document heading. */
 .concord-position {
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: 0.06em;
-    font-size: 1.3rem;
-    color: var(--ink);
-    border-bottom: 1px solid var(--bronze);
-    padding-bottom: 0.4rem;
-    margin: 1.5rem 0 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: var(--bronze-ink);
+    margin: 1.5rem 0 0.75rem;
 }
 
 .concord-loading {
@@ -4151,6 +4181,36 @@ input:focus-visible,
 
 .follow-chip:hover {
     background: rgba(16, 22, 36, .95);
+}
+
+/* Fix round (Q-3, IMPORTANT -- review): .follow-chip alone is World's own
+   DUSK register (--dusk-ink on a blurred --dusk-panel) -- correct on the
+   night map, but Kretzmann.razor reused it VERBATIM for its own chip,
+   putting a dark glass control on the PARCHMENT page (contrast was fine,
+   ~8:1 composited -- this is a register failure, not an accessibility
+   one). The SAME modifier idiom .split-open-parchment/.picker-parchment
+   already establish for "this control, on a parchment page": bronze
+   border, --parchment-raised ground, --bronze-ink text, no
+   backdrop-filter. Pressed state uses --lapis (the reader's own live-link
+   accent -- "following" IS a live link to the shared reader position, the
+   same "quiet visual echo" reasoning .follow-chip[aria-pressed] gives for
+   its own --lamp-core choice on dusk, translated to the parchment
+   palette's own link color rather than the dusk ember one). */
+.follow-chip-parchment {
+    color: var(--bronze-ink);
+    background: var(--parchment-raised);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-color: var(--bronze);
+}
+
+.follow-chip-parchment:hover {
+    background: var(--parchment);
+}
+
+.follow-chip-parchment[aria-pressed="true"] {
+    color: var(--lapis);
+    border-color: var(--bronze-bright);
 }
 
 .split-close {

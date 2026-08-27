@@ -13,14 +13,23 @@ namespace BibleAtlas.Client.Explore;
 /// confirms the only Concord-serving endpoint is the generic reading spine,
 /// `GET /api/text?corpus=concord`), so it is hand-authored here rather than
 /// fetched -- per this batch's own zero-server-changes rule. It mirrors,
-/// verbatim, `server/atlas-etl/src/concord.rs`'s own `CONCORD_DOC_SPECS`
-/// table (part number, title) -- READ directly before writing this, not
-/// guessed -- so it names exactly the same ten documents, in the same part
-/// order, the server itself already parses from the real vendored corpus
+/// verbatim, `server/atlas-etl/src/concord.rs`'s own
+/// <c>pub const DOCUMENTS: &amp;[ConcordDocSpec]</c> table (part number,
+/// title) -- READ directly before writing this, not guessed -- so it names
+/// exactly the same ten documents, in the same part order, the server
+/// itself already parses from the real vendored corpus
 /// (`data/raw/concord/*.html`). Server-only code was not touched; this is a
 /// disclosed, independent client-side copy of already-stable, already-real
 /// data (the same class of thing `AtlasClient.Books()`'s own curated TOC
 /// already is, just not reachable via a fetch for this corpus).
+///
+/// Fix round (S-7, TRIVIA -- review): an earlier draft of this comment (and
+/// Concord.razor's/CONTRACT.md's own mirroring text) named this table
+/// "CONCORD_DOC_SPECS" -- that is the RECORD TYPE's own name
+/// (<see cref="ConcordDocEntry"/> here, `ConcordDocSpec` server-side), not
+/// the constant itself (`DOCUMENTS`). The CONTENT mirror was always exact
+/// (all ten part/title pairs verified identical, unchanged by this fix) --
+/// this was a citation slip only, corrected here.
 /// </summary>
 public sealed record ConcordDocEntry(int Part, string Title);
 

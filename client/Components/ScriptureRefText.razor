@@ -17,7 +17,7 @@
    what a click resolves to. *@
 @using BibleAtlas.Client.Explore
 
-@foreach (var seg in Segments)
+@foreach (var seg in _segments)
 {
     @if (seg.Sref is { } sref)
     {
@@ -48,34 +48,59 @@
 
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    private IReadOnlyList<Segment> Segments
-    {
-        get
-        {
-            var matches = ScriptureRefScan.Scan(Text, Toc);
-            if (matches.Count == 0)
-            {
-                return new[] { new Segment(Text, null, 0) };
-            }
+    // Fix round (Q-1, CRITICAL -- review, second half): this used to be a
+    // plain computed property, re-scanning `Text` on EVERY render pass (the
+    // `@foreach` above reads it fresh every time) -- ScriptureRefScan.Scan's
+    // own regex/dictionary build is now memoized (Explore/ScriptureRefScan.cs's
+    // own header), but re-running Regex.Matches over the same string on
+    // every unrelated re-render (a sibling popover open/close, an unrelated
+    // StateHasChanged upstream) is still wasted work this component alone
+    // can avoid. OnParametersSet runs on every render regardless of whether
+    // parameters actually changed (Blazor does not diff parameter equality
+    // for you) -- the explicit `_lastText`/`_lastToc` check below is what
+    // makes this "recompute only when Text/Toc actually change," not merely
+    // "recompute once per lifetime."
+    private string? _lastText;
+    private IReadOnlyList<BookTocEntry>? _lastToc;
+    private IReadOnlyList<Segment> _segments = Array.Empty<Segment>();
 
-            var segments = new List<Segment>();
-            var cursor = 0;
-            var n = 0;
-            foreach (var m in matches)
-            {
-                if (m.Start > cursor)
-                {
-                    segments.Add(new Segment(Text[cursor..m.Start], null, 0));
-                }
-                segments.Add(new Segment(Text.Substring(m.Start, m.Length), m.Sref, n++));
-                cursor = m.Start + m.Length;
-            }
-            if (cursor < Text.Length)
-            {
-                segments.Add(new Segment(Text[cursor..], null, 0));
-            }
-            return segments;
+    protected override void OnParametersSet()
+    {
+        if (_lastText == Text && ReferenceEquals(_lastToc, Toc))
+        {
+            return; // unchanged since the last render -- keep the cached segments
         }
+
+        _lastText = Text;
+        _lastToc = Toc;
+        _segments = ComputeSegments();
+    }
+
+    private IReadOnlyList<Segment> ComputeSegments()
+    {
+        var matches = ScriptureRefScan.Scan(Text, Toc);
+        if (matches.Count == 0)
+        {
+            return new[] { new Segment(Text, null, 0) };
+        }
+
+        var segments = new List<Segment>();
+        var cursor = 0;
+        var n = 0;
+        foreach (var m in matches)
+        {
+            if (m.Start > cursor)
+            {
+                segments.Add(new Segment(Text[cursor..m.Start], null, 0));
+            }
+            segments.Add(new Segment(Text.Substring(m.Start, m.Length), m.Sref, n++));
+            cursor = m.Start + m.Length;
+        }
+        if (cursor < Text.Length)
+        {
+            segments.Add(new Segment(Text[cursor..], null, 0));
+        }
+        return segments;
     }
 
     private Task Open(string sref) => OnExplore.InvokeAsync(new VerseNode(sref));

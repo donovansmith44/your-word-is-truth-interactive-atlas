@@ -43,11 +43,12 @@ namespace BibleAtlas.Client.Explore;
 /// (1) a citation naming a VERSE RANGE resolves to its FIRST verse only
 /// (mirrors <see cref="CanonRef.TargetSpan"/>'s own precedent for
 /// same-chapter xref targets -- this app's own "passage" concept is always
-/// single-chapter); (2) an ambiguous bare abbreviation this batch's own
-/// table does not carry (e.g. a citation style not observed in the real
-/// vendored samples) is simply not matched -- a miss, never a
-/// misattribution; (3) case-sensitive, whole-word matching only (no attempt
-/// to resolve a reference split across a line/sentence boundary).
+/// single-chapter); (2) an unlisted abbreviation (a citation style not
+/// observed in the real vendored samples) is simply not matched -- a miss,
+/// never a misattribution -- see <see cref="CitationAliases"/>'s own header
+/// for the fix-round history of making this literally true; (3)
+/// case-sensitive, whole-word matching only (no attempt to resolve a
+/// reference split across a line/sentence boundary).
 /// </summary>
 public readonly record struct ScriptureRefMatch(int Start, int Length, string Sref);
 
@@ -75,6 +76,24 @@ public static class ScriptureRefScan
     // supplies the correct code for that path, regardless of this table),
     // but would have been a real, silent misattribution for a book ONLY
     // ever matched via one of these short ALIASES.
+    //
+    // Fix round (S-5, IMPORTANT -- review): three earlier entries here
+    // ("Cor"->1CO, "Pet"->1PE, "Phil"->PHP) resolved a genuinely AMBIGUOUS
+    // bare abbreviation BY GUESS (a bare "Cor." is at least as often an
+    // elided 2 Corinthians as 1; "Phil" is ambiguous between Philippians and
+    // Philemon) -- contradicting this file's own disclosed-limitations
+    // claim ("an unlisted abbreviation is a miss, never a misattribution").
+    // The review verified the exposure empirically against BOTH vendored
+    // corpora: zero bare "Cor."/"Pet." occurrences in data/raw/kretzmann/
+    // (every real occurrence there is already preceded by "1 "/"2 ", which
+    // the longer, unambiguous aliases below correctly route), and every
+    // "Cor."/"Pet." occurrence in data/raw/concord/*.html is likewise
+    // preceded by "1 "/"2 " -- so the three entries were latent, not live,
+    // and unused by real prose. Deleted rather than kept "for future
+    // corpora" -- an unlisted abbreviation is a miss (silent, safe) and a
+    // future corpus that genuinely needs a bare "Cor."/"Pet."/"Phil." can
+    // add it back with its OWN verified default, not inherit this batch's
+    // unverified guess.
     private static readonly (string Alias, string Code)[] CitationAliases =
     {
         ("Gen", "GEN"), ("Exod", "EXO"), ("Exo", "EXO"), ("Lev", "LEV"), ("Num", "NUM"),
@@ -88,12 +107,12 @@ public static class ScriptureRefScan
         ("Obad", "OBA"), ("Mic", "MIC"), ("Nah", "NAM"), ("Hab", "HAB"),
         ("Zeph", "ZEP"), ("Hag", "HAG"), ("Zech", "ZEC"), ("Mal", "MAL"),
         ("Matt", "MAT"), ("Mat", "MAT"), ("Mk", "MRK"), ("Lk", "LUK"),
-        ("Rom", "ROM"), ("1 Cor", "1CO"), ("Cor", "1CO"), ("2 Cor", "2CO"),
-        ("Gal", "GAL"), ("Eph", "EPH"), ("Phil", "PHP"), ("Php", "PHP"),
+        ("Rom", "ROM"), ("1 Cor", "1CO"), ("2 Cor", "2CO"),
+        ("Gal", "GAL"), ("Eph", "EPH"), ("Php", "PHP"),
         ("Col", "COL"), ("1 Thess", "1TH"), ("1 Thes", "1TH"), ("2 Thess", "2TH"),
         ("2 Thes", "2TH"), ("1 Tim", "1TI"), ("2 Tim", "2TI"), ("Tit", "TIT"),
         ("Philem", "PHM"), ("Heb", "HEB"), ("Jas", "JAS"),
-        ("1 Pet", "1PE"), ("Pet", "1PE"), ("2 Pet", "2PE"),
+        ("1 Pet", "1PE"), ("2 Pet", "2PE"),
         ("1 John", "1JN"), ("2 John", "2JN"), ("3 John", "3JN"),
         ("Jude", "JUD"), ("Rev", "REV"),
     };
@@ -132,6 +151,54 @@ public static class ScriptureRefScan
             RegexOptions.Compiled);
     }
 
+    // Fix round (Q-1, CRITICAL -- review): BuildPattern/the alias dictionary
+    // used to be rebuilt (sort ~130 tokens, Regex.Escape each, compile a
+    // fresh RegexOptions.Compiled pattern) on EVERY Scan() call -- and
+    // Scan() runs once per ScriptureRefText instance, on every one of that
+    // component's renders (Kretzmann.LoadCommentaryAsync alone calls
+    // StateHasChanged three times per chapter navigation, plus every
+    // popover open/close). Genesis 1 renders ~31 instances; the review
+    // measured this as "on the order of 90+ compiled 130-branch regexes"
+    // per chapter turn -- inside Blazor WASM, on the app's primary reading
+    // surface. Memoized here: the caller's own `toc` reference is the SAME
+    // `List<BookTocEntry>` instance every render (AtlasClient.Books() is a
+    // singleton-cached `??=` -- see that method's own header -- so every
+    // caller across the whole app shares ONE instance for the app's entire
+    // lifetime), so a plain "last built against THIS reference" cache is
+    // correct and never stale: the TOC is fetched once and never mutated,
+    // and CitationAliases is a `static readonly` compile-time constant --
+    // there is no code path that could change either input out from under
+    // a cached build. Not a ConditionalWeakTable (unnecessary complexity for
+    // a single long-lived key) -- the review's own sanctioned simpler
+    // alternative.
+    private static IReadOnlyList<BookTocEntry>? _cachedToc;
+    private static Regex? _cachedPattern;
+    private static Dictionary<string, string>? _cachedCodeByAlias;
+
+    private static (Regex Pattern, Dictionary<string, string> CodeByAlias) GetOrBuild(IReadOnlyList<BookTocEntry> toc)
+    {
+        if (_cachedPattern is not null && ReferenceEquals(_cachedToc, toc))
+        {
+            return (_cachedPattern, _cachedCodeByAlias!);
+        }
+
+        var pattern = BuildPattern(toc);
+        var codeByAlias = new Dictionary<string, string>();
+        foreach (var b in toc)
+        {
+            codeByAlias[b.Name] = b.Code;
+        }
+        foreach (var (alias, code) in CitationAliases)
+        {
+            codeByAlias.TryAdd(alias, code);
+        }
+
+        _cachedToc = toc;
+        _cachedPattern = pattern;
+        _cachedCodeByAlias = codeByAlias;
+        return (pattern, codeByAlias);
+    }
+
     /// <summary>
     /// Scans <paramref name="text"/> for scripture citations, resolving each
     /// against <paramref name="toc"/>'s own canonical codes. Returns matches
@@ -147,16 +214,7 @@ public static class ScriptureRefScan
             return Array.Empty<ScriptureRefMatch>();
         }
 
-        var pattern = BuildPattern(toc);
-        var codeByAlias = new Dictionary<string, string>();
-        foreach (var b in toc)
-        {
-            codeByAlias[b.Name] = b.Code;
-        }
-        foreach (var (alias, code) in CitationAliases)
-        {
-            codeByAlias.TryAdd(alias, code);
-        }
+        var (pattern, codeByAlias) = GetOrBuild(toc);
 
         var results = new List<ScriptureRefMatch>();
         foreach (Match m in pattern.Matches(text))

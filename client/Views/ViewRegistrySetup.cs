@@ -107,22 +107,39 @@ public static class ViewRegistrySetup
         // ViewArrangement.cs) is a pure write against the ONE shared
         // ViewArrangement atom ("flip Follow"), the SAME meaning regardless
         // of which locus-bearing owner's own chip fired it (see
-        // ToggleFollowHatch.cs's own header for the full reasoning). Reader
-        // and Kretzmann both declare BearsLocus (registrations below) and so
-        // are COMPELLED by the standing conformance tripwire
+        // ToggleFollowHatch.cs's own header for the full reasoning).
+        // Kretzmann declares BearsLocus (registrations below) and is
+        // COMPELLED by the standing conformance tripwire
         // (ViewRegistryConformanceTests.cs's own
         // HatchConformance_EveryBearsLocusView_DeclaresAToggleFollowHatch)
         // to carry one of these; World declares BearsWindow, not BearsLocus,
         // and gets one too per deliverable 0a's own explicit instruction
         // ("the world map's follow chip becomes the declared instance of the
         // same hatch kind") -- not because the tripwire demands it.
+        //
+        // ADJUDICATION G (fix round, review): Reader no longer gets one.
+        // Reader declares BearsLocus and the tripwire's own LITERAL
+        // predicate used to compel a hatch here too -- but Reader is the
+        // CANONICAL LOCUS WRITER (its own route IS the shared value's
+        // projection; there is no external value for it to "stop
+        // following"), and no UI anywhere in the app ever invoked it (every
+        // EscapeHatches consumer selects by Kind==EnterSplit or by a
+        // specific view's OWN name -- verified exhaustively by the review).
+        // A declared-but-unreachable hatch is contract theater, not vocabulary
+        // -- deleted, and Reader is now exempted BY NAME, with its own
+        // reason, in ViewRegistryConformanceTests.cs's own
+        // FollowReleaseExemptViews (see that file's own header for the full
+        // reasoning; ToggleFollowHatch.cs's own header carries the same
+        // note). If Reader ever gains a genuine guest-mode independent-
+        // browse capability, its own release semantics and chip should be
+        // designed and declared together, then -- not kept as an inert
+        // placeholder now.
         Task ToggleFollowGlobal()
         {
             arrangement.Dispatch(new ToggleFollow(!arrangement.Value.Follow));
             return Task.CompletedTask;
         }
 
-        var readerFollowHatch = new ToggleFollowHatch(ViewNames.Reader, ToggleFollowGlobal);
         var worldFollowHatch = new ToggleFollowHatch(ViewNames.World, ToggleFollowGlobal);
         var kretzmannFollowHatch = new ToggleFollowHatch(ViewNames.Kretzmann, ToggleFollowGlobal);
 
@@ -155,7 +172,7 @@ public static class ViewRegistrySetup
                 builder.OpenComponent<Reader>(0);
                 builder.AddAttribute(1, nameof(Reader.SplitMode), (bool?)ctx.SplitMode);
                 builder.CloseComponent();
-            }, new IEscapeHatch[] { readerHatch, readerFollowHatch }),
+            }, new IEscapeHatch[] { readerHatch }),
 
             new(ViewNames.World, ViewCapabilities.BearsWindow, ctx => builder =>
             {
@@ -164,7 +181,7 @@ public static class ViewRegistrySetup
                 builder.AddAttribute(2, nameof(World.OnRequestClose), ctx.OnRequestClose);
                 builder.AddAttribute(3, nameof(World.RegisterQueryHandler), ctx.RegisterQueryHandler);
                 builder.CloseComponent();
-            }, new IEscapeHatch[] { worldHatch, worldFollowHatch }),
+            }, new IEscapeHatch[] { worldHatch, worldFollowHatch }), // S-4 (IMPORTANT, one-line justified below, ToggleFollowHatch.cs's own header)
 
             // Fix round 2 (Q-4, trivia -- re-review, PARTIAL, one-line
             // justified): this closure is not invoked by any shipped
