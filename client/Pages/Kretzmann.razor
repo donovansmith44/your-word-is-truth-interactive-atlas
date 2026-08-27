@@ -1,0 +1,304 @@
+@page "/kretzmann"
+@using BibleAtlas.Client.Explore
+@using BibleAtlas.Client.State
+@using BibleAtlas.Client.Views
+@implements IDisposable
+@inject StateAtom<Locus> LocusAtom
+@inject StateAtom<ViewArrangement> ViewArrangementAtom
+@inject AtlasClient Atlas
+@inject IExplorableClient Graph
+
+@* Batch CORP-1 (R2): the Kretzmann Popular Commentary browser -- a
+   LOCUS-KEYED commentary browser. It PROJECTS the shared Locus atom
+   (declares ViewCapabilities.BearsLocus, ViewRegistrySetup.Build): it
+   ALWAYS shows the commentary for the current book+chapter -- the same one
+   the reader is on, by the agreement law (client/Contracts/State.cs's own
+   law 5) -- with the SAME ScripturePicker idiom Reader.razor uses for
+   direct navigation (the picker's own OnApply dispatches SetLocus directly
+   here, since this route carries no per-chapter route params of its own --
+   unlike /read/{Book}/{Chapter}, there is nothing to navigate TO; the
+   shared atom IS the destination).
+
+   SPLIT-FOLLOW BY CONSTRUCTION (R2, the state layer's first free win):
+   this view declares a "read-beside" enter-split hatch with Reader
+   (EnterSplitKretzmannHostsReader, ViewRegistrySetup.cs), the SAME
+   self-hosting shape Sources.razor's own hatch already proved generic.
+   NO Follow link is declared or needed -- Reader ALSO projects the SAME
+   Locus atom (BearsLocus) directly off its own `_book`/`_chapterNum` thin
+   read, so once both panes are mounted, navigating the reader (picker,
+   prev/next, a "read in context" hatch, ...) dispatches SetLocus onto the
+   ONE shared atom both members already render off; this page's own
+   OnLocusChanged (below) re-renders/refetches in response, with no wiring
+   between the two views at all. tests/ux/kretzmann.spec.ts proves this
+   directly: navigate the reader while split ⇒ the commentary pane follows.
+
+   Batch VC-1's own official host recipe (CompositionSplit.razor's own
+   header, "read this page as that reference example"): follows
+   Sources.razor VERBATIM -- a `<CompositionSplit HostName="@ViewNames.Kretzmann">`
+   wrapping this page's own content as ChildContent, a `SplitMode`
+   parameter threaded to `SplitModeOverride`, `ctx.HostPaneClassSuffix` for
+   the class conditional, and one route-level EnterSingle dispatch at mount.
+   No second ViewArrangementAtom.Changed subscription -- CompositionSplit
+   owns that one, exactly once (see its own header, RULING 1); this page's
+   own ENTIRE markup lives inside ChildContent, so it re-renders for free
+   whenever the arrangement changes.
+
+   Body: the current chapter's CommentaryItem entries, in canonical order,
+   grouped by verse (mirrors the reader's own verse-line grouping). Plain
+   click on a row = the existing ONE-RULE explore/popover semantics
+   (Explore/CommentaryItemNode.cs). DISCLOSED GAP, named in
+   batch-corp1-report.md: no existing server query serves a CommentaryItem's
+   own prose text (only its heading, via the generic node card) -- see
+   CommentaryItemNode.cs's own header for the full investigation. This
+   listing is real (every heading + verse anchor below is genuine, fetched
+   data, never fabricated); the popover it opens is honestly limited to
+   what the current server surface can serve.
+
+   LISTING MECHANISM (R2's own "expressible as edge queries from the nodes
+   that anchor them"): `comments-on`/`commented-on-by` is a bespoke row
+   table (graph.comments_on) ALREADY lowered into the generic directed edge
+   index (graph-types/src/graph.rs's own KRETZ-1 "pre-authorized
+   exception") -- there is no chapter-scoped listing query, so this page
+   issues one `commented-on-by` edges call per verse in the current chapter,
+   concurrently (this app's own "independent fetches never serialize" house
+   pattern, MainLayout.Continue's own doc comment), and groups the results.
+   A CommentaryItem's own trailing id ordinal (kretzmann_adapter.rs's own
+   "NODE IDENTITY: kretzmann/{book}.{chapter}.{ordinal}", document order)
+   orders items within a verse group. *@
+
+<PageTitle>Bible Explorer &mdash; Kretzmann</PageTitle>
+
+<CompositionSplit HostName="@ViewNames.Kretzmann" SplitModeOverride="@SplitMode" HostPaneClass="split-pane-host" Context="ctx">
+    <div class="@($"kretzmann-page{ctx.HostPaneClassSuffix}")" data-testid="kretzmann-page">
+        <div class="kretzmann-column">
+            <h1 class="kretzmann-title">Kretzmann</h1>
+            <p class="kretzmann-intro">
+                Paul E. Kretzmann's <em>Popular Commentary of the Bible</em>
+                (Concordia Publishing House, 1921&ndash;1924) &mdash; verse by
+                verse, subordinate to the text it serves.
+            </p>
+
+            <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" CurrentBook="@_book" CurrentChapter="@_chapterNum" />
+
+            @* Sources.razor's own MINIMAL host recipe: only the "read
+               beside" affordance renders here; a split-h GUEST closes
+               itself (Reader's own guest-role close button, wired through
+               ctx.RequestClose there) -- no separate host-side close
+               affordance is needed, matching Sources exactly. *@
+            @if (!ctx.IsSplitOpen)
+            {
+                <button type="button" class="split-open split-open-parchment" data-testid="split-open-kretzmann"
+                        @onclick="ctx.InvokeHatch">
+                    Read beside the reader
+                </button>
+            }
+
+            <h2 class="kretzmann-chapter-head" data-testid="kretzmann-chapter-head">@BookName @_chapterNum</h2>
+
+            @if (_error is not null)
+            {
+                <div class="toast" data-testid="toast">
+                    <p class="toast-message">@_error</p>
+                </div>
+            }
+            else if (_loading)
+            {
+                <p class="kretzmann-loading">Loading&hellip;</p>
+            }
+            else if (_rows.Count == 0)
+            {
+                <p class="kretzmann-empty" data-testid="kretzmann-empty">No commentary is indexed for this chapter.</p>
+            }
+            else
+            {
+                @foreach (var group in _rows)
+                {
+                    <section class="kretzmann-verse-group" data-testid="@($"kretzmann-verse-group-{group.Verse}")">
+                        <p class="kretzmann-verse-num">@group.Verse</p>
+                        @foreach (var item in group.Items)
+                        {
+                            <button type="button" class="kretzmann-item explorable" data-testid="@($"kretzmann-item-{Slug(item.Id)}")"
+                                    @onclick="@(() => OnExplore(item))">
+                                @item.Heading
+                            </button>
+                        }
+                    </section>
+                }
+            }
+        </div>
+    </div>
+</CompositionSplit>
+
+@if (_activeNode is not null)
+{
+    <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover" />
+}
+
+@code {
+    private sealed record CommentaryItemRow(string Id, string Heading);
+    private sealed record CommentaryVerseGroup(int Verse, List<CommentaryItemRow> Items);
+
+    [Parameter] public bool? SplitMode { get; set; }
+
+    private Projection<Locus>? _locusBacking;
+    private Projection<Locus> _locus => _locusBacking ??= new Projection<Locus>(LocusAtom);
+    private string _book => _locus.Value.Book;
+    private int _chapterNum => _locus.Value.Chapter;
+
+    private List<BookTocEntry>? _toc;
+    private List<CommentaryVerseGroup> _rows = new();
+    private bool _loading = true;
+    private string? _error;
+    private int _requestId;
+    private IExplorable? _activeNode;
+
+    private string BookName => _toc?.FirstOrDefault(b => b.Code == _book)?.Name ?? _book;
+
+    // Wire ids ("CommentaryItem:kretzmann/0.1.0") carry ':' and '/' -- not
+    // legal in a bare CSS-identifier-ish testid; a stable, readable slug for
+    // the testid only (never used to re-derive the id itself).
+    private static string Slug(string wireId) => wireId.Replace(':', '-').Replace('/', '-').Replace('.', '-');
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (SplitMode is null)
+        {
+            // The standalone counterpart to Sources' own mount-time assert --
+            // Kretzmann has no per-navigation route params to react to
+            // repeatedly (R2: it is never itself the SetLocus writer via
+            // routing, only via the picker below).
+            ViewArrangementAtom.Dispatch(new EnterSingle(ViewNames.Kretzmann));
+        }
+
+        // Batch CORP-1: the one legitimate direct LocusAtom.Changed
+        // subscription this view needs -- see ConformanceTests.cs's own
+        // EffectsOnlyViaRegistry allowlist entry for the full justification
+        // (mirrors World.razor's own OnLocusChanged: pure re-render, plus
+        // here a refetch, no JS interop/Materialize-shaped side effect).
+        LocusAtom.Changed += OnLocusChanged;
+
+        try
+        {
+            _toc = await Atlas.Books();
+        }
+        catch (Exception)
+        {
+            // Non-fatal -- BookName falls back to the bare code (see its own
+            // property above); the commentary fetch below does not need the
+            // TOC at all except to resolve THIS chapter's own verse count.
+        }
+
+        await LoadCommentaryAsync();
+    }
+
+    private void OnLocusChanged()
+    {
+        _activeNode = null; // a new chapter invalidates whatever was open, same reset Reader.razor already performs on navigation
+        _ = LoadCommentaryAsync();
+    }
+
+    public void Dispose()
+    {
+        LocusAtom.Changed -= OnLocusChanged;
+    }
+
+    // ScripturePicker's own composed sref ("GEN.1", "GEN.1.5", "GEN.1.5-9")
+    // -- Kretzmann only cares about book+chapter (R2's own "browses by
+    // chapter" scope); any verse-range suffix is simply not read.
+    private void ApplyScriptureRef(string sref)
+    {
+        var parts = sref.Split('.');
+        if (parts.Length == 0 || string.IsNullOrWhiteSpace(parts[0]))
+        {
+            return;
+        }
+
+        var book = parts[0];
+        var chapter = parts.Length > 1 && int.TryParse(parts[1], out var c) ? c : 1;
+        LocusAtom.Dispatch(new SetLocus(book, chapter));
+    }
+
+    private int VerseCountFor(string book, int chapter)
+    {
+        var entry = _toc?.FirstOrDefault(b => b.Code == book);
+        return entry is not null && chapter >= 1 && chapter <= entry.Chapters.Count ? entry.Chapters[chapter - 1] : 0;
+    }
+
+    private async Task LoadCommentaryAsync()
+    {
+        var myRequest = ++_requestId;
+        var book = _book;
+        var chapterNum = _chapterNum;
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var verseCount = VerseCountFor(book, chapterNum);
+            var spec = EdgeSectionRegistry.CommentedOnBy;
+
+            // Independent fetches never serialize (this app's own house
+            // pattern, MainLayout.Continue's own doc comment) -- one
+            // "commented-on-by" edges call per verse, concurrently.
+            var tasks = Enumerable.Range(1, verseCount)
+                .Select(async v =>
+                {
+                    var page = await Graph.Edges($"text-unit:{book}.{chapterNum}.{v}", spec.EdgeKind, cursor: null, limit: spec.InitialClamp);
+                    return (Verse: v, Page: page);
+                });
+            var results = await Task.WhenAll(tasks);
+
+            if (myRequest != _requestId)
+            {
+                return; // superseded by a newer navigation -- discard this stale response
+            }
+
+            var groups = new List<CommentaryVerseGroup>();
+            foreach (var (verse, page) in results.OrderBy(r => r.Verse))
+            {
+                var items = page.Entries
+                    .Where(e => e.Node.Kind == "CommentaryItem")
+                    .Select(e => new CommentaryItemRow(e.Node.Id, e.Node.Label))
+                    .OrderBy(r => OrdinalOf(r.Id))
+                    .ToList();
+                if (items.Count > 0)
+                {
+                    groups.Add(new CommentaryVerseGroup(verse, items));
+                }
+            }
+
+            _rows = groups;
+        }
+        catch (Exception)
+        {
+            if (myRequest != _requestId)
+            {
+                return;
+            }
+
+            _error = "Couldn't load the commentary for this chapter — check your connection and try again.";
+        }
+        finally
+        {
+            if (myRequest == _requestId)
+            {
+                _loading = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    // "CommentaryItem:kretzmann/0.1.0" -> 0, the unit's own trailing
+    // ordinal -- kretzmann_adapter.rs's own "NODE IDENTITY" doc comment:
+    // the id's own last '.'-separated segment IS document order.
+    private static int OrdinalOf(string wireId)
+    {
+        var dot = wireId.LastIndexOf('.');
+        return dot >= 0 && int.TryParse(wireId[(dot + 1)..], out var n) ? n : 0;
+    }
+
+    private void OnExplore(CommentaryItemRow item) => _activeNode = new CommentaryItemNode(item.Id, item.Heading);
+
+    private void ClosePopover() => _activeNode = null;
+}

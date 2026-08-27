@@ -649,6 +649,26 @@
         // need THIS component's own re-render to stay fresh -- but it gets
         // that callback WITHOUT registering a second subscribe/unsubscribe
         // pair of its own.
+        // Batch CORP-1 (R2, the split-follow-by-construction proof):
+        // guest-mounted only (SplitMode is explicit) -- a SELF-DETERMINED
+        // instance (SplitMode null) is the one WRITER of Locus, reached
+        // exclusively via routing, and never needs to react to its own
+        // writes this way. A guest instance, by contrast, is mounted once
+        // by its host's own registry Mount closure and never re-routed --
+        // nothing else tells it to refresh when the shared Locus atom moves
+        // for a reason THIS instance didn't cause (e.g. a BearsLocus host
+        // like Kretzmann dispatching SetLocus from its own picker). Mirrors
+        // World.razor's own pre-existing direct Locus-atom subscription
+        // exactly (see ConformanceTests.cs's own allowlist
+        // entry for both) -- the SAME "a BearsLocus-adjacent view listens
+        // for the shared position to move" shape, applied here for the
+        // first time a Reader instance is ever the one being followed
+        // rather than the one being watched.
+        if (SplitMode is not null)
+        {
+            LocusAtom.Changed += OnLocusChangedAsGuest;
+        }
+
         try
         {
             _toc = await Atlas.Books();
@@ -657,6 +677,31 @@
         {
             _errorMessage = "Couldn't load the book list — check your connection and try again.";
         }
+    }
+
+    // Batch CORP-1: fires only while guest-mounted (see OnInitializedAsync's
+    // own comment for why self-routed instances never subscribe at all).
+    // Fire-and-forget, the SAME shape every other atom.Changed handler in
+    // this app that needs an async continuation already uses (event Action?
+    // cannot itself be async) -- mirrors Kretzmann.razor's own
+    // OnLocusChanged. Refetches only when the locus GENUINELY moved
+    // (_loadedBook/_loadedChapterNum still hold the LAST fetch this
+    // instance completed) -- a no-op re-entry (e.g. Changed firing for an
+    // unrelated reason) costs nothing.
+    private void OnLocusChangedAsGuest() => _ = RefreshAsGuestAsync();
+
+    private async Task RefreshAsGuestAsync()
+    {
+        if (_loadedBook == _book && _loadedChapterNum == _chapterNum)
+        {
+            return;
+        }
+
+        ResetXrefEntryState();
+        _activeNode = null;
+        _scrolledFragment = null;
+        await LoadChapter();
+        StateHasChanged();
     }
 
     // Batch VC-1: resyncs the URL (SyncSplitUrl, a no-op when guest-mounted)
@@ -1539,6 +1584,13 @@
         // itself, in its own Dispose(), when IT is torn down (a child
         // component's own lifetime, not Reader's, governs that -- see
         // CompositionSplit.razor's own Dispose()).
+
+        // Batch CORP-1: unsubscribes the guest-only LocusAtom.Changed
+        // handler added in OnInitializedAsync -- unconditional (`-=` on a
+        // delegate that was never `+=`'d, i.e. a self-routed instance, is a
+        // documented safe no-op in C#), so this needs no SplitMode check of
+        // its own.
+        LocusAtom.Changed -= OnLocusChangedAsGuest;
 
         // M-D3 (R3): cancels any in-flight hover-close delay -- without
         // this, DelayedHoverClose's own await could resolve AFTER this
