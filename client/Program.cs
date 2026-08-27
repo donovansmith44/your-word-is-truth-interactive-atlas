@@ -109,4 +109,21 @@ builder.Services.AddSingleton(sp => new SelectionTrayService(
     (IJSInProcessRuntime)sp.GetRequiredService<IJSRuntime>(),
     sp.GetRequiredService<StateAtom<IReadOnlyList<ExplorationDescriptor>>>()));
 
-await builder.Build().RunAsync();
+var host = builder.Build();
+
+// Batch ST-3 (R2): a plain `AddSingleton` factory is LAZY -- it only ever
+// runs the first time something actually resolves the service. Pre-ST-3,
+// SelectionTrayService was always resolved anyway (every consumer injected
+// it directly for Items/Toggle/Remove/Clear). Post-ST-3, NOTHING injects
+// it any more (SelectionTray.razor/Reader.razor/World.razor all moved onto
+// the atom directly, per R2) -- its own constructor (where the
+// persistence-writing `Changed` subscriber gets wired) would otherwise
+// never run at all, silently dropping "selection-v1" writes forever. Real,
+// live-caught regression (Playwright's own pre-existing selection-tray.spec.ts
+// reload test, SELECTION-1, went red): forcing resolution here, once, right
+// after the host is built, is the fix -- the service has no OTHER job left
+// (see its own updated header comment) but this one still needs a live
+// instance to exist.
+host.Services.GetRequiredService<SelectionTrayService>();
+
+await host.RunAsync();
