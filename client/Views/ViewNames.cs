@@ -15,6 +15,17 @@ public static class ViewNames
     public const string Reader = "reader";
     public const string World = "world";
     public const string Sources = "sources";
+
+    /// <summary>Batch CORP-1 (R1/R2): the Kretzmann Popular Commentary
+    /// browser -- locus-keyed, declares <see cref="ViewCapabilities.BearsLocus"/>
+    /// (see <see cref="ViewRegistrySetup.Build"/>'s own registration).</summary>
+    public const string Kretzmann = "kretzmann";
+
+    /// <summary>Batch CORP-1 (R1/R3): the Book of Concord structure browser
+    /// -- navigates the corpus's own part/article/paragraph shape, NOT
+    /// scripture locus (declares no capability -- see
+    /// <see cref="ViewRegistrySetup.Build"/>'s own registration).</summary>
+    public const string Concord = "concord";
 }
 
 /// <summary>

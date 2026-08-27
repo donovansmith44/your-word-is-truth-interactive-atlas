@@ -3,6 +3,7 @@
 @implements IDisposable
 @inject NavigationManager Nav
 @inject AtlasClient Atlas
+@inject IExplorableClient Graph
 @inject SavedExplorationsService SavedExplorations
 
 <header class="app-header @HeaderThemeClass">
@@ -11,6 +12,12 @@
     <nav class="app-nav" aria-label="Primary">
         <a class="nav-link" href="/" data-testid="nav-reader">Reader</a>
         <a class="nav-link" href="/world" data-testid="nav-world">World</a>
+        @* Batch CORP-1 (R1, owner order 2026-08-27: "obviously Kretzmann and
+           Concord each get their own tabs"): top-level tabs alongside
+           Reader/World, matching this SAME .nav-link idiom exactly -- no new
+           nav paradigm. Sources stays reachable only via Credits, unchanged. *@
+        <a class="nav-link" href="/kretzmann" data-testid="nav-kretzmann">Kretzmann</a>
+        <a class="nav-link" href="/concord" data-testid="nav-concord">Concord</a>
     </nav>
 
     <div class="header-tools">
@@ -170,7 +177,10 @@
         _hamburgerError = null;
         try
         {
-            var nodes = await Task.WhenAll(trailPrefix.Select(d => ExplorationDescriptor.Reconstruct(d, Atlas)));
+            // Batch CORP-1: Reconstruct now also takes the generic graph
+            // client (IExplorableClient) -- needed to reconstruct a saved
+            // "ConcordUnit" descriptor; see that method's own header.
+            var nodes = await Task.WhenAll(trailPrefix.Select(d => ExplorationDescriptor.Reconstruct(d, Atlas, Graph)));
             _hamburgerSeedStack = nodes;
             _hamburgerActiveNode = nodes[^1];
         }

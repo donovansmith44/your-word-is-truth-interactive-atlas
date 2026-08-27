@@ -69,6 +69,15 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
         EventNode ev => new ExplorationDescriptor("Event", ev.EventId, ev.Title),
         PolityDeltaNode pd => new ExplorationDescriptor("PolityDelta", $"{pd.PolityName}|{pd.DeltaKind}|{pd.FromYear}|{pd.ToYear}", pd.Title),
         PersonNode pn => new ExplorationDescriptor("Person", pn.PersonId, pn.Title),
+        // Batch CORP-1: CommentaryItem's own Key is the wire node id
+        // ("CommentaryItem:kretzmann/0.1.0") -- Reconstruct needs nothing
+        // more (no fetch: the constructor takes id+heading only, see that
+        // class's own header for why it deliberately holds no
+        // IExplorableClient). ConcordUnit's own Key is its citation
+        // ("BoC 7.2.1"); Reconstruct DOES need a fetch there (unlike every
+        // fetch-free case above) -- see that case's own comment.
+        CommentaryItemNode ci => new ExplorationDescriptor("CommentaryItem", ci.Id, ci.Title),
+        ConcordUnitNode cu => new ExplorationDescriptor("ConcordUnit", cu.Title, cu.Title),
         _ => throw new NotSupportedException($"ExplorationDescriptor.Capture: unrecognized IExplorable kind '{node.Kind}' ({node.GetType().Name})."),
     };
 
@@ -82,8 +91,20 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
     /// wrap this in a try/catch and surface the app's existing toast/error
     /// affordance, the same graceful-degradation stance every other
     /// best-effort fetch in this app already takes.
+    ///
+    /// Batch CORP-1 widens this signature with a SECOND client
+    /// (<paramref name="graph"/>, <see cref="IExplorableClient"/>) --
+    /// disclosed, not silent: every case above this batch's own additions
+    /// needs only <paramref name="api"/> (the bespoke client), but
+    /// reconstructing a saved "ConcordUnit" needs the generic reading-spine
+    /// endpoint (<c>Reading(...,corpus:"concord")</c>), which only
+    /// <see cref="IExplorableClient"/> exposes -- <c>AtlasClient</c> has no
+    /// Concord-reading method of its own, and duplicating one there just for
+    /// this ONE reconstruction path would be a second representation of the
+    /// same call. <c>MainLayout.razor</c>'s own "Continue" is the one real
+    /// call site, updated to inject and pass both clients.
     /// </summary>
-    public static async Task<IExplorable> Reconstruct(ExplorationDescriptor descriptor, AtlasClient api)
+    public static async Task<IExplorable> Reconstruct(ExplorationDescriptor descriptor, AtlasClient api, IExplorableClient graph)
     {
         switch (descriptor.Kind)
         {
@@ -190,6 +211,22 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
 
             case "Person":
                 return new PersonNode(descriptor.Key, descriptor.Title);
+
+            case "CommentaryItem":
+                // No fetch -- CommentaryItemNode's own constructor takes
+                // id+heading only (see that class's own header for why).
+                return new CommentaryItemNode(descriptor.Key, descriptor.Title);
+
+            case "ConcordUnit":
+            {
+                // One reading-window fetch (n=1, corpus=concord) re-resolves
+                // this exact paragraph's own full text -- the same call
+                // Pages/Concord.razor itself makes to build its own rows.
+                var window = await graph.Reading(descriptor.Key, 1, "onward", corpus: "concord");
+                var unit = window.Units.FirstOrDefault(u => u.Ref == descriptor.Key)
+                    ?? throw new NotSupportedException($"ExplorationDescriptor.Reconstruct: Concord paragraph '{descriptor.Key}' no longer resolves.");
+                return new ConcordUnitNode(unit.Ref, unit.Text);
+            }
 
             default:
                 throw new NotSupportedException($"ExplorationDescriptor.Reconstruct: unrecognized descriptor Kind '{descriptor.Kind}'.");

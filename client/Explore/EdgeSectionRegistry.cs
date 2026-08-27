@@ -129,10 +129,28 @@ public static class EdgeSectionRegistry
     /// reveal instead of just un-hiding already-held rows).
     public static readonly EdgeSectionSpec MentionedIn = new(new EdgeKindId("mentioned-in"), SectionStyle.Standard, InitialClamp: 12, SectionOrder.Canonical);
 
+    /// Batch CORP-1 (R2, Kretzmann): a verse/passage TextUnit's own inverse
+    /// frontier of CommentaryItems anchored to it (`comments-on`'s own
+    /// inverse label -- graph-types/src/edge.rs; ALREADY lowered into the
+    /// generic directed edge index by the KRETZ-1 "pre-authorized exception"
+    /// -- graph-types/src/graph.rs's own `comments_on` loop). InitialClamp
+    /// generous (20): a real verse very rarely carries more than a handful
+    /// of Kretzmann units (one per lemma span), so one page safely captures
+    /// the whole set for virtually every real verse -- the SAME "single
+    /// generous page" reasoning EdgeSectionRegistry.Mentions already
+    /// establishes for its own per-locus frontier.
+    public static readonly EdgeSectionSpec CommentedOnBy = new(new EdgeKindId("commented-on-by"), SectionStyle.Standard, InitialClamp: 20, SectionOrder.Canonical);
+
     // Batch P fix round 1: keyed by EdgeKindId now (a record struct --
     // value equality/GetHashCode come free, a fully valid Dictionary key),
     // not a bare string, for the same reason EdgeSectionSpec.EdgeKind
     // itself is typed.
     public static readonly IReadOnlyDictionary<EdgeKindId, EdgeSectionSpec> ByKind =
-        new Dictionary<EdgeKindId, EdgeSectionSpec> { [Cites.EdgeKind] = Cites, [Mentions.EdgeKind] = Mentions, [MentionedIn.EdgeKind] = MentionedIn };
+        new Dictionary<EdgeKindId, EdgeSectionSpec>
+        {
+            [Cites.EdgeKind] = Cites,
+            [Mentions.EdgeKind] = Mentions,
+            [MentionedIn.EdgeKind] = MentionedIn,
+            [CommentedOnBy.EdgeKind] = CommentedOnBy,
+        };
 }

@@ -51,4 +51,12 @@ export const api = {
     const params = new URLSearchParams({ kind, ...(opts.limit != null ? { limit: String(opts.limit) } : {}), ...(opts.cursor != null ? { cursor: String(opts.cursor) } : {}) });
     return getJson(`/api/node/${encodeURIComponent(id)}/edges?${params}`);
   },
+  // Batch CORP-1: GET /api/text -- the SAME reading-window endpoint
+  // client/IExplorableClient.cs's Reading() consumes, read here directly for
+  // CONTRACT-lockstep assertions (kretzmann.spec.ts/concord.spec.ts compare
+  // what the Concord page renders against this raw response).
+  reading: (ref: string, n: number, opts: { dir?: string; corpus?: string } = {}) => {
+    const params = new URLSearchParams({ ref, n: String(n), dir: opts.dir ?? 'onward', corpus: opts.corpus ?? 'bible' });
+    return getJson(`/api/text?${params}`);
+  },
 };

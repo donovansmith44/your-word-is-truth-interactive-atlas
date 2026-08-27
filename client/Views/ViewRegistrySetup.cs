@@ -65,6 +65,29 @@ public static class ViewRegistrySetup
             return Task.CompletedTask;
         }
 
+        // Batch CORP-1 (R2/R3): Kretzmann and Concord each declare their OWN
+        // "read-beside" hatch, self-hosting -- the SAME shape Sources' own
+        // EnterSplitSourcesHostsReader establishes immediately above (owner
+        // becomes host, Reader becomes guest, no per-route split query to
+        // keep in sync). Kretzmann PROJECTS the shared Locus atom directly
+        // (R2) -- it never navigates on entering split; the already-shared
+        // atom is why the guest Reader pane tracks it "by construction," not
+        // a link. Concord (R3) is identical in shape, just with a different
+        // owner name; it bears no locus/window capability, so nothing about
+        // this hatch differs from Sources' own proof that any two views may
+        // pair this way.
+        Task EnterSplitKretzmannHostsReader()
+        {
+            arrangement.Dispatch(new EnterSplit(ViewNames.Kretzmann, ViewNames.Reader, DefaultFollow: false, DefaultDividerFraction: null));
+            return Task.CompletedTask;
+        }
+
+        Task EnterSplitConcordHostsReader()
+        {
+            arrangement.Dispatch(new EnterSplit(ViewNames.Concord, ViewNames.Reader, DefaultFollow: false, DefaultDividerFraction: null));
+            return Task.CompletedTask;
+        }
+
         // Fix round 1 (controller ruling 2): HostView is the hosting
         // declaration -- Reader's and Sources' own hatches host themselves;
         // World's own hatch (declared by World, "Read beside the map")
@@ -74,6 +97,8 @@ public static class ViewRegistrySetup
         var readerHatch = new EnterSplitHatch(ViewNames.Reader, ViewNames.World, hostView: ViewNames.Reader, EnterSplitReaderHostsWorld);
         var worldHatch = new EnterSplitHatch(ViewNames.World, ViewNames.Reader, hostView: ViewNames.Reader, EnterSplitWorldRequestsReader);
         var sourcesHatch = new EnterSplitHatch(ViewNames.Sources, ViewNames.Reader, hostView: ViewNames.Sources, EnterSplitSourcesHostsReader);
+        var kretzmannHatch = new EnterSplitHatch(ViewNames.Kretzmann, ViewNames.Reader, hostView: ViewNames.Kretzmann, EnterSplitKretzmannHostsReader);
+        var concordHatch = new EnterSplitHatch(ViewNames.Concord, ViewNames.Reader, hostView: ViewNames.Concord, EnterSplitConcordHostsReader);
 
         // Fix round 1 (Adjudication F): Reader/Sources no longer take
         // IsHost/OnRequestClose parameters at all -- both are host-CAPABLE
@@ -116,6 +141,30 @@ public static class ViewRegistrySetup
                 builder.AddAttribute(1, nameof(Sources.SplitMode), (bool?)ctx.SplitMode);
                 builder.CloseComponent();
             }, new IEscapeHatch[] { sourcesHatch }),
+
+            // Batch CORP-1 (R2): the Kretzmann commentary browser -- PROJECTS
+            // the shared Locus atom (BearsLocus), same capability declaration
+            // Reader carries, which is exactly why the split-follow-by-
+            // construction proof holds (both members read the SAME atom;
+            // there is no link to wire).
+            new(ViewNames.Kretzmann, ViewCapabilities.BearsLocus, ctx => builder =>
+            {
+                builder.OpenComponent<Kretzmann>(0);
+                builder.AddAttribute(1, nameof(Kretzmann.SplitMode), (bool?)ctx.SplitMode);
+                builder.CloseComponent();
+            }, new IEscapeHatch[] { kretzmannHatch }),
+
+            // Batch CORP-1 (R3): the Book of Concord structure browser --
+            // declares NO capability (navigates its own part/article/paragraph
+            // shape, not scripture locus); its own browsing position is
+            // view-local component state, not a shared atom (see
+            // Concord.razor's own header).
+            new(ViewNames.Concord, ViewCapabilities.None, ctx => builder =>
+            {
+                builder.OpenComponent<Concord>(0);
+                builder.AddAttribute(1, nameof(Concord.SplitMode), (bool?)ctx.SplitMode);
+                builder.CloseComponent();
+            }, new IEscapeHatch[] { concordHatch }),
         };
 
         return new ViewRegistry(views);

@@ -50,9 +50,13 @@ public sealed class GraphExplorableClient : IExplorableClient
         return result ?? throw new InvalidOperationException($"empty response body from {url}");
     }
 
-    public async Task<TextWindowDto> Reading(string fromRef, int n, string dir = "onward")
+    public async Task<TextWindowDto> Reading(string fromRef, int n, string dir = "onward", string corpus = "bible")
     {
-        var url = $"api/text?ref={Uri.EscapeDataString(fromRef)}&n={n}&dir={Uri.EscapeDataString(dir)}";
+        // Batch CORP-1: &corpus= appended unconditionally (not only when
+        // non-default) -- explicit is as valid as omitted on the wire
+        // (graph_handlers.rs defaults to "bible" either way), and always
+        // sending it keeps this call site simple, with no silent branch.
+        var url = $"api/text?ref={Uri.EscapeDataString(fromRef)}&n={n}&dir={Uri.EscapeDataString(dir)}&corpus={Uri.EscapeDataString(corpus)}";
         var result = await _http.GetFromJsonAsync<TextWindowDto>(url, Wire.Options);
         return result ?? throw new InvalidOperationException($"empty response body from {url}");
     }

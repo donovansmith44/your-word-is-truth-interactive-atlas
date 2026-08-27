@@ -88,10 +88,16 @@ public interface IExplorableClient
     /// own default (20, capped at 200 server-side).
     Task<EdgePageDto> Edges(string id, EdgeKindId kind, int? cursor = null, int limit = 20);
 
-    /// <c>GET /api/text?ref=&amp;n=&amp;dir=</c> -- a window of <c>{ref,
-    /// text}</c> units along one corpus's reading spine, starting at
-    /// <paramref name="fromRef"/> (a dot-ref, e.g. <c>"JHN.3.16"</c>).
+    /// <c>GET /api/text?ref=&amp;n=&amp;dir=&amp;corpus=</c> -- a window of
+    /// <c>{ref, text}</c> units along one corpus's reading spine, starting at
+    /// <paramref name="fromRef"/> (a dot-ref, e.g. <c>"JHN.3.16"</c>, or --
+    /// Batch CORP-1, R3 -- a Concord citation, e.g. <c>"BoC 7.2.1"</c>).
     /// <paramref name="dir"/> is <c>"onward"</c> (default) or
-    /// <c>"backward"</c>.
-    Task<TextWindowDto> Reading(string fromRef, int n, string dir = "onward");
+    /// <c>"backward"</c>. <paramref name="corpus"/> (Batch CORP-1, extending
+    /// this interface -- not the compiled client/Contracts/*.cs authority,
+    /// so ordinary extension applies) is <c>"bible"</c> (default, byte-
+    /// identical to every pre-existing caller) or <c>"concord"</c> --
+    /// mirrors <c>GET /api/text</c>'s own optional <c>corpus=</c> param
+    /// (server: CORP-2a, `graph_handlers.rs`), not a new server surface.
+    Task<TextWindowDto> Reading(string fromRef, int n, string dir = "onward", string corpus = "bible");
 }

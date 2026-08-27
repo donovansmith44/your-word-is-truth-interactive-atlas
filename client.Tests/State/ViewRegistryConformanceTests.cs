@@ -92,7 +92,9 @@ public class ViewRegistryConformanceTests
     {
         var values = ViewNamesConstants();
 
-        Assert.Equal(3, values.Count); // reader, world, sources -- this batch's own ship list; grows deliberately, not by accident
+        // Batch CORP-1: reader, world, sources, kretzmann, concord -- grows
+        // deliberately, not by accident (this test's own header comment).
+        Assert.Equal(5, values.Count);
         Assert.Equal(values.Count, values.Distinct().Count());
     }
 
@@ -132,6 +134,14 @@ public class ViewRegistryConformanceTests
         Assert.Equal(ViewCapabilities.BearsLocus, registry.CapabilitiesOf(ViewNames.Reader));
         Assert.Equal(ViewCapabilities.BearsWindow, registry.CapabilitiesOf(ViewNames.World));
         Assert.Equal(ViewCapabilities.None, registry.CapabilitiesOf(ViewNames.Sources));
+
+        // Batch CORP-1 (R2/R3): Kretzmann PROJECTS the shared Locus atom
+        // (BearsLocus, the SAME declaration Reader carries -- this is
+        // exactly why the split-follow-by-construction proof holds); Concord
+        // declares no capability (R3: navigates its own structure, not
+        // scripture locus).
+        Assert.Equal(ViewCapabilities.BearsLocus, registry.CapabilitiesOf(ViewNames.Kretzmann));
+        Assert.Equal(ViewCapabilities.None, registry.CapabilitiesOf(ViewNames.Concord));
     }
 
     // ------------------------------------------------------------------
@@ -165,10 +175,12 @@ public class ViewRegistryConformanceTests
         }
 
         // R4's own ship list, verbatim: reader<->world (two hatches, one per
-        // side) PLUS Sources' own "read-beside" proof -- exactly three,
-        // never silently zero (a registry with no hatches at all would pass
-        // every loop above vacuously).
-        Assert.Equal(3, hatchesFound);
+        // side) PLUS Sources' own "read-beside" proof -- three at VC-1.
+        // Batch CORP-1 adds two more, self-hosting like Sources: Kretzmann's
+        // own "read-beside" and Concord's own "read-beside" -- five, never
+        // silently zero (a registry with no hatches at all would pass every
+        // loop above vacuously).
+        Assert.Equal(5, hatchesFound);
     }
 
     [Fact]
@@ -185,6 +197,25 @@ public class ViewRegistryConformanceTests
         Assert.Equal(ViewNames.Sources, sourcesHatch.OwnerView);
         Assert.Equal(ViewNames.Reader, sourcesHatch.PartnerView);
         Assert.Equal(ViewNames.Sources, sourcesHatch.HostView);
+    }
+
+    // Batch CORP-1 (R2/R3): Kretzmann and Concord each declare their OWN
+    // "read-beside" hatch, self-hosting -- the identical shape Sources' own
+    // hatch already proved generic immediately above.
+    [Fact]
+    public void HatchConformance_KretzmannAndConcord_OwnHatchHostsThemselves()
+    {
+        var registry = BuildRegistry();
+
+        var kretzmannHatch = (EnterSplitHatch)registry.Get(ViewNames.Kretzmann).EscapeHatches.Single(h => h.Kind == HatchKinds.EnterSplit);
+        Assert.Equal(ViewNames.Kretzmann, kretzmannHatch.OwnerView);
+        Assert.Equal(ViewNames.Reader, kretzmannHatch.PartnerView);
+        Assert.Equal(ViewNames.Kretzmann, kretzmannHatch.HostView);
+
+        var concordHatch = (EnterSplitHatch)registry.Get(ViewNames.Concord).EscapeHatches.Single(h => h.Kind == HatchKinds.EnterSplit);
+        Assert.Equal(ViewNames.Concord, concordHatch.OwnerView);
+        Assert.Equal(ViewNames.Reader, concordHatch.PartnerView);
+        Assert.Equal(ViewNames.Concord, concordHatch.HostView);
     }
 
     [Fact]
