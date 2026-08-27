@@ -48,12 +48,16 @@ builder.Services.AddSingleton<ViewStateService>();
 // bookkeeping (LastOrigin). AtomNames.Locus/AtomNames.TimeWindow (Contracts/
 // State.cs) are the canonical names, threaded straight through as each
 // atom's own Name.
-builder.Services.AddSingleton(_ => new StateAtom<Locus>(AtomNames.Locus, Locus.Default));
-builder.Services.AddSingleton(_ => new StateAtom<TimeWindow>(AtomNames.TimeWindow, TimeWindow.Default));
-
-// Batch ST-2: the ViewArrangement atom (controller ruling R4) -- same
-// singleton treatment as Locus/TimeWindow above.
-builder.Services.AddSingleton(_ => new StateAtom<ViewArrangement>(AtomNames.ViewArrangement, ViewArrangement.Default));
+//
+// Fix round 1 (ruling 6.i -- controller, binding): the four JS-independent
+// atom registrations (Locus/TimeWindow/ViewArrangement/FocusStack) moved
+// into AppServices.AddStateAtoms -- this is the SAME code, called from here,
+// not a parallel copy -- so client.Tests can exercise REAL DI resolution +
+// singleton lifetime for each migrated AtomNames entry (see
+// ConformanceTests.cs's own rewritten atom-registration test; a Program.cs
+// TEXT scan, the original approach, could never prove registration or
+// lifetime, only that a constructor call appears somewhere in the file).
+AppServices.AddStateAtoms(builder.Services);
 
 // Batch ST-3 (R1): the effect-ownership registry (client/Contracts/State.cs's
 // own IStateEffect<T>/IEffectRegistry, controller addition) -- ONE singleton
@@ -65,65 +69,25 @@ builder.Services.AddSingleton<EffectRegistry>();
 builder.Services.AddSingleton<IEffectRegistry>(sp => sp.GetRequiredService<EffectRegistry>());
 
 // Batch ST-3 (R4): the multi-instance ownership registry for the FocusStack
-// atom below -- see OwnershipRegistry.cs's own header for why this is a
-// separate primitive from EffectRegistry above, not a reuse of it.
+// atom -- see OwnershipRegistry.cs's own header for why this is a separate
+// primitive from EffectRegistry above, not a reuse of it.
 builder.Services.AddSingleton<OwnershipRegistry>();
 
-// Batch ST-3 (R3): the FocusStack atom -- one popover session's stack +
-// trail, as one value (see FocusStack.cs's own header). Empty at every
-// fresh app load (ExplorerPopover.razor's own OnInitializedAsync always
-// claims ownership and seeds it before ever rendering from it -- there is
-// no cross-reload persistence for this atom, matching the pre-atom
-// component-local _stack/_trail fields' own "resets on a fresh open"
-// behavior exactly).
-builder.Services.AddSingleton(_ => new StateAtom<FocusStack>(AtomNames.FocusStack, FocusStack.Empty));
+// Batch ST-3 (R2), fix round 1 (Q-2 -- IMPORTANT, review, "no load-bearing
+// constructors"): the Selection atom -- see AppServices.AddSelectionAtom's
+// own doc comment for the seed/persistence-write mechanism, and Selection.cs's
+// own header for why the persistence write lives directly in this factory
+// now instead of the retired SelectionTrayService.
+AppServices.AddSelectionAtom(builder.Services);
 
-// Batch ST-3 (R2): the Selection atom -- seeded directly from whatever
-// "selection-v1" doc localStorage already holds (the SAME LocalStore.Read/
-// Probe idiom SelectionTrayService's own pre-atom constructor used to run
-// itself), off the SAME already-registered IJSInProcessRuntime cast the
-// saved-explorations/selection-tray registrations below already perform --
-// no separate JS-interop bootstrapping step. SequenceEqualityComparer
-// (client/State/SequenceEqualityComparer.cs) is REQUIRED here, not
-// optional -- see that type's own header for why List<T>'s lack of
-// structural equality would otherwise break laws 2/5 for a list-valued atom.
-builder.Services.AddSingleton(sp =>
-{
-    var js = (IJSInProcessRuntime)sp.GetRequiredService<IJSRuntime>();
-    var initial = LocalStore.Probe(js)
-        ? (IReadOnlyList<ExplorationDescriptor>)LocalStore.Read(js, SelectionTrayService.StorageKey, new List<ExplorationDescriptor>())
-        : Selection.Empty;
-    return new StateAtom<IReadOnlyList<ExplorationDescriptor>>(AtomNames.Selection, initial, SequenceEqualityComparer<ExplorationDescriptor>.Instance);
-});
-
-// Batch G2 decisions 4/6: saved explorations + the selection tray's own
-// PERSISTENCE half (Batch ST-3, R2 -- see SelectionTrayService.cs's own
-// updated header), each a localStorage-backed singleton (LocalStore.cs's
-// own header comment has the full reasoning) -- resolved lazily off the
-// SAME IJSRuntime the framework already registers, cast once here to
-// IJSInProcessRuntime (Blazor WebAssembly's own DI-registered instance
-// always implements it -- there is no cross-process hop the way Blazor
-// Server has).
+// Batch G2 decision 4: saved explorations, a localStorage-backed singleton
+// (LocalStore.cs's own header comment has the full reasoning) -- resolved
+// lazily off the SAME IJSRuntime the framework already registers, cast once
+// here to IJSInProcessRuntime (Blazor WebAssembly's own DI-registered
+// instance always implements it -- there is no cross-process hop the way
+// Blazor Server has). Genuinely load-bearing (unlike the retired
+// SelectionTrayService above): MainLayout.razor injects it directly for the
+// hamburger panel's own Available/Items/Save/Rename/Delete surface.
 builder.Services.AddSingleton(sp => new SavedExplorationsService((IJSInProcessRuntime)sp.GetRequiredService<IJSRuntime>()));
-builder.Services.AddSingleton(sp => new SelectionTrayService(
-    (IJSInProcessRuntime)sp.GetRequiredService<IJSRuntime>(),
-    sp.GetRequiredService<StateAtom<IReadOnlyList<ExplorationDescriptor>>>()));
 
-var host = builder.Build();
-
-// Batch ST-3 (R2): a plain `AddSingleton` factory is LAZY -- it only ever
-// runs the first time something actually resolves the service. Pre-ST-3,
-// SelectionTrayService was always resolved anyway (every consumer injected
-// it directly for Items/Toggle/Remove/Clear). Post-ST-3, NOTHING injects
-// it any more (SelectionTray.razor/Reader.razor/World.razor all moved onto
-// the atom directly, per R2) -- its own constructor (where the
-// persistence-writing `Changed` subscriber gets wired) would otherwise
-// never run at all, silently dropping "selection-v1" writes forever. Real,
-// live-caught regression (Playwright's own pre-existing selection-tray.spec.ts
-// reload test, SELECTION-1, went red): forcing resolution here, once, right
-// after the host is built, is the fix -- the service has no OTHER job left
-// (see its own updated header comment) but this one still needs a live
-// instance to exist.
-host.Services.GetRequiredService<SelectionTrayService>();
-
-await host.RunAsync();
+await builder.Build().RunAsync();
