@@ -1206,11 +1206,155 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
         return Err(ArtifactError(format!("artifact format_version {} unsupported (this build understands {FORMAT_VERSION})", d.format_version)));
     }
 
+    // PERF-m1 (the disclosed follow-up named in `BENCHMARKS.md`'s own
+    // `artifact_load` "disclosed floor, not chased this batch" note --
+    // verbatim: "`to_service_parts`'s own per-relation DTO->domain
+    // conversion loops are STRUCTURALLY the same shape `build_indexes`'s
+    // row-lowering loops were before this batch's fix -- a disclosed,
+    // low-risk follow-up (chunk-then-concatenate a `Vec`, simpler than
+    // `build_indexes`'s own chunk-then-merge-a-map, since a flat `Vec`
+    // split needs no per-key ordering argument at all)"). Applied here,
+    // verbatim to that prescription, to the four DOMINANT row tables by
+    // count on the real committed artifact (`M-C ARTIFACT SOURCE GRAPH:
+    // 31102 text units, 343558 cites edges, ...` -- `nodes` and
+    // `cross_refs`/`cites` are the two largest by a wide margin;
+    // `comments_on` (50,602 rows, KRETZ-1) and `mentions` are the next
+    // tier): `std::thread::scope`, chunk size off
+    // `std::thread::available_parallelism()`, each chunk runs the EXACT
+    // SAME per-row conversion the sequential version ran, handles are
+    // joined and their chunks concatenated IN ORIGINAL VECTOR ORDER
+    // (`Vec::extend`, never a re-sort) -- the same "handles processed in
+    // vector order regardless of which thread the OS finishes first"
+    // guarantee `Graph::build_indexes`'s own doc comment states, so the
+    // resulting row tables are bit-for-bit identical in content to the
+    // pre-parallel sequential version; only wall-clock changes. Every
+    // SMALLER row table below (curated-data-sized -- hundreds to low
+    // thousands of rows: attests/succession/dated_by/located_at/
+    // named_after/fulfills/typology/contains_concord/catechism/spoken_by/
+    // spoken_at/temporal_adjacency) stays sequential, unchanged from
+    // before this batch -- thread-spawn overhead is not worth it at that
+    // size, and leaving them alone keeps this diff minimal and easy to
+    // verify against the pre-existing code.
+    fn owned_chunks<T>(v: Vec<T>, chunk_size: usize) -> Vec<Vec<T>> {
+        let mut it = v.into_iter();
+        let mut out = Vec::new();
+        loop {
+            let chunk: Vec<T> = (&mut it).take(chunk_size).collect();
+            if chunk.is_empty() {
+                break;
+            }
+            out.push(chunk);
+        }
+        out
+    }
+
+    let n_threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
+    // Lengths captured BEFORE each field is moved into `owned_chunks` below
+    // (argument evaluation would otherwise try to read the just-moved
+    // field a second time for its own chunk-size computation).
+    let node_chunk_size = d.nodes.len().div_ceil(n_threads).max(1);
+    let cross_ref_chunk_size = d.cross_refs.len().div_ceil(n_threads).max(1);
+    let comments_on_chunk_size = d.comments_on.len().div_ceil(n_threads).max(1);
+    let mentions_chunk_size = d.mentions.len().div_ceil(n_threads).max(1);
+    let node_chunks = owned_chunks(d.nodes, node_chunk_size);
+    let cross_ref_chunks = owned_chunks(d.cross_refs, cross_ref_chunk_size);
+    let comments_on_chunks = owned_chunks(d.comments_on, comments_on_chunk_size);
+    let mentions_chunks = owned_chunks(d.mentions, mentions_chunk_size);
+
+    let (node_rows, cross_ref_rows, comments_on_rows, mentions_rows): (Vec<(AnyNodeId, Node)>, Vec<CrossRef>, Vec<CommentsOn>, Vec<Mentions>) = std::thread::scope(|scope| -> Result<_, ArtifactError> {
+        let node_handles: Vec<_> = node_chunks
+            .into_iter()
+            .map(|chunk| {
+                scope.spawn(move || -> Result<Vec<(AnyNodeId, Node)>, ArtifactError> {
+                    chunk
+                        .into_iter()
+                        .map(|n| {
+                            let id: AnyNodeId = n.id.into();
+                            Ok((id.clone(), Node { id, payload: payload_from_dto(n.payload)?, provenance: n.provenance }))
+                        })
+                        .collect()
+                })
+            })
+            .collect();
+
+        let cross_ref_handles: Vec<_> = cross_ref_chunks
+            .into_iter()
+            .map(|chunk| {
+                scope.spawn(move || -> Result<Vec<CrossRef>, ArtifactError> {
+                    chunk
+                        .into_iter()
+                        .map(|r| {
+                            Ok(CrossRef {
+                                from: r.from.try_into()?,
+                                to: r.to.try_into()?,
+                                to_last: r.to_last.map(TextLocus::try_from).transpose()?,
+                                target_display: r.target_display,
+                                votes: r.votes,
+                                provenance: r.provenance,
+                            })
+                        })
+                        .collect()
+                })
+            })
+            .collect();
+
+        let comments_on_handles: Vec<_> = comments_on_chunks
+            .into_iter()
+            .map(|chunk| {
+                scope.spawn(move || -> Result<Vec<CommentsOn>, ArtifactError> {
+                    chunk
+                        .into_iter()
+                        .map(|r| {
+                            Ok(CommentsOn { item: CommentaryItemId::new(r.item), on: dto_to_bible_range(r.on_from, r.on_to)?, provenance: r.provenance, justification: dto_to_justification(r.justification)? })
+                        })
+                        .collect()
+                })
+            })
+            .collect();
+
+        let mentions_handles: Vec<_> = mentions_chunks
+            .into_iter()
+            .map(|chunk| {
+                scope.spawn(move || -> Result<Vec<Mentions>, ArtifactError> {
+                    chunk
+                        .into_iter()
+                        .map(|r| {
+                            let entity = match r.entity {
+                                DtoMentionedEntity::Place(p) => MentionedEntity::Place(PlaceId::new(p)),
+                                DtoMentionedEntity::Person(p) => MentionedEntity::Person(PersonId::new(p)),
+                                DtoMentionedEntity::PeopleGroup(pg) => MentionedEntity::PeopleGroup(PeopleGroupId::new(pg)),
+                            };
+                            Ok(Mentions { locus: r.locus.try_into()?, entity, provenance: r.provenance })
+                        })
+                        .collect()
+                })
+            })
+            .collect();
+
+        let mut node_rows = Vec::new();
+        for h in node_handles {
+            node_rows.extend(h.join().expect("node-conversion worker panicked")?);
+        }
+        let mut cross_ref_rows = Vec::new();
+        for h in cross_ref_handles {
+            cross_ref_rows.extend(h.join().expect("cross-ref-conversion worker panicked")?);
+        }
+        let mut comments_on_rows = Vec::new();
+        for h in comments_on_handles {
+            comments_on_rows.extend(h.join().expect("comments-on-conversion worker panicked")?);
+        }
+        let mut mentions_rows = Vec::new();
+        for h in mentions_handles {
+            mentions_rows.extend(h.join().expect("mentions-conversion worker panicked")?);
+        }
+
+        Ok((node_rows, cross_ref_rows, comments_on_rows, mentions_rows))
+    })?;
+
     let mut g = Graph::default();
 
-    for n in d.nodes {
-        let id: AnyNodeId = n.id.into();
-        g.nodes.insert(id.clone(), Node { id, payload: payload_from_dto(n.payload)?, provenance: n.provenance });
+    for (id, node) in node_rows {
+        g.nodes.insert(id, node);
     }
 
     for (corpus, order) in d.reading {
@@ -1303,15 +1447,11 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
         g.catechism.push(CatechismLink { locus: r.locus.try_into()?, item: CatechismItemId::new(r.item), provenance: r.provenance, justification: dto_to_justification(r.justification)? });
     }
 
-    // KRETZ-1: a plain row table, like `attests`/`fulfills` above.
-    for r in d.comments_on {
-        g.comments_on.push(CommentsOn {
-            item: CommentaryItemId::new(r.item),
-            on: dto_to_bible_range(r.on_from, r.on_to)?,
-            provenance: r.provenance,
-            justification: dto_to_justification(r.justification)?,
-        });
-    }
+    // KRETZ-1: a plain row table, like `attests`/`fulfills` above --
+    // PERF-m1: already converted chunk-parallel above (`comments_on_rows`,
+    // one of the four dominant tables), so this is a plain move, not a
+    // per-row loop, unlike its sibling tables here.
+    g.comments_on = comments_on_rows;
 
     // RED-1: plain row tables, like `attests`/`fulfills`/`comments_on`
     // above.
@@ -1332,25 +1472,15 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
         });
     }
 
-    for r in d.mentions {
-        let entity = match r.entity {
-            DtoMentionedEntity::Place(p) => MentionedEntity::Place(PlaceId::new(p)),
-            DtoMentionedEntity::Person(p) => MentionedEntity::Person(PersonId::new(p)),
-            DtoMentionedEntity::PeopleGroup(g) => MentionedEntity::PeopleGroup(PeopleGroupId::new(g)),
-        };
-        g.mentions.push(Mentions { locus: r.locus.try_into()?, entity, provenance: r.provenance });
-    }
+    // PERF-m1: already converted chunk-parallel above (`mentions_rows`, one
+    // of the four dominant tables) -- plain move, not a per-row loop.
+    g.mentions = mentions_rows;
 
-    for r in d.cross_refs {
-        g.cross_refs.push(CrossRef {
-            from: r.from.try_into()?,
-            to: r.to.try_into()?,
-            to_last: r.to_last.map(TextLocus::try_from).transpose()?,
-            target_display: r.target_display,
-            votes: r.votes,
-            provenance: r.provenance,
-        });
-    }
+    // PERF-m1: already converted chunk-parallel above (`cross_ref_rows` --
+    // `cross_refs`/`cites` is "by far the largest single relation," the
+    // BENCHMARKS.md-named primary target of this follow-up) -- plain move,
+    // not a per-row loop.
+    g.cross_refs = cross_ref_rows;
 
     // TRAV-1: a plain row table, like `cross_refs` above -- NOT part of
     // the chronology companion reconstruction below.
