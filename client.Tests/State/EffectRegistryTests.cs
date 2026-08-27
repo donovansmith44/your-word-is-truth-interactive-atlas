@@ -308,6 +308,89 @@ public class EffectRegistryTests
     }
 
     // ------------------------------------------------------------------
+    // Fix round 2 (N-1 -- IMPORTANT, re-review): `EffectRegistry.Release(name)`
+    // -- the registry-level "release-before-direct-write" primitive that
+    // replaces World.razor's own instance-local `DisableFollowScene()` call
+    // at `EnterScriptureMode`'s own choke point. Proves the property that
+    // matters: a direct writer can force "no one currently owns this name"
+    // WITHOUT knowing or caring whether IT is the owner -- composing across
+    // instances, unlike a per-instance claim handle.
+    // ------------------------------------------------------------------
+    [Fact]
+    public void ReleaseByName_ReleasesWhoeverCurrentlyOwnsTheSlot_RegardlessOfWhichHandleWouldHaveReleasedIt()
+    {
+        var atom = new StateAtom<Counter>("counter", new Counter(0));
+        var registry = new EffectRegistry();
+        var values = new List<Counter>();
+        var claim = registry.Claim(MakeEffect("e", atom, values)); // claim held by "someone" -- the caller below never touches this handle at all
+        values.Clear();
+
+        registry.Release("e"); // registry-level release, by NAME -- not claim.Dispose()
+
+        atom.Dispatch(new SetCounter(5));
+        Assert.Empty(values); // the still-undisposed claim handle's own handler no longer fires -- released regardless of who held it
+
+        claim.Dispose(); // safe afterward -- the token no longer matches, so this is a no-op on the (already-cleared) slot
+    }
+
+    [Fact]
+    public void ReleaseByName_ThenReClaim_ReconcilesNormallyAgainstTheCurrentValue()
+    {
+        var atom = new StateAtom<Counter>("counter", new Counter(7));
+        var registry = new EffectRegistry();
+        var values = new List<Counter>();
+        var claim1 = registry.Claim(MakeEffect("e", atom, values));
+        values.Clear();
+
+        registry.Release("e");
+        var claim2 = registry.Claim(MakeEffect("e", atom, values)); // a fresh claim after a by-name release reconciles exactly like any other claim
+
+        Assert.Single(values);
+        Assert.Equal(new Counter(7), values[0]);
+
+        claim1.Dispose(); // stale handle from before the release -- harmless no-op
+        claim2.Dispose();
+    }
+
+    [Fact]
+    public void ReleaseByName_OnAnUnclaimedNameIsASafeNoOp()
+    {
+        var registry = new EffectRegistry();
+        var exception = Record.Exception(() => registry.Release("never-claimed"));
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void ReleaseByName_ComposesAcrossTwoDifferentCallers_ClosesTheN1CrossInstanceGap()
+    {
+        // Reproduces N-1's own named reachable shape directly: caller B does
+        // NOT hold the "follow-scene" claim (instance A does) but still
+        // needs "a direct write materializes exactly once" to hold. Before
+        // this fix, only A's own claim.Dispose() could release A's claim --
+        // B had no way to prevent A's own Materialize from ALSO firing
+        // alongside B's own direct effect. With Release(name), B (or ANY
+        // caller) can guarantee no one is claimed before its own direct
+        // write, regardless of who owned it.
+        var atom = new StateAtom<Counter>("counter", new Counter(0));
+        var registry = new EffectRegistry();
+        var ownerValues = new List<Counter>(); // instance A's own materialized values
+        var claimA = registry.Claim(MakeEffect("follow-scene", atom, ownerValues));
+        ownerValues.Clear();
+
+        // Caller B's own direct-write choke point: release by name FIRST
+        // (B never touches claimA at all), then dispatch.
+        registry.Release("follow-scene");
+        var callerOwnDirectPath = new List<Counter>();
+        atom.Dispatch(new SetCounter(42));
+        callerOwnDirectPath.Add(atom.Value);
+
+        Assert.Empty(ownerValues); // A's own Materialize did NOT also fire -- the cross-instance double-fetch N-1 named is closed
+        Assert.Single(callerOwnDirectPath); // materializes exactly once, from B's own direct path
+
+        claimA.Dispose();
+    }
+
+    // ------------------------------------------------------------------
     // Fix round 1 (S-4 -- IMPORTANT, review): "release-before-direct-write"
     // invariant, pinned at the registry level (World.razor's own
     // EnterScriptureMode fix -- calling DisableFollowScene first -- is the

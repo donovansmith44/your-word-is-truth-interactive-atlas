@@ -1091,44 +1091,42 @@
     // materializes through the registry, so a direct dispatch here would
     // double-fetch (this method's own unconditional `RunScriptureModeEffect`
     // call, PLUS the registry's own claimed Materialize) unless the claim is
-    // released first. `ApplyExternalQuery` already achieves this
-    // indirectly (`SetSplitFollow(false)` fires `OnViewArrangementChanged`'s
-    // own OFF edge, which calls `DisableFollowScene` before ever reaching
-    // this method) -- the call here makes that release a property of EVERY
-    // direct entry point, present and future (`SyncFromQuery`/
-    // `RestoreMapState` reach this method too, today unreachable in
-    // SplitMode only because Blazor's own `[SupplyParameterFromQuery]`
-    // doesn't feed a non-routed child -- a reachability ACCIDENT, not a
-    // structural guarantee), not just the one caller that happens to arrange
-    // it today.
+    // released first. `SyncFromQuery`/`RestoreMapState` reach this method
+    // too, today unreachable in SplitMode only because Blazor's own
+    // `[SupplyParameterFromQuery]` doesn't feed a non-routed child -- a
+    // reachability ACCIDENT, not a structural guarantee -- so this release
+    // must hold for EVERY direct entry point, present and future, not just
+    // whichever caller happens to arrange it today.
     //
-    // Gated on `SplitMode` -- a live, self-caught bug found while running
-    // this fix round's OWN Playwright verification: an UNCONDITIONAL call
-    // here (every instance, standalone included) made
-    // `split-view.spec.ts`'s own "closing the reader pane returns to a full
-    // /world, preserving the atlas pane's actual state" test genuinely
-    // flaky (bisected: 5/5 clean on the pre-fix-round code, 5/5 clean with
-    // this call reverted, intermittently red with it unconditional --
-    // reproduced, not assumed). `DisableFollowScene`'s own null-check
-    // already makes it a no-op on a standalone instance in the COMMON case
-    // (no claim ever held there), so this gate changes nothing about the
-    // invariant's own correctness for the case that actually matters (a
-    // SplitMode instance that might hold a claim) -- it only removes a
-    // method call from the standalone instance's own hot path, which is
-    // exactly `_followEffectsLive`'s own established scoping (S-3's own
-    // comment: "SplitMode is the one per-instance fact no atom read can
-    // spoof"), applied here for the same reason, not a new rule. The exact
-    // mechanism by which the unconditional call disturbed a standalone
-    // instance's own dispose-vs-mount timing was not fully isolated beyond
-    // this reproduction -- disclosed, not papered over; see the batch
-    // report's own fix-round notes.
+    // Fix round 2 (N-1 -- IMPORTANT, re-review): releases at the REGISTRY
+    // level (`Effects.Release`, by NAME), not through this instance's own
+    // `_followSceneClaim` handle. An earlier draft (fix round 1) called
+    // `DisableFollowScene()` here, gated on `SplitMode` -- the re-review
+    // proved BOTH halves of that wrong: (1) the gate was a semantic NO-OP
+    // (`_followSceneClaim` is provably always null on a `!SplitMode`
+    // instance -- every assignment path is itself `SplitMode`-gated, and
+    // `SplitMode` never flips on a live instance, so the gated and
+    // ungated builds are the SAME PROGRAM on every path that reaches here;
+    // the flake this batch bisected against it was independently
+    // attributed to a pre-existing, unrelated race -- see SPLITCLOSE-1 in
+    // the batch report), so removing the gate costs nothing; (2) even
+    // ungated, `DisableFollowScene()` can only ever release THIS
+    // instance's own claim -- the registry slot and `TimeWindowAtom` are
+    // DI singletons, so a direct writer that does not happen to BE the
+    // current owner could never release someone ELSE's claim, meaning
+    // "materializes exactly once" held only when writer == owner, an
+    // instance-local accident, not a structural guarantee (reachable in
+    // principle: `/world?ref=X` mounting, or `SyncFromQuery` running,
+    // while a DIFFERENT, still-live SplitMode pane owns "follow-scene").
+    // `EffectRegistry.Release(name)` closes both: it is UNCONDITIONAL (no
+    // gate needed -- releasing an unclaimed or already-unowned name is a
+    // safe no-op, proven at
+    // `EffectRegistryTests.cs`'s own `ReleaseByName_OnAnUnclaimedNameIsASafeNoOp`)
+    // and it releases WHOEVER currently owns the name, regardless of which
+    // instance's own field would have pointed at it.
     private Task EnterScriptureMode(string sref)
     {
-        if (SplitMode)
-        {
-            DisableFollowScene();
-        }
-
+        Effects.Release(EffectNames.FollowScene);
         TimeWindowAtom.Dispatch(new SetScriptureWindow(sref));
         return RunScriptureModeEffect(sref);
     }

@@ -125,6 +125,39 @@ public sealed class EffectRegistry : IEffectRegistry
 
     IDisposable IEffectRegistry.Claim<T>(IStateEffect<T> effect) => Claim(effect);
 
+    /// <summary>
+    /// Fix round 2 (N-1 -- IMPORTANT, re-review): releases WHOEVER currently
+    /// owns <paramref name="name"/>, by NAME, not by claim handle. This is
+    /// what makes "release-before-direct-write" a property of the
+    /// REGISTRY/atom level rather than of one instance's own field: the
+    /// original S-4 fix (<c>World.razor</c>'s own <c>DisableFollowScene</c>)
+    /// could only release ITS OWN <c>_followSceneClaim</c>, so a direct
+    /// writer that did not happen to be the current owner could never
+    /// prevent the OWNER's own claim from materializing a second time --
+    /// the invariant held only when writer == owner, an instance-local
+    /// fact, not a structural one (the re-review's own N-1 finding). A
+    /// caller about to dispatch a direct, non-link-derived write no longer
+    /// needs to know or care whether IT holds the claim -- it just releases
+    /// the NAME, unconditionally, safe even when nothing is currently
+    /// claimed (a no-op: an empty <see cref="Slot.Unsubscribe"/>/`Owner`
+    /// stays empty). Superseding a stale claim HANDLE this way is safe by
+    /// the SAME token mechanism <see cref="Claim{T}"/> already relies on --
+    /// a claimant whose own claim was released this way simply finds
+    /// `slot.Owner` no longer matches its token the next time its own
+    /// handler (if still wired) or its own eventual `Dispose` runs.
+    /// </summary>
+    public void Release(string name)
+    {
+        if (!_slots.TryGetValue(name, out var slot))
+        {
+            return; // nothing has ever claimed this name -- a safe no-op
+        }
+
+        slot.Unsubscribe?.Invoke();
+        slot.Unsubscribe = null;
+        slot.Owner = null;
+    }
+
     private Slot GetOrAddSlot(string name)
     {
         if (!_slots.TryGetValue(name, out var slot))
