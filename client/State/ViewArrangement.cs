@@ -39,6 +39,20 @@ public sealed record ViewArrangement(IReadOnlyList<string> Members, string Layou
     /// starting state to ST-2's own <c>ReaderOnly</c> default.</summary>
     public static readonly ViewArrangement Default = new(new[] { ViewNames.Reader }, LayoutKinds.Single, null, false);
 
+    /// <summary>Batch CORPREAD-1a, DELIVERABLE 0b / SPLIT-5050 (owner order,
+    /// verbatim: "by default whatever opens up to the right when you split
+    /// screen is way bigger. make it so that it's 50/50 by default"). The
+    /// ONE named constant a no-stored-<see cref="DividerFraction"/> initial
+    /// width computation reads -- <c>CompositionSplit.razor</c>'s own
+    /// <c>OnAfterRenderAsync</c> is the sole production site (grep-able;
+    /// conformance-tripwired, <c>ConformanceTests.cs</c>'s own
+    /// <c>DefaultDividerFraction_ReferencedFromExactlyOneProductionSite</c>)
+    /// -- never a bare <c>0.5</c> literal, and applies through
+    /// <c>CompositionSplit</c> to EVERY pairing (no per-pair tuning, per the
+    /// ticket's own text) since that component is the ONE place any host's
+    /// divider ever restores its width from.</summary>
+    public const double DefaultDividerFraction = 0.5;
+
     public bool Equals(ViewArrangement? other) =>
         other is not null
         && Members.SequenceEqual(other.Members)

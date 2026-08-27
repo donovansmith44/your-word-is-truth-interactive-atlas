@@ -20,6 +20,16 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
   removed the moment split closes) -- so a refresh at ANY point while split
   is open always lands back in split view on the SAME chapter, not just
   immediately after the original arrival
+
+  CORPREAD-1a AMENDMENT (SPLIT-PERSIST-1, deliverable-0a): `?split=1` above
+  is RETIRED -- superseded by `?split={guest view name}` (optionally
+  `&follow=1`), the ONE URL vocabulary declared in
+  `client/Views/SplitUrlContract.cs` and owned centrally by
+  `CompositionSplit.razor`, not just Reader.razor. Every host-capable
+  route (`/read/...`, `/sources`, `/kretzmann`, `/concord`) now gets the
+  SAME refresh-survives-split guarantee this note originally described only
+  for reader+world -- see the SPLIT-1 entry's own CORPREAD-1a DELIVERABLE 0
+  rows below for the full projection law.
 - `/world?from={year}&to={year}` — time mode (signed years, no zero)
 - `/world?ref={REF}` — scripture mode (canonical ref)
 - `/world` (no `from`/`to`/`ref` at all) — defaults to a Gospel-era window,
@@ -4482,6 +4492,61 @@ Notes:
   never a special case, never a rendered chip, never a claimed effect. The
   per-instance `SplitMode` conjunct (S-3, ST-3 review) is UNCHANGED and
   still load-bearing alongside the capability query.
+
+  CORPREAD-1a DELIVERABLE 0 (batch-corpread1a-brief.md, contract-first,
+  owner standing order verbatim: "henceforth you write the contracts
+  first" -- these three rows were committed BEFORE any of this batch's own
+  implementation landed):
+
+  0a. SPLIT-URL PROJECTION LAW: the query string is a PROJECTION of the
+  live `ViewArrangement` atom (spec §4d, "URLs/deep links are
+  projections"), never a second writer. Vocabulary declared as data,
+  `client/Views/SplitUrlContract.cs` (`SplitParam`/`FollowParam`/
+  `FollowTrueValue`) -- `?split={a ViewNames constant}` names the GUEST
+  view (superseding the pre-existing `?split=1` boolean, reader/world-only
+  -- see that file's own MIGRATION note), optionally followed by
+  `&follow=1` (absence = false). Exactly two directions of data flow, owned
+  by `CompositionSplit.razor` (its own header, "RULING 5" -- centralized
+  there fix round CORPREAD-1a, so EVERY host gets both halves for free,
+  not just Reader): RESTORE-ONCE-ON-LOAD (dispatched exactly once per
+  host-page component instance, from the URL the router actually
+  delivered) and PROJECT-ON-CHANGE (resynced, `replace: true`, on every
+  arrangement change, guarded by a same-URL no-op check so a resync that
+  changes nothing never re-enters Blazor's own navigation pipeline -- the
+  SAME re-entrancy hazard this file's own VC-1 fix-round-1/2 history
+  already fought, see CompositionSplit.razor's own header, RULING 4(b)).
+  No third path ever re-reads the query string later in an
+  already-restored instance's life and re-dispatches from it -- that would
+  be the router-echo loop the no-echo law forbids.
+
+  0b. SPLIT LAYOUT CONTRACT: two rows.
+    - PINNED-PANE LAW (SPLIT-SCROLL-1's own contract, implemented this
+      batch): while split, the GUEST pane is fully visible at every
+      viewport scroll position -- it never scrolls out of view, and the
+      viewport itself never scrolls it away. The HOST pane scrolls its OWN
+      content, independently, inside its own overflow container. ONE
+      layout rule lives in `CompositionSplit.razor` (the `.split-view`
+      two-viewport-height-pane shape) -- never a per-host CSS override.
+    - 50/50 DEFAULT (SPLIT-5050's own contract, implemented this batch):
+      the no-stored-`DividerFraction` initial width is exactly
+      `ViewArrangement.DefaultDividerFraction` (a named constant, `0.5`)
+      of the measured `.split-view` content-box width, computed at the
+      ONE initial-width site (`CompositionSplit.razor`'s own
+      `OnAfterRenderAsync`) -- applies to every pairing through
+      `CompositionSplit`, no per-pair tuning. A user-dragged fraction
+      (`SetDivider`, unchanged) always wins over this default once one
+      exists.
+
+  0c. NAV-STABILITY CONTRACT (NAV-STABLE-1's own contract): the reader's
+  chapter-navigation buttons (`reader-prev`/`reader-next`) keep the SAME
+  DOM identity (never removed/recreated -- diffing patches attributes onto
+  the SAME node) AND stay fully interactive (a click/keyboard activation
+  during or immediately after a scroll gesture reliably fires its
+  navigation) across an entire scroll session, in BOTH split and
+  standalone layouts. See this batch's own report, section "NAV-STABLE-1
+  PHASE-0 DIAGNOSIS," for the mechanism this guarantee was actually
+  diagnosed and fixed against.
+
 - VIEWSTATE-1 (batch-h-brief.md): a lightweight, in-memory (NOT
   localStorage-persisted -- explicitly out of scope this batch; a hard
   reload starts fresh), app-lifetime view-state service remembers where the
