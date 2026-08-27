@@ -465,50 +465,80 @@ mod tests {
     use crate::text::{ConcordRef, ConcordTag, Locus, LocusSet, TranslationId};
     use std::collections::BTreeSet;
 
-    /// PERF-2b: `Graph::build_indexes`'s own chunk-then-merge parallelism
-    /// (this file's own `build_indexes` doc comment) is only as correct
-    /// as the claim that splitting a relation's rows into contiguous
-    /// chunks, building a `BiIndex` over each chunk separately, and
-    /// merging the chunks back IN ORDER (`Vec::append`, never a re-sort)
-    /// reproduces EXACTLY what `BiIndex::build` over the WHOLE, unchunked
-    /// slice would have produced -- including PER-KEY EDGE ORDER for a
-    /// position that spans more than one chunk (a small relation, run
-    /// whole on a real machine, never exercises this -- it only ever sees
-    /// one chunk). This test hardcodes 3 chunks so the property it proves
-    /// holds regardless of `std::thread::available_parallelism()`'s own
-    /// answer on whatever machine runs it (that call only decides HOW
-    /// MANY chunks a real run uses -- it is not what this test is about).
+    /// PERF-2b / PERF-m2 (batch-finalp2-brief.md ticket 4 -- strengthening
+    /// this SAME test, test-file-only, per that ticket's own disclosed
+    /// carve-out: "the standing veto is on the TYPES, not this crate's own
+    /// tests"; origin: PERF-2b review finding 1, LOW, "the crate equality
+    /// test is synthetic toy-data and re-implements the merge inline rather
+    /// than calling production `Graph::build_indexes`"):
+    /// `Graph::build_indexes`'s own chunk-then-merge parallelism (this
+    /// file's own `build_indexes` doc comment) is only as correct as the
+    /// claim that splitting a relation's rows into contiguous chunks,
+    /// building a `BiIndex` over each chunk separately, and merging the
+    /// chunks back IN ORDER (`Vec::append`, never a re-sort) reproduces
+    /// EXACTLY what `BiIndex::build` over the WHOLE, unchunked slice would
+    /// have produced -- including PER-KEY EDGE ORDER for a position that
+    /// spans more than one chunk.
+    ///
+    /// STRENGTHENED (was: raw `Position` tuples fed straight to
+    /// `BiIndex::build`, chunked and merged by a hand-rolled 3-chunk loop
+    /// living entirely in this test -- a real, disclosed gap: the merge
+    /// algorithm under test was a SEPARATE, inline REIMPLEMENTATION of
+    /// `build_indexes`'s own logic, so a real bug in the PRODUCTION
+    /// function's own chunking/merge could exist while this test stayed
+    /// green, having never called it). NOW: real, STRUCTURED domain rows
+    /// (`Attests`, populated via `Graph.attests` -- the actual authored row
+    /// table, not a bypass of it) drive the REAL, production
+    /// `g.build_indexes()` entry point directly -- real `std::thread::
+    /// scope`, real chunk count off THIS machine's own `std::thread::
+    /// available_parallelism()`, the exact call every real
+    /// `from_sources`/`from_artifact` build path makes -- and the result
+    /// (`g.indexes`) is compared against an independently-computed
+    /// sequential reference (`BiIndex::build` over the SAME row->pair
+    /// mapping `build_indexes`'s own `attests` loop uses, computed once,
+    /// unchunked, here in the test). 300 rows, all sharing one hub
+    /// `EventId` (every row's own SOURCE position) -- comfortably exceeds
+    /// this machine's own core count, so a position spanning more than one
+    /// chunk (the case that actually exercises cross-chunk merge order) is
+    /// exercised on any real machine, not just a hardcoded chunk count.
     #[test]
     fn parallel_build_indexes_matches_sequential_over_a_large_relation() {
-        fn node(kind: NodeKind, raw: &str) -> Position {
-            Position::Node(crate::id::AnyNodeId { kind, raw: raw.to_string() })
-        }
+        use crate::edge::Justification;
         use crate::explore::EdgeMeta as M;
+        use crate::id::EventId;
+        use crate::text::{BibleLocusRange, VerseRef};
 
-        // A hub position ("hebron") that is the SOURCE of every row below,
-        // spread across all three chunks -- the case that actually
-        // exercises cross-chunk merge (a position touched by only one
-        // chunk proves nothing about merge order).
-        let common = node(NodeKind::Place, "hebron");
-        let pairs: Vec<(Position, Position, M)> = (0..300u32).map(|i| (common.clone(), node(NodeKind::TextUnit, &format!("bible/{i}.1.1")), M::Votes(i))).collect();
-
-        // Sequential reference: `BiIndex::build` over the WHOLE slice,
-        // exactly what the pre-PERF-2b code always did.
-        let sequential = crate::edge::BiIndex::build(RelationId::Cites, &pairs);
-
-        // The SAME merge `Graph::build_indexes` performs, over 3
-        // hardcoded contiguous chunks.
-        let chunk_size = pairs.len().div_ceil(3);
-        let mut merged = crate::edge::BiIndex::default();
-        for chunk in pairs.chunks(chunk_size) {
-            let partial = crate::edge::BiIndex::build(RelationId::Cites, chunk);
-            for (k, mut v) in partial.fwd {
-                merged.fwd.entry(k).or_default().append(&mut v);
-            }
-            for (k, mut v) in partial.inv {
-                merged.inv.entry(k).or_default().append(&mut v);
-            }
+        let hub = EventId::new("hub-event".to_string());
+        let mut g = Graph::default();
+        for i in 0..300u16 {
+            let v = VerseRef { book: 0, chapter: 1, verse: i + 1 };
+            let attestation = BibleLocusRange::new(Locus::whole(v.clone()), Locus::whole(v)).expect("a single-verse range must construct");
+            g.attests.push(Attests { event: hub.clone(), attestation, provenance: ProvenanceId::from("test"), justification: Justification::default() });
         }
+
+        // The SAME row->pair mapping `build_indexes`'s own `attests` loop
+        // uses (this file's own `for row in &self.attests` block above),
+        // computed independently here so the sequential reference below is
+        // built from the real rows, not a second synthetic dataset.
+        let pairs: Vec<(Position, Position, M)> = g
+            .attests
+            .iter()
+            .map(|row| {
+                let tl: TextLocus = row.attestation.from.clone().into();
+                (at(&row.event.clone().erase()), at(&text_node(&tl)), M::None)
+            })
+            .collect();
+        assert_eq!(pairs.len(), 300, "sanity: every real Attests row must lower to exactly one pair");
+
+        // Sequential reference: `BiIndex::build` over the WHOLE, unchunked
+        // pair list -- exactly what the pre-PERF-2b code always did.
+        let sequential = crate::edge::BiIndex::build(RelationId::Attests, &pairs);
+
+        // THE REAL THING: production `build_indexes()`, called directly --
+        // real thread::scope, real chunk count off this machine's own core
+        // count, the identical entry point every real build path calls.
+        g.build_indexes();
+        let merged = g.indexes.get(&RelationId::Attests).expect("build_indexes must populate a real index for a relation with real rows");
 
         assert_eq!(merged.fwd.len(), sequential.fwd.len());
         assert_eq!(merged.inv.len(), sequential.inv.len());
