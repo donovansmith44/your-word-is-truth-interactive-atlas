@@ -98,7 +98,7 @@ test('COMP-3: the arrangement round-trips cleanly through open -> close -> reope
   await expect(page.getByTestId('sources-page')).toBeVisible();
 });
 
-test('COMP-5 (fix round 1, S-4 regression): a picker jump from the guest-mounted reader does not silently open a reader+world split', async ({ page }) => {
+test('COMP-5 (fix round 1, S-4 regression; superseded by READER-GUEST-1): a picker jump from the guest-mounted reader does not silently open a reader+world split', async ({ page }) => {
   // The ONE real, live bug the retired ambiguous `_splitOpen` flag caused
   // (not just a code-smell): a GUEST-mounted Reader read `_splitOpen` alone
   // (true in EITHER role) for its picker-jump handler's own `?split=1`
@@ -106,6 +106,18 @@ test('COMP-5 (fix round 1, S-4 regression): a picker jump from the guest-mounted
   // sources+reader split into a reader+world one. Fixed by reading
   // CompositionSplit's own unambiguous IsHost too (client/Pages/Reader.razor's
   // own ApplyScriptureRef).
+  //
+  // READER-GUEST-1 (batch-corp1-review.md S-2/Q-4, batch-finalp1-brief.md
+  // ticket 1) went further: this test USED TO assert a "disclosed
+  // limitation" here -- a guest-mounted picker jump left the sources+reader
+  // split entirely (navigated to standalone /read/...). That was the real,
+  // unclosed gap S-2/Q-4 named (a guest-mounted Reader had no route of its
+  // own to navigate TO without leaving its host's route, destroying the
+  // split). Fixed BY CONSTRUCTION: a guest-mounted picker Apply now
+  // dispatches SetLocus onto the shared Locus atom in place, never
+  // Nav.NavigateTo -- see this suite's own READER-GUEST-1 tests
+  // (kretzmann.spec.ts's KRETZMANN-6b, composition.spec.ts's COMP-6) for
+  // the split-intact assertions this test now shares.
   await page.goto('/sources');
   await page.getByTestId('split-open-sources').click();
   await expect(page.getByTestId('split-view')).toBeVisible();
@@ -113,13 +125,16 @@ test('COMP-5 (fix round 1, S-4 regression): a picker jump from the guest-mounted
   await page.getByTestId('picker-book').selectOption('EXO');
   await page.getByTestId('picker-apply').click();
 
-  // Disclosed limitation (unchanged by this fix): a picker jump from inside
-  // a guest-mounted reader leaves the sources+reader split entirely
-  // (navigates to standalone /read/...) -- but it must NEVER carry
-  // ?split=1, which would silently open an UNRELATED reader+world split.
-  await page.waitForURL(/\/read\/EXO\//);
-  await expect(page).not.toHaveURL(/split=1/);
+  // The split stays intact -- no navigation at all, still /sources, no
+  // reader+world split silently opened (the ORIGINAL S-4 bug this test was
+  // written to catch), and no /read/... navigation either (the
+  // READER-GUEST-1 fix).
+  await expect(page).toHaveURL(/\/sources$/);
   await expect(page.getByTestId('world-map')).toHaveCount(0);
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page.getByTestId('sources-page')).toBeVisible();
+  await expect(page.getByTestId('reader-root')).toBeVisible();
+  await expect(page.getByTestId('chapter-head')).toContainText('Exodus');
 });
 
 test('COMP-4: reader+world split still opens via the reader\'s own hatch and survives a refresh -- the reshaped EnterSplit(host,guest) intent round-trips through the URL exactly as before', async ({ page }) => {
@@ -164,4 +179,26 @@ test('COMP-6 (fix round 2, N-7 -- re-review, "no automated guard for the two cra
   await expect(page.getByTestId('split-view')).toBeVisible();
 
   expect(pageErrors).toEqual([]);
+});
+
+// READER-GUEST-1 (batch-corp1-review.md S-2/Q-4, batch-finalp1-brief.md
+// ticket 1): reader-prev/reader-next are the SECOND guest-mode navigation
+// surface this ticket fixes (picker Apply is the first, covered above by
+// COMP-5's own updated assertions) -- both funnel through the SAME
+// OnChapterNavClick mechanism (Reader.razor), so this test exercises the
+// other one directly rather than trusting the shared code path by
+// inference alone.
+test('COMP-6 (READER-GUEST-1): reader-next from inside a sources+reader split moves the guest reader forward WITHOUT leaving /sources or closing the split', async ({ page }) => {
+  await page.goto('/sources');
+  await page.getByTestId('split-open-sources').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page.getByTestId('chapter-head')).toContainText('1');
+
+  await page.getByTestId('reader-next').click();
+
+  await expect(page).toHaveURL(/\/sources$/); // no navigation -- still Sources' own route
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page.getByTestId('sources-page')).toBeVisible();
+  await expect(page.getByTestId('reader-root')).toBeVisible();
+  await expect(page.getByTestId('chapter-head')).toContainText('2');
 });

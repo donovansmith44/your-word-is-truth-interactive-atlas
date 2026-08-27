@@ -240,11 +240,15 @@
         <nav aria-label="Chapter navigation">
             @if (PrevTarget is { } prev)
             {
-                <a class="reader-prev" data-testid="reader-prev" href="@ChapterHref(prev.Book, prev.Chapter, ctx)" aria-label="@($"Previous chapter: {prev.Name} {prev.Chapter}")">&lsaquo;<span class="reader-nav-label"> @prev.Name @prev.Chapter</span></a>
+                <a class="reader-prev" data-testid="reader-prev" href="@ChapterHref(prev.Book, prev.Chapter, ctx)"
+                   @onclick="@(() => OnChapterNavClick(prev.Book, prev.Chapter))" @onclick:preventDefault="@(ctx.IsSplitOpen && !ctx.IsHost)"
+                   aria-label="@($"Previous chapter: {prev.Name} {prev.Chapter}")">&lsaquo;<span class="reader-nav-label"> @prev.Name @prev.Chapter</span></a>
             }
             @if (NextTarget is { } next)
             {
-                <a class="reader-next" data-testid="reader-next" href="@ChapterHref(next.Book, next.Chapter, ctx)" aria-label="@($"Next chapter: {next.Name} {next.Chapter}")"><span class="reader-nav-label">@next.Name @next.Chapter </span>&rsaquo;</a>
+                <a class="reader-next" data-testid="reader-next" href="@ChapterHref(next.Book, next.Chapter, ctx)"
+                   @onclick="@(() => OnChapterNavClick(next.Book, next.Chapter))" @onclick:preventDefault="@(ctx.IsSplitOpen && !ctx.IsHost)"
+                   aria-label="@($"Next chapter: {next.Name} {next.Chapter}")"><span class="reader-nav-label">@next.Name @next.Chapter </span>&rsaquo;</a>
             }
         </nav>
 
@@ -594,11 +598,15 @@
     // very next chapter turn, and a refresh right after would lose split
     // state even though _splitOpen itself is still (correctly) true.
     // Batch VC-1: guarded on IsHost too -- a guest-mounted instance
-    // (sources+reader) has no ?split=1 of its own to propagate; prev/next
-    // there is a plain chapter link, disclosed to leave the sources+reader
-    // split (navigating to standalone /read/...) rather than trying to keep
-    // an arrangement its own route knows nothing about alive across a real
-    // navigation.
+    // (sources+reader) has no ?split=1 of its own to propagate. This
+    // `href` is still COMPUTED for a guest-mounted instance (harmless --
+    // real markup needs SOME href) but is never actually FOLLOWED there
+    // any more: READER-GUEST-1 (batch-corp1-review.md S-2/Q-4) added
+    // `@onclick:preventDefault` (markup above) for exactly the guest case,
+    // so the click routes through OnChapterNavClick's own SetLocus dispatch
+    // instead -- see that method's own comment for why leaving the split
+    // (this href's own pre-READER-GUEST-1 behavior) was a real bug, not a
+    // disclosed trade.
     //
     // Fix round 1: takes `ctx` as a PARAMETER (from the markup's own
     // ChildContent lambda), NOT `_compositionSplit` -- another live,
@@ -1501,6 +1509,30 @@
         _activeNode = new PassageNode(PassageRef(range), text);
     }
 
+    // READER-GUEST-1 (batch-corp1-review.md S-2/Q-4, batch-finalp1-brief.md
+    // ticket 1): the ONE guest-role check every user-initiated
+    // chapter-navigation control on this page (picker Apply, reader-prev/
+    // next) branches on -- BY CONSTRUCTION per the state law, a
+    // guest-mounted Reader (SplitMode explicit, e.g. kretzmann+reader,
+    // sources+reader) has no route of its own to Nav.NavigateTo -- doing so
+    // anyway navigates the WHOLE APP away from the host's own route
+    // (/kretzmann, /sources), destroying the split rather than updating the
+    // shared position in place. Guest-mode navigation therefore dispatches
+    // SetLocus onto the shared atom instead -- the exact same write ST-1's
+    // own SYNC-1 fix already makes the standalone case's ONE choke point
+    // (OnParametersSetAsync, below), and which CORP-1's own guest-follow
+    // subscription (OnLocusChangedAsGuest/RefreshAsGuestAsync, above) already
+    // reacts to correctly regardless of WHICH instance's dispatch caused it
+    // -- no new machinery, just a second caller reaching machinery this page
+    // already has. Self-determined (standalone /read/... or a reader+world
+    // split Reader itself hosts) keeps real route navigation, unchanged --
+    // deep links and browser history genuinely matter there. Reads
+    // `_compositionSplit` (not `ctx`): both call sites below run from a
+    // user-triggered event (a click), always post-first-render, so the
+    // timing gap ChapterHref's own comment documents (needing `ctx` as a
+    // parameter during RENDER) does not apply here.
+    private bool IsGuestMounted => _compositionSplit is { IsSplitOpen: true, IsHost: false };
+
     // ScripturePicker composes one of GEN / GEN.1 / GEN.1.5 / GEN.1.5-9 (the
     // 4 canonical ref shapes -- see ScripturePicker.Apply); this is the
     // reader's own NavigateReader-style dispatch for it (World's mount
@@ -1516,6 +1548,20 @@
             var versePart = parts[2];
             var dash = versePart.IndexOf('-');
             verse = int.Parse(dash >= 0 ? versePart[..dash] : versePart);
+        }
+
+        // READER-GUEST-1: guest-mounted -- update the shared Locus atom in
+        // place, no route navigation (see IsGuestMounted's own comment).
+        // Verse-anchor scroll (the host path's own URL fragment, below) has
+        // no guest-mode equivalent -- there is no route/fragment to carry it
+        // -- so a guest-mode picker jump lands correctly on the chapter but
+        // does not additionally scroll to a specific verse within it; a
+        // disclosed, narrow scope limitation, not a silent drop (the CHAPTER
+        // itself is always correct).
+        if (IsGuestMounted)
+        {
+            LocusAtom.Dispatch(new SetLocus(book, chapterNum));
+            return Task.CompletedTask;
         }
 
         // Batch F2 requirement 6c: query (?split=1, when open) BEFORE the
@@ -1537,6 +1583,24 @@
         var fragment = verse is int v ? $"#v{v}" : "";
         Nav.NavigateTo($"/read/{book}/{chapterNum}{query}{fragment}");
         return Task.CompletedTask;
+    }
+
+    // READER-GUEST-1: shared by reader-prev/reader-next (markup above) --
+    // guest-mounted dispatches SetLocus in place (see IsGuestMounted's own
+    // comment); self-determined does nothing here at all, deliberately --
+    // the anchor's own `href` (ChapterHref) performs the real navigation
+    // natively (Blazor's router intercepts the same-origin click), exactly
+    // as it always has. `@onclick:preventDefault` (markup above) is gated on
+    // the SAME condition (read via `ctx`, render-time-safe, mirroring
+    // ChapterHref's own `ctx`-vs-`_compositionSplit` split for the identical
+    // reason) so the native navigation is suppressed ONLY when this method
+    // is about to handle the click itself.
+    private void OnChapterNavClick(string book, int chapterNum)
+    {
+        if (IsGuestMounted)
+        {
+            LocusAtom.Dispatch(new SetLocus(book, chapterNum));
+        }
     }
 
     private sealed record AdjacentChapter(string Book, string Name, int Chapter);

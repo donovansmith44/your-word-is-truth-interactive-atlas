@@ -140,6 +140,58 @@ test('KRETZMANN-6 (R2, the free win): navigating the reader in split -- wait, na
   await expect(page).toHaveURL(/\/kretzmann$/); // still Kretzmann's own route -- no navigation happened
 });
 
+// READER-GUEST-1 (batch-corp1-review.md S-2/Q-4, batch-finalp1-brief.md
+// ticket 1): KRETZMANN-6's own MISSING reverse-direction sibling. R2's own
+// text asked for a test proving "navigate reader in split ⇒ commentary
+// follows" -- KRETZMANN-6 above proves the OPPOSITE direction (Kretzmann's
+// own picker writes, guest Reader follows). This test drives the READER
+// pane's own navigation controls (guest role) and asserts Kretzmann (host)
+// follows -- before this fix, Reader's guest-mode picker/prev-next
+// unconditionally Nav.NavigateTo'd, which would have navigated the WHOLE
+// APP away from /kretzmann to plain /read/..., destroying the split
+// (S-2's own disclosed, then-unverified prediction).
+test('KRETZMANN-6b (R2, the reverse direction -- READER-GUEST-1): navigating the GUEST reader pane\'s own picker moves BOTH panes, split stays intact', async ({ page }) => {
+  await page.goto('/kretzmann');
+  await page.getByTestId('split-open-kretzmann').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page.getByTestId('reader-root')).toBeVisible();
+
+  // Scoped to reader-root specifically -- the kretzmann pane mounts its OWN
+  // ScripturePicker too (KRETZMANN-6's own comment on the identical
+  // ambiguity, mirrored here for the opposite pane).
+  const readerPane = page.getByTestId('reader-root');
+  await readerPane.getByTestId('picker-book').selectOption('EXO');
+  await readerPane.getByTestId('picker-chapter').selectOption('3');
+  await readerPane.getByTestId('picker-apply').click();
+
+  // The GUEST reader pane itself updates (it dispatched SetLocus).
+  await expect(page.getByTestId('chapter-head')).toContainText('Exodus');
+  await expect(page.getByTestId('chapter-head')).toContainText('3');
+
+  // Kretzmann (host) follows -- it never received a direct call; it simply
+  // re-renders/refetches off the SAME shared Locus atom the guest just wrote.
+  await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('Exodus');
+  await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('3');
+
+  // Split intact throughout -- still Kretzmann's own route, no navigation.
+  await expect(page).toHaveURL(/\/kretzmann$/);
+  await expect(page.getByTestId('split-view')).toBeVisible();
+});
+
+test('KRETZMANN-6c (READER-GUEST-1): reader-next from the GUEST pane also moves Kretzmann, split stays intact', async ({ page }) => {
+  await page.goto('/kretzmann');
+  await page.getByTestId('split-open-kretzmann').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page.getByTestId('chapter-head')).toContainText('1');
+
+  await page.getByTestId('reader-next').click();
+
+  await expect(page).toHaveURL(/\/kretzmann$/);
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  await expect(page.getByTestId('chapter-head')).toContainText('2');
+  await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('2');
+});
+
 test('KRETZMANN-7: closing the embedded reader (the guest\'s own close button) returns to a full, single Kretzmann page', async ({ page }) => {
   await page.goto('/kretzmann');
   await page.getByTestId('split-open-kretzmann').click();
