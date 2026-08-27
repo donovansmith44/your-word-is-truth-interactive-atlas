@@ -11,8 +11,10 @@ namespace BibleAtlas.Client.Views;
 /// singleton, Program.cs) -- three registrations (Reader/World/Sources),
 /// each a mount factory (a <see cref="RenderTreeBuilder"/> closure -- the
 /// same low-level mechanism <see cref="RenderFragment"/> itself is defined
-/// in terms of, letting <see cref="Components.CompositionHost"/> mount ANY
-/// registered view by NAME with zero per-view branching of its own) plus a
+/// in terms of, letting <see cref="Components.CompositionSplit"/> mount ANY
+/// registered view by NAME with zero per-view branching of its own -- fix
+/// round 2, N-6 doc rot: this used to name the retired
+/// <c>Components.CompositionHost</c>) plus a
 /// declared enter-split hatch where one exists today.
 ///
 /// Every hatch closure below is expressed purely against DI-singleton
@@ -101,6 +103,13 @@ public static class ViewRegistrySetup
                 builder.CloseComponent();
             }, new IEscapeHatch[] { worldHatch }),
 
+            // Fix round 2 (Q-4, trivia -- re-review, PARTIAL, one-line
+            // justified): this closure is not invoked by any shipped
+            // pairing today (nothing hosts Sources as ITS guest) -- kept for
+            // the SAME reason Sources.SplitMode itself is kept (see that
+            // parameter's own comment): every registered view gets the
+            // identical mount-closure shape, by construction (R1), not a
+            // per-view special case for "currently unreachable."
             new(ViewNames.Sources, ViewCapabilities.None, ctx => builder =>
             {
                 builder.OpenComponent<Sources>(0);

@@ -110,16 +110,14 @@ public class ConformanceTests
                 "OnChanged => InvokeAsync(StateHasChanged) -- pure re-render, no Materialize-shaped side effect."),
             ("client\\Layout\\MainLayout.razor", "SavedExplorations.Changed += OnSavedExplorationsChanged",
                 "SavedExplorations.Changed is SavedExplorationsService's OWN plain C# event, not an IStateAtom<T>.Changed -- out of this rule's scope entirely (SavedExplorationsService is not an atom)."),
-            ("client\\Pages\\Reader.razor", "ViewArrangementAtom.Changed += OnViewArrangementChanged",
-                "OnViewArrangementChanged => StateHasChanged() only (fix round 1, Q-3 of ST-2's own review) -- pure re-render."),
+            ("client\\Components\\CompositionSplit.razor", "ViewArrangementAtom.Changed += HandleArrangementChanged",
+                "Fix round 2 (ruling 1, N-1 -- re-review, binding): the ONE owned subscription -- HandleArrangementChanged => StateHasChanged() (pure re-render, covers every host whose markup lives entirely inside ChildContent, e.g. Sources) PLUS the optional OnArrangementChanged hook invocation (the sanctioned per-host exception, e.g. Reader.razor's own SyncSplitUrl -- see CompositionSplit.razor's own header). Reader.razor and Sources.razor BOTH deleted their own former entries here this round -- this single entry replaces both."),
             ("client\\Pages\\World.razor", "LocusAtom.Changed += OnLocusChanged",
                 "OnLocusChanged => StateHasChanged() only (ST-2 retired its own re-scening side effect) -- pure re-render."),
             ("client\\Pages\\World.razor", "TimeWindowAtom.Changed += OnTimeWindowChanged",
                 "OnTimeWindowChanged => SyncTimeWindowProjection() + StateHasChanged() -- a LOCAL field projection sync (no fetch/JS interop), not an effect; the fetch itself lives in the follow-scene effect (EffectRegistry), which this handler no longer touches."),
             ("client\\Pages\\World.razor", "ViewArrangementAtom.Changed += OnViewArrangementChanged",
                 "OnViewArrangementChanged => the SyncToken bump + EnableFollowScene/DisableFollowScene (claim/release calls) + StateHasChanged() -- claiming/releasing is the SANCTIONED consumer-side interaction with the registry; Materialize itself is invoked only from inside EffectRegistry.Claim's own subscription (see test below)."),
-            ("client\\Pages\\Sources.razor", "ViewArrangementAtom.Changed += OnViewArrangementChanged",
-                "Batch VC-1: OnViewArrangementChanged => StateHasChanged() only -- pure re-render, the SAME shape Reader.razor's own entry above already establishes (Sources needs to re-render when it wins/loses the split-h host slot, nothing more)."),
             ("client\\AppServices.cs", "atom.Changed += () => LocalStore.Write(js, Selection.StorageKey, atom.Value)",
                 "The Selection atom's own persistence write (fix round 1, Q-2 -- moved here from the retired SelectionTrayService, wired directly in AppServices.AddSelectionAtom, the SAME factory Program.cs calls) -- a JS-interop write, which IStateEffect<T>'s own doc comment WOULD class as an effect in shape, but this atom's factory is a single, app-lifetime singleton with real, load-bearing consumers -- there is no multi-instance ownership hazard for EffectRegistry's claim/latest-wins mechanism to protect against here, unlike every current IStateEffect<T> use (World.razor's follow-scene, claimed by a per-mount, multiply-instantiable component). Disclosed design choice, not an oversight."),
             ("client\\State\\EffectRegistry.cs", "effect.Source.Changed += OnSourceChanged",
@@ -312,6 +310,18 @@ public class ConformanceTests
         var allowlist = new (string File, string FieldName)[]
         {
             ("client\\Components\\ExplorerPopover.razor", "_frozenSnapshot"),
+            // Fix round 2 (N-4, trivia -- re-review, cheap fix): a
+            // MEMOIZATION KEY, not a component-held copy of shared state in
+            // the sense this rule guards against -- every read of
+            // CompositionSplit's own Composition property re-checks
+            // `ReferenceEquals(_lastArrangement, ViewArrangementAtom.Value)`
+            // FIRST and refreshes both fields together the instant it
+            // disagrees (an immutable record, so reference inequality means
+            // a genuinely new atom value, never a false negative); this
+            // field can never be read while stale, unlike a `_splitOpen`-
+            // style copy computed once and left to drift. See
+            // CompositionSplit.razor's own Composition property.
+            ("client\\Components\\CompositionSplit.razor", "_lastArrangement"),
         };
 
         var typeNames = new[] { "Locus", "TimeWindow", "ViewArrangement", "FocusStack" };
@@ -422,7 +432,7 @@ public class ConformanceTests
         var allowlist = new (string File, string Justification)[]
         {
             ("client\\Components\\CompositionSplit.razor",
-                "The ONE sanctioned generic reader -- Composition => Registry.ComposeFrom(ViewArrangementAtom.Value) IS R1/R3's own job (materializing the live arrangement through the compiled IViewComposition contract), not a component-held copy of role state; nothing derived from it is cached past this one render-scoped property."),
+                "The ONE sanctioned generic reader -- the Composition property's own `_lastArrangement = ViewArrangementAtom.Value` read (fix round 2, N-4: now a render-pass-memoized block-bodied getter, not a bare expression-bodied one, to avoid re-materializing IViewComposition 3-5 times per render) IS R1/R3's own job (materializing the live arrangement through the compiled IViewComposition contract), not a component-held copy of role state -- `_lastArrangement`/`_lastComposition` are a CACHE of that ONE read's own most recent result, invalidated on every genuinely new atom value (reference equality against an immutable record), never a second, independently-drifting copy."),
             ("client\\Pages\\World.razor",
                 "R5's own capability-gated follow read (_follow) -- pre-existing (ST-2/ST-3/VC-1), reviewed and verified-passing in this batch's own original review ('R5 capability-based follow ... verified PASSING'). Not a role-determination copy of the retired _splitOpen shape -- Reader/Sources no longer have ANY such property after this fix round; CompositionSplit computes role ONCE, centrally."),
         };
@@ -466,5 +476,91 @@ public class ConformanceTests
             Assert.True(ArrangementStateInitializerPattern.IsMatch(text) || ArrangementStateAssignmentPattern.IsMatch(text),
                 $"Stale allowlist entry -- {file} no longer matches the pattern it was allowlisted for.");
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Batch VC-1 fix round 2 (N-2, Important -- re-review, controller
+    // ruling 2, binding): "extend the no-copy scan to catch this shape:
+    // role/arrangement FORMULAS re-derived outside CompositionSplit and the
+    // atom ... The wrapper's 'never re-derived' claim must be enforced, not
+    // asserted." The S-3 scan above catches a component-held FIELD/PROPERTY
+    // that reads the atom -- it does NOT catch a LOCAL variable inside a
+    // method body computing the exact "who is the split-h host" shape by
+    // hand (Reader.razor:520's own pre-fix-round-2 formula, now retired in
+    // favor of the single `IsHostedBy` extension method,
+    // `client/Views/ViewRegistry.cs`), which is precisely what slipped past
+    // it. This pattern targets the FORMULA'S OWN SHAPE directly -- a
+    // `LayoutKind`/`LayoutKinds.SplitH` comparison and a `Members[0]` index
+    // read within a short window of each other, in EITHER order (a `record`
+    // pattern match like `is { LayoutKind: LayoutKinds.SplitH }` puts the
+    // kind check FIRST; a hand-rolled `==` check could as easily be written
+    // either way) -- rather than on any particular variable name or type,
+    // since the retired violation was a LOCAL (`var isSplitOpen = ...`),
+    // invisible to any field-declaration-shaped regex by construction.
+    // ------------------------------------------------------------------
+    private static readonly Regex RoleFormulaRederivationPattern = new(
+        @"(?:(?:LayoutKind|Layout\.Kind)\s*(?:==|:)\s*LayoutKinds\.SplitH|LayoutKinds\.SplitH\s*==\s*(?:LayoutKind|Layout\.Kind))[\s\S]{0,250}?Members\s*\[\s*0\s*\]" +
+        @"|Members\s*\[\s*0\s*\][\s\S]{0,250}?(?:(?:LayoutKind|Layout\.Kind)\s*(?:==|:)\s*LayoutKinds\.SplitH|LayoutKinds\.SplitH\s*==\s*(?:LayoutKind|Layout\.Kind))",
+        RegexOptions.Compiled);
+
+    [Fact]
+    public void RoleFormulaRederivation_PlantedRetiredReaderShapeViolation_IsCaught()
+    {
+        // The EXACT shape Reader.razor's own SyncSplitUrl carried before
+        // this fix round (the re-review's own N-2 finding, byte-identical
+        // to the review's own quote of it).
+        const string planted = "var isSplitOpen = ViewArrangementAtom.Value is { LayoutKind: LayoutKinds.SplitH } a && a.Members.Count > 0 && a.Members[0] == ViewNames.Reader;";
+
+        Assert.Matches(RoleFormulaRederivationPattern, planted);
+    }
+
+    [Fact]
+    public void RoleFormulaRederivation_PlantedInlineComparisonShapeViolation_IsCaught()
+    {
+        // A DIFFERENT hand-rolled phrasing of the same law (plain `==`
+        // comparisons, `Members[0]` written BEFORE the LayoutKind check) --
+        // proves the scan is not keyed to the one exact retired string, and
+        // catches the direction CompositionSplit's own pre-fix-round-2
+        // IsSplitOpen was written in (`Composition.Layout.Kind == LayoutKinds.SplitH
+        // && Composition.Members.Count > 0 && Composition.Members[0].Name == HostName`)
+        // were it ever pasted somewhere OTHER than the sanctioned
+        // `IsHostedBy` definition.
+        const string planted = "return other.Members[0].Name == target && other.Layout.Kind == LayoutKinds.SplitH;";
+
+        Assert.Matches(RoleFormulaRederivationPattern, planted);
+    }
+
+    [Fact]
+    public void RoleFormulaRederivation_NoRealSiteOutsideTheSanctionedDefinition()
+    {
+        // The ONE sanctioned definition site: ViewCompositionExtensions.IsHostedBy
+        // (client/Views/ViewRegistry.cs) -- everywhere else (CompositionSplit's
+        // own IsSplitOpen, Reader.razor's own SyncSplitUrl) now CALLS that
+        // one method instead of writing the formula out by hand. client/Views/
+        // is the definition-site exclusion the S-3 scan above already
+        // establishes (ViewArrangement/the registry-backed contract
+        // projection legitimately live there) -- reused verbatim, not a new
+        // carve-out invented for this test.
+        static string Normalize(string path) => path.Replace('\\', '/');
+
+        var violations = new List<string>();
+        foreach (var file in ClientSourceFiles())
+        {
+            var relative = Normalize(Path.GetRelativePath(RepoRoot(), file));
+            if (relative.StartsWith("client/State/") || relative.StartsWith("client/Views/"))
+            {
+                continue;
+            }
+
+            var text = File.ReadAllText(file);
+            if (RoleFormulaRederivationPattern.IsMatch(text))
+            {
+                violations.Add(relative);
+            }
+        }
+
+        Assert.True(violations.Count == 0,
+            "Found a hand-derived 'is this the split-h host' formula (a LayoutKind/SplitH check near a Members[0] read) outside the sanctioned IsHostedBy definition -- call Composition.IsHostedBy(name) (or Registry.ComposeFrom(...).IsHostedBy(name) where ctx/Composition is out of reach) instead:\n" +
+            string.Join("\n", violations));
     }
 }

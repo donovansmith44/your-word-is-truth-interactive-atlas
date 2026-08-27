@@ -61,16 +61,17 @@ public sealed record ViewArrangement(IReadOnlyList<string> Members, string Layou
     }
 }
 
-/// <summary>R2: the closed, extend-only layout-kind vocabulary. A
-/// <see cref="CompositionHost"/> that meets an unrecognized value fails
-/// loud (R6) rather than silently rendering nothing -- see that
-/// component's own header.</summary>
+/// <summary>R2: the closed, extend-only layout-kind vocabulary. Fix round 2
+/// (N-6, trivia -- re-review, doc rot): <c>CompositionHost</c> is RETIRED
+/// (fix round 1) -- <c>CompositionSplit</c> is the component that meets an
+/// unrecognized value and fails loud (R6) rather than silently rendering
+/// nothing; see that component's own header.</summary>
 public static class LayoutKinds
 {
     public const string Single = "single";
     public const string SplitH = "split-h";
 
-    /// <summary>The closed vocabulary, as data -- <c>CompositionHost.razor</c>'s
+    /// <summary>The closed vocabulary, as data -- <c>CompositionSplit.razor</c>'s
     /// own "unknown kind fails loud" branch (R6) reads THIS, not a hand-rolled
     /// `!= Single &amp;&amp; != SplitH` inline check, so client.Tests can prove
     /// the vocabulary check directly (IsKnown("single")/IsKnown("split-h") are
@@ -154,8 +155,10 @@ public sealed record CloseGuest(string? Origin = null) : IIntent<ViewArrangement
 /// writers -- same "two independent writers of sibling fields" reasoning
 /// ST-2's own <c>SetSplitDividerFraction</c> used). "Commits on drag END
 /// only" (R4/ST-2, unchanged discipline) -- the one caller
-/// (<c>CompositionHost</c>'s own <c>SplitDivider.OnCommitted</c> wiring)
-/// never dispatches this from a live drag frame. No-op off a split-h
+/// (<c>CompositionSplit</c>'s own <c>SplitDivider.OnCommitted</c> wiring,
+/// fix round 1 -- N-6 doc rot fix, fix round 2: this used to name the
+/// retired <c>CompositionHost</c>) never dispatches this from a live drag
+/// frame. No-op off a split-h
 /// arrangement (same correctness-tightening ST-2's own fix round already
 /// established for the predecessor intent -- no reachable call site ever
 /// exercises the no-op branch, SplitDivider only exists in the DOM while

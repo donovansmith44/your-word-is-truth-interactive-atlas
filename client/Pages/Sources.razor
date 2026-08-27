@@ -1,7 +1,6 @@
 @page "/sources"
 @using BibleAtlas.Client.State
 @using BibleAtlas.Client.Views
-@implements IDisposable
 @inject AtlasClient Atlas
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 
@@ -40,12 +39,24 @@
    GONE -- CompositionSplit owns all of it now, shared, not copied. This
    page's own remaining job is exactly what it always should have been:
    render its OWN content, and tell CompositionSplit which role-specific
-   button to show via `ctx`. *@
+   button to show via `ctx`.
+
+   Fix round 2 (ruling 1/3, N-1 -- re-review): the ViewArrangementAtom
+   subscription this page used to carry (`Changed += / -= OnViewArrangementChanged`,
+   `@implements IDisposable`) is GONE too -- CompositionSplit now owns that
+   subscription exactly once (see its own header, RULING 1) and this page's
+   ENTIRE markup lives inside `<CompositionSplit>`'s own ChildContent, so
+   its re-render already covers everything Sources needs; there was never a
+   genuine per-host need here (unlike Reader.razor -- see that page's own
+   comment for the one documented exception). This IS the "declare a hatch,
+   nothing else" minimal host CompositionSplit.razor's own header now
+   documents as the official recipe -- read this page as that reference
+   example. *@
 
 <PageTitle>Bible Explorer &mdash; Sources</PageTitle>
 
-<CompositionSplit HostName="@ViewNames.Sources" SplitModeOverride="@SplitMode" Context="ctx">
-    <div class="@(ctx.IsSplitOpen && ctx.IsHost ? "sources-page split-pane-host" : "sources-page")" data-testid="sources-page">
+<CompositionSplit HostName="@ViewNames.Sources" SplitModeOverride="@SplitMode" HostPaneClass="split-pane-host" Context="ctx">
+    <div class="@($"sources-page{ctx.HostPaneClassSuffix}")" data-testid="sources-page">
         <div class="sources-column">
             <h1 class="sources-title">Sources</h1>
             <p class="sources-intro">
@@ -109,6 +120,23 @@
     // someone ELSE's guest). Fix round 1: no longer paired with an IsHost/
     // OnRequestClose parameter -- CompositionSplit computes both internally
     // from SplitMode alone now (see that component's own header).
+    //
+    // Fix round 2 (Q-4, trivia -- re-review, PARTIAL, "Sources.SplitMode
+    // remains dead ... with no test keeping it coherent. Symmetry argument
+    // unchanged and still defensible"): true today -- ViewRegistrySetup's
+    // own Sources mount closure (the ONE thing that would ever set this
+    // non-null) is registered but never invoked, since no shipped pairing
+    // hosts Sources as ITS guest yet. Kept anyway, deliberately: Reader and
+    // World BOTH carry this identical parameter/null-check shape (a routed
+    // view is either self-determined or registry-mounted, the SAME two
+    // cases for every registered view by construction, per R1), and Sources
+    // is registered in that SAME registry (ViewRegistrySetup.Build) with
+    // the SAME mount-closure machinery -- omitting this parameter here
+    // would special-case Sources out of a pattern every OTHER registered
+    // view honors, for a "currently unreachable" reason that stops being
+    // true the instant a future view hosts Sources. One-line-justified per
+    // the ruling; not cheap enough to prove with a test today (there is no
+    // fourth host to mount it FROM).
     [Parameter] public bool? SplitMode { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -122,8 +150,6 @@
             ViewArrangementAtom.Dispatch(new EnterSingle(ViewNames.Sources));
         }
 
-        ViewArrangementAtom.Changed += OnViewArrangementChanged;
-
         try
         {
             _doc = await Atlas.Sources();
@@ -134,13 +160,6 @@
         }
     }
 
-    private void OnViewArrangementChanged() => StateHasChanged();
-
     private IEnumerable<SourceEntryDto> SourcesFor(string categoryId) =>
         _doc!.Sources.Where(s => s.Category == categoryId);
-
-    public void Dispose()
-    {
-        ViewArrangementAtom.Changed -= OnViewArrangementChanged;
-    }
 }

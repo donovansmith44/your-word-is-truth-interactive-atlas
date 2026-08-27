@@ -258,12 +258,13 @@
     // Batch VC-1: the generalized "no nested-popup rule" plumbing (see
     // ViewRegistry.cs's own ViewMountContext header) -- while SplitMode, this
     // instance hands its OWN ApplyExternalQuery straight to whichever
-    // CompositionHost mounted it, so a popover chip on the HOST side (e.g.
-    // Reader's own) can route into this ALREADY-EMBEDDED pane. Not invoked
-    // at all for a standalone /world mount (CompositionHost never sets it
-    // there -- see World's own ViewRegistrySetup mount closure, which passes
-    // it unconditionally, harmlessly unused when SplitMode is false since
-    // nothing calls it).
+    // CompositionSplit mounted it (fix round 2, N-6 doc rot: this used to
+    // name the retired CompositionHost), so a popover chip on the HOST side
+    // (e.g. Reader's own) can route into this ALREADY-EMBEDDED pane. Not
+    // invoked at all for a standalone /world mount (CompositionSplit never
+    // sets it there -- see World's own ViewRegistrySetup mount closure,
+    // which passes it unconditionally, harmlessly unused when SplitMode is
+    // false since nothing calls it).
     [Parameter] public Action<Func<string, Task>>? RegisterQueryHandler { get; set; }
 
     private List<EraDto>? _eras;
@@ -565,7 +566,8 @@
     protected override async Task OnInitializedAsync()
     {
         // Batch VC-1: hands this instance's own ApplyExternalQuery up to
-        // whichever CompositionHost mounted it, if any (see
+        // whichever CompositionSplit mounted it, if any (fix round 2, N-6
+        // doc rot: this used to name the retired CompositionHost -- see
         // ViewMountContext's own header) -- a safe no-op call site
         // regardless of SplitMode, since RegisterQueryHandler is only ever
         // non-null when this instance IS a genuinely embedded guest.

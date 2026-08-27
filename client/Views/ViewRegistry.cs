@@ -164,7 +164,54 @@ public sealed class ViewRegistry
     /// arrangement through the compiled §4b contract -- the ONE place a
     /// <see cref="ViewArrangement"/> atom value becomes a real
     /// <see cref="IViewComposition"/>. Called every render by
-    /// <c>CompositionSplit.razor</c> (never cached -- cheap to construct,
-    /// and the atom can change between renders).</summary>
+    /// <c>CompositionSplit.razor</c> (fix round 2, N-4: <c>CompositionSplit</c>
+    /// itself now memoizes the result for the DURATION of one render pass --
+    /// see that component's own <c>Composition</c> property -- so "cheap to
+    /// construct" no longer means "constructed 3-5 times per render," but
+    /// this method stays uncached: a fresh <see cref="LiveComposition"/> is
+    /// still the correct thing to hand back on every genuinely NEW call,
+    /// since the atom can change between renders and this method has no way
+    /// to know whether its caller already has a fresh one).
+    ///
+    /// Fix round 2 (N-3, trivia -- re-review, PARKED, one line): an
+    /// unregistered member NAME throws here (via <see cref="Get"/>) rather
+    /// than reaching <c>CompositionSplit</c>'s own "unrecognized Layout.Kind"
+    /// toast -- unreachable by construction today (no shipped path can
+    /// dispatch an out-of-<see cref="ViewNames"/>-vocabulary member), the
+    /// SAME standing the toast branch itself already has for an
+    /// out-of-<see cref="LayoutKinds"/>-vocabulary kind; making member-name
+    /// validation ALSO fail loud through the toast would require this method
+    /// to swallow and re-surface `RegisteredView.Get`'s own exception as
+    /// composition DATA instead of a thrown fault, a real design question
+    /// left for whichever future batch first makes an out-of-vocabulary
+    /// member name reachable at all.</summary>
     public IViewComposition ComposeFrom(ViewArrangement arrangement) => new LiveComposition(arrangement, this);
+}
+
+/// <summary>
+/// Fix round 2 (N-2, Important -- re-review): the ONE law for "who is the
+/// split-h HOST of this composition," expressed exactly once against the
+/// COMPILED <see cref="IViewComposition"/> contract (not against
+/// <see cref="ViewArrangement"/>'s own bare strings -- S-1's own "driven by
+/// the contract type" bar applies here too) so <c>CompositionSplit</c>'s own
+/// role check and any external caller that genuinely cannot reach a
+/// <c>CompositionSplitContext</c> (e.g. <c>Reader.razor</c>'s own
+/// <c>SyncSplitUrl</c>, invoked from <c>CompositionSplit</c>'s new
+/// <c>OnArrangementChanged</c> hook -- see that component's own header)
+/// share a single definition. Extension method, not an <see cref="IViewComposition"/>
+/// member, so the compiled contract itself gains ZERO members (extend-only
+/// honored) while still being reachable from any implementation of it, not
+/// just <see cref="LiveComposition"/>. The re-review's own recommended fix,
+/// verbatim: "expose the role law once ... so the law then has exactly one
+/// definition and the scan's blind spot stops mattering" -- see
+/// <c>ViewRegistryConformanceTests.cs</c>'s own
+/// <c>RoleFormulaRederivation_*</c> tripwire tests for the planted-line
+/// proof that a future hand-copy of this exact shape is now caught.
+/// </summary>
+public static class ViewCompositionExtensions
+{
+    public static bool IsHostedBy(this IViewComposition composition, string viewName) =>
+        composition.Layout.Kind == LayoutKinds.SplitH
+        && composition.Members.Count > 0
+        && composition.Members[0].Name == viewName;
 }

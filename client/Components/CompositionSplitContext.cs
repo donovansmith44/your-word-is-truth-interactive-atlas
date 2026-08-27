@@ -24,4 +24,19 @@ namespace BibleAtlas.Client.Components;
 /// self-close (e.g. Reader's "close the reader, keep the map," a real
 /// navigation) is NOT this -- it stays each host's own bespoke method,
 /// wired directly, since it is genuinely per-host behavior.</param>
-public sealed record CompositionSplitContext(bool IsSplitOpen, bool IsHost, EventCallback InvokeHatch, EventCallback RequestClose);
+/// <param name="HostPaneClassSuffix">Fix round 2 (Q-1, Important --
+/// re-review, "the review's recommended HostPaneClass parameter was not
+/// built"): the ready-to-append class-name fragment for a host's own outer
+/// page-root element -- `" split-pane-reader"`/`" split-pane-host"` (a
+/// leading space, ready to concatenate onto a base class name) while this
+/// HostName is genuinely the live split-h host, or `""` otherwise. Computed
+/// ONCE here from <see cref="CompositionSplit.HostPaneClass"/> (the class
+/// NAME each host supplies as a parameter, since <c>.split-pane-reader</c>
+/// and <c>.split-pane-host</c> genuinely differ in BODY -- Reader's own
+/// column-width custom properties vs. the generic fallback shape, see
+/// app.css's own header comments on both) combined with the SAME
+/// <see cref="IsSplitOpen"/>/<see cref="IsHost"/> condition every other
+/// role-driven read in this record already uses -- a host no longer
+/// hand-writes its own `ctx.IsSplitOpen &amp;&amp; ctx.IsHost ? "X" : ""`
+/// ternary at all.</param>
+public sealed record CompositionSplitContext(bool IsSplitOpen, bool IsHost, EventCallback InvokeHatch, EventCallback RequestClose, string HostPaneClassSuffix);

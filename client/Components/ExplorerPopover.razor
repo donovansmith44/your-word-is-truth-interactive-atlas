@@ -563,9 +563,16 @@
     // matches NOTHING, ever. World.razor's own root is the opposite: BOTH
     // its class AND its testid switch to "split-pane-atlas" together while
     // SplitMode. reader-root only ever needs measuring while PaneAnchor is
-    // "reader" (i.e. while _splitOpen is true on the host), so it's always
-    // carrying the split-pane-reader CLASS at exactly the moment this
-    // selector is used -- no need to select on that class specifically.
+    // "reader" -- Reader.razor sets that whenever CompositionSplit's own
+    // IsSplitOpen is true, in EITHER role, not host-only (fix round 2, N-6
+    // doc rot: corrected from "while _splitOpen is true on the host" --
+    // Reader's own PaneAnchor read has never been host-gated; only InSplit,
+    // a genuinely different property, is). The reader-root element only
+    // ever carries the split-pane-reader CLASS in the HOST role specifically
+    // (a guest-mounted Reader's own outer div never gets that class --
+    // see Reader.razor's own HostPaneClassSuffix use), but that class is
+    // irrelevant here: this selector targets the TESTID, which is stable
+    // ("reader-root") across every role.
     private string PaneSelector => PaneAnchor switch
     {
         "reader" => "[data-testid=\"reader-root\"]",

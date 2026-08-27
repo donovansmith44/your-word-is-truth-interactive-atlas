@@ -11,6 +11,12 @@
 @inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
 @inject StateAtom<Locus> LocusAtom
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
+@* Fix round 2 (N-2): re-injected so SyncSplitUrl can call the ONE shared
+   Registry.ComposeFrom(...).IsHostedBy(...) law instead of hand-rederiving
+   the role formula (removed in fix round 1, re-added here for exactly this
+   one call site -- see SyncSplitUrl's own comment and
+   CompositionSplit.razor's own header, RULING 2). *@
+@inject ViewRegistry Registry
 
 <PageTitle>Bible Explorer &mdash; @BookName @_chapterNum</PageTitle>
 
@@ -69,7 +75,8 @@
 <div class="@(_shiftHeld ? "reader-shift-active" : "")"
      @onkeydown="OnPageKeyDown" @onkeyup="OnPageKeyUp">
     <CompositionSplit HostName="@ViewNames.Reader" SplitModeOverride="@SplitMode"
-                       OnFractionCommitted="OnDividerFractionCommitted" @ref="_compositionSplit" Context="ctx">
+                       OnFractionCommitted="OnDividerFractionCommitted" HostPaneClass="split-pane-reader"
+                       OnArrangementChanged="OnViewArrangementChanged" @ref="_compositionSplit" Context="ctx">
         @* Batch VC-1 fix round 1 (S-2): Reader's own `_splitOpen`-style
            branch is RETIRED -- role now comes from `ctx`, computed ONCE by
            CompositionSplit, never re-derived here. The two close
@@ -78,8 +85,12 @@
            byte-identical to pre-VC-1, a real navigation, not a generic
            dispatch) vs. GUEST's own close (`ctx.RequestClose`, dispatches
            the generic CloseGuest intent -- the SAME semantic World.razor's
-           own split-close-atlas button already uses, now shared). *@
-        <div class="@(ctx.IsSplitOpen && ctx.IsHost ? "reader-page split-pane-reader" : "reader-page")" data-testid="reader-root">
+           own split-close-atlas button already uses, now shared). Fix
+           round 2 (Q-1): the class conditional itself is now
+           `ctx.HostPaneClassSuffix` (computed once by CompositionSplit from
+           its own HostPaneClass parameter above), not a hand-written
+           ternary. *@
+        <div class="@($"reader-page{ctx.HostPaneClassSuffix}")" data-testid="reader-root">
         @if (!ctx.IsSplitOpen)
         {
             <button type="button" class="split-open split-open-parchment" data-testid="split-open-reader"
@@ -269,6 +280,14 @@
            content is narrowed -- and worth pane-anchoring a popover
            against -- in EITHER role), matching this file's own pre-fix-round
            behavior for both, just through the new unambiguous source. *@
+        @* Fix round 2 (ruling 4 -- re-review asked for a one-line comment at
+           each surviving @ref read site: provably post-first-render, and
+           why). This whole block is gated by `_activeNode is not null`
+           (above) -- reachable ONLY via a user interaction (opening a
+           popover), which cannot happen before this component's own first
+           render has completed and `_compositionSplit`'s own @ref has been
+           assigned; the null-conditional below is defensive belt-and-
+           suspenders, not an expected path. *@
         <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover"
                           InSplit="@(_compositionSplit?.IsSplitOpen == true && _compositionSplit?.IsHost == true)" OnNavigateWorldInSplit="NavigateWorldInSplit" PaneAnchor="@(_compositionSplit?.IsSplitOpen == true ? "reader" : null)"
                           VerseAnchorSelector="@(_xrefEntryVerse is int xv ? $"#v{xv}" : null)" ShowBackdrop="!_hoverOnlyOpen"
@@ -517,7 +536,18 @@
         // atom itself has no such timing gap -- it is always valid,
         // synchronously, the SAME reasoning the pre-fix-round-1 `_splitOpen`
         // formula relied on for this exact reason.
-        var isSplitOpen = ViewArrangementAtom.Value is { LayoutKind: LayoutKinds.SplitH } a && a.Members.Count > 0 && a.Members[0] == ViewNames.Reader;
+        //
+        // Fix round 2 (ruling 2, N-2 -- re-review): the formula itself is no
+        // longer hand-written here -- `Registry.ComposeFrom(...).IsHostedBy(...)`
+        // is the SAME extension method CompositionSplit's own IsSplitOpen
+        // calls (client/Views/ViewRegistry.cs), the ONE shared law, driven
+        // by the compiled IViewComposition contract like S-1 requires
+        // everywhere else, not a bare-ViewArrangement-strings copy. `ctx` is
+        // genuinely out of reach here (this runs from CompositionSplit's own
+        // OnArrangementChanged hook, outside ChildContent's lambda) -- the
+        // registry call is the sanctioned fallback the ruling names for
+        // exactly that case.
+        var isSplitOpen = Registry.ComposeFrom(ViewArrangementAtom.Value).IsHostedBy(ViewNames.Reader);
         var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?> { ["split"] = isSplitOpen ? "1" : null });
 
         // Fix round 1 (a SECOND live, self-caught bug found while verifying
@@ -605,20 +635,20 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Fix round 1 (Q-3, Important -- review): _splitOpen is a LIVE read
-        // of ViewArrangementAtom.Value, but until this fix Reader never
-        // subscribed to its own Changed event -- correct today only because
-        // every arrangement change Reader itself must re-render for
-        // originates in Reader's OWN event handlers (OpenSplit/
-        // CloseSplitAtlas/the SplitQuery block), which Blazor already
-        // re-renders after. The moment a LATER batch dispatches an
-        // arrangement change from anywhere else (World's own
-        // OpenReadBesideMap not dispatching at all today is exactly the
-        // kind of asymmetry that makes this fragile), the split host would
-        // silently stop re-rendering. Subscribed symmetrically with World.razor
-        // now -- unsubscribed in DisposeAsync below.
-        ViewArrangementAtom.Changed += OnViewArrangementChanged;
-
+        // Fix round 2 (ruling 1, N-1 -- re-review, binding): Reader no
+        // longer subscribes to ViewArrangementAtom.Changed itself --
+        // CompositionSplit now owns that subscription exactly once (see its
+        // own header, RULING 1) and calls OnViewArrangementChanged (below)
+        // through its own OnArrangementChanged hook (wired on the
+        // <CompositionSplit> tag above) whenever the arrangement changes,
+        // from ANY dispatch site. Reader still NEEDS this callback (it is
+        // not a "nothing beyond ChildContent's own re-render" host, unlike
+        // Sources): SyncSplitUrl is a genuine Nav.NavigateTo side effect,
+        // and ExplorerPopover's own InSplit/PaneAnchor bindings (a SIBLING
+        // of <CompositionSplit>, outside ChildContent's own lambda scope)
+        // need THIS component's own re-render to stay fresh -- but it gets
+        // that callback WITHOUT registering a second subscribe/unsubscribe
+        // pair of its own.
         try
         {
             _toc = await Atlas.Books();
@@ -629,18 +659,21 @@
         }
     }
 
-    // Fix round 1 (Q-3): a plain re-render -- Reader has no side effect of
-    // its own to run here (unlike World's OWN ViewArrangementAtom.Changed
-    // subscriber, OnViewArrangementChanged, which also drives the
-    // SyncToken/follow re-sync -- that stays World's job).
+    // Batch VC-1: resyncs the URL (SyncSplitUrl, a no-op when guest-mounted)
+    // and re-renders (for ExplorerPopover's own InSplit/PaneAnchor bindings,
+    // which read `_compositionSplit` directly -- see that @ref's own read
+    // sites) whenever the shared arrangement changes, regardless of WHICH
+    // dispatch site changed it (World's own hatch, a guest's own CloseGuest,
+    // Reader's own hatch/SplitQuery consumption -- all funnel through here).
     //
-    // Batch VC-1: NOW also resyncs the URL (SyncSplitUrl, a no-op when
-    // guest-mounted) -- moved here from the individual OpenSplit/
-    // CloseSplitAtlas dispatch sites (both retired) so the URL stays
-    // truthful regardless of WHICH dispatch site changed the arrangement,
-    // including the new one this batch adds: a guest's own CloseGuest
-    // dispatch, which this page never calls directly (it is wired as the
-    // GUEST's own OnRequestClose, not Reader's).
+    // Fix round 2 (ruling 1, N-1): no longer a direct
+    // ViewArrangementAtom.Changed subscriber -- bound instead as
+    // CompositionSplit's own OnArrangementChanged hook (the <CompositionSplit>
+    // tag above), fired from THAT component's single owned subscription.
+    // Same body, same two responsibilities (Reader genuinely needs both --
+    // see OnInitializedAsync's own comment for why Reader is the ONE
+    // documented exception to "a host needs nothing beyond ChildContent's
+    // own re-render"), different wiring.
     private void OnViewArrangementChanged()
     {
         SyncSplitUrl();
@@ -1444,6 +1477,9 @@
         // picker jump into a reader+world split, navigating away from
         // /sources entirely. Guarded on IsHost too now, matching
         // ChapterHref's own already-correct pattern exactly.
+        // Fix round 2 (ruling 4): provably post-first-render -- this is a
+        // click handler (ApplyScriptureRef, ScripturePicker's own OnApply),
+        // which cannot fire before this page's first render has completed.
         var query = _compositionSplit is { IsSplitOpen: true, IsHost: true } ? "?split=1" : "";
         var fragment = verse is int v ? $"#v{v}" : "";
         Nav.NavigateTo($"/read/{book}/{chapterNum}{query}{fragment}");
@@ -1497,13 +1533,12 @@
 
     public async ValueTask DisposeAsync()
     {
-        // Fix round 1 (Q-3): unsubscribe from the SHARED (app-lifetime)
-        // ViewArrangement atom before this instance goes away -- same
-        // reasoning World.razor's own equivalent unsubscribe gives (the atom
-        // outlives this component; leaving the subscription wired would call
-        // back into a disposed component on every future arrangement
-        // dispatch, from ANY page).
-        ViewArrangementAtom.Changed -= OnViewArrangementChanged;
+        // Fix round 2 (ruling 1, N-1): no ViewArrangementAtom unsubscribe
+        // here any more -- Reader never subscribed directly this round (see
+        // OnInitializedAsync's own comment); CompositionSplit unsubscribes
+        // itself, in its own Dispose(), when IT is torn down (a child
+        // component's own lifetime, not Reader's, governs that -- see
+        // CompositionSplit.razor's own Dispose()).
 
         // M-D3 (R3): cancels any in-flight hover-close delay -- without
         // this, DelayedHoverClose's own await could resolve AFTER this

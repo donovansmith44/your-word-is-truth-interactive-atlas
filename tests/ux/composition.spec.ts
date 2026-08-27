@@ -143,3 +143,25 @@ test('COMP-4: reader+world split still opens via the reader\'s own hatch and sur
   await expect(page.getByTestId('verse-line-1')).toBeVisible();
   await expect(page).toHaveURL(/\/read\/GEN\/12\?split=1$/);
 });
+
+test('COMP-6 (fix round 2, N-7 -- re-review, "no automated guard for the two crash regressions"): a fresh ?split=1 load and reload never throw inside Blazor\'s own lifecycle', async ({ page }) => {
+  // Both fix-round-1 self-caught live crashes (ObjectDisposedException from
+  // a stale @ref read; InvalidOperationException:
+  // InvalidOperation_EnumFailedVersion from a same-URL re-entrant
+  // Nav.NavigateTo) lived on EXACTLY this path -- a fresh `?split=1` load,
+  // where [SupplyParameterFromQuery]'s own documented timing quirk means
+  // Reader genuinely renders "single" once before "split-h" -- and neither
+  // one failed any EXISTING assertion in this suite or reader.spec.ts,
+  // because nothing anywhere asserted on page-level errors at all (the
+  // re-review's own finding). This is that guard.
+  const pageErrors: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+
+  await page.goto('/read/GEN/12?split=1');
+  await expect(page.getByTestId('split-view')).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+
+  expect(pageErrors).toEqual([]);
+});

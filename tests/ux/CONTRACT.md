@@ -4256,6 +4256,45 @@ Notes:
   composition.spec.ts's own COMP-5 for the one genuine bug this
   consolidation fixed along the way (a picker jump from a guest-mounted
   reader no longer silently converts sources+reader into reader+world).
+  VC-1 FIX ROUND 2 AMENDMENT (batch-vc1-rereview.md, "GAPS REMAIN" --
+  Adjudication F's own unfinished tail, controller rulings 1-4): the
+  `ViewArrangementAtom.Changed` subscribe/`StateHasChanged`/unsubscribe
+  trio -- fix round 1's own row #12, left duplicated in BOTH
+  `Reader.razor` and `Sources.razor` -- now lives EXACTLY ONCE, inside
+  `CompositionSplit.razor` itself; both pages deleted their own copies.
+  `Sources.razor` (the reference "declare a hatch, nothing else" minimal
+  host -- its entire markup lives inside `CompositionSplit`'s own
+  `ChildContent`) needs nothing further. `Reader.razor` -- which has
+  markup (`ExplorerPopover`, a sibling of `<CompositionSplit>`) and a side
+  effect (`SyncSplitUrl`, a `Nav.NavigateTo` call) OUTSIDE `ChildContent`'s
+  own lambda scope -- opts into the one sanctioned hook,
+  `CompositionSplit`'s new optional `OnArrangementChanged` parameter,
+  fired from that SAME single owned subscription (not a second one).
+  Separately, `Reader.razor:520`'s hand-copied host-role formula (the
+  re-review's own N-2 finding -- byte-identical to the shape S-2 already
+  retired everywhere else) is retired too: `IsSplitOpen`'s own role check
+  and `SyncSplitUrl`'s now both call the SAME `IsHostedBy` extension
+  method against the compiled `IViewComposition` contract
+  (`client/Views/ViewRegistry.cs`) -- one law, one definition, enforced by
+  a new `client.Tests` tripwire (a planted-line proof against a hand-copy
+  of this exact shape), not merely asserted in a doc comment. New:
+  `CompositionSplit`'s own `HostPaneClass` parameter (the review's own
+  recommended fix, previously unbuilt) -- a host supplies its class NAME
+  once (`Reader.razor` still passes `split-pane-reader`, `Sources.razor`
+  still passes `split-pane-host` -- the two classes genuinely differ in
+  body, so this stays two names, not one) and reads the ready-combined
+  `ctx.HostPaneClassSuffix` instead of hand-writing its own
+  `ctx.IsSplitOpen &amp;&amp; ctx.IsHost ? "X" : ""` ternary. User-visible
+  behavior is UNCHANGED for every pairing in this document -- this round
+  is consolidation and documentation, not a behavior change; see
+  `CompositionSplit.razor`'s own header for the full "how to become a
+  host" recipe and the two hazard-class writeups (render-branch shape
+  churn orphaning JS-captured DOM nodes; never navigate from a lifecycle
+  synchronous prefix) this round moved there from scattered prose. Also
+  new: `composition.spec.ts`'s own COMP-6, a `page.on('pageerror')` guard
+  on a fresh `?split=1` load + reload -- the exact path BOTH fix-round-1
+  self-caught live crashes lived on, previously uncovered by any
+  assertion anywhere in this suite (re-review's own N-7 finding).
 - DIVIDER-1 (M-D3/B2, owner morning address verbatim: "map toggles halfway
   into view, reader can't -- parity ('not good')"; brief: "the split-view
   drag affordance works from the reader side too"): `Components/
