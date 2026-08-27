@@ -395,6 +395,243 @@ input:focus-visible,
     margin-top: 0.25rem;
 }
 
+/* Kretzmann page (Batch CORP-1, R2/R4): a FOURTH page-root class -- never
+   combined with .reader-page/.world-page/.sources-page above, per this
+   file's own single-class-selector discipline -- the SAME parchment
+   material as .sources-page (R4: "the sources-page tone precedent...
+   commentary and confession, subordinate to THE text"). Byte-identical
+   shape to .sources-page's own rule, defined separately rather than shared
+   -- this file's own established convention for "visually identical, still
+   an independent rule per page root" (compare .reader-page/.sources-page
+   themselves). */
+.kretzmann-page {
+    min-height: 100vh;
+    background: var(--parchment);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.kretzmann-column {
+    width: 100%;
+    max-width: 860px;
+    padding: 6rem 1.5rem 4rem;
+}
+
+.kretzmann-title {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.08em;
+    font-size: 2.4rem;
+    color: var(--ink);
+    margin: 0 0 1rem;
+}
+
+.kretzmann-intro {
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--ink);
+    max-width: 66ch;
+    margin: 0 0 1.5rem;
+}
+
+.kretzmann-loading,
+.kretzmann-empty {
+    font-family: var(--font-serif);
+    color: var(--ink);
+}
+
+.kretzmann-chapter-head {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.06em;
+    font-size: 1.3rem;
+    color: var(--ink);
+    border-bottom: 1px solid var(--bronze);
+    padding-bottom: 0.4rem;
+    margin: 1.5rem 0 1.25rem;
+}
+
+.kretzmann-verse-group {
+    margin: 0 0 1.5rem;
+}
+
+/* --ink-soft measures 7.26:1 on --parchment (this file's own header
+   comment) -- a bare verse-number label is exactly the "quiet, not the
+   subject" role .verse-num already uses --bronze-ink for; this one is
+   plain running prose furniture (not a click target of its own), so the
+   softer, still-compliant --ink-soft is the honest choice here, matching
+   .source-what/.source-built's own body-text color one level up. */
+.kretzmann-verse-num {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.06em;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin: 0 0 0.4rem;
+}
+
+.kretzmann-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--ink);
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    padding: 0.6rem 0.9rem;
+    margin: 0 0 0.5rem;
+}
+
+/* Concord page (Batch CORP-1, R3/R4): a FIFTH page-root class, the SAME
+   parchment material, same reasoning as .kretzmann-page immediately
+   above. */
+.concord-page {
+    min-height: 100vh;
+    background: var(--parchment);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.concord-column {
+    width: 100%;
+    max-width: 860px;
+    padding: 6rem 1.5rem 4rem;
+}
+
+.concord-title {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.08em;
+    font-size: 2.4rem;
+    color: var(--ink);
+    margin: 0 0 1rem;
+}
+
+.concord-intro {
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--ink);
+    max-width: 66ch;
+    margin: 0 0 1.5rem;
+}
+
+/* R3's own numeric part/article/paragraph jump -- "navigation mirrors the
+   corpus's OWN shape, not scripture locus," so this deliberately does NOT
+   reuse .picker/ScripturePicker (a book+chapter+verse instrument with no
+   honest way to express "part"). Reuses .picker-apply for the submit
+   button only -- the one piece that's genuinely identical furniture. */
+.concord-picker {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    margin: 0 0 1.25rem;
+}
+
+.concord-picker-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.concord-picker-label {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.06em;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+}
+
+.concord-picker-input {
+    width: 4.5rem;
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    color: var(--ink);
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+    border-radius: 3px;
+    padding: 0.3rem 0.5rem;
+}
+
+.concord-position {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.06em;
+    font-size: 1.3rem;
+    color: var(--ink);
+    border-bottom: 1px solid var(--bronze);
+    padding-bottom: 0.4rem;
+    margin: 1.5rem 0 1.25rem;
+}
+
+.concord-loading {
+    font-family: var(--font-serif);
+    color: var(--ink);
+}
+
+.concord-unit {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    padding: 0.6rem 0.9rem;
+    margin: 0 0 0.5rem;
+}
+
+.concord-unit-ref {
+    display: block;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.06em;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin: 0 0 0.25rem;
+}
+
+.concord-unit-text {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--ink);
+}
+
+.concord-nav {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+/* Deliberately NOT .reader-prev/.reader-next -- those are Reader.razor's own
+   position:fixed, viewport-edge chapter arrows (a different affordance,
+   tuned against .reader-page's own layout); Concord's own prev/next is
+   plain in-flow furniture at the bottom of its own list. */
+.concord-nav-button {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.06em;
+    font-size: 0.9rem;
+    color: var(--ink);
+    background: var(--parchment-raised);
+    border: 1px solid var(--bronze);
+    border-radius: 3px;
+    padding: 0.4rem 0.9rem;
+}
+
+.concord-nav-button:hover {
+    color: var(--lapis);
+}
+
 /* Split view (Batch H, study without page-turning): reader-left/atlas-right.
    .split-view is Reader.razor's own outer wrapper, reused (see its file
    header) -- .split-pane-reader/.split-pane-atlas are ADDITIONAL classes

@@ -39,6 +39,16 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
 - `/sources` (batch-s-brief.md, SOURCES-1 below) — the Sources page, the
   app's one decisive home for attribution; reached from the header's
   `attribution` link on either page
+- `/kretzmann` (batch-corp1-brief.md, R2, KRETZMANN-1 below) — the Kretzmann
+  Popular Commentary browser. No route params of its own: it PROJECTS the
+  shared Locus atom (`client/Contracts/State.cs`), always showing the
+  current book+chapter's commentary -- the same chapter the reader is on
+  (agreement law). Reached from the header's `nav-kretzmann` tab
+- `/concord` (batch-corp1-brief.md, R3, CONCORD-1 below) — the Book of
+  Concord structure browser. No route params of its own either; its own
+  browsing position (part/article/paragraph) is view-local component state,
+  not a shared atom (R3 -- it navigates the corpus's OWN shape, not
+  scripture locus). Reached from the header's `nav-concord` tab
 
 ## Displayed text formats
 - Year: `1447 BC` or `AD 30`
@@ -46,7 +56,9 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
 - Canonical refs: `GEN`, `GEN.1`, `GEN.1.1`, `GEN.1.1-5`
 
 ## data-testid inventory
-Header: `nav-reader`, `nav-world`, `translation-select`,
+Header: `nav-reader`, `nav-world`, `nav-kretzmann`, `nav-concord` (batch-corp1-brief.md,
+  R1 — top-level tabs alongside Reader/World, on every page's chrome, same `.nav-link`
+  idiom), `translation-select`,
   `attribution` (batch-s-brief.md requirement 1, SOURCES-1 below; a plain `<a>` to `/sources`,
   the app's one decisive home for attribution -- NOT a popover-opening button, since
   batch-g2-brief.md/M1's own "credits popover opens and closes on Escape" test era; that
@@ -66,6 +78,24 @@ Sources page (batch-s-brief.md, SOURCES-1 below): `sources-page` (the page root)
   built/license text, ALL read from `GET /api/sources`, never hardcoded prose),
   `source-link-{sourceId}` (anchor to that source's own external link; present only when
   the source entry carries one)
+Kretzmann page (batch-corp1-brief.md, R2, KRETZMANN-1 below): `kretzmann-page` (the page
+  root), `split-open-kretzmann` ("Read beside the reader," present only when not already
+  split), `kretzmann-chapter-head` (the current book+chapter, always the SAME chapter the
+  reader is on), `kretzmann-verse-group-{n}` (one per verse of the current chapter that
+  carries >=1 CommentaryItem, `n` = verse number), `kretzmann-item-{slug}` (one explorable
+  row per CommentaryItem, plain click opens the ONE-RULE popover), `kretzmann-empty`
+  (present when the current chapter carries no indexed commentary at all).
+  DISCLOSED GAP (see batch-corp1-report.md): the popover this row opens carries the unit's
+  own heading only, not its prose -- no existing server query serves a CommentaryItem's own
+  text (`client/Explore/CommentaryItemNode.cs` has the full investigation).
+Concord page (batch-corp1-brief.md, R3, CONCORD-1 below): `concord-page` (the page root),
+  `concord-picker` (the part/article/paragraph jump form; `concord-picker-part`/
+  `-article`/`-paragraph`/`-go`), `split-open-concord` ("Read beside the reader," present
+  only when not already split), `concord-position` (the current window's own first
+  citation, e.g. "BoC 7.2.1"), `concord-unit-{slug}` (one explorable row per TextUnit in
+  the current window, plain click opens the ONE-RULE popover with the unit's own full
+  paragraph text -- already resolved, no second fetch), `concord-prev`/`concord-next`
+  (reading-spine paging; present only when a window in that direction exists).
 World: `world-map`, `marker-{placeId}`, `quiet-marker-{placeId}` (batch-e2-brief.md,
   "the ever-present graph": one per currently QUIET place -- an event-bearing place not
   lit this window, see QUIET-1 below -- distinct from and never overlapping
