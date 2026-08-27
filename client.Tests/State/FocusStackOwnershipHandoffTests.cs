@@ -52,16 +52,18 @@ public class FocusStackOwnershipHandoffTests
 
         public OwnershipClaim? Claim { get; private set; }
 
-        public FocusStack Value
-        {
-            get
-            {
-                if (Claim?.IsCurrent == true)
-                {
-                    _frozen = _atom.Value;
-                }
+        // Fix round 2 (N-3, trivia -- REQUIRED, re-review): a PURE forward,
+        // mirroring ExplorerPopover.razor's own fix -- `SyncSnapshot()` below
+        // is the one explicit write path now, not a side effect of reading
+        // this property. See that file's own `FocusValue`/`SyncSnapshot`
+        // doc comments for the full reasoning.
+        public FocusStack Value => _frozen;
 
-                return _frozen;
+        private void SyncSnapshot()
+        {
+            if (Claim?.IsCurrent == true)
+            {
+                _frozen = _atom.Value;
             }
         }
 
@@ -81,25 +83,20 @@ public class FocusStackOwnershipHandoffTests
             // before it ever finishes opening -- exactly the bug these
             // tests exist to catch, and did.
             ApplyLocally(new SeedFromTrail(new[] { root }));
-
-            // Simulates Blazor's own FIRST RENDER, which always reads
-            // FocusValue and happens before this method returns control to
-            // whatever triggered the open -- i.e., strictly before any
-            // LATER, separately-triggered popover open could supersede this
-            // one (two independent, user-triggered opens are never
-            // simultaneous; the earlier one is always fully mounted AND
-            // rendered at least once first). Warms `_frozen` here so this
-            // harness matches that real ordering instead of silently
-            // depending on a test happening to call `.Value` before the
-            // next `Open` -- the exact bug a first draft of these tests hit.
-            _ = Value;
         }
 
         public void Close()
         {
+            // Fix round 2 (N-4, trivia -- REQUIRED, re-review): unsubscribe
+            // BEFORE dispatching -- mirrors ExplorerPopover.razor's own
+            // Dispose fix exactly (see that method's own doc comment): this
+            // instance is still `Claim.IsCurrent` at the moment `Reset` is
+            // about to dispatch, so leaving the subscription wired would
+            // make this instance re-enter its OWN OnChanged during its own
+            // teardown.
+            _atom.Changed -= OnChanged;
             ApplyLocally(new Reset());
             Claim?.Dispose();
-            _atom.Changed -= OnChanged;
         }
 
         private void ApplyLocally(IIntent<FocusStack> intent)
@@ -107,6 +104,7 @@ public class FocusStackOwnershipHandoffTests
             if (Claim?.IsCurrent == true)
             {
                 _atom.Dispatch(intent);
+                SyncSnapshot(); // fix round 2, N-3: explicit, right after the dispatch that (while current) makes the atom authoritative
             }
             else
             {
@@ -122,6 +120,8 @@ public class FocusStackOwnershipHandoffTests
                 Claim = _ownership.Claim(AtomNames.FocusStack);
                 _atom.Dispatch(new Reseed(_frozen));
             }
+
+            SyncSnapshot(); // fix round 2, N-3: covers the reclaim branch above AND any other dispatch while already current
         }
     }
 

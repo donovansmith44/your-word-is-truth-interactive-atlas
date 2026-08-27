@@ -344,16 +344,35 @@
     private Projection<FocusStack> _focusProjection => _focusProjectionBacking ??= new Projection<FocusStack>(FocusStackAtom);
     private FocusStack _frozenSnapshot = FocusStack.Empty;
 
-    private FocusStack FocusValue
-    {
-        get
-        {
-            if (_claim?.IsCurrent == true)
-            {
-                _frozenSnapshot = _focusProjection.Value; // keep the snapshot warm WHILE current -- see this field group's own header
-            }
+    // Fix round 2 (N-3, trivia -- REQUIRED this round, re-review: "getters
+    // must be pure -- move the side effect to an explicit path"). An
+    // earlier draft's own `FocusValue` getter WROTE `_frozenSnapshot` as a
+    // side effect of being READ -- correct today only because every render
+    // and every mutating method happens to read it at least once while
+    // current, but "snapshot warmth" depended on read/render ORDERING
+    // rather than being asserted at the point the atom actually changes
+    // (the ownership-handoff test harness needed an extra, undocumented
+    // `_ = Value;` call purely to reproduce that ordering -- a real sign the
+    // dependency was implicit). `FocusValue` is a plain, pure forward now;
+    // `SyncSnapshot()` below is the ONE explicit write path, called at
+    // every point this instance's own view of "current" data could have
+    // just changed.
+    private FocusStack FocusValue => _frozenSnapshot;
 
-            return _frozenSnapshot;
+    // Fix round 2 (N-3): the explicit sync -- while this instance currently
+    // owns "focus-stack", `_frozenSnapshot` is set to the atom's own live
+    // value; a superseded instance is a no-op (nothing to sync FROM -- its
+    // own `_frozenSnapshot` stays whatever it already was, by design).
+    // Called from `ApplyLocally` (right after a dispatch this instance's
+    // own claim made) and from `OnFocusStackChanged` (right after a
+    // reclaim, and on every OTHER Changed while still current -- covering
+    // any future writer of this atom that isn't this instance itself, not
+    // just self-triggered notifications).
+    private void SyncSnapshot()
+    {
+        if (_claim?.IsCurrent == true)
+        {
+            _frozenSnapshot = _focusProjection.Value;
         }
     }
 
@@ -400,6 +419,7 @@
         if (_claim?.IsCurrent == true)
         {
             FocusStackAtom.Dispatch(intent);
+            SyncSnapshot(); // fix round 2, N-3: explicit -- the dispatch above already changed the atom (or was a law-2 no-op), either way this is the authoritative point to (re)assert `_frozenSnapshot`'s own warmth, not a side effect of some LATER read
         }
         else
         {
@@ -450,6 +470,7 @@
             FocusStackAtom.Dispatch(new Reseed(_frozenSnapshot));
         }
 
+        SyncSnapshot(); // fix round 2, N-3: explicit -- covers both the reclaim branch just above (the atom now holds exactly this instance's own re-seeded value) and the ordinary case (some OTHER dispatch changed the atom while this instance was ALREADY current, not just this instance's own dispatches)
         StateHasChanged();
     }
 
@@ -467,6 +488,24 @@
 
     public void Dispose()
     {
+        // Fix round 2 (N-4, trivia -- REQUIRED this round, re-review):
+        // unsubscribe FIRST, before dispatching. An earlier draft dispatched
+        // `Reset` (below) BEFORE unsubscribing -- since this instance is
+        // still `_claim.IsCurrent` at that exact instant, `Reset`'s own
+        // Dispatch synchronously invoked THIS instance's own
+        // `OnFocusStackChanged`, calling `StateHasChanged()` on a component
+        // Blazor is in the middle of tearing down. Harmless in practice
+        // (the reclaim guard is false for a still-current instance, so no
+        // OTHER side effect ran), but dispose re-entering its own live
+        // event handler is exactly the hazard class this whole layer exists
+        // to kill by construction, not merely by argument -- unsubscribing
+        // first removes the path entirely rather than relying on the guard.
+        // Every OTHER live (superseded) subscriber is UNAFFECTED by this
+        // reordering -- only THIS instance's own handler is removed before
+        // its own Reset fires; the hand-off (OnFocusStackChanged, above)
+        // still runs normally on whichever OTHER instance reclaims.
+        FocusStackAtom.Changed -= OnFocusStackChanged;
+
         // Batch ST-3 (R3): "close resets both" -- dispatched from HERE
         // (Blazor's own IDisposable teardown, fired for EVERY path that
         // removes this component from the tree -- RequestClose's own
@@ -481,7 +520,6 @@
         // popover is listening (the ownership hand-off).
         ApplyLocally(new Reset());
         _claim?.Dispose();
-        FocusStackAtom.Changed -= OnFocusStackChanged;
     }
 
     private IReadOnlyList<Exploration> _explorations = Array.Empty<Exploration>();
