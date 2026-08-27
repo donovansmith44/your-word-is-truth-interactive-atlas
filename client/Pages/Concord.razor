@@ -3,53 +3,94 @@
 @using BibleAtlas.Client.State
 @using BibleAtlas.Client.Views
 @inject IExplorableClient Graph
+@inject AtlasClient Atlas
 
-@* Batch CORP-1 (R3): the Book of Concord structure browser -- a STRUCTURE
-   browser. Navigation mirrors the corpus's OWN shape (part -> article ->
-   paragraph, per graph-types' own ConcordRef), NOT scripture locus --
-   Concord declares NO capability (ViewRegistrySetup.Build:
-   ViewCapabilities.None), unlike Kretzmann/Reader's own BearsLocus. Body
-   rows are the explorable TextUnits (ONE-RULE, Explore/ConcordUnitNode.cs).
+@* Batch CORPREAD-1b (ticket C, owner order verbatim: "I want to be able ot
+   read it like the normal BoC. Everything doesn't need to be shown
+   visually as belonging to these boxes. It should be a smooth reading
+   experiecne like the Bible, except verses and verse fragements and
+   verse/passage references are explorable. I should have a menu through
+   which I can navigate to different parts in the BoC.") -- REBUILDS
+   CORP-1's own bordered-row list (see git history, R3) into a CONTINUOUS
+   READING SURFACE: the SAME reading-column register Kretzmann.razor and
+   Reader.razor both now share -- part/article STRUCTURE carried by
+   TYPOGRAPHY (a part heading, an article heading, each interleaved
+   directly in the reading flow the moment the window crosses into a new
+   one -- BuildRenderRows below), never a container.
 
-   Declares "read-beside" with Reader (EnterSplitConcordHostsReader,
-   ViewRegistrySetup.cs) -- works via VC-1's own generality (any two
-   registered views may pair this way, the SAME self-hosting shape
-   Sources.razor's own hatch already proved generic); no "follow" anything
-   -- clean degradation, the SAME shape sources+reader already establishes
-   (Sources also declares no BearsLocus/BearsWindow capability, so
-   World.razor's own `_follow` predicate is unreachable for THAT pairing by
-   construction; the identical reasoning applies here).
+   NAV MENU (ticket C): a "Contents" toggle reveals a panel over the BoC's
+   own canon -- Explore/ConcordToc.cs's ten traditional documents (Creeds,
+   AC, Apology, Smalcald, Treatise, SC, LC, FC, plus the Preface and the
+   Formula's two forms), mirrored from `atlas-etl/src/concord.rs`'s own
+   CONCORD_DOC_SPECS table (read directly before writing, not guessed).
+   Jumping loads that document's own opening window (BoC {part}.1.1) into
+   the SAME reading-flow body every other navigation renders through --
+   never a bare fragment. The pre-existing numeric part/article/paragraph
+   picker stays too (fine-grained jump beyond the menu's own per-document
+   granularity) -- both live under one grouped "controls" cluster (design
+   discipline, not chrome clutter).
 
-   VIEW-LOCAL STATE, DELIBERATE (R3): Concord's own current browsing
-   position (`_currentRef` below) is ORDINARY COMPONENT STATE, not a shared
-   atom -- it is single-consumer (no other view reads or writes "where in
-   the Book of Concord am I"), so client/Contracts/State.cs's own atom law
-   ("all SHARED state lives in named, typed atoms") simply does not apply to
-   it; inventing a sixth atom for state nothing else ever reads would be
-   ceremony, not correctness. This is the SAME reasoning ST-4's own D2
-   exemption already ledgers for exactly this shape (a view-local field the
-   no-copy conformance scan permits because it is not one of the five
-   migrated atom-value TYPES at all) -- the scans' own allowlists do NOT
-   grow for this (R3, verbatim): there is nothing to allowlist, because
-   holding plain component state that is not a copy of an ATOM's value was
-   never the thing those scans police.
+   SCRIPTURE REFS + QUOTED FRAGMENTS EXPLORABLE (ticket C, "same mechanism
+   as ticket K -- do not fork the scanner"): every unit's own confession
+   text renders through the SAME Components/ScriptureRefText.razor scanner
+   Kretzmann.razor uses.
 
-   Official host recipe (CompositionSplit.razor's own header): follows
-   Sources.razor VERBATIM, same as Kretzmann.razor -- no
-   OnArrangementChanged hook (this page's entire markup lives inside
-   ChildContent, so it re-renders for free on every arrangement change; it
-   has no per-route query/Nav side effect of its own to resync). *@
+   VIEW-LOCAL STATE, UNCHANGED (R3/ST-3 D2): `_currentRef` stays ordinary
+   component state, not an atom -- this ticket's own text says so
+   explicitly ("Concord's browse position stays VIEW-LOCAL state ... no
+   sixth atom, no allowlist growth") -- nothing about this mechanism
+   changes in this batch.
+
+   Official host recipe (CompositionSplit.razor's own header): unchanged --
+   follows Sources.razor verbatim, same as Kretzmann.razor. *@
 
 <PageTitle>Bible Explorer &mdash; Concord</PageTitle>
 
 <CompositionSplit HostName="@ViewNames.Concord" SplitModeOverride="@SplitMode" HostPaneClass="split-pane-host" Context="ctx">
     <div class="@($"concord-page{ctx.HostPaneClassSuffix}")" data-testid="concord-page">
-        <div class="concord-column">
+        <article class="concord-column reader-column">
             <h1 class="concord-title">The Book of Concord</h1>
             <p class="concord-intro">
                 The Lutheran confessions of 1580 &mdash; the church's own
                 confession, subordinate to the Scripture it confesses.
             </p>
+
+            <div class="concord-controls">
+                <button type="button" class="concord-toc-toggle" data-testid="concord-toc-toggle"
+                        aria-expanded="@(_tocOpen ? "true" : "false")" aria-controls="concord-toc-menu" @onclick="ToggleToc">
+                    Contents
+                </button>
+
+                @if (!ctx.IsSplitOpen)
+                {
+                    <button type="button" class="split-open split-open-parchment" data-testid="split-open-concord"
+                            @onclick="ctx.InvokeHatch">
+                        Read beside the reader
+                    </button>
+                }
+            </div>
+
+            @if (_tocOpen)
+            {
+                @* Ticket C, "a menu through which I can navigate to
+                   different parts in the BoC" -- a reader's
+                   table-of-contents affordance, collapsed by default (no
+                   chrome clutter), the traditional documents in canon
+                   order. *@
+                <nav class="concord-toc-menu" id="concord-toc-menu" data-testid="concord-toc-menu" aria-label="Book of Concord contents">
+                    <ul class="concord-toc-list">
+                        @foreach (var doc in ConcordToc.Documents)
+                        {
+                            <li>
+                                <button type="button" class="concord-toc-item" data-testid="@($"concord-toc-part-{doc.Part}")"
+                                        @onclick="@(() => JumpToPartAsync(doc.Part))">
+                                    @doc.Title
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            }
 
             <form class="concord-picker" data-testid="concord-picker" @onsubmit="JumpToAsync">
                 <label class="concord-picker-field">
@@ -67,14 +108,6 @@
                 <button type="submit" class="picker-apply" data-testid="concord-picker-go">Go</button>
             </form>
 
-            @if (!ctx.IsSplitOpen)
-            {
-                <button type="button" class="split-open split-open-parchment" data-testid="split-open-concord"
-                        @onclick="ctx.InvokeHatch">
-                    Read beside the reader
-                </button>
-            }
-
             <h2 class="concord-position" data-testid="concord-position">@_currentRef</h2>
 
             @if (_error is not null)
@@ -89,13 +122,27 @@
             }
             else
             {
-                @foreach (var unit in _units)
+                @foreach (var row in RenderRows)
                 {
-                    <button type="button" class="concord-unit explorable" data-testid="@($"concord-unit-{Slug(unit.Ref)}")"
-                            @onclick="@(() => OnExplore(unit))">
-                        <span class="concord-unit-ref">@unit.Ref</span>
-                        <span class="concord-unit-text">@unit.Text</span>
-                    </button>
+                    if (row is PartHeadingRow ph)
+                    {
+                        <h2 class="concord-part-heading" data-testid="@($"concord-part-heading-{ph.Part}")">@ph.Title</h2>
+                    }
+                    else if (row is ArticleHeadingRow ah)
+                    {
+                        <h3 class="concord-article-heading" data-testid="@($"concord-article-heading-{ah.Part}-{ah.Article}")">Article @ah.Article</h3>
+                    }
+                    else if (row is UnitRow ur)
+                    {
+                        var unit = ur.Unit;
+                        <div class="concord-unit explorable" data-testid="@($"concord-unit-{Slug(unit.Ref)}")"
+                             tabindex="0" role="button" aria-label="@($"Explore {unit.Ref}")"
+                             @onclick="@(() => OnExplore(unit))" @onkeydown="@(e => OnUnitKeyDown(e, unit))">
+                            <span class="concord-unit-ref">@unit.Ref</span>
+                            <ScriptureRefText Text="@unit.Text" Toc="@(_toc ?? EmptyToc)" ClassPrefix="concord-ref"
+                                               OwnerSlug="@Slug(unit.Ref)" OnExplore="OnExploreNode" />
+                        </div>
+                    }
                 }
 
                 <nav class="concord-nav" aria-label="Concord navigation">
@@ -109,7 +156,7 @@
                     }
                 </nav>
             }
-        </div>
+        </article>
     </div>
 </CompositionSplit>
 
@@ -121,6 +168,13 @@
 @code {
     private const int PageSize = 20;
     private const string DefaultRef = "BoC 1.1.1";
+
+    private abstract record ConcordRenderRow;
+    private sealed record PartHeadingRow(int Part, string Title) : ConcordRenderRow;
+    private sealed record ArticleHeadingRow(int Part, int Article) : ConcordRenderRow;
+    private sealed record UnitRow(TextUnitDto Unit) : ConcordRenderRow;
+
+    private static readonly List<BookTocEntry> EmptyToc = new();
 
     [Parameter] public bool? SplitMode { get; set; }
 
@@ -134,21 +188,86 @@
     private string? _error;
     private int _requestId;
     private IExplorable? _activeNode;
+    private bool _tocOpen;
 
     private int? _jumpPart;
     private int? _jumpArticle;
     private int? _jumpParagraph;
 
+    // Batch CORPREAD-1b (ticket C, "scripture refs ... explorable, same
+    // mechanism as ticket K"): the app's own canonical book TOC, fetched
+    // once, feeding ScriptureRefText's own scanner exactly like
+    // Kretzmann.razor does.
+    private List<BookTocEntry>? _toc;
+
     private static string Slug(string reference) => reference.Replace(' ', '-').Replace('.', '-');
 
-    // Batch CORPREAD-1a (SPLIT-PERSIST-1): the standalone mount-time assert
-    // this method used to perform directly is RETIRED -- CompositionSplit's
-    // own OnParametersSet now performs it generically (see its own header,
-    // RULING 5), and additionally restores a split from the URL when one is
-    // present -- Concord gets the SAME refresh-survives-split guarantee
-    // Reader always had.
+    // Batch CORPREAD-1b (ticket C): part/article structure carried by
+    // TYPOGRAPHY -- a fresh part/article heading is emitted the instant the
+    // window's own ordered units cross into one, interleaved directly with
+    // the unit rows (never a container grouping them). Recomputed whenever
+    // `_units` changes (a plain property, not cached -- this window is at
+    // most PageSize=20 units, recomputation is immaterial).
+    private List<ConcordRenderRow> RenderRows
+    {
+        get
+        {
+            var rows = new List<ConcordRenderRow>();
+            int? lastPart = null;
+            int? lastArticle = null;
+            foreach (var unit in _units)
+            {
+                var (part, article, _) = ParseRef(unit.Ref);
+                if (part != lastPart)
+                {
+                    rows.Add(new PartHeadingRow(part, ConcordToc.TitleOf(part)));
+                    lastPart = part;
+                    lastArticle = null;
+                }
+                if (article != lastArticle)
+                {
+                    rows.Add(new ArticleHeadingRow(part, article));
+                    lastArticle = article;
+                }
+                rows.Add(new UnitRow(unit));
+            }
+            return rows;
+        }
+    }
+
+    private static (int Part, int Article, int Paragraph) ParseRef(string reference)
+    {
+        var afterPrefix = reference.StartsWith("BoC ", StringComparison.Ordinal) ? reference[4..] : reference;
+        var parts = afterPrefix.Split('.');
+        return (int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]));
+    }
+
+    private void ToggleToc() => _tocOpen = !_tocOpen;
+
+    // Batch CORPREAD-1b (ticket C, "jump anywhere; landing position renders
+    // the target in reading flow"): jumps to the document's own opening
+    // paragraph -- the SAME LoadWindowAsync every other navigation uses, so
+    // the landing is a full reading-flow window, never a bare fragment.
+    private Task JumpToPartAsync(int part)
+    {
+        _tocOpen = false;
+        _currentRef = ConcordToc.StartRef(part);
+        return LoadWindowAsync(_currentRef, "onward");
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        try
+        {
+            _toc = await Atlas.Books();
+        }
+        catch (Exception)
+        {
+            // Non-fatal -- ScriptureRefText simply renders no explorable
+            // refs until the TOC resolves (Scan's own toc.Count==0
+            // short-circuit); the confession text itself still renders.
+        }
+
         await LoadWindowAsync(_currentRef, "onward");
     }
 
@@ -237,6 +356,20 @@
     }
 
     private void OnExplore(TextUnitDto unit) => _activeNode = new ConcordUnitNode(unit.Ref, unit.Text);
+
+    private void OnUnitKeyDown(KeyboardEventArgs e, TextUnitDto unit)
+    {
+        if (e.Key == "Enter")
+        {
+            OnExplore(unit);
+        }
+    }
+
+    // Batch CORPREAD-1b (ticket C, "verses and verse fragments and
+    // verse/passage references are explorable"): ScriptureRefText's own
+    // OnExplore callback -- a plain VerseNode push, ONE-RULE, the same
+    // shape Kretzmann.razor's OnExploreNode already establishes.
+    private void OnExploreNode(IExplorable node) => _activeNode = node;
 
     private void ClosePopover() => _activeNode = null;
 }
