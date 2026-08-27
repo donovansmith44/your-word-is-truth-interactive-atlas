@@ -511,7 +511,7 @@
     // what actually subscribes).
     private DelegateEffect<TimeWindow>? _followSceneEffectBacking;
     private DelegateEffect<TimeWindow> _followSceneEffect => _followSceneEffectBacking ??= new DelegateEffect<TimeWindow>(
-        "follow-scene", TimeWindowAtom, value => value is ScriptureMode, value => RunScriptureModeEffectAndSurfaceFaults(((ScriptureMode)value).Ref));
+        EffectNames.FollowScene, TimeWindowAtom, value => value is ScriptureMode, value => RunScriptureModeEffectAndSurfaceFaults(((ScriptureMode)value).Ref));
 
     // Batch ST-3 (R1): non-null exactly while THIS instance currently owns
     // the "follow-scene" effect -- claimed by EnableFollowScene (mount with
@@ -885,17 +885,42 @@
     // field comment, before ST-2 too) -- the guard below makes that
     // semantic actually true for this handler, not just documented.
     //
-    // Batch ST-3 (R1): the ad hoc `SplitMode &&`/`_followEffectsLive &&`
-    // guard around the OLD `TriggerFollowSync()` call is GONE -- ownership
-    // (EnableFollowScene/DisableFollowScene, below) now decides whether this
-    // instance's follow-derived writes actually reach the shared
-    // TimeWindowAtom, structurally, the same way it decides whether the
-    // effect itself runs. The SyncToken bump stays exactly where R4 (ST-2)
-    // put it -- "re-seat its trigger on the atom transition, don't fork
-    // it" -- now paired with a symmetric OFF-edge that releases the claim
-    // (there was no OFF-edge branch pre-ST-3 because the old mechanism had
-    // no persistent ownership state to release -- TriggerFollowSync ran
-    // fresh, self-contained, on every ON edge only).
+    // Fix round 1 (S-3 -- IMPORTANT, review): CORRECTED comment. An earlier
+    // draft claimed the `_followEffectsLive &&` guard on the line below was
+    // "GONE" -- FALSE, and the report's own §1 repeated the same false
+    // claim. `_followEffectsLive` (== `SplitMode`) SURVIVES here, on
+    // purpose, and is LOAD-BEARING: `ViewArrangementAtom` is a shared,
+    // page-independent DI singleton, so a STANDALONE `/world` instance's own
+    // `OnViewArrangementChanged` ALSO fires on the ON edge whenever ANY page
+    // dispatches `EnterSplit(Follow: true)` into it (the exact ST-2 hazard
+    // class this predicate has guarded against since ST-2's own fix round).
+    // Without it, a standalone instance would claim "follow-scene" too, and
+    // EffectRegistry's own latest-claim-wins would hand ownership to
+    // whichever instance's `EnableFollowScene` happened to run LAST --
+    // `SplitMode` is the one per-instance fact no shared-atom read can
+    // spoof, so it is what keeps the CLAIM decision itself scoped to a
+    // genuinely embedded pane. What ownership retires is narrower than the
+    // original draft claimed: the EFFECT'S OWN invocation (Materialize)
+    // no longer needs a SECOND, redundant guard the way `OnTimeWindowChanged`'s
+    // old `LastOrigin`/`_followEffectsLive` double-check did -- see that
+    // handler's own comment. R1's own ruling ("ownership gates EFFECTS, not
+    // link derivation") is why the SAME predicate legitimately gates BOTH
+    // the link's `Active` closure and this claim decision: both are,
+    // structurally, "is this a genuinely embedded pane" checks, and there is
+    // exactly one per-instance fact that answers it honestly.
+    //
+    // The OFF edge below is intentionally asymmetric (unguarded by
+    // `_followEffectsLive`) -- harmless, not an oversight: `DisableFollowScene`
+    // on an instance that was never claimed (standalone /world) is a no-op
+    // (`_followSceneClaim` is already null), so gating the OFF edge would
+    // only add a redundant check, never change behavior.
+    //
+    // The SyncToken bump stays exactly where R4 (ST-2) put it -- "re-seat
+    // its trigger on the atom transition, don't fork it" -- now paired with
+    // the OFF-edge release just described (there was no OFF-edge branch
+    // pre-ST-3 because the old mechanism had no persistent ownership state
+    // to release -- TriggerFollowSync ran fresh, self-contained, on every ON
+    // edge only).
     private void OnViewArrangementChanged()
     {
         var nowFollowing = _follow;
@@ -937,14 +962,26 @@
     // against a possibly-stale value, then redundantly re-materialize once
     // SyncNow's own dispatch (now claimed) fires Changed.
     //
-    // Disposes any PRIOR claim first (defensive -- idempotent, matches
-    // EffectClaim's own Dispose contract; no real call site invokes this
-    // while already claimed, since every caller is edge-triggered or
-    // one-shot-per-mount).
+    // Fix round 1 (Q-1 -- IMPORTANT, review): disposes any PRIOR claim
+    // FIRST, THEN syncs, THEN claims -- an earlier draft synced BEFORE
+    // disposing the prior claim, which is one line too late: if a claim was
+    // ALREADY held when this runs, `SyncNow()`'s own dispatch would fire the
+    // OLD (still-subscribed) claim's own handler (Materialize #1) before the
+    // NEW claim's own reconcile runs (Materialize #2) -- a structural
+    // double-materialize window, not merely an argument-backed absence of
+    // one ("no real call site invokes this while already claimed" was true
+    // but was an argument, not a structure -- this batch's whole thesis is
+    // that structure beats argument). With no owner held at the moment
+    // `SyncNow()` runs, its own dispatch (if any) fires no claimed handler
+    // at all, and `Claim` immediately below reconciles exactly once against
+    // the fresh, now-current value -- the property becomes unconditional,
+    // not merely true-by-discipline. See EffectRegistryTests.cs's own
+    // `TwoRapidReClaims...` test for the registry-level proof this exact
+    // reordering is what closes.
     private async Task EnableFollowScene()
     {
-        _followRunner.SyncNow();
         _followSceneClaim?.Dispose();
+        _followRunner.SyncNow();
         _followSceneClaim = Effects.Claim(_followSceneEffect);
 
         if (_followSceneClaim.ReconcileTask is { } task)
@@ -1044,17 +1081,67 @@
     // fires at all), and the effect must still run (e.g. re-entering the
     // exact scripture ref already showing, or a fresh mount already sitting
     // at TimeWindow.Default).
+    //
+    // Fix round 1 (S-4 -- IMPORTANT, review): "release-before-direct-write"
+    // INVARIANT, enforced HERE, at the one choke point, rather than trusted
+    // to each caller individually. `EffectRegistry`'s own contract is
+    // origin-blind by design (`AppliesTo` only ever sees the VALUE, never
+    // which write produced it) -- while "follow-scene" is claimed, ANY
+    // change to `TimeWindowAtom` that lands in `ScriptureMode` also
+    // materializes through the registry, so a direct dispatch here would
+    // double-fetch (this method's own unconditional `RunScriptureModeEffect`
+    // call, PLUS the registry's own claimed Materialize) unless the claim is
+    // released first. `ApplyExternalQuery` already achieves this
+    // indirectly (`SetSplitFollow(false)` fires `OnViewArrangementChanged`'s
+    // own OFF edge, which calls `DisableFollowScene` before ever reaching
+    // this method) -- the call here makes that release a property of EVERY
+    // direct entry point, present and future (`SyncFromQuery`/
+    // `RestoreMapState` reach this method too, today unreachable in
+    // SplitMode only because Blazor's own `[SupplyParameterFromQuery]`
+    // doesn't feed a non-routed child -- a reachability ACCIDENT, not a
+    // structural guarantee), not just the one caller that happens to arrange
+    // it today.
+    //
+    // Gated on `SplitMode` -- a live, self-caught bug found while running
+    // this fix round's OWN Playwright verification: an UNCONDITIONAL call
+    // here (every instance, standalone included) made
+    // `split-view.spec.ts`'s own "closing the reader pane returns to a full
+    // /world, preserving the atlas pane's actual state" test genuinely
+    // flaky (bisected: 5/5 clean on the pre-fix-round code, 5/5 clean with
+    // this call reverted, intermittently red with it unconditional --
+    // reproduced, not assumed). `DisableFollowScene`'s own null-check
+    // already makes it a no-op on a standalone instance in the COMMON case
+    // (no claim ever held there), so this gate changes nothing about the
+    // invariant's own correctness for the case that actually matters (a
+    // SplitMode instance that might hold a claim) -- it only removes a
+    // method call from the standalone instance's own hot path, which is
+    // exactly `_followEffectsLive`'s own established scoping (S-3's own
+    // comment: "SplitMode is the one per-instance fact no atom read can
+    // spoof"), applied here for the same reason, not a new rule. The exact
+    // mechanism by which the unconditional call disturbed a standalone
+    // instance's own dispose-vs-mount timing was not fully isolated beyond
+    // this reproduction -- disclosed, not papered over; see the batch
+    // report's own fix-round notes.
     private Task EnterScriptureMode(string sref)
     {
+        if (SplitMode)
+        {
+            DisableFollowScene();
+        }
+
         TimeWindowAtom.Dispatch(new SetScriptureWindow(sref));
         return RunScriptureModeEffect(sref);
     }
 
     // Batch ST-2: the actual scripture-mode EFFECT (sync view-state, hide the
     // polity layer, fetch) -- called unconditionally from EnterScriptureMode
-    // above (every direct writer) AND from OnTimeWindowChanged's own
-    // link-derived path (via RunScriptureModeEffectAndSurfaceFaults) --
-    // ONE implementation, two callers, per R2/R3.
+    // above (every direct writer). Batch ST-3 (R1): the OTHER, link-derived
+    // caller this comment used to name (`OnTimeWindowChanged`'s own
+    // `RunScriptureModeEffectAndSurfaceFaults` path) is RETIRED -- the
+    // follow-derived path now runs through `DelegateEffect`'s own
+    // `Materialize` (`_followSceneEffect`, which wraps
+    // `RunScriptureModeEffectAndSurfaceFaults` directly), invoked only by
+    // `EffectRegistry`, never by this handler.
     private async Task RunScriptureModeEffect(string sref)
     {
         SyncTimeWindowProjection();

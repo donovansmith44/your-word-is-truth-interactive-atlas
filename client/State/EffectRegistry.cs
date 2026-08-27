@@ -42,6 +42,17 @@ public sealed class EffectRegistry : IEffectRegistry
     private sealed class Slot
     {
         public object? Owner;
+
+        // Fix round 1 (Q-7, trivia -- review, "cheap hardening"): the
+        // CURRENT owner's own unsubscribe action, so a NEW claim can
+        // proactively detach the prior claimant's handler immediately,
+        // rather than leaving it wired (inert, via the token check alone --
+        // correctness never depended on this) until ITS OWN, possibly-
+        // never-called Dispose. Without this, a claimant that never
+        // disposes leaks one live delegate on the atom for the app's
+        // lifetime; with it, at most ONE superseded delegate is ever
+        // wired at a time per name.
+        public Action? Unsubscribe;
     }
 
     private readonly Dictionary<string, Slot> _slots = new();
@@ -62,6 +73,15 @@ public sealed class EffectRegistry : IEffectRegistry
     public EffectClaim Claim<T>(IStateEffect<T> effect)
     {
         var slot = GetOrAddSlot(effect.Name);
+
+        // Fix round 1 (Q-7, trivia): proactively detach the PRIOR owner's
+        // handler -- cheap hardening on top of the token check below, which
+        // already made this safe on its own; this just stops a
+        // never-disposed prior claimant from leaking one live delegate on
+        // its own Source atom for the app's lifetime.
+        slot.Unsubscribe?.Invoke();
+        slot.Unsubscribe = null;
+
         var token = new object();
         slot.Owner = token; // latest claim wins -- supersedes any prior claimant immediately, synchronously
 
@@ -80,6 +100,7 @@ public sealed class EffectRegistry : IEffectRegistry
         }
 
         effect.Source.Changed += OnSourceChanged;
+        slot.Unsubscribe = () => effect.Source.Changed -= OnSourceChanged;
 
         // Reconcile-on-claim: run against the CURRENT value now, since a
         // law-2-converged atom (the exact S-1 blank-atlas-pane hazard ST-2's
@@ -93,10 +114,11 @@ public sealed class EffectRegistry : IEffectRegistry
 
         return new EffectClaim(reconcileTask, () =>
         {
-            effect.Source.Changed -= OnSourceChanged;
+            effect.Source.Changed -= OnSourceChanged; // safe even if already detached by a later claim's own proactive unsubscribe above -- removing an already-removed delegate is a no-op
             if (ReferenceEquals(slot.Owner, token))
             {
                 slot.Owner = null;
+                slot.Unsubscribe = null;
             }
         });
     }

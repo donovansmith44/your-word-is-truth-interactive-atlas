@@ -213,6 +213,151 @@ public class EffectRegistryTests
     }
 
     // ------------------------------------------------------------------
+    // Fix round 1 (Q-1 -- IMPORTANT, review): "add a registry property test
+    // that would have caught the double-materialize window (two rapid
+    // re-claims -> exactly one live materialization)." Reproduces
+    // World.razor's own EnableFollowScene shape directly against the
+    // registry -- correct order (dispose the prior claim BEFORE dispatching
+    // + re-claiming) vs. the pre-fix-round wrong order (dispatch while the
+    // prior claim is still held), as a positive/negative-control pair.
+    // ------------------------------------------------------------------
+    [Fact]
+    public void TwoRapidReClaims_DisposePriorClaimBeforeDispatchAndReClaim_ExactlyOneLiveMaterialization()
+    {
+        var atom = new StateAtom<Counter>("counter", new Counter(0));
+        var registry = new EffectRegistry();
+        var values = new List<Counter>();
+        var claim1 = registry.Claim(MakeEffect("e", atom, values));
+        values.Clear();
+
+        // CORRECT order (the fixed EnableFollowScene): dispose FIRST, then
+        // dispatch (no live claim, so nothing fires), then re-claim
+        // (reconciles exactly once against the fresh value).
+        claim1.Dispose();
+        atom.Dispatch(new SetCounter(5));
+        var claim2 = registry.Claim(MakeEffect("e", atom, values));
+
+        Assert.Single(values);
+        Assert.Equal(new Counter(5), values[0]);
+        claim2.Dispose();
+    }
+
+    [Fact]
+    public void TwoRapidReClaims_DispatchWhileThePriorClaimIsStillHeldDoubleMaterializes_NegativeControl()
+    {
+        // Reproduces the WRONG order (the pre-fix-round `EnableFollowScene`
+        // shape: sync/dispatch BEFORE disposing the prior claim) directly
+        // against the registry -- proves the mechanism WOULD have caught
+        // Q-1 had this test existed first. Disclosed negative control, not
+        // a registry defect: EffectRegistry's own contract is "materialize
+        // when claimed and Source changes" -- it correctly does exactly
+        // that; avoiding the double fire is the CALLER's own ordering
+        // responsibility (fixed in World.razor, this same round).
+        var atom = new StateAtom<Counter>("counter", new Counter(0));
+        var registry = new EffectRegistry();
+        var values = new List<Counter>();
+        var claim1 = registry.Claim(MakeEffect("e", atom, values));
+        values.Clear();
+
+        atom.Dispatch(new SetCounter(5)); // claim1's own handler fires -- materialization #1
+        claim1.Dispose();
+        var claim2 = registry.Claim(MakeEffect("e", atom, values)); // reconciles -- materialization #2
+
+        Assert.Equal(2, values.Count); // the double-materialize window, reproduced on demand
+        claim2.Dispose();
+    }
+
+    // ------------------------------------------------------------------
+    // Fix round 1 (S-7 / ruling 6.ii -- controller, binding): "effect-name
+    // uniqueness made real -- assert at the REGISTRY level across ALL
+    // claims (a runtime-registry test that fails on a planted duplicate)."
+    // ------------------------------------------------------------------
+    [Fact]
+    public void PlantedDuplicateEffectName_TwoUnrelatedEffectsSharingOneNameSupersedeAtTheRegistryLevel()
+    {
+        // Two GENUINELY DIFFERENT effects (different Source atoms -- the
+        // shape a real naming COLLISION takes, as opposed to the SAME
+        // effect legitimately re-claimed across component instances, which
+        // always shares one Source) that happen to share a Name string --
+        // exactly the accident EffectNames.cs (client/State/EffectNames.cs,
+        // reflected over by ConformanceTests.cs) exists to prevent at the
+        // SOURCE level. This test pins what happens at the REGISTRY level
+        // if it ever occurs anyway: "one owner per name" means the SECOND
+        // claimant silently steals ownership from the first, regardless of
+        // whether they represent the same real-world thing -- a genuine,
+        // runtime, planted-duplicate scenario, not a source-text scan.
+        var atomA = new StateAtom<Counter>("counter-a", new Counter(1));
+        var atomB = new StateAtom<Counter>("counter-b", new Counter(2));
+        var registry = new EffectRegistry();
+        var valuesA = new List<Counter>();
+        var valuesB = new List<Counter>();
+
+        var claimA = registry.Claim(MakeEffect("planted-duplicate", atomA, valuesA));
+        var claimB = registry.Claim(MakeEffect("planted-duplicate", atomB, valuesB)); // same name, UNRELATED source -- the collision
+
+        valuesA.Clear();
+        valuesB.Clear();
+        atomA.Dispatch(new SetCounter(99)); // A's own claim was superseded by B's claim -- A's handler must NOT fire
+        atomB.Dispatch(new SetCounter(100));
+
+        Assert.Empty(valuesA); // superseded -- the collision is real and DETECTABLE via this exact test shape
+        Assert.Single(valuesB);
+
+        claimA.Dispose();
+        claimB.Dispose();
+    }
+
+    // ------------------------------------------------------------------
+    // Fix round 1 (S-4 -- IMPORTANT, review): "release-before-direct-write"
+    // invariant, pinned at the registry level (World.razor's own
+    // EnterScriptureMode fix -- calling DisableFollowScene first -- is the
+    // production application of this same fact). EffectRegistry's own
+    // AppliesTo gate is origin-blind BY DESIGN (it only ever sees the atom's
+    // VALUE, never which write produced it) -- both tests below pin that
+    // fact honestly, as documented behavior, not a defect: the first proves
+    // a direct write WHILE claimed also materializes through the registry
+    // (the double-fetch hazard, if a caller does not release first); the
+    // second proves a direct write AFTER release does not.
+    // ------------------------------------------------------------------
+    [Fact]
+    public void DirectWriteWhileClaimed_AlsoMaterializesViaTheRegistry_DocumentedOriginBlindTrait()
+    {
+        var atom = new StateAtom<Counter>("counter", new Counter(0));
+        var registry = new EffectRegistry();
+        var registryValues = new List<Counter>();
+        var claim = registry.Claim(MakeEffect("e", atom, registryValues));
+        registryValues.Clear();
+
+        var callerOwnDirectPath = new List<Counter>();
+        atom.Dispatch(new SetCounter(9)); // a "direct, non-link-derived" write -- e.g. EnterScriptureMode's own dispatch, BEFORE this batch's own release-first fix
+        callerOwnDirectPath.Add(atom.Value); // the caller's own unconditional effect (RunScriptureModeEffect's own analogue)
+
+        Assert.Single(registryValues); // the registry ALSO fired -- the hazard S-4 names, reproduced
+        Assert.Single(callerOwnDirectPath);
+
+        claim.Dispose();
+    }
+
+    [Fact]
+    public void DirectWriteAfterRelease_MaterializesOnlyViaTheCallersOwnPath_NotTheRegistry()
+    {
+        var atom = new StateAtom<Counter>("counter", new Counter(0));
+        var registry = new EffectRegistry();
+        var registryValues = new List<Counter>();
+        var claim = registry.Claim(MakeEffect("e", atom, registryValues));
+        registryValues.Clear();
+
+        // The fixed EnterScriptureMode shape: release BEFORE the direct write.
+        claim.Dispose();
+        var callerOwnDirectPath = new List<Counter>();
+        atom.Dispatch(new SetCounter(9));
+        callerOwnDirectPath.Add(atom.Value);
+
+        Assert.Empty(registryValues); // no live claim -- the registry never fires
+        Assert.Single(callerOwnDirectPath); // materializes exactly once, from the caller's own path
+    }
+
+    // ------------------------------------------------------------------
     // "no direct atom subscription by effects" (R5: "grep-able assertion is
     // fine") -- a source-text scan proving the ONE place any Source.Changed
     // subscription that calls IStateEffect<T>.Materialize lives is
@@ -240,8 +385,13 @@ public class EffectRegistryTests
                 continue;
             }
 
+            // Fix round 1 (cheap hardening, review's own caveat on this
+            // test): excludes by RELATIVE PATH now, not bare basename -- a
+            // second file named "EffectRegistry.cs" anywhere else under
+            // client/ would previously have been wrongly exempted too.
+            var relative = Path.GetRelativePath(clientDir, file).Replace(Path.DirectorySeparatorChar, '/');
             var text = File.ReadAllText(file);
-            if (pattern.IsMatch(text) && Path.GetFileName(file) != "EffectRegistry.cs")
+            if (pattern.IsMatch(text) && relative != "State/EffectRegistry.cs")
             {
                 materializeCallers.Add(file);
             }
