@@ -36,7 +36,8 @@ use atlas_core::refs::ScriptureRef;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
 use atlas_graph_types::explore::EdgeQuery;
-use atlas_graph_types::id::{NodeKind, Position};
+use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
+use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
 
 use crate::error::ApiError;
@@ -79,6 +80,35 @@ pub struct NodeCardOut {
     pub description: Option<String>,
 }
 
+/// Layering cleanup (batch-finalp2-brief.md ticket 10; origin: batch-
+/// corp1-review.md S-3/placement note, "the widened `node_description`
+/// match lives in `atlas-graph`, not `atlas-server`, arguably outside the
+/// strict wording of the CORP-1b authorization... worth a controller note
+/// for a possible future relocation for tighter handler/domain layering").
+/// RELOCATED here from `atlas_graph::legacy::node_description`, byte-
+/// identical body (a clean move-only diff, confirmed by grep: its only two
+/// callers -- `node_card` below and `handlers::place` -- both already live
+/// in THIS crate, so nothing outside atlas-server ever called the old
+/// location; zero behavior change). A node's own Easton's/Kretzmann
+/// `description`, straight off the graph payload -- deliberately NOT
+/// threaded through `atlas_core::data::Place` (that struct is shared by
+/// every OTHER caller this fn's own history does not otherwise touch), so
+/// this stays a second, tiny, single-field reconstruction. `handlers::place`
+/// calls this via `crate::graph_handlers::node_description`.
+pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
+    let node = q.node(id)?;
+    match node.payload {
+        NodePayload::Place { description, .. } | NodePayload::Person { description, .. } | NodePayload::PeopleGroup { description, .. } => description,
+        // Batch CORP-1b: a CommentaryItem's own prose is ALREADY on the
+        // compiled graph payload (`NodePayload::CommentaryItem.text`,
+        // KRETZ-1) -- reusing the SAME additive `description` seam
+        // ENT-1a built for Place/Person/PeopleGroup rather than a new wire
+        // field or a bespoke endpoint.
+        NodePayload::CommentaryItem { text, .. } => Some(text),
+        _ => None,
+    }
+}
+
 /// `GET /api/node/{id}` (design doc §5): card (id/kind/label/provenance) +
 /// edge summary (kind -> true count, honesty needs it -- `GraphQuery`'s own
 /// `edge_summary` already lists only inhabited kinds) + the graph version
@@ -102,19 +132,20 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<St
 
     // ENT-1a: whichever of the described kinds this node is (or `None` for
     // every other kind, and `None` until a match exists even for those) --
-    // via `atlas_graph::legacy::node_description`, the SAME
-    // shared accessor `handlers::place` calls (batch-polish1-brief.md
+    // via this file's own `node_description` (batch-polish1-brief.md
     // ENT1A-m4: this used to hand-roll its own copy of that exact
     // NodePayload match on the already-fetched `node` above; unified,
-    // observable behavior unchanged. `node_description` re-fetches by id
-    // internally rather than taking `node` directly, a small redundant
-    // lookup -- disclosed, accepted: `GraphQuery::node` is a cheap
-    // in-memory lookup, and matching `handlers::place`'s own existing
-    // call shape (which never had `node` fetched separately to begin
-    // with) keeps the shared fn's own signature uniform across both
-    // callers rather than growing a second, `Node`-taking overload for
-    // this one caller's own minor optimization).
-    let description = atlas_graph::legacy::node_description(&node_id, &snap);
+    // observable behavior unchanged; batch-finalp2's own layering cleanup
+    // relocated it here from `atlas_graph::legacy`, see its own doc
+    // comment). `node_description` re-fetches by id internally rather than
+    // taking `node` directly, a small redundant lookup -- disclosed,
+    // accepted: `GraphQuery::node` is a cheap in-memory lookup, and
+    // matching `handlers::place`'s own existing call shape (which never
+    // had `node` fetched separately to begin with) keeps the shared fn's
+    // own signature uniform across both callers rather than growing a
+    // second, `Node`-taking overload for this one caller's own minor
+    // optimization.
+    let description = node_description(&node_id, &snap);
 
     Ok(Json(NodeCardOut {
         id: encode_node_id(&node_id),

@@ -138,54 +138,16 @@ pub fn place_from_node(id: &AnyNodeId, q: &impl GraphQuery) -> Option<Place> {
     Some(Place { id: id.raw.clone(), name: canonical, lat, lon, verse_links })
 }
 
-/// ENT-1a: a node's own Easton's `description`, straight off the graph
-/// payload -- deliberately NOT threaded through `atlas_core::data::Place`
-/// the way `place_from_node`'s other fields are: that struct is shared by
-/// every OTHER caller this batch does not otherwise touch (scene
-/// composition, event witnessing, ...), so widening its own shape would
-/// ripple far beyond this batch's own additive-only serving requirement. A
-/// second, tiny, single-field reconstruction keeps this addition minimal
-/// and exactly as wide as what actually changed.
+/// Layering cleanup (batch-finalp2-brief.md ticket 10; origin: batch-
+/// corp1-review.md S-3/placement note): `node_description` RELOCATED to
+/// `atlas-server::graph_handlers` -- its only two callers (`graph_handlers::
+/// node_card`, `handlers::place`) both already lived in that crate, so this
+/// was a clean move-only diff (grep-confirmed: nothing outside atlas-server
+/// ever called `atlas_graph::legacy::node_description`), not a functional
+/// change. See `atlas-server/src/graph_handlers.rs`'s own `node_description`
+/// doc comment for the byte-identical body and the full history
+/// (ENT-1a/CORP-1b) this doc comment used to carry.
 ///
-/// batch-polish1-brief.md ENT1A-m4 (description-accessor unification, the
-/// ledger's own RECURSE-1 precedent the motivation: one shared fn, not two
-/// near-twins): this used to be `place_description`, Place-only, called
-/// ONLY by `handlers::place`. `atlas-server`'s own `graph_handlers::
-/// node_card` (the generic `GET /api/node/{id}` card) independently
-/// hand-wrote the SAME "pull `description` off whichever of Place/Person/
-/// PeopleGroup this node's payload is" match, just widened to all three
-/// kinds -- a real, disclosed duplicate of this exact accessor, not a
-/// different concern. Generalized here (Place's own case is unaffected --
-/// still `description` straight off that arm, zero behavior change for
-/// `handlers::place`'s own call) rather than kept narrow, so
-/// `graph_handlers::node_card` can call this SAME fn instead of
-/// re-matching on `NodePayload` itself; pure refactor, both call sites
-/// updated, no third copy anywhere in the workspace (grep-checked).
-pub fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
-    let node = q.node(id)?;
-    match node.payload {
-        NodePayload::Place { description, .. } | NodePayload::Person { description, .. } | NodePayload::PeopleGroup { description, .. } => description,
-        // Batch CORP-1b (owner authorization, resolving CORP-1's own
-        // disclosed NEEDS_CONTEXT gap): a CommentaryItem's own prose is
-        // ALREADY on the compiled graph payload (`NodePayload::
-        // CommentaryItem.text`, KRETZ-1) -- it was simply never read by
-        // this accessor. Reusing the SAME additive `description` seam
-        // ENT-1a built for Place/Person/PeopleGroup (rather than a new
-        // wire field or a bespoke endpoint) is the smaller, more
-        // precedented diff: `graph_handlers::node_card` already calls this
-        // function and already serializes its result as an OPTIONAL,
-        // `skip_serializing_if`-omitted JSON key
-        // (`NodeCardOut.description`) -- widening this ONE match arm is
-        // the ENTIRE server-side change needed to make a real
-        // CommentaryItem's own prose reachable over `GET /api/node/{id}`,
-        // with zero new routes, zero new wire types, zero graph-types
-        // changes, and zero artifact/ETL changes (the text was already
-        // there; only this accessor was blind to it).
-        NodePayload::CommentaryItem { text, .. } => Some(text),
-        _ => None,
-    }
-}
-
 /// Reconstructs one `atlas_core::data::Narrative` from its graph node --
 /// `legs` is handed in (the `succession` relation's own row `chain`,
 /// order-preserved) rather than duplicated onto the payload (`NodePayload::
