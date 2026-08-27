@@ -514,6 +514,32 @@ async function scrollCheckpoints(page: Page): Promise<number[]> {
   return [0, Math.floor(max / 2), max];
 }
 
+// Batch CORPREAD-1a (SPLIT-SCROLL-1, deliverable 0b pinned-pane law): while
+// split, `.split-pane-reader` is now its OWN overflow-y:auto scroll
+// container (app.css's own .split-view header comment has the full design)
+// -- the WHOLE-DOCUMENT scroll scrollCheckpoints above measures is no
+// longer where a long chapter's own scroll room lives in split view (the
+// window itself now only ever scrolls the small, fixed amount needed to
+// clear the page header before `.split-view` locks in place -- see that
+// same comment). This is the split-specific counterpart: measures/applies
+// scroll against `[data-testid="reader-root"]`'s own scrollTop instead of
+// window.scrollY.
+async function splitScrollCheckpoints(page: Page): Promise<number[]> {
+  const max = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="reader-root"]') as HTMLElement;
+    return el.scrollHeight - el.clientHeight;
+  });
+  expect(max, 'expected genuine internal scroll room on a long chapter, split view').toBeGreaterThan(200);
+  return [0, Math.floor(max / 2), max];
+}
+
+async function setSplitScrollY(page: Page, y: number): Promise<void> {
+  await page.evaluate((scrollY) => {
+    const el = document.querySelector('[data-testid="reader-root"]') as HTMLElement;
+    el.scrollTop = scrollY;
+  }, y);
+}
+
 test('BACKDROP-1: the popover backdrop covers the full viewport at any scroll position, standalone (O6)', async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });
   const toc = await loadToc();
@@ -567,17 +593,76 @@ test('BACKDROP-1: the popover backdrop covers the full viewport at any scroll po
 
   const viewport = page.viewportSize();
   expect(viewport).toBeTruthy();
-  for (const y of await scrollCheckpoints(page)) {
-    await page.evaluate(scrollY => window.scrollTo(0, scrollY), y);
+  // Batch CORPREAD-1a (SPLIT-SCROLL-1): splitScrollCheckpoints/setSplitScrollY,
+  // not scrollCheckpoints/window.scrollTo -- see those helpers' own comments.
+  for (const y of await splitScrollCheckpoints(page)) {
+    await setSplitScrollY(page, y);
     const box = await page.getByTestId('popover-backdrop').boundingBox();
-    expect(box, `backdrop boundingBox at scrollY=${y}, split view`).toBeTruthy();
+    expect(box, `backdrop boundingBox at reader scrollTop=${y}, split view`).toBeTruthy();
     if (box && viewport) {
-      expect(box.x, `x at scrollY=${y}`).toBeLessThanOrEqual(2);
-      expect(box.y, `y at scrollY=${y}`).toBeLessThanOrEqual(2);
-      expect(box.width, `width at scrollY=${y} -- the FULL viewport, not just the reader pane`).toBeGreaterThanOrEqual(viewport.width - 2);
-      expect(box.height, `height at scrollY=${y}`).toBeGreaterThanOrEqual(viewport.height - 2);
+      expect(box.x, `x at scrollTop=${y}`).toBeLessThanOrEqual(2);
+      expect(box.y, `y at scrollTop=${y}`).toBeLessThanOrEqual(2);
+      expect(box.width, `width at scrollTop=${y} -- the FULL viewport, not just the reader pane`).toBeGreaterThanOrEqual(viewport.width - 2);
+      expect(box.height, `height at scrollTop=${y}`).toBeGreaterThanOrEqual(viewport.height - 2);
     }
   }
+});
+
+// Batch CORPREAD-1a (SPLIT-SCROLL-1, owner order verbatim: "when i scroll
+// through reader with world open beside world does not remain stable and i
+// can scroll past the world window so that its totally out of sight. not
+// good."): the deliverable-0b pinned-pane law's own direct regression
+// coverage -- the guest pane's own box is IDENTICAL, and still genuinely
+// on-screen, at every host-pane internal scroll depth, including all the
+// way to the floor of a real, long chapter (not a synthetic short one).
+test('SPLIT-SCROLL-1: the guest pane stays fully visible and never moves while the host pane scrolls its own content, even at the floor of a long chapter', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  const toc = await loadToc();
+  const longest = await longestChapter(toc);
+
+  await page.goto(`/read/${longest.book}/${longest.chapter}?split=world`);
+  await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
+  // The chapter's own verse content is a SEPARATE, independent fetch from
+  // the atlas pane's own scene -- waiting on split-pane-atlas alone (above)
+  // does not guarantee the reader pane has enough REAL content rendered
+  // yet for splitScrollCheckpoints below to find genuine scroll room (a
+  // real, live-caught flake in an earlier draft of this test: scrollHeight
+  // read as 0 -- clientHeight, i.e. "no overflow yet" -- purely a timing
+  // race against the verse fetch, not a real product bug).
+  await expect(page.getByTestId('verse-line-1')).toBeVisible();
+
+  const viewport = page.viewportSize();
+  const before = await page.getByTestId('split-pane-atlas').boundingBox();
+  expect(viewport).toBeTruthy();
+  expect(before).toBeTruthy();
+  if (!before || !viewport) return;
+
+  // Sanity: the pane is genuinely fully on-screen BEFORE any scroll too --
+  // this test would also have failed against the pre-fix regression (which
+  // reproduced starting from the very FIRST scroll frame, not only deep in).
+  expect(before.y).toBeGreaterThanOrEqual(-1);
+  expect(before.y + before.height).toBeLessThanOrEqual(viewport.height + 1);
+
+  for (const y of await splitScrollCheckpoints(page)) {
+    await setSplitScrollY(page, y);
+    const box = await page.getByTestId('split-pane-atlas').boundingBox();
+    expect(box, `atlas pane boundingBox at reader scrollTop=${y}`).toBeTruthy();
+    if (box) {
+      // Byte-identical position at every checkpoint -- the guest pane
+      // genuinely never moves, not merely "ends up back on-screen."
+      expect(box.y, `y at scrollTop=${y}`).toBeCloseTo(before.y, 0);
+      expect(box.height, `height at scrollTop=${y}`).toBeCloseTo(before.height, 0);
+      expect(box.y, `still on-screen at scrollTop=${y}`).toBeGreaterThanOrEqual(-1);
+      expect(box.y + box.height, `still on-screen at scrollTop=${y}`).toBeLessThanOrEqual(viewport.height + 1);
+    }
+  }
+
+  // The reader pane's own content DID actually move -- proves the scroll
+  // was real, not a no-op that happened to leave everything unchanged.
+  await expect(page.getByTestId('verse-line-1')).not.toBeInViewport();
+  // And the reader pane itself is STILL fully functional post-scroll --
+  // a pinned pane is cosmetic, not a teardown of the other one.
+  await expect(page.getByTestId('world-map')).toBeVisible();
 });
 
 // DIVIDER-1 (M-D3/B2, owner morning address verbatim: "map toggles halfway

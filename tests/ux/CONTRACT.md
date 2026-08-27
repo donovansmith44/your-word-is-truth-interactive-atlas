@@ -4549,6 +4549,103 @@ Notes:
   PHASE-0 DIAGNOSIS," for the mechanism this guarantee was actually
   diagnosed and fixed against.
 
+  SPLIT-SCROLL-1 (implemented this batch, owner order verbatim: "when i
+  scroll through reader with world open beside world does not remain
+  stable and i can scroll past the world window so that its totally out
+  of sight. not good."): PHASE-0 ROOT CAUSE (a real, live-reproduced
+  diagnosis -- a throwaway Node+Playwright probe against the running app,
+  walking the DOM ancestor chain and sampling getBoundingClientRect at
+  0%/50%/100% scroll -- not a guess): pre-CORPREAD-1a, only the GUEST pane
+  (`.split-pane-atlas`) was `position: sticky`, and its own wrapper
+  (`.split-pane-guest` -- VC-1's own generalization for mounting ANY
+  guest) carried no explicit height, collapsing to match its single
+  child's height exactly. Sticky positioning needs its OWN containing
+  block to be TALLER than itself to have any room to stick in -- with
+  both wrapper and child pinned at the identical 100vh, there was none,
+  and the "sticky" pane silently behaved as plain in-flow content
+  (confirmed: its own rect.top tracked `window.scrollY` in exact 1:1
+  lockstep at every sampled position).
+
+  THE FIX -- both panes now genuinely `height: calc(100vh - var(--app-
+  header-height))`, computed as EXACTLY 100% of `.split-view`'s own
+  header-aware box (a `.app-header`-real-height measurement,
+  `CompositionSplit.razor`'s own `OnAfterRenderAsync`, alongside its
+  pre-existing divider-width measurement -- the SAME `getPaneRect` JS
+  interop, no new import), NOT a flat `100vh` -- literally "the split
+  becomes two viewport-height panes," where "viewport" honestly accounts
+  for the page's own header. Two live-caught corrections along the way,
+  both disclosed rather than silently fixed:
+    - a first iteration tried `.split-view { position: sticky; height:
+      100vh; }` (letting the header's own normal-flow height supply
+      sticky's "room"). Its OWN follow-up probe caught a real regression
+      before landing: a natural mouse-wheel gesture scrolls whichever
+      PANE is under the cursor first (browser-native scroll chaining only
+      reaches the outer window once an internal container hits ITS OWN
+      limit), so the window could go an entire session without ever
+      advancing far enough to "lock" -- stranding a header-sized sliver
+      of BOTH panes below the fold indefinitely. The shipped `calc()`
+      design needs no such lock at all: header + split-view are exactly
+      one viewport tall, by construction, from the very first paint.
+    - `.reader-page`/`.world-page`'s own PRE-EXISTING `min-height: 100vh`
+      (both page-root base rules) OVERRIDES a smaller explicit `height`
+      per spec (resolved height = max(height, min-height)) -- without an
+      explicit `min-height: 0` override on every split-pane-* class
+      (app.css), the panes silently re-inflated to the full 100vh
+      regardless of the calc()'d box, the SAME class of gap through a
+      DIFFERENT CSS mechanism.
+
+  The HOST pane (`.split-pane-reader`/`.split-pane-host`) gets `overflow-
+  y: auto` -- "the HOST pane scrolls its own content in an overflow
+  container" -- and the GUEST pane (`.split-pane-guest`) gets the
+  identical treatment generically (not just `.split-pane-atlas`, which
+  never needs it), so a future guest with more-than-one-viewport content
+  -- or Reader itself, mounted as guest under Sources/Kretzmann/Concord --
+  scrolls internally too, by the SAME one rule, no per-host CSS.
+
+  TWO FURTHER live-caught corollaries of the SAME root fact (a `contain:
+  layout`-established containing block does not exempt its `position:
+  fixed`/effectively-absolute descendants from THAT block's own internal
+  scroll -- confirmed live, the opposite of an earlier draft's own
+  assumption):
+    - `reader-prev`/`reader-next`'s own JS-computed `--chapter-nav-top`
+      (`reader.js`'s `watchChapterNavCenter`) now adds the reader pane's
+      OWN `scrollTop` back into the offset whenever `.reader-page` is
+      genuinely its own scroll container (the HOST-in-split case only --
+      standalone and GUEST-mounted Reader are provably unaffected, see
+      that function's own header comment for the full three-case
+      argument) -- without it, the buttons drifted off-screen by the
+      exact internal-scroll amount, `position: fixed` notwithstanding.
+    - `.passage-chip`/`.toast`, static `bottom`-anchored (no JS
+      recompute), switch to `position: sticky` -- scoped to a plain
+      `.split-pane-reader .passage-chip`/`.split-pane-host .toast`-style
+      descendant selector (app.css), so ONLY an instance genuinely
+      rendered inside a split-hosting pane is affected; standalone stays
+      `position: fixed`, byte-identical.
+    - NAV-3's own 1024px-floor regression coverage caught a THIRD,
+      related but distinct issue live: `--nav-left`(6px) + `--nav-max-
+      width`(44px) gives reader-prev/-next a 50px right edge against
+      `.split-pane-reader`'s own pre-existing 3rem/48px left padding -- a
+      2px overlap latent in those exact numbers regardless of scroll
+      position, never actually OBSERVED before because the reader pane's
+      new internal-overflow `scrollIntoViewIfNeeded` lands on a
+      genuinely different vertical alignment than the whole-document
+      scroll it replaces, finally landing a real verse row in the
+      overlapping band. Fixed by widening `--reader-col-pad-x` to
+      3.25rem (a real, live-verified 2px gap).
+
+  See `app.css`'s own `.split-view` header comment for the full pane
+  layout design and `client/wwwroot/js/reader.js`'s own
+  `findReaderScrollContainer` for the companion JS-side rebinding
+  (`watchScroll`/`setScrollY`/`watchChapterNavCenter` now report/restore/
+  recompute against the reader's own real internal scroll container when
+  one exists -- decided from a real computed style, never a guessed class
+  name -- falling back to `window` for standalone, unchanged there).
+  `tests/ux/split-view.spec.ts`'s own `SPLIT-SCROLL-1` test is the direct
+  regression coverage (the guest pane's own box, byte-identical, at
+  every host-pane scroll depth, including the floor of a real long
+  chapter); NAV-3 through NAV-7 (`reader.spec.ts`) cover the
+  reader-prev/-next half.
+
 - VIEWSTATE-1 (batch-h-brief.md): a lightweight, in-memory (NOT
   localStorage-persisted -- explicitly out of scope this batch; a hard
   reload starts fresh), app-lifetime view-state service remembers where the

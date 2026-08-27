@@ -248,7 +248,7 @@ else if (!IsSplitOpen)
 }
 else if (IsHost)
 {
-    <div class="split-view" style="--split-reader-width:@(_widthPx.ToString(System.Globalization.CultureInfo.InvariantCulture))px;" data-testid="split-view">
+    <div class="split-view" style="--split-reader-width:@(_widthPx.ToString(System.Globalization.CultureInfo.InvariantCulture))px;--app-header-height:@(_headerHeightPx.ToString(System.Globalization.CultureInfo.InvariantCulture))px;" data-testid="split-view">
         @ChildContent(BuildContext())
         <SplitDivider WidthPx="_widthPx" WidthPxChanged="w => _widthPx = w" OnCommitted="OnDividerCommitted" />
         <div class="split-pane-guest">
@@ -350,6 +350,14 @@ else
     private bool _dividerRestoreAttempted;
     private IJSObjectReference? _js;
     private Func<string, Task>? _guestQueryHandler;
+
+    // Batch CORPREAD-1a (SPLIT-SCROLL-1): the ONE source `.split-view`'s own
+    // `--app-header-height` custom property (markup below) is written from
+    // -- matches app.css's own CSS fallback (`var(--app-header-height,
+    // 56px)`) exactly, so a genuinely failed measurement (see
+    // OnAfterRenderAsync below) degrades to the SAME value the stylesheet
+    // would already have used on its own, never a mismatched second guess.
+    private double _headerHeightPx = 56;
 
     private bool IsGuestMount => SplitModeOverride == true;
 
@@ -571,6 +579,17 @@ else
     // measurement (JS interop error, `.split-view` not yet in the DOM) ever
     // falls back to the 704px field default, same fail-soft stance as
     // before.
+    //
+    // Batch CORPREAD-1a (SPLIT-SCROLL-1): ALSO measures `.app-header`'s own
+    // real rendered height here, in the SAME pass (one shared JS import,
+    // one shared "once per split-open transition" guard) -- app.css's own
+    // `.split-view` header comment has the full design this feeds
+    // (`height: calc(100vh - var(--app-header-height))`, written below as
+    // an inline custom property alongside `--split-reader-width`, which
+    // already works this exact way). Failing soft here means keeping
+    // whatever `_headerHeightPx` already holds -- the field default (56)
+    // matches the CSS fallback exactly, so a failed measurement degrades to
+    // the SAME value the stylesheet would have used on its own anyway.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (IsSplitOpen && IsHost && !_dividerRestoreAttempted)
@@ -580,6 +599,13 @@ else
             try
             {
                 _js ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
+
+                var headerRect = await _js.InvokeAsync<PaneRectDto?>("getPaneRect", ".app-header");
+                if (headerRect is { Height: > 0 } h)
+                {
+                    _headerHeightPx = h.Height;
+                }
+
                 var rect = await _js.InvokeAsync<PaneRectDto?>("getPaneRect", ".split-view");
                 if (rect is { Width: > 0 } r)
                 {
@@ -600,8 +626,8 @@ else
             }
             catch (Exception)
             {
-                // Fail soft -- keep whatever _widthPx already holds, same
-                // graceful-degrade stance SplitDivider's own
+                // Fail soft -- keep whatever _widthPx/_headerHeightPx already
+                // hold, same graceful-degrade stance SplitDivider's own
                 // EnsureMaxWidthAsync takes.
             }
         }

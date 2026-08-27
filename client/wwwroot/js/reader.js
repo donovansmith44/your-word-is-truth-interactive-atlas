@@ -79,14 +79,50 @@ export function unwatchShiftRelease() {
     }
 }
 
-// Batch H (view-state round-trip). setScrollY is the restore half -- plain
-// window-level scroll, covering BOTH the standalone reader (the whole
-// document scrolls) and the split-view reader pane (app.css's own
-// .split-pane-reader is a normal in-flow flex child, not its own
-// overflow:auto container, so the document itself is still what scrolls
-// there too -- no separate code path needed for either).
+// Batch CORPREAD-1a (SPLIT-SCROLL-1): app.css's own .split-view (that
+// rule's own header comment has the full pinned-pane design and its live
+// root-cause diagnosis) makes .split-pane-reader/.split-pane-host a REAL
+// overflow-y:auto scroll container of their own whenever Reader is genuinely
+// hosting a split -- the "whole document scrolls either way" assumption
+// setScrollY/watchScroll/watchChapterNavCenter used to document and rely on
+// (Batch H) no longer holds there. This is the ONE place "which element is
+// the reader's real scroll target right now" gets decided, from a REAL,
+// CURRENT layout fact (a computed style), never a guessed/hand-copied class
+// name -- so it stays correct even if a future batch renames or restructures
+// the split-pane classes, and degrades safely (falls back to window) if
+// nothing along the chain is actually a scroll container, which is exactly
+// what "standalone reader, whole document scrolls" IS. Starts from
+// `[data-testid="reader-root"]` itself (not one of its ancestors) so it
+// covers BOTH roles this element can play: HOST (the element itself is the
+// overflow:auto container -- .split-pane-reader/.split-pane-host, app.css)
+// and GUEST (a WRAPPER one level up -- .split-pane-guest -- is the real
+// container instead, e.g. Reader mounted under Sources/Kretzmann/Concord;
+// see .split-pane-guest's own app.css comment). Stops at document.body --
+// nothing above that is ever a meaningful scroll boundary for this app.
+function findReaderScrollContainer() {
+    let node = document.querySelector('[data-testid="reader-root"]');
+    while (node && node !== document.body) {
+        const style = getComputedStyle(node);
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+            return node;
+        }
+        node = node.parentElement;
+    }
+    return null; // no real overflow container found -- window/document is genuinely the scroller (standalone)
+}
+
+// Batch H (view-state round-trip). setScrollY is the restore half.
+// Batch CORPREAD-1a: rebound (see findReaderScrollContainer's own header
+// comment) -- a real internal scroll container gets its OWN scrollTop set;
+// its absence (standalone) falls through to the original plain
+// window-level scroll, UNCHANGED for that case.
 export function setScrollY(y) {
-    window.scrollTo(0, y);
+    const container = findReaderScrollContainer();
+    if (container) {
+        container.scrollTop = y;
+    } else {
+        window.scrollTo(0, y);
+    }
 }
 
 // watchScroll/unwatchScroll -- the CAPTURE half, and NOT a plain "read
@@ -105,12 +141,26 @@ export function setScrollY(y) {
 // already sitting there, written well before navigation ever started.
 // Same module-scoped-single-cleanup shape as watchShiftRelease above (this
 // app never mounts more than one Reader.razor instance at a time).
+//
+// Batch CORPREAD-1a (SPLIT-SCROLL-1): rebound to
+// findReaderScrollContainer()'s own result -- REPORTS that container's own
+// scrollTop, not window.scrollY, whenever one is found (idempotent/
+// self-cleaning discipline: re-resolves the target on EVERY call, exactly
+// like watchChapterNavCenter below already does for its own DOM query, so a
+// later call after the split/standalone layout itself changed -- e.g. this
+// same Reader.razor instance closing its split -- rebinds correctly rather
+// than staying latched onto a target that may no longer be the real
+// scroller). Standalone (no container found) is BYTE-IDENTICAL to the
+// pre-CORPREAD-1a behavior -- window.scrollY, unchanged.
 let _scrollCleanup = null;
 
 export function watchScroll(dotnetRef) {
     if (_scrollCleanup) {
         _scrollCleanup();
     }
+
+    const container = findReaderScrollContainer();
+    const target = container || window;
 
     let ticking = false;
     const onScroll = () => {
@@ -120,13 +170,14 @@ export function watchScroll(dotnetRef) {
         ticking = true;
         requestAnimationFrame(() => {
             ticking = false;
-            dotnetRef.invokeMethodAsync('OnScroll', window.scrollY);
+            const y = container ? container.scrollTop : window.scrollY;
+            dotnetRef.invokeMethodAsync('OnScroll', y);
         });
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
+    target.addEventListener('scroll', onScroll, { passive: true });
 
     _scrollCleanup = () => {
-        window.removeEventListener('scroll', onScroll);
+        target.removeEventListener('scroll', onScroll);
         _scrollCleanup = null;
     };
 }
@@ -216,6 +267,62 @@ export function unwatchScroll() {
 // throttle exists to protect against elsewhere in this app; watchScroll
 // above is UNCHANGED and keeps its own rAF throttle, since invokeMethodAsync
 // crossing the JS/.NET boundary is real, non-trivial work worth batching.
+//
+// Batch CORPREAD-1a (SPLIT-SCROLL-1): rebound to
+// findReaderScrollContainer()'s own result, same as watchScroll above.
+//
+// THE FORMULA ITSELF ALSO CHANGES, in one specific, real case -- caught
+// live (a real Playwright NAV-3 failure, not a guess) after an EARLIER
+// draft of this fix shipped with the formula genuinely unchanged and the
+// reasoning "page.rect.top is invariant under its own internal scroll."
+// That reasoning is correct for `page.getBoundingClientRect()` itself, but
+// WRONG about what it implies for `reader-prev`/`reader-next`: `.reader-page`'s
+// own pre-existing `contain: layout` (app.css) makes IT the CSS containing
+// block for its `position: fixed` descendants -- and a containing block's
+// `top` offset for such a descendant resolves against that block's OWN
+// PADDING-BOX COORDINATE SPACE, which -- once `.reader-page` is genuinely
+// its OWN scroll container (HOST role in split, this batch's own new
+// case) -- is the SCROLLED CONTENT space, not the visible slice of it.
+// Confirmed live: `--chapter-nav-top` correctly held steady across an
+// internal `.reader-page` scroll (exactly as the invariant-rect reasoning
+// predicted), while the BUTTON'S OWN real screen position drifted by the
+// exact scrolled amount -- `contain: layout` does not exempt a fixed
+// descendant from its own containing block's internal scroll (this is the
+// SAME relationship an ordinary `position: absolute` child of a
+// `position: relative; overflow: auto` ancestor already has -- `contain:
+// layout` only supplies the CONTAINING BLOCK, it does not additionally
+// make the descendant immune to that block's own scrolling, which is a
+// materially different (and, before this fix, silently unverified)
+// property).
+//
+// THE FIX: when `page` IS its own found container (the HOST-in-split
+// case, the ONLY case where this distinction is live), add `page.scrollTop`
+// back into the computed offset -- compensating exactly for the amount
+// the content coordinate space has shifted, so the VISUAL (viewport)
+// position stays put regardless of how far the pane has scrolled
+// internally. The other two cases are genuinely unaffected and need no
+// compensation: STANDALONE (container is null -- `page.rect.top` moves
+// with the whole-document scroll exactly as it always has, formula
+// unchanged) and GUEST-mounted (the found container is an ANCESTOR of
+// `page`, not `page` itself -- e.g. `.split-pane-guest` when Reader hosts
+// under Sources/Kretzmann/Concord -- `.reader-page` itself never scrolls
+// its OWN content there, so `page.rect.top` already moves correctly as
+// THAT ancestor scrolls, the same way it always has for any scrolling
+// ancestor).
+//
+// Re-resolved on EVERY call (not cached across calls), matching this
+// function's own pre-existing idempotent/self-cleaning discipline
+// (_navCenterCleanup at the top of every invocation) -- a later call
+// after this same Reader.razor instance's own split state changed (open
+// -> closed, or vice versa) rebinds to whichever target/formula is
+// ACTUALLY correct now, never a stale one from before the transition.
+// Disclosed, narrow trade-off: while genuinely split-hosting, this binds
+// to the reader's own internal container ONLY, not window -- .split-view's
+// own header comment (app.css) explains why WINDOW no longer scrolls at
+// all in that mode (header + split-view together are exactly one viewport
+// tall by construction), so there is no missed window-scroll case left to
+// widen for -- unlike an earlier draft of this same reasoning, before that
+// layout fix landed.
 let _navCenterCleanup = null;
 
 export function watchChapterNavCenter() {
@@ -228,17 +335,22 @@ export function watchChapterNavCenter() {
         return;
     }
 
+    const container = findReaderScrollContainer();
+    const target = container || window;
+    const selfScrolls = container === page;
+
     const recompute = () => {
-        const top = window.innerHeight / 2 - page.getBoundingClientRect().top;
+        const selfScrollTop = selfScrolls ? page.scrollTop : 0;
+        const top = window.innerHeight / 2 - page.getBoundingClientRect().top + selfScrollTop;
         page.style.setProperty('--chapter-nav-top', `${top}px`);
     };
 
     recompute();
-    window.addEventListener('scroll', recompute, { passive: true });
+    target.addEventListener('scroll', recompute, { passive: true });
     window.addEventListener('resize', recompute);
 
     _navCenterCleanup = () => {
-        window.removeEventListener('scroll', recompute);
+        target.removeEventListener('scroll', recompute);
         window.removeEventListener('resize', recompute);
         _navCenterCleanup = null;
     };
