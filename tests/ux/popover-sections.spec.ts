@@ -1531,6 +1531,60 @@ test('EVENT-1: clicking a verse\'s EVENT row opens the EventNode, whose PRIOR/FO
   await expect(followingBtn.locator('.popover-event-nav-label')).toHaveAttribute('title', 'Crossing the Red Sea');
 });
 
+// ---------------------------------------------------------------------
+// PERI-1 (PRESENTATION CATEGORY LAW -- owner, verbatim: "NUN is not an
+// event. fix this error and others like it"). CONFORMANCE: the two
+// owner-named repros verbatim, per batch-peri1-brief.md's own conformance
+// corollary -- a general-kind PASSAGE must render under "PASSAGE," NEVER
+// under "EVENT," and (the drift-failing half) the EVENT section, if
+// present at all for this verse, must never carry that same row.
+// ---------------------------------------------------------------------
+
+test('PERI-1: PSA.119.105\'s own popover shows NUN under PASSAGE, never EVENT', async ({ page }) => {
+  const detail = await api.verse('PSA.119.105');
+  const nun = detail.events.find((e: any) => e.id === 'psa_119_nun');
+  expect(nun, 'psa_119_nun must still be a real event this verse cites').toBeTruthy();
+  expect(nun.kind).toBe('general');
+
+  await page.goto('/read/PSA/119');
+  await page.getByTestId('verse-line-105').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('PSA.119.105');
+
+  const passageSection = page.getByTestId('popover-section-passage-membership');
+  await expect(passageSection).toBeVisible();
+  await expect(passageSection.getByTestId('event-section-heading')).toHaveText('PASSAGE');
+  await expect(passageSection.getByTestId('verse-event-psa_119_nun')).toHaveText('Psalm 119: NUN');
+
+  // The drift-failing half: an EVENT section may legitimately be absent
+  // for this verse, but if OTHER (dated) events also cite it, NUN must
+  // never be among its rows.
+  const eventSection = page.getByTestId('popover-section-event-membership');
+  if (await eventSection.count() > 0) {
+    await expect(eventSection.getByTestId('verse-event-psa_119_nun')).toHaveCount(0);
+  }
+});
+
+test('PERI-1: GAL.1.8\'s own popover shows the astonishment pericope under PASSAGE, never EVENT', async ({ page }) => {
+  const detail = await api.verse('GAL.1.8');
+  const astonishment = detail.events.find((e: any) => e.id === 'gal_no_other_gospel');
+  expect(astonishment, 'gal_no_other_gospel must still be a real event this verse cites').toBeTruthy();
+  expect(astonishment.kind).toBe('general');
+
+  await page.goto('/read/GAL/1');
+  await page.getByTestId('verse-line-8').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('GAL.1.8');
+
+  const passageSection = page.getByTestId('popover-section-passage-membership');
+  await expect(passageSection).toBeVisible();
+  await expect(passageSection.getByTestId('event-section-heading')).toHaveText('PASSAGE');
+  await expect(passageSection.getByTestId('verse-event-gal_no_other_gospel')).toHaveText('Astonishment: no other gospel; let him be accursed');
+
+  const eventSection = page.getByTestId('popover-section-event-membership');
+  if (await eventSection.count() > 0) {
+    await expect(eventSection.getByTestId('verse-event-gal_no_other_gospel')).toHaveCount(0);
+  }
+});
+
 // CHRONO-MERGE-1 RETIREMENT (not a rewrite -- this file's own header
 // comment, above, has the full reasoning): three tests used to live here --
 // "EVENT-1: MULTI-NARRATIVE nav" (already permanently `test.skip`-vacuous,

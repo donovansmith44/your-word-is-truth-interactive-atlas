@@ -227,6 +227,13 @@ public static class PopoverSectionRegistry
         // genuinely ambiguous in a way a single verse never is -- REGISTRY-1's
         // own standing scope note, unchanged).
         new VerseEventMembershipSection(),
+        // Batch PERI-1 (PRESENTATION CATEGORY LAW): the sibling "PASSAGE"
+        // section for this verse's own general-kind (dateless) passages --
+        // registered immediately after EVENT membership so a verse
+        // touching both kinds renders dated events first, general-kind
+        // passages second (registration order IS render order for
+        // same-kind providers, REGISTRY-1's own standing rule, unchanged).
+        new VersePassageMembershipSection(),
         // M-D3/U6 (NEW this batch): "PARALLELS" -- other witnesses of an
         // event the current verse belongs to, a quick peek without a click
         // into the EVENT node first. Verse OR Passage (first-verse-anchored

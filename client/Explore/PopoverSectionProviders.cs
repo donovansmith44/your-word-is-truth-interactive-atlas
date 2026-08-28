@@ -1111,6 +1111,33 @@ public sealed class PlaceEventsSection : IPopoverSectionProvider
 }
 
 /// <summary>
+/// Batch PERI-1 (PRESENTATION CATEGORY LAW -- owner, verbatim: "NUN is not
+/// an event. fix this error and others like it"): the exhaustive,
+/// drift-failing kind-&gt;heading mapping <see cref="VerseEventMembershipSection"/>/
+/// <see cref="VersePassageMembershipSection"/> both read, rather than each
+/// hand-rolling its own ternary/ternary-of-a-ternary (the pre-PERI-1 shape
+/// this class replaces, which silently defaulted an unrecognized kind to
+/// "EVENT" instead of failing loud). Pinned directly by
+/// client.Tests/Explore/EventMembershipHeadingTests.cs -- "event" -&gt;
+/// "EVENT", "general" -&gt; "PASSAGE" (this project's own pre-existing
+/// PASSAGE noun, reused per the register law -- see CONTRACT.md's own
+/// PRESENTATION CATEGORY LAW section for the full cross-surface rule this
+/// mapping is one instance of), anything else throws
+/// <see cref="NotSupportedException"/> rather than defaulting -- the
+/// "cheapest honest structural check" the batch brief's own conformance
+/// corollary asks for.
+/// </summary>
+public static class EventMembershipHeading
+{
+    public static string For(string kind) => kind switch
+    {
+        "event" => "EVENT",
+        "general" => "PASSAGE",
+        _ => throw new NotSupportedException($"EventMembershipHeading.For: unrecognized Event::kind '{kind}'."),
+    };
+}
+
+/// <summary>
 /// Batch T requirement 3 ("verse popover: event membership replaces
 /// prev/next"): the VERSE popover's own "EVENT" section -- one row per
 /// EVENT-kind PASSAGE citing this verse (the pre-existing
@@ -1125,6 +1152,17 @@ public sealed class PlaceEventsSection : IPopoverSectionProvider
 /// rows. Conditional presence: absent for a verse touching zero titled
 /// events (the overwhelming majority of verses outside Gospels/Acts/the
 /// curated narratives).
+///
+/// Batch PERI-1 (PRESENTATION CATEGORY LAW): SPLIT by
+/// <see cref="VerseEventDto.Kind"/> -- this section now renders ONLY
+/// `kind == "event"` rows, under the unchanged "EVENT" heading/testid/row
+/// shape; a `kind == "general"` PASSAGE (a Psalm acrostic stanza, an
+/// epistle outline pericope -- the owner's own PSA.119.105/GAL.1.8 repros)
+/// renders instead under <see cref="VersePassageMembershipSection"/>, a
+/// sibling section immediately below in the registry, never under this
+/// one. The two sections share <see cref="RenderRows"/> (below) --
+/// identical row markup/testid/click behavior either way, only the
+/// grouping heading/PopoverSection testid differs.
 /// </summary>
 public sealed class VerseEventMembershipSection : IPopoverSectionProvider
 {
@@ -1147,42 +1185,93 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             return null;
         }
 
-        if (events.Count == 0)
+        var dated = events.Where(e => e.Kind == "event").ToList();
+        if (dated.Count == 0)
         {
             return null;
         }
 
-        RenderFragment body = builder =>
-        {
-            var seq = 0;
-            builder.OpenElement(seq++, "p");
-            builder.AddAttribute(seq++, "class", "catechism-section-heading"); // the SAME house small-caps eyebrow every section-registry heading shares (CATECH-1/NARRATIVE-1/DELTA-1) -- not a fifth copy
-            builder.AddAttribute(seq++, "data-testid", "event-section-heading");
-            builder.AddContent(seq++, "EVENT");
-            builder.CloseElement();
+        return new PopoverSection("event-membership", RenderRows("event", dated, ctx));
+    }
 
-            foreach (var e in events)
-            {
-                var id = e.Id; // local copies -- captured per-row by the onclick closure below
-                var label = e.Label;
-                // Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY): a
-                // general-kind event is NOT part of time traversal (req 2)
-                // -- its own row here must not look like a dated event's
-                // (which DOES traverse, after req 1). `.explorable-quiet`
-                // REPLACES `.explorable` (never both) -- same class,
-                // everywhere a non-traversable node's own identity renders,
-                // per that class's own app.css comment.
-                var explorableClass = e.Kind == "general" ? "explorable-quiet" : "explorable";
-                builder.OpenElement(seq++, "button");
-                builder.AddAttribute(seq++, "type", "button");
-                builder.AddAttribute(seq++, "class", $"popover-event-row popover-event-row-button {explorableClass}");
-                builder.AddAttribute(seq++, "data-testid", $"verse-event-{id}");
-                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label))));
-                builder.AddContent(seq++, label);
-                builder.CloseElement();
-            }
-        };
-        return new PopoverSection("event-membership", body);
+    /// Shared by <see cref="VersePassageMembershipSection"/> below -- ONE
+    /// row-rendering implementation for both sibling sections (identical
+    /// button/testid/click/quiet-styling shape either way; only the
+    /// heading text and the PopoverSection's own testid differ, both
+    /// derived from <paramref name="kind"/> via
+    /// <see cref="EventMembershipHeading"/> above).
+    internal static RenderFragment RenderRows(string kind, IReadOnlyList<VerseEventDto> events, IPopoverSectionContext ctx) => builder =>
+    {
+        var seq = 0;
+        builder.OpenElement(seq++, "p");
+        builder.AddAttribute(seq++, "class", "catechism-section-heading"); // the SAME house small-caps eyebrow every section-registry heading shares (CATECH-1/NARRATIVE-1/DELTA-1) -- not a fifth copy
+        builder.AddAttribute(seq++, "data-testid", "event-section-heading");
+        builder.AddContent(seq++, EventMembershipHeading.For(kind));
+        builder.CloseElement();
+
+        foreach (var e in events)
+        {
+            var id = e.Id; // local copies -- captured per-row by the onclick closure below
+            var label = e.Label;
+            // Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY): a
+            // general-kind event is NOT part of time traversal (req 2)
+            // -- its own row here must not look like a dated event's
+            // (which DOES traverse, after req 1). `.explorable-quiet`
+            // REPLACES `.explorable` (never both) -- same class,
+            // everywhere a non-traversable node's own identity renders,
+            // per that class's own app.css comment. Unchanged by PERI-1
+            // (this section's own events are now single-kind, but the
+            // per-row check stays -- cheaper than threading `kind` through
+            // a second parameter, and correct either way).
+            var explorableClass = e.Kind == "general" ? "explorable-quiet" : "explorable";
+            builder.OpenElement(seq++, "button");
+            builder.AddAttribute(seq++, "type", "button");
+            builder.AddAttribute(seq++, "class", $"popover-event-row popover-event-row-button {explorableClass}");
+            builder.AddAttribute(seq++, "data-testid", $"verse-event-{id}");
+            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label))));
+            builder.AddContent(seq++, label);
+            builder.CloseElement();
+        }
+    };
+}
+
+/// <summary>
+/// Batch PERI-1 (PRESENTATION CATEGORY LAW): the VERSE popover's own
+/// "PASSAGE" section -- <see cref="VerseEventMembershipSection"/>'s own
+/// sibling, header comment above, restricted to `kind == "general"` rows
+/// (a dateless pericope/literary-structure PASSAGE) -- NEVER rendered
+/// under the "EVENT" heading. Conditional presence: absent for a verse
+/// touching zero general-kind passages (the overwhelming majority --
+/// PSA.119.105/GAL.1.8 are the owner's own two named exceptions).
+/// </summary>
+public sealed class VersePassageMembershipSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Verse";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not VerseNode v)
+        {
+            return null;
+        }
+
+        List<VerseEventDto> events;
+        try
+        {
+            events = (await v.DetailAsync(api)).Events; // memoized -- shares VerseEventMembershipSection's/VerseTextSectionProvider's own fetch
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        var general = events.Where(e => e.Kind == "general").ToList();
+        if (general.Count == 0)
+        {
+            return null;
+        }
+
+        return new PopoverSection("passage-membership", VerseEventMembershipSection.RenderRows("general", general, ctx));
     }
 }
 

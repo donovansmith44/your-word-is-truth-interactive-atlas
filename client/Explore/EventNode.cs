@@ -58,6 +58,25 @@ public sealed class EventNode : IExplorable, INarrativeAware
     public string Kind => "Event";
 
     /// <summary>
+    /// Batch PERI-1 (PRESENTATION CATEGORY LAW): a read-only forward to
+    /// this SAME memoized <see cref="_cached"/> fetch's own
+    /// <see cref="EventDetail.Kind"/> ("event" | "general", the DATA's own
+    /// classification -- distinct from this class's own <see cref="Kind"/>
+    /// above, the CLIENT's structural node-type tag; see EVENT-1's own
+    /// KIND-AGNOSTIC note, CONTRACT.md) -- null only when this node's own
+    /// popover has never resolved (no fetch triggered here; "no fetch just
+    /// to render a label," this class's own header comment). Every node
+    /// that ever became `Current` in a popover session already has this
+    /// populated (every Kind=="Event" section provider -- EventDateAndPlacesSection/
+    /// EventChronologySection -- calls <see cref="DetailAsync"/> the moment
+    /// it renders) -- <see cref="ExplorationDescriptor.Capture"/> reads
+    /// this to label a saved-trail row "Passage" instead of "Event" for a
+    /// general-kind entry, "prefer client-side use of an existing field"
+    /// per this batch's own machine rules, zero new fetches.
+    /// </summary>
+    public string? CachedKind => _cached?.Kind;
+
+    /// <summary>
     /// Requirement 4's own "Explore (map -- the event's place(s)/scene;
     /// split view targets the right pane)" -- <see cref="ExplorationTarget.NavigateWorld"/>
     /// already gives split-mode-aware "apply to the atlas pane that's

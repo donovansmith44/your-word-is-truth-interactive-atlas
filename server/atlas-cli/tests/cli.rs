@@ -46,7 +46,34 @@ fn verse_happy_path_shows_text_and_attached_sections() {
     assert!(out.contains("Places:"), "out: {out}");
     assert!(out.contains("Persons:"), "out: {out}");
     assert!(out.contains("Events:"), "out: {out}");
+    assert!(out.contains("Passages:"), "out: {out}");
     assert_eq!(o.status.code(), Some(0));
+}
+
+// Batch PERI-1 (PRESENTATION CATEGORY LAW -- owner, verbatim: "NUN is not
+// an event. fix this error and others like it"): the CLI's own sibling of
+// the two owner-named repros -- `Events:` must NEVER carry a general-kind
+// pericope's label; `Passages:` must.
+#[test]
+fn verse_psa_119_105_shows_nun_under_passages_not_events() {
+    let o = run_with_data_dir(&["verse", "PSA.119.105"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let out = stdout(&o);
+    let passages_line = out.lines().find(|l| l.starts_with("Passages:")).expect("a Passages: line");
+    assert!(passages_line.contains("Psalm 119: NUN"), "out: {out}");
+    let events_line = out.lines().find(|l| l.starts_with("Events:")).expect("an Events: line");
+    assert!(!events_line.contains("Psalm 119: NUN"), "out: {out}");
+}
+
+#[test]
+fn verse_gal_1_8_shows_astonishment_pericope_under_passages_not_events() {
+    let o = run_with_data_dir(&["verse", "GAL.1.8"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let out = stdout(&o);
+    let passages_line = out.lines().find(|l| l.starts_with("Passages:")).expect("a Passages: line");
+    assert!(passages_line.contains("Astonishment: no other gospel; let him be accursed"), "out: {out}");
+    let events_line = out.lines().find(|l| l.starts_with("Events:")).expect("an Events: line");
+    assert!(!events_line.contains("Astonishment"), "out: {out}");
 }
 
 #[test]

@@ -56,7 +56,13 @@
                 <li>
                     <button type="button" class="hamburger-exploration-trail-node explorable" data-testid="@($"exploration-node-{idx}")"
                             @onclick="() => OnContinue.InvokeAsync(Item.Nodes.Take(idx + 1).ToList())">
-                        <span class="hamburger-node-kind">@node.Kind</span>
+                        @* Batch PERI-1 (PRESENTATION CATEGORY LAW): a
+                           general-kind Event descriptor (NUN/GAL.1.8-shaped
+                           -- see ExplorationDescriptor.cs's own header)
+                           reads "Passage" here, never "Event" -- every
+                           other descriptor kind (IsGeneralKind always
+                           false) is byte-identical to before. *@
+                        <span class="hamburger-node-kind">@(node.IsGeneralKind ? "Passage" : node.Kind)</span>
                         <span class="hamburger-node-title">@node.Title</span>
                     </button>
                 </li>

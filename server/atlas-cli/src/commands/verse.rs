@@ -78,9 +78,24 @@ pub fn run(graph: &GraphService, data: &AtlasData, ref_raw: &str) -> Result<Stri
         out.push_str(&if persons.is_empty() { "(none)".to_string() } else { persons.join(", ") });
         out.push('\n');
 
-        let events: Vec<String> = data.events_for_verse(&sref).iter().filter_map(|eid| data.event_by_id(eid)).map(|e| e.label.clone()).collect();
+        // Batch PERI-1 (PRESENTATION CATEGORY LAW -- owner, verbatim: "NUN
+        // is not an event. fix this error and others like it"): SPLIT by
+        // `Event::kind`, which was already on every row -- `Events:` keeps
+        // only `kind == "event"` (a real, dated/placed passage);
+        // `Passages:` is new, `kind == "general"` (a dateless pericope/
+        // literary-structure passage -- a Psalm acrostic stanza, an
+        // epistle outline pericope, the owner's own PSA.119.105/GAL.1.8
+        // repros). Each independently `(none)` when empty -- the SAME
+        // empty-result discipline as before, now applied per-kind. See
+        // CONTRACT.md's own `atlas verse` section, updated in lockstep.
+        let all_events: Vec<&atlas_core::data::Event> = data.events_for_verse(&sref).iter().filter_map(|eid| data.event_by_id(eid)).collect();
+        let events: Vec<&str> = all_events.iter().filter(|e| e.kind == "event").map(|e| e.label.as_str()).collect();
+        let passages: Vec<&str> = all_events.iter().filter(|e| e.kind == "general").map(|e| e.label.as_str()).collect();
         out.push_str("Events:  ");
         out.push_str(&if events.is_empty() { "(none)".to_string() } else { events.join(", ") });
+        out.push('\n');
+        out.push_str("Passages: ");
+        out.push_str(&if passages.is_empty() { "(none)".to_string() } else { passages.join(", ") });
         out.push('\n');
 
         Ok(out)
@@ -94,7 +109,7 @@ pub fn run(graph: &GraphService, data: &AtlasData, ref_raw: &str) -> Result<Stri
         })?;
         let mut out = String::new();
         out.push_str(&format!("BoC {part}.{article}.{paragraph}  {text}\n\n"));
-        out.push_str("Places/Persons/Events: not tracked for the Book of Concord\n");
+        out.push_str("Places/Persons/Events/Passages: not tracked for the Book of Concord\n");
         Ok(out)
     } else {
         // decode_node_id succeeded (it's a well-shaped text-unit id) but

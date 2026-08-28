@@ -46,8 +46,18 @@ namespace BibleAtlas.Client.Explore;
 /// name+from+to -- see that case's own comment for the graceful-degrade
 /// path when a boundary can no longer be found).
 /// </summary>
-public sealed record ExplorationDescriptor(string Kind, string Key, string Title)
+public sealed record ExplorationDescriptor(string Kind, string Key, string Title, bool IsGeneralKind = false)
 {
+    // Batch PERI-1 (PRESENTATION CATEGORY LAW): trailing, default-`false`,
+    // ADDITIVE -- client-only (this record is serialized to localStorage
+    // ONLY, SavedExplorationsService, never the HTTP wire), so an
+    // already-saved descriptor from before this batch simply deserializes
+    // with `false`, unchanged rendering, same as every OTHER kind ever
+    // reconstructs. Set true only for an "Event"-kind descriptor whose
+    // captured node's own EventNode.CachedKind reads "general" (see
+    // Capture's own EventNode case below) -- ExplorationListItem.razor
+    // reads this to render "Passage" instead of the raw Kind string.
+
     /// <summary>
     /// Captures a descriptor for any <see cref="IExplorable"/> node this app
     /// can push -- the inverse of <see cref="Reconstruct"/>, always
@@ -66,7 +76,7 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
         TimeAndPlaceNode tp => new ExplorationDescriptor("TimeAndPlace", $"{tp.PlaceId}|{tp.EventId}", tp.Title),
         YearNode y => new ExplorationDescriptor("Year", $"{y.PlaceId}|{y.Label}", y.Title),
         CatechismNode ct => new ExplorationDescriptor("Catechism", ct.Id, ct.Title),
-        EventNode ev => new ExplorationDescriptor("Event", ev.EventId, ev.Title),
+        EventNode ev => new ExplorationDescriptor("Event", ev.EventId, ev.Title, IsGeneralKind: ev.CachedKind == "general"),
         // G2-m1: Key now leads with the polity's own stable id (5 fields,
         // was 4) -- Reconstruct below still accepts the pre-G2-m1 4-field
         // form (a descriptor saved before this batch) and falls back to the
