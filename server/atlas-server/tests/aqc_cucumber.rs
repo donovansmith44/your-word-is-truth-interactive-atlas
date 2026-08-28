@@ -67,20 +67,24 @@ async fn get(uri: &str) -> (u16, serde_json::Value) {
     (status, json)
 }
 
-/// Required top-level fields per `aqc.schema.json`'s own `$defs` -- kept in
-/// lockstep with that file BY HAND (the same discipline every other
-/// hand-authored/generated pairing in this repo carries; a drift here is a
-/// contract-corpus bug, caught the moment a required field this list still
-/// expects goes missing from a real response).
-fn required_fields(shape: &str) -> &'static [&'static str] {
-    match shape {
-        "NodeCardOut" => &["id", "kind", "label", "provenance", "edge_summary", "version"],
-        "EdgePageOut" => &["kind", "entries", "version"],
-        "TextWindowOut" => &["units", "version"],
-        "Scene" => &["mode", "places", "quiet_places", "arrows", "narratives"],
-        "ContractOut" => &["min_version", "max_version"],
-        other => panic!("aqc_cucumber: unknown shape '{other}' -- add it to required_fields (and aqc.schema.json)"),
-    }
+/// Q-2/Q-3 fix (Batch AQC-1 fix round 1, controller ruling): `aqc.schema.json`
+/// itself, parsed ONCE and read at test time -- replaces the prior
+/// hand-copied `required_fields()` match (three places carried the same
+/// list by hand: the schema, this match, and AqcSteps.cs's own switch;
+/// nothing enforced them staying in sync). "Step definitions are thin
+/// glue, not contract knowledge" (spec §3) -- the schema IS the contract
+/// knowledge; this function only reads it.
+fn schema() -> &'static serde_json::Value {
+    static SCHEMA: std::sync::OnceLock<serde_json::Value> = std::sync::OnceLock::new();
+    SCHEMA.get_or_init(|| {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../contracts/atlas-query-contract/aqc.schema.json");
+        let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("aqc_cucumber: could not read {}: {e}", path.display()));
+        serde_json::from_str(&text).unwrap_or_else(|e| panic!("aqc_cucumber: {} is not valid JSON: {e}", path.display()))
+    })
+}
+
+fn shape_def(shape: &str) -> &'static serde_json::Value {
+    schema()["$defs"].get(shape).unwrap_or_else(|| panic!("aqc_cucumber: unknown shape '{shape}' -- no aqc.schema.json $defs.{shape}"))
 }
 
 #[derive(Debug, Default, World)]
@@ -88,6 +92,16 @@ pub struct AqcWorld {
     status: u16,
     body: serde_json::Value,
     captured_ref: Option<String>,
+    /// S-1 fix (Batch AQC-1 fix round 1, controller ruling -- applied here
+    /// too for symmetry with the C# side's own fix, though this review
+    /// flagged only C# as vacuous): the id THIS scenario's own
+    /// `when_focus_query` requested, `None` when the capture instead
+    /// originated from a TraversalQuery target (there, the captured id is
+    /// legitimately DIFFERENT from anything requested so far). When
+    /// `Some`, `then_round_trips` asserts the captured reference equals
+    /// THIS -- the actual descriptor round-trip identity law, not merely
+    /// self-consistency between the capture and the second live fetch.
+    focus_requested_id: Option<String>,
     last_traversal_id: String,
     last_traversal_kind: String,
     advertised_min: String,
@@ -100,16 +114,42 @@ pub struct AqcWorld {
 /// so `versioning.feature`'s client-acceptance phrases bind on BOTH sides
 /// (spec §3's phrase-parity law), each side proving the SAME semver-range
 /// check independently.
-const HARNESS_CLIENT_VERSION: &str = "0.1.0";
-
-fn parse_semver(s: &str) -> (u32, u32, u32) {
-    let mut parts = s.split('.').map(|p| p.parse::<u32>().expect("semver component must be an integer"));
-    (parts.next().unwrap(), parts.next().unwrap(), parts.next().unwrap())
+///
+/// Q-6 fix (Batch AQC-1 fix round 1, controller ruling -- "single-source
+/// them or extend the cross-check to all five" hand-kept "0.1.0" copies):
+/// this one is SINGLE-SOURCED, not hand-kept -- read from `contracts/
+/// atlas-query-contract/VERSION` at test-run time (this is a TEST binary,
+/// unlike `contract.rs`'s own compiled server constants, which genuinely
+/// cannot read a repo-relative file at runtime once deployed) rather than
+/// duplicated as a literal a future VERSION bump could silently leave
+/// stale.
+fn harness_client_version() -> &'static str {
+    static VERSION: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    VERSION.get_or_init(|| {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../contracts/atlas-query-contract/VERSION");
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("aqc_cucumber: could not read {}: {e}", path.display())).trim().to_string()
+    })
 }
 
-fn satisfies(client: &str, min: &str, max: &str) -> bool {
-    let c = parse_semver(client);
-    c >= parse_semver(min) && c <= parse_semver(max)
+/// `Err` on a malformed semver string -- the Rust mirror of
+/// `AqcContract.ParseSemver`'s own deliberate C# `FormatException` throw
+/// (Q-4 fix, fix round 1): a malformed advertisement must fail LOUD, not
+/// silently pass, on both sides.
+fn parse_semver(s: &str) -> Result<(u32, u32, u32), String> {
+    let parts: Vec<&str> = s.split('.').collect();
+    if parts.len() != 3 {
+        return Err(format!("'{s}' is not a MAJOR.MINOR.PATCH semver string"));
+    }
+    let mut nums = [0u32; 3];
+    for (i, p) in parts.iter().enumerate() {
+        nums[i] = p.parse::<u32>().map_err(|_| format!("'{s}' is not a MAJOR.MINOR.PATCH semver string"))?;
+    }
+    Ok((nums[0], nums[1], nums[2]))
+}
+
+fn satisfies(client: &str, min: &str, max: &str) -> Result<bool, String> {
+    let c = parse_semver(client)?;
+    Ok(c >= parse_semver(min)? && c <= parse_semver(max)?)
 }
 
 // ---------------------------------------------------------------------
@@ -139,6 +179,7 @@ async fn when_focus_query(world: &mut AqcWorld, id: String) {
     let (status, body) = get(&format!("/api/node/{}", path_encode(&id))).await;
     world.status = status;
     world.body = body;
+    world.focus_requested_id = Some(id);
 }
 
 #[when(expr = "I run FocusQuery again for the captured reference")]
@@ -151,6 +192,9 @@ async fn when_focus_query_captured(world: &mut AqcWorld) {
 
 #[when(expr = "I run TraversalQuery for {string} frontier {string}")]
 async fn when_traversal_query(world: &mut AqcWorld, id: String, kind: String) {
+    // Not a FocusQuery -- see AqcWorld::focus_requested_id's own doc
+    // comment for why this scenario shape skips the original-id check.
+    world.focus_requested_id = None;
     world.last_traversal_id = id.clone();
     world.last_traversal_kind = kind.clone();
     let (status, body) = get(&format!("/api/node/{}/edges?kind={kind}", path_encode(&id))).await;
@@ -197,7 +241,7 @@ async fn when_scene_time(world: &mut AqcWorld, from: String, to: String) {
 
 #[when(expr = "I run SceneQuery for scripture ref {string}")]
 async fn when_scene_scripture(world: &mut AqcWorld, sref: String) {
-    let (status, body) = get(&format!("/api/scene/scripture?ref={}", urlencoding_lite(&sref))).await;
+    let (status, body) = get(&format!("/api/scene/scripture?ref={sref}")).await;
     world.status = status;
     world.body = body;
 }
@@ -230,14 +274,6 @@ fn when_capture_focus_ref(world: &mut AqcWorld) {
     world.captured_ref = Some(captured);
 }
 
-/// Minimal percent-encoding for the one unsafe char (`|`, never present in
-/// this app's own scripture refs) -- kept local rather than pulling in a
-/// URL-encoding crate for one call site; every ref this contract exercises
-/// is already URI-safe ASCII (book codes, digits, dots).
-fn urlencoding_lite(s: &str) -> String {
-    s.to_string()
-}
-
 // ---------------------------------------------------------------------
 // Then
 // ---------------------------------------------------------------------
@@ -246,8 +282,22 @@ fn urlencoding_lite(s: &str) -> String {
 fn then_valid_shape(world: &mut AqcWorld, shape: String) {
     assert_eq!(world.status, 200, "expected 200 for a valid {shape}, got {} -- body: {}", world.status, world.body);
     let obj = world.body.as_object().unwrap_or_else(|| panic!("{shape} response must be a JSON object: {}", world.body));
-    for field in required_fields(&shape) {
-        assert!(obj.contains_key(*field), "{shape} response missing required field '{field}': {}", world.body);
+    let def = shape_def(&shape);
+
+    let required = def["required"].as_array().unwrap_or_else(|| panic!("aqc.schema.json $defs.{shape} has no 'required' array"));
+    for field in required {
+        let field = field.as_str().unwrap();
+        assert!(obj.contains_key(field), "{shape} response missing required field '{field}': {}", world.body);
+    }
+
+    // Q-3 fix: additionalProperties: false, enforced -- glossary.md's own
+    // "the response is a valid <Shape>" definition names this as HALF of
+    // what the phrase means; only the required-fields half was checked
+    // before this fix.
+    assert_eq!(def["additionalProperties"], serde_json::json!(false), "aqc.schema.json $defs.{shape} must declare additionalProperties: false");
+    let allowed = def["properties"].as_object().unwrap_or_else(|| panic!("aqc.schema.json $defs.{shape} has no 'properties' object"));
+    for key in obj.keys() {
+        assert!(allowed.contains_key(key), "{shape} response has field '{key}' outside aqc.schema.json's own $defs.{shape}.properties: {}", world.body);
     }
 }
 
@@ -282,6 +332,14 @@ fn then_round_trips(world: &mut AqcWorld) {
     let captured = world.captured_ref.clone().expect("no focus reference was captured");
     let second = world.body["id"].as_str().expect("second FocusQuery response has no 'id'");
     assert_eq!(second, captured, "the id must round-trip byte-identically (encode_node_id(decode_node_id(s)) == s)");
+    // S-1 fix (fix round 1): the ACTUAL round-trip identity law -- captured
+    // must ALSO equal what this scenario originally requested, not merely
+    // equal the second (live, independently re-fetched) response. Skipped
+    // when the capture originated from a TraversalQuery target
+    // (AqcWorld::focus_requested_id's own doc comment).
+    if let Some(requested) = &world.focus_requested_id {
+        assert_eq!(captured, *requested, "the captured reference must equal the id this scenario originally requested");
+    }
 }
 
 #[then(expr = "every traversal target resolves to a live node")]
@@ -326,13 +384,12 @@ fn then_entries_at_most(world: &mut AqcWorld, max: usize) {
 async fn then_pagination_no_repeats(world: &mut AqcWorld, next_field: String) {
     assert_eq!(next_field, "next");
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
-    let mut cursor: Option<usize> = None;
     let id = world.last_traversal_id.clone();
     let kind = world.last_traversal_kind.clone();
     for entry in world.body["entries"].as_array().unwrap() {
         seen.insert(entry["edge"].as_str().unwrap().to_string());
     }
-    cursor = world.body["next"].as_u64().map(|n| n as usize).or(cursor);
+    let mut cursor = world.body["next"].as_u64().map(|n| n as usize);
     let mut pages_walked = 0;
     while let Some(c) = cursor {
         pages_walked += 1;
@@ -399,21 +456,30 @@ fn then_server_advertises(world: &mut AqcWorld, min: String, max: String) {
 
 #[then(expr = "the client accepts the advertised range")]
 fn then_client_accepts(world: &mut AqcWorld) {
-    assert!(
-        satisfies(HARNESS_CLIENT_VERSION, &world.advertised_min, &world.advertised_max),
-        "expected client version {HARNESS_CLIENT_VERSION} to satisfy [{}, {}]",
-        world.advertised_min,
-        world.advertised_max
-    );
+    let result = satisfies(harness_client_version(), &world.advertised_min, &world.advertised_max)
+        .unwrap_or_else(|e| panic!("expected a well-formed advertised range [{}, {}], got: {e}", world.advertised_min, world.advertised_max));
+    assert!(result, "expected client version {} to satisfy [{}, {}]", harness_client_version(), world.advertised_min, world.advertised_max);
 }
 
 #[then(expr = "the client rejects the advertised range")]
 fn then_client_rejects(world: &mut AqcWorld) {
+    let result = satisfies(harness_client_version(), &world.advertised_min, &world.advertised_max)
+        .unwrap_or_else(|e| panic!("expected a well-formed advertised range [{}, {}], got: {e}", world.advertised_min, world.advertised_max));
+    assert!(!result, "expected client version {} to be REJECTED by [{}, {}]", harness_client_version(), world.advertised_min, world.advertised_max);
+}
+
+/// Q-4 fix (fix round 1, controller ruling): a MALFORMED advertised
+/// version must fail LOUD -- `satisfies` returning `Err`, the Rust mirror
+/// of `AqcContract.ParseSemver`'s own C# `FormatException` throw.
+#[then(expr = "the malformed advertisement fails loud")]
+fn then_malformed_advertisement_fails_loud(world: &mut AqcWorld) {
+    let result = satisfies(harness_client_version(), &world.advertised_min, &world.advertised_max);
     assert!(
-        !satisfies(HARNESS_CLIENT_VERSION, &world.advertised_min, &world.advertised_max),
-        "expected client version {HARNESS_CLIENT_VERSION} to be REJECTED by [{}, {}]",
+        result.is_err(),
+        "expected the semver-range check to fail loud (Err) on advertised range [{}, {}], got {:?}",
         world.advertised_min,
-        world.advertised_max
+        world.advertised_max,
+        result
     );
 }
 

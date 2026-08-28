@@ -22,9 +22,75 @@ public class AqcSteps
     private static readonly string RepoRoot = FindRepoRoot();
     private static readonly string FixturesDir = Path.Combine(RepoRoot, "contracts", "atlas-query-contract", "fixtures");
 
+    /// <summary>
+    /// Q-2/Q-3 fix (Batch AQC-1 fix round 1, controller ruling):
+    /// <c>aqc.schema.json</c> itself, parsed ONCE -- replaces the prior
+    /// hand-copied <c>shape switch</c> required-field lists (three places
+    /// carried the same list by hand: the schema, this switch, and the
+    /// Rust harness's own match; nothing enforced them staying in sync).
+    /// </summary>
+    private static readonly JsonElement Schema = LoadSchema();
+
+    private static JsonElement LoadSchema()
+    {
+        var path = Path.Combine(RepoRoot, "contracts", "atlas-query-contract", "aqc.schema.json");
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException($"AQC schema not found at {path}.");
+        }
+        using var doc = JsonDocument.Parse(File.ReadAllText(path));
+        return doc.RootElement.Clone();
+    }
+
+    private static JsonElement ShapeDef(string shape) =>
+        Schema.GetProperty("$defs").TryGetProperty(shape, out var def)
+            ? def
+            : throw new NotSupportedException($"AqcSteps: unknown shape '{shape}' -- no aqc.schema.json $defs.{shape}.");
+
+    /// <summary>
+    /// S-1 fix (Batch AQC-1 fix round 1, controller ruling): wire id ->
+    /// fixture-name IDENTITY INDEX, loaded from
+    /// <c>contracts/atlas-query-contract/fixtures/index.json</c> -- built
+    /// by the exporter (<c>export_aqc_examples.rs</c>) from the REQUEST id
+    /// of every FocusQuery it captures, never from a hand-typed C# switch.
+    /// This is what makes <see cref="WhenFocusQueryCaptured"/>'s own second
+    /// lookup a genuine, independently-failable check rather than the SAME
+    /// deterministic function called twice on the SAME input (the prior
+    /// vacuity this fix closes): a captured reference that is not a real
+    /// key in this index throws immediately, which would happen if the
+    /// server ever echoed an id no request in this corpus was ever made
+    /// for.
+    /// </summary>
+    private static readonly Dictionary<string, string> IdentityIndex = LoadIdentityIndex();
+
+    /// <summary>Deliberately-invalid FocusQuery request ids (no real node
+    /// identity, so they have no business in <see cref="IdentityIndex"/>)
+    /// -- kept as their own small, explicit table.</summary>
+    private static readonly Dictionary<string, string> ErrorCaseFixtures = new()
+    {
+        ["Person:nonexistent-xyz"] = "focus-not-found",
+        ["not-even-a-colon-pair"] = "focus-bad-ref",
+    };
+
     private int _status;
     private JsonElement _body;
     private string? _capturedRef;
+
+    /// <summary>
+    /// S-1 fix: the id this scenario's OWN <see cref="WhenFocusQuery"/>
+    /// call requested (null when the scenario's capture instead
+    /// originated from a TraversalQuery target, e.g. "a traversal target's
+    /// own id round-trips too" -- there, the captured id is legitimately
+    /// DIFFERENT from anything requested so far, and this check does not
+    /// apply). When set, <see cref="ThenRoundTrips"/> asserts the captured
+    /// reference equals THIS -- the actual descriptor round-trip identity
+    /// law ("what you asked for is what you get back"), not merely
+    /// self-consistency between the capture and a second fetch (which
+    /// alone cannot catch a response echoing a DIFFERENT, still
+    /// valid-looking, id).
+    /// </summary>
+    private string? _focusRequestedId;
+
     private string _advertisedMin = "";
     private string _advertisedMax = "";
 
@@ -52,26 +118,41 @@ public class AqcSteps
         return (root.GetProperty("status").GetInt32(), root.GetProperty("body").Clone());
     }
 
-    // FocusQuery: one fixture per wire id this corpus ever runs FocusQuery
-    // against -- SAME names export_aqc_examples.rs writes.
-    private static string FocusFixtureName(string id) => id switch
+    private static Dictionary<string, string> LoadIdentityIndex()
     {
-        "Person:nonexistent-xyz" => "focus-not-found",
-        "not-even-a-colon-pair" => "focus-bad-ref",
-        "text-unit:JHN.3.16" => "focus-textunit",
-        "Event:ab_ur" => "focus-event",
-        "Narrative:abraham-migration" => "focus-narrative",
-        "Anchor:solomon-crowned" => "focus-anchor",
-        "Place:ur-1" => "focus-place",
-        "Era:primeval" => "focus-era",
-        "Polity:egypt" => "focus-polity",
-        "Person:aaron_1" => "focus-person",
-        "Translation:latin_vulgate" => "focus-translation",
-        "CommentaryItem:kretzmann/0.1.0" => "focus-commentaryitem",
-        "CatechismItem:commandment-1" => "focus-catechismitem",
-        "text-unit:ROM.5.8" => "focus-traversal-target",
-        _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for FocusQuery id '{id}' -- add one to export_aqc_examples.rs's FIXTURES/SEEDS."),
-    };
+        var path = Path.Combine(FixturesDir, "index.json");
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException(
+                $"AQC identity index not found at {path} -- run `cargo run -p atlas-server --bin export_aqc_examples` from server/ to (re)generate it.");
+        }
+        return JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(path))
+            ?? throw new InvalidOperationException($"AQC identity index at {path} deserialized to null.");
+    }
+
+    // The FIRST FocusQuery in a scenario: request id may be a real node
+    // identity (IdentityIndex) or one of the two deliberately-invalid
+    // error-case ids (ErrorCaseFixtures) -- both are legitimate REQUESTS.
+    private static string FocusFixtureNameForRequest(string id)
+    {
+        if (ErrorCaseFixtures.TryGetValue(id, out var errName)) return errName;
+        if (IdentityIndex.TryGetValue(id, out var idName)) return idName;
+        throw new NotSupportedException($"AqcSteps: no fixture mapped for FocusQuery request id '{id}' -- add one to export_aqc_examples.rs's FIXTURES/SEEDS.");
+    }
+
+    // S-1 fix: the SECOND FocusQuery, keyed by the id the FIRST response
+    // itself echoed back (glossary.md's own "descriptor RE-DERIVED from
+    // the response content") -- deliberately narrower than
+    // FocusFixtureNameForRequest above (no error-case fallback: a captured
+    // reference is never one of the two deliberately-invalid inputs).
+    private static string FocusFixtureNameForCapturedIdentity(string id) =>
+        IdentityIndex.TryGetValue(id, out var name)
+            ? name
+            : throw new InvalidOperationException(
+                $"AqcSteps: captured focus reference '{id}' is not a key in the identity index " +
+                "(contracts/atlas-query-contract/fixtures/index.json) -- this would mean the server " +
+                "echoed an id no request in this corpus was ever captured for (a G2 bijection break), " +
+                "or the index is stale. Run `cargo run -p atlas-server --bin export_aqc_examples` to regenerate.");
 
     // ---------------------------------------------------------------
     // Given
@@ -101,19 +182,24 @@ public class AqcSteps
     [When("I run FocusQuery for \"([^\"]+)\"")]
     public void WhenFocusQuery(string id)
     {
-        (_status, _body) = LoadFixture(FocusFixtureName(id));
+        (_status, _body) = LoadFixture(FocusFixtureNameForRequest(id));
+        _focusRequestedId = id;
     }
 
     [When("I run FocusQuery again for the captured reference")]
     public void WhenFocusQueryCaptured()
     {
         if (_capturedRef is null) throw new InvalidOperationException("no focus reference was captured yet");
-        (_status, _body) = LoadFixture(FocusFixtureName(_capturedRef));
+        (_status, _body) = LoadFixture(FocusFixtureNameForCapturedIdentity(_capturedRef));
     }
 
     [When("I run TraversalQuery for \"([^\"]+)\" frontier \"([^\"]+)\"")]
     public void WhenTraversalQuery(string id, string kind)
     {
+        // Not a FocusQuery -- see _focusRequestedId's own doc comment for
+        // why this scenario shape (capture originates from a traversal
+        // TARGET, not this call's own id) skips the original-id check.
+        _focusRequestedId = null;
         var name = (id, kind) switch
         {
             ("text-unit:JHN.3.16", "cites") => "traversal-cites",
@@ -233,18 +319,25 @@ public class AqcSteps
     public void ThenValidShape(string shape)
     {
         Assert.Equal(200, _status);
-        var required = shape switch
+        var def = ShapeDef(shape);
+
+        foreach (var field in def.GetProperty("required").EnumerateArray())
         {
-            "NodeCardOut" => new[] { "id", "kind", "label", "provenance", "edge_summary", "version" },
-            "EdgePageOut" => new[] { "kind", "entries", "version" },
-            "TextWindowOut" => new[] { "units", "version" },
-            "Scene" => new[] { "mode", "places", "quiet_places", "arrows", "narratives" },
-            "ContractOut" => new[] { "min_version", "max_version" },
-            _ => throw new NotSupportedException($"AqcSteps: unknown shape '{shape}'."),
-        };
-        foreach (var field in required)
+            var name = field.GetString()!;
+            Assert.True(_body.TryGetProperty(name, out _), $"{shape} response missing required field '{name}'");
+        }
+
+        // Q-3 fix: additionalProperties: false, enforced -- glossary.md's
+        // own "the response is a valid <Shape>" definition names this as
+        // HALF of what the phrase means; only the required-fields half
+        // was checked before this fix.
+        Assert.True(def.TryGetProperty("additionalProperties", out var ap) && ap.ValueKind == JsonValueKind.False,
+            $"aqc.schema.json $defs.{shape} must declare additionalProperties: false");
+        var allowed = def.GetProperty("properties");
+        foreach (var prop in _body.EnumerateObject())
         {
-            Assert.True(_body.TryGetProperty(field, out _), $"{shape} response missing required field '{field}'");
+            Assert.True(allowed.TryGetProperty(prop.Name, out _),
+                $"{shape} response has field '{prop.Name}' outside aqc.schema.json's own $defs.{shape}.properties");
         }
 
         // Also proves CONSUMER PARSING, not just field presence -- the
@@ -311,6 +404,16 @@ public class AqcSteps
         Assert.NotNull(_capturedRef);
         var second = _body.GetProperty("id").GetString();
         Assert.Equal(_capturedRef, second);
+        // S-1 fix (fix round 1): the ACTUAL round-trip identity law --
+        // captured must ALSO equal what this scenario originally
+        // requested, not merely equal the second (independently,
+        // index-looked-up) fetch. Skipped when the capture originated
+        // from a TraversalQuery target (_focusRequestedId's own doc
+        // comment).
+        if (_focusRequestedId is not null)
+        {
+            Assert.Equal(_focusRequestedId, _capturedRef);
+        }
     }
 
     [Then("every traversal target resolves to a live node")]
@@ -339,7 +442,7 @@ public class AqcSteps
             Assert.False(string.IsNullOrEmpty(node.GetProperty("label").GetString()));
             if (first)
             {
-                var (status, focusBody) = LoadFixture(FocusFixtureName(id!));
+                var (status, focusBody) = LoadFixture(FocusFixtureNameForCapturedIdentity(id!));
                 Assert.Equal(200, status);
                 Assert.Equal(id, focusBody.GetProperty("id").GetString());
                 first = false;
@@ -449,5 +552,17 @@ public class AqcSteps
     public void ThenClientRejects()
     {
         Assert.False(AqcContract.Satisfies(new ContractDto(_advertisedMin, _advertisedMax)));
+    }
+
+    /// <summary>Q-4 fix (fix round 1, controller ruling): a MALFORMED
+    /// advertised version must fail LOUD -- the REAL production
+    /// <see cref="AqcContract.Satisfies"/> throwing
+    /// <see cref="FormatException"/>, the same mechanism App.razor's own
+    /// narrowed startup-check catch now routes to
+    /// <c>CheckState.Mismatch</c> rather than swallowing into "Ok".</summary>
+    [Then("the malformed advertisement fails loud")]
+    public void ThenMalformedAdvertisementFailsLoud()
+    {
+        Assert.Throws<FormatException>(() => AqcContract.Satisfies(new ContractDto(_advertisedMin, _advertisedMax)));
     }
 }
