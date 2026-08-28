@@ -2,7 +2,7 @@
 # GET /api/node/{id} -- server/atlas-server/src/graph_handlers.rs::node_card.
 #
 # The Examples: table below is GENERATED, not hand-authored -- see
-# server/atlas-etl/src/bin/export_aqc_examples.rs. It draws one seed id per
+# server/atlas-server/src/bins/export_aqc_examples.rs. It draws one seed id per
 # NODE KIND the real committed graph materializes (spec §3: "every node kind
 # sampled from the graph"), verified live against that graph at export time
 # (a stale seed id fails the exporter loud, not silently). Re-running the

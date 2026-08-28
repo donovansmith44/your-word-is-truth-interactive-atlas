@@ -1,0 +1,14 @@
+{
+  "Anchor:solomon-crowned": "focus-anchor",
+  "CatechismItem:commandment-1": "focus-catechismitem",
+  "CommentaryItem:kretzmann/0.1.0": "focus-commentaryitem",
+  "Era:primeval": "focus-era",
+  "Event:ab_ur": "focus-event",
+  "Narrative:abraham-migration": "focus-narrative",
+  "Person:aaron_1": "focus-person",
+  "Place:ur-1": "focus-place",
+  "Polity:egypt": "focus-polity",
+  "Translation:latin_vulgate": "focus-translation",
+  "text-unit:JHN.3.16": "focus-textunit",
+  "text-unit:ROM.5.8": "focus-traversal-target"
+}
