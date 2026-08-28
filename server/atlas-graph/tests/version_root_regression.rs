@@ -323,4 +323,15 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // jm_sychar, jm_caesarea_philippi). Real, deliberate event-graph content
 // change (fewer event nodes, some events' own verse/witness sets widened)
 // -- the root moving IS the fix. New captured value: "3197f8531ce0bc1a".
-const EXPECTED_VERSION_HEX: &str = "3197f8531ce0bc1a";
+//
+// MOVED AGAIN (fix round 1, review verdict SPEC REJECTED -- 1 Critical + 7
+// Important findings, all addressed in this same commit): S-1's own real
+// fix (rob_leper_healed's own MAT witness row widened to MAT.8.1-4 --
+// the original commit's top-level-verses-only widening never reached a
+// real reader, `scene::witnesses_for`'s own doc comment) + theo-295/
+// rob_twelve_apostles re-triaged DISTINCT -> MERGE (I-3) + theo-145/
+// theo-152's own survivor switched (I-4). One fewer event node
+// (theo-295 absorbed), several events' own witness/verse sets changed --
+// the root moving IS every one of these fixes landing for real. New
+// captured value: "1fa6fd69488d6cd6".
+const EXPECTED_VERSION_HEX: &str = "1fa6fd69488d6cd6";
