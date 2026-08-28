@@ -133,8 +133,14 @@ printed.
 
 Output: one line per entry — `edge-id  kind  id  label` — then either
 `(end of list)` or `more: continue with --cursor N`. An edge kind with
-zero entries at this id prints `(none)` under the header, not a blank
-page (this is the literal "empty result, stated" case R6 names).
+zero entries at this id (a valid id, a valid, elsewhere-inhabited kind,
+but nothing at THIS position) is the `empty_result` error class below
+(exit 1, stderr) — `edges`'s own entire output IS the page, so a zero-row
+page is the command's whole answer coming back empty, the literal case
+R5's "no empty stdout-and-exit-0 on a miss" names, not a sub-field of an
+otherwise-nonempty success (contrast `atlas verse`'s Places/Persons/Events
+sections below, which stay on stdout with `(none)` — those are one part
+of a still-nonempty successful lookup, not the whole answer).
 
 ### `atlas find <term>`
 
@@ -153,9 +159,11 @@ logic" forbids. `atlas find --help`-shaped output (i.e. running `atlas
 find` with no term) states this scope explicitly, not silently.
 
 Output: one line per match — `kind  id  label` — sorted by kind then id
-(a stable, reproducible order); `no matches for '<term>' across
-Place/Event/Narrative/Era/Polity` (spelled out, not blank) when nothing
-hits.
+(a stable, reproducible order) on a hit. Zero matches is the
+`empty_result` error class below (exit 1, stderr, "no matches for
+'\<term\>' -- searched Place/Event/Narrative/Era/Polity labels"), not a
+blank stdout line — `find`'s entire output IS the match list, so no
+matches means the command's whole answer came back empty.
 
 ## Error taxonomy
 
@@ -176,7 +184,7 @@ nothing on a clean run.
 | `bad_ref` | 2 | a ref/id argument does not parse against its own grammar (locus grammar for `verse`/`chapter`, wire-id grammar for `node`/`edges`, an unrecognized `--kind` label for `edges`) | `atlas: error (bad_ref): 'GEN.1.99.3' is not a valid verse/Concord reference -- expected BOOK.CHAPTER.VERSE (e.g. GEN.1.1) or "BoC PART.ARTICLE.PARAGRAPH" -- check the book code and the dot-separated parts` |
 | `not_found` | 3 | the ref/id parses cleanly but names nothing this graph has — a real book+chapter+verse number combination that exceeds the chapter's own length, a well-formed id of a real kind that isn't in the graph | `atlas: error (not_found): no node named 'Event:not-a-real-event' -- the id parsed fine but this graph has no Event with that raw id -- try 'atlas find <term>' to locate the id you meant` |
 | `data_load_failed` | 5 | `graph.bin` (or a required compiled JSON file) is missing, unreadable, or fails to parse at startup, before any command's own logic runs | `atlas: error (data_load_failed): could not load ../data/compiled/graph.bin -- reading ../data/compiled/graph.bin: The system cannot find the path specified. (os error 3) -- run 'cargo run -p atlas-graph --bin atlas-graph-compile' from server/ first, or pass --data-dir to point at a directory that already has graph.bin` |
-| `empty_result` | 1 | the command ran correctly end-to-end but the honest answer is zero rows (`find` with no matches; `edges` for an inhabited-elsewhere-but-empty-here kind) | (see `atlas find`/`atlas edges` output shapes above — the message itself is the stated empty result, not a separate error line; exit code 1 marks it non-silent for scripts) |
+| `empty_result` | 1 | the command ran correctly end-to-end but the honest answer is zero rows (`find` with no matches; `edges` for an inhabited-elsewhere-but-empty-here kind) | `atlas: error (empty_result): no matches for 'zzqx' -- searched Place/Event/Narrative/Era/Polity labels -- try a shorter or different substring` |
 
 "Empty result" is intentionally its OWN class, distinct from `not_found`:
 `not_found` means the id/ref you asked about does not exist at all;

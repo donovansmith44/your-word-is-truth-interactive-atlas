@@ -15,7 +15,7 @@
 # workspace, member or not). This is a build-tooling-level adjustment, not
 # a type-shape change -- the outcome the ruling asked for (one lockfile,
 # `-p atlas-graph-types` works) is unaffected.
-members = ["atlas-core", "atlas-etl", "atlas-server", "atlas-graph"]
+members = ["atlas-core", "atlas-etl", "atlas-server", "atlas-graph", "atlas-cli"]
 resolver = "2"
 
 # STANDING COUNTING PROCEDURE (established by review at f988f1b, restated by
