@@ -3,6 +3,15 @@ name = "atlas-server"
 version = "0.1.0"
 edition = "2021"
 
+[[test]]
+# Batch AQC-1's own Rust contract harness (spec §3) -- `harness = false`
+# because this binary IS its own test runner (cucumber's `World::run`,
+# not `#[test]`-per-function); it still shows up under `cargo test
+# --workspace` as one more section, joining the standing canonical count.
+name = "aqc_cucumber"
+path = "tests/aqc_cucumber.rs"
+harness = false
+
 [[bin]]
 # Batch AQC-1's own provider-side Examples: exporter (spec §3) -- named
 # explicitly, at a path OUTSIDE `src/bin/` (this repo's own root
@@ -29,6 +38,12 @@ anyhow = "1"
 
 [dev-dependencies]
 http-body-util = "0.1"
+# Batch AQC-1: the Gherkin cucumber harness (dev-dependency -- MIT/Apache-2.0
+# dual license, disclosed in the batch report) binding contracts/atlas-
+# query-contract/features/*.feature against the live axum handlers
+# in-process (tests/aqc_cucumber.rs's own `real_app()`-idiom World).
+cucumber = "0.23"
+futures = "0.3"
 # Batch PERF-2a Phase 1: the permanent criterion regression harness (own
 # bench target, deliberately NOT part of `cargo test`'s own count -- see
 # server/Cargo.toml's own STANDING COUNTING PROCEDURE comment and this
