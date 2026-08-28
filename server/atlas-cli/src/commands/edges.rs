@@ -5,7 +5,7 @@
 
 use atlas_graph::GraphService;
 use atlas_graph_types::explore::EdgeQuery;
-use atlas_graph_types::id::Position;
+use atlas_graph_types::id::{NodeKind, Position};
 use atlas_graph_types::store::GraphQuery;
 use atlas_server::graph_wire::{decode_node_id, describe_position, parse_edge_kind};
 
@@ -57,7 +57,19 @@ pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
     let limit = args.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
     let page = snap.edges(&Position::Node(node_id), &EdgeQuery { kind, cursor: args.cursor, limit });
 
-    if page.entries.is_empty() {
+    // FIX ROUND 1 (review S-3/Q-2): the SAME PeopleGroup filter
+    // `atlas_server::graph_handlers::node_edges` applies (PG-1a, "the
+    // U5-rebinding seam") -- `graph_wire::decode_node_id` carries no
+    // "PeopleGroup" arm, so a PeopleGroup-kind neighbor id handed back
+    // here could never be resolved by `atlas node <id>`/`atlas edges <id>`
+    // afterward: a real, reachable dead end this command would otherwise
+    // create and never disclose. Filtered HERE, mirroring the server's own
+    // serving-boundary projection exactly (the underlying graph query
+    // above is unfiltered, same as the server's) -- one revert away once
+    // U5 lands, same as the server's own comment says.
+    let entries: Vec<_> = page.entries.iter().filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup)).collect();
+
+    if entries.is_empty() {
         return Err(CliError::empty_result(
             format!("no '{kind_raw}' edges at '{}'", args.id_raw),
             "the id and kind both parsed fine, but this node has zero edges of that kind at this position",
@@ -66,7 +78,7 @@ pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
     }
 
     let mut out = String::new();
-    for entry in &page.entries {
+    for entry in &entries {
         let (id, kind_str, label) = describe_position(&entry.node, &snap);
         out.push_str(&format!("{:<24} {:<12} {:<28} {}\n", entry.edge.0, kind_str, id, label));
     }

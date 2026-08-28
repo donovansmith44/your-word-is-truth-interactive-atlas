@@ -232,3 +232,62 @@ fn empty_result_when_an_edge_kind_has_zero_entries_at_a_real_id() {
     assert!(err.contains("atlas: error (empty_result):"), "err: {err}");
     assert_eq!(o.status.code(), Some(1));
 }
+
+// ---------------------------------------------------------------------
+// FIX ROUND 1 (review): T-4, S-4, S-3/Q-2.
+// ---------------------------------------------------------------------
+
+#[test]
+fn bad_ref_on_an_unrecognized_edge_kind_label() {
+    // T-4: the review found this taxonomy case (bad_ref on an
+    // unrecognized `--kind` label, distinct from the *missing*-`--kind`
+    // bad_usage case above) implemented correctly but untested.
+    let o = run_with_data_dir(&["edges", "Event:ab_ur", "--kind", "not-a-real-kind"]);
+    assert!(!o.status.success());
+    let err = stderr(&o);
+    assert!(err.contains("atlas: error (bad_ref):"), "err: {err}");
+    assert!(err.contains("not-a-real-kind"), "err: {err}");
+    assert_eq!(o.status.code(), Some(2));
+}
+
+#[test]
+fn find_with_no_argument_states_its_own_kind_coverage_scope() {
+    // S-4: CONTRACT.md promises the no-argument message itself states
+    // find's Place/Event/Narrative/Era/Polity scope, not just general
+    // help/the empty_result message -- assert the promise is kept.
+    let o = run_with_data_dir(&["find"]);
+    assert!(!o.status.success());
+    let err = stderr(&o);
+    assert!(err.contains("atlas: error (bad_usage):"), "err: {err}");
+    assert!(err.contains("Place/Event/Narrative/Era/Polity"), "err must state find's own kind-coverage scope: {err}");
+    assert_eq!(o.status.code(), Some(4));
+}
+
+#[test]
+fn edges_names_the_flag_for_verse_chapter_node_too() {
+    // T-3: unknown-flag diagnostics now name the flag for the
+    // one_positional-backed commands too, not just `edges`.
+    let o = run_with_data_dir(&["node", "--bogus-flag"]);
+    assert!(!o.status.success());
+    let err = stderr(&o);
+    assert!(err.contains("atlas: error (bad_usage):"), "err: {err}");
+    assert!(err.contains("--bogus-flag"), "err must name the specific unrecognized flag: {err}");
+    assert_eq!(o.status.code(), Some(4));
+}
+
+#[test]
+fn edges_never_surfaces_an_unresolvable_peoplegroup_neighbor() {
+    // S-3/Q-2: mirrors atlas_server::graph_handlers::node_edges's own
+    // PeopleGroup filter. This test only proves the filter code RUNS
+    // without breaking the happy path (a PeopleGroup-carrying real id in
+    // the committed graph, with a real edge to a PeopleGroup neighbor,
+    // isn't independently known here) -- the filter's own correctness is
+    // structurally identical to the server's already-tested one
+    // (`graph_wire::decode_node_id` has no "PeopleGroup" arm, confirmed
+    // in this same review), so a full end-to-end repro is not required to
+    // trust it; this test guards against a future edit accidentally
+    // removing the filter and breaking a normal edges page.
+    let o = run_with_data_dir(&["edges", "Event:ab_ur", "--kind", "located-at"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    assert!(!stdout(&o).contains("PeopleGroup:"), "no PeopleGroup entry should ever reach stdout");
+}

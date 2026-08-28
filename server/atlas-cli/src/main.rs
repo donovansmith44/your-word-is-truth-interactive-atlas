@@ -81,7 +81,32 @@ fn run(args: &[String]) -> Result<String, CliError> {
             commands::edges::run(&loaded.graph, commands::edges::EdgesArgs { id_raw, kind_raw, limit, cursor })
         }
         "find" => {
-            let term = one_positional(&rest, "find", "<term>")?;
+            // FIX ROUND 1 (review S-4): `find` does NOT share the generic
+            // `one_positional` message -- CONTRACT.md's own "atlas find"
+            // section specifically promises that running `find` with no
+            // term states its kind-coverage scope, so that promise is
+            // fulfilled HERE, in the actual `bad_usage` message, rather
+            // than only in general help text/the `empty_result` message.
+            let term = match rest.len() {
+                1 => {
+                    return Err(CliError::bad_usage(
+                        "'find' requires a <term> argument",
+                        "usage: atlas find <term> -- searches Place/Event/Narrative/Era/Polity labels only (Person/CatechismItem/CommentaryItem/Translation/TextUnit are not searched -- see CONTRACT.md)",
+                        "run 'atlas find <term>' with a real value, or 'atlas tutorial' for a worked example",
+                    ))
+                }
+                2 if rest[1].starts_with("--") => {
+                    return Err(CliError::bad_usage(format!("unrecognized flag '{}' for 'find'", rest[1]), "'find' takes a single <term> argument, not flags", "run 'atlas find <term>' with a real value, no flags"))
+                }
+                2 => rest[1].as_str(),
+                _ => {
+                    return Err(CliError::bad_usage(
+                        format!("'find' takes exactly one argument, got {}", rest.len() - 1),
+                        "usage: atlas find <term>",
+                        "quote a multi-word term (e.g. \"the Red Sea\") so it arrives as one shell word",
+                    ))
+                }
+            };
             let loaded = load::load(&data_dir)?;
             commands::find::run(&loaded.graph, term)
         }
@@ -93,18 +118,35 @@ fn run(args: &[String]) -> Result<String, CliError> {
     }
 }
 
-/// Every single-positional-argument command (`verse`/`chapter`/`node`/
-/// `find`) shares this exact validation: exactly one argument after the
-/// subcommand name, nonempty.
+/// Every single-positional-argument command (`verse`/`chapter`/`node`)
+/// shares this exact validation: exactly one argument after the
+/// subcommand name, nonempty. (`find` has its own copy in `run` above,
+/// per review S-4 -- it names its own kind-coverage scope in the
+/// zero-argument message, which this generic helper cannot express.)
+///
+/// FIX ROUND 1 (review T-3): an unrecognized `--flag` used to fall
+/// through into the generic "too many arguments" message without ever
+/// naming the flag -- inconsistent with `edges.rs`'s own diagnostics,
+/// which always name the offending flag. Both the exactly-one-extra-arg
+/// case and the too-many-args case now check for a leading `--` first and
+/// name it explicitly, matching `edges`'s own message shape.
 fn one_positional<'a>(rest: &'a [String], cmd: &str, shape: &str) -> Result<&'a str, CliError> {
     match rest.len() {
         1 => Err(CliError::bad_usage(format!("'{cmd}' requires an argument"), format!("usage: atlas {cmd} {shape}"), format!("run 'atlas {cmd} {shape}' with a real value, or 'atlas tutorial' for a worked example"))),
+        2 if rest[1].starts_with("--") => {
+            Err(CliError::bad_usage(format!("unrecognized flag '{}' for '{cmd}'", rest[1]), format!("'{cmd}' takes a single positional argument, not flags"), format!("run 'atlas {cmd} {shape}' with a real value, no flags")))
+        }
         2 => Ok(rest[1].as_str()),
-        _ => Err(CliError::bad_usage(
-            format!("'{cmd}' takes exactly one argument, got {}", rest.len() - 1),
-            format!("usage: atlas {cmd} {shape}"),
-            "quote a multi-word argument (e.g. \"BoC 7.2.1\") so it arrives as one shell word",
-        )),
+        _ => {
+            if let Some(flag) = rest[1..].iter().find(|a| a.starts_with("--")) {
+                return Err(CliError::bad_usage(format!("unrecognized flag '{flag}' for '{cmd}'"), format!("'{cmd}' takes a single positional argument, not flags"), format!("run 'atlas {cmd} {shape}' with a real value, no flags")));
+            }
+            Err(CliError::bad_usage(
+                format!("'{cmd}' takes exactly one argument, got {}", rest.len() - 1),
+                format!("usage: atlas {cmd} {shape}"),
+                "quote a multi-word argument (e.g. \"BoC 7.2.1\") so it arrives as one shell word",
+            ))
+        }
     }
 }
 

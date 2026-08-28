@@ -221,5 +221,23 @@ resolver = "2"
 # touched that crate (standing veto honored). AQC corpus unchanged (44/184,
 # harness=false runner never touched this batch).
 #
-# CURRENT CANONICAL: 933 (909 + 24) across 49 sections.
+# Batch CLI-1 fix round 1 (2026-08-28, controller review response --
+# C-1/S-2/S-3/S-4/T-1/T-2/T-3/T-4): moved to 940 (916 + 24) across the
+# SAME 49 sections (no new test file -- every new test lands inside an
+# already-counted section: `chapter.rs`'s own new `#[cfg(test)]` module
+# joins `unittests src\main.rs`; four new `tests/cli.rs` cases join that
+# section). Workspace +7: three new `chapter.rs` unit tests proving the
+# C-1 fix (`render_verse_line` now fails loud -- `not_found` -- on both
+# a missing KJV rendering and a non-KJV-shaped id, where `.unwrap_or_
+# default()` used to blank/skip silently; a third pins the real-rendering
+# happy path unchanged) plus four new `tests/cli.rs` integration cases
+# (T-4's untested `bad_ref`-on-unrecognized-`--kind` path; S-4's find-
+# with-no-argument scope-disclosure wording; T-3's named-flag diagnostic
+# on a `one_positional` command; a PeopleGroup-filter regression guard for
+# S-3/Q-2). `atlas-graph-types` unchanged (+0). AQC corpus unchanged
+# (44/184). Zero failures in either dual-run command. See
+# batch-cli1-report.md's own "Fix round 1" section for the full
+# per-finding disposition.
+#
+# CURRENT CANONICAL: 940 (916 + 24) across 49 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).

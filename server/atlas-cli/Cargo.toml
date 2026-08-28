@@ -12,7 +12,12 @@ atlas-core = { path = "../atlas-core" }
 atlas-graph = { path = "../atlas-graph" }
 atlas-graph-types = { path = "../../graph-types" }
 atlas-server = { path = "../atlas-server" }
-anyhow = "1"
 
 # R3: args hand-parsed per the atlas-server precedent -- no clap, no new
 # runtime deps beyond what atlas-server itself already brings in.
+#
+# FIX ROUND 1 (review T-1): `anyhow = "1"` was declared here but never
+# imported anywhere in this crate's own source (`load.rs` only calls
+# `.map_err` on the `anyhow::Result` that `GraphService::from_artifact`/
+# `AtlasData::load` already return -- it never names the `anyhow` type
+# itself) -- a dead dependency declaration, removed.

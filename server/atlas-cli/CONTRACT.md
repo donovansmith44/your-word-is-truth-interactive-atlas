@@ -182,7 +182,7 @@ nothing on a clean run.
 |---|---|---|---|
 | `bad_usage` | 4 | the command line itself is unparseable — unknown subcommand, unknown flag, missing a required positional/flag value, or extra positional arguments the command doesn't take | `atlas: error (bad_usage): unrecognized subcommand 'vers' -- 'atlas' only knows verse, chapter, node, edges, find, tutorial, help -- run 'atlas help' for the full list` |
 | `bad_ref` | 2 | a ref/id argument does not parse against its own grammar (locus grammar for `verse`/`chapter`, wire-id grammar for `node`/`edges`, an unrecognized `--kind` label for `edges`) | `atlas: error (bad_ref): 'GEN.1.99.3' is not a valid verse/Concord reference -- expected BOOK.CHAPTER.VERSE (e.g. GEN.1.1) or "BoC PART.ARTICLE.PARAGRAPH" -- check the book code and the dot-separated parts` |
-| `not_found` | 3 | the ref/id parses cleanly but names nothing this graph has — a real book+chapter+verse number combination that exceeds the chapter's own length, a well-formed id of a real kind that isn't in the graph | `atlas: error (not_found): no node named 'Event:not-a-real-event' -- the id parsed fine but this graph has no Event with that raw id -- try 'atlas find <term>' to locate the id you meant` |
+| `not_found` | 3 | the ref/id parses cleanly but names nothing this graph has — a real book+chapter+verse number combination that exceeds the chapter's own length, a well-formed id of a real kind that isn't in the graph | `atlas: error (not_found): no node named 'Event:not-a-real-event' -- the id parsed fine but this graph has no node with that raw id -- try 'atlas find <term>' to locate the id you meant` |
 | `data_load_failed` | 5 | `graph.bin` (or a required compiled JSON file) is missing, unreadable, or fails to parse at startup, before any command's own logic runs | `atlas: error (data_load_failed): could not load ../data/compiled/graph.bin -- reading ../data/compiled/graph.bin: The system cannot find the path specified. (os error 3) -- run 'cargo run -p atlas-graph --bin atlas-graph-compile' from server/ first, or pass --data-dir to point at a directory that already has graph.bin` |
 | `empty_result` | 1 | the command ran correctly end-to-end but the honest answer is zero rows (`find` with no matches; `edges` for an inhabited-elsewhere-but-empty-here kind) | `atlas: error (empty_result): no matches for 'zzqx' -- searched Place/Event/Narrative/Era/Polity labels -- try a shorter or different substring` |
 
@@ -192,6 +192,24 @@ nothing on a clean run.
 zero answers right now (a real, checked absence, not a lookup failure).
 Both still exit nonzero — R5's "no empty stdout-and-exit-0 on a miss"
 binds equally to both classes.
+
+FIX ROUND 1 (review S-2): the owner's brief names "ambiguous input" as
+one of five illustrative failure-class examples (batch-cli1-brief.md's
+own DELIVERABLE 0 wording); this taxonomy has no dedicated `ambiguous`
+class, disclosed here rather than left silently absent. No ambiguous-input
+case exists anywhere on this command surface: every ref/id/kind lookup
+this crate performs is an EXACT match against a total, unambiguous
+grammar (`ScriptureRef::parse`, `graph_wire::decode_node_id`,
+`graph_wire::parse_edge_kind` each either parse to exactly one value or
+fail outright -- none of them has a "could mean either of two things"
+partial-match mode) -- an input that doesn't match cleanly is always
+`bad_usage` (the command line itself) or `bad_ref` (the ref/id/kind
+argument), never a genuine ambiguity between two candidate
+interpretations. `atlas find <term>` is the one command whose answer can
+have MULTIPLE rows for one input, but that is not ambiguity in the input
+itself (the term is unambiguous; the graph honestly has several matching
+labels) -- its own multi-row success output, not an error class, is the
+correct treatment.
 
 Exit 0 is reserved for a command that produced real, nonempty primary
 output (help/tutorial's own "exit 0 on completion" is the one exception,
