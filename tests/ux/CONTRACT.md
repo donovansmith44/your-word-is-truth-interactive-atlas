@@ -65,6 +65,191 @@ The UX property suite couples ONLY to this contract (plus the HTTP API).
 - Range: `1447 BC – 1400 BC` (spaced en dash U+2013); single year shown as the year alone
 - Canonical refs: `GEN`, `GEN.1`, `GEN.1.1`, `GEN.1.1-5`
 
+## PRESENTATION CATEGORY LAW (Batch PERI-1, DELIVERABLE 0)
+Owner orders, verbatim (ledgered in batch-peri1-brief.md): "NUN is not an
+event. fix this error and others like it" (PSA.119.105's own popover,
+which surfaced the acrostic-stanza pericope `psa_119_nun` under an "EVENT"
+heading), and GAL.1.8's own "Astonishment: no other gospel; let him be
+accursed" pericope (`gal_no_other_gospel`), same defect. Controller scout
+(verified, not re-derived): the underlying data is sound and load-bearing
+(EVENT-1's own PASSAGE/EVENT DATA MODEL note above — `atlas_core::data::Event`
+with `kind == "general"`, dateless, no places, by construction) — the
+defect is purely presentational: a general-kind PASSAGE surfacing under
+event-category vocabulary it never earned.
+
+THE LAW: an entry of `kind == "general"` (a pericope / literary-structure
+PASSAGE — a Psalm acrostic stanza, an epistle outline pericope, ...) NEVER
+renders under an EVENT heading, on any surface that groups PASSAGE entries
+by a category label at all. Its category label, where one is shown, is
+**PASSAGE** — register law: plain, direction-not-mood, reusing this
+project's own pre-existing PASSAGE noun (EVENT-1's own model note above
+already calls `atlas_core::data::Event` "the owner's own PASSAGE
+abstraction"; CONTRACT.md's own testid inventory already writes "an
+EVENT-kind PASSAGE" throughout) rather than inventing a new word. A
+`kind == "event"` entry is UNCHANGED by this law — it keeps the EVENT
+category label everywhere it already had one.
+
+Surfaces RELABELED (a general-kind entry now reads PASSAGE where it used
+to read EVENT):
+- The VERSE popover's own event-membership section (EVENT-1 above,
+  `VerseEventMembershipSection`, client/Explore/PopoverSectionProviders.cs):
+  SPLIT into two sibling sections by `VerseEventDto.Kind` — dated
+  (`kind == "event"`) entries keep rendering under the EXISTING
+  `popover-section-event-membership` section (heading text "EVENT",
+  testid `event-section-heading`, unchanged; row testid `verse-event-{id}`,
+  unchanged), general-kind entries render under a NEW sibling section,
+  `popover-section-passage-membership` (heading text "PASSAGE", SAME
+  `event-section-heading` testid convention this popover platform already
+  reuses across every differently-worded section heading in this same
+  registry slot family — PARALLELS/PARALLEL ACCOUNTS/EVENT above all share
+  this one generic child testid, scoped by their own distinct
+  `popover-section-{testid}` parent), row testid `verse-event-{id}`
+  UNCHANGED (same button, same click target, same `.explorable-quiet`
+  styling this section already applied per-row before this batch —
+  HOTFIX-4 requirement 6 — only the GROUPING heading changes). Either
+  section is absent (conditional presence, unchanged idiom) when its own
+  kind has zero qualifying entries for this verse. The kind→heading
+  mapping is a real, exhaustive C# switch (throws `NotSupportedException`
+  on an unrecognized kind rather than silently defaulting) —
+  `EventMembershipHeading.For(string kind)`, client/Explore/
+  PopoverSectionProviders.cs — pinned by a client.Tests case (CONFORMANCE,
+  below).
+- `atlas verse <ref>` (server/atlas-cli): the CLI's own sibling defect —
+  `Events:` used to list every `events_for_verse` label regardless of
+  kind. Now FOUR labeled sections, not three — `Places:` / `Persons:` /
+  `Events:` / `Passages:` — `Events:` lists only `kind == "event"` labels,
+  `Passages:` only `kind == "general"` ones, each independently `(none)`
+  when empty (the pre-existing empty-result discipline, unchanged, now
+  applied per-kind rather than to one merged list). See
+  server/atlas-cli/CONTRACT.md's own `atlas verse` section for the
+  authoritative wording — updated in lockstep with this row, per this
+  batch's own machine rules.
+
+Surfaces AUDITED and EXCLUDED (verified structurally impossible or
+out-of-vocabulary, not assumed):
+- Place card event lists (`PlaceEventsSection`, `SceneEvent`): a
+  general-kind passage has no `Places` by construction (EVENT-1's own
+  model note — "places stays empty by construction" for `kind ==
+  "general"`) and `SceneEvent.When` is non-nullable on the wire — a
+  general-kind entry can never appear in a place's own event list at all,
+  so there is no EVENT heading here for one to be misfiled under.
+- World/chronology traversal, incl. the EV-1 verse-text rows
+  (`EventChronologySection`): already excludes `kind == "general"` before
+  this batch — "general-kind or unknown event -- NOT part of time
+  traversal," that class's own doc comment, `positions.Timeline is null`
+  short-circuits the whole section to absent. Verified live in this
+  batch's own conformance pass (unchanged, not re-implemented).
+- The selection tray chips (`SelectionTray.razor`, `item.Kind`) and the
+  saved-exploration hamburger trail's own per-node badge
+  (`ExplorationListItem.razor`, `node.Kind`): `item.Kind`/`node.Kind` here
+  is `IExplorable.Kind` / `ExplorationDescriptor.Kind` — the CLIENT's own
+  STRUCTURAL node-type tag ("Event", "Verse", "Place", "Chapter", ...,
+  the exact discriminator `PopoverSectionRegistry.Providers` and
+  `ExplorationDescriptor.Reconstruct` both switch on), a different
+  vocabulary axis from the DATA's own `Event::kind` ("event" | "general")
+  — the same "CLIENT's own UI-node-kind discriminator, distinct from and
+  never checked against the DATA's own `Event::kind`" distinction EVENT-1's
+  own KIND-AGNOSTIC note above already draws for `EventWitnessesSection`.
+  No general-kind entry can EVER reach the selection tray at all — grep-
+  verified this batch: zero call sites wire `OnToggleSelect`/
+  `ToggleSelectAsync` for an `EventNode` row anywhere in
+  PopoverSectionProviders.cs (`PlaceEventsSection`'s own toggle wires a
+  `TimeAndPlaceNode`, not an `EventNode`; `CrossRefsSection`'s own toggle
+  wires Verse/Passage targets) — so `SelectionTray.razor` is EXCLUDED
+  outright, not merely relabeled. The hamburger trail CAN hold a
+  general-kind `EventNode` (any node visited this popover session lands
+  in `FocusStack.Trail`, saved verbatim by `SaveExploration`) — RELABELED
+  instead of excluded: `ExplorationDescriptor` gains an ADDITIVE,
+  client-only (never crosses the HTTP wire — this record is serialized to
+  localStorage only, `SavedExplorationsService`), trailing, default-`false`
+  field, `IsGeneralKind`, populated from `EventNode.CachedKind` (a new
+  read-only forward to the SAME `EventDetail.Kind` every section provider
+  for that node already fetched and memoized while the node was ever
+  `Current` — "prefer client-side use of an existing field," this batch's
+  own machine rules, verbatim; zero new fetches). `ExplorationListItem.razor`
+  renders "Passage" instead of the raw `Kind` string for a badge whose
+  `IsGeneralKind` is true; every other of the twelve reconstructible node
+  kinds is unaffected (default `false`, unchanged rendering).
+- `atlas node <id>` / `atlas edges <id>` / `atlas find <term>`
+  (server/atlas-cli): each prints `kind: Event` (or a bare `Event` column)
+  — but this is the GRAPH's own structural node-type name
+  (`NodeKind::Event`, `graph_wire::describe_node`/`describe_position`'s own
+  `kind_str`), the identical CLIENT-side vocabulary-axis distinction drawn
+  immediately above — never the DATA's `Event::kind`, which none of these
+  three commands reads or prints at all today. A general-kind pericope IS,
+  structurally, an `Event`-kind graph node (the toml's own `[[event]]`
+  block), so `kind: Event` is not a false claim of dated/historical
+  event-ness the way a UI heading grouping by category is — EXCLUDED, same
+  reasoning as the client's own node-type badges immediately above.
+
+CONFORMANCE (the corollary, per spec §0 — "a contract whose violation
+nothing can fail on is documentation, not a contract"):
+- `EventMembershipHeadingTests` (client.Tests/Explore/): pins
+  `EventMembershipHeading.For` directly — `"event"` → `"EVENT"`,
+  `"general"` → `"PASSAGE"`, an unrecognized kind → throws
+  `NotSupportedException` (the cheapest honest structural check the switch
+  itself being EXHAUSTIVE, not merely two `if`s with a silent fallthrough).
+- `tests/ux/popover-sections.spec.ts` — PERI-1 block: the two owner-named
+  repros verbatim. PSA.119.105's own popover shows `popover-section-
+  passage-membership` with heading "PASSAGE" containing `verse-event-
+  psa_119_nun` ("Psalm 119: NUN"), and asserts `popover-section-event-
+  membership` is EITHER absent OR, if present (this verse may also touch a
+  real dated event), never contains that same row. GAL.1.8 likewise for
+  `gal_no_other_gospel` ("Astonishment: no other gospel; let him be
+  accursed"). A drift-failing assertion additionally scans EVERY
+  `popover-section-event-membership` block's own rows against a live
+  general-kind fixture id and fails if one is ever found there again.
+
+## Kretzmann width tokens (Batch PERI-1, KRETZ-WIDE-1, DELIVERABLE 0)
+Owner order, verbatim: "On Kretzmann, it doesn't read well. You need to
+use more horizontal real estate." CORPREAD-2's own SHARED-CONTAINER LAW
+(below) — the Kretzmann page's own scripture rows (`VerseLine`) render via
+the exact same component/class vocabulary Reader.razor's own chapter body
+does, at `.reader-column`'s own pinned `max-width: 66ch` — is UNTOUCHED:
+`.reader-column` itself gains no new rule, no token, no override. The
+PAGE's own outer column is the knob instead: `Kretzmann.razor`'s own root
+`<article>` drops the `reader-column` class it used to share with
+Reader.razor's page and gains its own dedicated rule instead, keyed to two
+new, named custom properties (declared on `:root`, `client/wwwroot/css/app.css`) —
+
+- `--kretzmann-page-measure` (`80ch`): the widened PAGE column — controls,
+  chapter head, section headings, and every commentary block
+  (`.kretzmann-item`) now read at this measure, not 66ch.
+- `--kretzmann-scripture-measure` (`66ch`): CORPREAD-2's own pinned
+  scripture-row measure, named here (not a bare magic number) for the ONE
+  place Kretzmann's own page CSS still needs to state it explicitly — the
+  scripture row itself. Deliberately the SAME numeric value `.reader-column`
+  already hard-codes elsewhere (a disclosed, intentional duplicate, not a
+  shared token — `.reader-column` is Reader.razor's own law and stays
+  untouched, per the paragraph above; this is Kretzmann's own page
+  independently agreeing with it, the same way two independently-declared
+  page-root rules already do elsewhere in this file, e.g. `.reader-page`/
+  `.sources-page`).
+
+Single-class-selector discipline (this file's own header comment) is kept
+throughout: `VerseLine`'s own `RowClass` parameter (Kretzmann.razor's call
+site only — Reader.razor's own `RowClass` is unchanged) gains one
+additional class, `kretzmann-scripture-row` (mirrors the EXISTING
+`kretzmann-scripture-text` precedent on `TextClass` one parameter over —
+"an ADDED class, layered onto VerseLine's own ... parameter," CORPREAD-2's
+own words), clamped to `--kretzmann-scripture-measure` and centered
+(`margin-inline: auto`) within the now-wider page column — no descendant
+selector, one rule per class, same as every other rule in this file.
+Commentary (`.kretzmann-item`, `.kretzmann-section-heading`), the chapter
+head, and the controls row are UNCLAMPED beyond the page's own new
+`--kretzmann-page-measure` — free to run wider than the bolded scripture
+column, per the owner's own words ("commentary blocks may run wider than
+the bolded scripture column if that reads best," batch-peri1-brief.md).
+Split view: `--kretzmann-page-measure`/`--kretzmann-scripture-measure` are
+both `max-width` caps on a `width: 100%` box — the EXACT mechanism
+`.reader-column` already uses successfully at the split-pane floor (see
+that rule's own comment) — so a narrower split pane clamps this column
+down exactly as it always has, no split-specific exception needed; the
+Kretzmann page's own padding token (`var(--reader-col-pad-x, 1.5rem)`) is
+reused verbatim (not reinvented) for the same reason. Both themes/7:1
+contrast/keyboard: unaffected — this is a `max-width`/`margin` change
+only, no color or interaction touched.
+
 ## data-testid inventory
 Header: `nav-reader`, `nav-world`, `nav-kretzmann`, `nav-concord` (batch-corp1-brief.md,
   R1 — top-level tabs alongside Reader/World, on every page's chrome, same `.nav-link`
@@ -948,7 +1133,14 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   `verse-event-{eventId}` (batch-t-brief.md; button; one per EVENT-kind
   PASSAGE citing the current VERSE, inside `popover-section-event-membership`
   -- REPLACES batch-n-brief.md's own verse-level PRIOR/FOLLOWING (retired,
-  see EVENT-1); clicking pushes a fresh `EventNode` for that event, id-keyed),
+  see EVENT-1); clicking pushes a fresh `EventNode` for that event, id-keyed).
+  Batch PERI-1 (PRESENTATION CATEGORY LAW, see that section above): SPLIT by
+  `Kind` -- a `kind == "general"` PASSAGE's own `verse-event-{eventId}` row
+  now lives inside a SIBLING section, `popover-section-passage-membership`
+  (heading text "PASSAGE", same `event-section-heading` child testid), never
+  inside `popover-section-event-membership` (heading "EVENT") -- both
+  sections share the row testid convention verbatim; only the grouping
+  wrapper/heading differs by kind,
   `event-date` (batch-t-brief.md; an EVENT node's own quiet date line,
   non-interactive -- carries the event's own curated `ref_note`, if any, as
   a plain hover tooltip, per requirement 4's own "ref_note provenance on

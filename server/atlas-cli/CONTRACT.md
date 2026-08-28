@@ -79,16 +79,29 @@ Output: the rendered text, red-letter marks shown inline as `[...]`
 around any KJV sub-verse span the graph's own `red_letter_spans` table
 covers (Concord refs never carry red-letter spans — that table is
 KJV-specific by construction, same as the server's own `words_of_christ`
-field), then three labeled sections — Places / Persons / Events — each
-either a short list or the literal word `(none)` (never blank space,
-never omitted — the empty-result discipline applies inside a successful
-command's own sections too, not just at the top level). Places/Persons/
-Events are populated ONLY for KJV verses (`AtlasData`'s own
-`places_for_verse`/`events_for_verse`/the graph's `persons_by_verse` are
-all Bible-specific tables); a Concord ref's card states this plainly
-("Places/Persons/Events: not tracked for the Book of Concord") rather
-than showing three empty sections that would misleadingly imply a real,
-checked absence.
+field), then FOUR labeled sections — Places / Persons / Events / Passages
+— each either a short list or the literal word `(none)` (never blank
+space, never omitted — the empty-result discipline applies inside a
+successful command's own sections too, not just at the top level).
+Places/Persons/Events/Passages are populated ONLY for KJV verses
+(`AtlasData`'s own `places_for_verse`/`events_for_verse`/the graph's
+`persons_by_verse` are all Bible-specific tables); a Concord ref's card
+states this plainly ("Places/Persons/Events/Passages: not tracked for the
+Book of Concord") rather than showing four empty sections that would
+misleadingly imply a real, checked absence.
+
+Batch PERI-1 (PRESENTATION CATEGORY LAW — owner order, verbatim: "NUN is
+not an event. fix this error and others like it"): `Events:`/`Passages:`
+is a SPLIT of what used to be one merged `Events:` line — `events_for_verse`
+now filters on `Event::kind` (already on every `Event` row, no new field):
+`Events:` lists only `kind == "event"` labels (a real, dated/placed
+passage), `Passages:` only `kind == "general"` ones (a dateless
+pericope/literary-structure passage — a Psalm acrostic stanza, an epistle
+outline pericope). Each list is independently `(none)` when its own kind
+has zero entries for this verse — the SAME empty-result discipline as
+before, now applied per-kind. See tests/ux/CONTRACT.md's own PRESENTATION
+CATEGORY LAW section for the full cross-surface law this row is one
+disclosed instance of.
 
 ### `atlas chapter <ref>`
 
