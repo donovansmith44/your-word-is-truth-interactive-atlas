@@ -139,8 +139,136 @@ Concord page (batch-corpread1b-brief.md, ticket C -- a CONTINUOUS READING SURFAC
   a popover click (CORP-1's own disclosed NEEDS_CONTEXT gap, later closed by CORP-1b's
   `description` field -- but even once real prose existed, CORP-1 never rendered it inline),
   and Concord's own part/article/paragraph navigation was numeric-picker-only, no menu. Every
-  testid named above is this batch's OWN current, accurate shape -- the boxed-card
-  presentation, and Concord's picker-only navigation, are retired.
+  testid named above is this batch's OWN current, accurate shape (AS OF CORPREAD-1b -- see the
+  CORPREAD-2 AMENDMENT immediately below for what supersedes it) -- the boxed-card
+  presentation, and Concord's picker-only navigation, were retired.
+
+  CORPREAD-2 AMENDMENT (batch-corpread2-brief.md, THE OWNER'S THREE VERBATIM VERDICTS,
+  superseding the Kretzmann/Concord rows above -- deliverable 0, the batch's own contract-first
+  charter, committed BEFORE implementation): CORPREAD-1b's own Kretzmann page never rendered
+  the Bible text at all -- a commentary-only reading surface (a quiet verse-anchor LABEL,
+  never the real verse) that the owner's own verdict named "wrong." CORPREAD-1b's own Concord
+  page put its Contents menu and numeric picker behind a click-to-open toggle, ABOVE the
+  reading column. Both are retired below.
+
+  (a) THE SHARED-CONTAINER LAW (owner verdict 1, VERBATIM: "essentially this should be a copy
+  of the main reader, except the kretzmann commentary is interleaved with the Bible ...
+  container names should be the same"). Kretzmann's own scripture rows now render through
+  THE READER'S OWN component pipeline -- `VerseLine.razor` (which itself renders
+  `MentionText.razor` -> `MentionScan.razor` for place/person mentions and the
+  `.words-of-christ` red-letter wrap) -- the SAME component instances `Reader.razor`'s own
+  chapter body calls, not a copy, not a parallel mini-implementation. Every CSS class is
+  identical: `verse-line`, `verse-num`, `verse-text`, `verse-mention`(`-person`),
+  `verse-xref-marker`, `words-of-christ`. Every testid VALUE is identical too whenever this
+  page is NOT split (no simultaneous second reader on screen to collide with): `verse-line-{n}`,
+  `verse-num-{n}`, `verse-mention-{n}-{placeId}` / `verse-mention-person-{n}-{personId}`,
+  `verse-xref-marker-{n}` -- pinned by a conformance-style Playwright assertion
+  (`kretzmann.spec.ts`'s own KRETZMANN-2S) that these exact selectors match on BOTH `/read`
+  and `/kretzmann`. SPLIT-MODE DISAMBIGUATION: Kretzmann's own split partner is Reader itself
+  (`ViewRegistrySetup.cs`'s own `EnterSplitKretzmannHostsReader`, unchanged) -- while split and
+  following, both panes would otherwise render the SAME verse's testids TWICE in one DOM,
+  breaking Playwright's strict-mode single-match locators. `VerseLine.razor` gains ONE new
+  parameter wiring (`TestIdSuffix` now also threads through its own `VerseNumTestId`, the ONE
+  reader-component change this batch makes -- optional, default `""`, every pre-existing
+  caller, `Reader.razor`/`MiniReaderExpand.razor`, is byte-for-byte unaffected); Kretzmann.razor
+  passes `""` (unsuffixed, matching the pin above) whenever standalone, `"-kv"` only while
+  split -- the SAME "same vocabulary, disambiguated instance" discipline
+  `MiniReaderExpand.razor`'s own `TestIdSuffix` already establishes for `VerseLine` reuse
+  inside a popover, applied here for the first time to two simultaneous TOP-LEVEL readers.
+  NEW containers (the interleaved commentary blocks) keep their OWN, already-declared testids
+  (`kretzmann-verse-group-{n}`, `kretzmann-section-heading-{slug}`, `kretzmann-item-{slug}`,
+  `kretzmann-ref-{ownerSlug}-{n}` -- unchanged, below).
+
+  THE ONE DELIBERATE TYPOGRAPHIC DELTA (owner verdict 1, verbatim: "bible bolded"): scripture
+  text on `/kretzmann` renders BOLD -- an ADDED CSS class (`kretzmann-scripture-text`,
+  `font-weight: 700`) layered onto `VerseLine`'s own pre-existing `TextClass` parameter
+  alongside the unchanged `verse-text` (`TextClass="verse-text kretzmann-scripture-text"`), a
+  pure class-list widening with no component change and no effect on `/read` (which passes
+  `TextClass="verse-text"` alone, untouched). Every OTHER property (size, line-height, color,
+  the red-letter override) is byte-identical between the two pages -- weight is the ONE
+  authorized difference.
+
+  RED LETTERS ("red letters should be there"), MENTIONS ("mentions/clicks ... identical"),
+  SAME EXPLORATION RESULTS PER NODE ("you should get the same exploration results per node"):
+  all free, by construction, from the shared pipeline above -- `VerseLine` renders red-letter
+  spans and mention spans unconditionally from the SAME `VerseOut`/`WordsOfChrist`/`XrefCount`
+  data `Reader.razor` already fetches (`Atlas.Chapter`, unchanged endpoint); a verse-line click
+  on either page pushes the identical `new VerseNode(vref)`, so `ExplorerPopover` renders the
+  SAME fetched `VerseDetail` regardless of which page opened it -- KRETZMANN-2S proves this
+  directly (click GEN.1.1 on `/read`, click GEN.1.1 on `/kretzmann`, same popover title/body).
+
+  PARTIAL VERSES CLICKABLE (owner verdict 1, verbatim: "verses and partial verses are still
+  clickable"): `Reader.razor`'s own anchor+extend shift-click passage-range mechanic (a plain
+  verse-num click sets an anchor; a shift-click against a different verse-num forms a range and
+  shows a `.passage-chip` that opens a PassageNode) is MIRRORED in `Kretzmann.razor`'s own page
+  code (the SAME shape Reader.razor itself uses -- this mechanic has never been a shared
+  component in this app, on EITHER page, so mirroring it here is the identical pattern, not a
+  second copy of a shared component). `passage-chip` on Kretzmann carries the SAME
+  split-mode `VerseTestIdSuffix` the verse rows do. DISCLOSED, NARROWER SCOPE:
+  `reader.js`'s own Shift-held backdrop-inertness mechanism (`watchShiftRelease`, the
+  `reader-shift-active` class that makes an open popover's backdrop `pointer-events: none`
+  while Shift is held, letting a second shift-click land underneath it) is NOT replicated on
+  Kretzmann -- a real, narrow, accepted gap: a shift-click sequence started while a popover is
+  already open may have its second click intercepted by the backdrop. Similarly, VerseLine's
+  own xref-marker CLICK/Enter path is wired (`OpenVerseXrefEntry`, commits a
+  `VerseNode(xrefEntryPoint: true)`); Reader's own HOVER-preview micro-behavior (a debounced
+  auto-dismiss tuned across several M-D3 fix rounds for a top-level popover's own pane-anchored
+  dismiss dance) is not replicated, matching `MiniReaderExpand.razor`'s own established
+  "hover stays Reader-page-only" precedent (that file's own header comment).
+
+  LAYOUT ("layout of the page the same as reader"): Kretzmann's own page-title/intro
+  strapline (`kretzmann-title`/`kretzmann-intro`, no counterpart on `/read` at all) is
+  RETIRED -- the page now opens directly on a real `<h1>.chapter-head` (byte-identical
+  typography to Reader's own, testid stays `kretzmann-chapter-head`), the same way `/read`
+  does. The bespoke `kretzmann-verse-anchor-{n}` quiet marginal-mark button (a small label
+  that opened the same VerseNode a real verse-num/verse-line click now already does) is
+  RETIRED WHOLE -- strictly redundant with the real verse row now rendered, and a second,
+  competing way to explore the identical verse is exactly the "parallel path" this batch's own
+  reuse mandate forbids. `kretzmann-prev`/`kretzmann-next` stay the SAME in-flow (not
+  `position: fixed`) idiom CORPREAD-1b already established, for the SAME reason (unchanged --
+  `.kretzmann-page` carries no `contain: layout`, so a fixed viewport-edge button would glue to
+  the WHOLE window rather than the split pane; see `Kretzmann.razor`'s own CORPREAD-1b header
+  comment, preserved). `kretzmann-controls`/`kretzmann-follow-chip`/`split-open-kretzmann` are
+  UNCHANGED from CORPREAD-1b. `kretzmann-empty`'s own MEANING narrows (semantics change,
+  disclosed): CORPREAD-1b's Kretzmann never rendered scripture, so "no commentary for this
+  chapter" and "nothing to show" were the same condition -- `kretzmann-empty` gated the WHOLE
+  page. Now the chapter's own real Bible text always renders regardless (the reader-parity
+  mandate); `kretzmann-empty` is a quiet NOTE shown alongside the still-rendered scripture,
+  present exactly when every verse of the current chapter carries zero commentary items --
+  never in place of the chapter body. Lazy-prose machinery (`lazyProse.js` +
+  `SemaphoreSlim(8)` + the KRETZMANN-13 total-request-bound guard + the every-render
+  observer rebind, CORPREAD-1b fix rounds 1/2) CARRIES OVER BYTE-IDENTICAL.
+
+  (b) CONCORD SIDEBAR CONTRACT (owner verdict 2, VERBATIM: "BoC: contents should always be
+  visible, not needed to click, to the left of the text. search is also to the left of the
+  text rather than always at the top of the page."). `concord-sidebar` (new; an ALWAYS-VISIBLE
+  left-hand `<aside>`, no toggle, no `aria-expanded` -- `concord-toc-toggle`/`concord-toc-menu`
+  are RETIRED WHOLE, along with `_tocOpen`/`ToggleToc`), containing two always-visible
+  sections: `concord-sidebar-search` (DISCLOSED reading: this app carries no free-text search
+  feature anywhere -- grep-verified; "search" here names the pre-existing numeric
+  part/article/paragraph jump form, the one find-your-way control that used to sit ABOVE the
+  reading column, which the owner's own sentence explicitly says "also" moves "to the left" --
+  wraps the UNCHANGED `concord-picker`/`concord-picker-part`/`-article`/`-paragraph`/`-go`)
+  and `concord-sidebar-toc` (the UNCHANGED ten-document `concord-toc-part-{n}` tree, below,
+  now unconditionally rendered). CURRENT-POSITION HIGHLIGHTED: the tree entry whose part
+  matches `_currentRef`'s own part carries an added `concord-toc-item-current` class plus
+  `aria-current="true"` (a plain computed property, `CurrentPart`, over the SAME `_currentRef`
+  the reading column already shows -- cannot drift out of sync by construction). Clicking a
+  document still navigates via the SAME `LoadWindowAsync` every other navigation uses, landing
+  in full reading flow -- unchanged. The reading column (`concord-title`/`concord-intro`/
+  `concord-controls` -- now just the split-open button, Contents+picker having moved to the
+  sidebar -- `concord-position`, `concord-part-heading-{n}`/`concord-article-heading-{part}-
+  {article}`, `concord-unit-{slug}`, `concord-ref-{ownerSlug}-{n}`, `concord-prev`/
+  `concord-next`) is UNCHANGED. RESPONSIVE: below `@media (max-width: 1023.98px)` -- the SAME
+  breakpoint `.split-open`/`.split-close` already hide behind in `app.css`, no new responsive
+  vocabulary -- the sidebar collapses to the STACKED pattern (full-width, non-sticky, above the
+  reading column; the brief's own named "drawer/stacked" alternative to a drawer) -- "always
+  visible" binds at desktop widths, per the brief's own explicit carve-out. SPLIT MODE: the
+  sidebar belongs to the Concord PANE (`position: sticky; top: 0`, resolving against whichever
+  ancestor genuinely scrolls -- the document body standalone, `.concord-page.split-pane-host`'s
+  own `overflow-y: auto` box while split-hosted -- by construction, one CSS rule, no per-mode
+  branch); its own 260px flex-basis is shrinkable (`flex: 0 1 260px`), so a narrow split pane
+  compresses it rather than clipping it or breaking the pinned-pane law.
 
 Escape-hatch vocabulary (batch-corpread1b-brief.md, deliverable 0a -- THE FOLLOW-RELEASE
   LAW, design spec §5, owner ruling 2026-08-27 verbatim: "on every thing sharing state with
@@ -235,9 +363,12 @@ BoC nav-menu structure (batch-corpread1b-brief.md, ticket C, owner order verbati
   the corpus's OWN part→article grammar (`ConcordRef`),
   not an invented taxonomy. Disclosed: a plain client-side constant (no Concord TOC/
   structure endpoint exists to fetch it from; zero server changes is this batch's own
-  machine rule). `concord-toc-toggle` reveals `concord-toc-menu`; each `concord-toc-part-{n}`
-  jumps to `BoC {n}.1.1` (every document's own opening paragraph) through the SAME
-  `LoadWindowAsync` every other navigation uses -- the landing always renders in full
+  machine rule). CORPREAD-2 AMENDMENT: `concord-toc-toggle`/`concord-toc-menu` (the
+  click-to-open panel) are RETIRED -- the tree now lives, unconditionally rendered, inside
+  `concord-sidebar-toc` (the always-visible left sidebar; see the CORPREAD-2 AMENDMENT above).
+  Each `concord-toc-part-{n}` jumps to `BoC {n}.1.1` (every document's own opening paragraph)
+  through the SAME `LoadWindowAsync` every other navigation uses -- the landing always renders
+  in full
   reading flow, never a bare fragment.
 
 Reading-continuity guarantees (batch-corpread1b-brief.md, ticket K/C): both pages render
