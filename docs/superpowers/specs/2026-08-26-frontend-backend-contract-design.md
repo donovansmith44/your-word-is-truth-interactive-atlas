@@ -98,10 +98,14 @@ lands in both in the same commit). Summary for readers of this spec:
 
 **Enforcement (the conformance corollary applied to data):** two
 fail-loud mechanisms, neither alone sufficient — (a) the pairwise
-duplicate sweep (`atlas_etl::validate::run_event_merges` /
-`run_cross_book_duplicates`) at `DUPLICATE_JACCARD_THRESHOLD = 0.5`
-(Batch CHRON-1, lowered from 0.8; also widened to compare
-layer0-against-layer0 pairs, not just layer0-vs-layer1), the tooling
+duplicate sweep (`atlas_etl::validate::run_event_merges`, gated on
+`DUPLICATE_JACCARD_THRESHOLD = 0.5`, Batch CHRON-1, lowered from 0.8
+and widened to compare layer0-against-layer0 pairs, not just
+layer0-vs-layer1; `run_cross_book_duplicates`, the orthogonal
+cross-book detector, gated on its own separate
+`TITLE_JACCARD_THRESHOLD = 0.70`, untouched by this batch — fix round
+1, review finding T-2: the earlier text here incorrectly cited both
+sweeps against the SAME threshold), the tooling
 a curator uses to triage every candidate pair into
 `EVENT_MERGE_PAIRS` or `EVENT_DISTINCT_PAIRS` with a written reason —
 an unlisted pair fails the ETL build loud; (b) the NEW

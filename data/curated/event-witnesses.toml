@@ -1441,8 +1441,8 @@ robertson_section = "Robertson (1922) §44"
 [[witness]]
 event_id = "rob_leper_healed"
 book = "MAT"
-verses = ["MAT.8.2-4"]
-ref_note = "Matthew 8:2-4 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
+verses = ["MAT.8.1-4"]
+ref_note = "Matthew 8:1-4 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor). Batch CHRON-1 fix round 1 (review finding S-C1/S-1): widened from MAT.8.2-4 to MAT.8.1-4 -- `scene::witnesses_for` returns ONLY these explicit witness rows once any exist, never falling back to the event's own top-level `verses` field, so widening events-extra.toml's own MAT.8.1-4 alone (this batch's original fix) never actually reached the compiled artifact; this row is the one that does. The widening supersedes Robertson's own §45 title's literal 2-4 span because the theo-286 merge absorbed Theographic's own MAT.8.1 attestation (the leper pericope's own scene-setting verse, \"when he was come down from the mountain, great multitudes followed him\") -- restoring it here, not dropping it, per the standing coverage-completion law."
 robertson_section = "Robertson (1922) §45"
 
 [[witness]]

@@ -2077,16 +2077,23 @@ fn run_no_two_opinions_ignores_general_kind_events() {
 }
 
 #[test]
-fn run_no_two_opinions_passes_on_the_real_post_triage_corpus() {
-    // The real, standing EVENT_DISTINCT_PAIRS table -- every pair this
-    // module's own module doc documents as genuinely distinct must ALSO
-    // pass this direct, placement-based check (not just the pairwise
-    // sweep's own "is it listed" bar). Uses synthetic events matching each
-    // real distinct pair's own id/placement shape rather than the full
-    // compiled corpus (a live end-to-end proof runs at `cargo run -p
-    // atlas-etl` time against the real data, exercised in this batch's own
-    // report); this proves the FUNCTION's own exemption lookup works
-    // against every real entry, not a stale subset.
+fn run_no_two_opinions_exempts_every_real_distinct_pair() {
+    // FIX ROUND 1 (review finding I-7): renamed from
+    // `..._passes_on_the_real_post_triage_corpus` -- that name overclaimed
+    // what this test actually proves. It builds SYNTHETIC events (fabricated
+    // `GEN.{i}.1` verses) one pair per real EVENT_DISTINCT_PAIRS row, so it
+    // proves the exemption LOOKUP covers every real entry, not that the
+    // real compiled corpus passes this check end to end -- the genuine
+    // corpus proof is `cargo run -p atlas-etl` (which calls
+    // run_no_two_opinions against the real post-merge data and DID run,
+    // clean, at this batch's own recompile step), not this unit test. Every
+    // pair this module's own module doc documents as genuinely distinct
+    // must be exempt from the direct, placement-based check (not just the
+    // pairwise sweep's own "is it listed" bar) -- proven here via synthetic
+    // events matching each real distinct pair's own id/placement shape
+    // rather than the full compiled corpus, so this proves the FUNCTION's
+    // own exemption lookup works against every real entry, not a stale
+    // subset.
     use atlas_core::event_merge::EVENT_DISTINCT_PAIRS;
     let mut events = Vec::new();
     for (i, pair) in EVENT_DISTINCT_PAIRS.iter().enumerate() {

@@ -11,4 +11,13 @@ Set-Location "$PSScriptRoot\..\.."
 # full path sidesteps PATH resolution order entirely -- the one genuinely
 # reliable fix, not order-dependent on whatever this machine's system PATH
 # happens to contain.
-& "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe" run --project client --launch-profile http
+# T-4 (fix round 1 review, Trivia): fall back to plain `dotnet` (PATH
+# resolution) if the LOCALAPPDATA copy this machine happens to need isn't
+# there at all, rather than hard-failing on a path that only this one
+# machine is known to require.
+$dotnetExe = "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe"
+if (Test-Path $dotnetExe) {
+    & $dotnetExe run --project client --launch-profile http
+} else {
+    dotnet run --project client --launch-profile http
+}

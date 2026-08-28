@@ -2124,7 +2124,7 @@ places = ["galilee-1"]
 verses = ["MAT.8.1-4"]
 order_key = 450
 robertson_section = "Robertson (1922) §45, \"A Leper Healed and Much Popular Excitement\""
-ref_note = "Matthew 8:1-4 read directly against the compiled KJV text (Batch CHRON-1: widened from 8:2-4 to include 8:1, the scene-setting 'when he was come down from the mountain, great multitudes followed him' verse -- theo-286's own boundary-verse coverage this event's own theo-286 merge otherwise would have dropped, per the standing coverage-completion law); Luke's own witness (5:12) names only 'a certain city,' unspecified -- galilee-1 kept as the broad, defensible region"
+ref_note = "Matthew 8:1-4 read directly against the compiled KJV text (Batch CHRON-1: widened from 8:2-4 to include 8:1, the scene-setting 'when he was come down from the mountain, great multitudes followed him' verse -- theo-286's own boundary-verse coverage this event's own theo-286 merge otherwise would have dropped, per the standing coverage-completion law; fix round 1, review finding S-C1/S-1: this top-level field alone does NOT reach the compiled artifact once explicit witness rows exist -- `scene::witnesses_for` returns ONLY those rows -- the real fix is event-witnesses.toml's own MAT witness row, widened alongside this one); Luke's own witness (5:12) names only 'a certain city,' unspecified -- galilee-1 kept as the broad, defensible region"
 
 [[event]]
 id = "rob_paralytic_roof"

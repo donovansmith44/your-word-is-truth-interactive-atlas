@@ -654,6 +654,89 @@ fn no_duplicate_fall_of_jerusalem_or_gedaliah_mizpah_nodes_in_the_real_compiled_
 }
 
 // ---------------------------------------------------------------------
+// Batch CHRON-1 fix round 1 (review finding S-C1/S-1, Critical): the
+// original batch's own claimed "coverage restoration" fixes were checked
+// against `covered_verses` above (a top-level-`verses`-UNION-witnesses
+// helper) and against `chronology.json`'s own event count, neither of
+// which reproduces the real bug -- `scene::witnesses_for` (the function
+// `server/atlas-graph/src/event_world.rs`'s own `attests`-row builder
+// calls, i.e. the SAME resolver that actually reaches `chronology.json`
+// and the live server) returns ONLY an event's own explicit `[[witness]]`
+// rows once ANY exist, NEVER falling back to top-level `verses` -- so
+// widening `rob_leper_healed`'s own top-level `verses` to MAT.8.1-4
+// (this batch's original fix) never reached a real reader at all; the
+// MAT witness row itself was still MAT.8.2-4. Fixed (widened the witness
+// row too); this test proves it stays fixed by calling `witnesses_for`
+// directly, on the real compiled event, the exact function the bug hid
+// inside -- not a re-derivation of `verse_to_events`'s own different
+// (looser) union, which would pass even on the broken shape.
+// ---------------------------------------------------------------------
+
+#[test]
+fn chron1_coverage_restorations_actually_reach_witnesses_for() {
+    let real = real_compiled_data();
+
+    // (event id, verse this event's own restoration/enrichment must cover)
+    // -- covers FOUR of the batch's own five claimed restorations directly
+    // through `witnesses_for`'s own OUTPUT: the charter case's own MAT.8.1
+    // (the one S-1 caught broken), plus ab_egypt/je_egypt_ruler (no witness
+    // rows of their own, so their top-level widenings alone DO reach
+    // witnesses_for's synthesis path) and jm_caesarea_philippi's MRK/LUK
+    // (real witness rows, never dependent on the top-level field at all).
+    // jm_sychar is checked separately, below, at the SOURCE rather than
+    // through witnesses_for's own output -- see that test's own comment
+    // for why (verse_groups_for's own pre-existing 20-verses-per-chapter
+    // cap, unrelated to this batch, would make JHN.4.27 structurally
+    // unreachable through witnesses_for() regardless of the widening).
+    let cases: &[(&str, &str)] = &[
+        ("rob_leper_healed", "MAT.8.1"),
+        ("ab_egypt", "GEN.12.11"),
+        ("je_egypt_ruler", "GEN.41.37"),
+        ("jm_caesarea_philippi", "MRK.8.27"),
+        ("jm_caesarea_philippi", "LUK.9.18"),
+    ];
+
+    for (event_id, vref) in cases {
+        let event = real.events.iter().find(|e| e.id == *event_id).unwrap_or_else(|| panic!("'{event_id}' must exist in the real compiled event set"));
+        let resolved = atlas_core::scene::witnesses_for(event);
+        let covered: HashSet<&str> = resolved.iter().flat_map(|w| w.verse_groups.iter().flat_map(|g| g.verses.iter().map(String::as_str))).collect();
+        assert!(
+            covered.contains(vref),
+            "'{event_id}'s own witnesses_for() must cover {vref} -- a widening that only ever touches the top-level `verses` field is INERT once explicit witness rows exist (S-1's own root cause); covered set was: {covered:?}"
+        );
+    }
+}
+
+/// `jm_sychar`'s own JHN.4.4-42 widening checked at the SOURCE (the
+/// event's own top-level `verses` field), not through `witnesses_for`'s
+/// own OUTPUT the way the other four restorations above are -- that
+/// output runs through `verse_groups_for`'s own PRE-EXISTING (unrelated to
+/// this batch), ascending, 20-verse-per-chapter cap (`scene.rs`'s own doc
+/// comment), so JHN.4.4-42's own 39 verses cap down to JHN.4.4-23 there
+/// regardless of whether the widening ever happened -- asserting JHN.4.27
+/// through `witnesses_for()` would fail on CORRECT data just as readily as
+/// on broken data, telling a future reader nothing. This is exactly the
+/// shape the review's own investigation already checked and cleared:
+/// "JHN.4.24-JHN.4.42 appearing uncovered in chronology.json is the
+/// pre-existing 20-verses-per-chapter DISPLAY cap... not a data loss --
+/// jm_sychar really does carry JHN.4.4-42." This test proves that last
+/// clause directly against the real compiled event's own source field.
+#[test]
+fn chron1_jm_sychar_widening_reaches_the_source_verses_field() {
+    let real = real_compiled_data();
+    let event = real.events.iter().find(|e| e.id == "jm_sychar").expect("jm_sychar must exist in the real compiled event set");
+    assert!(
+        event.verses.contains(&"JHN.4.27".to_string()),
+        "jm_sychar's own top-level `verses` must contain JHN.4.27 (the widened JHN.4.4-42 range) -- got {:?}",
+        event.verses
+    );
+    assert!(
+        event.witnesses.is_empty(),
+        "jm_sychar must still carry NO explicit witness rows -- if this ever changes, witnesses_for's own synthesis path (which reads top-level `verses`) stops applying to it, and this test's own reasoning (and chron1_coverage_restorations_actually_reach_witnesses_for's own comment) needs revisiting"
+    );
+}
+
+// ---------------------------------------------------------------------
 // Batch W5 (whole-Bible titled verse containers, fifth and FINAL run --
 // req 4, THE COMPLETION MILESTONE). `tests/ux/reader-headings.spec.ts`'s
 // own "an uncovered book/chapter shows no pericope heading at all" test

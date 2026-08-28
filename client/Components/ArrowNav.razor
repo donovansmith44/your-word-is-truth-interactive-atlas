@@ -367,7 +367,20 @@ else
         {
             return; // Inline rows never show a primary verse (this file's own header comment); an unchanged Adjacent needs no re-fetch
         }
-        _lastAdjacentId = Adjacent?.Id;
+        // FIX ROUND 1 (review finding I-6): `capturedId` is the id THIS
+        // fetch is resolving for, closed over by value. `_lastAdjacentId`
+        // itself already gated the FETCH (unchanged) -- but the original
+        // code assigned `_primaryVerse` unconditionally after the `await`,
+        // with no re-check that `Adjacent` hadn't already moved on to a
+        // NEWER row while this fetch was in flight (two rapid traversals
+        // could land a stale verse under the newer row's own label). Low
+        // probability (chapter fetches are LRU-cached on AtlasClient) but
+        // a real correctness hole -- this file's own header comment
+        // claimed the change was "identity-guarded on Adjacent?.Id,"
+        // which was only ever true of the READ side; now true of the
+        // WRITE side too.
+        var capturedId = Adjacent?.Id;
+        _lastAdjacentId = capturedId;
         _primaryRef = null;
         _primaryVerse = null;
 
@@ -380,6 +393,10 @@ else
         try
         {
             var resolved = await VerseTextResolver.ResolveAsync(Atlas, new[] { firstVref });
+            if (_lastAdjacentId != capturedId)
+            {
+                return; // a NEWER Adjacent already landed while this fetch was in flight -- never overwrite its own state with a stale result
+            }
             _primaryVerse = resolved.FirstOrDefault();
         }
         catch (Exception)
