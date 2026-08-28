@@ -168,7 +168,35 @@
    (`RoleTestIdPrefix`) and TITLE-WRAP-1's own two-line clamp are both
    BLOCK-mode-only -- a story-thread leg shows its full name unclamped,
    never truncated: it is not squeezed into a 47%-width column the way a
-   block arrow is, so there is nothing here for that clamp to solve. *@
+   block arrow is, so there is nothing here for that clamp to solve.
+
+   EV-1 (owner, verbatim: "when traversing events, i should be able to see
+   the actual event-mapped verse, rather than just the event title when
+   going through the chronology."): block-mode rows (the ordinary
+   Chronology prior/following arrows -- never Inline, the divergence
+   sentence above, which stays title-only, a running-prose leg reference
+   rather than a traversal row of its own) now render the event's own
+   PRIMARY WITNESS VERSE -- ref plus first-verse text, through the ONE
+   render rule (MentionText) -- as an always-visible line beneath the role
+   caption, not gated behind the dwell peek the way verse text used to be
+   exclusively (TRAV-1/PEEK-TRUNC-1 above; that peek still exists,
+   unchanged, for the FULL passage on hover). "Primary" = this event's own
+   FIRST VerseGroup (server-order, the same primary-attestation ordering
+   the peek's own _peekVerses already trusts) -- SelectPrimaryVerse below
+   is the pure selection logic (ref via PassageGrouping.SpanRef, first
+   vref to resolve), covered directly by client.Tests/ArrowNavTests.cs; a
+   RANGE group (e.g. MAT.8.2-4) shows its own SPAN ref ("MAT.8.2-4") but
+   only the FIRST verse's own real text (MAT.8.2's), per the brief's own
+   words -- never all verses inline (that stays the peek's own job).
+   Eager, not dwell-gated (OnParametersSetAsync, the same _lastPlaceId-
+   style identity guard PlaceCard.razor's own OnParametersSetAsync
+   established, keyed on Adjacent?.Id so a re-render with the SAME
+   adjacent event never re-fetches) -- the whole point is visibility
+   without a hover gesture. Chapter fetches are LRU-cached on AtlasClient
+   (_chapterCache), so a later dwell-peek over the identical event's own
+   chapter is a cache hit, not a second network round trip. POPOVER-LAW-1
+   (chrome vs content) is satisfied by construction: this is content the
+   owner explicitly ordered rendered, not chrome pulled in speculatively. *@
 @using System.Globalization
 @inject AtlasClient Atlas
 @inject IJSRuntime JS
@@ -218,6 +246,24 @@ else
     </button>
 
     <p class="popover-event-nav-role" data-testid="@($"{RoleTestIdPrefix}-{IdSuffix}")">@RoleText</p>
+
+    @* EV-1: the always-visible primary-verse line -- see this file's own
+       header comment for the full "why eager, why first-group-first-verse"
+       story. _primaryVerse is null on the very first render after a fresh
+       Adjacent lands (the fetch is in flight) and stays null if resolution
+       genuinely fails (fail-soft, LoadPrimaryVerseAsync's own try/catch) --
+       either way this renders nothing rather than a loading placeholder,
+       the same "absence is a valid, honest state" precedent MentionText's
+       own header comment already establishes for empty text. *@
+    @if (_primaryVerse is not null)
+    {
+        <p class="popover-event-nav-verse" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-verse")">
+            <span class="popover-event-nav-verse-ref">@_primaryRef</span>
+            <MentionText Text="@_primaryVerse.Text" Places="@(_primaryVerse.Places ?? Array.Empty<PlaceRefDto>())" Persons="@(_primaryVerse.Persons ?? Array.Empty<PersonRefDto>())"
+                WordsOfChrist="@(_primaryVerse.WordsOfChrist ?? Array.Empty<WordsOfChristSpanDto>())" Verse="@CanonRef.ParseVerse(_primaryVerse.Vref).Verse"
+                ClassPrefix="popover-event-nav-mention" TestIdSuffix="@($"-{EventTestIdPrefix}-{IdSuffix}")" OnExplore="OnExplore" />
+        </p>
+    }
 }
 
 @* CHRONO-MERGE-1: hoisted out of the block-only `else` above -- the peek
@@ -304,6 +350,74 @@ else
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
     private string RoleText => Direction == "prior" ? "PRIOR EVENT" : "FOLLOWING EVENT";
+
+    // EV-1 -- see this file's own header comment for the full story.
+    // _lastAdjacentId gates OnParametersSetAsync's own fetch to ONLY a
+    // genuinely NEW adjacent event (PlaceCard.razor's own _lastPlaceId
+    // precedent, identical shape): every OTHER re-render of this same
+    // instance (a parent StateHasChanged for an unrelated reason -- the
+    // dwell peek opening on the OPPOSITE side, say) must not re-fetch.
+    private string? _lastAdjacentId;
+    private string? _primaryRef;
+    private PassageListVerse? _primaryVerse;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Inline || Adjacent?.Id == _lastAdjacentId)
+        {
+            return; // Inline rows never show a primary verse (this file's own header comment); an unchanged Adjacent needs no re-fetch
+        }
+        _lastAdjacentId = Adjacent?.Id;
+        _primaryRef = null;
+        _primaryVerse = null;
+
+        var (spanRef, firstVref) = SelectPrimaryVerse(Adjacent?.VerseGroups);
+        if (firstVref is null)
+        {
+            return; // no verse groups at all -- genuinely nothing to show (never reached by a real dated event, defensive regardless)
+        }
+        _primaryRef = spanRef;
+        try
+        {
+            var resolved = await VerseTextResolver.ResolveAsync(Atlas, new[] { firstVref });
+            _primaryVerse = resolved.FirstOrDefault();
+        }
+        catch (Exception)
+        {
+            // fail soft -- same graceful-degradation policy the dwell
+            // peek's own DwellThenPeek already follows for this identical fetch shape
+        }
+    }
+
+    /// Pure: this event's own PRIMARY witness verse -- the first
+    /// `VerseGroup`'s own span ref (<see cref="PassageGrouping.SpanRef"/>,
+    /// e.g. "MAT.8.2-4" for a range or the bare "MAT.8.2" for a lone
+    /// verse) paired with that SAME group's own first vref (the one verse
+    /// whose real text actually gets resolved and shown -- "ranges shown
+    /// as their ref + first-verse text," the brief's own words, verbatim).
+    /// `null` groups (Adjacent absent -- the empty-placeholder side) or an
+    /// empty group list both return (null, null); a group with an empty
+    /// `Verses` list (never real, but defended against rather than
+    /// trusted) is skipped in favor of the next non-empty group, if any.
+    /// Covered directly by client.Tests/ArrowNavTests.cs.
+    public static (string? Ref, string? FirstVref) SelectPrimaryVerse(IReadOnlyList<VerseGroup>? groups)
+    {
+        if (groups is null)
+        {
+            return (null, null);
+        }
+        foreach (var g in groups)
+        {
+            if (g.Verses.Count == 0)
+            {
+                continue;
+            }
+            var first = g.Verses[0];
+            var last = g.Verses[^1];
+            return (PassageGrouping.SpanRef(first, last), first);
+        }
+        return (null, null);
+    }
 
     // CHRONO-MERGE-1: the ONE thing that actually differs about the
     // wrapper element between the two modes -- Inline drops the block

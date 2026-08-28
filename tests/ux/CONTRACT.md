@@ -3661,6 +3661,56 @@ Notes:
   click each onto the Chronology block (`ex_succoth`, agreeing) or the
   story-thread line (`ex_kadesh`, diverging on both directions)
   respectively -- both fixtures' own real wire data decided which.
+- EV-1 (Batch CHRON-1, owner verbatim: "when traversing events, i should
+  be able to see the actual event-mapped verse, rather than just the
+  event title when going through the chronology."): the Chronology
+  block's own BLOCK-mode arrow rows (`EventChronologySection`'s two
+  `ArrowNav` instances, `event-chrono-prior-event-global`/`event-chrono-
+  following-event-global`) now render an ALWAYS-VISIBLE primary-witness-
+  verse line beneath the existing PRIOR/FOLLOWING role caption -- ref plus
+  first-verse real KJV text, through the ONE render rule (`MentionText`,
+  in-text place/person mentions explorable exactly as everywhere else
+  text renders), never gated behind the dwell peek the way verse text used
+  to be exclusively (PEEK-1/TRAV-1/PEEK-TRUNC-1, above; that peek is
+  UNCHANGED, still the way to see the FULL passage/all verses on hover).
+  The story-thread line's own `Inline` rows are UNTOUCHED (title-only,
+  same as before) -- a running-prose leg reference, not a traversal row of
+  its own; POPOVER-LAW-1 is satisfied by construction (this is content the
+  owner explicitly ordered, not chrome pulled in speculatively).
+  - SELECTION: "primary" = this event's own FIRST `VerseGroup` (server
+    order, the same primary-attestation ordering the peek's own resolved
+    verse list already trusts) -- a RANGE group (e.g. `MAT.8.1-4`) shows
+    its own SPAN ref (`.popover-event-nav-verse-ref`, e.g. "MAT.8.1-4")
+    but resolves and shows ONLY the FIRST verse's own real text
+    (`MAT.8.1`'s) -- "ranges shown as their ref + first-verse text," the
+    brief's own words, verbatim; the REST of a multi-verse witness stays
+    the dwell peek's own job, unchanged.
+  - TIMING: eager, not dwell-gated -- fetched the moment a genuinely NEW
+    adjacent event lands on either arrow (`ArrowNav`'s own
+    `OnParametersSetAsync`, identity-guarded on `Adjacent?.Id` so a
+    same-event re-render never re-fetches), never waiting on a hover
+    gesture -- the entire point of this ticket. Chapter fetches are
+    LRU-cached client-side, so a LATER dwell-peek over the identical
+    event's own chapter is a cache hit, not a second round trip.
+  - ABSENCE: no verse resolves (network failure, or -- never reached by a
+    real dated event, but defended against -- an event with zero verse
+    groups) renders nothing extra, never a loading placeholder or an
+    empty box -- MentionText's own "absence is a valid, honest state"
+    precedent, applied one layer out.
+  - TESTIDS: `{event-chrono-prior-event|event-chrono-following-event}-
+    global-verse` names the new `<p class="popover-event-nav-verse">`
+    line; the verse's own in-text mentions carry the `popover-event-nav-
+    mention`/`popover-event-nav-mention-person` prefix (MentionText's own
+    `ClassPrefix`/testid convention), suffixed
+    `-{event-chrono-prior-event|event-chrono-following-event}-global`
+    exactly like every other MentionText consumer in this file.
+  - DUP-DEATH REGRESSION (the owner's own original repro, ledgered in
+    `.superpowers/sdd/2026-08-17-bible-atlas-m1/dup-events-investigation.md`):
+    the leper pair (`rob_leper_healed`/`theo-286`, the batch's own charter
+    merge) means MAT.8.3's own PARALLELS popover now shows exactly ONE
+    event, not two independently-dated cards for the identical pericope --
+    covered by `tests/ux/event-timeline.spec.ts`'s own `EV-1` describe
+    block alongside the traversal-row verse-text assertion above.
 - ONE-RULE (batch-g1-brief.md, user direction 2026-08-19: "the little trinity button
   isn't clear... explorable elements display slightly darker on hover; click opens the
   pop-up menu" -- REPLACES the retired `verse-explore-{n}` ∴ button, which offered no

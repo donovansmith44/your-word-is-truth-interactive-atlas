@@ -5067,6 +5067,42 @@ input:focus-visible,
     margin: .1rem 0 0;
 }
 
+/* EV-1 (owner: "when traversing events, i should be able to see the
+   actual event-mapped verse, rather than just the event title") -- the
+   always-visible primary-verse line beneath .popover-event-nav-role
+   (ArrowNav.razor's own header comment has the full "why eager, why
+   first-group-first-verse" story). Serif/ink like ordinary verse prose
+   elsewhere (VerseLine, the dwell peek's own .popover-arrow-peek-verse),
+   never the role caption's own mono/tracked-caps register -- this IS the
+   verse text, not a label about it. word-break (not the label's own
+   white-space:nowrap): real KJV prose is meant to wrap. -webkit-line-clamp
+   caps it at 3 lines -- generous enough that the overwhelming majority of
+   single verses show in full (median KJV verse length comfortably fits;
+   the peek's own "more/all" reveal, one dwell away, is still where a
+   genuinely long verse or the REST of a multi-verse witness lives) while
+   keeping this column's own .popover-event-nav-side 47%-width box from
+   growing unboundedly for the rare long one. */
+.popover-event-nav-verse {
+    margin: .2rem 0 0;
+    font-family: var(--font-serif);
+    font-size: .82rem;
+    line-height: 1.4;
+    color: var(--ink);
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.popover-event-nav-verse-ref {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--bronze-ink);
+    margin-right: .35rem;
+}
+
 .popover-event-nav-arrows {
     display: flex;
     align-items: flex-start;

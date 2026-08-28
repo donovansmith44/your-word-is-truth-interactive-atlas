@@ -976,3 +976,100 @@ test('PEEK-5 (fix round 1, F2): a peek target whose own verse group is server-ca
   await expect(page.getByTestId(`event-chrono-prior-event-global-peek-verse-${group.verses[group.verses.length - 1]}`)).toBeVisible();
   await expect(truncatedNote).toBeVisible();
 });
+
+// ---------------------------------------------------------------------
+// EV-1 (Batch CHRON-1, owner verbatim: "when traversing events, i should
+// be able to see the actual event-mapped verse, rather than just the
+// event title when going through the chronology."): the Chronology
+// block's own block-mode arrow rows now render an ALWAYS-VISIBLE
+// primary-witness-verse line -- ref plus first-verse real text -- never
+// gated behind the dwell peek (PEEK-1, above; that peek is UNCHANGED,
+// still the way to see the full passage on hover). CONTRACT.md's own EV-1
+// note (after CHRONO-MERGE-1) has the full selection/timing/testid rule.
+// ---------------------------------------------------------------------
+
+test('EV-1: a Chronology traversal row shows the target event\'s own real verse text immediately, with no hover/dwell needed', async ({ page }) => {
+  const positions = await api.narrativeEventPositions('gen_binding_isaac');
+  expect(positions.timeline.following, 'gen_binding_isaac must have a real FOLLOWING target for this test to mean anything').toBeTruthy();
+
+  await openEventPopover(page, 'gen_binding_isaac');
+  const arrow = page.getByTestId('event-chrono-following-event-global');
+  await expect(arrow).toBeVisible();
+
+  // No hover/dwell at all -- the whole point of this ticket. The verse
+  // line must already be present the instant the row itself renders.
+  const verseLine = page.getByTestId('event-chrono-following-event-global-verse');
+  await expect(verseLine).toBeVisible();
+
+  // Ground truth: the wire's own FIRST verse group's own FIRST verse --
+  // SelectPrimaryVerse's own selection rule (client.Tests/ArrowNavTests.cs
+  // has the pure-logic proof; this is the real end-to-end wire-through-DOM
+  // confirmation).
+  const group = positions.timeline.following.verse_groups[0];
+  const firstVref = group.verses[0];
+  const lastVref = group.verses[group.verses.length - 1];
+  const expectedRef = firstVref === lastVref ? firstVref : `${firstVref.split('.').slice(0, 2).join('.')}.${firstVref.split('.')[2]}-${lastVref.split('.')[2]}`;
+  await expect(verseLine.locator('.popover-event-nav-verse-ref')).toHaveText(expectedRef);
+
+  const chapterOut = await api.chapter(firstVref.split('.').slice(0, 2).join('.'));
+  const firstVerseNum = Number(firstVref.split('.')[2]);
+  const firstVerseText = chapterOut.verses.find((v: any) => v.verse === firstVerseNum).text;
+  await expect(verseLine).toContainText(firstVerseText);
+
+  // The peek (hover-triggered, unchanged) still exists alongside this --
+  // EV-1 adds visibility, it does not retire the "see the full passage"
+  // affordance.
+  const peek = page.getByTestId('event-chrono-following-event-global-peek');
+  await expect(peek).toHaveCount(0); // not yet dwelled
+  await arrow.hover({ force: true });
+  await expect(peek).toBeVisible({ timeout: 2000 });
+});
+
+test('EV-1: the Inline story-thread leg (a diverging narrative row) stays title-only, unaffected by the block-mode verse line', async ({ page }) => {
+  // pw_jerusalem_entry is CONTRACT.md's own named dual-divergence fixture
+  // (passion-week's own prior AND following both differ from the global
+  // timeline) -- guaranteed to render at least one story-thread leg.
+  await openEventPopover(page, 'pw_jerusalem_entry');
+  const storyThread = page.getByTestId('event-story-thread');
+  await expect(storyThread).toBeVisible();
+  const leg = storyThread.locator('.popover-story-thread-leg').first();
+  await expect(leg).toBeVisible();
+  // No verse-text line anywhere inside an inline leg -- this ticket's own
+  // scoping decision (ArrowNav.razor's own header comment): Inline rows
+  // are a running-prose leg reference, never a traversal row of their own.
+  await expect(leg.locator('.popover-event-nav-verse')).toHaveCount(0);
+});
+
+// DUP-DEATH REGRESSION (the owner's own original repro, ledgered in
+// .superpowers/sdd/2026-08-17-bible-atlas-m1/dup-events-investigation.md):
+// before Batch CHRON-1's own charter merge (rob_leper_healed/theo-286),
+// MAT.8.3 cited TWO independently-dated events for the identical Gospel
+// pericope -- two PARALLELS cards, two conflicting dates. THE CHRONOLOGY
+// AUTHORITY LAW (owner: "why are we pulling chronology from conflicting
+// sources? we should have one absolute source of truth") fixes this at
+// the data layer (server/atlas-core/src/event_merge.rs); this test proves
+// it end to end, through the real popover a reader actually sees.
+test('EV-1/dup-death regression: MAT.8.3\'s own popover shows exactly ONE event (the leper pair, rob_leper_healed/theo-286, is merged)', async ({ page }) => {
+  const verseOut = await api.verse('MAT.8.3');
+  expect(verseOut.events.map((e: any) => e.id), 'MAT.8.3 must cite exactly one event id, never two independently-dated opinions about the identical pericope').toEqual(['rob_leper_healed']);
+
+  await page.goto('/read/MAT/8');
+  await page.getByTestId('verse-line-3').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('MAT.8.3');
+
+  const eventSection = page.getByTestId('popover-section-event-membership');
+  await expect(eventSection).toBeVisible();
+  await expect(eventSection.getByTestId('event-section-heading')).toHaveText('EVENT');
+  await expect(eventSection.getByTestId('verse-event-rob_leper_healed')).toBeVisible();
+  // No second, independently-dated event card for the same pericope.
+  await expect(eventSection.locator('[data-testid^="verse-event-"]')).toHaveCount(1);
+
+  // The PARALLELS section (this verse's own OTHER witnesses, Mark/Luke)
+  // still shows exactly one event group -- the plain "PARALLELS" heading,
+  // never the multi-event "PARALLELS — {label}" variant that a live
+  // duplicate would have produced.
+  const parallels = page.getByTestId('popover-section-parallels');
+  await expect(parallels).toBeVisible();
+  await expect(parallels.getByTestId('event-section-heading')).toHaveCount(1);
+  await expect(parallels.getByTestId('event-section-heading')).toHaveText('PARALLELS');
+});
