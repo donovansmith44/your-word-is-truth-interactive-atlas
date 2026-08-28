@@ -704,6 +704,21 @@
             ViewState.UnmountReaderChapter(prevBook, prevChapterNum);
         }
 
+        // Fix round 3 (N-1, IMPORTANT -- re-review): nulled in the SAME
+        // breath as the unmount just above -- see Reader.razor's own
+        // LoadChapter for the full "why" (byte-identical reasoning, mirrored
+        // here for symmetry). Without this, a FAILED fetch below left
+        // _loadedBook/_loadedChapterNum stale, pointing at a chapter this
+        // instance had already relinquished its mount credit for; the NEXT
+        // event to read them (a subsequent LoadChapterAsync's own
+        // top-of-method unmount, or DisposeAsync) would spend that same
+        // credit a SECOND time, phantom-decrementing a count a sibling
+        // split-pane (the guest Reader, Following the same chapter) still
+        // legitimately holds. The success branch below re-sets both fields
+        // exactly as before.
+        _loadedBook = null;
+        _loadedChapterNum = null;
+
         try
         {
             var chapterTask = Atlas.Chapter(book, chapterNum);

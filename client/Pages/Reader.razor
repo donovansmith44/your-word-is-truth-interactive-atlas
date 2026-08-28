@@ -912,6 +912,27 @@
             ViewState.UnmountReaderChapter(prevBook, prevChapterNum);
         }
 
+        // Fix round 3 (N-1, IMPORTANT -- re-review): the unmount just above
+        // spends this instance's ENTIRE remaining mount credit for the
+        // previous chapter -- _loadedBook/_loadedChapterNum must be nulled
+        // in the SAME breath, not left pointing at a chapter this instance
+        // no longer holds any credit for. Without this, a FAILED fetch below
+        // (the catch branch never used to touch these fields) left them
+        // stale; the NEXT event that reads them -- a subsequent navigation's
+        // own top-of-method unmount, or DisposeAsync -- would spend the same
+        // already-relinquished credit a SECOND time, wrongly decrementing a
+        // count a sibling split-pane still legitimately holds (the exact
+        // "wrongly reads not-mounted" failure class this whole fix round
+        // exists to close, reintroduced via double-spend instead of
+        // never-spend). The success branch below re-sets both fields from
+        // _book/_chapterNum exactly as before -- this null is only ever
+        // observed by a subsequent unmount attempt or by DisposeAsync,
+        // never by ChapterMatchesRoute (which already gates on
+        // _loadedBook/_loadedChapterNum matching _book/_chapterNum, so
+        // nulling them here changes nothing about what is on screen).
+        _loadedBook = null;
+        _loadedChapterNum = null;
+
         try
         {
             var chapter = await Atlas.Chapter(_book, _chapterNum);
