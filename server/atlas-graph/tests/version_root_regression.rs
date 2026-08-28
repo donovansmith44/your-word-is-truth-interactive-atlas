@@ -312,4 +312,15 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // `CommentaryItem` nodes' own `text` payloads, not a bug -- the root
 // moving IS the mis-attribution being corrected. New captured value:
 // "35778a6d6855cf35".
-const EXPECTED_VERSION_HEX: &str = "35778a6d6855cf35";
+//
+// MOVED AGAIN (deliberately, EXPECTED and SANCTIONED per the batch brief --
+// Batch CHRON-1, THE CHRONOLOGY AUTHORITY LAW): 24 duplicate curated<->
+// theographic event pairs merged (owner ruling: "why are we pulling
+// chronology from conflicting sources? we should have one absolute source
+// of truth" -- the leper pair, rob_leper_healed/theo-286, is the charter
+// case) + boundary-verse coverage restored on 5 survivors via witness-row/
+// top-level-verse widening (rob_leper_healed, ab_egypt, je_egypt_ruler,
+// jm_sychar, jm_caesarea_philippi). Real, deliberate event-graph content
+// change (fewer event nodes, some events' own verse/witness sets widened)
+// -- the root moving IS the fix. New captured value: "3197f8531ce0bc1a".
+const EXPECTED_VERSION_HEX: &str = "3197f8531ce0bc1a";

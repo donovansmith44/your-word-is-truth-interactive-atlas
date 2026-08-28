@@ -22,6 +22,18 @@
 //! compose path that silently alters a real window's response now fails
 //! loud, here, rather than being caught (or missed) downstream.
 //!
+//! RE-PINNED, Batch CHRON-1 (THE CHRONOLOGY AUTHORITY LAW): a DATA batch,
+//! not a zero-behavior-change one -- the 20 `time_windows()` hashes below
+//! legitimately changed (24 duplicate curated<->theographic event pairs
+//! merged; boundary-verse coverage restored via witness-row/top-level-verse
+//! widening) and are re-pinned against the freshly-regenerated
+//! `data/compiled/graph.bin` (`cargo run -p atlas-graph --bin
+//! atlas-graph-compile`), same capture method as before. The 5
+//! `scripture_refs()` hashes are untouched -- none of those single-chapter
+//! windows happened to touch a merged/widened event. This harness's own
+//! PERMANENT-regression job (catching a future SILENT drift) is unaffected;
+//! only its baseline moved, honestly, with the real cause on record.
+//!
 //! "commit the harness, not the captured fixtures if large" (brief): a
 //! single NT-window response alone is ~205KB; committing 25 raw JSON
 //! fixtures would be several MB for zero benefit over a hash. FNV-1a (below)
@@ -83,27 +95,34 @@ fn fnv1a(bytes: &[u8]) -> u64 {
 /// an arbitrary mid-span year), and three windows that straddle an era
 /// boundary rather than landing exactly on one.
 fn time_windows() -> Vec<(&'static str, i32, i32, u64, usize)> {
+    // Batch CHRON-1: re-pinned against the post-recompile data/compiled/
+    // graph.bin (24-pair triage merge + coverage-completion widenings) --
+    // this data batch deliberately changes scene content (fewer duplicate
+    // events, restored boundary-verse coverage), so the former BASE
+    // (7c32200) hashes are expected to differ; these are the new baseline,
+    // captured via `cargo test -p atlas-server --test scene_byte_identity
+    // -- --nocapture` against the freshly-regenerated artifact.
     vec![
-        ("era_primeval", -4004, -2167, 0xeee278d893da398b, 26199),
-        ("era_patriarchs", -2166, -1877, 0x880e1dca61e707de, 40151),
-        ("era_egypt_exodus", -1876, -1407, 0x582c4bbb35da149c, 97856),
-        ("era_conquest_judges", -1406, -1051, 0xb7f0f2c46f6c1ca8, 59347),
-        ("era_united_kingdom", -1050, -932, 0x636a05aaf5dc4e1d, 51147),
-        ("era_divided_kingdom", -931, -587, 0xa5415ca390c636d0, 70318),
-        ("era_exile", -586, -539, 0x59ed412d6162e2dc, 33771),
-        ("era_return", -538, -6, 0xe58f114db506303c, 48767),
-        ("era_gospels", -5, 29, 0xf25817c14b1acc77, 30790),
-        ("era_early_church", 30, 100, 0x5b1b4f203ea4e47b, 201340),
-        ("full_span", -4004, 100, 0xbab7a2226ee5d2d2, 456360),
-        ("nt_window_gospels_plus_church", -5, 100, 0x074a49748b8bccec, 209737),
-        ("degenerate_start_year", -4004, -4004, 0x92e2c06f8cad8c7f, 22384),
-        ("degenerate_end_year", 100, 100, 0xc7c15a91e1c8da7d, 22381),
-        ("degenerate_mid_year", -1000, -1000, 0x61672595e56e43d9, 22385),
-        ("straddle_primeval_patriarchs", -2200, -2100, 0x107951b4ab92eb70, 22589),
-        ("straddle_gospels_early_church", 25, 35, 0xb782ad97310e9d05, 131267),
-        ("straddle_exile_return", -600, -500, 0xe4741224197fa4e8, 58722),
-        ("narrow_conquest", -1407, -1406, 0x61e135c9d3e687a5, 24878),
-        ("wide_kingdom_era", -1051, -539, 0xa7412af29a0dde9d, 109983),
+        ("era_primeval", -4004, -2167, 0x913f4c70cd564bb8, 26199),
+        ("era_patriarchs", -2166, -1877, 0x3e4a2cec2a450dad, 39946),
+        ("era_egypt_exodus", -1876, -1407, 0xe817bc4d477a8b51, 97573),
+        ("era_conquest_judges", -1406, -1051, 0xcbedbb2468d9de6d, 59347),
+        ("era_united_kingdom", -1050, -932, 0xf0e8be51b0163186, 51147),
+        ("era_divided_kingdom", -931, -587, 0x8b50b44b287a5f2e, 70054),
+        ("era_exile", -586, -539, 0x0941d4218c20aeef, 33771),
+        ("era_return", -538, -6, 0xc7192422ea53c6ec, 48767),
+        ("era_gospels", -5, 29, 0x68aab329bd0bae26, 30105),
+        ("era_early_church", 30, 100, 0xae9228b78b67989b, 193622),
+        ("full_span", -4004, 100, 0x955fd8d5db97c2ba, 447205),
+        ("nt_window_gospels_plus_church", -5, 100, 0xb88cb7484eab6a7f, 201334),
+        ("degenerate_start_year", -4004, -4004, 0x9738088e13b3d592, 22384),
+        ("degenerate_end_year", 100, 100, 0x0ff5361af32ba4b6, 22381),
+        ("degenerate_mid_year", -1000, -1000, 0xdcfe7c6d56df9ee2, 22385),
+        ("straddle_primeval_patriarchs", -2200, -2100, 0xc4cf6283068f870b, 22589),
+        ("straddle_gospels_early_church", 25, 35, 0x19ac33cf538b1ed1, 127094),
+        ("straddle_exile_return", -600, -500, 0xa17a8ab8250caad5, 58722),
+        ("narrow_conquest", -1407, -1406, 0xd5e33018e90c7bc0, 24878),
+        ("wide_kingdom_era", -1051, -539, 0x344c409a40ce7805, 109719),
     ]
 }
 
@@ -159,7 +178,7 @@ fn scene_responses_are_byte_identical_to_the_pinned_base_captures() {
         }
     }
 
-    assert!(failures.is_empty(), "scene response(s) changed since BASE (7c32200) -- zero-behavior-change law broken:\n{}", failures.join("\n"));
+    assert!(failures.is_empty(), "scene response(s) changed since the pinned baseline (BASE 7c32200 for PERF-2a; re-pinned by Batch CHRON-1's own recompile, see this file's own module doc) -- if this batch is NOT a deliberate data/behavior change, the zero-behavior-change law is broken:\n{}", failures.join("\n"));
 }
 
 /// Sanity companion: every one of `AtlasData`'s HTTP-facing scene functions
