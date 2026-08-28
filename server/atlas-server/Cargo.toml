@@ -3,6 +3,17 @@ name = "atlas-server"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+# Batch AQC-1's own provider-side Examples: exporter (spec §3) -- named
+# explicitly, at a path OUTSIDE `src/bin/` (this repo's own root
+# `.gitignore` carries a broad `**/bin/` rule, meant for the Blazor
+# client's own .NET build-output `bin/` directories -- the SAME disclosed
+# workaround `atlas-graph`'s `compile_graph.rs`/`atlas-etl`'s
+# `gen_sources.rs` already use): source lives at
+# `src/bins/export_aqc_examples.rs`.
+name = "export_aqc_examples"
+path = "src/bins/export_aqc_examples.rs"
+
 [dependencies]
 atlas-core = { path = "../atlas-core" }
 atlas-etl = { path = "../atlas-etl" }
