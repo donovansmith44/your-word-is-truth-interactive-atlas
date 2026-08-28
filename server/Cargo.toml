@@ -161,4 +161,47 @@ resolver = "2"
 # `data/compiled/graph.bin` NOT rebuilt this batch (no format change --
 # `FORMAT_VERSION` stays 10; Phase 2's fix is `std::thread::scope`
 # parallelism, entirely in-memory).
-# CURRENT CANONICAL: 881 (857 + 24) across 45 sections.
+#
+# Intervening batches (CORPREAD-2 and others, not individually paragraphed
+# here) moved the workspace total from 857 to 880 before Batch AQC-1
+# began; 904 (880 + 24) across 45 sections was the real, confirmed BASE
+# this batch inherited (re-verified independently at dispatch time, per
+# that batch's own standing-procedure requirement -- see
+# batch-aqc1-report.md's own "baseline verification").
+#
+# Batch AQC-1 (2026-08-27/28, the Atlas Query Contract -- Gherkin corpus +
+# both harnesses): moved to 907 (883 + 24) across 46 workspace sections.
+# Workspace +3: `contract.rs`'s own unit test (+1, the new `/api/contract`
+# endpoint) and the new `tests/contract_api.rs` HTTP-level section (+2).
+# `atlas-graph-types` unchanged (+0) -- this batch never touched that
+# crate (standing veto honored). Fix round 1 (same batch, controller
+# review) added two more sections -- `tests/aqc_corpus_generation.rs` (a
+# regenerate-and-diff test, a fixture-name existence cross-check, a
+# scenario-count parity check, and the five-hand-kept-version-copies
+# cross-check; Q-6) -- +5 tests, and 2 new scenarios/8 new steps inside
+# the ALREADY-counted `aqc_cucumber.rs` section (Q-4's malformed-
+# advertisement law) -- CURRENT CANONICAL: 912 (888 + 24) across 47
+# sections.
+#
+# STANDING COUNTING PROCEDURE ADDENDUM -- THE COUNTING LAW (Batch AQC-1
+# fix round 1, controller ruling, mandatory from this batch onward): a
+# `harness = false` runner (`aqc_cucumber.rs`) never prints a `test
+# result: ok. N passed` line, so its own scenario/step count structurally
+# cannot join the mechanical sum above -- folding it in would be an
+# arithmetic fiction. Report it as a MANDATORY companion line instead,
+# every time the canonical line is reported (baseline block AND close
+# block), and treat a change in either number as its own STOP condition,
+# exactly like a change in the canonical total:
+#
+#   canonical <TOTAL> (workspace <W> + atlas-graph-types <T>) across <S> sections
+#   AQC corpus: <X> scenarios / <Y> steps (harness=false; NOT in the canonical sum)
+#
+# The dotnet line carries the matching parity check: `client.Tests <N>/<N>
+# | client.ContractTests <X>/<X>` -- client.ContractTests's own count MUST
+# equal the AQC line's `<X>` (Reqnroll emits one xunit test per scenario);
+# both `tests/aqc_corpus_generation.rs::declared_scenario_count_matches_
+# the_pinned_corpus_size` and `client.ContractTests/CorpusCountTests.cs`
+# assert this mechanically now, not just report it.
+#
+# CURRENT CANONICAL: 912 (888 + 24) across 47 sections.
+# AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
