@@ -1,0 +1,9 @@
+{
+  "body": {
+    "error": {
+      "code": "bad_kind",
+      "message": "unknown or missing edge kind: 'not-a-real-kind'"
+    }
+  },
+  "status": 400
+}

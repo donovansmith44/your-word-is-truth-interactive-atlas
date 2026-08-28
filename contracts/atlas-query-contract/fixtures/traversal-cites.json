@@ -1,0 +1,170 @@
+{
+  "body": {
+    "entries": [
+      {
+        "edge": "Cites:92bf1e650f767d27",
+        "node": {
+          "id": "text-unit:ROM.5.8",
+          "kind": "TextUnit",
+          "label": "ROM.5.8"
+        }
+      },
+      {
+        "edge": "Cites:93c823118610ed6e",
+        "node": {
+          "id": "text-unit:1JN.4.9",
+          "kind": "TextUnit",
+          "label": "1JN.4.9"
+        }
+      },
+      {
+        "edge": "Cites:639e12b802276a4b",
+        "node": {
+          "id": "text-unit:ROM.8.32",
+          "kind": "TextUnit",
+          "label": "ROM.8.32"
+        }
+      },
+      {
+        "edge": "Cites:d8e096c7e5e4cd9a",
+        "node": {
+          "id": "text-unit:JHN.3.15",
+          "kind": "TextUnit",
+          "label": "JHN.3.15"
+        }
+      },
+      {
+        "edge": "Cites:f654fdd68671efd0",
+        "node": {
+          "id": "text-unit:JHN.11.25",
+          "kind": "TextUnit",
+          "label": "JHN.11.25"
+        }
+      },
+      {
+        "edge": "Cites:88904b4a547cba06",
+        "node": {
+          "id": "text-unit:JHN.6.40",
+          "kind": "TextUnit",
+          "label": "JHN.6.40"
+        }
+      },
+      {
+        "edge": "Cites:cbcb5ebdd7145ea5",
+        "node": {
+          "id": "text-unit:JHN.3.36",
+          "kind": "TextUnit",
+          "label": "JHN.3.36"
+        }
+      },
+      {
+        "edge": "Cites:33a288a966dbaf14",
+        "node": {
+          "id": "text-unit:1JN.4.19",
+          "kind": "TextUnit",
+          "label": "1JN.4.19"
+        }
+      },
+      {
+        "edge": "Cites:57881f7d43e21978",
+        "node": {
+          "id": "text-unit:JHN.10.28",
+          "kind": "TextUnit",
+          "label": "JHN.10.28"
+        }
+      },
+      {
+        "edge": "Cites:ecf2973229182889",
+        "node": {
+          "id": "text-unit:1TI.1.15",
+          "kind": "TextUnit",
+          "label": "1TI.1.15"
+        }
+      },
+      {
+        "edge": "Cites:5e2081313ab54d44",
+        "node": {
+          "id": "text-unit:ROM.5.10",
+          "kind": "TextUnit",
+          "label": "ROM.5.10"
+        }
+      },
+      {
+        "edge": "Cites:a5afa51e86de2913",
+        "node": {
+          "id": "text-unit:JHN.1.29",
+          "kind": "TextUnit",
+          "label": "JHN.1.29"
+        }
+      },
+      {
+        "edge": "Cites:0a5f9f600861b503",
+        "node": {
+          "id": "text-unit:2TH.2.16",
+          "kind": "TextUnit",
+          "label": "2TH.2.16"
+        }
+      },
+      {
+        "edge": "Cites:8ceda9bf97774a75",
+        "node": {
+          "id": "text-unit:2CO.5.19",
+          "kind": "TextUnit",
+          "label": "2CO.5.19"
+        }
+      },
+      {
+        "edge": "Cites:5cb85015bb22c744",
+        "node": {
+          "id": "text-unit:EPH.2.4",
+          "kind": "TextUnit",
+          "label": "EPH.2.4"
+        }
+      },
+      {
+        "edge": "Cites:2ddb5a73a321bf7c",
+        "node": {
+          "id": "text-unit:MAT.9.13",
+          "kind": "TextUnit",
+          "label": "MAT.9.13"
+        }
+      },
+      {
+        "edge": "Cites:a0bb36c0e19b4c86",
+        "node": {
+          "id": "text-unit:REV.1.5",
+          "kind": "TextUnit",
+          "label": "REV.1.5"
+        }
+      },
+      {
+        "edge": "Cites:3b034bd138fa2955",
+        "node": {
+          "id": "text-unit:GEN.22.12",
+          "kind": "TextUnit",
+          "label": "GEN.22.12"
+        }
+      },
+      {
+        "edge": "Cites:ee00438a66128c71",
+        "node": {
+          "id": "text-unit:JHN.1.14",
+          "kind": "TextUnit",
+          "label": "JHN.1.14"
+        }
+      },
+      {
+        "edge": "Cites:4024363412d93bd7",
+        "node": {
+          "id": "text-unit:TIT.3.4",
+          "kind": "TextUnit",
+          "label": "TIT.3.4"
+        }
+      }
+    ],
+    "kind": "cites",
+    "next": 20,
+    "version": "2a45127ba3b91af4"
+  },
+  "status": 200
+}

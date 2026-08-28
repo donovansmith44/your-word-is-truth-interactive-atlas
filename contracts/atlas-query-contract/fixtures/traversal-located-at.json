@@ -1,0 +1,18 @@
+{
+  "body": {
+    "entries": [
+      {
+        "edge": "LocatedAt:b449e37d5a691cef",
+        "node": {
+          "id": "Place:ur-1",
+          "kind": "Place",
+          "label": "Ur 1"
+        }
+      }
+    ],
+    "kind": "located-at",
+    "next": null,
+    "version": "2a45127ba3b91af4"
+  },
+  "status": 200
+}

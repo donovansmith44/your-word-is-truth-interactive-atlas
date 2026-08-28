@@ -1,0 +1,1921 @@
+{
+  "body": {
+    "arrows": [
+      {
+        "color": "#D97706",
+        "from_event": "ab_ur",
+        "from_place": "ur-1",
+        "narrative": "abraham-migration",
+        "order": 1,
+        "to_event": "ab_haran",
+        "to_place": "haran"
+      },
+      {
+        "color": "#D97706",
+        "from_event": "ab_haran",
+        "from_place": "haran",
+        "narrative": "abraham-migration",
+        "order": 2,
+        "to_event": "ab_shechem",
+        "to_place": "shechem"
+      },
+      {
+        "color": "#D97706",
+        "from_event": "ab_shechem",
+        "from_place": "shechem",
+        "narrative": "abraham-migration",
+        "order": 3,
+        "to_event": "ab_bethel",
+        "to_place": "bethel-1"
+      },
+      {
+        "color": "#D97706",
+        "from_event": "ab_bethel",
+        "from_place": "bethel-1",
+        "narrative": "abraham-migration",
+        "order": 4,
+        "to_event": "ab_egypt",
+        "to_place": "egypt"
+      },
+      {
+        "color": "#D97706",
+        "from_event": "ab_egypt",
+        "from_place": "egypt",
+        "narrative": "abraham-migration",
+        "order": 5,
+        "to_event": "ab_hebron",
+        "to_place": "hebron"
+      }
+    ],
+    "mode": "time",
+    "narratives": [
+      {
+        "color": "#D97706",
+        "id": "abraham-migration",
+        "legs_in_scene": 6,
+        "name": "Abraham's Migration"
+      }
+    ],
+    "places": [
+      {
+        "brightness": 1,
+        "display_name": "Bethel",
+        "events": [
+          {
+            "id": "ab_bethel",
+            "label": "Altar between Bethel and Ai",
+            "verse_groups": [
+              {
+                "book": "GEN",
+                "chapter": 12,
+                "count": 1,
+                "verses": [
+                  "GEN.12.8"
+                ]
+              }
+            ],
+            "when": {
+              "from_year": -2091,
+              "to_year": -2090
+            }
+          }
+        ],
+        "id": "bethel-1",
+        "lat": 31.922778,
+        "lon": 35.241389,
+        "name": "Bethel 1"
+      },
+      {
+        "brightness": 1,
+        "display_name": "Egypt",
+        "events": [
+          {
+            "id": "ab_egypt",
+            "label": "Famine drives Abram to Egypt",
+            "verse_groups": [
+              {
+                "book": "GEN",
+                "chapter": 12,
+                "count": 11,
+                "verses": [
+                  "GEN.12.10",
+                  "GEN.12.11",
+                  "GEN.12.12",
+                  "GEN.12.13",
+                  "GEN.12.14",
+                  "GEN.12.15",
+                  "GEN.12.16",
+                  "GEN.12.17",
+                  "GEN.12.18",
+                  "GEN.12.19",
+                  "GEN.12.20"
+                ]
+              }
+            ],
+            "when": {
+              "from_year": -2090,
+              "to_year": -2089
+            }
+          }
+        ],
+        "id": "egypt",
+        "lat": 30.129444,
+        "lon": 31.3075,
+        "name": "Egypt"
+      },
+      {
+        "brightness": 1,
+        "display_name": "Haran",
+        "events": [
+          {
+            "id": "ab_haran",
+            "label": "Sojourn in Haran; the call of Abram",
+            "verse_groups": [
+              {
+                "book": "GEN",
+                "chapter": 11,
+                "count": 1,
+                "verses": [
+                  "GEN.11.31"
+                ]
+              },
+              {
+                "book": "GEN",
+                "chapter": 12,
+                "count": 2,
+                "verses": [
+                  "GEN.12.1",
+                  "GEN.12.4"
+                ]
+              }
+            ],
+            "when": {
+              "from_year": -2092,
+              "to_year": -2091
+            }
+          }
+        ],
+        "id": "haran",
+        "lat": 36.864444,
+        "lon": 39.032778,
+        "name": "Haran"
+      },
+      {
+        "brightness": 1,
+        "display_name": "Kirjath-arba",
+        "events": [
+          {
+            "id": "ab_hebron",
+            "label": "Abram settles at Mamre in Hebron",
+            "verse_groups": [
+              {
+                "book": "GEN",
+                "chapter": 13,
+                "count": 2,
+                "verses": [
+                  "GEN.13.1",
+                  "GEN.13.18"
+                ]
+              }
+            ],
+            "when": {
+              "from_year": -2088,
+              "to_year": -2085
+            }
+          }
+        ],
+        "id": "hebron",
+        "lat": 31.525087,
+        "lon": 35.10222,
+        "name": "Hebron"
+      },
+      {
+        "brightness": 1,
+        "display_name": "Shechem",
+        "events": [
+          {
+            "id": "ab_shechem",
+            "label": "Abram at the oak of Moreh",
+            "verse_groups": [
+              {
+                "book": "GEN",
+                "chapter": 12,
+                "count": 2,
+                "verses": [
+                  "GEN.12.6",
+                  "GEN.12.7"
+                ]
+              }
+            ],
+            "when": {
+              "from_year": -2091,
+              "to_year": -2091
+            }
+          }
+        ],
+        "id": "shechem",
+        "lat": 32.213611,
+        "lon": 35.281944,
+        "name": "Shechem"
+      },
+      {
+        "brightness": 1,
+        "display_name": "Ur",
+        "events": [
+          {
+            "id": "ab_ur",
+            "label": "Terah's family leaves Ur",
+            "verse_groups": [
+              {
+                "book": "GEN",
+                "chapter": 11,
+                "count": 2,
+                "verses": [
+                  "GEN.11.28",
+                  "GEN.11.31"
+                ]
+              }
+            ],
+            "when": {
+              "from_year": -2100,
+              "to_year": -2092
+            }
+          }
+        ],
+        "id": "ur-1",
+        "lat": 30.962222,
+        "lon": 46.104444,
+        "name": "Ur 1"
+      }
+    ],
+    "quiet_places": [
+      {
+        "display_name": "Abel-beth-maacah",
+        "id": "abel-beth-maacah",
+        "lat": 33.258051,
+        "lon": 35.581007,
+        "total_events": 1
+      },
+      {
+        "display_name": "Abel-meholah",
+        "id": "abel-meholah",
+        "lat": 32.3743,
+        "lon": 35.56089,
+        "total_events": 1
+      },
+      {
+        "display_name": "Accad",
+        "id": "accad",
+        "lat": 33.025556,
+        "lon": 44.391944,
+        "total_events": 1
+      },
+      {
+        "display_name": "Achaia",
+        "id": "achaia",
+        "lat": 38.72,
+        "lon": 22.54,
+        "total_events": 2
+      },
+      {
+        "display_name": "Adramyttium",
+        "id": "adramyttium",
+        "lat": 39.500667,
+        "lon": 26.932716,
+        "total_events": 2
+      },
+      {
+        "display_name": "Adria",
+        "id": "adria_30",
+        "lat": 42.415,
+        "lon": 16.3735,
+        "total_events": 2
+      },
+      {
+        "display_name": "Adullam",
+        "id": "adullam",
+        "lat": 31.651667,
+        "lon": 35.001667,
+        "total_events": 2
+      },
+      {
+        "display_name": "Ai",
+        "id": "ai-1",
+        "lat": 31.916944,
+        "lon": 35.261111,
+        "total_events": 1
+      },
+      {
+        "display_name": "Ai",
+        "id": "ai_36",
+        "lat": 31.9166759,
+        "lon": 35.2615767,
+        "total_events": 1
+      },
+      {
+        "display_name": "Alexandria",
+        "id": "alexandria",
+        "lat": 31.1825,
+        "lon": 29.8965,
+        "total_events": 2
+      },
+      {
+        "display_name": "Anathoth",
+        "id": "anathoth",
+        "lat": 31.80752,
+        "lon": 35.25758,
+        "total_events": 1
+      },
+      {
+        "display_name": "Antioch",
+        "id": "antioch-1",
+        "lat": 36.226691,
+        "lon": 36.171743,
+        "total_events": 1
+      },
+      {
+        "display_name": "Antioch",
+        "id": "antioch-2",
+        "lat": 38.306111,
+        "lon": 31.189167,
+        "total_events": 1
+      },
+      {
+        "display_name": "Antioch (Syria)",
+        "id": "antioch_68",
+        "lat": 36.200663,
+        "lon": 36.165318,
+        "total_events": 6
+      },
+      {
+        "display_name": "Antioch (Pisidia)",
+        "id": "antioch_69",
+        "lat": 38.30466,
+        "lon": 31.19049,
+        "total_events": 2
+      },
+      {
+        "display_name": "Antipatris",
+        "id": "antipatris_70",
+        "lat": 32.10478,
+        "lon": 34.93078,
+        "total_events": 1
+      },
+      {
+        "display_name": "Aphek",
+        "id": "aphek-2",
+        "lat": 32.105,
+        "lon": 34.930417,
+        "total_events": 1
+      },
+      {
+        "display_name": "Aphek",
+        "id": "aphek-3",
+        "lat": 32.783679,
+        "lon": 35.63729,
+        "total_events": 1
+      },
+      {
+        "display_name": "Ararat",
+        "id": "ararat",
+        "lat": 39.702761,
+        "lon": 44.300381,
+        "total_events": 3
+      },
+      {
+        "display_name": "Areopagus",
+        "id": "areopagus",
+        "lat": 37.972222,
+        "lon": 23.723611,
+        "total_events": 1
+      },
+      {
+        "display_name": "Ashdod",
+        "id": "ashdod",
+        "lat": 31.7572,
+        "lon": 34.6578,
+        "total_events": 1
+      },
+      {
+        "display_name": "Asia",
+        "id": "asia",
+        "lat": 38.4,
+        "lon": 28.3,
+        "total_events": 6
+      },
+      {
+        "display_name": "Assos",
+        "id": "assos",
+        "lat": 39.490556,
+        "lon": 26.336667,
+        "total_events": 1
+      },
+      {
+        "display_name": "Assyria",
+        "id": "assyria",
+        "lat": 36.3594,
+        "lon": 43.1528,
+        "total_events": 1
+      },
+      {
+        "display_name": "Athens",
+        "id": "athens",
+        "lat": 37.971851,
+        "lon": 23.726738,
+        "total_events": 1
+      },
+      {
+        "display_name": "Attalia",
+        "id": "attalia",
+        "lat": 36.881272,
+        "lon": 30.703614,
+        "total_events": 3
+      },
+      {
+        "display_name": "Baal-perazim",
+        "id": "baal-perazim",
+        "lat": 31.741854,
+        "lon": 35.183317,
+        "total_events": 1
+      },
+      {
+        "display_name": "Baal-zephon",
+        "id": "baal-zephon",
+        "lat": 30.860556,
+        "lon": 32.171389,
+        "total_events": 1
+      },
+      {
+        "display_name": "Babel",
+        "id": "babel",
+        "lat": 32.543333,
+        "lon": 44.422222,
+        "total_events": 2
+      },
+      {
+        "display_name": "Babylon",
+        "id": "babylon-1",
+        "lat": 32.543333,
+        "lon": 44.422222,
+        "total_events": 17
+      },
+      {
+        "display_name": "Beautiful Gate",
+        "id": "beautiful-gate",
+        "lat": 31.776667,
+        "lon": 35.234167,
+        "total_events": 1
+      },
+      {
+        "display_name": "Beersheba",
+        "id": "beersheba-1",
+        "lat": 31.244722,
+        "lon": 34.840833,
+        "total_events": 8
+      },
+      {
+        "display_name": "Beersheba",
+        "id": "beersheba-2",
+        "lat": 31.244722,
+        "lon": 34.840833,
+        "total_events": 2
+      },
+      {
+        "display_name": "Berea",
+        "id": "berea",
+        "lat": 40.518333,
+        "lon": 22.2,
+        "total_events": 1
+      },
+      {
+        "display_name": "Bethany",
+        "id": "bethany-1",
+        "lat": 31.771661,
+        "lon": 35.255903,
+        "total_events": 5
+      },
+      {
+        "display_name": "Bethabara",
+        "id": "bethany-2",
+        "lat": 31.837109,
+        "lon": 35.550301,
+        "total_events": 4
+      },
+      {
+        "display_name": "Bethany",
+        "id": "bethany_186",
+        "lat": 31.77078,
+        "lon": 35.26917,
+        "total_events": 1
+      },
+      {
+        "display_name": "Bethel (of Palestine)",
+        "id": "bethel_202",
+        "lat": 31.93053921,
+        "lon": 35.22103275,
+        "total_events": 1
+      },
+      {
+        "display_name": "Bethlehem",
+        "id": "bethlehem-1",
+        "lat": 31.704306,
+        "lon": 35.207639,
+        "total_events": 11
+      },
+      {
+        "display_name": "Bethlehem",
+        "id": "bethlehem_218",
+        "lat": 31.70431,
+        "lon": 35.20746,
+        "total_events": 2
+      },
+      {
+        "display_name": "Bethsaida",
+        "id": "bethsaida-2",
+        "lat": 32.91038,
+        "lon": 35.63096,
+        "total_events": 3
+      },
+      {
+        "display_name": "Bethsaida",
+        "id": "bethsaida_231",
+        "lat": 32.91031,
+        "lon": 35.63067,
+        "total_events": 1
+      },
+      {
+        "display_name": "Bochim",
+        "id": "bochim",
+        "lat": 31.922778,
+        "lon": 35.241389,
+        "total_events": 1
+      },
+      {
+        "display_name": "Caesarea",
+        "id": "caesarea",
+        "lat": 32.5,
+        "lon": 34.891667,
+        "total_events": 11
+      },
+      {
+        "display_name": "Caesarea Philippi",
+        "id": "caesarea-philippi",
+        "lat": 33.246111,
+        "lon": 35.693333,
+        "total_events": 7
+      },
+      {
+        "display_name": "Calah",
+        "id": "calah",
+        "lat": 36.098056,
+        "lon": 43.328889,
+        "total_events": 1
+      },
+      {
+        "display_name": "Calneh",
+        "id": "calneh_269",
+        "lat": 32.127213,
+        "lon": 45.229995,
+        "total_events": 1
+      },
+      {
+        "display_name": "Cana",
+        "id": "cana",
+        "lat": 32.8222,
+        "lon": 35.30269,
+        "total_events": 2
+      },
+      {
+        "display_name": "Canaan",
+        "id": "canaan",
+        "lat": 32.766667,
+        "lon": 35.333333,
+        "total_events": 20
+      },
+      {
+        "display_name": "Capernaum",
+        "id": "capernaum",
+        "lat": 32.881111,
+        "lon": 35.575,
+        "total_events": 22
+      },
+      {
+        "display_name": "Cenchreae",
+        "id": "cenchreae",
+        "lat": 37.884335,
+        "lon": 22.996816,
+        "total_events": 1
+      },
+      {
+        "display_name": "Chebar",
+        "id": "chebar",
+        "lat": 32.126944,
+        "lon": 45.230833,
+        "total_events": 9
+      },
+      {
+        "display_name": "Cherith",
+        "id": "cherith",
+        "lat": 32.394722,
+        "lon": 35.591389,
+        "total_events": 1
+      },
+      {
+        "display_name": "Chios",
+        "id": "chios",
+        "lat": 38.3725,
+        "lon": 26.1375,
+        "total_events": 1
+      },
+      {
+        "display_name": "Cilicia",
+        "id": "cilicia",
+        "lat": 36.913028,
+        "lon": 34.892056,
+        "total_events": 3
+      },
+      {
+        "display_name": "Cnidus",
+        "id": "cnidus",
+        "lat": 36.685833,
+        "lon": 27.375,
+        "total_events": 2
+      },
+      {
+        "display_name": "Coos",
+        "id": "coos_308",
+        "lat": 36.844,
+        "lon": 27.17,
+        "total_events": 1
+      },
+      {
+        "display_name": "Corinth",
+        "id": "corinth",
+        "lat": 37.905785,
+        "lon": 22.878741,
+        "total_events": 1
+      },
+      {
+        "display_name": "Crete",
+        "id": "crete",
+        "lat": 35.309722,
+        "lon": 24.893333,
+        "total_events": 3
+      },
+      {
+        "display_name": "Cyprus",
+        "id": "cyprus",
+        "lat": 35.0,
+        "lon": 33.0,
+        "total_events": 6
+      },
+      {
+        "display_name": "Dalmanutha",
+        "id": "dalmanutha",
+        "lat": 32.827069,
+        "lon": 35.513552,
+        "total_events": 2
+      },
+      {
+        "display_name": "Damascus",
+        "id": "damascus",
+        "lat": 33.511112,
+        "lon": 36.30639,
+        "total_events": 2
+      },
+      {
+        "display_name": "Decapolis",
+        "id": "decapolis",
+        "lat": 32.716667,
+        "lon": 35.8,
+        "total_events": 2
+      },
+      {
+        "display_name": "Derbe",
+        "id": "derbe",
+        "lat": 37.348569,
+        "lon": 33.361453,
+        "total_events": 2
+      },
+      {
+        "display_name": "Dothan",
+        "id": "dothan",
+        "lat": 32.413528,
+        "lon": 35.239861,
+        "total_events": 1
+      },
+      {
+        "display_name": "Ebenezer",
+        "id": "ebenezer-1",
+        "lat": 32.1046,
+        "lon": 34.9645,
+        "total_events": 1
+      },
+      {
+        "display_name": "Ebenezer",
+        "id": "ebenezer-2",
+        "lat": 31.940941,
+        "lon": 35.23695,
+        "total_events": 1
+      },
+      {
+        "display_name": "Elam",
+        "id": "elam",
+        "lat": 32.18922,
+        "lon": 48.25778,
+        "total_events": 1
+      },
+      {
+        "display_name": "Elim",
+        "id": "elim",
+        "lat": 29.254722,
+        "lon": 32.915833,
+        "total_events": 2
+      },
+      {
+        "display_name": "Emmaus",
+        "id": "emmaus",
+        "lat": 31.79289,
+        "lon": 35.16419,
+        "total_events": 1
+      },
+      {
+        "display_name": "Engedi",
+        "id": "engedi",
+        "lat": 31.45,
+        "lon": 35.383333,
+        "total_events": 2
+      },
+      {
+        "display_name": "Ephesus",
+        "id": "ephesus",
+        "lat": 37.939125,
+        "lon": 27.3407,
+        "total_events": 4
+      },
+      {
+        "display_name": "Ephraim",
+        "id": "ephraim_401",
+        "lat": 31.95378956,
+        "lon": 35.29913578,
+        "total_events": 1
+      },
+      {
+        "display_name": "Ephrath",
+        "id": "ephrath",
+        "lat": 31.704306,
+        "lon": 35.207639,
+        "total_events": 1
+      },
+      {
+        "display_name": "Erech",
+        "id": "erech",
+        "lat": 31.322222,
+        "lon": 45.636111,
+        "total_events": 1
+      },
+      {
+        "display_name": "Etham",
+        "id": "etham",
+        "lat": 30.861009,
+        "lon": 32.352252,
+        "total_events": 1
+      },
+      {
+        "display_name": "Fair Havens",
+        "id": "fair-havens",
+        "lat": 34.929694,
+        "lon": 24.800306,
+        "total_events": 3
+      },
+      {
+        "display_name": "Gadara",
+        "id": "gadara",
+        "lat": 32.655998,
+        "lon": 35.679352,
+        "total_events": 1
+      },
+      {
+        "display_name": "Galatia",
+        "id": "galatia",
+        "lat": 39.266667,
+        "lon": 32.983333,
+        "total_events": 2
+      },
+      {
+        "display_name": "Galilee",
+        "id": "galilee-1",
+        "lat": 32.76,
+        "lon": 35.527,
+        "total_events": 16
+      },
+      {
+        "display_name": "Galilee",
+        "id": "galilee_433",
+        "lat": 32.70674542474383,
+        "lon": 35.30152807767973,
+        "total_events": 5
+      },
+      {
+        "display_name": "Gath",
+        "id": "gath-1",
+        "lat": 31.69972,
+        "lon": 34.84694,
+        "total_events": 3
+      },
+      {
+        "display_name": "Gaza",
+        "id": "gaza",
+        "lat": 31.504,
+        "lon": 34.4644,
+        "total_events": 2
+      },
+      {
+        "display_name": "Gennesaret",
+        "id": "gennesaret",
+        "lat": 32.860556,
+        "lon": 35.507222,
+        "total_events": 1
+      },
+      {
+        "display_name": "Gerar",
+        "id": "gerar",
+        "lat": 31.3821,
+        "lon": 34.6065,
+        "total_events": 3
+      },
+      {
+        "display_name": "Geshur",
+        "id": "geshur",
+        "lat": 32.766667,
+        "lon": 35.7,
+        "total_events": 1
+      },
+      {
+        "display_name": "Gethsemane",
+        "id": "gethsemane",
+        "lat": 31.779419,
+        "lon": 35.239425,
+        "total_events": 1
+      },
+      {
+        "display_name": "Gibbethon",
+        "id": "gibbethon",
+        "lat": 31.856389,
+        "lon": 34.865556,
+        "total_events": 1
+      },
+      {
+        "display_name": "Gibeon",
+        "id": "gibeon",
+        "lat": 31.847451,
+        "lon": 35.183351,
+        "total_events": 2
+      },
+      {
+        "display_name": "Gilead",
+        "id": "gilead-1",
+        "lat": 32.187016,
+        "lon": 35.69211,
+        "total_events": 1
+      },
+      {
+        "display_name": "Gilgal",
+        "id": "gilgal-1",
+        "lat": 31.881883,
+        "lon": 35.459969,
+        "total_events": 1
+      },
+      {
+        "display_name": "Golgotha",
+        "id": "golgotha",
+        "lat": 31.778444,
+        "lon": 35.22975,
+        "total_events": 6
+      },
+      {
+        "display_name": "Gomorrah",
+        "id": "gomorrah",
+        "lat": 31.20849,
+        "lon": 35.449223,
+        "total_events": 1
+      },
+      {
+        "display_name": "Goshen",
+        "id": "goshen-1",
+        "lat": 30.79937,
+        "lon": 31.834217,
+        "total_events": 4
+      },
+      {
+        "display_name": "Greece",
+        "id": "greece",
+        "lat": 37.971851,
+        "lon": 23.726738,
+        "total_events": 1
+      },
+      {
+        "display_name": "Hazeroth",
+        "id": "hazeroth",
+        "lat": 28.896944,
+        "lon": 34.421667,
+        "total_events": 1
+      },
+      {
+        "display_name": "Hazor",
+        "id": "hazor-1",
+        "lat": 33.018333,
+        "lon": 35.569167,
+        "merged_ids": [
+          "hazor_545"
+        ],
+        "total_events": 2
+      },
+      {
+        "display_name": "Helam",
+        "id": "helam",
+        "lat": 32.75,
+        "lon": 36.240833,
+        "total_events": 1
+      },
+      {
+        "display_name": "Horeb",
+        "id": "horeb_576",
+        "lat": 28.58771,
+        "lon": 33.921682,
+        "total_events": 2
+      },
+      {
+        "display_name": "Iconium",
+        "id": "iconium",
+        "lat": 37.872202,
+        "lon": 32.492331,
+        "total_events": 3
+      },
+      {
+        "display_name": "Italy",
+        "id": "italy",
+        "lat": 41.8922,
+        "lon": 12.4852,
+        "total_events": 2
+      },
+      {
+        "display_name": "Jericho",
+        "id": "jericho-1",
+        "lat": 31.871719,
+        "lon": 35.444564,
+        "total_events": 2
+      },
+      {
+        "display_name": "Jericho",
+        "id": "jericho-2",
+        "lat": 31.851872,
+        "lon": 35.436238,
+        "total_events": 3
+      },
+      {
+        "display_name": "Jericho",
+        "id": "jericho_634",
+        "lat": 31.8700465,
+        "lon": 35.443876,
+        "total_events": 1
+      },
+      {
+        "display_name": "Jebus",
+        "existence_from": -4004,
+        "existence_to": -586,
+        "id": "jerusalem",
+        "lat": 31.776667,
+        "lon": 35.234167,
+        "total_events": 230
+      },
+      {
+        "display_name": "Jezreel",
+        "id": "jezreel-2",
+        "lat": 32.557853,
+        "lon": 35.327953,
+        "total_events": 2
+      },
+      {
+        "display_name": "Joppa",
+        "id": "joppa",
+        "lat": 32.054481,
+        "lon": 34.753039,
+        "total_events": 4
+      },
+      {
+        "display_name": "Jordan",
+        "id": "jordan",
+        "lat": 31.761389,
+        "lon": 35.558333,
+        "total_events": 8
+      },
+      {
+        "display_name": "Judea",
+        "id": "judea-1",
+        "lat": 31.776667,
+        "lon": 35.234167,
+        "total_events": 23
+      },
+      {
+        "display_name": "Judea",
+        "id": "judea_657",
+        "lat": 31.777444,
+        "lon": 35.234935,
+        "total_events": 4
+      },
+      {
+        "display_name": "Kadesh-barnea",
+        "id": "kadesh-barnea",
+        "lat": 30.648333,
+        "lon": 34.422222,
+        "total_events": 7
+      },
+      {
+        "display_name": "Keilah",
+        "id": "keilah",
+        "lat": 31.6137,
+        "lon": 35.0036,
+        "total_events": 1
+      },
+      {
+        "display_name": "Kibroth-hattaavah",
+        "id": "kibroth-hattaavah",
+        "lat": 28.788667,
+        "lon": 34.275439,
+        "total_events": 1
+      },
+      {
+        "display_name": "Kiriath-jearim",
+        "id": "kiriath-jearim",
+        "lat": 31.808957,
+        "lon": 35.10378,
+        "total_events": 1
+      },
+      {
+        "display_name": "Lachish",
+        "id": "lachish",
+        "lat": 31.565278,
+        "lon": 34.849167,
+        "total_events": 1
+      },
+      {
+        "display_name": "Lasea",
+        "id": "lasea",
+        "lat": 34.940556,
+        "lon": 24.811111,
+        "total_events": 2
+      },
+      {
+        "display_name": "Lycia",
+        "id": "lycia",
+        "lat": 36.733333,
+        "lon": 29.9,
+        "total_events": 2
+      },
+      {
+        "display_name": "Lydda",
+        "id": "lydda_741",
+        "lat": 31.950908,
+        "lon": 34.893068,
+        "total_events": 1
+      },
+      {
+        "display_name": "Lystra",
+        "id": "lystra",
+        "lat": 37.6017,
+        "lon": 32.3384,
+        "total_events": 4
+      },
+      {
+        "display_name": "Macedonia",
+        "id": "macedonia",
+        "lat": 41.6,
+        "lon": 22.54,
+        "total_events": 2
+      },
+      {
+        "display_name": "Machpelah",
+        "id": "machpelah",
+        "lat": 31.524672,
+        "lon": 35.110758,
+        "total_events": 4
+      },
+      {
+        "display_name": "Mahanaim",
+        "id": "mahanaim",
+        "lat": 32.18575,
+        "lon": 35.68667,
+        "total_events": 3
+      },
+      {
+        "display_name": "Melita",
+        "id": "malta",
+        "lat": 35.933464,
+        "lon": 14.411732,
+        "total_events": 1
+      },
+      {
+        "display_name": "Mamre",
+        "id": "mamre",
+        "lat": 31.556536,
+        "lon": 35.105336,
+        "total_events": 4
+      },
+      {
+        "display_name": "Marah",
+        "id": "marah",
+        "lat": 29.34604,
+        "lon": 32.94284,
+        "total_events": 2
+      },
+      {
+        "display_name": "Massah",
+        "id": "massah",
+        "lat": 28.623056,
+        "lon": 33.880278,
+        "total_events": 1
+      },
+      {
+        "display_name": "Megiddo",
+        "id": "megiddo",
+        "lat": 32.585278,
+        "lon": 35.184444,
+        "total_events": 1
+      },
+      {
+        "display_name": "Melita",
+        "id": "melita_761",
+        "lat": 35.87373581,
+        "lon": 14.44874427,
+        "total_events": 2
+      },
+      {
+        "display_name": "Meribah (of Horeb)",
+        "id": "meribah_783",
+        "lat": 28.73106102564323,
+        "lon": 33.84169995726504,
+        "total_events": 1
+      },
+      {
+        "display_name": "Mesopotamia",
+        "id": "mesopotamia",
+        "lat": 36.864444,
+        "lon": 39.032778,
+        "total_events": 1
+      },
+      {
+        "display_name": "Midian",
+        "id": "midian",
+        "lat": 28.4947,
+        "lon": 35.0122,
+        "total_events": 2
+      },
+      {
+        "display_name": "Migdol",
+        "id": "migdol_799",
+        "lat": 30.97269,
+        "lon": 32.44456,
+        "total_events": 1
+      },
+      {
+        "display_name": "Miletus",
+        "id": "miletus",
+        "lat": 37.531111,
+        "lon": 27.275556,
+        "total_events": 2
+      },
+      {
+        "display_name": "Mitylene",
+        "id": "mitylene",
+        "lat": 39.110475,
+        "lon": 26.547048,
+        "total_events": 1
+      },
+      {
+        "display_name": "Mizpah",
+        "id": "mizpah-3",
+        "lat": 31.885136,
+        "lon": 35.216417,
+        "total_events": 3
+      },
+      {
+        "display_name": "Moab",
+        "id": "moab-1",
+        "lat": 31.180556,
+        "lon": 35.701389,
+        "total_events": 15
+      },
+      {
+        "display_name": "Moab",
+        "id": "moab-2",
+        "lat": 31.84018,
+        "lon": 35.67368,
+        "total_events": 1
+      },
+      {
+        "display_name": "Moab",
+        "id": "moab_815",
+        "lat": 31.499159,
+        "lon": 35.780512,
+        "total_events": 1
+      },
+      {
+        "display_name": "Moreh (Shechem)",
+        "id": "moreh_817",
+        "lat": 32.21369123124062,
+        "lon": 35.2817986718367,
+        "total_events": 1
+      },
+      {
+        "display_name": "Moriah",
+        "id": "moriah",
+        "lat": 31.777778,
+        "lon": 35.235556,
+        "total_events": 1
+      },
+      {
+        "display_name": "Mount Carmel",
+        "id": "mount-carmel",
+        "lat": 32.6725,
+        "lon": 35.023333,
+        "total_events": 1
+      },
+      {
+        "display_name": "Mount Gilboa",
+        "id": "mount-gilboa",
+        "lat": 32.433889,
+        "lon": 35.414444,
+        "total_events": 1
+      },
+      {
+        "display_name": "Mount Hermon",
+        "id": "mount-hermon",
+        "lat": 33.4,
+        "lon": 35.85,
+        "total_events": 1
+      },
+      {
+        "display_name": "Mount Horeb",
+        "id": "mount-horeb",
+        "lat": 28.539722,
+        "lon": 33.973333,
+        "total_events": 1
+      },
+      {
+        "display_name": "Mount Nebo",
+        "id": "mount-nebo",
+        "lat": 31.766667,
+        "lon": 35.75,
+        "total_events": 2
+      },
+      {
+        "display_name": "Mount of Olives",
+        "id": "mount-of-olives",
+        "lat": 31.777946,
+        "lon": 35.245686,
+        "total_events": 4
+      },
+      {
+        "display_name": "Mount Sinai",
+        "id": "mount-sinai",
+        "lat": 28.539722,
+        "lon": 33.973333,
+        "total_events": 14
+      },
+      {
+        "display_name": "Myra",
+        "id": "myra",
+        "lat": 36.259167,
+        "lon": 29.985278,
+        "total_events": 3
+      },
+      {
+        "display_name": "Mysia",
+        "id": "mysia",
+        "lat": 40.0,
+        "lon": 28.5,
+        "total_events": 1
+      },
+      {
+        "display_name": "Nain",
+        "id": "nain",
+        "lat": 32.630694,
+        "lon": 35.350139,
+        "total_events": 1
+      },
+      {
+        "display_name": "Nazareth",
+        "id": "nazareth",
+        "lat": 32.70214,
+        "lon": 35.29769,
+        "total_events": 6
+      },
+      {
+        "display_name": "Neapolis",
+        "id": "neapolis",
+        "lat": 40.935,
+        "lon": 24.415,
+        "total_events": 1
+      },
+      {
+        "display_name": "Negeb",
+        "id": "negeb",
+        "lat": 31.244722,
+        "lon": 34.840833,
+        "total_events": 1
+      },
+      {
+        "display_name": "Nineveh",
+        "existence_from": -2242,
+        "id": "nineveh",
+        "lat": 36.3594,
+        "lon": 43.1528,
+        "total_events": 3
+      },
+      {
+        "display_name": "Nob",
+        "id": "nob",
+        "lat": 31.7925,
+        "lon": 35.244167,
+        "total_events": 1
+      },
+      {
+        "display_name": "Olivet",
+        "id": "olivet_907",
+        "lat": 31.77809503,
+        "lon": 35.24719761,
+        "total_events": 4
+      },
+      {
+        "display_name": "Pamphylia",
+        "id": "pamphylia",
+        "lat": 37.0,
+        "lon": 31.0,
+        "total_events": 4
+      },
+      {
+        "display_name": "Paphos",
+        "id": "paphos",
+        "lat": 34.755667,
+        "lon": 32.404167,
+        "total_events": 3
+      },
+      {
+        "display_name": "Patara",
+        "id": "patara",
+        "lat": 36.260278,
+        "lon": 29.314167,
+        "total_events": 1
+      },
+      {
+        "display_name": "Penuel",
+        "id": "penuel",
+        "lat": 32.187016,
+        "lon": 35.69211,
+        "total_events": 2
+      },
+      {
+        "display_name": "Perga",
+        "id": "perga",
+        "lat": 36.960353,
+        "lon": 30.853686,
+        "total_events": 3
+      },
+      {
+        "display_name": "Phenice",
+        "id": "phenice_945",
+        "lat": 35.19888577,
+        "lon": 24.08098202,
+        "total_events": 2
+      },
+      {
+        "display_name": "Phenicia",
+        "id": "phenicia_944",
+        "lat": 33.25,
+        "lon": 35.25,
+        "total_events": 1
+      },
+      {
+        "display_name": "Philippi",
+        "id": "philippi",
+        "lat": 41.012072,
+        "lon": 24.284576,
+        "total_events": 6
+      },
+      {
+        "display_name": "Philistia",
+        "id": "philistia",
+        "lat": 31.663889,
+        "lon": 34.545833,
+        "total_events": 1
+      },
+      {
+        "display_name": "Phrygia",
+        "id": "phrygia",
+        "lat": 39.0,
+        "lon": 31.0,
+        "total_events": 2
+      },
+      {
+        "display_name": "Pi-hahiroth",
+        "id": "pi-hahiroth",
+        "lat": 30.22518,
+        "lon": 32.46951,
+        "total_events": 1
+      },
+      {
+        "display_name": "Pisidia",
+        "id": "pisidia",
+        "lat": 38.306111,
+        "lon": 31.189167,
+        "total_events": 2
+      },
+      {
+        "display_name": "Plain of Jordan",
+        "id": "plain_of_jordan_654",
+        "lat": 32.309099,
+        "lon": 35.5599,
+        "total_events": 1
+      },
+      {
+        "display_name": "Ptolemais",
+        "id": "ptolemais",
+        "lat": 32.9214,
+        "lon": 35.0692,
+        "total_events": 1
+      },
+      {
+        "display_name": "Puteoli",
+        "id": "puteoli",
+        "lat": 40.826111,
+        "lon": 14.120556,
+        "total_events": 2
+      },
+      {
+        "display_name": "Rabbah",
+        "id": "rabbah-1",
+        "lat": 31.9547,
+        "lon": 35.9343,
+        "total_events": 3
+      },
+      {
+        "display_name": "Ramah",
+        "id": "ramah-4",
+        "lat": 31.85434,
+        "lon": 35.23161,
+        "total_events": 4
+      },
+      {
+        "display_name": "Rameses",
+        "id": "rameses",
+        "lat": 30.79937,
+        "lon": 31.834217,
+        "total_events": 1
+      },
+      {
+        "display_name": "Ramoth-gilead",
+        "id": "ramoth-gilead",
+        "lat": 32.499852,
+        "lon": 36.014988,
+        "total_events": 2
+      },
+      {
+        "display_name": "Red Sea",
+        "id": "red-sea-1",
+        "lat": 28.75,
+        "lon": 33.0,
+        "total_events": 1
+      },
+      {
+        "display_name": "Red Sea",
+        "id": "red_sea_986",
+        "lat": 19.0,
+        "lon": 39.5,
+        "total_events": 1
+      },
+      {
+        "display_name": "Rehoboth",
+        "id": "rehoboth-ir_992",
+        "lat": 36.35941,
+        "lon": 43.152887,
+        "total_events": 1
+      },
+      {
+        "display_name": "Rephidim",
+        "id": "rephidim",
+        "lat": 28.623056,
+        "lon": 33.880278,
+        "total_events": 2
+      },
+      {
+        "display_name": "Resen",
+        "id": "resen",
+        "lat": 36.1437,
+        "lon": 43.31452,
+        "total_events": 1
+      },
+      {
+        "display_name": "Rhegium",
+        "id": "rhegium",
+        "lat": 38.1088,
+        "lon": 15.64412,
+        "total_events": 2
+      },
+      {
+        "display_name": "Rhodes",
+        "id": "rhodes_1000",
+        "lat": 36.41451,
+        "lon": 28.15629,
+        "total_events": 1
+      },
+      {
+        "display_name": "Riblah",
+        "id": "riblah-1",
+        "lat": 34.459547,
+        "lon": 36.572623,
+        "total_events": 2
+      },
+      {
+        "display_name": "Rome",
+        "id": "rome",
+        "lat": 41.8922,
+        "lon": 12.4852,
+        "total_events": 3
+      },
+      {
+        "display_name": "Salamis",
+        "id": "salamis",
+        "lat": 35.184944,
+        "lon": 33.901944,
+        "total_events": 3
+      },
+      {
+        "display_name": "Salem",
+        "id": "salem",
+        "lat": 31.776667,
+        "lon": 35.234167,
+        "total_events": 1
+      },
+      {
+        "display_name": "Salmone",
+        "id": "salmone",
+        "lat": 35.31603,
+        "lon": 26.31155,
+        "total_events": 2
+      },
+      {
+        "display_name": "Samaria",
+        "id": "samaria-1",
+        "lat": 32.276111,
+        "lon": 35.195,
+        "total_events": 6
+      },
+      {
+        "display_name": "Samaria",
+        "id": "samaria-2",
+        "lat": 32.276111,
+        "lon": 35.195,
+        "total_events": 2
+      },
+      {
+        "display_name": "Samaria",
+        "existence_from": -929,
+        "existence_to": -722,
+        "id": "samaria_1022",
+        "lat": 32.331417,
+        "lon": 35.228586,
+        "total_events": 27
+      },
+      {
+        "display_name": "Samos",
+        "id": "samos",
+        "lat": 37.75,
+        "lon": 26.8333,
+        "total_events": 1
+      },
+      {
+        "display_name": "Samothracia",
+        "id": "samothrace",
+        "lat": 40.45,
+        "lon": 25.583333,
+        "total_events": 1
+      },
+      {
+        "display_name": "Saron",
+        "id": "saron_1063",
+        "lat": 32.639068,
+        "lon": 34.945929,
+        "total_events": 1
+      },
+      {
+        "display_name": "Sea of Galilee",
+        "id": "sea-of-galilee",
+        "lat": 32.818906,
+        "lon": 35.590033,
+        "total_events": 10
+      },
+      {
+        "display_name": "Seleucia",
+        "id": "seleucia",
+        "lat": 36.124,
+        "lon": 35.922,
+        "total_events": 3
+      },
+      {
+        "display_name": "Shiloh",
+        "existence_from": -1399,
+        "existence_to": -1050,
+        "id": "shiloh",
+        "lat": 32.055703,
+        "lon": 35.289536,
+        "total_events": 9
+      },
+      {
+        "display_name": "Shinar",
+        "id": "shinar",
+        "lat": 32.543333,
+        "lon": 44.422222,
+        "total_events": 1
+      },
+      {
+        "display_name": "Shittim",
+        "id": "shittim",
+        "lat": 31.84018,
+        "lon": 35.67368,
+        "total_events": 2
+      },
+      {
+        "display_name": "Shur",
+        "id": "shur",
+        "lat": 30.493333,
+        "lon": 32.956667,
+        "total_events": 2
+      },
+      {
+        "display_name": "Sidon",
+        "id": "sidon",
+        "lat": 33.560985,
+        "lon": 35.371944,
+        "total_events": 5
+      },
+      {
+        "display_name": "Sin",
+        "id": "sin",
+        "lat": 29.147778,
+        "lon": 33.536667,
+        "total_events": 1
+      },
+      {
+        "display_name": "Sinai",
+        "id": "sinai_1098",
+        "lat": 29.5,
+        "lon": 34.0,
+        "total_events": 1
+      },
+      {
+        "display_name": "Sodom",
+        "id": "sodom",
+        "lat": 31.20849,
+        "lon": 35.449223,
+        "total_events": 4
+      },
+      {
+        "display_name": "Solomon's Portico",
+        "id": "solomons_portico_1109",
+        "lat": 31.777444,
+        "lon": 35.234935,
+        "total_events": 2
+      },
+      {
+        "display_name": "Straight Gate",
+        "id": "straight_1112",
+        "lat": 33.519299,
+        "lon": 36.31344999999999,
+        "total_events": 1
+      },
+      {
+        "display_name": "Succoth",
+        "id": "succoth-2",
+        "lat": 30.5527,
+        "lon": 32.099,
+        "total_events": 1
+      },
+      {
+        "display_name": "Succoth",
+        "id": "succoth_1114",
+        "lat": 30.62077414,
+        "lon": 32.25869322,
+        "total_events": 1
+      },
+      {
+        "display_name": "Shushan",
+        "id": "susa",
+        "lat": 32.18922,
+        "lon": 48.25778,
+        "total_events": 14
+      },
+      {
+        "display_name": "Sychar",
+        "id": "sychar",
+        "lat": 32.21776,
+        "lon": 35.28897,
+        "total_events": 1
+      },
+      {
+        "display_name": "Syracuse",
+        "id": "syracuse",
+        "lat": 37.063889,
+        "lon": 15.293056,
+        "total_events": 2
+      },
+      {
+        "display_name": "Syria",
+        "id": "syria_1122",
+        "lat": 37.5,
+        "lon": 37.5,
+        "total_events": 3
+      },
+      {
+        "display_name": "Syrtis",
+        "id": "syrtis",
+        "lat": 31.5,
+        "lon": 18.0,
+        "total_events": 2
+      },
+      {
+        "display_name": "Tahpanhes",
+        "id": "tahpanhes",
+        "lat": 30.860556,
+        "lon": 32.171389,
+        "total_events": 2
+      },
+      {
+        "display_name": "Tarsus",
+        "id": "tarsus",
+        "lat": 36.913028,
+        "lon": 34.892056,
+        "total_events": 1
+      },
+      {
+        "display_name": "Tekoa",
+        "id": "tekoa",
+        "lat": 31.63247,
+        "lon": 35.21048,
+        "total_events": 1
+      },
+      {
+        "display_name": "Thessalonica",
+        "id": "thessalonica",
+        "lat": 40.637771,
+        "lon": 22.945767,
+        "total_events": 1
+      },
+      {
+        "display_name": "Three Taverns",
+        "id": "three-taverns",
+        "lat": 41.561944,
+        "lon": 12.873889,
+        "total_events": 1
+      },
+      {
+        "display_name": "Tiberias",
+        "id": "tiberias",
+        "lat": 32.773611,
+        "lon": 35.544167,
+        "total_events": 1
+      },
+      {
+        "display_name": "Hiddekel",
+        "id": "tigris",
+        "lat": 31.0043,
+        "lon": 47.4421,
+        "total_events": 1
+      },
+      {
+        "display_name": "Timnah",
+        "id": "timnah-1",
+        "lat": 31.784831,
+        "lon": 34.910297,
+        "total_events": 2
+      },
+      {
+        "display_name": "Timnath-serah",
+        "id": "timnath-serah_1167",
+        "lat": 32.121473,
+        "lon": 35.150392,
+        "total_events": 1
+      },
+      {
+        "display_name": "Tiphsah",
+        "id": "tiphsah-2",
+        "lat": 32.10415,
+        "lon": 35.23007,
+        "total_events": 1
+      },
+      {
+        "display_name": "Tirzah",
+        "id": "tirzah",
+        "lat": 32.2874,
+        "lon": 35.3378,
+        "total_events": 1
+      },
+      {
+        "display_name": "Tishbe",
+        "id": "tishbe",
+        "lat": 33.028611,
+        "lon": 35.539722,
+        "total_events": 1
+      },
+      {
+        "display_name": "Troas",
+        "id": "troas",
+        "lat": 39.751944,
+        "lon": 26.158611,
+        "total_events": 4
+      },
+      {
+        "display_name": "Trogyllium",
+        "id": "trogyllium",
+        "lat": 37.659431,
+        "lon": 27.003279,
+        "total_events": 1
+      },
+      {
+        "display_name": "Tyre",
+        "id": "tyre",
+        "lat": 33.270833,
+        "lon": 35.196111,
+        "total_events": 7
+      },
+      {
+        "display_name": "Ur of the Chaldees",
+        "id": "ur_1189",
+        "lat": 30.9625,
+        "lon": 46.103056,
+        "total_events": 1
+      },
+      {
+        "display_name": "Uz",
+        "id": "uz",
+        "lat": 30.745843,
+        "lon": 35.603919,
+        "total_events": 3
+      },
+      {
+        "display_name": "Uzza",
+        "id": "uzza",
+        "lat": 31.776667,
+        "lon": 35.234167,
+        "total_events": 2
+      },
+      {
+        "display_name": "Valley of Beracah",
+        "id": "valley-of-beracah",
+        "lat": 31.60894,
+        "lon": 35.17164,
+        "total_events": 1
+      },
+      {
+        "display_name": "Zarephath",
+        "id": "zarephath",
+        "lat": 33.464227,
+        "lon": 35.295136,
+        "total_events": 1
+      },
+      {
+        "display_name": "Ziklag",
+        "id": "ziklag",
+        "lat": 31.3912,
+        "lon": 34.6816,
+        "total_events": 3
+      },
+      {
+        "display_name": "Ziph",
+        "id": "ziph-1",
+        "lat": 31.47475,
+        "lon": 35.13514,
+        "total_events": 1
+      },
+      {
+        "display_name": "Zoar",
+        "id": "zoar",
+        "lat": 31.036904,
+        "lon": 35.487657,
+        "total_events": 1
+      },
+      {
+        "display_name": "Zorah",
+        "id": "zorah",
+        "lat": 31.773992,
+        "lon": 34.985289,
+        "total_events": 1
+      }
+    ],
+    "window": {
+      "from_year": -2100,
+      "to_year": -2000
+    }
+  },
+  "status": 200
+}

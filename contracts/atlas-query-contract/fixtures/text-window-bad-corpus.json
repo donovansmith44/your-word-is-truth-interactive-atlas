@@ -1,0 +1,9 @@
+{
+  "body": {
+    "error": {
+      "code": "bad_corpus",
+      "message": "unknown corpus: 'not-a-real-corpus' (expected 'bible' or 'concord')"
+    }
+  },
+  "status": 400
+}

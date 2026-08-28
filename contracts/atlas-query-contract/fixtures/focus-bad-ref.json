@@ -1,0 +1,9 @@
+{
+  "body": {
+    "error": {
+      "code": "bad_ref",
+      "message": "invalid scripture reference: 'not-even-a-colon-pair'"
+    }
+  },
+  "status": 400
+}

@@ -1,0 +1,17 @@
+{
+  "body": {
+    "description": "In the beginning, cp. John 1, 1, that is, when time first began, when time was first measured; for as long as God alone existed, there was no time. God created, He brought forth out of nothing, He brought into being something that had not been in existence before, namely, the heaven, or heavens, and the earth, the material out of which they were constructed.",
+    "edge_summary": [
+      {
+        "count": 1,
+        "kind": "comments-on"
+      }
+    ],
+    "id": "CommentaryItem:kretzmann/0.1.0",
+    "kind": "CommentaryItem",
+    "label": "The Creation of the World.: The Creation of Chaos and Light",
+    "provenance": "kretzmann/genesis/1",
+    "version": "2a45127ba3b91af4"
+  },
+  "status": 200
+}

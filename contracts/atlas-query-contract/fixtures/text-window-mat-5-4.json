@@ -1,0 +1,19 @@
+{
+  "body": {
+    "next": "MAT.5.5",
+    "units": [
+      {
+        "ref": "MAT.5.4",
+        "text": "Blessed are they that mourn: for they shall be comforted.",
+        "words_of_christ": [
+          {
+            "end": 57,
+            "start": 0
+          }
+        ]
+      }
+    ],
+    "version": "2a45127ba3b91af4"
+  },
+  "status": 200
+}

@@ -1,0 +1,71 @@
+{
+  "body": {
+    "arrows": [],
+    "mode": "scripture",
+    "narratives": [],
+    "places": [
+      {
+        "brightness": 1,
+        "display_name": "Jerusalem",
+        "events": [
+          {
+            "id": "rob_nicodemus",
+            "label": "Nicodemus comes to Jesus by night",
+            "verse_groups": [
+              {
+                "book": "JHN",
+                "chapter": 2,
+                "count": 3,
+                "verses": [
+                  "JHN.2.23",
+                  "JHN.2.24",
+                  "JHN.2.25"
+                ]
+              },
+              {
+                "book": "JHN",
+                "chapter": 3,
+                "count": 21,
+                "verses": [
+                  "JHN.3.1",
+                  "JHN.3.2",
+                  "JHN.3.3",
+                  "JHN.3.4",
+                  "JHN.3.5",
+                  "JHN.3.6",
+                  "JHN.3.7",
+                  "JHN.3.8",
+                  "JHN.3.9",
+                  "JHN.3.10",
+                  "JHN.3.11",
+                  "JHN.3.12",
+                  "JHN.3.13",
+                  "JHN.3.14",
+                  "JHN.3.15",
+                  "JHN.3.16",
+                  "JHN.3.17",
+                  "JHN.3.18",
+                  "JHN.3.19",
+                  "JHN.3.20"
+                ]
+              }
+            ],
+            "when": {
+              "from_year": 30,
+              "to_year": 30
+            }
+          }
+        ],
+        "existence_from": -4004,
+        "existence_to": -586,
+        "id": "jerusalem",
+        "lat": 31.776667,
+        "lon": 35.234167,
+        "name": "Jerusalem"
+      }
+    ],
+    "quiet_places": [],
+    "ref": "JHN.3.16"
+  },
+  "status": 200
+}

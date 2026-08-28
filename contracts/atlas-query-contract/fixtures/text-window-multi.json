@@ -1,0 +1,39 @@
+{
+  "body": {
+    "next": "JHN.3.19",
+    "units": [
+      {
+        "ref": "JHN.3.16",
+        "text": "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
+        "words_of_christ": [
+          {
+            "end": 141,
+            "start": 0
+          }
+        ]
+      },
+      {
+        "ref": "JHN.3.17",
+        "text": "For God sent not his Son into the world to condemn the world; but that the world through him might be saved.",
+        "words_of_christ": [
+          {
+            "end": 108,
+            "start": 0
+          }
+        ]
+      },
+      {
+        "ref": "JHN.3.18",
+        "text": "He that believeth on him is not condemned: but he that believeth not is condemned already, because he hath not believed in the name of the only begotten Son of God.",
+        "words_of_christ": [
+          {
+            "end": 164,
+            "start": 0
+          }
+        ]
+      }
+    ],
+    "version": "2a45127ba3b91af4"
+  },
+  "status": 200
+}

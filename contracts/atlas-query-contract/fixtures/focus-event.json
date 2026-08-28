@@ -1,0 +1,36 @@
+{
+  "body": {
+    "edge_summary": [
+      {
+        "count": 2,
+        "kind": "attested-in"
+      },
+      {
+        "count": 1,
+        "kind": "follows-in"
+      },
+      {
+        "count": 1,
+        "kind": "dated-by"
+      },
+      {
+        "count": 1,
+        "kind": "dates"
+      },
+      {
+        "count": 1,
+        "kind": "located-at"
+      },
+      {
+        "count": 2,
+        "kind": "temporal-adjacency"
+      }
+    ],
+    "id": "Event:ab_ur",
+    "kind": "Event",
+    "label": "Terah's family leaves Ur",
+    "provenance": "curated",
+    "version": "2a45127ba3b91af4"
+  },
+  "status": 200
+}

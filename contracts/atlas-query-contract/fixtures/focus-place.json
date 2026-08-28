@@ -1,0 +1,20 @@
+{
+  "body": {
+    "edge_summary": [
+      {
+        "count": 1,
+        "kind": "site-of"
+      },
+      {
+        "count": 4,
+        "kind": "mentioned-in"
+      }
+    ],
+    "id": "Place:ur-1",
+    "kind": "Place",
+    "label": "Ur 1",
+    "provenance": "curated-places",
+    "version": "2a45127ba3b91af4"
+  },
+  "status": 200
+}

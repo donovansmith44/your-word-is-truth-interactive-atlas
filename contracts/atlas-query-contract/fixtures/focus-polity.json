@@ -1,0 +1,11 @@
+{
+  "body": {
+    "edge_summary": [],
+    "id": "Polity:egypt",
+    "kind": "Polity",
+    "label": "Ptolemaic Egypt",
+    "provenance": "curated-polities",
+    "version": "2a45127ba3b91af4"
+  },
+  "status": 200
+}

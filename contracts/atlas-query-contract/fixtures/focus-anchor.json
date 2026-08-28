@@ -1,0 +1,20 @@
+{
+  "body": {
+    "edge_summary": [
+      {
+        "count": 1,
+        "kind": "dates"
+      },
+      {
+        "count": 1,
+        "kind": "justifies"
+      }
+    ],
+    "id": "Anchor:solomon-crowned",
+    "kind": "Anchor",
+    "label": "Solomon anointed king — 1015 BC. Source: Ussher's Annals of the World (1658).",
+    "provenance": "chronology-anchors",
+    "version": "2a45127ba3b91af4"
+  },
+  "status": 200
+}

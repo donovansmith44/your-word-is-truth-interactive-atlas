@@ -1,0 +1,9 @@
+{
+  "body": {
+    "error": {
+      "code": "not_found",
+      "message": "node not found"
+    }
+  },
+  "status": 404
+}

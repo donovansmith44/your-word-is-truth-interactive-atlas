@@ -1,0 +1,9 @@
+{
+  "body": {
+    "error": {
+      "code": "bad_dir",
+      "message": "dir=backward is not supported with scope=chapter -- a chapter-scoped window's bounds are already fully determined by the chapter itself, so there is no direction left to walk; omit dir, or use dir=onward, or drop scope=chapter and anchor on a specific verse instead"
+    }
+  },
+  "status": 400
+}

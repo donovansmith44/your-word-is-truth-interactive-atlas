@@ -1,0 +1,9 @@
+{
+  "body": {
+    "error": {
+      "code": "bad_window",
+      "message": "from/to must both be present, non-zero integers with from <= to"
+    }
+  },
+  "status": 400
+}

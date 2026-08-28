@@ -1,0 +1,18 @@
+{
+  "body": {
+    "entries": [
+      {
+        "edge": "Cites:92bf1e650f767d27",
+        "node": {
+          "id": "text-unit:ROM.5.8",
+          "kind": "TextUnit",
+          "label": "ROM.5.8"
+        }
+      }
+    ],
+    "kind": "cites",
+    "next": 1,
+    "version": "2a45127ba3b91af4"
+  },
+  "status": 200
+}
