@@ -179,6 +179,12 @@ Concord page (batch-corpread1b-brief.md, ticket C -- a CONTINUOUS READING SURFAC
   (`kretzmann-verse-group-{n}`, `kretzmann-section-heading-{slug}`, `kretzmann-item-{slug}`,
   `kretzmann-ref-{ownerSlug}-{n}` -- unchanged, below).
 
+  CORPREAD-2 fix round (S-4, TRIVIA -- review): each `VerseLine` row also carries `Id="v{n}"`
+  (suffixed `"-kv"` while split, the SAME `VerseTestIdSuffix` disambiguation the testids already
+  use, since two simultaneous `id="v1"` elements would be invalid DOM if Kretzmann and a guest
+  Reader pane both rendered the same verse at once) -- omitted at first ship; element identity
+  now matches `/read`'s own `Id="v{n}"` under the SAME "container names should be the same" law.
+
   THE ONE DELIBERATE TYPOGRAPHIC DELTA (owner verdict 1, verbatim: "bible bolded"): scripture
   text on `/kretzmann` renders BOLD -- an ADDED CSS class (`kretzmann-scripture-text`,
   `font-weight: 700`) layered onto `VerseLine`'s own pre-existing `TextClass` parameter
@@ -197,13 +203,37 @@ Concord page (batch-corpread1b-brief.md, ticket C -- a CONTINUOUS READING SURFAC
   SAME fetched `VerseDetail` regardless of which page opened it -- KRETZMANN-2S proves this
   directly (click GEN.1.1 on `/read`, click GEN.1.1 on `/kretzmann`, same popover title/body).
 
+  CORPREAD-2 fix round (S-1, IMPORTANT -- review): `OnToggleSelect`/`OnMentionToggleSelect` are
+  now wired on Kretzmann's own `VerseLine` (they were left unbound at first ship -- a SILENT
+  narrowing, since `VerseLine`/`MentionScan` both already branch Ctrl/Cmd-click away from
+  `OnExplore` regardless, so an unwired callback made the gesture a true no-op: no popover, no
+  tray add). Mirrors `Reader.razor`'s own `OnLineToggleSelect`/`OnMentionToggleSelect` exactly --
+  the SAME shared, app-lifetime Selection Tray (`SelectionTray.razor`, rendered on every page)
+  now receives the identical `ToggleSelection` dispatch from a Ctrl/Cmd-click on either page.
+  `selection-tray.spec.ts`'s own SELECTION-1 pattern is mirrored for Kretzmann.
+
+  CORPREAD-2 fix round (S-3, IMPORTANT -- review): `kretzmann-chapter-head` is now a real
+  explorable `<button class="chapter-head-button explorable">` (it rendered as a plain,
+  non-interactive `<h1>` at first ship), pushing the SAME `ChapterNode` a click on Reader's own
+  chapter-head would (`OpenChapter`, mirrored) -- DISCLOSED, narrower scope, unchanged: Reader's
+  own CHAP-HOVER-1 dwell-peek (`OnChapterHeadPointerEnter`/`-Leave`, `chapter-head-peek`) is NOT
+  replicated -- click/Enter only, the SAME "hover stays Reader-page-only" precedent
+  `VerseLine.razor`'s own header already draws for the xref marker's hover-preview.
+
   PARTIAL VERSES CLICKABLE (owner verdict 1, verbatim: "verses and partial verses are still
   clickable"): `Reader.razor`'s own anchor+extend shift-click passage-range mechanic (a plain
   verse-num click sets an anchor; a shift-click against a different verse-num forms a range and
   shows a `.passage-chip` that opens a PassageNode) is MIRRORED in `Kretzmann.razor`'s own page
   code (the SAME shape Reader.razor itself uses -- this mechanic has never been a shared
   component in this app, on EITHER page, so mirroring it here is the identical pattern, not a
-  second copy of a shared component). `passage-chip` on Kretzmann carries the SAME
+  second copy of a shared component). PARKED (Q-7, review, "the one to watch" -- NOT built this
+  fix round, per controller ruling: do not refactor Reader): this mechanic is now two
+  hand-maintained copies (`Reader.razor`'s own `OnVerseNumClick`/`SetAnchor`/`PassageRef`/
+  `OpenPassage`, mirrored verbatim in `Kretzmann.razor`) of a gesture the owner named explicitly
+  -- a real componentization candidate (a shared `PassageRangeSelector`-style helper both pages'
+  own verse-num click handlers would call) if a THIRD caller ever appears, or at the next touch
+  of either copy; not attempted here to keep this fix round's own scope to S-1/S-2/S-3/Q-1/Q-2
+  plus trivia. `passage-chip` on Kretzmann carries the SAME
   split-mode `VerseTestIdSuffix` the verse rows do. DISCLOSED, NARROWER SCOPE:
   `reader.js`'s own Shift-held backdrop-inertness mechanism (`watchShiftRelease`, the
   `reader-shift-active` class that makes an open popover's backdrop `pointer-events: none`
@@ -228,7 +258,18 @@ Concord page (batch-corpread1b-brief.md, ticket C -- a CONTINUOUS READING SURFAC
   `position: fixed`) idiom CORPREAD-1b already established, for the SAME reason (unchanged --
   `.kretzmann-page` carries no `contain: layout`, so a fixed viewport-edge button would glue to
   the WHOLE window rather than the split pane; see `Kretzmann.razor`'s own CORPREAD-1b header
-  comment, preserved). `kretzmann-controls`/`kretzmann-follow-chip`/`split-open-kretzmann` are
+  comment, preserved).
+
+  CORPREAD-2 fix round (S-2, IMPORTANT -- review, ONE-LINE JUSTIFY per the controller's own
+  ruling): the brief's "chapter navigation = the reader's own (ArrowNav/picker idioms -- same
+  containers)" is met HALF -- `ScripturePicker` above genuinely is the shared component -- but
+  `kretzmann-prev`/`-next` stay `<button>`, not Reader's own `<a href>`. TWO separate, deliberate
+  reasons: (1) the `contain: layout` gap immediately above, unchanged; (2) Reader's own `<a
+  href>` encodes a REAL destination (`/read/{book}/{chapter}`, a route parameter Reader.razor
+  actually has); Kretzmann carries NO book/chapter route parameter at all (`@page "/kretzmann"`
+  alone, entirely picker/atom-driven) -- an `<a href>` here would have nowhere real to point
+  without a genuine routing change to this page, out of THIS fix round's own bounded scope (a
+  separable future ticket, not a one-line fix). `kretzmann-controls`/`kretzmann-follow-chip`/`split-open-kretzmann` are
   UNCHANGED from CORPREAD-1b. `kretzmann-empty`'s own MEANING narrows (semantics change,
   disclosed): CORPREAD-1b's Kretzmann never rendered scripture, so "no commentary for this
   chapter" and "nothing to show" were the same condition -- `kretzmann-empty` gated the WHOLE
@@ -248,7 +289,11 @@ Concord page (batch-corpread1b-brief.md, ticket C -- a CONTINUOUS READING SURFAC
   feature anywhere -- grep-verified; "search" here names the pre-existing numeric
   part/article/paragraph jump form, the one find-your-way control that used to sit ABOVE the
   reading column, which the owner's own sentence explicitly says "also" moves "to the left" --
-  wraps the UNCHANGED `concord-picker`/`concord-picker-part`/`-article`/`-paragraph`/`-go`)
+  wraps the UNCHANGED `concord-picker`/`concord-picker-part`/`-article`/`-paragraph`/`-go`.
+  CORPREAD-2 fix round (S-6, TRIVIA -- review): the section's own visible label reads "Go to",
+  not "Search" -- "Search" told a reader the form would search the corpus, which it never did;
+  "Go to" is the honest register for a numeric jump control and satisfies the owner's own
+  sentence just as fully, per the review's own suggestion.)
   and `concord-sidebar-toc` (the UNCHANGED ten-document `concord-toc-part-{n}` tree, below,
   now unconditionally rendered). CURRENT-POSITION HIGHLIGHTED: the tree entry whose part
   matches `_currentRef`'s own part carries an added `concord-toc-item-current` class plus
@@ -761,13 +806,28 @@ Popover (shared): `popover`, `popover-title`, `popover-breadcrumb-back`,
   shared mechanism, so this is one check in one place, not a per-caller
   flag): absent entirely, not merely disabled, whenever the Book+Chapter it
   would open is the SAME Book+Chapter a Reader.razor instance is ACTIVELY
-  showing right now (`ViewStateService.MountedReaderChapter` -- deliberately
+  showing right now (`ViewStateService.IsReaderChapterMounted` -- deliberately
   separate from the pre-existing, PERSISTENT `ViewState.Reader` "last
   known position" record, which stays set even after Reader.razor
   unmounts and would wrongly suppress the affordance on a plain `/world`
-  visit too; this field is null unless a Reader.razor instance -- standalone
-  or split view's own embedded pane, SPLIT-1 -- is mounted on that exact
-  chapter at this exact moment). A verse popover reached by clicking a
+  visit too; this reads false unless SOME reading surface -- Reader.razor,
+  standalone or split view's own embedded pane (SPLIT-1), OR Kretzmann.razor
+  (K2, below) -- is mounted on that exact chapter at this exact moment).
+
+  CORPREAD-2 fix round (Q-1/Q-2, review): K2 made Kretzmann.razor a SECOND
+  genuine writer of this signal (see (a) below) -- the single nullable
+  `(Book, Chapter)?` this used to be is now a REF-COUNTED multiset
+  (`MountReaderChapter`/`UnmountReaderChapter`, keyed on
+  `(Book, Chapter)`), so two simultaneous readers of the SAME chapter (the
+  common Following-split case, Kretzmann hosting Reader as guest) never
+  clobber each other's mount, and two readers on DIFFERENT chapters (the
+  released-split case) are tracked independently rather than
+  last-writer-wins. Mounting happens ONLY on a genuinely successful chapter
+  load (never on a failed fetch, matching what is actually on screen);
+  unmounting happens at the top of the SAME load method, keyed off that
+  instance's own last-successfully-loaded chapter, not the new navigation
+  target -- see `ViewStateService`'s own doc comment for the full design.
+  A verse popover reached by clicking a
   verse-line in the reader is, by construction, always FROM the chapter on
   screen, so its own `popover-verse-expand` is now unconditionally absent
   every time; exploring onward (a cross-reference, a catechism proof

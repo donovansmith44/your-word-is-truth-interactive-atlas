@@ -61,16 +61,78 @@ public sealed class ViewStateService
     // Reader.razor unmounts (that class's own doc comment: "never
     // captured at dispose"), so it stays true on /world after navigating
     // away and would wrongly suppress the affordance there too. This
-    // field is the opposite: null unless a Reader.razor instance is
-    // ACTIVELY mounted right now, showing exactly this chapter --
-    // Reader.razor sets it alongside _book/_chapterNum in
-    // OnParametersSetAsync and clears it in DisposeAsync, so
-    // MiniReaderExpand.razor's own read of it is always "is the reader
-    // genuinely on screen, on this exact chapter, at this exact moment"
-    // -- true for a standalone /read/{book}/{chapter} visit AND for
-    // split view's own embedded reader pane (Reader.razor is reused,
-    // not copied, for both -- SPLIT-1), never merely "was it there once."
-    public (string Book, int Chapter)? MountedReaderChapter { get; set; }
+    // signal is the opposite: a chapter counts as "mounted" only while
+    // SOME reading surface is ACTIVELY showing it right now.
+    //
+    // Batch CORPREAD-2 fix round (Q-1/Q-2, review): this was a single
+    // nullable `(Book, Chapter)?` with exactly ONE documented writer
+    // (Reader.razor). K2 made Kretzmann.razor a second, genuine full
+    // reading of the chapter too -- a SECOND simultaneous writer, most
+    // visibly in `EnterSplitKretzmannHostsReader` (Kretzmann hosting,
+    // Reader as guest, Following, both legitimately showing the SAME
+    // chapter at once). A single last-writer-wins value is wrong on BOTH
+    // sides of that: (Q-2) while RELEASED, the two panes can legitimately
+    // show DIFFERENT chapters, and whichever page wrote last silently wins
+    // for both; even while FOLLOWING the same chapter, a plain non-counted
+    // `HashSet` would be wrong too -- one pane disposing (or navigating
+    // away) would unmount a chapter the OTHER pane is still genuinely
+    // showing. A REFERENCE-COUNTED multiset (below) is the minimal correct
+    // generalization: each reading-surface INSTANCE increments its own
+    // chapter on a successful mount and decrements it on unmount/dispose;
+    // the chapter counts as mounted for as long as ANY count is nonzero,
+    // so two simultaneous readers of the same chapter (the common
+    // Following-split case) never race each other, and two readers on
+    // DIFFERENT chapters (the released-split case) are tracked
+    // independently by construction, never last-writer-wins.
+    //
+    // (Q-1) Mounting is now scoped to a GENUINELY SUCCESSFUL load only
+    // (Reader.razor's LoadChapter / Kretzmann.razor's LoadChapterAsync,
+    // each in their own success branch) -- a failed fetch never mounts
+    // anything, matching what is actually on screen (an error toast, not
+    // stale or half-loaded chapter content). The PREVIOUS chapter this
+    // SAME instance had mounted is unmounted at the top of that same
+    // method, before the new fetch starts, keyed off that instance's own
+    // `_loadedBook`/`_loadedChapterNum` (the last chapter IT actually
+    // finished loading) rather than off the current navigation target --
+    // so an instance can never accidentally leak a stale "still mounted"
+    // count for a chapter it in fact is no longer showing, regardless of
+    // whether the new navigation itself later succeeds or fails.
+    private readonly Dictionary<(string Book, int Chapter), int> _mountedReaderChapterCounts = new();
+
+    public void MountReaderChapter(string book, int chapter)
+    {
+        var key = (book, chapter);
+        _mountedReaderChapterCounts[key] = _mountedReaderChapterCounts.GetValueOrDefault(key) + 1;
+    }
+
+    // Safe to call on a chapter this caller never actually mounted (e.g. a
+    // superseded, discarded navigation, or a defensive double-call across a
+    // race window) -- a no-op rather than throwing or going negative.
+    public void UnmountReaderChapter(string book, int chapter)
+    {
+        var key = (book, chapter);
+        if (!_mountedReaderChapterCounts.TryGetValue(key, out var count))
+        {
+            return;
+        }
+
+        if (count <= 1)
+        {
+            _mountedReaderChapterCounts.Remove(key);
+        }
+        else
+        {
+            _mountedReaderChapterCounts[key] = count - 1;
+        }
+    }
+
+    // MiniReaderExpand.razor's own read -- "is the reader genuinely on
+    // screen, on this exact chapter, at this exact moment" -- true for a
+    // standalone /read/{book}/{chapter} visit, split view's own embedded
+    // reader pane, AND Kretzmann's own reading surface (SPLIT-1/K2:
+    // Reader.razor and Kretzmann.razor are both reused, not copied),
+    // regardless of how many of those are simultaneously true at once.
+    public bool IsReaderChapterMounted(string book, int chapter) => _mountedReaderChapterCounts.ContainsKey((book, chapter));
 }
 
 /// <summary>

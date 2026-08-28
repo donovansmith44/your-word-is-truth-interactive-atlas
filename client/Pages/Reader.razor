@@ -746,11 +746,20 @@
         }
 
         // M-D3/U6: this Reader.razor instance is now actively showing
-        // exactly this chapter -- see ViewStateService.MountedReaderChapter's
-        // own doc comment for why this is deliberately separate from
-        // ViewState.Reader (below, a couple hundred lines down) and cleared
-        // in DisposeAsync.
-        ViewState.MountedReaderChapter = (_book, _chapterNum);
+        // exactly this chapter -- see ViewStateService's own
+        // MountReaderChapter/UnmountReaderChapter doc comment for why this
+        // is deliberately separate from ViewState.Reader (below, a couple
+        // hundred lines down).
+        //
+        // Batch CORPREAD-2 fix round (Q-1): the actual mount/unmount calls
+        // moved INTO LoadChapter below (mount only on a genuinely
+        // successful fetch; unmount the chapter THIS instance previously
+        // had mounted, at the very top, before the new fetch starts) -- see
+        // that method's own comment. This choke point's only remaining job
+        // for the signal is nothing at all; every navigation path
+        // (self-routed AND guest, via RefreshAsGuestAsync) funnels through
+        // LoadChapter, so putting the logic there covers both without
+        // duplicating it here.
         ResetXrefEntryState();
         _activeNode = null;
         _scrolledFragment = null;
@@ -884,6 +893,25 @@
     private async Task LoadChapter()
     {
         var myRequest = ++_requestId;
+
+        // Batch CORPREAD-2 fix round (Q-1/Q-2, review): unmount whatever
+        // chapter THIS instance last successfully mounted (if any) the
+        // instant a new navigation starts -- keyed off _loadedBook/
+        // _loadedChapterNum (this instance's OWN last-successful load), not
+        // off _book/_chapterNum (the new target, which may yet fail) -- see
+        // ViewStateService's own MountReaderChapter/UnmountReaderChapter doc
+        // comment for the full "why a ref-counted multiset, not a single
+        // last-writer-wins value" reasoning. Safe under the race this
+        // file's own myRequest guard already documents: two navigations
+        // started back to back before either resolves will each unmount the
+        // SAME previous chapter (UnmountReaderChapter is a documented safe
+        // no-op the second time), and only the request that survives the
+        // myRequest check below ever mounts its own target.
+        if (_loadedBook is { } prevBook && _loadedChapterNum is { } prevChapterNum)
+        {
+            ViewState.UnmountReaderChapter(prevBook, prevChapterNum);
+        }
+
         try
         {
             var chapter = await Atlas.Chapter(_book, _chapterNum);
@@ -900,6 +928,14 @@
             _loadedBook = _book;
             _loadedChapterNum = _chapterNum;
             _errorMessage = null;
+
+            // Q-1: mounted ONLY on a genuinely successful load -- a failed
+            // fetch (the catch branch below) leaves nothing mounted,
+            // matching what is actually on screen (ChapterMatchesRoute is
+            // false whenever _loadedBook/_loadedChapterNum don't match
+            // _book/_chapterNum, so a failure shows the error toast alone,
+            // never stale chapter content).
+            ViewState.MountReaderChapter(_loadedBook, _loadedChapterNum.Value);
         }
         catch (Exception)
         {
@@ -1602,17 +1638,25 @@
         CancelHoverCloseTimer();
 
         // M-D3/U6: this instance is no longer actively showing anything --
-        // clear the "currently mounted" signal (UNLIKE ViewState.Reader,
-        // which deliberately stays set as a persistent "last known
-        // position" record). Guarded on OUR OWN book/chapter still being
-        // the current value, not unconditionally null'd -- a genuinely
-        // concurrent dispose+mount (e.g. a split-view instance tearing down
-        // while a fresh standalone one is already mounting) must never let
-        // the OLD instance's own teardown clobber the NEW instance's
-        // already-current value.
-        if (ViewState.MountedReaderChapter is { } cur && cur.Book == _book && cur.Chapter == _chapterNum)
+        // unmount whatever chapter THIS instance itself last had mounted
+        // (UNLIKE ViewState.Reader, which deliberately stays set as a
+        // persistent "last known position" record).
+        //
+        // Batch CORPREAD-2 fix round (Q-1/Q-2, review): keyed off
+        // _loadedBook/_loadedChapterNum (this instance's own last
+        // successful load), not _book/_chapterNum (today's current
+        // navigation target, which is exactly the field the OLD single-
+        // value guard here used to compare against -- wrong once a second
+        // simultaneous writer, Kretzmann.razor, existed: it let a genuinely
+        // concurrent dispose+mount clobber the wrong instance's value). The
+        // ref-counted multiset (ViewStateService's own doc comment) makes
+        // this unconditional decrement always correct on its own terms: if
+        // another instance (this pane's own split partner, or a fresh
+        // remount) still has the SAME chapter mounted, the count simply
+        // stays above zero and MiniReaderExpand's read is unaffected.
+        if (_loadedBook is { } db && _loadedChapterNum is { } dc)
         {
-            ViewState.MountedReaderChapter = null;
+            ViewState.UnmountReaderChapter(db, dc);
         }
 
         if (_readerJs is not null)

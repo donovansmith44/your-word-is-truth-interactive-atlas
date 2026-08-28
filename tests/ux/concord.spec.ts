@@ -247,7 +247,15 @@ test('CONCORD-9e (C2, responsive collapse): below the app\'s existing split-affo
   await page.setViewportSize({ width: 1280, height: 900 });
   const sidebarBoxWide = await page.getByTestId('concord-sidebar').boundingBox();
   const readingBoxWide = await page.locator('.concord-reading').boundingBox();
+  // Fix round (Q-6, TRIVIA -- review): a bare "sidebar top is above the
+  // reading area's own bottom edge" is satisfied by almost any layout,
+  // including the STACKED one this same test's first half already proves --
+  // real vertical OVERLAP (the sidebar's own bottom edge reaches at least as
+  // far down as the reading area's own top edge) is what actually
+  // distinguishes "side by side" from "stacked", combined with the x-adjacency
+  // assertion immediately below.
   expect(sidebarBoxWide!.y).toBeLessThan(readingBoxWide!.y + readingBoxWide!.height);
+  expect(sidebarBoxWide!.y + sidebarBoxWide!.height).toBeGreaterThan(readingBoxWide!.y);
   expect(sidebarBoxWide!.x + sidebarBoxWide!.width).toBeLessThanOrEqual(readingBoxWide!.x + 1);
 });
 

@@ -87,7 +87,16 @@
            visible sidebar, no toggle -- see this file's own header comment. *@
         <aside class="concord-sidebar" data-testid="concord-sidebar">
             <div class="concord-sidebar-section" data-testid="concord-sidebar-search">
-                <p class="concord-sidebar-label">Search</p>
+                @* Fix round (S-6, TRIVIA -- review): "Search" is retired --
+                   this control is a numeric Part/Article/Paragraph jump
+                   form, never a free-text search (this app carries no
+                   free-text search feature anywhere, grep-verified, the
+                   report's own disclosed reading of the owner's "search"
+                   sentence). "Go to" tells the truth about what the control
+                   actually does while still satisfying the owner's own
+                   sentence ("search is also to the left of the text") just
+                   as fully as the label it replaces. *@
+                <p class="concord-sidebar-label">Go to</p>
                 <form class="concord-picker" data-testid="concord-picker" @onsubmit="JumpToAsync">
                     <label class="concord-picker-field">
                         <span class="concord-picker-label">Part</span>

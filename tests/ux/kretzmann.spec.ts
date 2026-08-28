@@ -295,6 +295,21 @@ test('KRETZMANN-2S (deliverable 0a, THE SHARED-CONTAINER LAW): the same verse-li
   await expect(page.getByTestId('verse-num-1')).toHaveClass(/\bverse-num\b/);
   await expect(readerLine.locator('.verse-text')).toBeVisible();
 
+  // Fix round (S-5, TRIVIA -- review): this test's own title claims the
+  // verse-MENTION family, not just verse-line/-num/-text -- GEN.1.1 (above)
+  // carries no mention span at all, so that claim was true only by
+  // construction (MentionText is shared, unasserted here), never actually
+  // pinned. GEN.1.4's own real person mention ("god_1324",
+  // reader-recursion.spec.ts's own ground truth ID) is asserted directly on
+  // BOTH pages below, closing that gap.
+  // GEN.1.4 names "God" twice, each occurrence its own span sharing the
+  // SAME testid (keyed by verse+personId, not occurrence index) -- .first()
+  // disambiguates the strict-mode locator; either occurrence proves the
+  // vocabulary equally.
+  const readerMention = page.getByTestId('verse-mention-person-4-god_1324').first();
+  await expect(readerMention).toBeVisible();
+  await expect(readerMention).toHaveClass(/\bverse-mention\b/);
+
   await readerLine.click();
   await expect(page.getByTestId('popover-title')).toBeVisible();
   // popover-body's own VerseDetail fetch resolves asynchronously, same as
@@ -313,6 +328,10 @@ test('KRETZMANN-2S (deliverable 0a, THE SHARED-CONTAINER LAW): the same verse-li
   await expect(kretzmannLine).toHaveClass(/\bverse-line\b/);
   await expect(page.getByTestId('verse-num-1')).toHaveClass(/\bverse-num\b/);
   await expect(kretzmannLine.locator('.verse-text')).toBeVisible();
+
+  const kretzmannMention = page.getByTestId('verse-mention-person-4-god_1324').first();
+  await expect(kretzmannMention).toBeVisible();
+  await expect(kretzmannMention).toHaveClass(/\bverse-mention\b/);
 
   await kretzmannLine.click();
   await expect(page.getByTestId('popover-title')).toBeVisible();
@@ -557,4 +576,61 @@ test('KRETZMANN-15 (fix round 2): a same-chapter split toggle does not orphan th
   await lastRow.scrollIntoViewIfNeeded();
 
   await expect(lastRow).toContainText(groundCard.description, { timeout: 10000 });
+});
+
+// Fix round (S-1, IMPORTANT -- review, THE BATCH'S OWN PRIORITY carry-forward
+// finding, controller ruling verbatim: "wire OnToggleSelect/OnMentionToggleSelect
+// on Kretzmann's verse rows ... so Ctrl/Cmd-click adds to the Selection Tray
+// exactly as on /read"). Before this fix, Ctrl/Cmd-click on a Kretzmann verse
+// row was a genuinely DEAD gesture: VerseLine.razor's own OnRowClick already
+// branches Ctrl/Cmd-click AWAY from OnExplore regardless of whether
+// OnToggleSelect is wired, so leaving it unwired meant the click opened no
+// popover AND added nothing to the tray -- silent, not merely incomplete.
+// Mirrors selection-tray.spec.ts's own SELECTION-1/SELECTION-2 pattern
+// (the SAME shared, app-lifetime Selection Tray, SelectionTray.razor,
+// rendered on every page via MainLayout.razor), on /kretzmann instead of
+// /read.
+test('KRETZMANN-21 (S-1 fix, THE SHARED-CONTAINER LAW extends to Ctrl/Cmd-click): Ctrl-click on a Kretzmann verse row adds it to the shared Selection Tray without opening a popover; a plain click keeps opening the popover exactly as before', async ({ page }) => {
+  await page.goto('/kretzmann');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  const line = page.getByTestId('verse-line-1');
+  await expect(line).toBeVisible();
+
+  await line.click({ modifiers: ['Control'] });
+  await expect(page.getByTestId('popover')).toHaveCount(0);
+  const tray = page.getByTestId('selection-tray');
+  await expect(tray).toBeVisible();
+  await expect(page.getByTestId('selection-tray-count')).toHaveText('1 selected');
+  await expect(page.getByTestId('selection-chip-0')).toContainText('GEN.1.1');
+
+  // A second Ctrl-click toggles it back off -- the SAME toggle semantics as
+  // /read (SELECTION-1's own first assertion, mirrored).
+  await line.click({ modifiers: ['Control'] });
+  await expect(tray).toHaveCount(0);
+
+  // A PLAIN click on the SAME row keeps its pre-existing, UNCHANGED meaning
+  // -- opens the verse's popover, never touches the tray (SELECTION-2's own
+  // gesture-split proof, mirrored on this page).
+  await line.click();
+  await expect(page.getByTestId('popover-title')).toBeVisible();
+  await expect(page.getByTestId('popover-title')).toContainText('GEN.1.1');
+  await expect(page.getByTestId('selection-tray')).toHaveCount(0);
+});
+
+// Fix round (S-3, IMPORTANT -- review): the chapter head was a plain,
+// non-interactive heading at first ship -- the thinnest edge of "same
+// exploration results per node," since Reader's own chapter-head opens a
+// real ChapterNode popover. Now a real explorable button, pushing the SAME
+// node type Reader.razor's own OpenChapter would (title is `{book}.{chapter}`,
+// e.g. "GEN.1" -- ChapterNode.cs's own Title).
+test('KRETZMANN-22 (S-3 fix): the chapter head is explorable, opening a ChapterNode popover for the current chapter', async ({ page }) => {
+  await page.goto('/kretzmann');
+  const head = page.getByTestId('kretzmann-chapter-head');
+  await expect(head).toBeVisible();
+
+  await head.click();
+  await expect(page.getByTestId('popover-title')).toBeVisible();
+  await expect(page.getByTestId('popover-title')).toContainText('GEN.1');
 });
