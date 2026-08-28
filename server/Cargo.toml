@@ -203,5 +203,23 @@ resolver = "2"
 # the_pinned_corpus_size` and `client.ContractTests/CorpusCountTests.cs`
 # assert this mechanically now, not just report it.
 #
-# CURRENT CANONICAL: 912 (888 + 24) across 47 sections.
+# Batch CLI-1 (2026-08-27/28, the graph-query CLI -- a new workspace
+# binary crate, server/atlas-cli, R1: loads data/compiled/graph.bin
+# directly via atlas_graph::GraphService::from_artifact, no HTTP/no
+# server, every graph question through atlas_graph_types::store::
+# GraphQuery/GraphService's own public companions/AtlasData's own public
+# accessors -- zero parallel query logic, zero changes to atlas-server/
+# atlas-graph/atlas-core/graph-types): moved to 933 (909 + 24) across 49
+# sections. Workspace +21 across +2 sections, both new atlas-cli test
+# targets: `unittests src\main.rs` (3 tests -- `commands::verse::
+# mark_red_letter`'s own byte-offset-bracketing unit tests) and the new
+# `tests/cli.rs` integration section (18 tests, R6 -- std::process::Command
+# against the real compiled atlas-cli binary and the real committed
+# data/compiled/graph.bin: every subcommand's happy path, the tutorial
+# smoke test, and all five CONTRACT.md error-taxonomy classes with their
+# exit codes). `atlas-graph-types` unchanged (+0) -- this batch never
+# touched that crate (standing veto honored). AQC corpus unchanged (44/184,
+# harness=false runner never touched this batch).
+#
+# CURRENT CANONICAL: 933 (909 + 24) across 49 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
