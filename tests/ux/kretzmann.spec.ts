@@ -297,6 +297,12 @@ test('KRETZMANN-2S (deliverable 0a, THE SHARED-CONTAINER LAW): the same verse-li
 
   await readerLine.click();
   await expect(page.getByTestId('popover-title')).toBeVisible();
+  // popover-body's own VerseDetail fetch resolves asynchronously, same as
+  // every other popover in this app -- wait for REAL content (auto-
+  // retrying), not a bare textContent() snapshot that can race an
+  // in-flight fetch under a loaded full-suite run (this exact race is what
+  // a bare snapshot caught here: empty string, not a real mismatch).
+  await expect(page.getByTestId('popover-body')).not.toHaveText('');
   const readerTitle = await page.getByTestId('popover-title').textContent();
   const readerBody = await page.getByTestId('popover-body').textContent();
   expect(readerTitle).toContain('GEN.1.1');
@@ -310,6 +316,7 @@ test('KRETZMANN-2S (deliverable 0a, THE SHARED-CONTAINER LAW): the same verse-li
 
   await kretzmannLine.click();
   await expect(page.getByTestId('popover-title')).toBeVisible();
+  await expect(page.getByTestId('popover-body')).not.toHaveText('');
   const kretzmannTitle = await page.getByTestId('popover-title').textContent();
   const kretzmannBody = await page.getByTestId('popover-body').textContent();
 

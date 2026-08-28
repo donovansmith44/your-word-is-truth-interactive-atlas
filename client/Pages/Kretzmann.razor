@@ -10,6 +10,7 @@
 @inject IExplorableClient Graph
 @inject ViewRegistry Registry
 @inject IJSRuntime JS
+@inject ViewStateService ViewState
 
 @* Batch CORPREAD-2 (ticket K2, owner verdict, VERBATIM, the batch's own
    charter: "kretzmann - wrong. Essentially this should be a copy of the
@@ -495,6 +496,19 @@
     {
         LocusAtom.Changed -= OnLocusChanged;
 
+        // Batch CORPREAD-2 (K2, deliverable 0a -- found live by KRETZMANN-2S's
+        // own conformance run): mirrors Reader.razor's own identical guarded
+        // clear -- see ViewStateService.MountedReaderChapter's own doc comment
+        // for the "guarded on OUR OWN book/chapter still being current"
+        // reasoning (a genuinely concurrent dispose+mount, e.g. this instance
+        // tearing down while a fresh one is already mounting on a different
+        // chapter, must never let the OLD instance's teardown clobber the
+        // NEW one's already-current value).
+        if (ViewState.MountedReaderChapter is { } cur && cur.Book == _book && cur.Chapter == _chapterNum)
+        {
+            ViewState.MountedReaderChapter = null;
+        }
+
         if (_lazyJs is not null)
         {
             try
@@ -652,6 +666,21 @@
             _loadedChapterNum = chapterNum;
             _loading = false;
             _proseRequested.Clear(); // fresh chapter -- a fresh lazy-load generation
+
+            // Batch CORPREAD-2 (K2, deliverable 0a -- found live by
+            // KRETZMANN-2S's own conformance run, not guessed): this page now
+            // genuinely renders the chapter's own real Bible text (K2's whole
+            // point), so it belongs in the SAME "is a full reading of this
+            // chapter actively on screen right now" signal
+            // ViewStateService.MountedReaderChapter already establishes for
+            // Reader.razor -- see that field's own doc comment. Without this,
+            // MiniReaderExpand.razor's own "Read the whole chapter" affordance
+            // wrongly offered itself inside a popover opened FROM Kretzmann's
+            // own already-fully-rendered chapter (a real, found-not-guessed
+            // "same exploration results per node" gap: the SAME verse's
+            // popover rendered a genuinely DIFFERENT body on /kretzmann than
+            // on /read, for this one reason alone).
+            ViewState.MountedReaderChapter = (book, chapterNum);
             StateHasChanged(); // scripture + headings visible immediately -- prose loads lazily below, never blocking the whole chapter
         }
         catch (Exception)
