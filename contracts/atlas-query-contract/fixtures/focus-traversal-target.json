@@ -1,0 +1,32 @@
+{
+  "body": {
+    "edge_summary": [
+      {
+        "count": 1,
+        "kind": "attests"
+      },
+      {
+        "count": 2,
+        "kind": "mentions"
+      },
+      {
+        "count": 13,
+        "kind": "cites"
+      },
+      {
+        "count": 31,
+        "kind": "cited-by"
+      },
+      {
+        "count": 2,
+        "kind": "catechism-link"
+      }
+    ],
+    "id": "text-unit:ROM.5.8",
+    "kind": "TextUnit",
+    "label": "ROM.5.8",
+    "provenance": "kjv",
+    "version": "2a45127ba3b91af4"
+  },
+  "status": 200
+}

@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Batch AQC-1, deliverable 3: the THIN, contract-ignorant C# step
+    definition layer, binding the SAME phrases (glossary.md) the Rust
+    cucumber harness binds, through the client's own DTO deserialization
+    (Wire.Options) against the committed provider fixtures
+    (contracts/atlas-query-contract/fixtures/*.json), never a live server.
+    A NEW project (reported separately from client.Tests, per the brief).
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!-- Reqnroll's code-behind for a LINKED feature file defaults to
+         writing next to the SOURCE file, which would pollute
+         contracts/atlas-query-contract/features/ (the pure-Gherkin
+         corpus directory, no generated code) with .feature.cs files.
+         Routes generated code-behind into obj/ instead. -->
+    <ReqnrollUseIntermediateOutputPathForCodeBehind>true</ReqnrollUseIntermediateOutputPathForCodeBehind>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <!-- Reqnroll (BSD-3-Clause, disclosed in the batch report): the
+         SpecFlow-lineage Gherkin binding for .NET. Reqnroll.xUnit pairs it
+         with the SAME xunit runner client.Tests already uses. -->
+    <PackageReference Include="Reqnroll" Version="3.3.4" />
+    <PackageReference Include="Reqnroll.xUnit" Version="3.3.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\client\BibleAtlas.Client.csproj" />
+  </ItemGroup>
+
+  <!--
+    The corpus itself lives at contracts/atlas-query-contract/features/
+    (spec §3: "each side executes the SAME feature files"), linked in here
+    rather than physically duplicated, so there is exactly ONE copy on
+    disk; Reqnroll's own generator discovers them via this project's
+    Features/ virtual folder the same way it would discover a
+    project-local .feature file.
+  -->
+  <ItemGroup>
+    <ReqnrollFeatureFile Include="..\contracts\atlas-query-contract\features\*.feature" Link="Features\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

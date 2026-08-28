@@ -169,6 +169,11 @@ const FIXTURES: &[(&str, &str)] = &[
     // below -- one "focus-<kind-lowercase>" fixture per real node kind).
     ("focus-not-found", "/api/node/Person:nonexistent-xyz"),
     ("focus-bad-ref", "/api/node/not-even-a-colon-pair"),
+    // exploration-roundtrip.feature's own "a traversal target's own id
+    // round-trips too" scenario captures a TraversalQuery entry's own id
+    // (text-unit:ROM.5.8, JHN.3.16's own first "cites" target) and
+    // re-runs FocusQuery on it -- this is that second FocusQuery's fixture.
+    ("focus-traversal-target", "/api/node/text-unit:ROM.5.8"),
     // TraversalQuery
     ("traversal-cites", "/api/node/text-unit:JHN.3.16/edges?kind=cites"),
     ("traversal-cites-limit1", "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=1"),

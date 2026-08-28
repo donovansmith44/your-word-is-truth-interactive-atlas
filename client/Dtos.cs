@@ -542,3 +542,11 @@ public sealed record TextUnitDto(
     List<WordsOfChristSpanDto> WordsOfChrist);
 
 public sealed record TextWindowDto(List<TextUnitDto> Units, string? Next, string Version);
+
+// -----------------------------------------------------------------------
+// Batch AQC-1 (design spec §2's versioning law): the AQC version-
+// advertisement wire shape -- GET /api/contract, server:
+// contract::ContractOut, field for field.
+// -----------------------------------------------------------------------
+
+public sealed record ContractDto(string MinVersion, string MaxVersion);
