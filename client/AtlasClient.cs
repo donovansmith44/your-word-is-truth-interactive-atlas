@@ -301,6 +301,15 @@ public sealed class AtlasClient
         return _sourcesCache;
     }
 
+    // Batch AQC-1 (design spec §2's versioning law): GET /api/contract --
+    // the AQC version range this running server supports. No cache -- the
+    // ONE call site is the startup fail-loud check (AqcContract.cs), which
+    // by definition runs exactly once per app load.
+    public async Task<ContractDto> Contract()
+    {
+        return await GetRequired<ContractDto>("api/contract");
+    }
+
     private async Task<T> GetRequired<T>(string relativeUrl)
     {
         var result = await _http.GetFromJsonAsync<T>(relativeUrl, Wire.Options);

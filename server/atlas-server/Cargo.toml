@@ -2,6 +2,16 @@
 name = "atlas-server"
 version = "0.1.0"
 edition = "2021"
+# Batch AQC-1: with a second [[bin]] target (export_aqc_examples) now
+# declared below, a bare `cargo run -p atlas-server` (no --bin) becomes
+# ambiguous -- `default-run` pins it to the pre-existing primary binary
+# (src/main.rs, package-named "atlas-server"), the SAME fix
+# `atlas-etl/Cargo.toml`'s own `default-run` already applies for its
+# `gen_sources` sibling bin. Every pre-existing bare-invocation call site
+# (start-api.ps1, the real deployment binary, ...) keeps working
+# unchanged; `export_aqc_examples` is always reached explicitly via
+# `cargo run -p atlas-server --bin export_aqc_examples`.
+default-run = "atlas-server"
 
 [[test]]
 # Batch AQC-1's own Rust contract harness (spec §3) -- `harness = false`

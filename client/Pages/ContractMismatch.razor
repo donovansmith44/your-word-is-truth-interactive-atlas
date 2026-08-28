@@ -1,0 +1,28 @@
+﻿@* Batch AQC-1 (design spec §2's versioning law, the house fail-loud law):
+    the visible, honest error state a real AQC version mismatch renders --
+    NEVER a silent degrade. Rendered by App.razor INSTEAD OF the ordinary
+    Router the moment the startup check (AqcContract.Satisfies) fails; not
+    itself a routed page (no @page directive -- App.razor swaps it in
+    directly, so a mismatch is caught before any route even resolves). *@
+
+<div data-testid="contract-mismatch" style="max-width:640px;margin:4rem auto;padding:2rem;font-family:sans-serif;text-align:center;">
+    <h1>This build of Bible Atlas can't talk to its server</h1>
+    <p>
+        The server advertises Atlas Query Contract version
+        <strong data-testid="contract-mismatch-advertised">@Advertised</strong>,
+        but this client build was compiled against
+        <strong data-testid="contract-mismatch-client">@ClientVersion</strong>.
+    </p>
+    <p>
+        This is a deployment mismatch, not a data problem -- reloading will
+        not fix it. Please contact whoever deployed this build.
+    </p>
+</div>
+
+@code {
+    /// <summary>The advertised range, rendered as "min-max" (e.g. "0.2.0-0.5.0").</summary>
+    [Parameter, EditorRequired]
+    public string Advertised { get; set; } = "";
+
+    public string ClientVersion => AqcContract.ClientVersion;
+}

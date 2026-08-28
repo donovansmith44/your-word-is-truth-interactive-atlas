@@ -1,6 +1,54 @@
-﻿<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-</Router>
+@using BibleAtlas.Client.Pages
+@inject AtlasClient Api
+
+@* Batch AQC-1 (design spec §2's versioning law, the house fail-loud law):
+    the client's own startup check -- queries GET /api/contract and FAILS
+    LOUD (renders Pages.ContractMismatch instead of the ordinary Router)
+    the moment the server's advertised AQC range does not include this
+    build's own compiled AqcContract.ClientVersion. A network failure
+    while checking (server unreachable, CORS, ...) is deliberately NOT
+    treated as a mismatch -- this check exists to catch a DEPLOYMENT
+    version skew, not general connectivity; the ordinary app still loads
+    and its own existing error handling covers a genuinely unreachable
+    server the same way it always has. Disclosed scope decision (batch
+    report). *@
+
+@switch (_state)
+{
+    case CheckState.Checking:
+        break;
+    case CheckState.Mismatch:
+        <ContractMismatch Advertised="@_advertisedRange"/>
+        break;
+    default:
+        <Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+            <Found Context="routeData">
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
+                <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+            </Found>
+        </Router>
+        break;
+}
+
+@code {
+    private enum CheckState { Checking, Ok, Mismatch }
+    private CheckState _state = CheckState.Checking;
+    private string _advertisedRange = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var contract = await Api.Contract();
+            _advertisedRange = $"{contract.MinVersion}-{contract.MaxVersion}";
+            _state = AqcContract.Satisfies(contract) ? CheckState.Ok : CheckState.Mismatch;
+        }
+        catch (Exception)
+        {
+            // Server unreachable / CORS / transient -- not a version
+            // mismatch this check can speak to. Proceed; the app's own
+            // existing per-request error handling covers the rest.
+            _state = CheckState.Ok;
+        }
+    }
+}
