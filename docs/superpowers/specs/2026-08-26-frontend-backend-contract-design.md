@@ -1,9 +1,19 @@
-# Frontend–Backend Contract Architecture — design spec (DRAFT for owner review)
+# Frontend–Backend Contract Architecture — design spec
 
-**Status:** DRAFT — awaiting owner review. Written from the owner's
-2026-08-26 brainstorm directive (traveling, no detailed spec); every
-assumption that fills a gap is marked **[ASSUMED]** and every question
-that needs the owner is in §9. Nothing here is implemented.
+**Status:** SUBSTANTIALLY IMPLEMENTED (status corrected 2026-08-28 at
+the final branch review's direction — the original "DRAFT … nothing
+here is implemented" header had gone stale). §0's three laws
+(total-capture, contract-first, conformance corollary), §0a (chronology
+authority), §2/§3 (the AQC: schema v0.1.0, Gherkin corpus, both
+harnesses, /api/contract), §4/§4b/§4d (compiled Contracts skeleton +
+state/effect layer + generalized composition), and §5 (hatches incl.
+the follow-release law) are implemented and enforcement-tested on the
+M1 branch. Remaining OPEN: §9 Q2 (map-view kinds) and Q5
+(relations!-generated frontier) — owner-gated, un-pre-empted; §6
+(map-view consumer contract) unimplemented pending Q2. [ASSUMED]
+markers retain their original meaning where their sections are still
+prose-only. Originally written from the owner's 2026-08-26 brainstorm
+directive (traveling, no detailed spec).
 
 **Owner directive (2026-08-26, near-verbatim):** contracts between
 frontend and backend; the backend's contract is a semantically versioned
