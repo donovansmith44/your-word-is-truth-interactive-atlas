@@ -5,6 +5,7 @@
 //! logic lives in a library target rather than only in the binary.
 
 pub mod app;
+pub mod contract;
 pub mod error;
 pub mod graph_handlers;
 pub mod graph_wire;

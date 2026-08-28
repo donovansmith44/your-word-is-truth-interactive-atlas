@@ -16,7 +16,7 @@ use atlas_core::data::AtlasData;
 use atlas_core::sources::SourcesDocument;
 use atlas_graph::GraphService;
 
-use crate::{graph_handlers, handlers};
+use crate::{contract, graph_handlers, handlers};
 
 /// Batch M-A (fix round 1, C1): the two pieces of server state every
 /// handler now draws from -- the pre-existing `AtlasData` (places/events/
@@ -131,6 +131,10 @@ pub fn build_with_sources(
 
     let api = Router::new()
         .route("/health", get(handlers::health))
+        // Batch AQC-1 (design spec §2's versioning law): the AQC version
+        // advertisement -- the ONE new behavioral surface this batch adds;
+        // every other AQC-1 addition is a zero-behavior-change snapshot.
+        .route("/api/contract", get(contract::contract))
         .route("/api/scene", get(handlers::scene_time))
         .route("/api/scene/scripture", get(handlers::scene_scripture))
         .route("/api/books", get(handlers::books))
