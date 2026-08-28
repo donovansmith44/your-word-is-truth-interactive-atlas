@@ -430,23 +430,12 @@ input:focus-visible,
     align-items: center;
 }
 
-.kretzmann-title {
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: 0.08em;
-    font-size: 2.4rem;
-    color: var(--ink);
-    margin: 0 0 1rem;
-}
-
-.kretzmann-intro {
-    font-family: var(--font-serif);
-    font-size: 1.05rem;
-    line-height: 1.7;
-    color: var(--ink);
-    max-width: 66ch;
-    margin: 0 0 1.5rem;
-}
+/* Batch CORPREAD-2 (K2, "layout of the page the same as reader"):
+   .kretzmann-title/.kretzmann-intro DIE -- the reader's own page opens
+   directly on the chapter head, not a page-title/strapline pair with no
+   counterpart on /read at all. Kretzmann.razor's own <h1> now reuses
+   .chapter-head directly (byte-identical typography), no modifier class of
+   its own. */
 
 /* Batch CORPREAD-1b design pass: controls grouped where a reader expects
    them -- the picker (navigate anywhere) and the read-beside/follow chip
@@ -472,32 +461,29 @@ input:focus-visible,
    parallel, smaller-scale rule. */
 
 /* Batch CORPREAD-1b: the boxed ".kretzmann-verse-group" card dies -- a
-   verse's own commentary is now a plain reading-flow section: a quiet
-   marginal anchor label, then its paragraph(s) directly beneath, no
-   border/background/radius of any kind. */
+   verse's own commentary is now a plain reading-flow section.
+   Batch CORPREAD-2 (K2): the section now OPENS with the verse's own real
+   VerseLine (bold scripture, see .kretzmann-scripture-text below), the
+   commentary item(s) following directly beneath it -- no border/
+   background/radius of any kind, unchanged. */
 .kretzmann-verse-block {
     margin: 0 0 1.75rem;
 }
 
-/* The verse anchor: a quiet, small-caps, mono-adjacent marginal mark --
-   the SAME register .verse-num's own gutter numerals use (bronze-ink,
-   small), but laid out as its own line (Kretzmann's own commentary can run
-   to several paragraphs per verse, unlike a single verse line, so a
-   left-gutter number would misalign against multi-paragraph content) --
-   explorable (.explorable-quiet, this file's own existing lighter-weight
-   hover/focus treatment for a mark that is not itself the main reading
-   content). */
-.kretzmann-verse-anchor {
-    display: block;
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    letter-spacing: 0.04em;
-    color: var(--bronze-ink);
-    background: none;
-    border: none;
-    padding: 0;
-    margin: 0 0 0.5rem;
-    cursor: pointer;
+/* Batch CORPREAD-2 (K2, "container names should be the same... bible
+   bolded"): the ONE deliberate typographic delta from /read -- an ADDED
+   class, layered onto VerseLine's own TextClass parameter alongside the
+   unchanged "verse-text" (Kretzmann.razor's own markup passes
+   TextClass="verse-text kretzmann-scripture-text"), so every OTHER
+   .verse-text rule (size/line-height/color) still applies verbatim; only
+   weight changes. Declared in CONTRACT.md as the one authorized delta.
+   Batch CORPREAD-1b's own separate ".kretzmann-verse-anchor" quiet
+   marginal-mark button (a bespoke small label duplicating what the real
+   verse-num button/verse-line click now already provide) is RETIRED
+   whole -- see Kretzmann.razor's own header comment for the "second,
+   competing explore path" reasoning. */
+.kretzmann-scripture-text {
+    font-weight: 700;
 }
 
 /* The commentary paragraph itself -- plain reading-column prose, the SAME
@@ -606,14 +592,105 @@ input:focus-visible,
 
 /* Concord page (Batch CORP-1, R3/R4): a FIFTH page-root class, the SAME
    parchment material, same reasoning as .kretzmann-page immediately
-   above. */
+   above.
+
+   Batch CORPREAD-2 (ticket C2, owner verdict verbatim: "contents should
+   always be visible ... to the left of the text"): a two-column flex ROW
+   (sidebar + reading area) replaces CORPREAD-1b's own single centered flex
+   COLUMN -- see .concord-sidebar's own comment immediately below for the
+   sticky-positioning reasoning that makes this correct in both standalone
+   and split-hosted mode with no per-mode branch. */
 .concord-page {
     min-height: 100vh;
     background: var(--parchment);
     color: var(--ink);
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+/* Batch CORPREAD-2 (C2): the always-visible left sidebar -- contents tree
+   + the "search" jump form (both formerly a click-to-open panel + a
+   controls-row form sitting ABOVE the reading column; see Concord.razor's
+   own header comment for the disclosed "search = the pre-existing numeric
+   picker" reading).
+
+   `position: sticky; top: 0` is the WHOLE mechanism, deliberately not
+   `position: fixed` (which would need a per-mode width/offset calculation)
+   nor a JS-measured pane rect: sticky resolves against whichever ancestor
+   is ACTUALLY the nearest scrolling container -- the document body while
+   `.concord-page` renders standalone (`.header-parchment`, this page's own
+   header theme, is static/in-flow, not `position: fixed` like the dusk
+   header -- so `top: 0` clears it correctly with no header-height offset
+   needed at all), or THIS PANE's own `overflow-y: auto` box
+   (`.concord-page.split-pane-host`, the shared `.split-pane-reader,
+   .split-pane-host` rule above) while split-hosted -- by construction, one
+   rule, no branch. Fixed 260px basis: compresses along with a half-width
+   split pane rather than breaking it (the pinned-pane law, unchanged --
+   see Concord.razor's own header comment). */
+.concord-sidebar {
+    /* Batch CORPREAD-2: flex-shrink 1 (not 0) -- "may compress" (the
+       brief's own explicit allowance for the split-hosted pane): a narrow
+       split pane genuinely can be less than 260px+content wide, and
+       .concord-page.split-pane-host carries overflow-x:hidden (the shared
+       pane rule), so a non-shrinking sidebar would simply clip instead of
+       compressing. */
+    flex: 0 1 260px;
+    width: 260px;
+    min-width: 0;
+    align-self: flex-start;
+    position: sticky;
+    top: 0;
+    padding: 2rem 1.25rem;
+    background: var(--parchment-raised);
+    border-right: 1px solid var(--bronze);
+}
+
+.concord-sidebar-section {
+    margin: 0 0 1.75rem;
+}
+
+.concord-sidebar-label {
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: 0.08em;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--bronze-ink);
+    margin: 0 0 0.6rem;
+}
+
+/* The reading area: the remaining flex space, centering the unchanged
+   .reader-column/.concord-column measure within it -- the SAME visual
+   result CORPREAD-1b's own `.concord-page { align-items: center }` gave a
+   single child, just now scoped to the space left over after the sidebar's
+   own fixed 260px. */
+.concord-reading {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    justify-content: center;
+}
+
+/* Batch CORPREAD-2 (C2, "below the app's own established responsive
+   floor... always visible binds at desktop widths"): the SAME breakpoint
+   `.split-open`/`.split-close` already hide behind, in this SAME file --
+   no new responsive vocabulary. Stacked, not an overlay drawer: the
+   sidebar's own fixed width/sticky positioning both retire below this
+   width, in favor of full-width, in-flow, ABOVE the reading column -- the
+   brief's own named "stacked" alternative to a drawer. */
+@media (max-width: 1023.98px) {
+    .concord-page {
+        flex-direction: column;
+    }
+
+    .concord-sidebar {
+        position: static;
+        flex: 0 0 auto;
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--bronze);
+    }
 }
 
 /* Batch CORPREAD-1b (ticket C): shares .reader-column's own measure/padding
@@ -643,47 +720,15 @@ input:focus-visible,
     margin: 0 0 1.5rem;
 }
 
-/* Batch CORPREAD-1b design pass: controls grouped where a reader expects
-   them -- Contents toggle + read-beside chip together, above the picker,
-   mirroring .kretzmann-controls's own identical discipline. */
+/* Batch CORPREAD-2 (C2): now wraps ONLY the split-open button (Contents +
+   the numeric picker both moved into the sidebar, above) -- present only
+   while not split (unchanged condition). */
 .concord-controls {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.75rem;
     margin: 0 0 1rem;
-}
-
-.concord-toc-toggle {
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: 0.06em;
-    font-size: 0.95rem;
-    color: var(--bronze-ink);
-    background: var(--parchment-raised);
-    border: 1px solid var(--bronze);
-    border-radius: 3px;
-    padding: 0.4rem 0.9rem;
-    cursor: pointer;
-}
-
-.concord-toc-toggle:hover,
-.concord-toc-toggle:focus-visible {
-    color: var(--lapis);
-}
-
-/* Batch CORPREAD-1b (ticket C, "a menu through which I can navigate to
-   different parts in the BoC"): a reader's table-of-contents affordance --
-   collapsed by default (design discipline: "not chrome clutter"), a plain
-   bordered panel over the ten traditional documents (Explore/ConcordToc.cs),
-   never one of the retired boxed reading-row cards reused for a different
-   purpose. */
-.concord-toc-menu {
-    background: var(--parchment-raised);
-    border: 1px solid var(--bronze);
-    border-radius: 4px;
-    padding: 0.5rem 0.75rem;
-    margin: 0 0 1.25rem;
 }
 
 .concord-toc-list {
@@ -712,16 +757,32 @@ input:focus-visible,
     color: var(--lapis);
 }
 
+/* Batch CORPREAD-2 (C2, "current-position highlighted"): layered onto
+   .concord-toc-item above (both classes present together on the matching
+   entry) -- bronze-ink weight + a quiet left rule, the SAME "amplified,
+   not just recolored" idiom this file's own hover/focus rule right above
+   already establishes for this exact element, so the current entry reads
+   as "selected" even to a viewer who can't rely on color alone. */
+.concord-toc-item-current {
+    color: var(--bronze-ink);
+    font-weight: 600;
+    border-left: 2px solid var(--bronze);
+    padding-left: calc(0.3rem - 2px);
+}
+
 /* R3's own numeric part/article/paragraph jump -- "navigation mirrors the
    corpus's OWN shape, not scripture locus," so this deliberately does NOT
    reuse .picker/ScripturePicker (a book+chapter+verse instrument with no
    honest way to express "part"). Reuses .picker-apply for the submit
-   button only -- the one piece that's genuinely identical furniture. */
+   button only -- the one piece that's genuinely identical furniture.
+   Batch CORPREAD-2 (C2): now laid out as a narrow COLUMN of fields (the
+   sidebar's own 260px is too narrow for the pre-existing flex-row
+   end-aligned layout CORPREAD-1b's header row used). */
 .concord-picker {
     display: flex;
-    align-items: flex-end;
-    gap: 0.75rem;
-    margin: 0 0 1.25rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
 }
 
 .concord-picker-field {
@@ -738,12 +799,21 @@ input:focus-visible,
     color: var(--ink-soft);
 }
 
+/* Batch CORPREAD-2 (C2): width widened from a bare 4.5rem (right for the
+   old end-aligned inline-row layout) to fill its own stacked column inside
+   the sidebar. Background swapped from --parchment-raised to plain
+   --parchment: .concord-sidebar (above) is now ITSELF the --parchment-raised
+   surface this input used to contrast against sitting on the page's own
+   plain --parchment -- reusing --parchment-raised here too would leave the
+   input visually flush with its own container; --parchment is the one
+   still-distinct token left, same border/radius otherwise. */
 .concord-picker-input {
-    width: 4.5rem;
+    width: 100%;
+    box-sizing: border-box;
     font-family: var(--font-serif);
     font-size: 0.95rem;
     color: var(--ink);
-    background: var(--parchment-raised);
+    background: var(--parchment);
     border: 1px solid var(--bronze);
     border-radius: 3px;
     padding: 0.3rem 0.5rem;
@@ -755,8 +825,11 @@ input:focus-visible,
    bronze rule, both at heading scale -- putting a machine citation
    ("BoC 1.1.1") in heading position, exactly the "page of BoC x.x.x
    labels" the owner's own complaint named. Demoted to the SAME quiet
-   marginal-mark register .kretzmann-verse-anchor/.concord-unit-ref already
-   use (mono, small, bronze-ink, no border/heading weight) -- a position
+   marginal-mark register .concord-unit-ref itself already establishes
+   (mono, small, bronze-ink, no border/heading weight; Batch CORPREAD-2:
+   Kretzmann's own former ".kretzmann-verse-anchor" sibling of this
+   register is retired -- see .kretzmann-scripture-text's own comment) --
+   a position
    ANNOUNCEMENT, not a second document heading. */
 .concord-position {
     font-family: var(--font-mono);
@@ -802,8 +875,8 @@ input:focus-visible,
 
 /* The confession's own paragraph -- plain reading-column prose (the SAME
    measure/weight .verse-text/.kretzmann-item both already establish), not
-   a boxed row. A quiet marginal ref label precedes it (the SAME register
-   .kretzmann-verse-anchor's own mono/bronze-ink mark uses), itself part of
+   a boxed row. A quiet marginal ref label precedes it (.concord-unit-ref's
+   own mono/bronze-ink register, below), itself part of
    the SAME explorable row (ONE-RULE: the whole paragraph is one click
    target -- see Concord.razor's own markup). */
 .concord-unit {

@@ -233,7 +233,22 @@
 
     private string Vref => $"{Book}.{Chapter}.{Verse.Verse}";
     private string RowTestId => $"{RowTestIdPrefix}-{Verse.Verse}{TestIdSuffix}";
-    private string? VerseNumTestId => VerseNumTestIdPrefix is { } prefix ? $"{prefix}-{Verse.Verse}" : null;
+
+    // Batch CORPREAD-2 (deliverable 0a, THE SHARED-CONTAINER LAW): the ONLY
+    // reader-component parameter change this batch makes, per the brief's
+    // own "if reuse genuinely requires a parameter addition ... follow the
+    // house pattern" instruction -- TestIdSuffix is a PRE-EXISTING parameter
+    // (RowTestId/XrefMarkerTestId already thread it), just never applied to
+    // this ONE testid. Kretzmann.razor now renders a SECOND, simultaneous
+    // VerseLine instance for the same verse whenever it hosts a split with
+    // Reader as guest (both following the same chapter) -- without this fix,
+    // both instances would emit a LITERALLY duplicate "verse-num-{n}"
+    // testid, breaking Playwright's own strict-mode single-match locators.
+    // Every pre-existing caller (Reader.razor, MiniReaderExpand.razor) still
+    // passes TestIdSuffix="" (the default) and is therefore byte-for-byte
+    // unaffected -- this string is identical to before whenever the suffix
+    // is empty.
+    private string? VerseNumTestId => VerseNumTestIdPrefix is { } prefix ? $"{prefix}-{Verse.Verse}{TestIdSuffix}" : null;
 
     // M-D4 fix round 1, P1 (owner correction, verbatim in this file's own
     // header comment): each xref-bearing verse's own ORDINAL among the
