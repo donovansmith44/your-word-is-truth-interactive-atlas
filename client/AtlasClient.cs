@@ -303,16 +303,19 @@ public sealed class AtlasClient
 
     // Batch AQC-1 (design spec §2's versioning law): GET /api/contract --
     // the AQC version range this running server supports. No cache -- the
-    // ONE call site is the startup fail-loud check (AqcContract.cs), which
-    // by definition runs exactly once per app load.
-    public async Task<ContractDto> Contract()
+    // ONE call site is the startup fail-loud check (App.razor), which by
+    // definition runs exactly once per app load. Fix round 1 (Q-5): takes
+    // a CancellationToken so the caller can bound how long first paint is
+    // gated on this round trip -- an UNREACHABLE/hanging /api/contract
+    // must not leave the app blank indefinitely.
+    public async Task<ContractDto> Contract(CancellationToken cancellationToken = default)
     {
-        return await GetRequired<ContractDto>("api/contract");
+        return await GetRequired<ContractDto>("api/contract", cancellationToken);
     }
 
-    private async Task<T> GetRequired<T>(string relativeUrl)
+    private async Task<T> GetRequired<T>(string relativeUrl, CancellationToken cancellationToken = default)
     {
-        var result = await _http.GetFromJsonAsync<T>(relativeUrl, Wire.Options);
+        var result = await _http.GetFromJsonAsync<T>(relativeUrl, Wire.Options, cancellationToken);
         return result ?? throw new InvalidOperationException($"empty response body from {relativeUrl}");
     }
 }

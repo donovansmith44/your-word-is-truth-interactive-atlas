@@ -6,12 +6,23 @@
     LOUD (renders Pages.ContractMismatch instead of the ordinary Router)
     the moment the server's advertised AQC range does not include this
     build's own compiled AqcContract.ClientVersion. A network failure
-    while checking (server unreachable, CORS, ...) is deliberately NOT
-    treated as a mismatch -- this check exists to catch a DEPLOYMENT
-    version skew, not general connectivity; the ordinary app still loads
-    and its own existing error handling covers a genuinely unreachable
-    server the same way it always has. Disclosed scope decision (batch
-    report). *@
+    while checking (server unreachable, CORS, timeout, unparseable JSON)
+    is deliberately NOT treated as a mismatch -- this check exists to
+    catch a DEPLOYMENT version skew, not general connectivity; the
+    ordinary app still loads and its own existing error handling covers a
+    genuinely unreachable server the same way it always has.
+
+    Fix round 1 (Q-4/Q-5/§0, controller ruling): two real gaps closed.
+    (Q-4) A MALFORMED advertisement (AqcContract.Satisfies -> ParseSemver
+    throwing FormatException by design) used to be caught by the SAME
+    catch-all as a network failure and silently loaded the app -- that IS
+    the deployment-skew case this gate exists for, so it now fails loud
+    (Mismatch), not Ok. (Q-5) The check is now bounded by a 2s
+    CancellationToken -- an UNREACHABLE or hanging /api/contract can no
+    longer leave first paint blank indefinitely; it resolves to Ok on
+    timeout, same as any other network failure this check treats as
+    non-fatal. Both new paths get their own versioning.feature scenarios
+    and Playwright coverage (contract-versioning.spec.ts). *@
 
 @switch (_state)
 {
@@ -35,20 +46,40 @@
     private CheckState _state = CheckState.Checking;
     private string _advertisedRange = "";
 
+    // Q-5 fix: the check must be able to FAIL loud, not HANG silent.
+    private static readonly TimeSpan CheckTimeout = TimeSpan.FromSeconds(2);
+
     protected override async Task OnInitializedAsync()
     {
+        ContractDto contract;
         try
         {
-            var contract = await Api.Contract();
-            _advertisedRange = $"{contract.MinVersion}-{contract.MaxVersion}";
+            using var cts = new CancellationTokenSource(CheckTimeout);
+            contract = await Api.Contract(cts.Token);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or System.Text.Json.JsonException)
+        {
+            // Unreachable / CORS / timeout / unparseable JSON -- not a
+            // version mismatch this check can speak to. Proceed; the
+            // app's own existing per-request error handling covers the
+            // rest (the disclosed scope decision, unchanged).
+            _state = CheckState.Ok;
+            return;
+        }
+
+        _advertisedRange = $"{contract.MinVersion}-{contract.MaxVersion}";
+        try
+        {
+            // Q-4 fix: a MALFORMED advertisement is precisely the
+            // deployment-skew case this gate exists for -- FormatException
+            // (AqcContract.ParseSemver's own deliberate throw) falls
+            // through to Mismatch below, not into the network-failure
+            // catch above.
             _state = AqcContract.Satisfies(contract) ? CheckState.Ok : CheckState.Mismatch;
         }
-        catch (Exception)
+        catch (FormatException)
         {
-            // Server unreachable / CORS / transient -- not a version
-            // mismatch this check can speak to. Proceed; the app's own
-            // existing per-request error handling covers the rest.
-            _state = CheckState.Ok;
+            _state = CheckState.Mismatch;
         }
     }
 }
