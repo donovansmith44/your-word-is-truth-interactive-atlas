@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bible-atlas.internal/contracts/atlas-query-contract/aqc.schema.json",
+  "title": "Atlas Query Contract (AQC) v0.1.0",
+  "description": "SNAPSHOT of today's actually-consumed wire shapes (spec §9 Q4, recommended scope). Every schema below is a field-for-field transcription of the real provider handler/DTO named in its own 'x-source' — this document does not redesign anything; it documents what already ships. Zero server behavior change accompanies this version; the ONLY new behavior in this batch is the /api/contract endpoint itself (ContractOut, §6 below).",
+  "version": "0.1.0",
+
+  "x-queries": {
+    "FocusQuery": {
+      "description": "FocusQuery(descriptor) -> Focus. The node-card payload for one descriptor. The snapshot does NOT include Frontier/EscapeHatches as separate wire fields — today's real endpoint returns edge_summary (kind -> count) as the frontier signal and no escape-hatch data at all; those richer shapes are §4/§5 CLIENT-side constructs, not yet part of the wire (spec §9 Q5 is owner-gated).",
+      "request": { "method": "GET", "path": "/api/node/{id}", "x-source": "server/atlas-server/src/graph_handlers.rs::node_card" },
+      "response": { "$ref": "#/$defs/NodeCardOut" },
+      "errors": { "400": "bad_ref", "404": "not_found" }
+    },
+    "TraversalQuery": {
+      "description": "TraversalQuery(descriptor, frontierGroup, page?) -> [Focus refs]. Expands one frontier abstraction (an edge kind label off graph-types' relation manifest) into one page of traversable node references.",
+      "request": {
+        "method": "GET",
+        "path": "/api/node/{id}/edges",
+        "query": { "kind": "string (required, an EdgeKind label e.g. 'cites'/'cited-by'/'mentions')", "cursor": "usize (optional, opaque offset)", "limit": "usize (optional, default 20, max 200)" },
+        "x-source": "server/atlas-server/src/graph_handlers.rs::node_edges"
+      },
+      "response": { "$ref": "#/$defs/EdgePageOut" },
+      "errors": { "400": "bad_ref | bad_kind", "404": "not_found" }
+    },
+    "TextWindowQuery": {
+      "description": "TextWindowQuery(ref, radius) -> verses. A window of {ref, text} reading-spine units, including per-verse annotation spans (words_of_christ is the first annotation layer; RED-1's alignment law: every span is within [0, text.length] of the SAME verse's text).",
+      "request": {
+        "method": "GET",
+        "path": "/api/text",
+        "query": { "ref": "string (required, a dot-ref e.g. 'JHN.3.16', or a Concord citation 'BoC 7.2.1')", "n": "usize (optional, default 1, max 500)", "dir": "'onward' (default) | 'backward'", "scope": "'verse' (default) | 'chapter'", "corpus": "'bible' (default) | 'concord'" },
+        "x-source": "server/atlas-server/src/graph_handlers.rs::text_window"
+      },
+      "response": { "$ref": "#/$defs/TextWindowOut" },
+      "errors": { "400": "bad_ref | bad_dir | bad_corpus", "404": "not_found" }
+    },
+    "SceneQuery": {
+      "description": "SceneQuery(window) -> scene. The map composition query, in EITHER of its two real forms: a time-window scene or a scripture-ref scene. Both forms return the identical Scene shape (mode discriminates which).",
+      "request": {
+        "x-variants": [
+          { "method": "GET", "path": "/api/scene", "query": { "from": "i32 (required, year)", "to": "i32 (required, year, >= from)" }, "x-source": "server/atlas-server/src/handlers.rs::scene_time" },
+          { "method": "GET", "path": "/api/scene/scripture", "query": { "ref": "string (required, a scripture ref)" }, "x-source": "server/atlas-server/src/handlers.rs::scene_scripture" }
+        ]
+      },
+      "response": { "$ref": "#/$defs/Scene" },
+      "errors": { "400": "bad_window | bad_ref" }
+    },
+    "ExplorationRoundTrip": {
+      "description": "ExplorationRoundTrip(descriptor) -- descriptor -> node -> descriptor identity (the G2 seam, wire-level). NodeCardOut.id is the bijection witness: encode_node_id(decode_node_id(s)) == s for every id this contract's FocusQuery/TraversalQuery ever hand back, and re-requesting FocusQuery with a card's own .id, or a TraversalQuery entry's own .node.id, always resolves the SAME node again. Not a separate wire shape — a LAW over NodeCardOut/EdgePageOut's own id fields.",
+      "x-source": "server/atlas-server/src/graph_wire.rs::encode_node_id / decode_node_id"
+    }
+  },
+
+  "$defs": {
+    "EdgeSummaryEntryOut": {
+      "type": "object",
+      "x-source": "server/atlas-server/src/graph_handlers.rs::EdgeSummaryEntryOut",
+      "required": ["kind", "count"],
+      "properties": {
+        "kind": { "type": "string" },
+        "count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "NodeCardOut": {
+      "type": "object",
+      "x-source": "server/atlas-server/src/graph_handlers.rs::NodeCardOut",
+      "required": ["id", "kind", "label", "provenance", "edge_summary", "version"],
+      "properties": {
+        "id": { "type": "string", "description": "The wire node id, e.g. 'text-unit:JHN.3.16' or 'Event:ab_ur' — graph_wire::encode_node_id's own grammar." },
+        "kind": { "type": "string", "description": "The Rust NodeKind's Debug string, e.g. 'TextUnit', 'Event', 'Person'." },
+        "label": { "type": "string" },
+        "provenance": { "type": "string" },
+        "edge_summary": { "type": "array", "items": { "$ref": "#/$defs/EdgeSummaryEntryOut" } },
+        "version": { "type": "string", "description": "atlas_graph::version_hex(graph.version()) — a hex graph-version stamp, NOT the AQC version." },
+        "description": { "type": "string", "description": "OMITTED (not null) when no description match exists. Present for Place/Person/PeopleGroup/CommentaryItem kinds." }
+      },
+      "additionalProperties": false
+    },
+    "NodeRefOut": {
+      "type": "object",
+      "x-source": "server/atlas-server/src/graph_handlers.rs::NodeRefOut",
+      "required": ["id", "kind", "label"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string" },
+        "label": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "EdgeEntryOut": {
+      "type": "object",
+      "x-source": "server/atlas-server/src/graph_handlers.rs::EdgeEntryOut",
+      "required": ["edge", "node"],
+      "properties": {
+        "edge": { "type": "string", "description": "The bijection witness (M-A requirement 4): the SAME id the target's own inverse-kind page carries back for this connection." },
+        "node": { "$ref": "#/$defs/NodeRefOut" }
+      },
+      "additionalProperties": false
+    },
+    "EdgePageOut": {
+      "type": "object",
+      "x-source": "server/atlas-server/src/graph_handlers.rs::EdgePageOut",
+      "required": ["kind", "entries", "version"],
+      "properties": {
+        "kind": { "type": "string" },
+        "entries": { "type": "array", "items": { "$ref": "#/$defs/EdgeEntryOut" } },
+        "next": { "type": ["integer", "null"], "minimum": 0 },
+        "version": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "WordsOfChristSpanOut": {
+      "type": "object",
+      "x-source": "server/atlas-server/src/handlers.rs::WordsOfChristSpanOut",
+      "description": "Half-open CHAR-offset span [start,end) into the OWNING TextUnitOut/VerseOut's own .text — RED-1's alignment law: 0 <= start <= end <= text.length (char count) ALWAYS, for every verse this contract ever serves.",
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "integer", "minimum": 0 },
+        "end": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "TextUnitOut": {
+      "type": "object",
+      "x-source": "server/atlas-server/src/graph_handlers.rs::TextUnitOut",
+      "required": ["ref", "text", "words_of_christ"],
+      "properties": {
+        "ref": { "type": "string" },
+        "text": { "type": "string" },
+        "words_of_christ": { "type": "array", "items": { "$ref": "#/$defs/WordsOfChristSpanOut" } }
+      },
+      "additionalProperties": false
+    },
+    "TextWindowOut": {
+      "type": "object",
+      "x-source": "server/atlas-server/src/graph_handlers.rs::TextWindowOut",
+      "required": ["units", "version"],
+      "properties": {
+        "units": { "type": "array", "items": { "$ref": "#/$defs/TextUnitOut" } },
+        "next": { "type": ["string", "null"] },
+        "version": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "TimeRange": {
+      "type": "object",
+      "x-source": "server/atlas-core/src/time.rs::TimeRange",
+      "required": ["from_year", "to_year"],
+      "properties": {
+        "from_year": { "type": "integer" },
+        "to_year": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "VerseGroup": {
+      "type": "object",
+      "x-source": "server/atlas-core/src/wire.rs::VerseGroup",
+      "required": ["book", "chapter", "verses", "count"],
+      "properties": {
+        "book": { "type": "string" },
+        "chapter": { "type": "integer" },
+        "verses": { "type": "array", "items": { "type": "string" } },
+        "count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "SceneEvent": {
+      "type": "object",
+      "x-source": "server/atlas-core/src/wire.rs::SceneEvent",
+      "required": ["id", "label", "when", "verse_groups"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "when": { "$ref": "#/$defs/TimeRange" },
+        "verse_groups": { "type": "array", "items": { "$ref": "#/$defs/VerseGroup" } }
+      },
+      "additionalProperties": false
+    },
+    "ScenePlace": {
+      "type": "object",
+      "x-source": "server/atlas-core/src/wire.rs::ScenePlace",
+      "required": ["id", "name", "display_name", "lat", "lon", "brightness", "events"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "display_name": { "type": "string" },
+        "lat": { "type": "number" },
+        "lon": { "type": "number" },
+        "brightness": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "events": { "type": "array", "items": { "$ref": "#/$defs/SceneEvent" } },
+        "existence_from": { "type": "integer" },
+        "existence_to": { "type": "integer" },
+        "merged_ids": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "QuietPlace": {
+      "type": "object",
+      "x-source": "server/atlas-core/src/wire.rs::QuietPlace",
+      "required": ["id", "display_name", "lat", "lon", "total_events"],
+      "properties": {
+        "id": { "type": "string" },
+        "display_name": { "type": "string" },
+        "lat": { "type": "number" },
+        "lon": { "type": "number" },
+        "total_events": { "type": "integer", "minimum": 0 },
+        "existence_from": { "type": "integer" },
+        "existence_to": { "type": "integer" },
+        "merged_ids": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "SceneArrow": {
+      "type": "object",
+      "x-source": "server/atlas-core/src/wire.rs::SceneArrow",
+      "required": ["narrative", "color", "from_place", "to_place", "from_event", "to_event", "order"],
+      "properties": {
+        "narrative": { "type": "string" },
+        "color": { "type": "string" },
+        "from_place": { "type": "string" },
+        "to_place": { "type": "string" },
+        "from_event": { "type": "string" },
+        "to_event": { "type": "string" },
+        "order": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "SceneNarrative": {
+      "type": "object",
+      "x-source": "server/atlas-core/src/wire.rs::SceneNarrative",
+      "required": ["id", "name", "color", "legs_in_scene"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "color": { "type": "string" },
+        "legs_in_scene": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "Scene": {
+      "type": "object",
+      "x-source": "server/atlas-core/src/wire.rs::Scene",
+      "required": ["mode", "places", "quiet_places", "arrows", "narratives"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["time", "scripture"] },
+        "window": { "$ref": "#/$defs/TimeRange" },
+        "ref": { "type": "string" },
+        "places": { "type": "array", "items": { "$ref": "#/$defs/ScenePlace" } },
+        "quiet_places": { "type": "array", "items": { "$ref": "#/$defs/QuietPlace" }, "description": "ALWAYS an array (never omitted); ALWAYS empty for mode='scripture' (E2/QUIET-1 law)." },
+        "arrows": { "type": "array", "items": { "$ref": "#/$defs/SceneArrow" } },
+        "narratives": { "type": "array", "items": { "$ref": "#/$defs/SceneNarrative" } }
+      },
+      "additionalProperties": false
+    },
+    "ContractOut": {
+      "type": "object",
+      "description": "GET /api/contract's own response -- the ONE new behavioral surface this batch adds. Advertises the AQC version range this running server supports (spec §2's versioning law).",
+      "x-source": "server/atlas-server/src/contract.rs::ContractOut",
+      "required": ["min_version", "max_version"],
+      "properties": {
+        "min_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "max_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
