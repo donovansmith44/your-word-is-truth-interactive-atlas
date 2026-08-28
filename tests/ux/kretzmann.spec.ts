@@ -264,14 +264,135 @@ test('KRETZMANN-11 (ticket K, "chapter-to-chapter continuation ... reads like th
   await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('1');
 });
 
-test('KRETZMANN-12 (ticket K, "the verse anchors themselves are clickable explorables"): a verse anchor opens the SAME VerseNode popover as the reader\'s own verse-num', async ({ page }) => {
+// Batch CORPREAD-2 (K2): the bespoke "kretzmann-verse-anchor-{n}" quiet
+// marginal-mark button (KRETZMANN-12's own former target) is RETIRED --
+// strictly redundant with the real verse row VerseLine.razor now renders.
+// This test is REPURPOSED to prove the stronger, real replacement: the
+// verse LINE itself (the SAME VerseLine component /read renders) opens the
+// SAME VerseNode popover a plain row click on /read would.
+test('KRETZMANN-12 (ticket K2, "verses ... still clickable, same exploration results per node"): clicking the verse LINE opens the SAME VerseNode popover the reader\'s own verse-line click would', async ({ page }) => {
   await page.goto('/kretzmann');
-  await expect(page.getByTestId('kretzmann-verse-anchor-1')).toBeVisible();
+  await expect(page.getByTestId('verse-line-1')).toBeVisible();
 
-  await page.getByTestId('kretzmann-verse-anchor-1').click();
+  await page.getByTestId('verse-line-1').click();
 
   await expect(page.getByTestId('popover-title')).toBeVisible();
   await expect(page.getByTestId('popover-title')).toContainText('GEN.1.1');
+});
+
+// Batch CORPREAD-2 (K2, deliverable 0a, THE SHARED-CONTAINER LAW, owner
+// verdict 1 verbatim: "container names should be the same ... you should
+// get the same exploration results per node"). The conformance proof: the
+// SAME testid/class vocabulary matches on /read and /kretzmann (standalone,
+// unsuffixed), and clicking the identical verse on each page opens a
+// popover with the identical title/body -- proving VerseLine.razor is
+// genuinely the SAME component instance, not a parallel copy.
+test('KRETZMANN-2S (deliverable 0a, THE SHARED-CONTAINER LAW): the same verse-line/verse-num/verse-mention/verse-text vocabulary matches on /read and /kretzmann, and the same verse click opens the same popover node on both', async ({ page }) => {
+  await page.goto('/read/GEN/1');
+  const readerLine = page.getByTestId('verse-line-1');
+  await expect(readerLine).toBeVisible();
+  await expect(readerLine).toHaveClass(/\bverse-line\b/);
+  await expect(page.getByTestId('verse-num-1')).toHaveClass(/\bverse-num\b/);
+  await expect(readerLine.locator('.verse-text')).toBeVisible();
+
+  await readerLine.click();
+  await expect(page.getByTestId('popover-title')).toBeVisible();
+  const readerTitle = await page.getByTestId('popover-title').textContent();
+  const readerBody = await page.getByTestId('popover-body').textContent();
+  expect(readerTitle).toContain('GEN.1.1');
+
+  await page.goto('/kretzmann');
+  const kretzmannLine = page.getByTestId('verse-line-1');
+  await expect(kretzmannLine).toBeVisible();
+  await expect(kretzmannLine).toHaveClass(/\bverse-line\b/);
+  await expect(page.getByTestId('verse-num-1')).toHaveClass(/\bverse-num\b/);
+  await expect(kretzmannLine.locator('.verse-text')).toBeVisible();
+
+  await kretzmannLine.click();
+  await expect(page.getByTestId('popover-title')).toBeVisible();
+  const kretzmannTitle = await page.getByTestId('popover-title').textContent();
+  const kretzmannBody = await page.getByTestId('popover-body').textContent();
+
+  expect(kretzmannTitle).toBe(readerTitle);
+  expect(kretzmannBody).toBe(readerBody);
+});
+
+// Batch CORPREAD-2 (K2, owner verdict 1 verbatim: "bible bolded").
+test('KRETZMANN-17: scripture text renders bold on /kretzmann (the one declared typographic delta), a plain, un-bolded weight on /read', async ({ page }) => {
+  await page.goto('/kretzmann');
+  const kretzmannText = page.getByTestId('verse-line-1').locator('.verse-text');
+  await expect(kretzmannText).toHaveClass(/\bkretzmann-scripture-text\b/);
+  await expect(kretzmannText).toHaveCSS('font-weight', '700');
+
+  await page.goto('/read/GEN/1');
+  const readerText = page.getByTestId('verse-line-1').locator('.verse-text');
+  await expect(readerText).not.toHaveClass(/\bkretzmann-scripture-text\b/);
+  const readerWeight = await readerText.evaluate(el => getComputedStyle(el).fontWeight);
+  expect(readerWeight).not.toBe('700');
+});
+
+// Batch CORPREAD-2 (K2, owner verdict 1 verbatim: "red letters should be
+// there"). Ground truth: reader-red-letters.spec.ts's own RED-1 fixture,
+// MAT.4.19 ("Follow me" -- the narration prefix is NOT red, the speech is).
+test('KRETZMANN-18: red letters render on /kretzmann exactly as on /read (MAT.4.19, RED-1\'s own fixture)', async ({ page }) => {
+  const chapterOut = await api.chapter('MAT.4');
+  const v19 = chapterOut.verses.find((v: any) => v.verse === 19);
+  expect(v19.words_of_christ).toHaveLength(1);
+
+  await page.goto('/kretzmann');
+  await page.getByTestId('picker-book').selectOption('MAT');
+  await page.getByTestId('picker-chapter').selectOption('4');
+  await page.getByTestId('picker-apply').click();
+
+  const line = page.getByTestId('verse-line-19');
+  await expect(line).toBeVisible();
+  const redSpan = line.locator('.words-of-christ');
+  await expect(redSpan).toHaveText('Follow me, and I will make you fishers of men.');
+  // Bold AND red at once (K2's own bold delta is orthogonal to red-letter
+  // color -- MentionText.razor's own .words-of-christ span nests INSIDE
+  // Kretzmann's own bolded .verse-text, so both apply together).
+  await expect(line.locator('.verse-text')).toHaveClass(/\bkretzmann-scripture-text\b/);
+});
+
+// Batch CORPREAD-2 (K2, owner verdict 1 verbatim: "partial verses are
+// still clickable" -- Reader.razor's own anchor+extend shift-click
+// passage-range mechanic, mirrored).
+test('KRETZMANN-19: shift-click on a second verse-num forms a passage range, opening a PassageNode', async ({ page }) => {
+  await page.goto('/kretzmann');
+  await expect(page.getByTestId('verse-num-1')).toBeVisible();
+  await expect(page.getByTestId('verse-num-3')).toBeVisible();
+
+  await page.getByTestId('verse-num-1').click();
+  await page.getByTestId('verse-num-3').click({ modifiers: ['Shift'] });
+
+  await expect(page.getByTestId('passage-chip')).toBeVisible();
+  await expect(page.getByTestId('passage-chip')).toContainText('GEN.1.1-3');
+
+  await page.getByTestId('passage-chip').click();
+  await expect(page.getByTestId('popover-title')).toBeVisible();
+  await expect(page.getByTestId('popover-title')).toContainText('GEN.1.1-3');
+});
+
+// Batch CORPREAD-2 (K2, deliverable 0a): while split (Kretzmann hosting,
+// Reader as guest, both FOLLOWING the same GEN.1), the SAME verse's
+// testids must not collide -- VerseLine.razor's own TestIdSuffix
+// disambiguation ("-kv") is what makes getByTestId still resolve to
+// exactly one element per page instead of Playwright's strict-mode
+// throwing on two matches.
+test('KRETZMANN-20 (split-mode disambiguation): verse-num-1 resolves to exactly one element per pane while split, never a strict-mode collision', async ({ page }) => {
+  await page.goto('/kretzmann');
+  await page.getByTestId('split-open-kretzmann').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+
+  // Two DIFFERENT elements exist DOM-wide (one per pane) -- getByTestId
+  // alone (unscoped) would be strict-mode-ambiguous; scoping to each
+  // pane's own root is what proves each pane resolves to exactly one.
+  await expect(page.locator('[data-testid="verse-num-1"], [data-testid="verse-num-1-kv"]')).toHaveCount(2);
+
+  const kretzmannPane = page.getByTestId('kretzmann-page');
+  await expect(kretzmannPane.getByTestId('verse-num-1-kv')).toHaveCount(1);
+  const readerPane = page.getByTestId('reader-root');
+  await expect(readerPane.getByTestId('verse-num-1')).toHaveCount(1);
 });
 
 // KRETZ-SCALE-1 (batch-corp1-review.md Q-1, batch-finalp1-brief.md ticket
