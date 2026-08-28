@@ -38,6 +38,31 @@ test('mocked mismatch: an advertised range excluding this client build fails lou
   await expect(page.getByTestId('nav-world')).toHaveCount(0);
 });
 
+test('mocked malformed advertisement: a non-semver version string fails loud too (Q-4)', async ({ page }) => {
+  // Fix round 2 (N-2, re-review finding): the existing "mocked mismatch"
+  // test above exercises the well-formed-but-out-of-range branch
+  // (AqcContract.Satisfies returns false). This exercises the DIFFERENT
+  // App.razor code path Q-4 added -- Satisfies THROWING FormatException
+  // on a malformed version string -- proving the browser actually renders
+  // ContractMismatch for that branch too, not just the Gherkin-level
+  // semver check (glossary.md's own "the malformed advertisement fails
+  // loud" entry, N-1).
+  await page.route(
+    url => url.pathname === '/api/contract',
+    route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ min_version: 'garbage', max_version: '0.1.0' }),
+    }));
+
+  await page.goto('/');
+  await expect(page.getByTestId('contract-mismatch')).toBeVisible();
+  await expect(page.getByTestId('contract-mismatch-advertised')).toHaveText('garbage-0.1.0');
+  await expect(page.getByTestId('contract-mismatch-client')).toHaveText('0.1.0');
+  await expect(page.getByTestId('nav-world')).toHaveCount(0);
+});
+
 test('unreachable /api/contract: the app loads normally rather than failing loud', async ({ page }) => {
   await page.route(
     url => url.pathname === '/api/contract',

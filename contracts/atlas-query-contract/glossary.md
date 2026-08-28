@@ -6,10 +6,13 @@ the Rust (`cucumber`) and C# (Reqnroll) step definitions. A phrase not
 listed here has no business appearing in a `.feature` file — add it here
 first, in the same commit as its first use.
 
-**Fix round 1 (S-2, controller ruling):** the corpus uses 30 distinct
+**Fix round 1 (S-2, controller ruling):** the corpus uses 31 distinct
 step phrases (verified by extracting every `Given`/`When`/`Then`/`And`
 line across all six `.feature` files and normalizing quoted values/
-integers). All 30 are defined below. Where the two bindings genuinely
+integers — 30 at S-2's own original count, +1 for "the malformed
+advertisement fails loud," the Q-4 phrase this SAME fix round added and
+initially left undefined; N-1, fix round 2, closed that gap). All 31
+are defined below. Where the two bindings genuinely
 differ in PROOF DEPTH (not merely implementation), the difference is
 stated explicitly in that phrase's own entry — never left to a code
 comment alone (that was S-2's own finding: the divergence between the
@@ -102,6 +105,21 @@ two bindings is exactly what an incomplete glossary hides).
   is no Rust CONSUMER in this app for `AqcContract` to live on) — the two
   sides prove the SAME pass/fail outcome via two separately-written
   implementations, which is itself part of what phrase parity is for.
+- **"the malformed advertisement fails loud"** (fix round 1, N-1 —
+  added late by the same fix round that introduced it, closing the gap
+  the re-review found) — asserts the semver-range check itself FAILS
+  LOUD (raises/returns an error signal, distinct from a well-formed
+  `false`) when either advertised bound is not a `MAJOR.MINOR.PATCH`
+  string. C#: `AqcContract.Satisfies` throws `FormatException` (the
+  REAL production implementation — the same one `App.razor`'s own
+  `catch (FormatException)` branch routes to `CheckState.Mismatch`,
+  Q-4). Rust: this file's own `satisfies()` mirror returns `Err`
+  (refactored from a panicking `.expect()` specifically so this phrase
+  can assert the failure as a value rather than catching a panic). Only
+  ever used with `Given the server advertises AQC version "garbage"
+  through "0.1.0"` immediately before it — proves the CHECK fails loud;
+  the BROWSER actually rendering the mismatch page for this same input
+  is proven separately, Playwright-only (N-2, below).
 
 ## Assertion phrases ("Then")
 
