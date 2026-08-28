@@ -140,7 +140,7 @@
 <CompositionSplit HostName="@ViewNames.Kretzmann" SplitModeOverride="@SplitMode" HostPaneClass="split-pane-host"
                    OnArrangementChanged="OnArrangementChanged" @ref="_compositionSplit" Context="ctx">
     <div class="@($"kretzmann-page{ctx.HostPaneClassSuffix}")" data-testid="kretzmann-page">
-        <article class="kretzmann-column reader-column">
+        <article class="kretzmann-column">
             <div class="kretzmann-controls">
                 <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" CurrentBook="@_book" CurrentChapter="@_chapterNum" />
 
@@ -238,7 +238,7 @@
                            behind every parameter below. *@
                         <VerseLine Verse="@row.Verse" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore"
                                    Id="@($"v{row.Verse.Verse}{VerseTestIdSuffix}")"
-                                   RowClass="verse-line explorable" RowTestIdPrefix="verse-line" TestIdSuffix="@VerseTestIdSuffix"
+                                   RowClass="verse-line explorable kretzmann-scripture-row" RowTestIdPrefix="verse-line" TestIdSuffix="@VerseTestIdSuffix"
                                    VerseNumClass="verse-num" ShowVerseNumButton="true" VerseNumTestIdPrefix="verse-num"
                                    OnVerseNumClick="@(e => OnVerseNumClick(e, row.Verse.Verse))"
                                    TextClass="verse-text kretzmann-scripture-text" MentionClass="verse-mention"

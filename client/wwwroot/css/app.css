@@ -116,6 +116,22 @@
        same literal. */
     --panel-inset: rgba(0, 0, 0, 0.7);
 
+    /* layout (Batch PERI-1, KRETZ-WIDE-1 -- owner order, verbatim: "On
+       Kretzmann, it doesn't read well. You need to use more horizontal
+       real estate."). Declared here (not a magic number at the rule site)
+       per this batch's own DELIVERABLE 0 -- see CONTRACT.md's own
+       "Kretzmann width tokens" section for the full design rationale.
+       `.reader-column`'s own pinned `max-width: 66ch` (line ~1419 below,
+       CORPREAD-2's SHARED-CONTAINER LAW) is UNTOUCHED -- neither token
+       here is read by that rule; --kretzmann-scripture-measure merely
+       AGREES with it numerically, Kretzmann's own page independently, the
+       same way .reader-page/.sources-page/.kretzmann-page/.concord-page
+       already independently agree on their own parchment background
+       rather than sharing one compound selector (this file's own single-
+       class-selector discipline, header comment). */
+    --kretzmann-page-measure: 96ch;
+    --kretzmann-scripture-measure: 66ch;
+
     /* type */
     --font-serif: "EB Garamond", "Palatino Linotype", Palatino, Georgia, serif;
     --font-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
@@ -407,9 +423,9 @@ input:focus-visible,
 /* Batch CORPREAD-1b (ticket K, owner order verbatim: "design it like a
    sensible UI developer would ... the whole kretzmann commentary just like
    on the kretzmann.org"): REBUILT from CORP-1's own bordered-card list
-   (see git history) into a CONTINUOUS READING SURFACE, sharing
+   (see git history) into a CONTINUOUS READING SURFACE, ORIGINALLY sharing
    .reader-column's own reading-column measure/padding directly (the
-   markup combines both classes -- "typography carrying the structure,"
+   markup combined both classes -- "typography carrying the structure,"
    not a second, parallel column rule).
 
    Fix round (Q-4, IMPORTANT -- review): a `.kretzmann-column { max-width:
@@ -419,8 +435,26 @@ input:focus-visible,
    always won: the 70ch rule was dead on arrival, and the "wider measure"
    language described something that never actually rendered. Deleted
    rather than reordered -- the design pass never asked for 70ch, only for
-   THIS reading column to share the reader's own measure, which it now does
-   honestly (66ch, .reader-column, no parallel override). */
+   THIS reading column to share the reader's own measure, which it now did
+   honestly (66ch, .reader-column, no parallel override).
+
+   Batch PERI-1 (KRETZ-WIDE-1, owner order verbatim: "On Kretzmann, it
+   doesn't read well. You need to use more horizontal real estate."): the
+   combined-class shape above is RETIRED -- Kretzmann.razor's own root
+   `<article>` now carries `kretzmann-column` ALONE (`reader-column`
+   dropped from that element's own class list; Reader.razor's own markup
+   is untouched, still `reader-column` alone, CORPREAD-2's law unaffected).
+   This rule is now the PAGE's own real, live width cap -- wider than
+   66ch, `--kretzmann-page-measure` (`:root`, above) -- covering the
+   controls row, the chapter head, every commentary block
+   (`.kretzmann-item`/`.kretzmann-section-heading`), and the pericope
+   heading. The scripture ROW alone (`VerseLine`, via its own
+   `kretzmann-scripture-row` class, see `.kretzmann-scripture-row` below)
+   stays independently pinned to `--kretzmann-scripture-measure` (66ch) --
+   CORPREAD-2's own shared-container law, honored exactly, just no longer
+   via a shared CLASS -- see CONTRACT.md's own "Kretzmann width tokens"
+   section for the full rationale and the split(+screenshot)-verified
+   split-pane-safety argument. */
 .kretzmann-page {
     min-height: 100vh;
     background: var(--parchment);
@@ -428,6 +462,29 @@ input:focus-visible,
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+.kretzmann-column {
+    width: 100%;
+    max-width: var(--kretzmann-page-measure);
+    padding: 2.5rem var(--reader-col-pad-x, 1.5rem) 6rem;
+}
+
+/* Batch PERI-1 (KRETZ-WIDE-1): the ONE element inside `.kretzmann-column`
+   still pinned to CORPREAD-2's own scripture-row measure -- mirrors the
+   EXISTING `.kretzmann-scripture-text` precedent immediately below
+   (Kretzmann.razor's own VerseLine call site, `TextClass="verse-text
+   kretzmann-scripture-text"`) one parameter over: an ADDED class layered
+   onto `RowClass`, Kretzmann's own call site only (Reader.razor's own
+   `RowClass` is unchanged, still bare `"verse-line explorable"`) -- no
+   descendant selector, one rule per class, this file's own single-class
+   discipline (header comment) honored. Centered within the now-wider
+   page column so the scripture "spine" reads as a deliberate, centered
+   column with commentary free to run wider around/beneath it, not a
+   left-flush accident of block-flow default sizing. */
+.kretzmann-scripture-row {
+    max-width: var(--kretzmann-scripture-measure);
+    margin-inline: auto;
 }
 
 /* Batch CORPREAD-2 (K2, "layout of the page the same as reader"):

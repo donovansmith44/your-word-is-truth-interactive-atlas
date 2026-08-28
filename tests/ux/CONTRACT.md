@@ -212,9 +212,15 @@ PAGE's own outer column is the knob instead: `Kretzmann.razor`'s own root
 Reader.razor's page and gains its own dedicated rule instead, keyed to two
 new, named custom properties (declared on `:root`, `client/wwwroot/css/app.css`) —
 
-- `--kretzmann-page-measure` (`80ch`): the widened PAGE column — controls,
+- `--kretzmann-page-measure` (`96ch`): the widened PAGE column — controls,
   chapter head, section headings, and every commentary block
-  (`.kretzmann-item`) now read at this measure, not 66ch.
+  (`.kretzmann-item`) now read at this measure, not 66ch. Screenshot-judged
+  (batch-peri1-report.md's own before/after) — a first pass at `80ch`
+  measurably widened the commentary but still left the page reading
+  cramped relative to a 1440px viewport (a Psalm-119 stanza's own
+  Kretzmann heading still wrapped 3 lines); `96ch` was the value that
+  actually read well, without crossing into an uncomfortably long prose
+  measure (still well short of full-bleed).
 - `--kretzmann-scripture-measure` (`66ch`): CORPREAD-2's own pinned
   scripture-row measure, named here (not a bare magic number) for the ONE
   place Kretzmann's own page CSS still needs to state it explicitly — the
