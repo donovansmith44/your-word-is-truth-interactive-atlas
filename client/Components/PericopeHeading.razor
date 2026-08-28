@@ -42,7 +42,14 @@
 
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    private Task Open() => OnExplore.InvokeAsync(new EventNode(Heading.EventId, Heading.Title));
+    // PERI-1 fix round 1 (S-1a/Q-1a): Heading.Kind is passed as EventNode's
+    // own knownKind -- this reader-heading click is the MOST common route
+    // to a general-kind pericope (it's how the owner's own PSA.119.105/
+    // GAL.1.8 repros are titled inline while reading, not just reachable
+    // via the verse popover's own PASSAGE section) -- see EventNode.cs's
+    // own _knownKind doc comment for why this can no longer wait on a
+    // fetch that hasn't happened yet.
+    private Task Open() => OnExplore.InvokeAsync(new EventNode(Heading.EventId, Heading.Title, Heading.Kind));
 
     private Task OnKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? Open() : Task.CompletedTask;
 }

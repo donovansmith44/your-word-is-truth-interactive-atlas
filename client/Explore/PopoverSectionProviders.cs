@@ -111,11 +111,12 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
                 {
                     var eventId = h.EventId; // local copies -- captured per-row by the onclick closure below
                     var title = h.Title;
+                    var headingKind = h.Kind; // fix round 1 (S-1a/Q-1a): passed to EventNode's own knownKind below -- see that constructor param's own doc comment
                     builder.OpenElement(seq++, "button");
                     builder.AddAttribute(seq++, "type", "button");
                     builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
                     builder.AddAttribute(seq++, "data-testid", $"chapter-card-heading-{eventId}");
-                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(eventId, title))));
+                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(eventId, title, headingKind))));
                     builder.AddContent(seq++, title);
                     builder.CloseElement();
                 }
@@ -1213,6 +1214,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
         {
             var id = e.Id; // local copies -- captured per-row by the onclick closure below
             var label = e.Label;
+            var rowKind = e.Kind; // fix round 1 (S-1a/Q-1a): passed to EventNode's own knownKind below -- see that constructor param's own doc comment
             // Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY): a
             // general-kind event is NOT part of time traversal (req 2)
             // -- its own row here must not look like a dated event's
@@ -1228,7 +1230,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "type", "button");
             builder.AddAttribute(seq++, "class", $"popover-event-row popover-event-row-button {explorableClass}");
             builder.AddAttribute(seq++, "data-testid", $"verse-event-{id}");
-            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label))));
+            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label, rowKind))));
             builder.AddContent(seq++, label);
             builder.CloseElement();
         }

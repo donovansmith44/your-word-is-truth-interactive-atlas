@@ -239,5 +239,24 @@ resolver = "2"
 # batch-cli1-report.md's own "Fix round 1" section for the full
 # per-finding disposition.
 #
-# CURRENT CANONICAL: 940 (916 + 24) across 49 sections.
+# Batch PERI-1 (2026-08-28, "pericopes are not events" -- the verse
+# popover's own EVENT membership section split by Event::kind so a
+# general-kind PASSAGE (PSA.119.105's own NUN acrostic stanza, GAL.1.8's
+# own astonishment pericope) never renders under an EVENT heading;
+# atlas-cli's own `atlas verse` sibling fix, `Events:`/`Passages:`):
+# moved to 942 (918 + 24) across the SAME 49 sections (no new test file --
+# both new cases land inside the already-counted `tests/cli.rs`
+# integration section). Workspace +2:
+# `verse_psa_119_105_shows_nun_under_passages_not_events` /
+# `verse_gal_1_8_shows_astonishment_pericope_under_passages_not_events`
+# (server/atlas-cli/tests/cli.rs), the CLI's own owner-repro pair. No wire
+# field added (`Event::kind`/`VerseEventOut.kind` both pre-existed).
+# `atlas-graph-types` unchanged (+0) -- data/graph-types byte-untouched
+# (standing veto honored). AQC corpus unchanged (44/184). Zero failures in
+# either dual-run command. See batch-peri1-report.md's own "Fix round 1"
+# section (controller ruling S-1b) for why this paragraph exists: the
+# recount was performed and reported in prose by the original batch but
+# not persisted here until the review caught the miss.
+#
+# CURRENT CANONICAL: 942 (918 + 24) across 49 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).

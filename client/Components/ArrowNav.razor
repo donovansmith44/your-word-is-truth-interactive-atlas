@@ -463,7 +463,16 @@ else
         CancelDwell();
         CancelDismiss();
         HidePeekState();
-        return OnExplore.InvokeAsync(new EventNode(Adjacent.Id, Adjacent.Label));
+        // PERI-1 fix round 1 (S-1a/Q-1a): the literal "event" is a
+        // STRUCTURAL fact here, not a guess -- Adjacent is a
+        // NarrativeAdjacentEventDto, which carries no Kind field at all,
+        // but this component only ever renders for a PRIOR/FOLLOWING
+        // narrative/timeline position (EventChronologySection's own
+        // "general-kind or unknown event -- NOT part of time traversal"
+        // rule, PopoverSectionProviders.cs), so every Adjacent this class
+        // ever resolves is, by construction, kind=="event". See
+        // EventNode.cs's own _knownKind doc comment.
+        return OnExplore.InvokeAsync(new EventNode(Adjacent.Id, Adjacent.Label, "event"));
     }
 
     // TITLE-WRAP-1 (owner report, 2026-08-24, verbatim: "i don't like that

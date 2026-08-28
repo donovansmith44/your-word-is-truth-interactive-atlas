@@ -188,7 +188,15 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
                 return new CatechismNode(descriptor.Key, descriptor.Title);
 
             case "Event":
-                return new EventNode(descriptor.Key, descriptor.Title);
+                // PERI-1 fix round 1 (S-1a/Q-1a): seeds knownKind from the
+                // SAVED descriptor's own IsGeneralKind -- without this, a
+                // "Continue" reopen re-captures every seeded node fresh
+                // (SeedFromTrail.Apply -> Visit.Apply -> Capture, FocusStack.cs),
+                // which would silently regress an already-correct saved
+                // "Passage" badge back to "Event" the instant the trail is
+                // reopened (Capture would again read a not-yet-fetched
+                // EventNode). See EventNode.cs's own _knownKind doc comment.
+                return new EventNode(descriptor.Key, descriptor.Title, descriptor.IsGeneralKind ? "general" : "event");
 
             case "PolityDelta":
             {

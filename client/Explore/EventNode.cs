@@ -47,10 +47,37 @@ public sealed class EventNode : IExplorable, INarrativeAware
     private EventDetail? _cached;
     private NarrativeEventPositionsResult? _cachedPositions;
 
-    public EventNode(string eventId, string title)
+    // PERI-1 fix round 1 (review S-1a/Q-1a, CRITICAL -- the review's own
+    // recommended fix (b)): the FIRST draft of CachedKind (below) forwarded
+    // ONLY `_cached?.Kind`, populated solely by DetailAsync -- but
+    // ExplorationDescriptor.Capture runs SYNCHRONOUSLY, inside Visit.Apply,
+    // BEFORE PushAsync's own `await LoadCurrent()` ever gets a chance to
+    // resolve that fetch (ExplorerPopover.razor's own PushAsync: `Visit`
+    // dispatches, THEN LoadCurrent awaits) -- so for a freshly-clicked
+    // EventNode (every real owner-repro click), `_cached` is always still
+    // null at the exact instant Capture reads it. That made the trail
+    // badge fix a no-op in the common case, not a rare race -- see this
+    // batch's fix-round report section for the full trace. Fixed here,
+    // not by making Capture async (architecturally awkward -- Visit.Apply
+    // is a pure, synchronous IIntent<FocusStack>): every construction site
+    // that already KNOWS this event's own `Event::kind` at construction
+    // time (a VerseEventDto/HeadingDto row -- the wire already carries
+    // `kind` right there, no fetch needed) now passes it in as
+    // `knownKind`, so CachedKind is correct from the FIRST synchronous
+    // read, never dependent on a fetch racing a capture. A construction
+    // site that genuinely does NOT know the kind yet (ArrowNav's own
+    // PRIOR/FOLLOWING traversal reads a structurally-guaranteed-dated
+    // `NarrativeAdjacentEventDto`, which carries no `Kind` field at all --
+    // see that call site's own comment for why passing the literal
+    // `"event"` there is a structural fact, not a guess) still falls back
+    // to the old fetch-populated path once DetailAsync resolves.
+    private readonly string? _knownKind;
+
+    public EventNode(string eventId, string title, string? knownKind = null)
     {
         EventId = eventId;
         Title = title;
+        _knownKind = knownKind;
     }
 
     public string EventId { get; }
@@ -58,23 +85,27 @@ public sealed class EventNode : IExplorable, INarrativeAware
     public string Kind => "Event";
 
     /// <summary>
-    /// Batch PERI-1 (PRESENTATION CATEGORY LAW): a read-only forward to
-    /// this SAME memoized <see cref="_cached"/> fetch's own
-    /// <see cref="EventDetail.Kind"/> ("event" | "general", the DATA's own
-    /// classification -- distinct from this class's own <see cref="Kind"/>
-    /// above, the CLIENT's structural node-type tag; see EVENT-1's own
-    /// KIND-AGNOSTIC note, CONTRACT.md) -- null only when this node's own
-    /// popover has never resolved (no fetch triggered here; "no fetch just
-    /// to render a label," this class's own header comment). Every node
-    /// that ever became `Current` in a popover session already has this
-    /// populated (every Kind=="Event" section provider -- EventDateAndPlacesSection/
-    /// EventChronologySection -- calls <see cref="DetailAsync"/> the moment
-    /// it renders) -- <see cref="ExplorationDescriptor.Capture"/> reads
-    /// this to label a saved-trail row "Passage" instead of "Event" for a
-    /// general-kind entry, "prefer client-side use of an existing field"
-    /// per this batch's own machine rules, zero new fetches.
+    /// Batch PERI-1 (PRESENTATION CATEGORY LAW), fix round 1 (see
+    /// <see cref="_knownKind"/>'s own doc comment above for why this reads
+    /// TWO sources, not one): <see cref="_cached"/>'s own
+    /// <see cref="EventDetail.Kind"/> once a fetch has actually resolved
+    /// (authoritative -- always wins when present), falling back to
+    /// <see cref="_knownKind"/> (the caller-supplied, already-on-the-wire
+    /// value) when no fetch has happened yet. Either source is "event" |
+    /// "general", the DATA's own classification -- distinct from this
+    /// class's own <see cref="Kind"/> above, the CLIENT's structural
+    /// node-type tag; see EVENT-1's own KIND-AGNOSTIC note, CONTRACT.md.
+    /// Null only for the residual construction sites that neither know the
+    /// kind up front NOR have resolved a fetch yet (e.g.
+    /// <see cref="ExplorationDescriptor.Reconstruct"/>'s "Event" case,
+    /// which DOES seed `knownKind` from the saved descriptor's own
+    /// `IsGeneralKind` -- so this is genuinely rare in practice, not the
+    /// deterministic gap fix round 1 closes).
+    /// <see cref="ExplorationDescriptor.Capture"/> reads this to label a
+    /// saved-trail row "Passage" instead of "Event" for a general-kind
+    /// entry.
     /// </summary>
-    public string? CachedKind => _cached?.Kind;
+    public string? CachedKind => _cached?.Kind ?? _knownKind;
 
     /// <summary>
     /// Requirement 4's own "Explore (map -- the event's place(s)/scene;

@@ -78,6 +78,69 @@ test('EXPLORE-TRAIL-1: save from the popover, list in the hamburger, continue wi
   await expect(page.getByTestId('hamburger-empty')).toBeVisible();
 });
 
+// PERI-1 fix round 1 (review S-1a/Q-1a, CRITICAL): the review proved
+// ExplorationDescriptor.Capture runs synchronously BEFORE the fetch that
+// used to be the ONLY source EventNode.CachedKind read, so a freshly
+// clicked general-kind EventNode's own trail badge was captured as "Event"
+// deterministically, not as a rare race -- the owner's own PSA.119.105/
+// GAL.1.8 repro shape, saved. Fixed by threading the already-on-the-wire
+// VerseEventDto.Kind into EventNode's own constructor at the exact click
+// site (PopoverSectionProviders.cs's RenderRows) -- this test proves the
+// saved-trail badge itself, live, the surface the review found broken.
+test('PERI-1 fix round 1: saving an exploration through a general-kind pericope (NUN) labels its own trail badge "Passage," never "Event"', async ({ page }) => {
+  await page.goto('/read/PSA/119');
+  await page.getByTestId('verse-line-105').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('PSA.119.105');
+
+  // Drill into the general-kind PASSAGE row itself -- a fresh EventNode,
+  // never previously fetched, the exact shape the review's own trace
+  // named as the deterministic failure case.
+  await page.getByTestId('verse-event-psa_119_nun').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('Psalm 119: NUN');
+
+  await page.getByTestId('popover-save-exploration').click();
+  await page.getByTestId('popover-close').click();
+
+  await page.getByTestId('hamburger-menu').click();
+  const item = page.locator('[data-testid^="exploration-item-"]');
+  await expect(item).toHaveCount(1);
+  await item.locator('.hamburger-exploration-summary').click();
+
+  // Two trail nodes: PSA.119.105 (Verse), then NUN (Event-kind CLIENT
+  // node, but a general-kind PASSAGE by data) -- its own badge must read
+  // "Passage," never "Event."
+  await expect(page.getByTestId('exploration-node-0')).toContainText('Verse');
+  const nunNode = page.getByTestId('exploration-node-1');
+  await expect(nunNode).toContainText('Psalm 119: NUN');
+  await expect(nunNode.locator('.hamburger-node-kind')).toHaveText('Passage');
+  await expect(nunNode.locator('.hamburger-node-kind')).not.toHaveText('Event');
+
+  // "Continue" reopens the trail (SeedFromTrail -> Visit -> a FRESH
+  // Capture per node, FocusStack.cs) -- proves the fix survives a
+  // re-capture, not just the original save (S-1a's own second-order
+  // concern: ExplorationDescriptor.Reconstruct must seed knownKind from
+  // the saved descriptor's own IsGeneralKind, or a reopen would silently
+  // regress the badge back to "Event").
+  await nunNode.click();
+  await expect(page.getByTestId('popover-title')).toHaveText('Psalm 119: NUN');
+  await page.getByTestId('popover-save-exploration').click();
+  await page.getByTestId('popover-close').click();
+
+  await page.getByTestId('hamburger-menu').click();
+  const items = page.locator('[data-testid^="exploration-item-"]');
+  await expect(items).toHaveCount(2);
+  // SavedExplorationsService.Save always APPENDS (never mutates a prior
+  // save) -- the LAST item in the list is this second, freshly re-saved one.
+  const fresh = items.last();
+  await fresh.locator('.hamburger-exploration-summary').click();
+  // Same shape as the original save above -- index 0 is the Verse
+  // (PSA.119.105), index 1 is NUN (the node "Continue" was clicked from).
+  await expect(fresh.getByTestId('exploration-node-0')).toContainText('Verse');
+  const reopenedNunNode = fresh.getByTestId('exploration-node-1');
+  await expect(reopenedNunNode).toContainText('Psalm 119: NUN');
+  await expect(reopenedNunNode.locator('.hamburger-node-kind')).toHaveText('Passage');
+});
+
 // Decision 1's own "consecutive duplicates collapsed" rule. This app's real
 // navigation graph never revisits the SAME node twice in a row (every Push
 // target differs from Current; every Back lands on whatever the stack
