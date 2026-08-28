@@ -11,176 +11,187 @@
    experiecne like the Bible, except verses and verse fragements and
    verse/passage references are explorable. I should have a menu through
    which I can navigate to different parts in the BoC.") -- REBUILDS
-   CORP-1's own bordered-row list (see git history, R3) into a CONTINUOUS
-   READING SURFACE: the SAME reading-column register Kretzmann.razor and
-   Reader.razor both now share -- part/article STRUCTURE carried by
-   TYPOGRAPHY (a part heading, an article heading, each interleaved
-   directly in the reading flow the moment the window crosses into a new
-   one -- BuildRenderRows below), never a container.
+   CORP-1's own bordered-row list into a CONTINUOUS READING SURFACE: the
+   SAME reading-column register Kretzmann.razor and Reader.razor both now
+   share -- part/article STRUCTURE carried by TYPOGRAPHY (a part heading, an
+   article heading, each interleaved directly in the reading flow the
+   moment the window crosses into a new one -- BuildRenderRows below),
+   never a container.
 
-   NAV MENU (ticket C): a "Contents" toggle reveals a panel over the BoC's
-   own canon -- Explore/ConcordToc.cs's ten traditional documents (Creeds,
-   AC, Apology, Smalcald, Treatise, SC, LC, FC, plus the Preface and the
-   Formula's two forms), mirrored from `atlas-etl/src/concord.rs`'s own
-   `DOCUMENTS: &[ConcordDocSpec]` table (read directly before writing, not
-   guessed -- fix round S-7 trivia: an earlier draft of this comment named
-   this table "CONCORD_DOC_SPECS," which is the RECORD TYPE's name
-   (`ConcordDocSpec`), not the constant's own real name; the content mirror
-   itself was always exact, verified line by line -- this was a citation
-   slip only, corrected here and in ConcordToc.cs/CONTRACT.md).
-   Jumping loads that document's own opening window (BoC {part}.1.1) into
-   the SAME reading-flow body every other navigation renders through --
-   never a bare fragment. The pre-existing numeric part/article/paragraph
-   picker stays too (fine-grained jump beyond the menu's own per-document
-   granularity) -- both live under one grouped "controls" cluster (design
-   discipline, not chrome clutter).
+   Batch CORPREAD-2 (ticket C2, owner verdict, VERBATIM: "BoC: contents
+   should always be visible, not needed to click, to the left of the text.
+   search is also to the left of the text rather than always at the top of
+   the page.") -- REBUILDS CORPREAD-1b's own click-to-open "Contents" panel
+   (a collapsed-by-default toggle sitting ABOVE the reading column,
+   alongside the numeric picker also above it) into an ALWAYS-VISIBLE LEFT
+   SIDEBAR (.concord-sidebar below): the ten-document contents tree
+   (Explore/ConcordToc.cs, unchanged) plus the "search" affordance (the
+   pre-existing numeric part/article/paragraph jump form -- DISCLOSED: this
+   app carries no free-text search feature anywhere; the owner's own
+   "search... at the top of the page" plainly refers to this page's own
+   pre-existing find-your-way control, the one thing that used to sit above
+   the reading column and now moves into the sidebar alongside Contents,
+   per the same sentence's own "also to the left") -- both now render
+   UNCONDITIONALLY, no click-to-open toggle anywhere (`_tocOpen`/ToggleToc/
+   concord-toc-toggle/concord-toc-menu are RETIRED whole). Current position
+   highlighted in the tree (CurrentPart below). Clicking a document still
+   navigates via the SAME LoadWindowAsync every other navigation uses,
+   landing in full reading flow, never a bare fragment -- unchanged from
+   CORPREAD-1b.
 
-   SCRIPTURE REFS + QUOTED FRAGMENTS EXPLORABLE (ticket C, "same mechanism
-   as ticket K -- do not fork the scanner"): every unit's own confession
-   text renders through the SAME Components/ScriptureRefText.razor scanner
-   Kretzmann.razor uses.
+   LAYOUT: `.concord-page` becomes a two-column flex ROW (sidebar left,
+   sticky; reading area right, centered) instead of CORPREAD-1b's own
+   single centered flex COLUMN -- see app.css's own header comment on
+   `.concord-sidebar` for the sticky-vs-fixed reasoning (it works
+   correctly, by construction, in BOTH standalone and split-hosted mode,
+   because `position: sticky` resolves against whichever ancestor actually
+   scrolls -- the document body standalone, this page's own
+   `.split-pane-host` pane while split -- with no JS and no per-mode
+   branch). Narrow viewports (below the app's own established
+   1023.98px split-affordance floor, `@media (max-width: 1023.98px)` --
+   the SAME breakpoint `.split-open`/`.split-close` already hide behind, in
+   this SAME file, chosen so this page gains no NEW responsive vocabulary):
+   the sidebar collapses to the STACKED pattern (full-width, non-sticky,
+   ABOVE the reading column) -- the brief's own "drawer/stacked" alternative;
+   a slide-out drawer overlay was judged more UI surface than this batch's
+   own C2 ticket asked for and is not built this round (disclosed, not a
+   silent narrowing).
+
+   Split mode (Concord hosting, Reader guest -- CompositionSplit.razor's own
+   header, "official host recipe... follows Sources.razor verbatim"): the
+   sidebar belongs to the Concord PANE (a child of `.concord-page.
+   split-pane-host`, never the whole viewport) -- it compresses along with
+   the pane's own narrower width (the sidebar's own fixed 260px basis simply
+   consumes a larger fraction of a half-width pane; the reading column
+   keeps its own unchanged max-width:66ch measure, wrapping onto more
+   available height instead of overflowing) and never overlaps the guest
+   pane -- both panes keep their own independent scroll (the pinned-pane
+   law, unchanged, CompositionSplit.razor's own established guarantee).
+
+   SCRIPTURE REFS + QUOTED FRAGMENTS EXPLORABLE (ticket K/C, AFFIRMED-KEEP,
+   owner verdict 3 verbatim -- "i did like what you did where verse
+   references like In the beginning cp. John 1,1 got mapped to the actual
+   graph. That's good. Keep that."): every unit's own confession text still
+   renders through the SAME Components/ScriptureRefText.razor scanner
+   Kretzmann.razor uses -- UNCHANGED, carried over whole from CORPREAD-1b.
 
    VIEW-LOCAL STATE, UNCHANGED (R3/ST-3 D2): `_currentRef` stays ordinary
-   component state, not an atom -- this ticket's own text says so
-   explicitly ("Concord's browse position stays VIEW-LOCAL state ... no
-   sixth atom, no allowlist growth") -- nothing about this mechanism
-   changes in this batch.
-
-   Official host recipe (CompositionSplit.razor's own header): unchanged --
-   follows Sources.razor verbatim, same as Kretzmann.razor. *@
+   component state, not an atom. *@
 
 <PageTitle>Bible Explorer &mdash; Concord</PageTitle>
 
 <CompositionSplit HostName="@ViewNames.Concord" SplitModeOverride="@SplitMode" HostPaneClass="split-pane-host" Context="ctx">
     <div class="@($"concord-page{ctx.HostPaneClassSuffix}")" data-testid="concord-page">
-        <article class="concord-column reader-column">
-            <h1 class="concord-title">The Book of Concord</h1>
-            <p class="concord-intro">
-                The Lutheran confessions of 1580 &mdash; the church's own
-                confession, subordinate to the Scripture it confesses.
-            </p>
+        @* Batch CORPREAD-2 (C2, "contents should always be visible, not
+           needed to click ... search is also to the left"): ONE always-
+           visible sidebar, no toggle -- see this file's own header comment. *@
+        <aside class="concord-sidebar" data-testid="concord-sidebar">
+            <div class="concord-sidebar-section" data-testid="concord-sidebar-search">
+                <p class="concord-sidebar-label">Search</p>
+                <form class="concord-picker" data-testid="concord-picker" @onsubmit="JumpToAsync">
+                    <label class="concord-picker-field">
+                        <span class="concord-picker-label">Part</span>
+                        <input class="concord-picker-input" type="number" min="1" data-testid="concord-picker-part" @bind="_jumpPart" />
+                    </label>
+                    <label class="concord-picker-field">
+                        <span class="concord-picker-label">Article</span>
+                        <input class="concord-picker-input" type="number" min="1" data-testid="concord-picker-article" @bind="_jumpArticle" />
+                    </label>
+                    <label class="concord-picker-field">
+                        <span class="concord-picker-label">Paragraph</span>
+                        <input class="concord-picker-input" type="number" min="1" data-testid="concord-picker-paragraph" @bind="_jumpParagraph" />
+                    </label>
+                    <button type="submit" class="picker-apply" data-testid="concord-picker-go">Go</button>
+                </form>
+            </div>
 
-            <div class="concord-controls">
-                <button type="button" class="concord-toc-toggle" data-testid="concord-toc-toggle"
-                        aria-expanded="@(_tocOpen ? "true" : "false")" aria-controls="concord-toc-menu" @onclick="ToggleToc">
-                    Contents
-                </button>
+            <nav class="concord-sidebar-section" data-testid="concord-sidebar-toc" aria-label="Book of Concord contents">
+                <p class="concord-sidebar-label">Contents</p>
+                <ul class="concord-toc-list">
+                    @foreach (var doc in ConcordToc.Documents)
+                    {
+                        var isCurrent = doc.Part == CurrentPart;
+                        <li>
+                            <button type="button" class="@("concord-toc-item" + (isCurrent ? " concord-toc-item-current" : ""))"
+                                    data-testid="@($"concord-toc-part-{doc.Part}")"
+                                    aria-current="@(isCurrent ? "true" : null)"
+                                    @onclick="@(() => JumpToPartAsync(doc.Part))">
+                                @doc.Title
+                            </button>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </aside>
+
+        <div class="concord-reading">
+            <article class="concord-column reader-column">
+                <h1 class="concord-title">The Book of Concord</h1>
+                <p class="concord-intro">
+                    The Lutheran confessions of 1580 &mdash; the church's own
+                    confession, subordinate to the Scripture it confesses.
+                </p>
 
                 @if (!ctx.IsSplitOpen)
                 {
-                    <button type="button" class="split-open split-open-parchment" data-testid="split-open-concord"
-                            @onclick="ctx.InvokeHatch">
-                        Read beside the reader
-                    </button>
+                    <div class="concord-controls">
+                        <button type="button" class="split-open split-open-parchment" data-testid="split-open-concord"
+                                @onclick="ctx.InvokeHatch">
+                            Read beside the reader
+                        </button>
+                    </div>
                 }
-            </div>
 
-            @if (_tocOpen)
-            {
-                @* Ticket C, "a menu through which I can navigate to
-                   different parts in the BoC" -- a reader's
-                   table-of-contents affordance, collapsed by default (no
-                   chrome clutter), the traditional documents in canon
-                   order. *@
-                <nav class="concord-toc-menu" id="concord-toc-menu" data-testid="concord-toc-menu" aria-label="Book of Concord contents">
-                    <ul class="concord-toc-list">
-                        @foreach (var doc in ConcordToc.Documents)
-                        {
-                            <li>
-                                <button type="button" class="concord-toc-item" data-testid="@($"concord-toc-part-{doc.Part}")"
-                                        @onclick="@(() => JumpToPartAsync(doc.Part))">
-                                    @doc.Title
-                                </button>
-                            </li>
-                        }
-                    </ul>
-                </nav>
-            }
+                <p class="concord-position" data-testid="concord-position">@_currentRef</p>
 
-            <form class="concord-picker" data-testid="concord-picker" @onsubmit="JumpToAsync">
-                <label class="concord-picker-field">
-                    <span class="concord-picker-label">Part</span>
-                    <input class="concord-picker-input" type="number" min="1" data-testid="concord-picker-part" @bind="_jumpPart" />
-                </label>
-                <label class="concord-picker-field">
-                    <span class="concord-picker-label">Article</span>
-                    <input class="concord-picker-input" type="number" min="1" data-testid="concord-picker-article" @bind="_jumpArticle" />
-                </label>
-                <label class="concord-picker-field">
-                    <span class="concord-picker-label">Paragraph</span>
-                    <input class="concord-picker-input" type="number" min="1" data-testid="concord-picker-paragraph" @bind="_jumpParagraph" />
-                </label>
-                <button type="submit" class="picker-apply" data-testid="concord-picker-go">Go</button>
-            </form>
-
-            @* Fix round (Q-7, TRIVIA -- review): this used to be an `<h2>`
-               with its own bronze rule, stacked directly above
-               `.concord-part-heading`'s own bronze rule -- two rules, and a
-               machine citation ("BoC 1.1.1") sitting in HEADING position,
-               exactly the "page of BoC x.x.x labels" the owner complained
-               about (the boxes are gone; this one label wasn't). Demoted to
-               a plain `<p>`, quiet register (app.css's own `.concord-
-               position`) -- a position ANNOUNCEMENT, not a document
-               heading; `.concord-part-heading` is the one real heading now. *@
-            <p class="concord-position" data-testid="concord-position">@_currentRef</p>
-
-            @if (_error is not null)
-            {
-                <div class="toast" data-testid="toast">
-                    <p class="toast-message">@_error</p>
-                </div>
-            }
-            else if (_loading)
-            {
-                <p class="concord-loading">Loading&hellip;</p>
-            }
-            else
-            {
-                @foreach (var row in RenderRows)
+                @if (_error is not null)
                 {
-                    if (row is PartHeadingRow ph)
-                    {
-                        <h2 class="concord-part-heading" data-testid="@($"concord-part-heading-{ph.Part}")">@ph.Title</h2>
-                    }
-                    else if (row is ArticleHeadingRow ah)
-                    {
-                        <h3 class="concord-article-heading" data-testid="@($"concord-article-heading-{ah.Part}-{ah.Article}")">Article @ah.Article</h3>
-                    }
-                    else if (row is UnitRow ur)
-                    {
-                        var unit = ur.Unit;
-                        @* Fix round (Q-6, IMPORTANT -- review): dropped the
-                           `aria-label="Explore ..."` this wrapper used to
-                           carry -- it REPLACED the accessible name, so a
-                           screen reader announced only "Explore BoC x.x.x,
-                           button" and never read the confession paragraph
-                           itself. The element's own text content (the ref
-                           label + the paragraph) is now its accessible name
-                           -- still focusable/actionable via tabindex+Enter,
-                           unchanged. Mirrors Kretzmann.razor's own identical
-                           fix, same finding, same reasoning. *@
-                        <div class="concord-unit explorable" data-testid="@($"concord-unit-{Slug(unit.Ref)}")"
-                             tabindex="0" role="button"
-                             @onclick="@(() => OnExplore(unit))" @onkeydown="@(e => OnUnitKeyDown(e, unit))">
-                            <span class="concord-unit-ref">@unit.Ref</span>
-                            <ScriptureRefText Text="@unit.Text" Toc="@(_toc ?? EmptyToc)" ClassPrefix="concord-ref"
-                                               OwnerSlug="@Slug(unit.Ref)" OnExplore="OnExploreNode" />
-                        </div>
-                    }
+                    <div class="toast" data-testid="toast">
+                        <p class="toast-message">@_error</p>
+                    </div>
                 }
+                else if (_loading)
+                {
+                    <p class="concord-loading">Loading&hellip;</p>
+                }
+                else
+                {
+                    @foreach (var row in RenderRows)
+                    {
+                        if (row is PartHeadingRow ph)
+                        {
+                            <h2 class="concord-part-heading" data-testid="@($"concord-part-heading-{ph.Part}")">@ph.Title</h2>
+                        }
+                        else if (row is ArticleHeadingRow ah)
+                        {
+                            <h3 class="concord-article-heading" data-testid="@($"concord-article-heading-{ah.Part}-{ah.Article}")">Article @ah.Article</h3>
+                        }
+                        else if (row is UnitRow ur)
+                        {
+                            var unit = ur.Unit;
+                            <div class="concord-unit explorable" data-testid="@($"concord-unit-{Slug(unit.Ref)}")"
+                                 tabindex="0" role="button"
+                                 @onclick="@(() => OnExplore(unit))" @onkeydown="@(e => OnUnitKeyDown(e, unit))">
+                                <span class="concord-unit-ref">@unit.Ref</span>
+                                <ScriptureRefText Text="@unit.Text" Toc="@(_toc ?? EmptyToc)" ClassPrefix="concord-ref"
+                                                   OwnerSlug="@Slug(unit.Ref)" OnExplore="OnExploreNode" />
+                            </div>
+                        }
+                    }
 
-                <nav class="concord-nav" aria-label="Concord navigation">
-                    @if (_prevRef is not null)
-                    {
-                        <button type="button" class="concord-nav-button" data-testid="concord-prev" @onclick="GoBackward">&lsaquo; Previous</button>
-                    }
-                    @if (_nextRef is not null)
-                    {
-                        <button type="button" class="concord-nav-button" data-testid="concord-next" @onclick="GoForward">Next &rsaquo;</button>
-                    }
-                </nav>
-            }
-        </article>
+                    <nav class="concord-nav" aria-label="Concord navigation">
+                        @if (_prevRef is not null)
+                        {
+                            <button type="button" class="concord-nav-button" data-testid="concord-prev" @onclick="GoBackward">&lsaquo; Previous</button>
+                        }
+                        @if (_nextRef is not null)
+                        {
+                            <button type="button" class="concord-nav-button" data-testid="concord-next" @onclick="GoForward">Next &rsaquo;</button>
+                        }
+                    </nav>
+                }
+            </article>
+        </div>
     </div>
 </CompositionSplit>
 
@@ -212,7 +223,6 @@
     private string? _error;
     private int _requestId;
     private IExplorable? _activeNode;
-    private bool _tocOpen;
 
     private int? _jumpPart;
     private int? _jumpArticle;
@@ -225,6 +235,13 @@
     private List<BookTocEntry>? _toc;
 
     private static string Slug(string reference) => reference.Replace(' ', '-').Replace('.', '-');
+
+    // Batch CORPREAD-2 (C2, "current-position highlighted"): the sidebar's
+    // own tree entry for whatever document the CURRENT window's own first
+    // unit belongs to -- a plain computed property over `_currentRef`,
+    // never separately tracked state (so it can never drift out of sync
+    // with what the reading column is actually showing).
+    private int CurrentPart => ParseRef(_currentRef).Part;
 
     // Batch CORPREAD-1b (ticket C): part/article structure carried by
     // TYPOGRAPHY -- a fresh part/article heading is emitted the instant the
@@ -266,15 +283,14 @@
         return (int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]));
     }
 
-    private void ToggleToc() => _tocOpen = !_tocOpen;
-
     // Batch CORPREAD-1b (ticket C, "jump anywhere; landing position renders
     // the target in reading flow"): jumps to the document's own opening
     // paragraph -- the SAME LoadWindowAsync every other navigation uses, so
     // the landing is a full reading-flow window, never a bare fragment.
+    // Batch CORPREAD-2 (C2): no more `_tocOpen = false` -- the sidebar is
+    // always visible, there is nothing left to close.
     private Task JumpToPartAsync(int part)
     {
-        _tocOpen = false;
         _currentRef = ConcordToc.StartRef(part);
         return LoadWindowAsync(_currentRef, "onward");
     }
