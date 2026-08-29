@@ -293,5 +293,35 @@ resolver = "2"
 # `batch-bibex1-report.md` has the full self-review, transcript excerpts,
 # and plain-mode-unchanged proof.
 #
-# CURRENT CANONICAL: 967 (943 + 24) across 49 sections.
+# Batch BIBEX-1 fix round 1 (2026-08-29, controller review response --
+# 0 Critical / 3 Important (I-1/I-2/I-3, all test-coverage gaps, code
+# correct by construction) / 3 Trivial (T-1/T-2/T-3, doc/comment
+# accuracy)): moved to 971 (947 + 24) across the SAME 49 sections (no new
+# test file -- all four new tests join the already-counted `tests/cli.rs`
+# integration section). Workspace +4: `json_error_on_a_malformed_data_dir_
+# is_data_load_failed_not_plain_text` (I-1, the --json sibling of the
+# pre-existing plain-mode `data_load_failed_when_graph_bin_is_missing`
+# case -- proves CONTRACT.md's own claim that even a malformed --data-dir
+# renders its error as JSON); `find_json_widened_scope_carries_a_real_
+# person_hit` / `find_json_widened_scope_carries_a_real_catechism_item_
+# hit` (I-2, the `--json` shape for both newly-widened `find` kinds, off
+# real committed-graph hits -- Person:moses_2108/CatechismItem:
+# commandment-1); `node_json_edge_summary_is_an_explicit_empty_array_for_
+# a_real_zero_edge_node` (I-3, `Translation:latin_vulgate` -- a real node
+# in the committed graph with genuinely zero edges of any relation this
+# app's vocabulary tracks, so `edge_summary: []` is proven against real
+# data, not a fixture). `atlas-graph-types` unchanged (+0). AQC corpus
+# unchanged (44/184). Zero failures in either dual-run command. The three
+# Trivial findings (T-1: `CONTRACT.md`'s stale `main.rs::extract global
+# flags` cross-reference, corrected to name the real inline
+# `raw.iter().any(...)` presence check; T-2: `bibex kinds` mentioned only
+# in the tutorial's closing help-text dump, not demonstrated -- step 5's
+# own edges explanation now points to it, and step 6's find explanation
+# now names its own widened Person/CatechismItem scope instead of the
+# stale five-kind list; T-3: `kinds.rs`'s own doc comment misquoted
+# `graph_wire.rs`'s doc comment -- corrected to the exact text at
+# `parse_edge_kind`'s own doc comment, `graph_wire.rs:146-149`) are
+# doc/comment-only, no behavior change, no new tests.
+#
+# CURRENT CANONICAL: 971 (947 + 24) across 49 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
