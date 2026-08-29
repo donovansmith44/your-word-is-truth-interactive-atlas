@@ -14,7 +14,7 @@ fn data_dir() -> PathBuf {
 }
 
 fn run(args: &[&str]) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_atlas-cli")).args(args).output().expect("atlas-cli must run")
+    Command::new(env!("CARGO_BIN_EXE_bibex")).args(args).output().expect("bibex must run")
 }
 
 fn run_with_data_dir(args: &[&str]) -> Output {
@@ -143,7 +143,7 @@ fn bare_invocation_shows_short_help_and_names_the_tutorial() {
     assert!(o.status.success());
     let out = stdout(&o);
     assert!(out.contains("commands:"), "out: {out}");
-    assert!(out.contains("atlas tutorial"), "out: {out}");
+    assert!(out.contains("bibex tutorial"), "out: {out}");
     assert_eq!(o.status.code(), Some(0));
 }
 
@@ -151,7 +151,7 @@ fn bare_invocation_shows_short_help_and_names_the_tutorial() {
 fn help_command_matches_bare_invocation() {
     let bare = stdout(&run(&[]));
     let help = stdout(&run(&["help"]));
-    assert_eq!(bare, help, "'atlas help' must be identical to bare 'atlas' per CONTRACT.md");
+    assert_eq!(bare, help, "'bibex help' must be identical to bare 'atlas' per CONTRACT.md");
 }
 
 // ---------------------------------------------------------------------

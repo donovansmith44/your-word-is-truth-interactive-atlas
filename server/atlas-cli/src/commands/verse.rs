@@ -1,5 +1,5 @@
-//! `atlas verse <ref>` -- text + red-letter marks + attached
-//! places/persons/events. See CONTRACT.md's own "atlas verse" section.
+//! `bibex verse <ref>` -- text + red-letter marks + attached
+//! places/persons/events. See CONTRACT.md's own "bibex verse" section.
 //! Ref decoded via `graph_wire::decode_node_id("text-unit:" + ref)` -- the
 //! SAME locus grammar `/api/text`/`/api/node` accept on the wire, reused
 //! verbatim rather than hand-parsed (R2/R1).
@@ -87,7 +87,7 @@ pub fn run(graph: &GraphService, data: &AtlasData, ref_raw: &str) -> Result<Stri
         // epistle outline pericope, the owner's own PSA.119.105/GAL.1.8
         // repros). Each independently `(none)` when empty -- the SAME
         // empty-result discipline as before, now applied per-kind. See
-        // CONTRACT.md's own `atlas verse` section, updated in lockstep.
+        // CONTRACT.md's own `bibex verse` section, updated in lockstep.
         let all_events: Vec<&atlas_core::data::Event> = data.events_for_verse(&sref).iter().filter_map(|eid| data.event_by_id(eid)).collect();
         let events: Vec<&str> = all_events.iter().filter(|e| e.kind == "event").map(|e| e.label.as_str()).collect();
         let passages: Vec<&str> = all_events.iter().filter(|e| e.kind == "general").map(|e| e.label.as_str()).collect();

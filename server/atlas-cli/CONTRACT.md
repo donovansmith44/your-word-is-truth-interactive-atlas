@@ -1,4 +1,9 @@
-# atlas-cli CONTRACT
+# atlas-cli CONTRACT (binary: `bibex`)
+
+RENAME (owner order 2026-08-29, verbatim: "rather than atlas-cli, it
+should just be called bibex (bibleexplorer)"): the crate keeps the
+workspace name atlas-cli; the BINARY and every user-typed command below
+is `bibex`.
 
 Batch CLI-1. This document is DELIVERABLE 0 (committed before any command
 is implemented) — it fixes the command vocabulary, the error taxonomy, and
@@ -48,26 +53,26 @@ Global flag, accepted before the subcommand on every invocation:
 files. Defaults to `../data/compiled` (the same relative layout every
 other tool in this repo assumes when run from `server/`).
 
-### `atlas` (bare, no arguments)
+### `bibex` (bare, no arguments)
 
 Prints a short help block: the command list (one line each, name + a
-one-clause description) and a pointer to `atlas tutorial`. Exit 0.
+one-clause description) and a pointer to `bibex tutorial`. Exit 0.
 
-### `atlas help`
+### `bibex help`
 
-Identical output to bare `atlas`. Exit 0. (`atlas help <cmd>` is NOT
+Identical output to bare `atlas`. Exit 0. (`bibex help <cmd>` is NOT
 implemented this batch — every command's own `--help`-shaped usage line
 is instead shown automatically whenever that command is called with a bad
 usage shape, per the error taxonomy's `bad_usage` class below.)
 
-### `atlas tutorial`
+### `bibex tutorial`
 
 A guided, numbered walkthrough — see "Tutorial contract" below. Exit 0 on
 completion (a tutorial that cannot complete because the graph itself
 fails to load exits through the `data_load_failed` class instead, code 5,
 same as every other command).
 
-### `atlas verse <ref>`
+### `bibex verse <ref>`
 
 `<ref>` is a text-unit locus: a KJV dot-ref (`GEN.1.1`, `JHN.3.16`) or a
 Book of Concord citation (`"BoC 7.2.1"`, quoted because of the space).
@@ -103,7 +108,7 @@ before, now applied per-kind. See tests/ux/CONTRACT.md's own PRESENTATION
 CATEGORY LAW section for the full cross-surface law this row is one
 disclosed instance of.
 
-### `atlas chapter <ref>`
+### `bibex chapter <ref>`
 
 `<ref>` is a KJV chapter ref (`GEN.1`), parsed via
 `atlas_core::refs::ScriptureRef::parse` (rejects anything that isn't
@@ -115,9 +120,9 @@ this command inherits that same disclosed scope limit rather than
 inventing its own answer to a question the server itself declined.
 
 Output: every verse in the chapter, one line each, `REF  text` (red-letter
-spans marked inline, same convention as `atlas verse`).
+spans marked inline, same convention as `bibex verse`).
 
-### `atlas node <id>`
+### `bibex node <id>`
 
 `<id>` is any wire-form node id (`text-unit:GEN.1.1`, `Event:ab_ur`,
 `Place:jericho`, ...), decoded via `graph_wire::decode_node_id` — the
@@ -131,14 +136,14 @@ then an edge-summary table (`kind -> count`, via `GraphQuery::edge_summary`)
 listing only inhabited edge kinds — `(no edges)` when the summary is
 empty, never a blank table.
 
-### `atlas edges <id> [--kind K] [--limit N] [--cursor C]`
+### `bibex edges <id> [--kind K] [--limit N] [--cursor C]`
 
 One frontier page at `<id>` — the SAME `(Position, EdgeQuery)` shape
 `/api/node/{id}/edges` serves. `--kind` is REQUIRED (a node can carry
 several distinct edge kinds; there is no honest "default" one to pick —
 same reasoning the server's own `bad_kind` on a missing `kind` param
 already encodes) and must be a label from `graph_wire::parse_edge_kind`
-(`cites`, `cited-by`, `attests`, ...; `atlas node <id>` prints the exact
+(`cites`, `cited-by`, `attests`, ...; `bibex node <id>` prints the exact
 labels available for a given id). `--limit` defaults to 20, clamps to
 [1, 200] (same bounds as the server). `--cursor` is the opaque integer
 offset a previous page's own "more: continue with --cursor N" line
@@ -151,11 +156,11 @@ but nothing at THIS position) is the `empty_result` error class below
 (exit 1, stderr) — `edges`'s own entire output IS the page, so a zero-row
 page is the command's whole answer coming back empty, the literal case
 R5's "no empty stdout-and-exit-0 on a miss" names, not a sub-field of an
-otherwise-nonempty success (contrast `atlas verse`'s Places/Persons/Events
+otherwise-nonempty success (contrast `bibex verse`'s Places/Persons/Events
 sections below, which stay on stdout with `(none)` — those are one part
 of a still-nonempty successful lookup, not the whole answer).
 
-### `atlas find <term>`
+### `bibex find <term>`
 
 Case-insensitive substring match on `<term>` against the label of every
 node this crate's `GraphService` already enumerates by kind — Places,
@@ -168,7 +173,7 @@ for those kinds (by the same design choice `store.rs`'s own doc comment
 explains: `GraphQuery` deliberately has no "list every node" operation),
 and adding one for the sole purpose of this command would be new,
 un-server-shared enumeration logic — exactly what "zero parallel query
-logic" forbids. `atlas find --help`-shaped output (i.e. running `atlas
+logic" forbids. `bibex find --help`-shaped output (i.e. running `atlas
 find` with no term) states this scope explicitly, not silently.
 
 Output: one line per match — `kind  id  label` — sorted by kind then id
@@ -218,7 +223,7 @@ fail outright -- none of them has a "could mean either of two things"
 partial-match mode) -- an input that doesn't match cleanly is always
 `bad_usage` (the command line itself) or `bad_ref` (the ref/id/kind
 argument), never a genuine ambiguity between two candidate
-interpretations. `atlas find <term>` is the one command whose answer can
+interpretations. `bibex find <term>` is the one command whose answer can
 have MULTIPLE rows for one input, but that is not ambiguity in the input
 itself (the term is unambiguous; the graph honestly has several matching
 labels) -- its own multi-row success output, not an error class, is the
@@ -231,7 +236,7 @@ empty).
 
 ## Tutorial contract
 
-`atlas tutorial` runs SEVEN numbered steps against the REAL loaded graph
+`bibex tutorial` runs SEVEN numbered steps against the REAL loaded graph
 (no mocked output, no canned transcript) — one step per command in the
 vocabulary above (verse, chapter, node, edges, find), plus an opening
 step explaining `--data-dir`/exit codes, plus a closing step listing every
@@ -240,7 +245,7 @@ command again with a one-line reminder of its shape. Each step prints:
 1. `Step N of 7: <what this teaches>`
 2. the REAL command line being run (e.g. `$ atlas verse GEN.1.1`)
 3. that command's REAL output, produced by calling the exact same
-   command-implementation function `atlas verse ...` itself would call
+   command-implementation function `bibex verse ...` itself would call
    (never a hand-copied transcript — a change to `verse`'s own output
    shape changes the tutorial's own output on the next run, automatically)
 4. one short paragraph explaining what the step just demonstrated
@@ -249,8 +254,8 @@ Every real query the tutorial runs targets GEN.1.1/GEN.1/an id/edge kind
 that is GENUINELY present in the committed `data/compiled/graph.bin` —
 verified by this crate's own smoke test (`tutorial runs to completion,
 nonempty numbered steps` per R6), never a placeholder that would 404 on a
-real invocation. Bare `atlas` (no args) names `atlas tutorial` by
-pointing at it directly: `run 'atlas tutorial' for a guided walkthrough`.
+real invocation. Bare `atlas` (no args) names `bibex tutorial` by
+pointing at it directly: `run 'bibex tutorial' for a guided walkthrough`.
 
 Register: direction, not mood — the tutorial explains what each command
 does and why, in a plain instructional voice, never first-person

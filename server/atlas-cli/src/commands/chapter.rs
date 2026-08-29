@@ -1,7 +1,7 @@
-//! `atlas chapter <ref>` -- every verse in a KJV chapter, one line each.
+//! `bibex chapter <ref>` -- every verse in a KJV chapter, one line each.
 //! Ref parsed via `atlas_core::refs::ScriptureRef::parse` (the shared
 //! locus parser, not a hand-rolled one -- R2). Concord is deliberately
-//! NOT accepted here (CONTRACT.md's own "atlas chapter" section: a
+//! NOT accepted here (CONTRACT.md's own "bibex chapter" section: a
 //! Concord article's own paragraph count varies too widely for a
 //! server-derived chapter span to mean anything consistent --
 //! `graph_handlers::text_window` rejects the identical combination for

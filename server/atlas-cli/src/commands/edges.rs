@@ -1,7 +1,7 @@
-//! `atlas edges <id> [--kind K] [--limit N] [--cursor C]` -- one frontier
+//! `bibex edges <id> [--kind K] [--limit N] [--cursor C]` -- one frontier
 //! page, the exact `(Position, EdgeQuery)` shape
 //! `atlas_server::graph_handlers::node_edges` serves. See CONTRACT.md's
-//! own "atlas edges" section.
+//! own "bibex edges" section.
 
 use atlas_graph::GraphService;
 use atlas_graph_types::explore::EdgeQuery;
@@ -26,7 +26,7 @@ pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
         CliError::bad_ref(
             format!("'{}' is not a valid node id", args.id_raw),
             "expected KIND:raw (e.g. text-unit:GEN.1.1, Event:ab_ur, Place:jericho)",
-            "run 'atlas find <term>' to locate an id, or 'atlas node <id>' to see what kind it is",
+            "run 'bibex find <term>' to locate an id, or 'bibex node <id>' to see what kind it is",
         )
     })?;
 
@@ -35,22 +35,22 @@ pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
         return Err(CliError::not_found(
             format!("no node named '{}'", args.id_raw),
             "the id parsed fine but this graph has no node with that raw id",
-            "try 'atlas find <term>' to locate the id you meant",
+            "try 'bibex find <term>' to locate the id you meant",
         ));
     }
 
     let kind_raw = args.kind_raw.ok_or_else(|| {
         CliError::bad_usage(
-            "--kind is required for 'atlas edges'",
+            "--kind is required for 'bibex edges'",
             "a node can carry several distinct edge kinds; there is no honest default one to pick",
-            "run 'atlas node <id>' first to see which kinds are inhabited for this id, then pass --kind <one of them>",
+            "run 'bibex node <id>' first to see which kinds are inhabited for this id, then pass --kind <one of them>",
         )
     })?;
     let kind = parse_edge_kind(kind_raw).ok_or_else(|| {
         CliError::bad_ref(
             format!("'{kind_raw}' is not a known edge kind"),
             "edge kinds are the labels graph-types' own relation manifest defines (e.g. cites, cited-by, attests, mentions)",
-            "run 'atlas node <id>' to see which kinds this id actually carries",
+            "run 'bibex node <id>' to see which kinds this id actually carries",
         )
     })?;
 
@@ -61,7 +61,7 @@ pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
     // `atlas_server::graph_handlers::node_edges` applies (PG-1a, "the
     // U5-rebinding seam") -- `graph_wire::decode_node_id` carries no
     // "PeopleGroup" arm, so a PeopleGroup-kind neighbor id handed back
-    // here could never be resolved by `atlas node <id>`/`atlas edges <id>`
+    // here could never be resolved by `bibex node <id>`/`bibex edges <id>`
     // afterward: a real, reachable dead end this command would otherwise
     // create and never disclose. Filtered HERE, mirroring the server's own
     // serving-boundary projection exactly (the underlying graph query
@@ -73,7 +73,7 @@ pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
         return Err(CliError::empty_result(
             format!("no '{kind_raw}' edges at '{}'", args.id_raw),
             "the id and kind both parsed fine, but this node has zero edges of that kind at this position",
-            "run 'atlas node <id>' to see which kinds actually have entries here",
+            "run 'bibex node <id>' to see which kinds actually have entries here",
         ));
     }
 

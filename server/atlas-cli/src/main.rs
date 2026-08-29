@@ -82,7 +82,7 @@ fn run(args: &[String]) -> Result<String, CliError> {
         }
         "find" => {
             // FIX ROUND 1 (review S-4): `find` does NOT share the generic
-            // `one_positional` message -- CONTRACT.md's own "atlas find"
+            // `one_positional` message -- CONTRACT.md's own "bibex find"
             // section specifically promises that running `find` with no
             // term states its kind-coverage scope, so that promise is
             // fulfilled HERE, in the actual `bad_usage` message, rather
@@ -91,18 +91,18 @@ fn run(args: &[String]) -> Result<String, CliError> {
                 1 => {
                     return Err(CliError::bad_usage(
                         "'find' requires a <term> argument",
-                        "usage: atlas find <term> -- searches Place/Event/Narrative/Era/Polity labels only (Person/CatechismItem/CommentaryItem/Translation/TextUnit are not searched -- see CONTRACT.md)",
-                        "run 'atlas find <term>' with a real value, or 'atlas tutorial' for a worked example",
+                        "usage: bibex find <term> -- searches Place/Event/Narrative/Era/Polity labels only (Person/CatechismItem/CommentaryItem/Translation/TextUnit are not searched -- see CONTRACT.md)",
+                        "run 'bibex find <term>' with a real value, or 'bibex tutorial' for a worked example",
                     ))
                 }
                 2 if rest[1].starts_with("--") => {
-                    return Err(CliError::bad_usage(format!("unrecognized flag '{}' for 'find'", rest[1]), "'find' takes a single <term> argument, not flags", "run 'atlas find <term>' with a real value, no flags"))
+                    return Err(CliError::bad_usage(format!("unrecognized flag '{}' for 'find'", rest[1]), "'find' takes a single <term> argument, not flags", "run 'bibex find <term>' with a real value, no flags"))
                 }
                 2 => rest[1].as_str(),
                 _ => {
                     return Err(CliError::bad_usage(
                         format!("'find' takes exactly one argument, got {}", rest.len() - 1),
-                        "usage: atlas find <term>",
+                        "usage: bibex find <term>",
                         "quote a multi-word term (e.g. \"the Red Sea\") so it arrives as one shell word",
                     ))
                 }
@@ -113,7 +113,7 @@ fn run(args: &[String]) -> Result<String, CliError> {
         other => Err(CliError::bad_usage(
             format!("unrecognized subcommand '{other}'"),
             "'atlas' only knows verse, chapter, node, edges, find, tutorial, help",
-            "run 'atlas help' for the full list",
+            "run 'bibex help' for the full list",
         )),
     }
 }
@@ -132,7 +132,7 @@ fn run(args: &[String]) -> Result<String, CliError> {
 /// name it explicitly, matching `edges`'s own message shape.
 fn one_positional<'a>(rest: &'a [String], cmd: &str, shape: &str) -> Result<&'a str, CliError> {
     match rest.len() {
-        1 => Err(CliError::bad_usage(format!("'{cmd}' requires an argument"), format!("usage: atlas {cmd} {shape}"), format!("run 'atlas {cmd} {shape}' with a real value, or 'atlas tutorial' for a worked example"))),
+        1 => Err(CliError::bad_usage(format!("'{cmd}' requires an argument"), format!("usage: atlas {cmd} {shape}"), format!("run 'atlas {cmd} {shape}' with a real value, or 'bibex tutorial' for a worked example"))),
         2 if rest[1].starts_with("--") => {
             Err(CliError::bad_usage(format!("unrecognized flag '{}' for '{cmd}'", rest[1]), format!("'{cmd}' takes a single positional argument, not flags"), format!("run 'atlas {cmd} {shape}' with a real value, no flags")))
         }
@@ -162,7 +162,7 @@ fn parse_edges_args(rest: &[String]) -> Result<(&str, Option<&str>, Option<usize
         match rest[i].as_str() {
             "--kind" => {
                 i += 1;
-                let v = rest.get(i).ok_or_else(|| CliError::bad_usage("--kind requires a value", "no edge-kind label followed --kind", "pass a label, e.g. --kind cites (see 'atlas node <id>' for the labels a given node carries)"))?;
+                let v = rest.get(i).ok_or_else(|| CliError::bad_usage("--kind requires a value", "no edge-kind label followed --kind", "pass a label, e.g. --kind cites (see 'bibex node <id>' for the labels a given node carries)"))?;
                 kind_raw = Some(v.as_str());
             }
             "--limit" => {
@@ -176,7 +176,7 @@ fn parse_edges_args(rest: &[String]) -> Result<(&str, Option<&str>, Option<usize
                 cursor = Some(v.parse().map_err(|_| CliError::bad_usage(format!("--cursor value '{v}' is not a valid number"), "expected a nonnegative integer", "pass the exact number a previous page's own 'more: continue with --cursor N' line printed"))?);
             }
             other if other.starts_with("--") => {
-                return Err(CliError::bad_usage(format!("unrecognized flag '{other}' for 'edges'"), "'edges' only accepts --kind, --limit, and --cursor", "run 'atlas help' or 'atlas tutorial' for the full shape"));
+                return Err(CliError::bad_usage(format!("unrecognized flag '{other}' for 'edges'"), "'edges' only accepts --kind, --limit, and --cursor", "run 'bibex help' or 'bibex tutorial' for the full shape"));
             }
             positional => positionals.push(positional),
         }
@@ -184,8 +184,8 @@ fn parse_edges_args(rest: &[String]) -> Result<(&str, Option<&str>, Option<usize
     }
 
     match positionals.len() {
-        0 => Err(CliError::bad_usage("'edges' requires an <id> argument", "usage: atlas edges <id> --kind K [--limit N] [--cursor C]", "run 'atlas edges <id> --kind K' with a real id, or 'atlas tutorial' for a worked example")),
+        0 => Err(CliError::bad_usage("'edges' requires an <id> argument", "usage: bibex edges <id> --kind K [--limit N] [--cursor C]", "run 'bibex edges <id> --kind K' with a real id, or 'bibex tutorial' for a worked example")),
         1 => Ok((positionals[0], kind_raw, limit, cursor)),
-        _ => Err(CliError::bad_usage(format!("'edges' takes exactly one <id> argument, got {}", positionals.len()), "usage: atlas edges <id> --kind K [--limit N] [--cursor C]", "quote a multi-word id if it has one, and check no flag value was left unconsumed")),
+        _ => Err(CliError::bad_usage(format!("'edges' takes exactly one <id> argument, got {}", positionals.len()), "usage: bibex edges <id> --kind K [--limit N] [--cursor C]", "quote a multi-word id if it has one, and check no flag value was left unconsumed")),
     }
 }

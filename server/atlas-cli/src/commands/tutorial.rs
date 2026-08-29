@@ -1,4 +1,4 @@
-//! `atlas tutorial` -- CONTRACT.md's own "Tutorial contract": seven
+//! `bibex tutorial` -- CONTRACT.md's own "Tutorial contract": seven
 //! numbered steps, each running the REAL command-implementation function
 //! against the REAL loaded graph (never a canned transcript) -- a change
 //! to a command's own output shape changes this tutorial's own output on
@@ -33,8 +33,8 @@ and exits a nonzero code fixed per error class (see CONTRACT.md's own \
 error taxonomy) -- scripts can branch on the exit code alone.\n\n"
     ));
 
-    out.push_str(&step_header(2, "atlas verse <ref> -- one verse, its text, and what's attached to it"));
-    out.push_str("$ atlas verse GEN.1.1\n");
+    out.push_str(&step_header(2, "bibex verse <ref> -- one verse, its text, and what's attached to it"));
+    out.push_str("$ bibex verse GEN.1.1\n");
     out.push_str(&super::verse::run(graph, data, "GEN.1.1")?);
     out.push_str(
         "\nThe line above is the verse's own reference and text (red-letter \
@@ -43,22 +43,22 @@ every Place/Person/Event this graph attaches to that exact verse -- \
 '(none)' when a section is honestly empty, never blank.\n\n",
     );
 
-    out.push_str(&step_header(3, "atlas chapter <ref> -- a whole chapter, one line per verse"));
-    out.push_str("$ atlas chapter GEN.1\n");
+    out.push_str(&step_header(3, "bibex chapter <ref> -- a whole chapter, one line per verse"));
+    out.push_str("$ bibex chapter GEN.1\n");
     out.push_str(&super::chapter::run(graph, "GEN.1")?);
-    out.push_str("\nSame per-verse text and red-letter marking as 'atlas verse', for every verse the chapter has, in order.\n\n");
+    out.push_str("\nSame per-verse text and red-letter marking as 'bibex verse', for every verse the chapter has, in order.\n\n");
 
-    out.push_str(&step_header(4, "atlas node <id> -- any node's card + edge summary"));
-    out.push_str("$ atlas node Event:ab_ur\n");
+    out.push_str(&step_header(4, "bibex node <id> -- any node's card + edge summary"));
+    out.push_str("$ bibex node Event:ab_ur\n");
     out.push_str(&super::node::run(graph, "Event:ab_ur")?);
     out.push_str(
         "\n'id'/'kind'/'label'/'provenance' identify the node; 'edges' lists \
 every edge KIND this node carries and how many entries each has -- the \
-counts you pass to 'atlas edges' next.\n\n",
+counts you pass to 'bibex edges' next.\n\n",
     );
 
-    out.push_str(&step_header(5, "atlas edges <id> --kind K -- walking one frontier"));
-    out.push_str("$ atlas edges Event:ab_ur --kind located-at\n");
+    out.push_str(&step_header(5, "bibex edges <id> --kind K -- walking one frontier"));
+    out.push_str("$ bibex edges Event:ab_ur --kind located-at\n");
     out.push_str(&super::edges::run(graph, super::edges::EdgesArgs { id_raw: "Event:ab_ur", kind_raw: Some("located-at"), limit: None, cursor: None })?);
     out.push_str(
         "\nEach row is one connected node reached by that edge kind. A page \
@@ -66,10 +66,10 @@ that runs past --limit entries ends with 'more: continue with --cursor N' \
 instead of 'end of list' -- pass that N back in to keep walking.\n\n",
     );
 
-    out.push_str(&step_header(6, "atlas find <term> -- name lookup across kinds"));
-    out.push_str("$ atlas find jericho\n");
+    out.push_str(&step_header(6, "bibex find <term> -- name lookup across kinds"));
+    out.push_str("$ bibex find jericho\n");
     out.push_str(&super::find::run(graph, "jericho")?);
-    out.push_str("\nA case-insensitive substring match over Place/Event/Narrative/Era/Polity labels -- useful for finding the exact id 'atlas node'/'atlas edges' need.\n\n");
+    out.push_str("\nA case-insensitive substring match over Place/Event/Narrative/Era/Polity labels -- useful for finding the exact id 'bibex node'/'bibex edges' need.\n\n");
 
     out.push_str(&step_header(7, "the full command list"));
     out.push_str(&super::help::text());

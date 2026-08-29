@@ -1,8 +1,8 @@
-//! `atlas find <term>` -- case-insensitive substring match on the label of
+//! `bibex find <term>` -- case-insensitive substring match on the label of
 //! every node this crate's `GraphService` already enumerates by kind
 //! (Place/Event/Narrative/Era/Polity, the same `..._ids` companion fields
 //! `atlas_server::handlers::{places,eras,polities,narratives}` etc. read
-//! for their own listing endpoints). See CONTRACT.md's own "atlas find"
+//! for their own listing endpoints). See CONTRACT.md's own "bibex find"
 //! section for the disclosed scope limit (no Person/CatechismItem/
 //! CommentaryItem/Translation/TextUnit search -- `GraphService` carries no
 //! companion enumeration for those kinds, and building one for this

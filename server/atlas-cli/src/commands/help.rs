@@ -1,9 +1,9 @@
-//! Bare `atlas` and `atlas help` -- CONTRACT.md's own "atlas (bare, no
-//! arguments)"/"atlas help" sections: identical short-help output, exit 0.
+//! Bare `atlas` and `bibex help` -- CONTRACT.md's own "bibex (bare, no
+//! arguments)"/"bibex help" sections: identical short-help output, exit 0.
 
 pub fn text() -> String {
     let mut out = String::new();
-    out.push_str("atlas -- a really simple CLI to query the Bible Explorer graph\n\n");
+    out.push_str("bibex -- a really simple CLI to query the Bible Explorer graph\n\n");
     out.push_str("commands:\n");
     out.push_str("  verse <ref>                     text + red-letter marks + attached places/persons/events\n");
     out.push_str("  chapter <ref>                    every verse in a KJV chapter\n");
@@ -13,6 +13,6 @@ pub fn text() -> String {
     out.push_str("  tutorial                         a guided, numbered walkthrough (real queries, real output)\n");
     out.push_str("  help                             this text\n\n");
     out.push_str("global flag: --data-dir <path>    where graph.bin lives (default: ../data/compiled)\n\n");
-    out.push_str("new here? run 'atlas tutorial' for a guided walkthrough.\n");
+    out.push_str("new here? run 'bibex tutorial' for a guided walkthrough.\n");
     out
 }

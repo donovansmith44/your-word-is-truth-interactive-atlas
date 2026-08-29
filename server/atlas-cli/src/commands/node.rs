@@ -1,7 +1,7 @@
-//! `atlas node <id>` -- card + edge summary. Mirrors
+//! `bibex node <id>` -- card + edge summary. Mirrors
 //! `atlas_server::graph_handlers::node_card` exactly (same id grammar,
 //! same `GraphQuery` calls), minus the HTTP wire wrapping -- see
-//! CONTRACT.md's own "atlas node" section.
+//! CONTRACT.md's own "bibex node" section.
 
 use atlas_graph::GraphService;
 use atlas_graph_types::id::Position;
@@ -15,7 +15,7 @@ pub fn run(graph: &GraphService, id_raw: &str) -> Result<String, CliError> {
         CliError::bad_ref(
             format!("'{id_raw}' is not a valid node id"),
             "expected KIND:raw (e.g. text-unit:GEN.1.1, Event:ab_ur, Place:jericho)",
-            "run 'atlas find <term>' to locate an id, or 'atlas tutorial' for worked examples",
+            "run 'bibex find <term>' to locate an id, or 'bibex tutorial' for worked examples",
         )
     })?;
 
@@ -24,7 +24,7 @@ pub fn run(graph: &GraphService, id_raw: &str) -> Result<String, CliError> {
         CliError::not_found(
             format!("no node named '{id_raw}'"),
             "the id parsed fine but this graph has no node with that raw id",
-            "try 'atlas find <term>' to locate the id you meant",
+            "try 'bibex find <term>' to locate the id you meant",
         )
     })?;
 

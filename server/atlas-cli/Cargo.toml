@@ -21,3 +21,10 @@ atlas-server = { path = "../atlas-server" }
 # `.map_err` on the `anyhow::Result` that `GraphService::from_artifact`/
 # `AtlasData::load` already return -- it never names the `anyhow` type
 # itself) -- a dead dependency declaration, removed.
+
+# Owner order 2026-08-29: "rather than atlas-cli, it should just be called
+# bibex (bibleexplorer)" -- the crate keeps its workspace name; the BINARY
+# users type is bibex.
+[[bin]]
+name = "bibex"
+path = "src/main.rs"
