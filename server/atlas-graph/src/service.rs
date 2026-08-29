@@ -93,6 +93,20 @@ pub struct GraphService {
     pub narrative_ids: Vec<AnyNodeId>,
     pub event_ids: Vec<AnyNodeId>,
     pub place_ids: Vec<AnyNodeId>,
+    /// BIBEX-1 addendum (ticket 2, owner order mid-batch, 2026-08-29:
+    /// "also i need to be able to find node/edge ids by the things...
+    /// PERSONS above all"): the SAME "companion enumeration the generic
+    /// port doesn't model" class as `era_ids`/`narrative_ids`/`event_ids`/
+    /// `place_ids` above, identical construction (a one-time scan over the
+    /// node table's own kind tag, before the graph moves into the store) --
+    /// `bibex find`'s own widened search now reads this the SAME way it
+    /// already reads the other five companions, so a Person becomes
+    /// discoverable without any new, un-shared enumeration logic (this IS
+    /// the established, owner-approved shape for exactly this need, not a
+    /// competing one). `graph.nodes` is a `BTreeMap<AnyNodeId, _>`, so this
+    /// is already alphabetical-by-id order, same as `narrative_ids`/
+    /// `event_ids`/`place_ids` (no separate sort needed).
+    pub person_ids: Vec<AnyNodeId>,
     /// M-C2: narrative id -> its own `succession` row's `chain`, in order
     /// -- the single source `handlers::narratives`/`legacy::
     /// narrative_from_node` read for `legs`, never duplicated onto the
@@ -467,6 +481,9 @@ impl GraphService {
         let narrative_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Narrative).cloned().collect();
         let event_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Event).cloned().collect();
         let place_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Place).cloned().collect();
+        // BIBEX-1 addendum (ticket 2): identical one-time scan for
+        // `person_ids` -- see this struct's own field doc comment.
+        let person_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Person).cloned().collect();
         let mut narrative_legs: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for row in &graph.succession {
             narrative_legs.insert(row.narrative.0.clone(), row.chain.iter().map(|e| e.0.clone()).collect());
@@ -576,6 +593,7 @@ impl GraphService {
             narrative_ids,
             event_ids,
             place_ids,
+            person_ids,
             narrative_legs,
             heading_index,
             cross_refs_by_from,
@@ -762,6 +780,36 @@ mod tests {
         let svc = service();
         assert_eq!(svc.position_of(0, 1, 2), Some(1));
         assert_eq!(svc.position_of(0, 99, 1), None, "unknown verse position is None, not a panic");
+    }
+
+    /// BIBEX-1 addendum (ticket 2): `person_ids` is built the SAME way as
+    /// `event_ids`/`place_ids`/`narrative_ids` (a one-time scan over the
+    /// node table's own kind tag) -- this fixture has no real Person data
+    /// (the KJV-fixture-only `service()` helper above never carries one),
+    /// so a hand-built `Graph` with one `NodePayload::Person` row proves the
+    /// scan actually fires and finds it, the same "inject the one condition
+    /// the real committed graph doesn't exercise in this small unit test"
+    /// treatment `chapter.rs`'s own C-1 fixture tests use.
+    #[test]
+    fn person_ids_enumerates_every_person_node() {
+        use atlas_graph_types::id::NodeKind;
+        use atlas_graph_types::node::{Node, NodePayload};
+
+        let mut g = Graph::default();
+        let id = atlas_graph_types::id::PersonId::new("aaron_1").erase();
+        g.nodes.insert(
+            id.clone(),
+            Node {
+                id: id.clone(),
+                payload: NodePayload::Person { label: "Aaron".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None },
+                provenance: atlas_graph_types::ingest::ProvenanceId::from("test-fixture"),
+            },
+        );
+        g.build_indexes();
+
+        let svc = GraphService::assemble(g, BuildStats::default(), EventWorldStats::default(), Chronology::from_derivation(crate::event_world::ChronologyDerivation::default()), HashMap::new());
+        assert_eq!(svc.person_ids, vec![id.clone()]);
+        assert_eq!(id.kind, NodeKind::Person);
     }
 
     #[test]
