@@ -76,6 +76,27 @@ impl CliError {
             | CliError::EmptyResult { what, why, do_ } => (what, why, do_),
         }
     }
+
+    /// BIBEX-1 (--json mode, "ERRORS STAY FAIL-LOUD, MACHINE-READABLY"):
+    /// the SAME taxonomy this type already carries, rendered as
+    /// `{"error":{"code","message","hint"}}` instead of the plain-mode
+    /// `atlas: error (<code>): <what> -- <why> -- <what to do>` line --
+    /// ONE source of truth (this type's own fields), TWO renderings
+    /// (`Display` above for plain mode, this for `--json`), never a
+    /// second, independently-maintained error text. `message` folds
+    /// `what`/`why` together (the WHAT and the WHY read as one sentence in
+    /// plain mode too, joined by " -- "); `hint` is `do_` (the WHAT TO DO)
+    /// verbatim -- the CONTRACT's own declared two-field shape.
+    pub fn to_json(&self) -> serde_json::Value {
+        let (what, why, do_) = self.parts();
+        serde_json::json!({
+            "error": {
+                "code": self.code(),
+                "message": format!("{what} -- {why}"),
+                "hint": do_,
+            }
+        })
+    }
 }
 
 impl fmt::Display for CliError {

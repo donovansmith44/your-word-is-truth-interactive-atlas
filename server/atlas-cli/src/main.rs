@@ -2,9 +2,9 @@
 //! Explorer graph directly -- no server, no HTTP (design ruling R1). Args
 //! are hand-parsed (R3, the `atlas-server/src/main.rs` precedent -- no
 //! clap, no new runtime deps). See `CONTRACT.md` for the full command
-//! vocabulary, error taxonomy, and tutorial contract this binary
-//! implements; `report.md`'s own "self-review" section is checked against
-//! that document line by line.
+//! vocabulary, error taxonomy, tutorial contract, `--json` mode, and ID
+//! discoverability conventions this binary implements; `report.md`'s own
+//! "self-review" section is checked against that document line by line.
 
 mod commands;
 mod error;
@@ -16,13 +16,35 @@ use error::CliError;
 
 fn main() {
     let raw: Vec<String> = std::env::args().skip(1).collect();
-    match run(&raw) {
-        Ok(output) => {
-            print!("{output}");
+    // BIBEX-1 (--json mode): whether `--json` is present must be known
+    // BEFORE any fallible parsing runs, so a bad-usage error that occurs
+    // while EXTRACTING the other global flags (e.g. a dangling
+    // `--data-dir` with no value) still gets rendered the right way --
+    // a pure presence check over the raw, unparsed args, which can never
+    // itself fail. `--json` is then stripped here (once), so neither
+    // `run` nor `run_json` ever sees it as a stray token.
+    let json = raw.iter().any(|a| a == "--json");
+    let stripped: Vec<String> = if json { raw.iter().filter(|a| a.as_str() != "--json").cloned().collect() } else { raw };
+
+    if json {
+        match run_json(&stripped) {
+            Ok(value) => {
+                println!("{}", serde_json::to_string(&value).expect("every value this crate builds is a plain, already-valid JSON tree"));
+            }
+            Err(e) => {
+                eprintln!("{}", serde_json::to_string(&e.to_json()).expect("CliError::to_json always produces a plain, already-valid JSON tree"));
+                std::process::exit(e.exit_code());
+            }
         }
-        Err(e) => {
-            eprintln!("{e}");
-            std::process::exit(e.exit_code());
+    } else {
+        match run(&stripped) {
+            Ok(output) => {
+                print!("{output}");
+            }
+            Err(e) => {
+                eprintln!("{e}");
+                std::process::exit(e.exit_code());
+            }
         }
     }
 }
@@ -45,6 +67,37 @@ fn extract_data_dir(args: &[String]) -> Result<(PathBuf, Vec<String>), CliError>
         i += 1;
     }
     Ok((data_dir.unwrap_or_else(load::default_data_dir), rest))
+}
+
+/// Shared by `run` and `run_json` -- `find`'s own argument validation
+/// (CONTRACT.md's own "bibex find" section: the zero-argument message
+/// specifically states the widened kind-coverage scope, per review S-4 and
+/// BIBEX-1 addendum ticket 2's widening of that same scope).
+fn parse_find_term(rest: &[String]) -> Result<&str, CliError> {
+    match rest.len() {
+        1 => Err(CliError::bad_usage(
+            "'find' requires a <term> argument",
+            format!("usage: bibex find <term> -- searches {} labels only ({})", commands::find::SEARCHED_KINDS, commands::find::EXCLUDED_KINDS),
+            "run 'bibex find <term>' with a real value, or 'bibex tutorial' for a worked example",
+        )),
+        2 if rest[1].starts_with("--") => {
+            Err(CliError::bad_usage(format!("unrecognized flag '{}' for 'find'", rest[1]), "'find' takes a single <term> argument, not flags", "run 'bibex find <term>' with a real value, no flags"))
+        }
+        2 => Ok(rest[1].as_str()),
+        _ => Err(CliError::bad_usage(
+            format!("'find' takes exactly one argument, got {}", rest.len() - 1),
+            "usage: bibex find <term>",
+            "quote a multi-word term (e.g. \"the Red Sea\") so it arrives as one shell word",
+        )),
+    }
+}
+
+/// Shared by `run` and `run_json` -- `kinds` takes no arguments at all.
+fn check_no_kinds_args(rest: &[String]) -> Result<(), CliError> {
+    if rest.len() > 1 {
+        return Err(CliError::bad_usage(format!("'kinds' takes no arguments, got {}", rest.len() - 1), "usage: bibex kinds", "run 'bibex kinds' with no arguments"));
+    }
+    Ok(())
 }
 
 fn run(args: &[String]) -> Result<String, CliError> {
@@ -81,38 +134,81 @@ fn run(args: &[String]) -> Result<String, CliError> {
             commands::edges::run(&loaded.graph, commands::edges::EdgesArgs { id_raw, kind_raw, limit, cursor })
         }
         "find" => {
-            // FIX ROUND 1 (review S-4): `find` does NOT share the generic
-            // `one_positional` message -- CONTRACT.md's own "bibex find"
-            // section specifically promises that running `find` with no
-            // term states its kind-coverage scope, so that promise is
-            // fulfilled HERE, in the actual `bad_usage` message, rather
-            // than only in general help text/the `empty_result` message.
-            let term = match rest.len() {
-                1 => {
-                    return Err(CliError::bad_usage(
-                        "'find' requires a <term> argument",
-                        "usage: bibex find <term> -- searches Place/Event/Narrative/Era/Polity labels only (Person/CatechismItem/CommentaryItem/Translation/TextUnit are not searched -- see CONTRACT.md)",
-                        "run 'bibex find <term>' with a real value, or 'bibex tutorial' for a worked example",
-                    ))
-                }
-                2 if rest[1].starts_with("--") => {
-                    return Err(CliError::bad_usage(format!("unrecognized flag '{}' for 'find'", rest[1]), "'find' takes a single <term> argument, not flags", "run 'bibex find <term>' with a real value, no flags"))
-                }
-                2 => rest[1].as_str(),
-                _ => {
-                    return Err(CliError::bad_usage(
-                        format!("'find' takes exactly one argument, got {}", rest.len() - 1),
-                        "usage: bibex find <term>",
-                        "quote a multi-word term (e.g. \"the Red Sea\") so it arrives as one shell word",
-                    ))
-                }
-            };
+            let term = parse_find_term(&rest)?;
             let loaded = load::load(&data_dir)?;
-            commands::find::run(&loaded.graph, term)
+            commands::find::run(&loaded.graph, &loaded.data, term)
+        }
+        "kinds" => {
+            check_no_kinds_args(&rest)?;
+            Ok(commands::kinds::run())
         }
         other => Err(CliError::bad_usage(
             format!("unrecognized subcommand '{other}'"),
-            "'atlas' only knows verse, chapter, node, edges, find, tutorial, help",
+            "'atlas' only knows verse, chapter, node, edges, find, kinds, tutorial, help",
+            "run 'bibex help' for the full list",
+        )),
+    }
+}
+
+/// BIBEX-1 (--json mode): the `--json` sibling of `run`. `tutorial`/`help`/
+/// a bare invocation are `bad_usage` under `--json` (CONTRACT.md, binding
+/// ruling: "a tutorial is prose by nature; say so in the message's hint")
+/// -- every real query command (`verse`/`chapter`/`node`/`edges`/`find`/
+/// `kinds`) gets a real JSON answer instead.
+fn run_json(args: &[String]) -> Result<serde_json::Value, CliError> {
+    let (data_dir, rest) = extract_data_dir(args)?;
+
+    let Some(cmd) = rest.first() else {
+        return Err(CliError::bad_usage(
+            "a bare invocation has no --json output",
+            "a bare invocation prints a prose help block, not a machine-shaped answer",
+            "run 'bibex' or 'bibex help' without --json, or use --json with a real query command (verse/chapter/node/edges/find/kinds)",
+        ));
+    };
+
+    match cmd.as_str() {
+        "help" => Err(CliError::bad_usage(
+            "'help' has no --json output",
+            "help is a prose command list, not a machine-shaped answer",
+            "run 'bibex help' without --json, or use --json with a real query command (verse/chapter/node/edges/find/kinds)",
+        )),
+        "tutorial" => Err(CliError::bad_usage(
+            "'tutorial' has no --json output",
+            "a tutorial is a guided prose walkthrough by nature, not a machine-shaped answer",
+            "run 'bibex tutorial' without --json, or use --json with a real query command (verse/chapter/node/edges/find/kinds)",
+        )),
+        "verse" => {
+            let ref_raw = one_positional(&rest, "verse", "<ref>")?;
+            let loaded = load::load(&data_dir)?;
+            commands::verse::run_json(&loaded.graph, &loaded.data, ref_raw)
+        }
+        "chapter" => {
+            let ref_raw = one_positional(&rest, "chapter", "<ref>")?;
+            let loaded = load::load(&data_dir)?;
+            commands::chapter::run_json(&loaded.graph, ref_raw)
+        }
+        "node" => {
+            let id_raw = one_positional(&rest, "node", "<id>")?;
+            let loaded = load::load(&data_dir)?;
+            commands::node::run_json(&loaded.graph, id_raw)
+        }
+        "edges" => {
+            let (id_raw, kind_raw, limit, cursor) = parse_edges_args(&rest)?;
+            let loaded = load::load(&data_dir)?;
+            commands::edges::run_json(&loaded.graph, commands::edges::EdgesArgs { id_raw, kind_raw, limit, cursor })
+        }
+        "find" => {
+            let term = parse_find_term(&rest)?;
+            let loaded = load::load(&data_dir)?;
+            commands::find::run_json(&loaded.graph, &loaded.data, term)
+        }
+        "kinds" => {
+            check_no_kinds_args(&rest)?;
+            Ok(commands::kinds::run_json())
+        }
+        other => Err(CliError::bad_usage(
+            format!("unrecognized subcommand '{other}'"),
+            "'atlas' only knows verse, chapter, node, edges, find, kinds, tutorial, help",
             "run 'bibex help' for the full list",
         )),
     }

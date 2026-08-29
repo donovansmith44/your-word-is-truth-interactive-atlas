@@ -21,7 +21,27 @@ pub struct EdgesArgs<'a> {
     pub cursor: Option<usize>,
 }
 
-pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
+/// One resolved page row, ALREADY described (id/kind/label) -- shared by
+/// `run` (plain) and `run_json`, the same "one resolution, two renderings"
+/// discipline `node.rs`'s own `ResolvedCard`/`resolve` uses.
+struct ResolvedEntry {
+    edge: String,
+    id: String,
+    kind: String,
+    label: String,
+}
+
+struct ResolvedPage {
+    /// The canonical `--kind` token this page answered for
+    /// (`EdgeKind::label()`, not necessarily byte-identical to whatever
+    /// case/spelling the caller typed -- though in practice they're the
+    /// same string, since `parse_edge_kind` only accepts exact labels).
+    kind_label: String,
+    entries: Vec<ResolvedEntry>,
+    next: Option<usize>,
+}
+
+fn resolve(graph: &GraphService, args: &EdgesArgs) -> Result<ResolvedPage, CliError> {
     let node_id = decode_node_id(args.id_raw).ok_or_else(|| {
         CliError::bad_ref(
             format!("'{}' is not a valid node id", args.id_raw),
@@ -67,7 +87,15 @@ pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
     // serving-boundary projection exactly (the underlying graph query
     // above is unfiltered, same as the server's) -- one revert away once
     // U5 lands, same as the server's own comment says.
-    let entries: Vec<_> = page.entries.iter().filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup)).collect();
+    let entries: Vec<ResolvedEntry> = page
+        .entries
+        .iter()
+        .filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup))
+        .map(|e| {
+            let (id, kind_str, label) = describe_position(&e.node, &snap);
+            ResolvedEntry { edge: e.edge.0.clone(), id, kind: kind_str, label }
+        })
+        .collect();
 
     if entries.is_empty() {
         return Err(CliError::empty_result(
@@ -77,14 +105,31 @@ pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
         ));
     }
 
+    Ok(ResolvedPage { kind_label: kind.label().to_string(), entries, next: page.next })
+}
+
+pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
+    let page = resolve(graph, &args)?;
+
     let mut out = String::new();
-    for entry in &entries {
-        let (id, kind_str, label) = describe_position(&entry.node, &snap);
-        out.push_str(&format!("{:<24} {:<12} {:<28} {}\n", entry.edge.0, kind_str, id, label));
+    for entry in &page.entries {
+        out.push_str(&format!("{:<24} {:<12} {:<28} {}\n", entry.edge, entry.kind, entry.id, entry.label));
     }
     match page.next {
         Some(n) => out.push_str(&format!("more: continue with --cursor {n}\n")),
         None => out.push_str("(end of list)\n"),
     }
     Ok(out)
+}
+
+/// BIBEX-1 (--json mode): `{kind, entries: [{edge, node: {id, kind,
+/// label}}], next}` -- field names reused verbatim from
+/// `atlas_server::graph_handlers::EdgePageOut`/`EdgeEntryOut`/`NodeRefOut`
+/// (the SAME wire shape `/api/node/{id}/edges` already serves, minus
+/// `version`). CONTRACT.md's own "--json mode" section has the full field
+/// table.
+pub fn run_json(graph: &GraphService, args: EdgesArgs) -> Result<serde_json::Value, CliError> {
+    let page = resolve(graph, &args)?;
+    let entries: Vec<_> = page.entries.iter().map(|e| serde_json::json!({"edge": e.edge, "node": {"id": e.id, "kind": e.kind, "label": e.label}})).collect();
+    Ok(serde_json::json!({"kind": page.kind_label, "entries": entries, "next": page.next}))
 }

@@ -38,7 +38,7 @@ use crate::error::CliError;
 /// rendering case can be reproduced against a small hand-built fixture in
 /// a unit test, without needing a full `GraphService` (which has no
 /// public constructor that accepts a deliberately broken node table).
-fn render_verse_line(snap: &impl GraphQuery, id: &AnyNodeId, chapter_ref: &str, red_letter_spans: &HashMap<String, Vec<(usize, usize)>>) -> Result<String, CliError> {
+fn resolve_verse_line(snap: &impl GraphQuery, id: &AnyNodeId, chapter_ref: &str) -> Result<(String, String), CliError> {
     let (b, c, v) = atlas_graph::kjv_adapter::decode_text_unit(id).ok_or_else(|| {
         CliError::not_found(
             format!("no chapter '{chapter_ref}'"),
@@ -54,11 +54,21 @@ fn render_verse_line(snap: &impl GraphQuery, id: &AnyNodeId, chapter_ref: &str, 
             "run 'cargo run -p atlas-graph --bin atlas-graph-compile' from server/ to rebuild the artifact, or report this as a bug",
         )
     })?;
+    Ok((sref, text))
+}
+
+fn render_verse_line(snap: &impl GraphQuery, id: &AnyNodeId, chapter_ref: &str, red_letter_spans: &HashMap<String, Vec<(usize, usize)>>) -> Result<String, CliError> {
+    let (sref, text) = resolve_verse_line(snap, id, chapter_ref)?;
     let spans = red_letter_spans.get(&sref).cloned().unwrap_or_default();
     Ok(format!("{sref}  {}\n", super::verse::mark_red_letter(&text, &spans)))
 }
 
-pub fn run(graph: &GraphService, ref_raw: &str) -> Result<String, CliError> {
+/// Shared by `run` (plain) and `run_json`: parses `ref_raw` and resolves it
+/// to the `(start, n)` window this chapter's own verses occupy in the
+/// reading spine -- the SAME two fail-loud steps (`bad_ref` on a
+/// non-chapter-shaped ref, `not_found` on a well-shaped but absent
+/// book/chapter combination) both output modes must agree on.
+fn resolve_span(graph: &GraphService, ref_raw: &str) -> Result<(usize, usize), CliError> {
     let (book, chapter) = match ScriptureRef::parse(ref_raw) {
         Ok(ScriptureRef::Chapter { book, chapter }) => (book, chapter),
         _ => {
@@ -70,13 +80,17 @@ pub fn run(graph: &GraphService, ref_raw: &str) -> Result<String, CliError> {
         }
     };
 
-    let (start, n) = graph.chapter_span(book.0, chapter).ok_or_else(|| {
+    graph.chapter_span(book.0, chapter).ok_or_else(|| {
         CliError::not_found(
             format!("no chapter '{ref_raw}'"),
             "the reference parsed fine but this graph has no such book/chapter combination",
             "check the chapter number is within that book's real length",
         )
-    })?;
+    })
+}
+
+pub fn run(graph: &GraphService, ref_raw: &str) -> Result<String, CliError> {
+    let (start, n) = resolve_span(graph, ref_raw)?;
 
     let snap = graph.snapshot();
     let ids = window::window(&snap, atlas_graph::kjv_adapter::BIBLE_CORPUS, start, n, WindowDir::Onward);
@@ -86,6 +100,29 @@ pub fn run(graph: &GraphService, ref_raw: &str) -> Result<String, CliError> {
         out.push_str(&render_verse_line(&snap, id, ref_raw, &graph.red_letter_spans)?);
     }
     Ok(out)
+}
+
+/// BIBEX-1 (--json mode): an array of `{ref, text, words_of_christ}`
+/// objects, one per verse, in chapter order -- field names reused verbatim
+/// from `atlas_server::graph_handlers::TextUnitOut` (the SAME wire shape
+/// `/api/text` already serves for a window of units). CONTRACT.md's own
+/// "--json mode" section has the full field table; no `next` field (unlike
+/// `/api/text`'s own paginated window) -- a chapter's own span is always
+/// the WHOLE chapter, never a page of it, so there is nothing to continue.
+pub fn run_json(graph: &GraphService, ref_raw: &str) -> Result<serde_json::Value, CliError> {
+    let (start, n) = resolve_span(graph, ref_raw)?;
+
+    let snap = graph.snapshot();
+    let ids = window::window(&snap, atlas_graph::kjv_adapter::BIBLE_CORPUS, start, n, WindowDir::Onward);
+
+    let mut units = Vec::with_capacity(ids.len());
+    for id in &ids {
+        let (sref, text) = resolve_verse_line(&snap, id, ref_raw)?;
+        let spans = graph.red_letter_spans.get(&sref).cloned().unwrap_or_default();
+        let woc: Vec<_> = spans.iter().map(|&(s, e)| serde_json::json!({"start": s, "end": e})).collect();
+        units.push(serde_json::json!({"ref": sref, "text": text, "words_of_christ": woc}));
+    }
+    Ok(serde_json::Value::Array(units))
 }
 
 #[cfg(test)]

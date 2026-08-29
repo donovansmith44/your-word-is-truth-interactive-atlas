@@ -81,6 +81,7 @@ dependencies = [
  "atlas-graph",
  "atlas-graph-types",
  "atlas-server",
+ "serde_json",
 ]
 
 [[package]]

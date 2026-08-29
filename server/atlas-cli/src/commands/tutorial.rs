@@ -30,7 +30,12 @@ pub fn run(graph: &GraphService, data: &AtlasData, data_dir_shown: &str) -> Resu
 stdout and exits 0 on success. A command that fails prints one line to \
 stderr shaped 'atlas: error (<class>): <what> -- <why> -- <what to do>' \
 and exits a nonzero code fixed per error class (see CONTRACT.md's own \
-error taxonomy) -- scripts can branch on the exit code alone.\n\n"
+error taxonomy) -- scripts can branch on the exit code alone. Add --json \
+before or after any real query command (verse/chapter/node/edges/find/ \
+kinds) for a single machine-readable JSON value on stdout instead -- a \
+failure becomes one JSON object on stderr, same exit codes; --json is not \
+available for this tutorial itself, or for bare/help (see CONTRACT.md's \
+own --json mode section).\n\n"
     ));
 
     out.push_str(&step_header(2, "bibex verse <ref> -- one verse, its text, and what's attached to it"));
@@ -68,7 +73,7 @@ instead of 'end of list' -- pass that N back in to keep walking.\n\n",
 
     out.push_str(&step_header(6, "bibex find <term> -- name lookup across kinds"));
     out.push_str("$ bibex find jericho\n");
-    out.push_str(&super::find::run(graph, "jericho")?);
+    out.push_str(&super::find::run(graph, data, "jericho")?);
     out.push_str("\nA case-insensitive substring match over Place/Event/Narrative/Era/Polity labels -- useful for finding the exact id 'bibex node'/'bibex edges' need.\n\n");
 
     out.push_str(&step_header(7, "the full command list"));
