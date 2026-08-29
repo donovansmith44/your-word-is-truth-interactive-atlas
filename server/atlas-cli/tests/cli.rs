@@ -32,6 +32,20 @@ fn stderr(o: &Output) -> String {
     String::from_utf8(o.stderr.clone()).expect("stderr must be valid UTF-8")
 }
 
+/// BIBEX-1: runs `bibex --json <args>` against the real committed graph and
+/// parses stdout as JSON -- fails loud (not `Option`/`Result` swallowed) if
+/// stdout isn't valid JSON, since a --json happy path promises exactly one
+/// JSON value on stdout, nothing else.
+fn run_json(args: &[&str]) -> (Output, Option<serde_json::Value>) {
+    let dd = data_dir();
+    let dd_str = dd.to_str().expect("data dir path must be valid UTF-8");
+    let mut full = vec!["--data-dir", dd_str, "--json"];
+    full.extend_from_slice(args);
+    let o = run(&full);
+    let value = if o.status.success() { Some(serde_json::from_str(&stdout(&o)).unwrap_or_else(|e| panic!("--json happy path stdout must be valid JSON: {e}\nstdout: {}", stdout(&o)))) } else { None };
+    (o, value)
+}
+
 // ---------------------------------------------------------------------
 // Happy paths -- one per subcommand (R6).
 // ---------------------------------------------------------------------
@@ -299,6 +313,292 @@ fn edges_names_the_flag_for_verse_chapter_node_too() {
     let err = stderr(&o);
     assert!(err.contains("atlas: error (bad_usage):"), "err: {err}");
     assert!(err.contains("--bogus-flag"), "err must name the specific unrecognized flag: {err}");
+    assert_eq!(o.status.code(), Some(4));
+}
+
+// ---------------------------------------------------------------------
+// BIBEX-1: --json mode -- happy paths (real field values, not just
+// is-json), the error path, and tutorial/help/bare = bad_usage.
+// ---------------------------------------------------------------------
+
+#[test]
+fn verse_json_happy_path_carries_real_fields() {
+    let (o, v) = run_json(&["verse", "GEN.1.1"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let v = v.unwrap();
+    assert_eq!(v["ref"], "GEN.1.1");
+    assert_eq!(v["text"], "In the beginning God created the heaven and the earth.");
+    assert_eq!(v["tracked"], true);
+    assert!(v["words_of_christ"].is_array());
+    assert!(v["places"].is_array());
+    // A real, checked-present attachment: God is mentioned at GEN.1.1.
+    let persons = v["persons"].as_array().expect("persons must be an array");
+    assert!(persons.iter().any(|p| p["label"] == "God" && p["id"].as_str().unwrap().starts_with("Person:")), "persons: {persons:?}");
+    let events = v["events"].as_array().expect("events must be an array");
+    assert!(events.iter().any(|e| e["id"].as_str().unwrap().starts_with("Event:")), "events: {events:?}");
+}
+
+#[test]
+fn verse_json_concord_shape_is_leaner_and_untracked() {
+    let (o, v) = run_json(&["verse", "BoC 7.2.1"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let v = v.unwrap();
+    assert_eq!(v["ref"], "BoC 7.2.1");
+    assert_eq!(v["tracked"], false);
+    assert!(v.get("places").is_none(), "a Concord verse's json must not carry the KJV-only sections: {v:?}");
+}
+
+#[test]
+fn chapter_json_happy_path_carries_real_units_in_order() {
+    let (o, v) = run_json(&["chapter", "GEN.1"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let units = v.unwrap();
+    let units = units.as_array().expect("chapter --json must be a top-level array");
+    assert_eq!(units.len(), 31, "Genesis 1 has exactly 31 verses");
+    assert_eq!(units[0]["ref"], "GEN.1.1");
+    assert_eq!(units[0]["text"], "In the beginning God created the heaven and the earth.");
+    assert_eq!(units[30]["ref"], "GEN.1.31");
+    assert!(units[0]["words_of_christ"].is_array());
+}
+
+#[test]
+fn node_json_happy_path_carries_real_fields() {
+    let (o, v) = run_json(&["node", "Event:ab_ur"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let v = v.unwrap();
+    assert_eq!(v["id"], "Event:ab_ur");
+    assert_eq!(v["kind"], "Event");
+    assert_eq!(v["label"], "Terah's family leaves Ur");
+    assert_eq!(v["provenance"], "curated");
+    let summary = v["edge_summary"].as_array().expect("edge_summary must be an array");
+    assert!(summary.iter().any(|e| e["kind"] == "located-at" && e["count"].as_u64().unwrap() >= 1), "edge_summary: {summary:?}");
+}
+
+#[test]
+fn edges_json_happy_path_carries_real_fields() {
+    let (o, v) = run_json(&["edges", "Event:ab_ur", "--kind", "located-at"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let v = v.unwrap();
+    assert_eq!(v["kind"], "located-at");
+    let entries = v["entries"].as_array().expect("entries must be an array");
+    assert!(!entries.is_empty());
+    assert!(entries[0]["node"]["id"].as_str().unwrap().starts_with("Place:"), "entries: {entries:?}");
+    assert!(entries[0]["edge"].is_string());
+}
+
+#[test]
+fn find_json_happy_path_carries_real_fields() {
+    let (o, v) = run_json(&["find", "jericho"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let hits = v.unwrap();
+    let hits = hits.as_array().expect("find --json must be a top-level array");
+    assert!(hits.iter().any(|h| h["kind"] == "Place" && h["id"].as_str().unwrap().starts_with("Place:")), "hits: {hits:?}");
+}
+
+#[test]
+fn kinds_json_row_count_matches_parse_edge_kind_and_every_token_round_trips() {
+    let (o, v) = run_json(&["kinds"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let rows = v.unwrap();
+    let rows = rows.as_array().expect("kinds --json must be a top-level array");
+    assert!(!rows.is_empty());
+    for row in rows {
+        assert!(row["token"].is_string());
+        assert!(row["relation"].is_string());
+        let dir = row["direction"].as_str().unwrap();
+        assert!(matches!(dir, "forward" | "inverse" | "symmetric"), "unexpected direction: {dir}");
+    }
+    // Plain and json modes must agree on the row count.
+    let plain = stdout(&run_with_data_dir(&["kinds"]));
+    let plain_rows = plain.lines().skip(1).count(); // skip the header line
+    assert_eq!(rows.len(), plain_rows, "plain and --json 'kinds' must list the identical vocabulary");
+}
+
+#[test]
+fn json_error_on_not_found_id_emits_the_error_object_on_stderr() {
+    let (o, v) = run_json(&["node", "Event:not-a-real-event"]);
+    assert!(!o.status.success());
+    assert!(v.is_none());
+    let err: serde_json::Value = serde_json::from_str(&stderr(&o)).unwrap_or_else(|e| panic!("--json error path stderr must be valid JSON: {e}\nstderr: {}", stderr(&o)));
+    assert_eq!(err["error"]["code"], "not_found");
+    assert!(err["error"]["message"].as_str().unwrap().contains("Event:not-a-real-event"));
+    assert!(err["error"]["hint"].is_string());
+    assert!(stdout(&o).is_empty(), "a failing --json invocation must print nothing to stdout");
+    assert_eq!(o.status.code(), Some(3));
+}
+
+#[test]
+fn json_error_on_empty_result_uses_the_same_taxonomy_as_plain_mode() {
+    let (o, v) = run_json(&["find", "zzqxnotarealsearchterm"]);
+    assert!(!o.status.success());
+    assert!(v.is_none());
+    let err: serde_json::Value = serde_json::from_str(&stderr(&o)).unwrap();
+    assert_eq!(err["error"]["code"], "empty_result");
+    assert_eq!(o.status.code(), Some(1));
+}
+
+#[test]
+fn json_tutorial_is_bad_usage() {
+    let (o, v) = run_json(&["tutorial"]);
+    assert!(!o.status.success());
+    assert!(v.is_none());
+    let err: serde_json::Value = serde_json::from_str(&stderr(&o)).unwrap();
+    assert_eq!(err["error"]["code"], "bad_usage");
+    assert_eq!(o.status.code(), Some(4));
+    assert!(stdout(&o).is_empty());
+}
+
+#[test]
+fn json_help_is_bad_usage() {
+    let (o, v) = run_json(&["help"]);
+    assert!(!o.status.success());
+    assert!(v.is_none());
+    let err: serde_json::Value = serde_json::from_str(&stderr(&o)).unwrap();
+    assert_eq!(err["error"]["code"], "bad_usage");
+    assert_eq!(o.status.code(), Some(4));
+}
+
+#[test]
+fn json_bare_invocation_is_bad_usage() {
+    let dd = data_dir();
+    let o = run(&["--data-dir", dd.to_str().unwrap(), "--json"]);
+    assert!(!o.status.success());
+    let err: serde_json::Value = serde_json::from_str(&stderr(&o)).unwrap();
+    assert_eq!(err["error"]["code"], "bad_usage");
+    assert_eq!(o.status.code(), Some(4));
+}
+
+#[test]
+fn json_flag_works_before_or_after_the_subcommand() {
+    // "--json is a GLOBAL flag... accepted before the subcommand, any
+    // order between the two" (CONTRACT.md). Prove both orders parse the
+    // same real query identically.
+    let dd = data_dir();
+    let dd_str = dd.to_str().unwrap();
+    let before = run(&["--json", "--data-dir", dd_str, "node", "Event:ab_ur"]);
+    let after = run(&["--data-dir", dd_str, "node", "Event:ab_ur", "--json"]);
+    assert!(before.status.success(), "stderr: {}", stderr(&before));
+    assert!(after.status.success(), "stderr: {}", stderr(&after));
+    assert_eq!(stdout(&before), stdout(&after));
+}
+
+// ---------------------------------------------------------------------
+// BIBEX-1: plain-mode byte-unchanged regression guard -- representative
+// commands the --json addition never touches (chapter/node/edges' own
+// plain bytes are unaffected by this batch).
+// ---------------------------------------------------------------------
+
+#[test]
+fn node_plain_output_is_byte_unchanged_by_the_json_addition() {
+    let o = run_with_data_dir(&["node", "Event:ab_ur"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let expected = concat!(
+        "id:         Event:ab_ur\n",
+        "kind:       Event\n",
+        "label:      Terah's family leaves Ur\n",
+        "provenance: curated\n",
+        "edges:\n",
+        "  attested-in      2\n",
+        "  follows-in       1\n",
+        "  dated-by         1\n",
+        "  dates            1\n",
+        "  located-at       1\n",
+        "  temporal-adjacency 2\n",
+    );
+    assert_eq!(stdout(&o), expected, "node's plain output must be byte-identical to its pre-BIBEX-1 form");
+}
+
+#[test]
+fn edges_plain_output_is_byte_unchanged_by_the_json_addition() {
+    let o = run_with_data_dir(&["edges", "Event:ab_ur", "--kind", "located-at"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let expected = "LocatedAt:b449e37d5a691cef Place        Place:ur-1                   Ur 1\n(end of list)\n";
+    assert_eq!(stdout(&o), expected, "edges's plain output must be byte-identical to its pre-BIBEX-1 form");
+}
+
+// ---------------------------------------------------------------------
+// BIBEX-1 addendum ticket 2: ID discoverability -- "IDS EVERYWHERE",
+// find's widened kind coverage, and the real "see it -> use it" loop for
+// both a node id (via find) and an edge-kind token (via node).
+// ---------------------------------------------------------------------
+
+#[test]
+fn verse_plain_output_brackets_an_id_next_to_every_attached_name() {
+    let o = run_with_data_dir(&["verse", "GEN.1.1"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let out = stdout(&o);
+    let persons_line = out.lines().find(|l| l.starts_with("Persons:")).expect("a Persons: line");
+    assert!(persons_line.contains("God [Person:"), "persons line must bracket a wire id next to the name: {persons_line}");
+    let events_line = out.lines().find(|l| l.starts_with("Events:")).expect("an Events: line");
+    assert!(events_line.contains('[') && events_line.contains("[Event:"), "events line must bracket a wire id: {events_line}");
+}
+
+#[test]
+fn find_widened_to_person_and_the_id_is_directly_usable_in_node() {
+    let find_out = stdout(&run_with_data_dir(&["find", "moses"]));
+    let person_line = find_out.lines().find(|l| l.starts_with("Person")).expect("find 'moses' must surface a Person hit now: {find_out}");
+    let id = person_line.split_whitespace().nth(1).expect("a Person id column");
+    assert!(id.starts_with("Person:"), "id must be the wire-encoded form: {id}");
+
+    // The loop: paste that exact id into `bibex node`.
+    let node_out = run_with_data_dir(&["node", id]);
+    assert!(node_out.status.success(), "'bibex node {id}' must succeed on an id 'bibex find' just printed -- stderr: {}", stderr(&node_out));
+    assert!(stdout(&node_out).contains("kind:       Person"));
+}
+
+#[test]
+fn find_widened_to_catechism_item() {
+    let out = stdout(&run_with_data_dir(&["find", "First Commandment"]));
+    assert!(out.contains("CatechismItem"), "find must now search CatechismItem labels too: {out}");
+    assert!(out.contains("CatechismItem:commandment-1"), "id column must be the wire-encoded form: {out}");
+}
+
+#[test]
+fn find_id_column_is_directly_usable_in_node_for_every_widened_kind() {
+    // Same loop as the Person case above, proven once more for a Place
+    // hit (find's own pre-existing kind, but the id column itself changed
+    // this batch from a bare curated id to the wire-encoded form).
+    let find_out = stdout(&run_with_data_dir(&["find", "jericho"]));
+    let place_line = find_out.lines().find(|l| l.starts_with("Place")).expect("a Place hit");
+    let id = place_line.split_whitespace().nth(1).unwrap();
+    assert!(id.starts_with("Place:"));
+    let node_out = run_with_data_dir(&["node", id]);
+    assert!(node_out.status.success(), "stderr: {}", stderr(&node_out));
+}
+
+#[test]
+fn node_edge_summary_kind_token_is_directly_usable_in_edges() {
+    let node_out = stdout(&run_with_data_dir(&["node", "Event:ab_ur"]));
+    let located_at_line = node_out.lines().find(|l| l.trim_start().starts_with("located-at")).expect("a located-at edge-summary row");
+    let token = located_at_line.split_whitespace().next().unwrap();
+    assert_eq!(token, "located-at");
+
+    // The loop: paste that exact token into `bibex edges --kind`.
+    let edges_out = run_with_data_dir(&["edges", "Event:ab_ur", "--kind", token]);
+    assert!(edges_out.status.success(), "'bibex edges Event:ab_ur --kind {token}' must succeed on a token 'bibex node' just printed -- stderr: {}", stderr(&edges_out));
+    assert!(stdout(&edges_out).contains("Place:"));
+}
+
+// ---------------------------------------------------------------------
+// BIBEX-1 addendum ticket 2: `bibex kinds`.
+// ---------------------------------------------------------------------
+
+#[test]
+fn kinds_plain_lists_the_full_vocabulary() {
+    let o = run_with_data_dir(&["kinds"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let out = stdout(&o);
+    assert!(out.contains("cites") && out.contains("cited-by"), "out: {out}");
+    assert!(out.contains("temporal-adjacency"), "out: {out}");
+    assert!(out.contains("forward") && out.contains("inverse") && out.contains("symmetric"), "out: {out}");
+}
+
+#[test]
+fn kinds_takes_no_arguments() {
+    let o = run_with_data_dir(&["kinds", "extra-arg"]);
+    assert!(!o.status.success());
+    let err = stderr(&o);
+    assert!(err.contains("atlas: error (bad_usage):"), "err: {err}");
     assert_eq!(o.status.code(), Some(4));
 }
 
