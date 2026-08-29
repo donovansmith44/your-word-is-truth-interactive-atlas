@@ -258,5 +258,40 @@ resolver = "2"
 # recount was performed and reported in prose by the original batch but
 # not persisted here until the review caught the miss.
 #
-# CURRENT CANONICAL: 942 (918 + 24) across 49 sections.
+# Batch BIBEX-1 (2026-08-29, the --json flag, contract-first, plus a
+# mid-batch owner addendum -- ticket 2, ID discoverability: "also i need
+# to be able to find node/edge ids by the things... because i don't just
+# know edge and node ids off the top of my head"): moved to 967 (943 + 24)
+# across the SAME 49 sections (no new test file -- every new test lands
+# inside an already-counted section: two new `kinds.rs` unit tests join
+# `unittests src\main.rs`; one new `person_ids_enumerates_every_person_
+# node` unit test joins atlas-graph's own `unittests src\lib.rs`; every
+# other new test joins the already-counted `tests/cli.rs` integration
+# section). Workspace +25: `unittests src\main.rs` +2 (`kinds.rs`'s own
+# manifest-round-trip/nonempty-vocabulary tests); `tests/cli.rs` +22
+# (--json happy-path tests per real query command asserting real field
+# values off the committed graph; the --json error-path shape and exit
+# code; tutorial/help/bare = bad_usage under --json; --json accepted
+# before-or-after the subcommand; two byte-for-byte plain-output
+# regression guards for `node`/`edges`, both untouched by this batch; the
+# addendum's own real two-invocation "see it -> use it" loop tests -- a
+# Person id out of `find` feeds straight into `node`, a `--kind` token
+# out of `node`'s edge summary feeds straight into `edges`; `find`'s
+# widened Person/CatechismItem coverage; `bibex kinds`'s own vocabulary/
+# token-round-trip checks); `atlas-graph`'s own lib unittests +1
+# (`person_ids_enumerates_every_person_node`, the ONE code change this
+# batch makes outside `server/atlas-cli` -- `GraphService::person_ids`,
+# built the identical way `era_ids`/`narrative_ids`/`event_ids`/
+# `place_ids` already are, server-side/additive, zero data/graph-types/
+# client changes -- the established companion-enumeration pattern
+# extended by one more kind, what lets `bibex find` widen to Persons per
+# the owner's own "PERSONS above all" instruction). `atlas-graph-types`
+# unchanged (+0) -- this batch never touched that crate (standing veto
+# honored). AQC corpus unchanged (44/184). Zero failures in either
+# dual-run command. `server/atlas-cli/CONTRACT.md` carries the full
+# per-command `--json` shape table and the ID-discoverability convention;
+# `batch-bibex1-report.md` has the full self-review, transcript excerpts,
+# and plain-mode-unchanged proof.
+#
+# CURRENT CANONICAL: 967 (943 + 24) across 49 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
