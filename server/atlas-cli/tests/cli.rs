@@ -395,6 +395,68 @@ fn find_json_happy_path_carries_real_fields() {
     assert!(hits.iter().any(|h| h["kind"] == "Place" && h["id"].as_str().unwrap().starts_with("Place:")), "hits: {hits:?}");
 }
 
+// Fix round 1 (review I-2): the two newly-widened `find` kinds (Person,
+// CatechismItem) were only proven reachable in PLAIN mode; the one
+// pre-existing `find --json` happy-path test only ever exercised a
+// pre-BIBEX-1 kind (Place). Real `{kind,id,label}` entries for both new
+// kinds, off the real committed graph.
+#[test]
+fn find_json_widened_scope_carries_a_real_person_hit() {
+    let (o, v) = run_json(&["find", "moses"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let hits = v.unwrap();
+    let hits = hits.as_array().expect("find --json must be a top-level array");
+    let person = hits.iter().find(|h| h["kind"] == "Person").unwrap_or_else(|| panic!("find --json 'moses' must surface a Person hit: {hits:?}"));
+    assert_eq!(person["id"], "Person:moses_2108");
+    assert_eq!(person["label"], "Moses");
+}
+
+#[test]
+fn find_json_widened_scope_carries_a_real_catechism_item_hit() {
+    let (o, v) = run_json(&["find", "First Commandment"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let hits = v.unwrap();
+    let hits = hits.as_array().expect("find --json must be a top-level array");
+    let item = hits.iter().find(|h| h["kind"] == "CatechismItem").unwrap_or_else(|| panic!("find --json 'First Commandment' must surface a CatechismItem hit: {hits:?}"));
+    assert_eq!(item["id"], "CatechismItem:commandment-1");
+    assert_eq!(item["label"], "The First Commandment");
+}
+
+// Fix round 1 (review I-3): CONTRACT.md's own "Empty results are explicit
+// in JSON too" ruling for `bibex node` (`edge_summary` is `[]`, present
+// not absent, for a genuinely zero-edge node) had production code
+// (`node.rs`'s `Vec::new()` -> `serde_json::json!`) but no test. `Translation:
+// latin_vulgate` is a real, checked example in the committed graph -- a
+// Translation node carries no edge of any relation this batch's
+// vocabulary tracks -- so this is a real-data proof, not a fixture.
+#[test]
+fn node_json_edge_summary_is_an_explicit_empty_array_for_a_real_zero_edge_node() {
+    let (o, v) = run_json(&["node", "Translation:latin_vulgate"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let v = v.unwrap();
+    assert_eq!(v["id"], "Translation:latin_vulgate");
+    assert!(v.get("edge_summary").is_some(), "edge_summary key must be PRESENT even when this node has zero edges, never omitted");
+    assert_eq!(v["edge_summary"], serde_json::Value::Array(vec![]), "edge_summary must be an explicit empty array, not null or absent");
+}
+
+// Fix round 1 (review I-1): CONTRACT.md's own "--json mode" section makes
+// an explicit claim -- "even a malformed --data-dir under --json renders
+// its error as JSON, never plain text" -- that had no test. Mirrors the
+// existing plain-mode `data_load_failed_when_graph_bin_is_missing` case,
+// under `--json`.
+#[test]
+fn json_error_on_a_malformed_data_dir_is_data_load_failed_not_plain_text() {
+    let o = run(&["--data-dir", "./this-directory-does-not-exist", "--json", "verse", "GEN.1.1"]);
+    assert!(!o.status.success());
+    assert!(stdout(&o).is_empty(), "a failing --json invocation must print nothing to stdout, even when the failure comes from --data-dir resolution itself");
+    let err: serde_json::Value =
+        serde_json::from_str(&stderr(&o)).unwrap_or_else(|e| panic!("a malformed --data-dir under --json must still render its error as JSON, never plain text: {e}\nstderr: {}", stderr(&o)));
+    assert_eq!(err["error"]["code"], "data_load_failed");
+    assert!(err["error"]["message"].is_string());
+    assert!(err["error"]["hint"].is_string());
+    assert_eq!(o.status.code(), Some(5));
+}
+
 #[test]
 fn kinds_json_row_count_matches_parse_edge_kind_and_every_token_round_trips() {
     let (o, v) = run_json(&["kinds"]);
