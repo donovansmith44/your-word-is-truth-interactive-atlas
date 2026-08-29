@@ -344,11 +344,13 @@ once real machine consumers exist" — this section fixes the shape BEFORE
 any code changed, per this repo's standing contract-first discipline.
 
 **Global flag.** `--json` is accepted before OR after the subcommand, in
-any order relative to `--data-dir` (`main.rs::extract global flags`
-scans the whole arg list for both, the same permissive treatment
-`--data-dir` alone already had). Presence is checked BEFORE any other
-argument parsing can fail, so even a malformed `--data-dir` under `--json`
-renders its error as JSON, never plain text.
+any order relative to `--data-dir` (`main()`'s own `raw.iter().any(|a| a
+== "--json")` presence scan runs over the WHOLE raw arg list, before
+`extract_data_dir` -- the function that actually handles `--data-dir` --
+ever runs inside `run`/`run_json`; the same permissive "appears anywhere"
+treatment `--data-dir` alone already had). Presence is checked BEFORE any
+other argument parsing can fail, so even a malformed `--data-dir` under
+`--json` renders its error as JSON, never plain text.
 
 **One JSON value per invocation on stdout.** A single, compact
 (single-line) JSON value — an object, or an array where the command is a

@@ -68,13 +68,16 @@ counts you pass to 'bibex edges' next.\n\n",
     out.push_str(
         "\nEach row is one connected node reached by that edge kind. A page \
 that runs past --limit entries ends with 'more: continue with --cursor N' \
-instead of 'end of list' -- pass that N back in to keep walking.\n\n",
+instead of 'end of list' -- pass that N back in to keep walking. A node's \
+own edge summary above only lists the kinds THAT node happens to carry --  \
+run 'bibex kinds' any time for the full --kind vocabulary this graph \
+supports, no node needed first.\n\n",
     );
 
     out.push_str(&step_header(6, "bibex find <term> -- name lookup across kinds"));
     out.push_str("$ bibex find jericho\n");
     out.push_str(&super::find::run(graph, data, "jericho")?);
-    out.push_str("\nA case-insensitive substring match over Place/Event/Narrative/Era/Polity labels -- useful for finding the exact id 'bibex node'/'bibex edges' need.\n\n");
+    out.push_str("\nA case-insensitive substring match over Place/Event/Narrative/Era/Polity/Person/CatechismItem labels -- useful for finding the exact id 'bibex node'/'bibex edges' need.\n\n");
 
     out.push_str(&step_header(7, "the full command list"));
     out.push_str(&super::help::text());
