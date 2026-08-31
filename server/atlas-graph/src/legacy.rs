@@ -167,7 +167,7 @@ pub fn narrative_from_node(id: &AnyNodeId, q: &impl GraphQuery, legs: &[String])
 pub fn locus_dot_ref(l: &TextLocus) -> Option<String> {
     match &l.at {
         TextRef::Bible(v) => Some(crate::kjv_adapter::dot_ref(v.book, v.chapter, v.verse)),
-        TextRef::Concord(_) => None,
+        TextRef::Concord(_) | TextRef::Svebilius(_) => None,
     }
 }
 

@@ -52,7 +52,7 @@ use atlas_graph_types::edge::{
 use atlas_graph_types::graph::{Graph, ReadingSpine};
 use atlas_graph_types::id::{AnchorId, AnyNodeId, CatechismItemId, CommentaryItemId, EraId, EventId, NarrativeId, NodeKind, PeopleGroupId, PersonId, PlaceId, PolityId, SourceId};
 use atlas_graph_types::node::{Node, NodePayload, PolityEraPayload};
-use atlas_graph_types::text::{BibleLocus, BibleLocusRange, ConcordRef, LocusRange, TextLocus, TextRef, TokenSpan, TranslationId, VerseRef};
+use atlas_graph_types::text::{BibleLocus, BibleLocusRange, ConcordRef, LocusRange, SvebiliusRef, TextLocus, TextRef, TokenSpan, TranslationId, VerseRef};
 
 use serde::{Deserialize, Serialize};
 
@@ -92,6 +92,11 @@ enum DtoNodeKind {
     /// module's own `FORMAT_VERSION` doc comment has the full "appended
     /// variant vs. added field" distinction, PG-1's own precedent).
     CommentaryItem,
+    /// SVEB-1: appended, same discipline as CommentaryItem above.
+    CatechismTopic,
+    SvebiliusUnit,
+    /// PARTS-1: appended, same discipline as CommentaryItem above.
+    CatechismPart,
 }
 
 impl From<NodeKind> for DtoNodeKind {
@@ -111,6 +116,9 @@ impl From<NodeKind> for DtoNodeKind {
             NodeKind::Translation => DtoNodeKind::Translation,
             NodeKind::PeopleGroup => DtoNodeKind::PeopleGroup,
             NodeKind::CommentaryItem => DtoNodeKind::CommentaryItem,
+            NodeKind::CatechismTopic => DtoNodeKind::CatechismTopic,
+            NodeKind::SvebiliusUnit => DtoNodeKind::SvebiliusUnit,
+            NodeKind::CatechismPart => DtoNodeKind::CatechismPart,
         }
     }
 }
@@ -131,6 +139,9 @@ impl From<DtoNodeKind> for NodeKind {
             DtoNodeKind::Translation => NodeKind::Translation,
             DtoNodeKind::PeopleGroup => NodeKind::PeopleGroup,
             DtoNodeKind::CommentaryItem => NodeKind::CommentaryItem,
+            DtoNodeKind::CatechismTopic => NodeKind::CatechismTopic,
+            DtoNodeKind::SvebiliusUnit => NodeKind::SvebiliusUnit,
+            DtoNodeKind::CatechismPart => NodeKind::CatechismPart,
         }
     }
 }
@@ -261,6 +272,12 @@ enum DtoPayload {
     /// carried as a bare string, re-typed on read" convention every other
     /// node-id-carrying Dto field already uses).
     CommentaryItem { work: String, heading: Option<String>, text: String },
+    /// SVEB-1: appended.
+    CatechismTopic { label: String, source: String },
+    SvebiliusUnit { question: Option<String>, answer: String },
+    /// PARTS-1: appended. `curated` rides on the node so a reader never
+    /// has to infer from an id whether a part is one Luther numbered.
+    CatechismPart { label: String, curated: bool },
 }
 
 fn payload_to_dto(p: &NodePayload) -> DtoPayload {
@@ -299,6 +316,9 @@ fn payload_to_dto(p: &NodePayload) -> DtoPayload {
         NodePayload::Source { label } => DtoPayload::Source { label: label.clone() },
         NodePayload::Translation { label } => DtoPayload::Translation { label: label.clone() },
         NodePayload::PeopleGroup { label, description } => DtoPayload::PeopleGroup { label: label.clone(), description: description.clone() },
+        NodePayload::CatechismTopic { label, source } => DtoPayload::CatechismTopic { label: label.clone(), source: source.clone() },
+        NodePayload::CatechismPart { label, curated } => DtoPayload::CatechismPart { label: label.clone(), curated: *curated },
+        NodePayload::SvebiliusUnit { question, answer } => DtoPayload::SvebiliusUnit { question: question.clone(), answer: answer.clone() },
     }
 }
 
@@ -308,6 +328,7 @@ fn payload_from_dto(d: DtoPayload) -> Result<NodePayload, ArtifactError> {
             let corpus: &'static str = match corpus.as_str() {
                 "bible" => "bible",
                 "concord" => "concord",
+                "svebilius" => "svebilius",
                 other => return Err(ArtifactError(format!("unknown corpus '{other}' in serialized artifact"))),
             };
             NodePayload::TextUnit { corpus, renderings: renderings.into_iter().map(|(k, v)| (TranslationId(k), v)).collect() }
@@ -344,6 +365,9 @@ fn payload_from_dto(d: DtoPayload) -> Result<NodePayload, ArtifactError> {
         DtoPayload::Source { label } => NodePayload::Source { label },
         DtoPayload::Translation { label } => NodePayload::Translation { label },
         DtoPayload::PeopleGroup { label, description } => NodePayload::PeopleGroup { label, description },
+        DtoPayload::CatechismTopic { label, source } => NodePayload::CatechismTopic { label, source },
+        DtoPayload::CatechismPart { label, curated } => NodePayload::CatechismPart { label, curated },
+        DtoPayload::SvebiliusUnit { question, answer } => NodePayload::SvebiliusUnit { question, answer },
         DtoPayload::CommentaryItem { work, heading, text } => NodePayload::CommentaryItem { work: SourceId::new(work), heading, text },
     })
 }
@@ -381,12 +405,15 @@ impl TryFrom<DtoTokenSpan> for TokenSpan {
 enum DtoTextRef {
     Bible { book: u8, chapter: u16, verse: u16 },
     Concord { part: u8, article: u16, paragraph: u16 },
+    /// SVEB-1: appended.
+    Svebilius { section: u8, unit: u16 },
 }
 impl From<&TextRef> for DtoTextRef {
     fn from(r: &TextRef) -> Self {
         match r {
             TextRef::Bible(v) => DtoTextRef::Bible { book: v.book, chapter: v.chapter, verse: v.verse },
             TextRef::Concord(c) => DtoTextRef::Concord { part: c.part, article: c.article, paragraph: c.paragraph },
+            TextRef::Svebilius(v) => DtoTextRef::Svebilius { section: v.section, unit: v.unit },
         }
     }
 }
@@ -395,6 +422,7 @@ impl From<DtoTextRef> for TextRef {
         match d {
             DtoTextRef::Bible { book, chapter, verse } => TextRef::Bible(VerseRef { book, chapter, verse }),
             DtoTextRef::Concord { part, article, paragraph } => TextRef::Concord(ConcordRef { part, article, paragraph }),
+            DtoTextRef::Svebilius { section, unit } => TextRef::Svebilius(SvebiliusRef { section, unit }),
         }
     }
 }
@@ -441,11 +469,25 @@ fn dto_to_bible_range(from: DtoTextLocus, to: DtoTextLocus) -> Result<BibleLocus
 fn concord_locus_to_dto(l: &atlas_graph_types::text::ConcordLocus) -> DtoTextLocus {
     DtoTextLocus::from(&TextLocus::from(atlas_graph_types::text::ConcordLocus { unit: l.unit.clone(), span: l.span.clone() }))
 }
+/// SVEB-1: mirrors `concord_locus_to_dto`/`dto_to_concord_locus` exactly.
+fn svebilius_locus_to_dto(l: &atlas_graph_types::text::SvebiliusLocus) -> DtoTextLocus {
+    DtoTextLocus::from(&TextLocus::from(atlas_graph_types::text::SvebiliusLocus { unit: l.unit.clone(), span: l.span.clone() }))
+}
+fn dto_to_svebilius_locus(d: DtoTextLocus) -> Result<atlas_graph_types::text::SvebiliusLocus, ArtifactError> {
+    let tl = TextLocus::try_from(d)?;
+    match tl.at {
+        TextRef::Svebilius(v) => Ok(atlas_graph_types::text::Locus { unit: v, span: tl.span }),
+        TextRef::Bible(_) => Err(ArtifactError("expected a Svebilius-corpus locus in serialized artifact, found a Bible-corpus one".into())),
+        TextRef::Concord(_) => Err(ArtifactError("expected a Svebilius-corpus locus in serialized artifact, found a Concord-corpus one".into())),
+    }
+}
+
 fn dto_to_concord_locus(d: DtoTextLocus) -> Result<atlas_graph_types::text::ConcordLocus, ArtifactError> {
     let tl = TextLocus::try_from(d)?;
     match tl.at {
         TextRef::Concord(c) => Ok(atlas_graph_types::text::Locus { unit: c, span: tl.span }),
         TextRef::Bible(_) => Err(ArtifactError("expected a Concord-corpus locus in serialized artifact, found a Bible-corpus one".into())),
+        TextRef::Svebilius(_) => Err(ArtifactError("expected a Concord-corpus locus in serialized artifact, found a Svebilius-corpus one".into())),
     }
 }
 
@@ -615,12 +657,50 @@ struct DtoContains {
     justification: DtoJustification,
 }
 
+/// SVEB-1: mirrors `graph_types::edge::Quotes` -- `quoting` is a GENERIC
+/// `TextLocus` (any corpus may quote Scripture; Svebilius is the first that
+/// does), `quoted` a Bible range carried as the same `{from,to}` pair
+/// `DtoAttests` already uses. No `justification` field: `Quotes` itself
+/// carries none.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoQuotes {
+    quoting: DtoTextLocus,
+    quoted_from: DtoTextLocus,
+    quoted_to: DtoTextLocus,
+    provenance: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DtoCatechismLink {
     locus: DtoTextLocus,
     item: String,
+    /// SVEB-1: the owning topical grouping's node id, `None` for an
+    /// item-level citation. An ADDED FIELD (not an appended variant), so
+    /// `FORMAT_VERSION` had to move -- see its own doc comment.
+    topic: Option<String>,
     provenance: String,
     justification: DtoJustification,
+}
+
+/// PARTS-1: mirrors `graph_types::edge::CatechismPartLink` -- the same
+/// shape `DtoCatechismLink` uses, with `part` where it has `item`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoCatechismPartLink {
+    locus: DtoTextLocus,
+    part: String,
+    topic: Option<String>,
+    provenance: String,
+    justification: DtoJustification,
+}
+
+/// PARTS-1: mirrors `graph_types::edge::CatechismMembership` -- which
+/// chief part contains which item. Structure, so it carries no locus and
+/// no justification: nothing here is a claim about a text.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoCatechismMembership {
+    part: String,
+    item: String,
+    provenance: String,
 }
 
 /// KRETZ-1: mirrors `graph_types::edge::CommentsOn` -- the SAME `{node id,
@@ -737,7 +817,23 @@ pub struct ArtifactDump {
     /// table in this codebase (`contains_bible` stays empty/guarded,
     /// this batch's own scope note above).
     contains_concord: Vec<DtoContains>,
+    /// SVEB-1: `graph.contains_svebilius`'s own row table -- the THIRD
+    /// populated `Contains<C>`. Serialized here for the same reason
+    /// CORP-2a serialized the second: an emitted row that no serializer
+    /// carries is a SILENT DROP, and this batch emits real ones.
+    contains_svebilius: Vec<DtoContains>,
+    /// SVEB-1: `graph.quotes`'s own row table -- the TWELFTH member of the
+    /// original guarded set to close, on the same schedule as every prior
+    /// data batch (the moment `svebilius_adapter` started emitting real
+    /// rows).
+    quotes: Vec<DtoQuotes>,
     catechism: Vec<DtoCatechismLink>,
+    /// PARTS-1: the part-level citation and membership row tables. Brand
+    /// new, so -- exactly like `contains_svebilius` before them -- they
+    /// are serialized in the SAME batch that introduces them; the dump
+    /// guard cannot catch a table it has never heard of.
+    catechism_part: Vec<DtoCatechismPartLink>,
+    catechism_membership: Vec<DtoCatechismMembership>,
     /// KRETZ-1: `graph.comments_on`'s own row table -- see `DtoCommentsOn`'s
     /// own doc comment. The NINTH member of the original guarded set
     /// (`dump`'s own doc comment) to close, on the same schedule as every
@@ -911,7 +1007,15 @@ pub struct ArtifactDump {
 /// of which the root's own hash touches; `tests/version_root_regression.rs`
 /// proves this for the real committed data in the same commit. `data/
 /// compiled/graph.bin` rebuilt in this same commit.
-const FORMAT_VERSION: u32 = 10;
+// SVEB-1: 10 -> 11. Three Dto enums gained appended variants
+// (DtoNodeKind, DtoPayload, DtoTextRef) and the corpus whitelist learned
+// "svebilius" -- appended variants are benign to READ from an older
+// artifact, but the standing convention here is to bump on any Dto shape
+// change at all, not only on breaking ones.
+// SVEB-1: 11 -> 12. `ArtifactDump` gained two row tables
+// (`contains_svebilius`, `quotes`) on top of this batch's own earlier
+// enum widenings -- a new table is the clearest possible Dto shape change.
+const FORMAT_VERSION: u32 = 13;
 
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
@@ -930,12 +1034,19 @@ const FORMAT_VERSION: u32 = 10;
 /// schedule, the moment `kretzmann_adapter` started emitting real rows;
 /// RED-1 (2026-08-25) closes the TENTH and ELEVENTH (`spoken_by`/
 /// `spoken_at`) the same way, the moment `red_letter_adapter` started
-/// emitting real rows -- all are REAL SERIALIZED CONTENT below now, no
-/// longer guarded.
+/// emitting real rows; SVEB-1 (2026-08-30) closes the TWELFTH (`quotes`,
+/// alongside the new `contains_svebilius` table) the moment
+/// `svebilius_adapter` started emitting real rows -- all are REAL
+/// SERIALIZED CONTENT below now, no longer guarded.
+///
+/// `contains_svebilius` was never IN this guard (it did not exist), which
+/// is precisely why it is worth naming here: a brand-new row table is the
+/// one case the guard cannot catch on its own, so serializing it is part
+/// of the same batch that introduces it, never a later cleanup.
 pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_stats: &EventWorldStats) -> Result<ArtifactDump, ArtifactError> {
-    if !g.contains_bible.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty() {
+    if !g.contains_bible.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty() {
         return Err(ArtifactError(
-            "the graph carries rows in a relation this artifact format does not yet serialize (contains_bible/quotes/confesses/corresponds) -- extend artifact.rs before shipping this content".into(),
+            "the graph carries rows in a relation this artifact format does not yet serialize (contains_bible/confesses/corresponds) -- extend artifact.rs before shipping this content".into(),
         ));
     }
 
@@ -1040,10 +1151,55 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         })
         .collect();
 
+    // SVEB-1: the third `Contains<C>` table, dumped exactly as the second.
+    let contains_svebilius = g
+        .contains_svebilius
+        .iter()
+        .map(|r: &atlas_graph_types::edge::Contains<atlas_graph_types::text::SvebiliusTag>| DtoContains {
+            container: r.container.0.clone(),
+            content: r.content.0.iter().map(svebilius_locus_to_dto).collect(),
+            provenance: r.provenance.clone(),
+            justification: justification_to_dto(&r.justification),
+        })
+        .collect();
+
+    let quotes = g
+        .quotes
+        .iter()
+        .map(|r: &atlas_graph_types::edge::Quotes| DtoQuotes {
+            quoting: (&r.quoting).into(),
+            quoted_from: (&TextLocus::from(r.quoted.from.clone())).into(),
+            quoted_to: (&TextLocus::from(r.quoted.to.clone())).into(),
+            provenance: r.provenance.clone(),
+        })
+        .collect();
+
     let catechism = g
         .catechism
         .iter()
-        .map(|r: &CatechismLink| DtoCatechismLink { locus: (&r.locus).into(), item: r.item.0.clone(), provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) })
+        .map(|r: &CatechismLink| DtoCatechismLink { locus: (&r.locus).into(), item: r.item.0.clone(), topic: r.topic.as_ref().map(|t| t.0.clone()), provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) })
+        .collect();
+
+    let catechism_part = g
+        .catechism_part
+        .iter()
+        .map(|r: &atlas_graph_types::edge::CatechismPartLink| DtoCatechismPartLink {
+            locus: (&r.locus).into(),
+            part: r.part.0.clone(),
+            topic: r.topic.as_ref().map(|t| t.0.clone()),
+            provenance: r.provenance.clone(),
+            justification: justification_to_dto(&r.justification),
+        })
+        .collect();
+
+    let catechism_membership = g
+        .catechism_membership
+        .iter()
+        .map(|r: &atlas_graph_types::edge::CatechismMembership| DtoCatechismMembership {
+            part: r.part.0.clone(),
+            item: r.item.0.clone(),
+            provenance: r.provenance.clone(),
+        })
         .collect();
 
     // KRETZ-1: `graph.comments_on`'s own row table -- the SAME `{from, to}`
@@ -1169,6 +1325,10 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         fulfills,
         typology,
         contains_concord,
+        contains_svebilius,
+        catechism_part,
+        catechism_membership,
+        quotes,
         catechism,
         comments_on,
         spoken_by,
@@ -1361,6 +1521,8 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
         let corpus: &'static str = match corpus.as_str() {
             "bible" => "bible",
             "concord" => "concord",
+            // SVEB-1: the third corpus with a reading spine of its own.
+            "svebilius" => "svebilius",
             other => return Err(ArtifactError(format!("unknown reading-spine corpus '{other}' in serialized artifact"))),
         };
         g.reading.insert(corpus, ReadingSpine { order: order.into_iter().map(AnyNodeId::from).collect() });
@@ -1443,8 +1605,48 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
         });
     }
 
+    for r in d.contains_svebilius {
+        let content: Result<std::collections::BTreeSet<_>, ArtifactError> = r.content.into_iter().map(dto_to_svebilius_locus).collect();
+        g.contains_svebilius.push(atlas_graph_types::edge::Contains {
+            container: atlas_graph_types::id::ContainerNodeId::new(r.container),
+            content: atlas_graph_types::text::LocusSet(content?),
+            provenance: r.provenance,
+            justification: dto_to_justification(r.justification)?,
+        });
+    }
+
+    for r in d.quotes {
+        let from = dto_to_bible_locus(r.quoted_from)?;
+        let to = dto_to_bible_locus(r.quoted_to)?;
+        let quoted = atlas_graph_types::text::LocusRange::new(from, to)
+            .map_err(|_| ArtifactError("inverted quoted range in serialized artifact".into()))?;
+        g.quotes.push(atlas_graph_types::edge::Quotes {
+            quoting: r.quoting.try_into()?,
+            quoted,
+            provenance: r.provenance,
+        });
+    }
+
     for r in d.catechism {
-        g.catechism.push(CatechismLink { locus: r.locus.try_into()?, item: CatechismItemId::new(r.item), provenance: r.provenance, justification: dto_to_justification(r.justification)? });
+        g.catechism.push(CatechismLink { locus: r.locus.try_into()?, item: CatechismItemId::new(r.item), topic: r.topic.map(atlas_graph_types::id::CatechismTopicId::new), provenance: r.provenance, justification: dto_to_justification(r.justification)? });
+    }
+
+    for r in d.catechism_part {
+        g.catechism_part.push(atlas_graph_types::edge::CatechismPartLink {
+            locus: r.locus.try_into()?,
+            part: atlas_graph_types::id::CatechismPartId::new(r.part),
+            topic: r.topic.map(atlas_graph_types::id::CatechismTopicId::new),
+            provenance: r.provenance,
+            justification: dto_to_justification(r.justification)?,
+        });
+    }
+
+    for r in d.catechism_membership {
+        g.catechism_membership.push(atlas_graph_types::edge::CatechismMembership {
+            part: atlas_graph_types::id::CatechismPartId::new(r.part),
+            item: CatechismItemId::new(r.item),
+            provenance: r.provenance,
+        });
     }
 
     // KRETZ-1: a plain row table, like `attests`/`fulfills` above --
@@ -1994,11 +2196,22 @@ mod tests {
 
     #[test]
     fn dump_rejects_a_graph_carrying_an_unsupported_relations_rows() {
+        // SVEB-1: this test used to populate `quotes`. That relation is
+        // SERIALIZED now (this batch closed it), so it no longer trips the
+        // guard -- and a guard test that cannot fail is worse than none.
+        // Re-pointed at `confesses`, which remains unserialized, so the
+        // test keeps proving the thing it was written to prove: an
+        // emitted-but-uncarried row fails loud instead of vanishing.
         let mut g = Graph::default();
-        g.quotes.push(atlas_graph_types::edge::Quotes {
-            quoting: TextLocus::from(BibleLocus::whole(VerseRef { book: 0, chapter: 1, verse: 1 })),
-            quoted: LocusRange::new(BibleLocus::whole(VerseRef { book: 0, chapter: 1, verse: 1 }), BibleLocus::whole(VerseRef { book: 0, chapter: 1, verse: 1 })).unwrap(),
+        g.confesses.push(atlas_graph_types::edge::Confesses {
+            confessing: atlas_graph_types::text::ConcordLocus::whole(atlas_graph_types::text::ConcordRef {
+                part: 7,
+                article: 2,
+                paragraph: 1,
+            }),
+            confessed: LocusRange::new(BibleLocus::whole(VerseRef { book: 0, chapter: 1, verse: 1 }), BibleLocus::whole(VerseRef { book: 0, chapter: 1, verse: 1 })).unwrap(),
             provenance: "test".into(),
+            justification: Default::default(),
         });
         let empty_chrono = Chronology::from_derivation(ChronologyDerivation::default());
         assert!(dump(&g, &empty_chrono, &BuildStats::default(), &EventWorldStats::default()).is_err(), "an unsupported-but-populated relation must fail loud, not silently drop rows");

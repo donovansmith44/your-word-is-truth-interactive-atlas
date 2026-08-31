@@ -179,6 +179,39 @@ fn main() -> Result<()> {
         kretzmann_corpus.stats.pages, kretzmann_corpus.stats.units, kretzmann_corpus.stats.fragments, kretzmann_corpus.stats.footnotes, kretzmann_corpus.stats.disclosures.len(),
     );
 
+    // SVEB-1: Svebilius' Simple Exposition, vendored inside the pinned
+    // brain-fuel/catechism checkout (its own `svebilius/en` directory,
+    // fetched since Batch F2 and ingested by nothing until now). HARD-
+    // REQUIRED here, the same "a real compile never silently produces an
+    // incomplete corpus" rule Concord and Kretzmann above already follow.
+    // The SAME pinned commit `atlas_etl::compile` and
+    // `data/curated/catechism-mapping.toml` name -- one vendored
+    // checkout, addressed identically from both.
+    let catechism_mapping_sha = "0be24fee92e6333f817c4c2a08f99cf7c5274295";
+    let svebilius_root = raw_dir
+        .join("catechism-mapping")
+        .join(format!("catechism-{catechism_mapping_sha}"))
+        .join("svebilius/en");
+    println!("atlas-graph-compile: reading vendored Svebilius (Simple Exposition) data from {}...", svebilius_root.display());
+    let (svebilius_units, svebilius_stats, _juslenius) =
+        atlas_etl::svebilius::read_all(&svebilius_root, &atlas.verses)
+            .with_context(|| format!("reading {}", svebilius_root.display()))?;
+    println!(
+        "atlas-graph-compile: svebilius {} units ({} Q&A + {} prose), {} verse links, {} continuations folded, {} dividers + {} sub-headings skipped, {} numbering gap(s), {} unresolved",
+        svebilius_stats.units,
+        svebilius_stats.qa_units,
+        svebilius_stats.prose_units,
+        svebilius_stats.verse_links,
+        svebilius_stats.continuations,
+        svebilius_stats.skipped_dividers.len(),
+        svebilius_stats.skipped_subheadings.len(),
+        svebilius_stats.numbering_gaps.len(),
+        svebilius_stats.unresolved.len(),
+    );
+    for u in &svebilius_stats.unresolved {
+        println!("atlas-graph-compile: svebilius UNRESOLVED {u}");
+    }
+
     // RED-1: the real compile step HARD-REQUIRES the vendored red-letter
     // OSIS source (the SAME "graph.bin compiled without it would silently
     // ship an incomplete corpus" reasoning every prior vendored-data
@@ -211,6 +244,7 @@ fn main() -> Result<()> {
         Some(&concord_bundle),
         Some(&kretzmann_corpus),
         Some(&red_letter_corpus),
+        Some(&svebilius_units),
     )
     .context("building the graph from raw sources")?;
     println!(
@@ -233,6 +267,7 @@ fn main() -> Result<()> {
         Some(&concord_bundle),
         Some(&kretzmann_corpus),
         Some(&red_letter_corpus),
+        Some(&svebilius_units),
     )
     .context("building the independent model graph")?;
     graph_b.build_indexes();

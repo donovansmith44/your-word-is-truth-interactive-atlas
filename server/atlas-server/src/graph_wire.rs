@@ -82,6 +82,47 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
         // parse unchanged. See `encode_node_id`'s own matching doc
         // comment for the full round-trip picture.
         "text-unit" => {
+            // SVEB-1: accept the RAW node-id form as well as the cite form.
+            //
+            // A pre-existing asymmetry this batch inherited rather than
+            // introduced: `encode_node_id` renders a non-Bible TextUnit via
+            // its generic `id.raw` fallback -- "text-unit:concord/7.2.1" --
+            // but this decoder only ever accepted the CITE form,
+            // "text-unit:BoC 7.2.1". So an id the server itself emitted (in
+            // any edge listing naming a Concord unit) could not be fed back
+            // to `/api/node/{id}`. Svebilius inherited the same break the
+            // moment its own `quotes` edges started naming its units.
+            //
+            // Fixed additively: both forms decode now, and what `encode`
+            // emits is unchanged, so no committed fixture moves for this.
+            if let Some(raw_rest) = rest.strip_prefix("concord/") {
+                let mut parts = raw_rest.split('.');
+                let part: u8 = parts.next()?.parse().ok()?;
+                let article: u16 = parts.next()?.parse().ok()?;
+                let paragraph: u16 = parts.next()?.parse().ok()?;
+                if parts.next().is_some() {
+                    return None;
+                }
+                return Some(atlas_graph::concord_adapter::text_unit_id(part, article, paragraph));
+            }
+            if let Some(raw_rest) = rest.strip_prefix("svebilius/") {
+                let mut parts = raw_rest.split('.');
+                let section: u8 = parts.next()?.parse().ok()?;
+                let unit: u16 = parts.next()?.parse().ok()?;
+                if parts.next().is_some() {
+                    return None;
+                }
+                return Some(atlas_graph::svebilius_adapter::text_unit_id(section, unit));
+            }
+            if let Some(sveb_rest) = rest.strip_prefix("Sveb ") {
+                let mut parts = sveb_rest.split('.');
+                let section: u8 = parts.next()?.parse().ok()?;
+                let unit: u16 = parts.next()?.parse().ok()?;
+                if parts.next().is_some() {
+                    return None;
+                }
+                return Some(atlas_graph::svebilius_adapter::text_unit_id(section, unit));
+            }
             if let Some(concord_rest) = rest.strip_prefix("BoC ") {
                 let mut parts = concord_rest.split('.');
                 let part: u8 = parts.next()?.parse().ok()?;
@@ -109,6 +150,13 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
         "Era" => Some(AnyNodeId { kind: NodeKind::Era, raw: rest.to_string() }),
         "Polity" => Some(AnyNodeId { kind: NodeKind::Polity, raw: rest.to_string() }),
         "CatechismItem" => Some(AnyNodeId { kind: NodeKind::CatechismItem, raw: rest.to_string() }),
+        // SVEB-1: the two kinds this batch materializes -- the same
+        // one-arm completion of `encode_node_id`'s own generic
+        // `{Kind:?}:{raw}` fallback every prior batch added.
+        "CatechismTopic" => Some(AnyNodeId { kind: NodeKind::CatechismTopic, raw: rest.to_string() }),
+        "SvebiliusUnit" => Some(AnyNodeId { kind: NodeKind::SvebiliusUnit, raw: rest.to_string() }),
+        // PARTS-1: the chief part itself, same one-arm completion.
+        "CatechismPart" => Some(AnyNodeId { kind: NodeKind::CatechismPart, raw: rest.to_string() }),
         // Batch P (the extensibility proof): the ONE line this batch adds
         // to this file -- completing the round trip `encode_node_id`'s own
         // pre-existing generic fallback ALREADY produces for Person
@@ -229,6 +277,7 @@ mod tests {
             (NodeKind::Era, "patriarchs", "Era:patriarchs"),
             (NodeKind::Polity, "egypt", "Polity:egypt"),
             (NodeKind::CatechismItem, "first-commandment", "CatechismItem:first-commandment"),
+            (NodeKind::CatechismPart, "ten-commandments", "CatechismPart:ten-commandments"),
             // Batch P.
             (NodeKind::Person, "aaron_1", "Person:aaron_1"),
             // Batch CORP-1a.

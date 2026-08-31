@@ -29,6 +29,17 @@ pub enum NodeKind {
     /// KRETZ-1: a verse-anchored unit of a commentary work's prose
     /// (annotation shape -- owner order 2026-08-24).
     CommentaryItem,
+    /// SVEB-1: a topical grouping of proof texts under a catechism item.
+    CatechismTopic,
+    /// PARTS-1: a CHIEF PART of the catechism -- the level above an item.
+    /// Materialized so part-level content has somewhere to attach: the
+    /// brain-fuel repo carries whole files of part-OVERVIEW questions
+    /// ("The Ten Commandments", "The Apostles' Creed") that belong to a
+    /// part rather than to any one of its items, and before this they had
+    /// nowhere to live and were deferred.
+    CatechismPart,
+    /// SVEB-1: one addressable unit of Svebilius' Catechism.
+    SvebiliusUnit,
 }
 
 /// Kind tag for phantom-typed ids: a cross-kind reference is a type
@@ -60,6 +71,9 @@ kind_tags! {
     TranslationTag => Translation,
     PeopleGroupTag => PeopleGroup,
     CommentaryItemTag => CommentaryItem,
+    CatechismTopicTag => CatechismTopic,
+    CatechismPartTag => CatechismPart,
+    SvebiliusUnitTag => SvebiliusUnit,
 }
 
 /// Typed in-memory handle; renders to its Pid at the boundary.
@@ -117,6 +131,9 @@ pub type SourceId = NodeId<SourceTag>;
 pub type TranslationNodeId = NodeId<TranslationTag>;
 pub type PeopleGroupId = NodeId<PeopleGroupTag>;
 pub type CommentaryItemId = NodeId<CommentaryItemTag>;
+pub type CatechismTopicId = NodeId<CatechismTopicTag>;
+pub type CatechismPartId = NodeId<CatechismPartTag>;
+pub type SvebiliusUnitId = NodeId<SvebiliusUnitTag>;
 
 /// Erased form for the wire/UI boundary and heterogeneous holdings.
 /// Narrowing back to a typed id is a checked parse.

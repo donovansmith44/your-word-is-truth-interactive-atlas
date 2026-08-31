@@ -2,7 +2,7 @@
   "body": {
     "edge_summary": [
       {
-        "count": 207,
+        "count": 226,
         "kind": "catechism-link"
       }
     ],
@@ -10,7 +10,7 @@
     "kind": "CatechismItem",
     "label": "The First Commandment",
     "provenance": "curated-catechism",
-    "version": "2a45127ba3b91af4"
+    "version": "a8cf616212ee3241"
   },
   "status": 200
 }

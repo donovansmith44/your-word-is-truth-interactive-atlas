@@ -114,7 +114,7 @@ pub fn build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzman
     concord: Option<&crate::concord_adapter::ConcordBundle>,
     kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
-    build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, None)
+    build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, None, None)
 }
 
 /// RED-1: the richest raw-source form yet -- `bins/compile_graph.rs` and
@@ -137,6 +137,13 @@ pub fn build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzman
     concord: Option<&crate::concord_adapter::ConcordBundle>,
     kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
     red_letter: Option<&atlas_etl::red_letter::RedLetterCorpus>,
+    // SVEB-1: added to THIS function rather than spawning an
+    // `..._and_svebilius` sibling. The escalating-name convention has run
+    // its course at eight corpora -- and a sibling would leave this one
+    // silently meaning "everything except Svebilius", which is exactly the
+    // sort of name that rots. All six call sites are this richest form
+    // already, so widening it costs six `None`s and no ambiguity.
+    svebilius: Option<&[atlas_etl::svebilius::SvebiliusUnit]>,
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
     let (canon, verses) = atlas_etl::kjv::parse(kjv_json).context("parsing the KJV source (kjv.json)")?;
     // Batch KJV-CASE (owner ruling; batch-kjv-case-brief.md): restore the
@@ -162,7 +169,7 @@ pub fn build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzman
         }
         None => &verses,
     };
-    run_pipeline_build_with_brainfuel(&canon, verses, Some(kjv_json), xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter)
+    run_pipeline_build_with_brainfuel(&canon, verses, Some(kjv_json), xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter, svebilius)
 }
 
 /// The same build, starting from an already-parsed `(Canon, verses)` pair
@@ -206,7 +213,7 @@ fn run_pipeline_build(
     atlas: &AtlasData,
     eras: &[atlas_core::data::Era],
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
-    run_pipeline_build_with_brainfuel(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, None, None, None, None)
+    run_pipeline_build_with_brainfuel(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, None, None, None, None, None)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -221,8 +228,12 @@ fn run_pipeline_build_with_brainfuel(
     concord: Option<&crate::concord_adapter::ConcordBundle>,
     kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
     red_letter: Option<&atlas_etl::red_letter::RedLetterCorpus>,
+    svebilius: Option<&[atlas_etl::svebilius::SvebiliusUnit]>,
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
     let mut ctx = crate::pipeline::BuildCtx::with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter);
+    // Set after construction -- see `BuildCtx::svebilius`'s own note on why
+    // the constructor chain does not grow a tenth positional.
+    ctx.svebilius = svebilius;
     crate::pipeline::run_pipeline(&mut ctx, &crate::pipeline::pipeline())?;
     Ok((ctx.graph, ctx.stats, ctx.event_world_stats, ctx.chrono))
 }

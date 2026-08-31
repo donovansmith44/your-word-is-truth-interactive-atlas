@@ -334,4 +334,34 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // (theo-295 absorbed), several events' own witness/verse sets changed --
 // the root moving IS every one of these fixes landing for real. New
 // captured value: "1fa6fd69488d6cd6".
-const EXPECTED_VERSION_HEX: &str = "1fa6fd69488d6cd6";
+// SVEB-1 (2026-08-30): moved deliberately. This batch adds real graph
+// CONTENT, so the root moving is the root doing its job -- three distinct
+// additions, all intentional:
+//   1. 574 CatechismTopic nodes, and the topic endpoint on CatechismLink
+//      that carries them (the dedup key widened from (locus, item) to
+//      (locus, item, topic), which recovers 740 curated citations the old
+//      key discarded).
+//   2. 325 Svebilius TextUnit nodes + 9 section containers + the
+//      "svebilius" reading spine.
+//   3. 558 Quotes rows from Svebilius answers to the Scripture they print.
+// New captured value (this test's own eras-less build, NOT
+// atlas-graph-compile's own with-eras root -- those have always differed,
+// per this file's own historical note above): "89c2d6c314703741".
+// PARTS-1 (2026-08-30): moved deliberately. This batch adds real graph
+// CONTENT -- the root moving is the root doing its job. Three additions,
+// all intentional:
+//   1. 10 CatechismPart nodes (the 6 chief parts catechism.toml defines,
+//      plus 4 this app materializes so genuine sections of the Small
+//      Catechism -- Daily Prayers, the Table of Duties, and the
+//      brain-fuel repo's own two topical framings -- have an owner).
+//   2. 79 part-level CatechismTopic nodes and their 838 citation rows:
+//      the seven `resources/*.yaml` files Batch F2 deferred for having
+//      "no existing item to attach to", now that a part IS something to
+//      attach to.
+//   3. 33 CatechismMembership rows (which part contains which item), so
+//      an item reaches its part in one hop rather than an out-of-band
+//      lookup.
+// New captured value (this test's own eras-less build, NOT
+// atlas-graph-compile's own with-eras root -- those have always differed,
+// per this file's own historical note above): "c011acd48207e016".
+const EXPECTED_VERSION_HEX: &str = "c011acd48207e016";

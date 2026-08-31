@@ -60,6 +60,8 @@ pub struct GraphService {
     /// that doesn't supply a `ConcordBundle` -- an honestly empty
     /// lookup, never a placeholder).
     concord_position: HashMap<AnyNodeId, usize>,
+    /// SVEB-1: the same reverse index over the "svebilius" spine.
+    svebilius_position: HashMap<AnyNodeId, usize>,
     pub stats: BuildStats,
     /// Batch M-B (narrowed at M-C, renamed `EventWorld` -> `Chronology`):
     /// the chronology companion index -- same status as `bible_position`
@@ -310,7 +312,7 @@ impl GraphService {
         red_letter: Option<&atlas_etl::red_letter::RedLetterCorpus>,
     ) -> anyhow::Result<Self> {
         let (graph, stats, event_world_stats, chrono) =
-            build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter)?;
+            build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter, None)?;
         let red_letter_spans: HashMap<String, Vec<(usize, usize)>> = match red_letter {
             Some(corpus) => {
                 let (_, verses) = atlas_etl::kjv::parse(kjv_json).context("parsing the KJV source (kjv.json) for the red-letter span table")?;
@@ -444,6 +446,13 @@ impl GraphService {
         let concord_position = graph
             .reading
             .get(crate::concord_adapter::CONCORD_CORPUS)
+            .map(|spine| spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect())
+            .unwrap_or_default();
+        // SVEB-1: the same one-time reverse-index build, over the
+        // "svebilius" spine.
+        let svebilius_position = graph
+            .reading
+            .get(crate::svebilius_adapter::SVEBILIUS_CORPUS)
             .map(|spine| spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect())
             .unwrap_or_default();
         // M-C (map migration): the era_ids/polity_ids companion
@@ -585,6 +594,7 @@ impl GraphService {
             snapshot,
             bible_position,
             concord_position,
+            svebilius_position,
             stats,
             chronology,
             event_world_stats,
@@ -631,6 +641,11 @@ impl GraphService {
     /// "concord" spine's own starting index.
     pub fn concord_position_of(&self, part: u8, article: u16, paragraph: u16) -> Option<usize> {
         self.concord_position.get(&crate::concord_adapter::text_unit_id(part, article, paragraph)).copied()
+    }
+
+    /// SVEB-1: the same lookup over the Svebilius spine.
+    pub fn svebilius_position_of(&self, section: u8, unit: u16) -> Option<usize> {
+        self.svebilius_position.get(&crate::svebilius_adapter::text_unit_id(section, unit)).copied()
     }
 
     /// The (start, n) window covering exactly one chapter -- `scope=chapter`'s

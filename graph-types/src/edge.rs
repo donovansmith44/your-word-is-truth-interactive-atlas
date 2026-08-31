@@ -284,8 +284,50 @@ pub enum Namesake {
 pub struct CatechismLink {
     pub locus: TextLocus,
     pub item: CatechismItemId,
+    /// SVEB-1: WHICH topical grouping this citation came from, when it came
+    /// from one at all (`None` for Luther's own item-level embedded
+    /// citations, which belong to no topic by construction).
+    ///
+    /// This field is the repair of a documented gap. `catechism_adapter`'s
+    /// own header used to read: "`catechism-link` is a flat, symmetric,
+    /// locus <-> item relation ... with NO ROOM FOR A QUESTION TAG", and so
+    /// 7,251 curated topic-attributed citations collapsed to 6,531
+    /// item-to-verse rows -- 740 dropped outright as duplicates, and the
+    /// topic lost on every survivor. Making room here (rather than minting
+    /// a new relation) keeps the vocabulary unchanged and widens the dedup
+    /// key from (locus, item) to (locus, item, topic), which is what
+    /// actually recovers the dropped rows.
+    pub topic: Option<crate::id::CatechismTopicId>,
     pub provenance: ProvenanceId,
     pub justification: Justification,
+}
+
+/// PARTS-1: a citation attached to a chief PART rather than to one of its
+/// items.
+///
+/// A separate row table rather than making `CatechismLink.item` optional:
+/// every existing consumer of `CatechismLink` reads `row.item` on the
+/// assumption it is there, and loosening that to satisfy new content would
+/// push an `Option` through code that has no business handling one. The
+/// two tables lower into the SAME symmetric `catechism-link` relation, so
+/// traversal does not care which table a row came from.
+#[derive(Clone, Debug)]
+pub struct CatechismPartLink {
+    pub locus: TextLocus,
+    pub part: crate::id::CatechismPartId,
+    /// Which part-overview topic gathered this citation, when one did.
+    pub topic: Option<crate::id::CatechismTopicId>,
+    pub provenance: ProvenanceId,
+    pub justification: Justification,
+}
+
+/// PARTS-1: the structural part -> item edge, so a part can be walked down
+/// into its own items (and an item back up to its part).
+#[derive(Clone, Debug)]
+pub struct CatechismMembership {
+    pub part: crate::id::CatechismPartId,
+    pub item: CatechismItemId,
+    pub provenance: ProvenanceId,
 }
 
 /// KRETZ-1: one verse-anchored commentary unit's target -- the unit's

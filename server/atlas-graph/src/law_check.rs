@@ -233,6 +233,7 @@ mod tests {
     fn red_when_a_catechism_link_row_names_an_item_with_no_node() {
         let mut graph = Graph::default();
         graph.catechism.push(atlas_graph_types::edge::CatechismLink {
+            topic: None,
             locus: locus(),
             item: atlas_graph_types::id::CatechismItemId::new("nowhere"),
             provenance: "test".into(),
@@ -397,6 +398,7 @@ mod tests {
         assert_eq!(item_id.kind, NodeKind::CatechismItem);
         graph.nodes.insert(item_id.clone(), Node { id: item_id.clone(), payload: NodePayload::CatechismItem { label: "The First Commandment".into() }, provenance: "test".into() });
         graph.catechism.push(atlas_graph_types::edge::CatechismLink {
+            topic: None,
             locus: locus(),
             item: atlas_graph_types::id::CatechismItemId::new("commandment-1"),
             provenance: "test".into(),

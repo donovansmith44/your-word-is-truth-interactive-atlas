@@ -1,0 +1,71 @@
+# PARTS-1: the PART-level half of the brain-fuel/catechism mapping.
+#
+# `catechism-mapping.toml` (Batch F2) maps 37 of the repo's ~45
+# `resources/*.yaml` files to individual `catechism.toml` ITEMS. It also
+# lists, by name, the seven it DEFERRED -- every one of them for the same
+# structural reason: the questions in those files belong to a whole chief
+# part, or to no part of `catechism.toml` at all, and there was nowhere for
+# a part-level citation to attach. That file's own header says it plainly:
+# "no existing item to attach to", "part-overview content, not one
+# commandment".
+#
+# This file closes that gap. Chief parts are graph NODES now
+# (`NodePayload::CatechismPart`), so part-level questions have an owner.
+#
+# TWO KINDS OF ROW:
+#   `part = "<id>"` alone      -- attaches to a chief part `catechism.toml`
+#                                 already defines. Validated: the id must
+#                                 exist there.
+#   `part` + `title`           -- DECLARES a part `catechism.toml` does not
+#                                 define, and attaches to it. These
+#                                 materialize as `CatechismPart { curated:
+#                                 false }`, so the six chief parts Luther
+#                                 numbered stay distinguishable on the node
+#                                 itself from the sections this app adds to
+#                                 give real content a home.
+#
+# WHY THE FOUR NON-CURATED PARTS ARE HONEST, not invented scaffolding:
+# Luther's Small Catechism is larger than the six chief parts
+# `catechism.toml` scopes itself to. Daily Prayers and the Table of Duties
+# are genuine sections of the work -- the Book of Concord's own Small
+# Catechism carries them as articles 8 and 9 (see
+# `concord-sc-overlap.toml`'s own header, which names them as having "no
+# CatechismItem counterpart at all"). "What Is Christianity" and "The Means
+# of Grace" are the brain-fuel repo's own topical framing rather than
+# Luther's, and are marked non-curated for exactly that reason.
+
+# --- part-overview files for the three chief parts that have one ---------
+
+[[file]]
+path = "resources/02.0-The-Ten-Commandments.yaml"
+part = "ten-commandments"
+
+[[file]]
+path = "resources/03.0-The-Apostles'-Creed.yaml"
+part = "creed"
+
+[[file]]
+path = "resources/04.0-The-Lord's-Prayer.yaml"
+part = "lords-prayer"
+
+# --- sections this app materializes so their content has a home ----------
+
+[[file]]
+path = "resources/01-What-Is-Christianity.yaml"
+part = "what-is-christianity"
+title = "What Is Christianity"
+
+[[file]]
+path = "resources/05.0-The-Means-of-Grace.yaml"
+part = "means-of-grace"
+title = "The Means of Grace"
+
+[[file]]
+path = "resources/06-Daily-Prayers.yaml"
+part = "daily-prayers"
+title = "Daily Prayers"
+
+[[file]]
+path = "resources/07-The-Table-of-Duties.yaml"
+part = "table-of-duties"
+title = "The Table of Duties"

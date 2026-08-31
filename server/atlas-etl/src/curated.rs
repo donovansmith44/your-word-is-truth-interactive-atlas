@@ -853,9 +853,54 @@ pub fn parse_catechism(input: &str) -> Result<Vec<CatechismPart>> {
                 questions: Vec::new(),
             });
         }
-        parts.push(CatechismPart { id: p.id, title: p.title, items });
+        // PARTS-1: part-level questions are merged in separately by
+        // compile.rs, from catechism-part-mapping.toml -- always empty
+        // here, the same shape the items' own `questions` already follow.
+        parts.push(CatechismPart { id: p.id, title: p.title, items, questions: Vec::new(), curated: true });
     }
     Ok(parts)
+}
+
+// --- PARTS-1: catechism-part-mapping.toml ----------------------------------
+
+#[derive(Deserialize)]
+struct PartMappingFileToml {
+    file: Vec<PartMappingRowToml>,
+}
+
+#[derive(Deserialize)]
+struct PartMappingRowToml {
+    path: String,
+    part: String,
+    #[serde(default)]
+    title: Option<String>,
+}
+
+/// One row of `catechism-part-mapping.toml`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PartMappingRow {
+    pub path: String,
+    pub part: String,
+    /// `Some` DECLARES a part `catechism.toml` does not define; `None`
+    /// attaches to a chief part it already does.
+    pub declares_title: Option<String>,
+}
+
+/// Parses `catechism-part-mapping.toml`. Structural checks only -- whether
+/// a `part` without a `title` actually exists in `catechism.toml` needs the
+/// full roster, and is `validate::run_catechism_parts`'s job (the same
+/// split `parse_catechism`/`validate::run_catechism` already use).
+pub fn parse_catechism_part_mapping(input: &str) -> Result<Vec<PartMappingRow>> {
+    let f: PartMappingFileToml = toml::from_str(input)
+        .context("catechism-part-mapping.toml: invalid TOML or does not match the [[file]] schema")?;
+    let mut out = Vec::with_capacity(f.file.len());
+    for r in f.file {
+        if r.part.trim().is_empty() {
+            bail!("catechism-part-mapping.toml: '{}' has an empty part id", r.path);
+        }
+        out.push(PartMappingRow { path: r.path, part: r.part, declares_title: r.title });
+    }
+    Ok(out)
 }
 
 // --- Batch F2: catechism-mapping.toml (requirement 3) + catechism-deut5.toml (requirement 5b) ---

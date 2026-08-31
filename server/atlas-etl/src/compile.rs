@@ -447,9 +447,48 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     catechism_map::merge_questions_into_parts(&mut catechism, catechism_questions_by_item)
         .context("data/compiled/catechism.json was NOT written; fix data/curated/catechism-mapping.toml or data/curated/catechism-deut5.toml (an item id doesn't match catechism.toml)")?;
 
+    // --- PARTS-1: the seven files Batch F2 deferred ----
+    // Each names a chief part rather than an item. Rows that DECLARE a
+    // part (a `title`) materialize a non-curated one; rows without attach
+    // to a part catechism.toml already defines.
+    let part_rows = curated::parse_catechism_part_mapping(&read(&curated_dir.join("catechism-part-mapping.toml"))?)?;
+    for row in &part_rows {
+        if let Some(title) = &row.declares_title {
+            if !catechism.iter().any(|p| p.id == row.part) {
+                catechism.push(atlas_core::data::CatechismPart {
+                    id: row.part.clone(),
+                    title: title.clone(),
+                    items: Vec::new(),
+                    questions: Vec::new(),
+                    curated: false,
+                });
+            }
+        }
+    }
+    let part_questions_by_part =
+        catechism_map::build_part_questions_from_mapping(&part_rows, &catechism_mapping_root, &data.verses)
+            .context("reading the part-level brain-fuel/catechism resource files")?;
+    let mut part_questions = 0usize;
+    for (part_id, questions) in part_questions_by_part {
+        part_questions += questions.len();
+        match catechism.iter_mut().find(|p| p.id == part_id) {
+            // Unreachable in practice -- a row either names an existing
+            // part or declares one just above -- but a silent drop here
+            // would lose real citations, so it bails like every other
+            // merge in this crate.
+            None => bail!("catechism-part-mapping.toml: no part '{part_id}' to attach part-level questions to"),
+            Some(part) => part.questions.extend(questions),
+        }
+    }
+    validate::run_catechism_parts(&catechism, &part_rows, &data.verses).context(
+        "data/compiled/catechism.json was NOT written; fix data/curated/catechism-part-mapping.toml and re-run",
+    )?;
+
     validate::run_catechism(&catechism, &data.verses)
         .context("data/compiled/catechism.json was NOT written; fix data/curated/catechism.toml and re-run")?;
     let catechism_items_count: usize = catechism.iter().map(|p| p.items.len()).sum();
+    let catechism_part_questions = part_questions;
+    let catechism_noncurated_parts = catechism.iter().filter(|p| !p.curated).count();
 
     let mut catechism_distinct_verse_set: HashSet<&str> = HashSet::new();
     let mut catechism_items_reachable = 0usize;
@@ -488,6 +527,8 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         land_mask_points,
         catechism_parts: catechism_parts_count,
         catechism_items: catechism_items_count,
+        catechism_noncurated_parts,
+        catechism_part_questions,
         catechism_items_reachable,
         catechism_distinct_verses,
         catechism_per_part,

@@ -323,5 +323,47 @@ resolver = "2"
 # `parse_edge_kind`'s own doc comment, `graph_wire.rs:146-149`) are
 # doc/comment-only, no behavior change, no new tests.
 #
-# CURRENT CANONICAL: 971 (947 + 24) across 49 sections.
+# Batch SVEB-1 (2026-08-30, Svebilius' Catechism as a third corpus +
+# topical catechism edges): moved to 991 (966 + 25) across 55 sections.
+#
+# Workspace +19 across +5 sections:
+#   - `svebilius::` parser unit tests (10) and the new
+#     `tests/svebilius_real_data.rs` real-data section (5), which pins the
+#     parse against the actual vendored file: 314 Q&A units, the source's
+#     own numbering gap at section 4, and the one unresolved citation
+#     (`Ps 41:14` -- real, not a parse failure: KJV Psalm 41 has 13 verses;
+#     verse 14 exists only in the Hebrew/Vulgate numbering this 1745
+#     Finnish translation follows, so it is DISCLOSED rather than forced).
+#   - `svebilius_adapter::` module tests (4).
+#   - `graph-types` gains nothing here; its +1 is below.
+#   Net of those: three pre-existing tests were UPDATED rather than added
+#   (see their own doc comments) because this batch changed the laws they
+#   encoded -- the catechism dedup key, the item's own frontier, and the
+#   artifact dump guard (whose `quotes` relation this batch serializes, so
+#   it was re-pointed at `confesses`, still unserialized).
+#
+# `atlas-graph-types` +1 (24 -> 25):
+#   `topic_rows_do_not_multiply_the_structural_catechism_edges`, pinning
+#   the three multiplicity laws the topic endpoint introduced -- verse<->
+#   item once per (verse,item), item<->topic once per (item,topic),
+#   verse<->topic once per citation. Both duplication bugs it guards
+#   survived the compile, both ADMISSION passes AND the byte round-trip;
+#   only reading the real neighbour list exposed them.
+#
+# NOT counted here, deliberately: an earlier `tests/svebilius_report.rs`
+# was written to extract harvest numbers and then DELETED -- it asserted
+# nothing, always passed, and would have inflated this count with a
+# printout while adding ~24s to every full run.
+#
+# PARTS-1 (2026-08-30, chief parts as graph nodes + the seven deferred
+# part-level resource files): moved to 995 (970 + 25) across 55 sections.
+# Four new tests, no section added: one in atlas-etl (a part carrying only
+# part-level questions is valid -- the other half of the widened
+# empty-part law) and three in atlas-graph's catechism_adapter (a part is
+# a node carrying `curated`; part-level citations do not collapse into the
+# item's own rows; part and item topic ids cannot collide).
+# CURRENT CANONICAL: 995 (970 + 25) across 55 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
+# AQC fixtures REGENERATED this batch (19 files) -- diff is version + count
+# only, no shape drift; `focus-catechismitem` moves 207 -> 225 as the topic
+# edges land.

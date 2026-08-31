@@ -69,6 +69,9 @@ fn real_graph() -> &'static atlas_graph_types::graph::Graph {
             Some(&concord_bundle),
             Some(&kretzmann_corpus),
             Some(&red_letter_corpus),
+            // SVEB-1: this suite exercises the red-letter adapter, not
+            // Svebilius -- None is the honest input, not a gap.
+            None,
         )
         .expect("the real committed sources must build");
         graph.build_indexes();

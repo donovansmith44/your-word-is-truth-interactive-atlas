@@ -65,7 +65,8 @@ Land mask (Batch R requirement 1):
   6 region(s), 6 ring(s), 135 points total
 
 Catechism (Batch F, extended Batch F2):
-  6 chief part(s), 33 item(s) total
+  10 chief part(s), 33 item(s) total
+  4 of those part(s) are non-curated (materialized here, not in catechism.toml); 79 part-level question(s)
   33/33 items reachable from >=1 verse (was 6/33 before Batch F2's own repo mapping + Deut5 supplement)
   4828 distinct verse(s) link into the catechism
     The Ten Commandments: 11/11 reachable
@@ -74,3 +75,7 @@ Catechism (Batch F, extended Batch F2):
     The Sacrament of Holy Baptism: 4/4 reachable
     Confession: 2/2 reachable
     The Sacrament of the Altar: 4/4 reachable
+    What Is Christianity: 0/0 reachable
+    The Means of Grace: 0/0 reachable
+    Daily Prayers: 0/0 reachable
+    The Table of Duties: 0/0 reachable

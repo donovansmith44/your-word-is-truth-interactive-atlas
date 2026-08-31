@@ -146,6 +146,13 @@ pub struct BuildCtx<'a> {
     /// pinned count), and every real caller
     /// already has one living for the duration of the build.
     pub kretzmann: Option<&'a atlas_etl::kretzmann::KretzmannCorpus>,
+    /// SVEB-1: `atlas_etl::svebilius::read_all`'s own parsed units -- the
+    /// SAME "absent == an honestly empty build, not a placeholder"
+    /// treatment `kretzmann`/`concord`/`brainfuel` above already get. Set
+    /// by the caller AFTER construction (the constructor chain is already
+    /// nine parameters deep; adding a tenth positional would be worse than
+    /// one assignment at the one real call site).
+    pub svebilius: Option<&'a [atlas_etl::svebilius::SvebiliusUnit]>,
     /// RED-1: `atlas_etl::red_letter::read_all`'s own pre-parsed + aligned
     /// corpus -- the SAME "absent == an honestly empty build, not a
     /// placeholder" treatment `kretzmann`/`concord`/`brainfuel` above
@@ -284,6 +291,7 @@ impl<'a> BuildCtx<'a> {
             concord,
             kretzmann,
             red_letter,
+            svebilius: None,
             graph: Graph::default(),
             stats: BuildStats::default(),
             event_world_stats: EventWorldStats::default(),
@@ -326,6 +334,10 @@ impl Pass for NormalizePass {
         // `kjv_adapter::normalize` above already has (module doc comment
         // on `concord_adapter.rs`).
         crate::concord_adapter::normalize(ctx);
+        // SVEB-1: Svebilius' own TextUnit nodes + section containers +
+        // reading spine -- self-contained, the SAME NORMALIZE-eligibility
+        // `concord_adapter::normalize` immediately above has.
+        crate::svebilius_adapter::normalize(ctx);
         // KRETZ-1: the Kretzmann corpus's own Source node + CommentaryItem
         // nodes + comments_on rows -- self-contained (no OTHER pass's
         // output needed first), the SAME NORMALIZE-eligibility `concord_
@@ -380,6 +392,10 @@ impl Pass for MergeAliasPass {
         // MergeAliasPass runs at all (concord_adapter.rs's own module doc
         // comment).
         crate::concord_adapter::merge_alias(ctx);
+        // SVEB-1: the Scripture the Exposition quotes, lowered into
+        // `quotes` rows (see `svebilius_adapter.rs` on why Quotes and not
+        // Confesses).
+        crate::svebilius_adapter::merge_alias(ctx);
         // Batch P: Person.verse_links -> mentions rows, the SAME
         // "legacy-vocabulary boundary crossing" shape place_adapter's own
         // mentions half already is (this stage's own doc comment above).

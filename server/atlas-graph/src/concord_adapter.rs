@@ -232,7 +232,7 @@ pub fn merge_alias(ctx: &mut BuildCtx) -> ConcordAdapterStats {
                 continue;
             }
             let locus: TextLocus = Locus::<ConcordTag>::whole(ConcordRef { part: sc_part, article: row.article, paragraph }).into();
-            ctx.graph.catechism.push(CatechismLink { locus, item: item_id.clone(), provenance: ProvenanceId::from("concord-sc-overlap"), justification: Default::default() });
+            ctx.graph.catechism.push(CatechismLink { locus, item: item_id.clone(), topic: None, provenance: ProvenanceId::from("concord-sc-overlap"), justification: Default::default() });
             stats.sc_overlap_links += 1;
         }
     }
@@ -310,6 +310,8 @@ mod tests {
                 ref_note: None,
                 questions: vec![],
             }],
+            questions: vec![],
+            curated: true,
         }];
         d
     }

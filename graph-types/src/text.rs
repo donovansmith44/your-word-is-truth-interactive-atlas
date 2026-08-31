@@ -72,6 +72,48 @@ impl Corpus for ConcordTag {
     }
 }
 
+/// Svebilius' Catechism — Olaus Svebilius' exposition, in Bishop Daniel
+/// Juslenius' Finnish translation (Skara, 1745), Englished from Tero
+/// Kotti's 2007 edition. SVEB-1.
+///
+/// ROLE: `Reference`, not `NormaNormata`. Luther's Small Catechism is a
+/// confession and lives in the Book of Concord (part 7); Svebilius'
+/// *Simple Exposition* is a teaching work ABOUT it — questions a catechist
+/// asks, not a symbol the church subscribes. The distinction matters here
+/// because `CorpusRole` is what an attestation law would read.
+///
+/// ADDRESSING: `section` is the work's own chief division (1 Preface,
+/// 2 the Law, 3 the Creed, 4 the Lord's Prayer, 5 Baptism, 6 Confession,
+/// 7 the Lord's Supper, 8 the Penitential Psalms, 9 Confession of Sins);
+/// `unit` is the source's OWN question number, which RESTARTS at 1 in each
+/// section (verified across all seven Q&A sections). Two sections are not
+/// question-and-answer at all — 8 is seven psalms quoted whole, 9 is a
+/// single confession formula — and there `unit` is a sequential index over
+/// the section's own prose blocks, disclosed rather than force-fit into a
+/// question number the source never assigns.
+///
+/// The source's numbering is carried FAITHFULLY, gaps included: section 4
+/// (the Lord's Prayer) has 53 questions but numbers running to 54 — the
+/// source itself skips 53. Renumbering to close the gap would silently
+/// disagree with every printed copy, so the gap stands and the parser
+/// reports it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SvebiliusTag;
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SvebiliusRef {
+    pub section: u8,
+    pub unit: u16,
+}
+
+impl Corpus for SvebiliusTag {
+    type Ref = SvebiliusRef;
+    const ID: &'static str = "svebilius";
+    fn cite(r: &Self::Ref) -> String {
+        format!("Sveb {}.{}", r.section, r.unit)
+    }
+}
+
 /// Token indices — necessarily tagged with the layer whose tokenization
 /// they index: verse-level loci are layer-neutral, but a sub-unit span
 /// only means something in one translation's wording.
@@ -145,6 +187,8 @@ where
 
 pub type BibleLocus = Locus<BibleTag>;
 pub type ConcordLocus = Locus<ConcordTag>;
+/// SVEB-1.
+pub type SvebiliusLocus = Locus<SvebiliusTag>;
 
 /// Contiguous same-scheme range, from <= to.
 #[derive(Debug)]
@@ -218,6 +262,8 @@ impl<C: Corpus> Clone for LocusSet<C> {
 pub enum TextRef {
     Bible(VerseRef),
     Concord(ConcordRef),
+    /// SVEB-1.
+    Svebilius(SvebiliusRef),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -234,6 +280,12 @@ impl From<BibleLocus> for TextLocus {
 impl From<ConcordLocus> for TextLocus {
     fn from(l: ConcordLocus) -> Self {
         TextLocus { at: TextRef::Concord(l.unit), span: l.span }
+    }
+}
+
+impl From<SvebiliusLocus> for TextLocus {
+    fn from(l: SvebiliusLocus) -> Self {
+        TextLocus { at: TextRef::Svebilius(l.unit), span: l.span }
     }
 }
 

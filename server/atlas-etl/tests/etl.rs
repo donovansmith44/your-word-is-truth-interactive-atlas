@@ -1259,6 +1259,13 @@ fn catechism_item(id: &str, name: &str, verses: &[&str]) -> atlas_core::data::Ca
     }
 }
 
+/// PARTS-1: the two fields `CatechismPart` gained default the same way
+/// `catechism.toml`'s own parts do -- curated, with no part-level
+/// questions -- so a test that predates them reads unchanged.
+fn catechism_part(id: &str, title: &str, items: Vec<atlas_core::data::CatechismItem>) -> atlas_core::data::CatechismPart {
+    atlas_core::data::CatechismPart { id: id.into(), title: title.into(), items, questions: Vec::new(), curated: true }
+}
+
 fn catechism_question(title: &str, verses: &[&str], source: &str) -> atlas_core::data::CatechismQuestion {
     atlas_core::data::CatechismQuestion {
         title: title.into(),
@@ -1270,8 +1277,8 @@ fn catechism_question(title: &str, verses: &[&str], source: &str) -> atlas_core:
 #[test]
 fn catechism_duplicate_part_id_fails_validation() {
     let parts = vec![
-        atlas_core::data::CatechismPart { id: "dup".into(), title: "A".into(), items: vec![catechism_item("a1", "A1", &[])] },
-        atlas_core::data::CatechismPart { id: "dup".into(), title: "B".into(), items: vec![catechism_item("b1", "B1", &[])] },
+        catechism_part("dup", "A", vec![catechism_item("a1", "A1", &[])]),
+        catechism_part("dup", "B", vec![catechism_item("b1", "B1", &[])]),
     ];
     let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
     assert!(err.to_string().contains("duplicate catechism part"), "{err}");
@@ -1283,8 +1290,8 @@ fn catechism_duplicate_item_id_across_different_parts_fails_validation() {
     // not scoped to a part), so a collision across two DIFFERENT parts must
     // be caught too, not just within one part.
     let parts = vec![
-        atlas_core::data::CatechismPart { id: "p1".into(), title: "P1".into(), items: vec![catechism_item("shared", "A", &[])] },
-        atlas_core::data::CatechismPart { id: "p2".into(), title: "P2".into(), items: vec![catechism_item("shared", "B", &[])] },
+        catechism_part("p1", "P1", vec![catechism_item("shared", "A", &[])]),
+        catechism_part("p2", "P2", vec![catechism_item("shared", "B", &[])]),
     ];
     let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
     assert!(err.to_string().contains("duplicate catechism item"), "{err}");
@@ -1292,29 +1299,35 @@ fn catechism_duplicate_item_id_across_different_parts_fails_validation() {
 
 #[test]
 fn catechism_empty_part_fails_validation() {
-    let parts = vec![atlas_core::data::CatechismPart { id: "empty".into(), title: "Empty".into(), items: vec![] }];
+    let parts = vec![catechism_part("empty", "Empty", vec![])];
     let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
-    assert!(err.to_string().contains("has no items"), "{err}");
+    assert!(err.to_string().contains("neither items nor part-level questions"), "{err}");
+}
+
+/// PARTS-1: the other half of the widened law -- a part carrying only
+/// part-level questions is VALID. Daily Prayers and the Table of Duties
+/// are real sections of the Small Catechism that Luther never divided
+/// into numbered items, so requiring items would have made them
+/// unrepresentable.
+#[test]
+fn catechism_part_with_questions_but_no_items_passes_validation() {
+    let mut part = catechism_part("daily-prayers", "Daily Prayers", vec![]);
+    part.curated = false;
+    part.questions = vec![catechism_question("Morning Prayer", &["PSA.5.3"], "brain-fuel/catechism")];
+    let verses = HashMap::from([("PSA.5.3".to_string(), "My voice shalt thou hear in the morning".to_string())]);
+    atlas_etl::validate::run_catechism(&[part], &verses).expect("items are no longer the only way a part carries content");
 }
 
 #[test]
 fn catechism_verse_missing_from_compiled_kjv_text_fails_validation() {
-    let parts = vec![atlas_core::data::CatechismPart {
-        id: "p".into(),
-        title: "P".into(),
-        items: vec![catechism_item("i1", "I1", &["GEN.99.99"])],
-    }];
+    let parts = vec![catechism_part("p", "P", vec![catechism_item("i1", "I1", &["GEN.99.99"])])];
     let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
     assert!(err.to_string().contains("does not exist in the compiled KJV text"), "{err}");
 }
 
 #[test]
 fn catechism_non_canonical_verse_fails_validation() {
-    let parts = vec![atlas_core::data::CatechismPart {
-        id: "p".into(),
-        title: "P".into(),
-        items: vec![catechism_item("i1", "I1", &["NOT.A.VERSE"])],
-    }];
+    let parts = vec![catechism_part("p", "P", vec![catechism_item("i1", "I1", &["NOT.A.VERSE"])])];
     let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
     assert!(err.to_string().contains("not a canonical single-verse ref"), "{err}");
 }
@@ -1325,7 +1338,7 @@ fn catechism_non_canonical_verse_fails_validation() {
 fn catechism_question_with_verse_missing_from_compiled_text_fails_validation() {
     let mut item = catechism_item("i1", "I1", &[]);
     item.questions = vec![catechism_question("Q1", &["GEN.99.99"], "brain-fuel/catechism")];
-    let parts = vec![atlas_core::data::CatechismPart { id: "p".into(), title: "P".into(), items: vec![item] }];
+    let parts = vec![catechism_part("p", "P", vec![item])];
     let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
     assert!(err.to_string().contains("does not exist in the compiled KJV text"), "{err}");
     assert!(err.to_string().contains("Q1"), "{err}");
@@ -1335,7 +1348,7 @@ fn catechism_question_with_verse_missing_from_compiled_text_fails_validation() {
 fn catechism_question_with_non_canonical_verse_fails_validation() {
     let mut item = catechism_item("i1", "I1", &[]);
     item.questions = vec![catechism_question("Q1", &["NOT.A.VERSE"], "brain-fuel/catechism")];
-    let parts = vec![atlas_core::data::CatechismPart { id: "p".into(), title: "P".into(), items: vec![item] }];
+    let parts = vec![catechism_part("p", "P", vec![item])];
     let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
     assert!(err.to_string().contains("not a canonical single-verse ref"), "{err}");
 }
@@ -1344,7 +1357,7 @@ fn catechism_question_with_non_canonical_verse_fails_validation() {
 fn catechism_question_with_zero_verses_fails_validation() {
     let mut item = catechism_item("i1", "I1", &[]);
     item.questions = vec![catechism_question("Q1", &[], "brain-fuel/catechism")];
-    let parts = vec![atlas_core::data::CatechismPart { id: "p".into(), title: "P".into(), items: vec![item] }];
+    let parts = vec![catechism_part("p", "P", vec![item])];
     let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
     assert!(err.to_string().contains("has zero verses"), "{err}");
 }
@@ -1355,7 +1368,7 @@ fn catechism_valid_questions_pass_validation() {
     verses.insert("MAT.28.19".to_string(), "text".to_string());
     let mut item = catechism_item("i1", "I1", &[]);
     item.questions = vec![catechism_question("Q1", &["MAT.28.19"], "brain-fuel/catechism")];
-    let parts = vec![atlas_core::data::CatechismPart { id: "p".into(), title: "P".into(), items: vec![item] }];
+    let parts = vec![catechism_part("p", "P", vec![item])];
     assert!(atlas_etl::validate::run_catechism(&parts, &verses).is_ok());
 }
 
@@ -1406,6 +1419,8 @@ fn report_contains_expected_sections() {
         land_mask_points: 135,
         catechism_parts: 6,
         catechism_items: 33,
+        catechism_noncurated_parts: 4,
+        catechism_part_questions: 79,
         catechism_items_reachable: 30,
         catechism_distinct_verses: 210,
         catechism_per_part: vec![("The Ten Commandments".to_string(), 11, 11)],

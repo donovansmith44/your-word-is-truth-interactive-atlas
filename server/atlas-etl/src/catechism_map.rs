@@ -57,6 +57,50 @@ pub struct RawQuestion {
     pub refs: Vec<String>,
 }
 
+/// PARTS-1: drops entries a `refs: !!set` block lists MORE THAN ONCE,
+/// returning the normalized text and how many were dropped.
+///
+/// `resources/02.0-The-Ten-Commandments.yaml` question 10 lists
+/// `"1 John 3:4"` twice. `serde_yaml` refuses a mapping with duplicate
+/// keys -- correctly, in general -- and a YAML `!!set` IS a mapping in
+/// YAML's own data model, which is why the file parses nowhere. But a set
+/// that names the same member twice denotes exactly the set that names it
+/// once: dropping the repeat is meaning-preserving, not a relaxed guard.
+/// Everything else stays strict, including the duplicate-key rule for any
+/// mapping that is not a set block.
+///
+/// Scoped deliberately narrowly -- the seen-set resets at each new set
+/// block -- so two different questions citing the same verse (the normal
+/// case, and the whole point of the topical edges) are untouched.
+fn dedupe_set_entries(input: &str) -> (String, usize) {
+    let mut out = String::with_capacity(input.len());
+    let mut seen: std::collections::HashSet<&str> = std::collections::HashSet::new();
+    let mut in_set = false;
+    let mut dropped = 0usize;
+
+    for line in input.lines() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("refs:") {
+            in_set = true;
+            seen.clear();
+        } else if in_set && trimmed.starts_with("? ") {
+            if !seen.insert(trimmed) {
+                dropped += 1;
+                continue;
+            }
+        } else if !trimmed.is_empty() {
+            // Any other non-blank line ends the set block; a blank line
+            // does not, since the real files separate nothing with them
+            // INSIDE a block but do use them between questions.
+            in_set = false;
+        }
+        out.push_str(line);
+        out.push('\n');
+    }
+
+    (out, dropped)
+}
+
 /// Parses one `resources/*.yaml` file's own numbered-entry shape: a
 /// top-level mapping from a bare integer key (`1`, `2`, ...) to
 /// `{ title: string, refs: !!set of string }`. Deserializes via
@@ -73,7 +117,11 @@ pub struct RawQuestion {
 /// happens to be); each question's own `refs` are returned in the file's
 /// insertion order (serde_yaml preserves YAML mapping order).
 pub fn parse_yaml_questions(input: &str) -> Result<Vec<RawQuestion>> {
-    let doc: serde_yaml::Value = serde_yaml::from_str(input).context("invalid YAML")?;
+    let (normalized, repeats) = dedupe_set_entries(input);
+    if repeats > 0 {
+        eprintln!("CATECHISM YAML: dropped {repeats} repeated `!!set` ref entr(ies) -- see dedupe_set_entries");
+    }
+    let doc: serde_yaml::Value = serde_yaml::from_str(&normalized).context("invalid YAML")?;
     let top = doc.as_mapping().context("expected a top-level YAML mapping of question-number -> {title, refs}")?;
 
     let mut out = Vec::with_capacity(top.len());
@@ -526,6 +574,44 @@ pub fn build_questions_from_mapping(
     Ok(by_item)
 }
 
+/// PARTS-1: the part-level twin of `build_questions_from_mapping`.
+///
+/// Same files, same YAML shape, same `canonicalize_ref` bar -- the only
+/// difference is the key. These seven files' questions belong to a whole
+/// chief part rather than to any one item, which is precisely why Batch F2
+/// deferred them; the returned map is keyed by PART id.
+pub fn build_part_questions_from_mapping(
+    rows: &[crate::curated::PartMappingRow],
+    mapping_root: &Path,
+    verses: &HashMap<String, String>,
+) -> Result<HashMap<String, Vec<CatechismQuestion>>> {
+    let mut by_part: HashMap<String, Vec<CatechismQuestion>> = HashMap::new();
+
+    for row in rows {
+        let full_path = mapping_root.join(&row.path);
+        let yaml = std::fs::read_to_string(&full_path).with_context(|| {
+            format!("reading {} (catechism-part-mapping.toml row for '{}')", full_path.display(), row.path)
+        })?;
+        let raw_questions = parse_yaml_questions(&yaml).with_context(|| format!("parsing {}", full_path.display()))?;
+
+        for rq in raw_questions {
+            let mut verse_list = Vec::new();
+            for r in &rq.refs {
+                let expanded = canonicalize_ref(r, verses)
+                    .with_context(|| format!("{} question {} ('{}')", row.path, rq.number, rq.title))?;
+                verse_list.extend(expanded);
+            }
+            by_part.entry(row.part.clone()).or_default().push(CatechismQuestion {
+                title: rq.title,
+                verses: verse_list,
+                source: "brain-fuel/catechism".to_string(),
+            });
+        }
+    }
+
+    Ok(by_part)
+}
+
 /// Merges `by_item` (from `build_questions_from_mapping`, and/or the
 /// Deut5 supplement's own equivalent map) into `parts` -- assigns each
 /// target item's own `questions` field. Fails loudly if any target item id
@@ -859,6 +945,8 @@ mod tests {
                     questions: vec![],
                 },
             ],
+            questions: vec![],
+            curated: true,
         }]
     }
 

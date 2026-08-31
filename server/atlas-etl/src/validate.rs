@@ -824,8 +824,14 @@ pub fn run_catechism(parts: &[CatechismPart], verses: &HashMap<String, String>) 
     };
 
     for part in parts {
-        if part.items.is_empty() {
-            errors.push(format!("catechism part '{}' has no items", part.id));
+        // PARTS-1: a part must carry SOMETHING -- but "something" is no
+        // longer necessarily items. Daily Prayers and the Table of Duties
+        // are genuine sections of the Small Catechism that Luther did not
+        // divide into numbered items at all; they carry part-level
+        // questions instead. An empty part is still an error; a part with
+        // questions and no items is not.
+        if part.items.is_empty() && part.questions.is_empty() {
+            errors.push(format!("catechism part '{}' has neither items nor part-level questions", part.id));
         }
         for item in &part.items {
             let ctx = format!("catechism item '{}' ({})", item.id, item.name);
@@ -849,6 +855,67 @@ pub fn run_catechism(parts: &[CatechismPart], verses: &HashMap<String, String>) 
     }
     let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
     bail!("catechism validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// PARTS-1: validates the part-level mapping
+/// (`data/curated/catechism-part-mapping.toml`) after `compile.rs` has
+/// merged it onto the part roster.
+///
+/// Three laws:
+/// 1. **A row without a `title` must name a part that exists.** That row
+///    form means "attach to a chief part `catechism.toml` already
+///    defines"; if it does not, the id is a typo and the questions would
+///    silently attach to nothing.
+/// 2. **A row WITH a `title` must NOT name an existing part.** That form
+///    DECLARES a new one; colliding with a curated chief part would
+///    silently rename it.
+/// 3. **Every part-level question cites at least one real verse**, the
+///    same bar `run_catechism` already holds item-level questions to.
+pub fn run_catechism_parts(
+    parts: &[CatechismPart],
+    rows: &[crate::curated::PartMappingRow],
+    verses: &HashMap<String, String>,
+) -> Result<()> {
+    let mut errors: Vec<String> = Vec::new();
+    let curated: HashSet<&str> = parts.iter().filter(|p| p.curated).map(|p| p.id.as_str()).collect();
+
+    for r in rows {
+        match &r.declares_title {
+            None if !curated.contains(r.part.as_str()) => errors.push(format!(
+                "catechism-part-mapping.toml: '{}' attaches to part '{}', which catechism.toml does not define -- add a `title` to DECLARE it, or fix the id",
+                r.path, r.part
+            )),
+            Some(title) if curated.contains(r.part.as_str()) => errors.push(format!(
+                "catechism-part-mapping.toml: '{}' declares part '{}' with title '{}', but catechism.toml already defines that part -- drop the `title` to attach to it",
+                r.path, r.part, title
+            )),
+            _ => {}
+        }
+    }
+
+    for part in parts {
+        for q in &part.questions {
+            let ctx = format!("catechism part '{}' ({}) question '{}'", part.id, part.title, q.title);
+            if q.verses.is_empty() {
+                errors.push(format!("{ctx}: has zero verses -- every question must cite at least one"));
+            }
+            for v in &q.verses {
+                match VerseId::parse_canonical(v) {
+                    Err(err) => errors.push(format!("{ctx}: verse '{v}' is not a canonical single-verse ref: {err}")),
+                    Ok(_) if !verses.contains_key(v) => {
+                        errors.push(format!("{ctx}: verse '{v}' parses but does not exist in the compiled KJV text"))
+                    }
+                    Ok(_) => {}
+                }
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        return Ok(());
+    }
+    let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("catechism part validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
 /// Batch HOTFIX-2 fix-round-1 (review findings I-1, I-3): validates

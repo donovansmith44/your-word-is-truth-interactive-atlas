@@ -154,6 +154,40 @@ pub enum NodePayload {
     /// "Ptolemaic Egypt").
     Polity { label: String, color_key: u8, eras: Vec<PolityEraPayload> },
     CatechismItem { label: String },
+    /// SVEB-1: one TOPICAL grouping of proof texts under a catechism item
+    /// -- the brain-fuel/catechism repo's own per-question titles ("Worship
+    /// God Alone", "Fear, Love, and Trust in God"), 574 of them.
+    ///
+    /// WHY THIS IS A NODE AND NOT AN EDGE TAG: before this batch the topic
+    /// did not survive onto the graph at all. `catechism_adapter`'s own doc
+    /// comment said so plainly -- `catechism-link` is "a flat, symmetric,
+    /// locus <-> item relation ... with no room for a question tag" -- so
+    /// 7,251 curated topic-attributed citations collapsed into 6,531
+    /// item-to-verse rows, losing 740 outright and losing the topic on all
+    /// of them. Making the topic a NODE (item `contains` topic, topic
+    /// `cites` verse) restores every citation with its attribution and, as
+    /// the point of the exercise, makes the topic itself traversable from
+    /// both ends: "what does this topic gather" and "which topics does this
+    /// verse serve".
+    ///
+    /// `source` is the provenance tag the curated data already carries
+    /// ("brain-fuel/catechism" or "deut5-parallel"), kept on the node so a
+    /// topic never loses which mapping authored it.
+    CatechismTopic { label: String, source: String },
+    /// PARTS-1: one chief part. `curated` is false for a part this app
+    /// materializes for content that has no `catechism.toml` counterpart
+    /// (the appendices, and the brain-fuel repo's own topical sections) --
+    /// disclosed on the node itself rather than inferred, so a reader can
+    /// always tell Luther's own six chief parts from the extras.
+    CatechismPart { label: String, curated: bool },
+    /// SVEB-1: one addressable unit of Svebilius' Catechism -- a numbered
+    /// question with its answer in the seven Q&A sections, or one prose
+    /// block in the two that are not Q&A (see `text::SvebiliusTag`). The
+    /// question and its answer are ONE node, the same "one catechetical
+    /// unit is one thing" call `catechism.toml` already makes for
+    /// text+explanation and the Concord parser makes for its own
+    /// question/answer sub-lettering.
+    SvebiliusUnit { question: Option<String>, answer: String },
     /// KRETZ-1 (owner order 2026-08-24: "pull kretzmann commentary
     /// (public domain version) into our corpora"; ruled the ANNOTATION
     /// shape: "a comprehensive commentary without the verses interleaved
@@ -235,6 +269,15 @@ pub fn card(n: &dyn NodeData) -> Card {
         | NodePayload::PeopleGroup { label, .. } => label.clone(),
         NodePayload::CommentaryItem { heading, .. } => {
             heading.clone().unwrap_or_else(|| "Commentary".to_string())
+        }
+        NodePayload::CatechismTopic { label, .. } | NodePayload::CatechismPart { label, .. } => label.clone(),
+        // SVEB-1: the question IS the label where there is one. The two
+        // non-Q&A sections (psalms, the confession formula) have no
+        // question, and fall back to their answer prose -- truncation is
+        // the caller's business, the same way CommentaryItem leaves its
+        // own long `text` to the renderer.
+        NodePayload::SvebiliusUnit { question, answer } => {
+            question.clone().unwrap_or_else(|| answer.clone())
         }
         NodePayload::Place { canonical, .. } => canonical.clone(),
         NodePayload::Anchor { citation, .. } => citation.clone(),

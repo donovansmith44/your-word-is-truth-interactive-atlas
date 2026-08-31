@@ -6,10 +6,17 @@
 # file, naming the catechism item (data/curated/catechism.toml, [[part.item]]
 # id) its own numbered questions attach to.
 #
-# 37 of the repo's ~45 files are ingested here. 7 are DELIBERATELY DEFERRED
+# 37 of the repo's ~45 files are ingested here. 7 were DELIBERATELY DEFERRED
 # (fetched -- data/raw/ carries all of them -- but not modeled as questions
 # this batch, same disclosed-not-forgotten treatment Batch F already gave
-# the Preface/Daily-Prayers/Table-of-Duties appendices):
+# the Preface/Daily-Prayers/Table-of-Duties appendices).
+#
+# PARTS-1 (2026-08-30) CLOSED that deferral: every one of the seven is now
+# ingested by `catechism-part-mapping.toml`, which attaches them to chief
+# PARTS rather than to items -- parts are graph nodes now
+# (`NodePayload::CatechismPart`), so the "no existing item to attach to"
+# reason each row gives below no longer holds. The list stays here, with
+# its original reasons intact, because it records WHY they waited:
 #   - resources/01-What-Is-Christianity.yaml       (no existing item to attach to)
 #   - resources/02.0-The-Ten-Commandments.yaml      (part-overview content, not one commandment)
 #   - resources/03.0-The-Apostles'-Creed.yaml       (part-overview content, not one article)

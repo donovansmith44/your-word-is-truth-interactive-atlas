@@ -291,6 +291,22 @@ fn parse_ref(raw: &str, scope: &str) -> Result<(u8, u16, Option<u16>), ApiError>
 /// hundreds) for a single server-derived span to mean the same thing
 /// `scope=chapter` means for the Bible; `n` always governs, the same as
 /// every other non-chapter-scoped window.
+/// SVEB-1: `ref` is `SvebiliusTag::cite`'s own citation form,
+/// `"Sveb {section}.{unit}"` (e.g. `"Sveb 2.14"`) -- the same
+/// prefix-plus-dotted-numerals shape `parse_concord_ref` reads, and for
+/// the same reason: the citation form the corpus itself prints is the one
+/// a URL should carry.
+fn parse_svebilius_ref(raw: &str) -> Result<(u8, u16), ApiError> {
+    let rest = raw.strip_prefix("Sveb ").ok_or_else(|| ApiError::bad_ref(raw))?;
+    let mut parts = rest.split('.');
+    let section: u8 = parts.next().and_then(|s| s.parse().ok()).ok_or_else(|| ApiError::bad_ref(raw))?;
+    let unit: u16 = parts.next().and_then(|s| s.parse().ok()).ok_or_else(|| ApiError::bad_ref(raw))?;
+    if parts.next().is_some() {
+        return Err(ApiError::bad_ref(raw));
+    }
+    Ok((section, unit))
+}
+
 fn parse_concord_ref(raw: &str) -> Result<(u8, u16, u16), ApiError> {
     let rest = raw.strip_prefix("BoC ").ok_or_else(|| ApiError::bad_ref(raw))?;
     let mut parts = rest.split('.');
@@ -363,13 +379,20 @@ pub async fn text_window(
     // behavior; `concord` is the one other corpus `/api/text` now serves,
     // through this SAME route (design doc §6; no new bespoke endpoint).
     let corpus = params.get("corpus").map(String::as_str).unwrap_or("bible");
-    if corpus != "bible" && corpus != "concord" {
+    // SVEB-1: the third corpus this route serves, through the SAME route
+    // (design doc S6; no bespoke endpoint per corpus).
+    if corpus != "bible" && corpus != "concord" && corpus != "svebilius" {
         return Err(ApiError::bad_corpus(corpus));
     }
 
     if scope == "chapter" && dir_raw == Some("backward") {
         return Err(ApiError::bad_dir(
             "dir=backward is not supported with scope=chapter -- a chapter-scoped window's bounds are already fully determined by the chapter itself, so there is no direction left to walk; omit dir, or use dir=onward, or drop scope=chapter and anchor on a specific verse instead",
+        ));
+    }
+    if corpus == "svebilius" && scope == "chapter" {
+        return Err(ApiError::bad_dir(
+            "scope=chapter is not supported with corpus=svebilius -- a Svebilius section's own unit count varies too widely for one server-derived span (12 in the Preface, 90 in the Creed); omit scope and set n explicitly instead",
         ));
     }
     if corpus == "concord" && scope == "chapter" {
@@ -384,6 +407,45 @@ pub async fn text_window(
     };
 
     let snap = graph.snapshot();
+
+    if corpus == "svebilius" {
+        let (section, unit) = parse_svebilius_ref(raw_ref)?;
+        let start = graph
+            .svebilius_position_of(section, unit)
+            .ok_or_else(|| ApiError::not_found("svebilius unit"))?;
+        let n = params.get("n").and_then(|s| s.parse::<usize>().ok()).unwrap_or(1).clamp(1, 500);
+
+        let ids = window::window(&snap, atlas_graph::svebilius_adapter::SVEBILIUS_CORPUS, start, n, dir);
+        let units: Vec<TextUnitOut> = ids
+            .iter()
+            .filter_map(|id| {
+                let (sec, u) = atlas_graph::svebilius_adapter::decode_text_unit(id)?;
+                let text = window::render_layer(&snap, id, atlas_graph::svebilius_adapter::SVEBILIUS_TRANSLATION)?;
+                Some(TextUnitOut { sref: format!("Sveb {sec}.{u}"), text, words_of_christ: Vec::new() })
+            })
+            .collect();
+
+        let unit_at = |pos: usize| {
+            snap.reading_window(atlas_graph::svebilius_adapter::SVEBILIUS_CORPUS, pos, 1)
+                .into_iter()
+                .next()
+                .and_then(|id| atlas_graph::svebilius_adapter::decode_text_unit(&id))
+                .map(|(sec, u)| format!("Sveb {sec}.{u}"))
+        };
+        let next = match dir {
+            WindowDir::Onward => unit_at(start + units.len()),
+            WindowDir::Backward => {
+                let window_start = window::resolved_start(start, n, dir);
+                if window_start == 0 {
+                    None
+                } else {
+                    unit_at(window_start - 1)
+                }
+            }
+        };
+        let body = Json(TextWindowOut { units, next, version: atlas_graph::version_hex(graph.version()) });
+        return Ok(([(header::ETAG, etag)], body).into_response());
+    }
 
     if corpus == "concord" {
         let (part, article, paragraph) = parse_concord_ref(raw_ref)?;

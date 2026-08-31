@@ -29,6 +29,9 @@ pub struct Graph {
     // -------- authored --------
     pub contains_bible: Vec<Contains<BibleTag>>,
     pub contains_concord: Vec<Contains<crate::text::ConcordTag>>,
+    /// SVEB-1: the THIRD `Contains<C>` instantiation -- Svebilius' own
+    /// section containers over its units. Same shape as the two above.
+    pub contains_svebilius: Vec<Contains<crate::text::SvebiliusTag>>,
     pub attests: Vec<Attests>,
     pub succession: Vec<Succession>,
     pub dated_by: Vec<DatedBy>,
@@ -37,6 +40,11 @@ pub struct Graph {
     pub typology: Vec<Typology>,
     pub named_after: Vec<NamedAfter>,
     pub catechism: Vec<CatechismLink>,
+    /// PARTS-1: citations attached to a chief PART rather than an item,
+    /// plus the structural part -> item membership. Both lower into the
+    /// same symmetric `catechism-link` relation as `catechism` above.
+    pub catechism_part: Vec<crate::edge::CatechismPartLink>,
+    pub catechism_membership: Vec<crate::edge::CatechismMembership>,
     /// KRETZ-1: verse-anchored commentary targets (annotation shape;
     /// the units themselves are CommentaryItem nodes).
     pub comments_on: Vec<CommentsOn>,
@@ -72,11 +80,20 @@ pub struct Graph {
     pub pid_index: BTreeMap<crate::id::Pid, AnyNodeId>,
 }
 
+/// SVEB-1: the same mapping `text_node` performs, exposed for tests that
+/// need to name a locus's own node id (see `tests.rs`'s own
+/// `topic_rows_do_not_multiply_the_structural_catechism_edges`).
+#[cfg(test)]
+pub fn text_node_for_test(l: &TextLocus) -> AnyNodeId {
+    text_node(l)
+}
+
 fn text_node(kind_hint: &TextLocus) -> AnyNodeId {
     // Skeleton mapping from a locus to its unit node id.
     let raw = match &kind_hint.at {
         TextRef::Bible(v) => format!("bible/{}.{}.{}", v.book, v.chapter, v.verse),
         TextRef::Concord(c) => format!("concord/{}.{}.{}", c.part, c.article, c.paragraph),
+        TextRef::Svebilius(v) => format!("svebilius/{}.{}", v.section, v.unit),
     };
     AnyNodeId { kind: NodeKind::TextUnit, raw }
 }
@@ -133,6 +150,14 @@ impl Graph {
         // mechanical completions of an already-declared field, not a new
         // relation or a type-shape change.
         for row in &self.contains_concord {
+            let c = at(&row.container.erase());
+            for l in &row.content.0 {
+                let tl: TextLocus = l.clone().into();
+                pairs.entry(R::Contains).or_default().push((c.clone(), at(&text_node(&tl)), M::None));
+            }
+        }
+        // SVEB-1: the third instantiation, lowered identically.
+        for row in &self.contains_svebilius {
             let c = at(&row.container.erase());
             for l in &row.content.0 {
                 let tl: TextLocus = l.clone().into();
@@ -288,10 +313,88 @@ impl Graph {
         // above) -- there is nothing blocking this one.
         use crate::edge::SymRelationId as S;
         let mut sym_pairs: BTreeMap<S, Vec<(Position, Position, M)>> = BTreeMap::new();
+        // SVEB-1: ROW multiplicity is not EDGE multiplicity, and this is
+        // where the two part company.
+        //
+        // Widening the dedup key to (locus, item, topic) was the whole
+        // point -- it recovers the 740 citations the old (locus, item) key
+        // dropped. But it means one verse cited under three topics now
+        // produces THREE rows, and lowering each row blindly would emit
+        // that verse <-> item pair three times over. Both structural pairs
+        // therefore get their own seen-set:
+        //
+        //   verse <-> item   exactly one per (verse, item), as before this
+        //                    batch -- three topics citing ROM.1.22 do not
+        //                    make three links between ROM.1.22 and the
+        //                    First Commandment.
+        //   item  <-> topic  exactly one per (item, topic) -- a topic
+        //                    gathering five verses is still one topic.
+        //   verse <-> topic  one per citation, NOT deduped: each is a
+        //                    genuinely distinct verse under that topic.
+        //
+        // Both were caught by reading the real neighbour list rather than
+        // by any guard: the counts looked plausible either way.
+        let mut locus_item_seen: std::collections::BTreeSet<(String, String)> =
+            std::collections::BTreeSet::new();
+        let mut item_topic_seen: std::collections::BTreeSet<(String, String)> =
+            std::collections::BTreeSet::new();
         for row in &self.catechism {
             let locus = at(&text_node(&row.locus));
             let item = at(&row.item.erase());
-            sym_pairs.entry(S::CatechismLink).or_default().push((locus, item, M::None));
+            if locus_item_seen.insert((text_node(&row.locus).raw.clone(), row.item.0.clone())) {
+                sym_pairs.entry(S::CatechismLink).or_default().push((locus.clone(), item.clone(), M::None));
+            }
+            // SVEB-1: a topic-attributed citation indexes TWO further
+            // pairs, which is what makes a topic traversable at all --
+            // verse <-> topic answers "which topics does this verse
+            // serve", item <-> topic answers "what does this item
+            // gather". Both ride the SAME symmetric relation as the
+            // locus <-> item pair above: `catechism-link` means "joined
+            // to the catechism", and a topic is part of the catechism.
+            // The locus <-> item pair is emitted UNCONDITIONALLY above,
+            // exactly as before, so nothing that already traversed this
+            // relation changes shape.
+            if let Some(topic) = &row.topic {
+                let topic_pos = at(&topic.erase());
+                // Verse <-> topic: one per citation, each a distinct verse.
+                sym_pairs.entry(S::CatechismLink).or_default().push((locus, topic_pos.clone(), M::None));
+                // Item <-> topic: structural, so exactly one.
+                if item_topic_seen.insert((row.item.0.clone(), topic.0.clone())) {
+                    sym_pairs.entry(S::CatechismLink).or_default().push((item, topic_pos, M::None));
+                }
+            }
+        }
+
+        // PARTS-1: the part-level rows, lowered by the SAME three laws --
+        // verse<->part once per (verse,part), part<->topic once per
+        // (part,topic), verse<->topic once per citation. Copying the
+        // discipline rather than the code because getting this wrong is
+        // exactly the bug the item rows already had once.
+        let mut locus_part_seen: std::collections::BTreeSet<(String, String)> = std::collections::BTreeSet::new();
+        let mut part_topic_seen: std::collections::BTreeSet<(String, String)> = std::collections::BTreeSet::new();
+        for row in &self.catechism_part {
+            let locus = at(&text_node(&row.locus));
+            let part = at(&row.part.erase());
+            if locus_part_seen.insert((text_node(&row.locus).raw.clone(), row.part.0.clone())) {
+                sym_pairs.entry(S::CatechismLink).or_default().push((locus.clone(), part.clone(), M::None));
+            }
+            if let Some(topic) = &row.topic {
+                let topic_pos = at(&topic.erase());
+                sym_pairs.entry(S::CatechismLink).or_default().push((locus, topic_pos.clone(), M::None));
+                if part_topic_seen.insert((row.part.0.clone(), topic.0.clone())) {
+                    sym_pairs.entry(S::CatechismLink).or_default().push((part, topic_pos, M::None));
+                }
+            }
+        }
+
+        // PARTS-1: part <-> item membership -- one row each already, so no
+        // seen-set is needed; the ETL emits exactly one per item.
+        for row in &self.catechism_membership {
+            sym_pairs.entry(S::CatechismLink).or_default().push((
+                at(&row.part.erase()),
+                at(&row.item.erase()),
+                M::None,
+            ));
         }
         // TRAV-1: the second inhabited symmetric relation -- the exact
         // `temporal-adjacency` gap the doc comment above carried since

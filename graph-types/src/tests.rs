@@ -187,6 +187,7 @@ fn edge_summary_includes_symmetric_kinds() {
 
     let mut g = toy();
     g.catechism.push(CatechismLink {
+        topic: None,
         locus: TextLocus { at: TextRef::Bible(vr(40, 3, 13)), span: None },
         item: crate::id::CatechismItemId::new("baptism-part"),
         provenance: "curated".into(),
@@ -200,6 +201,60 @@ fn edge_summary_includes_symmetric_kinds() {
     assert_eq!(summary.get(&sym), Some(&1), "symmetric kinds appear in summaries");
     let total = Holdings::focus(item).step(&g, sym);
     assert_eq!(total.0.len(), 1, "and the summary agrees with the frontier");
+}
+
+/// SVEB-1: row multiplicity is not edge multiplicity.
+///
+/// Widening the catechism dedup key to (locus, item, topic) is what
+/// recovers the citations the old (locus, item) key dropped -- but it means
+/// one verse cited under three topics produces THREE rows. Lowering those
+/// blindly emitted the verse <-> item pair three times and the item <->
+/// topic pair once per citation. Both were real, both looked plausible in
+/// the aggregate counts, and both were only visible by reading the actual
+/// neighbour list. This pins the three laws so they cannot drift back.
+#[test]
+fn topic_rows_do_not_multiply_the_structural_catechism_edges() {
+    use crate::edge::{CatechismLink, Justification};
+    use crate::text::{TextLocus, TextRef};
+
+    let mut g = toy();
+    let item_id = crate::id::CatechismItemId::new("commandment-1");
+    let topic_a = crate::id::CatechismTopicId::new("commandment-1#0");
+    let topic_b = crate::id::CatechismTopicId::new("commandment-1#1");
+
+    // ONE verse (40.3.13) cited under TWO topics, plus a second verse
+    // (40.3.14) under the first topic only.
+    for (locus_verse, topic) in [(13u16, &topic_a), (13, &topic_b), (14, &topic_a)] {
+        g.catechism.push(CatechismLink {
+            locus: TextLocus { at: TextRef::Bible(vr(40, 3, locus_verse)), span: None },
+            item: item_id.clone(),
+            topic: Some(topic.clone()),
+            provenance: "curated".into(),
+            justification: Justification::default(),
+        });
+    }
+    g.build_indexes();
+
+    let sym = EdgeKind::Symmetric(SymRelationId::CatechismLink);
+
+    // The item reaches 2 distinct verses + 2 distinct topics = 4, NOT the
+    // 6 that blind per-row lowering produced.
+    let item = Position::Node(item_id.erase());
+    let from_item = Holdings::focus(item).step(&g, sym);
+    assert_eq!(from_item.0.len(), 4, "item neighbours must be distinct: 2 verses + 2 topics");
+
+    // The doubly-cited verse reaches the item ONCE and both topics.
+    let verse = Position::Node(crate::graph::text_node_for_test(&TextLocus {
+        at: TextRef::Bible(vr(40, 3, 13)),
+        span: None,
+    }));
+    let from_verse = Holdings::focus(verse).step(&g, sym);
+    assert_eq!(from_verse.0.len(), 3, "verse reaches 1 item + 2 topics, not 2 items");
+
+    // The topic gathering two verses is one topic reaching item + 2 verses.
+    let topic = Position::Node(topic_a.erase());
+    let from_topic = Holdings::focus(topic).step(&g, sym);
+    assert_eq!(from_topic.0.len(), 3, "topic reaches its item once and both its verses");
 }
 
 #[test]

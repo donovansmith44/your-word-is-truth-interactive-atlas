@@ -940,6 +940,22 @@ pub struct CatechismPart {
     pub id: String,
     pub title: String,
     pub items: Vec<CatechismItem>,
+    /// PARTS-1: topical groupings that belong to the PART rather than to
+    /// any one of its items -- the brain-fuel repo's own part-overview
+    /// files, deferred by Batch F2 for having "no existing item to attach
+    /// to". Same `CatechismQuestion` shape the items carry.
+    #[serde(default)]
+    pub questions: Vec<CatechismQuestion>,
+    /// PARTS-1: false for a part this app materializes to give real
+    /// content a home rather than one `catechism.toml` itself defines
+    /// (Daily Prayers, the Table of Duties, and the repo's own topical
+    /// sections). Disclosed on the data, never inferred from the id.
+    #[serde(default = "curated_true")]
+    pub curated: bool,
+}
+
+fn curated_true() -> bool {
+    true
 }
 
 /// One hand-authored polity, `data/curated/polities/{id}.toml` (one file per
@@ -2220,6 +2236,14 @@ pub fn demo_fixture() -> AtlasData {
     data.catechism = vec![CatechismPart {
         id: "demo-part".into(),
         title: "Demo Part".into(),
+        // PARTS-1: a part-level topical grouping, so a server test can
+        // assert part questions reach the wire distinctly from item ones.
+        questions: vec![CatechismQuestion {
+            title: "Demo Part Question".into(),
+            verses: vec!["JOS.6.20".into()],
+            source: "brain-fuel/catechism".into(),
+        }],
+        curated: true,
         items: vec![CatechismItem {
             id: "demo-item-1".into(),
             name: "Demo Catechism Item".into(),

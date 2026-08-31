@@ -56,6 +56,16 @@ pub struct Report {
     /// `land_mask_regions` already report for their own curated files.
     pub catechism_parts: usize,
     pub catechism_items: usize,
+    /// PARTS-1: how many of `catechism_parts` this app materializes to
+    /// give real content a home rather than `catechism.toml` defining
+    /// them (Daily Prayers, the Table of Duties, and the brain-fuel
+    /// repo's own two topical sections). Reported so the six chief parts
+    /// Luther numbered stay countable separately from the roster total.
+    pub catechism_noncurated_parts: usize,
+    /// PARTS-1: questions attached to a PART rather than to any item --
+    /// the seven `resources/*.yaml` files Batch F2 deferred for having
+    /// "no existing item to attach to".
+    pub catechism_part_questions: usize,
     /// Batch F2 (requirement 5, "report the before/after"): how many of
     /// `catechism_items` are reachable from >=1 verse today -- an item
     /// counts if EITHER its own item-level `verses` (Luther's embedded
@@ -170,6 +180,12 @@ pub fn write(r: &Report) -> String {
 
     writeln!(s, "Catechism (Batch F, extended Batch F2):").unwrap();
     writeln!(s, "  {} chief part(s), {} item(s) total", r.catechism_parts, r.catechism_items).unwrap();
+    writeln!(
+        s,
+        "  {} of those part(s) are non-curated (materialized here, not in catechism.toml); {} part-level question(s)",
+        r.catechism_noncurated_parts, r.catechism_part_questions
+    )
+    .unwrap();
     writeln!(
         s,
         "  {}/{} items reachable from >=1 verse (was 6/33 before Batch F2's own repo mapping + Deut5 supplement)",
